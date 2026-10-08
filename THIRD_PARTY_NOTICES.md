@@ -10,6 +10,6 @@ MaaNikki 桌面客户端基于 [MistEO/MXU](https://github.com/MistEO/MXU)，目
 
 JS 和 Rust 依赖的精确版本见 `client/pnpm-lock.yaml` 和 `client/src-tauri/Cargo.lock`。打包时收集本次已安装/下载的依赖所附许可文件，并保存到发布包的 `licenses/dependencies/`，清单见该目录的 `index.json`。本文件列出主要组件，不替代完整的依赖许可核查。
 
-`resource/model/ocr/` 下的检测模型、识别模型及字典来自 [MaaCommonAssets 的 PP-OCRv6 small 模型](https://github.com/MaaXYZ/MaaCommonAssets/tree/dabcd4681ac990dc4361de26416d986abd80e4aa/OCR/ppocr_v6/small)，三个文件与该上游版本逐文件一致。MaaCommonAssets 仓库采用 MIT 许可，模型来源为 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)（Apache-2.0）。许可原文分别保留在 `licenses/MaaCommonAssets-MIT.txt` 和 `licenses/PaddleOCR-Apache-2.0.txt`；模型来源、上游版本和文件校验值记录在 `build/resource-models.lock.json`。
+`resource/model/ocr/` 下的检测模型、识别模型及字典来自 [MaaCommonAssets 的 PP-OCRv6 small 模型](https://github.com/MaaXYZ/MaaCommonAssets/tree/dabcd4681ac990dc4361de26416d986abd80e4aa/OCR/ppocr_v6/small)，检测和识别模型与该上游版本逐字节一致；字典内容一致，仅使用 Windows 换行符。MaaCommonAssets 仓库采用 MIT 许可，模型来源为 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)（Apache-2.0）。许可原文分别保留在 `licenses/MaaCommonAssets-MIT.txt` 和 `licenses/PaddleOCR-Apache-2.0.txt`；模型来源、上游版本和文件校验值记录在 `build/resource-models.lock.json`。
 
 游戏截图与地图用于界面识别和路线定位。《无限暖暖》的名称及相关游戏素材权利归相应权利人，部分路线与匹配截图的项目来源见上述 Whimbox 说明。
