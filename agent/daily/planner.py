@@ -46,7 +46,7 @@ XINGHAI = (
     Rule("delivery", "投递信笺", ("投递", "信笺"), 200, 3, "delivery", route="xinghai_delivery"),
     Rule("bottle_photo", "星愿瓶合影", ("星愿瓶", "合影"), 200, 4, "photo", route="xinghai_bottle_photo"),
     Rule("crystal", "星光结晶", ("10个星光结晶",), 100, 0, "crystal"),
-    Rule("meteor", "召唤流星", ("1次流星",), 200, 0),
+    Rule("meteor", "召唤流星", ("1次流星",), 200, 4, "meteor"),
     # User-confirmed daily: teleport to the hub, then hold the configured bell key.
     Rule("bell", "召唤摇铃", ("召唤摇铃",), 100, 6, "bell"),
     Rule("wing_photo", "星芒之翼合影", ("星芒之翼", "合影"), 200, 4, "photo", route="xinghai_wing_photo"),

@@ -30,6 +30,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
+import { isTaskAvailable } from '@/utils/developerTasks';
 import { TaskItem } from './TaskItem';
 import { ActionItem } from './ActionItem';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
@@ -284,6 +285,7 @@ export function TaskList() {
     clearLastAddedTaskId,
     projectInterface,
     skippedPresetInstanceIds,
+    devMode,
   } = useAppStore();
 
   const instance = getActiveInstance();
@@ -489,7 +491,9 @@ export function TaskList() {
     );
   }
 
-  const tasks = instance.selectedTasks;
+  const tasks = instance.selectedTasks.filter((task) =>
+    isTaskAvailable(projectInterface?.task.find((def) => def.name === task.taskName), devMode),
+  );
   // pretask 伪任务作为卡片置于前置程序之上，其余任务保持在下方
   const pretaskTasks = tasks.filter((t) => isPretaskName(t.taskName));
   const normalTasks = tasks.filter((t) => !isPretaskName(t.taskName));

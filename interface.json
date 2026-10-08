@@ -4,7 +4,7 @@
   "label": "MaaNikki",
   "title": "MaaNikki - 无限暖暖自动化",
   "description": "《无限暖暖》助手，支持日常任务、幻境挑战、巅峰赛和常驻开荒辅助。",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "controller": [
     {
       "name": "nikki_windows",
@@ -52,6 +52,21 @@
       "name": "daily",
       "label": "其他每日任务",
       "default_expand": true
+    },
+    {
+      "name": "developer",
+      "label": "开发者工具",
+      "default_expand": true
+    },
+    {
+      "name": "developer_zhaoxi",
+      "label": "朝夕子任务测试",
+      "default_expand": true
+    },
+    {
+      "name": "developer_xinghai",
+      "label": "星海子任务测试",
+      "default_expand": true
     }
   ],
   "task": [],
@@ -64,6 +79,8 @@
     "tasks/MonthlyPass.json",
     "tasks/Crown.json",
     "tasks/Exploration.json",
+    "tasks/RouteTest.json",
+    "tasks/SubtaskTest.json",
     "tasks/Presets.json"
   ]
 }

@@ -1,0 +1,413 @@
+{
+  "task": [
+    {
+      "name": "dev_zhaoxi_energy",
+      "label": "朝夕 · 消耗活跃能量（进度条件）",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_energy",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "累计消耗活跃能量是进度条件，没有单独执行动作；请测试具体幻境。",
+      "option": []
+    },
+    {
+      "name": "dev_zhaoxi_jihua",
+      "label": "朝夕 · 素材激化",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_jihua",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。 会消耗活跃能量，按游戏默认最少次数执行当前测试选项所选的幻境目标。",
+      "option": [
+        "JihuaTarget",
+        "JihuaMaterialMode"
+      ]
+    },
+    {
+      "name": "dev_zhaoxi_bless",
+      "label": "朝夕 · 获取祝福闪光",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_bless",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。 会消耗活跃能量，按游戏默认最少次数执行当前测试选项所选的幻境目标。",
+      "option": [
+        "BlessTarget"
+      ]
+    },
+    {
+      "name": "dev_zhaoxi_monster",
+      "label": "朝夕 · 魔物试炼",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_monster",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。 会消耗活跃能量，按游戏默认最少次数执行当前测试选项所选的幻境目标。",
+      "option": [
+        "MonsterTarget"
+      ]
+    },
+    {
+      "name": "dev_zhaoxi_plant",
+      "label": "朝夕 · 采集植物",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_plant",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    },
+    {
+      "name": "dev_zhaoxi_insect",
+      "label": "朝夕 · 捕虫",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_insect",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": [
+        "ZhaoxiAbilityPlan"
+      ]
+    },
+    {
+      "name": "dev_zhaoxi_fight",
+      "label": "朝夕 · 打怪",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_fight",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    },
+    {
+      "name": "dev_zhaoxi_minigame",
+      "label": "朝夕 · 小游戏（未适配）",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_minigame",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "此子任务尚未适配执行流程。",
+      "option": []
+    },
+    {
+      "name": "dev_zhaoxi_photo",
+      "label": "朝夕 · 拍照",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_photo",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": [
+        "ZhaoxiPhoto"
+      ]
+    },
+    {
+      "name": "dev_zhaoxi_dig",
+      "label": "朝夕 · 美鸭梨挖掘",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_dig",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": [
+        "DigRepeat"
+      ]
+    },
+    {
+      "name": "dev_zhaoxi_upgrade",
+      "label": "朝夕 · 升级祝福闪光（未适配）",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_upgrade",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "此子任务尚未适配执行流程。",
+      "option": []
+    },
+    {
+      "name": "dev_zhaoxi_clothes",
+      "label": "朝夕 · 制作服装（未适配）",
+      "entry": "MaaNikki_SubtaskTest_zhaoxi_clothes",
+      "group": [
+        "developer_zhaoxi"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "此子任务尚未适配执行流程。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_photo",
+      "label": "星海 · 拍照",
+      "entry": "MaaNikki_SubtaskTest_xinghai_photo",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": [
+        "XinghaiPhoto"
+      ]
+    },
+    {
+      "name": "dev_xinghai_place",
+      "label": "星海 · 放置摆饰",
+      "entry": "MaaNikki_SubtaskTest_xinghai_place",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_music",
+      "label": "星海 · 更改音乐",
+      "entry": "MaaNikki_SubtaskTest_xinghai_music",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_chat",
+      "label": "星海 · 聚会聊天",
+      "entry": "MaaNikki_SubtaskTest_xinghai_chat",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。 需明确开启发送聚会频道消息选项。",
+      "option": [
+        "XinghaiChat"
+      ]
+    },
+    {
+      "name": "dev_xinghai_like",
+      "label": "星海 · 星绘图册点赞",
+      "entry": "MaaNikki_SubtaskTest_xinghai_like",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": [
+        "XinghaiLookbook"
+      ]
+    },
+    {
+      "name": "dev_xinghai_coco",
+      "label": "星海 · 椰果采摘（未适配）",
+      "entry": "MaaNikki_SubtaskTest_xinghai_coco",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "此子任务尚未适配执行流程。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_coco_photo",
+      "label": "星海 · 椰果拍照（未适配）",
+      "entry": "MaaNikki_SubtaskTest_xinghai_coco_photo",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "此子任务尚未适配执行流程。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_fragment",
+      "label": "星海 · 星愿碎片投递（未适配）",
+      "entry": "MaaNikki_SubtaskTest_xinghai_fragment",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "此子任务尚未适配执行流程。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_fragment_photo",
+      "label": "星海 · 星愿碎片拍照（未适配）",
+      "entry": "MaaNikki_SubtaskTest_xinghai_fragment_photo",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "此子任务尚未适配执行流程。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_bottle",
+      "label": "星海 · 漂流瓶查看",
+      "entry": "MaaNikki_SubtaskTest_xinghai_bottle",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_delivery",
+      "label": "星海 · 投递信笺",
+      "entry": "MaaNikki_SubtaskTest_xinghai_delivery",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_bottle_photo",
+      "label": "星海 · 星愿瓶合影",
+      "entry": "MaaNikki_SubtaskTest_xinghai_bottle_photo",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": [
+        "XinghaiPhoto"
+      ]
+    },
+    {
+      "name": "dev_xinghai_crystal",
+      "label": "星海 · 星光结晶",
+      "entry": "MaaNikki_SubtaskTest_xinghai_crystal",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_meteor",
+      "label": "星海 · 召唤流星",
+      "entry": "MaaNikki_SubtaskTest_xinghai_meteor",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。 当天需有未完成的召唤流星任务；会扫描对应卡片，使用立即前往入口。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_bell",
+      "label": "星海 · 召唤摇铃",
+      "entry": "MaaNikki_SubtaskTest_xinghai_bell",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_wing_photo",
+      "label": "星海 · 星芒之翼合影",
+      "entry": "MaaNikki_SubtaskTest_xinghai_wing_photo",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": [
+        "XinghaiPhoto"
+      ]
+    },
+    {
+      "name": "dev_xinghai_bubble",
+      "label": "星海 · 制造泡泡",
+      "entry": "MaaNikki_SubtaskTest_xinghai_bubble",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。 需先装备泡泡漂浮套装并在选项中确认。",
+      "option": [
+        "XinghaiBubble"
+      ]
+    },
+    {
+      "name": "dev_xinghai_bubble_photo",
+      "label": "星海 · 泡泡合影（未适配）",
+      "entry": "MaaNikki_SubtaskTest_xinghai_bubble_photo",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "此子任务尚未适配执行流程。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_animal_three",
+      "label": "星海 · 动物互动3次",
+      "entry": "MaaNikki_SubtaskTest_xinghai_animal_three",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    },
+    {
+      "name": "dev_xinghai_animal_one",
+      "label": "星海 · 不同动物互动",
+      "entry": "MaaNikki_SubtaskTest_xinghai_animal_one",
+      "group": [
+        "developer_xinghai"
+      ],
+      "developer_only": true,
+      "default_check": false,
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
+    }
+  ]
+}

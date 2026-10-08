@@ -1,0 +1,10 @@
+{
+  "MaaNikki_RouteTest": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.route_test",
+    "custom_action_param": {"route": "xinghai_meteor1", "file": ""},
+    "post_delay": 0,
+    "next": []
+  }
+}

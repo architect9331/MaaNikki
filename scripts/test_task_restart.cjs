@@ -14,6 +14,11 @@ const source = readFileSync(resolve(__dirname, '..', process.argv[2] ||
 const compiled = ts.transpileModule(source, {
   compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
 }).outputText;
+const developerSource = readFileSync(resolve(__dirname, '..', 'client/src/utils/developerTasks.ts'), 'utf8');
+const developerContext = { exports: {} };
+vm.runInNewContext(ts.transpileModule(developerSource, {
+  compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
+}).outputText, developerContext);
 
 function instance(running, status = 'succeeded') {
   return {
@@ -30,6 +35,7 @@ function harness(native = true) {
   const snapshot = { instances: { default: instance(false) } };
   const calls = [];
   const dataset = {};
+  const settings = { devMode: false, projectInterface: { task: [] } };
   let onStart = async () => [201];
   const start = async (args) => {
     calls.push(args);
@@ -60,6 +66,8 @@ function harness(native = true) {
       },
     },
     '@/services/wsService': {},
+    '@/stores/appStore': { useAppStore: { getState: () => settings } },
+    '@/utils/developerTasks': developerContext.exports,
   };
   const context = {
     exports: {}, Error, crypto: webcrypto,
@@ -71,7 +79,7 @@ function harness(native = true) {
   };
   vm.runInNewContext(compiled, context, { filename: 'maaService.js' });
   return {
-    service: context.exports.maaService, snapshot, calls, dataset,
+    service: context.exports.maaService, snapshot, calls, dataset, settings,
     setStart: (callback) => { onStart = callback; },
   };
 }
@@ -80,6 +88,34 @@ const tasks = [{ entry: 'MaaNikki_Xinghai', pipeline_override: '{}' }];
 
 for (const native of [true, false]) {
   const mode = native ? 'desktop' : 'browser';
+  test(`${mode}: all metadata-based developer subtasks require mode`, async () => {
+    const h = harness(native);
+    const definitions = JSON.parse(readFileSync(resolve(__dirname, '..', 'tasks/SubtaskTest.json'), 'utf8')).task;
+    h.settings.projectInterface.task = definitions;
+    for (const definition of definitions) {
+      await assert.rejects(h.service.startTasks('default', [{ entry: definition.entry, pipeline_override: '{}' }]), /开发模式/);
+      await assert.rejects(h.service.runTask('default', definition.entry), /任务列表启动/);
+    }
+    assert.equal(h.calls.length, 0);
+    h.settings.devMode = true;
+    await h.service.startTasks('default', [{ entry: definitions[0].entry, pipeline_override: '{}' }]);
+    assert.equal(h.calls.length, 1);
+  });
+  test(`${mode}: developer task requires mode and forwards it to the agent`, async () => {
+    const h = harness(native);
+    const routeTask = [{ entry: 'MaaNikki_RouteTest', pipeline_override: '{}' }];
+    await assert.rejects(h.service.startTasks('default', routeTask), /开发模式/);
+    await assert.rejects(h.service.runTask('default', 'MaaNikki_RouteTest'), /任务列表启动/);
+    assert.equal(h.calls.length, 0);
+    h.settings.devMode = true;
+    await h.service.startTasks('default', routeTask);
+    // Agent environments are forwarded only when an agent is configured.
+    await h.service.startTasks('default', routeTask, [{ child_exec: 'python', child_args: [] }]);
+    assert.equal((native ? h.calls[1].piEnvs : h.calls[1].pi_envs).PI_MAANIKKI_DEV_MODE, '1');
+    h.settings.devMode = false;
+    await assert.rejects(h.service.startTasks('default', routeTask), /开发模式/);
+    assert.equal(h.calls.length, 2);
+  });
   for (const status of ['succeeded', 'failed']) {
     test(`${mode}: restart after ${status} with retained history`, async () => {
       const h = harness(native);
@@ -105,6 +141,14 @@ for (const native of [true, false]) {
     assert.equal(h.dataset.maanikkiStarting, undefined);
   });
 }
+
+test('developer task visibility follows the setting without affecting regular tasks', () => {
+  const { isTaskAvailable } = developerContext.exports;
+  assert.equal(isTaskAvailable({ entry: 'MaaNikki_RouteTest' }, false), false);
+  assert.equal(isTaskAvailable({ developer_only: true }, false), false);
+  assert.equal(isTaskAvailable({ entry: 'MaaNikki_RouteTest' }, true), true);
+  assert.equal(isTaskAvailable({ entry: 'MaaNikki_Xinghai' }, false), true);
+});
 
 test('stop in progress blocks; restart succeeds after framework stops', async () => {
   const h = harness();

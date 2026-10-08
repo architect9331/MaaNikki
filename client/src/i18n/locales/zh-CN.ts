@@ -579,7 +579,7 @@ export default {
     logsExported: '日志已导出',
     exportLogsFailed: '导出日志失败',
     devMode: '开发模式',
-    devModeHint: '启用后允许按 F5 刷新 UI',
+    devModeHint: '显示路线测试等开发者任务，并允许按 F5 刷新 UI',
     saveDraw: '保存调试图像',
     saveDrawHint: '保存识别和操作的调试图像到日志目录（重启软件后自动关闭）',
     tcpCompatMode: '通信兼容模式',

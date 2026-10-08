@@ -595,7 +595,7 @@ export default {
     logsExported: 'ログをエクスポートしました',
     exportLogsFailed: 'ログのエクスポートに失敗しました',
     devMode: '開発者モード',
-    devModeHint: '有効にすると F5 キーで UI をリフレッシュできます',
+    devModeHint: 'ルートテストなどの開発者タスクを表示し、F5 で UI を更新できます',
     saveDraw: 'デバッグ画像を保存',
     saveDrawHint:
       '認識と操作のデバッグ画像をログフォルダに保存します（再起動後は自動的にオフになります）',

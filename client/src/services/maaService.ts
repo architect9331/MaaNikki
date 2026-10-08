@@ -21,6 +21,8 @@ import { isTauri } from '@/utils/paths';
 import i18n from '@/i18n';
 import { apiDelete, apiGet, apiPost, apiPut, getApiBase } from '@/utils/backendApi';
 import * as wsService from '@/services/wsService';
+import { useAppStore } from '@/stores/appStore';
+import { isDeveloperTask, ROUTE_TEST_ENTRY } from '@/utils/developerTasks';
 
 const log = loggers.maa;
 
@@ -433,6 +435,10 @@ export const maaService = {
     pipelineOverride: string = '{}',
     selectedTaskId?: string,
   ): Promise<number> {
+    const { projectInterface } = useAppStore.getState();
+    if (entry === ROUTE_TEST_ENTRY || isDeveloperTask(projectInterface?.task.find((def) => def.entry === entry))) {
+      throw new Error('开发者任务请在停止当前任务后，通过任务列表启动。');
+    }
     log.info(
       '运行任务, 实例:',
       instanceId,
@@ -646,6 +652,12 @@ export const maaService = {
     controllerInfo?: ControllerTelemetryInfo,
     logRedactSecrets?: string[],
   ): Promise<number[]> {
+    const { devMode, projectInterface } = useAppStore.getState();
+    const hasDeveloperTask = tasks.some((task) => task.entry === ROUTE_TEST_ENTRY ||
+      isDeveloperTask(projectInterface?.task.find((def) => def.entry === task.entry)));
+    if (hasDeveloperTask && !devMode) {
+      throw new Error('路线测试需要开启设置中的开发模式。');
+    }
     if (document.documentElement.dataset.maanikkiStarting === 'yes')
       throw new Error('已有任务正在启动，请稍候。');
     document.documentElement.dataset.maanikkiStarting = 'yes';
@@ -656,7 +668,7 @@ export const maaService = {
       // 是否还在执行以 MaaTaskerRunning 的实时结果为准。
       if (Object.values(state.instances).some(item => item.isRunning))
         throw new Error('请先停止正在运行的任务组，再启动日常或开荒辅助。');
-    piEnvs = { ...piEnvs, PI_MAANIKKI_RUN_PLAN: JSON.stringify({
+    piEnvs = { ...piEnvs, PI_MAANIKKI_DEV_MODE: devMode ? '1' : '0', PI_MAANIKKI_RUN_PLAN: JSON.stringify({
       schema_version: 1, id: crypto.randomUUID(), instance: instanceId,
       entries: tasks.map(task => task.entry),
     }) };

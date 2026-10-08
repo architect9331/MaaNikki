@@ -1,0 +1,46 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_meteor3",
+  "title": "星海 · 流星3",
+  "map": "starsea",
+  "start_radius": 9.0,
+  "timeout": 240.0,
+  "material": "",
+  "capacity": null,
+  "points": [
+    {
+      "x": 1313.95,
+      "y": 729.85,
+      "radius": 3,
+      "jump": false
+    },
+    {
+      "x": 1294.65,
+      "y": 753.75,
+      "radius": 3,
+      "jump": false
+    }
+  ],
+  "teleport": {
+    "name": "繁星之滨",
+    "province": "星海",
+    "region": "星海",
+    "x": 1313.986,
+    "y": 731.313
+  },
+  "editor_target": {
+    "map": "starsea",
+    "x": 1259.2,
+    "y": 785.2,
+    "score": 0.7623,
+    "local_peak": 0.0538,
+    "coordinate_system": "navigation_map_pixels",
+    "page_checks": {
+      "MaaNikki_Navigation_MapFeature": 0.9269348978996277,
+      "MaaNikki_Navigation_MapMaxScale": 0.9969925880432129
+    },
+    "note": "单帧截图位置；使用前须确认自动地图移动已结束。",
+    "source_id": "20261009-002102-4edd8fac",
+    "title": "流星3"
+  }
+}

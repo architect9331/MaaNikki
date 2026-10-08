@@ -596,7 +596,7 @@ export default {
     logsExported: 'Logs exported',
     exportLogsFailed: 'Failed to export logs',
     devMode: 'Developer Mode',
-    devModeHint: 'Allow pressing F5 to refresh UI when enabled',
+    devModeHint: 'Show developer tasks such as route testing and allow F5 to refresh the UI',
     saveDraw: 'Save Debug Images',
     saveDrawHint:
       'Save recognition and action debug images to log directory (auto-disabled on restart)',

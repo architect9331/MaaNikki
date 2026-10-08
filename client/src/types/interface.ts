@@ -222,6 +222,8 @@ export interface TaskItem {
   label?: string;
   entry: string;
   default_check?: boolean;
+  /** MaaNikki 扩展：仅在设置中的开发模式开启时显示和运行。 */
+  developer_only?: boolean;
   description?: string;
   icon?: string;
   /** v2.4.0: 任务所属分组列表 */

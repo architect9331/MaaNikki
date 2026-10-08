@@ -1,6 +1,6 @@
 [package]
 name = "mxu"
-version = "2.7.1-maanikki.4"
+version = "2.7.1-maanikki.5"
 description = "MaaNikki desktop client for Infinity Nikki automation, based on MXU"
 authors = ["MaaNikki contributors"]
 edition = "2021"

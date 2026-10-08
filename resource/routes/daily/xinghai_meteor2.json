@@ -1,0 +1,52 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_meteor2",
+  "title": "星海 · 流星2",
+  "map": "starsea",
+  "start_radius": 9.0,
+  "timeout": 240.0,
+  "material": "",
+  "capacity": null,
+  "points": [
+    {
+      "x": 1433.8,
+      "y": 995.0,
+      "radius": 3,
+      "jump": false
+    },
+    {
+      "x": 1455.78,
+      "y": 985.39,
+      "radius": 3,
+      "jump": false
+    },
+    {
+      "x": 1483.58,
+      "y": 1008.4,
+      "radius": 3,
+      "jump": false
+    }
+  ],
+  "teleport": {
+    "name": "星梦群屿·主岛",
+    "province": "星海",
+    "region": "星海",
+    "x": 1433.676,
+    "y": 997.388
+  },
+  "editor_target": {
+    "map": "starsea",
+    "x": 1515.8,
+    "y": 1014.0,
+    "score": 0.8635,
+    "local_peak": 0.0844,
+    "coordinate_system": "navigation_map_pixels",
+    "page_checks": {
+      "MaaNikki_Navigation_MapFeature": 0.9269683957099915,
+      "MaaNikki_Navigation_MapMaxScale": 0.9969925880432129
+    },
+    "note": "单帧截图位置；使用前须确认自动地图移动已结束。",
+    "source_id": "20261009-001545-419374ef",
+    "title": "流星2无对话框"
+  }
+}

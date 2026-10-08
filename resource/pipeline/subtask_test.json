@@ -1,0 +1,354 @@
+{
+  "MaaNikki_SubtaskTest_zhaoxi_energy": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "energy"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_jihua": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "jihua"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_bless": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "bless"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_monster": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "monster"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_plant": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "plant"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_insect": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "insect"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_fight": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "fight"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_minigame": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "minigame"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_photo": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "photo"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_dig": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "dig"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_upgrade": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "upgrade"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_zhaoxi_clothes": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "zhaoxi",
+      "task": "clothes"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_photo": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "photo"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_place": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "place"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_music": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "music"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_chat": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "chat"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_like": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "like"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_coco": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "coco"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_coco_photo": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "coco_photo"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_fragment": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "fragment"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_fragment_photo": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "fragment_photo"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_bottle": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "bottle"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_delivery": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "delivery"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_bottle_photo": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "bottle_photo"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_crystal": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "crystal"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_meteor": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "meteor"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_bell": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "bell"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_wing_photo": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "wing_photo"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_bubble": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "bubble"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_bubble_photo": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "bubble_photo"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_animal_three": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "animal_three"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_SubtaskTest_xinghai_animal_one": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.subtask_test",
+    "custom_action_param": {
+      "mode": "xinghai",
+      "task": "animal_one"
+    },
+    "post_delay": 0,
+    "next": []
+  }
+}

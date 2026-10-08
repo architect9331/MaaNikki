@@ -63,9 +63,16 @@ class Locator:
         local = rates-cv2.GaussianBlur(rates, (kernel, kernel), 0)
         if peak_mask is not None:
             h, w = local.shape
+            # Stored masks describe big-map correlation centers. A mini-map
+            # patch is smaller and produces a larger response grid; extend
+            # the mask with forbidden border centers instead of resizing it
+            # or rejecting an otherwise valid global mini-map lookup.
+            mh, mw = peak_mask.shape
+            dh, dw = max(0, h-mh), max(0, w-mw)
+            if dh or dw:
+                peak_mask = cv2.copyMakeBorder(peak_mask, dh//2, dh-dh//2, dw//2, dw-dw//2,
+                                               cv2.BORDER_CONSTANT, value=0)
             oy, ox = (peak_mask.shape[0]-h)//2, (peak_mask.shape[1]-w)//2
-            if min(oy, ox) < 0:
-                raise NavigationError("地图遮罩尺寸不匹配。")
             local = np.where(peak_mask[oy:oy+h, ox:ox+w] > 0, local, -np.inf)
         _, detail, _, (px, py) = cv2.minMaxLoc(local)
         left, top = max(0, px-4), max(0, py-4)

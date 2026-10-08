@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAppStore } from '@/stores/appStore';
+import { isTaskAvailable } from '@/utils/developerTasks';
 import { maaService } from '@/services/maaService';
 import { buildTaskOptionSummary } from '@/services/telemetryService';
 import { collectPasswordPlaintextsFromRunnableTasks } from '@/utils/passwordOptionValues';
@@ -85,6 +86,7 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
     setShowAddTaskPanel,
     addLog,
     tcpCompatMode,
+    devMode,
     maaVersion,
   } = useAppStore();
 
@@ -116,7 +118,8 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
   const instance = instances.find((i) => i.id === instanceId);
   const isRunning = instance?.isRunning || false;
   const tasks = instance?.selectedTasks || [];
-  const enabledTasks = tasks.filter((t) => t.enabled);
+  const enabledTasks = tasks.filter((task) => task.enabled &&
+    isTaskAvailable(projectInterface?.task.find((def) => def.name === task.taskName), devMode));
   const canRun = isConnected && isResourceLoaded && enabledTasks.length > 0;
 
   // 获取当前控制器和资源名（用于 pipeline override 生成）

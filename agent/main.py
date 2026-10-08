@@ -16,6 +16,8 @@ from action import game_key as _game_key
 from action import gameplay as _gameplay
 from action import run_coordination as _run_coordination
 from action import exploration_crown as _exploration_crown
+from action import route_test as _route_test
+from action import subtask_test as _subtask_test
 from recognition import ui_template as _ui_template
 
 

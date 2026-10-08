@@ -298,7 +298,7 @@ class Runtime:
         route = load_route(RESOURCE, name)
         return route.document if route else None
 
-    def navigate(self, name, mode=None, card=None, progress=None):
+    def navigate(self, name, mode=None, card=None, progress=None, *, meteor_travel=False):
         if not foreground_inputs():
             self.log("路线导航需要前台鼠标和键盘输入，请将两者设置为 Seize。")
             return False
@@ -316,6 +316,8 @@ class Runtime:
         previous_inputs = self.navigation_inputs
         try:
             model = parse_route(route, name)
+            if meteor_travel and route["schema_version"] != 3:
+                raise NavigationError("流星移动路线必须使用已验证的坐标路线格式。")
             locator = Locator(maps(RESOURCE)[model.map_id])
             stage = "window_binding"
             inputs = ForegroundInput(self.controller, lambda: self.stopped,
@@ -329,15 +331,25 @@ class Runtime:
                     raise NavigationError("此路线需要从相应日常任务执行。")
                 stage = "action_validation"
                 preflight(RESOURCE, model, card.rule.executor)
-                actions = RouteActions(self, RESOURCE, model, mode, card, inputs, events.append)
-                if progress is not None:
-                    actions.count = progress
+                if meteor_travel:
+                    if (mode != "xinghai" or card.rule.executor != "meteor" or model.map_id != "starsea"
+                            or any(point.action for point in model.points) or not route.get("teleport")):
+                        raise NavigationError("流星移动路线配置无效。")
+                else:
+                    actions = RouteActions(self, RESOURCE, model, mode, card, inputs, events.append)
+                    if progress is not None:
+                        actions.count = progress
                 if card.rule.executor == "bubble" and not self.setting(mode).get("bubble_equipped", False):
                     raise NavigationError("请先装备泡泡漂浮套装，并在星海任务设置中确认。")
                 stage = "teleport"
                 teleporter = Teleporter(self, locator, events.append, inputs)
-                actions.teleporter = teleporter
-                teleporter.prepare(model)
+                if actions:
+                    actions.teleporter = teleporter
+                if meteor_travel:
+                    # Keep the map opened by Go Now; transport handles an arbitrary viewport.
+                    teleporter.transport(route["teleport"])
+                else:
+                    teleporter.prepare(model)
                 stage = "ability_selection"
                 if card.rule.executor == "insect" and not actions.select_insect():
                     raise NavigationError("捕虫能力配置未完成，本项尚未开始。")
@@ -429,6 +441,12 @@ class Executors(Runtime):
             return False
         if rule.executor == "crystal":
             return any(self.usable_route(self.routes(f"xinghai_crystal_{index}"), "crystal") for index in range(1, 9))
+        if rule.executor == "meteor":
+            from .meteor import meteor_routes
+            try:
+                return mode == "xinghai" and bool(meteor_routes(RESOURCE))
+            except (ValueError, KeyError, TypeError, OSError):
+                return False
         if rule.route:
             route = self.routes(rule.route)
             if route:
@@ -470,6 +488,9 @@ class Executors(Runtime):
             return self.crystals(mode, card)
         if rule.executor == "bell":
             return self.ring_bell()
+        if rule.executor == "meteor":
+            from .meteor import Meteor
+            return Meteor(self, RESOURCE).run(mode, card)
         if rule.route and self.routes(rule.route):
             route = self.routes(rule.route)
             if route.get("schema_version") == 3:

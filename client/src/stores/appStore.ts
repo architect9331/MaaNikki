@@ -1,6 +1,7 @@
 import i18n, { getInterfaceLangKey, setLanguage as setI18nLanguage } from '@/i18n';
 import { saveConfig } from '@/services/configService';
 import { maaService } from '@/services/maaService';
+import { isTaskAvailable } from '@/utils/developerTasks';
 import { isTelemetryBlockedByBuild, setTelemetryEnabled } from '@/services/telemetryService';
 import {
   type AccentColor,
@@ -968,7 +969,7 @@ export const useAppStore = create<AppState>()(
                 if (!enabled) return { ...t, enabled: false, runOnce: false };
                 // 全选时不兼容的任务显式禁用
                 const taskDef = resolveCompatTaskDef(state.projectInterface, t.taskName);
-                if (!isTaskCompatible(taskDef, controllerName, resourceName)) {
+                if (!isTaskAvailable(taskDef, state.devMode) || !isTaskCompatible(taskDef, controllerName, resourceName)) {
                   return { ...t, enabled: false, runOnce: false };
                 }
                 return { ...t, enabled: true, runOnce: false };

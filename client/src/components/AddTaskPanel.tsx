@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { maaService } from '@/services/maaService';
+import { isDeveloperTask, isTaskAvailable } from '@/utils/developerTasks';
 import { useResolvedContent } from '@/services/contentResolver';
 import { loggers, generateTaskPipelineOverride } from '@/utils';
 import { getInterfaceLangKey } from '@/i18n';
@@ -170,6 +171,7 @@ export function AddTaskPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const {
     projectInterface,
+    devMode,
     getActiveInstance,
     addTaskToInstance,
     addMxuSpecialTask,
@@ -216,6 +218,7 @@ export function AddTaskPanel() {
     if (!projectInterface) return [];
 
     return projectInterface.task.filter((task) => {
+      if (!isTaskAvailable(task, devMode)) return false;
       const label = resolveI18nText(task.label, langKey) || task.name;
       const searchLower = searchQuery.toLowerCase();
 
@@ -224,7 +227,7 @@ export function AddTaskPanel() {
         task.name.toLowerCase().includes(searchLower) || label.toLowerCase().includes(searchLower)
       );
     });
-  }, [projectInterface, searchQuery, resolveI18nText, langKey]);
+  }, [projectInterface, devMode, searchQuery, resolveI18nText, langKey]);
 
   // 检查任务是否与当前控制器/资源兼容
   const getTaskCompatibility = (task: TaskItem) => {
@@ -337,7 +340,7 @@ export function AddTaskPanel() {
     if (!instance || !projectInterface) return;
 
     const task = projectInterface.task.find((t) => t.name === taskName);
-    if (!task) return;
+    if (!task || !isTaskAvailable(task, useAppStore.getState().devMode)) return;
 
     // 收起添加任务面板
     setShowAddTaskPanel(false);
@@ -351,7 +354,7 @@ export function AddTaskPanel() {
     addTaskToInstance(instance.id, task);
 
     // 如果实例正在运行，立即调用 PostTask 追加到执行队列
-    if (instance.isRunning) {
+    if (instance.isRunning && !isDeveloperTask(task)) {
       try {
         // 使用 getState() 获取最新状态（zustand 状态更新是同步的）
         const latestState = useAppStore.getState();

@@ -60,6 +60,7 @@ import { scheduleService } from '@/services/scheduleService';
 import { stopInstanceTasks } from '@/services/taskStopService';
 import { taskStartService, type TaskStartOptions } from '@/services/taskStartService';
 import { isTaskSelectedForRun, filterTasksForRun } from '@/utils/taskRunFilter';
+import { isTaskAvailable } from '@/utils/developerTasks';
 import { isTauri } from '@/utils/paths';
 import { onStateChanged } from '@/services/wsService';
 import { buildPiEnvVars } from '@/utils/piEnv';
@@ -183,6 +184,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
     language,
     // 调试设置
     tcpCompatMode,
+    devMode,
     // MaaFramework 版本
     maaVersion,
   } = useAppStore();
@@ -207,7 +209,9 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
   const startingRef = useRef(false);
 
   const instance = getActiveInstance();
-  const tasks = instance?.selectedTasks || [];
+  const tasks = (instance?.selectedTasks || []).filter((task) =>
+    isTaskAvailable(projectInterface?.task.find((def) => def.name === task.taskName), devMode),
+  );
   const anyExpanded = tasks.some((t) => t.expanded);
 
   // 获取当前语言的翻译
@@ -333,7 +337,10 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         return false;
       };
 
-      const tasksToRun = filterTasksForRun(targetTasks, { startFromTaskId, singleTaskId });
+      const currentDevMode = useAppStore.getState().devMode;
+      const tasksToRun = filterTasksForRun(targetTasks, { startFromTaskId, singleTaskId }).filter(
+        (task) => isTaskAvailable(projectInterface?.task.find((def) => def.name === task.taskName), currentDevMode),
+      );
       if (tasksToRun.length === 0) {
         if (singleTaskId || startFromTaskId) {
           return failStart(t('taskList.autoConnect.taskNotFound'));

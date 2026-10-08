@@ -1,0 +1,52 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_meteor4",
+  "title": "星海 · 流星4",
+  "map": "starsea",
+  "start_radius": 9.0,
+  "timeout": 240.0,
+  "material": "",
+  "capacity": null,
+  "points": [
+    {
+      "x": 834.45,
+      "y": 1016.75,
+      "radius": 3,
+      "jump": false
+    },
+    {
+      "x": 824.4,
+      "y": 990.11,
+      "radius": 3,
+      "jump": false
+    },
+    {
+      "x": 883.29,
+      "y": 911.16,
+      "radius": 3,
+      "jump": false
+    }
+  ],
+  "teleport": {
+    "name": "无界枢纽",
+    "province": "星海",
+    "region": "星海",
+    "x": 834.327,
+    "y": 1019.073
+  },
+  "editor_target": {
+    "map": "starsea",
+    "x": 891.8,
+    "y": 902.2,
+    "score": 0.6931,
+    "local_peak": 0.0523,
+    "coordinate_system": "navigation_map_pixels",
+    "page_checks": {
+      "MaaNikki_Navigation_MapFeature": 0.9298062324523926,
+      "MaaNikki_Navigation_MapMaxScale": 0.9969925880432129
+    },
+    "note": "单帧截图位置；使用前须确认自动地图移动已结束。",
+    "source_id": "20261009-003813-a05b7904",
+    "title": "流星4"
+  }
+}

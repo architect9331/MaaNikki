@@ -1,0 +1,33 @@
+{
+  "task": [{
+    "name": "route_test",
+    "label": "路线测试",
+    "entry": "MaaNikki_RouteTest",
+    "group": ["developer"],
+    "developer_only": true,
+    "default_check": false,
+    "description": "测试选定路线的移动和跳跃。有传送点时先检查当前位置，必要时传送；没有传送点时请先到第 1 点附近。启动时自动聚焦已连接的游戏窗口，全程保持游戏前台。只测试行走，含采集、摇铃等任务动作的路线会拒绝执行。结果写入 logs/navigation，使用停止按钮中断。",
+    "option": ["RouteTestRoute"]
+  }],
+  "option": {
+    "RouteTestRoute": {
+      "type": "select",
+      "label": "测试路线",
+      "default_case": "xinghai_meteor1",
+      "cases": [
+        {"name": "xinghai_meteor1", "label": "流星 1 · 主岛", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor1", "file": ""}}}},
+        {"name": "xinghai_meteor2", "label": "流星 2 · 主岛", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor2", "file": ""}}}},
+        {"name": "xinghai_meteor3", "label": "流星 3 · 繁星之滨", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor3", "file": ""}}}},
+        {"name": "xinghai_meteor4", "label": "流星 4 · 无界枢纽", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor4", "file": ""}}}},
+        {"name": "file", "label": "本地路线 JSON", "option": ["RouteTestFile"], "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "", "file": ""}}}}
+      ]
+    },
+    "RouteTestFile": {
+      "type": "input",
+      "label": "本地路线文件",
+      "description": "选择工坊导出的 JSON，或收件箱素材中的 route.json；启动时读取并保存快照，运行期间编辑原文件不影响测试。",
+      "inputs": [{"name": "file", "label": "路线 JSON", "default": "", "input_type": "file"}],
+      "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"file": "{file}"}}}
+    }
+  }
+}

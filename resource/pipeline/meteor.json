@@ -1,0 +1,29 @@
+{
+  "MaaNikki_Xinghai_MeteorGo": {
+    "recognition": "OCR",
+    "roi": [250, 450, 1030, 250],
+    "expected": "^立即前往$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Xinghai_MeteorClose",
+      "source": "MaaNikki_Xinghai_DailyReady"
+    }
+  },
+  "MaaNikki_Xinghai_MeteorClose": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [1100, 508, 65, 65],
+      "template": "game/daily/meteor_close.png",
+      "gray_limit": [190, 255],
+      "threshold": 0.8
+    },
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Navigation_MapFeature",
+      "source": "MaaNikki_Xinghai_MeteorClose"
+    }
+  }
+}

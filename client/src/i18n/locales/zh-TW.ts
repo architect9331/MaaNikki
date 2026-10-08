@@ -575,7 +575,7 @@ export default {
     logsExported: '日誌已匯出',
     exportLogsFailed: '匯出日誌失敗',
     devMode: '開發模式',
-    devModeHint: '啟用後允許按 F5 重新整理 UI',
+    devModeHint: '顯示路線測試等開發者任務，並允許按 F5 重新整理 UI',
     saveDraw: '儲存除錯圖像',
     saveDrawHint: '儲存識別和操作的除錯圖像到日誌目錄（重啟軟體後自動關閉）',
     tcpCompatMode: '通訊相容模式',
