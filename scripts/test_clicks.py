@@ -18,6 +18,27 @@ from daily.ui import GameUI
 
 
 class ClickTests(unittest.TestCase):
+    def test_main_confirmation_never_moves_cursor(self):
+        rt = self.runtime()
+        rt.hit = Mock(return_value=True)
+        self.assertTrue(rt.ui.wait_page("MaaNikki_MainDetected"))
+        self.assertEqual(rt.hit.call_count, 2)
+        rt.ui.unhover.assert_not_called()
+
+    def test_unhover_moves_cursor_only_in_ui_and_never_after_stop(self):
+        rt = self.runtime()
+        rt.controller.post_touch_move = Mock()
+        rt.controller.post_touch_move.return_value.wait.return_value.succeeded = True
+        rt.hit = Mock(return_value=True)
+        self.assertTrue(GameUI.unhover(rt.ui))
+        rt.controller.post_touch_move.assert_not_called()
+        rt.hit.return_value = False
+        self.assertTrue(GameUI.unhover(rt.ui))
+        rt.controller.post_touch_move.assert_called_once_with(0, 0)
+        rt.context.tasker.stopping = True
+        self.assertFalse(GameUI.unhover(rt.ui))
+        self.assertEqual(rt.controller.post_touch_move.call_count, 1)
+
     def runtime(self):
         context = SimpleNamespace(
             tasker=SimpleNamespace(stopping=False, controller=SimpleNamespace()),

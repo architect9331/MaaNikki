@@ -93,9 +93,13 @@ class GameUI:
 
     def unhover(self):
         """Leave UI controls without clicking or turning the game camera."""
+        if self.rt.stopped:
+            return False
+        main = self.rt.hit("MaaNikki_MainDetected")
         self.rt.invalidate_frame()
-        return (not self.rt.stopped
-                and self.rt.controller.post_touch_move(0, 0).wait().succeeded)
+        if main:
+            return True
+        return self.rt.controller.post_touch_move(0, 0).wait().succeeded
 
     def text(self, roi, image=None, color=None):
         frame = self.rt.frame() if image is None else image
@@ -365,9 +369,10 @@ class GameUI:
             # a caller's observation scope.
             with self.rt.observe(fresh=True):
                 matched = self.page_matches(page)
-            if matched:
-                if confirmations == 0 and not self.unhover():
+                if (matched and confirmations == 0 and page != "MaaNikki_MainDetected"
+                        and not self.unhover()):
                     return False
+            if matched:
                 confirmations += 1
                 if confirmations >= 2:
                     if stable:

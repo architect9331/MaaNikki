@@ -148,9 +148,10 @@ class Navigator:
         return pose
 
     def camera(self, pixels):
-        from .controller import relative_camera
-        # Never issue a large burst without observing its actual effect.
-        part = max(-180, min(180, round(pixels)))
+        from .controller import MAX_CAMERA_PIXELS, relative_camera
+        # Send the calibrated displacement, then verify the actual heading.
+        # Keep an input bound for unusual sensitivity/calibration results.
+        part = max(-MAX_CAMERA_PIXELS, min(MAX_CAMERA_PIXELS, round(pixels)))
         self.inputs.check()
         if part and not relative_camera(self.inputs.controller, part, 0):
             raise NavigationError("转动镜头失败。")
@@ -195,22 +196,24 @@ class Navigator:
             ratios = [ratio]
         raise NavigationError("镜头校准结果不稳定，请检查游戏前台和小地图显示。")
 
-    def turn(self, target_heading, pose):
+    def turn(self, target_heading, pose, *, stationary=False, tolerance=5):
         if pose.heading is None:
             raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
-        if self.turn_ratio is not None and pose.heading is not None and abs(angle_delta(target_heading, pose.heading)) <= 5:
+        if self.turn_ratio is not None and abs(angle_delta(target_heading, pose.heading)) <= tolerance:
             return pose
-        if self.turn_ratio is not None and abs(angle_delta(target_heading, pose.heading)) < 45:
-            # A bounded small correction preserves continuous walking/jumping.
-            # Larger turns and first calibration remain stationary and closed-loop.
-            limit = 15 if self.motion and self.motion.jump_state != "idle" else 30
-            delta = max(-limit, min(limit, angle_delta(target_heading, pose.heading)))
+        if (not stationary and self.turn_ratio is not None
+                and abs(angle_delta(target_heading, pose.heading)) < 45):
+            # Apply the full small correction during route travel. Capture
+            # again before deciding whether walking can continue.
+            delta = angle_delta(target_heading, pose.heading)
             self.camera(delta*self.turn_ratio)
             self.pause(.04)
             after = self.observe((pose.x, pose.y))
             if after.heading is None:
                 raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
-            return after
+            if abs(angle_delta(target_heading, after.heading)) <= tolerance:
+                return after
+            pose = after
         # Calibration and closed-loop steering must not also walk past a point.
         if self.motion:
             self.motion.stop()
@@ -225,13 +228,12 @@ class Navigator:
             for _ in range(24):
                 self.inputs.check()
                 delta = angle_delta(target_heading, pose.heading)
-                if abs(delta) <= 5:
+                if abs(delta) <= tolerance:
                     return pose
                 if time.monotonic() >= deadline:
                     break
                 before = pose.heading
-                # At most 30 estimated degrees / 180 pixels, then read again.
-                pixels = self.camera(max(-30, min(30, delta))*self.turn_ratio)
+                pixels = self.camera(delta*self.turn_ratio)
                 self.pause(.15)
                 pose = self.stable_heading(pose)
                 actual = angle_delta(pose.heading, before)
@@ -244,7 +246,8 @@ class Navigator:
                 else:
                     unresponsive = 0
                     measured = pixels/actual
-                    if measured*self.turn_ratio > 0 and abs(actual) <= 90:
+                    if (measured*self.turn_ratio > 0 and abs(actual) <= 90
+                            and .5 <= abs(measured/self.turn_ratio) <= 2):
                         self.turn_ratio = (self.turn_ratio+measured)/2
             raise NavigationError("镜头未能稳定朝向路线，已停止移动。")
         except BaseException:
@@ -304,6 +307,7 @@ class Navigator:
         self.motion = motion
         if self.point_action:
             self.point_action.motion = motion
+            self.point_action.navigator = self
         speeds, periods = [6.0]*5, [.2]*5
         last = None
         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
@@ -424,3 +428,4 @@ class Navigator:
                 self.motion = None
                 if self.point_action:
                     self.point_action.motion = None
+                    self.point_action.navigator = None

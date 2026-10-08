@@ -65,6 +65,7 @@ class RouteActions:
         self.material = route.document.get("material", "") or ("星光结晶" if self.executor == "crystal" else "")
         self.last_notice = ""
         self.motion = None
+        self.navigator = None
         from .insect import Insect
         self.insect = Insect(self)
 
@@ -142,10 +143,10 @@ class RouteActions:
         initial = self.count
         # One location may expose several pickup prompts. Continue until the
         # prompt disappears, rather than leaving after the first interaction.
-        for _ in range(40):
+        for index in range(40):
             if self.rt.stopped:
                 return False
-            if not self.rt.ui.wait_pickup(1):
+            if not self.rt.ui.wait_pickup(2 if index == 0 else 1):
                 break
             baseline = self.notification()
             if not self.rt.key("interact", .5):

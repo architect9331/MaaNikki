@@ -10,6 +10,31 @@ from .models import NavigationError
 from game_keys import GameKeys, MACRO_KEYS, MOVEMENT
 
 
+MAX_CAMERA_PIXELS = 8192
+
+
+class MouseEvent(ctypes.Structure):
+    _fields_ = [("dx", wintypes.LONG), ("dy", wintypes.LONG), ("mouseData", wintypes.DWORD),
+                ("dwFlags", wintypes.DWORD), ("time", wintypes.DWORD), ("extra", ctypes.c_size_t)]
+
+
+class InputPayload(ctypes.Union):
+    # Windows x64 INPUT's largest member is MOUSEINPUT (32 bytes).
+    _fields_ = [("mouse", MouseEvent), ("alignment", ctypes.c_byte*32)]
+
+
+class MouseInput(ctypes.Structure):
+    _fields_ = [("type", wintypes.DWORD), ("payload", InputPayload)]
+
+
+def send_mouse(user32, flags, *, dx=0, dy=0, data=0):
+    event = MouseInput(type=0, payload=InputPayload(mouse=MouseEvent(
+        dx=dx, dy=dy, mouseData=data, dwFlags=flags)))
+    user32.SendInput.argtypes = [wintypes.UINT, ctypes.POINTER(MouseInput), ctypes.c_int]
+    user32.SendInput.restype = wintypes.UINT
+    return user32.SendInput(1, ctypes.byref(event), ctypes.sizeof(event)) == 1
+
+
 class ForegroundInput:
     """Bounded Maa key pulses. Stop/focus loss always releases held keys."""
     def __init__(self, controller, stopped, ready=lambda: True, bindings=None):
@@ -177,8 +202,10 @@ class ForegroundInput:
             raise NavigationError("鼠标按键未登记。")
         self.check()
         self.buttons.add(button)
-        # Scene input, not the source macro's arbitrary screen coordinates.
-        if not self.controller.post_touch_down(640, 360, button).wait().succeeded:
+        # Maa Seize touch_down relocates the cursor before pressing. Scene
+        # buttons must only press, otherwise that warp can turn the camera.
+        flags = {0: 0x0002, 1: 0x0008, 2: 0x0020, 3: 0x0080, 4: 0x0080}[button]
+        if not send_mouse(self.user32, flags, data=button-2 if button >= 3 else 0):
             raise NavigationError("鼠标动作输入失败。")
 
     def mouse_up(self, button=0):
@@ -204,28 +231,15 @@ def relative_camera(controller, dx: int, dy: int) -> bool:
     This is part of the application, not a computer-use testing workaround.
     No background or arbitrary-window injection is supported.
     """
-    if type(dx) is not int or type(dy) is not int or abs(dx) > 300 or abs(dy) > 300:
+    if (type(dx) is not int or type(dy) is not int
+            or abs(dx) > MAX_CAMERA_PIXELS or abs(dy) > 300):
         return False
     adapter = ForegroundInput(controller, lambda: False)
     if not adapter.foreground():
         return False
     if controller.post_relative_move(dx, dy).wait().succeeded:
         return True
-    # INPUT contains a pointer-sized union; do not use truncated x86 layouts.
-    class Mouse(ctypes.Structure):
-        _fields_ = [("dx", wintypes.LONG), ("dy", wintypes.LONG), ("mouseData", wintypes.DWORD),
-                    ("dwFlags", wintypes.DWORD), ("time", wintypes.DWORD), ("extra", ctypes.c_size_t)]
-
-    class Payload(ctypes.Union):
-        _fields_ = [("mouse", Mouse), ("alignment", ctypes.c_byte*32)]
-
-    class Input(ctypes.Structure):
-        _fields_ = [("type", wintypes.DWORD), ("payload", Payload)]
-
     if not adapter.foreground():
         return False
-    event = Input(type=0, payload=Payload(mouse=Mouse(dx=dx, dy=dy, dwFlags=0x0001)))
-    adapter.user32.SendInput.argtypes = [wintypes.UINT, ctypes.POINTER(Input), ctypes.c_int]
-    adapter.user32.SendInput.restype = wintypes.UINT
-    return adapter.user32.SendInput(1, ctypes.byref(event), ctypes.sizeof(event)) == 1
+    return send_mouse(adapter.user32, 0x0001, dx=dx, dy=dy)
 

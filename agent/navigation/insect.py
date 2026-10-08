@@ -188,6 +188,10 @@ class Insect:
                               lambda: self.rt.stopped, self.rt.pause, self.actions.event,
                               page_detector=lambda frame: bool(
                                   (result := self.rt.recognize("MaaNikki_MainDetected", image=frame)) and result.hit))
+        route_navigator = self.actions.navigator
+        if route_navigator is not None:
+            navigator.turn_ratio = route_navigator.turn_ratio
+            self.actions.event({"type": "camera_calibration_reused", "pixels_per_degree": navigator.turn_ratio})
         motion = Motion(self.inputs)
         navigator.motion = motion
         initial = self.actions.count
@@ -229,9 +233,12 @@ class Insect:
                     else:
                         failed = 0
                         pose = self.actions.teleporter.locator.locate(frame)
-                        navigator.turn(degree, pose)
+                        # Do not approach on a partially corrected heading.
+                        navigator.turn(degree, pose, stationary=True, tolerance=3)
                         motion.forward(.35)
                 motion.wait(.05)
             return self.actions.count > initial
         finally:
+            if route_navigator is not None:
+                route_navigator.turn_ratio = navigator.turn_ratio
             motion.close()

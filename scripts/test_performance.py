@@ -92,10 +92,12 @@ class ObservationTests(unittest.TestCase):
         with rt.observe():
             old = rt.frame()
             self.assertTrue(rt.ui.wait_page("ready"))
-        images = [call.args[1] for call in rt.context.run_recognition.call_args_list]
+        images = [call.args[1] for call in rt.context.run_recognition.call_args_list
+                  if call.args[0] == "ready"]
         self.assertEqual(len(images), 2)
         self.assertIsNot(images[0], images[1])
         self.assertTrue(all(image is not old for image in images))
+        self.assertEqual(rt.controller.post_screencap.call_count, 3)
 
     def test_failed_capture_does_not_reuse_last_success(self):
         rt = runtime()
