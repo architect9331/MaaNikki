@@ -1,0 +1,118 @@
+{
+  "schema_version": 3,
+  "id": "zhaoxi_plant",
+  "map": "miraland",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": 5,
+  "material": "星荧草",
+  "teleport": {
+    "name": "古木河畔",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11336.613,
+    "y": 9573.273
+  },
+  "points": [
+    {
+      "x": 11336.403,
+      "y": 9570.897,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 11338.003,
+      "y": 9570.647,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 11340.477,
+      "y": 9572.983,
+      "radius": 1.0,
+      "jump": false,
+      "action": "collect"
+    },
+    {
+      "x": 11343.203,
+      "y": 9566.947,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 11345.503,
+      "y": 9565.097,
+      "radius": 1.0,
+      "jump": false,
+      "action": "collect"
+    },
+    {
+      "x": 11348.703,
+      "y": 9567.397,
+      "radius": 1.0,
+      "jump": false,
+      "action": "collect"
+    },
+    {
+      "x": 11351.353,
+      "y": 9573.297,
+      "radius": 1.0,
+      "jump": false,
+      "action": "collect"
+    },
+    {
+      "x": 11362.153,
+      "y": 9565.197,
+      "radius": 1.0,
+      "jump": false,
+      "action": "collect"
+    },
+    {
+      "x": 11366.203,
+      "y": 9556.997,
+      "radius": 1.0,
+      "jump": false,
+      "action": "collect"
+    },
+    {
+      "x": 11371.153,
+      "y": 9560.547,
+      "radius": 1.0,
+      "jump": false,
+      "action": "collect"
+    },
+    {
+      "x": 11377.703,
+      "y": 9568.197,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 11377.253,
+      "y": 9570.147,
+      "radius": 1.0,
+      "jump": false,
+      "action": "collect"
+    },
+    {
+      "x": 11386.903,
+      "y": 9563.647,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 11394.453,
+      "y": 9554.047,
+      "radius": 1.0,
+      "jump": false,
+      "action": "collect"
+    },
+    {
+      "x": 11395.903,
+      "y": 9561.747,
+      "radius": 1.0,
+      "jump": false
+    }
+  ],
+  "title": "朝夕 · 采集"
+}

@@ -1,0 +1,8 @@
+# Windows x64 / CPython 3.12 runtime dependencies.
+# Native DLLs come from the matching SDK in build/runtime.lock.json.
+maafw==5.14.2
+MaaAgentBinary==1.0.1
+numpy==1.26.4
+opencv-python==4.10.0.84
+scipy==1.13.1
+StrEnum==0.4.15

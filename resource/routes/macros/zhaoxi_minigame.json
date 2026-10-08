@@ -1,0 +1,62 @@
+{
+  "schema_version": 2,
+  "id": "zhaoxi_minigame",
+  "steps": [
+    {
+      "type": "wait",
+      "seconds": 0.5
+    },
+    {
+      "type": "game_down",
+      "key": "forward"
+    },
+    {
+      "type": "wait",
+      "seconds": 4.452929973602295
+    },
+    {
+      "type": "game_down",
+      "key": "right"
+    },
+    {
+      "type": "wait",
+      "seconds": 2.234499740600586
+    },
+    {
+      "type": "game_up",
+      "key": "forward"
+    },
+    {
+      "type": "game_up",
+      "key": "right"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.3
+    },
+    {
+      "type": "game_down",
+      "key": "forward"
+    },
+    {
+      "type": "game_down",
+      "key": "right"
+    },
+    {
+      "type": "wait",
+      "seconds": 1.7
+    },
+    {
+      "type": "game_up",
+      "key": "right"
+    },
+    {
+      "type": "wait",
+      "seconds": 2.590903806686403
+    },
+    {
+      "type": "game_up",
+      "key": "forward"
+    }
+  ]
+}

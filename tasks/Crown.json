@@ -1,0 +1,24 @@
+{
+  "task": [{
+    "name": "crown", "label": "奇迹之冠巅峰赛", "entry": "MaaNikki_Crown",
+    "group": ["daily"], "default_check": false,
+    "description": "进入巅峰赛，领取可用快速奖励，使用游戏推荐搭配连续挑战。需要提前解锁玩法；成绩取决于衣柜和养成，不保证满星。请保持游戏前台。可选领取赛事嘉奖及按最大数量兑换指定商品。",
+    "option": ["CrownRewards"]
+  }],
+  "option": {
+    "CrownRewards": {
+      "type": "switch", "label": "赛事嘉奖与兑换", "default_case": "No",
+      "description": "挑战流程结束后领取赛事嘉奖，并按下方顺序最大数量兑换商品，会消耗赛事货币。留空兑换清单则只领取嘉奖。快速奖励不受此开关影响。当前入口没有可开始的挑战时直接结束，不进入此流程。",
+      "cases": [
+        {"name": "Yes", "label": "开启", "option": ["CrownTargets"], "pipeline_override": {"MaaNikki_Crown_Rewards": {"custom_action_param": {"value": true}}}},
+        {"name": "No", "label": "关闭", "pipeline_override": {"MaaNikki_Crown_Rewards": {"custom_action_param": {"value": false}}}}
+      ]
+    },
+    "CrownTargets": {
+      "type": "input", "label": "兑换商品（按顺序）",
+      "description": "填写游戏中的完整商品名称，用逗号分隔；每项兑换当前允许的最大数量。仅查找当前商品列表，不滚动。留空不兑换。",
+      "inputs": [{"name": "value", "label": "商品名称", "default": "启示水晶,共鸣水晶"}],
+      "pipeline_override": {"MaaNikki_Crown_Targets": {"custom_action_param": {"value": "{value}"}}}
+    }
+  }
+}

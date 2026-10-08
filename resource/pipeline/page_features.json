@@ -1,0 +1,40 @@
+{
+  "MaaNikki_MenuReady": {
+    "recognition": "OCR",
+    "roi": [66, 15, 153, 37],
+    "expected": "^美鸭梨$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Dig_PageReady": {
+    "recognition": "TemplateMatch",
+    "roi": [0, 0, 1280, 720],
+    "template": "game/dig/feature.png",
+    "threshold": 0.68,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Monthly_PageReady": {
+    "recognition": "OCR",
+    "roi": [450, 0, 350, 80],
+    "expected": "旅行任务|旅行秘宝",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_PageReady": {
+    "recognition": "TemplateMatch",
+    "roi": [92, 203, 169, 134],
+    "template": "game/ui/areamiracrownentrance.png",
+    "threshold": 0.8,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_SummitReady": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [736, 9, 50, 50],
+      "template": "game/ui/buttonmiracrownrank.png",
+      "method": 3,
+      "gray_limit": [50, 255],
+      "threshold": 0.98
+    },
+    "action": "DoNothing"
+  }
+}

@@ -1,0 +1,251 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_crystal_8",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "繁星之滨",
+    "province": "星海",
+    "region": "星海",
+    "x": 1313.986,
+    "y": 731.313
+  },
+  "points": [
+    {
+      "x": 1313.95,
+      "y": 729.6,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1279.8,
+      "y": 759.1,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1257.0,
+      "y": 785.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1250.4,
+      "y": 793.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1249.6,
+      "y": 801.7,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1255.6,
+      "y": 808.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1257.0,
+      "y": 811.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1256.35,
+      "y": 818.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1252.3,
+      "y": 819.7,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1248.45,
+      "y": 807.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1244.7,
+      "y": 800.75,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.0
+      }
+    },
+    {
+      "x": 1241.887,
+      "y": 785.958,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1223.6,
+      "y": 785.3,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1217.0,
+      "y": 778.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1215.6,
+      "y": 771.25,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1221.55,
+      "y": 765.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1233.85,
+      "y": 765.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1231.65,
+      "y": 792.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1216.871,
+      "y": 802.318,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1205.37,
+      "y": 787.821,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1194.3,
+      "y": 779.9,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1192.132,
+      "y": 791.458,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1197.8,
+      "y": 793.95,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.0
+      }
+    },
+    {
+      "x": 1211.639,
+      "y": 800.021,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1211.8,
+      "y": 807.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1193.5,
+      "y": 816.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1180.7,
+      "y": 818.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1163.75,
+      "y": 825.95,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1155.698,
+      "y": 833.083,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1149.55,
+      "y": 828.6,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1145.1,
+      "y": 825.3,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1127.7,
+      "y": 810.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1122.25,
+      "y": 812.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1136.2,
+      "y": 829.3,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1144.9,
+      "y": 835.25,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1147.8,
+      "y": 840.6,
+      "radius": 1.0,
+      "jump": false
+    }
+  ],
+  "title": "星海 · 星光结晶收集_繁星之滨2"
+}

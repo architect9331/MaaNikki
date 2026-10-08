@@ -1,0 +1,229 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_crystal_2",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "无界枢纽",
+    "province": "星海",
+    "region": "星海",
+    "x": 834.327,
+    "y": 1019.073
+  },
+  "points": [
+    {
+      "x": 833.65,
+      "y": 1015.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 842.37,
+      "y": 1019.095,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 840.0,
+      "y": 1023.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 837.307,
+      "y": 1029.093,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 822.372,
+      "y": 1027.344,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 817.2,
+      "y": 1040.35,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 819.1,
+      "y": 1054.25,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 816.45,
+      "y": 1063.3,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 804.75,
+      "y": 1058.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 808.371,
+      "y": 1066.406,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 803.185,
+      "y": 1070.968,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 810.7,
+      "y": 1080.45,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 818.8,
+      "y": 1082.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 829.55,
+      "y": 1083.6,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 831.556,
+      "y": 1051.97,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 850.55,
+      "y": 1037.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 857.4,
+      "y": 1037.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 861.95,
+      "y": 1036.3,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 860.492,
+      "y": 1029.471,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 870.75,
+      "y": 1023.0,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 875.4,
+      "y": 1024.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 872.8,
+      "y": 1018.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 872.8,
+      "y": 1012.45,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 876.8,
+      "y": 1008.45,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 868.85,
+      "y": 1009.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 866.8,
+      "y": 1006.7,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 865.3,
+      "y": 1001.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 850.307,
+      "y": 994.906,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 843.65,
+      "y": 951.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 825.85,
+      "y": 961.25,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 817.7,
+      "y": 952.6,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 825.7,
+      "y": 942.1,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 828.6,
+      "y": 938.4,
+      "radius": 1.0,
+      "jump": true
+    }
+  ],
+  "title": "星海 · 星光结晶收集_无界枢纽"
+}

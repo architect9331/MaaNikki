@@ -1,0 +1,37 @@
+{
+    "task": [
+        {
+            "name": "dig",
+            "label": "美鸭梨挖掘",
+            "entry": "MaaNikki_Dig",
+            "group": ["daily"],
+            "default_check": true,
+            "description": "在收取界面选择只收取奖励或再次挖掘。运行前请回到游戏主界面。",
+            "option": ["DigRepeat"]
+        }
+    ],
+    "option": {
+        "DigRepeat": {
+            "type": "switch",
+            "label": "收取时再次挖掘",
+            "description": "开启时选择“再次挖掘”，收取奖励并沿用当前目标再次派遣；关闭时选择“确认收获”，只收取本轮奖励。两个按钮只选择一个。",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "label": "开启",
+                    "pipeline_override": {
+                        "MaaNikki_Dig_Again": {"enabled": true}
+                    }
+                },
+                {
+                    "name": "No",
+                    "label": "关闭",
+                    "pipeline_override": {
+                        "MaaNikki_Dig_Again": {"enabled": false}
+                    }
+                }
+            ],
+            "default_case": "Yes"
+        }
+    }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 2,
+  "id": "starsea_fall",
+  "steps": [
+    {
+      "type": "wait",
+      "seconds": 1.0
+    },
+    {
+      "type": "game_down",
+      "key": "jump"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.1587228775024414
+    },
+    {
+      "type": "game_up",
+      "key": "jump"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.23234057426452637
+    },
+    {
+      "type": "game_down",
+      "key": "falling"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.10042738914489746
+    },
+    {
+      "type": "game_up",
+      "key": "falling"
+    }
+  ]
+}

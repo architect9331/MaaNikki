@@ -1,0 +1,38 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_place",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "无界枢纽",
+    "province": "星海",
+    "region": "星海",
+    "x": 834.327,
+    "y": 1019.073
+  },
+  "points": [
+    {
+      "x": 834.55,
+      "y": 1016.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 833.65,
+      "y": 1054.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 832.929,
+      "y": 1056.254,
+      "radius": 1.0,
+      "jump": false,
+      "action": "place"
+    }
+  ],
+  "title": "星海 · 放置摆饰"
+}

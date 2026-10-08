@@ -1,0 +1,271 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_crystal_4",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "晶簇之谷",
+    "province": "星海",
+    "region": "星海",
+    "x": 1018.573,
+    "y": 697.101
+  },
+  "points": [
+    {
+      "x": 1018.4,
+      "y": 694.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1031.496,
+      "y": 700.881,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1043.65,
+      "y": 712.4,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1049.182,
+      "y": 717.883,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1059.65,
+      "y": 726.4,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1061.9,
+      "y": 728.4,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1064.244,
+      "y": 725.694,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1074.304,
+      "y": 713.257,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1078.993,
+      "y": 708.194,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1093.3,
+      "y": 700.7,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1096.85,
+      "y": 699.6,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1111.15,
+      "y": 704.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1129.7,
+      "y": 718.95,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1133.1,
+      "y": 728.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1151.75,
+      "y": 750.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1153.55,
+      "y": 748.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1153.9,
+      "y": 745.7,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1156.2,
+      "y": 743.6,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1176.1,
+      "y": 721.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1181.738,
+      "y": 721.573,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1190.65,
+      "y": 747.05,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1189.7,
+      "y": 750.6,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1185.806,
+      "y": 751.943,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1175.55,
+      "y": 758.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1162.15,
+      "y": 762.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1159.75,
+      "y": 767.05,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1149.55,
+      "y": 779.6,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1133.7,
+      "y": 775.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1129.9,
+      "y": 764.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1130.85,
+      "y": 758.3,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1130.058,
+      "y": 752.944,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1128.65,
+      "y": 750.8,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1120.2,
+      "y": 737.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1114.7,
+      "y": 740.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1120.05,
+      "y": 761.6,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1121.745,
+      "y": 770.193,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1115.4,
+      "y": 784.4,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1107.7,
+      "y": 787.9,
+      "radius": 1.0,
+      "jump": false
+    }
+  ],
+  "title": "星海 · 星光结晶收集_晶簇之谷"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "dark",
+  "bg": {"primary": "#241e25", "secondary": "#302731", "tertiary": "#3a2e3a", "hover": "#493847", "active": "#604859"},
+  "text": {"primary": "#fff2f1", "secondary": "#ddbeca", "tertiary": "#bb99a9", "muted": "#a88a98"},
+  "border": {"default": "#4c3947", "strong": "#705361"},
+  "shadow": {"sm": "0 1px 3px rgb(12 5 14 / 0.22)", "md": "0 4px 14px rgb(12 5 14 / 0.28)", "lg": "0 12px 36px rgb(12 5 14 / 0.36)"}
+}

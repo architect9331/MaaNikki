@@ -1,0 +1,63 @@
+{
+  "schema_version": 3,
+  "id": "zhaoxi_fight",
+  "map": "miraland",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": 13,
+  "material": "",
+  "teleport": {
+    "name": "巨兽堡垒北侧",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3568.402,
+    "y": 8184.955
+  },
+  "points": [
+    {
+      "x": 3567.95,
+      "y": 8182.35,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 3569.432,
+      "y": 8193.51,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 3569.8,
+      "y": 8203.85,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 3571.75,
+      "y": 8224.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 3577.7,
+      "y": 8224.5,
+      "radius": 1.0,
+      "jump": false,
+      "action": "macro",
+      "params": {
+        "id": "zhaoxi_attack"
+      }
+    },
+    {
+      "x": 3565.55,
+      "y": 8225.0,
+      "radius": 1.0,
+      "jump": false,
+      "action": "macro",
+      "params": {
+        "id": "zhaoxi_attack"
+      }
+    }
+  ],
+  "title": "朝夕 · 战斗"
+}

@@ -1,0 +1,131 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_bubble",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "星梦群屿·主岛",
+    "province": "星海",
+    "region": "星海",
+    "x": 1433.676,
+    "y": 997.388
+  },
+  "points": [
+    {
+      "x": 1433.8,
+      "y": 995.0,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1441.75,
+      "y": 985.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1459.6,
+      "y": 987.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1506.3,
+      "y": 1015.2,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1527.613,
+      "y": 1005.134,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1583.483,
+      "y": 960.391,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1586.6,
+      "y": 954.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1588.6,
+      "y": 948.9,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1591.117,
+      "y": 946.758,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1589.9,
+      "y": 944.3,
+      "radius": 1.0,
+      "jump": false,
+      "action": "macro",
+      "params": {
+        "id": "starsea_fall"
+      }
+    },
+    {
+      "x": 1595.554,
+      "y": 945.257,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1595.2,
+      "y": 942.35,
+      "radius": 1.0,
+      "jump": false,
+      "action": "macro",
+      "params": {
+        "id": "starsea_fall"
+      }
+    },
+    {
+      "x": 1599.366,
+      "y": 945.257,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1599.9,
+      "y": 942.7,
+      "radius": 1.0,
+      "jump": false,
+      "action": "macro",
+      "params": {
+        "id": "starsea_fall"
+      }
+    },
+    {
+      "x": 1603.242,
+      "y": 947.443,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1605.25,
+      "y": 945.75,
+      "radius": 1.0,
+      "jump": false,
+      "action": "macro",
+      "params": {
+        "id": "starsea_fall"
+      }
+    }
+  ],
+  "title": "星海 · 制造泡泡"
+}

@@ -1,0 +1,50 @@
+{
+  "MaaNikki_Asset_areaabilityplanchangebutton": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areaabilityplanchangebutton.png",
+    "roi": [
+      21,
+      77,
+      220,
+      30
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areaabilityplan1button": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areaabilityplan1button.png",
+    "roi": [
+      21,
+      115,
+      220,
+      30
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areaabilityplan2button": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areaabilityplan2button.png",
+    "roi": [
+      21,
+      152,
+      220,
+      30
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areaabilityplan3button": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areaabilityplan3button.png",
+    "roi": [
+      21,
+      189,
+      220,
+      30
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  }
+}

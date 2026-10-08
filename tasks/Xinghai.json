@@ -1,0 +1,243 @@
+{
+  "task": [
+    {
+      "name": "xinghai",
+      "label": "星海拾光",
+      "entry": "MaaNikki_Xinghai",
+      "group": [
+        "daily"
+      ],
+      "default_check": true,
+      "description": "检查积分和未完成任务，遇到遮挡任务文字的摇铃提示会等待其消失。优先完成未完成的召唤摇铃：传送到无界枢纽并长按摇铃键，然后执行其他已适配任务。整批核实积分并领取奖励，结束后退出任务页面。已完成任务会跳过，地图和传送点需提前解锁，自动路线请使用前台输入。",
+      "option": [
+        "XinghaiAuto",
+        "XinghaiBubble",
+        "XinghaiChat",
+        "XinghaiPhoto",
+        "XinghaiClaim",
+        "XinghaiMaxClaims",
+        "XinghaiLookbook"
+      ]
+    }
+  ],
+  "option": {
+    "XinghaiBubble": {
+      "type": "switch",
+      "label": "已装备泡泡漂浮套装",
+      "default_case": "No",
+      "description": "仅装备能制造泡泡的漂浮套装后开启。普通漂浮能力不等于制造泡泡能力；关闭时跳过制造泡泡任务。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "已装备",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_DailyBubble": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过泡泡任务",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_DailyBubble": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiAuto": {
+      "type": "switch",
+      "label": "自动完成已适配的任务",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_DailyAuto": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "仅检查与领奖",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_DailyAuto": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiChat": {
+      "type": "switch",
+      "label": "允许发送聚会频道消息",
+      "default_case": "No",
+      "description": "仅在识别出聚会频道后发送一次设置的消息，默认关闭；不会向世界或私聊频道发送。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "允许",
+          "option": [
+            "XinghaiChatText"
+          ],
+          "pipeline_override": {
+            "MaaNikki_Xinghai_DailyChat": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_DailyChat": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiChatText": {
+      "type": "input",
+      "label": "聚会消息",
+      "inputs": [
+        {
+          "name": "Text",
+          "label": "内容",
+          "default": "1",
+          "pipeline_type": "string",
+          "verify": "^.{1,40}$"
+        }
+      ],
+      "pipeline_override": {
+        "MaaNikki_Xinghai_DailyChatText": {
+          "custom_action_param": {
+            "value": "{Text}"
+          }
+        }
+      }
+    },
+    "XinghaiPhoto": {
+      "type": "switch",
+      "label": "删除本次自动拍摄的任务照片",
+      "default_case": "No",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "删除本次照片",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_DailyPhoto": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "保留",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_DailyPhoto": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiClaim": {
+      "type": "switch",
+      "label": "领取星海拾光奖励",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "领取",
+          "pipeline_override": {
+            "MaaNikki_ClaimXinghaiRewards": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "不领取",
+          "pipeline_override": {
+            "MaaNikki_ClaimXinghaiRewards": {
+              "enabled": false
+            }
+          }
+        }
+      ],
+      "default_case": "Yes"
+    },
+    "XinghaiMaxClaims": {
+      "type": "input",
+      "label": "最大奖励领取次数",
+      "inputs": [
+        {
+          "name": "MaxClaims",
+          "label": "次数",
+          "default": "5",
+          "pipeline_type": "int",
+          "verify": "^[1-5]$",
+          "pattern_msg": "请输入 1 到 5。"
+        }
+      ],
+      "pipeline_override": {
+        "MaaNikki_ClaimXinghaiRewards": {
+          "custom_action_param": {
+            "roi": [
+              1165,
+              135,
+              65,
+              345
+            ],
+            "max_claims": "{MaxClaims}"
+          }
+        }
+      }
+    },
+    "XinghaiLookbook": {
+      "type": "switch",
+      "label": "自动完成星绘图册点赞",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_LookbookDetected": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_LookbookDetected": {
+              "enabled": false
+            }
+          }
+        }
+      ],
+      "default_case": "Yes"
+    }
+  }
+}

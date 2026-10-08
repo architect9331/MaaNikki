@@ -1,0 +1,67 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_bottle",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "无界枢纽",
+    "province": "星海",
+    "region": "星海",
+    "x": 834.327,
+    "y": 1019.073
+  },
+  "points": [
+    {
+      "x": 834.25,
+      "y": 1016.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 823.056,
+      "y": 1012.44,
+      "radius": 1.0,
+      "jump": false,
+      "action": "bottle"
+    },
+    {
+      "x": 820.65,
+      "y": 988.7,
+      "radius": 1.0,
+      "jump": false,
+      "action": "bottle"
+    },
+    {
+      "x": 811.85,
+      "y": 969.9,
+      "radius": 1.0,
+      "jump": false,
+      "action": "bottle"
+    },
+    {
+      "x": 817.7,
+      "y": 961.55,
+      "radius": 1.0,
+      "jump": false,
+      "action": "bottle"
+    },
+    {
+      "x": 829.8,
+      "y": 955.4,
+      "radius": 1.0,
+      "jump": false,
+      "action": "bottle"
+    },
+    {
+      "x": 844.055,
+      "y": 951.196,
+      "radius": 1.0,
+      "jump": false,
+      "action": "bottle"
+    }
+  ],
+  "title": "星海 · 拾取漂流瓶"
+}

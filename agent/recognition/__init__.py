@@ -1,0 +1,1 @@
+"""MaaNikki custom recognition modules."""

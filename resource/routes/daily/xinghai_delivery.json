@@ -1,0 +1,38 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_delivery",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "星梦群屿·海滩",
+    "province": "星海",
+    "region": "星海",
+    "x": 1543.062,
+    "y": 1134.288
+  },
+  "points": [
+    {
+      "x": 1543.85,
+      "y": 1130.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1541.15,
+      "y": 1094.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1545.65,
+      "y": 1098.6,
+      "radius": 1.0,
+      "jump": false,
+      "action": "delivery"
+    }
+  ],
+  "title": "星海 · 投递漂流瓶"
+}

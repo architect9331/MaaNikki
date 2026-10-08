@@ -1,0 +1,403 @@
+{
+  "MaaNikki_Daily_Action": {
+    "recognition": "DirectHit",
+    "action": "DoNothing",
+    "pre_delay": 0,
+    "post_delay": 0
+  },
+  "MaaNikki_Xinghai_DailyBubble": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": false
+    }
+  },
+  "MaaNikki_Daily_Message": {
+    "recognition": "DirectHit",
+    "action": "DoNothing",
+    "pre_delay": 0,
+    "post_delay": 0
+  },
+  "MaaNikki_Daily_OCR": {
+    "recognition": "OCR",
+    "expected": ".+",
+    "threshold": 0.65,
+    "order_by": "Horizontal",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_Template": {
+    "recognition": "TemplateMatch",
+    "template": "nikki/common/main_feature.png",
+    "threshold": 0.8,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_SetAmount": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_set_amount",
+    "custom_action_param": {
+      "kind": "bless",
+      "minimum_energy": 0
+    }
+  },
+  "MaaNikki_Daily_QuickCount": {
+    "recognition": "OCR",
+    "roi": [
+      570,
+      310,
+      145,
+      75
+    ],
+    "expected": "^[0-9]+$",
+    "threshold": 0.8,
+    "action": "DoNothing",
+    "attach": {}
+  },
+  "MaaNikki_Daily_JihuaCount": {
+    "recognition": "OCR",
+    "roi": [
+      570,
+      280,
+      145,
+      65
+    ],
+    "expected": "^[0-9]+$",
+    "threshold": 0.8,
+    "action": "DoNothing",
+    "attach": {}
+  },
+  "MaaNikki_Zhaoxi_DailySettings": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "auto_complete": true,
+      "allow_energy": true,
+      "delete_photo": false
+    }
+  },
+  "MaaNikki_Xinghai_DailySettings": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "auto_complete": true,
+      "allow_chat": false,
+      "delete_photo": false,
+      "chat_text": "1"
+    }
+  },
+  "MaaNikki_Zhaoxi_DailyAuto": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": true
+    }
+  },
+  "MaaNikki_Zhaoxi_DailyEnergy": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": true
+    }
+  },
+  "MaaNikki_Zhaoxi_DailyPhoto": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": false
+    }
+  },
+  "MaaNikki_Xinghai_DailyAuto": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": true
+    }
+  },
+  "MaaNikki_Xinghai_DailyPhoto": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": false
+    }
+  },
+  "MaaNikki_Xinghai_DailyChat": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": false
+    }
+  },
+  "MaaNikki_Xinghai_DailyChatText": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": "1"
+    }
+  },
+  "MaaNikki_Zhaoxi_DailyLayout": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "card_centers": [
+        [
+          366,
+          397
+        ],
+        [
+          527,
+          225
+        ],
+        [
+          741,
+          252
+        ],
+        [
+          877,
+          405
+        ],
+        [
+          1021,
+          250
+        ]
+      ],
+      "detail_roi": [
+        350,
+        595,
+        685,
+        75
+      ]
+    }
+  },
+  "MaaNikki_Xinghai_DailyLayout": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "card_centers": [
+        [
+          300,
+          290
+        ],
+        [
+          457,
+          319
+        ],
+        [
+          610,
+          256
+        ],
+        [
+          759,
+          268
+        ],
+        [
+          899,
+          340
+        ],
+        [
+          1048,
+          272
+        ]
+      ],
+      "detail_roi": [
+        395,
+        588,
+        735,
+        65
+      ]
+    }
+  },
+  "MaaNikki_Zhaoxi_DailyReady": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1140,
+      480,
+      140,
+      100
+    ],
+    "template": "game/daily/zhaoxi_feature.png",
+    "threshold": 0.68,
+    "action": "DoNothing",
+    "timeout": 4000
+  },
+  "MaaNikki_Xinghai_DailyReady": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      115,
+      590,
+      115,
+      105
+    ],
+    "template": "game/daily/xinghai_feature.png",
+    "threshold": 0.68,
+    "action": "DoNothing",
+    "timeout": 4000
+  },
+  "MaaNikki_Zhaoxi_DailyFinished": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      990,
+      660,
+      60,
+      60
+    ],
+    "template": "game/daily/zhaoxi_finished.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Xinghai_DailyFinished": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1040,
+      640,
+      70,
+      70
+    ],
+    "template": "game/daily/xinghai_finished.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_PhotoReady": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1150,
+      60,
+      110,
+      115
+    ],
+    "template": "game/daily/photo_ready.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_PhotoTaken": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1160,
+      600,
+      110,
+      85
+    ],
+    "template": "game/daily/photo_taken.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_PhotoDelete": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      35,
+      645,
+      65,
+      65
+    ],
+    "template": "game/daily/photo_delete.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_PhotoDeleteConfirm": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      645,
+      420,
+      180,
+      70
+    ],
+    "template": "game/daily/photo_delete_confirm.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_ItemSetting": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      450,
+      370,
+      75,
+      65
+    ],
+    "template": "game/daily/item_setting.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_ItemFinish": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1050,
+      640,
+      155,
+      60
+    ],
+    "template": "game/daily/item_finish.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_ItemCategory": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1210,
+      470,
+      70,
+      85
+    ],
+    "template": "game/daily/item_category.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_CantPlace": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      520,
+      180,
+      240,
+      70
+    ],
+    "template": "game/daily/cant_place.png",
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_LanternConfirm": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      800,
+      585,
+      210,
+      75
+    ],
+    "template": "game/daily/lantern_confirm.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_GroupChat": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      25,
+      45,
+      105,
+      105
+    ],
+    "template": "game/daily/group_chat.png",
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_BottleClose": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      945,
+      135,
+      75,
+      75
+    ],
+    "template": "game/daily/bottle_close.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  }
+}

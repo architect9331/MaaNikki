@@ -1,0 +1,34 @@
+# Local runtime and user data
+/cache/
+/config/
+/debug/
+/logs/
+/python/
+/maafw/
+/*.exe
+/*.dll
+*.pdb
+
+# Dependencies and generated build outputs
+**/node_modules/
+**/dist/
+**/target/
+**/__pycache__/
+*.py[cod]
+/.build/
+/artifacts/
+/.venv/
+/venv/
+/client/src-tauri/gen/schemas/
+
+# Local credentials and editor state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+.DS_Store
+Thumbs.db
+/.idea/
+/.vscode/

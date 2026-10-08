@@ -1,0 +1,87 @@
+[package]
+name = "mxu"
+version = "2.7.1-maanikki.4"
+description = "MaaNikki desktop client for Infinity Nikki automation, based on MXU"
+authors = ["MaaNikki contributors"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "mxu_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["image-png", "image-ico", "tray-icon"] }
+tauri-plugin-opener = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-http = "2"
+tauri-plugin-log = "2"
+tauri-plugin-process = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"
+log = "0.4"
+chrono = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1.10"
+base64 = "0.22"
+zip = "7.2.0"
+flate2 = "1.0"
+tar = "0.4"
+tokio = { version = "1", features = ["rt", "sync", "net", "rt-multi-thread"] }
+reqwest = { version = "0.12", features = ["stream", "blocking", "json", "socks"] }
+axum = { version = "0.7", features = ["ws"] }
+tower-http = { version = "0.5", features = ["cors", "fs"] }
+futures-util = "0.3"
+bytes = "1"
+libc = "0.2.180"
+semver = "1.0"
+os_info = "3"
+urlencoding = "2.1"
+notify-rust = "4"
+shell-words = "1.1.1"
+maa-framework = { version = "1.22.0", features = ["dynamic"] }
+rust-embed = "8"
+clap = { version = "4", features = ["derive"] }
+# 匿名遥测（数据埋点）
+sentry = { version = "0.49.1", default-features = false, features = [
+    "backtrace",
+    "contexts",
+    "logs",
+    "panic",
+    "reqwest",
+    "rustls",
+    "release-health",
+] }
+sysinfo = "0.32"
+machine-uid = "0.5"
+sha2 = "0.10"
+
+[profile.release]
+# 保留调试符号以生成 PDB 文件，便于崩溃分析
+debug = true
+
+[target.'cfg(windows)'.dependencies]
+winsafe = { version = "0.0.28", features = [
+    "advapi",
+    "kernel",
+    "shell",
+    "gui",
+    "gdi",
+    "user"
+] }
+windows = { version = "0.61.3", features = [
+    "Win32_Media_Audio",
+    "Win32_Media_Audio_Endpoints",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Variant",
+] }

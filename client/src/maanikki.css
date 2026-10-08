@@ -1,0 +1,37 @@
+/* Cosmetic only: no queue, settings, capture or input behavior changes. */
+:root {
+  --radius-sm: 0.5rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 1.15rem;
+}
+
+body {
+  font-family: 'Microsoft YaHei UI', 'PingFang SC', 'Yu Gothic UI', sans-serif;
+  font-feature-settings: 'tnum';
+}
+
+button, input, select, textarea { font-family: inherit; }
+::selection { background: var(--color-accent-light); color: var(--color-text-primary); }
+
+/* Light pastel controls need dark labels in the night palette. */
+html.dark[data-maanikki-accent='rosegold'] .bg-accent.text-white,
+html.dark[data-maanikki-accent='rosegold'] .bg-accent-hover.text-white {
+  color: #3a2030;
+}
+html.dark .bg-success.text-white { color: #193b2c; }
+
+/* Restrained satin surfaces; do not cover custom wallpapers or modal layers. */
+.bg-bg-secondary.rounded-lg, .bg-bg-secondary.rounded-xl {
+  box-shadow: var(--shadow-sm);
+}
+.task-item-running { border-radius: var(--radius-lg); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-running-indicator, .task-item-running, .animate-bell-shake,
+  .animate-pulse-glow-accent { animation: none; }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "rosegold",
+  "label": {"zh-CN": "樱花粉", "zh-TW": "櫻花粉", "en-US": "Sakura Rose", "ja-JP": "桜色", "ko-KR": "벚꽃 핑크"},
+  "default": "#b34f76",
+  "hover": "#963b60",
+  "light": "#fbe7ed",
+  "lightDark": "#573246"
+}

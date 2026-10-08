@@ -1,0 +1,83 @@
+{
+  "schema_version": 3,
+  "id": "zhaoxi_minigame",
+  "map": "miraland",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "心愿花街",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10260.861,
+    "y": 10085.844
+  },
+  "points": [
+    {
+      "x": 10261.15,
+      "y": 10083.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10246.0,
+      "y": 10108.25,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10225.15,
+      "y": 10105.95,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10206.25,
+      "y": 10097.6,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10191.05,
+      "y": 10097.95,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10159.35,
+      "y": 10076.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10148.7,
+      "y": 10073.2,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10146.9,
+      "y": 10063.05,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10148.6,
+      "y": 10056.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10152.121,
+      "y": 10053.257,
+      "radius": 1.0,
+      "jump": false,
+      "action": "minigame",
+      "params": {
+        "id": "zhaoxi_minigame"
+      }
+    }
+  ],
+  "title": "朝夕 · 小游戏"
+}

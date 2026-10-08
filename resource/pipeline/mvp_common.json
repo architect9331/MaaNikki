@@ -1,0 +1,204 @@
+{
+  "MaaNikki_RealmPageReady": {
+    "recognition": "OCR",
+    "roi": [
+      66,
+      15,
+      210,
+      38
+    ],
+    "expected": "^幻境挑战$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Jihua_PageReady": {
+    "recognition": "OCR",
+    "roi": [
+      66,
+      15,
+      240,
+      38
+    ],
+    "expected": "^素材激化幻境$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Bless_PageReady": {
+    "recognition": "OCR",
+    "roi": [
+      66,
+      15,
+      240,
+      38
+    ],
+    "expected": "^祝福闪光幻境$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Monster_PageReady": {
+    "recognition": "OCR",
+    "roi": [
+      66,
+      15,
+      240,
+      38
+    ],
+    "expected": "^魔物试炼幻境$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Weekly_PageReady": {
+    "recognition": "OCR",
+    "roi": [
+      66,
+      15,
+      240,
+      38
+    ],
+    "expected": "^心之突破幻境$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_RewardLayer": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [
+        1060,
+        640,
+        220,
+        80
+      ],
+      "template": "game/common/skip_click.png",
+      "gray_limit": [
+        210,
+        255
+      ],
+      "threshold": 0.8
+    },
+    "action": "DoNothing"
+  },
+  "MaaNikki_CalendarReady": {
+    "recognition": "OCR",
+    "roi": [
+      66,
+      15,
+      154,
+      38
+    ],
+    "expected": "^奇想日历$",
+    "action": "DoNothing",
+    "next": []
+  },
+  "MaaNikki_MainDetected": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [
+        0,
+        620,
+        110,
+        100
+      ],
+      "template": "nikki/common/main_feature.png",
+      "gray_limit": [
+        230,
+        255
+      ],
+      "threshold": 0.9
+    },
+    "action": "DoNothing",
+    "next": []
+  },
+  "MaaNikki_ReturnMain": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 0,
+    "next": [],
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "main"
+    }
+  },
+  "MaaNikki_ReturnMainSecond": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 0,
+    "next": [],
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "main"
+    }
+  },
+  "MaaNikki_ReturnMainThird": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 0,
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "main"
+    },
+    "next": []
+  },
+  "MaaNikki_SkipReward": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [
+        1060,
+        640,
+        220,
+        80
+      ],
+      "template": [
+        "game/common/skip_click.png",
+        "game/common/skip.png"
+      ],
+      "gray_limit": [
+        210,
+        255
+      ],
+      "threshold": [
+        0.8,
+        0.73
+      ]
+    },
+    "action": "Custom",
+    "post_delay": 1200,
+    "timeout": 5000,
+    "custom_action": "nikki.game_key",
+    "custom_action_param": {
+      "name": "skip"
+    },
+    "next": []
+  },
+  "MaaNikki_ClaimZhaoxiRewards": {
+    "enabled": true,
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.claim_daily_rewards",
+    "custom_action_param": {
+      "roi": [
+        1165,
+        145,
+        65,
+        355
+      ],
+      "max_claims": 5
+    },
+    "next": [],
+    "post_delay": 0
+  },
+  "MaaNikki_ClaimXinghaiRewards": {
+    "enabled": true,
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.claim_daily_rewards",
+    "custom_action_param": {
+      "roi": [
+        1165,
+        135,
+        65,
+        345
+      ],
+      "max_claims": 5
+    },
+    "next": [],
+    "post_delay": 0
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "task": [
+    {
+      "name": "zhaoxi",
+      "label": "朝夕心愿",
+      "entry": "MaaNikki_Zhaoxi",
+      "group": [
+        "daily"
+      ],
+      "default_check": true,
+      "description": "先执行不耗体力的已适配任务，再集中检查积分；不足 500 分时，优先按游戏默认最少次数完成当天指定的幻境。累计消耗体力条件不单独增加次数；同一轮勾选后续幻境挑战时，清体力后只复核积分和领奖，已满 500 分不再复核。捕虫能力需提前解锁，缺少时使用允许的能力方案。",
+      "option": [
+        "ZhaoxiAuto",
+        "ZhaoxiAbilityPlan",
+        "ZhaoxiEnergy",
+        "ZhaoxiPhoto",
+        "ZhaoxiClaim",
+        "ZhaoxiMaxClaims"
+      ]
+    }
+  ],
+  "option": {
+    "ZhaoxiAuto": {
+      "type": "switch",
+      "label": "自动完成已适配的心愿",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_Zhaoxi_DailyAuto": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "仅检查与领奖",
+          "pipeline_override": {
+            "MaaNikki_Zhaoxi_DailyAuto": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ZhaoxiAbilityPlan": {
+      "type": "select",
+      "label": "捕虫允许使用的能力方案",
+      "default_case": "Plan3",
+      "description": "优先使用当前已装备的捕虫能力。当前轮盘没有捕虫时，才切换到所选方案；该方案仍未配置捕虫时，仅将第 8 槽改为捕虫，不重置其他槽。建议使用专门用于自动任务的方案。",
+      "cases": [
+        {
+          "name": "Plan1",
+          "label": "自定义方案一",
+          "pipeline_override": {
+            "MaaNikki_Zhaoxi_DailyAbilityPlan": {
+              "custom_action_param": {
+                "value": 1
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan2",
+          "label": "自定义方案二",
+          "pipeline_override": {
+            "MaaNikki_Zhaoxi_DailyAbilityPlan": {
+              "custom_action_param": {
+                "value": 2
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan3",
+          "label": "自定义方案三",
+          "pipeline_override": {
+            "MaaNikki_Zhaoxi_DailyAbilityPlan": {
+              "custom_action_param": {
+                "value": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ZhaoxiEnergy": {
+      "type": "switch",
+      "label": "允许用体力补足心愿积分",
+      "default_case": "Yes",
+      "description": "先做不耗体力的项目。不足 500 分时才执行当天指定的幻境，直接使用游戏默认最少数量确认，不读取或调整次数。不为累计体力条件额外刷副本；同一轮后续幻境挑战清体力后再复核。目标和材料沿用幻境挑战设置。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "允许",
+          "pipeline_override": {
+            "MaaNikki_Zhaoxi_DailyEnergy": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "不消耗体力",
+          "pipeline_override": {
+            "MaaNikki_Zhaoxi_DailyEnergy": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ZhaoxiPhoto": {
+      "type": "switch",
+      "label": "删除本次自动拍摄的任务照片",
+      "default_case": "No",
+      "description": "仅删除本次任务刚拍出的照片，不进入相册删除已有照片。关闭时保留照片。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "删除本次照片",
+          "pipeline_override": {
+            "MaaNikki_Zhaoxi_DailyPhoto": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "保留",
+          "pipeline_override": {
+            "MaaNikki_Zhaoxi_DailyPhoto": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ZhaoxiClaim": {
+      "type": "switch",
+      "label": "领取朝夕心愿奖励",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "领取",
+          "pipeline_override": {
+            "MaaNikki_ClaimZhaoxiRewards": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "仅检查积分",
+          "pipeline_override": {
+            "MaaNikki_ClaimZhaoxiRewards": {
+              "enabled": false
+            }
+          }
+        }
+      ],
+      "default_case": "Yes"
+    },
+    "ZhaoxiMaxClaims": {
+      "type": "input",
+      "label": "最大奖励领取次数",
+      "description": "限制单次任务中点击橙色奖励标记的次数。",
+      "inputs": [
+        {
+          "name": "MaxClaims",
+          "label": "次数",
+          "default": "5",
+          "pipeline_type": "int",
+          "verify": "^[1-5]$",
+          "pattern_msg": "请输入 1 到 5。"
+        }
+      ],
+      "pipeline_override": {
+        "MaaNikki_ClaimZhaoxiRewards": {
+          "custom_action_param": {
+            "roi": [
+              1165,
+              145,
+              65,
+              355
+            ],
+            "max_claims": "{MaxClaims}"
+          }
+        }
+      }
+    }
+  }
+}

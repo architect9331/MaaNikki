@@ -1,0 +1,519 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_crystal_5",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "星梦群屿·主岛",
+    "province": "星海",
+    "region": "星海",
+    "x": 1433.676,
+    "y": 997.388
+  },
+  "points": [
+    {
+      "x": 1433.8,
+      "y": 995.0,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1428.85,
+      "y": 988.4,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1433.75,
+      "y": 985.05,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1440.85,
+      "y": 982.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1444.4,
+      "y": 982.4,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1447.69,
+      "y": 980.445,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1454.15,
+      "y": 975.9,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1462.65,
+      "y": 973.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1465.55,
+      "y": 977.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1473.9,
+      "y": 982.4,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1480.65,
+      "y": 987.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1487.0,
+      "y": 995.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1491.65,
+      "y": 999.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1499.75,
+      "y": 1001.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1508.8,
+      "y": 996.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1518.6,
+      "y": 987.8,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.0
+      }
+    },
+    {
+      "x": 1527.7,
+      "y": 979.8,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.0
+      }
+    },
+    {
+      "x": 1541.8,
+      "y": 971.65,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.0
+      }
+    },
+    {
+      "x": 1555.65,
+      "y": 969.65,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1555.65,
+      "y": 964.35,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1555.25,
+      "y": 958.95,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1553.85,
+      "y": 952.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1548.75,
+      "y": 948.35,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1549.7,
+      "y": 947.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1553.7,
+      "y": 946.3,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.0
+      }
+    },
+    {
+      "x": 1562.6,
+      "y": 950.35,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1569.9,
+      "y": 939.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1586.6,
+      "y": 924.15,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1595.4,
+      "y": 920.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1602.8,
+      "y": 925.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1614.55,
+      "y": 926.3,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1619.95,
+      "y": 922.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1622.55,
+      "y": 920.3,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1627.7,
+      "y": 914.9,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1622.55,
+      "y": 916.2,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1616.8,
+      "y": 915.55,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1613.95,
+      "y": 912.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1609.4,
+      "y": 914.2,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1604.6,
+      "y": 908.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1590.6,
+      "y": 902.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1586.616,
+      "y": 902.32,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.0
+      }
+    },
+    {
+      "x": 1573.9,
+      "y": 901.6,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 2.0
+      }
+    },
+    {
+      "x": 1573.4,
+      "y": 908.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1560.85,
+      "y": 910.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1555.95,
+      "y": 912.8,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1575.95,
+      "y": 922.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1579.3,
+      "y": 925.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1581.85,
+      "y": 930.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1575.3,
+      "y": 940.95,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1569.85,
+      "y": 954.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1578.6,
+      "y": 960.3,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1586.492,
+      "y": 955.127,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1587.3,
+      "y": 952.3,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1591.7,
+      "y": 946.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1596.55,
+      "y": 945.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1601.3,
+      "y": 947.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1603.7,
+      "y": 950.25,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1604.802,
+      "y": 956.32,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1602.928,
+      "y": 962.381,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1599.241,
+      "y": 966.754,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1587.7,
+      "y": 961.6,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 2.0
+      }
+    },
+    {
+      "x": 1589.9,
+      "y": 966.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1590.0,
+      "y": 973.6,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1591.3,
+      "y": 981.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1592.6,
+      "y": 984.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1596.993,
+      "y": 986.759,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.0
+      }
+    },
+    {
+      "x": 1598.179,
+      "y": 999.631,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1598.55,
+      "y": 1007.0,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1596.8,
+      "y": 1012.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1592.6,
+      "y": 1016.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1589.3,
+      "y": 1017.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1583.9,
+      "y": 1018.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1578.6,
+      "y": 1017.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1571.8,
+      "y": 1012.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1569.9,
+      "y": 1008.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1569.05,
+      "y": 1004.45,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1569.7,
+      "y": 1000.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1571.1,
+      "y": 995.65,
+      "radius": 1.0,
+      "jump": true
+    }
+  ],
+  "title": "星海 · 星光结晶收集_泡泡梦屿"
+}

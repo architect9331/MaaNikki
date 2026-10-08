@@ -1,0 +1,7 @@
+# Windows x64 / CPython 3.12 wheels only. Generated from build/runtime.lock.json.
+maafw==5.14.2 --hash=sha256:3688dcf544a59a8529ceaab60e2c0367974ae496fdaa7c4d620105a98f0edd44
+MaaAgentBinary==1.0.1 --hash=sha256:d97bcc9f35b52add199b287932511ecfcddcb83930c6b532d1c7010b432ec8bf
+numpy==1.26.4 --hash=sha256:08beddf13648eb95f8d867350f6a018a4be2e5ad54c8d8caed89ebca558b2818
+opencv-python==4.10.0.84 --hash=sha256:32dbbd94c26f611dc5cc6979e6b7aa1f55a64d6b463cc1dcd3c95505a63e48fe
+scipy==1.13.1 --hash=sha256:cdd7dacfb95fea358916410ec61bbc20440f7860333aee6d882bb8046264e949
+StrEnum==0.4.15 --hash=sha256:a30cda4af7cc6b5bf52c8055bc4bf4b2b6b14a93b574626da33df53cf7740659

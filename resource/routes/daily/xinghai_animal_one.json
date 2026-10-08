@@ -1,0 +1,97 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_animal_one",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "星梦群屿·海滩",
+    "province": "星海",
+    "region": "星海",
+    "x": 1543.062,
+    "y": 1134.288
+  },
+  "points": [
+    {
+      "x": 1543.65,
+      "y": 1132.05,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1551.65,
+      "y": 1167.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1553.75,
+      "y": 1211.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1557.825,
+      "y": 1220.896,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1555.887,
+      "y": 1216.896,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1557.825,
+      "y": 1220.896,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1555.887,
+      "y": 1216.896,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1557.825,
+      "y": 1220.896,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1555.887,
+      "y": 1216.896,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1557.825,
+      "y": 1220.896,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1555.887,
+      "y": 1216.896,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1557.825,
+      "y": 1220.896,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1555.887,
+      "y": 1216.896,
+      "radius": 1.0,
+      "jump": false
+    }
+  ],
+  "title": "星海 · 化身动物"
+}

@@ -1,0 +1,13 @@
+* text=auto
+*.py text eol=lf
+*.rs text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.ico binary
+*.onnx binary

@@ -1,0 +1,162 @@
+{
+  "schema_version": 2,
+  "id": "zhaoxi_attack",
+  "steps": [
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.1
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.3520219326019287
+    },
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.10802197456359863
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.4270148277282715
+    },
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.11638808250427246
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.4272637367248535
+    },
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.14000248908996582
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.6114118099212646
+    },
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.11824178695678711
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.5018901824951172
+    },
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.14143872261047363
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.5433659553527832
+    },
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.14185094833374023
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.38334012031555176
+    },
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.13916373252868652
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.38334012031555176
+    },
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.13916373252868652
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.38334012031555176
+    },
+    {
+      "type": "game_down",
+      "key": "attack"
+    },
+    {
+      "type": "wait",
+      "seconds": 0.13916373252868652
+    },
+    {
+      "type": "game_up",
+      "key": "attack"
+    }
+  ]
+}

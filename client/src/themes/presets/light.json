@@ -1,0 +1,7 @@
+{
+  "name": "light",
+  "bg": {"primary": "#fff8f5", "secondary": "#fffefd", "tertiary": "#f9eeeb", "hover": "#f5e1e3", "active": "#ecd0d5"},
+  "text": {"primary": "#49323d", "secondary": "#715561", "tertiary": "#886c77", "muted": "#967b85"},
+  "border": {"default": "#efdee0", "strong": "#dbc1c8"},
+  "shadow": {"sm": "0 1px 3px rgb(105 54 74 / 0.06)", "md": "0 4px 14px rgb(105 54 74 / 0.08)", "lg": "0 12px 36px rgb(105 54 74 / 0.12)"}
+}

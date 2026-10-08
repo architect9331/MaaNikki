@@ -1,0 +1,63 @@
+{
+  "MaaNikki_Crown_Open": {
+    "recognition": "OCR",
+    "roi": [91, 176, 587, 395],
+    "expected": "奇迹之冠",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Crown_PageReady",
+      "source": "MaaNikki_MenuReady"
+    },
+    "next": []
+  },
+  "MaaNikki_Exploration": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.exploration",
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Assist_Pickup": {
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    }
+  },
+  "MaaNikki_Assist_Clear": {
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    }
+  },
+  "MaaNikki_Assist_Dialogue": {
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    }
+  },
+  "MaaNikki_Crown": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.crown",
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Crown_Rewards": {
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": false
+    }
+  },
+  "MaaNikki_Crown_Targets": {
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": "启示水晶,共鸣水晶"
+    }
+  }
+}

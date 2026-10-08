@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "maps": [
+    {
+      "id": "starsea",
+      "title": "星海",
+      "image": "maps/starsea.png",
+      "scale_720": 0.6,
+      "bigmap_scale_720": 0.465,
+      "width": 2560,
+      "height": 2048
+    },
+    {
+      "id": "miraland",
+      "title": "奇迹大陆",
+      "image": "maps/miraland.png",
+      "scale_720": 0.73125,
+      "bigmap_scale_720": 0.47775,
+      "width": 13824,
+      "height": 14336
+    },
+    {
+      "id": "home",
+      "title": "家园",
+      "image": "maps/home.png",
+      "scale_720": 0.6,
+      "bigmap_scale_720": 0.4575,
+      "width": 2560,
+      "height": 1536
+    },
+    {
+      "id": "wanxiang",
+      "title": "万相境",
+      "image": "maps/wanxiang.png",
+      "scale_720": 0.6,
+      "bigmap_scale_720": 0.46575,
+      "width": 4096,
+      "height": 3072
+    }
+  ]
+}

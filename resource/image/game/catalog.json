@@ -1,0 +1,2377 @@
+{
+  "schema_version": 1,
+  "assets": {
+    "AreaAbilityButton": {
+      "template": "game/ui/AreaAbilityButton.png",
+      "roi": [
+        1073,
+        631,
+        60,
+        60
+      ]
+    },
+    "AreaAbilityChange": {
+      "template": "game/ui/AreaAbilityChange.png",
+      "roi": [
+        961,
+        119,
+        241,
+        459
+      ]
+    },
+    "AreaBigMapMaterialSelect": {
+      "template": "game/ui/AreaBigMapMaterialSelect.png",
+      "roi": [
+        208,
+        218,
+        270,
+        309
+      ]
+    },
+    "AreaBigMapMaterialTrackConfirm": {
+      "template": "game/ui/AreaBigMapMaterialTrackConfirm.png",
+      "roi": [
+        919,
+        538,
+        133,
+        33
+      ]
+    },
+    "AreaBigMapMaterialTypeSelect": {
+      "template": "game/ui/AreaBigMapMaterialTypeSelect.png",
+      "roi": [
+        217,
+        182,
+        247,
+        33
+      ]
+    },
+    "AreaBigMapRegionName": {
+      "template": "game/ui/AreaBigMapRegionName.png",
+      "roi": [
+        1042,
+        59,
+        160,
+        27
+      ]
+    },
+    "AreaBigMapRegionSelect": {
+      "template": "game/ui/AreaBigMapRegionSelect.png",
+      "roi": [
+        891,
+        69,
+        247,
+        617
+      ]
+    },
+    "AreaBigMapTeleportButton": {
+      "template": "game/ui/AreaBigMapTeleportButton.png",
+      "roi": [
+        1005,
+        655,
+        160,
+        33
+      ]
+    },
+    "AreaBigMapTeleporterSelect": {
+      "template": "game/ui/AreaBigMapTeleporterSelect.png",
+      "roi": [
+        847,
+        324,
+        168,
+        168
+      ]
+    },
+    "AreaDialog": {
+      "template": "game/ui/AreaDialog.png",
+      "roi": [
+        240,
+        93,
+        800,
+        533
+      ]
+    },
+    "AreaDigingNumText": {
+      "template": "game/ui/AreaDigingNumText.png",
+      "roi": [
+        1232,
+        122,
+        23,
+        13
+      ]
+    },
+    "AreaItemFirstItem": {
+      "template": "game/ui/AreaItemFirstItem.png",
+      "roi": [
+        1052,
+        134,
+        60,
+        60
+      ]
+    },
+    "AreaJihuaCostSelect": {
+      "template": "game/ui/AreaJihuaCostSelect.png",
+      "roi": [
+        51,
+        75,
+        628,
+        529
+      ]
+    },
+    "AreaJihuaFirstMaterial": {
+      "template": "game/ui/AreaJihuaFirstMaterial.png",
+      "roi": [
+        77,
+        101,
+        53,
+        53
+      ]
+    },
+    "AreaJihuaTargetSelect": {
+      "template": "game/ui/AreaJihuaTargetSelect.png",
+      "roi": [
+        813,
+        206,
+        401,
+        401
+      ]
+    },
+    "AreaMaterialGetText": {
+      "template": "game/ui/AreaMaterialGetText.png",
+      "roi": [
+        15,
+        451,
+        147,
+        133
+      ]
+    },
+    "AreaTextJihuatai": {
+      "template": "game/ui/AreaTextJihuatai.png",
+      "roi": [
+        640,
+        117,
+        234,
+        235
+      ]
+    },
+    "ButtonAbilityChangeList": {
+      "template": "game/ui/ButtonAbilityChangeList.png",
+      "roi": [
+        1221,
+        86,
+        23,
+        19
+      ]
+    },
+    "ButtonAbilityConfig": {
+      "template": "game/ui/ButtonAbilityConfig.png",
+      "roi": [
+        1085,
+        650,
+        27,
+        32
+      ]
+    },
+    "ButtonAbilitySave": {
+      "template": "game/ui/ButtonAbilitySave.png",
+      "roi": [
+        76,
+        645,
+        150,
+        40
+      ]
+    },
+    "ButtonDungeonQuitOK": {
+      "template": "game/ui/ButtonDungeonQuitOK.png",
+      "roi": [
+        701,
+        439,
+        53,
+        27
+      ]
+    },
+    "ButtonJihuaSort": {
+      "template": "game/ui/ButtonJihuaSort.png",
+      "roi": [
+        207,
+        661,
+        33,
+        27
+      ]
+    },
+    "IconAbilityFeature": {
+      "template": "game/ui/IconAbilityFeature.png",
+      "roi": [
+        519,
+        31,
+        118,
+        35
+      ]
+    },
+    "IconAbilityInsect": {
+      "template": "game/ui/IconAbilityInsect.png",
+      "roi": null
+    },
+    "IconClickSkip": {
+      "template": "game/ui/IconClickSkip.png",
+      "roi": [
+        1128,
+        681,
+        100,
+        23
+      ]
+    },
+    "IconDungeonFeature": {
+      "template": "game/ui/IconDungeonFeature.png",
+      "roi": [
+        32,
+        146,
+        17,
+        17
+      ]
+    },
+    "IconMaterialTypeInsect": {
+      "template": "game/ui/IconMaterialTypeInsect.png",
+      "roi": null
+    },
+    "IconMovementWalk": {
+      "template": "game/ui/IconMovementWalk.png",
+      "roi": [
+        1191,
+        635,
+        47,
+        40
+      ]
+    },
+    "IconSetdownFeature": {
+      "template": "game/ui/IconSetdownFeature.png",
+      "roi": null
+    },
+    "IconSkip": {
+      "template": "game/ui/IconSkip.png",
+      "roi": [
+        1193,
+        675,
+        34,
+        20
+      ]
+    },
+    "IconUILoading": {
+      "template": "game/ui/IconUILoading.png",
+      "roi": [
+        680,
+        0,
+        600,
+        67
+      ]
+    },
+    "IconWardrobeFeature": {
+      "template": "game/ui/iconwardrobefeature.png",
+      "roi": [
+        394,
+        31,
+        118,
+        35
+      ]
+    },
+    "T_Icon_INT_Nature_Flower_05": {
+      "template": "game/ui/T_Icon_INT_Nature_Flower_05.png",
+      "roi": null
+    },
+    "T_Icon_INT_Nature_Shrub_102": {
+      "template": "game/ui/T_Icon_INT_Nature_Shrub_102.png",
+      "roi": null
+    },
+    "T_Icon_INT_Nature_Tree_12": {
+      "template": "game/ui/T_Icon_INT_Nature_Tree_12.png",
+      "roi": null
+    },
+    "T_Icon_INT_Prop_Gameplay_326": {
+      "template": "game/ui/T_Icon_INT_Prop_Gameplay_326.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0024": {
+      "template": "game/ui/T_Icon_item_AN0024.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0029": {
+      "template": "game/ui/T_Icon_item_AN0029.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0034": {
+      "template": "game/ui/T_Icon_item_AN0034.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0042": {
+      "template": "game/ui/T_Icon_item_AN0042.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0051": {
+      "template": "game/ui/T_Icon_item_AN0051.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0055": {
+      "template": "game/ui/T_Icon_item_AN0055.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0057": {
+      "template": "game/ui/T_Icon_item_AN0057.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0058": {
+      "template": "game/ui/T_Icon_item_AN0058.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0059": {
+      "template": "game/ui/T_Icon_item_AN0059.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0059R2": {
+      "template": "game/ui/T_Icon_item_AN0059R2.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0065": {
+      "template": "game/ui/T_Icon_item_AN0065.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0066": {
+      "template": "game/ui/T_Icon_item_AN0066.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0067": {
+      "template": "game/ui/T_Icon_item_AN0067.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0068": {
+      "template": "game/ui/T_Icon_item_AN0068.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0068R2": {
+      "template": "game/ui/T_Icon_item_AN0068R2.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0069": {
+      "template": "game/ui/T_Icon_item_AN0069.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0072": {
+      "template": "game/ui/T_Icon_item_AN0072.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0076": {
+      "template": "game/ui/T_Icon_item_AN0076.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0077": {
+      "template": "game/ui/T_Icon_item_AN0077.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0078": {
+      "template": "game/ui/T_Icon_item_AN0078.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0078R2": {
+      "template": "game/ui/T_Icon_item_AN0078R2.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0080": {
+      "template": "game/ui/T_Icon_item_AN0080.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0082": {
+      "template": "game/ui/T_Icon_item_AN0082.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0083": {
+      "template": "game/ui/T_Icon_item_AN0083.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0084": {
+      "template": "game/ui/T_Icon_item_AN0084.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0085": {
+      "template": "game/ui/T_Icon_item_AN0085.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0086": {
+      "template": "game/ui/T_Icon_item_AN0086.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0087": {
+      "template": "game/ui/T_Icon_item_AN0087.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0088": {
+      "template": "game/ui/T_Icon_item_AN0088.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0090": {
+      "template": "game/ui/T_Icon_item_AN0090.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0092": {
+      "template": "game/ui/T_Icon_item_AN0092.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0092R2": {
+      "template": "game/ui/T_Icon_item_AN0092R2.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0092R3": {
+      "template": "game/ui/T_Icon_item_AN0092R3.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0093": {
+      "template": "game/ui/T_Icon_item_AN0093.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0094": {
+      "template": "game/ui/T_Icon_item_AN0094.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0095": {
+      "template": "game/ui/T_Icon_item_AN0095.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0096": {
+      "template": "game/ui/T_Icon_item_AN0096.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0097": {
+      "template": "game/ui/T_Icon_item_AN0097.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0098": {
+      "template": "game/ui/T_Icon_item_AN0098.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0099": {
+      "template": "game/ui/T_Icon_item_AN0099.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0099R2": {
+      "template": "game/ui/T_Icon_item_AN0099R2.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0100": {
+      "template": "game/ui/T_Icon_item_AN0100.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0101": {
+      "template": "game/ui/T_Icon_item_AN0101.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0103": {
+      "template": "game/ui/T_Icon_item_AN0103.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0109": {
+      "template": "game/ui/T_Icon_item_AN0109.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0111": {
+      "template": "game/ui/T_Icon_item_AN0111.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0112": {
+      "template": "game/ui/T_Icon_item_AN0112.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0113": {
+      "template": "game/ui/T_Icon_item_AN0113.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0114": {
+      "template": "game/ui/T_Icon_item_AN0114.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0115": {
+      "template": "game/ui/T_Icon_item_AN0115.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0136": {
+      "template": "game/ui/T_Icon_item_AN0136.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0138Back": {
+      "template": "game/ui/T_Icon_item_AN0138Back.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0138Claw": {
+      "template": "game/ui/T_Icon_item_AN0138Claw.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0138Head": {
+      "template": "game/ui/T_Icon_item_AN0138Head.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0138R6": {
+      "template": "game/ui/T_Icon_item_AN0138R6.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0138R8": {
+      "template": "game/ui/T_Icon_item_AN0138R8.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0139": {
+      "template": "game/ui/T_Icon_item_AN0139.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0140": {
+      "template": "game/ui/T_Icon_item_AN0140.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0149": {
+      "template": "game/ui/T_Icon_item_AN0149.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0150": {
+      "template": "game/ui/T_Icon_item_AN0150.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0151": {
+      "template": "game/ui/T_Icon_item_AN0151.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0153": {
+      "template": "game/ui/T_Icon_item_AN0153.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0158": {
+      "template": "game/ui/T_Icon_item_AN0158.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0159": {
+      "template": "game/ui/T_Icon_item_AN0159.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0160": {
+      "template": "game/ui/T_Icon_item_AN0160.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0161": {
+      "template": "game/ui/T_Icon_item_AN0161.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0162": {
+      "template": "game/ui/T_Icon_item_AN0162.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0163": {
+      "template": "game/ui/T_Icon_item_AN0163.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0164": {
+      "template": "game/ui/T_Icon_item_AN0164.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0165": {
+      "template": "game/ui/T_Icon_item_AN0165.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0166": {
+      "template": "game/ui/T_Icon_item_AN0166.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0171": {
+      "template": "game/ui/T_Icon_item_AN0171.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0172": {
+      "template": "game/ui/T_Icon_item_AN0172.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0173": {
+      "template": "game/ui/T_Icon_item_AN0173.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0174": {
+      "template": "game/ui/T_Icon_item_AN0174.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0177": {
+      "template": "game/ui/T_Icon_item_AN0177.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0178": {
+      "template": "game/ui/T_Icon_item_AN0178.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0179": {
+      "template": "game/ui/T_Icon_item_AN0179.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0180": {
+      "template": "game/ui/T_Icon_item_AN0180.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0182": {
+      "template": "game/ui/T_Icon_item_AN0182.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0191": {
+      "template": "game/ui/T_Icon_item_AN0191.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0192": {
+      "template": "game/ui/T_Icon_item_AN0192.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0193": {
+      "template": "game/ui/T_Icon_item_AN0193.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0194": {
+      "template": "game/ui/T_Icon_item_AN0194.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0195": {
+      "template": "game/ui/T_Icon_item_AN0195.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0196": {
+      "template": "game/ui/T_Icon_item_AN0196.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0197": {
+      "template": "game/ui/T_Icon_item_AN0197.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0198": {
+      "template": "game/ui/T_Icon_item_AN0198.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0208": {
+      "template": "game/ui/T_Icon_item_AN0208.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0210": {
+      "template": "game/ui/T_Icon_item_AN0210.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0219": {
+      "template": "game/ui/T_Icon_item_AN0219.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0221": {
+      "template": "game/ui/T_Icon_item_AN0221.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0235": {
+      "template": "game/ui/T_Icon_item_AN0235.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0237": {
+      "template": "game/ui/T_Icon_item_AN0237.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0237R2": {
+      "template": "game/ui/T_Icon_item_AN0237R2.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0246": {
+      "template": "game/ui/T_Icon_item_AN0246.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0256": {
+      "template": "game/ui/T_Icon_item_AN0256.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0275": {
+      "template": "game/ui/T_Icon_item_AN0275.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0276": {
+      "template": "game/ui/T_Icon_item_AN0276.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0285": {
+      "template": "game/ui/T_Icon_item_AN0285.png",
+      "roi": null
+    },
+    "T_Icon_item_AN0286": {
+      "template": "game/ui/T_Icon_item_AN0286.png",
+      "roi": null
+    },
+    "T_Icon_item_ANQ0018": {
+      "template": "game/ui/T_Icon_item_ANQ0018.png",
+      "roi": null
+    },
+    "T_Icon_item_ANQ0037": {
+      "template": "game/ui/T_Icon_item_ANQ0037.png",
+      "roi": null
+    },
+    "T_Icon_item_ANQ0044": {
+      "template": "game/ui/T_Icon_item_ANQ0044.png",
+      "roi": null
+    },
+    "T_Icon_item_ANQ0044R2": {
+      "template": "game/ui/T_Icon_item_ANQ0044R2.png",
+      "roi": null
+    },
+    "T_Icon_item_ANQ0053": {
+      "template": "game/ui/T_Icon_item_ANQ0053.png",
+      "roi": null
+    },
+    "T_Icon_item_ANQ0053R2": {
+      "template": "game/ui/T_Icon_item_ANQ0053R2.png",
+      "roi": null
+    },
+    "T_Icon_item_ANQ0056": {
+      "template": "game/ui/T_Icon_item_ANQ0056.png",
+      "roi": null
+    },
+    "T_Icon_item_ANQ0057": {
+      "template": "game/ui/T_Icon_item_ANQ0057.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0034": {
+      "template": "game/ui/T_Icon_item_ANW0034.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0034R2": {
+      "template": "game/ui/T_Icon_item_ANW0034R2.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0035": {
+      "template": "game/ui/T_Icon_item_ANW0035.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0036": {
+      "template": "game/ui/T_Icon_item_ANW0036.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0038": {
+      "template": "game/ui/T_Icon_item_ANW0038.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0041": {
+      "template": "game/ui/T_Icon_item_ANW0041.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0047": {
+      "template": "game/ui/T_Icon_item_ANW0047.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0049": {
+      "template": "game/ui/T_Icon_item_ANW0049.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0050": {
+      "template": "game/ui/T_Icon_item_ANW0050.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0051": {
+      "template": "game/ui/T_Icon_item_ANW0051.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0051R2": {
+      "template": "game/ui/T_Icon_item_ANW0051R2.png",
+      "roi": null
+    },
+    "T_Icon_item_ANW0052": {
+      "template": "game/ui/T_Icon_item_ANW0052.png",
+      "roi": null
+    },
+    "T_Icon_item_INFT0001F": {
+      "template": "game/ui/T_Icon_item_INFT0001F.png",
+      "roi": null
+    },
+    "T_Icon_item_INFT0003F": {
+      "template": "game/ui/T_Icon_item_INFT0003F.png",
+      "roi": null
+    },
+    "T_Icon_item_INFT0004F": {
+      "template": "game/ui/T_Icon_item_INFT0004F.png",
+      "roi": null
+    },
+    "T_Icon_item_INFT0009F": {
+      "template": "game/ui/T_Icon_item_INFT0009F.png",
+      "roi": null
+    },
+    "T_Icon_item_INFT0036F": {
+      "template": "game/ui/T_Icon_item_INFT0036F.png",
+      "roi": null
+    },
+    "T_Icon_item_INFT0037F": {
+      "template": "game/ui/T_Icon_item_INFT0037F.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0001": {
+      "template": "game/ui/T_Icon_item_INS0001.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0002": {
+      "template": "game/ui/T_Icon_item_INS0002.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0004": {
+      "template": "game/ui/T_Icon_item_INS0004.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0008": {
+      "template": "game/ui/T_Icon_item_INS0008.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0013": {
+      "template": "game/ui/T_Icon_item_INS0013.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0014": {
+      "template": "game/ui/T_Icon_item_INS0014.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0015D": {
+      "template": "game/ui/T_Icon_item_INS0015D.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0015N": {
+      "template": "game/ui/T_Icon_item_INS0015N.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0016": {
+      "template": "game/ui/T_Icon_item_INS0016.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0022": {
+      "template": "game/ui/T_Icon_item_INS0022.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0026R": {
+      "template": "game/ui/T_Icon_item_INS0026R.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0026S": {
+      "template": "game/ui/T_Icon_item_INS0026S.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0027": {
+      "template": "game/ui/T_Icon_item_INS0027.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0027R2": {
+      "template": "game/ui/T_Icon_item_INS0027R2.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0028": {
+      "template": "game/ui/T_Icon_item_INS0028.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0029": {
+      "template": "game/ui/T_Icon_item_INS0029.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0029R2": {
+      "template": "game/ui/T_Icon_item_INS0029R2.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0038": {
+      "template": "game/ui/T_Icon_item_INS0038.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0038R2": {
+      "template": "game/ui/T_Icon_item_INS0038R2.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0039": {
+      "template": "game/ui/T_Icon_item_INS0039.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0040": {
+      "template": "game/ui/T_Icon_item_INS0040.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0046": {
+      "template": "game/ui/T_Icon_item_INS0046.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0047": {
+      "template": "game/ui/T_Icon_item_INS0047.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0048": {
+      "template": "game/ui/T_Icon_item_INS0048.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0050": {
+      "template": "game/ui/T_Icon_item_INS0050.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0051": {
+      "template": "game/ui/T_Icon_item_INS0051.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0052": {
+      "template": "game/ui/T_Icon_item_INS0052.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0053": {
+      "template": "game/ui/T_Icon_item_INS0053.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0055": {
+      "template": "game/ui/T_Icon_item_INS0055.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0067": {
+      "template": "game/ui/T_Icon_item_INS0067.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0067R2": {
+      "template": "game/ui/T_Icon_item_INS0067R2.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0088": {
+      "template": "game/ui/T_Icon_item_INS0088.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0091": {
+      "template": "game/ui/T_Icon_item_INS0091.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0123": {
+      "template": "game/ui/T_Icon_item_INS0123.png",
+      "roi": null
+    },
+    "T_Icon_item_INS0123R2": {
+      "template": "game/ui/T_Icon_item_INS0123R2.png",
+      "roi": null
+    },
+    "T_Icon_item_INT0005F": {
+      "template": "game/ui/T_Icon_item_INT0005F.png",
+      "roi": null
+    },
+    "T_UI_map_img_icon_star_02": {
+      "template": "game/ui/T_UI_map_img_icon_star_02.png",
+      "roi": null
+    },
+    "AreaAbilityPlan1Button": {
+      "template": "game/ui/areaabilityplan1button.png",
+      "roi": [
+        21,
+        115,
+        220,
+        30
+      ]
+    },
+    "AreaAbilityPlan2Button": {
+      "template": "game/ui/areaabilityplan2button.png",
+      "roi": [
+        21,
+        152,
+        220,
+        30
+      ]
+    },
+    "AreaAbilityPlan3Button": {
+      "template": "game/ui/areaabilityplan3button.png",
+      "roi": [
+        21,
+        189,
+        220,
+        30
+      ]
+    },
+    "AreaAbilityPlanChangeButton": {
+      "template": "game/ui/areaabilityplanchangebutton.png",
+      "roi": [
+        21,
+        77,
+        220,
+        30
+      ]
+    },
+    "AreaDialogSelection": {
+      "template": "game/ui/areadialogselection.png",
+      "roi": [
+        884,
+        373,
+        188,
+        153
+      ]
+    },
+    "AreaEscEntrances": {
+      "template": "game/ui/areaescentrances.png",
+      "roi": [
+        91,
+        176,
+        587,
+        395
+      ]
+    },
+    "AreaMiraCrownAutoMatchButton": {
+      "template": "game/ui/areamiracrownautomatchbutton.png",
+      "roi": [
+        679,
+        267,
+        93,
+        133
+      ]
+    },
+    "AreaMiraCrownEntrance": {
+      "template": "game/ui/areamiracrownentrance.png",
+      "roi": [
+        92,
+        203,
+        169,
+        134
+      ]
+    },
+    "AreaMiraCrownOverview": {
+      "template": "game/ui/areamiracrownoverview.png",
+      "roi": [
+        1029,
+        315,
+        113,
+        33
+      ]
+    },
+    "AreaMiraCrownSecondDoor": {
+      "template": "game/ui/areamiracrownseconddoor.png",
+      "roi": [
+        704,
+        437,
+        101,
+        112
+      ]
+    },
+    "AreaMiraCrownShopItemList": {
+      "template": "game/ui/areamiracrownshopitemlist.png",
+      "roi": [
+        199,
+        111,
+        898,
+        415
+      ]
+    },
+    "AreaMiraCrownThirdDoor": {
+      "template": "game/ui/areamiracrownthirddoor.png",
+      "roi": [
+        1034,
+        401,
+        75,
+        93
+      ]
+    },
+    "AreaPageTitleFeature": {
+      "template": "game/ui/areapagetitlefeature.png",
+      "roi": [
+        66,
+        15,
+        153,
+        37
+      ]
+    },
+    "AreaPickup": {
+      "template": "game/ui/areapickup.png",
+      "roi": [
+        265,
+        97,
+        897,
+        533
+      ]
+    },
+    "ButtonMiraCrownAward": {
+      "template": "game/ui/buttonmiracrownaward.png",
+      "roi": [
+        83,
+        543,
+        33,
+        33
+      ]
+    },
+    "ButtonMiraCrownConfirmMatch": {
+      "template": "game/ui/buttonmiracrownconfirmmatch.png",
+      "roi": [
+        43,
+        641,
+        149,
+        37
+      ]
+    },
+    "ButtonMiraCrownNextStep": {
+      "template": "game/ui/buttonmiracrownnextstep.png",
+      "roi": [
+        73,
+        643,
+        150,
+        37
+      ]
+    },
+    "ButtonMiraCrownQuickReward": {
+      "template": "game/ui/buttonmiracrownquickreward.png",
+      "roi": [
+        574,
+        486,
+        133,
+        33
+      ]
+    },
+    "ButtonMiraCrownRank": {
+      "template": "game/ui/buttonmiracrownrank.png",
+      "roi": [
+        736,
+        9,
+        50,
+        50
+      ]
+    },
+    "ButtonMiraCrownRewardGet": {
+      "template": "game/ui/buttonmiracrownrewardget.png",
+      "roi": [
+        833,
+        255,
+        30,
+        30
+      ]
+    },
+    "ButtonMiraCrownShop": {
+      "template": "game/ui/buttonmiracrownshop.png",
+      "roi": [
+        83,
+        465,
+        33,
+        33
+      ]
+    },
+    "ButtonMiraCrownShopConfirm": {
+      "template": "game/ui/buttonmiracrownshopconfirm.png",
+      "roi": [
+        591,
+        523,
+        97,
+        37
+      ]
+    },
+    "ButtonMiraCrownShopMax": {
+      "template": "game/ui/buttonmiracrownshopmax.png",
+      "roi": [
+        884,
+        270,
+        30,
+        30
+      ]
+    },
+    "ButtonMiraCrownSkipAll": {
+      "template": "game/ui/buttonmiracrownskipall.png",
+      "roi": [
+        1123,
+        17,
+        40,
+        40
+      ]
+    },
+    "ButtonMiraCrownStartChallenge": {
+      "template": "game/ui/buttonmiracrownstartchallenge.png",
+      "roi": [
+        938,
+        591,
+        149,
+        37
+      ]
+    },
+    "IconPickupFeature": {
+      "template": "game/ui/iconpickupfeature.png",
+      "roi": null
+    },
+    "IconSkipDialog": {
+      "template": "game/ui/iconskipdialog.png",
+      "roi": [
+        1149,
+        669,
+        79,
+        21
+      ]
+    },
+    "IconTalkFeature": {
+      "template": "game/ui/icontalkfeature.png",
+      "roi": null
+    }
+  },
+  "materials": {
+    "布布果": {
+      "game_img": "T_Icon_item_INFT0001F",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "小绵菊": {
+      "game_img": "T_Icon_item_INS0029",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "壁灯红椒": {
+      "game_img": "T_Icon_item_INFT0003F",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "满满果": {
+      "game_img": "T_Icon_item_INFT0037F",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "纽扣松果": {
+      "game_img": "T_Icon_item_INS0028",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "珠花贝壳": {
+      "game_img": "T_Icon_item_INS0001",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "小星扇贝": {
+      "game_img": "T_Icon_item_INS0002",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "路灯花": {
+      "game_img": "T_Icon_item_INS0040",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "瓜子珠": {
+      "game_img": "T_Icon_item_INFT0036F",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "兔兔妆粉": {
+      "game_img": "T_Icon_item_INS0123",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "草绒球": {
+      "game_img": "T_Icon_item_INS0008",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "滋滋花粉": {
+      "game_img": "T_Icon_item_INS0004",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "晴日蝶兰": {
+      "game_img": "T_Icon_item_INS0026S",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "雨滴蝶兰": {
+      "game_img": "T_Icon_item_INS0026R",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "香薰睡莲": {
+      "game_img": "T_Icon_item_INS0027",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "滚滚花球": {
+      "game_img": "T_Icon_item_INS0016",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "飞球果": {
+      "game_img": "T_Icon_item_INFT0004F",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "花伞藤萝": {
+      "game_img": "T_Icon_item_INS0039",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "风絮草": {
+      "game_img": "T_Icon_item_INS0046",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "星荧草": {
+      "game_img": "T_Icon_item_INS0038",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "星光果": {
+      "game_img": "T_Icon_item_INS0015N",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "日光果": {
+      "game_img": "T_Icon_item_INS0015D",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "噼啪花粉": {
+      "game_img": "T_Icon_item_INS0013",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "胭脂芙蕖": {
+      "game_img": "T_Icon_item_INS0027R2",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "云绒玉絮": {
+      "game_img": "T_Icon_item_INFT0009F",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "荷包草": {
+      "game_img": "T_Icon_item_INS0038R2",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "袋袋果": {
+      "game_img": "T_Icon_item_INS0022",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "结结蕨": {
+      "game_img": "T_Icon_item_INS0048",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "垂穗魔果": {
+      "game_img": "T_Icon_item_INS0055",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "草棘果": {
+      "game_img": "T_Icon_item_INS0047",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "流金蜜": {
+      "game_img": "T_Icon_item_INT0005F",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "针蕊水仙": {
+      "game_img": "T_Icon_item_INS0051",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "蓝风铃": {
+      "game_img": "T_Icon_item_INS0050",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "蜜妆粉": {
+      "game_img": "T_Icon_item_INS0123R2",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "珠贝花": {
+      "game_img": "T_Icon_item_INS0014",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "小野菊": {
+      "game_img": "T_Icon_item_INS0029R2",
+      "type": "plant",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "风旋果": {
+      "game_img": "T_Icon_item_INS0088",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "晴雨伞": {
+      "game_img": "T_Icon_item_INS0052",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "风舞花": {
+      "game_img": "T_Icon_INT_Nature_Flower_05",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "蓝鳞晶": {
+      "game_img": "T_Icon_INT_Prop_Gameplay_326",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "汐萤蟹": {
+      "game_img": "T_Icon_item_AN0275",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "骨焰花": {
+      "game_img": "T_Icon_item_INS0053",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "龙棘瑚": {
+      "game_img": "T_Icon_item_INS0091",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "烛融花": {
+      "game_img": "T_Icon_item_INS0067",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "烛荧花": {
+      "game_img": "T_Icon_item_INS0067R2",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "浮冠果": {
+      "game_img": "T_Icon_INT_Nature_Shrub_102",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "机芯果": {
+      "game_img": "T_Icon_INT_Nature_Tree_12",
+      "type": "plant",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "笔刷鱼": {
+      "game_img": "T_Icon_item_AN0024",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "蝴蝶结鱼": {
+      "game_img": "T_Icon_item_AN0059",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "大笔刷鱼": {
+      "game_img": "T_Icon_item_ANW0051",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "羽毛笔鱼": {
+      "game_img": "T_Icon_item_AN0069",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "厨师帽鱼": {
+      "game_img": "T_Icon_item_AN0088",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "提包鱼": {
+      "game_img": "T_Icon_item_ANW0050",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "拉夫领鱼": {
+      "game_img": "T_Icon_item_AN0055",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "发夹泥鳅": {
+      "game_img": "T_Icon_item_AN0098",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "提灯鱼": {
+      "game_img": "T_Icon_item_AN0096",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "胡子鲶鱼": {
+      "game_img": "T_Icon_item_ANW0049",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "缎带鱼": {
+      "game_img": "T_Icon_item_ANW0052",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "手绢鱼": {
+      "game_img": "T_Icon_item_AN0083",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "头巾鱼": {
+      "game_img": "T_Icon_item_AN0097",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "纱裙鱼": {
+      "game_img": "T_Icon_item_AN0058",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "插梳鱼": {
+      "game_img": "T_Icon_item_AN0080",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "眼影鱼": {
+      "game_img": "T_Icon_item_AN0082",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "雾绡鱼": {
+      "game_img": "T_Icon_item_AN0059R2",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "云尾锦鲤": {
+      "game_img": "T_Icon_item_ANW0051R2",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "恋恋左心鱼": {
+      "game_img": "T_Icon_item_ANW0041",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "恋恋右心鱼": {
+      "game_img": "T_Icon_item_ANW0038",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "晕妆鱼": {
+      "game_img": "T_Icon_item_AN0057",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "裁尺鱼": {
+      "game_img": "T_Icon_item_AN0171",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "骨盔鱼": {
+      "game_img": "T_Icon_item_AN0161",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "彩翎鱼": {
+      "game_img": "T_Icon_item_AN0160",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "星绸鱼": {
+      "game_img": "T_Icon_item_AN0173",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "斓焰鱼": {
+      "game_img": "T_Icon_item_AN0172",
+      "type": "fish",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "卷尾伞鱼": {
+      "game_img": "T_Icon_item_AN0246",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "澜旗鱼": {
+      "game_img": "T_Icon_item_AN0182",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "铁剑鱼": {
+      "game_img": "T_Icon_item_AN0197",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "岩壳鱼": {
+      "game_img": "T_Icon_item_AN0198",
+      "type": "fish",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "汪汪毛线": {
+      "game_img": "T_Icon_item_ANQ0044",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "兔尾绒团": {
+      "game_img": "T_Icon_item_ANQ0053",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "蓝珀鸟羽": {
+      "game_img": "T_Icon_item_ANQ0056",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "衬衫毛团": {
+      "game_img": "T_Icon_item_AN0090",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "花香羊毛": {
+      "game_img": "T_Icon_item_AN0085",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "名流鸦羽": {
+      "game_img": "T_Icon_item_AN0114",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "领结毛团": {
+      "game_img": "T_Icon_item_AN0092",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "抱抱绒团": {
+      "game_img": "T_Icon_item_AN0087",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "围兜毛球": {
+      "game_img": "T_Icon_item_ANQ0037",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "长袜羊毛": {
+      "game_img": "T_Icon_item_AN0034",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "贵族卷毛": {
+      "game_img": "T_Icon_item_AN0029",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "骑士马鬃": {
+      "game_img": "T_Icon_item_AN0072",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "盛宴毛毡": {
+      "game_img": "T_Icon_item_AN0066",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "夜色天鹅绒": {
+      "game_img": "T_Icon_item_AN0094",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "玫色天鹅绒": {
+      "game_img": "T_Icon_item_AN0095",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "绣球羊毛": {
+      "game_img": "T_Icon_item_AN0086",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "画帽羽毛": {
+      "game_img": "T_Icon_item_ANQ0057",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "背带毛团": {
+      "game_img": "T_Icon_item_AN0100",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "礅礅毛团": {
+      "game_img": "T_Icon_item_AN0093",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "天星之羽": {
+      "game_img": "T_Icon_item_AN0115",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "花环毛团": {
+      "game_img": "T_Icon_item_AN0109",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "鹿冠毛团": {
+      "game_img": "T_Icon_item_AN0103",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "兜帽绒羽": {
+      "game_img": "T_Icon_item_AN0101",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "明珠翎羽": {
+      "game_img": "T_Icon_item_AN0099",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "曦光毛团": {
+      "game_img": "T_Icon_item_AN0136",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "画眉毛团": {
+      "game_img": "T_Icon_item_AN0092R2",
+      "type": "animal",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "远黛扇羽": {
+      "game_img": "T_Icon_item_AN0210",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "板刷狸绒": {
+      "game_img": "T_Icon_item_AN0163",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "盗面毛团": {
+      "game_img": "T_Icon_item_AN0177",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "扣扣毛球": {
+      "game_img": "T_Icon_item_AN0178",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "行鹭羽": {
+      "game_img": "T_Icon_item_AN0219",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "草裙毛团": {
+      "game_img": "T_Icon_item_AN0153",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "绒领毛团": {
+      "game_img": "T_Icon_item_AN0151",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "王子鹰羽": {
+      "game_img": "T_Icon_item_AN0149",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "荧夜鬃": {
+      "game_img": "T_Icon_item_AN0221",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "咕咕之羽": {
+      "game_img": "T_Icon_item_AN0162",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "草蓬团绒": {
+      "game_img": "T_Icon_item_AN0237",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "巨兽鬃绒": {
+      "game_img": "T_Icon_item_AN0138Head",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "巨兽掌绒": {
+      "game_img": "T_Icon_item_AN0138Claw",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "巨兽背绒": {
+      "game_img": "T_Icon_item_AN0138Back",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "春兽茸团": {
+      "game_img": "T_Icon_item_AN0208",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "东桠绒花": {
+      "game_img": "T_Icon_item_AN0138R8",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "蜜妆兔绒": {
+      "game_img": "T_Icon_item_ANQ0053R2",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "沙沙毛团": {
+      "game_img": "T_Icon_item_ANQ0044R2",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "巨兽细绒": {
+      "game_img": "T_Icon_item_AN0138R6",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "胭脂翎羽": {
+      "game_img": "T_Icon_item_ANQ0018",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "栗蓬团绒": {
+      "game_img": "T_Icon_item_AN0237R2",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "羽巾绒": {
+      "game_img": "T_Icon_item_AN0256",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "金灵毛球": {
+      "game_img": "T_Icon_item_AN0092R3",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "茸芽鹿绒": {
+      "game_img": "T_Icon_item_AN0191",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "大叶鹿绒": {
+      "game_img": "T_Icon_item_AN0192",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "涅拉羽": {
+      "game_img": "T_Icon_item_AN0164",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "斗篷绒毛": {
+      "game_img": "T_Icon_item_AN0193",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "机雀羽": {
+      "game_img": "T_Icon_item_AN0285",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "桂冠翎羽": {
+      "game_img": "T_Icon_item_AN0099R2",
+      "type": "animal",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "发卡蚱蜢": {
+      "game_img": "T_Icon_item_AN0068",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "珠链蝶": {
+      "game_img": "T_Icon_item_AN0084",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "美食家蜜蜂": {
+      "game_img": "T_Icon_item_ANW0034",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "织衣蛛": {
+      "game_img": "T_Icon_item_ANW0047",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "芭蕾豆娘": {
+      "game_img": "T_Icon_item_ANW0036",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "泳镜蝽": {
+      "game_img": "T_Icon_item_AN0065",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "尖帽仙": {
+      "game_img": "T_Icon_item_AN0076",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "刺绣蛾": {
+      "game_img": "T_Icon_item_AN0077",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "耳坠萤": {
+      "game_img": "T_Icon_item_AN0112",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "布布袜虫": {
+      "game_img": "T_Icon_item_ANW0035",
+      "type": "insect",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "风铃子": {
+      "game_img": "T_Icon_item_AN0042",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "花球娘": {
+      "game_img": "T_Icon_item_AN0051",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "裙撑萤": {
+      "game_img": "T_Icon_item_AN0067",
+      "type": "insect",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "围巾蚯蚓": {
+      "game_img": "T_Icon_item_AN0078",
+      "type": "insect",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "丝巾蛾": {
+      "game_img": "T_Icon_item_AN0139",
+      "type": "insect",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "美甲金龟": {
+      "game_img": "T_Icon_item_AN0111",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "面膜草蛉": {
+      "game_img": "T_Icon_item_AN0113",
+      "type": "insect",
+      "dig": false,
+      "track": true,
+      "jihua": true
+    },
+    "玉簪蚱蜢": {
+      "game_img": "T_Icon_item_AN0068R2",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "发圈蛞蝓": {
+      "game_img": "T_Icon_item_AN0140",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "木夹跳甲": {
+      "game_img": "T_Icon_item_AN0174",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "朝朝蝶": {
+      "game_img": "T_Icon_item_AN0158",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "暮暮蝶": {
+      "game_img": "T_Icon_item_AN0159",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "裁衣甲": {
+      "game_img": "T_Icon_item_AN0150",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "陶罐茧": {
+      "game_img": "T_Icon_item_AN0165",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "青青釉蝉": {
+      "game_img": "T_Icon_item_AN0166",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "花纹围巾蚯蚓": {
+      "game_img": "T_Icon_item_AN0078R2",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "探险家蜜蜂": {
+      "game_img": "T_Icon_item_ANW0034R2",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "革袋甲": {
+      "game_img": "T_Icon_item_AN0180",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "珍蛛": {
+      "game_img": "T_Icon_item_AN0179",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "损音甲": {
+      "game_img": "T_Icon_item_AN0276",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "蜉幽幽": {
+      "game_img": "T_Icon_item_AN0235",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "珠坠甲虫": {
+      "game_img": "T_Icon_item_AN0194",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "蓝玉甲虫": {
+      "game_img": "T_Icon_item_AN0195",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "晶球棉蚧": {
+      "game_img": "T_Icon_item_AN0196",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "金轴蜻蜓": {
+      "game_img": "T_Icon_item_AN0286",
+      "type": "insect",
+      "dig": true,
+      "track": true,
+      "jihua": true
+    },
+    "纯真丝线": {
+      "game_img": "T_UI_icon_004",
+      "type": "other",
+      "dig": true,
+      "track": false,
+      "jihua": false
+    },
+    "闪光粒子": {
+      "game_img": "T_UI_icon_006",
+      "type": "other",
+      "dig": true,
+      "track": false,
+      "jihua": false
+    }
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "schema_version": 3,
+  "id": "zhaoxi_insect",
+  "map": "miraland",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": 3,
+  "material": "织衣蛛",
+  "teleport": {
+    "name": "遗迹山坡",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10093.044,
+    "y": 11104.113
+  },
+  "points": [
+    {
+      "x": 10090.003,
+      "y": 11099.447,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10104.353,
+      "y": 11098.797,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10107.353,
+      "y": 11100.147,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10113.661,
+      "y": 11101.849,
+      "radius": 1.0,
+      "jump": false,
+      "action": "insect",
+      "params": {
+        "count": 1
+      }
+    },
+    {
+      "x": 10119.653,
+      "y": 11102.497,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10126.053,
+      "y": 11103.197,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10128.303,
+      "y": 11101.447,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10127.053,
+      "y": 11091.897,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10118.253,
+      "y": 11087.497,
+      "radius": 1.0,
+      "jump": false,
+      "action": "insect",
+      "params": {
+        "count": 1
+      }
+    },
+    {
+      "x": 10123.769,
+      "y": 11087.657,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10127.812,
+      "y": 11066.859,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10119.253,
+      "y": 11062.447,
+      "radius": 1.0,
+      "jump": false,
+      "action": "insect",
+      "params": {
+        "count": 1
+      }
+    },
+    {
+      "x": 10099.7,
+      "y": 11053.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10097.75,
+      "y": 11043.4,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10079.05,
+      "y": 11029.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10067.602,
+      "y": 11013.513,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10055.739,
+      "y": 11002.643,
+      "radius": 1.0,
+      "jump": false,
+      "action": "insect",
+      "params": {
+        "count": 1
+      }
+    },
+    {
+      "x": 10027.994,
+      "y": 11020.139,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 10021.056,
+      "y": 11015.757,
+      "radius": 1.0,
+      "jump": false,
+      "action": "insect",
+      "params": {
+        "count": 1
+      }
+    },
+    {
+      "x": 10020.55,
+      "y": 11015.65,
+      "radius": 1.0,
+      "jump": false
+    }
+  ],
+  "title": "朝夕 · 捕虫"
+}

@@ -1,0 +1,463 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Clock,
+  Plus,
+  X,
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+} from 'lucide-react';
+import { useAppStore } from '@/stores/appStore';
+import type { SchedulePolicy } from '@/types/interface';
+import clsx from 'clsx';
+import { ConfirmDialog } from './ConfirmDialog';
+
+// 生成唯一 ID
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
+// 校验 "HH:mm" 格式
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+interface SchedulePanelProps {
+  instanceId: string;
+  onClose: () => void;
+}
+
+/** 策略卡片组件 */
+function PolicyCard({
+  policy,
+  onUpdate,
+  onDelete,
+  isExpanded,
+  onToggleExpand,
+}: {
+  policy: SchedulePolicy;
+  onUpdate: (updates: Partial<SchedulePolicy>) => void;
+  onDelete: () => void;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+}) {
+  const { t } = useTranslation();
+  const { confirmBeforeDelete } = useAppStore();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [timeDraft, setTimeDraft] = useState('08:00');
+
+  const weekdayLabels = t('schedule.weekdays', { returnObjects: true }) as string[];
+
+  const handleToggleWeekday = (day: number) => {
+    const newWeekdays = policy.weekdays.includes(day)
+      ? policy.weekdays.filter((d) => d !== day)
+      : [...policy.weekdays, day].sort((a, b) => a - b);
+    onUpdate({ weekdays: newWeekdays });
+  };
+
+  const handleAddTime = () => {
+    if (!TIME_PATTERN.test(timeDraft)) return;
+    if (policy.times.includes(timeDraft)) return;
+    const newTimes = [...policy.times, timeDraft].sort((a, b) => a.localeCompare(b));
+    onUpdate({ times: newTimes });
+  };
+
+  const handleRemoveTime = (time: string) => {
+    onUpdate({ times: policy.times.filter((t) => t !== time) });
+  };
+
+  const handleSelectAllWeekdays = () => {
+    // 已全选时取消全选，否则全选
+    if (policy.weekdays.length === 7) {
+      onUpdate({ weekdays: [] });
+    } else {
+      onUpdate({ weekdays: [0, 1, 2, 3, 4, 5, 6] });
+    }
+  };
+
+  // 格式化显示已选周几
+  const formatWeekdays = () => {
+    if (policy.weekdays.length === 0) return t('schedule.noWeekdays');
+    if (policy.weekdays.length === 7) return t('schedule.everyday');
+    return policy.weekdays.map((d) => weekdayLabels[d]).join(', ');
+  };
+
+  // 格式化显示已选时间
+  const formatTimes = () => {
+    if (policy.times.length === 0) return t('schedule.noTimes');
+    if (policy.times.length <= 3) {
+      return policy.times.join(', ');
+    }
+    return `${policy.times.length} ${t('schedule.timesSelected')}`;
+  };
+
+  return (
+    <div
+      className={clsx(
+        'bg-bg-secondary rounded-lg border border-border overflow-hidden',
+        !policy.enabled && 'opacity-60',
+      )}
+    >
+      {/* 卡片头部 */}
+      <div className="flex items-center gap-2 p-3">
+        {/* 策略名称 */}
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-medium text-text-primary truncate block">
+            {policy.name}
+          </span>
+        </div>
+
+        {/* 单个策略启用开关（靠右，位于展开按钮左侧） */}
+        <button
+          onClick={() => onUpdate({ enabled: !policy.enabled })}
+          className="p-1 rounded hover:bg-bg-hover"
+          title={policy.enabled ? t('schedule.disable') : t('schedule.enable')}
+        >
+          {policy.enabled ? (
+            <ToggleRight className="w-5 h-5 text-accent" />
+          ) : (
+            <ToggleLeft className="w-5 h-5 text-text-muted" />
+          )}
+        </button>
+
+        {/* 展开/折叠 */}
+        <button onClick={onToggleExpand} className="p-1 rounded hover:bg-bg-hover">
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4 text-text-secondary" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-text-secondary" />
+          )}
+        </button>
+
+        {/* 删除按钮 */}
+        <button
+          onClick={() => {
+            if (confirmBeforeDelete) {
+              setShowDeleteConfirm(true);
+            } else {
+              onDelete();
+            }
+          }}
+          className="p-1 rounded hover:bg-error/10 text-text-muted hover:text-error"
+          title={t('common.delete')}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* 展开的配置面板 */}
+      {isExpanded && (
+        <div className="border-t border-border bg-bg-tertiary p-3 space-y-3">
+          {/* 策略名称 */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-text-secondary">
+              {t('schedule.policyName')}
+            </label>
+            <input
+              type="text"
+              value={policy.name}
+              onChange={(e) => onUpdate({ name: e.target.value })}
+              onBlur={(e) => {
+                if (!e.target.value.trim()) {
+                  onUpdate({ name: t('schedule.defaultPolicyName') });
+                }
+              }}
+              className={clsx(
+                'w-full px-2 py-1.5 text-sm rounded border',
+                'bg-bg-primary text-text-primary border-border',
+                'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20',
+              )}
+            />
+          </div>
+
+          {/* 重复日期选择 */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-text-secondary">
+              {t('schedule.repeatDays')}
+            </label>
+            {/* 选择按钮 */}
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={handleSelectAllWeekdays}
+                className={clsx(
+                  'px-2 py-1 text-xs rounded border transition-colors',
+                  policy.weekdays.length === 7
+                    ? 'bg-accent text-white border-accent'
+                    : 'bg-bg-primary text-text-secondary border-border hover:border-accent hover:text-accent',
+                )}
+              >
+                {t('schedule.everyday')}
+              </button>
+              {[1, 2, 3, 4, 5, 6, 0].map((day) => (
+                <button
+                  key={day}
+                  onClick={() => handleToggleWeekday(day)}
+                  className={clsx(
+                    'px-2 py-1 text-xs rounded border transition-colors',
+                    policy.weekdays.includes(day)
+                      ? 'bg-accent text-white border-accent'
+                      : 'bg-bg-primary text-text-secondary border-border hover:border-accent hover:text-accent',
+                  )}
+                >
+                  {weekdayLabels[day]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 开始时间选择 */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-text-secondary">
+              {t('schedule.startTime')}
+              <span className="text-text-muted font-normal ml-1">
+                ({t('schedule.multiSelect')})
+              </span>
+            </label>
+            {/* 时间点添加 */}
+            <div className="flex items-center gap-1.5">
+              <input
+                type="time"
+                value={timeDraft}
+                onChange={(e) => setTimeDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddTime();
+                  }
+                }}
+                className={clsx(
+                  'flex-1 px-2 py-1.5 text-sm rounded border',
+                  'bg-bg-primary text-text-primary border-border',
+                  'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20',
+                )}
+              />
+              <button
+                onClick={handleAddTime}
+                disabled={!TIME_PATTERN.test(timeDraft) || policy.times.includes(timeDraft)}
+                className={clsx(
+                  'flex items-center gap-1 px-2 py-1.5 text-xs rounded border transition-colors',
+                  'border-border text-text-secondary',
+                  'hover:border-accent hover:text-accent',
+                  'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:text-text-secondary',
+                )}
+                title={t('schedule.addTime')}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t('schedule.addTime')}</span>
+              </button>
+            </div>
+            {/* 已选时间点 */}
+            {policy.times.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {policy.times.map((time) => (
+                  <span
+                    key={time}
+                    className="flex items-center gap-1 pl-2 pr-1 py-1 text-xs rounded border border-accent bg-accent/10 text-accent"
+                  >
+                    {time}
+                    <button
+                      onClick={() => handleRemoveTime(time)}
+                      className="p-0.5 rounded hover:bg-accent/20"
+                      title={t('common.delete')}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted">{t('schedule.noTimes')}</p>
+            )}
+            <p className="text-xs text-text-muted">
+              {t('schedule.timeZoneHint')} (
+              {(() => {
+                const off = -new Date().getTimezoneOffset() / 60;
+                return `UTC${off >= 0 ? '+' : ''}${off}`;
+              })()}
+              )
+            </p>
+          </div>
+
+          {/* 摘要显示 */}
+          <div className="pt-2 border-t border-border">
+            <p className="text-xs text-text-secondary">
+              {formatWeekdays()} · {formatTimes()}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 未展开时显示简要信息 */}
+      {!isExpanded && (
+        <div className="px-3 pb-2">
+          <p className="text-xs text-text-muted truncate">
+            {formatWeekdays()} · {formatTimes()}
+          </p>
+        </div>
+      )}
+
+      {/* 删除确认弹窗 */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title={t('schedule.deletePolicyTitle')}
+        message={t('schedule.deletePolicyConfirm', { name: policy.name })}
+        cancelText={t('common.cancel')}
+        confirmText={t('common.confirm')}
+        destructive
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          onDelete();
+        }}
+      />
+    </div>
+  );
+}
+
+export function SchedulePanel({ instanceId, onClose }: SchedulePanelProps) {
+  const { t } = useTranslation();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { getActiveInstance, updateInstance } = useAppStore();
+  const [expandedPolicyId, setExpandedPolicyId] = useState<string | null>(null);
+
+  const instance = getActiveInstance();
+  const policies = instance?.schedulePolicies || [];
+  const anyEnabled = policies.some((p) => p.enabled);
+
+  // 点击外部关闭面板
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  const handleAddPolicy = useCallback(() => {
+    const newPolicy: SchedulePolicy = {
+      id: generateId(),
+      name: `${t('schedule.defaultPolicyName')} ${policies.length + 1}`,
+      enabled: true,
+      weekdays: [1, 2, 3, 4, 5], // 默认工作日
+      times: ['08:00'], // 默认早上 8 点
+    };
+    updateInstance(instanceId, {
+      schedulePolicies: [...policies, newPolicy],
+    });
+    setExpandedPolicyId(newPolicy.id);
+  }, [instanceId, policies, t, updateInstance]);
+
+  const handleUpdatePolicy = useCallback(
+    (policyId: string, updates: Partial<SchedulePolicy>) => {
+      const updatedPolicies = policies.map((p) => (p.id === policyId ? { ...p, ...updates } : p));
+      updateInstance(instanceId, { schedulePolicies: updatedPolicies });
+    },
+    [instanceId, policies, updateInstance],
+  );
+
+  const handleDeletePolicy = useCallback(
+    (policyId: string) => {
+      const updatedPolicies = policies.filter((p) => p.id !== policyId);
+      updateInstance(instanceId, { schedulePolicies: updatedPolicies });
+      if (expandedPolicyId === policyId) {
+        setExpandedPolicyId(null);
+      }
+    },
+    [instanceId, policies, expandedPolicyId, updateInstance],
+  );
+
+  const handleToggleAll = useCallback(() => {
+    if (policies.length === 0) return;
+    const nextEnabled = !anyEnabled;
+    const updatedPolicies = policies.map((p) => ({ ...p, enabled: nextEnabled }));
+    updateInstance(instanceId, { schedulePolicies: updatedPolicies });
+  }, [anyEnabled, instanceId, policies, updateInstance]);
+
+  return (
+    <div
+      ref={panelRef}
+      className={clsx(
+        'mxu-overlay-surface',
+        'absolute bottom-full right-0 mb-2 w-80',
+        'bg-bg-primary border border-border rounded-lg shadow-lg',
+        'z-50',
+      )}
+    >
+      {/* 头部 */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-accent" />
+          <span className="text-sm font-medium text-text-primary">{t('schedule.title')}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {/* 总开关：启用/禁用所有策略 */}
+          <button
+            onClick={handleToggleAll}
+            disabled={policies.length === 0}
+            className={clsx(
+              'p-1 rounded hover:bg-bg-hover',
+              policies.length === 0 && 'opacity-50 cursor-not-allowed',
+            )}
+            title={anyEnabled ? t('schedule.disableAll') : t('schedule.enableAll')}
+          >
+            {anyEnabled ? (
+              <ToggleRight className="w-5 h-5 text-accent" />
+            ) : (
+              <ToggleLeft className="w-5 h-5 text-text-muted" />
+            )}
+          </button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-bg-hover">
+            <X className="w-4 h-4 text-text-muted" />
+          </button>
+        </div>
+      </div>
+
+      {/* 策略列表 */}
+      <div className="p-3 space-y-2 max-h-96 overflow-y-auto">
+        {policies.length === 0 ? (
+          <div className="text-center py-6">
+            <Clock className="w-8 h-8 text-text-muted mx-auto mb-2" />
+            <p className="text-sm text-text-muted">{t('schedule.noPolicies')}</p>
+            <p className="text-xs text-text-muted mt-1">{t('schedule.noPoliciesHint')}</p>
+          </div>
+        ) : (
+          policies.map((policy) => (
+            <PolicyCard
+              key={policy.id}
+              policy={policy}
+              onUpdate={(updates) => handleUpdatePolicy(policy.id, updates)}
+              onDelete={() => handleDeletePolicy(policy.id)}
+              isExpanded={expandedPolicyId === policy.id}
+              onToggleExpand={() =>
+                setExpandedPolicyId(expandedPolicyId === policy.id ? null : policy.id)
+              }
+            />
+          ))
+        )}
+      </div>
+
+      {/* 添加按钮 */}
+      <div className="px-3 pb-3">
+        <button
+          onClick={handleAddPolicy}
+          className={clsx(
+            'w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg',
+            'text-sm text-text-secondary',
+            'border border-dashed border-border',
+            'hover:bg-bg-hover hover:border-border-strong',
+            'transition-colors',
+          )}
+        >
+          <Plus className="w-4 h-4" />
+          <span>{t('schedule.addPolicy')}</span>
+        </button>
+      </div>
+
+      {/* 提示信息 */}
+      <div className="px-4 py-2 border-t border-border bg-bg-tertiary rounded-b-lg">
+        <p className="text-xs text-text-muted">{t('schedule.hint')}</p>
+      </div>
+    </div>
+  );
+}

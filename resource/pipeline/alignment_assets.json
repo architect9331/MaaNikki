@@ -1,0 +1,2403 @@
+{
+  "MaaNikki_Asset_iconwardrobefeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/iconwardrobefeature.png",
+    "roi": [
+      394,
+      31,
+      118,
+      35
+    ],
+    "threshold": 0.99,
+    "method": 3,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areaabilitybutton": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaAbilityButton.png",
+    "roi": [
+      1073,
+      631,
+      60,
+      60
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areaabilitychange": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaAbilityChange.png",
+    "roi": [
+      961,
+      119,
+      241,
+      459
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areabigmapmaterialselect": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaBigMapMaterialSelect.png",
+    "roi": [
+      208,
+      218,
+      270,
+      309
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areabigmapmaterialtrackconfirm": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaBigMapMaterialTrackConfirm.png",
+    "roi": [
+      919,
+      538,
+      133,
+      33
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areabigmapmaterialtypeselect": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaBigMapMaterialTypeSelect.png",
+    "roi": [
+      217,
+      182,
+      247,
+      33
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areabigmapregionname": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaBigMapRegionName.png",
+    "roi": [
+      1042,
+      59,
+      160,
+      27
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areabigmapregionselect": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaBigMapRegionSelect.png",
+    "roi": [
+      891,
+      69,
+      247,
+      617
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areabigmapteleportbutton": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaBigMapTeleportButton.png",
+    "roi": [
+      1005,
+      655,
+      160,
+      33
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areabigmapteleporterselect": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaBigMapTeleporterSelect.png",
+    "roi": [
+      847,
+      324,
+      168,
+      168
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areadialog": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaDialog.png",
+    "roi": [
+      240,
+      93,
+      800,
+      533
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areadigingnumtext": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaDigingNumText.png",
+    "roi": [
+      1232,
+      122,
+      23,
+      13
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areaitemfirstitem": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaItemFirstItem.png",
+    "roi": [
+      1052,
+      134,
+      60,
+      60
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areajihuacostselect": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaJihuaCostSelect.png",
+    "roi": [
+      51,
+      75,
+      628,
+      529
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areajihuafirstmaterial": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaJihuaFirstMaterial.png",
+    "roi": [
+      77,
+      101,
+      53,
+      53
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areajihuatargetselect": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaJihuaTargetSelect.png",
+    "roi": [
+      813,
+      206,
+      401,
+      401
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areamaterialgettext": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaMaterialGetText.png",
+    "roi": [
+      15,
+      451,
+      147,
+      133
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areatextjihuatai": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaTextJihuatai.png",
+    "roi": [
+      640,
+      117,
+      234,
+      235
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonabilitychangelist": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/ButtonAbilityChangeList.png",
+    "roi": [
+      1221,
+      86,
+      23,
+      19
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonabilityconfig": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/ButtonAbilityConfig.png",
+    "roi": [
+      1085,
+      650,
+      27,
+      32
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonabilitysave": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/ButtonAbilitySave.png",
+    "roi": [
+      76,
+      645,
+      150,
+      40
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttondungeonquitok": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/ButtonDungeonQuitOK.png",
+    "roi": [
+      701,
+      439,
+      53,
+      27
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonjihuasort": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/ButtonJihuaSort.png",
+    "roi": [
+      207,
+      661,
+      33,
+      27
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconabilityfeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityFeature.png",
+    "roi": [
+      519,
+      31,
+      118,
+      35
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconabilityinsect": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityInsect.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconclickskip": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconClickSkip.png",
+    "roi": [
+      1128,
+      681,
+      100,
+      23
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_icondungeonfeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconDungeonFeature.png",
+    "roi": [
+      32,
+      146,
+      17,
+      17
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconmaterialtypeinsect": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconMaterialTypeInsect.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconmovementwalk": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconMovementWalk.png",
+    "roi": [
+      1191,
+      635,
+      47,
+      40
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconsetdownfeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconSetdownFeature.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconskip": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconSkip.png",
+    "roi": [
+      1193,
+      675,
+      34,
+      20
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconuiloading": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconUILoading.png",
+    "roi": [
+      680,
+      0,
+      600,
+      67
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_int_nature_flower_05": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_INT_Nature_Flower_05.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_int_nature_shrub_102": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_INT_Nature_Shrub_102.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_int_nature_tree_12": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_INT_Nature_Tree_12.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_int_prop_gameplay_326": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_INT_Prop_Gameplay_326.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0024": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0024.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0029": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0029.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0034": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0034.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0042": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0042.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0051": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0051.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0055": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0055.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0057": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0057.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0058": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0058.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0059": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0059.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0059r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0059R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0065": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0065.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0066": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0066.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0067": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0067.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0068": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0068.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0068r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0068R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0069": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0069.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0072": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0072.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0076": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0076.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0077": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0077.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0078": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0078.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0078r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0078R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0080": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0080.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0082": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0082.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0083": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0083.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0084": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0084.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0085": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0085.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0086": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0086.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0087": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0087.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0088": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0088.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0090": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0090.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0092": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0092.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0092r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0092R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0092r3": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0092R3.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0093": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0093.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0094": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0094.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0095": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0095.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0096": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0096.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0097": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0097.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0098": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0098.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0099": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0099.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0099r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0099R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0100": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0100.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0101": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0101.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0103": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0103.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0109": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0109.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0111": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0111.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0112": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0112.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0113": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0113.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0114": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0114.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0115": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0115.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0136": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0136.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0138back": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0138Back.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0138claw": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0138Claw.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0138head": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0138Head.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0138r6": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0138R6.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0138r8": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0138R8.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0139": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0139.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0140": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0140.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0149": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0149.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0150": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0150.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0151": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0151.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0153": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0153.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0158": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0158.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0159": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0159.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0160": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0160.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0161": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0161.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0162": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0162.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0163": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0163.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0164": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0164.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0165": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0165.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0166": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0166.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0171": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0171.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0172": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0172.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0173": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0173.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0174": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0174.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0177": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0177.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0178": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0178.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0179": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0179.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0180": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0180.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0182": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0182.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0191": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0191.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0192": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0192.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0193": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0193.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0194": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0194.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0195": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0195.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0196": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0196.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0197": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0197.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0198": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0198.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0208": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0208.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0210": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0210.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0219": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0219.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0221": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0221.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0235": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0235.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0237": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0237.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0237r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0237R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0246": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0246.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0256": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0256.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0275": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0275.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0276": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0276.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0285": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0285.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_an0286": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_AN0286.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anq0018": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANQ0018.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anq0037": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANQ0037.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anq0044": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANQ0044.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anq0044r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANQ0044R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anq0053": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANQ0053.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anq0053r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANQ0053R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anq0056": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANQ0056.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anq0057": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANQ0057.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0034": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0034.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0034r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0034R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0035": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0035.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0036": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0036.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0038": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0038.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0041": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0041.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0047": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0047.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0049": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0049.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0050": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0050.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0051": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0051.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0051r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0051R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_anw0052": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_ANW0052.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_inft0001f": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INFT0001F.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_inft0003f": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INFT0003F.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_inft0004f": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INFT0004F.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_inft0009f": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INFT0009F.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_inft0036f": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INFT0036F.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_inft0037f": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INFT0037F.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0001": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0001.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0002": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0002.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0004": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0004.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0008": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0008.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0013": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0013.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0014": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0014.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0015d": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0015D.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0015n": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0015N.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0016": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0016.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0022": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0022.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0026r": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0026R.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0026s": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0026S.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0027": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0027.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0027r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0027R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0028": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0028.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0029": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0029.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0029r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0029R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0038": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0038.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0038r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0038R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0039": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0039.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0040": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0040.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0046": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0046.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0047": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0047.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0048": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0048.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0050": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0050.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0051": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0051.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0052": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0052.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0053": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0053.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0055": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0055.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0067": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0067.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0067r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0067R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0088": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0088.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0091": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0091.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0123": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0123.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_ins0123r2": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INS0123R2.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_icon_item_int0005f": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_Icon_item_INT0005F.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_t_ui_map_img_icon_star_02": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/T_UI_map_img_icon_star_02.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  }
+}

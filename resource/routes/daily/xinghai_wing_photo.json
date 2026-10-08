@@ -1,0 +1,68 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_wing_photo",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "繁星之滨",
+    "province": "星海",
+    "region": "星海",
+    "x": 1313.986,
+    "y": 731.313
+  },
+  "points": [
+    {
+      "x": 1313.7,
+      "y": 730.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1274.4,
+      "y": 765.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1262.4,
+      "y": 782.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1241.0,
+      "y": 787.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1202.9,
+      "y": 812.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1164.85,
+      "y": 825.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1149.5,
+      "y": 838.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1144.306,
+      "y": 843.192,
+      "radius": 1.0,
+      "jump": true,
+      "action": "photo"
+    }
+  ],
+  "title": "星海 · 合影星芒之翼"
+}

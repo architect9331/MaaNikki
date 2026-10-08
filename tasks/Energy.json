@@ -1,0 +1,568 @@
+{
+    "task": [
+        {
+            "name": "realm_challenge",
+            "label": "幻境挑战",
+            "entry": "MaaNikki_RealmChallenge",
+            "group": [
+                "energy"
+            ],
+            "default_check": true,
+            "description": "请排在朝夕心愿之后执行。先按开关处理周本，再用所选普通幻境的最大次数消耗剩余体力。同一轮朝夕尚未满分且有累计体力条件时，最后只复核朝夕积分和领奖，不重复执行日常；单跑本项不打开朝夕页面。",
+            "option": [
+                "WeeklyEnabled",
+                "RealmTypes"
+            ]
+        }
+    ],
+    "option": {
+        "WeeklyEnabled": {
+            "type": "switch",
+            "label": "优先完成每周幻境",
+            "description": "开启后先检查本周剩余挑战次数；本周已完成时自动跳过。之后使用剩余活跃能量挑战下面选择的幻境。",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "label": "开启",
+                    "option": [
+                        "WeeklyTargets"
+                    ],
+                    "pipeline_override": {
+                        "MaaNikki_RealmWeekly": {
+                            "enabled": true
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "label": "关闭",
+                    "pipeline_override": {
+                        "MaaNikki_RealmWeekly": {
+                            "enabled": false
+                        }
+                    }
+                }
+            ],
+            "default_case": "Yes"
+        },
+        "RealmTypes": {
+            "type": "select",
+            "label": "剩余体力消耗方式",
+            "description": "选择一种幻境，自动使用最大次数消耗剩余活跃能量。不足一次所需的剩余活跃能量会保留。",
+            "cases": [
+                {
+                    "name": "Jihua",
+                    "label": "素材激化",
+                    "option": [
+                        "JihuaTarget",
+                        "JihuaMaterialMode"
+                    ],
+                    "pipeline_override": {
+                        "MaaNikki_RealmEnergy": {
+                            "next": [
+                                "MaaNikki_Jihua"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Bless",
+                    "label": "祝福闪光",
+                    "option": [
+                        "BlessTarget"
+                    ],
+                    "pipeline_override": {
+                        "MaaNikki_RealmEnergy": {
+                            "next": [
+                                "MaaNikki_Bless"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Monster",
+                    "label": "魔物试炼",
+                    "option": [
+                        "MonsterTarget"
+                    ],
+                    "pipeline_override": {
+                        "MaaNikki_RealmEnergy": {
+                            "next": [
+                                "MaaNikki_Monster"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "default_case": "Bless"
+        },
+        "JihuaTarget": {
+            "type": "select",
+            "label": "兑换目标",
+            "cases": [
+                {
+                    "name": "Bubble",
+                    "label": "闪亮泡泡",
+                    "pipeline_override": {
+                        "MaaNikki_Jihua_Target": {
+                            "expected": "闪亮泡泡"
+                        },
+                        "MaaNikki_Jihua_TargetRetry": {
+                            "expected": "闪亮泡泡"
+                        }
+                    }
+                },
+                {
+                    "name": "Bling",
+                    "label": "噗灵",
+                    "pipeline_override": {
+                        "MaaNikki_Jihua_Target": {
+                            "expected": "噗灵"
+                        },
+                        "MaaNikki_Jihua_TargetRetry": {
+                            "expected": "噗灵"
+                        }
+                    }
+                },
+                {
+                    "name": "Thread",
+                    "label": "丝线",
+                    "pipeline_override": {
+                        "MaaNikki_Jihua_Target": {
+                            "expected": "丝线"
+                        },
+                        "MaaNikki_Jihua_TargetRetry": {
+                            "expected": "丝线"
+                        }
+                    }
+                }
+            ],
+            "default_case": "Bubble"
+        },
+        "JihuaMaterialMode": {
+            "type": "select",
+            "label": "消耗材料选择方式",
+            "description": "选择数量最多的材料，或使用指定的首选与备选材料。",
+            "cases": [
+                {
+                    "name": "Priority",
+                    "label": "按优先级选择",
+                    "option": [
+                        "JihuaMaterials"
+                    ],
+                    "pipeline_override": {
+                        "MaaNikki_Jihua_MaterialMostOpen": {
+                            "enabled": false
+                        },
+                        "MaaNikki_Jihua_Material": {
+                            "enabled": true
+                        }
+                    }
+                },
+                {
+                    "name": "Most",
+                    "label": "选择数量最多的材料",
+                    "pipeline_override": {
+                        "MaaNikki_Jihua_MaterialMostOpen": {
+                            "enabled": true
+                        },
+                        "MaaNikki_Jihua_Material": {
+                            "enabled": false
+                        }
+                    }
+                }
+            ],
+            "default_case": "Priority"
+        },
+        "JihuaMaterials": {
+            "type": "input",
+            "label": "消耗材料优先级",
+            "description": "填写材料在游戏中的完整名称。首选材料不可用时尝试备选材料。",
+            "inputs": [
+                {
+                    "name": "Primary",
+                    "label": "首选",
+                    "default": "星荧草",
+                    "pipeline_type": "string",
+                    "verify": "^.{1,12}$"
+                },
+                {
+                    "name": "Backup1",
+                    "label": "备选 1",
+                    "default": "纽扣松果",
+                    "pipeline_type": "string",
+                    "verify": "^.{1,12}$"
+                },
+                {
+                    "name": "Backup2",
+                    "label": "备选 2",
+                    "default": "小棉菊",
+                    "pipeline_type": "string",
+                    "verify": "^.{1,12}$"
+                }
+            ],
+            "pipeline_override": {
+                "MaaNikki_Jihua_Material": {
+                    "expected": [
+                        "{Primary}",
+                        "{Backup1}",
+                        "{Backup2}"
+                    ]
+                }
+            }
+        },
+        "BlessTarget": {
+            "type": "select",
+            "label": "目标关卡",
+            "description": "选择需要快速挑战的关卡。请确保已解锁该关卡的困难难度与快速挑战。",
+            "cases": [
+                {
+                    "name": "Well",
+                    "label": "福鸣之井",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "福鸣之井"
+                        }
+                    }
+                },
+                {
+                    "name": "Warehouse",
+                    "label": "愿望梦境仓库",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "愿望梦境仓库"
+                        }
+                    }
+                },
+                {
+                    "name": "Cellar",
+                    "label": "涟漪之窖",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "涟漪之窖"
+                        }
+                    }
+                },
+                {
+                    "name": "Train",
+                    "label": "幽灵列车",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "幽灵列车"
+                        }
+                    }
+                },
+                {
+                    "name": "Makeup",
+                    "label": "美妆工坊",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "美妆工坊"
+                        }
+                    }
+                },
+                {
+                    "name": "Queen",
+                    "label": "菲洛米亚女王行宫",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "菲洛米亚女王行宫"
+                        }
+                    }
+                },
+                {
+                    "name": "Sword",
+                    "label": "古铸剑遗址",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "古铸剑遗址"
+                        }
+                    }
+                },
+                {
+                    "name": "Snake",
+                    "label": "巨蛇遗迹",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "巨蛇遗迹"
+                        }
+                    }
+                },
+                {
+                    "name": "Mushroom",
+                    "label": "母菇梦境",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "母菇梦境"
+                        }
+                    }
+                },
+                {
+                    "name": "Ishanshan",
+                    "label": "伊闪闪宝库",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "伊闪闪宝库"
+                        }
+                    }
+                },
+                {
+                    "name": "Beast",
+                    "label": "巨兽堡垒",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "巨兽堡垒"
+                        }
+                    }
+                },
+                {
+                    "name": "Frost",
+                    "label": "甜霜梦屿",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "甜霜梦屿"
+                        }
+                    }
+                },
+                {
+                    "name": "Soul",
+                    "label": "灵魂大潮",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "灵魂大潮"
+                        }
+                    }
+                },
+                {
+                    "name": "Harvest",
+                    "label": "丰登庆典",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "丰登庆典"
+                        }
+                    }
+                }
+            ],
+            "default_case": "Snake"
+        },
+        "MonsterTarget": {
+            "type": "select",
+            "label": "目标关卡",
+            "description": "根据所需制衣或焕新材料选择关卡。请确保已解锁快速挑战。",
+            "cases": [
+                {
+                    "name": "Energy",
+                    "label": "能量 | 1.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "能量"
+                        }
+                    }
+                },
+                {
+                    "name": "Throw",
+                    "label": "抛掷 | 1.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "抛掷"
+                        }
+                    }
+                },
+                {
+                    "name": "Fall",
+                    "label": "坠落 | 1.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "坠落"
+                        }
+                    }
+                },
+                {
+                    "name": "Roll",
+                    "label": "翻滚 | 1.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "翻滚"
+                        }
+                    }
+                },
+                {
+                    "name": "Drive",
+                    "label": "驭使 | 1.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "驭使"
+                        }
+                    }
+                },
+                {
+                    "name": "Climb",
+                    "label": "攀越 | 典雅 1.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "攀越"
+                        }
+                    }
+                },
+                {
+                    "name": "Shock",
+                    "label": "震荡 | 帅气 1.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "震荡"
+                        }
+                    }
+                },
+                {
+                    "name": "Wind",
+                    "label": "风舞 | 甜美 1.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "风舞"
+                        }
+                    }
+                },
+                {
+                    "name": "Spin",
+                    "label": "飞旋 | 性感 1.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "飞旋"
+                        }
+                    }
+                },
+                {
+                    "name": "Flip",
+                    "label": "翻转 | 清新 1.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "翻转"
+                        }
+                    }
+                },
+                {
+                    "name": "Crash",
+                    "label": "冲撞 | 性感 2.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "冲撞"
+                        }
+                    }
+                },
+                {
+                    "name": "Spit",
+                    "label": "喷吐 | 典雅 2.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "喷吐"
+                        }
+                    }
+                },
+                {
+                    "name": "Air",
+                    "label": "凌空 | 清新 2.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "凌空"
+                        }
+                    }
+                },
+                {
+                    "name": "Blast",
+                    "label": "爆裂 | 帅气 2.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "爆裂"
+                        }
+                    }
+                },
+                {
+                    "name": "Guard",
+                    "label": "固守 | 甜美 2.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "固守"
+                        }
+                    }
+                },
+                {
+                    "name": "Assault",
+                    "label": "强袭 | 清新 2.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "强袭"
+                        }
+                    }
+                },
+                {
+                    "name": "Violence",
+                    "label": "暴行 | 帅气 2.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "暴行"
+                        }
+                    }
+                },
+                {
+                    "name": "Weightless",
+                    "label": "失重 | 甜美 2.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "失重"
+                        }
+                    }
+                },
+                {
+                    "name": "Lost",
+                    "label": "迷踪 | 典雅 2.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "迷踪"
+                        }
+                    }
+                },
+                {
+                    "name": "Expel",
+                    "label": "驱逐 | 性感 2.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "驱逐"
+                        }
+                    }
+                }
+            ],
+            "default_case": "Climb"
+        },
+        "WeeklyTargets": {
+            "type": "checkbox",
+            "label": "每周幻境目标",
+            "description": "检查一次本周完成次数；仍需挑战时，依次尝试所选目标，每个目标一次。之后处理普通幻境。",
+            "cases": [
+                {
+                    "name": "Qiggeda",
+                    "label": "奇格格达",
+                    "pipeline_override": {
+                        "MaaNikki_Weekly_Level_Qiggeda": {
+                            "enabled": true
+                        }
+                    }
+                },
+                {
+                    "name": "Juan",
+                    "label": "卷卷",
+                    "pipeline_override": {
+                        "MaaNikki_Weekly_Level_Juan": {
+                            "enabled": true
+                        }
+                    }
+                }
+            ],
+            "default_case": [
+                "Qiggeda",
+                "Juan"
+            ],
+            "min_count": 1,
+            "max_count": 2
+        }
+    }
+}

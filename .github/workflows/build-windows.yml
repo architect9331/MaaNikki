@@ -1,0 +1,34 @@
+name: Build Windows x64
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.10'
+      - name: Install pinned Rust toolchain
+        shell: pwsh
+        run: rustup show
+      - name: Build and verify release packages
+        shell: pwsh
+        run: ./scripts/build.ps1 -Action Package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MaaNikki-Windows-x64
+          path: artifacts/*
+          if-no-files-found: error

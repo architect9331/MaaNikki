@@ -1,0 +1,786 @@
+{
+  "MaaNikki_Energy_Remaining": {
+    "recognition": "OCR",
+    "roi": [
+      608,
+      99,
+      82,
+      32
+    ],
+    "expected": "[0-9]+\\s*[/／]\\s*[0-9]+",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Energy_SkipReward": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [
+        1060,
+        640,
+        220,
+        80
+      ],
+      "template": [
+        "game/common/skip_click.png",
+        "game/common/skip.png"
+      ],
+      "gray_limit": [
+        210,
+        255
+      ],
+      "threshold": [
+        0.8,
+        0.73
+      ]
+    },
+    "action": "Custom",
+    "post_delay": 1000,
+    "timeout": 10000,
+    "next": [],
+    "custom_action": "nikki.game_key",
+    "custom_action_param": {
+      "name": "skip"
+    }
+  },
+  "MaaNikki_Jihua": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 0,
+    "next": [],
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "jihua"
+    }
+  },
+  "MaaNikki_Jihua_Huanjing": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      662,
+      90,
+      198,
+      156
+    ],
+    "template": "game/common/huanjing_go.png",
+    "threshold": 0.68,
+    "action": "Custom",
+    "post_delay": 1200,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_RealmPageReady",
+      "source": "MaaNikki_CalendarReady"
+    }
+  },
+  "MaaNikki_Jihua_Entrance": {
+    "recognition": "OCR",
+    "roi": [
+      840,
+      470,
+      240,
+      130
+    ],
+    "expected": "素材激化幻境",
+    "action": "Custom",
+    "post_delay": 900,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Jihua_PageReady",
+      "source": "MaaNikki_RealmPageReady"
+    }
+  },
+  "MaaNikki_Jihua_Go": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      780,
+      610,
+      230,
+      100
+    ],
+    "template": "game/energy/jihua_go.png",
+    "threshold": 0.68,
+    "action": "Custom",
+    "post_delay": 3500,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_MainDetected",
+      "source": "MaaNikki_Jihua_PageReady",
+      "ready_timeout": 30
+    }
+  },
+  "MaaNikki_Jihua_Inside": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      0,
+      620,
+      110,
+      100
+    ],
+    "template": "nikki/common/main_feature.png",
+    "threshold": 0.68,
+    "action": "Custom",
+    "post_delay": 0,
+    "next": [],
+    "custom_action": "nikki.game_key",
+    "custom_action_param": {
+      "name": "forward",
+      "seconds": 0.85
+    }
+  },
+  "MaaNikki_Jihua_StopMove": {
+    "recognition": "DirectHit",
+    "action": "DoNothing",
+    "post_delay": 250,
+    "next": []
+  },
+  "MaaNikki_Jihua_Interact": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 900,
+    "next": [],
+    "custom_action": "nikki.game_key",
+    "custom_action_param": {
+      "name": "interact"
+    }
+  },
+  "MaaNikki_Jihua_Target": {
+    "recognition": "OCR",
+    "roi": [
+      800,
+      185,
+      430,
+      430
+    ],
+    "expected": "闪亮泡泡",
+    "action": "Custom",
+    "post_delay": 600,
+    "timeout": 4000,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Jihua_MoveRetry": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 0,
+    "next": [],
+    "custom_action": "nikki.game_key",
+    "custom_action_param": {
+      "name": "forward",
+      "seconds": 0.85
+    }
+  },
+  "MaaNikki_Jihua_MoveRetryStop": {
+    "recognition": "DirectHit",
+    "action": "DoNothing",
+    "post_delay": 250,
+    "next": []
+  },
+  "MaaNikki_Jihua_InteractRetry": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 900,
+    "next": [],
+    "custom_action": "nikki.game_key",
+    "custom_action_param": {
+      "name": "interact"
+    }
+  },
+  "MaaNikki_Jihua_TargetRetry": {
+    "recognition": "OCR",
+    "roi": [
+      800,
+      185,
+      430,
+      430
+    ],
+    "expected": "闪亮泡泡",
+    "action": "Custom",
+    "post_delay": 600,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Jihua_MaterialMostOpen": {
+    "enabled": false,
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 250,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "target": [
+        93,
+        675
+      ]
+    }
+  },
+  "MaaNikki_Jihua_MaterialMostQuantity": {
+    "recognition": "OCR",
+    "roi": [
+      60,
+      585,
+      60,
+      75
+    ],
+    "expected": "数量",
+    "action": "Custom",
+    "post_delay": 250,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Jihua_MaterialMostSort": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 600,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "target": [
+        224,
+        675
+      ]
+    }
+  },
+  "MaaNikki_Jihua_MaterialMostFirst": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 500,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "target": [
+        103,
+        128
+      ]
+    }
+  },
+  "MaaNikki_Jihua_Material": {
+    "enabled": true,
+    "recognition": "OCR",
+    "roi": [
+      35,
+      65,
+      660,
+      555
+    ],
+    "expected": [
+      "星荧草",
+      "纽扣松果",
+      "小棉菊"
+    ],
+    "action": "Custom",
+    "post_delay": 500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Jihua_NumMax": {
+    "enabled": true,
+    "recognition": "TemplateMatch",
+    "roi": [
+      700,
+      260,
+      100,
+      90
+    ],
+    "template": "game/energy/jihua_num_max.png",
+    "threshold": 0.66,
+    "action": "Custom",
+    "post_delay": 350,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Jihua_NumConfirm": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      630,
+      430,
+      200,
+      90
+    ],
+    "template": "game/energy/jihua_num_confirm.png",
+    "threshold": 0.66,
+    "action": "Custom",
+    "post_delay": 500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Jihua_FinalConfirm": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      900,
+      560,
+      240,
+      100
+    ],
+    "template": "game/energy/jihua_final_confirm.png",
+    "threshold": 0.66,
+    "action": "Custom",
+    "post_delay": 1500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Bless": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 0,
+    "next": [],
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "bless"
+    }
+  },
+  "MaaNikki_Bless_Huanjing": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      662,
+      90,
+      198,
+      156
+    ],
+    "template": "game/common/huanjing_go.png",
+    "threshold": 0.68,
+    "action": "Custom",
+    "post_delay": 1200,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_RealmPageReady",
+      "source": "MaaNikki_CalendarReady"
+    }
+  },
+  "MaaNikki_Bless_Entrance": {
+    "recognition": "OCR",
+    "roi": [
+      200,
+      470,
+      240,
+      130
+    ],
+    "expected": "祝福闪光幻境",
+    "action": "Custom",
+    "post_delay": 900,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Bless_PageReady",
+      "source": "MaaNikki_RealmPageReady"
+    }
+  },
+  "MaaNikki_Bless_Level": {
+    "recognition": "OCR",
+    "roi": [
+      145,
+      90,
+      410,
+      600
+    ],
+    "expected": "巨蛇遗迹试炼",
+    "action": "Custom",
+    "post_delay": 500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Bless_Difficulty": {
+    "enabled": true,
+    "recognition": "OCR",
+    "roi": [
+      1000,
+      315,
+      130,
+      110
+    ],
+    "expected": "困难",
+    "action": "Custom",
+    "post_delay": 400,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Bless_Quick": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      690,
+      610,
+      230,
+      100
+    ],
+    "template": "game/energy/quick.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 700,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Bless_Max": {
+    "enabled": true,
+    "recognition": "TemplateMatch",
+    "roi": [
+      690,
+      295,
+      100,
+      100
+    ],
+    "template": "game/energy/max.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 300,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Bless_Confirm": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      620,
+      410,
+      220,
+      100
+    ],
+    "template": "game/energy/confirm.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 1500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Bless_Cancel": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      410,
+      410,
+      220,
+      100
+    ],
+    "template": "game/energy/cancel.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "next": [],
+    "focus": {
+      "Node.Action.Starting": "活跃能量不足或无法挑战，取消并返回。"
+    },
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Monster": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 0,
+    "next": [],
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "monster"
+    }
+  },
+  "MaaNikki_Monster_Huanjing": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      662,
+      90,
+      198,
+      156
+    ],
+    "template": "game/common/huanjing_go.png",
+    "threshold": 0.68,
+    "action": "Custom",
+    "post_delay": 1200,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_RealmPageReady",
+      "source": "MaaNikki_CalendarReady"
+    }
+  },
+  "MaaNikki_Monster_Entrance": {
+    "recognition": "OCR",
+    "roi": [
+      70,
+      210,
+      250,
+      140
+    ],
+    "expected": "魔物试炼幻境",
+    "action": "Custom",
+    "post_delay": 900,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Monster_PageReady",
+      "source": "MaaNikki_RealmPageReady"
+    }
+  },
+  "MaaNikki_Monster_Level": {
+    "recognition": "OCR",
+    "roi": [
+      145,
+      90,
+      410,
+      600
+    ],
+    "expected": "攀越",
+    "action": "Custom",
+    "post_delay": 500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Monster_Quick": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      690,
+      610,
+      230,
+      100
+    ],
+    "template": "game/energy/quick.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 700,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Monster_Max": {
+    "enabled": true,
+    "recognition": "TemplateMatch",
+    "roi": [
+      690,
+      295,
+      100,
+      100
+    ],
+    "template": "game/energy/max.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 300,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Monster_Confirm": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      620,
+      410,
+      220,
+      100
+    ],
+    "template": "game/energy/confirm.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 1500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Monster_Cancel": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      410,
+      410,
+      220,
+      100
+    ],
+    "template": "game/energy/cancel.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_WeeklyRealm": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 0,
+    "next": [],
+    "custom_action": "nikki.weekly_challenge",
+    "custom_action_param": {}
+  },
+  "MaaNikki_Weekly_Huanjing": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      662,
+      90,
+      198,
+      156
+    ],
+    "template": "game/common/huanjing_go.png",
+    "threshold": 0.68,
+    "action": "Custom",
+    "post_delay": 1200,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_RealmPageReady",
+      "source": "MaaNikki_CalendarReady"
+    }
+  },
+  "MaaNikki_Weekly_Entrance": {
+    "recognition": "OCR",
+    "roi": [
+      960,
+      210,
+      250,
+      140
+    ],
+    "expected": "心之突破幻境",
+    "action": "Custom",
+    "post_delay": 900,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Weekly_PageReady",
+      "source": "MaaNikki_RealmPageReady"
+    }
+  },
+  "MaaNikki_Weekly_Level_Qiggeda": {
+    "enabled": false,
+    "recognition": "OCR",
+    "roi": [
+      145,
+      90,
+      410,
+      600
+    ],
+    "expected": "奇格格达",
+    "action": "Custom",
+    "post_delay": 500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Weekly_Quick_Qiggeda": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      690,
+      610,
+      230,
+      100
+    ],
+    "template": "game/energy/quick.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 700,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Weekly_Max_Qiggeda": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      690,
+      295,
+      100,
+      100
+    ],
+    "template": "game/energy/max.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 300,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Weekly_Confirm_Qiggeda": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      620,
+      410,
+      220,
+      100
+    ],
+    "template": "game/energy/confirm.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 1500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Weekly_Skip_Qiggeda": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1060,
+      640,
+      220,
+      80
+    ],
+    "template": [
+      "game/common/skip_click.png",
+      "game/common/skip.png"
+    ],
+    "threshold": [
+      0.68,
+      0.68
+    ],
+    "action": "Custom",
+    "post_delay": 1000,
+    "timeout": 10000,
+    "next": [],
+    "custom_action": "nikki.game_key",
+    "custom_action_param": {
+      "name": "skip"
+    }
+  },
+  "MaaNikki_Weekly_Level_Juan": {
+    "enabled": false,
+    "recognition": "OCR",
+    "roi": [
+      145,
+      90,
+      410,
+      600
+    ],
+    "expected": "卷卷",
+    "action": "Custom",
+    "post_delay": 500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Weekly_Quick_Juan": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      690,
+      610,
+      230,
+      100
+    ],
+    "template": "game/energy/quick.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 700,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Weekly_Max_Juan": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      690,
+      295,
+      100,
+      100
+    ],
+    "template": "game/energy/max.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 300,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Weekly_Confirm_Juan": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      620,
+      410,
+      220,
+      100
+    ],
+    "template": "game/energy/confirm.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "post_delay": 1500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Weekly_Cancel": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      410,
+      410,
+      220,
+      100
+    ],
+    "template": "game/energy/cancel.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  }
+}

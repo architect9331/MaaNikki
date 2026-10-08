@@ -1,0 +1,38 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_chat",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "无界枢纽",
+    "province": "星海",
+    "region": "星海",
+    "x": 834.327,
+    "y": 1019.073
+  },
+  "points": [
+    {
+      "x": 834.45,
+      "y": 1016.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 852.43,
+      "y": 1019.319,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 851.868,
+      "y": 1021.944,
+      "radius": 1.0,
+      "jump": false,
+      "action": "chat"
+    }
+  ],
+  "title": "星海 · 聚会聊天"
+}

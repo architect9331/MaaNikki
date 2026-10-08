@@ -1,0 +1,115 @@
+{
+  "MaaNikki_Dig": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 0,
+    "next": [],
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "dig"
+    }
+  },
+  "MaaNikki_Dig_Open": {
+    "recognition": "OCR",
+    "roi": [
+      90,
+      170,
+      590,
+      405
+    ],
+    "expected": "美鸭梨挖掘",
+    "action": "Custom",
+    "post_delay": 1500,
+    "next": [],
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Dig_PageReady",
+      "source": "MaaNikki_MenuReady"
+    }
+  },
+  "MaaNikki_Dig_Gather": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1160,
+      450,
+      120,
+      120
+    ],
+    "template": "game/dig/gather.png",
+    "threshold": 0.68,
+    "action": "Custom",
+    "post_delay": 1000,
+    "next": [],
+    "focus": {
+      "Node.Action.Starting": "打开美鸭梨挖掘收取界面。"
+    },
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Dig_GatherConfirm": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      420,
+      480,
+      240,
+      100
+    ],
+    "template": "game/dig/gather_confirm.png",
+    "threshold": 0.68,
+    "action": "Custom",
+    "post_delay": 1200,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Dig_SkipReward": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1060,
+      640,
+      220,
+      80
+    ],
+    "template": [
+      "game/common/skip_click.png",
+      "game/common/skip.png"
+    ],
+    "threshold": [
+      0.68,
+      0.68
+    ],
+    "action": "Custom",
+    "post_delay": 1300,
+    "next": [],
+    "custom_action": "nikki.game_key",
+    "custom_action_param": {
+      "name": "skip"
+    }
+  },
+  "MaaNikki_Dig_Again": {
+    "enabled": true,
+    "recognition": "TemplateMatch",
+    "roi": [
+      620,
+      470,
+      240,
+      100
+    ],
+    "template": "game/dig/again.png",
+    "threshold": 0.68,
+    "action": "Custom",
+    "post_delay": 800,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Dig_NoReward": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "next": [],
+    "custom_action": "nikki.daily_fail"
+  },
+  "MaaNikki_Dig_Finish": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "next": [],
+    "custom_action": "nikki.daily_fail"
+  }
+}

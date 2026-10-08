@@ -1,0 +1,69 @@
+{
+  "interface_version": 2,
+  "name": "MaaNikki",
+  "label": "MaaNikki",
+  "title": "MaaNikki - 无限暖暖自动化",
+  "description": "《无限暖暖》助手，支持日常任务、幻境挑战、巅峰赛和常驻开荒辅助。",
+  "version": "0.5.0",
+  "controller": [
+    {
+      "name": "nikki_windows",
+      "label": "无限暖暖（Windows）",
+      "description": "连接无限暖暖 PC 客户端窗口。自动路线需要 16:9 窗口，推荐 1920×1080。",
+      "type": "Win32",
+      "permission_required": true,
+      "display_short_side": 720,
+      "win32": {
+        "class_regex": ".*",
+        "window_regex": "^\\s*(Infinity Nikki|无限暖暖)\\s*$",
+        "screencap": "FramePool",
+        "mouse": "Seize",
+        "keyboard": "Seize"
+      }
+    }
+  ],
+  "resource": [
+    {
+      "name": "main_resource",
+      "label": "MaaNikki 通用资源",
+      "path": [
+        "./resource"
+      ]
+    }
+  ],
+  "agent": {
+    "child_exec": "./python/python.exe",
+    "child_args": [
+      "./agent/main.py"
+    ]
+  },
+  "group": [
+    {
+      "name": "assist",
+      "label": "开荒辅助",
+      "default_expand": true
+    },
+    {
+      "name": "energy",
+      "label": "幻境",
+      "default_expand": true
+    },
+    {
+      "name": "daily",
+      "label": "其他每日任务",
+      "default_expand": true
+    }
+  ],
+  "task": [],
+  "import": [
+    "options/GameKeys.json",
+    "tasks/Dig.json",
+    "tasks/Zhaoxi.json",
+    "tasks/Energy.json",
+    "tasks/Xinghai.json",
+    "tasks/MonthlyPass.json",
+    "tasks/Crown.json",
+    "tasks/Exploration.json",
+    "tasks/Presets.json"
+  ]
+}

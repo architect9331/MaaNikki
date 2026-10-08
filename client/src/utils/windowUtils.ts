@@ -1,0 +1,170 @@
+import { loggers } from './logger';
+import { isTauri } from './paths';
+
+// 重新导出 isTauri，保持向后兼容
+export { isTauri };
+
+const log = loggers.app;
+
+// 最小窗口尺寸（逻辑像素）
+export const MIN_WINDOW_WIDTH = 800;
+export const MIN_WINDOW_HEIGHT = 500;
+
+// 最大窗口尺寸（逻辑像素）
+// 多屏/DPI 异常时可能出现离谱的尺寸回传，需在持久化与恢复前拦截
+export const MAX_WINDOW_WIDTH = 16384;
+export const MAX_WINDOW_HEIGHT = 16384;
+
+// 左侧面板最小宽度（确保工具栏按钮文字不换行）
+export const MIN_LEFT_PANEL_WIDTH = 530;
+
+/**
+ * 验证窗口尺寸是否有效
+ */
+export function isValidWindowSize(width: number, height: number): boolean {
+  return (
+    Number.isFinite(width) &&
+    Number.isFinite(height) &&
+    width >= MIN_WINDOW_WIDTH &&
+    height >= MIN_WINDOW_HEIGHT &&
+    width <= MAX_WINDOW_WIDTH &&
+    height <= MAX_WINDOW_HEIGHT
+  );
+}
+
+/**
+ * 设置窗口标题
+ */
+export async function setWindowTitle(title: string) {
+  // 同时设置 document.title（对浏览器和 Tauri 都有效）
+  document.title = title;
+
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      await currentWindow.setTitle(title);
+    } catch (err) {
+      log.warn('设置窗口标题失败:', err);
+    }
+  }
+}
+
+/**
+ * 设置窗口大小（逻辑像素）
+ */
+export async function setWindowSize(width: number, height: number) {
+  if (!isValidWindowSize(width, height)) {
+    log.warn('窗口大小无效，跳过设置:', { width, height });
+    return;
+  }
+
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const { LogicalSize } = await import('@tauri-apps/api/dpi');
+      const currentWindow = getCurrentWindow();
+      await currentWindow.setSize(new LogicalSize(width, height));
+    } catch (err) {
+      log.warn('设置窗口大小失败:', err);
+    }
+  }
+}
+
+/**
+ * 设置窗口位置（物理像素）
+ */
+export async function setWindowPosition(x: number, y: number) {
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const { PhysicalPosition } = await import('@tauri-apps/api/dpi');
+      const currentWindow = getCurrentWindow();
+      await currentWindow.setPosition(new PhysicalPosition(x, y));
+    } catch (err) {
+      log.warn('设置窗口位置失败:', err);
+    }
+  }
+}
+
+/**
+ * 获取当前窗口位置（物理像素）
+ */
+export async function getWindowPosition(): Promise<{ x: number; y: number } | null> {
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      const position = await currentWindow.outerPosition();
+      return { x: position.x, y: position.y };
+    } catch (err) {
+      log.warn('获取窗口位置失败:', err);
+    }
+  }
+  return null;
+}
+
+/**
+ * 获取当前窗口大小（逻辑像素）
+ */
+export async function getWindowSize(): Promise<{ width: number; height: number } | null> {
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      const size = await currentWindow.innerSize();
+      const scaleFactor = await currentWindow.scaleFactor();
+      // innerSize 是物理像素，这里统一转换并存储为逻辑像素
+      return {
+        width: Math.round(size.width / scaleFactor),
+        height: Math.round(size.height / scaleFactor),
+      };
+    } catch (err) {
+      log.warn('获取窗口大小失败:', err);
+    }
+  }
+  return null;
+}
+
+/**
+ * 显示窗口（配合 tauri.conf.json 中 visible: false 使用）
+ * 窗口初始隐藏，在主题应用和窗口定位完成后调用此函数显示
+ */
+let windowShown = false;
+export async function showWindow(): Promise<void> {
+  if (windowShown) return;
+
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      await currentWindow.show();
+      windowShown = true;
+      log.info('窗口已显示');
+    } catch (err) {
+      log.warn('显示窗口失败:', err);
+    }
+  } else {
+    windowShown = true;
+  }
+}
+
+/**
+ * 将窗口带到前台并获取焦点
+ * 用于更新重启后确保窗口在前台显示
+ */
+export async function focusWindow(): Promise<void> {
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const currentWindow = getCurrentWindow();
+      // 先取消最小化（如果有）
+      await currentWindow.unminimize();
+      // 设置焦点，将窗口带到前台
+      await currentWindow.setFocus();
+      log.info('窗口已获取焦点');
+    } catch (err) {
+      log.warn('设置窗口焦点失败:', err);
+    }
+  }
+}

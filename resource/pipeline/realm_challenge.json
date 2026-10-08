@@ -1,0 +1,109 @@
+{
+  "MaaNikki_RealmChallenge": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.run_coordination",
+    "custom_action_param": {
+      "stage": "begin_realm"
+    },
+    "next": [
+      "MaaNikki_RealmWeekly",
+      "MaaNikki_RealmEnergy"
+    ],
+    "focus": {
+      "Node.Action.Starting": "正在执行所选幻境挑战。",
+      "Node.Action.Failed": "幻境挑战未完成，请查看上一条任务记录并检查游戏画面。"
+    }
+  },
+  "MaaNikki_RealmWeekly": {
+    "enabled": true,
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.weekly_challenge",
+    "next": [
+      "MaaNikki_RealmEnergy"
+    ],
+    "on_error": [],
+    "focus": {
+      "Node.Action.Starting": "正在检查本周幻境挑战次数。"
+    }
+  },
+  "MaaNikki_RealmEnergy": {
+    "recognition": "DirectHit",
+    "action": "DoNothing",
+    "next": [
+      "MaaNikki_Bless"
+    ],
+    "focus": {
+      "Node.Action.Starting": "正在使用剩余活跃能量挑战所选幻境。"
+    }
+  },
+  "MaaNikki_RealmReview": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.run_coordination",
+    "custom_action_param": {
+      "stage": "settle",
+      "realm_success": true
+    }
+  },
+  "MaaNikki_RealmReviewFailed": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.run_coordination",
+    "custom_action_param": {
+      "stage": "settle",
+      "realm_success": false
+    }
+  },
+  "MaaNikki_RealmWeeklyIncomplete": {
+    "recognition": "DirectHit",
+    "action": "DoNothing",
+    "next": [
+      "MaaNikki_RealmEnergy"
+    ],
+    "focus": {
+      "Node.Action.Starting": "每周幻境部分挑战未完成；已安全返回主界面，继续处理所选普通幻境。"
+    }
+  },
+  "MaaNikki_Weekly_Calendar": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "post_delay": 1300,
+    "next": [
+      "MaaNikki_Weekly_CalendarReady"
+    ],
+    "custom_action": "nikki.game_key",
+    "custom_action_param": {
+      "name": "calendar"
+    }
+  },
+  "MaaNikki_Weekly_CalendarReady": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      662,
+      90,
+      198,
+      156
+    ],
+    "template": "game/common/huanjing_go.png",
+    "threshold": 0.68,
+    "action": "DoNothing",
+    "timeout": 5000
+  },
+  "MaaNikki_Weekly_CountOCR": {
+    "recognition": "OCR",
+    "roi": [
+      1035,
+      150,
+      160,
+      85
+    ],
+    "expected": "[0-9]+\\s*[/／]\\s*[0-9]+",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Weekly_Message": {
+    "recognition": "DirectHit",
+    "action": "DoNothing"
+  }
+}

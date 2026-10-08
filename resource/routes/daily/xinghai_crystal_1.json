@@ -1,0 +1,253 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_crystal_1",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "星梦群屿·海滩",
+    "province": "星海",
+    "region": "星海",
+    "x": 1543.062,
+    "y": 1134.288
+  },
+  "points": [
+    {
+      "x": 1543.0,
+      "y": 1132.1,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1550.45,
+      "y": 1156.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1587.4,
+      "y": 1161.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1586.681,
+      "y": 1152.132,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1599.75,
+      "y": 1154.15,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1610.7,
+      "y": 1147.45,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1626.8,
+      "y": 1130.15,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1637.8,
+      "y": 1142.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1662.85,
+      "y": 1154.2,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1676.305,
+      "y": 1157.133,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1668.85,
+      "y": 1177.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1668.05,
+      "y": 1192.4,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1653.75,
+      "y": 1187.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1636.623,
+      "y": 1191.005,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1636.8,
+      "y": 1196.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1645.45,
+      "y": 1198.2,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1651.492,
+      "y": 1205.693,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1650.65,
+      "y": 1210.7,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1644.75,
+      "y": 1220.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1645.5,
+      "y": 1221.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1639.8,
+      "y": 1230.2,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1620.0,
+      "y": 1206.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1611.15,
+      "y": 1214.9,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1606.55,
+      "y": 1226.4,
+      "radius": 1.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1592.242,
+      "y": 1230.757,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1594.55,
+      "y": 1247.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1599.2,
+      "y": 1251.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1592.45,
+      "y": 1248.9,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1586.5,
+      "y": 1257.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1569.25,
+      "y": 1264.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1564.8,
+      "y": 1268.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1553.7,
+      "y": 1267.55,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1550.65,
+      "y": 1266.6,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1540.8,
+      "y": 1259.15,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1535.95,
+      "y": 1257.75,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1536.05,
+      "y": 1244.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1535.307,
+      "y": 1235.879,
+      "radius": 1.0,
+      "jump": false
+    }
+  ],
+  "title": "星海 · 星光结晶收集_大舞台"
+}

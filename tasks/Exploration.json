@@ -1,0 +1,33 @@
+{
+  "task": [{
+    "name": "exploration", "label": "开荒辅助", "entry": "MaaNikki_Exploration",
+    "group": ["assist"], "default_check": false,
+    "description": "自由探索时自动拾取、跳过清洁动画并推进对白，持续运行直到手动停止。切出游戏暂停输入，切回后继续。不选择对话分支，不自动接近动物或开始清洁。清洁跳过与部分剧情动画使用同一提示图标，可能同时跳过相应动画。不与日常任务同时运行。",
+    "option": ["AssistPickup", "AssistClear", "AssistDialogue"]
+  }],
+  "option": {
+    "AssistPickup": {
+      "type": "switch", "label": "自动拾取", "default_case": "Yes",
+      "cases": [
+        {"name": "Yes", "label": "开启", "pipeline_override": {"MaaNikki_Assist_Pickup": {"custom_action_param": {"value": true}}}},
+        {"name": "No", "label": "关闭", "pipeline_override": {"MaaNikki_Assist_Pickup": {"custom_action_param": {"value": false}}}}
+      ]
+    },
+    "AssistClear": {
+      "type": "switch", "label": "清洁动画跳过", "default_case": "Yes",
+      "description": "出现跳过提示后按一次交互键，等待提示消失，不连续触发。此提示也可能出现在部分剧情动画中。",
+      "cases": [
+        {"name": "Yes", "label": "开启", "pipeline_override": {"MaaNikki_Assist_Clear": {"custom_action_param": {"value": true}}}},
+        {"name": "No", "label": "关闭", "pipeline_override": {"MaaNikki_Assist_Clear": {"custom_action_param": {"value": false}}}}
+      ]
+    },
+    "AssistDialogue": {
+      "type": "switch", "label": "自动对话", "default_case": "Yes",
+      "description": "仅在画面出现推进对白提示时按交互键，选项分支由你手动选择。",
+      "cases": [
+        {"name": "Yes", "label": "开启", "pipeline_override": {"MaaNikki_Assist_Dialogue": {"custom_action_param": {"value": true}}}},
+        {"name": "No", "label": "关闭", "pipeline_override": {"MaaNikki_Assist_Dialogue": {"custom_action_param": {"value": false}}}}
+      ]
+    }
+  }
+}

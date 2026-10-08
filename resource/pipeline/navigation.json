@@ -1,0 +1,81 @@
+{
+  "MaaNikki_Navigation_MapFeature": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      15,
+      600,
+      60,
+      65
+    ],
+    "template": "game/navigation/map_feature.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Navigation_MapMaxScale": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [
+        170,
+        675,
+        75,
+        35
+      ],
+      "template": "game/navigation/map_max_scale.png",
+      "gray_limit": [
+        155,
+        255
+      ],
+      "threshold": 0.9
+    },
+    "action": "DoNothing"
+  },
+  "MaaNikki_Navigation_MapZoom": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      230,
+      675,
+      45,
+      35
+    ],
+    "template": "game/navigation/map_zoom.png",
+    "threshold": 0.76,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Navigation_Pickup": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      265,
+      97,
+      897,
+      534
+    ],
+    "template": "game/navigation/pickup.png",
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Navigation_InsectAbility": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1072,
+      631,
+      62,
+      61
+    ],
+    "template": "game/navigation/ability_insect.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Navigation_FloatAbility": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1150,
+      590,
+      110,
+      110
+    ],
+    "template": "game/navigation/ability_float.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
+  }
+}

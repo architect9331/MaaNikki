@@ -1,0 +1,60 @@
+{
+    "task": [
+        {
+            "name": "monthly_pass",
+            "label": "奇迹之旅奖励",
+            "entry": "MaaNikki_MonthlyPass",
+            "group": ["daily"],
+            "default_check": true,
+            "description": "领取旅行任务与旅行秘宝中当前可领取的奖励；两个页签可独立设置。",
+            "option": ["MonthlyIntro", "MonthlyPages"]
+        }
+    ],
+    "option": {
+        "MonthlyIntro": {
+            "type": "switch",
+            "label": "处理首次介绍动画",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "label": "自动跳过",
+                    "pipeline_override": {
+                        "MaaNikki_Monthly_IntroSkip": {"enabled": true}
+                    }
+                },
+                {
+                    "name": "No",
+                    "label": "不处理",
+                    "pipeline_override": {
+                        "MaaNikki_Monthly_IntroSkip": {"enabled": false}
+                    }
+                }
+            ],
+            "default_case": "Yes"
+        },
+        "MonthlyPages": {
+            "type": "checkbox",
+            "label": "领取页签",
+            "description": "选择需要领取奖励的页签。默认先领取旅行任务，再领取旅行秘宝。",
+            "cases": [
+                {
+                    "name": "Task",
+                    "label": "旅行任务",
+                    "pipeline_override": {
+                        "MaaNikki_Monthly_TaskTab": {"enabled": true}
+                    }
+                },
+                {
+                    "name": "Treasure",
+                    "label": "旅行秘宝",
+                    "pipeline_override": {
+                        "MaaNikki_Monthly_TreasureTab": {"enabled": true}
+                    }
+                }
+            ],
+            "default_case": ["Task", "Treasure"],
+            "min_count": 1,
+            "max_count": 2
+        }
+    }
+}

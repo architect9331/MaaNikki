@@ -1,0 +1,203 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_crystal_7",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "繁星之滨",
+    "province": "星海",
+    "region": "星海",
+    "x": 1313.986,
+    "y": 731.313
+  },
+  "points": [
+    {
+      "x": 1313.95,
+      "y": 729.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1273.65,
+      "y": 765.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1266.4,
+      "y": 775.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1269.05,
+      "y": 781.1,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1274.35,
+      "y": 789.1,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1279.55,
+      "y": 797.15,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1288.35,
+      "y": 851.1,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1269.1,
+      "y": 867.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1252.744,
+      "y": 879.88,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1262.4,
+      "y": 898.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1274.85,
+      "y": 884.4,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1279.1,
+      "y": 879.45,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1294.302,
+      "y": 877.195,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1298.4,
+      "y": 882.05,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1300.927,
+      "y": 876.506,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1279.4,
+      "y": 873.65,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1274.85,
+      "y": 872.25,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1251.0,
+      "y": 840.2,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1198.75,
+      "y": 815.3,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1171.8,
+      "y": 821.95,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1161.5,
+      "y": 827.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1147.7,
+      "y": 839.9,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1142.8,
+      "y": 844.75,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1136.9,
+      "y": 851.25,
+      "radius": 1.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.0
+      }
+    },
+    {
+      "x": 1136.8,
+      "y": 849.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1138.65,
+      "y": 841.85,
+      "radius": 1.0,
+      "jump": true
+    },
+    {
+      "x": 1132.6,
+      "y": 834.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1110.85,
+      "y": 829.85,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1094.55,
+      "y": 828.8,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1090.75,
+      "y": 829.9,
+      "radius": 1.0,
+      "jump": false
+    }
+  ],
+  "title": "星海 · 星光结晶收集_繁星之滨"
+}

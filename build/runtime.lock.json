@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "platform": "windows-x86_64",
+  "python_version": "3.12.10",
+  "maafw_version": "5.14.2",
+  "python": {
+    "name": "python-3.12.10-embed-amd64.zip",
+    "url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip",
+    "sha256": "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
+  },
+  "maafw": {
+    "name": "MAA-win-x86_64-v5.14.2.zip",
+    "url": "https://github.com/MaaXYZ/MaaFramework/releases/download/v5.14.2/MAA-win-x86_64-v5.14.2.zip",
+    "sha256": "e279163bcdcab7c87ebe5a9dd157c47e169c78742dbdcc30d095de55ab0eaa9c"
+  },
+  "wheels": [
+    {
+      "package": "maafw",
+      "version": "5.14.2",
+      "name": "maafw-5.14.2-py3-none-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/1c/71/0b83a8c17a9f02b8fc476cbf8eca6c1690f563cd4c4b036f355700dff274/maafw-5.14.2-py3-none-win_amd64.whl",
+      "sha256": "3688dcf544a59a8529ceaab60e2c0367974ae496fdaa7c4d620105a98f0edd44"
+    },
+    {
+      "package": "MaaAgentBinary",
+      "version": "1.0.1",
+      "name": "MaaAgentBinary-1.0.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/b9/89/6b173d2e151517a8a24c3194bc8783643f49186547ae53c8b635be19d310/MaaAgentBinary-1.0.1-py3-none-any.whl",
+      "sha256": "d97bcc9f35b52add199b287932511ecfcddcb83930c6b532d1c7010b432ec8bf"
+    },
+    {
+      "package": "numpy",
+      "version": "1.26.4",
+      "name": "numpy-1.26.4-cp312-cp312-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/16/2e/86f24451c2d530c88daf997cb8d6ac622c1d40d19f5a031ed68a4b73a374/numpy-1.26.4-cp312-cp312-win_amd64.whl",
+      "sha256": "08beddf13648eb95f8d867350f6a018a4be2e5ad54c8d8caed89ebca558b2818"
+    },
+    {
+      "package": "opencv-python",
+      "version": "4.10.0.84",
+      "name": "opencv_python-4.10.0.84-cp37-abi3-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/ec/6c/fab8113424af5049f85717e8e527ca3773299a3c6b02506e66436e19874f/opencv_python-4.10.0.84-cp37-abi3-win_amd64.whl",
+      "sha256": "32dbbd94c26f611dc5cc6979e6b7aa1f55a64d6b463cc1dcd3c95505a63e48fe"
+    },
+    {
+      "package": "scipy",
+      "version": "1.13.1",
+      "name": "scipy-1.13.1-cp312-cp312-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/3e/df/963384e90733e08eac978cd103c34df181d1fec424de383cdc443f418dd4/scipy-1.13.1-cp312-cp312-win_amd64.whl",
+      "sha256": "cdd7dacfb95fea358916410ec61bbc20440f7860333aee6d882bb8046264e949"
+    },
+    {
+      "package": "StrEnum",
+      "version": "0.4.15",
+      "name": "StrEnum-0.4.15-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/81/69/297302c5f5f59c862faa31e6cb9a4cd74721cd1e052b38e464c5b402df8b/StrEnum-0.4.15-py3-none-any.whl",
+      "sha256": "a30cda4af7cc6b5bf52c8055bc4bf4b2b6b14a93b574626da33df53cf7740659"
+    }
+  ]
+}
