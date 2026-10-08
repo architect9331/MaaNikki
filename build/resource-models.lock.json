@@ -16,5 +16,16 @@
       "sha256": "7dcf6298d77d2a6eb44c1ebeed990826ca895a9c68d955a3eace00763d052949",
       "size": 21146753
     }
-  ]
+  ],
+  "source": {
+    "repository": "https://github.com/MaaXYZ/MaaCommonAssets",
+    "revision": "dabcd4681ac990dc4361de26416d986abd80e4aa",
+    "directory": "OCR/ppocr_v6/small",
+    "model": "PP-OCRv6 small",
+    "upstream": "https://github.com/PaddlePaddle/PaddleOCR",
+    "licenses": [
+      "MIT",
+      "Apache-2.0"
+    ]
+  }
 }

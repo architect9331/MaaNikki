@@ -27,5 +27,6 @@
 - [Whimbox（奇想盒）](https://github.com/nikkigallery/Whimbox)：部分路线及匹配截图来自该项目。
 - [MaaFramework](https://github.com/MaaXYZ/MaaFramework)：自动化框架。
 - [MXU](https://github.com/MistEO/MXU)：桌面客户端基于该项目修改。
+- [MaaCommonAssets](https://github.com/MaaXYZ/MaaCommonAssets) / [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)：OCR 模型。
 
 本项目代码采用 **AGPL-3.0-only**，第三方组件及素材保留各自的许可与来源说明，详见 [LICENSE](LICENSE)、[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [licenses/](licenses/)。本项目与游戏官方无关联。

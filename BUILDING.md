@@ -52,7 +52,7 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Build
 
 Python 3.12.10、MaaFramework SDK 5.14.2 和所有 Windows x64 Python wheels 的下载地址、版本和 SHA-256 在 `build/runtime.lock.json`。Python 依赖清单是 `requirements.txt`；`requirements.lock` 包含同一组版本及哈希。构建脚本直接展开经过校验的 wheels，嵌入式 Python 无需安装 pip。
 
-OCR 模型及字典保留在源码 `resource/model/ocr/`，由 `build/resource-models.lock.json` 校验。修改模型时需要同时更新模型清单；模型来源和素材授权仍需在公开发布前核实。
+OCR 模型及字典保留在源码 `resource/model/ocr/`，由 `build/resource-models.lock.json` 校验。修改模型时需要同时更新模型清单中的来源、版本和校验值。模型来自 MaaCommonAssets 的 PP-OCRv6 small，具体来源及许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 发布包保留 Python 和 wheels 自带的许可证、MaaFramework SDK 许可证、`licenses/` 和第三方说明，并收集已安装 JS 包和本次构建下载的 Rust crates 所附许可文件，写入 `licenses/dependencies/` 和清单。这不替代对许可证条款的核查。Windows WebView2 使用系统安装的运行时，客户端已有缺失时的下载流程，个人 WebView2 缓存不进入发布包。发布端需要具备相应 Microsoft Visual C++ 运行库；实际启动验证应在干净 Windows 环境完成。
 
