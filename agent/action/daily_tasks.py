@@ -42,6 +42,12 @@ class DailyRun(Executors):
         entrance = f"MaaNikki_{self.prefix}_Entrance"
         return self.ui.calendar() and self.click_template(entrance)
 
+    def open_score_page(self):
+        """Page features can arrive before the score/reward animation ends."""
+        if self.stopped or not self.open_page():
+            return False
+        return self.pause(1.5) and not self.stopped
+
     def score(self):
         from daily.score import score_image
         from daily.ui import fields
@@ -152,7 +158,7 @@ class DailyRun(Executors):
         return self.rewards_ok
 
     def check_group(self):
-        if not self.open_page():
+        if not self.open_score_page():
             return None
         score = self.score()
         if score is not None:
@@ -207,7 +213,7 @@ class DailyRun(Executors):
         try:
             if self.mode == "zhaoxi":
                 run_state.clear(self)
-            if not self.open_page():
+            if not self.open_score_page():
                 self.log(f"未能打开{self.title}页面。")
                 return False
             score = self.score()
@@ -309,7 +315,7 @@ class DailyRun(Executors):
         score = None
         try:
             self.log("本轮幻境已处理，复核待补的朝夕心愿积分和奖励。")
-            if not self.open_page():
+            if not self.open_score_page():
                 return False
             score = self.score()
             if score is None:

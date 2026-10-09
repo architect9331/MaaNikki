@@ -95,6 +95,50 @@ class GameplayTests(unittest.TestCase):
             self.assertIsNone(DailyRun.score(rt))
         self.assertEqual(rt.capture.call_count, 1)
 
+    def settled_score_runtime(self, clock, mode):
+        rt = self.score_runtime(clock, [])
+        rt.mode = mode
+        rt.prefix = "Zhaoxi" if mode == "zhaoxi" else "Xinghai"
+        rt.open_page.return_value = True
+        rt.open_score_page.side_effect = lambda: DailyRun.open_score_page(rt)
+        rt.score.side_effect = lambda: DailyRun.score(rt)
+        rt.recognize.side_effect = lambda *args, **kwargs: SimpleNamespace(
+            hit=True, best_result=SimpleNamespace(text="400" if clock.now < 1.5 else "500"))
+        return rt
+
+    def test_both_daily_groups_wait_before_reading_an_animated_old_score(self):
+        for mode in ("zhaoxi", "xinghai"):
+            clock = Clock()
+            rt = self.settled_score_runtime(clock, mode)
+            with patch("daily.score.score_image", return_value=None):
+                self.assertEqual(DailyRun.check_group(rt), 500)
+            self.assertEqual([call.args[0] for call in rt.pause.call_args_list], [1.5, .4])
+            self.assertEqual(rt.capture.call_count, 2)
+            rt.open_page.assert_called_once()
+
+    def test_final_energy_review_uses_the_same_score_wait(self):
+        clock = Clock()
+        rt = self.settled_score_runtime(clock, "zhaoxi")
+        rt.finish.return_value = ("main", True)
+        rt.claim.return_value = True
+        pending = SimpleNamespace(events=[], scans=[], source_task_id=1,
+                                  score=300, energy_remaining=150)
+        with patch("daily.score.score_image", return_value=None):
+            self.assertTrue(DailyRun.review_after_energy(rt, pending))
+        self.assertEqual(rt.events[-1]["actual_score"], 500)
+        self.assertEqual([call.args[0] for call in rt.pause.call_args_list], [1.5, .4])
+        rt.claim.assert_called_once()
+
+    def test_cancelled_page_wait_does_not_read_score_or_claim(self):
+        clock = Clock()
+        rt = self.settled_score_runtime(clock, "xinghai")
+        rt.pause.side_effect = lambda seconds: setattr(rt, "stopped", True) or False
+        self.assertIsNone(DailyRun.check_group(rt))
+        rt.pause.assert_called_once_with(1.5)
+        rt.score.assert_not_called()
+        rt.capture.assert_not_called()
+        rt.claim.assert_not_called()
+
     def test_standalone_claim_returns_without_animation_wait_when_no_button(self):
         rt = Mock(stopped=False)
         rt.capture.return_value = np.zeros((720, 1280, 3), dtype=np.uint8)
