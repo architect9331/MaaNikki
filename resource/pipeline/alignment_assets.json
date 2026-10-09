@@ -2410,7 +2410,8 @@
       153
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areaescentrances": {
     "recognition": "TemplateMatch",
@@ -2422,7 +2423,8 @@
       395
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areamiracrownautomatchbutton": {
     "recognition": "TemplateMatch",
@@ -2434,7 +2436,8 @@
       133
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areamiracrownentrance": {
     "recognition": "TemplateMatch",
@@ -2446,7 +2449,8 @@
       134
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areamiracrownoverview": {
     "recognition": "TemplateMatch",
@@ -2458,7 +2462,8 @@
       33
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areamiracrownseconddoor": {
     "recognition": "TemplateMatch",
@@ -2470,7 +2475,8 @@
       112
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areamiracrownshopitemlist": {
     "recognition": "TemplateMatch",
@@ -2482,7 +2488,8 @@
       415
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areamiracrownthirddoor": {
     "recognition": "TemplateMatch",
@@ -2494,7 +2501,8 @@
       93
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areapagetitlefeature": {
     "recognition": "TemplateMatch",
@@ -2506,7 +2514,8 @@
       37
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areapickup": {
     "recognition": "TemplateMatch",
@@ -2518,7 +2527,8 @@
       533
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_buttonmiracrownaward": {
     "recognition": "TemplateMatch",
@@ -2530,7 +2540,8 @@
       33
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownconfirmmatch": {
     "recognition": "TemplateMatch",
@@ -2542,7 +2553,8 @@
       37
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownnextstep": {
     "recognition": "TemplateMatch",
@@ -2554,7 +2566,8 @@
       37
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownquickreward": {
     "recognition": "TemplateMatch",
@@ -2566,7 +2579,8 @@
       33
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownrank": {
     "recognition": "TemplateMatch",
@@ -2578,7 +2592,8 @@
       50
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownrewardget": {
     "recognition": "TemplateMatch",
@@ -2590,7 +2605,8 @@
       30
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownshop": {
     "recognition": "TemplateMatch",
@@ -2602,7 +2618,8 @@
       33
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownshopconfirm": {
     "recognition": "TemplateMatch",
@@ -2614,7 +2631,8 @@
       37
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownshopmax": {
     "recognition": "TemplateMatch",
@@ -2626,7 +2644,8 @@
       30
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownskipall": {
     "recognition": "TemplateMatch",
@@ -2638,7 +2657,8 @@
       40
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_buttonmiracrownstartchallenge": {
     "recognition": "TemplateMatch",
@@ -2650,7 +2670,8 @@
       37
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconpickupfeature": {
     "recognition": "TemplateMatch",
@@ -2662,7 +2683,8 @@
       720
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconskipdialog": {
     "recognition": "TemplateMatch",
@@ -2674,7 +2696,8 @@
       21
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_icontalkfeature": {
     "recognition": "TemplateMatch",
@@ -2686,7 +2709,8 @@
       720
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconfishingfinish": {
     "recognition": "TemplateMatch",
@@ -2698,7 +2722,8 @@
       20
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconfishingstrike": {
     "recognition": "TemplateMatch",
@@ -2710,7 +2735,8 @@
       20
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconfishingpullline": {
     "recognition": "TemplateMatch",
@@ -2722,7 +2748,8 @@
       20
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconfishingpulllinehome": {
     "recognition": "TemplateMatch",
@@ -2734,7 +2761,8 @@
       20
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconfishingreelin": {
     "recognition": "TemplateMatch",
@@ -2746,7 +2774,8 @@
       20
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconfishingnofish": {
     "recognition": "TemplateMatch",
@@ -2758,7 +2787,8 @@
       26
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconabilitystarcollect": {
     "recognition": "TemplateMatch",
@@ -2770,11 +2800,12 @@
       720
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconabilityfish": {
     "recognition": "TemplateMatch",
-    "template": "game/ui/IconAbilityFish.png",
+    "template": "nikki/home/fishing_available.png",
     "roi": [
       0,
       0,
@@ -2782,7 +2813,8 @@
       720
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_iconbigmaphomefeature": {
     "recognition": "TemplateMatch",
@@ -2794,7 +2826,8 @@
       33
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 3
   },
   "MaaNikki_Asset_areafishingicons": {
     "recognition": "TemplateMatch",
@@ -2806,7 +2839,8 @@
       27
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areafishingdetection": {
     "recognition": "TemplateMatch",
@@ -2818,7 +2852,8 @@
       166
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areasubabilitybutton": {
     "recognition": "TemplateMatch",
@@ -2830,7 +2865,8 @@
       40
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   },
   "MaaNikki_Asset_areabigmapmeteortext": {
     "recognition": "TemplateMatch",
@@ -2842,6 +2878,7 @@
       105
     ],
     "threshold": 0.75,
-    "action": "DoNothing"
+    "action": "DoNothing",
+    "method": 5
   }
 }

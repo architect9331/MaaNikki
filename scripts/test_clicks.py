@@ -507,6 +507,84 @@ class ClickTests(unittest.TestCase):
         self.assertEqual(state["page"], "main")
         teleporter.zoom.assert_called_once()
 
+    def test_transport_candidate_waits_for_detail_and_never_scrolls_or_reclicks_marker(self):
+        from navigation.teleport import Teleporter
+        for detail_after in (4, None):
+            with self.subTest(detail_after=detail_after):
+                rt = self.runtime()
+                state = {"page": "list", "reads": 0, "time": 0.0}
+                button, panel = [1005, 655, 160, 33], [847, 324, 168, 168]
+                rt.ui.roi = Mock(side_effect=lambda name:
+                    button if name == "AreaBigMapTeleportButton" else panel)
+                rt.capture = Mock(return_value=object())
+                rt.ui.map_failure = Mock()
+                rt.hit = Mock(return_value=False)
+                def pause(seconds):
+                    state["time"] += seconds
+                    return True
+                rt.pause = Mock(side_effect=pause)
+                def text(*args, **kwargs):
+                    if state["page"] == "opening_detail":
+                        state["reads"] += 1
+                        if detail_after and state["reads"] >= detail_after:
+                            state["page"] = "detail"
+                    return "传送" if state["page"] == "detail" else ""
+                rt.ui.text = Mock(side_effect=text)
+                def find(**kwargs):
+                    self.assertFalse(kwargs["scroll"])
+                    self.assertTrue(kwargs["exact"])
+                    self.assertEqual(kwargs["text"], "星实之树")
+                    if state["page"] != "list":
+                        return False
+                    if kwargs["click"]:
+                        state["page"] = "opening_detail"
+                        return True
+                    return [852, 418, 75, 22]
+                rt.ui.find = Mock(side_effect=find)
+                rt.action = Mock(return_value=True)
+                teleporter = Teleporter(rt, Mock())
+                with patch("navigation.teleport.time.monotonic", side_effect=lambda: state["time"]):
+                    teleporter.deadline = 120
+                    if detail_after:
+                        self.assertTrue(teleporter.confirm_transport({"name": "星实之树"}))
+                        rt.action.assert_called_once_with("Click", target=button)
+                        rt.ui.map_failure.assert_not_called()
+                    else:
+                        with self.assertRaisesRegex(NavigationError, "未找到传送按钮"):
+                            teleporter.confirm_transport({"name": "星实之树"})
+                        rt.action.assert_not_called()
+                        rt.ui.map_failure.assert_called_once()
+                self.assertEqual(sum(c.kwargs["click"] for c in rt.ui.find.call_args_list), 1)
+                self.assertIn(.5, [c.args[0] for c in rt.pause.call_args_list])
+
+    def test_transport_candidate_retries_only_visible_entry_and_rejects_locked_point(self):
+        from navigation.teleport import Teleporter
+        rt = self.runtime()
+        state = {"clicks": 0, "time": 0.0}
+        rt.ui.roi = Mock(return_value=[1005, 655, 160, 33])
+        rt.capture = Mock(return_value=object())
+        rt.hit = Mock(return_value=False)
+        rt.ui.map_failure = Mock()
+        def pause(seconds):
+            state["time"] += seconds
+            return True
+        rt.pause = Mock(side_effect=pause)
+        rt.ui.text = Mock(side_effect=lambda *args, **kwargs: "追踪" if state["clicks"] == 2 else "")
+        def find(**kwargs):
+            self.assertFalse(kwargs["scroll"])
+            if kwargs["click"]:
+                state["clicks"] += 1
+            return True
+        rt.ui.find = Mock(side_effect=find)
+        rt.action = Mock()
+        teleporter = Teleporter(rt, Mock())
+        with patch("navigation.teleport.time.monotonic", side_effect=lambda: state["time"]):
+            teleporter.deadline = 120
+            with self.assertRaisesRegex(NavigationError, "尚未解锁"):
+                teleporter.confirm_transport({"name": "星实之树"})
+        self.assertEqual(state["clicks"], 2)
+        rt.action.assert_not_called()
+
     def test_scroll_search_checks_current_view_then_top_and_each_lower_view(self):
         import numpy as np
         for start, target, reads, scrolls in (
@@ -594,14 +672,28 @@ class ClickTests(unittest.TestCase):
                 rt.ui.click_box = Mock(side_effect=lambda box: state.update(menu=True) or True)
                 rt.ui.find = Mock(return_value=[893, 95, 33, 33])
                 rt.ui.text = Mock(return_value=home_name)
-                rt.key = Mock(side_effect=lambda *args: state.update(menu=False) or True)
+                rt.click_template = Mock(side_effect=lambda *args, **kwargs: state.update(menu=False) or True)
                 teleporter = Teleporter(rt, Mock())
                 teleporter.check = Mock()
                 teleporter.dark_text = Mock(return_value=home_name)
                 teleporter.home_region([1042, 59, 160, 27], [891, 69, 247, 617])
                 rt.ui.click_box.assert_called_once_with([1042, 59, 160, 27])
-                rt.key.assert_called_once_with("menu", 0)
+                rt.click_template.assert_called_once_with("MaaNikki_Navigation_RegionMenuClose",
+                                                         attempts=1, wait_seconds=0, verify=False)
                 self.assertFalse(state["menu"])
+                self.assertEqual(teleporter.home_region_name, home_name)
+                teleporter.home_region([1042, 59, 160, 27], [891, 69, 247, 617])
+                self.assertEqual(rt.ui.click_box.call_count, 1)
+                self.assertEqual(rt.ui.find.call_count, 1)
+                self.assertEqual(rt.click_template.call_count, 1)
+                # A rename invalidates the shortcut and must be verified again.
+                renamed = home_name+"改名"
+                teleporter.dark_text.return_value = renamed
+                rt.ui.text.return_value = renamed
+                teleporter.home_region([1042, 59, 160, 27], [891, 69, 247, 617])
+                self.assertEqual(rt.ui.click_box.call_count, 2)
+                self.assertEqual(rt.ui.find.call_count, 2)
+                self.assertEqual(teleporter.home_region_name, renamed)
 
     def test_current_normal_region_is_not_reselected_and_open_menu_is_closed(self):
         from navigation.teleport import Teleporter
@@ -614,13 +706,35 @@ class ClickTests(unittest.TestCase):
             rt.ui.roi = Mock(return_value=[1042, 59, 160, 27])
             rt.ui.find = Mock()
             rt.ui.click_box = Mock()
-            rt.key = Mock(side_effect=lambda *args: state.update(menu=False) or True)
+            rt.click_template = Mock(side_effect=lambda *args, **kwargs: state.update(menu=False) or True)
             teleporter = Teleporter(rt, Mock())
+            teleporter.check = Mock()
             teleporter.dark_text = Mock(return_value="星海")
             teleporter.region({"province": "星海", "region": "星海"})
             rt.ui.find.assert_not_called()
             rt.ui.click_box.assert_not_called()
-            self.assertEqual(rt.key.call_count, int(menu_open))
+            self.assertEqual(rt.click_template.call_count, int(menu_open))
+
+    def test_region_close_waits_for_overlay_to_disappear_not_only_map_marker(self):
+        from navigation.teleport import Teleporter
+        for closes_on in (1, 2, None):
+            with self.subTest(closes_on=closes_on):
+                rt = self.runtime()
+                state = {"menu": True, "clicks": 0}
+                rt.hit = Mock(side_effect=lambda node:
+                    node == "MaaNikki_Navigation_MapFeature" or
+                    node == "MaaNikki_Navigation_RegionMenuReady" and state["menu"])
+                def close(*args, **kwargs):
+                    state["clicks"] += 1
+                    if state["clicks"] == closes_on:
+                        state["menu"] = False
+                    return True
+                rt.click_template = Mock(side_effect=close)
+                rt.ui.wait_page = Mock(side_effect=lambda page, **kwargs: rt.ui.page_matches(page))
+                teleporter = Teleporter(rt, Mock())
+                teleporter.check = Mock()
+                self.assertEqual(teleporter.close_region_menu(), closes_on is not None)
+                self.assertEqual(state["clicks"], closes_on or 3)
 
     def test_search_can_locate_entry_without_clicking(self):
         import numpy as np

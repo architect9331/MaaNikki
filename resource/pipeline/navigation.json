@@ -5,6 +5,17 @@
     "expected": "^地图切换$",
     "action": "DoNothing"
   },
+  "MaaNikki_Navigation_RegionMenuClose": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [1190, 5, 66, 65],
+      "template": "game/daily/meteor_close.png",
+      "gray_limit": [190, 255],
+      "threshold": 0.8
+    },
+    "action": "DoNothing"
+  },
   "MaaNikki_Navigation_MapFeature": {
     "recognition": "TemplateMatch",
     "roi": [

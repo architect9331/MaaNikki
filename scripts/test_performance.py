@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -135,6 +136,28 @@ class ObservationTests(unittest.TestCase):
 
 
 class TemplateTests(unittest.TestCase):
+    def test_registered_glyphs_keep_their_method_after_framework_normalization(self):
+        code = """
+import json, pathlib, sys
+from maa.resource import Resource
+from maa.tasker import Tasker
+Tasker.set_log_dir(sys.argv[1])
+root = pathlib.Path.cwd()
+assets = json.loads((root / 'resource/image/game/catalog.json').read_text(encoding='utf-8'))['assets']
+resource = Resource()
+resource.use_cpu()
+assert resource.post_bundle(root / 'resource').wait().succeeded
+for name in assets:
+    if (name.startswith(('IconFishing', 'ButtonMiraCrown')) or name in
+            ('IconAbilityStarCollect', 'IconAbilityFish', 'IconBigMapHomeFeature',
+             'IconPickupFeature', 'IconSkipDialog', 'IconTalkFeature')):
+        data = resource.get_node_data('MaaNikki_Asset_' + name.lower())
+        assert data['recognition']['param']['method'] == 3, (name, data)
+"""
+        result = subprocess.run([sys.executable, "-B", "-c", code, self.directory.name],
+                                cwd=ROOT, capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+
     def test_map_maximum_requires_gold_segment_at_right_end_not_gray_track(self):
         from recognition.ui_template import UITemplateRecognition
         param = json.loads((ROOT / "resource/pipeline/navigation.json").read_text(encoding="utf-8"))[

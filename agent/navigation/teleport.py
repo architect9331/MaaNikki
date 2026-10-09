@@ -12,6 +12,7 @@ REGION_LIST = [885, 64, 310, 600]
 PANEL = [843, 320, 175, 176]
 BUTTON = [1005, 655, 160, 35]
 TERRAIN = [0, 0, 1280, 720]
+POINT_DETAIL_DELAY = .5
 
 
 def normalized(text):
@@ -26,6 +27,7 @@ class Teleporter:
         self.last_frame = None
         self.last_selection_frame = None
         self.map_diagnostics = []
+        self.home_region_name = None
 
     def check(self, browse=False):
         if self.inputs:
@@ -43,6 +45,17 @@ class Teleporter:
         # An expanded province can push every destination out of view. The
         # menu title proves the dropdown is open independently of its scroll.
         return self.rt.hit("MaaNikki_Navigation_RegionMenuReady")
+
+    def close_region_menu(self):
+        self.check()
+        def ready():
+            return (self.rt.hit("MaaNikki_Navigation_MapFeature")
+                    and not self.region_menu_visible())
+        closed = self.rt.ui.enter_page(lambda: self.rt.click_template(
+            "MaaNikki_Navigation_RegionMenuClose", attempts=1, wait_seconds=0, verify=False),
+            ready, source=self.region_menu_visible, seconds=3)
+        self.event({"type": "map_region_menu_closed", "success": closed})
+        return closed
 
     def region(self, checkpoint):
         wanted = checkpoint["region"]
@@ -91,8 +104,7 @@ class Teleporter:
 
         try:
             if read_region() == normalized(wanted):
-                if menu_visible() and not self.rt.ui.enter_page(
-                        lambda: self.rt.key("menu", 0), region_ready, source=menu_visible, seconds=3):
+                if menu_visible() and not self.close_region_menu():
                     raise NavigationError("当前已在目标区域，但地图区域列表未能关闭。")
                 if self.rt.ui.wait_page(region_ready, seconds=8):
                     return
@@ -111,6 +123,15 @@ class Teleporter:
         color = ([10, 0, 190], [30, 80, 255])
         menu_visible = self.region_menu_visible
         current = normalized(self.dark_text(region_roi))
+        def known_home_ready():
+            return (self.rt.hit("MaaNikki_Navigation_MapFeature") and not menu_visible()
+                    and normalized(self.dark_text(region_roi)) == self.home_region_name)
+        if current and current == self.home_region_name:
+            if menu_visible() and not self.close_region_menu():
+                raise NavigationError("当前已在家园，但地图区域列表未能关闭。")
+            if self.rt.ui.wait_page(known_home_ready, seconds=3):
+                self.event({"type": "map_region_reused", "actual": current})
+                return
         def open_menu():
             self.check()
             return self.rt.ui.open_map(self.event) and self.rt.ui.enter_page(
@@ -118,8 +139,9 @@ class Teleporter:
                 source="MaaNikki_Navigation_MapFeature",
                 recover=lambda: self.rt.ui.open_map(self.event), seconds=3)
         selected = False
+        home_name = None
         def choose_home():
-            nonlocal selected
+            nonlocal selected, home_name
             self.check()
             box = self.rt.ui.find(roi=list_roi, asset="IconBigMapHomeFeature",
                                  scale=2/3, threshold=.9, color=color, scroll=True, click=False)
@@ -131,9 +153,10 @@ class Teleporter:
             text_x = x+w+4
             name_roi = [text_x, max(0, y-8), max(1, list_roi[0]+list_roi[2]-text_x), h+16]
             name = normalized(self.rt.ui.text(name_roi))
+            home_name = name
             same = bool(current and name == current)
             self.event({"type": "map_home_observed", "actual": current, "entry": name, "reused": same})
-            selected = self.rt.key("menu", 0) if same else self.rt.ui.click_box(box)
+            selected = self.close_region_menu() if same else self.rt.ui.click_box(box)
             if selected and same:
                 self.event({"type": "map_region_reused", "actual": current})
             return selected
@@ -142,6 +165,10 @@ class Teleporter:
         try:
             if open_menu() and self.rt.ui.enter_page(choose_home, ready, source=menu_visible,
                                                      recover=open_menu, seconds=8):
+                # Remember only a confirmed home selection for this route.
+                # Empty/changed names still use the glyph-based entrance.
+                actual = normalized(self.dark_text(region_roi))
+                self.home_region_name = home_name if home_name and actual == home_name else None
                 self.event({"type": "map_home_selected"})
                 return
             raise NavigationError("地图家园图标未找到或区域切换未完成。")
@@ -202,27 +229,46 @@ class Teleporter:
             self.rt.ui.stable()
 
     def confirm_transport(self, checkpoint):
-        self.rt.ui.stable()
         button = self.rt.ui.roi("AreaBigMapTeleportButton")
         panel = self.rt.ui.roi("AreaBigMapTeleporterSelect")
-        for attempt in range(2):
+        observations = 0
+        text = ""
+        def detail_ready():
+            nonlocal observations, text
             self.check()
             frame = self.rt.capture()
             self.last_selection_frame = frame
-            text = normalized(self.rt.ui.text(button, image=frame))
-            self.event({"type": "teleport_button_observed", "attempt": attempt+1, "text": text, "roi": button})
+            text = normalized(self.rt.ui.text(button, image=frame)) if frame is not None else ""
+            observations += 1
+            self.event({"type": "teleport_button_observed", "attempt": observations, "text": text, "roi": button})
+            return text in ("传送", "追踪")
+        def find_entry(click=False):
+            self.check()
+            return self.rt.ui.find(roi=panel, text=checkpoint["name"], exact=True,
+                                   color=([0, 0, 220], [180, 15, 255]),
+                                   scroll=False, click=click)
+        def select_entry():
+            clicked = bool(find_entry(click=True))
+            self.event({"type": "teleport_list_selected", "name": checkpoint["name"], "clicked": clicked})
+            return clicked and self.rt.pause(POINT_DETAIL_DELAY)
+        try:
+            # Overlapping markers open a candidate list first. Only retry that
+            # safe selection while the named entry is still visible; wait for
+            # its detail button instead of reading the list's previous frame.
+            if not self.rt.ui.enter_page(select_entry, detail_ready,
+                    source=find_entry, attempts=2, seconds=4):
+                raise NavigationError("选中点位后未找到传送按钮。")
             if text == "追踪":
                 raise NavigationError("传送点尚未解锁。")
-            if text == "传送":
-                clicked = self.rt.action("Click", target=button)
-                self.event({"type": "teleport_button", "clicked": clicked, "target": button})
-                if not clicked:
-                    raise NavigationError("传送按钮点击失败。")
-                return True
-            if attempt == 0 and self.rt.ui.find(roi=panel, text=checkpoint["name"], exact=True,
-                                               color=([0, 0, 220], [180, 15, 255])):
-                continue
-            raise NavigationError("选中点位后未找到传送按钮。")
+            clicked = self.rt.action("Click", target=button)
+            self.event({"type": "teleport_button", "clicked": clicked, "target": button})
+            if not clicked:
+                raise NavigationError("传送按钮点击失败。")
+            return True
+        except NavigationError as error:
+            if not self.rt.stopped:
+                self.rt.ui.map_failure(0, str(error), self.event, stage="selection")
+            raise
 
     def transport(self, checkpoint):
         self.deadline = time.monotonic()+120

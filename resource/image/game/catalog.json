@@ -1247,7 +1247,7 @@
       "roi": null
     },
     "IconAbilityFish": {
-      "template": "game/ui/IconAbilityFish.png",
+      "template": "nikki/home/fishing_available.png",
       "roi": null
     },
     "IconBigMapHomeFeature": {

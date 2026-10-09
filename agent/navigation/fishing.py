@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 from enum import Enum
+from datetime import datetime
 import time
+import re
 
 import cv2
 import numpy as np
 
 from game_keys import Binding
+from daily.settings import ROOT
 from .ability import Ability, WHITE
 from .models import NavigationError
 
@@ -43,6 +46,9 @@ class StarFishing:
         self.ability = Ability(actions, "采星", "IconAbilityStarCollect",
                                "MaaNikki_Navigation_StarCollectAbility", "star_collect", "home")
         self.materials = {}
+        self.last_state_frame = None
+        self.last_state_details = None
+        self.previous_state = None
 
     def configure(self):
         return self.ability.configure() and self.rt.main()
@@ -60,12 +66,51 @@ class StarFishing:
     def state(self):
         self.inputs.check()
         frame = self.rt.capture()
+        self.last_state_frame = frame
         area = self.ui.roi("AreaFishingIcons")
+        found, source, text = FishingState.UNKNOWN, None, ""
         for icon, state in STATES:
-            if self.ui.asset(icon, image=frame, roi=area, threshold=.8, gray=(210, 255),
+            if frame is not None and self.ui.asset(icon, image=frame, roi=area, threshold=.8, gray=(210, 255),
                              scale=1 if icon == "IconSkip" else 2/3):
-                return state
-        return FishingState.UNKNOWN
+                found, source = state, icon
+                break
+        if frame is not None and found == FishingState.UNKNOWN:
+            text = re.sub(r"\s+", "", self.ui.text(area, image=frame))
+            for label, state in (("提竿", FishingState.STRIKE), ("调整发力", FishingState.PULL_LINE),
+                                 ("拉扯鱼线", FishingState.PULL_LINE), ("收线", FishingState.REEL_IN),
+                                 ("收竿", FishingState.FINISH), ("跳过", FishingState.SKIP)):
+                if label in text:
+                    found, source = state, "text"
+                    break
+        self.last_state_details = {"state": found.name, "source": source, "text": text, "roi": area}
+        if found != self.previous_state:
+            self.actions.event({"type": "star_fishing_state", **self.last_state_details})
+            self.previous_state = found
+        return found
+
+    def fail_state(self, reason):
+        record = {"type": "star_fishing_unconfirmed", "reason": reason,
+                  "recognition": self.last_state_details}
+        try:
+            frame = self.last_state_frame
+            if frame is not None and frame.shape[:2] == (720, 1280):
+                folder = ROOT / "logs/navigation"
+                folder.mkdir(parents=True, exist_ok=True)
+                filename = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-fishing-state.png"
+                # Fishing prompts are at the bottom; retain them and mask UID.
+                frame = frame.copy()
+                frame[700:, :240] = 0
+                ok, png = cv2.imencode(".png", frame)
+                if ok:
+                    (folder / filename).write_bytes(png.tobytes())
+                    record["file"] = filename
+        except (OSError, cv2.error):
+            record["image_status"] = "save_failed"
+        self.actions.event(record)
+        self.rt.log(reason+" 识别信息已记录，本轮停止。")
+        # An unclassified fishing page must not reach ordinary Esc recovery.
+        self.rt.navigation_halted = True
+        raise NavigationError(reason)
 
     def tension(self):
         self.inputs.check()
@@ -122,7 +167,8 @@ class StarFishing:
                 self.wait(.18-gap)
 
     def skip(self):
-        while not self.rt.stopped:
+        deadline = time.monotonic()+30
+        while not self.rt.stopped and time.monotonic() < deadline:
             self.wait(.5)
             with self.rt.observe(fresh=True):
                 skip = (self.ui.asset("IconSkip", threshold=.8, gray=(210, 255))
@@ -134,10 +180,17 @@ class StarFishing:
                 self.actions.event({"type": "star_fished", "count": self.materials["陨星"]})
                 self.rt.log(f"获得陨星，本次累计 {self.materials['陨星']}。")
                 return
+        if not self.rt.stopped:
+            self.state()
+            self.fail_state("钓星奖励结束后未确认返回。")
         raise NavigationError("钓星已停止。")
 
     def wait_main(self, gap):
+        deadline = time.monotonic()+5
         while not self.rt.stopped and not self.rt.hit("MaaNikki_MainDetected"):
+            if time.monotonic() >= deadline:
+                self.state()
+                self.fail_state("收竿后未确认返回采星界面。")
             self.wait(gap)
 
     def cast(self):
@@ -145,30 +198,38 @@ class StarFishing:
         deadline = time.monotonic()+5
         while not self.rt.stopped:
             if time.monotonic() >= deadline:
-                return FishingResult.WRONG_POSITION
-            if self.state() == FishingState.FINISH:
+                self.fail_state("已触发钓星，但未识别到钓星操作提示。")
+            pending = self.state()
+            if pending != FishingState.UNKNOWN:
                 break
             if not started:
                 started = True
                 self.press("sub_ability")
             else:
                 self.wait(.5)
+        if self.rt.stopped:
+            raise NavigationError("钓星已停止。")
         idle_deadline = time.monotonic()+30
-        self.wait(2)
+        # A fish can already be biting when the entrance is first recognized.
+        # Only the waiting-for-bite phase needs the original settling delay.
+        if pending == FishingState.FINISH:
+            self.wait(2)
+            pending = None
         if self.ui.asset("IconFishingNoFish", threshold=.9, scale=2/3,
                          color=([0, 0, 175], [20, 255, 255])):
             self.press("sub_ability")
             self.wait_main(.5)
             return FishingResult.NO_FISH
-        unknown, strikes = 0, 0
+        unknown_since, strikes = None, 0
         while not self.rt.stopped:
             if idle_deadline is not None and time.monotonic() >= idle_deadline:
                 self.press("sub_ability")
                 self.wait_main(.2)
                 return FishingResult.WRONG_POSITION
-            state = self.state()
+            state = pending if pending is not None else self.state()
+            pending = None
             if state != FishingState.UNKNOWN:
-                unknown = 0
+                unknown_since = None
                 if state == FishingState.FINISH:
                     self.wait(.5)
                 elif state == FishingState.STRIKE:
@@ -185,10 +246,10 @@ class StarFishing:
                     self.skip()
                     break
             else:
-                unknown += 1
-                if unknown > 4:
-                    self.skip()
-                    break
+                if unknown_since is None:
+                    unknown_since = time.monotonic()
+                if time.monotonic()-unknown_since >= 3:
+                    self.fail_state("钓星操作提示持续未识别。")
                 self.wait(.1)
         return FishingResult.SUCCESS
 
@@ -202,14 +263,34 @@ class StarFishing:
         self.press("ability_use")
         self.wait(2)
         available = False
-        for _ in range(3):
-            if self.ui.asset("IconAbilityFish", roi=self.ui.roi("AreaSubAbilityButton"),
-                             scale=1/3, color=WHITE, threshold=.8):
+        area = self.ui.roi("AreaSubAbilityButton")
+        frame = None
+        for attempt in range(1, 4):
+            frame = self.rt.capture()
+            box = self.ui.asset("IconAbilityFish", image=frame, roi=area,
+                                color=WHITE, threshold=.8) if frame is not None else None
+            self.actions.event({"type": "star_fishing_availability", "attempt": attempt,
+                                "available": bool(box), "box": box, "roi": area,
+                                "threshold": .8, "scale": 1})
+            if box:
                 available = True
                 break
             self.wait(1)
         if not available:
-            self.rt.log("当前位置无法钓星，继续路线。")
+            record = {"type": "star_fishing_skipped", "reason": "subability_not_detected"}
+            try:
+                if frame is not None and frame.shape[:2] == (720, 1280):
+                    folder = ROOT / "logs/navigation"
+                    folder.mkdir(parents=True, exist_ok=True)
+                    filename = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-fishing-availability.png"
+                    ok, png = cv2.imencode(".png", frame[:680])
+                    if ok:
+                        (folder / filename).write_bytes(png.tobytes())
+                        record.update(file=filename, roi=[0, 0, 1280, 680])
+            except (OSError, cv2.error):
+                record["image_status"] = "save_failed"
+            self.actions.event(record)
+            self.rt.log("未识别到钓星副能力图标，跳过当前点，继续路线。")
             self.press("ability_use")
             return True
         self.materials["陨星"] = 0
