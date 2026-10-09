@@ -1,11 +1,10 @@
 """Opt-in, foreground-only helpers while the player explores manually."""
 from __future__ import annotations
 
-import ctypes
-from ctypes import wintypes
 import time
 
 from navigation.controller import ForegroundInput
+from navigation.models import NavigationError
 from performance import checkpoint, count, measure
 from .runtime import Runtime, parameters
 
@@ -38,12 +37,6 @@ class Exploration(Runtime):
             self.log("请至少开启一项开荒辅助功能。")
             return False
         guard = ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
-        for name, signature in (("GetCursorPos", [ctypes.POINTER(wintypes.POINT)]),
-                                ("ScreenToClient", [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]),
-                                ("GetClientRect", [wintypes.HWND, ctypes.POINTER(wintypes.RECT)])):
-            function = getattr(guard.user32, name)
-            function.argtypes = signature
-            function.restype = wintypes.BOOL
         self.log("开荒辅助已启动：请切回游戏自由探索；切出游戏会暂停输入，回来后继续。手动停止可结束辅助。")
         schedule, waiting_clear = AssistSchedule(enabled), False
 
@@ -51,8 +44,9 @@ class Exploration(Runtime):
             return not self.stopped and guard.foreground()
 
         @measure("input.assist")
-        def press(frame):
-            # Do not use the center of the screen for mouse-bound interaction.
+        def press():
+            # Scene interaction must not reposition even to a sampled cursor:
+            # capture scaling/rounding and user movement can change that point.
             if not available():
                 return False
             binding = self.game_keys.get("interact")
@@ -61,19 +55,17 @@ class Exploration(Runtime):
                     return False
                 self.invalidate_frame()
                 return self.controller.post_click_key(binding.code).wait().succeeded
-            point, rect = wintypes.POINT(), wintypes.RECT()
-            if not (guard.user32.GetCursorPos(ctypes.byref(point))
-                    and guard.user32.ScreenToClient(guard.hwnd, ctypes.byref(point))
-                    and guard.user32.GetClientRect(guard.hwnd, ctypes.byref(rect))):
+            if not available():
                 return False
-            if not (0 <= point.x < rect.right and 0 <= point.y < rect.bottom):
-                return False
-            if frame is None or not available():
-                return False
-            height, width = frame.shape[:2]
             self.invalidate_frame()
-            return self.controller.post_click(round(point.x * width / rect.right),
-                round(point.y * height / rect.bottom), contact=binding.code).wait().succeeded
+            try:
+                return guard.click_mouse(binding.code)
+            except NavigationError:
+                # The resident helper pauses on focus loss, including loss
+                # during the short pulse; click_mouse has already released it.
+                if not available():
+                    return False
+                raise
 
         def found(name, frame=None):
             roi = self.ui.roi("AreaPickup") if name == "IconPickupFeature" else None
@@ -113,7 +105,7 @@ class Exploration(Runtime):
                     schedule.checked(helper, time.monotonic())
                     if not matched:
                         continue
-                    if available() and press(frame):
+                    if available() and press():
                         count("assist."+helper)
                         schedule.checked(helper, time.monotonic(), acted=True)
                         waiting_clear = helper == "Clear"

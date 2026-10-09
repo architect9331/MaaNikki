@@ -254,5 +254,29 @@
     "custom_action_param": {
       "value": "E"
     }
+  },
+  "MaaNikki_Key_ability_use": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": "MouseRight"
+    }
+  },
+  "MaaNikki_Key_sub_ability": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": "R"
+    }
+  },
+  "MaaNikki_Key_fishing_reel": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": "MouseRight"
+    }
   }
 }

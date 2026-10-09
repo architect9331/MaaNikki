@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from contextlib import contextmanager
 from datetime import datetime
 import json
 from pathlib import Path
@@ -57,6 +58,17 @@ class GameUI:
     }
     def __init__(self, runtime, resource):
         self.rt, self.resource = runtime, resource
+        self._preserve_cursor = False
+
+    @contextmanager
+    def preserve_cursor(self):
+        """Keep the pointer after UI inputs that can immediately enter a scene."""
+        previous = self._preserve_cursor
+        self._preserve_cursor = True
+        try:
+            yield
+        finally:
+            self._preserve_cursor = previous
 
     def roi(self, name):
         definition = fields(self.rt.context, "MaaNikki_Asset_"+name.lower())
@@ -95,6 +107,8 @@ class GameUI:
         """Leave UI controls without clicking or turning the game camera."""
         if self.rt.stopped:
             return False
+        if self._preserve_cursor:
+            return True
         main = self.rt.hit("MaaNikki_MainDetected")
         self.rt.invalidate_frame()
         if main:
@@ -261,8 +275,8 @@ class GameUI:
         return self.menu() and self.rt.click_template(node)
 
     def find(self, *, roi, text=None, node=None, asset=None, scale=1, threshold=.75,
-             color=None, exact=False, scroll=True):
-        """Search current view, reset to top if absent, then scan to bottom."""
+             color=None, exact=False, scroll=True, click=True):
+        """Search current view, then top to bottom; optionally return the box without clicking."""
         if node:
             definition = fields(self.rt.context, node)
             roi = definition.get("roi", roi)
@@ -293,6 +307,8 @@ class GameUI:
                     result = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": roi, "expected": pattern}, image=image)
                 box = list(result.box) if result and result.hit else None
             if box:
+                if not click:
+                    return box
                 if node:
                     from .runtime import parameters
                     if parameters(self.rt.context, node).get("ready"):

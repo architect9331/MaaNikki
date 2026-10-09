@@ -231,6 +231,7 @@ class GameplayTests(unittest.TestCase):
 
     def placement_runtime(self, clock):
         rt = self.runtime(clock)
+        rt.ui.preserve_cursor.side_effect = lambda: nullcontext()
         rt.select_item.return_value = True
         rt.ui.wait_page.return_value = True
         rt.observe.side_effect = lambda **kwargs: nullcontext()

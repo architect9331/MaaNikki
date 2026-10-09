@@ -39,32 +39,30 @@ class Teleporter:
     def dark_text(self, roi):
         return self.rt.ui.text(roi, color=([0, 0, 0], [180, 255, 180]))
 
+    def region_menu_visible(self):
+        # An expanded province can push every destination out of view. The
+        # menu title proves the dropdown is open independently of its scroll.
+        return self.rt.hit("MaaNikki_Navigation_RegionMenuReady")
+
     def region(self, checkpoint):
         wanted = checkpoint["region"]
         province = checkpoint["province"]
         region_roi = self.rt.ui.roi("AreaBigMapRegionName")
         list_roi = self.rt.ui.roi("AreaBigMapRegionSelect")
+        if wanted == "家园":
+            # Home names are user-defined; upstream selects the home glyph.
+            return self.home_region(region_roi, list_roi)
 
         def read_region():
             value = normalized(self.dark_text(region_roi))
             self.event({"type": "map_region_observed", "wanted": wanted, "actual": value})
             return value
 
-        # Exclude the map's current-region header at the right edge. Its text
-        # must not masquerade as an opened dropdown entry.
-        lx, ly, lw, lh = list_roi
-        menu_roi = [lx, ly+12, max(1, lw-65), lh-12]
-        labels = {province, wanted, "心愿原野", "伊赞之土", "暖暖的家",
-                  "纪念山地", "巨木之森", "花愿镇", "微风绿野", "祈愿树林", "星海"}
-        pattern = "^(?:"+"|".join(re.escape(value) for value in sorted(labels))+")$"
-
-        def menu_visible():
-            result = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": menu_roi, "expected": pattern})
-            return bool(result and result.hit)
+        menu_visible = self.region_menu_visible
 
         def region_ready():
             return (self.rt.hit("MaaNikki_Navigation_MapFeature")
-                    and read_region() == normalized(wanted))
+                    and not menu_visible() and read_region() == normalized(wanted))
 
         def open_region_menu():
             self.check()
@@ -79,20 +77,23 @@ class Teleporter:
         def select_region():
             self.check()
             if province == "星海":
-                return self.rt.ui.find(roi=list_roi, text=province, exact=True)
+                return self.rt.ui.find(roi=list_roi, text=province, exact=True, scroll=True)
             result = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": list_roi, "expected": ".+"})
             entries = {normalized(getattr(item, "text", "")) for item in
                        (getattr(result, "filtered_results", None) or [])}
             first = {"心愿原野": "纪念山地", "伊赞之土": "巨木之森"}.get(province)
             if province not in entries or first and first not in entries:
-                if not self.rt.ui.find(roi=list_roi, text=province, exact=True):
+                if not self.rt.ui.find(roi=list_roi, text=province, exact=True, scroll=True):
                     return False
                 if not self.rt.ui.wait_page(menu_visible, seconds=3):
                     return False
-            return self.rt.ui.find(roi=list_roi, text=wanted, exact=True)
+            return self.rt.ui.find(roi=list_roi, text=wanted, exact=True, scroll=True)
 
         try:
             if read_region() == normalized(wanted):
+                if menu_visible() and not self.rt.ui.enter_page(
+                        lambda: self.rt.key("menu", 0), region_ready, source=menu_visible, seconds=3):
+                    raise NavigationError("当前已在目标区域，但地图区域列表未能关闭。")
                 if self.rt.ui.wait_page(region_ready, seconds=8):
                     return
             if not open_region_menu():
@@ -101,6 +102,49 @@ class Teleporter:
                                       recover=open_region_menu, seconds=8):
                 return
             raise NavigationError("地图区域切换未完成。")
+        except NavigationError as error:
+            if not self.rt.stopped:
+                self.rt.ui.map_failure(0, str(error), self.event, stage="region")
+            raise
+
+    def home_region(self, region_roi, list_roi):
+        color = ([10, 0, 190], [30, 80, 255])
+        menu_visible = self.region_menu_visible
+        current = normalized(self.dark_text(region_roi))
+        def open_menu():
+            self.check()
+            return self.rt.ui.open_map(self.event) and self.rt.ui.enter_page(
+                lambda: self.rt.ui.click_box(region_roi), menu_visible,
+                source="MaaNikki_Navigation_MapFeature",
+                recover=lambda: self.rt.ui.open_map(self.event), seconds=3)
+        selected = False
+        def choose_home():
+            nonlocal selected
+            self.check()
+            box = self.rt.ui.find(roi=list_roi, asset="IconBigMapHomeFeature",
+                                 scale=2/3, threshold=.9, color=color, scroll=True, click=False)
+            if not box:
+                return False
+            # Compare the home row with the current header, including renamed
+            # homes. Reselecting an active region resets the map zoom.
+            x, y, w, h = box
+            text_x = x+w+4
+            name_roi = [text_x, max(0, y-8), max(1, list_roi[0]+list_roi[2]-text_x), h+16]
+            name = normalized(self.rt.ui.text(name_roi))
+            same = bool(current and name == current)
+            self.event({"type": "map_home_observed", "actual": current, "entry": name, "reused": same})
+            selected = self.rt.key("menu", 0) if same else self.rt.ui.click_box(box)
+            if selected and same:
+                self.event({"type": "map_region_reused", "actual": current})
+            return selected
+        def ready():
+            return bool(selected and self.rt.hit("MaaNikki_Navigation_MapFeature") and not menu_visible())
+        try:
+            if open_menu() and self.rt.ui.enter_page(choose_home, ready, source=menu_visible,
+                                                     recover=open_menu, seconds=8):
+                self.event({"type": "map_home_selected"})
+                return
+            raise NavigationError("地图家园图标未找到或区域切换未完成。")
         except NavigationError as error:
             if not self.rt.stopped:
                 self.rt.ui.map_failure(0, str(error), self.event, stage="region")
@@ -185,7 +229,6 @@ class Teleporter:
         self.check()
         if not self.rt.ui.open_map(self.event):
             raise NavigationError("无法打开地图。")
-        self.zoom()
         self.region(checkpoint)
         self.rt.pause(.5)
         self.zoom()

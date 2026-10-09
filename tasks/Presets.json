@@ -2,7 +2,7 @@
   "preset": [
     {"name": "Daily", "label": "日常", "description": "日常任务及巅峰赛。巅峰赛默认不勾选，可按需开启。",
       "task": [{"name": "dig"}, {"name": "zhaoxi"}, {"name": "realm_challenge"},
-               {"name": "xinghai"}, {"name": "monthly_pass"}, {"name": "crown", "enabled": false}]},
+               {"name": "xinghai"}, {"name": "home"}, {"name": "monthly_pass"}, {"name": "crown", "enabled": false}]},
     {"name": "Exploration", "label": "开荒辅助", "description": "自由探索时使用，持续运行直到手动停止。",
       "task": [{"name": "exploration", "option": {"AssistPickup": "Yes", "AssistClear": "Yes", "AssistDialogue": "Yes"}}]}
   ]

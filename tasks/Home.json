@@ -1,0 +1,60 @@
+{
+  "task": [
+    {
+      "name": "home",
+      "label": "家园日常",
+      "entry": "MaaNikki_Home",
+      "group": [
+        "daily"
+      ],
+      "default_check": true,
+      "description": "沿家园日常路线钓星、执行原地急坠并收集星实，结束后检查巨陨星提示。",
+      "option": [
+        "HomeAbilityPlan"
+      ]
+    }
+  ],
+  "option": {
+    "HomeAbilityPlan": {
+      "type": "select",
+      "label": "采星允许使用的能力方案",
+      "default_case": "Plan3",
+      "description": "采星能力未装备时，在所选方案中配置；当前轮盘已有采星时直接沿用。",
+      "cases": [
+        {
+          "name": "Plan1",
+          "label": "自定义方案一",
+          "pipeline_override": {
+            "MaaNikki_Home_DailyAbilityPlan": {
+              "custom_action_param": {
+                "value": 1
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan2",
+          "label": "自定义方案二",
+          "pipeline_override": {
+            "MaaNikki_Home_DailyAbilityPlan": {
+              "custom_action_param": {
+                "value": 2
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan3",
+          "label": "自定义方案三",
+          "pipeline_override": {
+            "MaaNikki_Home_DailyAbilityPlan": {
+              "custom_action_param": {
+                "value": 3
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

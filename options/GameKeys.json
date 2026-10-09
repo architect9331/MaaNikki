@@ -243,6 +243,33 @@
                     "pattern_msg": "请输入单个键名，例如 M、Space、Backspace 或 Thumb2；不支持组合键。",
                     "pipeline_type": "string",
                     "input_type": "key"
+                },
+                {
+                    "name": "ability_use",
+                    "label": "使用／结束能力",
+                    "default": "MouseRight",
+                    "verify": "^\\s*(?:[A-Za-z0-9]|[Ff](?:[1-9]|1[0-9]|2[0-4])|[Nn][Uu][Mm][Pp][Aa][Dd][0-9]|[Ee][Ss][Cc]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ee][Tt][Uu][Rr][Nn]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Tt][Aa][Bb]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Tt][Rr][Ll]|[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Aa][Ll][Tt]|[Cc][Aa][Pp][Ss][Ll][Oo][Cc][Kk]|[Uu][Pp]|[Dd][Oo][Ww][Nn]|[Ll][Ee][Ff][Tt]|[Rr][Ii][Gg][Hh][Tt]|[Ii][Nn][Ss][Ee][Rr][Tt]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Hh][Oo][Mm][Ee]|[Ee][Nn][Dd]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Ll][Ss][Hh][Ii][Ff][Tt]|[Rr][Ss][Hh][Ii][Ff][Tt]|[Ll][Cc][Tt][Rr][Ll]|[Rr][Cc][Tt][Rr][Ll]|[Ll][Aa][Ll][Tt]|[Rr][Aa][Ll][Tt]|[Ww][Ii][Nn]|[Mm][Ee][Tt][Aa]|[Ll][Ww][Ii][Nn]|[Rr][Ww][Ii][Nn]|[Aa][Pp][Pp][Ss]|[Pp][Aa][Uu][Ss][Ee]|[Pp][Rr][Ii][Nn][Tt][Ss][Cc][Rr][Ee][Ee][Nn]|[Nn][Uu][Mm][Ll][Oo][Cc][Kk]|[Ss][Cc][Rr][Oo][Ll][Ll][Ll][Oo][Cc][Kk]|[Bb][Aa][Cc][Kk][Qq][Uu][Oo][Tt][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Bb][Rr][Aa][Cc][Kk][Ee][Tt][Ll][Ee][Ff][Tt]|[Bb][Rr][Aa][Cc][Kk][Ee][Tt][Rr][Ii][Gg][Hh][Tt]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Ll][Aa][Ss][Hh]|[Nn][Uu][Mm][Pp][Aa][Dd][Aa][Dd][Dd]|[Nn][Uu][Mm][Pp][Aa][Dd][Ss][Uu][Bb][Tt][Rr][Aa][Cc][Tt]|[Nn][Uu][Mm][Pp][Aa][Dd][Mm][Uu][Ll][Tt][Ii][Pp][Ll][Yy]|[Nn][Uu][Mm][Pp][Aa][Dd][Dd][Ii][Vv][Ii][Dd][Ee]|[Nn][Uu][Mm][Pp][Aa][Dd][Dd][Ee][Cc][Ii][Mm][Aa][Ll]|[Mm][Oo][Uu][Ss][Ee][Ll][Ee][Ff][Tt]|[Mm][Oo][Uu][Ss][Ee][Rr][Ii][Gg][Hh][Tt]|[Mm][Oo][Uu][Ss][Ee][Mm][Ii][Dd][Dd][Ll][Ee]|[Mm][Oo][Uu][Ss][Ee][Xx]1|[Mm][Oo][Uu][Ss][Ee][Xx]2|[Tt][Hh][Uu][Mm][Bb]1|[Tt][Hh][Uu][Mm][Bb]2|左键|右键|中键|侧键1|侧键2)\\s*$",
+                    "pattern_msg": "请输入单个键名，例如 M、Space、Backspace 或 Thumb2；不支持组合键。",
+                    "pipeline_type": "string",
+                    "input_type": "key"
+                },
+                {
+                    "name": "sub_ability",
+                    "label": "能力衍生功能 1",
+                    "default": "R",
+                    "verify": "^\\s*(?:[A-Za-z0-9]|[Ff](?:[1-9]|1[0-9]|2[0-4])|[Nn][Uu][Mm][Pp][Aa][Dd][0-9]|[Ee][Ss][Cc]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ee][Tt][Uu][Rr][Nn]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Tt][Aa][Bb]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Tt][Rr][Ll]|[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Aa][Ll][Tt]|[Cc][Aa][Pp][Ss][Ll][Oo][Cc][Kk]|[Uu][Pp]|[Dd][Oo][Ww][Nn]|[Ll][Ee][Ff][Tt]|[Rr][Ii][Gg][Hh][Tt]|[Ii][Nn][Ss][Ee][Rr][Tt]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Hh][Oo][Mm][Ee]|[Ee][Nn][Dd]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Ll][Ss][Hh][Ii][Ff][Tt]|[Rr][Ss][Hh][Ii][Ff][Tt]|[Ll][Cc][Tt][Rr][Ll]|[Rr][Cc][Tt][Rr][Ll]|[Ll][Aa][Ll][Tt]|[Rr][Aa][Ll][Tt]|[Ww][Ii][Nn]|[Mm][Ee][Tt][Aa]|[Ll][Ww][Ii][Nn]|[Rr][Ww][Ii][Nn]|[Aa][Pp][Pp][Ss]|[Pp][Aa][Uu][Ss][Ee]|[Pp][Rr][Ii][Nn][Tt][Ss][Cc][Rr][Ee][Ee][Nn]|[Nn][Uu][Mm][Ll][Oo][Cc][Kk]|[Ss][Cc][Rr][Oo][Ll][Ll][Ll][Oo][Cc][Kk]|[Bb][Aa][Cc][Kk][Qq][Uu][Oo][Tt][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Bb][Rr][Aa][Cc][Kk][Ee][Tt][Ll][Ee][Ff][Tt]|[Bb][Rr][Aa][Cc][Kk][Ee][Tt][Rr][Ii][Gg][Hh][Tt]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Ll][Aa][Ss][Hh]|[Nn][Uu][Mm][Pp][Aa][Dd][Aa][Dd][Dd]|[Nn][Uu][Mm][Pp][Aa][Dd][Ss][Uu][Bb][Tt][Rr][Aa][Cc][Tt]|[Nn][Uu][Mm][Pp][Aa][Dd][Mm][Uu][Ll][Tt][Ii][Pp][Ll][Yy]|[Nn][Uu][Mm][Pp][Aa][Dd][Dd][Ii][Vv][Ii][Dd][Ee]|[Nn][Uu][Mm][Pp][Aa][Dd][Dd][Ee][Cc][Ii][Mm][Aa][Ll]|[Mm][Oo][Uu][Ss][Ee][Ll][Ee][Ff][Tt]|[Mm][Oo][Uu][Ss][Ee][Rr][Ii][Gg][Hh][Tt]|[Mm][Oo][Uu][Ss][Ee][Mm][Ii][Dd][Dd][Ll][Ee]|[Mm][Oo][Uu][Ss][Ee][Xx]1|[Mm][Oo][Uu][Ss][Ee][Xx]2|[Tt][Hh][Uu][Mm][Bb]1|[Tt][Hh][Uu][Mm][Bb]2|左键|右键|中键|侧键1|侧键2)\\s*$",
+                    "pattern_msg": "请输入单个键名，例如 M、Space、Backspace 或 Thumb2；不支持组合键。",
+                    "pipeline_type": "string",
+                    "input_type": "key"
+                },
+                {
+                    "name": "fishing_reel",
+                    "label": "钓星收线",
+                    "default": "MouseRight",
+                    "verify": "^\\s*(?:[A-Za-z0-9]|[Ff](?:[1-9]|1[0-9]|2[0-4])|[Nn][Uu][Mm][Pp][Aa][Dd][0-9]|[Ee][Ss][Cc]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ee][Tt][Uu][Rr][Nn]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Tt][Aa][Bb]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Tt][Rr][Ll]|[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Aa][Ll][Tt]|[Cc][Aa][Pp][Ss][Ll][Oo][Cc][Kk]|[Uu][Pp]|[Dd][Oo][Ww][Nn]|[Ll][Ee][Ff][Tt]|[Rr][Ii][Gg][Hh][Tt]|[Ii][Nn][Ss][Ee][Rr][Tt]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Hh][Oo][Mm][Ee]|[Ee][Nn][Dd]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Ll][Ss][Hh][Ii][Ff][Tt]|[Rr][Ss][Hh][Ii][Ff][Tt]|[Ll][Cc][Tt][Rr][Ll]|[Rr][Cc][Tt][Rr][Ll]|[Ll][Aa][Ll][Tt]|[Rr][Aa][Ll][Tt]|[Ww][Ii][Nn]|[Mm][Ee][Tt][Aa]|[Ll][Ww][Ii][Nn]|[Rr][Ww][Ii][Nn]|[Aa][Pp][Pp][Ss]|[Pp][Aa][Uu][Ss][Ee]|[Pp][Rr][Ii][Nn][Tt][Ss][Cc][Rr][Ee][Ee][Nn]|[Nn][Uu][Mm][Ll][Oo][Cc][Kk]|[Ss][Cc][Rr][Oo][Ll][Ll][Ll][Oo][Cc][Kk]|[Bb][Aa][Cc][Kk][Qq][Uu][Oo][Tt][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Bb][Rr][Aa][Cc][Kk][Ee][Tt][Ll][Ee][Ff][Tt]|[Bb][Rr][Aa][Cc][Kk][Ee][Tt][Rr][Ii][Gg][Hh][Tt]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Ll][Aa][Ss][Hh]|[Nn][Uu][Mm][Pp][Aa][Dd][Aa][Dd][Dd]|[Nn][Uu][Mm][Pp][Aa][Dd][Ss][Uu][Bb][Tt][Rr][Aa][Cc][Tt]|[Nn][Uu][Mm][Pp][Aa][Dd][Mm][Uu][Ll][Tt][Ii][Pp][Ll][Yy]|[Nn][Uu][Mm][Pp][Aa][Dd][Dd][Ii][Vv][Ii][Dd][Ee]|[Nn][Uu][Mm][Pp][Aa][Dd][Dd][Ee][Cc][Ii][Mm][Aa][Ll]|[Mm][Oo][Uu][Ss][Ee][Ll][Ee][Ff][Tt]|[Mm][Oo][Uu][Ss][Ee][Rr][Ii][Gg][Hh][Tt]|[Mm][Oo][Uu][Ss][Ee][Mm][Ii][Dd][Dd][Ll][Ee]|[Mm][Oo][Uu][Ss][Ee][Xx]1|[Mm][Oo][Uu][Ss][Ee][Xx]2|[Tt][Hh][Uu][Mm][Bb]1|[Tt][Hh][Uu][Mm][Bb]2|左键|右键|中键|侧键1|侧键2)\\s*$",
+                    "pattern_msg": "请输入单个键名，例如 M、Space、Backspace 或 Thumb2；不支持组合键。",
+                    "pipeline_type": "string",
+                    "input_type": "key"
                 }
             ],
             "pipeline_override": {
@@ -284,6 +311,21 @@
                 "MaaNikki_Key_recover": {
                     "custom_action_param": {
                         "value": "{recover}"
+                    }
+                },
+                "MaaNikki_Key_ability_use": {
+                    "custom_action_param": {
+                        "value": "{ability_use}"
+                    }
+                },
+                "MaaNikki_Key_sub_ability": {
+                    "custom_action_param": {
+                        "value": "{sub_ability}"
+                    }
+                },
+                "MaaNikki_Key_fishing_reel": {
+                    "custom_action_param": {
+                        "value": "{fishing_reel}"
                     }
                 }
             }

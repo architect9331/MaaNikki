@@ -1,0 +1,31 @@
+{
+  "MaaNikki_Home": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "home"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Home_DailyAbilityPlan": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": 3
+    }
+  },
+  "MaaNikki_Navigation_StarCollectAbility": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1073,
+      631,
+      60,
+      60
+    ],
+    "template": "game/ui/IconAbilityStarCollect.png",
+    "action": "DoNothing"
+  }
+}

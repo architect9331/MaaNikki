@@ -9,7 +9,7 @@ import os
 import cv2
 
 from action.daily_tasks import DailyRun
-from .developer import focus_game
+from .startup import focus_game
 from .gameplay import Gameplay
 from .planner import Card, XINGHAI, ZHAOXI
 from .route_test import TestInputs, inputs_allowed

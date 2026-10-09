@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "agent"))
 os.environ.setdefault("MAAFW_BINARY_PATH", str(ROOT / "maafw"))
 from daily.planner import Card, classify
 from daily.subtask_test import SubtaskTest, RULES, test_rule, unsupported_reason
-from daily.developer import focus_game
+from daily.startup import focus_game
 from navigation.models import NavigationError
 
 
@@ -143,25 +143,26 @@ class SubtaskTests(unittest.TestCase):
             rt.execute.assert_not_called()
             inputs.release.assert_called_once()
 
-    def test_shared_startup_automatically_focuses_without_clicking_or_key_input(self):
+    def test_shared_startup_automatically_focuses_without_moving_or_pressing(self):
         for already_focused in (False, True):
             runtime, inputs = Mock(), Mock()
             runtime.stopped = False
             inputs.foreground.return_value = already_focused
             def activate(*args, **kwargs):
                 inputs.foreground.return_value = True
-                return True
-            runtime.action.side_effect = activate
+                return SimpleNamespace(succeeded=True)
+            runtime.controller.post_key_up.return_value.wait.side_effect = activate
             ticks = [0.0]
             def sleep(seconds):
                 ticks[0] += seconds
-            with patch("daily.developer.time.monotonic", side_effect=lambda: ticks[0]), \
-                    patch("daily.developer.time.sleep", side_effect=sleep):
+            with patch("daily.startup.time.monotonic", side_effect=lambda: ticks[0]), \
+                    patch("daily.startup.time.sleep", side_effect=sleep):
                 focus_game(runtime, inputs)
             if already_focused:
-                runtime.action.assert_not_called()
+                runtime.controller.post_key_up.assert_not_called()
             else:
-                runtime.action.assert_called_once_with("TouchMove", target=[0, 0])
+                runtime.controller.post_key_up.assert_called_once_with(18)
+            runtime.action.assert_not_called()
             self.assertLess(ticks[0], .5)
             inputs.check.assert_called_once()
 
@@ -173,7 +174,7 @@ class SubtaskTests(unittest.TestCase):
         runtime.action.assert_not_called()
         runtime.stopped = False
         inputs.foreground.return_value = False
-        runtime.action.return_value = False
+        runtime.controller.post_key_up.return_value.wait.return_value.succeeded = False
         with self.assertRaises(NavigationError):
             focus_game(runtime, inputs)
         inputs.check.assert_not_called()

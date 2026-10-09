@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 import re
 import time
@@ -42,11 +43,19 @@ def preflight(resource, route, executor):
     actions = {p.action for p in route.points if p.action}
     required = {"plant": "collect", "insect": "insect", "fight": "macro", "bubble": "macro", "photo": "photo",
                 "place": "place", "music": "music", "bottle": "bottle", "delivery": "delivery", "chat": "chat"}.get(executor)
+    if executor == "home" and "fishing_star" not in actions:
+        raise NavigationError("家园日常路线缺少钓星动作。")
     if required and required not in actions:
         raise NavigationError("路线没有包含此任务所需的动作。")
     if executor in {"plant", "insect"} and not route.document.get("material"):
         raise NavigationError("采集路线未指定可确认的素材名称。")
+    extra_materials = route.document.get("count_materials", [])
+    if (not isinstance(extra_materials, list)
+            or any(not isinstance(name, str) or not name.strip() for name in extra_materials)):
+        raise NavigationError("采集路线的计数素材列表无效。")
     for point in route.points:
+        if point.action == "teleport" and not point.params.get("checkpoint"):
+            raise NavigationError("路线内的传送动作未指定传送点。")
         if point.action == "minigame":
             raise NavigationError("小游戏入场与结束页面尚未适配。")
         if point.action == "macro":
@@ -63,9 +72,16 @@ class RouteActions:
         if self.quota is not None and (type(self.quota) is not int or not 1 <= self.quota <= 100):
             raise NavigationError("任务剩余数量无法可靠读取。")
         self.material = route.document.get("material", "") or ("星光结晶" if self.executor == "crystal" else "")
+        self.count_materials = tuple(dict.fromkeys(
+            [self.material] + route.document.get("count_materials", []))) if self.material else ()
         self.last_notice = ""
         self.motion = None
         self.navigator = None
+        self.action_failed = False
+        self.fishing = None
+        if self.executor == "home":
+            from .fishing import StarFishing
+            self.fishing = StarFishing(self)
         from .insect import Insect
         self.insect = Insect(self)
 
@@ -86,15 +102,17 @@ class RouteActions:
             if self.motion:
                 self.motion.tick()
             compact = re.sub(r"\s+", "", text)
-            amount = material_amount(text, self.material, interaction) if self.material else 0
-            if (amount
+            amounts = {name: amount for name in self.count_materials
+                       if (amount := material_amount(text, name, interaction))}
+            if (amounts
                     and (interaction or compact != re.sub(r"\s+", "", baseline) and compact != self.last_notice)):
                 self.last_notice = compact
-                self.count += amount
-                self.event({"type": "obtained", "material": self.material, "amount": amount, "total": self.count, "text": text})
-                self.rt.log(f"已识别获得{self.material}，本次累计 {self.count}。")
+                for name, amount in amounts.items():
+                    self.count += amount
+                    self.event({"type": "obtained", "material": name, "amount": amount, "total": self.count, "text": text})
+                    self.rt.log(f"已识别获得{name}，本次累计 {self.count}。")
                 return True
-            if self.material not in compact:
+            if not any(name in compact for name in self.count_materials):
                 self.last_notice = ""
             if single:
                 break
@@ -138,6 +156,22 @@ class RouteActions:
 
     def select_insect(self):
         return self.insect.select()
+
+    def prepare_point(self, point, pose):
+        """Resolve route teleports before attempting to walk to their coordinates."""
+        if point.action != "teleport":
+            return False
+        self.motion.stop()
+        self.motion.jump(False, self.rt.ui.walking())
+        checkpoint = point.params["checkpoint"]
+        moved = math.hypot(pose.x-point.x, pose.y-point.y) >= 15
+        if moved:
+            self.teleporter.transport(checkpoint)
+        else:
+            self.event({"type": "teleport_skipped_nearby", "checkpoint": checkpoint})
+        # Upstream recalibrates at every TELEPORT point, even if transport is skipped.
+        self.navigator.turn_ratio = None
+        return True
 
     def collect(self):
         initial = self.count
@@ -187,6 +221,22 @@ class RouteActions:
         if kind == "wait":
             self.inputs.wait(point.params["seconds"])
             ok = True
+        elif kind == "teleport":
+            # Navigation's preparation hook already handled this point.
+            ok = True
+        elif kind == "fishing_star":
+            try:
+                ok = self.fishing.run()
+            except NavigationError as error:
+                # Input interruption still stops the route; ordinary task
+                # failures retain upstream's continue-to-next-point behavior.
+                self.inputs.check()
+                self.event({"type": "fishing_failed", "reason": str(error)})
+                self.rt.log(f"此钓星点未完成：{error}")
+                ok = False
+            if not ok:
+                # Record a failed action and continue the remaining points.
+                self.action_failed = True
         elif kind in {"collect", "insect"}:
             if kind == "collect":
                 ok = self.collect()
@@ -247,7 +297,7 @@ class RouteActions:
         self.event({"type": "action_result", "action": kind, "success": bool(ok), "count": self.count})
         if ok and kind != "wait":
             self.successes += 1
-        if kind not in {"wait", "collect", "insect", "bottle"} and not ok:
+        if kind not in {"wait", "collect", "insect", "bottle", "fishing_star"} and not ok:
             raise NavigationError("点位动作未确认成功，已停止本项。")
         self.inputs.check()
         if not self.rt.main():
@@ -257,6 +307,8 @@ class RouteActions:
         return "continue"
 
     def complete(self):
+        if self.executor == "home":
+            return not self.action_failed
         if self.executor in {"crystal", "animal"}:
             # Passive collection/animal entry is completed by traversal itself.
             # This is only an execution estimate until the daily-score read.

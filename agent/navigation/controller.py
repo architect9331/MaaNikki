@@ -131,18 +131,38 @@ class ForegroundInput:
             finally:
                 self.held.discard(key)
         for button in list(self.buttons):
-            try:
-                if self.foreground():
-                    try:
-                        released = self.controller.post_touch_up(button).wait().succeeded
-                    except (OSError, RuntimeError, ValueError):
-                        released = False
-                    if not released:
-                        self.force_mouse_up(button)
-                else:
+            self.release_mouse(button)
+
+    def release_mouse(self, button):
+        if button not in self.buttons:
+            return
+        try:
+            if self.foreground():
+                try:
+                    released = self.controller.post_touch_up(button).wait().succeeded
+                except (OSError, RuntimeError, ValueError):
+                    released = False
+                if not released:
                     self.force_mouse_up(button)
-            finally:
-                self.buttons.discard(button)
+            else:
+                self.force_mouse_up(button)
+        finally:
+            self.buttons.discard(button)
+
+    def click_mouse(self, button, seconds=.05):
+        """Pulse a scene button without moving the cursor or releasing movement."""
+        if button not in (0, 1, 2, 3, 4) or not .01 <= seconds <= 1:
+            raise NavigationError("鼠标点击参数无效。")
+        self.check()
+        if button in self.buttons:
+            raise NavigationError("该鼠标按键正在按住，不能重复点击。")
+        try:
+            self.mouse_down(button)
+            self.wait(seconds)
+            self.check()
+            return True
+        finally:
+            self.release_mouse(button)
 
     def force_key_up(self, key):
         # Cleanup only: do not require a working Agent channel or refocus.

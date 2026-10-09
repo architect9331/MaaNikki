@@ -20,6 +20,8 @@ DEFAULTS = {
     "jump": ("Space", "跳跃"), "falling": ("Q", "急坠"),
     "attack": ("MouseLeft", "净化攻击"), "capture": ("MouseRight", "捕虫动作"),
     "place": ("MouseLeft", "放置摆饰"), "recover": ("MouseRight", "收回摆饰"),
+    "ability_use": ("MouseRight", "使用／结束能力"),
+    "sub_ability": ("R", "能力衍生功能 1"), "fishing_reel": ("MouseRight", "钓星收线"),
     **{f"ability_{i}": (str(i), f"快捷能力 {i}") for i in range(1, 9)},
 }
 MOVEMENT = {"forward", "left", "backward", "right"}

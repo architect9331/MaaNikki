@@ -1,0 +1,140 @@
+{
+  "schema_version": 3,
+  "id": "home_daily",
+  "title": "家园日常",
+  "map": "home",
+  "start_radius": 15,
+  "timeout": 900,
+  "teleport": {
+    "name": "家园码头",
+    "province": "家园",
+    "region": "家园",
+    "x": 1047.0,
+    "y": 721.85
+  },
+  "source": {
+    "reference": "README.md",
+    "commit": "e1e9d329fb2f47be3eb924457d756302afb70acc",
+    "file": "家园日常.json"
+  },
+  "points": [
+    {
+      "x": 1046.8,
+      "y": 719.8,
+      "radius": 1,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "家园码头",
+          "province": "家园",
+          "region": "家园",
+          "x": 1047.0,
+          "y": 721.85
+        }
+      }
+    },
+    {
+      "x": 1051.7,
+      "y": 716.35,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 1050.8,
+      "y": 720.15,
+      "radius": 1,
+      "jump": false,
+      "action": "fishing_star"
+    },
+    {
+      "x": 1054.45,
+      "y": 716.35,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 1057.65,
+      "y": 713.85,
+      "radius": 1,
+      "jump": true
+    },
+    {
+      "x": 1065.35,
+      "y": 735.15,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 1057.7,
+      "y": 747.55,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 1047.85,
+      "y": 744.7,
+      "radius": 1,
+      "jump": false,
+      "action": "fishing_star"
+    },
+    {
+      "x": 1061.2,
+      "y": 745.1,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 1070.45,
+      "y": 720.35,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 1072.45,
+      "y": 711.1,
+      "radius": 1,
+      "jump": true,
+      "action": "macro",
+      "params": {
+        "id": "starsea_fall"
+      }
+    },
+    {
+      "x": 1008.45,
+      "y": 666.65,
+      "radius": 1,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "星实之树",
+          "province": "家园",
+          "region": "家园",
+          "x": 1006.5,
+          "y": 665.05
+        }
+      }
+    },
+    {
+      "x": 1008.45,
+      "y": 666.65,
+      "radius": 1,
+      "jump": false,
+      "action": "macro",
+      "params": {
+        "id": "starsea_fall"
+      }
+    },
+    {
+      "x": 1008.45,
+      "y": 666.65,
+      "radius": 1,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.0
+      }
+    }
+  ]
+}

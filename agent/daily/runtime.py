@@ -129,6 +129,8 @@ class Runtime:
     def key(self, value, delay=0.35):
         # Integer keys are physical UI shortcuts / legacy physical recordings.
         # Never remap Ctrl+A to the configured left-movement key.
+        if self.stopped:
+            return False
         if isinstance(value, str):
             try:
                 binding = self.game_keys.get(value)
@@ -136,7 +138,10 @@ class Runtime:
                 self.log(str(error))
                 return False
             if binding.kind == "mouse":
-                return self.action("Click", ui_click=False, target=[640, 360], contact=binding.code) and self.pause(delay)
+                self.invalidate_frame()
+                with self.input_guard() as inputs:
+                    clicked = inputs.click_mouse(binding.code)
+                return clicked and self.pause(delay)
             value = binding.code
         return self.action("ClickKey", key=value) and self.pause(delay)
 
@@ -322,6 +327,14 @@ class Runtime:
             stage = "window_binding"
             inputs = ForegroundInput(self.controller, lambda: self.stopped,
                                      lambda: self.hit("MaaNikki_MainDetected"), bindings=self.game_keys)
+            stage = "focus_game"
+            if previous_inputs:
+                # A running parent guard must stop on focus loss, not refocus.
+                previous_inputs.check()
+                inputs.check()
+            else:
+                from .startup import focus_game
+                focus_game(self, inputs)
             self.navigation_inputs = inputs
             events.append({"type": "window_ready", "hwnd": inputs.hwnd, "foreground": inputs.foreground()})
             if route["schema_version"] == 3:
@@ -345,6 +358,11 @@ class Runtime:
                 teleporter = Teleporter(self, locator, events.append, inputs)
                 if actions:
                     actions.teleporter = teleporter
+                if actions and card.rule.executor == "home":
+                    stage = "ability_selection"
+                    if not actions.fishing.configure():
+                        raise NavigationError("采星能力配置未完成，本项尚未开始。")
+                    stage = "teleport"
                 if meteor_travel:
                     # Keep the map opened by Go Now; transport handles an arbitrary viewport.
                     teleporter.transport(route["teleport"])
@@ -356,7 +374,9 @@ class Runtime:
             navigator = Navigator(locator, inputs, self.capture, lambda: self.stopped, self.pause, events.append,
                                   point_action=actions, waypoint=actions.waypoint if actions else None,
                                   walking=self.ui.walking, page_detector=lambda frame: bool(
-                                      (result := self.recognize("MaaNikki_MainDetected", image=frame)) and result.hit))
+                                      (result := self.recognize("MaaNikki_MainDetected", image=frame)) and result.hit),
+                                  point_prepare=actions.prepare_point if actions and any(
+                                      point.action == "teleport" for point in model.points) else None)
             self.log("正在沿路线前往任务位置，请保持游戏前台。")
             stage = "route_execution"
             navigator.follow(model)
@@ -620,6 +640,12 @@ class Executors(Runtime):
                 and self.ui.find(roi=roi, text="确认", exact=True, scroll=False))
 
     def select_item(self):
+        def item_browser_ready():
+            # The category icon is also present while configuring quick slots.
+            # It cannot prove that Finish Settings has actually been clicked.
+            return (self.hit("MaaNikki_Daily_ItemCategory")
+                    and not self.hit("MaaNikki_Daily_ItemFinish"))
+
         def open_wheel():
             return self.main() and self.ui.enter_page(lambda: self.hold("item", 3),
                 "MaaNikki_Daily_ItemSetting", source="MaaNikki_MainDetected", recover=self.main)
@@ -627,11 +653,23 @@ class Executors(Runtime):
             return open_wheel() and self.ui.enter_page(lambda: self.click_template(
                 "MaaNikki_Daily_ItemSetting", attempts=1, wait_seconds=0), "MaaNikki_Daily_ItemFinish",
                 source="MaaNikki_Daily_ItemSetting", recover=open_wheel)
-        return (open_settings() and self.ui.enter_page(lambda: self.click_template(
-                    "MaaNikki_Daily_ItemFinish", attempts=1, wait_seconds=0), "MaaNikki_Daily_ItemCategory",
+        if not (open_settings() and self.ui.enter_page(lambda: self.click_template(
+                    "MaaNikki_Daily_ItemFinish", attempts=1, wait_seconds=0), item_browser_ready,
                     source="MaaNikki_Daily_ItemFinish", recover=open_settings)
                 and self.click_template("MaaNikki_Daily_ItemCategory")
-                and self.pause(.5) and self.action("Click", target=self.ui.roi("AreaItemFirstItem")) and self.pause(.5))
+                and self.pause(.5) and self.action("Click", target=self.ui.roi("AreaItemFirstItem"))
+                and self.pause(.5)):
+            return False
+        with self.observe(fresh=True):
+            # Selecting an already deployed ornament recalls it and leaves the
+            # browser open. Select it once more to enter placement, as upstream
+            # does, but never repeat a lantern confirmation or placement input.
+            recalled = (item_browser_ready() and not self.hit("MaaNikki_Daily_LanternConfirm")
+                        and not self.placement_ready())
+        if recalled:
+            self.log("摆饰选择面板仍打开，可能已收回原有摆饰，再选择一次进入放置。")
+            return self.action("Click", target=self.ui.roi("AreaItemFirstItem")) and self.pause(.5)
+        return True
 
     def placement_ready(self):
         # The category tab and minimap can remain visible in placement mode.
@@ -640,19 +678,22 @@ class Executors(Runtime):
 
     def place(self):
         from navigation.controller import relative_camera
-        if not foreground_inputs() or not self.select_item():
-            self.log("摆饰停止：未能选择摆饰。")
-            return False
-        lantern = self.hit("MaaNikki_Daily_LanternConfirm")
-        if lantern:
-            if (not self.click_template("MaaNikki_Daily_LanternConfirm")
-                    or not self.ui.find(roi=self.ui.roi("AreaDialog"), text="确认", exact=True, scroll=False)):
+        # Selecting the item / confirming a lantern can activate placement
+        # immediately. Do not move away from UI controls after these inputs.
+        with self.ui.preserve_cursor():
+            if not foreground_inputs() or not self.select_item():
+                self.log("摆饰停止：未能选择摆饰。")
                 return False
-        if not self.ui.wait_page(self.placement_ready, seconds=20):
-            self.log("摆饰停止：选中物品后未出现放置操作提示。")
-            self.save_placement_failure("placement_not_ready")
-            self.main()
-            return False
+            lantern = self.hit("MaaNikki_Daily_LanternConfirm")
+            if lantern:
+                if (not self.click_template("MaaNikki_Daily_LanternConfirm")
+                        or not self.ui.find(roi=self.ui.roi("AreaDialog"), text="确认", exact=True, scroll=False)):
+                    return False
+            if not self.ui.wait_page(self.placement_ready, seconds=20):
+                self.log("摆饰停止：选中物品后未出现放置操作提示。")
+                self.save_placement_failure("placement_not_ready")
+                self.main()
+                return False
         if not relative_camera(self.controller, 0, -133) or not self.pause(.3):
             return False
         recover_before = bool(self.text([0, 500, 1210, 200], r"收回|回收"))

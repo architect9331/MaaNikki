@@ -14,7 +14,7 @@ import cv2
 
 from .runtime import Runtime, RESOURCE
 from .settings import ROOT, foreground_inputs
-from .developer import focus_game
+from .startup import focus_game
 from navigation.controller import ForegroundInput
 from navigation.engine import Navigator
 from navigation.models import NavigationError, maps, parse_route

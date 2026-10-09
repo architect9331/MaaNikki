@@ -1,4 +1,4 @@
-"""Shared foreground startup for developer tests."""
+"""Shared foreground startup for ordinary routes and developer tests."""
 import time
 
 from navigation.models import NavigationError
@@ -6,12 +6,13 @@ from navigation.models import NavigationError
 
 def focus_game(runtime, inputs):
     if runtime.stopped:
-        raise NavigationError("测试已停止。")
-    runtime.log("测试启动：正在自动聚焦已连接的游戏窗口。")
+        raise NavigationError("任务已停止。")
+    runtime.log("正在自动聚焦已连接的游戏窗口。")
     if not inputs.foreground():
-        # Use the connected Maa Seize controller, just like ordinary UI
-        # actions. A mouse move activates the game without clicking or keys.
-        if not runtime.action("TouchMove", target=[0, 0]):
+        # Seize activates the connected window on key-up too. Releasing Alt
+        # avoids the old cursor warp to the top-left during scene startup.
+        runtime.invalidate_frame()
+        if not runtime.controller.post_key_up(18).wait().succeeded:
             raise NavigationError("未能自动聚焦游戏，请检查窗口连接和前台输入设置。")
     deadline, stable_since = time.monotonic()+3, None
     while time.monotonic() < deadline and not runtime.stopped:

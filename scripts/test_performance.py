@@ -135,6 +135,34 @@ class ObservationTests(unittest.TestCase):
 
 
 class TemplateTests(unittest.TestCase):
+    def test_map_maximum_requires_gold_segment_at_right_end_not_gray_track(self):
+        from recognition.ui_template import UITemplateRecognition
+        param = json.loads((ROOT / "resource/pipeline/navigation.json").read_text(encoding="utf-8"))[
+            "MaaNikki_Navigation_MapMaxScale"]["custom_recognition_param"]
+        template = cv2.imread(str(ROOT / "resource/image" / param["template"]))
+        height, width = template.shape[:2]
+        for gold_x, matched in ((65, False), (120, False), (189, True)):
+            with self.subTest(gold_x=gold_x):
+                frame = np.zeros((720, 1280, 3), np.uint8)
+                frame[688:688+height, 65:231] = 180  # Bright neutral track used to match after thresholding.
+                frame[688:688+height, gold_x:gold_x+width] = template
+                result = UITemplateRecognition().analyze(None, SimpleNamespace(
+                    image=frame, custom_recognition_param=param))
+                self.assertEqual(result.box is not None, matched, result.detail)
+
+    def test_ui_template_brightness_matching_remains_available(self):
+        from recognition.ui_template import UITemplateRecognition
+        scene = np.zeros((30, 40, 3), np.uint8)
+        scene[5:17, 8:22] = self.image[:, :, :3]
+        param = {"template": "template.png", "gray_limit": [210, 255], "threshold": .99}
+        with patch("recognition.ui_template.ROOT", Path(self.directory.name)), \
+                patch("recognition.ui_template.prepared_template", side_effect=lambda *args, **kwargs:
+                    prepared_template(self.path, **kwargs)):
+            result = UITemplateRecognition().analyze(None, SimpleNamespace(
+                image=scene, custom_recognition_param=param))
+        self.assertIsNotNone(result.box, result.detail)
+        self.assertEqual(result.detail["gray_limit"], [210, 255])
+
     def setUp(self):
         clear_template_cache()
         self.directory = tempfile.TemporaryDirectory()
@@ -253,6 +281,7 @@ class AssistTests(unittest.TestCase):
 
         rt.pause, rt.capture, rt.ui.asset = pause, Mock(side_effect=capture), Mock(side_effect=asset)
         rt.controller.post_click_key, rt.controller.post_click = Mock(side_effect=submit), Mock(side_effect=submit)
+        guard.click_mouse = Mock(side_effect=lambda button: submit(button).wait().succeeded)
         if mouse:
             rt.game_keys.get = Mock(return_value=SimpleNamespace(kind="mouse", code=1))
             def position(point):
@@ -300,13 +329,14 @@ class AssistTests(unittest.TestCase):
         _, _, _, inputs = self.simulate(lambda *args: True, input_ok=False)
         self.assertEqual(len({item[1] for item in inputs}), len(inputs))
 
-    def test_mouse_binding_uses_decision_dimensions_without_extra_capture(self):
+    def test_mouse_binding_clicks_in_place_without_extra_capture(self):
         rt, _, checks, inputs = self.simulate(lambda name, *args: name == "IconPickupFeature", mouse=True)
         self.assertTrue(inputs)
-        self.assertEqual(inputs[0][2], (12, 8))
-        self.assertEqual(inputs[0][3], {"contact": 1})
+        self.assertEqual(inputs[0][2], (1,))
+        self.assertEqual(inputs[0][3], {})
         self.assertEqual(inputs[0][1], 1)
         rt.controller.post_click_key.assert_not_called()
+        rt.controller.post_click.assert_not_called()
 
     def test_background_never_captures_or_sends_input(self):
         rt, _, _, inputs = self.simulate(lambda *args: True, foreground=lambda now: False)

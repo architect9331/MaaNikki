@@ -1,4 +1,4 @@
-"""MAA recognition for UI glyphs whose brightness is part of their identity."""
+"""MAA recognition for UI glyphs with brightness or color filtering."""
 from __future__ import annotations
 
 import json
@@ -39,10 +39,21 @@ class UITemplateRecognition(CustomRecognition):
             if (not isinstance(gray, list) or len(gray) != 2
                     or any(type(v) is not int for v in gray) or not 0 <= gray[0] < gray[1] <= 255):
                 raise ValueError("页面图像亮度范围无效。")
+            color = param.get("color")
+            if color is not None and (not isinstance(color, list) or len(color) != 2
+                    or any(not isinstance(bound, list) or len(bound) != 3 for bound in color)
+                    or any(type(v) is not int for bound in color for v in bound)
+                    or any(not 0 <= low <= high <= limit for low, high, limit
+                           in zip(color[0], color[1], (180, 255, 255)))):
+                raise ValueError("页面图像颜色范围无效。")
             resource = ROOT / "resource"
             image_root = (resource / "image").resolve()
-            target = cv2.threshold(cv2.cvtColor(image[y:y+height, x:x+width], cv2.COLOR_BGR2GRAY),
-                                   gray[0], gray[1], cv2.THRESH_BINARY)[1]
+            patch = image[y:y+height, x:x+width]
+            target = (cv2.inRange(cv2.cvtColor(patch, cv2.COLOR_BGR2HSV),
+                                  np.array(color[0]), np.array(color[1])) if color else
+                      cv2.threshold(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY),
+                                    gray[0], gray[1], cv2.THRESH_BINARY)[1])
+            preprocessing = {"color": color} if color else {"gray_limit": gray}
             best_score, best_box, best_template = -1.0, None, None
             for name, threshold in zip(templates, thresholds):
                 if not isinstance(name, str) or not isinstance(threshold, (int, float)) or not 0 <= threshold <= 1:
@@ -50,7 +61,8 @@ class UITemplateRecognition(CustomRecognition):
                 path = (image_root / name).resolve()
                 if not path.is_relative_to(image_root):
                     raise ValueError("页面图像资源路径无效。")
-                template = prepared_template(path, grayscale=True, gray=gray).image
+                template = prepared_template(path, grayscale=not bool(color),
+                                             gray=None if color else gray, color=color).image
                 if not template.size:
                     raise ValueError("页面图像没有可识别的亮色特征。")
                 th, tw = template.shape[:2]
@@ -64,8 +76,8 @@ class UITemplateRecognition(CustomRecognition):
                 if score >= threshold:
                     best_box = [x+point[0], y+point[1], tw, th]
                     return CustomRecognition.AnalyzeResult(box=best_box, detail={
-                        "score": float(score), "template": name, "gray_limit": gray, "method": 3})
+                        "score": float(score), "template": name, **preprocessing, "method": 3})
             return CustomRecognition.AnalyzeResult(box=None, detail={
-                "score": best_score, "template": best_template, "gray_limit": gray, "method": 3})
+                "score": best_score, "template": best_template, **preprocessing, "method": 3})
         except (OSError, ValueError, TypeError, KeyError, cv2.error) as error:
             return CustomRecognition.AnalyzeResult(box=None, detail={"error": str(error)})

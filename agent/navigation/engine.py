@@ -94,9 +94,10 @@ class Motion:
 
 class Navigator:
     def __init__(self, locator: Locator, inputs, capture, stopped, pause, event=lambda value: None,
-                 point_action=None, waypoint=None, walking=None, page_detector=None):
+                 point_action=None, waypoint=None, walking=None, page_detector=None, point_prepare=None):
         self.locator, self.inputs, self.capture, self.stopped, self._pause, self.event = locator, inputs, capture, stopped, pause, event
         self.point_action, self.waypoint = point_action, waypoint
+        self.point_prepare = point_prepare
         self.walking_detector = walking
         self.page_detector = page_detector
         self.turn_ratio = None
@@ -312,6 +313,7 @@ class Navigator:
         last = None
         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
         index = 0
+        prepared_index = None
         last_good = pose
         scene_interrupted, scene_retries = False, 0
         try:
@@ -333,12 +335,21 @@ class Navigator:
                         if distance(pose, route.points[nearest]) > 12:
                             raise NavigationError("画面恢复后已偏离当前路线，请重新运行本项。")
                         index = nearest
+                        prepared_index = None
                         self.event({"type": "route_resume", "index": index})
                     last_good = stuck_anchor = pose
                     stuck_since, recovered = time.monotonic(), False
                     scene_interrupted, last = False, None
                     continue
                 last_good = pose
+                if self.point_prepare and prepared_index != index:
+                    if self.point_prepare(target, pose):
+                        self.locator.previous = None
+                        pose = self.observe((target.x, target.y))
+                        last_good = pose
+                        stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        last = None
+                    prepared_index = index
                 if index == 0 and distance(pose, origin) > route.start_radius:
                     raise NavigationError("当前位置不在路线起点附近，未开始移动，请先传送或手动到达起点。")
                 # Pickup locations require closer arrival than transit points.

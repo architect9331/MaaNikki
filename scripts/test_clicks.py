@@ -12,18 +12,135 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "agent"))
 os.environ.setdefault("MAAFW_BINARY_PATH", str(ROOT / "maafw"))
 from daily.gameplay import Gameplay
-from daily.runtime import Runtime, parameters
+from daily.runtime import Executors, Runtime, parameters
 from daily import run_state
 from daily.ui import GameUI
+from daily.startup import focus_game
+from navigation.models import NavigationError
 
 
 class ClickTests(unittest.TestCase):
+    def test_home_and_other_routes_focus_before_guarded_operations(self):
+        for executor in ("home", "plant"):
+            rt = self.runtime()
+            state = {"focused": False}
+            rt.routes = Mock(return_value={"schema_version": 3, "id": "test", "map": "home",
+                "points": [{"x": 1, "y": 2}], "teleport": {"name": "test"}})
+            inputs = Mock(hwnd=1)
+            inputs.foreground.side_effect = lambda: state["focused"]
+            def checked(*args):
+                self.assertTrue(state["focused"])
+                return True
+            def focused(*args):
+                state["focused"] = True
+                inputs.check()
+            actions = Mock(count=0, quota=None)
+            actions.complete.return_value = True
+            actions.fishing.configure.side_effect = checked
+            card = SimpleNamespace(rule=SimpleNamespace(executor=executor))
+            with tempfile.TemporaryDirectory() as directory, \
+                    patch("daily.runtime.ROOT", Path(directory)), \
+                    patch("daily.runtime.foreground_inputs", return_value=True), \
+                    patch("navigation.models.maps", return_value={"home": Mock()}), \
+                    patch("navigation.vision.Locator"), \
+                    patch("navigation.controller.ForegroundInput", return_value=inputs), \
+                    patch("daily.startup.focus_game", side_effect=focused) as focus, \
+                    patch("navigation.daily_route.RouteActions", return_value=actions), \
+                    patch("navigation.daily_route.preflight"), \
+                    patch("navigation.teleport.Teleporter") as teleport, \
+                    patch("navigation.engine.Navigator") as navigator:
+                inputs.check.side_effect = checked
+                teleport.return_value.prepare.side_effect = checked
+                navigator.return_value.follow.side_effect = checked
+                self.assertTrue(rt.navigate("test", "home", card))
+                focus.assert_called_once_with(rt, inputs)
+                inputs.release.assert_called_once()
+                self.assertIsNone(rt.navigation_inputs)
+
+    def test_nested_route_does_not_refocus_after_parent_loses_foreground(self):
+        rt = self.runtime()
+        parent, inputs = Mock(), Mock(hwnd=1)
+        rt.navigation_inputs = parent
+        parent.check.side_effect = NavigationError("游戏已离开前台")
+        inputs.foreground.return_value = False
+        rt.routes = Mock(return_value={"schema_version": 2, "id": "test", "map": "home",
+                                      "points": [{"x": 1, "y": 2}]})
+        with tempfile.TemporaryDirectory() as directory, \
+                patch("daily.runtime.ROOT", Path(directory)), \
+                patch("daily.runtime.foreground_inputs", return_value=True), \
+                patch("navigation.models.maps", return_value={"home": Mock()}), \
+                patch("navigation.vision.Locator"), \
+                patch("navigation.controller.ForegroundInput", return_value=inputs), \
+                patch("daily.startup.focus_game") as focus:
+            self.assertFalse(rt.navigate("test"))
+            focus.assert_not_called()
+            self.assertIs(rt.navigation_inputs, parent)
+            self.assertTrue(rt.navigation_halted)
+
+    def test_item_selection_finishes_settings_before_using_or_recalling_item(self):
+        for outcome, expected_clicks in (("preview", 1), ("recall", 2), ("lantern", 1)):
+            with self.subTest(outcome=outcome):
+                rt = self.runtime()
+                state = {"page": "world", "item_clicks": 0}
+                rt.main = Mock(return_value=True)
+                rt.hit = Mock(side_effect=lambda node: {
+                    "MaaNikki_MainDetected": state["page"] in {"world", "preview"},
+                    "MaaNikki_Daily_ItemSetting": state["page"] == "wheel",
+                    "MaaNikki_Daily_ItemFinish": state["page"] == "settings",
+                    "MaaNikki_Daily_ItemCategory": state["page"] in {
+                        "settings", "browser", "preview", "lantern"},
+                    "MaaNikki_Daily_LanternConfirm": state["page"] == "lantern",
+                }.get(node, False))
+                rt.ui.wait_page = Mock(side_effect=lambda page, **kwargs: rt.ui.page_matches(page))
+                rt.ui.roi = Mock(return_value=[1052, 134, 60, 60])
+                rt.placement_ready = Mock(side_effect=lambda: state["page"] == "preview")
+
+                def hold(*args):
+                    state["page"] = "wheel"
+                    return True
+
+                def click_template(node, **kwargs):
+                    if node == "MaaNikki_Daily_ItemSetting":
+                        state["page"] = "settings"
+                    elif node == "MaaNikki_Daily_ItemFinish":
+                        state["page"] = "browser"
+                    return True
+
+                def choose(*args, **kwargs):
+                    self.assertEqual(state["page"], "browser")
+                    state["item_clicks"] += 1
+                    state["page"] = ("browser" if outcome == "recall" and state["item_clicks"] == 1
+                                     else "lantern" if outcome == "lantern" else "preview")
+                    return True
+
+                rt.hold = Mock(side_effect=hold)
+                rt.click_template = Mock(side_effect=click_template)
+                rt.action = Mock(side_effect=choose)
+                self.assertTrue(Executors.select_item(rt))
+                self.assertEqual(state["item_clicks"], expected_clicks)
+                finish_calls = [call for call in rt.click_template.call_args_list
+                                if call.args[0] == "MaaNikki_Daily_ItemFinish"]
+                self.assertEqual(len(finish_calls), 1)
+
     def test_main_confirmation_never_moves_cursor(self):
         rt = self.runtime()
         rt.hit = Mock(return_value=True)
         self.assertTrue(rt.ui.wait_page("MaaNikki_MainDetected"))
         self.assertEqual(rt.hit.call_count, 2)
         rt.ui.unhover.assert_not_called()
+
+    def test_scene_transition_suppresses_unhover_and_restores_ui_behavior(self):
+        rt = self.runtime()
+        rt.ui.unhover = lambda: GameUI.unhover(rt.ui)
+        rt.hit = Mock(return_value=False)
+        rt.controller.post_touch_move = Mock()
+        rt.controller.post_touch_move.return_value.wait.return_value.succeeded = True
+        with rt.ui.preserve_cursor():
+            self.assertTrue(rt.action("Click", target=[1082, 164]))
+            rt.ui.wait_page(lambda: True)
+        rt.controller.post_touch_move.assert_not_called()
+        self.assertTrue(rt.ui.unhover())
+        rt.controller.post_touch_move.assert_called_once_with(0, 0)
 
     def test_unhover_moves_cursor_only_in_ui_and_never_after_stop(self):
         rt = self.runtime()
@@ -85,11 +202,58 @@ class ClickTests(unittest.TestCase):
         self.assertEqual(len(self.actions(rt)), 1)
 
     def test_gameplay_mouse_binding_keeps_original_timing(self):
+        for name, button in (("place", 0), ("recover", 1), ("attack", 0), ("capture", 1)):
+            with self.subTest(name=name):
+                rt = self.runtime()
+                inputs = Mock()
+                rt.navigation_inputs = inputs
+                with patch("navigation.controller.ForegroundInput") as create:
+                    self.assertTrue(rt.key(name))
+                create.assert_not_called()
+                inputs.click_mouse.assert_called_once_with(button)
+                inputs.release.assert_not_called()
+                self.assertEqual(self.actions(rt), [])
+                rt.pause.assert_called_once_with(.35)
+                rt.ui.unhover.assert_not_called()
+
+    def test_mouse_bound_interaction_never_uses_ui_clicks(self):
         rt = self.runtime()
-        self.assertTrue(rt.key("capture"))
-        self.assertEqual(self.actions(rt), [
-            {"action": "Click", "target": [640, 360], "contact": 1}])
-        rt.ui.unhover.assert_not_called()
+        inputs = Mock()
+        rt.game_keys.values = {"interact": "MouseX1"}
+        rt.controller.post_touch_move = Mock()
+        with patch("navigation.controller.ForegroundInput", return_value=inputs):
+            self.assertTrue(rt.key("interact", .5))
+        inputs.click_mouse.assert_called_once_with(3)
+        inputs.release.assert_called_once()
+        self.assertEqual(self.actions(rt), [])
+        rt.controller.post_touch_move.assert_not_called()
+
+    def test_stopped_mouse_action_never_creates_input_guard(self):
+        rt = self.runtime()
+        rt.context.tasker.stopping = True
+        with patch("navigation.controller.ForegroundInput") as create:
+            self.assertFalse(rt.key("place"))
+        create.assert_not_called()
+        self.assertEqual(self.actions(rt), [])
+
+    def test_developer_focus_never_repositions_the_cursor(self):
+        rt = self.runtime()
+        inputs, state = Mock(), {"foreground": False, "time": 0.0}
+        inputs.foreground.side_effect = lambda: state["foreground"]
+        def activate(key):
+            self.assertEqual(key, 18)
+            state["foreground"] = True
+            return SimpleNamespace(wait=lambda: SimpleNamespace(succeeded=True))
+        def tick():
+            state["time"] += .1
+            return state["time"]
+        rt.controller.post_key_up = Mock(side_effect=activate)
+        with patch("daily.startup.time.monotonic", side_effect=tick), \
+                patch("daily.startup.time.sleep"):
+            focus_game(rt, inputs)
+        rt.controller.post_key_up.assert_called_once_with(18)
+        self.assertEqual(self.actions(rt), [])
+        inputs.check.assert_called_once()
 
     def test_enter_page_retries_unhandled_click(self):
         rt = self.runtime()
@@ -341,6 +505,141 @@ class ClickTests(unittest.TestCase):
                          [[640, 360], [1005, 655, 160, 35]])
         self.assertGreaterEqual(state["reads"], 3)
         self.assertEqual(state["page"], "main")
+        teleporter.zoom.assert_called_once()
+
+    def test_scroll_search_checks_current_view_then_top_and_each_lower_view(self):
+        import numpy as np
+        for start, target, reads, scrolls in (
+                (1, 1, [1], []),
+                (1, 0, [1, 0], [1800, 1800]),
+                (1, 2, [1, 0, 1, 2], [1800, 1800, -600, -600]),
+                (1, None, [1, 0, 1, 2], [1800, 1800, -600, -600, -600])):
+            with self.subTest(target=target):
+                rt = self.runtime()
+                state = {"view": start}
+                rng = np.random.default_rng(0)
+                frames = [rng.integers(0, 256, (64, 64, 3), dtype=np.uint8) for _ in range(3)]
+                observed, movements = [], []
+                rt.capture = Mock(side_effect=lambda: frames[state["view"]])
+                def recognize(*args, **kwargs):
+                    observed.append(state["view"])
+                    return SimpleNamespace(hit=state["view"] == target, box=[10, 10, 8, 8])
+                def scroll(roi, amount):
+                    movements.append(amount)
+                    state["view"] = 0 if amount > 0 else min(2, state["view"]+1)
+                    return True
+                rt.recognize = Mock(side_effect=recognize)
+                rt.ui.scroll = Mock(side_effect=scroll)
+                rt.ui.click_box = Mock(return_value=True)
+                self.assertEqual(rt.ui.find(roi=[4, 4, 40, 40], text="星海", exact=True),
+                                 target is not None)
+                self.assertEqual(observed, reads)
+                self.assertEqual(movements, scrolls)
+                self.assertEqual(rt.ui.click_box.call_count, int(target is not None))
+
+    def test_region_menu_title_allows_search_when_destinations_are_offscreen(self):
+        from navigation.teleport import Teleporter
+        for province, wanted in (("星海", "星海"), ("伊赞之土", "巨木之森"), ("家园", "家园")):
+            with self.subTest(wanted=wanted):
+                rt = self.runtime()
+                state = {"menu": False, "region": "微风绿野"}
+                region_roi, list_roi = [1042, 59, 160, 27], [891, 69, 247, 617]
+                rt.ui.roi = Mock(side_effect=lambda name:
+                    region_roi if name == "AreaBigMapRegionName" else list_roi)
+                rt.ui.open_map = Mock(return_value=True)
+                rt.ui.asset = Mock(return_value=None)
+                rt.hit = Mock(side_effect=lambda node:
+                    node == "MaaNikki_Navigation_MapFeature" or
+                    node == "MaaNikki_Navigation_RegionMenuReady" and state["menu"])
+                rt.recognize = Mock(return_value=SimpleNamespace(hit=False, filtered_results=[]))
+                def open_menu(box):
+                    if box == region_roi:
+                        state["menu"] = True
+                    else:
+                        state.update(menu=False, region=wanted)
+                    return True
+                def select(**kwargs):
+                    self.assertTrue(state["menu"])
+                    self.assertTrue(kwargs["scroll"])
+                    if kwargs.get("asset"):
+                        self.assertFalse(kwargs["click"])
+                        return [893, 95, 33, 33]
+                    if kwargs["text"] == wanted:
+                        state.update(menu=False, region=wanted)
+                    return True
+                rt.ui.click_box = Mock(side_effect=open_menu)
+                rt.ui.find = Mock(side_effect=select)
+                rt.ui.text = Mock(return_value="暖暖的家")
+                teleporter = Teleporter(rt, Mock())
+                teleporter.check = Mock()
+                teleporter.dark_text = Mock(side_effect=lambda roi:
+                    state["region"] if roi == region_roi else "暖暖的家")
+                teleporter.region({"province": province, "region": wanted})
+                self.assertEqual(state, {"menu": False, "region": wanted})
+                self.assertEqual(rt.ui.click_box.call_count, 2 if wanted == "家园" else 1)
+                self.assertGreater(rt.ui.find.call_count, 0)
+                rt.ui.asset.assert_not_called()
+                rt.ui.report_entry.assert_not_called()
+
+    def test_home_reuse_closes_menu_without_reselecting_even_with_custom_name(self):
+        from navigation.teleport import Teleporter
+        for home_name in ("暖暖的家", "我改过名字的小岛"):
+            with self.subTest(home_name=home_name):
+                rt = self.runtime()
+                state = {"menu": False}
+                rt.hit = Mock(side_effect=lambda node:
+                    node == "MaaNikki_Navigation_MapFeature" or
+                    node == "MaaNikki_Navigation_RegionMenuReady" and state["menu"])
+                rt.ui.open_map = Mock(return_value=True)
+                rt.ui.click_box = Mock(side_effect=lambda box: state.update(menu=True) or True)
+                rt.ui.find = Mock(return_value=[893, 95, 33, 33])
+                rt.ui.text = Mock(return_value=home_name)
+                rt.key = Mock(side_effect=lambda *args: state.update(menu=False) or True)
+                teleporter = Teleporter(rt, Mock())
+                teleporter.check = Mock()
+                teleporter.dark_text = Mock(return_value=home_name)
+                teleporter.home_region([1042, 59, 160, 27], [891, 69, 247, 617])
+                rt.ui.click_box.assert_called_once_with([1042, 59, 160, 27])
+                rt.key.assert_called_once_with("menu", 0)
+                self.assertFalse(state["menu"])
+
+    def test_current_normal_region_is_not_reselected_and_open_menu_is_closed(self):
+        from navigation.teleport import Teleporter
+        for menu_open in (False, True):
+            rt = self.runtime()
+            state = {"menu": menu_open}
+            rt.hit = Mock(side_effect=lambda node:
+                node == "MaaNikki_Navigation_MapFeature" or
+                node == "MaaNikki_Navigation_RegionMenuReady" and state["menu"])
+            rt.ui.roi = Mock(return_value=[1042, 59, 160, 27])
+            rt.ui.find = Mock()
+            rt.ui.click_box = Mock()
+            rt.key = Mock(side_effect=lambda *args: state.update(menu=False) or True)
+            teleporter = Teleporter(rt, Mock())
+            teleporter.dark_text = Mock(return_value="星海")
+            teleporter.region({"province": "星海", "region": "星海"})
+            rt.ui.find.assert_not_called()
+            rt.ui.click_box.assert_not_called()
+            self.assertEqual(rt.key.call_count, int(menu_open))
+
+    def test_search_can_locate_entry_without_clicking(self):
+        import numpy as np
+        rt = self.runtime()
+        rt.capture = Mock(return_value=np.zeros((720, 1280, 3), dtype=np.uint8))
+        rt.recognize = Mock(return_value=SimpleNamespace(hit=True, box=[10, 20, 8, 8]))
+        rt.ui.click_box = Mock()
+        rt.ui.scroll = Mock()
+        self.assertEqual(rt.ui.find(roi=[0, 0, 40, 40], text="星海", click=False), [10, 20, 8, 8])
+        rt.ui.click_box.assert_not_called()
+        rt.ui.scroll.assert_not_called()
+
+    def test_catalog_assets_have_pipeline_nodes_for_override_reads(self):
+        nodes = {}
+        for path in (ROOT / "resource/pipeline").glob("*.json"):
+            nodes.update(json.loads(path.read_text(encoding="utf-8")))
+        assets = json.loads((ROOT / "resource/image/game/catalog.json").read_text(encoding="utf-8"))["assets"]
+        for name in assets:
+            self.assertIn("MaaNikki_Asset_"+name.lower(), nodes, name)
 
     def test_template_retry_relocates_changed_box(self):
         rt = self.runtime()

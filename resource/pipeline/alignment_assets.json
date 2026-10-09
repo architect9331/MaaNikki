@@ -2399,5 +2399,449 @@
     ],
     "threshold": 0.75,
     "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areadialogselection": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areadialogselection.png",
+    "roi": [
+      884,
+      373,
+      188,
+      153
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areaescentrances": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areaescentrances.png",
+    "roi": [
+      91,
+      176,
+      587,
+      395
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areamiracrownautomatchbutton": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areamiracrownautomatchbutton.png",
+    "roi": [
+      679,
+      267,
+      93,
+      133
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areamiracrownentrance": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areamiracrownentrance.png",
+    "roi": [
+      92,
+      203,
+      169,
+      134
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areamiracrownoverview": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areamiracrownoverview.png",
+    "roi": [
+      1029,
+      315,
+      113,
+      33
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areamiracrownseconddoor": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areamiracrownseconddoor.png",
+    "roi": [
+      704,
+      437,
+      101,
+      112
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areamiracrownshopitemlist": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areamiracrownshopitemlist.png",
+    "roi": [
+      199,
+      111,
+      898,
+      415
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areamiracrownthirddoor": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areamiracrownthirddoor.png",
+    "roi": [
+      1034,
+      401,
+      75,
+      93
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areapagetitlefeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areapagetitlefeature.png",
+    "roi": [
+      66,
+      15,
+      153,
+      37
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areapickup": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/areapickup.png",
+    "roi": [
+      265,
+      97,
+      897,
+      533
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownaward": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownaward.png",
+    "roi": [
+      83,
+      543,
+      33,
+      33
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownconfirmmatch": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownconfirmmatch.png",
+    "roi": [
+      43,
+      641,
+      149,
+      37
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownnextstep": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownnextstep.png",
+    "roi": [
+      73,
+      643,
+      150,
+      37
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownquickreward": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownquickreward.png",
+    "roi": [
+      574,
+      486,
+      133,
+      33
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownrank": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownrank.png",
+    "roi": [
+      736,
+      9,
+      50,
+      50
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownrewardget": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownrewardget.png",
+    "roi": [
+      833,
+      255,
+      30,
+      30
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownshop": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownshop.png",
+    "roi": [
+      83,
+      465,
+      33,
+      33
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownshopconfirm": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownshopconfirm.png",
+    "roi": [
+      591,
+      523,
+      97,
+      37
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownshopmax": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownshopmax.png",
+    "roi": [
+      884,
+      270,
+      30,
+      30
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownskipall": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownskipall.png",
+    "roi": [
+      1123,
+      17,
+      40,
+      40
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonmiracrownstartchallenge": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/buttonmiracrownstartchallenge.png",
+    "roi": [
+      938,
+      591,
+      149,
+      37
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconpickupfeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/iconpickupfeature.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconskipdialog": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/iconskipdialog.png",
+    "roi": [
+      1149,
+      669,
+      79,
+      21
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_icontalkfeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/icontalkfeature.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconfishingfinish": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconFishingFinish.png",
+    "roi": [
+      1069,
+      682,
+      35,
+      20
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconfishingstrike": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconFishingStrike.png",
+    "roi": [
+      1048,
+      682,
+      56,
+      20
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconfishingpullline": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconFishingPullLine.png",
+    "roi": [
+      984,
+      682,
+      120,
+      20
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconfishingpulllinehome": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconFishingPullLineHome.png",
+    "roi": [
+      968,
+      683,
+      120,
+      20
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconfishingreelin": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconFishingReelIn.png",
+    "roi": [
+      1069,
+      682,
+      35,
+      20
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconfishingnofish": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconFishingNoFish.png",
+    "roi": [
+      561,
+      125,
+      171,
+      26
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconabilitystarcollect": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityStarCollect.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconabilityfish": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityFish.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconbigmaphomefeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconBigMapHomeFeature.png",
+    "roi": [
+      893,
+      95,
+      33,
+      33
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areafishingicons": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaFishingIcons.png",
+    "roi": [
+      962,
+      675,
+      267,
+      27
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areafishingdetection": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaFishingDetection.png",
+    "roi": [
+      472,
+      236,
+      333,
+      166
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areasubabilitybutton": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaSubAbilityButton.png",
+    "roi": [
+      1083,
+      583,
+      40,
+      40
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_areabigmapmeteortext": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/AreaBigMapMeteorText.png",
+    "roi": [
+      29,
+      82,
+      227,
+      105
+    ],
+    "threshold": 0.75,
+    "action": "DoNothing"
   }
 }

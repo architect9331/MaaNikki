@@ -1,4 +1,10 @@
 {
+  "MaaNikki_Navigation_RegionMenuReady": {
+    "recognition": "OCR",
+    "roi": [875, 15, 250, 60],
+    "expected": "^地图切换$",
+    "action": "DoNothing"
+  },
   "MaaNikki_Navigation_MapFeature": {
     "recognition": "TemplateMatch",
     "roi": [
@@ -16,15 +22,15 @@
     "custom_recognition": "nikki.ui_template",
     "custom_recognition_param": {
       "roi": [
-        170,
-        675,
-        75,
-        35
+        178,
+        684,
+        51,
+        18
       ],
       "template": "game/navigation/map_max_scale.png",
-      "gray_limit": [
-        155,
-        255
+      "color": [
+        [10, 80, 160],
+        [30, 255, 255]
       ],
       "threshold": 0.9
     },

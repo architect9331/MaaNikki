@@ -1187,6 +1187,113 @@
     "IconTalkFeature": {
       "template": "game/ui/icontalkfeature.png",
       "roi": null
+    },
+    "IconFishingFinish": {
+      "template": "game/ui/IconFishingFinish.png",
+      "roi": [
+        1069,
+        682,
+        35,
+        20
+      ]
+    },
+    "IconFishingStrike": {
+      "template": "game/ui/IconFishingStrike.png",
+      "roi": [
+        1048,
+        682,
+        56,
+        20
+      ]
+    },
+    "IconFishingPullLine": {
+      "template": "game/ui/IconFishingPullLine.png",
+      "roi": [
+        984,
+        682,
+        120,
+        20
+      ]
+    },
+    "IconFishingPullLineHome": {
+      "template": "game/ui/IconFishingPullLineHome.png",
+      "roi": [
+        968,
+        683,
+        120,
+        20
+      ]
+    },
+    "IconFishingReelIn": {
+      "template": "game/ui/IconFishingReelIn.png",
+      "roi": [
+        1069,
+        682,
+        35,
+        20
+      ]
+    },
+    "IconFishingNoFish": {
+      "template": "game/ui/IconFishingNoFish.png",
+      "roi": [
+        561,
+        125,
+        171,
+        26
+      ]
+    },
+    "IconAbilityStarCollect": {
+      "template": "game/ui/IconAbilityStarCollect.png",
+      "roi": null
+    },
+    "IconAbilityFish": {
+      "template": "game/ui/IconAbilityFish.png",
+      "roi": null
+    },
+    "IconBigMapHomeFeature": {
+      "template": "game/ui/IconBigMapHomeFeature.png",
+      "roi": [
+        893,
+        95,
+        33,
+        33
+      ]
+    },
+    "AreaFishingIcons": {
+      "template": "game/ui/AreaFishingIcons.png",
+      "roi": [
+        962,
+        675,
+        267,
+        27
+      ]
+    },
+    "AreaFishingDetection": {
+      "template": "game/ui/AreaFishingDetection.png",
+      "roi": [
+        472,
+        236,
+        333,
+        166
+      ]
+    },
+    "AreaSubAbilityButton": {
+      "template": "game/ui/AreaSubAbilityButton.png",
+      "roi": [
+        1083,
+        583,
+        40,
+        40
+      ]
+    },
+    "AreaBigMapMeteorText": {
+      "template": "game/ui/AreaBigMapMeteorText.png",
+      "roi": [
+        29,
+        82,
+        227,
+        105
+      ]
     }
   },
   "materials": {

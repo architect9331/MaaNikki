@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agent"))
-from navigation.models import NavigationError
+from navigation.models import NavigationError, load_route
 from navigation.vision import Locator, Pose
 from navigation.controller import ForegroundInput, relative_camera
 from navigation.daily_route import RouteActions
@@ -101,6 +101,35 @@ class SteeringTests(unittest.TestCase):
 
 
 class CollectionTests(unittest.TestCase):
+    def plant_actions(self, remaining=5):
+        resource = Path(__file__).resolve().parents[1] / "resource"
+        card = SimpleNamespace(rule=SimpleNamespace(executor="plant"), remaining=remaining)
+        return RouteActions(Mock(stopped=False), resource, load_route(resource, "zhaoxi_plant"),
+                            "zhaoxi", card, Mock(), Mock())
+
+    def test_lamp_flower_completes_quota_after_four_star_grasses(self):
+        actions = self.plant_actions()
+        actions.count = 4
+        actions.notification = Mock(return_value="路灯花×1\n路灯花精粹×1\n采集心得×10")
+        self.assertTrue(actions.obtained("", interaction=True))
+        self.assertEqual(actions.count, 5)
+        self.assertTrue(actions.complete())
+        self.assertEqual(actions.event.call_args.args[0]["material"], "路灯花")
+
+    def test_both_plants_count_but_byproducts_and_other_items_do_not(self):
+        actions = self.plant_actions()
+        actions.notification = Mock(return_value="星荧草×1\n路灯花×1\n路灯花种子×1\n星荧草精粹×1\n噗灵×10")
+        self.assertTrue(actions.obtained("", interaction=True))
+        self.assertEqual(actions.count, 2)
+        self.assertFalse(actions.complete())
+
+    def test_repeated_passive_notice_does_not_count_twice(self):
+        actions = self.plant_actions()
+        actions.notification = Mock(return_value="路灯花×1")
+        self.assertTrue(actions.obtained("", single=True))
+        self.assertFalse(actions.obtained("", single=True))
+        self.assertEqual(actions.count, 1)
+
     def test_each_plant_point_waits_two_seconds_then_one(self):
         actions = RouteActions.__new__(RouteActions)
         actions.count, actions.quota = 0, None
@@ -145,6 +174,54 @@ class CollectionTests(unittest.TestCase):
 
 
 class SceneInputTests(unittest.TestCase):
+    def test_scene_click_preserves_cursor_and_other_held_inputs(self):
+        for button in range(5):
+            inputs = ForegroundInput.__new__(ForegroundInput)
+            inputs.controller, inputs.user32 = Mock(), Mock()
+            inputs.check, inputs.wait = Mock(), Mock()
+            inputs.foreground = Mock(return_value=True)
+            other = 4 if button != 4 else 2
+            inputs.buttons, inputs.held = {other}, {87}
+            inputs.controller.post_touch_up.return_value.wait.return_value.succeeded = True
+            with patch("navigation.controller.send_mouse", return_value=True) as send:
+                self.assertTrue(inputs.click_mouse(button))
+            flags = {0: 0x0002, 1: 0x0008, 2: 0x0020, 3: 0x0080, 4: 0x0080}
+            send.assert_called_once_with(inputs.user32, flags[button], data=button-2 if button >= 3 else 0)
+            inputs.controller.post_touch_up.assert_called_once_with(button)
+            inputs.controller.post_touch_down.assert_not_called()
+            inputs.controller.post_touch_move.assert_not_called()
+            inputs.controller.post_click.assert_not_called()
+            inputs.controller.post_key_up.assert_not_called()
+            self.assertEqual(inputs.buttons, {other})
+            self.assertEqual(inputs.held, {87})
+
+    def test_scene_click_releases_after_interruption_without_stealing_focus(self):
+        inputs = ForegroundInput.__new__(ForegroundInput)
+        inputs.controller, inputs.user32 = Mock(), Mock()
+        inputs.check, inputs.wait = Mock(), Mock(side_effect=NavigationError("已停止"))
+        inputs.foreground = Mock(return_value=False)
+        inputs.buttons, inputs.held = set(), {87}
+        with patch("navigation.controller.send_mouse", return_value=True):
+            with self.assertRaises(NavigationError):
+                inputs.click_mouse(0)
+        inputs.user32.mouse_event.assert_called_once_with(0x0004, 0, 0, 0, 0)
+        inputs.controller.post_touch_up.assert_not_called()
+        self.assertEqual(inputs.buttons, set())
+        self.assertEqual(inputs.held, {87})
+
+    def test_failed_scene_click_down_is_released_with_fallback(self):
+        inputs = ForegroundInput.__new__(ForegroundInput)
+        inputs.controller, inputs.user32, inputs.check = Mock(), Mock(), Mock()
+        inputs.foreground = Mock(return_value=True)
+        inputs.buttons = set()
+        inputs.controller.post_touch_up.return_value.wait.return_value.succeeded = False
+        with patch("navigation.controller.send_mouse", return_value=False):
+            with self.assertRaises(NavigationError):
+                inputs.click_mouse(1)
+        inputs.controller.post_touch_up.assert_called_once_with(1)
+        inputs.user32.mouse_event.assert_called_once_with(0x0010, 0, 0, 0, 0)
+        self.assertEqual(inputs.buttons, set())
+
     def test_scene_button_does_not_relocate_cursor_and_failed_down_is_tracked(self):
         for succeeded in (True, False):
             inputs = ForegroundInput.__new__(ForegroundInput)
