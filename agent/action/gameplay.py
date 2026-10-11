@@ -19,6 +19,9 @@ class UIClickAction(CustomAction):
             options = json.loads(options or "{}") if isinstance(options, str) else options
             options = options or {}
             target = options.get("target", True)
+            resumed = runtime.check_focus()
+            if target is True and resumed and not options.get("ready"):
+                return runtime.click_template(argv.node_name, wait_seconds=0)
             target = list(argv.box) if target is True else target
             ready = options.get("ready")
             if ready:
@@ -42,6 +45,12 @@ class GameplayAction(CustomAction):
             if kind == "home":
                 from daily.home import Home
                 return Home(runtime).run()
+            if kind == "fishing":
+                from daily.fishing import current_fishing
+                return current_fishing(runtime)
+            if kind == "fishing_route":
+                from daily.fishing import route_fishing
+                return route_fishing(runtime)
             if kind == "main":
                 return runtime.main()
             if kind in ("dig", "monthly", "lookbook"):

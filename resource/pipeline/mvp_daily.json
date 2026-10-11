@@ -402,16 +402,42 @@
       "source": "MaaNikki_Monthly_Start"
     }
   },
+  "MaaNikki_Monthly_ToTravel": {
+    "recognition": "OCR",
+    "roi": [0, 630, 260, 80],
+    "expected": "奇迹之旅",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Monthly_TravelReady",
+      "source": "MaaNikki_Monthly_PageReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Monthly_ToParadise": {
+    "recognition": "OCR",
+    "roi": [0, 630, 260, 80],
+    "expected": "乐园构想",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Monthly_ParadiseReady",
+      "source": "MaaNikki_Monthly_PageReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
   "MaaNikki_Monthly_TaskTab": {
     "enabled": false,
     "recognition": "OCR",
     "roi": [
-      620,
+      590,
       0,
-      150,
+      200,
       80
     ],
-    "expected": "旅行任务",
+    "expected": "旅行任务|乐园纪事",
     "action": "Custom",
     "post_delay": 650,
     "next": [],

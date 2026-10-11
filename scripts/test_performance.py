@@ -267,7 +267,7 @@ class AssistTests(unittest.TestCase):
         enabled = enabled or {name: True for name in ("Pickup", "Clear", "Dialogue")}
         rt.context.get_node_data.side_effect = lambda name: {
             "action": {"param": {"custom_action_param": {
-                "value": enabled[name.removeprefix("MaaNikki_Assist_")]}}}
+                "value": enabled.get(name.removeprefix("MaaNikki_Assist_"), False)}}}
         } if name.startswith("MaaNikki_Assist_") else {}
         clock = SimpleNamespace(now=0.0)
         captures, checks, inputs = [], [], []
@@ -318,7 +318,10 @@ class AssistTests(unittest.TestCase):
         with patch("daily.exploration.ForegroundInput", return_value=guard), \
                 patch("daily.exploration.time.monotonic", side_effect=lambda: clock.now):
             self.assertTrue(rt.run_assist())
-        guard.release.assert_called_once()
+        if enabled.get("Fishing", False):
+            guard.release.assert_called()
+        else:
+            guard.release.assert_called_once()
         return rt, captures, checks, inputs
 
     def test_no_match_shares_each_due_decision_frame(self):
@@ -398,6 +401,28 @@ class AssistTests(unittest.TestCase):
         _, _, checks, _ = self.simulate(lambda *args: False,
             enabled={"Pickup": True, "Clear": False, "Dialogue": False})
         self.assertTrue(all(name == "IconPickupFeature" for name, _, _ in checks))
+
+    def test_fishing_session_excludes_other_helpers_from_its_frame(self):
+        with patch("daily.fishing.fishing_opportunity", return_value=True), \
+                patch("daily.fishing.run_fishing", side_effect=lambda rt, *args, **kwargs: rt.pause(.2)) as run:
+            _, _, checks, inputs = self.simulate(lambda *args: True,
+                enabled={name: True for name in ("Fishing", "Pickup", "Clear", "Dialogue")})
+        run.assert_called_once()
+        self.assertTrue(all(frame > 1 for _, _, frame in checks))
+        self.assertTrue(all(frame > 1 for _, frame, _, _ in inputs))
+
+    def test_focus_loss_during_fishing_detection_pauses_without_session(self):
+        active = [True]
+        def lost(*args):
+            active[0] = False
+            from navigation.models import NavigationError
+            raise NavigationError("focus lost")
+        with patch("daily.fishing.fishing_opportunity", side_effect=lost), \
+                patch("daily.fishing.run_fishing") as run:
+            _, _, _, inputs = self.simulate(lambda *args: True,
+                enabled={"Fishing": True}, foreground=lambda now: active[0])
+        run.assert_not_called()
+        self.assertFalse(inputs)
 
     def test_schedule_uses_elapsed_time_even_after_slow_capture(self):
         schedule = AssistSchedule({name: True for name in ("Pickup", "Clear", "Dialogue")})

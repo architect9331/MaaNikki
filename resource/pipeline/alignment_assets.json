@@ -2880,5 +2880,57 @@
     "threshold": 0.75,
     "action": "DoNothing",
     "method": 5
+  },
+  "MaaNikki_Asset_iconfishinghomefeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconFishingHomeFeature.png",
+    "roi": [
+      1157,
+      682,
+      67,
+      20
+    ],
+    "threshold": 0.75,
+    "method": 3,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconfishingmiralandfeature": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconFishingMiralandFeature.png",
+    "roi": [
+      1157,
+      682,
+      67,
+      20
+    ],
+    "threshold": 0.75,
+    "method": 3,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconabilityrhythms": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityRhythms.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "method": 3,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconabilityfishing": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityFish.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "method": 3,
+    "action": "DoNothing"
   }
 }

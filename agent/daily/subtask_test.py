@@ -124,11 +124,9 @@ class SubtaskTest(DailyRun):
             result["stage"] = self.test_stage
             if inputs:
                 try:
-                    if self.navigation_inputs is inputs and inputs.foreground() and not self.stopped:
+                    if self.navigation_inputs is inputs and not self.stopped:
                         self.test_stage = "return"
                         result["returned_main"] = self.main()
-                    elif self.navigation_inputs is inputs and not inputs.foreground():
-                        self.navigation_halted = True
                 except (OSError, ValueError, RuntimeError, cv2.error) as error:
                     result.update(returned_main=False, return_error=str(error))
                 try:

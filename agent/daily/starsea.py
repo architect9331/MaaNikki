@@ -1,7 +1,7 @@
 """Starsea hub, bell and crystal-location workflow."""
 from __future__ import annotations
 import math
-import time
+from task_control import task_time as time
 import json
 from datetime import datetime
 import cv2

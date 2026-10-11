@@ -4,7 +4,7 @@ import ctypes
 from ctypes import wintypes
 import os
 import re
-import time
+from task_control import task_time as time
 
 from .models import NavigationError
 from game_keys import GameKeys, MACRO_KEYS, MOVEMENT
@@ -63,6 +63,12 @@ class ForegroundInput:
         self.user32.GetForegroundWindow.restype = wintypes.HWND
         self.user32.IsWindow.argtypes = [wintypes.HWND]
         self.user32.IsWindow.restype = wintypes.BOOL
+        self.user32.IsIconic.argtypes = [wintypes.HWND]
+        self.user32.IsIconic.restype = wintypes.BOOL
+        self.user32.MapVirtualKeyW.argtypes = [wintypes.UINT, wintypes.UINT]
+        self.user32.MapVirtualKeyW.restype = wintypes.UINT
+        self.user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+        self.user32.PostMessageW.restype = wintypes.BOOL
         self.user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
         self.user32.GetWindowTextLengthW.restype = ctypes.c_int
         self.user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
@@ -76,6 +82,10 @@ class ForegroundInput:
         if (not self.user32.GetWindowTextW(self.hwnd, title, len(title))
                 or not re.fullmatch(r"\s*(Infinity Nikki|无限暖暖)\s*", title.value)):
             raise NavigationError("当前连接的窗口不是无限暖暖，导航已停止，请检查连接对象。")
+        from task_control import active_session
+        session = active_session()
+        if session is not None:
+            session.register(self)
 
     def foreground(self):
         return bool(self.user32.IsWindow(self.hwnd) and self.user32.GetForegroundWindow() == self.hwnd)
@@ -83,8 +93,46 @@ class ForegroundInput:
     def check(self):
         if self.stopped():
             raise NavigationError("已停止导航。")
-        if not self.foreground():
-            raise NavigationError("游戏已离开前台，导航已停止，请恢复游戏窗口后重试。")
+        from task_control import active_session
+        session = active_session()
+        if session is not None:
+            session.wait(self, require_foreground=True)
+        elif not self.foreground():
+            self.release()
+            while not self.foreground():
+                if self.stopped():
+                    raise NavigationError("任务已停止。")
+                if not self.user32.IsWindow(self.hwnd):
+                    raise NavigationError("连接的游戏窗口已经关闭，请重新连接。")
+                time.sleep(.05)
+
+    def click_window_key(self, key, pause, seconds=.05):
+        """Post a key pulse to the connected window without global input/focus."""
+        if type(key) is not int or not 0 < key < 256 or not .01 <= seconds <= 1:
+            raise NavigationError("后台按键参数无效。")
+        if self.stopped() or not self.user32.IsWindow(self.hwnd) or self.user32.IsIconic(self.hwnd):
+            return False
+        scan = self.user32.MapVirtualKeyW(key, 4)  # MAPVK_VK_TO_VSC_EX
+        extended = (scan >> 8) in (0xE0, 0xE1)
+        flags = 1 | ((scan & 0xFF) << 16) | (int(extended) << 24)
+        # Alt uses WM_SYSKEY*, other configured keys use WM_KEY*.
+        down, up = (0x0104, 0x0105) if key in (18, 164, 165) else (0x0100, 0x0101)
+        if not self.user32.PostMessageW(self.hwnd, down, key, flags):
+            raise NavigationError(f"无法向游戏窗口发送后台按键（错误 {ctypes.get_last_error()}）。")
+        try:
+            return pause(seconds)
+        finally:
+            # Even Stop during the pulse must enqueue the matching window-only up.
+            # Never use global key_up here: it could affect the user's active app.
+            if self.user32.IsWindow(self.hwnd):
+                if not self.user32.PostMessageW(self.hwnd, up, key, flags | 0xC0000000):
+                    raise NavigationError(f"无法释放游戏窗口的后台按键（错误 {ctypes.get_last_error()}）。")
+
+    @property
+    def generation(self):
+        from task_control import active_session
+        session = active_session()
+        return session.generation if session else 0
 
     def pulse(self, keys, seconds, jump=False):
         if not keys or any(k not in MOVEMENT for k in keys) or not 0.04 <= seconds <= 0.35:
@@ -110,6 +158,8 @@ class ForegroundInput:
             deadline = time.monotonic()+seconds
             while time.monotonic() < deadline:
                 self.check()
+                for binding in resolved:
+                    self._down(binding)
                 time.sleep(min(0.02, max(0, deadline-time.monotonic())))
         finally:
             self.release()
@@ -118,20 +168,25 @@ class ForegroundInput:
         # Maa Seize's key_up can refocus the game. Direct ups on focus loss avoid
         # stealing focus while still preventing globally stuck movement keys.
         for key in list(self.held):
-            try:
-                if self.foreground():
-                    try:
-                        released = self.controller.post_key_up(key).wait().succeeded
-                    except (OSError, RuntimeError, ValueError):
-                        released = False
-                    if not released:
-                        self.force_key_up(key)
-                else:
-                    self.force_key_up(key)
-            finally:
-                self.held.discard(key)
+            self.release_key(key)
         for button in list(self.buttons):
             self.release_mouse(button)
+
+    def release_key(self, key):
+        if key not in self.held:
+            return
+        try:
+            if self.foreground():
+                try:
+                    released = self.controller.post_key_up(key).wait().succeeded
+                except (OSError, RuntimeError, ValueError):
+                    released = False
+                if not released:
+                    self.force_key_up(key)
+            else:
+                self.force_key_up(key)
+        finally:
+            self.held.discard(key)
 
     def release_mouse(self, button):
         if button not in self.buttons:
@@ -158,7 +213,7 @@ class ForegroundInput:
             raise NavigationError("该鼠标按键正在按住，不能重复点击。")
         try:
             self.mouse_down(button)
-            self.wait(seconds)
+            self.wait(seconds, restore=False)
             self.check()
             return True
         finally:
@@ -236,12 +291,23 @@ class ForegroundInput:
             raise NavigationError("鼠标动作释放失败。")
         self.buttons.discard(button)
 
-    def wait(self, seconds):
+    def wait(self, seconds, *, restore=True):
         if not 0 <= seconds <= 8:
             raise NavigationError("动作等待时间超出限制。")
+        keys, buttons = set(self.held), set(self.buttons)
+        generation = self.generation
         deadline = time.monotonic()+seconds
         while time.monotonic() < deadline:
             self.check()
+            if restore and self.generation != generation:
+                generation = self.generation
+                # A bounded macro/ability hold resumes only its remaining
+                # active duration. Navigation movement replans separately.
+                from game_keys import Binding
+                for key in keys:
+                    self._down(Binding("key", key))
+                for button in buttons:
+                    self.mouse_down(button)
             time.sleep(min(.05, max(0, deadline-time.monotonic())))
 
 
@@ -255,10 +321,15 @@ def relative_camera(controller, dx: int, dy: int) -> bool:
             or abs(dx) > MAX_CAMERA_PIXELS or abs(dy) > 300):
         return False
     adapter = ForegroundInput(controller, lambda: False)
+    from task_control import active_session
+    if active_session() is not None:
+        adapter.check()
     if not adapter.foreground():
         return False
     if controller.post_relative_move(dx, dy).wait().succeeded:
         return True
+    if active_session() is not None:
+        adapter.check()
     if not adapter.foreground():
         return False
     return send_mouse(adapter.user32, 0x0001, dx=dx, dy=dy)

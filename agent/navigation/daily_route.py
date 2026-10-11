@@ -5,7 +5,7 @@ import json
 import math
 from pathlib import Path
 import re
-import time
+from task_control import task_time as time
 
 import cv2
 import numpy as np
@@ -41,7 +41,7 @@ def load_macro(resource: Path, name):
 
 def preflight(resource, route, executor):
     actions = {p.action for p in route.points if p.action}
-    required = {"plant": "collect", "insect": "insect", "fight": "macro", "bubble": "macro", "photo": "photo",
+    required = {"plant": "collect", "insect": "insect", "fishing": "fishing", "fight": "macro", "bubble": "macro", "photo": "photo",
                 "place": "place", "music": "music", "bottle": "bottle", "delivery": "delivery", "chat": "chat"}.get(executor)
     if executor == "home" and "fishing_star" not in actions:
         raise NavigationError("家园日常路线缺少钓星动作。")
@@ -56,6 +56,9 @@ def preflight(resource, route, executor):
     for point in route.points:
         if point.action == "teleport" and not point.params.get("checkpoint"):
             raise NavigationError("路线内的传送动作未指定传送点。")
+        if point.action == "fishing":
+            from .fishing import cast_count
+            cast_count((point.params or {}).get("cast_count"), 3)
         if point.action == "minigame":
             raise NavigationError("小游戏入场与结束页面尚未适配。")
         if point.action == "macro":
@@ -82,6 +85,9 @@ class RouteActions:
         if self.executor == "home":
             from .fishing import StarFishing
             self.fishing = StarFishing(self)
+        elif any(point.action == "fishing" for point in route.points):
+            from .fishing import Fishing
+            self.fishing = Fishing(self)
         from .insect import Insect
         self.insect = Insect(self)
 
@@ -123,36 +129,8 @@ class RouteActions:
         return False
 
     def ability(self, node):
-        from daily.ui import fields
-        definition = fields(self.rt.context, node)
-        template = definition.get("template", "")
-        if isinstance(template, list):
-            template = template[0] if template else ""
-        if not template:
-            return False
-        root = (self.resource / "image").resolve()
-        path = (root / template).resolve()
-        if not path.is_relative_to(root):
-            return False
-        image = cv2.imread(str(path))
-        frame = self.rt.capture()
-        if image is None or frame is None:
-            return False
-        area = definition.get("roi", self.rt.ui.roi("AreaAbilityButton"))
-        x, y, w, h = area
-        def white(value):
-            return cv2.inRange(cv2.cvtColor(value, cv2.COLOR_BGR2HSV),
-                               np.array([0, 0, 230]), np.array([180, 60, 255]))
-        scale = .73*2/3 if template.startswith("game/") else 1
-        image = cv2.resize(white(image), None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
-        patch = white(frame[y:y+h, x:x+w])
-        if patch.shape[0] < image.shape[0] or patch.shape[1] < image.shape[1]:
-            return False
-        x, y, w, h = cv2.boundingRect(image)
-        if not w or not h:
-            return False
-        image = image[y:y+h, x:x+w]
-        return float(cv2.matchTemplate(patch, image, cv2.TM_CCORR_NORMED).max()) > .8
+        from .ability import ability_matches
+        return ability_matches(self.rt, node)
 
     def select_insect(self):
         return self.insect.select()
@@ -224,15 +202,25 @@ class RouteActions:
         elif kind == "teleport":
             # Navigation's preparation hook already handled this point.
             ok = True
-        elif kind == "fishing_star":
+        elif kind in {"fishing_star", "fishing"}:
             try:
-                ok = self.fishing.run()
+                if kind == "fishing_star":
+                    ok = self.fishing.run()
+                else:
+                    settings = self.rt.setting("fishing")
+                    limit = settings.get("route_cast_count")
+                    if limit is None or limit == "":
+                        limit = (point.params or {}).get("cast_count")
+                    ok = self.fishing.run(max_cast_count=limit,
+                                          use_rhythms=settings.get("use_rhythms", False))
+                    names = self.count_materials or list(self.fishing.materials)
+                    self.count = sum(self.fishing.materials.get(name, 0) for name in names)
             except NavigationError as error:
                 # Input interruption still stops the route; ordinary task
                 # failures retain upstream's continue-to-next-point behavior.
                 self.inputs.check()
                 self.event({"type": "fishing_failed", "reason": str(error)})
-                self.rt.log(f"此钓星点未完成：{error}")
+                self.rt.log(f"此{'钓星' if kind == 'fishing_star' else '钓鱼'}点未完成：{error}")
                 ok = False
             if not ok:
                 # Record a failed action and continue the remaining points.
@@ -297,7 +285,7 @@ class RouteActions:
         self.event({"type": "action_result", "action": kind, "success": bool(ok), "count": self.count})
         if ok and kind != "wait":
             self.successes += 1
-        if kind not in {"wait", "collect", "insect", "bottle", "fishing_star"} and not ok:
+        if kind not in {"wait", "collect", "insect", "bottle", "fishing_star", "fishing"} and not ok:
             raise NavigationError("点位动作未确认成功，已停止本项。")
         self.inputs.check()
         if not self.rt.main():
@@ -313,7 +301,11 @@ class RouteActions:
             # Passive collection/animal entry is completed by traversal itself.
             # This is only an execution estimate until the daily-score read.
             return True
-        if self.executor in {"plant", "insect", "bottle"}:
+        if self.executor == "fishing" and self.quota is None:
+            # Route capacity is descriptive. Exhausted ponds still finish
+            # normally; only an interrupted/failed point makes the run fail.
+            return self.successes > 0 and not self.action_failed
+        if self.executor in {"plant", "insect", "bottle", "fishing"}:
             return self.quota is not None and self.count >= self.quota
         # Macro completion is only an execution estimate, never confirmed kills/points.
         return self.successes > 0

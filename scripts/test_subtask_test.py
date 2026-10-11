@@ -237,7 +237,7 @@ class SubtaskTests(unittest.TestCase):
             inputs.release.assert_called_once()
 
     def test_stop_and_return_failure_are_not_reported_as_success(self):
-        for outcome in ("stop", "return_failure", "focus_loss", "exception"):
+        for outcome in ("stop", "return_failure", "exception"):
             rt = self.runner()
             inputs = Mock()
             if outcome == "stop":
@@ -247,8 +247,6 @@ class SubtaskTests(unittest.TestCase):
                 rt.execute.side_effect = stop
             elif outcome == "return_failure":
                 rt.main.return_value = False
-            elif outcome == "focus_loss":
-                rt.execute.side_effect = lambda *args: setattr(inputs.foreground, "return_value", False) or False
             else:
                 rt.execute.side_effect = NavigationError("test failure")
             with tempfile.TemporaryDirectory() as directory:
@@ -256,7 +254,7 @@ class SubtaskTests(unittest.TestCase):
                 self.assertFalse(ok)
                 inputs.release.assert_called_once()
                 self.assertIsNone(rt.navigation_inputs)
-                if outcome in ("stop", "focus_loss"):
+                if outcome == "stop":
                     rt.main.assert_not_called()
                     self.assertEqual(report["status"], "stopped")
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-import time
+from task_control import task_time as time
 import cv2
 import numpy as np
 from registration import agent_action

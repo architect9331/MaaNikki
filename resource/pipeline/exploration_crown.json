@@ -1,7 +1,12 @@
 {
   "MaaNikki_Crown_Open": {
     "recognition": "OCR",
-    "roi": [91, 176, 587, 395],
+    "roi": [
+      91,
+      176,
+      587,
+      395
+    ],
     "expected": "奇迹之冠",
     "action": "Custom",
     "custom_action": "nikki.ui_click",
@@ -58,6 +63,13 @@
     "custom_action": "nikki.feature_settings",
     "custom_action_param": {
       "value": "启示水晶,共鸣水晶"
+    }
+  },
+  "MaaNikki_Assist_Fishing": {
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": false
     }
   }
 }

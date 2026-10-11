@@ -6,7 +6,7 @@
             "entry": "MaaNikki_MonthlyPass",
             "group": ["daily"],
             "default_check": true,
-            "description": "领取旅行任务与旅行秘宝中当前可领取的奖励；两个页签可独立设置。",
+            "description": "先处理当前打开的界面，再通过左下角切换处理另一个。奇迹之旅领取所选任务与秘宝，乐园构想只领取任务奖励。",
             "option": ["MonthlyIntro", "MonthlyPages"]
         }
     ],
@@ -35,7 +35,7 @@
         "MonthlyPages": {
             "type": "checkbox",
             "label": "领取页签",
-            "description": "选择需要领取奖励的页签。默认先领取旅行任务，再领取旅行秘宝。",
+            "description": "两个界面都会处理。奇迹之旅默认先领旅行任务，再领旅行秘宝；乐园构想沿用旅行任务选项，只领取乐园纪事奖励。",
             "cases": [
                 {
                     "name": "Task",

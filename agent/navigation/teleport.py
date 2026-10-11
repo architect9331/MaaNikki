@@ -2,7 +2,7 @@
 from __future__ import annotations
 import math
 import re
-import time
+from task_control import task_time as time
 import cv2
 from .models import NavigationError
 from .vision import Locator, luma

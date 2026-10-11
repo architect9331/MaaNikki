@@ -3,12 +3,44 @@ from __future__ import annotations
 
 import re
 import cv2
+import numpy as np
 
 from .models import NavigationError
 
 WHITE = ([0, 0, 230], [180, 60, 255])
 SLOTS = ((1063, 257), (1205, 433), (1199, 640), (1048, 829),
          (641, 829), (498, 640), (485, 433), (610, 257))
+
+
+def ability_matches(runtime, node):
+    """Recognize the equipped ability with the common wheel/HUD scale."""
+    from daily.ui import fields
+    definition = fields(runtime.context, node)
+    template = definition.get("template", "")
+    if isinstance(template, list):
+        template = template[0] if template else ""
+    if not template:
+        return False
+    root = (runtime.ui.resource / "image").resolve()
+    path = (root / template).resolve()
+    if not path.is_relative_to(root):
+        return False
+    image, frame = cv2.imread(str(path)), runtime.capture()
+    if image is None or frame is None:
+        return False
+    x, y, w, h = definition.get("roi", runtime.ui.roi("AreaAbilityButton"))
+    def white(value):
+        return cv2.inRange(cv2.cvtColor(value, cv2.COLOR_BGR2HSV),
+                           np.array(WHITE[0]), np.array(WHITE[1]))
+    scale = .73*2/3 if template.startswith("game/") else 1
+    image = cv2.resize(white(image), None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+    patch = white(frame[y:y+h, x:x+w])
+    if patch.shape[0] < image.shape[0] or patch.shape[1] < image.shape[1]:
+        return False
+    x, y, w, h = cv2.boundingRect(image)
+    if not w or not h:
+        return False
+    return float(cv2.matchTemplate(patch, image[y:y+h, x:x+w], cv2.TM_CCORR_NORMED).max()) > .8
 
 
 class Ability:

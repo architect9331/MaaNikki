@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-import time
+from task_control import task_time as time
 import cv2
 import numpy as np
 from scipy.signal import find_peaks

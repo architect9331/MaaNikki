@@ -5,7 +5,8 @@ import math
 from pathlib import Path
 from datetime import datetime
 import re
-import time
+import weakref
+from task_control import task_time as time
 import cv2
 from contextlib import contextmanager
 
@@ -36,17 +37,46 @@ class Runtime:
 
     def __init__(self, context):
         self.context = context
-        self.controller = context.tasker.controller
+        from task_control import active_session
+        session = active_session()
+        self.controller = session.controller if session else context.tasker.controller
         self.navigation_inputs = None
         self.navigation_halted = False
         self.game_keys = GameKeys(context)
         self._observations = []
+        self._focus_generation = 0
+        self._stale_images = []
         from .ui import GameUI
         self.ui = GameUI(self, RESOURCE)
 
     @property
     def stopped(self):
-        return self.context.tasker.stopping or self.navigation_halted
+        if self.navigation_halted:
+            return True
+        from task_control import active_session
+        session = active_session()
+        return session.stopped() if session else self.context.tasker.stopping
+
+    def check_focus(self):
+        from task_control import active_session
+        session = active_session()
+        if session is None or self.stopped:
+            return False
+        session.wait(self.navigation_inputs)
+        resumed = self._focus_generation != session.generation
+        if resumed:
+            self._focus_generation = session.generation
+            self.invalidate_frame()
+        return resumed
+
+    def image_current(self, image):
+        resumed = self.check_focus()
+        if image is None:
+            return True
+        self._stale_images = [ref for ref in self._stale_images if ref() is not None]
+        if resumed:
+            self._stale_images.append(weakref.ref(image))
+        return not any(ref() is image for ref in self._stale_images)
 
     def pause(self, seconds):
         self.invalidate_frame()
@@ -78,6 +108,7 @@ class Runtime:
     def frame(self):
         if self.stopped:
             return None
+        self.check_focus()
         if not self._observations:
             return self.capture()
         state = self._observations[-1]
@@ -100,9 +131,21 @@ class Runtime:
     def action(self, action, *, ui_click=True, **fields):
         if self.stopped:
             return False
+        self.check_focus()
         self.invalidate_frame()
         if self.navigation_inputs:
             self.navigation_inputs.check()
+        if action in {"KeyDown", "KeyUp"}:
+            from task_control import active_session
+            session = active_session()
+            if session is not None:
+                from game_keys import Binding
+                inputs = self.navigation_inputs or session.adapter
+                if action == "KeyDown":
+                    inputs._down(Binding("key", fields["key"]))
+                else:
+                    inputs._up(Binding("key", fields["key"]))
+                return True
         if action == "Click" and ui_click:
             target = fields.get("target")
             if not isinstance(target, (list, tuple)) or len(target) not in (2, 4):
@@ -150,7 +193,11 @@ class Runtime:
             return False
         self.invalidate_frame()
         binding = self.game_keys.get(key) if isinstance(key, str) else None
-        if binding and (binding.kind == "mouse" or foreground_inputs()):
+        from task_control import active_session
+        if active_session() is not None or binding and (binding.kind == "mouse" or foreground_inputs()):
+            if binding is None:
+                from game_keys import Binding
+                binding = Binding("key", key)
             with self.input_guard() as inputs:
                 if key in {"forward", "left", "backward", "right"}:
                     self.game_keys.movement()
@@ -167,28 +214,49 @@ class Runtime:
             return self.pause(seconds)
         finally:
             # Release even when the user presses Stop.
-            self.controller.post_key_up(key).wait()
+            self.release_key(key)
 
     def capture(self):
         self.invalidate_frame()
         if self.stopped:
             return None
+        self.check_focus()
         if self.navigation_inputs:
             self.navigation_inputs.check()
-        with measure("capture"):
-            result = self.controller.post_screencap().wait()
-            image = result.get() if result.succeeded else None
+        while not self.stopped:
+            with measure("capture"):
+                with measure("capture.wait"):
+                    result = self.controller.post_screencap().wait()
+                with measure("capture.transfer"):
+                    image = result.get() if result.succeeded else None
+            if self.check_focus():
+                continue
             if image is None or image.size == 0:
                 count("capture.failed")
                 return None
             return image
 
     def recognize(self, node, fields=None, image=None):
+        if not self.image_current(image):
+            return None
         image = self.frame() if image is None else image
         if image is None or image.size == 0:
             return None
         with measure("recognition.native"):
-            return self.context.run_recognition(node, image, {node: fields} if fields else None)
+            result = self.context.run_recognition(node, image, {node: fields} if fields else None)
+        if self.check_focus():
+            self._stale_images.append(weakref.ref(image))
+            return None
+        return result
+
+    def release_key(self, key):
+        from task_control import active_session
+        session = active_session()
+        if session is None:
+            self.controller.post_key_up(key).wait()
+        else:
+            for inputs in list(session.inputs):
+                inputs.release_key(key)
 
     def hit(self, node):
         result = self.recognize(node)
@@ -197,6 +265,7 @@ class Runtime:
     def input_text(self, content):
         if self.stopped:
             return False
+        self.check_focus()
         self.invalidate_frame()
         with measure("input.text"):
             return self.controller.post_input_text(content).wait().succeeded
@@ -267,8 +336,6 @@ class Runtime:
             inputs.check()
             yield inputs
         finally:
-            if not inputs.foreground():
-                self.navigation_halted = True
             self.navigation_inputs = previous
             if previous is None:
                 inputs.release()
@@ -282,6 +349,10 @@ class Runtime:
         return result is not None and result.status.succeeded and not self.stopped
 
     def setting(self, mode):
+        if mode == "fishing":
+            return {"ability_plan": parameters(self.context, "MaaNikki_Fishing_AbilityPlan").get("value", 3),
+                    "route_cast_count": parameters(self.context, "MaaNikki_FishingRoute_CastCount").get("value"),
+                    "use_rhythms": parameters(self.context, "MaaNikki_Fishing_Rhythms").get("value", False)}
         prefix = f"MaaNikki_{mode.capitalize()}_Daily"
         result = dict(parameters(self.context, prefix + "Settings"))
         # Maa replaces custom_action_param rather than deep-merging it. Keep
@@ -358,10 +429,10 @@ class Runtime:
                 teleporter = Teleporter(self, locator, events.append, inputs)
                 if actions:
                     actions.teleporter = teleporter
-                if actions and card.rule.executor == "home":
+                if actions and card.rule.executor in {"home", "fishing"}:
                     stage = "ability_selection"
                     if not actions.fishing.configure():
-                        raise NavigationError("采星能力配置未完成，本项尚未开始。")
+                        raise NavigationError(f"{actions.fishing.label}能力配置未完成，本项尚未开始。")
                     stage = "teleport"
                 if meteor_travel:
                     # Keep the map opened by Go Now; transport handles an arbitrary viewport.
@@ -377,7 +448,7 @@ class Runtime:
                                       (result := self.recognize("MaaNikki_MainDetected", image=frame)) and result.hit),
                                   point_prepare=actions.prepare_point if actions and any(
                                       point.action == "teleport" for point in model.points) else None)
-            self.log("正在沿路线前往任务位置，请保持游戏前台。")
+            self.log("正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。")
             stage = "route_execution"
             navigator.follow(model)
             result = actions.complete() if actions else True
@@ -416,8 +487,6 @@ class Runtime:
                 self.log(f"导航停止：{error}")
             else:
                 self.log("导航未能完成，本项已停止；具体原因已记录在导航日志中。")
-            if inputs and not inputs.foreground():
-                self.navigation_halted = True
             return False
         finally:
             self.navigation_inputs = previous_inputs
@@ -802,7 +871,7 @@ class Executors(Runtime):
                 if not self.key(65, 0.1):
                     return False
             finally:
-                self.controller.post_key_up(17).wait()
+                self.release_key(17)
             if not self.input_text(str(desired)) or not self.pause(0.3):
                 return False
             adjusted = self.recognize(count_node)

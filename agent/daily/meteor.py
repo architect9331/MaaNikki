@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import math
-import time
+from task_control import task_time as time
 
 import cv2
 

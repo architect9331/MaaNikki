@@ -1,5 +1,15 @@
 # Repository Guidelines
 
+## Mandatory Project Constraints for All Coding Agents
+
+These constraints apply throughout this repository, including all subdirectories and any delegated agent work. They take precedence over other repository guidance that asks agents to write or run tests.
+
+- Do not create, generate, modify, or delete test code, test files, test fixtures, or test suites unless the user explicitly authorizes that specific change.
+- Do not run unit, integration, regression, automated gameplay, or end-to-end tests, and do not trigger test workflows. All testing is performed by the user through end-to-end execution.
+- Focus on implementing features and fixing issues. Explain changed behavior and what the user should verify when handing off the work.
+- Reading source and existing logs, static checks, type checking, and necessary builds are allowed, provided they do not execute tests or control the game.
+- Do not bypass these constraints through another agent, tool, script, or workflow. Do not weaken or remove this policy without the user's explicit instruction.
+
 ## Project Structure & Module Organization
 
 MaaNikki is a Windows x64 Infinity Nikki automation application using MaaFramework and an MXU-derived desktop client.
@@ -11,7 +21,7 @@ MaaNikki is a Windows x64 Infinity Nikki automation application using MaaFramewo
 - `resource/`: pipelines, routes, recognition images, maps, and OCR models.
 - `scripts/`, `build/`, `.github/workflows/`: build tooling, dependency manifests, and Windows CI. Generated outputs belong in `.build/` or `artifacts/`.
 
-## Build, Test, and Development Commands
+## Build and Development Commands
 
 See `BUILDING.md` for prerequisites. Use pinned Node/Rust versions and Python 3.11+ on the build host.
 
@@ -31,7 +41,7 @@ Rust formatting uses `client/src-tauri/rustfmt.toml` (100-column width); check w
 
 ## Testing Guidelines
 
-Run `python/python.exe -B scripts/test_clicks.py` for offline click/navigation regressions. No coverage threshold is configured. Run source checks for every change; run frontend builds for UI changes and runtime verification for agent/pipeline changes. These checks do not exercise gameplay: record manual game checks separately. Name new Python tests `test_*.py`, and document their runner.
+Agents must follow the mandatory project constraints above: do not write, modify, or run tests. Existing tests may be read for context but must remain untouched unless the user explicitly authorizes a specific change. Hand off gameplay verification to the user; do not claim user-run end-to-end behavior has been verified without their results.
 
 ## Commit & Pull Request Guidelines
 

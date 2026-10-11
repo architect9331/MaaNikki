@@ -7,11 +7,11 @@ from datetime import datetime
 import json
 from pathlib import Path
 import re
-import time
+from task_control import task_time as time
 
 import cv2
 import numpy as np
-from performance import measure
+from performance import count, measure
 from vision import prepared_template
 
 
@@ -59,6 +59,40 @@ class GameUI:
     def __init__(self, runtime, resource):
         self.rt, self.resource = runtime, resource
         self._preserve_cursor = False
+        self._asset_definitions = self._asset_paths = None
+
+    @contextmanager
+    def cache_assets(self):
+        """Snapshot static asset configuration only for a resident helper run."""
+        previous = self._asset_definitions, self._asset_paths
+        self._asset_definitions, self._asset_paths = {}, {}
+        try:
+            yield
+        finally:
+            self._asset_definitions, self._asset_paths = previous
+
+    def asset_definition(self, name):
+        node = "MaaNikki_Asset_"+name.lower()
+        if self._asset_definitions is None:
+            count("asset.config_queries")
+            return fields(self.rt.context, node)
+        if name not in self._asset_definitions:
+            count("asset.config_queries")
+            self._asset_definitions[name] = fields(self.rt.context, node)
+        else:
+            count("asset.config_reused")
+        return self._asset_definitions[name]
+
+    def asset_path(self, template_path):
+        if self._asset_paths is not None and template_path in self._asset_paths:
+            return self._asset_paths[template_path]
+        image_root = (self.resource / "image").resolve()
+        path = (image_root / template_path).resolve()
+        if not path.is_relative_to(image_root):
+            raise ValueError("任务图像资源路径无效。")
+        if self._asset_paths is not None:
+            self._asset_paths[template_path] = path
+        return path
 
     @contextmanager
     def preserve_cursor(self):
@@ -71,7 +105,7 @@ class GameUI:
             self._preserve_cursor = previous
 
     def roi(self, name):
-        definition = fields(self.rt.context, "MaaNikki_Asset_"+name.lower())
+        definition = self.asset_definition(name)
         value = definition.get("roi", catalog(self.resource)["assets"][name]["roi"])
         if value is None:
             raise ValueError("此图像没有登记页面区域。")
@@ -116,6 +150,8 @@ class GameUI:
         return self.rt.controller.post_touch_move(0, 0).wait().succeeded
 
     def text(self, roi, image=None, color=None):
+        if self.rt.image_current(image) is False:
+            return ""
         frame = self.rt.frame() if image is None else image
         if frame is None:
             return ""
@@ -131,8 +167,10 @@ class GameUI:
     def asset_boxes(self, name, image=None, roi=None, scale=1, threshold=.75, color=None, count=1, gray=None,
                     gray_limit=None,
                     method=None):
+        if self.rt.image_current(image) is False:
+            return []
         data = catalog(self.resource)["assets"][name]
-        definition = fields(self.rt.context, "MaaNikki_Asset_"+name.lower())
+        definition = self.asset_definition(name)
         if method is None:
             # UI glyphs and raw game/material artwork use different metrics.
             method = definition.get("method", cv2.TM_CCORR_NORMED if name.startswith(("Icon", "Button"))
@@ -146,10 +184,7 @@ class GameUI:
         frame = self.rt.frame() if image is None else image
         if frame is None:
             return []
-        image_root = (self.resource / "image").resolve()
-        path = (image_root / template_path).resolve()
-        if not path.is_relative_to(image_root):
-            raise ValueError("任务图像资源路径无效。")
+        path = self.asset_path(template_path)
         prepared = prepared_template(path, scale=scale, gray=gray, color=color)
         template, mask = prepared.image, prepared.mask
         if not template.size:
@@ -275,12 +310,15 @@ class GameUI:
         return self.menu() and self.rt.click_template(node)
 
     def find(self, *, roi, text=None, node=None, asset=None, scale=1, threshold=.75,
-             color=None, exact=False, scroll=True, click=True):
+             color=None, exact=False, scroll=True, click=True, scroll_roi=None):
         """Search current view, then top to bottom; optionally return the box without clicking."""
         if node:
             definition = fields(self.rt.context, node)
             roi = definition.get("roi", roi)
             text = definition.get("expected", text)
+        # Recognition can include a margin outside the actual scrollable list.
+        # Keep scrolling and end-of-list comparison inside that list.
+        scroll_roi = roi if scroll_roi is None else scroll_roi
         reset = False
         next_image = None
         for _ in range(80 if scroll else 1):
@@ -316,11 +354,11 @@ class GameUI:
                 return self.click_box(box)
             if not scroll:
                 return False
-            x, y, w, h = roi
+            x, y, w, h = scroll_roi
             before = raw_image[y:y+h, x:x+w].copy()
             if not reset:
                 for _ in range(12):
-                    if not self.scroll(roi, 1800):
+                    if not self.scroll(scroll_roi, 1800):
                         return False
                     frame = self.rt.capture()
                     if frame is None:
@@ -332,7 +370,7 @@ class GameUI:
                 next_image = frame
                 reset = True
                 continue
-            if not self.scroll(roi, -600):
+            if not self.scroll(scroll_roi, -600):
                 return False
             frame = self.rt.capture()
             if frame is None or self.similarity(before, frame[y:y+h, x:x+w]) > .99:
@@ -526,7 +564,24 @@ class GameUI:
             return self.monthly_start()
         return False
 
+    def star_collect_world_ready(self):
+        with self.rt.observe():
+            return bool(not self.rt.hit("MaaNikki_Home_StarCollectReady")
+                        and self.rt.hit("MaaNikki_MainDetected"))
+
+    def leave_star_collect(self):
+        with self.preserve_cursor():
+            return self.enter_page(lambda: self.rt.key("ability_use", .35),
+                                   self.star_collect_world_ready,
+                                   source="MaaNikki_Home_StarCollectReady")
+
     def main(self):
+        # The chat icon remains visible in star sensing and is insufficient
+        # to establish that ordinary world controls are available.
+        with self.rt.observe():
+            star_collect = self.rt.hit("MaaNikki_Home_StarCollectReady")
+        if star_collect:
+            return self.leave_star_collect()
         if self.rt.hit("MaaNikki_MainDetected"):
             if self.wait_page("MaaNikki_MainDetected"):
                 return True
@@ -534,7 +589,9 @@ class GameUI:
         while not self.rt.stopped and time.monotonic() < deadline and escapes < 8:
             # Reclassify before every input; animated backgrounds need not stop.
             with self.rt.observe():
-                if self.rt.hit("MaaNikki_MainDetected"):
+                if self.rt.hit("MaaNikki_Home_StarCollectReady"):
+                    page = "star_collect"
+                elif self.rt.hit("MaaNikki_MainDetected"):
                     page = "main"
                 elif self.asset("IconDungeonFeature", threshold=.9, gray=(230, 255), method=cv2.TM_CCORR_NORMED):
                     page = "dungeon"
@@ -544,7 +601,9 @@ class GameUI:
                     page = "loading"
                 else:
                     page = "unknown"
-            if page == "main":
+            if page == "star_collect":
+                return self.leave_star_collect()
+            elif page == "main":
                 if self.wait_page("MaaNikki_MainDetected", seconds=2):
                     return True
                 continue

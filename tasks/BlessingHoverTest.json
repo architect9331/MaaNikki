@@ -1,0 +1,23 @@
+{
+  "task": [{
+    "name": "blessing_hover_test",
+    "label": "祝福闪光悬停等待测试",
+    "entry": "MaaNikki_BlessingHoverTest",
+    "group": ["developer"],
+    "developer_only": true,
+    "default_check": false,
+    "description": "只悬停分解页首屏物品，不选择或分解。对比 0、60、100、140、180、240 毫秒初始等待，保留正式扫描的文字稳定检查；用两次较长等待的结果核对名称、部位、颜色和等级。自动聚焦游戏，切出暂停；恢复后重新采样，避免混入暂停耗时。日志显示简短总结，报告保存到 logs/blessing-hover。使用停止按钮可中断。",
+    "option": ["BlessingHoverSamples"]
+  }],
+  "option": {
+    "BlessingHoverSamples": {
+      "type": "select",
+      "label": "首屏采样数量",
+      "default_case": "14",
+      "cases": [
+        {"name": "14", "label": "14 个（均匀覆盖首屏）", "pipeline_override": {"MaaNikki_BlessingHoverTest": {"custom_action_param": {"samples": 14}}}},
+        {"name": "28", "label": "28 个（首屏全部）", "pipeline_override": {"MaaNikki_BlessingHoverTest": {"custom_action_param": {"samples": 28}}}}
+      ]
+    }
+  }
+}

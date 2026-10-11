@@ -17,7 +17,7 @@ class Home:
             return False
         # Upstream checks this notice even when the route reports a failed action.
         self.rt.log("检测是否有巨陨星。")
-        if not self.ui.open_map():
+        if not self.rt.main() or not self.ui.open_map():
             return False
         text = self.ui.text(self.ui.roi("AreaBigMapMeteorText"))
         if "巨陨星" in text:

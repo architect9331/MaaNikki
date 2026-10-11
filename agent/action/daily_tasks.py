@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 import json
 import re
-import time
+from task_control import task_time as time
 
 import cv2
 

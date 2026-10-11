@@ -57,11 +57,11 @@ class ClickTests(unittest.TestCase):
                 inputs.release.assert_called_once()
                 self.assertIsNone(rt.navigation_inputs)
 
-    def test_nested_route_does_not_refocus_after_parent_loses_foreground(self):
+    def test_nested_route_waits_on_parent_guard_without_refocusing(self):
         rt = self.runtime()
         parent, inputs = Mock(), Mock(hwnd=1)
         rt.navigation_inputs = parent
-        parent.check.side_effect = NavigationError("游戏已离开前台")
+        parent.check.side_effect = lambda: setattr(inputs.foreground, "return_value", True)
         inputs.foreground.return_value = False
         rt.routes = Mock(return_value={"schema_version": 2, "id": "test", "map": "home",
                                       "points": [{"x": 1, "y": 2}]})
@@ -70,12 +70,13 @@ class ClickTests(unittest.TestCase):
                 patch("daily.runtime.foreground_inputs", return_value=True), \
                 patch("navigation.models.maps", return_value={"home": Mock()}), \
                 patch("navigation.vision.Locator"), \
+                patch("navigation.engine.Navigator"), \
                 patch("navigation.controller.ForegroundInput", return_value=inputs), \
                 patch("daily.startup.focus_game") as focus:
-            self.assertFalse(rt.navigate("test"))
+            self.assertTrue(rt.navigate("test"))
             focus.assert_not_called()
             self.assertIs(rt.navigation_inputs, parent)
-            self.assertTrue(rt.navigation_halted)
+            self.assertFalse(rt.navigation_halted)
 
     def test_item_selection_finishes_settings_before_using_or_recalling_item(self):
         for outcome, expected_clicks in (("preview", 1), ("recall", 2), ("lantern", 1)):
@@ -614,6 +615,38 @@ class ClickTests(unittest.TestCase):
                 self.assertEqual(observed, reads)
                 self.assertEqual(movements, scrolls)
                 self.assertEqual(rt.ui.click_box.call_count, int(target is not None))
+
+    def test_realm_search_scrolls_inside_list_without_shrinking_recognition(self):
+        import numpy as np
+        from daily.gameplay import Gameplay
+        rt = self.runtime()
+        state = {"view": 1}
+        rng = np.random.default_rng(0)
+        frames = [rng.integers(0, 256, (720, 1280, 3), dtype=np.uint8) for _ in range(3)]
+        rt.capture = Mock(side_effect=lambda: frames[state["view"]])
+        rt.context.get_node_data.return_value = {
+            "recognition": "OCR", "roi": Gameplay.REALM_LEVEL_ROI, "expected": "冲撞"}
+        views = []
+        def recognize(node, override, **kwargs):
+            self.assertEqual(override["roi"], Gameplay.REALM_LEVEL_ROI)
+            views.append(state["view"])
+            return SimpleNamespace(hit=state["view"] == 2, box=[165, 391, 215, 21])
+        def action(name, **kwargs):
+            self.assertEqual(name, "Scroll")
+            x, y = kwargs["target"]
+            self.assertTrue(165 <= x < 520 and 105 <= y < 680)
+            state["view"] = 0 if kwargs["dy"] > 0 else min(2, state["view"]+1)
+            return True
+        rt.recognize = Mock(side_effect=recognize)
+        rt.action = Mock(side_effect=action)
+        rt.pause = Mock(return_value=True)
+        rt.ui.click_box = Mock(return_value=True)
+        self.assertTrue(rt.ui.find(roi=Gameplay.REALM_LEVEL_ROI, node="MaaNikki_Monster_Level",
+                                   scroll_roi=Gameplay.REALM_SCROLL_ROI))
+        self.assertEqual(views, [1, 0, 1, 2])
+        self.assertEqual([call.kwargs["dy"] for call in rt.action.call_args_list],
+                         [1800, 1800, -600, -600])
+        rt.ui.click_box.assert_called_once_with([165, 391, 215, 21])
 
     def test_region_menu_title_allows_search_when_destinations_are_offscreen(self):
         from navigation.teleport import Teleporter

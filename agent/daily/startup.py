@@ -1,5 +1,5 @@
 """Shared foreground startup for ordinary routes and developer tests."""
-import time
+from task_control import task_time as time
 
 from navigation.models import NavigationError
 
@@ -7,6 +7,11 @@ from navigation.models import NavigationError
 def focus_game(runtime, inputs):
     if runtime.stopped:
         raise NavigationError("任务已停止。")
+    from task_control import active_session
+    session = active_session()
+    if session is not None and session.started:
+        inputs.check()
+        return
     runtime.log("正在自动聚焦已连接的游戏窗口。")
     if not inputs.foreground():
         # Seize activates the connected window on key-up too. Releasing Alt

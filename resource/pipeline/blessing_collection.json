@@ -1,0 +1,134 @@
+{
+  "MaaNikki_BlessingCollection": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.blessing_collection",
+    "custom_action_param": {
+      "source": "scan",
+      "file": ""
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Blessing_Entrance": {
+    "recognition": "OCR",
+    "roi": [
+      70,
+      80,
+      1100,
+      550
+    ],
+    "expected": "^祝福闪光$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Blessing_InventoryReady",
+      "source": "MaaNikki_MenuReady"
+    },
+    "post_delay": 300
+  },
+  "MaaNikki_Blessing_InventoryReady": {
+    "recognition": "OCR",
+    "roi": [
+      930,
+      15,
+      340,
+      52
+    ],
+    "expected": "祝福闪光",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Blessing_DecomposeEntrance": {
+    "recognition": "OCR",
+    "roi": [735, 625, 110, 78],
+    "expected": "^分解$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Blessing_DecomposeReady",
+      "source": "MaaNikki_Blessing_InventoryReady"
+    },
+    "post_delay": 300
+  },
+  "MaaNikki_Blessing_DecomposeReady": {
+    "recognition": "OCR",
+    "roi": [75, 15, 300, 55],
+    "expected": "祝福闪光.*分解",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Blessing_Layout": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "grid": [
+        25,
+        72,
+        755,
+        548
+      ],
+      "capacity": [
+        650,
+        645,
+        135,
+        40
+      ],
+      "card_size": [95, 101],
+      "columns": 7,
+      "first_x": 32,
+      "column_pitch": 108,
+      "level_bottom_padding": 8,
+      "row_pitch": 123,
+      "scroll_step": 1440,
+      "icon_threshold": 0.72,
+      "icon_margin": 0.035,
+      "color_threshold": 0.80,
+      "color_margin": 0.025,
+      "tooltip_view": [0, 70, 1280, 570],
+      "tooltip_initial_wait": 0.14,
+      "tooltip_ocr_threshold": 0.85
+    }
+  },
+  "MaaNikki_Blessing_Estimate": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "rainbow_percent": "5.405405405",
+      "five_star_per_40": "1"
+    }
+  },
+  "MaaNikki_Blessing_头部": {
+    "recognition": "OCR",
+    "roi": [
+      930,
+      15,
+      330,
+      52
+    ],
+    "expected": "头部",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Blessing_手部": {
+    "recognition": "OCR",
+    "roi": [
+      930,
+      15,
+      330,
+      52
+    ],
+    "expected": "手部",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Blessing_脚部": {
+    "recognition": "OCR",
+    "roi": [
+      930,
+      15,
+      330,
+      52
+    ],
+    "expected": "脚部",
+    "action": "DoNothing"
+  }
+}

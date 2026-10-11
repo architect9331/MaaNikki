@@ -14,6 +14,8 @@ from action import weekly_challenge as _weekly_challenge
 from action import daily_tasks as _daily_tasks
 from action import game_key as _game_key
 from action import gameplay as _gameplay
+from action import blessing_collection as _blessing_collection
+from action import blessing_hover_test as _blessing_hover_test
 from action import run_coordination as _run_coordination
 from action import exploration_crown as _exploration_crown
 from action import route_test as _route_test

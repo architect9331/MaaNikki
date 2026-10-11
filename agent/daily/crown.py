@@ -1,7 +1,7 @@
 """Summit challenge flow."""
 from __future__ import annotations
 
-import time
+from task_control import task_time as time
 import re
 
 from .runtime import Runtime, parameters
@@ -178,7 +178,7 @@ class Crown(Runtime):
             self.pause(.5)
 
     def run_crown(self):
-        self.log("正在检查巅峰赛进度，请保持游戏前台。")
+        self.log("正在检查巅峰赛进度；切出游戏会暂停，切回后自动继续。")
         self.require(self.ui.calendar(), "未能打开奇想日历")
         previous, progress = None, None
         roi = self.ui.roi("AreaMiraCrownOverview")

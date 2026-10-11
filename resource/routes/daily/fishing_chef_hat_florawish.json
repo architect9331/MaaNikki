@@ -1,0 +1,74 @@
+{
+  "schema_version": 3,
+  "id": "fishing_chef_hat_florawish",
+  "title": "花愿镇 · 厨师帽鱼",
+  "map": "miraland",
+  "start_radius": 9,
+  "timeout": 240,
+  "capacity": 1,
+  "material": "厨师帽鱼",
+  "teleport": {
+    "name": "织裙街",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10728.75,
+    "y": 10052.9
+  },
+  "points": [
+    {
+      "x": 10728.95,
+      "y": 10050.3,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 10729.25,
+      "y": 10056.75,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 10725.35,
+      "y": 10071.55,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 10722.05,
+      "y": 10078.6,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 10711.8,
+      "y": 10094.55,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 10715.9,
+      "y": 10098.15,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 10722.25,
+      "y": 10101.9,
+      "radius": 1,
+      "jump": false
+    },
+    {
+      "x": 10716.95,
+      "y": 10109.2,
+      "radius": 1,
+      "jump": false,
+      "action": "fishing"
+    },
+    {
+      "x": 10721.6,
+      "y": 10102.7,
+      "radius": 1,
+      "jump": false
+    }
+  ]
+}

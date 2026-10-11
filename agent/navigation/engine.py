@@ -1,7 +1,7 @@
 """Camera-aligned forward movement with timed movement and jump state."""
 from __future__ import annotations
 import math
-import time
+from task_control import task_time as time
 from .models import NavigationError, Route
 from .vision import Locator, Pose
 
@@ -36,6 +36,7 @@ class Motion:
         self.until = 0
         self.jump_state = "idle"
         self.jump_at = 0
+        self.generation = getattr(inputs, "generation", 0)
 
     def forward(self, seconds):
         self.tick()
@@ -65,6 +66,10 @@ class Motion:
 
     def tick(self):
         self.inputs.check()
+        generation = getattr(self.inputs, "generation", 0)
+        if generation != self.generation:
+            self.generation = generation
+            self.until, self.jump_state = 0, "idle"
         now = time.monotonic()
         if self.until and now >= self.until:
             self.inputs.key_up("forward")
@@ -316,6 +321,7 @@ class Navigator:
         prepared_index = None
         last_good = pose
         scene_interrupted, scene_retries = False, 0
+        generation = getattr(self.inputs, "generation", 0)
         try:
             self.inputs.check()
             if not self.inputs.controller.post_click_key(18).wait().succeeded:
@@ -324,6 +330,16 @@ class Navigator:
                 if self.stopped() or time.monotonic() >= deadline:
                     raise NavigationError("导航已停止或超时。")
                 motion.tick()
+                current_generation = getattr(self.inputs, "generation", 0)
+                if current_generation != generation:
+                    generation = current_generation
+                    self.locator.previous = None
+                    pose = self.observe((last_good.x, last_good.y))
+                    last_good = stuck_anchor = pose
+                    stuck_since, recovered = time.monotonic(), False
+                    last = None
+                    speeds, periods = [6.0]*5, [.2]*5
+                    continue
                 target = route.points[index]
                 if scene_interrupted or pose.heading is None or not self.inputs.ready():
                     scene_retries += 1

@@ -2,7 +2,7 @@
 from __future__ import annotations
 import math
 import re
-import time
+from task_control import task_time as time
 import cv2
 import numpy as np
 from daily.ui import catalog

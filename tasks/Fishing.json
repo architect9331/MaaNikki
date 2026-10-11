@@ -1,0 +1,171 @@
+{
+  "task": [
+    {
+      "name": "fishing",
+      "label": "当前点钓鱼",
+      "entry": "MaaNikki_Fishing",
+      "group": [
+        "assist"
+      ],
+      "default_check": false,
+      "description": "站在钓鱼点、面向水面后启动。自动聚焦游戏，切换钓鱼能力并抛竿；默认最多 3 竿，鱼已钓光或位置不适合时结束。收获按鱼的条数记录。",
+      "option": [
+        "FishingCastCount",
+        "FishingAbilityPlan",
+        "FishingRhythms"
+      ]
+    },
+    {
+      "name": "fishing_route",
+      "label": "路线钓鱼",
+      "entry": "MaaNikki_FishingRoute",
+      "group": [
+        "assist"
+      ],
+      "default_check": false,
+      "description": "选择已登记的钓点路线，自动聚焦游戏、准备钓鱼能力、必要时传送并沿路线到点钓鱼。鱼已钓光时继续后续路线；切出游戏暂停，切回后自动继续，停止按钮可中断。",
+      "option": [
+        "FishingRouteSelection",
+        "FishingRouteCastCount",
+        "FishingAbilityPlan",
+        "FishingRhythms"
+      ]
+    }
+  ],
+  "option": {
+    "FishingCastCount": {
+      "type": "input",
+      "label": "最多抛竿次数",
+      "inputs": [
+        {
+          "name": "cast_count",
+          "label": "抛竿次数",
+          "default": "3",
+          "verify": "^[1-9][0-9]*$",
+          "pattern_msg": "请输入正整数。",
+          "pipeline_type": "int",
+          "input_type": "text"
+        }
+      ],
+      "pipeline_override": {
+        "MaaNikki_Fishing_CastCount": {
+          "custom_action_param": {
+            "value": "{cast_count}"
+          }
+        }
+      }
+    },
+    "FishingAbilityPlan": {
+      "type": "select",
+      "label": "钓鱼允许使用的能力方案",
+      "default_case": "Plan3",
+      "description": "钓鱼或打窝能力未装备时，在所选方案中配置；轮盘已有时直接沿用。",
+      "cases": [
+        {
+          "name": "Plan1",
+          "label": "自定义方案一",
+          "pipeline_override": {
+            "MaaNikki_Fishing_AbilityPlan": {
+              "custom_action_param": {
+                "value": 1
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan2",
+          "label": "自定义方案二",
+          "pipeline_override": {
+            "MaaNikki_Fishing_AbilityPlan": {
+              "custom_action_param": {
+                "value": 2
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan3",
+          "label": "自定义方案三",
+          "pipeline_override": {
+            "MaaNikki_Fishing_AbilityPlan": {
+              "custom_action_param": {
+                "value": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FishingRhythms": {
+      "type": "switch",
+      "label": "钓鱼前打窝",
+      "default_case": "No",
+      "description": "开启后先使用已解锁的万物交响能力，再切换钓鱼能力。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_Fishing_Rhythms": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "pipeline_override": {
+            "MaaNikki_Fishing_Rhythms": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FishingRouteSelection": {
+      "type": "select",
+      "label": "钓鱼路线",
+      "default_case": "fishing_chef_hat_florawish",
+      "cases": [
+        {
+          "name": "fishing_chef_hat_florawish",
+          "label": "花愿镇 · 厨师帽鱼",
+          "pipeline_override": {
+            "MaaNikki_FishingRoute_Selection": {
+              "custom_action_param": {
+                "value": "fishing_chef_hat_florawish"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FishingRouteCastCount": {
+      "type": "input",
+      "label": "每个钓点最多抛竿次数",
+      "description": "留空时沿用路线指定次数，未指定时最多 3 竿。填写后统一覆盖各钓点次数；鱼已钓光时提前收竿。",
+      "inputs": [
+        {
+          "name": "cast_count",
+          "label": "抛竿次数（留空沿用路线）",
+          "default": "",
+          "verify": "^(?:[1-9][0-9]*)?$",
+          "pattern_msg": "请输入正整数，或留空沿用路线。",
+          "pipeline_type": "string",
+          "input_type": "text"
+        }
+      ],
+      "pipeline_override": {
+        "MaaNikki_FishingRoute_CastCount": {
+          "custom_action_param": {
+            "value": "{cast_count}"
+          }
+        }
+      }
+    }
+  }
+}

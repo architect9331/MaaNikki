@@ -2,14 +2,21 @@
 from __future__ import annotations
 
 import re
-import time
+import json
+from datetime import datetime
+import cv2
+from task_control import task_time as time
 
 from .ui import catalog, fields
+from .settings import ROOT
 
 
 class Gameplay:
     # Minimum energy for one challenge, not the selected batch's total cost.
     MIN_ENERGY = {"jihua": 10, "bless": 40, "monster": 40, "weekly": 60}
+    REALM_LEVEL_ROI = [145, 90, 410, 600]
+    # The level list ends before the recognition ROI's right/bottom margins.
+    REALM_SCROLL_ROI = [165, 105, 335, 545]
 
     def __init__(self, runtime):
         self.rt, self.ui = runtime, runtime.ui
@@ -158,15 +165,14 @@ class Gameplay:
             if kind == "jihua":
                 return self.jihua(maximize, allow_exhausted)
             node = weekly_node if kind == "weekly" else f"MaaNikki_{prefix}_Level"
-            if not self.ui.find(roi=[145, 90, 410, 600], node=node):
-                self.rt.log("未找到所选幻境关卡。")
+            if not self.select_realm_level(kind, node):
                 return False
             if kind == "bless" and not self.rt.click_template("MaaNikki_Bless_Difficulty"):
                 return False
             quick = "MaaNikki_Weekly_Quick_Qiggeda" if kind == "weekly" else f"MaaNikki_{prefix}_Quick"
             confirm = "MaaNikki_Weekly_Confirm_Qiggeda" if kind == "weekly" else f"MaaNikki_{prefix}_Confirm"
             def recover_level():
-                return (self.ui.realm(kind) and self.ui.find(roi=[145, 90, 410, 600], node=node)
+                return (self.ui.realm(kind) and self.select_realm_level(kind, node)
                         and (kind != "bless" or self.rt.click_template("MaaNikki_Bless_Difficulty")))
             if not self.ui.enter_page(lambda: self.rt.click_template(quick, attempts=1, wait_seconds=0),
                     confirm, source=quick, recover=recover_level):
@@ -189,6 +195,38 @@ class Gameplay:
                 if not returned:
                     self.rt.log("未能返回后续步骤需要的页面，本项停止。")
                     return False
+
+    def select_realm_level(self, kind, node):
+        if self.ui.find(roi=self.REALM_LEVEL_ROI, node=node, scroll_roi=self.REALM_SCROLL_ROI):
+            return True
+        if not self.rt.stopped:
+            self.rt.log("未找到所选幻境关卡。")
+            self.realm_level_diagnostic(kind, node)
+        return False
+
+    def realm_level_diagnostic(self, kind, node):
+        """Keep the failed list before the caller returns to the calendar/main."""
+        try:
+            folder = ROOT / "logs/realm"
+            folder.mkdir(parents=True, exist_ok=True)
+            name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+f"-{kind}-level_not_found"
+            definition = fields(self.rt.context, node)
+            record = {"kind": kind, "stage": "level_not_found", "node": node,
+                      "expected": definition.get("expected"),
+                      "roi": definition.get("roi", self.REALM_LEVEL_ROI),
+                      "scroll_roi": self.REALM_SCROLL_ROI}
+            image = self.rt.capture()
+            if image is not None:
+                # Exclude the bottom account identifier; retain the whole list.
+                ok, png = cv2.imencode(".png", image[:680])
+                if ok:
+                    (folder / (name+".png")).write_bytes(png.tobytes())
+                    record["image"] = name+".png"
+            (folder / (name+".json")).write_text(
+                json.dumps(record, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+            self.rt.log(f"幻境关卡查找记录已保存：logs/realm/{name}.json")
+        except (OSError, cv2.error) as error:
+            self.rt.log(f"幻境关卡查找记录未能保存：{error}。")
 
     def jihua(self, maximize, allow_exhausted=False):
         if not self.rt.click_template("MaaNikki_Jihua_Go"):
@@ -256,47 +294,129 @@ class Gameplay:
             return False
         return self.rt.pause(.5)
 
+    def monthly_diagnostic(self, kind, stage, reason=None):
+        """Retain the unfamiliar reward layer before ordinary page recovery."""
+        if self.rt.stopped:
+            return
+        try:
+            folder = ROOT / "logs/monthly"
+            folder.mkdir(parents=True, exist_ok=True)
+            name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+f"-{kind}-{stage}"
+            record = {"page": kind, "stage": stage, "reason": reason}
+            image = self.rt.capture()
+            if image is not None:
+                image = image.copy()
+                if image.shape[:2] == (720, 1280):
+                    image[700:, :240] = 0
+                ok, png = cv2.imencode(".png", image)
+                if ok:
+                    (folder / (name+".png")).write_bytes(png.tobytes())
+                    record["image"] = name+".png"
+            (folder / (name+".json")).write_text(
+                json.dumps(record, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+            self.rt.log(f"奖励页面记录已保存：logs/monthly/{name}.json")
+        except (OSError, cv2.error) as error:
+            self.rt.log(f"奖励页面记录未能保存：{error}。")
+
+    def paradise_reward_return(self):
+        deadline, dismissed = time.monotonic()+10, 0
+        while not self.rt.stopped and time.monotonic() < deadline:
+            with self.rt.observe(fresh=True):
+                reward = self.rt.hit("MaaNikki_RewardLayer")
+                continuation = self.rt.hit("MaaNikki_Monthly_ParadiseContinue")
+                returned = self.ui.page_matches("MaaNikki_Monthly_ParadiseReady")
+            if reward or continuation:
+                if dismissed >= 3:
+                    break
+                dismissed += 1
+                self.rt.log("乐园构想：已识别奖励继续提示，尝试关闭奖励页面。")
+                if not self.rt.key("skip", .5):
+                    return False
+            elif returned:
+                return self.ui.wait_page("MaaNikki_Monthly_ParadiseReady")
+            elif not self.rt.pause(.3):
+                return False
+        self.monthly_diagnostic("paradise", "return_unconfirmed", "领取后未能确认回到乐园构想")
+        self.rt.log("乐园构想领取后未能确认返回，已记录奖励界面，尝试正常退出。")
+        return False
+
+    def monthly_rewards(self, kind):
+        label = "乐园构想" if kind == "paradise" else "奇迹之旅"
+        self.rt.log(f"已识别{label}，开始处理奖励。")
+        claimed = False
+        for page in (("Task",) if kind == "paradise" else ("Task", "Treasure")):
+            node = f"MaaNikki_Monthly_{page}Tab"
+            if not (self.rt.context.get_node_data(node) or {}).get("enabled", False):
+                continue
+            if not self.rt.click_template(node):
+                return False
+            if not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
+                return False
+            claim = f"MaaNikki_Monthly_Claim{page}"
+            for attempt in range(3):
+                if self.rt.hit(claim):
+                    if not self.rt.click_template(claim, wait_seconds=.5):
+                        return False
+                    if kind == "paradise":
+                        self.monthly_diagnostic(kind, "after_claim")
+                        if not self.paradise_reward_return():
+                            return False
+                        claimed = True
+                        break
+                    rewarded = self.ui.skip_reward()
+                    # Task progress need not produce an item reward layer;
+                    # Treasure requires that layer as its receipt.
+                    if not rewarded and page == "Treasure":
+                        self.rt.log("奇迹之旅奖励未确认领取。")
+                        return False
+                    if self.rt.stopped:
+                        return False
+                    if not rewarded and not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
+                        self.rt.log("领取旅行任务后页面未能确认，本项停止。")
+                        return False
+                    claimed = True
+                    break
+                if attempt < 2 and not self.rt.pause(1):
+                    return False
+            if not self.rt.pause(.5):
+                return False
+        self.rt.log(f"{label}奖励已领取。" if claimed else f"{label}所选页签没有可领取的奖励。")
+        return not self.rt.stopped
+
     def monthly(self):
+        kind, label = "unknown", "奇迹之旅／乐园构想"
+        completed = set()
         try:
             if not self.ui.monthly_page():
-                self.rt.log("未能确认奇迹之旅页面。")
+                self.rt.log("未能确认奇迹之旅或乐园构想页面。")
                 return False
-            claimed = False
-            for page in ("Task", "Treasure"):
-                node = f"MaaNikki_Monthly_{page}Tab"
-                if not (self.rt.context.get_node_data(node) or {}).get("enabled", False):
-                    continue
-                if not self.rt.click_template(node):
+            for index in range(2):
+                if self.ui.page_matches("MaaNikki_Monthly_ParadiseReady"):
+                    kind, label = "paradise", "乐园构想"
+                elif self.ui.page_matches("MaaNikki_Monthly_TravelReady"):
+                    kind, label = "travel", "奇迹之旅"
+                else:
+                    self.monthly_diagnostic("unknown", "page_unconfirmed", "未能确定奖励页面类型")
                     return False
-                if not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
+                if kind in completed:
+                    self.monthly_diagnostic(kind, "switch_unconfirmed", "切换后仍停留在已处理页面")
                     return False
-                claim = f"MaaNikki_Monthly_Claim{page}"
-                for attempt in range(3):
-                    if self.rt.hit(claim):
-                        if not self.rt.click_template(claim, wait_seconds=.5):
-                            return False
-                        rewarded = self.ui.skip_reward()
-                        # Travel tasks can grant pass progress without an item
-                        # reward layer. The source flow continues to Treasure;
-                        # only Treasure requires that layer as its receipt.
-                        if not rewarded and page == "Treasure":
-                            self.rt.log("奇迹之旅奖励未确认领取。")
-                            return False
-                        if self.rt.stopped:
-                            return False
-                        if not rewarded and not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
-                            self.rt.log("领取旅行任务后页面未能确认，本项停止。")
-                            return False
-                        claimed = claimed or rewarded
-                        break
-                    if attempt < 2 and not self.rt.pause(1):
+                if not self.monthly_rewards(kind):
+                    return False
+                completed.add(kind)
+                if index == 0:
+                    target = "Travel" if kind == "paradise" else "Paradise"
+                    target_label = "奇迹之旅" if kind == "paradise" else "乐园构想"
+                    self.rt.log(f"{label}处理完成，点击左下角切换到{target_label}。")
+                    if not self.rt.click_template(f"MaaNikki_Monthly_To{target}"):
+                        self.monthly_diagnostic(kind, "switch_unconfirmed", f"未能切换到{target_label}")
                         return False
-                self.rt.pause(.5)
-            self.rt.log("奇迹之旅奖励已领取。" if claimed else "奇迹之旅没有可领取的奖励。")
+            self.rt.log("奇迹之旅与乐园构想奖励均已处理。")
             return True
         finally:
             if self.rt.stopped:
                 return False
             if not self.rt.main():
-                self.rt.log("奇迹之旅处理后未能返回主界面，本项未正常结束。")
+                self.monthly_diagnostic(kind, "exit_unconfirmed", "未能返回主界面")
+                self.rt.log(f"{label}处理后未能返回主界面，现场已记录，本项未正常结束。")
                 return False

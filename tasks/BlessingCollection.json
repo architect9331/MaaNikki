@@ -1,0 +1,98 @@
+{
+  "task": [
+    {
+      "name": "blessing_collection",
+      "label": "祝福闪光收集规划",
+      "entry": "MaaNikki_BlessingCollection",
+      "group": [
+        "collection"
+      ],
+      "default_check": false,
+      "description": "在分解界面整屏识别祝福闪光，首次遇到的款式会悬停核对名称、部位、颜色及等级，重复条目复用已核对结果。计算三档覆盖率与预计成本，未确认项会自动重试并留存截图。不会选中或分解闪光。日志显示简短总结与报告路径，详细报告保存在 logs/blessing，可用浏览器打开 report.html。请清除库存筛选；切出游戏会暂停。",
+      "option": [
+        "BlessingCollectionSource",
+        "BlessingCollectionEstimate"
+      ]
+    }
+  ],
+  "option": {
+    "BlessingCollectionSource": {
+      "type": "select",
+      "label": "库存来源",
+      "default_case": "Scan",
+      "cases": [
+        {
+          "name": "Scan",
+          "label": "分解页整屏扫描",
+          "pipeline_override": {
+            "MaaNikki_BlessingCollection": {
+              "custom_action_param": {
+                "source": "scan",
+                "file": ""
+              }
+            }
+          }
+        },
+        {
+          "name": "Snapshot",
+          "label": "读取库存快照",
+          "option": [
+            "BlessingCollectionFile"
+          ],
+          "pipeline_override": {
+            "MaaNikki_BlessingCollection": {
+              "custom_action_param": {
+                "source": "snapshot"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "BlessingCollectionFile": {
+      "type": "input",
+      "label": "库存快照",
+      "description": "选择之前生成的 inventory.json，可先修正未确认条目再重新计算；只读取文件，不操作游戏。",
+      "inputs": [
+        {
+          "name": "file",
+          "label": "库存 JSON",
+          "default": "",
+          "input_type": "file"
+        }
+      ],
+      "pipeline_override": {
+        "MaaNikki_BlessingCollection": {
+          "custom_action_param": {
+            "file": "{file}"
+          }
+        }
+      }
+    },
+    "BlessingCollectionEstimate": {
+      "type": "input",
+      "label": "预算估算参数",
+      "description": "默认彩色概率来自民间 52/962 的汇总转述，不是官方概率。六个五星部件及其余单色按等概率估算。五星产量按困难副本每 40 能量一件估算；低星、周常与活动来源暂不计算能量。",
+      "inputs": [
+        {
+          "name": "rainbow",
+          "label": "彩色概率（%）",
+          "default": "5.405405405"
+        },
+        {
+          "name": "yield",
+          "label": "每 40 能量的五星数量",
+          "default": "1"
+        }
+      ],
+      "pipeline_override": {
+        "MaaNikki_Blessing_Estimate": {
+          "custom_action_param": {
+            "rainbow_percent": "{rainbow}",
+            "five_star_per_40": "{yield}"
+          }
+        }
+      }
+    }
+  }
+}

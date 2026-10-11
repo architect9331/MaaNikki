@@ -1,0 +1,10 @@
+{
+  "MaaNikki_BlessingHoverTest": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.blessing_hover_test",
+    "custom_action_param": {"samples": 14},
+    "post_delay": 0,
+    "next": []
+  }
+}

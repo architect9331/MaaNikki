@@ -1,0 +1,86 @@
+{
+  "MaaNikki_Fishing": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "fishing"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Fishing_CastCount": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": 3
+    }
+  },
+  "MaaNikki_Fishing_AbilityPlan": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": 3
+    }
+  },
+  "MaaNikki_Fishing_Rhythms": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": false
+    }
+  },
+  "MaaNikki_Navigation_FishingAbility": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityFish.png",
+    "roi": [
+      1073,
+      631,
+      60,
+      60
+    ],
+    "method": 3,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Navigation_RhythmsAbility": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityRhythms.png",
+    "roi": [
+      1073,
+      631,
+      60,
+      60
+    ],
+    "method": 3,
+    "action": "DoNothing"
+  },
+  "MaaNikki_FishingRoute": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "fishing_route"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_FishingRoute_Selection": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": "fishing_chef_hat_florawish"
+    }
+  },
+  "MaaNikki_FishingRoute_CastCount": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": ""
+    }
+  }
+}

@@ -18,6 +18,7 @@ from daily.starsea import Starsea, CRYSTAL_CENTERS, marker_location, select_crys
 from daily.crown import Crown, parse_progress
 from daily.runtime import Executors
 from action.claim_daily_rewards import ClaimDailyRewardsAction
+from daily.gameplay import Gameplay
 
 
 class Clock:
@@ -303,6 +304,177 @@ class GameplayTests(unittest.TestCase):
         self.assertTrue(Crown.run_crown(rt))
         self.assertEqual(rt.capture.call_count, 3)
         rt.challenge.assert_not_called()
+
+
+class RealmTests(unittest.TestCase):
+    def test_level_failure_is_saved_before_returning_and_preserves_selected_target(self):
+        import json
+        rt = Mock(stopped=False)
+        rt.hit.return_value = True
+        rt.ui.realm.return_value = True
+        rt.ui.find.return_value = False
+        rt.context.get_node_data.return_value = {
+            "recognition": "OCR", "roi": Gameplay.REALM_LEVEL_ROI, "expected": "冲撞"}
+        rt.capture.return_value = np.full((720, 1280, 3), 255, dtype=np.uint8)
+        with tempfile.TemporaryDirectory(dir=ROOT / ".build") as directory, \
+                patch("daily.gameplay.ROOT", Path(directory)):
+            def returned():
+                import cv2
+                folder = Path(directory) / "logs/realm"
+                record = json.loads(next(folder.glob("*.json")).read_text(encoding="utf-8"))
+                self.assertEqual(record["expected"], "冲撞")
+                self.assertEqual(record["node"], "MaaNikki_Monster_Level")
+                self.assertEqual(record["scroll_roi"], Gameplay.REALM_SCROLL_ROI)
+                screenshot = cv2.imread(str(folder / record["image"]))
+                self.assertEqual(screenshot.shape, (680, 1280, 3))
+                return True
+            rt.main.side_effect = returned
+            self.assertFalse(Gameplay(rt).realm("monster"))
+        rt.ui.find.assert_called_once_with(roi=Gameplay.REALM_LEVEL_ROI,
+            node="MaaNikki_Monster_Level", scroll_roi=Gameplay.REALM_SCROLL_ROI)
+        rt.main.assert_called_once()
+        rt.click_template.assert_not_called()
+
+    def test_stopped_level_search_does_not_capture_or_report_a_failure(self):
+        rt = Mock(stopped=True)
+        rt.ui.find.return_value = False
+        self.assertFalse(Gameplay(rt).select_realm_level("monster", "MaaNikki_Monster_Level"))
+        rt.capture.assert_not_called()
+        rt.log.assert_not_called()
+
+
+class MonthlyTests(unittest.TestCase):
+    def runtime(self, kind="travel"):
+        clock, rt = Clock(), Mock()
+        state = {"kind": kind}
+        rt.stopped = False
+        rt.pause.side_effect = clock.pause
+        rt.main.return_value = True
+        rt.context.get_node_data.return_value = {"enabled": True}
+        rt.ui.monthly_page.return_value = True
+        rt.ui.page_matches.side_effect = lambda node: node == (
+            "MaaNikki_Monthly_ParadiseReady" if state["kind"] == "paradise" else "MaaNikki_Monthly_TravelReady")
+        def click(node, **kwargs):
+            if node == "MaaNikki_Monthly_ToTravel":
+                state["kind"] = "travel"
+            elif node == "MaaNikki_Monthly_ToParadise":
+                state["kind"] = "paradise"
+            return True
+        rt.click_template.side_effect = click
+        rt.observe.side_effect = lambda **kwargs: nullcontext()
+        rt.hit.side_effect = lambda node: node in (
+            "MaaNikki_Monthly_ClaimTask", "MaaNikki_Monthly_ClaimTreasure")
+        rt.capture.return_value = np.full((720, 1280, 3), 255, np.uint8)
+        return rt, clock
+
+    def test_travel_keeps_task_then_treasure_order(self):
+        rt, _ = self.runtime()
+        self.assertTrue(Gameplay(rt).monthly_rewards("travel"))
+        self.assertEqual([call.args[0] for call in rt.click_template.call_args_list], [
+            "MaaNikki_Monthly_TaskTab", "MaaNikki_Monthly_ClaimTask",
+            "MaaNikki_Monthly_TreasureTab", "MaaNikki_Monthly_ClaimTreasure"])
+        self.assertEqual(rt.ui.skip_reward.call_count, 2)
+
+    def test_paradise_only_claims_task_and_keeps_after_claim_snapshot(self):
+        rt, _ = self.runtime("paradise")
+        with tempfile.TemporaryDirectory(dir=ROOT / ".build") as directory, \
+                patch("daily.gameplay.ROOT", Path(directory)):
+            self.assertTrue(Gameplay(rt).monthly_rewards("paradise"))
+            records = list((Path(directory) / "logs/monthly").glob("*.json"))
+            self.assertEqual(len(records), 1)
+            import json
+            import cv2
+            record = json.loads(records[0].read_text(encoding="utf-8"))
+            self.assertEqual(record["stage"], "after_claim")
+            frame = cv2.imdecode(np.frombuffer(records[0].with_name(record["image"]).read_bytes(),
+                dtype=np.uint8), cv2.IMREAD_COLOR)
+            self.assertFalse(frame[700:, :240].any())
+            self.assertTrue(frame[700:, 240:].all())
+        self.assertEqual([call.args[0] for call in rt.click_template.call_args_list], [
+            "MaaNikki_Monthly_TaskTab", "MaaNikki_Monthly_ClaimTask"])
+        rt.ui.skip_reward.assert_not_called()
+        rt.main.assert_not_called()
+
+    def test_paradise_dismisses_only_recognized_continue_prompt(self):
+        rt, clock = self.runtime("paradise")
+        state = {"reward": True}
+        rt.hit.side_effect = lambda node: state["reward"] and node == "MaaNikki_Monthly_ParadiseContinue"
+        rt.ui.page_matches.side_effect = lambda node: not state["reward"]
+        def dismiss(key, delay):
+            self.assertEqual(key, "skip")
+            state["reward"] = False
+            return clock.pause(delay)
+        rt.key.side_effect = dismiss
+        with patch("daily.gameplay.time.monotonic", side_effect=lambda: clock.now):
+            self.assertTrue(Gameplay(rt).paradise_reward_return())
+        rt.key.assert_called_once_with("skip", .5)
+
+    def test_unrecognized_paradise_reward_is_logged_before_main_recovery(self):
+        rt, clock = self.runtime("paradise")
+        game = Gameplay(rt)
+        rt.ui.page_matches.side_effect = None
+        rt.ui.page_matches.return_value = False
+        rt.hit.side_effect = None
+        rt.hit.return_value = False
+        with tempfile.TemporaryDirectory(dir=ROOT / ".build") as directory, \
+                patch("daily.gameplay.ROOT", Path(directory)), \
+                patch("daily.gameplay.time.monotonic", side_effect=lambda: clock.now):
+            self.assertFalse(game.paradise_reward_return())
+            self.assertEqual(len(list((Path(directory) / "logs/monthly").glob("*-return_unconfirmed.png"))), 1)
+        rt.key.assert_not_called()
+
+    def test_failed_exit_is_saved_and_task_reports_failure(self):
+        rt, _ = self.runtime("paradise")
+        rt.main.return_value = False
+        rt.hit.side_effect = None
+        rt.hit.return_value = False
+        with tempfile.TemporaryDirectory(dir=ROOT / ".build") as directory, \
+                patch("daily.gameplay.ROOT", Path(directory)):
+            self.assertFalse(Gameplay(rt).monthly())
+            self.assertEqual(len(list((Path(directory) / "logs/monthly").glob("*-exit_unconfirmed.png"))), 1)
+
+    def test_paradise_honors_disabled_task_rewards_and_never_enters_treasure(self):
+        rt, _ = self.runtime("paradise")
+        rt.context.get_node_data.side_effect = lambda node: {"enabled": node.endswith("TreasureTab")}
+        self.assertTrue(Gameplay(rt).monthly_rewards("paradise"))
+        rt.click_template.assert_not_called()
+
+    def test_both_pages_are_processed_once_in_the_opened_order(self):
+        travel = ["MaaNikki_Monthly_TaskTab", "MaaNikki_Monthly_ClaimTask",
+                  "MaaNikki_Monthly_TreasureTab", "MaaNikki_Monthly_ClaimTreasure"]
+        paradise = ["MaaNikki_Monthly_TaskTab", "MaaNikki_Monthly_ClaimTask"]
+        for kind, expected in (
+                ("travel", travel+["MaaNikki_Monthly_ToParadise"]+paradise),
+                ("paradise", paradise+["MaaNikki_Monthly_ToTravel"]+travel)):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory(dir=ROOT / ".build") as directory, \
+                    patch("daily.gameplay.ROOT", Path(directory)):
+                rt, _ = self.runtime(kind)
+                self.assertTrue(Gameplay(rt).monthly())
+                self.assertEqual([call.args[0] for call in rt.click_template.call_args_list], expected)
+                rt.ui.monthly_page.assert_called_once()
+                rt.main.assert_called_once()
+
+    def test_failed_switch_records_source_page_and_does_not_claim_again(self):
+        rt, _ = self.runtime()
+        rt.click_template.side_effect = lambda node, **kwargs: node != "MaaNikki_Monthly_ToParadise"
+        with tempfile.TemporaryDirectory(dir=ROOT / ".build") as directory, \
+                patch("daily.gameplay.ROOT", Path(directory)):
+            self.assertFalse(Gameplay(rt).monthly())
+            self.assertEqual(len(list((Path(directory) / "logs/monthly").glob("*-switch_unconfirmed.png"))), 1)
+        self.assertEqual([call.args[0] for call in rt.click_template.call_args_list].count(
+            "MaaNikki_Monthly_ClaimTask"), 1)
+        rt.main.assert_called_once()
+
+    def test_unchanged_page_after_switch_does_not_claim_processed_page_twice(self):
+        rt, _ = self.runtime()
+        rt.click_template.side_effect = None
+        rt.click_template.return_value = True
+        with tempfile.TemporaryDirectory(dir=ROOT / ".build") as directory, \
+                patch("daily.gameplay.ROOT", Path(directory)):
+            self.assertFalse(Gameplay(rt).monthly())
+            self.assertEqual(len(list((Path(directory) / "logs/monthly").glob("*-switch_unconfirmed.json"))), 1)
+        self.assertEqual([call.args[0] for call in rt.click_template.call_args_list].count(
+            "MaaNikki_Monthly_ClaimTask"), 1)
 
 
 if __name__ == "__main__":

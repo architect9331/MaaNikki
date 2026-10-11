@@ -167,7 +167,8 @@ class HomeTests(unittest.TestCase):
         import cv2
         from navigation.ability import WHITE
         nodes = json.loads((ROOT / "resource/pipeline/alignment_assets.json").read_text(encoding="utf-8"))
-        rt = SimpleNamespace(context=SimpleNamespace(get_node_data=lambda node: nodes.get(node, {})))
+        rt = SimpleNamespace(context=SimpleNamespace(get_node_data=lambda node: nodes.get(node, {})),
+                             image_current=lambda image: True)
         ui = GameUI(rt, ROOT / "resource")
         for name, available in (("available", True), ("unavailable", False)):
             with self.subTest(name=name):

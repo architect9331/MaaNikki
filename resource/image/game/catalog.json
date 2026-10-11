@@ -1294,6 +1294,32 @@
         227,
         105
       ]
+    },
+    "IconFishingHomeFeature": {
+      "template": "game/ui/IconFishingHomeFeature.png",
+      "roi": [
+        1157,
+        682,
+        67,
+        20
+      ]
+    },
+    "IconFishingMiralandFeature": {
+      "template": "game/ui/IconFishingMiralandFeature.png",
+      "roi": [
+        1157,
+        682,
+        67,
+        20
+      ]
+    },
+    "IconAbilityRhythms": {
+      "template": "game/ui/IconAbilityRhythms.png",
+      "roi": null
+    },
+    "IconAbilityFishing": {
+      "template": "game/ui/IconAbilityFish.png",
+      "roi": null
     }
   },
   "materials": {

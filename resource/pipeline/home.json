@@ -17,6 +17,12 @@
       "value": 3
     }
   },
+  "MaaNikki_Home_StarCollectReady": {
+    "recognition": "OCR",
+    "roi": [490, 90, 300, 60],
+    "expected": "可感应陨星",
+    "action": "DoNothing"
+  },
   "MaaNikki_Navigation_StarCollectAbility": {
     "recognition": "TemplateMatch",
     "roi": [
