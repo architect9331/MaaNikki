@@ -85,6 +85,12 @@ export interface PretaskItem {
   icon?: string;
   /** 可选。引用的顶层 option 键名数组，其取值序列化为最后一个参数 */
   option?: string[];
+  /** MaaNikki: run this pipeline entry after connecting the game window. */
+  entry?: string;
+  /** Stop the batch if this prerequisite cannot complete. */
+  required?: boolean;
+  /** Cancel the owned prerequisite process when the user stops. */
+  cancel_on_stop?: boolean;
 }
 
 /**

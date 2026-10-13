@@ -9,6 +9,9 @@ from scipy.signal import find_peaks
 from .models import MapSpec, NavigationError
 
 
+MINIMAP_POSITION_SCORE = .55
+
+
 @dataclass(frozen=True)
 class Pose:
     x: float
@@ -55,7 +58,7 @@ class Locator:
         self.last_frame = None
 
     @staticmethod
-    def match(image, patch, mask=None, peak_mask=None, kernel=5):
+    def match(image, patch, mask=None, peak_mask=None, kernel=5, minimum_score=None):
         if image.shape[0] < patch.shape[0] or image.shape[1] < patch.shape[1]:
             raise NavigationError("地图匹配区域不足。")
         rates = cv2.matchTemplate(image, patch, cv2.TM_CCOEFF_NORMED, mask=mask)
@@ -74,6 +77,16 @@ class Locator:
                                                cv2.BORDER_CONSTANT, value=0)
             oy, ox = (peak_mask.shape[0]-h)//2, (peak_mask.shape[1]-w)//2
             local = np.where(peak_mask[oy:oy+h, ox:ox+w] > 0, local, -np.inf)
+        if minimum_score is not None:
+            # A sharp local peak can still be a poor terrain match. Rank
+            # sharpness only among correlations close to the strongest valid
+            # candidate; otherwise animation/flat terrain can win with a
+            # near-zero or even negative absolute correlation.
+            eligible = np.isfinite(local)
+            strongest = float(np.max(rates[eligible])) if np.any(eligible) else -1
+            credible = eligible & (rates >= max(minimum_score, strongest - .12))
+            if np.any(credible):
+                local = np.where(credible, local, -np.inf)
         _, detail, _, (px, py) = cv2.minMaxLoc(local)
         left, top = max(0, px-4), max(0, py-4)
         fine = rates[top:min(rates.shape[0], py+4), left:min(rates.shape[1], px+4)]
@@ -106,28 +119,33 @@ class Locator:
         pad_y = max(patch.shape[0]*1.3/2, search_radius)
         x, y = max(0, round(hint[0]-pad_x)), max(0, round(hint[1]-pad_y))
         local = self.map[y:min(self.spec.height, round(hint[1]+pad_y)), x:min(self.spec.width, round(hint[0]+pad_x))]
-        px, py, score, detail = self.match(local, patch, mask)
+        px, py, score, detail = self.match(local, patch, mask, minimum_score=MINIMAP_POSITION_SCORE)
         px, py = px+x+.25, py+y+.25
         # Local peak height measures sharpness, not correctness. Keep both
         # correlation scores for diagnostics; validate motion by continuity.
         # Coordinates here use the half-size map (50 px/s, 0.5 px allowance).
         candidate = (px, py)
         elapsed = time.monotonic()-self.position_time
+        unreliable = not np.isfinite(score) or score < MINIMAP_POSITION_SCORE
         rejected = bool(self.previous and elapsed <= 20
                         and np.hypot(px-self.previous.x, py-self.previous.y) >= 50*elapsed+.5)
-        if rejected:
-            px, py = self.previous.x, self.previous.y
-        else:
+        if rejected or unreliable:
+            px, py = (self.previous.x, self.previous.y) if self.previous else hint
+        elif not unreliable and not rejected:
             self.position_time = time.monotonic()
-        # A rejected position is not a failed camera observation. Subtract the
-        # map at the retained position and measure the camera independently.
+        # Keep camera diagnostics independent, but only a trustworthy position
+        # may advance the coordinate history or be used by route movement.
         self.heading_diagnostics = {}
         heading, confidence = self.camera_heading(reference, px, py)
-        self.heading_diagnostics.update({"position_method": "speed_rejected" if rejected else "map_correlation",
+        self.heading_diagnostics.update({"position_method": "correlation_rejected" if unreliable else
+                                         "speed_rejected" if rejected else "map_correlation",
+                                         "position_reliable": not (unreliable or rejected),
                                          "candidate_position": list(candidate), "position_elapsed": elapsed,
                                          "score": score, "local_peak": detail})
-        self.previous = Pose(px, py, score, detail, heading, confidence)
-        return self.previous
+        pose = Pose(px, py, score, detail, heading, confidence)
+        if not unreliable and not rejected:
+            self.previous = pose
+        return pose
 
     def camera_heading(self, reference, x, y):
         observed = luma(reference[20:224, 79:283])

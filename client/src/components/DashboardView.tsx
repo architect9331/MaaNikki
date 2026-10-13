@@ -42,6 +42,7 @@ import { isTaskCompatible } from '@/stores/helpers';
 import { isPretaskName, getPretaskItem, buildPretaskArgs, buildPretaskDef } from '@/types/pretasks';
 import { startGlobalCallbackListener } from '@/components/connection/callbackCache';
 import { stopInstanceTasks } from '@/services/taskStopService';
+import { taskStartService } from '@/services/taskStartService';
 import { buildPiEnvVars } from '@/utils/piEnv';
 import {
   formatCheckboxCountViolation,
@@ -120,7 +121,10 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
   const tasks = instance?.selectedTasks || [];
   const enabledTasks = tasks.filter((task) => task.enabled &&
     isTaskAvailable(projectInterface?.task.find((def) => def.name === task.taskName), devMode));
-  const canRun = isConnected && isResourceLoaded && enabledTasks.length > 0;
+  const hasLaunchTask = enabledTasks.some(
+    (task) => Boolean(getPretaskItem(projectInterface, task.taskName)?.entry),
+  );
+  const canRun = enabledTasks.length > 0 && ((isConnected && isResourceLoaded) || hasLaunchTask);
 
   // 获取当前控制器和资源名（用于 pipeline override 生成）
   const currentControllerName =
@@ -238,6 +242,11 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
         setIsStarting(true);
 
         try {
+          if (hasLaunchTask) {
+            // Share the controller discovery and cancellable prerequisite flow.
+            await taskStartService.start(instance);
+            return;
+          }
           const compatibleEnabledTasks = enabledTasks.filter((task) => {
             const specialTask = getMxuSpecialTask(task.taskName);
             const pretask = isPretaskName(task.taskName)
@@ -437,6 +446,7 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
       instanceName,
       isRunning,
       canRun,
+      hasLaunchTask,
       enabledTasks,
       projectInterface,
       basePath,

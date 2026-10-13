@@ -1,0 +1,92 @@
+{
+  "MaaNikki_StartGame": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.start_game",
+    "custom_action_param": {"timeout": 900}
+  },
+  "MaaNikki_StartGame_Enter": {
+    "recognition": "OCR",
+    "roi": [150, 360, 980, 340],
+    "expected": "点击.*进入游戏|点击.*开始游戏|[Tt]ap.*[Ee]nter|[Cc]lick.*[Ee]nter",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_MainDetected",
+      "source": "MaaNikki_StartGame_Enter"
+    },
+    "post_delay": 1000
+  },
+  "MaaNikki_StartGame_UpdateTitle": {
+    "recognition": "OCR",
+    "roi": [480, 230, 320, 60],
+    "expected": "发现新版本|發現新版本",
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_UpdateBody": {
+    "recognition": "OCR",
+    "roi": [490, 305, 310, 110],
+    "expected": "资源文件.*更新|資源文件.*更新|是否更新资源|是否更新資源",
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_UpdateDialog": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_StartGame_UpdateTitle", "MaaNikki_StartGame_UpdateBody"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_UpdateButton": {
+    "recognition": "OCR",
+    "roi": [645, 430, 195, 65],
+    "expected": "^确认$|^確認$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_UpdateConfirm": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_StartGame_UpdateDialog", "MaaNikki_StartGame_UpdateButton"],
+    "box_index": 1,
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_StartGame_UpdateNext",
+      "source": "MaaNikki_StartGame_UpdateConfirm"
+    }
+  },
+  "MaaNikki_StartGame_UpdateNext": {
+    "recognition": "Or",
+    "any_of": [
+      "MaaNikki_StartGame_Enter", "MaaNikki_StartGame_Login",
+      "MaaNikki_MainDetected", "MaaNikki_RewardLayer", "MaaNikki_StartGame_RestartConfirm"
+    ],
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_RestartText": {
+    "recognition": "OCR",
+    "roi": [485, 330, 320, 55],
+    "expected": "更新完成.*请重启|更新完成.*請重啟",
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_RestartButton": {
+    "recognition": "OCR",
+    "roi": [545, 430, 190, 65],
+    "expected": "^确认$|^確認$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_RestartConfirm": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_StartGame_RestartText", "MaaNikki_StartGame_RestartButton"],
+    "box_index": 1,
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_Login": {
+    "recognition": "OCR",
+    "roi": [320, 340, 640, 360],
+    "expected": "^登录$|^登錄$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_StartGame_Enter",
+      "source": "MaaNikki_StartGame_Login"
+    },
+    "post_delay": 1000
+  }
+}

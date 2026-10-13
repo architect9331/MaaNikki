@@ -3,8 +3,8 @@
 // ----------------------------------------------------------------------------
 // 将项目在 interface.json 中声明的 pretask 映射为“伪任务”，复用现有任务的
 // 勾选/展开/选项渲染机制，作为卡片显示在任务列表顶部。
-// pretask 在连接 Controller 之前执行，且不进入 Tasker 执行队列，而是通过
-// run_pretask 直接启动外部程序。
+// pretask 通过 run_pretask 在连接 Controller 之前执行外部程序。
+// 声明 entry 的前置任务连接后继续执行对应 Pipeline，其余前置任务不进入 Tasker。
 // ============================================================================
 
 import type {
@@ -64,7 +64,7 @@ export function buildPretaskDef(item: PretaskItem): TaskItem {
     name: pretaskName(item),
     // 缺省 label 时回退到 name / exec，避免展示内部伪任务名
     label: item.label || item.name || item.exec,
-    entry: PRETASK_ENTRY,
+    entry: item.entry || PRETASK_ENTRY,
     description: item.description,
     icon: item.icon,
     option: item.option,

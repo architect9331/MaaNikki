@@ -32,8 +32,14 @@
   },
   "MaaNikki_Monthly_ParadiseContinue": {
     "recognition": "OCR",
-    "roi": [300, 500, 680, 220],
-    "expected": "按.*任意|任意键|点击.*任意|点击.*空白|点击.*继续|轻触.*继续",
+    "roi": [1050, 655, 230, 65],
+    "expected": "空白区域继续|点击.*继续|轻触.*继续",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Monthly_ParadiseReward": {
+    "recognition": "OCR",
+    "roi": [480, 140, 320, 110],
+    "expected": "恭喜获得",
     "action": "DoNothing"
   },
   "MaaNikki_Crown_PageReady": {

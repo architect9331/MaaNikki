@@ -458,6 +458,22 @@
     "next": [],
     "custom_action": "nikki.ui_click"
   },
+  "MaaNikki_Monthly_ParadiseClaim": {
+    "recognition": "TemplateMatch",
+    "roi": [940, 600, 230, 90],
+    "template": "game/monthly/claim.png",
+    "threshold": 0.65,
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "post_delay": 900,
+    "next": []
+  },
+  "MaaNikki_Monthly_ParadiseClaimEmpty": {
+    "recognition": "OCR",
+    "roi": [940, 600, 230, 90],
+    "expected": "^进行中(的)?$|^已领取$",
+    "next": []
+  },
   "MaaNikki_Monthly_SkipTask": {
     "recognition": "TemplateMatch",
     "roi": [

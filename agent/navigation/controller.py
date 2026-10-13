@@ -73,8 +73,14 @@ class ForegroundInput:
         self.user32.GetWindowTextLengthW.restype = ctypes.c_int
         self.user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
         self.user32.GetWindowTextW.restype = ctypes.c_int
+        self.user32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+        self.user32.GetClassNameW.restype = ctypes.c_int
         if not self.user32.IsWindow(self.hwnd):
             raise NavigationError("连接的游戏窗口已经关闭，请重新连接。")
+        class_name = ctypes.create_unicode_buffer(257)
+        if (not self.user32.GetClassNameW(self.hwnd, class_name, len(class_name))
+                or class_name.value != "UnrealWindow"):
+            raise NavigationError("当前连接的窗口不是游戏客户端，请重新连接无限暖暖。")
         length = self.user32.GetWindowTextLengthW(self.hwnd)
         if not 0 < length <= 256:
             raise NavigationError("无法确认连接窗口的标题，导航已停止。")
@@ -89,6 +95,45 @@ class ForegroundInput:
 
     def foreground(self):
         return bool(self.user32.IsWindow(self.hwnd) and self.user32.GetForegroundWindow() == self.hwnd)
+
+    def focus_snapshot(self):
+        """Read focus and pointer state once when a task pauses, never for each frame."""
+        foreground = self.user32.GetForegroundWindow()
+
+        def describe(hwnd):
+            title, class_name = ctypes.create_unicode_buffer(513), ctypes.create_unicode_buffer(257)
+            self.user32.GetWindowTextW(hwnd, title, len(title))
+            self.user32.GetClassNameW(hwnd, class_name, len(class_name))
+            pid = wintypes.DWORD()
+            self.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            return {"hwnd": int(hwnd or 0), "title": title.value,
+                    "class": class_name.value, "pid": pid.value}
+
+        self.user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+        self.user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+        self.user32.GetCursorPos.argtypes = [ctypes.POINTER(wintypes.POINT)]
+        self.user32.GetCursorPos.restype = wintypes.BOOL
+        self.user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+        self.user32.GetClientRect.restype = wintypes.BOOL
+        self.user32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
+        self.user32.ClientToScreen.restype = wintypes.BOOL
+        self.user32.GetClipCursor.argtypes = [ctypes.POINTER(wintypes.RECT)]
+        self.user32.GetClipCursor.restype = wintypes.BOOL
+        snapshot = {"game": describe(self.hwnd), "foreground": describe(foreground),
+                    "game_is_foreground": foreground == self.hwnd,
+                    "game_minimized": bool(self.user32.IsIconic(self.hwnd))}
+        cursor, origin, client, clip = wintypes.POINT(), wintypes.POINT(), wintypes.RECT(), wintypes.RECT()
+        if self.user32.GetCursorPos(ctypes.byref(cursor)):
+            snapshot["cursor"] = [cursor.x, cursor.y]
+            if (self.user32.GetClientRect(self.hwnd, ctypes.byref(client))
+                    and self.user32.ClientToScreen(self.hwnd, ctypes.byref(origin))):
+                left, top = origin.x+client.left, origin.y+client.top
+                right, bottom = origin.x+client.right, origin.y+client.bottom
+                snapshot["game_client_screen_rect"] = [left, top, right, bottom]
+                snapshot["cursor_in_game"] = left <= cursor.x < right and top <= cursor.y < bottom
+        if self.user32.GetClipCursor(ctypes.byref(clip)):
+            snapshot["cursor_clip_rect"] = [clip.left, clip.top, clip.right, clip.bottom]
+        return snapshot
 
     def check(self):
         if self.stopped():

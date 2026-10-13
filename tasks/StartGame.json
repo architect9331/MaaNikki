@@ -1,0 +1,37 @@
+{
+  "pretask": [
+    {
+      "name": "start_game",
+      "label": "启动游戏",
+      "description": "通过官方启动器启动无限暖暖，处理客户端资源更新和自动重启，再进入主页；游戏已打开时直接处理当前页面。此任务固定先于其他任务执行。切出启动器或游戏窗口时暂停，切回后继续。启动失败的记录保存在 logs/startup。",
+      "controller": ["nikki_windows"],
+      "exec": "./python/python.exe",
+      "args": ["./agent/start_game.py"],
+      "option": ["StartGameProgram", "StartGameTimeout"],
+      "entry": "MaaNikki_StartGame",
+      "required": true,
+      "cancel_on_stop": true
+    }
+  ],
+  "option": {
+    "StartGameProgram": {
+      "type": "input",
+      "label": "官方启动器路径",
+      "description": "可留空自动查找，或选择官方启动器目录中的 launcher.exe；之前填写的游戏路径会尝试查找同一安装目录的启动器。",
+      "inputs": [
+        {"name": "path", "label": "官方启动器", "default": "", "input_type": "file"}
+      ]
+    },
+    "StartGameTimeout": {
+      "type": "input",
+      "label": "启动等待上限（秒）",
+      "description": "启动器、资源更新、自动重启及进入游戏的等待上限，默认900秒。暂停期间不计时。大型更新超时后可手动完成更新再运行。",
+      "inputs": [
+        {"name": "seconds", "default": "900", "pipeline_type": "int", "verify": "^(?:[3-9][0-9]|[1-8][0-9]{2}|900)$", "pattern_msg": "请输入30至900之间的秒数。"}
+      ],
+      "pipeline_override": {
+        "MaaNikki_StartGame": {"custom_action_param": {"timeout": "{seconds}"}}
+      }
+    }
+  }
+}

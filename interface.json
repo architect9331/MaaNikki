@@ -4,7 +4,7 @@
   "label": "MaaNikki",
   "title": "MaaNikki - 无限暖暖自动化",
   "description": "《无限暖暖》助手，支持日常任务、幻境挑战、巅峰赛和常驻开荒辅助。",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "controller": [
     {
       "name": "nikki_windows",
@@ -14,7 +14,7 @@
       "permission_required": true,
       "display_short_side": 720,
       "win32": {
-        "class_regex": ".*",
+        "class_regex": "^UnrealWindow$",
         "window_regex": "^\\s*(Infinity Nikki|无限暖暖)\\s*$",
         "screencap": "FramePool",
         "mouse": "Seize",
@@ -77,6 +77,7 @@
   "task": [],
   "import": [
     "options/GameKeys.json",
+    "tasks/StartGame.json",
     "tasks/Dig.json",
     "tasks/Zhaoxi.json",
     "tasks/Energy.json",

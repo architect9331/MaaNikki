@@ -56,6 +56,25 @@ class ForegroundSession:
         self.context.run_task("MaaNikki_Daily_Message", {
             "MaaNikki_Daily_Message": {"focus": {"Node.Action.Starting": message}}})
 
+    def record_focus_loss(self, adapter):
+        from datetime import datetime
+        import json
+        from pathlib import Path
+
+        try:
+            record = adapter.focus_snapshot()
+            record["time"] = datetime.now().isoformat(timespec="milliseconds")
+            record["reason"] = "foreground_window_changed"
+            folder = Path(__file__).resolve().parents[1] / "logs/focus"
+            folder.mkdir(parents=True, exist_ok=True)
+            name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+".json"
+            (folder / name).write_text(
+                json.dumps(record, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+            return "logs/focus/"+name
+        except Exception:
+            # Diagnostics must never interrupt cooperative pause/resume.
+            return None
+
     @contextmanager
     def coalesce_stop_queries(self, interval=.05):
         """Bound resident-helper IPC polling without caching window focus."""
@@ -134,9 +153,14 @@ class ForegroundSession:
         begin = wall_time.monotonic()
         self.waiting = True
         try:
+            # Capture the cause before releasing input changes window state.
+            focus_record = self.record_focus_loss(adapter)
             for inputs in list(self.inputs):
                 inputs.release()
-            self.notify("游戏已离开前台，任务暂停；切回无限暖暖后自动继续。")
+            message = "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。"
+            if focus_record:
+                message += f"失焦记录：{focus_record}。"
+            self.notify(message)
             stable_since = None
             while True:
                 if self.stopped() or adapter.stopped():

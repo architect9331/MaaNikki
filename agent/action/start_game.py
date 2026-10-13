@@ -1,0 +1,162 @@
+from __future__ import annotations
+
+from datetime import datetime
+import json
+
+from maa.custom_action import CustomAction
+from registration import agent_action
+from task_control import task_time as time
+from daily.runtime import Executors, ROOT
+
+
+@agent_action("nikki.start_game", stop_on_failure=True)
+class StartGameAction(CustomAction):
+    def run(self, context, argv):
+        runtime = Executors(context)
+        options = argv.custom_action_param
+        options = json.loads(options or "{}") if isinstance(options, str) else options or {}
+        timeout = int(options.get("timeout", 900))
+        bootstrap = options.get("bootstrap") is True
+        self.restart_requested = False
+        self.elapsed_seconds = 0.0
+        if not 30 <= timeout <= 900:
+            runtime.log("启动等待上限应在30至900秒之间。")
+            context.tasker.post_stop()
+            return False
+        runtime.log("正在等待进入游戏；切出窗口会暂停，切回后继续。")
+        started_at = time.monotonic()
+        deadline = started_at+timeout
+        entered, logged_in, update_attempts = 0, 0, 0
+        update_waiting = False
+
+        def incomplete(reason="尚未完成进入游戏"):
+            if not runtime.stopped:
+                import cv2
+                folder = ROOT / "logs/startup"
+                folder.mkdir(parents=True, exist_ok=True)
+                name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-enter"
+                record = {
+                    "stage": "enter_game", "success": False, "reason": reason,
+                    "enter_attempts": entered, "login_attempts": logged_in,
+                    "update_attempts": update_attempts,
+                }
+                image = runtime.capture()
+                if image is not None and cv2.imwrite(str(folder / (name+".png")), image):
+                    record["screenshot"] = "logs/startup/"+name+".png"
+                (folder / (name+".json")).write_text(
+                    json.dumps(record, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+                runtime.log(f"{reason}，本轮停止；记录：logs/startup/{name}.json。")
+                context.tasker.post_stop()
+            return False
+
+        def transition_ready():
+            with runtime.observe():
+                if runtime.hit("MaaNikki_StartGame_RestartConfirm"):
+                    return True
+                if runtime.hit("MaaNikki_StartGame_UpdateTitle"):
+                    return runtime.hit("MaaNikki_StartGame_UpdateConfirm")
+                return (runtime.hit("MaaNikki_MainDetected")
+                        or runtime.hit("MaaNikki_RewardLayer")
+                        or runtime.ui.asset("IconUILoading", threshold=.99)
+                        or runtime.hit("MaaNikki_StartGame_Enter"))
+
+        def advance(node, destination):
+            return runtime.ui.enter_page(
+                lambda: runtime.click_template(node, attempts=1, wait_seconds=0, verify=False),
+                destination, source=node, attempts=1,
+                seconds=max(.1, deadline-time.monotonic()))
+
+        def entered_game():
+            with runtime.observe():
+                if runtime.hit("MaaNikki_StartGame_RestartConfirm"):
+                    return True
+                if runtime.hit("MaaNikki_StartGame_UpdateTitle"):
+                    return runtime.hit("MaaNikki_StartGame_UpdateConfirm")
+                return not runtime.hit("MaaNikki_StartGame_Enter") and transition_ready()
+
+        def confirm_update():
+            nonlocal update_attempts
+            if update_attempts >= 3:
+                return False
+            update_attempts += 1
+            return runtime.click_template(
+                "MaaNikki_StartGame_UpdateConfirm", attempts=1, wait_seconds=0, verify=False)
+
+        while not runtime.stopped and time.monotonic() < deadline:
+            with runtime.observe(fresh=True):
+                restart = runtime.hit("MaaNikki_StartGame_RestartConfirm")
+                update = not restart and runtime.hit("MaaNikki_StartGame_UpdateTitle")
+                reward = not restart and not update and runtime.hit("MaaNikki_RewardLayer")
+                main = not restart and not update and runtime.hit("MaaNikki_MainDetected")
+                enter = not update and not main and runtime.hit("MaaNikki_StartGame_Enter")
+                login = not update and not main and not enter and runtime.hit("MaaNikki_StartGame_Login")
+            if restart:
+                if not bootstrap or options.get("allow_restart", True) is not True:
+                    # The regular batch must not continue on a window that is
+                    # about to disappear. Startup normally handles this earlier.
+                    return incomplete("更新需要重启，请重新运行启动游戏任务")
+                runtime.log("资源更新完成，正在确认重启并等待新的游戏窗口。")
+                result = runtime.recognize("MaaNikki_StartGame_RestartConfirm")
+                if not result or not result.hit:
+                    continue
+                box = list(result.box)
+                point = [box[0]+box[2]//2, box[1]+box[3]//2]
+                if not runtime.action("TouchMove", target=point) or not runtime.pause(.2):
+                    return incomplete("未能点击更新重启确认")
+                result = runtime.recognize("MaaNikki_StartGame_RestartConfirm")
+                if not result or not result.hit:
+                    continue
+                box = list(result.box)
+                self.elapsed_seconds = time.monotonic()-started_at
+                # Record intent before submitting: the game can close before
+                # the click response. Do not capture, unhover or wait on it again.
+                self.restart_requested = True
+                runtime.action("Click", ui_click=False, target=[
+                    box[0]+box[2]//2, box[1]+box[3]//2])
+                return True
+            elif update:
+                if not update_waiting:
+                    runtime.log("检测到客户端资源更新，正在确认并等待下载完成。")
+                    update_waiting = True
+                if runtime.hit("MaaNikki_StartGame_UpdateConfirm"):
+                    if update_attempts >= 3:
+                        return incomplete("客户端资源更新确认未生效")
+                    # Wait for the known prompt to leave; download duration is
+                    # bounded by the startup deadline, with no Esc recovery.
+                    if not runtime.ui.enter_page(
+                            confirm_update,
+                            lambda: not runtime.hit("MaaNikki_StartGame_UpdateConfirm"),
+                            source="MaaNikki_StartGame_UpdateConfirm", attempts=3,
+                            seconds=min(5, max(.1, deadline-time.monotonic()))):
+                        return incomplete("客户端资源更新确认未生效")
+            elif reward:
+                if not runtime.key("skip", .5):
+                    return incomplete()
+            elif main:
+                if runtime.ui.wait_page("MaaNikki_MainDetected"):
+                    runtime.log("已进入游戏主页。")
+                    if bootstrap:
+                        self.elapsed_seconds = time.monotonic()-started_at
+                        return True
+                    _, finished = runtime.finish("MaaNikki_StartGame")
+                    return finished
+            elif enter and entered < 3:
+                entered += 1
+                if not advance("MaaNikki_StartGame_Enter", entered_game):
+                    return incomplete()
+            elif login and logged_in < 3:
+                logged_in += 1
+                if not advance("MaaNikki_StartGame_Login", transition_ready):
+                    return incomplete()
+            elif any(runtime.hit(node) for node in (
+                    "MaaNikki_MenuReady", "MaaNikki_CalendarReady", "MaaNikki_Monthly_PageReady")):
+                if runtime.main():
+                    if bootstrap:
+                        self.elapsed_seconds = time.monotonic()-started_at
+                        return True
+                    _, finished = runtime.finish("MaaNikki_StartGame")
+                    return finished
+                return incomplete()
+            if not runtime.pause(.5):
+                return False
+        return incomplete("进入游戏主页超时，请检查登录或更新提示")

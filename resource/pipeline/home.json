@@ -18,9 +18,14 @@
     }
   },
   "MaaNikki_Home_StarCollectReady": {
-    "recognition": "OCR",
-    "roi": [490, 90, 300, 60],
-    "expected": "可感应陨星",
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [1165, 15, 80, 55],
+      "template": "nikki/home/star_collect_ready.png",
+      "gray_limit": [210, 255],
+      "threshold": 0.88
+    },
     "action": "DoNothing"
   },
   "MaaNikki_Navigation_StarCollectAbility": {

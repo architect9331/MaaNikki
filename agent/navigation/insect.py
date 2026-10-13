@@ -131,8 +131,16 @@ class Insect(Ability):
                             break
                         motion.wait(.1)
                     else:
-                        failed = 0
                         pose = self.actions.teleporter.locator.locate(frame)
+                        if not self.actions.teleporter.locator.heading_diagnostics.get("position_reliable", True):
+                            motion.stop()
+                            failed += 1
+                            if failed > 5:
+                                self.rt.log("捕虫时小地图位置未能恢复可信匹配，继续后续点位。")
+                                break
+                            motion.wait(.1)
+                            continue
+                        failed = 0
                         # Do not approach on a partially corrected heading.
                         navigator.turn(degree, pose, stationary=True, tolerance=3)
                         motion.forward(.35)

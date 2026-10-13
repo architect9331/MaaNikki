@@ -481,6 +481,13 @@ class Runtime:
                     if cv2.imwrite(str(folder / filename), frame[y:y+h, x:x+w]):
                         events.append({'type': 'failure_frame', 'file': filename, 'roi': roi,
                                        'heading_diagnostics': dict(locator.heading_diagnostics) if locator else {}})
+                    if stage == 'route_execution':
+                        # Include terrain/obstacles as well as the minimap;
+                        # exclude the account strip at the bottom of the scene.
+                        scene_file = filename.replace('-minimap.png', '-scene.png')
+                        if cv2.imwrite(str(folder / scene_file), frame[:688]):
+                            events.append({'type': 'failure_scene', 'file': scene_file,
+                                           'roi': [0, 0, 1280, 688]})
                 except (OSError, ValueError, cv2.error):
                     self.log('导航失败时的地图裁图未能保存。')
             if isinstance(error, NavigationError):

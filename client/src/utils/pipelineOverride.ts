@@ -11,6 +11,7 @@ import type {
   OptionDefinition,
 } from '@/types/interface';
 import { isMxuSpecialTask, getMxuSpecialTask } from '@/types/specialTasks';
+import { resolveCompatTaskDef } from '@/types/pretasks';
 import { loggers } from './logger';
 import { findSwitchCase } from './optionHelpers';
 import { createDefaultOptionValue, sanitizeOptionValue } from '@/stores/helpers';
@@ -546,7 +547,7 @@ export const generateTaskPipelineOverride = (
       : controllerDef?.type;
 
   const overrides: Record<string, unknown>[] = [];
-  const taskDef = projectInterface.task.find((t) => t.name === selectedTask.taskName);
+  const taskDef = resolveCompatTaskDef(projectInterface, selectedTask.taskName);
   if (!taskDef) return '[]';
 
   // 添加任务自身的 pipeline_override

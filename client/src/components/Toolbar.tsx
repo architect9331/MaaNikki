@@ -27,6 +27,7 @@ import {
   isPretaskName,
   getPretaskItem,
   buildPretaskArgs,
+  buildPretaskDef,
   resolveCompatTaskDef,
 } from '@/types/pretasks';
 import type { TaskConfig, ControllerConfig, GamescopeInstance } from '@/types/maa';
@@ -484,8 +485,10 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
 
         if (enabledPretasks.length > 0) {
           await beginPreActionControl(targetId);
+          let requiredPretask = false;
           try {
             for (const { task, item } of enabledPretasks) {
+              requiredPretask = item.required === true;
               const args = buildPretaskArgs(
                 item,
                 task.optionValues ?? {},
@@ -503,7 +506,9 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
               });
 
               throwIfPreActionStopped(targetId);
-              const exitCode = await maaService.runPretask(targetId, item.exec, args, basePath);
+              const exitCode = await maaService.runPretask(
+                targetId, item.exec, args, basePath, item.cancel_on_stop,
+              );
               throwIfPreActionStopped(targetId);
 
               if (exitCode !== 0) {
@@ -512,12 +517,16 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
                   type: 'warning',
                   message: t('action.pretaskExitCode', { code: exitCode }),
                 });
+                if (requiredPretask) {
+                  throw new Error(`${displayName}: ${t('action.pretaskExitCode', { code: exitCode })}`);
+                }
               } else {
                 addLog(targetId, {
                   type: 'success',
                   message: t('action.pretaskCompleted', { name: displayName }),
                 });
               }
+              if (item.entry) needsReconnect = true;
             }
           } catch (err) {
             if ((err instanceof Error ? err.message : String(err)) === PRE_ACTION_CANCELLED_ERROR) {
@@ -529,6 +538,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
               type: 'error',
               message: t('action.pretaskFailed', { error: String(err) }),
             });
+            if (requiredPretask) throw err;
           } finally {
             await endPreActionControl(targetId);
           }
@@ -1148,14 +1158,18 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
           specialTask: ReturnType<typeof getMxuSpecialTask>;
         }
         const runnableTasks: RunnableTask[] = [];
-        for (const selectedTask of compatibleTasks) {
-          // pretask 不进入 Tasker 队列，已在连接 Controller 前单独执行
-          if (isPretaskName(selectedTask.taskName)) {
-            continue;
-          }
+        const orderedTasks = [
+          ...compatibleTasks.filter((task) => getPretaskItem(projectInterface, task.taskName)?.entry),
+          ...compatibleTasks.filter((task) => !getPretaskItem(projectInterface, task.taskName)?.entry),
+        ];
+        for (const selectedTask of orderedTasks) {
+          const pretask = getPretaskItem(projectInterface, selectedTask.taskName);
+          // A launch prerequisite continues with its game pipeline after connecting.
+          if (isPretaskName(selectedTask.taskName) && !pretask?.entry) continue;
           const specialTask = getMxuSpecialTask(selectedTask.taskName);
           const taskDef =
             specialTask?.taskDef ||
+            (pretask ? buildPretaskDef(pretask) : undefined) ||
             projectInterface?.task.find((t) => t.name === selectedTask.taskName);
           if (!taskDef) {
             log.warn(`跳过任务 ${selectedTask.taskName}: 未找到任务定义`);

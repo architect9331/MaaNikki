@@ -148,6 +148,15 @@ class Navigator:
             pose = Pose(anchor[0], anchor[1], 0.0, 0.0, None, 0.0)
         else:
             pose = self.locator.locate(frame, hint, search_radius=26)
+            if not self.locator.heading_diagnostics.get("position_reliable", True):
+                # Retained coordinates are an anchor for recovery, not a new
+                # arrival or permission to keep walking/turning on bad matches.
+                if self.motion:
+                    self.motion.close()
+                self.locator.heading_diagnostics.update(
+                    camera_method=self.locator.heading_diagnostics.get("method"),
+                    method="position_unavailable")
+                pose = Pose(pose.x, pose.y, pose.score, pose.margin, None, 0.0)
         if self.motion:
             self.motion.tick()
         self.event({"type": "pose", **pose.dict(), "heading_diagnostics": dict(self.locator.heading_diagnostics)})
@@ -317,6 +326,7 @@ class Navigator:
         speeds, periods = [6.0]*5, [.2]*5
         last = None
         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+        best_distance = distance(pose, origin)
         index = 0
         prepared_index = None
         last_good = pose
@@ -337,6 +347,7 @@ class Navigator:
                     pose = self.observe((last_good.x, last_good.y))
                     last_good = stuck_anchor = pose
                     stuck_since, recovered = time.monotonic(), False
+                    best_distance = distance(pose, route.points[index])
                     last = None
                     speeds, periods = [6.0]*5, [.2]*5
                     continue
@@ -355,6 +366,7 @@ class Navigator:
                         self.event({"type": "route_resume", "index": index})
                     last_good = stuck_anchor = pose
                     stuck_since, recovered = time.monotonic(), False
+                    best_distance = distance(pose, route.points[index])
                     scene_interrupted, last = False, None
                     continue
                 last_good = pose
@@ -364,6 +376,7 @@ class Navigator:
                         pose = self.observe((target.x, target.y))
                         last_good = pose
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        best_distance = distance(pose, target)
                         last = None
                     prepared_index = index
                 if index == 0 and distance(pose, origin) > route.start_radius:
@@ -389,18 +402,24 @@ class Navigator:
                         motion.stop()
                         self.pause(.5 if route.points[index+1].jump else .2)
                     index += 1
+                    if index < len(route.points):
+                        stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        best_distance = distance(pose, route.points[index])
                     last = None
                     continue
-                if distance(pose, stuck_anchor) > 1:
-                    # Count interruptions without progress, not the lifetime
-                    # total of a route that has already resumed walking.
+                remaining_distance = distance(pose, target)
+                if distance(pose, stuck_anchor) > 1 and remaining_distance < best_distance - 1:
+                    # Jitter or drifting sideways along a wall is not progress
+                    # toward this waypoint and must not reset recovery timers.
                     scene_retries = 0
                     stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                    best_distance = remaining_distance
                 stuck_time = time.monotonic()-stuck_since
                 if stuck_time > 15:
                     raise NavigationError("原地卡住超过 15 秒，停止路线。")
                 if stuck_time > 5 and not recovered:
-                    self.event({"type": "unstuck", "seconds": stuck_time})
+                    self.event({"type": "unstuck", "seconds": stuck_time, "index": index,
+                                "remaining": remaining_distance, "best_remaining": best_distance})
                     motion.stop()
                     motion.jump(False, True)
                     self.pause(1)
@@ -408,6 +427,13 @@ class Navigator:
                     motion.jump(True, True)
                     self.pause(1.5)
                     recovered = True
+                    motion.stop()
+                    motion.jump(False, self.walking())
+                    # Recovery moves the character: acquire a new position
+                    # before steering instead of reusing the pre-jump bearing.
+                    pose = self.observe((pose.x, pose.y))
+                    last = None
+                    continue
                 turn_begin = time.monotonic()
                 before_turn = pose
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360

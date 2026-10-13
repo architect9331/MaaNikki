@@ -312,6 +312,8 @@ class Teleporter:
             self.transport(checkpoint)
             return
         pose = self.locator.locate(self.rt.capture(), (origin.x, origin.y))
+        if not self.locator.heading_diagnostics.get("position_reliable", True):
+            raise NavigationError("路线起点的小地图位置未能可信匹配，尚未开始移动。")
         if math.hypot(pose.x-origin.x, pose.y-origin.y) > route.start_radius:
             raise NavigationError("当前不在路线起点，且路线没有登记传送点。")
 
@@ -340,7 +342,8 @@ class Teleporter:
             except NavigationError:
                 self.locator.previous = None
                 return False
-            reliable = pose.score >= .75 and pose.margin >= .05 and pose.heading is not None
+            reliable = (pose.score >= .75 and pose.margin >= .05 and pose.heading is not None
+                        and self.locator.heading_diagnostics.get("position_reliable", True))
             near = math.hypot(pose.x-checkpoint["x"], pose.y-checkpoint["y"]) < 15
             if not reliable or not near or previous and math.hypot(pose.x-previous.x, pose.y-previous.y) > 1:
                 self.locator.previous = None

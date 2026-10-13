@@ -1126,6 +1126,7 @@ export const maaService = {
     program: string,
     args: string[],
     cwd?: string,
+    cancelOnStop = false,
   ): Promise<number> {
     if (!isTauri()) {
       throw new Error('此功能仅在 Tauri 环境中可用');
@@ -1136,6 +1137,7 @@ export const maaService = {
       program,
       args,
       cwd: cwd || null,
+      cancelOnStop,
     });
     log.info('预任务执行完成, 退出码:', exitCode);
     return exitCode;

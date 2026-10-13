@@ -644,6 +644,7 @@ pub async fn run_pretask(
     program: String,
     args: Vec<String>,
     cwd: Option<String>,
+    cancel_on_stop: Option<bool>,
 ) -> Result<i32, String> {
     info!(
         "run_pretask: instance_id={}, program={}, args={:?}, cwd={:?}",
@@ -661,6 +662,11 @@ pub async fn run_pretask(
     };
 
     let mut cmd = super::utils::build_launch_command(&resolved_program, &args, false);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW: hide the helper console.
+    }
 
     // 设置工作目录
     if let Some(ref dir) = cwd {
@@ -698,9 +704,15 @@ pub async fn run_pretask(
                 "run_pretask wait cancelled by stop request: {}",
                 instance_id
             );
-            std::thread::spawn(move || {
+            if cancel_on_stop.unwrap_or(false) {
+                // Only stop the helper owned by this prerequisite, not the game it opened.
+                let _ = child.kill();
                 let _ = child.wait();
-            });
+            } else {
+                std::thread::spawn(move || {
+                    let _ = child.wait();
+                });
+            }
             return Err("MXU_PRE_ACTION_CANCELLED".to_string());
         }
 

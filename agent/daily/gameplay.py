@@ -319,12 +319,19 @@ class Gameplay:
             self.rt.log(f"奖励页面记录未能保存：{error}。")
 
     def paradise_reward_return(self):
+        def page_returned():
+            with self.rt.observe():
+                return (self.ui.page_matches("MaaNikki_Monthly_ParadiseReady")
+                        and not self.rt.hit("MaaNikki_Monthly_ParadiseReward")
+                        and not self.rt.hit("MaaNikki_Monthly_ParadiseContinue")
+                        and not self.rt.hit("MaaNikki_RewardLayer"))
+
         deadline, dismissed = time.monotonic()+10, 0
         while not self.rt.stopped and time.monotonic() < deadline:
             with self.rt.observe(fresh=True):
                 reward = self.rt.hit("MaaNikki_RewardLayer")
                 continuation = self.rt.hit("MaaNikki_Monthly_ParadiseContinue")
-                returned = self.ui.page_matches("MaaNikki_Monthly_ParadiseReady")
+                returned = not (reward or continuation) and page_returned()
             if reward or continuation:
                 if dismissed >= 3:
                     break
@@ -332,8 +339,8 @@ class Gameplay:
                 self.rt.log("乐园构想：已识别奖励继续提示，尝试关闭奖励页面。")
                 if not self.rt.key("skip", .5):
                     return False
-            elif returned:
-                return self.ui.wait_page("MaaNikki_Monthly_ParadiseReady")
+            elif returned and dismissed:
+                return self.ui.wait_page(page_returned)
             elif not self.rt.pause(.3):
                 return False
         self.monthly_diagnostic("paradise", "return_unconfirmed", "领取后未能确认回到乐园构想")
@@ -352,9 +359,15 @@ class Gameplay:
                 return False
             if not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
                 return False
-            claim = f"MaaNikki_Monthly_Claim{page}"
+            claim = ("MaaNikki_Monthly_ParadiseClaim" if kind == "paradise"
+                     else f"MaaNikki_Monthly_Claim{page}")
+            empty = False
             for attempt in range(3):
-                if self.rt.hit(claim):
+                with self.rt.observe(fresh=True):
+                    available = self.rt.hit(claim)
+                    if kind == "paradise" and not available and attempt == 2:
+                        empty = self.rt.hit("MaaNikki_Monthly_ParadiseClaimEmpty")
+                if available:
                     if not self.rt.click_template(claim, wait_seconds=.5):
                         return False
                     if kind == "paradise":
@@ -377,6 +390,11 @@ class Gameplay:
                     claimed = True
                     break
                 if attempt < 2 and not self.rt.pause(1):
+                    return False
+            else:
+                if kind == "paradise" and not empty:
+                    self.monthly_diagnostic(kind, "claim_unconfirmed", "未能确定一键领取按钮状态")
+                    self.rt.log("乐园构想领取按钮状态未确认，已保存现场，本项未完成。")
                     return False
             if not self.rt.pause(.5):
                 return False
