@@ -1,4 +1,4 @@
-"""Movement-only route tests; no daily executor or task completion effects."""
+"""Movement route trials and explicit home workflow variants for user trials."""
 from __future__ import annotations
 
 import ctypes
@@ -8,6 +8,7 @@ import math
 import os
 from pathlib import Path
 import re
+from types import SimpleNamespace
 from task_control import task_time as time
 
 import cv2
@@ -20,6 +21,9 @@ from navigation.engine import Navigator
 from navigation.models import NavigationError, maps, parse_route
 from navigation.teleport import Teleporter
 from navigation.vision import Locator
+
+
+HOME_ROUTES = {"home_daily", "home_daily_shortcut"}
 
 
 def inputs_allowed():
@@ -41,6 +45,12 @@ def inputs_allowed():
 def test_document(resource: Path, settings: dict):
     """Read one fixed snapshot and validate before connecting or sending input."""
     filename, name = settings.get("file", ""), settings.get("route", "")
+    mode = settings.get("mode", "movement")
+    if mode not in {"movement", "home"}:
+        raise NavigationError("路线测试模式无效。")
+    home = mode == "home"
+    if home and (filename or name not in HOME_ROUTES):
+        raise NavigationError("家园动作测试仅支持内置的家园日常路线。")
     if filename:
         if not isinstance(filename, str):
             raise NavigationError("路线文件路径无效。")
@@ -61,20 +71,38 @@ def test_document(resource: Path, settings: dict):
     spec = maps(resource).get(document.get("map"))
     if spec is None:
         raise NavigationError("路线地图不受支持。")
+    if home and document.get("map") != "home":
+        raise NavigationError("家园测试路线必须使用家园地图。")
 
     def number(value, minimum, maximum):
         return type(value) in (int, float) and math.isfinite(value) and minimum <= value <= maximum
 
-    if not number(document.get("timeout", 120), 1, 600) or not number(document.get("start_radius", 6), .1, 30):
-        raise NavigationError("路线超时须为 1–600 秒，起点误差须为 0.1–30。")
+    maximum_timeout = 900 if home else 600
+    if not number(document.get("timeout", 120), 1, maximum_timeout) or not number(document.get("start_radius", 6), .1, 30):
+        raise NavigationError(f"路线超时须为 1–{maximum_timeout} 秒，起点误差须为 0.1–30。")
     for index, point in enumerate(document["points"]):
-        if not isinstance(point, dict) or point.get("action"):
+        if not isinstance(point, dict) or (point.get("action") and not home):
             raise NavigationError(f"第 {index+1} 点含任务动作或格式无效；路线测试只支持移动和跳跃。")
+        if home:
+            action, param = point.get("action", ""), point.get("params", {})
+            if not isinstance(param, dict) or action not in {"", "teleport", "fishing_star", "macro", "wait"}:
+                raise NavigationError(f"第 {index+1} 点不是支持的家园动作。")
+            if action == "macro" and param.get("id") != "starsea_fall":
+                raise NavigationError("家园测试仅支持原地下落攻击宏。")
+            if action == "wait" and not number(param.get("seconds"), 0, 10):
+                raise NavigationError("家园测试等待时间须为 0–10 秒。")
         if (not number(point.get("x"), 0, spec.width) or not number(point.get("y"), 0, spec.height)
                 or not number(point.get("radius", 3), .1, 30) or type(point.get("jump", False)) is not bool):
             raise NavigationError(f"第 {index+1} 点的坐标、半径或跳跃设置无效。")
-    checkpoint = document.get("teleport")
-    if checkpoint is not None:
+    checkpoints = [document.get("teleport")]
+    if home:
+        checkpoints += [point["params"].get("checkpoint") for point in document["points"]
+                        if point.get("action") == "teleport"]
+        if any(checkpoint is None for checkpoint in checkpoints[1:]):
+            raise NavigationError("家园测试的传送动作缺少传送点。")
+    for checkpoint in checkpoints:
+        if checkpoint is None:
+            continue
         if (not isinstance(checkpoint, dict)
                 or any(not isinstance(checkpoint.get(key), str) or not checkpoint[key].strip()
                        for key in ("name", "province", "region"))
@@ -158,6 +186,10 @@ class RouteTest(Runtime):
             if self.stopped:
                 raise NavigationError("路线测试已停止。")
             model, spec = test_document(RESOURCE, settings)
+            actions = None
+            if settings.get("mode") == "home":
+                from navigation.daily_route import RouteActions, preflight
+                preflight(RESOURCE, model, "home")
             if not inputs_allowed():
                 raise NavigationError("路线测试需要当前连接使用前台鼠标和键盘（Seize）。")
             self.directory = ROOT / "logs" / "navigation" / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-route-test")
@@ -171,14 +203,27 @@ class RouteTest(Runtime):
             self.navigation_inputs = inputs
             self.event({"type": "window_ready", **inputs.focus_details()})
             teleporter = TestTeleporter(self, locator, self.event, inputs)
+            if settings.get("mode") == "home":
+                card = SimpleNamespace(rule=SimpleNamespace(executor="home"), remaining=None)
+                actions = RouteActions(self, RESOURCE, model, "home", card, inputs, self.event)
+                actions.teleporter = teleporter
+                self.phase("ability_selection", "正在准备采星能力；本次将执行家园任务动作。")
+                if not self.main() or not actions.fishing.configure():
+                    raise NavigationError("家园测试的采星能力配置未完成。")
             self.phase("prepare", "正在准备路线："+str(model.document.get("title", model.id))+"。")
             teleporter.prepare(model)
             self.phase("follow", "正在检查第 1 点并沿路线行走。")
             navigator = Navigator(locator, inputs, self.capture, lambda: self.stopped, self.pause, self.event,
+                                  point_action=actions, waypoint=actions.waypoint if actions else None,
+                                  point_prepare=actions.prepare_point if actions else None,
                                   walking=self.ui.walking, page_detector=lambda frame: bool(
                                       (found := self.recognize("MaaNikki_MainDetected", image=frame)) and found.hit))
             pose = navigator.follow(model)
-            result = {"success": True, "route": model.id, "final": pose.dict()}
+            success = actions.complete() if actions else True
+            result = {"success": success, "route": model.id, "final": pose.dict()}
+            if not success:
+                result["error"] = "家园路线已走完，但有任务动作未确认完成。"
+                self.log(result["error"])
         except (NavigationError, OSError, KeyError, TypeError, ValueError, RuntimeError, cv2.error) as error:
             result = {"success": False, "stage": self.stage, "error_type": type(error).__name__,
                       "error": str(error), "stopped": self.stopped}

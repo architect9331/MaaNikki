@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "home_daily",
-  "title": "家园日常",
+  "title": "家园日常 · 双钓星点",
   "map": "home",
-  "start_radius": 15,
-  "timeout": 900,
+  "start_radius": 15.0,
+  "timeout": 900.0,
   "teleport": {
     "name": "家园码头",
     "province": "家园",
@@ -15,7 +15,8 @@
   "source": {
     "reference": "README.md",
     "commit": "e1e9d329fb2f47be3eb924457d756302afb70acc",
-    "file": "家园日常.json"
+    "file": "家园日常.json",
+    "workshop_entry": "20261013-213724-d9ddd8f7"
   },
   "points": [
     {
@@ -48,14 +49,14 @@
       "action": "fishing_star"
     },
     {
-      "x": 1054.45,
-      "y": 716.35,
+      "x": 1054.28,
+      "y": 716.54,
       "radius": 1,
       "jump": false
     },
     {
-      "x": 1057.65,
-      "y": 713.85,
+      "x": 1059.83,
+      "y": 716.53,
       "radius": 1,
       "jump": true
     },
@@ -91,8 +92,8 @@
       "jump": false
     },
     {
-      "x": 1072.45,
-      "y": 711.1,
+      "x": 1072.18,
+      "y": 714.78,
       "radius": 1,
       "jump": true,
       "action": "macro",
@@ -136,5 +137,6 @@
         "seconds": 2.0
       }
     }
-  ]
+  ],
+  "fishing_shortcut": "home_daily_shortcut"
 }

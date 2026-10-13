@@ -10,6 +10,7 @@ import re
 DEFAULTS = {
     "map": ("M", "地图"), "calendar": ("L", "奇想日历"),
     "monthly": ("J", "奇迹之旅"), "photo": ("P", "拍照模式"),
+    "shop": ("H", "商城"),
     "dress": ("C", "换装"), "ability_config": ("E", "能力配置"),
     "item": ("Z", "消耗品／摆饰"), "interact": ("F", "交互／拾取"),
     "bell": ("X", "摇铃"), "skip": ("F", "跳过动画／奖励"),

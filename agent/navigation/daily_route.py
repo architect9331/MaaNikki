@@ -10,7 +10,7 @@ from task_control import task_time as time
 import cv2
 import numpy as np
 
-from .models import NavigationError
+from .models import NavigationError, load_route
 
 
 def material_amount(text, material, interaction=False):
@@ -90,6 +90,43 @@ class RouteActions:
             self.fishing = Fishing(self)
         from .insect import Insect
         self.insect = Insect(self)
+        self.home_shortcut = None
+        self.home_branch_index = None
+        if self.executor == "home":
+            self.configure_home_shortcut()
+
+    def configure_home_shortcut(self):
+        name = self.route.document.get("fishing_shortcut")
+        if name is None:
+            return
+        if not isinstance(name, str) or not re.fullmatch(r"[a-zA-Z0-9_-]+", name):
+            raise NavigationError("家园钓星后捷径名称无效。")
+        shortcut = load_route(self.resource, name)
+        if shortcut is None or shortcut.map_id != self.route.map_id:
+            raise NavigationError("家园钓星后捷径无法读取或地图不一致。")
+        preflight(self.resource, shortcut, "home")
+        index = next((i for i, point in enumerate(self.route.points)
+                      if point.action == "fishing_star"), None)
+        # Keep the already visited prefix identical so switching can retain the
+        # current index, position, fishing result, and navigation time budget.
+        if (index is None or len(shortcut.points) <= index+1
+                or shortcut.points[:index+1] != self.route.points[:index+1]
+                or any(point.action == "fishing_star" for point in shortcut.points[index+1:])):
+            raise NavigationError("家园捷径必须与首个钓星点前的路线一致，且不再包含钓星点。")
+        self.home_shortcut = shortcut
+        self.home_branch_index = index
+
+    def branch_route(self, route, index):
+        if (self.home_shortcut is None or route.id != self.route.id
+                or index != self.home_branch_index or self.action_failed):
+            return None
+        # Use exactly the same gate as prepare_home's second-point skip,
+        # including confirmed exhaustion and a completed zero-catch attempt.
+        if "陨星" not in self.fishing.materials:
+            self.rt.log("首个点位尚未执行钓星，继续前往第二个钓星点。")
+            return None
+        self.rt.log("钓星已执行或陨星已耗尽，沿捷径前往点赞位置。")
+        return self.home_shortcut
 
     def notification(self):
         result = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": self.rt.ui.roi("AreaMaterialGetText")})

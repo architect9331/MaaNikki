@@ -42,6 +42,12 @@ class GameplayAction(CustomAction):
             options = json.loads(options or "{}") if isinstance(options, str) else options
             kind = options["kind"]
             game = Gameplay(runtime)
+            if kind == "weekly_shop":
+                from daily.shop import WeeklyShop
+                return WeeklyShop(runtime).run()
+            if kind == "monthly_exchange":
+                from daily.monthly_exchange import MonthlyExchange
+                return MonthlyExchange(runtime).run()
             if kind == "home":
                 from daily.home import Home
                 return Home(runtime).run()

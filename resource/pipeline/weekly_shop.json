@@ -1,0 +1,86 @@
+{
+  "MaaNikki_WeeklyFreeGifts": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {"kind": "weekly_shop"},
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Shop_PageReady": {
+    "recognition": "TemplateMatch",
+    "roi": [65, 15, 80, 45],
+    "template": "game/shop/title.png",
+    "threshold": 0.88,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_GiftsTab": {
+    "recognition": "TemplateMatch",
+    "roi": [20, 100, 220, 575],
+    "template": "game/shop/gifts_tab.png",
+    "threshold": 0.85,
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Shop_GiftsReady",
+      "source": "MaaNikki_Shop_PageReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Shop_GiftsSelected": {
+    "recognition": "TemplateMatch",
+    "roi": [0, 100, 255, 575],
+    "template": "game/shop/gifts_selected.png",
+    "threshold": 0.9,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_GiftsReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Shop_PageReady", "MaaNikki_Shop_GiftsSelected"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_buttonshopfree": {
+    "recognition": "TemplateMatch",
+    "roi": [285, 60, 930, 625],
+    "template": "game/shop/free.png",
+    "threshold": 0.85,
+    "method": 5,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_DetailReady": {
+    "recognition": "TemplateMatch",
+    "roi": [560, 140, 160, 55],
+    "template": "game/shop/detail_title.png",
+    "threshold": 0.88,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_DetailFree": {
+    "recognition": "OCR",
+    "roi": [335, 415, 195, 60],
+    "expected": "^免费$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_TotalZero": {
+    "recognition": "OCR",
+    "roi": [530, 450, 215, 65],
+    "expected": "^合计\\s*[0０]$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_Confirm": {
+    "recognition": "TemplateMatch",
+    "roi": [505, 495, 275, 70],
+    "template": "game/shop/confirm.png",
+    "threshold": 0.88,
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Shop_SoldOut": {
+    "recognition": "OCR",
+    "roi": [285, 60, 930, 625],
+    "expected": "^已售罄$",
+    "action": "DoNothing"
+  }
+}

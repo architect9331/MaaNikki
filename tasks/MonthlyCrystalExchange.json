@@ -1,0 +1,10 @@
+{
+  "task": [{
+    "name": "monthly_crystal_exchange",
+    "label": "每月五抽兑换",
+    "entry": "MaaNikki_MonthlyCrystalExchange",
+    "group": ["daily"],
+    "default_check": true,
+    "description": "进入商城共鸣商店的静谧水滴兑换，按最大数量兑换启示水晶和共鸣水晶，每种每月最多5个、单价40静谧水滴。确认选中静谧水滴、数量1–5及总消耗=数量×40后才购买。右侧只检查当前画面，没找到或已售罄的商品跳过；不兑换澎湃浪花商品。"
+  }]
+}

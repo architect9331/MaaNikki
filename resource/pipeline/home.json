@@ -18,12 +18,55 @@
     }
   },
   "MaaNikki_Home_StarCollectReady": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Home_StarCollectActive", "MaaNikki_Home_StarCollectExhaustedIcon"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Home_StarCollectActive": {
     "recognition": "Custom",
     "custom_recognition": "nikki.ui_template",
     "custom_recognition_param": {
       "roi": [1165, 15, 80, 55],
       "template": "nikki/home/star_collect_ready.png",
       "gray_limit": [210, 255],
+      "threshold": 0.88
+    },
+    "action": "DoNothing"
+  },
+  "MaaNikki_Home_StarCollectExhausted": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Home_StarCollectExhaustedIcon", "MaaNikki_Home_StarCollectTitle"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Home_StarCollectTitle": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Home_StarCollectTitleGlyph", "MaaNikki_Home_StarCollectTitleOCR"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Home_StarCollectTitleGlyph": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [585, 105, 115, 40],
+      "template": "nikki/home/star_collect_title.png",
+      "gray_limit": [175, 255],
+      "threshold": 0.88
+    },
+    "action": "DoNothing"
+  },
+  "MaaNikki_Home_StarCollectTitleOCR": {
+    "recognition": "OCR",
+    "roi": [585, 105, 115, 40],
+    "expected": "^可\\s*感\\s*应\\s*陨\\s*星$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Home_StarCollectExhaustedIcon": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [1165, 15, 80, 55],
+      "template": "nikki/home/star_collect_exhausted.png",
+      "color": [[0, 0, 100], [180, 90, 220]],
       "threshold": 0.88
     },
     "action": "DoNothing"

@@ -1,6 +1,18 @@
 {
   "schema_version": 1,
   "assets": {
+    "IconShopQuietUnit": {
+      "template": "game/shop/quiet_unit.png",
+      "roi": [335, 422, 195, 42]
+    },
+    "IconShopQuietTotal": {
+      "template": "game/shop/quiet_total.png",
+      "roi": [710, 468, 225, 38]
+    },
+    "ButtonShopFree": {
+      "template": "game/shop/free.png",
+      "roi": [285, 60, 930, 625]
+    },
     "AreaAbilityButton": {
       "template": "game/ui/AreaAbilityButton.png",
       "roi": [

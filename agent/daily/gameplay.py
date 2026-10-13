@@ -350,11 +350,18 @@ class Gameplay:
     def monthly_rewards(self, kind):
         label = "乐园构想" if kind == "paradise" else "奇迹之旅"
         self.rt.log(f"已识别{label}，开始处理奖励。")
-        claimed = False
-        for page in (("Task",) if kind == "paradise" else ("Task", "Treasure")):
+        claimed, task_claimed, treasure_available = False, False, False
+        # Inspect Treasure first without claiming. Return after Task only
+        # for an existing treasure reward or newly claimed task progress.
+        pages = ("Task",) if kind == "paradise" else ("Treasure", "Task", "Treasure")
+        for index, page in enumerate(pages):
+            if index == 2 and not (treasure_available or task_claimed):
+                continue
             node = f"MaaNikki_Monthly_{page}Tab"
             if not (self.rt.context.get_node_data(node) or {}).get("enabled", False):
                 continue
+            if index == 2:
+                self.rt.log("返回旅行秘宝，统一检查并领取奖励。")
             if not self.rt.click_template(node):
                 return False
             if not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
@@ -366,8 +373,18 @@ class Gameplay:
                 with self.rt.observe(fresh=True):
                     available = self.rt.hit(claim)
                     if kind == "paradise" and not available and attempt == 2:
-                        empty = self.rt.hit("MaaNikki_Monthly_ParadiseClaimEmpty")
+                        # With no claimable rewards, Paradise can show only
+                        # ongoing-task glyphs and omit the bottom claim button.
+                        empty = (self.ui.page_matches("MaaNikki_Monthly_ParadiseReady")
+                                 and (self.rt.hit("MaaNikki_Monthly_ParadiseClaimEmpty")
+                                      or self.rt.hit("MaaNikki_Monthly_ParadiseTaskOngoing"))
+                                 and not self.rt.hit("MaaNikki_RewardLayer")
+                                 and not self.rt.hit("MaaNikki_Monthly_ParadiseReward")
+                                 and not self.rt.hit("MaaNikki_Monthly_ParadiseContinue"))
                 if available:
+                    if kind == "travel" and index == 0:
+                        treasure_available = True
+                        break
                     if not self.rt.click_template(claim, wait_seconds=.5):
                         return False
                     if kind == "paradise":
@@ -388,6 +405,8 @@ class Gameplay:
                         self.rt.log("领取旅行任务后页面未能确认，本项停止。")
                         return False
                     claimed = True
+                    if page == "Task":
+                        task_claimed = True
                     break
                 if attempt < 2 and not self.rt.pause(1):
                     return False

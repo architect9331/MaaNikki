@@ -6,7 +6,7 @@
     "group": ["developer"],
     "developer_only": true,
     "default_check": false,
-    "description": "测试选定路线的移动和跳跃。有传送点时先检查当前位置，必要时传送；没有传送点时请先到第 1 点附近。启动时自动聚焦已连接的游戏窗口，切出游戏暂停，切回后自动继续。只测试行走，含采集、摇铃等任务动作的路线会拒绝执行。结果写入 logs/navigation，使用停止按钮中断。",
+    "description": "普通路线只测试移动和跳跃；家园日常路线会执行钓星、下落攻击和终点传送。双钓星点路线固定经过两个点位，钓星后捷径固定走首个点位后的捷径，便于分别检查两种走法；正式家园日常会按首个点位的钓星结果自动选择。有传送点时必要时传送；没有传送点时请先到第 1 点附近。启动时自动聚焦游戏，切出暂停，切回继续。结果写入 logs/navigation，使用停止按钮中断。",
     "option": ["RouteTestRoute"]
   }],
   "option": {
@@ -19,6 +19,8 @@
         {"name": "xinghai_meteor2", "label": "流星 2 · 主岛", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor2", "file": ""}}}},
         {"name": "xinghai_meteor3", "label": "流星 3 · 繁星之滨", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor3", "file": ""}}}},
         {"name": "xinghai_meteor4", "label": "流星 4 · 无界枢纽", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor4", "file": ""}}}},
+        {"name": "home_daily_route2", "label": "家园日常 · 双钓星点", "option": ["HomeAbilityPlan"], "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "home_daily", "file": "", "mode": "home"}}}},
+        {"name": "home_daily_route3", "label": "家园日常 · 钓星后捷径", "option": ["HomeAbilityPlan"], "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "home_daily_shortcut", "file": "", "mode": "home"}}}},
         {"name": "file", "label": "本地路线 JSON", "option": ["RouteTestFile"], "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "", "file": ""}}}}
       ]
     },

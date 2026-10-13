@@ -474,6 +474,14 @@
     "expected": "^进行中(的)?$|^已领取$",
     "next": []
   },
+  "MaaNikki_Monthly_ParadiseTaskOngoing": {
+    "recognition": "TemplateMatch",
+    "roi": [1070, 155, 65, 425],
+    "template": "game/monthly/paradise_task_ongoing.png",
+    "threshold": 0.85,
+    "action": "DoNothing",
+    "next": []
+  },
   "MaaNikki_Monthly_SkipTask": {
     "recognition": "TemplateMatch",
     "roi": [

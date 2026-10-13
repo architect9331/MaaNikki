@@ -23,6 +23,14 @@
     },
     "custom_action": "nikki.daily_config"
   },
+  "MaaNikki_Key_shop": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "H"
+    },
+    "custom_action": "nikki.daily_config"
+  },
   "MaaNikki_Key_photo": {
     "recognition": "DirectHit",
     "action": "Custom",

@@ -1,4 +1,4 @@
-"""Developer movement tests using the connected client's controller and bindings."""
+"""Developer route trials using the connected client's controller and bindings."""
 from maa.custom_action import CustomAction
 from registration import agent_action
 from daily.route_test import RouteTest

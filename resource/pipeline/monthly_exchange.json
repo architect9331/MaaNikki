@@ -1,0 +1,89 @@
+{
+  "MaaNikki_MonthlyCrystalExchange": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {"kind": "monthly_exchange"},
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Shop_ResonanceTab": {
+    "recognition": "OCR",
+    "roi": [20, 100, 220, 575],
+    "expected": "^共鸣商店$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Shop_ResonanceReady",
+      "source": "MaaNikki_Shop_PageReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Shop_ResonanceReady": {
+    "recognition": "OCR",
+    "roi": [260, 58, 480, 53],
+    "expected": "静谧水滴兑换|澎湃浪花兑换",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_QuietTab": {
+    "recognition": "OCR",
+    "roi": [495, 58, 245, 53],
+    "expected": "^[★☆]?\\s*静谧水滴兑换\\s*[★☆]?$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Shop_QuietReady",
+      "source": "MaaNikki_Shop_ResonanceReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Shop_QuietSelected": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [500, 63, 237, 43],
+      "template": ["game/shop/quiet_selected_light.png", "game/shop/quiet_selected.png"],
+      "color": [[0, 0, 140], [180, 90, 255]],
+      "threshold": 0.92
+    },
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_SurgeSelected": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [260, 63, 237, 43],
+      "template": ["game/shop/surge_selected_light.png", "game/shop/surge_selected.png"],
+      "color": [[0, 0, 140], [180, 90, 255]],
+      "threshold": 0.92
+    },
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_QuietReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Shop_PageReady", "MaaNikki_Shop_QuietSelected"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_ExchangeMax": {
+    "recognition": "TemplateMatch",
+    "roi": [570, 480, 40, 40],
+    "template": "game/shop/exchange_max.png",
+    "threshold": 0.88,
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Shop_ExchangeConfirm": {
+    "recognition": "TemplateMatch",
+    "roi": [665, 505, 250, 55],
+    "template": "game/shop/confirm.png",
+    "threshold": 0.88,
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "post_delay": 0,
+    "next": []
+  }
+}

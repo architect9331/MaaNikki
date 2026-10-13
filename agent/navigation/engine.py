@@ -99,10 +99,12 @@ class Motion:
 
 class Navigator:
     def __init__(self, locator: Locator, inputs, capture, stopped, pause, event=lambda value: None,
-                 point_action=None, waypoint=None, walking=None, page_detector=None, point_prepare=None):
+                 point_action=None, waypoint=None, walking=None, page_detector=None, point_prepare=None,
+                 route_branch=None):
         self.locator, self.inputs, self.capture, self.stopped, self._pause, self.event = locator, inputs, capture, stopped, pause, event
         self.point_action, self.waypoint = point_action, waypoint
         self.point_prepare = point_prepare
+        self.route_branch = route_branch
         self.walking_detector = walking
         self.page_detector = page_detector
         self.turn_ratio = None
@@ -398,6 +400,12 @@ class Navigator:
                         self.locator.previous = None
                         pose = self.observe((target.x, target.y))
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        if self.route_branch:
+                            replacement = self.route_branch(route, index)
+                            if replacement is not None:
+                                self.event({"type": "route_branch", "source": route.id,
+                                            "destination": replacement.id, "index": index})
+                                route = replacement
                     elif index+1 < len(route.points) and target.jump != route.points[index+1].jump and motion.until:
                         motion.stop()
                         self.pause(.5 if route.points[index+1].jump else .2)

@@ -1,0 +1,10 @@
+{
+  "task": [{
+    "name": "weekly_free_gifts",
+    "label": "每周免费礼包",
+    "entry": "MaaNikki_WeeklyFreeGifts",
+    "group": ["daily"],
+    "default_check": true,
+    "description": "按商城键（默认 H）进入甄选礼包，滚动查找并领取虹迹赠礼、芳馨赠礼和星实置业之礼。确认商品免费且合计为 0 后才领取，本周已领取的礼包自动跳过。三个礼包每周刷新，可每日运行检查。"
+  }]
+}

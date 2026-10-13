@@ -446,6 +446,7 @@ class Runtime:
                                   point_action=actions, waypoint=actions.waypoint if actions else None,
                                   walking=self.ui.walking, page_detector=lambda frame: bool(
                                       (result := self.recognize("MaaNikki_MainDetected", image=frame)) and result.hit),
+                                  route_branch=actions.branch_route if actions and card.rule.executor == "home" else None,
                                   point_prepare=actions.prepare_point if actions and any(
                                       point.action == "teleport" for point in model.points) else None)
             self.log("正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。")

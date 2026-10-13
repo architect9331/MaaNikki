@@ -342,6 +342,10 @@ class Fishing:
     def run_casts(self, limit=None):
         for _ in range(limit if limit is not None else (5 if self.kind == "home" else 3)):
             self.inputs.check()
+            if self.kind == "home" and self.home_exhausted():
+                self.actions.event({"type": "star_fishing_skipped", "reason": "meteors_exhausted"})
+                self.rt.log("可感应陨星已耗尽，停止钓星。")
+                break
             result = self.cast()
             self.wait(.5)
             if result in {FishingResult.NO_FISH, FishingResult.WRONG_POSITION}:
@@ -360,6 +364,13 @@ class Fishing:
         if not returned:
             self.state()
             self.fail_state("结束采星后未确认返回普通主界面。")
+
+    def home_exhausted(self, image=None):
+        # A disabled refresh glyph still belongs to star sensing, not the world.
+        # Require its title on the same frame before declaring global depletion.
+        image = self.rt.capture() if image is None else image
+        found = self.rt.recognize("MaaNikki_Home_StarCollectExhausted", image=image) if image is not None else None
+        return bool(found and found.hit)
 
     def prepare_home(self):
         # Preserve the upstream key-presence check, including a zero-catch run.
@@ -382,6 +393,12 @@ class Fishing:
         frame = None
         for attempt in range(1, 4):
             frame = self.rt.capture()
+            if frame is not None and self.home_exhausted(frame):
+                self.materials["陨星"] = 0
+                self.actions.event({"type": "star_fishing_skipped", "reason": "meteors_exhausted"})
+                self.rt.log("可感应陨星已耗尽，跳过钓星并继续路线。")
+                self.exit_home()
+                return False
             box = self.ui.asset("IconAbilityFish", image=frame, roi=area,
                                 color=WHITE, threshold=.8) if frame is not None else None
             self.actions.event({"type": "star_fishing_availability", "attempt": attempt,
