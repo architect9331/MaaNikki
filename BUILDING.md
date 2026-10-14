@@ -50,6 +50,14 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Build
 
 构建工具的 npm 缓存及安装诊断日志保存在 `.build/npm-cache/`。GitHub 自动构建失败时会将其中的日志保存为 `MaaNikki-build-npm-logs` 附件，保留 7 天，便于定位安装失败的具体原因。
 
+## GitHub 自动发布
+
+准备发布新版本时，更新 `interface.json` 中的项目版本号并推送到默认分支 `main`。Windows 自动构建成功后，发布任务会创建指向本次构建提交的 `v<版本号>` 标签，上传运行包、源码包和 SHA-256 校验文件，核对 GitHub 上的附件哈希后公开 Release。沿用现有发布方式，新版本标为预发布，更新说明由 GitHub 根据提交和拉取请求生成。
+
+同一版本已经公开时，后续普通提交只构建，不覆盖该版本的标签和附件；拉取请求与非默认分支的手动构建不发布。每次需要新安装包供用户更新时，必须递增项目版本号，客户端版本仍只在客户端本身需要更新时调整。
+
+发布失败时，附件不完整的 Release 会保持为草稿。可以在原构建运行中重新运行失败的发布任务，以同一提交恢复上传；也可在默认分支手动启动构建。已有标签或草稿属于其他提交时会停止发布，不移动标签或混用不同提交的附件，应重新运行原构建，或递增版本号发布新的提交。构建失败不会启动发布任务。
+
 ## 运行时依赖及模型
 
 Python 3.12.10、MaaFramework SDK 5.14.2 和所有 Windows x64 Python wheels 的下载地址、版本和 SHA-256 在 `build/runtime.lock.json`。Python 依赖清单是 `requirements.txt`；`requirements.lock` 包含同一组版本及哈希。构建脚本直接展开经过校验的 wheels，嵌入式 Python 无需安装 pip。
