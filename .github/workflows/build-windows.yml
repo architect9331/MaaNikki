@@ -27,6 +27,15 @@ jobs:
       - name: Build and verify release packages
         shell: pwsh
         run: ./scripts/build.ps1 -Action Package
+      - name: Upload npm diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MaaNikki-build-npm-logs
+          path: .build/npm-cache/_logs/*.log
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: MaaNikki-Windows-x64

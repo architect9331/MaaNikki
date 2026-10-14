@@ -42,10 +42,37 @@ try {
         throw "Use Node.js $expectedNode for this build (found $actualNode)."
     }
     Invoke-BuildStep 'cargo' @('--version')
+
+    # Install pnpm directly: npx's temporary cache lock can fail on Windows runners.
+    $packageManager = (Get-Content -LiteralPath 'client/package.json' -Raw | ConvertFrom-Json).packageManager
+    if ($packageManager -notmatch '^pnpm@(\d+\.\d+\.\d+)(?:\+sha512\.[0-9a-f]+)?$') {
+        throw 'client/package.json must pin an exact pnpm version in packageManager.'
+    }
+    $expectedPnpm = $Matches[1]
+    $buildTools = Join-Path $projectRoot '.build/build-tools'
+    $npmCache = Join-Path $projectRoot '.build/npm-cache'
+    $pnpmBin = Join-Path $buildTools 'node_modules/.bin'
+    $pnpmCommand = Join-Path $pnpmBin 'pnpm.cmd'
+    $actualPnpm = ''
+    if (Test-Path -LiteralPath $pnpmCommand) {
+        $actualPnpm = [string](& $pnpmCommand --version)
+        if ($LASTEXITCODE -ne 0) { $actualPnpm = '' }
+    }
+    if ($actualPnpm.Trim() -ne $expectedPnpm) {
+        Invoke-BuildStep 'npm.cmd' @('install', '--prefix', $buildTools, '--cache', $npmCache,
+            '--no-save', '--no-package-lock', '--ignore-scripts', '--no-audit', '--no-fund',
+            "pnpm@$expectedPnpm")
+        $actualPnpm = [string](& $pnpmCommand --version)
+        if ($LASTEXITCODE -ne 0 -or $actualPnpm.Trim() -ne $expectedPnpm) {
+            throw "Use pnpm $expectedPnpm for this build (found $actualPnpm)."
+        }
+    }
+    # Tauri's beforeBuildCommand also needs the same pnpm on its inherited PATH.
+    $env:PATH = $pnpmBin + ';' + $env:PATH
     Push-Location -LiteralPath (Join-Path $projectRoot 'client')
     try {
-        Invoke-BuildStep 'npx.cmd' @('--yes', 'pnpm@10.28.0', 'install', '--frozen-lockfile')
-        Invoke-BuildStep 'npx.cmd' @('--yes', 'pnpm@10.28.0', 'build:app')
+        Invoke-BuildStep $pnpmCommand @('install', '--frozen-lockfile')
+        Invoke-BuildStep $pnpmCommand @('build:app')
     } finally {
         Pop-Location
     }

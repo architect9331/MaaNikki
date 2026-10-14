@@ -10,7 +10,7 @@
 - Visual Studio 2022 或 Build Tools，安装「使用 C++ 的桌面开发」及 Windows SDK。
 - 构建主机安装 Python **3.11 或更高版本**；发布包使用独立的 Python **3.12.10**。
 - PowerShell，以及可以访问 npm、crates.io、PyPI、python.org 和 GitHub 的网络。
-- pnpm **10.28.0** 通过 `npx` 使用，无需修改全局 pnpm。JS 依赖使用冻结的 `pnpm-lock.yaml`，Rust 构建使用 `Cargo.lock` 和 `--locked`。
+- pnpm **10.28.0** 由 `client/package.json` 的 `packageManager` 固定。构建脚本通过 npm 直接安装到 `.build/build-tools/`，后续复用该版本，无需修改全局 pnpm，也不使用 npx 的临时安装缓存。JS 依赖使用冻结的 `pnpm-lock.yaml`，Rust 构建使用 `Cargo.lock` 和 `--locked`。
 
 ## 从干净源码构建
 
@@ -47,6 +47,8 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Build
 ```
 
 准备出的运行环境在 `.build/runtime-<随机编号>/`。下载缓存、构建目录和输出包都被 `.gitignore` 排除。脚本不会读取或打包现有 `config/`、`cache/`、根目录可执行文件和现有 Python/DLL；编译结果保留在 `client/src-tauri/target/release/mxu.exe`。
+
+构建工具的 npm 缓存及安装诊断日志保存在 `.build/npm-cache/`。GitHub 自动构建失败时会将其中的日志保存为 `MaaNikki-build-npm-logs` 附件，保留 7 天，便于定位安装失败的具体原因。
 
 ## 运行时依赖及模型
 
