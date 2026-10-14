@@ -50,17 +50,6 @@
     },
     "action": "DoNothing"
   },
-  "MaaNikki_Shop_SurgeSelected": {
-    "recognition": "Custom",
-    "custom_recognition": "nikki.ui_template",
-    "custom_recognition_param": {
-      "roi": [260, 63, 237, 43],
-      "template": ["game/shop/surge_selected_light.png", "game/shop/surge_selected.png"],
-      "color": [[0, 0, 140], [180, 90, 255]],
-      "threshold": 0.92
-    },
-    "action": "DoNothing"
-  },
   "MaaNikki_Shop_QuietReady": {
     "recognition": "And",
     "all_of": ["MaaNikki_Shop_PageReady", "MaaNikki_Shop_QuietSelected"],
