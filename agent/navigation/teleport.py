@@ -15,6 +15,14 @@ TERRAIN = [0, 0, 1280, 720]
 POINT_DETAIL_DELAY = .5
 
 
+def terrain_pan(dx, dy):
+    # Move most of the remaining distance, keeping both endpoints on terrain.
+    factor = min(.8, 880/max(abs(dx), 1), 540/max(abs(dy), 1))
+    vx, vy = -dx*factor, -dy*factor
+    return ([round(530-vx/2), round(370-vy/2)],
+            [round(530+vx/2), round(370+vy/2)])
+
+
 def normalized(text):
     return re.sub(r"\s+", "", text)
 
@@ -177,6 +185,39 @@ class Teleporter:
                 self.rt.ui.map_failure(0, str(error), self.event, stage="region")
             raise
 
+    def player_in_home(self):
+        """Compare a fresh player map with the named home row without selecting it."""
+        self.deadline = time.monotonic()+120
+        self.check()
+        if not self.rt.main() or not self.rt.ui.open_map(self.event):
+            raise NavigationError("未能打开地图确认是否位于家园。")
+        region_roi = self.rt.ui.roi("AreaBigMapRegionName")
+        list_roi = self.rt.ui.roi("AreaBigMapRegionSelect")
+        current = normalized(self.dark_text(region_roi))
+        if not current:
+            raise NavigationError("未能读取当前地图名称，无法确认是否位于家园。")
+        if not self.rt.ui.enter_page(lambda: self.rt.ui.click_box(region_roi),
+                self.region_menu_visible, source="MaaNikki_Navigation_MapFeature",
+                recover=lambda: self.rt.ui.open_map(self.event), seconds=3):
+            raise NavigationError("未能打开地图区域列表确认家园。")
+        box = self.rt.ui.find(roi=list_roi, asset="IconBigMapHomeFeature", scale=2/3,
+                              threshold=.9, color=([10, 0, 190], [30, 80, 255]),
+                              scroll=True, click=False)
+        if not box:
+            raise NavigationError("未找到家园地图图标，无法确认当前地图。")
+        x, y, w, h = box
+        text_x = x+w+4
+        name_roi = [text_x, max(0, y-8), max(1, list_roi[0]+list_roi[2]-text_x), h+16]
+        name = normalized(self.rt.ui.text(name_roi))
+        if not name:
+            raise NavigationError("未能读取家园地图名称，无法确认当前地图。")
+        in_home = current == name
+        self.event({"type": "map_player_home", "actual": current, "entry": name,
+                    "in_home": in_home})
+        if not self.close_region_menu():
+            raise NavigationError("确认家园后未能关闭地图区域列表。")
+        return in_home
+
     def zoom(self):
         for _ in range(3):
             self.check()
@@ -256,15 +297,14 @@ class Teleporter:
             dx, dy = (x-px)/self.locator.spec.bigmap_scale, (y-py)/self.locator.spec.bigmap_scale
             if math.hypot(dx, dy) < (20/2/self.locator.spec.bigmap_scale if force else 200*2/3):
                 return [round(640+dx), round(360+dy)]
-            # The map is half resolution and controller coordinates are 720p:
-            # 0.6 * 2 (map pixels) * 2/3 (screen pixels) = 0.8.
-            rate = self.locator.spec.bigmap_scale*.8
-            vx, vy = round(max(-200, min(200, -dx*rate))), round(max(-200, min(200, -dy*rate)))
-            self.event({"type": "map_pan", "begin": [640, 360], "end": [640+vx, 360+vy]})
-            if not self.rt.action("Swipe", begin=[640, 360], end=[640+vx, 360+vy], duration=450):
+            begin, end = terrain_pan(dx, dy)
+            self.event({"type": "map_pan", "begin": begin, "end": end})
+            if not self.rt.action("Swipe", begin=begin, end=end, duration=300):
                 raise NavigationError("地图拖动失败。")
-            self.rt.pause(.2)
-            self.rt.ui.stable()
+            if not self.rt.pause(.15):
+                raise NavigationError("地图传送已停止。")
+            # Animated HUD decorations should not delay every terrain drag.
+            self.rt.ui.stable(threshold=.995, seconds=1.5, roi=[300, 120, 650, 480])
 
     def confirm_transport(self, checkpoint):
         button = self.rt.ui.roi("AreaBigMapTeleportButton")

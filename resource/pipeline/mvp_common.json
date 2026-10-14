@@ -69,7 +69,7 @@
         210,
         255
       ],
-      "threshold": 0.8
+      "threshold": 0.75
     },
     "action": "DoNothing"
   },

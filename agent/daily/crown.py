@@ -179,6 +179,18 @@ class Crown(Runtime):
 
     def run_crown(self):
         self.log("正在检查巅峰赛进度；切出游戏会暂停，切回后自动继续。")
+        from .starsea import HUB, Starsea
+        travel = Starsea(self, self.ui.resource)
+        try:
+            with self.input_guard():
+                teleporter = travel.teleporter()
+                if teleporter.player_in_home():
+                    self.log("当前位于家园，正在传送到星海无界枢纽后检查奇迹之冠。")
+                    teleporter.transport(HUB)
+                else:
+                    self.require(self.main(), "确认当前地图后未能返回主界面")
+        finally:
+            travel.report("crown_world")
         self.require(self.ui.calendar(), "未能打开奇想日历")
         previous, progress = None, None
         roi = self.ui.roi("AreaMiraCrownOverview")
