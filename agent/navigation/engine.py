@@ -2,7 +2,7 @@
 from __future__ import annotations
 import math
 from task_control import task_time as time
-from .models import NavigationError, Route
+from .models import NavigationError, Point, Route
 from .vision import Locator, Pose
 
 
@@ -100,7 +100,7 @@ class Motion:
 class Navigator:
     def __init__(self, locator: Locator, inputs, capture, stopped, pause, event=lambda value: None,
                  point_action=None, waypoint=None, walking=None, page_detector=None, point_prepare=None,
-                 route_branch=None):
+                 route_branch=None, relocalize=None):
         self.locator, self.inputs, self.capture, self.stopped, self._pause, self.event = locator, inputs, capture, stopped, pause, event
         self.point_action, self.waypoint = point_action, waypoint
         self.point_prepare = point_prepare
@@ -110,11 +110,14 @@ class Navigator:
         self.turn_ratio = None
         self.motion = None
         self.next_skip_check = 0
+        self.relocalize = relocalize
+        self.map_recoveries = 0
+        self.relocalized = False
 
     def pause(self, seconds):
         return self.motion.wait(seconds) if self.motion else self._pause(seconds)
 
-    def observe(self, hint):
+    def observe(self, hint, *, commit=True, reset_continuity=False):
         self.inputs.check()
         if self.motion:
             self.motion.tick()
@@ -149,7 +152,8 @@ class Navigator:
             anchor = (previous.x, previous.y) if previous else (hint or (0.0, 0.0))
             pose = Pose(anchor[0], anchor[1], 0.0, 0.0, None, 0.0)
         else:
-            pose = self.locator.locate(frame, hint, search_radius=26)
+            pose = self.locator.locate(frame, hint, search_radius=26, commit=commit,
+                                       reset_continuity=reset_continuity)
             if not self.locator.heading_diagnostics.get("position_reliable", True):
                 # Retained coordinates are an anchor for recovery, not a new
                 # arrival or permission to keep walking/turning on bad matches.
@@ -276,19 +280,23 @@ class Navigator:
             return bool(self.walking_detector())
         return not self.point_action or self.point_action.rt.ui.walking()
 
-    def recover_scene(self, anchor, deadline):
+    def recover_scene(self, anchor, deadline, *, force_map=False):
         self.motion.close()
+        self.relocalized = False
         reason = ("page_unavailable" if not self.inputs.ready() else
                   self.locator.heading_diagnostics.get("method", "camera_unavailable"))
         self.event({"type": "scene_wait", "reason": reason})
         end = min(deadline, time.monotonic()+15)
         previous = None
         page_ready = False
+        failures = 0
         while time.monotonic() < end:
             self.inputs.check()
             if self.stopped():
                 raise NavigationError("已停止导航。")
             self.pause(.25)
+            if time.monotonic() >= end:
+                break
             page_ready = self.inputs.ready()
             if not page_ready:
                 if self.point_action and self.point_action.rt.hit("MaaNikki_Energy_SkipReward"):
@@ -296,17 +304,55 @@ class Navigator:
                         raise NavigationError("未能跳过获取提示。")
                 previous = None
                 continue
-            pose = self.observe((anchor.x, anchor.y))
+            # Waiting on unchanged terrain cannot repair a lost local search.
+            # Use a freshly opened, player-centered map as an independent anchor.
+            if self.relocalize and not self.relocalized and (force_map or failures >= 2):
+                if self.map_recoveries >= 3:
+                    raise NavigationError("本路线已多次打开地图恢复位置，仍未能稳定前进。")
+                self.map_recoveries += 1
+                x, y = self.relocalize()
+                anchor = Pose(x, y, 0.0, 0.0, None, 0.0)
+                self.relocalized = True
+                previous = None
+                end = min(deadline, time.monotonic()+15)
+                self.event({"type": "map_position_anchor", "x": x, "y": y,
+                            "attempt": self.map_recoveries})
+                if self.stopped() or time.monotonic() >= deadline:
+                    raise NavigationError("导航已停止或超时。")
+            pose = self.observe((anchor.x, anchor.y), commit=False,
+                                reset_continuity=self.relocalized)
             if pose.heading is not None:
                 if previous is not None and distance(pose, previous) < 2:
+                    if self.relocalized and distance(pose, anchor) > 6:
+                        raise NavigationError("大地图角色位置与小地图定位不一致，未继续移动。")
+                    # Tentative reads never replace the last trusted position.
+                    self.locator.previous = pose
+                    self.locator.position_time = time.monotonic()
                     self.event({"type": "scene_resumed", **pose.dict()})
                     return pose
                 previous = pose
             else:
                 previous = None
+                failures += 1
         if not page_ready:
             raise NavigationError("等待返回可移动的主界面超时。")
         raise NavigationError("主界面已恢复，但小地图位置或视角方向未能恢复稳定。")
+
+    def rejoin_point(self, route, index, pose):
+        """Return to the current segment without crediting or skipping a task."""
+        a, b = route.points[max(0, index-1)], route.points[index]
+        # Teleport endpoints do not describe a walkable segment from the
+        # preceding point; once prepared, return directly to that endpoint.
+        if b.action == "teleport":
+            a = b
+        dx, dy = b.x-a.x, b.y-a.y
+        length = dx*dx+dy*dy
+        fraction = max(0, min(1, ((pose.x-a.x)*dx+(pose.y-a.y)*dy)/length)) if length else 1
+        point = Point(a.x+fraction*dx, a.y+fraction*dy, min(b.radius, 2), b.jump)
+        self.event({"type": "route_rejoin", "index": index,
+                    "from": [pose.x, pose.y], "target": [point.x, point.y],
+                    "distance": distance(pose, point)})
+        return point
 
     def follow(self, route: Route):
         if route.map_id != self.locator.spec.id:
@@ -333,6 +379,8 @@ class Navigator:
         prepared_index = None
         last_good = pose
         scene_interrupted, scene_retries = False, 0
+        rejoin = None
+        map_checked = False
         generation = getattr(self.inputs, "generation", 0)
         try:
             self.inputs.check()
@@ -349,17 +397,22 @@ class Navigator:
                     pose = self.observe((last_good.x, last_good.y))
                     last_good = stuck_anchor = pose
                     stuck_since, recovered = time.monotonic(), False
-                    best_distance = distance(pose, route.points[index])
+                    best_distance = distance(pose, rejoin or route.points[index])
+                    map_checked = False
                     last = None
                     speeds, periods = [6.0]*5, [.2]*5
                     continue
-                target = route.points[index]
+                target = rejoin or route.points[index]
                 if scene_interrupted or pose.heading is None or not self.inputs.ready():
                     scene_retries += 1
                     if scene_retries > 3:
                         raise NavigationError("路线多次中断，已停止，请检查当前位置。")
                     pose = self.recover_scene(last_good, deadline)
-                    if distance(pose, last_good) > 4:
+                    if self.relocalized:
+                        pending_transport = route.points[index].action == "teleport" and prepared_index != index
+                        rejoin = None if pending_transport else self.rejoin_point(route, index, pose)
+                        map_checked = True
+                    elif distance(pose, last_good) > 4:
                         nearest = min(range(index+1), key=lambda n: distance(pose, route.points[n]))
                         if distance(pose, route.points[nearest]) > 12:
                             raise NavigationError("画面恢复后已偏离当前路线，请重新运行本项。")
@@ -368,24 +421,34 @@ class Navigator:
                         self.event({"type": "route_resume", "index": index})
                     last_good = stuck_anchor = pose
                     stuck_since, recovered = time.monotonic(), False
-                    best_distance = distance(pose, route.points[index])
+                    best_distance = distance(pose, rejoin or route.points[index])
                     scene_interrupted, last = False, None
+                    speeds, periods = [6.0]*5, [.2]*5
                     continue
                 last_good = pose
-                if self.point_prepare and prepared_index != index:
+                if rejoin is None and self.point_prepare and prepared_index != index:
                     if self.point_prepare(target, pose):
                         self.locator.previous = None
                         pose = self.observe((target.x, target.y))
                         last_good = pose
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
                         best_distance = distance(pose, target)
+                        map_checked = False
                         last = None
                     prepared_index = index
-                if index == 0 and distance(pose, origin) > route.start_radius:
+                if rejoin is None and index == 0 and distance(pose, origin) > route.start_radius:
                     raise NavigationError("当前位置不在路线起点附近，未开始移动，请先传送或手动到达起点。")
                 # Pickup locations require closer arrival than transit points.
                 radius = min(target.radius, 1) if target.action == "bottle" else target.radius
                 if distance(pose, target) <= radius or last and segment_distance(target, last, pose) <= radius:
+                    if rejoin is not None:
+                        motion.close()
+                        rejoin = None
+                        last = None
+                        stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        best_distance = distance(pose, route.points[index])
+                        self.event({"type": "route_rejoined", "index": index, **pose.dict()})
+                        continue
                     scene_retries = 0
                     self.event({"type": "waypoint", "index": index, "total": len(route.points)-1})
                     if self.waypoint and self.waypoint(target) == "done":
@@ -413,6 +476,7 @@ class Navigator:
                     if index < len(route.points):
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
                         best_distance = distance(pose, route.points[index])
+                        map_checked = False
                     last = None
                     continue
                 remaining_distance = distance(pose, target)
@@ -422,12 +486,23 @@ class Navigator:
                     scene_retries = 0
                     stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
                     best_distance = remaining_distance
+                    map_checked = False
                 stuck_time = time.monotonic()-stuck_since
                 if stuck_time > 15:
                     raise NavigationError("原地卡住超过 15 秒，停止路线。")
                 if stuck_time > 5 and not recovered:
                     self.event({"type": "unstuck", "seconds": stuck_time, "index": index,
                                 "remaining": remaining_distance, "best_remaining": best_distance})
+                    if self.relocalize and not map_checked and self.map_recoveries < 3:
+                        pose = self.recover_scene(last_good, deadline, force_map=True)
+                        rejoin = self.rejoin_point(route, index, pose)
+                        map_checked = True
+                        last_good = stuck_anchor = pose
+                        stuck_since, recovered = time.monotonic(), False
+                        best_distance = distance(pose, rejoin)
+                        last = None
+                        speeds, periods = [6.0]*5, [.2]*5
+                        continue
                     motion.stop()
                     motion.jump(False, True)
                     self.pause(1)

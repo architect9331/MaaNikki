@@ -100,7 +100,7 @@ class Locator:
             raise NavigationError("导航需要 16:9 游戏画面，截图基准为 1280×720。")
         return cv2.resize(frame, (1920, 1080), interpolation=cv2.INTER_LINEAR)
 
-    def locate(self, frame, hint=None, search_radius=75):
+    def locate(self, frame, hint=None, search_radius=75, *, commit=True, reset_continuity=False):
         self.last_frame = frame
         reference = self._frame(frame)
         gray = luma(reference[22:222, 81:281])
@@ -126,12 +126,16 @@ class Locator:
         # Coordinates here use the half-size map (50 px/s, 0.5 px allowance).
         candidate = (px, py)
         elapsed = time.monotonic()-self.position_time
-        unreliable = not np.isfinite(score) or score < MINIMAP_POSITION_SCORE
-        rejected = bool(self.previous and elapsed <= 20
+        # Miraland's existing routes locate correctly around .3, so preserve
+        # their legacy score acceptance. Other maps retain the current floor;
+        # rejected positions can trigger independent big-map recovery.
+        score_floor = None if self.spec.id == "miraland" else MINIMAP_POSITION_SCORE
+        unreliable = not np.isfinite(score) or score_floor is not None and score < score_floor
+        rejected = bool(self.previous and not reset_continuity and elapsed <= 20
                         and np.hypot(px-self.previous.x, py-self.previous.y) >= 50*elapsed+.5)
         if rejected or unreliable:
             px, py = (self.previous.x, self.previous.y) if self.previous else hint
-        elif not unreliable and not rejected:
+        elif commit:
             self.position_time = time.monotonic()
         # Keep camera diagnostics independent, but only a trustworthy position
         # may advance the coordinate history or be used by route movement.
@@ -141,9 +145,10 @@ class Locator:
                                          "speed_rejected" if rejected else "map_correlation",
                                          "position_reliable": not (unreliable or rejected),
                                          "candidate_position": list(candidate), "position_elapsed": elapsed,
-                                         "score": score, "local_peak": detail})
+                                         "score": score, "local_peak": detail,
+                                         "position_score_floor": score_floor})
         pose = Pose(px, py, score, detail, heading, confidence)
-        if not unreliable and not rejected:
+        if commit and not unreliable and not rejected:
             self.previous = pose
         return pose
 

@@ -229,17 +229,51 @@ class Gameplay:
             self.rt.log(f"幻境关卡查找记录未能保存：{error}。")
 
     def jihua(self, maximize, allow_exhausted=False):
-        if not self.rt.click_template("MaaNikki_Jihua_Go"):
+        submitted = False
+
+        def enter():
+            nonlocal submitted
+            submitted = self.rt.click_template("MaaNikki_Jihua_Go", attempts=1,
+                                               wait_seconds=0, verify=False)
+            return submitted
+
+        try:
+            if not self.ui.enter_page(enter, "MaaNikki_MainDetected",
+                    source="MaaNikki_Jihua_PageReady", attempts=1, seconds=30):
+                return False
+            if not self.jihua_open_table() or not self.jihua_select_target() or not self.jihua_select_material():
+                return False
+            if maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
+                return False
+            if not self.rt.click_template("MaaNikki_Jihua_NumConfirm"):
+                return False
+            if not self.rt.click_template("MaaNikki_Jihua_FinalConfirm"):
+                return self.confirm_unavailable("jihua", allow_exhausted)
+            return self.jihua_reward()
+        finally:
+            # This realm has a separate world map; closing its menus does not
+            # make the calendar's realm entrance usable. Clean up failures too.
+            if submitted and not self.rt.stopped and not self.jihua_leave():
+                return False
+
+    def jihua_leave(self):
+        self.rt.log("素材激化结束，正在后退穿过传送门离开幻境。")
+        if (self.rt.main() and self.rt.hold("backward", 3)
+                and self.ui.wait_page("MaaNikki_MainDetected", seconds=30)
+                and self.ui.calendar()
+                and self.rt.click_template("MaaNikki_Jihua_Huanjing", attempts=1, wait_seconds=0)):
+            # The ordinary HUD is also present inside this realm. A working
+            # realm entrance proves we have actually returned to the world.
+            self.rt.log("已离开素材激化幻境，幻境挑战入口已恢复。")
+            return True
+        if self.rt.stopped:
             return False
-        if not self.jihua_open_table() or not self.jihua_select_target() or not self.jihua_select_material():
-            return False
-        if maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
-            return False
-        if not self.rt.click_template("MaaNikki_Jihua_NumConfirm"):
-            return False
-        if not self.rt.click_template("MaaNikki_Jihua_FinalConfirm"):
-            return self.confirm_unavailable("jihua", allow_exhausted)
-        return self.jihua_reward()
+        self.rt.log("未确认通过传送门离境，正在传送到星海无界枢纽。")
+        from .starsea import Starsea
+        if Starsea(self.rt, self.ui.resource).hub():
+            return True
+        self.rt.log("未能离开素材激化幻境，本项停止。")
+        return False
 
     def jihua_reward(self):
         # Animation skip and reward skip are separate layers.

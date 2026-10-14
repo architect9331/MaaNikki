@@ -446,6 +446,7 @@ class Runtime:
                                   point_action=actions, waypoint=actions.waypoint if actions else None,
                                   walking=self.ui.walking, page_detector=lambda frame: bool(
                                       (result := self.recognize("MaaNikki_MainDetected", image=frame)) and result.hit),
+                                  relocalize=teleporter.player_location if teleporter else None,
                                   route_branch=actions.branch_route if actions and card.rule.executor == "home" else None,
                                   point_prepare=actions.prepare_point if actions and any(
                                       point.action == "teleport" for point in model.points) else None)

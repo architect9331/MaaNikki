@@ -211,6 +211,44 @@ class Teleporter:
                     "score": pose[2], "local_peak": pose[3], "windows": self.map_diagnostics})
         return self.hint
 
+    def player_location(self):
+        """A freshly opened map centers the player; never pan this view."""
+        self.rt.log("导航位置需要复核，正在打开大地图定位角色。")
+        previous = None
+        self.deadline = time.monotonic()+30
+        try:
+            # Close any old map first: only a fresh opening establishes that
+            # its viewport center is the player's current position.
+            if not self.rt.main() or not self.rt.ui.open_map(self.event):
+                raise NavigationError("未能打开大地图复核角色位置。")
+            self.zoom()
+            end = min(self.deadline, time.monotonic()+8)
+            while time.monotonic() < end:
+                self.check(browse=True)
+                self.last_frame = self.rt.capture()
+                try:
+                    pose, _ = self.map_pose(self.last_frame)
+                except NavigationError:
+                    pose = None
+                if pose and pose[2] >= .6 and pose[3] >= .01:
+                    self.event({"type": "map_player_observation", "x": pose[0], "y": pose[1],
+                                "score": pose[2], "local_peak": pose[3]})
+                    if previous and math.hypot(pose[0]-previous[0], pose[1]-previous[1]) <= 1.5:
+                        return pose[:2]
+                    previous = pose
+                else:
+                    previous = None
+                if not self.rt.pause(.25):
+                    break
+            raise NavigationError("大地图角色位置未能稳定匹配，未继续移动。")
+        except NavigationError as error:
+            if not self.rt.stopped:
+                self.rt.ui.map_failure(0, str(error), self.event, stage="relocalization")
+            raise
+        finally:
+            if not self.rt.stopped and not self.rt.main():
+                raise NavigationError("复核角色位置后未能返回主界面。")
+
     def center(self, x, y, force=False):
         while True:
             self.check()

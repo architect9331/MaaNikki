@@ -118,7 +118,7 @@ class MonthlyExchange(ShopWorkflow):
                 "roi": self.LIST_ROI, "expected": "^"+name+"$"}, image=image)
             if not result or not result.hit:
                 self.completed[name] = "not_visible"
-                self.rt.log(f"{self.LABEL}：当前画面未找到{name}，按规则跳过，不滚动查找。")
+                self.rt.log(f"{name}本月已领取，跳过。")
                 continue
             box = list(result.box)
             x, y, w, _ = box
