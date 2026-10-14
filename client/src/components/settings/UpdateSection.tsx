@@ -76,11 +76,12 @@ export function UpdateSection() {
 
   const projectName =
     resolveI18nText(projectInterface?.label, translations) || projectInterface?.name || 'MXU';
+  const hasMirrorChyan = !!projectInterface?.mirrorchyan_rid;
 
   // 检查是否禁用代理（填写了 MirrorChyan CDK）
   const isProxyDisabled = useMemo(() => {
-    return mirrorChyanSettings.cdk && mirrorChyanSettings.cdk.trim() !== '';
-  }, [mirrorChyanSettings.cdk]);
+    return hasMirrorChyan && mirrorChyanSettings.cdk.trim() !== '';
+  }, [hasMirrorChyan, mirrorChyanSettings.cdk]);
 
   // 判断是否为调试版本（interface 调试版本，或 MXU 自身开发模式）
   const isDebugMode = useMemo(() => {
@@ -309,8 +310,8 @@ export function UpdateSection() {
 
   // 检查更新
   const handleCheckUpdate = async () => {
-    if (!projectInterface?.mirrorchyan_rid || !projectInterface?.version) {
-      addDebugLog('未配置 mirrorchyan_rid 或 version，无法检查更新');
+    if (!(projectInterface?.mirrorchyan_rid || projectInterface?.github) || !projectInterface?.version) {
+      addDebugLog('未配置更新来源或 version，无法检查更新');
       return;
     }
 
@@ -325,12 +326,13 @@ export function UpdateSection() {
 
     try {
       const result = await checkAndPrepareDownload({
-        resourceId: projectInterface.mirrorchyan_rid,
+        resourceId: projectInterface.mirrorchyan_rid || '',
         currentVersion: projectInterface.version,
         cdk: mirrorChyanSettings.cdk || undefined,
         channel: mirrorChyanSettings.channel,
         userAgent: 'MXU',
         githubUrl: projectInterface.github,
+        githubPat: mirrorChyanSettings.githubPat || undefined,
         proxyUrl: proxySettings?.url,
         projectName: projectInterface.name,
       });
@@ -363,7 +365,7 @@ export function UpdateSection() {
     }
   };
 
-  if (!projectInterface?.mirrorchyan_rid) {
+  if (!(projectInterface?.mirrorchyan_rid || projectInterface?.github)) {
     return null;
   }
 
@@ -384,78 +386,83 @@ export function UpdateSection() {
         ) : (
           <>
             {/* 更新频道 */}
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <Download className="w-5 h-5 text-accent" />
-                <span className="font-medium text-text-primary">{t('mirrorChyan.channel')}</span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setMirrorChyanChannel('stable')}
-                  className={clsx(
-                    'flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    mirrorChyanSettings.channel === 'stable'
-                      ? 'bg-accent text-white'
-                      : 'bg-bg-tertiary text-text-secondary hover:bg-bg-hover',
-                  )}
-                >
-                  {t('mirrorChyan.channelStable')}
-                </button>
-                <button
-                  onClick={() => setMirrorChyanChannel('beta')}
-                  className={clsx(
-                    'flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    mirrorChyanSettings.channel === 'beta'
-                      ? 'bg-accent text-white'
-                      : 'bg-bg-tertiary text-text-secondary hover:bg-bg-hover',
-                  )}
-                >
-                  {t('mirrorChyan.channelBeta')}
-                </button>
-              </div>
-            </div>
+            {hasMirrorChyan && (
+              <>
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Download className="w-5 h-5 text-accent" />
+                    <span className="font-medium text-text-primary">{t('mirrorChyan.channel')}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setMirrorChyanChannel('stable')}
+                      className={clsx(
+                        'flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        mirrorChyanSettings.channel === 'stable'
+                          ? 'bg-accent text-white'
+                          : 'bg-bg-tertiary text-text-secondary hover:bg-bg-hover',
+                      )}
+                    >
+                      {t('mirrorChyan.channelStable')}
+                    </button>
+                    <button
+                      onClick={() => setMirrorChyanChannel('beta')}
+                      className={clsx(
+                        'flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        mirrorChyanSettings.channel === 'beta'
+                          ? 'bg-accent text-white'
+                          : 'bg-bg-tertiary text-text-secondary hover:bg-bg-hover',
+                      )}
+                    >
+                      {t('mirrorChyan.channelBeta')}
+                    </button>
+                  </div>
+                </div>
 
-            {/* CDK 输入 */}
-            <div className="pt-4 border-t border-border">
-              <div className="flex items-center gap-3 mb-3">
-                <Key className="w-5 h-5 text-accent" />
-                <span className="font-medium text-text-primary">{t('mirrorChyan.cdk')}</span>
-                <button
-                  onClick={() => openMirrorChyanWebsite('mxu_settings')}
-                  className="ml-auto text-xs text-accent hover:underline flex items-center gap-1"
-                >
-                  {t('mirrorChyan.getCdk')}
-                  <ExternalLink className="w-3 h-3" />
-                </button>
-              </div>
-              <div className="relative">
-                <input
-                  ref={cdkInputRef}
-                  type={showCdk ? 'text' : 'password'}
-                  value={mirrorChyanSettings.cdk}
-                  onChange={(e) => handleCdkChange(e.target.value)}
-                  placeholder={t('mirrorChyan.cdkPlaceholder')}
-                  className="w-full px-3 py-2.5 pr-10 rounded-lg bg-bg-tertiary border border-border text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
-                />
-                <button
-                  onClick={() => setShowCdk(!showCdk)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-text-muted hover:text-text-secondary transition-colors"
-                >
-                  {showCdk ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <div className="mt-3 text-xs text-text-muted leading-relaxed">
-                <p>
-                  <button
-                    onClick={() => openMirrorChyanWebsite('mxu_settings_hint')}
-                    className="text-accent hover:underline"
-                  >
-                    {t('mirrorChyan.serviceName')}
-                  </button>
-                  {t('mirrorChyan.cdkHintAfterLink', { projectName })}
-                </p>
-              </div>
-            </div>
+                {/* CDK 输入 */}
+                <div className="pt-4 border-t border-border">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Key className="w-5 h-5 text-accent" />
+                    <span className="font-medium text-text-primary">{t('mirrorChyan.cdk')}</span>
+                    <button
+                      onClick={() => openMirrorChyanWebsite('mxu_settings')}
+                      className="ml-auto text-xs text-accent hover:underline flex items-center gap-1"
+                    >
+                      {t('mirrorChyan.getCdk')}
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      ref={cdkInputRef}
+                      type={showCdk ? 'text' : 'password'}
+                      value={mirrorChyanSettings.cdk}
+                      onChange={(e) => handleCdkChange(e.target.value)}
+                      placeholder={t('mirrorChyan.cdkPlaceholder')}
+                      className="w-full px-3 py-2.5 pr-10 rounded-lg bg-bg-tertiary border border-border text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
+                    />
+                    <button
+                      onClick={() => setShowCdk(!showCdk)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-text-muted hover:text-text-secondary transition-colors"
+                    >
+                      {showCdk ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <div className="mt-3 text-xs text-text-muted leading-relaxed">
+                    <p>
+                      <button
+                        onClick={() => openMirrorChyanWebsite('mxu_settings_hint')}
+                        className="text-accent hover:underline"
+                      >
+                        {t('mirrorChyan.serviceName')}
+                      </button>
+                      {t('mirrorChyan.cdkHintAfterLink', { projectName })}
+                    </p>
+                  </div>
+                </div>
+
+              </>
+            )}
 
             {/* 代理设置 */}
             {!isProxyDisabled && (

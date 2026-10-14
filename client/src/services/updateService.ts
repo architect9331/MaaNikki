@@ -1,4 +1,4 @@
-// MirrorChyan 更新检查服务
+// MirrorChyan / GitHub 更新检查服务
 // API 文档: https://github.com/MirrorChyan/docs
 
 import type { DownloadProgress, UpdateInfo } from '@/stores/appStore';
@@ -117,8 +117,9 @@ interface MirrorChyanApiResponse {
 interface GitHubRelease {
   tag_name: string;
   name: string;
-  body: string;
+  body: string | null;
   prerelease: boolean;
+  draft: boolean;
   assets: GitHubAsset[];
 }
 
@@ -397,7 +398,6 @@ export async function checkUpdate(options: CheckUpdateOptions): Promise<UpdateIn
  * 判断是否为非正式版本（不进行自动更新）
  * 非正式版本定义：
  * - 版本号为 "DEBUG_VERSION"
- * - 版本号小于 "1.0.0"
  * - 版本号包含预发布标签，且不是 beta 或 rc（如 v2.0.2-ci.123、v1.0.0-alpha.1）
  */
 export function isDebugVersion(version: string | undefined): boolean {
@@ -409,7 +409,6 @@ export function isDebugVersion(version: string | undefined): boolean {
   // 优先尝试完整解析（保留预发布标签如 -ci.123、-beta.1）
   const parsed = semver.parse(normalized);
   if (parsed) {
-    if (semver.lt(parsed, '1.0.0')) return true;
     if (parsed.prerelease.length > 0) {
       const UPDATEABLE_TAGS = ['beta', 'rc'];
       const isUpdateable = parsed.prerelease.some(
@@ -420,11 +419,7 @@ export function isDebugVersion(version: string | undefined): boolean {
     return false;
   }
 
-  // 回退到 coerce（处理非标准版本号，会丢失预发布标签）
-  const coerced = semver.coerce(normalized);
-  if (!coerced) return false;
-
-  return semver.lt(coerced, '1.0.0');
+  return false;
 }
 
 /**
@@ -624,6 +619,7 @@ async function matchGitHubAsset(assets: GitHubAsset[]): Promise<GitHubAsset | nu
 
   for (const asset of assets) {
     const name = asset.name.toLowerCase();
+    if (!/\.(zip|tar\.gz|dmg|exe)$/.test(name) || /(?:source|symbols|pdb)/.test(name)) continue;
 
     // 检查 OS 匹配
     const osMatch = osAliases.some((alias) => name.includes(alias.toLowerCase()));
@@ -866,8 +862,49 @@ export interface CheckAndDownloadOptions extends CheckUpdateOptions {
 }
 
 /**
+ * 未接入 Mirror酱时，直接选择 GitHub 中最新的可安装正式版或预发布版。
+ */
+async function checkGitHubUpdate(options: CheckAndDownloadOptions): Promise<UpdateInfo | null> {
+  const { githubUrl, currentVersion, githubPat, proxyUrl } = options;
+  const repository = githubUrl ? parseGitHubUrl(githubUrl) : null;
+  if (!repository) return null;
+
+  const releases = await invoke<GitHubRelease[]>('get_github_releases', {
+    ...repository,
+    githubPat,
+    proxyUrl,
+  });
+  const candidates = releases
+    .filter(
+      (release) => !release.draft && semver.valid(release.tag_name.replace(/^v/i, ''))
+        && !isDebugVersion(release.tag_name),
+    )
+    .sort((a, b) => compareVersions(b.tag_name, a.tag_name));
+
+  for (const release of candidates) {
+    const asset = await matchGitHubAsset(release.assets);
+    if (!asset) continue;
+    const hasUpdate = compareVersions(release.tag_name, currentVersion) > 0;
+    log.info(`GitHub 更新检查完成: 最新版本=${release.tag_name}, 有更新=${hasUpdate}`);
+    return {
+      hasUpdate,
+      versionName: hasUpdate ? release.tag_name : currentVersion,
+      releaseNote: release.body || '',
+      downloadUrl: hasUpdate ? asset.browser_download_url : undefined,
+      filename: asset.name,
+      fileSize: asset.size,
+      channel: release.prerelease ? 'beta' : 'stable',
+      updateType: 'full',
+      downloadSource: 'github',
+    };
+  }
+  log.warn('GitHub 未找到适合当前系统和架构的更新包');
+  return null;
+}
+
+/**
  * 检查更新并获取下载信息
- * 始终使用 Mirror酱 检查更新，根据是否有 CDK 决定下载来源
+ * 已接入 Mirror酱时用其查询版本；未接入时直接查询 GitHub。
  */
 export async function checkAndPrepareDownload(
   options: CheckAndDownloadOptions,
@@ -876,6 +913,10 @@ export async function checkAndPrepareDownload(
   if (isDownloading) {
     log.info('正在下载更新，跳过检查更新');
     return null;
+  }
+
+  if (!options.resourceId) {
+    return checkGitHubUpdate(options);
   }
 
   const { githubUrl, cdk, channel, githubPat, projectName, proxyUrl, ...checkOptions } = options;

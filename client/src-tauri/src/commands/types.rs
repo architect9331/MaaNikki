@@ -475,6 +475,8 @@ pub struct GitHubRelease {
     pub name: String,
     pub body: Option<String>,
     pub prerelease: bool,
+    #[serde(default)]
+    pub draft: bool,
     pub assets: Vec<GitHubAsset>,
 }
 
