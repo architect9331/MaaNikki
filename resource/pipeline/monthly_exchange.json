@@ -66,6 +66,22 @@
     "all_of": ["MaaNikki_Shop_PageReady", "MaaNikki_Shop_QuietSelected"],
     "action": "DoNothing"
   },
+  "MaaNikki_Shop_RevelationTitle": {
+    "recognition": "TemplateMatch",
+    "roi": [555, 195, 150, 40],
+    "template": "game/shop/revelation_title.png",
+    "threshold": 0.88,
+    "method": 5,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_ResonanceTitle": {
+    "recognition": "TemplateMatch",
+    "roi": [555, 195, 150, 40],
+    "template": "game/shop/resonance_title.png",
+    "threshold": 0.88,
+    "method": 5,
+    "action": "DoNothing"
+  },
   "MaaNikki_Shop_ExchangeMax": {
     "recognition": "TemplateMatch",
     "roi": [570, 480, 40, 40],

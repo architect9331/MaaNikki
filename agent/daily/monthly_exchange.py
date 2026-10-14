@@ -12,6 +12,10 @@ class MonthlyExchange(ShopWorkflow):
     ENTRY = "MaaNikki_MonthlyCrystalExchange"
     LABEL = "每月五抽兑换"
     ITEMS = ("启示水晶", "共鸣水晶")
+    TITLE_NODES = {
+        "启示水晶": "MaaNikki_Shop_RevelationTitle",
+        "共鸣水晶": "MaaNikki_Shop_ResonanceTitle",
+    }
     LIST_ROI = [285, 120, 930, 550]
     BLUE = ([100, 45, 55], [140, 255, 255])
 
@@ -32,9 +36,12 @@ class MonthlyExchange(ShopWorkflow):
         return self.quiet_page(self.rt.capture())
 
     def detail(self, image, name):
+        node = self.TITLE_NODES.get(name)
+        if not node:
+            return False
         ready = self.rt.recognize("MaaNikki_Shop_DetailReady", image=image)
-        title = "".join(self.rt.text([545, 195, 160, 40], ".+", image=image).split())
-        return bool(ready and ready.hit and title == name and self.quiet_page(image))
+        title = self.rt.recognize(node, image=image)
+        return bool(ready and ready.hit and title and title.hit and self.quiet_page(image))
 
     def price(self, image, *, total=False):
         # Anchor OCR to the verified blue currency icon, then read the rightmost
