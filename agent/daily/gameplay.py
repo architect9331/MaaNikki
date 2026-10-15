@@ -116,38 +116,11 @@ class Gameplay:
         if not self.rt.wait_hit(node, 10) or not self.ui.stable(.98, roi=roi):
             self.rt.log("照片详情中的点赞按钮未能稳定识别，本项停止。")
             return False
-        before = self.lookbook_like_count()
-        if before is None:
-            self.rt.log("未能读取照片点赞数，本项停止。")
-            return False
         if not self.rt.click_template(node):
             return False
-        deadline = time.monotonic()+5
-        while not self.rt.stopped and time.monotonic() < deadline:
-            count = self.lookbook_like_count()
-            if count is not None and count > before:
-                self.rt.log(f"照片点赞数已增加：{before} → {count}。")
-                return self.rt.main()
-            if not self.rt.pause(.3):
-                break
-        # Like toggles: an ambiguous response must never cause a second click.
-        self.rt.log("点击后未确认点赞数增加，本项未完成。")
-        return False
-
-    def lookbook_like_count(self):
-        previous = None
-        for _ in range(3):
-            if self.rt.stopped or not self.rt.hit("MaaNikki_Xinghai_PhotoReady"):
-                return None
-            result = self.rt.recognize("MaaNikki_Xinghai_LikeCount")
-            raw = getattr(getattr(result, "best_result", None), "text", "").strip()
-            count = int(raw) if result and result.hit and re.fullmatch(r"[0-9]{1,9}", raw) else None
-            if count is not None and count == previous:
-                return count
-            previous = count
-            if not self.rt.pause(.3):
-                break
-        return None
+        # Like toggles: submit once, then leave without clicking again.
+        self.rt.log("已点击照片点赞按钮。")
+        return self.rt.main()
 
     def realm(self, kind, maximize=True, entered=False, weekly_node=None, allow_exhausted=False,
               return_page="main"):

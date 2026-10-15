@@ -304,13 +304,6 @@
     "expected": "详情界面",
     "action": "DoNothing"
   },
-  "MaaNikki_Xinghai_LikeCount": {
-    "recognition": "OCR",
-    "roi": [850, 495, 75, 25],
-    "only_rec": true,
-    "expected": "^[0-9]{1,9}$",
-    "action": "DoNothing"
-  },
   "MaaNikki_Xinghai_SelectPhoto": {
     "recognition": "DirectHit",
     "action": "Custom",

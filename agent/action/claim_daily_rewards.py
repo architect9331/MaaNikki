@@ -34,7 +34,7 @@ class ClaimDailyRewardsAction(CustomAction):
                 mask = cv2.inRange(cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2HSV),
                                    np.array([0, 0, 125]), np.array([30, 255, 255]))
                 circles = cv2.HoughCircles(mask, cv2.HOUGH_GRADIENT, dp=1, minDist=100*2/3,
-                                           param1=60, param2=8, minRadius=20, maxRadius=23)
+                                           param1=60, param2=8, minRadius=20, maxRadius=28)
                 candidates = [] if circles is None else [
                     (x+round(cx), y+round(cy)) for cx, cy, _ in circles[0]
                     if not any((x+cx-px)**2+(y+cy-py)**2 < 18**2 for px, py in attempted)]
