@@ -386,6 +386,27 @@ class Gameplay:
         self.rt.log("乐园构想领取后未能确认返回，已记录奖励界面，尝试正常退出。")
         return False
 
+    def monthly_tab_selected(self, page):
+        """Travel tabs use a gold selected background and dark inactive tabs."""
+        with self.rt.observe(fresh=True):
+            frame = self.rt.frame()
+            result = self.rt.recognize(f"MaaNikki_Monthly_{page}Tab", image=frame)
+            if frame is None or not result or not result.hit:
+                return False
+            box = getattr(result.best_result, "box", None)
+            if box is None or len(box) != 4:
+                return False
+            x, y, width, height = map(int, box)
+            patch = frame[max(0, y):min(frame.shape[0], y+height),
+                          max(0, x):min(frame.shape[1], x+width)]
+            if patch.size == 0:
+                return False
+            # Bounds come from the existing monthly/task_tab.png selected
+            # template; monthly/treasure_tab.png provides the inactive style.
+            selected = cv2.inRange(cv2.cvtColor(patch, cv2.COLOR_BGR2HSV),
+                                   (10, 40, 100), (35, 200, 255))
+            return cv2.countNonZero(selected) / selected.size >= .45
+
     def monthly_rewards(self, kind):
         label = "乐园构想" if kind == "paradise" else "奇迹之旅"
         self.rt.log(f"已识别{label}，开始处理奖励。")
@@ -400,8 +421,9 @@ class Gameplay:
             if not (self.rt.context.get_node_data(node) or {}).get("enabled", False):
                 continue
             if index == 2:
-                self.rt.log("返回旅行秘宝，统一检查并领取奖励。")
-            if not self.rt.click_template(node):
+                self.rt.log("正在检查并领取旅行秘宝奖励。")
+            selected = kind == "travel" and self.monthly_tab_selected(page)
+            if not selected and not self.rt.click_template(node):
                 return False
             if not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
                 return False

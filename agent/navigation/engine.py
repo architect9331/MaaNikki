@@ -1,6 +1,7 @@
 """Camera-aligned forward movement with timed movement and jump state."""
 from __future__ import annotations
 import math
+from statistics import median
 from task_control import task_time as time
 from .models import NavigationError, Point, Route
 from .vision import Locator, Pose
@@ -36,44 +37,72 @@ class Motion:
         self.until = 0
         self.jump_state = "idle"
         self.jump_at = 0
+        self.forward_started = None
+        self.forward_seconds = 0
         self.generation = getattr(inputs, "generation", 0)
 
     def forward(self, seconds):
+        if not math.isfinite(seconds) or seconds <= 0:
+            raise NavigationError("前进时长无效。")
+        generation = self.generation
         self.tick()
+        if self.generation != generation:
+            return
+        # Include submission latency in the budget instead of starting the
+        # timer after the key-down RPC has already moved the character.
+        now = time.monotonic()
+        if self.forward_started is None:
+            self.forward_started = now
+        self.until = now+seconds
         self.inputs.key_down("forward")
-        self.until = time.monotonic()+seconds
+        self.tick()
 
     def stop(self):
         self.until = 0
-        self.inputs.key_up("forward")
+        try:
+            self.inputs.key_up("forward")
+        finally:
+            if self.forward_started is not None:
+                self.forward_seconds += time.monotonic()-self.forward_started
+                self.forward_started = None
+
+    def forward_elapsed(self):
+        return self.forward_seconds+(time.monotonic()-self.forward_started
+                                     if self.forward_started is not None else 0)
 
     def jump(self, wanted, walking):
-        self.tick()
-        now = time.monotonic()
-        if wanted and walking and (self.jump_state == "idle" or self.jump_state == "air" and now-self.jump_at > .2):
-            self.inputs.key_down("jump")
-            self.jump_state, self.jump_at = "first", now
-        elif wanted and not walking and self.jump_state == "idle":
-            self.inputs.key_down("jump")
-            self.inputs.key_up("jump")
-            self.jump_state, self.jump_at = "air", now
-        elif not wanted and self.jump_state != "idle":
+        if not wanted:
+            if self.jump_state == "idle":
+                return
+            # Cancel a queued second jump before tick can submit it.
             self.inputs.key_up("jump")
             if self.jump_state == "air" and not walking:
                 self.inputs.key_down("jump")
                 self.inputs.key_up("jump")
             self.jump_state = "idle"
+            return
+        self.tick()
+        now = time.monotonic()
+        if walking and (self.jump_state == "idle" or self.jump_state == "air" and now-self.jump_at > .2):
+            self.inputs.key_down("jump")
+            self.jump_state, self.jump_at = "first", now
+        elif not walking and self.jump_state == "idle":
+            self.inputs.key_down("jump")
+            self.inputs.key_up("jump")
+            self.jump_state, self.jump_at = "air", now
 
     def tick(self):
         self.inputs.check()
         generation = getattr(self.inputs, "generation", 0)
         if generation != self.generation:
             self.generation = generation
-            self.until, self.jump_state = 0, "idle"
+            # A key-down RPC may itself have waited for focus restoration.
+            # Release that input too; the caller must obtain a fresh pose.
+            self.close()
+            return
         now = time.monotonic()
         if self.until and now >= self.until:
-            self.inputs.key_up("forward")
-            self.until = 0
+            self.stop()
         if self.jump_state == "first" and now-self.jump_at >= .3:
             self.inputs.key_up("jump")
             self.jump_state, self.jump_at = "second_wait", now
@@ -81,6 +110,17 @@ class Motion:
             self.inputs.key_down("jump")
             self.inputs.key_up("jump")
             self.jump_state, self.jump_at = "air", now
+
+    def guard(self, blocking_seconds):
+        """Keep cruising unless the next blocking read could miss release.
+
+        Near the deadline, service the timers until W is released before
+        starting that read. Jump timing remains independent of forward input.
+        """
+        self.tick()
+        if self.until and self.until-time.monotonic() <= blocking_seconds:
+            while self.until:
+                self.wait(min(.02, max(0, self.until-time.monotonic())))
 
     def wait(self, seconds):
         deadline = time.monotonic()+seconds
@@ -94,10 +134,17 @@ class Motion:
     def close(self):
         self.until = 0
         self.jump_state = "idle"
+        if self.forward_started is not None:
+            self.forward_seconds += time.monotonic()-self.forward_started
+        self.forward_started = None
         self.inputs.release()
 
 
 class Navigator:
+    # World-map units per second. Low displacement (wall contact, animation,
+    # noisy localization) must never turn into an arbitrarily long W hold.
+    MIN_PLANNING_SPEED = 6.0
+
     def __init__(self, locator: Locator, inputs, capture, stopped, pause, event=lambda value: None,
                  point_action=None, waypoint=None, walking=None, page_detector=None, point_prepare=None,
                  route_branch=None, relocalize=None):
@@ -113,15 +160,36 @@ class Navigator:
         self.relocalize = relocalize
         self.map_recoveries = 0
         self.relocalized = False
+        self.read_costs = {}
+        self.pose_at = time.monotonic()
+        self.pose_input = 0.0
 
     def pause(self, seconds):
         return self.motion.wait(seconds) if self.motion else self._pause(seconds)
 
+    def read_state(self, name, callback):
+        """Budget blocking recognition while retaining continuous travel."""
+        if self.motion:
+            self.motion.guard(self.read_costs.get(name, .2)*1.25+.03)
+        begin = time.monotonic()
+        try:
+            return callback()
+        finally:
+            self.read_costs[name] = max(self.read_costs.get(name, 0)*.8, time.monotonic()-begin)
+            if self.motion:
+                self.motion.tick()
+
     def observe(self, hint, *, commit=True, reset_continuity=False):
         self.inputs.check()
         if self.motion:
-            self.motion.tick()
+            self.motion.guard(self.read_costs.get("observe", .3)*1.25+.03)
+        begin = time.monotonic()
+        input_begin = self.motion.forward_elapsed() if self.motion else 0
         frame = self.capture()
+        # A screenshot describes capture time, not the later OCR completion.
+        # Midpoint is an estimate because Maa does not expose a frame timestamp.
+        self.pose_at = (begin+time.monotonic())/2
+        self.pose_input = (input_begin+self.motion.forward_elapsed())/2 if self.motion else 0
         if self.motion:
             self.motion.tick()
         if self.motion and self.point_action and time.monotonic() >= self.next_skip_check:
@@ -163,9 +231,15 @@ class Navigator:
                     camera_method=self.locator.heading_diagnostics.get("method"),
                     method="position_unavailable")
                 pose = Pose(pose.x, pose.y, pose.score, pose.margin, None, 0.0)
+            elif pose.heading is not None and pose.heading_confidence < .3:
+                if self.motion:
+                    self.motion.close()
+                self.locator.heading_diagnostics.update(method="heading_uncertain")
+                pose = Pose(pose.x, pose.y, pose.score, pose.margin, None, pose.heading_confidence)
         if self.motion:
             self.motion.tick()
         self.event({"type": "pose", **pose.dict(), "heading_diagnostics": dict(self.locator.heading_diagnostics)})
+        self.read_costs["observe"] = max(self.read_costs.get("observe", 0)*.8, time.monotonic()-begin)
         return pose
 
     def camera(self, pixels):
@@ -173,12 +247,16 @@ class Navigator:
         # Send the calibrated displacement, then verify the actual heading.
         # Keep an input bound for unusual sensitivity/calibration results.
         part = max(-MAX_CAMERA_PIXELS, min(MAX_CAMERA_PIXELS, round(pixels)))
+        generation = getattr(self.inputs, "generation", 0)
         self.inputs.check()
+        if getattr(self.inputs, "generation", 0) != generation:
+            raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
         if part and not relative_camera(self.inputs.controller, part, 0):
             raise NavigationError("转动镜头失败。")
         return part
 
     def stable_heading(self, pose):
+        generation = getattr(self.inputs, "generation", 0)
         previous = None
         stable = 0
         for _ in range(6):
@@ -186,6 +264,8 @@ class Navigator:
             if self.stopped() or self.pause(.04) is False:
                 raise NavigationError("已停止导航。")
             pose = self.observe((pose.x, pose.y))
+            if getattr(self.inputs, "generation", 0) != generation:
+                raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
             if pose.heading is None:
                 raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
             if pose.heading is not None and previous is not None and abs(angle_delta(pose.heading, previous)) < 5:
@@ -199,43 +279,55 @@ class Navigator:
 
     def calibrate(self, pose):
         ratios = []
-        for _ in range(4):
+        probe_pixels = 180
+        for _ in range(6):
             before = pose.heading
-            pixels = self.camera(90)
+            pixels = self.camera(probe_pixels)
             self.pause(.3)
             pose = self.stable_heading(pose)
             delta = angle_delta(pose.heading, before)
             self.event({"type": "camera_probe", "pixels": pixels, "rotation": delta})
-            if not 2 <= abs(delta) <= 120:
+            if not 8 <= abs(delta) <= 90:
                 ratios.clear()
+                probe_pixels = (min(1440, probe_pixels*2) if abs(delta) < 8
+                                else max(22, probe_pixels//2))
                 continue
             ratio = pixels/delta
-            if ratios and ratio*ratios[-1] > 0 and .5 <= abs(ratio/ratios[-1]) <= 2:
-                self.turn_ratio = (ratio+ratios[-1])/2
+            if ratios and (ratio*median(ratios) <= 0 or not .75 <= abs(ratio/median(ratios)) <= 1.33):
+                ratios.clear()
+            ratios.append(ratio)
+            if len(ratios) >= 3 or (len(ratios) == 2 and
+                                    max(map(abs, ratios))/min(map(abs, ratios)) <= 1.15):
+                self.turn_ratio = median(ratios)
                 self.event({"type": "camera_calibrated", "pixels_per_degree": self.turn_ratio})
                 return pose
-            ratios = [ratio]
         raise NavigationError("镜头校准结果不稳定，请检查游戏前台和小地图显示。")
 
     def turn(self, target_heading, pose, *, stationary=False, tolerance=5):
+        generation = getattr(self.inputs, "generation", 0)
         if pose.heading is None:
             raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
         if self.turn_ratio is not None and abs(angle_delta(target_heading, pose.heading)) <= tolerance:
             return pose
         if (not stationary and self.turn_ratio is not None
                 and abs(angle_delta(target_heading, pose.heading)) < 45):
-            # Apply the full small correction during route travel. Capture
-            # again before deciding whether walking can continue.
+            # Small corrections keep forward held while there is sufficient
+            # travel left to complete the camera update and its observation.
+            if self.motion:
+                self.motion.guard(self.read_costs.get("observe", .3)*1.25+.15)
+            if getattr(self.inputs, "generation", 0) != generation:
+                raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
             delta = angle_delta(target_heading, pose.heading)
             self.camera(delta*self.turn_ratio)
             self.pause(.04)
             after = self.observe((pose.x, pose.y))
+            if getattr(self.inputs, "generation", 0) != generation:
+                raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
             if after.heading is None:
                 raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
             if abs(angle_delta(target_heading, after.heading)) <= tolerance:
                 return after
             pose = after
-        # Calibration and closed-loop steering must not also walk past a point.
         if self.motion:
             self.motion.stop()
         else:
@@ -267,9 +359,9 @@ class Navigator:
                 else:
                     unresponsive = 0
                     measured = pixels/actual
-                    if (measured*self.turn_ratio > 0 and abs(actual) <= 90
-                            and .5 <= abs(measured/self.turn_ratio) <= 2):
-                        self.turn_ratio = (self.turn_ratio+measured)/2
+                    if (measured*self.turn_ratio > 0 and 8 <= abs(actual) <= 90
+                            and .75 <= abs(measured/self.turn_ratio) <= 1.33):
+                        self.turn_ratio = .8*self.turn_ratio+.2*measured
             raise NavigationError("镜头未能稳定朝向路线，已停止移动。")
         except BaseException:
             self.inputs.release()
@@ -277,8 +369,8 @@ class Navigator:
 
     def walking(self):
         if self.walking_detector is not None:
-            return bool(self.walking_detector())
-        return not self.point_action or self.point_action.rt.ui.walking()
+            return bool(self.read_state("walking", self.walking_detector))
+        return not self.point_action or self.read_state("walking", self.point_action.rt.ui.walking)
 
     def recover_scene(self, anchor, deadline, *, force_map=False):
         self.motion.close()
@@ -354,6 +446,71 @@ class Navigator:
                     "distance": distance(pose, point)})
         return point
 
+    def advance(self, pose, target, radius, speeds, *, recovery=False):
+        """Update continuous forward travel using capture-aligned feedback."""
+        motion = self.motion
+        generation = getattr(self.inputs, "generation", 0)
+        remaining = distance(pose, target)
+        before_at, before_input = self.pose_at, self.pose_input
+        walking = self.walking()
+        jumping = target.jump or recovery
+        mode = "air" if jumping or not walking else "ground"
+        samples = speeds[mode]
+        velocity = max(self.MIN_PLANNING_SPEED, median(samples))
+        self.inputs.check()
+        if getattr(self.inputs, "generation", 0) != generation:
+            motion.close()
+            return pose, False
+        # Recognition may have completed well after this pose was captured.
+        # Deduct only the forward input since capture, not stationary OCR time.
+        advanced_seconds = max(0, motion.forward_elapsed()-before_input)
+        duration = (remaining-radius*.5)/velocity-advanced_seconds-.06
+        if duration <= 0 and advanced_seconds > 0:
+            motion.stop()
+            return self.observe((pose.x, pose.y)), False
+        duration = max(.04, duration)
+        if recovery:
+            duration = min(1.0, duration)
+        motion.forward(duration)
+        if getattr(self.inputs, "generation", 0) != generation:
+            motion.close()
+            return pose, False
+        motion.jump(jumping, walking)
+        if recovery:
+            self.pause(1.5)
+            motion.stop()
+            motion.jump(False, self.walking())
+        elif motion.jump_state in {"first", "second_wait"}:
+            # Preserve the original full-height jump and second jump timing.
+            # The independent forward deadline can release W during this wait.
+            while motion.jump_state in {"first", "second_wait"}:
+                self.pause(.02)
+        else:
+            self.pause(.01)
+        observed_at = time.monotonic()
+        after = self.observe((pose.x, pose.y))
+        observation_seconds = time.monotonic()-observed_at
+        input_seconds = max(0, self.pose_input-before_input)
+        displacement = distance(pose, after)
+        measured = displacement/input_seconds if input_seconds > 0 else 0
+        trusted = (generation == getattr(self.inputs, "generation", 0)
+                   and after.heading is not None and input_seconds >= .08)
+        # Ignore blocked steps instead of interpreting a wall as a low speed.
+        learned = trusted and displacement >= .3 and .5 <= measured <= 50
+        if learned:
+            speeds[mode] = (samples+[measured])[-5:]
+        self.event({"type": "forward", "duration": duration, "movement_mode": mode,
+                    "bearing": math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360,
+                    "jump": jumping,
+                    "walking": walking, "jump_state": motion.jump_state,
+                    "recovery": recovery, "planning_speed": velocity,
+                    "input_seconds": input_seconds, "observation_seconds": observation_seconds,
+                    "capture_interval": self.pose_at-before_at, "compensated_input_seconds": advanced_seconds,
+                    "before": [pose.x, pose.y], "after": [after.x, after.y],
+                    "remaining_before": remaining, "remaining_after": distance(after, target),
+                    "measured_speed": measured, "feedback_valid": learned})
+        return after, recovery
+
     def follow(self, route: Route):
         if route.map_id != self.locator.spec.id:
             raise NavigationError("路线使用的地图不匹配。")
@@ -371,7 +528,7 @@ class Navigator:
         if self.point_action:
             self.point_action.motion = motion
             self.point_action.navigator = self
-        speeds, periods = [6.0]*5, [.2]*5
+        speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
         last = None
         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
         best_distance = distance(pose, origin)
@@ -400,10 +557,12 @@ class Navigator:
                     best_distance = distance(pose, rejoin or route.points[index])
                     map_checked = False
                     last = None
-                    speeds, periods = [6.0]*5, [.2]*5
+                    speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
+                    self.turn_ratio = None
+                    scene_interrupted = False
                     continue
                 target = rejoin or route.points[index]
-                if scene_interrupted or pose.heading is None or not self.inputs.ready():
+                if scene_interrupted or pose.heading is None or not self.read_state("ready", self.inputs.ready):
                     scene_retries += 1
                     if scene_retries > 3:
                         raise NavigationError("路线多次中断，已停止，请检查当前位置。")
@@ -423,7 +582,14 @@ class Navigator:
                     stuck_since, recovered = time.monotonic(), False
                     best_distance = distance(pose, rejoin or route.points[index])
                     scene_interrupted, last = False, None
-                    speeds, periods = [6.0]*5, [.2]*5
+                    speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
+                    continue
+                # A guarded page read may have reached the release deadline.
+                # Refresh the old moving frame before arrival/stuck decisions.
+                if getattr(self.inputs, "generation", 0) != generation:
+                    continue
+                if not motion.until and motion.forward_elapsed()-self.pose_input > .02:
+                    last, pose = pose, self.observe((pose.x, pose.y))
                     continue
                 last_good = pose
                 if rejoin is None and self.point_prepare and prepared_index != index:
@@ -435,12 +601,29 @@ class Navigator:
                         best_distance = distance(pose, target)
                         map_checked = False
                         last = None
+                        speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
                     prepared_index = index
+                    if pose.heading is None or getattr(self.inputs, "generation", 0) != generation:
+                        continue
                 if rejoin is None and index == 0 and distance(pose, origin) > route.start_radius:
                     raise NavigationError("当前位置不在路线起点附近，未开始移动，请先传送或手动到达起点。")
                 # Pickup locations require closer arrival than transit points.
                 radius = min(target.radius, 1) if target.action == "bottle" else target.radius
-                if distance(pose, target) <= radius or last and segment_distance(target, last, pose) <= radius:
+                precise = bool(target.action) or rejoin is not None or index == len(route.points)-1
+                crossed = (not precise and last is not None
+                           and segment_distance(target, last, pose) <= radius)
+                if distance(pose, target) <= radius or crossed:
+                    if precise:
+                        motion.stop()
+                        motion.jump(False, self.walking())
+                        self.pause(.12)
+                        confirmed = self.observe((pose.x, pose.y))
+                        settled = distance(pose, confirmed) <= max(.15, min(.4, radius*.25))
+                        pose = confirmed
+                        last = None
+                        if (pose.heading is None or distance(pose, target) > radius or not settled
+                                or getattr(self.inputs, "generation", 0) != generation):
+                            continue
                     if rejoin is not None:
                         motion.close()
                         rejoin = None
@@ -480,7 +663,8 @@ class Navigator:
                     last = None
                     continue
                 remaining_distance = distance(pose, target)
-                if distance(pose, stuck_anchor) > 1 and remaining_distance < best_distance - 1:
+                progress = max(.15, min(.75, radius*.5))
+                if distance(pose, stuck_anchor) > progress and remaining_distance < best_distance-progress:
                     # Jitter or drifting sideways along a wall is not progress
                     # toward this waypoint and must not reset recovery timers.
                     scene_retries = 0
@@ -490,7 +674,8 @@ class Navigator:
                 stuck_time = time.monotonic()-stuck_since
                 if stuck_time > 15:
                     raise NavigationError("原地卡住超过 15 秒，停止路线。")
-                if stuck_time > 5 and not recovered:
+                recovery = stuck_time > 5 and not recovered
+                if recovery:
                     self.event({"type": "unstuck", "seconds": stuck_time, "index": index,
                                 "remaining": remaining_distance, "best_remaining": best_distance})
                     if self.relocalize and not map_checked and self.map_recoveries < 3:
@@ -501,60 +686,38 @@ class Navigator:
                         stuck_since, recovered = time.monotonic(), False
                         best_distance = distance(pose, rejoin)
                         last = None
-                        speeds, periods = [6.0]*5, [.2]*5
+                        speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
                         continue
-                    motion.stop()
-                    motion.jump(False, True)
-                    self.pause(1)
-                    motion.forward(1)
-                    motion.jump(True, True)
-                    self.pause(1.5)
-                    recovered = True
-                    motion.stop()
-                    motion.jump(False, self.walking())
-                    # Recovery moves the character: acquire a new position
-                    # before steering instead of reusing the pre-jump bearing.
-                    pose = self.observe((pose.x, pose.y))
-                    last = None
-                    continue
                 turn_begin = time.monotonic()
                 before_turn = pose
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
-                delta = abs((bearing-(pose.heading or 0)+180) % 360-180)
-                stationary_turn = self.turn_ratio is None or delta >= 45
-                if delta >= 45:
-                    motion.stop()
+                tolerance = 3 if remaining_distance <= radius+2 else 5
+                stationary_turn = self.turn_ratio is None or abs(angle_delta(bearing, pose.heading)) >= 45
                 try:
-                    pose = self.turn(bearing, pose)
+                    pose = self.turn(bearing, pose, tolerance=tolerance)
                 except SceneUnavailable:
                     scene_interrupted = True
                     continue
-                # Only stationary steering is excluded from the stuck timer.
                 if stationary_turn:
                     stuck_since += time.monotonic()-turn_begin
-                if distance(pose, target) <= radius or segment_distance(target, before_turn, pose) <= radius:
+                if self.stopped() or time.monotonic() >= deadline:
+                    raise NavigationError("导航已停止或超时。")
+                if getattr(self.inputs, "generation", 0) != generation:
+                    continue
+                if (distance(pose, target) <= radius or not precise
+                        and segment_distance(target, before_turn, pose) <= radius):
                     last = before_turn
                     continue
-                begin = time.monotonic()
-                walking = self.walking()
-                motion.jump(target.jump, walking)
-                velocity = (sum(speeds)-max(speeds)-min(speeds))/3
-                period = (sum(periods)-max(periods)-min(periods))/3
-                duration = max(.05, distance(pose, target)/max(velocity, .1)-period)
-                motion.forward(duration)
-                self.event({"type": "forward", "duration": duration, "bearing": bearing, "jump": target.jump,
-                            "walking": walking, "jump_state": motion.jump_state})
-                if motion.jump_state in {"first", "second_wait"}:
-                    # Complete the 0.3s hold + 0.1s second-jump timing before
-                    # screenshot/OCR RPCs can delay it. Still one Maa thread.
-                    motion.wait(.45)
-                self.pause(.01)
-                after = self.observe((pose.x, pose.y))
-                elapsed = time.monotonic()-begin
-                if distance(pose, after) > .5 and elapsed > 0:
-                    speeds = speeds[1:]+[distance(pose, after)/elapsed]
-                periods = periods[1:]+[elapsed]
-                last, pose = pose, after
+                # Coasting during a turn can change the target bearing.
+                bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
+                if abs(angle_delta(bearing, pose.heading)) > tolerance:
+                    last = None
+                    continue
+                before_move = pose
+                pose, recovery_done = self.advance(pose, target, radius, speeds, recovery=recovery)
+                last = None if recovery else before_move
+                if recovery_done:
+                    recovered = True
             self.event({"type": "arrived", **pose.dict()})
             return pose
         finally:
