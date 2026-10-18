@@ -4,6 +4,8 @@ from __future__ import annotations
 from itertools import combinations
 import math
 
+from .policy import normalize_scope
+
 
 SLOTS = ("头部", "手部", "脚部")
 
@@ -14,12 +16,24 @@ def summarize_scan(snapshot, traversed, reason):
     total = sum(item["count"] for item in snapshot["items"])
     pending = sum(item["count"] for item in snapshot["items"] if not item.get("color"))
     visited = total + len(snapshot["unresolved"])
-    coverage = bool(traversed and scan.get("reported_capacity") == visited)
+    excluded = sum(item["count"] for item in scan.get("excluded_owned", []))
+    capacity = scan.get("reported_capacity")
+    expected = capacity
+    includes_excluded = False if capacity == visited else None
+    if scan.get("view") == "normal_inventory" and capacity is not None:
+        expected, includes_excluded = capacity - excluded, bool(excluded)
+    elif (scan.get("view") == "decomposition" and excluded and capacity is not None
+            and capacity - excluded == visited):
+        expected, includes_excluded = capacity - excluded, True
+    coverage = bool(traversed and expected == visited)
     identity = bool(coverage and not snapshot["unresolved"])
     colors = bool(identity and not pending)
     scan.update(complete=colors, traversed=bool(traversed), coverage_complete=coverage,
                 identity_complete=identity, color_complete=colors, recorded_copies=total,
                 visited_copies=visited, color_unresolved_copies=pending)
+    scan.update(expected_collectible_capacity=expected, excluded_copies=excluded,
+                capacity_includes_excluded=includes_excluded,
+                total_owned_copies=visited + excluded if coverage else None)
     details = []
     if not coverage:
         details.append("库存数量或遍历范围待核对")
@@ -30,7 +44,8 @@ def summarize_scan(snapshot, traversed, reason):
     scan["reason"] = "整份列表、部件、等级及颜色均已核对" if colors else "；".join([reason, *details])
     for slot in SLOTS:
         scan["slots"][slot] = {"complete": coverage, "pages": len(scan.get("pages", [])),
-                               "reason": "整屏混合部位扫描，" + scan["reason"]}
+                               "reason": ("普通仓库按部位核对，" if scan.get("view") == "normal_inventory"
+                                          else "整屏混合部位扫描，") + scan["reason"]}
 
 
 def remaining_cost(catalog, rarity, level, xp=0):
@@ -160,6 +175,8 @@ def validate_estimate(rainbow, copies_per_claim):
 
 def analyze(catalog, snapshot, rainbow, copies_per_claim, stopped=lambda: False):
     validate_estimate(rainbow, copies_per_claim)
+    normalize_scope(snapshot, catalog)
+    definitions = [item for item in catalog["sets"] if item.get("collection_target", True)]
     indexed = {}
     for item in snapshot["items"]:
         if item.get("name") and item.get("slot") in SLOTS and item.get("level") is not None:
@@ -171,7 +188,7 @@ def analyze(catalog, snapshot, rainbow, copies_per_claim, stopped=lambda: False)
               "goals": []}
     for goal in (1, 2, 3):
         rows, pools = [], {}
-        for definition in catalog["sets"]:
+        for definition in definitions:
             for slot in SLOTS:
                 items = indexed.get((definition["name"], slot), [])
                 part = budget_for_part(catalog, definition, items, goal, rainbow)
@@ -194,7 +211,7 @@ def analyze(catalog, snapshot, rainbow, copies_per_claim, stopped=lambda: False)
                                     snapshot["scan"].get("complete", False))),
                                 "total_parts": len(rows),
                                 "confirmed_colors": sum(len(row["owned_colors"]) for row in rows),
-                                "total_colors": sum(len(d["colors"]) * 3 for d in catalog["sets"]),
+                                "total_colors": sum(len(d["colors"]) * 3 for d in definitions),
                                 "bling": sum(row["bling"] for row in rows),
                                 "exp": sum(row["exp"] for row in rows), "pools": energy, "parts": rows})
     return result

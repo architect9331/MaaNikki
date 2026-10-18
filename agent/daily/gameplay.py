@@ -21,6 +21,7 @@ class Gameplay:
     def __init__(self, runtime):
         self.rt, self.ui = runtime, runtime.ui
         self.energy_exhausted = False
+        self.quick_unavailable = False
 
     def read_energy(self):
         """Read only on the confirmed calendar; an OCR miss is not zero."""
@@ -123,8 +124,11 @@ class Gameplay:
         return self.rt.main()
 
     def realm(self, kind, maximize=True, entered=False, weekly_node=None, allow_exhausted=False,
-              return_page="main"):
+              return_page="main", fixed_count=None, *, allow_unavailable=False, before_submit=None):
+        if fixed_count is not None and (type(fixed_count) is not int or fixed_count != 1):
+            raise ValueError("固定挑战数量目前仅支持一次")
         self.energy_exhausted = False
+        self.quick_unavailable = False
         prefix = {"jihua": "Jihua", "bless": "Bless", "monster": "Monster", "weekly": "Weekly"}[kind]
         try:
             if not entered and not self.rt.hit(f"MaaNikki_{prefix}_PageReady"):
@@ -136,7 +140,7 @@ class Gameplay:
             if not entered and not self.ui.realm(kind):
                 return False
             if kind == "jihua":
-                return self.jihua(maximize, allow_exhausted)
+                return self.jihua(maximize, allow_exhausted, fixed_count=fixed_count)
             node = weekly_node if kind == "weekly" else f"MaaNikki_{prefix}_Level"
             if not self.select_realm_level(kind, node):
                 return False
@@ -147,27 +151,53 @@ class Gameplay:
             def recover_level():
                 return (self.ui.realm(kind) and self.select_realm_level(kind, node)
                         and (kind != "bless" or self.rt.click_template("MaaNikki_Bless_Difficulty")))
+            can_skip = allow_unavailable and kind == "bless"
             if not self.ui.enter_page(lambda: self.rt.click_template(quick, attempts=1, wait_seconds=0),
-                    confirm, source=quick, recover=recover_level):
+                    confirm, source=quick, recover=None if can_skip else recover_level,
+                    attempts=1 if can_skip else 3):
                 cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
+                # Only a failure before opening the submission dialog can
+                # authorize another realm. An unknown page remains an error.
+                if (can_skip and not self.rt.stopped
+                        and self.ui.wait_page("MaaNikki_Bless_PageReady", seconds=2)
+                        and not self.rt.hit(confirm) and not self.rt.hit(cancel)):
+                    self.quick_unavailable = True
+                    return False
                 return self.confirm_unavailable(kind, allow_exhausted,
                                                 cancel if self.rt.hit(cancel) else None)
-            if maximize and kind != "weekly" and not self.rt.click_template(f"MaaNikki_{prefix}_Max", wait_seconds=.2):
+            if fixed_count is not None and not self.rt.set_amount(kind, 0):
+                return False
+            if fixed_count is None and maximize and kind != "weekly" and not self.rt.click_template(f"MaaNikki_{prefix}_Max", wait_seconds=.2):
                 return False
             # Daily supplementation uses the game's default minimum quantity.
             # Only the standalone energy-clearing task selects Max.
+            if before_submit is not None:
+                before_submit()
+            if kind == "bless":
+                self.invalidate_blessing_inventory("即将提交祝福闪光挑战，奖励数量待复核")
             if not self.rt.click_template(confirm):
                 cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
                 return self.confirm_unavailable(kind, allow_exhausted, cancel)
             result = self.ui.skip_reward()
-            self.rt.log("挑战奖励已领取。" if result else "未确认挑战奖励，本项未完成。")
+            if result and kind == "bless":
+                self.invalidate_blessing_inventory("已确认祝福闪光挑战奖励，新增库存数量待复核")
+            self.rt.log("挑战奖励已领取。" if result else "挑战奖励领取结果待确认，请检查游戏画面。",
+                        detail=bool(result and before_submit is not None))
             return result
         finally:
             if not entered and not self.rt.stopped:
                 returned = self.ui.calendar() if return_page == "calendar" else self.rt.main()
                 if not returned:
+                    self.quick_unavailable = False
                     self.rt.log("未能返回后续步骤需要的页面，本项停止。")
                     return False
+
+    def invalidate_blessing_inventory(self, reason):
+        # Applies to ordinary farming and daily supplementation too. Resource
+        # acquisition never silently leaves an older full snapshot reusable.
+        from collection.storage import InventoryStore
+        catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+        InventoryStore(ROOT, catalog).invalidate(reason, source="realm_bless")
 
     def select_realm_level(self, kind, node):
         if self.ui.find(roi=self.REALM_LEVEL_ROI, node=node, scroll_roi=self.REALM_SCROLL_ROI):
@@ -201,7 +231,7 @@ class Gameplay:
         except (OSError, cv2.error) as error:
             self.rt.log(f"幻境关卡查找记录未能保存：{error}。")
 
-    def jihua(self, maximize, allow_exhausted=False):
+    def jihua(self, maximize, allow_exhausted=False, fixed_count=None):
         submitted = False
 
         def enter():
@@ -216,7 +246,9 @@ class Gameplay:
                 return False
             if not self.jihua_open_table() or not self.jihua_select_target() or not self.jihua_select_material():
                 return False
-            if maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
+            if fixed_count is not None and not self.rt.set_amount("jihua", 0):
+                return False
+            if fixed_count is None and maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
                 return False
             if not self.rt.click_template("MaaNikki_Jihua_NumConfirm"):
                 return False

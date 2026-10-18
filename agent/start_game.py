@@ -52,12 +52,62 @@ def startup_step(record, stage):
 
 
 def focus_window(hwnd):
+    """Activate once at startup, then verify without repeatedly stealing focus."""
     user32 = ctypes.WinDLL("user32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    user32.IsWindow.argtypes = [wintypes.HWND]
+    user32.IsWindow.restype = wintypes.BOOL
+    user32.IsIconic.argtypes = [wintypes.HWND]
+    user32.IsIconic.restype = wintypes.BOOL
+    user32.GetForegroundWindow.argtypes = []
+    user32.GetForegroundWindow.restype = wintypes.HWND
+    user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+    user32.AttachThreadInput.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.BOOL]
+    user32.AttachThreadInput.restype = wintypes.BOOL
     user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+    user32.BringWindowToTop.argtypes = [wintypes.HWND]
+    user32.BringWindowToTop.restype = wintypes.BOOL
     user32.SetForegroundWindow.argtypes = [wintypes.HWND]
     user32.SetForegroundWindow.restype = wintypes.BOOL
-    user32.ShowWindow(hwnd, 9)
-    user32.SetForegroundWindow(hwnd)
+    kernel32.GetCurrentThreadId.argtypes = []
+    kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+    if not user32.IsWindow(hwnd):
+        return False
+    if user32.GetForegroundWindow() == hwnd and not user32.IsIconic(hwnd):
+        return True
+
+    current_thread = kernel32.GetCurrentThreadId()
+    foreground_thread = user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), None)
+    target_thread = user32.GetWindowThreadProcessId(hwnd, None)
+    attached = []
+    try:
+        # The helper is launched in the background. Share the foreground input
+        # queue during activation so Windows can grant it foreground access.
+        for thread in dict.fromkeys((foreground_thread, target_thread)):
+            if thread and thread != current_thread and user32.AttachThreadInput(current_thread, thread, True):
+                attached.append(thread)
+        if user32.IsIconic(hwnd):
+            user32.ShowWindow(hwnd, 9)  # SW_RESTORE; preserve maximized windows.
+        user32.BringWindowToTop(hwnd)
+        user32.SetForegroundWindow(hwnd)
+    finally:
+        for thread in reversed(attached):
+            user32.AttachThreadInput(current_thread, thread, False)
+
+    deadline, stable_since = time.monotonic()+3, None
+    while time.monotonic() < deadline:
+        if not user32.IsWindow(hwnd):
+            return False
+        now = time.monotonic()
+        if user32.GetForegroundWindow() == hwnd and not user32.IsIconic(hwnd):
+            stable_since = now if stable_since is None else stable_since
+            if now-stable_since >= .15:
+                return True
+        else:
+            stable_since = None
+        time.sleep(.05)
+    return False
 
 
 def game_window():
@@ -67,6 +117,8 @@ def game_window():
     user32.EnumWindows.restype = wintypes.BOOL
     user32.IsWindowVisible.argtypes = [wintypes.HWND]
     user32.IsWindowVisible.restype = wintypes.BOOL
+    user32.IsIconic.argtypes = [wintypes.HWND]
+    user32.IsIconic.restype = wintypes.BOOL
     user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
     user32.GetWindowTextW.restype = ctypes.c_int
     user32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
@@ -85,7 +137,10 @@ def game_window():
                 and user32.GetWindowTextW(hwnd, title, len(title))
                 and re.fullmatch(r"\s*(Infinity Nikki|无限暖暖)\s*", title.value)):
             rect = wintypes.RECT()
-            if user32.GetClientRect(hwnd, ctypes.byref(rect)):
+            if user32.IsIconic(hwnd):
+                # Minimized Unreal windows may report an empty client area.
+                found.append(int(hwnd))
+            elif user32.GetClientRect(hwnd, ctypes.byref(rect)):
                 width, height = rect.right-rect.left, rect.bottom-rect.top
                 if width >= 640 and height >= 360:
                     found.append(int(hwnd))
@@ -194,7 +249,8 @@ class LauncherWindows:
         return self.user32.GetForegroundWindow() == hwnd and not self.user32.IsIconic(hwnd)
 
     def focus(self, hwnd):
-        focus_window(hwnd)  # Restore once; never steal focus after a user switches away.
+        if not focus_window(hwnd):
+            raise RuntimeError("未能自动将官方启动器切到前台，请检查窗口状态和权限后重试。")
 
 
 class LauncherRuntime:
@@ -351,6 +407,9 @@ def prepare_game(timeout, record):
     hwnd = game_window()
     while hwnd and remaining >= 30:
         preparing_at = time.monotonic()
+        with startup_step(record, "focus_game"):
+            if not focus_window(hwnd):
+                raise RuntimeError("未能自动将无限暖暖切到前台，请检查窗口状态和权限后重试。")
         with startup_step(record, "load_game_resource"):
             resource = Resource()
             if not resource.post_bundle(ROOT / "resource").wait().succeeded:
@@ -360,7 +419,6 @@ def prepare_game(timeout, record):
                 from action import gameplay as _gameplay
                 from action import game_key as _game_key
                 from recognition import ui_template as _ui_template
-        focus_window(hwnd)
         record.update(game_hwnd=hwnd, screencap="ScreenDC")
         with startup_step(record, "connect_game"):
             # Startup pauses outside the foreground. ScreenDC avoids the

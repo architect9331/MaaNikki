@@ -1,7 +1,6 @@
 """Run one selected daily executor, independently of daily score and scheduling."""
 from __future__ import annotations
 
-from dataclasses import replace
 from datetime import datetime
 import json
 import os
@@ -24,10 +23,6 @@ def test_rule(mode, key):
     rule = next((rule for rule in RULES.get(mode, ()) if rule.key == key), None)
     if rule is None:
         raise NavigationError("子任务测试项目无效，请重新添加任务。")
-    # The dig workflow exists as a standalone task, though daily scheduling
-    # doesn't use it for score credit. Test that same workflow explicitly.
-    if mode == "zhaoxi" and key == "dig":
-        rule = replace(rule, executor="dig")
     return rule
 
 

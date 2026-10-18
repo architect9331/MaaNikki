@@ -3,7 +3,7 @@
     "recognition": "DirectHit",
     "action": "Custom",
     "custom_action": "nikki.route_test",
-    "custom_action_param": {"route": "xinghai_meteor1", "file": ""},
+    "custom_action_param": {"route": "", "file": "", "mode": "movement"},
     "post_delay": 0,
     "next": []
   }

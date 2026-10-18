@@ -14,6 +14,7 @@ from .planner import Card
 from .settings import ROOT, foreground_inputs
 from game_keys import GameKeys
 from performance import count, measure
+from message_log import write_message
 
 
 RESOURCE = ROOT / "resource"
@@ -123,10 +124,15 @@ class Runtime:
             count("capture.reused")
         return state["image"]
 
-    def log(self, text):
-        if not self.stopped:
+    def log(self, text, *, detail=False, ui_text=None):
+        stopped = self.stopped
+        display = None if detail or stopped else (text if ui_text is None else ui_text)
+        saved = write_message(text, display)
+        # A failed detail file must not silently swallow diagnostic messages.
+        if not stopped and (display or not saved):
             self.context.run_task("MaaNikki_Daily_Message", {
-                "MaaNikki_Daily_Message": {"focus": {"Node.Action.Starting": text}}})
+                "MaaNikki_Daily_Message": {"focus": {
+                    "Node.Action.Starting": display if saved else text}}})
 
     def action(self, action, *, ui_click=True, **fields):
         if self.stopped:
@@ -322,7 +328,7 @@ class Runtime:
         page = next_page(entry)
         ok = self.ui.calendar() if page == "calendar" else self.main()
         if ok and page == "calendar":
-            self.log("任务衔接：已保留奇想日历，下一项可直接继续。")
+            self.log("任务衔接：已保留奇想日历，下一项可直接继续。", detail=True)
         return page, ok
 
     @contextmanager
@@ -359,7 +365,7 @@ class Runtime:
         # independently selectable options in separate parameter-only nodes.
         flags = [("Auto", "auto_complete"), ("Photo", "delete_photo")]
         if mode == "xinghai":
-            flags += [("Bubble", "bubble_equipped")]
+            flags += [("Bubble", "bubble_equipped"), ("ForceCrystal", "force_crystal")]
         else:
             flags += [("AbilityPlan", "ability_plan")]
         flags += [("Energy", "allow_energy")] if mode == "zhaoxi" else [("Chat", "allow_chat"), ("ChatText", "chat_text")]
@@ -887,5 +893,5 @@ class Executors(Runtime):
             if not adjusted or not adjusted.hit or getattr(adjusted.best_result, "text", "").strip() != str(desired):
                 self.log("挑战数量未能设置为要求值，取消本项。")
                 return False
-        self.log(f"本次用于朝夕补分：{desired} 次，不使用最大次数。")
+        self.log(f"已确认本次挑战数量：{desired} 次。")
         return True

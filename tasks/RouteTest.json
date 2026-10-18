@@ -6,30 +6,36 @@
     "group": ["developer"],
     "developer_only": true,
     "default_check": false,
-    "description": "普通路线只测试移动和跳跃；家园日常路线会执行钓星、下落攻击和终点传送。双钓星点路线固定经过两个点位，钓星后捷径固定走首个点位后的捷径，便于分别检查两种走法；正式家园日常会按首个点位的钓星结果自动选择。有传送点时必要时传送；没有传送点时请先到第 1 点附近。启动时自动聚焦游戏，切出暂停，切回继续。结果写入 logs/navigation，使用停止按钮中断。",
-    "option": ["RouteTestRoute"]
+    "description": "选择路线 JSON，按文件中的地图和点位运行。支持内置路线、工坊导出和本地编辑的路线。切出游戏后暂停，切回继续。",
+    "option": ["RouteTestFile", "RouteTestMode"]
   }],
   "option": {
-    "RouteTestRoute": {
-      "type": "select",
-      "label": "测试路线",
-      "default_case": "xinghai_meteor1",
-      "cases": [
-        {"name": "xinghai_meteor1", "label": "流星 1 · 主岛", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor1", "file": ""}}}},
-        {"name": "xinghai_meteor2", "label": "流星 2 · 主岛", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor2", "file": ""}}}},
-        {"name": "xinghai_meteor3", "label": "流星 3 · 繁星之滨", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor3", "file": ""}}}},
-        {"name": "xinghai_meteor4", "label": "流星 4 · 无界枢纽", "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_meteor4", "file": ""}}}},
-        {"name": "home_daily_route2", "label": "家园日常 · 双钓星点", "option": ["HomeAbilityPlan"], "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "home_daily", "file": "", "mode": "home"}}}},
-        {"name": "home_daily_route3", "label": "家园日常 · 钓星后捷径", "option": ["HomeAbilityPlan"], "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "home_daily_shortcut", "file": "", "mode": "home"}}}},
-        {"name": "file", "label": "本地路线 JSON", "option": ["RouteTestFile"], "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "", "file": ""}}}}
-      ]
-    },
     "RouteTestFile": {
       "type": "input",
-      "label": "本地路线文件",
-      "description": "选择工坊导出的 JSON，或收件箱素材中的 route.json；启动时读取并保存快照，运行期间编辑原文件不影响测试。",
+      "label": "路线文件",
+      "description": "内置路线位于 resource/routes/daily/。运行时保存路线快照和执行记录到 logs/navigation/。",
       "inputs": [{"name": "file", "label": "路线 JSON", "default": "", "input_type": "file"}],
-      "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"file": "{file}"}}}
+      "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "", "file": "{file}"}}}
+    },
+    "RouteTestMode": {
+      "type": "select",
+      "label": "执行内容",
+      "default_case": "movement",
+      "cases": [
+        {
+          "name": "movement",
+          "label": "路线导航",
+          "description": "执行移动、跳跃、传送和等待，跳过采集、拍照等任务动作。",
+          "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"mode": "movement"}}}
+        },
+        {
+          "name": "home",
+          "label": "家园完整流程",
+          "description": "按家园路线执行钓星、下落攻击、传送和等待，消耗实际钓星次数。",
+          "option": ["HomeAbilityPlan"],
+          "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"mode": "home"}}}
+        }
+      ]
     }
   }
 }

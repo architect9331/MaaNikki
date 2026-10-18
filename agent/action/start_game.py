@@ -23,11 +23,12 @@ class StartGameAction(CustomAction):
             runtime.log("启动等待上限应在30至900秒之间。")
             context.tasker.post_stop()
             return False
-        runtime.log("正在等待进入游戏；切出窗口会暂停，切回后继续。")
         started_at = time.monotonic()
         deadline = started_at+timeout
         entered, logged_in, update_attempts = 0, 0, 0
         update_waiting = False
+        waiting_logged = False
+        unknown_since = None
 
         def incomplete(reason="尚未完成进入游戏"):
             if not runtime.stopped:
@@ -48,6 +49,13 @@ class StartGameAction(CustomAction):
                 runtime.log(f"{reason}，本轮停止；记录：logs/startup/{name}.json。")
                 context.tasker.post_stop()
             return False
+
+        def complete():
+            if bootstrap:
+                self.elapsed_seconds = time.monotonic()-started_at
+                return True
+            _, finished = runtime.finish("MaaNikki_StartGame")
+            return finished
 
         def transition_ready():
             with runtime.observe():
@@ -90,6 +98,8 @@ class StartGameAction(CustomAction):
                 main = not restart and not update and runtime.hit("MaaNikki_MainDetected")
                 enter = not update and not main and runtime.hit("MaaNikki_StartGame_Enter")
                 login = not update and not main and not enter and runtime.hit("MaaNikki_StartGame_Login")
+            if restart or update or reward or main or enter or login:
+                unknown_since = None
             if restart:
                 if not bootstrap or options.get("allow_restart", True) is not True:
                     # The regular batch must not continue on a window that is
@@ -134,12 +144,9 @@ class StartGameAction(CustomAction):
                     return incomplete()
             elif main:
                 if runtime.ui.wait_page("MaaNikki_MainDetected"):
-                    runtime.log("已进入游戏主页。")
-                    if bootstrap:
-                        self.elapsed_seconds = time.monotonic()-started_at
-                        return True
-                    _, finished = runtime.finish("MaaNikki_StartGame")
-                    return finished
+                    runtime.log("已进入游戏主页。" if waiting_logged
+                                else "游戏已在主页，跳过启动流程，继续后续任务。")
+                    return complete()
             elif enter and entered < 3:
                 entered += 1
                 if not advance("MaaNikki_StartGame_Enter", entered_game):
@@ -151,12 +158,25 @@ class StartGameAction(CustomAction):
             elif any(runtime.hit(node) for node in (
                     "MaaNikki_MenuReady", "MaaNikki_CalendarReady", "MaaNikki_Monthly_PageReady")):
                 if runtime.main():
-                    if bootstrap:
-                        self.elapsed_seconds = time.monotonic()-started_at
-                        return True
-                    _, finished = runtime.finish("MaaNikki_StartGame")
-                    return finished
+                    return complete()
                 return incomplete()
+            elif not enter and not login:
+                if runtime.ui.asset("IconUILoading", threshold=.99):
+                    unknown_since = None
+                else:
+                    # Allow a short unrecognized transition before invoking
+                    # the ordinary, bounded recovery used by other tasks.
+                    now = time.monotonic()
+                    unknown_since = now if unknown_since is None else unknown_since
+                    if now-unknown_since >= 3:
+                        runtime.log("当前为未知页面，正在尝试正常恢复到游戏主页。")
+                        if runtime.main():
+                            runtime.log("已恢复到游戏主页，继续后续任务。")
+                            return complete()
+                        return incomplete("无法从未知页面恢复到游戏主页，请手动返回主页后重试")
+            if not waiting_logged:
+                runtime.log("正在等待进入游戏；切出窗口会暂停，切回后继续。")
+                waiting_logged = True
             if not runtime.pause(.5):
                 return False
         return incomplete("进入游戏主页超时，请检查登录或更新提示")

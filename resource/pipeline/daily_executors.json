@@ -120,6 +120,14 @@
       "value": true
     }
   },
+  "MaaNikki_Xinghai_DailyForceCrystal": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {
+      "value": true
+    }
+  },
   "MaaNikki_Xinghai_DailyPhoto": {
     "recognition": "DirectHit",
     "action": "Custom",

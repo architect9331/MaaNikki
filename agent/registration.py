@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 import traceback
 from performance import action_profile
+from message_log import message_scope
 from task_control import TaskStopped, task_session
 
 from maa.agent.agent_server import AgentServer
@@ -42,7 +43,7 @@ def agent_action(name, *, stop_on_failure=False):
         def guarded(self, context, argv):
             task_id = getattr(getattr(argv, "task_detail", None), "task_id", 0)
             succeeded = False
-            with action_profile(argv.node_name) as profile:
+            with action_profile(argv.node_name) as profile, message_scope(argv.node_name):
                 try:
                     with task_session(context, task_id):
                         result = run(self, context, argv)

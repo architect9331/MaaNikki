@@ -1,7 +1,11 @@
 {
   "schema_version": 1,
-  "version": "2026-10-11",
+  "version": "2026-10-15",
   "sources": [
+    {
+      "title": "官方 1.8 更新公告：月桂兔自动锁定且不可解锁",
+      "url": "https://infinitynikki.infoldgames.com/zh-TW/news/66"
+    },
     {
       "title": "BWIKI 祝福闪光图鉴、数值及部件页",
       "url": "https://wiki.biligame.com/wxnn/祝福闪光"
@@ -568,6 +572,11 @@
     },
     {
       "name": "月桂兔",
+      "collection_target": false,
+      "lock_mutable": false,
+      "decomposable": false,
+      "maximum_owned": 3,
+      "policy_source": "https://infinitynikki.infoldgames.com/zh-TW/news/66",
       "colors": [
         "黄"
       ],

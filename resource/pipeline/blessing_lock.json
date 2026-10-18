@@ -1,0 +1,33 @@
+{
+  "MaaNikki_BlessingLock": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.blessing_lock",
+    "custom_action_param": {
+      "unlock_nonconforming": false
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_BlessingLock_Layout": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "grid": [938, 72, 316, 560],
+      "capacity": [1120, 633, 145, 30],
+      "card_size": [95, 101],
+      "columns": 3,
+      "first_x": 942,
+      "column_pitch": 107,
+      "level_bottom_padding": 8,
+      "row_pitch": 116,
+      "scroll_step": 1200,
+      "tooltip_view": [0, 70, 1254, 550],
+      "lock_icon": [230, 642, 31, 34],
+      "lock_button": [245, 660],
+      "sort_label": [1055, 663, 158, 37],
+      "slot_buttons": [[895, 110], [895, 180], [895, 252]]
+    }
+  }
+}

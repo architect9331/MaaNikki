@@ -21,6 +21,15 @@
 /venv/
 /client/src-tauri/gen/schemas/
 
+# Development logs and caches
+*.log
+*.tsbuildinfo
+**/.vite/
+**/.pnpm-store/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+
 # Local credentials and editor state
 .env
 .env.*

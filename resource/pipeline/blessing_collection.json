@@ -1,15 +1,4 @@
 {
-  "MaaNikki_BlessingCollection": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.blessing_collection",
-    "custom_action_param": {
-      "source": "scan",
-      "file": ""
-    },
-    "post_delay": 0,
-    "next": []
-  },
   "MaaNikki_Blessing_Entrance": {
     "recognition": "OCR",
     "roi": [
@@ -87,15 +76,6 @@
       "tooltip_view": [0, 70, 1280, 570],
       "tooltip_initial_wait": 0.14,
       "tooltip_ocr_threshold": 0.85
-    }
-  },
-  "MaaNikki_Blessing_Estimate": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.feature_settings",
-    "custom_action_param": {
-      "rainbow_percent": "5.405405405",
-      "five_star_per_40": "1"
     }
   },
   "MaaNikki_Blessing_头部": {

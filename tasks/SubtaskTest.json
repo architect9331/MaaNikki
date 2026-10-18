@@ -1,18 +1,6 @@
 {
   "task": [
     {
-      "name": "dev_zhaoxi_energy",
-      "label": "朝夕 · 消耗活跃能量（进度条件）",
-      "entry": "MaaNikki_SubtaskTest_zhaoxi_energy",
-      "group": [
-        "developer_zhaoxi"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "累计消耗活跃能量是进度条件，没有单独执行动作；请测试具体幻境。",
-      "option": []
-    },
-    {
       "name": "dev_zhaoxi_jihua",
       "label": "朝夕 · 素材激化",
       "entry": "MaaNikki_SubtaskTest_zhaoxi_jihua",
@@ -94,18 +82,6 @@
       "option": []
     },
     {
-      "name": "dev_zhaoxi_minigame",
-      "label": "朝夕 · 小游戏（未适配）",
-      "entry": "MaaNikki_SubtaskTest_zhaoxi_minigame",
-      "group": [
-        "developer_zhaoxi"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "此子任务尚未适配执行流程。",
-      "option": []
-    },
-    {
       "name": "dev_zhaoxi_photo",
       "label": "朝夕 · 拍照",
       "entry": "MaaNikki_SubtaskTest_zhaoxi_photo",
@@ -118,44 +94,6 @@
       "option": [
         "ZhaoxiPhoto"
       ]
-    },
-    {
-      "name": "dev_zhaoxi_dig",
-      "label": "朝夕 · 美鸭梨挖掘",
-      "entry": "MaaNikki_SubtaskTest_zhaoxi_dig",
-      "group": [
-        "developer_zhaoxi"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
-      "option": [
-        "DigRepeat"
-      ]
-    },
-    {
-      "name": "dev_zhaoxi_upgrade",
-      "label": "朝夕 · 升级祝福闪光（未适配）",
-      "entry": "MaaNikki_SubtaskTest_zhaoxi_upgrade",
-      "group": [
-        "developer_zhaoxi"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "此子任务尚未适配执行流程。",
-      "option": []
-    },
-    {
-      "name": "dev_zhaoxi_clothes",
-      "label": "朝夕 · 制作服装（未适配）",
-      "entry": "MaaNikki_SubtaskTest_zhaoxi_clothes",
-      "group": [
-        "developer_zhaoxi"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "此子任务尚未适配执行流程。",
-      "option": []
     },
     {
       "name": "dev_xinghai_photo",
@@ -222,54 +160,6 @@
       "option": [
         "XinghaiLookbook"
       ]
-    },
-    {
-      "name": "dev_xinghai_coco",
-      "label": "星海 · 椰果采摘（未适配）",
-      "entry": "MaaNikki_SubtaskTest_xinghai_coco",
-      "group": [
-        "developer_xinghai"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "此子任务尚未适配执行流程。",
-      "option": []
-    },
-    {
-      "name": "dev_xinghai_coco_photo",
-      "label": "星海 · 椰果拍照（未适配）",
-      "entry": "MaaNikki_SubtaskTest_xinghai_coco_photo",
-      "group": [
-        "developer_xinghai"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "此子任务尚未适配执行流程。",
-      "option": []
-    },
-    {
-      "name": "dev_xinghai_fragment",
-      "label": "星海 · 星愿碎片投递（未适配）",
-      "entry": "MaaNikki_SubtaskTest_xinghai_fragment",
-      "group": [
-        "developer_xinghai"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "此子任务尚未适配执行流程。",
-      "option": []
-    },
-    {
-      "name": "dev_xinghai_fragment_photo",
-      "label": "星海 · 星愿碎片拍照（未适配）",
-      "entry": "MaaNikki_SubtaskTest_xinghai_fragment_photo",
-      "group": [
-        "developer_xinghai"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "此子任务尚未适配执行流程。",
-      "option": []
     },
     {
       "name": "dev_xinghai_bottle",
@@ -372,18 +262,6 @@
       "option": [
         "XinghaiBubble"
       ]
-    },
-    {
-      "name": "dev_xinghai_bubble_photo",
-      "label": "星海 · 泡泡合影（未适配）",
-      "entry": "MaaNikki_SubtaskTest_xinghai_bubble_photo",
-      "group": [
-        "developer_xinghai"
-      ],
-      "developer_only": true,
-      "default_check": false,
-      "description": "此子任务尚未适配执行流程。",
-      "option": []
     },
     {
       "name": "dev_xinghai_animal_three",

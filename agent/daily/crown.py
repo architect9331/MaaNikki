@@ -17,6 +17,10 @@ def parse_progress(raw):
 
 
 class Crown(Runtime):
+    def __init__(self, context):
+        super().__init__(context)
+        self.report_reward_claimed = False
+
     def require(self, result, message):
         if not result:
             raise RuntimeError(message)
@@ -72,14 +76,102 @@ class Crown(Runtime):
             return self.pause(1) and self.key("interact", 0)
         return False
 
-    def open_summit(self):
-        if self.hit("MaaNikki_Crown_SummitReady") and self.ui.wait_page("MaaNikki_Crown_SummitReady"):
-            return True
+    def challenge_talk_visible(self):
+        # Prompt text can be readable before the old white-letter template
+        # matches its fade-in. Restrict OCR to complete interaction labels.
+        with self.observe(fresh=True):
+            return bool(self.asset("IconTalkFeature") or self.text(
+                self.ui.roi("AreaPickup"), r"^(?:开始挑战|继续挑战|对话)$"))
+
+    def start_challenge_dialogue(self):
+        self.log("正在等待巅峰赛入场过渡结束，再向前靠近挑战交互点。")
+        walked = 0.0
+        deadline = time.monotonic() + 60
+        controls_ready_since = None
+        waiting = True
+        while not self.stopped and time.monotonic() < deadline:
+            # Stop on the first image or text candidate and confirm while
+            # stationary, including after the final movement step.
+            if self.challenge_talk_visible():
+                self.log(f"检测到挑战交互提示，累计向前移动 {walked:.2f} 秒，原地确认。")
+                if self.ui.wait_page(self.challenge_talk_visible, seconds=1.5):
+                    self.log(f"已确认挑战对话按钮，累计向前移动 {walked:.2f} 秒，开始交互。")
+                    self.require(self.key("interact", 0), "未能开始挑战对话")
+                    return
+            if walked >= 12:
+                break
+            # The HUD can briefly appear before the arena entrance animation,
+            # then disappear for over five seconds. Require sustained controls
+            # before walking, and wait through later fades within this deadline.
+            if not self.hit("MaaNikki_MainDetected"):
+                controls_ready_since = None
+                if not waiting:
+                    self.log("赛场界面正在过渡，暂停移动并等待控制恢复。")
+                    waiting = True
+                self.require(self.pause(.25), "挑战已停止")
+                continue
+            if controls_ready_since is None:
+                controls_ready_since = time.monotonic()
+            if time.monotonic() - controls_ready_since < 1.5:
+                self.require(self.pause(.25), "挑战已停止")
+                continue
+            if waiting:
+                self.log("已持续确认赛场界面，开始向前靠近挑战交互点。")
+                waiting = False
+            self.require(self.hold("forward", .25) and self.pause(.25), "前往挑战对话失败")
+            walked += .25
+        self.require(not self.stopped, "挑战已停止")
+        if walked < 12:
+            raise RuntimeError(f"等待赛场控制恢复或靠近交互点超时，累计向前移动 {walked:.2f} 秒")
+        raise RuntimeError(f"累计向前移动 {walked:.2f} 秒后仍未找到挑战对话按钮")
+
+    def open_crown(self):
         if not self.ui.find_menu_entry(node="MaaNikki_Crown_Open"):
             return False
+        if self.hit("MaaNikki_Crown_ModeReady"):
+            self.log("已进入奇迹之冠玩法选择页，正在选择搭配赛。")
+            # The label identifies the mode; the arena above it receives the
+            # click. Keep the pointer there while the entrance animates.
+            with self.ui.preserve_cursor():
+                return self.ui.enter_page(
+                    lambda: self.click_template("MaaNikki_Crown_MatchOpen", attempts=1,
+                                                wait_seconds=0, verify=False),
+                    "MaaNikki_Crown_MatchReady", source="MaaNikki_Crown_ModeReady",
+                    recover=lambda: self.ui.find_menu_entry(node="MaaNikki_Crown_Open"),
+                    seconds=10)
+        return self.hit("MaaNikki_Crown_MatchReady")
+
+    def settle_summit_entry(self):
+        if self.hit("MaaNikki_Crown_ReportReady"):
+            self.log("检测到巅峰赛速报，正在领取奖励并等待奖励动画。")
+            # Claim once. A missing reward layer must stop this entrance rather
+            # than recover through the menu and submit another claim.
+            self.require(self.click_template("MaaNikki_Crown_ReportClaim", attempts=1,
+                                              wait_seconds=1),
+                         "领取速报奖励后未能确认奖励弹层")
+            self.report_reward_claimed = True
+        if self.hit("MaaNikki_Crown_EntryRewardReady"):
+            self.log("已确认速报奖励，正在关闭奖励弹层。")
+            self.require(self.click_template("MaaNikki_Crown_EntryRewardContinue", attempts=1,
+                                              wait_seconds=.25),
+                         "未能关闭速报奖励弹层并返回巅峰赛页面")
+            self.report_reward_claimed = True
+        return self.ui.wait_page("MaaNikki_Crown_SummitReady", seconds=10)
+
+    def open_summit(self):
+        if (self.hit("MaaNikki_Crown_SummitArrivalReady")
+                and self.ui.wait_page("MaaNikki_Crown_SummitArrivalReady")):
+            return self.settle_summit_entry()
+        if not self.open_crown():
+            return False
+        if (self.hit("MaaNikki_Crown_SummitArrivalReady")
+                and self.ui.wait_page("MaaNikki_Crown_SummitArrivalReady")):
+            return self.settle_summit_entry()
         if not self.ui.enter_page(lambda: self.area_click("AreaMiraCrownEntrance"),
-            "MaaNikki_Crown_SummitReady", source="MaaNikki_Crown_PageReady",
-            recover=lambda: self.ui.recover_page("MaaNikki_Crown_PageReady")):
+            "MaaNikki_Crown_SummitArrivalReady", source="MaaNikki_Crown_PageReady",
+            recover=self.open_crown):
+            return False
+        if not self.settle_summit_entry():
             return False
         self.wait_asset("ButtonMiraCrownRank", attempts=1, click=True)
         return True
@@ -87,8 +179,10 @@ class Crown(Runtime):
     def challenge(self):
         self.log("正在进入奇迹之冠巅峰赛。")
         self.require(self.open_summit(), "未能进入巅峰赛")
-        quick_reward = self.wait_asset("ButtonMiraCrownQuickReward", click=True)
-        if quick_reward:
+        quick_reward = self.report_reward_claimed
+        if not quick_reward:
+            quick_reward = self.wait_asset("ButtonMiraCrownQuickReward", click=True)
+        if quick_reward and not self.report_reward_claimed:
             self.require(self.pause(5), "挑战已停止")
             self.reward_popup()
         def start_visible():
@@ -105,13 +199,7 @@ class Crown(Runtime):
         self.require(self.ui.enter_page(lambda: self.wait_asset("ButtonMiraCrownStartChallenge", click=True),
             "MaaNikki_MainDetected", source=start_visible,
             recover=lambda: self.open_summit() and choose_door(), seconds=30), "未进入巅峰赛内部")
-        for _ in range(3):
-            self.require(self.hold("forward", .8) and self.pause(.2), "前往挑战对话失败")
-            if self.wait_asset("IconTalkFeature"):
-                self.require(self.key("interact", 0), "未能开始挑战对话")
-                break
-        else:
-            raise RuntimeError("未找到挑战对话按钮")
+        self.start_challenge_dialogue()
 
         while not self.stopped:
             self.require(self.skip_dialogue() and self.pause(.5), "挑战已停止")

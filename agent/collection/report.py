@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import html
 import json
+import os
 from pathlib import Path
 import re
+import tempfile
 
 from .blessing import SLOTS, summarize_scan
+from .policy import capabilities, definition_for, normalize_scope, reconcile_exclusions
 
 
 TITLES = {1: "一级：每套、每部位至少一个满级，颜色不限",
@@ -24,9 +27,18 @@ def cell(value):
 
 def write_json(path, data):
     # A stopped run should never replace a valid snapshot with truncated JSON.
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    temporary.replace(path)
+    content = json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, filename = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
+    temporary = Path(filename)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def report_html(markdown):
@@ -154,16 +166,26 @@ def load_snapshot(path, catalog):
     if not path.is_file() or path.stat().st_size > 20 * 1024 * 1024:
         raise ValueError("库存快照不存在或超过 20 MiB")
     data = json.loads(path.read_text(encoding="utf-8-sig"))
+    return validate_snapshot(data, catalog)
+
+
+def validate_snapshot(data, catalog):
+    """Validate and refresh completeness after importing or updating inventory."""
     definitions = {item["name"]: item for item in catalog["sets"]}
     if (not isinstance(data, dict) or data.get("schema_version") != 1
             or not isinstance(data.get("items"), list) or len(data["items"]) > 10000):
         raise ValueError("不支持的库存快照格式")
-    for item in data["items"]:
+    if any(not isinstance(item, dict) or not isinstance(item.get("name"), str) for item in data["items"]):
+        raise ValueError("库存条目必须包含名称")
+    normalize_scope(data, catalog)
+    for item in data["items"] + data["excluded_items"]:
         if not isinstance(item, dict):
             raise ValueError("库存条目必须是对象")
         definition = definitions.get(item.get("name"))
         if not definition or item.get("slot") not in SLOTS:
             raise ValueError("库存快照含未登记名称或部位")
+        item["rarity"] = definition["rarity"]
+        item.update(identity_known=True, color_known=bool(item.get("color")))
         maximum = catalog["upgrade_costs"][str(definition["rarity"])]["max_level"]
         if (type(item.get("level")) is not int or not 0 <= item["level"] <= maximum
                 or type(item.get("count")) is not int or not 1 <= item["count"] <= 10000
@@ -175,19 +197,71 @@ def load_snapshot(path, catalog):
         limit = costs[item["level"]] if item["level"] < maximum else 0
         if type(xp) is not int or not 0 <= xp <= limit:
             raise ValueError("库存快照含无效的等级内经验")
+        if ("xp_known" in item and type(item["xp_known"]) is not bool
+                or item.get("locked_count") is not None and (
+                    type(item["locked_count"]) is not int or not 0 <= item["locked_count"] <= item["count"])):
+            raise ValueError("库存快照含无效的经验或锁定数量")
+        item.setdefault("xp_known", False)
     if not isinstance(data.get("scan"), dict) or not isinstance(data.get("created"), str):
         raise ValueError("库存快照缺少扫描信息")
     data.setdefault("unresolved", [])
     # Recompute after manual editing; stale complete flags cannot assert absence.
     scan = data["scan"]
+    exclusions = scan.setdefault("excluded_owned", [])
+    if not isinstance(exclusions, list):
+        raise ValueError("特殊闪光持有数量记录必须为列表")
+    names = set()
+    for excluded in exclusions:
+        if not isinstance(excluded, dict):
+            raise ValueError("特殊闪光持有数量记录必须为对象")
+        definition = definition_for(catalog, excluded.get("name"))
+        if (definition.get("decomposable", True) or definition.get("collection_target", True)
+                or definition["name"] in names or type(excluded.get("count")) is not int
+                or not 0 <= excluded["count"] <= definition["maximum_owned"]
+                or excluded.get("basis") not in (
+                    "configured_owned_count", "observed_normal_inventory", "capacity_difference")):
+            raise ValueError("无效的特殊闪光容量排除记录")
+        names.add(definition["name"])
+        excluded.update(capabilities(catalog, definition["name"]))
+    locks = data["locks"]
+    if (not isinstance(locks, dict) or type(locks.get("complete")) is not bool
+            or not isinstance(locks.get("groups"), list)):
+        raise ValueError("锁定状态汇总格式无效")
+    lock_keys = set()
+    for group in locks["groups"]:
+        if not isinstance(group, dict):
+            raise ValueError("锁定状态分组必须为对象")
+        definition = definition_for(catalog, group.get("name"))
+        maximum = catalog["upgrade_costs"][str(definition["rarity"])]["max_level"]
+        if (group.get("slot") not in SLOTS or type(group.get("level")) is not int
+                or not 0 <= group["level"] <= maximum
+                or group.get("color") is not None and group["color"] not in definition["colors"]
+                or type(group.get("locked_count")) is not int or group["locked_count"] < 0):
+            raise ValueError("锁定状态分组数据无效")
+        key = (group["name"], group["slot"], group.get("color"), group["level"])
+        if key in lock_keys:
+            raise ValueError("锁定状态分组重复")
+        lock_keys.add(key)
+        candidates = [item for item in data["items"] if (item["name"], item["slot"], item["level"]) == (
+            group["name"], group["slot"], group["level"]) and (
+                group.get("color") is None or item.get("color") in (None, group["color"]))]
+        if locks["complete"] and group["locked_count"] > sum(item["count"] for item in candidates):
+            raise ValueError("已确认锁定数量超过本次扫描库存，请重新核对")
     scan.setdefault("slots", {})
     if (not isinstance(data["unresolved"], list) or not isinstance(scan["slots"], dict)
             or any(slot not in SLOTS or not isinstance(state, dict) for slot, state in scan["slots"].items())
+            or not isinstance(scan.get("pages", []), list)
+            or scan.get("reported_capacity") is not None and (
+                type(scan["reported_capacity"]) is not int or scan["reported_capacity"] < 0)
+            or any(key in scan and type(scan[key]) is not bool for key in ("complete", "traversed"))
+            or type(scan.get("excluded_observation_complete", False)) is not bool
             or not isinstance(scan.get("warnings", []), list)):
         raise ValueError("库存快照的扫描状态无效")
     traversed = bool(scan.get("traversed") or len(scan["slots"]) == 3
                      and all(state.get("complete") for state in scan["slots"].values()))
-    summarize_scan(data, traversed, "导入库存已核对" if traversed else "导入的库存遍历范围仍待确认")
+    reconcile_exclusions(data, catalog, traversed=traversed)
+    summarize_scan(data, traversed, scan.get("reason") or (
+        "导入库存已核对" if traversed else "导入的库存遍历范围仍待确认"))
     for item in data["items"]:
         item.update(identity_known=True, color_known=bool(item.get("color")))
     return data

@@ -1,0 +1,13 @@
+{
+  "source": "User-provided normal Eureka inventory screenshots, 2026-10-15; states explicitly confirmed by the user",
+  "unlocked.png": {
+    "description": "Unlocked state from the earlier hand-slot screenshot; confirmed by the user. No personal UI fields included",
+    "normalized_frame": [1280, 720],
+    "roi": [230, 642, 31, 34]
+  },
+  "locked.png": {
+    "description": "Locked state with chain from the later head-slot screenshot; confirmed by the user. No personal UI fields included",
+    "normalized_frame": [1280, 720],
+    "roi": [230, 642, 31, 34]
+  }
+}

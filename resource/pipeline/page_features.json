@@ -42,6 +42,57 @@
     "expected": "恭喜获得",
     "action": "DoNothing"
   },
+  "MaaNikki_Crown_ModeReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Crown_MatchOpen", "MaaNikki_Crown_ContestLabel"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_ContestLabel": {
+    "recognition": "OCR",
+    "roi": [840, 210, 360, 100],
+    "expected": "奇迹之冠争锋赛",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_EntryReady": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Crown_ModeReady", "MaaNikki_Crown_MatchReady"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_MatchReady": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Crown_SummitArrivalReady", "MaaNikki_Crown_PageReady"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_ReportTitle": {
+    "recognition": "OCR",
+    "roi": [480, 145, 320, 90],
+    "expected": "^巅峰赛速报$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_ReportReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Crown_ReportTitle", "MaaNikki_Crown_ReportClaim"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_EntryRewardTitle": {
+    "recognition": "OCR",
+    "roi": [480, 150, 320, 110],
+    "expected": "^恭喜获得$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_EntryRewardReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Crown_EntryRewardTitle", "MaaNikki_Crown_EntryRewardContinue"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_SummitArrivalReady": {
+    "recognition": "Or",
+    "any_of": [
+      "MaaNikki_Crown_ReportReady", "MaaNikki_Crown_EntryRewardReady",
+      "MaaNikki_Crown_SummitReady"
+    ],
+    "action": "DoNothing"
+  },
   "MaaNikki_Crown_PageReady": {
     "recognition": "TemplateMatch",
     "roi": [92, 203, 169, 134],
@@ -50,6 +101,22 @@
     "action": "DoNothing"
   },
   "MaaNikki_Crown_SummitReady": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.crown_ready",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_SummitFeature": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Crown_SummitTitle", "MaaNikki_Crown_SummitLegacyFeature"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_SummitTitle": {
+    "recognition": "OCR",
+    "roi": [55, 85, 500, 65],
+    "expected": "奇迹之冠巅峰赛",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_SummitLegacyFeature": {
     "recognition": "Custom",
     "custom_recognition": "nikki.ui_template",
     "custom_recognition_param": {

@@ -1,0 +1,70 @@
+{
+  "MaaNikki_BlessingPursuit": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.blessing_pursuit",
+    "custom_action_param": {"mode": "full_collection", "return_page": "calendar"},
+    "post_delay": 0,
+    "next": ["MaaNikki_RealmReview"],
+    "on_error": ["MaaNikki_RealmReviewFailed"]
+  },
+  "MaaNikki_BlessingUpgradeOnly": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.blessing_pursuit",
+    "custom_action_param": {"mode": "inventory_only"},
+    "post_delay": 0,
+    "next": [],
+    "on_error": []
+  },
+  "MaaNikki_Pursuit_UpgradeReady": {
+    "recognition": "OCR",
+    "roi": [70, 15, 300, 50],
+    "expected": "祝福闪光升级",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Pursuit_UpgradeResult": {
+    "recognition": "OCR",
+    "roi": [1060, 670, 220, 45],
+    "expected": "空白区域继续",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Pursuit_DecomposeLayout": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "count": [830, 455, 280, 35],
+      "capacity": [650, 645, 150, 40],
+      "particles": [1140, 18, 125, 38],
+      "gain": [982, 307, 125, 36],
+      "filter": [836, 490, 215, 38],
+      "filter_choices": [830, 300, 230, 190],
+      "auto_fill": [1060, 490, 148, 38],
+      "clear": [1245, 507],
+      "submit": [1070, 635, 175, 48],
+      "dialog": [330, 180, 620, 360]
+    }
+  },
+  "MaaNikki_Pursuit_Layout": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "entrance": [30, 640, 175, 48],
+      "name": [825, 62, 270, 40],
+      "level": [948, 115, 180, 55],
+      "xp": [1160, 119, 105, 40],
+      "bling": [1135, 18, 122, 38],
+      "color": [948, 180, 215, 35],
+      "maxed": [978, 458, 150, 40],
+      "material_count": [832, 456, 220, 30],
+      "material_filter": [836, 490, 215, 38],
+      "filter_choices": [834, 373, 220, 116],
+      "auto_fill": [1060, 490, 148, 38],
+      "clear": [1245, 507],
+      "cost": [830, 640, 190, 38],
+      "submit": [1070, 635, 175, 48]
+    }
+  }
+}

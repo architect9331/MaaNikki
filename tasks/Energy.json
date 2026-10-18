@@ -8,7 +8,7 @@
                 "energy"
             ],
             "default_check": true,
-            "description": "请排在朝夕心愿之后执行。先按开关处理周本，再用所选普通幻境的最大次数消耗剩余体力。同一轮朝夕尚未满分且有累计体力条件时，最后只复核朝夕积分和领奖，不重复执行日常；单跑本项不打开朝夕页面。",
+            "description": "请排在朝夕心愿之后执行。普通模式先按开关处理周本，再使用所选幻境消耗剩余体力。五星全收集须先完整运行祝福闪光整理：根据 JSON 选择一个缺色副本，一批刷完剩余体力，再升级胚子；已收齐时不消耗体力。同轮朝夕最后只复核积分和领奖。",
             "option": [
                 "WeeklyEnabled",
                 "RealmTypes"
@@ -48,7 +48,7 @@
         "RealmTypes": {
             "type": "select",
             "label": "剩余体力消耗方式",
-            "description": "选择一种幻境，自动使用最大次数消耗剩余活跃能量。不足一次所需的剩余活跃能量会保留。",
+            "description": "五星全收集需要完整的祝福闪光整理基准；一次运行只选一个缺色副本，用剩余体力快速挑战，再按队列升级。使用五星及以下未锁定素材，优先续升上次未完成对象。缺噗灵或材料正常保存退出，不自动素材激化；请自行切换模式获取噗灵。换号或手动升级、解锁、分解后须重新整理。",
             "cases": [
                 {
                     "name": "Jihua",
@@ -90,6 +90,23 @@
                             "next": [
                                 "MaaNikki_Monster"
                             ]
+                        }
+                    }
+                },
+                {
+                    "name": "FiveStarCollection",
+                    "label": "五星祝福闪光全收集",
+                    "pipeline_override": {
+                        "MaaNikki_RealmEnergy": {
+                            "next": [
+                                "MaaNikki_BlessingPursuit"
+                            ]
+                        },
+                        "MaaNikki_RealmChallenge": {
+                            "custom_action_param": {
+                                "stage": "begin_realm",
+                                "five_star_collection": true
+                            }
                         }
                     }
                 }

@@ -14,6 +14,7 @@ from daily.settings import ROOT
 from .blessing import summarize_scan
 from .icons import IconMatcher
 from .details import HEADER, VerifiedVariants, tooltip_facts
+from .policy import reconcile_exclusions
 
 
 LEVEL = r"(?:等级|[Ll][Vv]|级)[\s.．·:：]*(10|[0-9])(?=\D|$)"
@@ -45,8 +46,9 @@ class InventoryScanner:
                                    color_margin=self.layout.get("color_margin", .025))
         self.verified = VerifiedVariants(self.matcher)
         self.snapshot = {"schema_version": 1, "created": datetime.now().isoformat(timespec="seconds"),
-                         "items": [], "unresolved": [], "scan": {
+                         "items": [], "excluded_items": [], "unresolved": [], "scan": {
                              "complete": False, "slots": {}, "reported_capacity": None,
+                             "excluded_owned": [], "excluded_observation_complete": False,
                              "view": "decomposition", "pages": [], "scrolls": [], "warnings": [],
                              "verification_policy": "tooltip_first_variant",
                              "tooltip_verified": 0, "cached_verified": 0,
@@ -166,6 +168,20 @@ class InventoryScanner:
         width, height = self.layout["card_size"]
         boxes = self.cards(before, [])
         boxes = [box for box in boxes if gy + gh / 2 <= box[1] <= gy + gh - height - 8]
+        anchor_source = "lower_contours"
+        if (len(boxes) < 6 or len({round((box[0] - self.layout["first_x"]) / self.layout["column_pitch"])
+                                  for box in boxes}) < 3):
+            # Selected/glowing cards can break a contour, leaving fewer than
+            # three columns in the lower half (2026-10-15 normal inventory).
+            # One row with three columns is also too fragile: a selected card
+            # can fail to match, leaving only two votes (20:58 locking run).
+            # Recover row geometry from level text in the same BEFORE frame
+            # and use all complete visible cards. Artwork must still vote for
+            # the same translation across three independent columns below.
+            levels = self.ocr(self.grid, before, LEVEL)
+            boxes = self.cards(before, levels)
+            boxes = [box for box in boxes if gy <= box[1] <= gy + gh - height - 8]
+            anchor_source = "levels_and_contours"
 
         def features(frame):
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
@@ -196,7 +212,8 @@ class InventoryScanner:
                     for candidate in votes]
         cluster = max(clusters, key=lambda values: (len({v["column"] for v in values}), len(values)), default=[])
         columns = len({vote["column"] for vote in cluster})
-        self._scroll_diagnostics = {"anchors": len(boxes), "votes": votes, "consistent_columns": columns}
+        self._scroll_diagnostics = {"anchors": len(boxes), "anchor_source": anchor_source,
+                                    "votes": votes, "consistent_columns": columns}
         # Repeated artwork in one column cannot establish a physical-copy index.
         if columns < 3 or len(cluster) <= len(votes) / 2:
             return None
@@ -212,6 +229,9 @@ class InventoryScanner:
         # Move to the title without clicking before waiting for the new frame.
         return (self.rt.ui.scroll(self.grid, amount)
                 and self.rt.action("TouchMove", target=[420, 32]) and self.rt.pause(.25))
+
+    def scroll_amounts(self):
+        return tuple(dict.fromkeys((self.layout["scroll_step"], 120)))
 
     def record_scroll(self, before, after, amount, delta, phase):
         events = self.snapshot["scan"]["scrolls"]
@@ -470,7 +490,8 @@ class InventoryScanner:
         return None
 
     def advance(self, before, generation):
-        for amount in (self.layout["scroll_step"], 120):
+        amounts = self.scroll_amounts()
+        for attempt, amount in enumerate(amounts):
             self._scroll_diagnostics = {}
             if not self.scroll_list(-amount):
                 return None, None
@@ -487,7 +508,7 @@ class InventoryScanner:
                 return after, delta
             # Undo an ambiguous large scroll before retrying a smaller step.
             # Never advance across an unseen gap or silently deduplicate copies.
-            if amount == 120:
+            if attempt == len(amounts) - 1:
                 return None, None
             self.rt.log("祝福闪光：未确认翻页位移，已保存前后截图，回滚后缩小滚动幅度重试。")
             if not self.scroll_list(amount):
@@ -532,6 +553,8 @@ class InventoryScanner:
             boxes = self.cards(frame, levels)
             capacity = self.snapshot["scan"]["reported_capacity"]
             if not boxes:
+                if not seen and self.rt.text(self.grid, "暂无|没有|未获得|空空如也", image=frame):
+                    return True, "已确认分解列表为空"
                 return (capacity == 0, "库存为空" if capacity == 0 else "未识别到完整库存格子")
             new_boxes = [box for box in boxes if not any(
                 abs(box[0] - px) < 12 and abs(box[1] + position - py) < 12 for px, py in seen)]
@@ -619,10 +642,16 @@ class InventoryScanner:
                 if not self.open():
                     reason = "恢复后未确认分解库存入口"
                     break
+        reconcile_exclusions(self.snapshot, self.catalog, traversed=traversed)
         summarize_scan(self.snapshot, traversed, reason)
         scan = self.snapshot["scan"]
-        if scan["reported_capacity"] != scan["visited_copies"]:
+        if not scan["coverage_complete"]:
             scan["warnings"].append(f"库存容量 {scan['reported_capacity']}，实际遍历 {scan['visited_copies']} 个；"
                                     "请确认列表无筛选，锁定项是否可见，数量未一致时按部分库存处理。")
+        elif scan["capacity_includes_excluded"]:
+            basis = ("按当前仅有月桂兔特殊套装的假设，由容量差推断"
+                     if scan["excluded_owned_source"] == "capacity_difference" else "普通页面实际核对")
+            scan["warnings"].append(f"{basis}特殊闪光 {scan['excluded_copies']} 个；"
+                                    "这些物品不在分解列表且不计入追全目标，数量依据单独记录。")
         scan["warnings"].append("批量图标扫描不读取等级内已积累经验，升级预算按该等级的起点估算。")
         return self.snapshot

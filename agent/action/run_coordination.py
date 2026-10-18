@@ -7,8 +7,10 @@ from registration import agent_action
 from maa.custom_action import CustomAction
 
 from daily import run_state
-from daily.runtime import Executors
+from daily.runtime import Executors, parameters
 from .daily_tasks import DailyRun
+from daily.settings import ROOT
+from collection.storage import InventoryStore
 
 
 @agent_action("nikki.run_coordination")
@@ -20,6 +22,18 @@ class RunCoordinationAction(CustomAction):
             options = json.loads(options or "{}") if isinstance(options, str) else options
             task_id = argv.task_detail.task_id
             if options.get("stage") == "begin_realm":
+                energy = context.get_node_data("MaaNikki_RealmEnergy") or {}
+                next_names = {item if isinstance(item, str) else item.get("name")
+                              for item in energy.get("next", []) if isinstance(item, (str, dict))}
+                if options.get("five_star_collection") is True or "MaaNikki_BlessingPursuit" in next_names:
+                    catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+                    _, protected, _ = InventoryStore(ROOT, catalog).load_organization()
+                    total = sum(len(item["colors"]) * 3 for item in catalog["sets"]
+                                if item["rarity"] == 5 and item.get("collection_target", True))
+                    if len(protected) == total:
+                        rt.log("五星祝福闪光颜色已收齐；本次不消耗体力，请选择其他幻境。")
+                        run_state.begin_realm(rt, task_id)
+                        return context.override_pipeline({"MaaNikki_RealmChallenge": {"next": ["MaaNikki_RealmReview"]}})
                 run_state.begin_realm(rt, task_id)
                 # Overrides belong only to this RealmChallenge context. Daily
                 # minimum challenges and independent realm entries are unchanged.
@@ -31,6 +45,12 @@ class RunCoordinationAction(CustomAction):
                                     ("MaaNikki_Monster", "monster"))}
                 overrides["MaaNikki_RealmReview"] = {
                     "custom_action_param": {"stage": "settle", "realm_success": True}}
+                overrides["MaaNikki_BlessingPursuit"] = {
+                    "next": ["MaaNikki_RealmReview"],
+                    "on_error": ["MaaNikki_RealmReviewFailed"],
+                    "custom_action_param": {
+                        **parameters(context, "MaaNikki_BlessingPursuit"),
+                        "mode": "full_collection", "return_page": "calendar"}}
                 return context.override_pipeline(overrides)
             if options.get("stage") != "settle":
                 return False

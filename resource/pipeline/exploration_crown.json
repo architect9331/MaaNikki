@@ -11,10 +11,48 @@
     "action": "Custom",
     "custom_action": "nikki.ui_click",
     "custom_action_param": {
-      "ready": "MaaNikki_Crown_PageReady",
+      "ready": "MaaNikki_Crown_EntryReady",
       "source": "MaaNikki_MenuReady"
     },
     "next": []
+  },
+  "MaaNikki_Crown_MatchOpen": {
+    "recognition": "OCR",
+    "roi": [180, 380, 340, 100],
+    "expected": "奇迹之冠搭配赛",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Crown_MatchReady",
+      "source": "MaaNikki_Crown_ModeReady",
+      "target": [240, 300],
+      "ready_timeout": 10
+    }
+  },
+  "MaaNikki_Crown_ReportClaim": {
+    "recognition": "OCR",
+    "roi": [540, 475, 200, 60],
+    "expected": "^领取奖励$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "source": "MaaNikki_Crown_ReportReady",
+      "ready": "MaaNikki_Crown_EntryRewardReady",
+      "ready_timeout": 10
+    }
+  },
+  "MaaNikki_Crown_EntryRewardContinue": {
+    "recognition": "OCR",
+    "roi": [1050, 650, 230, 70],
+    "expected": "空白区域继续|点击.*继续|轻触.*继续",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "source": "MaaNikki_Crown_EntryRewardReady",
+      "ready": "MaaNikki_Crown_SummitReady",
+      "target": [1120, 630],
+      "ready_timeout": 10
+    }
   },
   "MaaNikki_Exploration": {
     "recognition": "DirectHit",
