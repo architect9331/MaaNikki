@@ -58,10 +58,12 @@ class Locator:
         self.last_frame = None
 
     @staticmethod
-    def match(image, patch, mask=None, peak_mask=None, kernel=5, minimum_score=None):
+    def match(image, patch, mask=None, peak_mask=None, kernel=5, minimum_score=None,
+              terrain_edges=False):
         if image.shape[0] < patch.shape[0] or image.shape[1] < patch.shape[1]:
             raise NavigationError("地图匹配区域不足。")
-        rates = cv2.matchTemplate(image, patch, cv2.TM_CCOEFF_NORMED, mask=mask)
+        rates = (Locator.terrain_rates(image, patch, mask) if terrain_edges else
+                 cv2.matchTemplate(image, patch, cv2.TM_CCOEFF_NORMED, mask=mask))
         rates = np.nan_to_num(rates, nan=-1, posinf=-1, neginf=-1)
         local = rates-cv2.GaussianBlur(rates, (kernel, kernel), 0)
         if peak_mask is not None:
@@ -95,6 +97,38 @@ class Locator:
         _, score, _, (fx, fy) = cv2.minMaxLoc(cv2.resize(fine, None, fx=20, fy=20, interpolation=cv2.INTER_CUBIC))
         return left+fx/20-1+patch.shape[1]/2, top+fy/20-1+patch.shape[0]/2, float(score), float(detail)
 
+    @staticmethod
+    def terrain_rates(image, patch, mask):
+        """Correlate terrain detail over known reference pixels at each offset."""
+        # Black pixels are unrecorded map tiles. Remove their blur boundary as
+        # well; neither that artificial edge nor the camera's broad lighting
+        # cone should count as terrain. Keep the normal path for complete maps.
+        valid = cv2.erode((image > 0).astype(np.uint8), np.ones((7, 7), np.uint8)).astype(np.float32)
+        source, target = image.astype(np.float32), patch.astype(np.float32)
+        # Suppress subpixel rasterization changes as well as broad lighting.
+        # A raw high-pass retains aliasing from thin map contour lines.
+        source = (cv2.GaussianBlur(source, (0, 0), 1)
+                  - cv2.GaussianBlur(source, (0, 0), 2)) * valid
+        target = (cv2.GaussianBlur(target, (0, 0), 1)
+                  - cv2.GaussianBlur(target, (0, 0), 2))
+        weights = (mask > 0).astype(np.float32)
+
+        def correlate(a, b):
+            return cv2.matchTemplate(a, b, cv2.TM_CCORR)
+
+        count = correlate(valid, weights)
+        size = np.maximum(count, 1)
+        source_sum = correlate(source, weights)
+        target_sum = correlate(valid, target * weights)
+        source_var = np.maximum(correlate(source * source, weights) - source_sum**2 / size, 0)
+        target_var = np.maximum(correlate(valid, target * target * weights) - target_sum**2 / size, 0)
+        covariance = correlate(source, target * weights) - source_sum * target_sum / size
+        denominator = np.sqrt(source_var * target_var)
+        rates = covariance / np.maximum(denominator, 1)
+        # A small surviving sliver cannot establish a position.
+        return np.where((count >= weights.sum() * .6) & (denominator > 1),
+                        np.clip(rates, -1, 1), -1).astype(np.float32)
+
     def _frame(self, frame):
         if frame is None or frame.shape[:2] != (720, 1280):
             raise NavigationError("导航需要 16:9 游戏画面，截图基准为 1280×720。")
@@ -120,6 +154,22 @@ class Locator:
         x, y = max(0, round(hint[0]-pad_x)), max(0, round(hint[1]-pad_y))
         local = self.map[y:min(self.spec.height, round(hint[1]+pad_y)), x:min(self.spec.width, round(hint[0]+pad_x))]
         px, py, score, detail = self.match(local, patch, mask, minimum_score=MINIMAP_POSITION_SCORE)
+        position_match = "luma"
+        match_diagnostics = {"luma_score": score}
+        if score < MINIMAP_POSITION_SCORE and np.any(local == 0):
+            # Insets exclude the minimap rim and player marker from edge
+            # correlation. Normal luminance matching and its floor are intact.
+            edge_ring = ((xx-100)**2+(yy-100)**2 <= 96**2) & ((xx-100)**2+(yy-100)**2 > 16**2)
+            edge_mask = cv2.resize(edge_ring.astype(np.uint8), (patch.shape[1], patch.shape[0]),
+                                   interpolation=cv2.INTER_NEAREST)
+            edge_patch = cv2.resize(gray, (patch.shape[1], patch.shape[0]), interpolation=cv2.INTER_AREA)
+            ex, ey, edge_score, edge_detail = self.match(
+                local, edge_patch, edge_mask, minimum_score=MINIMAP_POSITION_SCORE, terrain_edges=True)
+            match_diagnostics.update(terrain_score=edge_score, terrain_peak=edge_detail,
+                                     terrain_position=[ex+x+.25, ey+y+.25])
+            if edge_score >= MINIMAP_POSITION_SCORE:
+                px, py, score, detail = ex, ey, edge_score, edge_detail
+                position_match = "known_terrain_edges"
         px, py = px+x+.25, py+y+.25
         # Local peak height measures sharpness, not correctness. Keep both
         # correlation scores for diagnostics; validate motion by continuity.
@@ -146,6 +196,8 @@ class Locator:
                                          "position_reliable": not (unreliable or rejected),
                                          "candidate_position": list(candidate), "position_elapsed": elapsed,
                                          "score": score, "local_peak": detail,
+                                         "position_match": position_match,
+                                         "position_matches": match_diagnostics,
                                          "position_score_floor": score_floor})
         pose = Pose(px, py, score, detail, heading, confidence)
         if commit and not unreliable and not rejected:

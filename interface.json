@@ -3,8 +3,8 @@
   "name": "MaaNikki",
   "label": "MaaNikki",
   "title": "MaaNikki - 无限暖暖自动化",
-  "description": "《无限暖暖》助手，支持日常任务、幻境挑战、巅峰赛和常驻开荒辅助。",
-  "version": "0.5.13",
+  "description": "《无限暖暖》助手，以祝福闪光一键全收集为特色，支持日常任务、幻境挑战、巅峰赛和常驻开荒辅助。",
+  "version": "0.6.0",
   "github": "https://github.com/architect9331/MaaNikki",
   "controller": [
     {

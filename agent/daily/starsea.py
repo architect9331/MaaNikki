@@ -181,14 +181,17 @@ class Starsea:
                 if not self.ring(at_hub=True, timed=True):
                     return False
                 location = self.locate_crystals(teleporter)
-                if not self.rt.main():
-                    return False
                 if location is not None:
                     selected, distances = select_crystal_route(location)
                     self.events.append({"type": "crystal_route_selection", "location": list(location),
                                         "candidates": distances, "selected": selected})
                     if selected is not None:
+                        # The route's teleporter accepts this open map and
+                        # locates its viewport before selecting the checkpoint.
+                        self.events.append({"type": "crystal_map_handoff", "route": selected["route"]})
                         break
+                if not self.rt.main():
+                    return False
                 self.rt.log("本次未取得可确认的结晶位置，准备另一处地图视野后重新摇铃。")
             if selected is None:
                 if teleporter.last_frame is not None:

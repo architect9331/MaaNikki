@@ -15,6 +15,10 @@ from .quantity import read_count
 from .scanner import LEVEL, clean_text
 
 
+class IncompleteLookup(RuntimeError):
+    """A read-only interval observation failed; saved identities are intact."""
+
+
 def signature(row):
     return row["name"], row["slot"], row["level"], row.get("color") if row["maximum"] else None
 
@@ -206,7 +210,7 @@ class OrderedView:
                 return rows, len(old or [])
         raise RuntimeError("新增区域超过定位上限，请重新运行祝福闪光整理建立基准")
 
-    def locate(self, target, rows, *, exact_lock=None):
+    def locate(self, target, rows, *, exact_lock=None, quantities=False):
         """Check a bounded neighbourhood, with anchor proof for absence.
 
         Fast icon filtering applies only to exclusion; mutations always verify
@@ -230,6 +234,8 @@ class OrderedView:
             row, facts, evidence = self.observe(frame, cell)
             expected_lock = False if exact_lock is None else exact_lock
             if signature(row) == signature(target) and row["locked"] == expected_lock:
+                if quantities:
+                    self.target_quantity(frame, cell[0], row, evidence)
                 self.select_target(cell[0], facts, expected_lock, evidence)
                 target["ordinal"] = row["ordinal"]
                 stats["current_view_hits"] += 1
@@ -288,14 +294,23 @@ class OrderedView:
                 if (signature(row) == signature(target)
                         and (not duplicates or left_seen and not right_seen)
                         and (exact_lock is None and not row["locked"] or row["locked"] == exact_lock)):
+                    if quantities:
+                        self.target_quantity(frame, box, row, evidence)
                     self.select_target(box, facts, row["locked"], evidence)
                     target["ordinal"] = row["ordinal"]
                     return box, facts, evidence, self.generation
             if left_seen and right_seen:
+                self.o.report["lookup_interval"] = {
+                    "target": {key: target[key] for key in ("name", "slot", "level", "ordinal")},
+                    "left": list(left[0]) if left else None, "left_ordinal": left_ordinal,
+                    "right": list(right[0]), "right_ordinal": right_ordinal,
+                    "observed_ordinals": sorted(observed_ordinals)}
+                if right_ordinal <= left_ordinal:
+                    raise RuntimeError("定位参照的实际顺序与记录不一致，已保存参照位置")
                 if complete_interval(right_ordinal):
                     stats["confirmed_absent"] += 1
                     return None
-                raise RuntimeError("定位区间存在格子识别空缺，未将目标记为已消耗")
+                raise IncompleteLookup("定位区间读取不完整，已保留待处理项，可重新运行")
             if self.step(1) == 0 and self.step(1) == 0:
                 end = max(observed_ordinals, default=-1) + 1
                 if left_seen and right is None and complete_interval(end):
@@ -303,6 +318,13 @@ class OrderedView:
                     return None
                 break
         raise RuntimeError("目标附近未能确认对象或完整边界，已停止局部查找；请重新整理，未反复扫描全仓")
+
+    def target_quantity(self, frame, box, row, evidence):
+        # Only the selected upgrade candidate needs a quantity. Singles use
+        # the badge shape directly; stacks reuse the page's existing OCR.
+        count, proof = read_count(self.o, frame, box, row["locked"], self.labels,
+                                  self.generation, self.o.counter)
+        evidence.update(copies_before=count, quantity=proof)
 
     def select_target(self, box, facts, locked, evidence):
         """Only matching mutation targets require selected-detail verification."""
@@ -343,6 +365,6 @@ def baseline(ordered):
         for row in reversed(ordered[slot]):
             row["priority"] = priority
             priority += 1
-    return {"version": 1, "complete": True, "sort": "acquired_desc",
+    return {"version": 1, "anchor_policy_version": 2, "complete": True, "sort": "acquired_desc",
             "slots": ordered, "next_priority": priority, "unfinished": None,
             "pending_operation": None, "reason": None}

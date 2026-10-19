@@ -252,6 +252,46 @@ class Teleporter:
                     "score": pose[2], "local_peak": pose[3], "windows": self.map_diagnostics})
         return self.hint
 
+    def refine_player_pose(self, frame, pose):
+        """Cross-check a coarse global candidate using separate terrain tiles."""
+        if pose[2] < .45 or pose[3] < .01:
+            return pose
+        scale = self.locator.spec.bigmap_scale
+        candidates = []
+        # These disjoint tiles avoid the player marker, map labels near the
+        # center and fixed corner controls. Missing terrain can spoil one tile
+        # without discarding a match supported by two others.
+        for top in (160, 400):
+            for left in (260, 500, 740):
+                width, height = 240, 200
+                patch = cv2.resize(luma(frame[top:top+height, left:left+width]),
+                                   None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+                dx, dy = (left+width/2-640)*scale, (top+height/2-360)*scale
+                cx, cy = pose[0]+dx, pose[1]+dy
+                x0 = max(0, math.floor(cx-patch.shape[1]/2-12))
+                y0 = max(0, math.floor(cy-patch.shape[0]/2-12))
+                x1 = min(self.locator.spec.width, math.ceil(cx+patch.shape[1]/2+12))
+                y1 = min(self.locator.spec.height, math.ceil(cy+patch.shape[0]/2+12))
+                try:
+                    x, y, score, peak = Locator.match(
+                        self.locator.map[y0:y1, x0:x1], patch, minimum_score=.65)
+                except NavigationError:
+                    continue
+                center = x+x0-dx, y+y0-dy
+                accepted = (score >= .65 and peak >= .01
+                            and math.hypot(center[0]-pose[0], center[1]-pose[1]) <= 6)
+                self.map_diagnostics.append({"method": "player_terrain_tile",
+                    "roi": [left, top, width, height], "x": center[0], "y": center[1],
+                    "score": score, "local_peak": peak, "accepted": accepted})
+                if accepted:
+                    candidates.append((*center, score, peak))
+        if len(candidates) < 2 or any(math.hypot(a[0]-b[0], a[1]-b[1]) > 2
+                                      for a in candidates for b in candidates):
+            return pose
+        return (sum(p[0] for p in candidates)/len(candidates),
+                sum(p[1] for p in candidates)/len(candidates),
+                min(p[2] for p in candidates), min(p[3] for p in candidates))
+
     def player_location(self):
         """A freshly opened map centers the player; never pan this view."""
         self.rt.log("导航位置需要复核，正在打开大地图定位角色。")
@@ -267,10 +307,15 @@ class Teleporter:
             while time.monotonic() < end:
                 self.check(browse=True)
                 self.last_frame = self.rt.capture()
+                self.map_diagnostics = []
                 try:
                     pose, _ = self.map_pose(self.last_frame)
+                    if pose[2] < .6:
+                        pose = self.refine_player_pose(self.last_frame, pose)
                 except NavigationError:
                     pose = None
+                self.event({"type": "map_player_match", "pose": list(pose) if pose else None,
+                            "windows": list(self.map_diagnostics)})
                 if pose and pose[2] >= .6 and pose[3] >= .01:
                     self.event({"type": "map_player_observation", "x": pose[0], "y": pose[1],
                                 "score": pose[2], "local_peak": pose[3]})

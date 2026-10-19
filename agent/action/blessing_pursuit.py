@@ -11,6 +11,7 @@ from daily.runtime import Executors, parameters
 from daily.settings import ROOT
 from collection.pursuit import FiveStarPursuit
 from collection.inventory_workflow import FiveStarInventory
+from collection.ordered import IncompleteLookup
 from collection.scanner import RescanSlot
 
 
@@ -46,7 +47,12 @@ class BlessingPursuitAction(CustomAction):
             if pursuit is not None:
                 pursuit.report.update(complete=False, phase="interrupted", reason=reason)
                 if pursuit.organization is not None:
-                    pursuit.organization.update(complete=False, reason=reason)
+                    # An incomplete read did not mutate the candidate or prove
+                    # it absent. Preserve the established baseline for retry.
+                    resumable = (isinstance(error, IncompleteLookup)
+                                 and pursuit.pending is None
+                                 and pursuit.organization.get("complete") is True)
+                    pursuit.organization.update(complete=resumable, reason=reason)
                 try:
                     pursuit.image("interrupted.png", rt.capture())
                 except (OSError, RuntimeError, cv2.error):

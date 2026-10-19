@@ -233,7 +233,7 @@ class FiveStarInventory(BlessingLocker):
                     self.organization["unfinished"] = None
                     self.checkpoint()
                     continue
-                found = self.view.locate(target, rows)
+                found = self.view.locate(target, rows, quantities=True)
                 if found is None:
                     if target["id"] == self.organization["unfinished"]:
                         raise RuntimeError("上次未完成对象在定位区间内消失，请重新整理")
@@ -242,15 +242,19 @@ class FiveStarInventory(BlessingLocker):
                     rows.remove(target)
                     self.checkpoint()
                     continue
-                if target["id"] != self.organization["unfinished"]:
-                    # A card may represent a stack. Preserve its queue group
-                    # until a later bounded observation proves it exhausted.
+                if (target["id"] != self.organization["unfinished"]
+                        and found[2]["copies_before"] > 1):
+                    # Preserve a remainder only for a freshly observed stack.
+                    # A single copy becomes the active item itself.
                     self.active = deepcopy(target)
                     self.active["id"] = uuid4().hex
                     rows.insert(rows.index(target), self.active)
-                    self.organization["unfinished"] = self.active["id"]
                 else:
                     self.active = target
+                # Upgrade/lock can split or merge at another acquisition
+                # position. A later ordered scan establishes its true order.
+                self.active["anchor_eligible"] = False
+                self.organization["unfinished"] = self.active["id"]
                 self.checkpoint()
                 if self.active["maximum"]:
                     self.protect_selected(found[1], found[3])
@@ -287,6 +291,8 @@ class FiveStarInventory(BlessingLocker):
         self.organization["pending_operation"] = None
         self.prepared = True
         self.report["startup"] = {"mode": "ordered_json", "keepers": len(protected), **origin}
+        if origin.get("recovery") == "confirmed_legacy_lookup":
+            self.rt.log(f"已核对上次操作记录，恢复 {len(protected)} 个已收藏颜色及待处理进度。")
         self.rt.log(f"已读取完整获得时间基准及 {len(protected)} 个五星收藏；仅核对新增区域和待处理位置附近。", detail=True)
         self.log_progress("开始处理")
         self.save()

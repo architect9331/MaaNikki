@@ -7,6 +7,7 @@ The scan's created timestamp remains unchanged; record.updated_at tracks writes.
 from __future__ import annotations
 
 from copy import deepcopy
+from collections import Counter
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -83,6 +84,48 @@ class InventoryStore:
         return protected, {"path": str(path), "updated_at": latest["record"]["updated_at"],
                            "source": latest["record"]["source"]}
 
+    def recover_legacy_lookup(self, data, order):
+        """Recover only the old anchor bug with matching confirmed local evidence."""
+        reason = "定位区间存在格子识别空缺，未将目标记为已消耗"
+        progress = data.get("pursuit")
+        record = data.get("record", {})
+        if (order.get("complete") is not False or order.get("reason") != reason
+                or order.get("anchor_policy_version", 1) != 1
+                or order.get("pending_operation") is not None
+                or order.get("unfinished") is not None
+                or record.get("source") != "pursuit" or not isinstance(progress, dict)
+                or progress.get("phase") != "interrupted"
+                or progress.get("existing_colors_checked") is not True
+                or progress.get("pending_operation") is not None):
+            return False
+        startup = progress.get("startup")
+        if not isinstance(startup, dict) or startup.get("mode") != "ordered_json":
+            return False
+        folder = Path(record.get("evidence_dir", "")).resolve()
+        logs = (self.directory.parents[1] / "logs/blessing-pursuit").resolve()
+        if not folder.is_relative_to(logs):
+            return False
+        evidence = []
+        for name in ("pursuit.json", "inventory.json"):
+            path = folder / name
+            if not path.is_file() or path.stat().st_size > 20 * 1024 * 1024:
+                return False
+            evidence.append(json.loads(path.read_text(encoding="utf-8")))
+        report, snapshot = evidence
+        if not isinstance(report, dict) or not isinstance(snapshot, dict):
+            return False
+        operations = report.get("operations")
+        if (report.get("workflow") != "five_star_pursuit"
+                or report.get("phase") != "interrupted" or report.get("reason") != reason
+                or report.get("startup") != startup or report.get("collection") != progress
+                or snapshot.get("organization") != order or snapshot.get("pursuit") != progress
+                or snapshot.get("record") != record
+                or not isinstance(operations, list) or not operations
+                or any(not isinstance(op, dict) or op.get("status") != "confirmed"
+                       for op in operations)):
+            return False
+        return True
+
     def load_organization(self):
         """Full collection requires the newest complete ordered baseline."""
         candidates = [(load_snapshot(path, self.catalog), path)
@@ -92,10 +135,17 @@ class InventoryStore:
         data, path = max(candidates, key=lambda pair: self.updated_at(pair[0]))
         order = deepcopy(data.get("organization"))
         if (data.get("catalog_version") != self.catalog["version"] or not isinstance(order, dict)
-                or order.get("version") != 1 or order.get("complete") is not True
+                or order.get("version") != 1
                 or order.get("sort") != "acquired_desc"
                 or set(order.get("slots", {})) != set(SLOTS)):
             raise ValueError("缺少完整的获得时间整理基准，请先完整运行“祝福闪光整理”（旧锁定记录不能代替）")
+        recovered = False
+        if order.get("complete") is not True:
+            recovered = self.recover_legacy_lookup(data, order)
+            if not recovered:
+                raise ValueError("整理基准需重新核对："
+                                 + str(order.get("reason") or "尚未完成完整整理")
+                                 + "；请运行“祝福闪光整理”")
         operation = order.get("pending_operation")
         if operation is not None and (not isinstance(operation, dict) or operation.get("kind") != "realm"):
             raise ValueError("上次库存修改尚未确认，请重新运行祝福闪光整理")
@@ -125,11 +175,26 @@ class InventoryStore:
                     if row["color"] is None:
                         raise ValueError("满级收藏颜色不完整，请重新整理")
                     protected.add((row["name"], slot, row["color"]))
+            # Older pursuit records cloned each upgraded copy with its queue
+            # group's priority, then treated that inferred insertion order as
+            # a physical anchor. Keep the collection but reobserve its order.
+            if order.get("anchor_policy_version", 1) < 2:
+                priorities = Counter(row["priority"] for row in rows)
+                for row in rows:
+                    if priorities[row["priority"]] > 1:
+                        row["anchor_eligible"] = False
         if (type(order.get("next_priority")) is not int
                 or order["next_priority"] <= max((row["priority"] for rows in order["slots"].values() for row in rows), default=0)
                 or order.get("unfinished") is not None and order["unfinished"] not in identifiers):
             raise ValueError("顺序进度无效，请重新整理")
-        return order, protected, {"path": str(path), "updated_at": data["record"]["updated_at"]}
+        origin = {"path": str(path), "updated_at": data["record"]["updated_at"]}
+        if recovered:
+            if protected != keeper_keys(data, self.catalog):
+                raise ValueError("顺序基准与已确认收藏不一致，请重新整理")
+            order.update(complete=True, reason=None)
+            origin["recovery"] = "confirmed_legacy_lookup"
+        order["anchor_policy_version"] = 2
+        return order, protected, origin
 
     def prepare(self, snapshot, *, source, evidence_dir=None):
         data = validate_snapshot(deepcopy(snapshot), self.catalog)

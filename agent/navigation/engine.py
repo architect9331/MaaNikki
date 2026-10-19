@@ -454,7 +454,10 @@ class Navigator:
         before_at, before_input = self.pose_at, self.pose_input
         walking = self.walking()
         jumping = target.jump or recovery
-        mode = "air" if jumping or not walking else "ground"
+        # The movement-button icon is not a reliable airborne detector (it
+        # stayed false throughout both grounded routes in the latest logs).
+        # Keep its existing jump-control role; estimate by planned motion.
+        mode = "jump" if jumping else "travel"
         samples = speeds[mode]
         velocity = max(self.MIN_PLANNING_SPEED, median(samples))
         self.inputs.check()
@@ -464,7 +467,10 @@ class Navigator:
         # Recognition may have completed well after this pose was captured.
         # Deduct only the forward input since capture, not stationary OCR time.
         advanced_seconds = max(0, motion.forward_elapsed()-before_input)
-        duration = (remaining-radius*.5)/velocity-advanced_seconds-.06
+        # Aim toward the point centre, reserving only the input-release delay.
+        # Subtracting half the radius too made 50 ms restart attempts near
+        # the circle edge, shorter than the character's movement startup.
+        duration = remaining/velocity-advanced_seconds-.06
         if duration <= 0 and advanced_seconds > 0:
             motion.stop()
             return self.observe((pose.x, pose.y)), False
@@ -528,7 +534,7 @@ class Navigator:
         if self.point_action:
             self.point_action.motion = motion
             self.point_action.navigator = self
-        speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
+        speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
         last = None
         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
         best_distance = distance(pose, origin)
@@ -557,7 +563,7 @@ class Navigator:
                     best_distance = distance(pose, rejoin or route.points[index])
                     map_checked = False
                     last = None
-                    speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
+                    speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
                     self.turn_ratio = None
                     scene_interrupted = False
                     continue
@@ -582,7 +588,7 @@ class Navigator:
                     stuck_since, recovered = time.monotonic(), False
                     best_distance = distance(pose, rejoin or route.points[index])
                     scene_interrupted, last = False, None
-                    speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
+                    speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
                     continue
                 # A guarded page read may have reached the release deadline.
                 # Refresh the old moving frame before arrival/stuck decisions.
@@ -601,7 +607,7 @@ class Navigator:
                         best_distance = distance(pose, target)
                         map_checked = False
                         last = None
-                        speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
+                        speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
                     prepared_index = index
                     if pose.heading is None or getattr(self.inputs, "generation", 0) != generation:
                         continue
@@ -686,7 +692,7 @@ class Navigator:
                         stuck_since, recovered = time.monotonic(), False
                         best_distance = distance(pose, rejoin)
                         last = None
-                        speeds = {"ground": [self.MIN_PLANNING_SPEED], "air": [self.MIN_PLANNING_SPEED]}
+                        speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
                         continue
                 turn_begin = time.monotonic()
                 before_turn = pose
