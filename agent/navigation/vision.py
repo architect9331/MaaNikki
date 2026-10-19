@@ -102,7 +102,7 @@ class Locator:
         """Correlate terrain detail over known reference pixels at each offset."""
         # Black pixels are unrecorded map tiles. Remove their blur boundary as
         # well; neither that artificial edge nor the camera's broad lighting
-        # cone should count as terrain. Keep the normal path for complete maps.
+        # cone should count as terrain, including on fully recorded maps.
         valid = cv2.erode((image > 0).astype(np.uint8), np.ones((7, 7), np.uint8)).astype(np.float32)
         source, target = image.astype(np.float32), patch.astype(np.float32)
         # Suppress subpixel rasterization changes as well as broad lighting.
@@ -156,9 +156,11 @@ class Locator:
         px, py, score, detail = self.match(local, patch, mask, minimum_score=MINIMAP_POSITION_SCORE)
         position_match = "luma"
         match_diagnostics = {"luma_score": score}
-        if score < MINIMAP_POSITION_SCORE and np.any(local == 0):
-            # Insets exclude the minimap rim and player marker from edge
-            # correlation. Normal luminance matching and its floor are intact.
+        if score < MINIMAP_POSITION_SCORE and (self.spec.id == "starsea" or np.any(local == 0)):
+            # Starsea's camera-cone lighting can depress luminance correlation
+            # even on complete maps. Other maps retain the missing-tile fallback.
+            # Terrain detail must still meet the same score floor.
+            # Insets exclude the minimap rim and player marker from correlation.
             edge_ring = ((xx-100)**2+(yy-100)**2 <= 96**2) & ((xx-100)**2+(yy-100)**2 > 16**2)
             edge_mask = cv2.resize(edge_ring.astype(np.uint8), (patch.shape[1], patch.shape[0]),
                                    interpolation=cv2.INTER_NEAREST)

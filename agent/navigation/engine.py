@@ -32,6 +32,11 @@ class Motion:
     Agent reverse calls share a receive channel. A timer thread must not query
     stopping or submit inputs while another thread is receiving a screenshot.
     """
+    JUMP_HOLD = .3
+    JUMP_GAP = .1
+    FLOAT_PRESS = .08
+    JUMP_PENDING = {"first", "second_wait", "second_hold"}
+
     def __init__(self, inputs):
         self.inputs = inputs
         self.until = 0
@@ -76,20 +81,23 @@ class Motion:
                 return
             # Cancel a queued second jump before tick can submit it.
             self.inputs.key_up("jump")
-            if self.jump_state == "air" and not walking:
-                self.inputs.key_down("jump")
-                self.inputs.key_up("jump")
+            cancel_float = self.jump_state == "air" and not walking
             self.jump_state = "idle"
+            if cancel_float:
+                self.inputs.key_down("jump")
+                try:
+                    self.wait(self.FLOAT_PRESS)
+                finally:
+                    self.inputs.key_up("jump")
             return
         self.tick()
         now = time.monotonic()
         if walking and (self.jump_state == "idle" or self.jump_state == "air" and now-self.jump_at > .2):
             self.inputs.key_down("jump")
-            self.jump_state, self.jump_at = "first", now
+            self.jump_state, self.jump_at = "first", time.monotonic()
         elif not walking and self.jump_state == "idle":
             self.inputs.key_down("jump")
-            self.inputs.key_up("jump")
-            self.jump_state, self.jump_at = "air", now
+            self.jump_state, self.jump_at = "second_hold", time.monotonic()
 
     def tick(self):
         self.inputs.check()
@@ -103,13 +111,15 @@ class Motion:
         now = time.monotonic()
         if self.until and now >= self.until:
             self.stop()
-        if self.jump_state == "first" and now-self.jump_at >= .3:
+        if self.jump_state == "first" and now-self.jump_at >= self.JUMP_HOLD:
             self.inputs.key_up("jump")
-            self.jump_state, self.jump_at = "second_wait", now
-        elif self.jump_state == "second_wait" and now-self.jump_at >= .1:
+            self.jump_state, self.jump_at = "second_wait", time.monotonic()
+        elif self.jump_state == "second_wait" and now-self.jump_at >= self.JUMP_GAP:
             self.inputs.key_down("jump")
+            self.jump_state, self.jump_at = "second_hold", time.monotonic()
+        elif self.jump_state == "second_hold" and now-self.jump_at >= self.FLOAT_PRESS:
             self.inputs.key_up("jump")
-            self.jump_state, self.jump_at = "air", now
+            self.jump_state, self.jump_at = "air", time.monotonic()
 
     def guard(self, blocking_seconds):
         """Keep cruising unless the next blocking read could miss release.
@@ -118,6 +128,10 @@ class Motion:
         starting that read. Jump timing remains independent of forward input.
         """
         self.tick()
+        # Finish the short jump sequence before a blocking screenshot/OCR.
+        # Each tick still services W's independent release deadline.
+        while self.jump_state in self.JUMP_PENDING:
+            self.wait(.01)
         if self.until and self.until-time.monotonic() <= blocking_seconds:
             while self.until:
                 self.wait(min(.02, max(0, self.until-time.monotonic())))
@@ -486,11 +500,11 @@ class Navigator:
             self.pause(1.5)
             motion.stop()
             motion.jump(False, self.walking())
-        elif motion.jump_state in {"first", "second_wait"}:
+        elif motion.jump_state in motion.JUMP_PENDING:
             # Preserve the original full-height jump and second jump timing.
             # The independent forward deadline can release W during this wait.
-            while motion.jump_state in {"first", "second_wait"}:
-                self.pause(.02)
+            while motion.jump_state in motion.JUMP_PENDING:
+                self.pause(.01)
         else:
             self.pause(.01)
         observed_at = time.monotonic()

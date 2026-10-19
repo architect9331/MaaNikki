@@ -225,7 +225,11 @@ class GameUI:
         return boxes[0] if boxes else None
 
     def walking(self):
-        return bool(self.asset("IconMovementWalk", threshold=.9, color=([0, 0, 210], [180, 50, 255])))
+        # The .9 threshold is for correlation of the white glyph mask. Maa
+        # fills omitted pipeline methods with CCOEFF_NORMED, which otherwise
+        # overrides asset_boxes' icon default and falsely reports airborne.
+        return bool(self.asset("IconMovementWalk", threshold=.9, method=cv2.TM_CCORR_NORMED,
+                               color=([0, 0, 210], [180, 50, 255])))
 
     def click_asset(self, name, attempts=3, **kwargs):
         for index in range(attempts):
