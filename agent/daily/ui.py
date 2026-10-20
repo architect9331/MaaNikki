@@ -764,8 +764,7 @@ class GameUI:
             return False
         if self.page_matches(destination):
             return False
-        intro = (self.rt.context.get_node_data("MaaNikki_Monthly_IntroSkip") or {}).get("enabled", True)
         if self.rt.hit("MaaNikki_Monthly_IntroSkip"):
-            if not intro or not self.rt.hold("skip", 3):
+            if not self.rt.hold("skip", 3):
                 return False
         return self.wait_page("MaaNikki_Monthly_Start")

@@ -5,6 +5,7 @@ from .shop import ShopWorkflow
 
 
 class MonthlyExchange(ShopWorkflow):
+    TASK = "monthly_crystal_exchange"
     ENTRY = "MaaNikki_MonthlyCrystalExchange"
     LABEL = "每月五抽兑换"
     ITEMS = ("启示水晶", "共鸣水晶")
@@ -34,19 +35,32 @@ class MonthlyExchange(ShopWorkflow):
             return self.fail(f"未能确认{name}兑换")
         if not self.ui.skip_reward() or not self.ui.wait_page("MaaNikki_Shop_QuietReady"):
             return self.fail(f"{name}兑换后未能领取奖励并返回商店")
-        self.completed[name] = "exchanged"
+        image = self.rt.capture()
+        if image is None:
+            return self.fail(f"{name}兑换后未能复核额度")
+        title = self.rt.recognize("MaaNikki_Daily_OCR", {
+            "roi": self.LIST_ROI, "expected": "^"+name+"$"}, image=image)
+        if title and title.hit:
+            x, y, w, _ = title.box
+            sold = self.rt.recognize("MaaNikki_Shop_SoldOut", {
+                "roi": [max(285, round(x+w/2)-60), max(120, y-85), 120, 65]}, image=image)
+            if not sold or not sold.hit:
+                return self.fail(f"{name}已兑换部分数量，剩余额度尚未完成")
+        self.confirm(name, "exchanged")
         self.rt.log(f"{self.LABEL}：已按最大数量兑换{name}。")
         return True
 
     def scan(self):
         for name in self.ITEMS:
+            if name in self.completed:
+                continue
             image = self.rt.capture()
             if image is None:
                 return False
             result = self.rt.recognize("MaaNikki_Daily_OCR", {
                 "roi": self.LIST_ROI, "expected": "^"+name+"$"}, image=image)
             if not result or not result.hit:
-                self.completed[name] = "already_exchanged"
+                self.confirm(name, "already_exchanged")
                 self.rt.log(f"{self.LABEL}：{name}本月已兑换，跳过。")
                 continue
             box = list(result.box)
@@ -54,7 +68,7 @@ class MonthlyExchange(ShopWorkflow):
             sold = self.rt.recognize("MaaNikki_Shop_SoldOut", {
                 "roi": [max(285, round(x+w/2)-60), max(120, y-85), 120, 65]}, image=image)
             if sold and sold.hit:
-                self.completed[name] = "sold_out"
+                self.confirm(name, "sold_out")
                 self.rt.log(f"{self.LABEL}：{name}本月已兑换，跳过。")
                 continue
             if not self.rt.image_current(image) or not self.exchange(name, box):

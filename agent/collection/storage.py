@@ -12,7 +12,8 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 
-from .report import load_snapshot, validate_snapshot, write_json
+from .report import validate_snapshot
+from account_state import AccountState
 from .protection import keeper_keys
 from .blessing import SLOTS
 
@@ -23,16 +24,29 @@ class InventoryStore:
         self.path = self.directory / "inventory.json"
         self.last_scan_path = self.directory / "last_scan.json"
         self.catalog = catalog
+        self.account = AccountState(root)
+
+    def exists(self, path):
+        return path.stem in self.account.load()["blessing"]
+
+    def reference(self, path):
+        return f"{self.account.path}#blessing/{path.stem}"
+
+    def read_snapshot(self, path):
+        data = self.account.load()["blessing"].get(path.stem)
+        if data is None:
+            raise ValueError("尚未保存祝福闪光库存 JSON")
+        return validate_snapshot(deepcopy(data), self.catalog)
 
     def load(self):
         """Read validated inventory; missing/corrupt records must stop planning."""
-        snapshot = load_snapshot(self.path, self.catalog)
+        snapshot = self.read_snapshot(self.path)
         if snapshot.get("catalog_version") != self.catalog["version"]:
             raise ValueError("本地库存图鉴版本已变化，请重新扫描")
         if not snapshot["scan"]["identity_complete"]:
             raise ValueError("本地库存的部件及等级不完整，请重新扫描")
-        if self.last_scan_path.is_file():
-            latest = load_snapshot(self.last_scan_path, self.catalog)
+        if self.exists(self.last_scan_path):
+            latest = self.read_snapshot(self.last_scan_path)
             if (not latest["scan"]["identity_complete"]
                     and self.updated_at(latest) > self.updated_at(snapshot)):
                 raise ValueError("最近一次扫描未完成，旧库存已保留；请重新扫描后再规划")
@@ -50,8 +64,8 @@ class InventoryStore:
 
     def load_protection(self):
         """Use the newest trustworthy protection record, not stale quantities."""
-        candidates = [(load_snapshot(path, self.catalog), path)
-                      for path in (self.path, self.last_scan_path) if path.is_file()]
+        candidates = [(self.read_snapshot(path), path)
+                      for path in (self.path, self.last_scan_path) if self.exists(path)]
         if not candidates:
             raise ValueError("尚未保存祝福闪光库存 JSON")
         candidates.sort(key=lambda pair: self.updated_at(pair[0]), reverse=True)
@@ -81,7 +95,7 @@ class InventoryStore:
                 raise ValueError("上次中断存在操作或记录不一致，需重新核对")
             latest, path = candidates[1]
             protected = keeper_keys(latest, self.catalog)
-        return protected, {"path": str(path), "updated_at": latest["record"]["updated_at"],
+        return protected, {"path": self.reference(path), "updated_at": latest["record"]["updated_at"],
                            "source": latest["record"]["source"]}
 
     def recover_legacy_lookup(self, data, order):
@@ -128,8 +142,8 @@ class InventoryStore:
 
     def load_organization(self):
         """Full collection requires the newest complete ordered baseline."""
-        candidates = [(load_snapshot(path, self.catalog), path)
-                      for path in (self.path, self.last_scan_path) if path.is_file()]
+        candidates = [(self.read_snapshot(path), path)
+                      for path in (self.path, self.last_scan_path) if self.exists(path)]
         if not candidates:
             raise ValueError("请先完整运行一次“祝福闪光整理”")
         data, path = max(candidates, key=lambda pair: self.updated_at(pair[0]))
@@ -187,7 +201,7 @@ class InventoryStore:
                 or order["next_priority"] <= max((row["priority"] for rows in order["slots"].values() for row in rows), default=0)
                 or order.get("unfinished") is not None and order["unfinished"] not in identifiers):
             raise ValueError("顺序进度无效，请重新整理")
-        origin = {"path": str(path), "updated_at": data["record"]["updated_at"]}
+        origin = {"path": self.reference(path), "updated_at": data["record"]["updated_at"]}
         if recovered:
             if protected != keeper_keys(data, self.catalog):
                 raise ValueError("顺序基准与已确认收藏不一致，请重新整理")
@@ -260,7 +274,7 @@ class InventoryStore:
         data = self.prepare(snapshot, source=source, evidence_dir=evidence_dir)
         if not data["scan"]["identity_complete"]:
             raise ValueError("部件及等级不完整的记录不能覆盖本地库存")
-        write_json(self.path, data)
+        self.account.save_blessing("inventory", data)
         return data
 
     def save_scan(self, snapshot, evidence_dir, *, source="scan"):
@@ -276,10 +290,8 @@ class InventoryStore:
                 snapshot = deepcopy(snapshot)
                 snapshot["organization"] = order
         data = self.prepare(snapshot, source=source, evidence_dir=evidence_dir)
-        write_json(self.last_scan_path, data)
         published = data["scan"]["identity_complete"]
-        if published:
-            write_json(self.path, data)
+        self.account.save_blessing("last_scan", data, publish=published)
         return data, published
 
     def invalidate(self, reason, *, source):
@@ -289,8 +301,8 @@ class InventoryStore:
         collection progress. Unknown rewards never become invented item counts.
         An interrupted or unconfirmed submission conservatively stays stale.
         """
-        previous = [load_snapshot(path, self.catalog)
-                    for path in (self.path, self.last_scan_path) if path.is_file()]
+        previous = [self.read_snapshot(path)
+                    for path in (self.path, self.last_scan_path) if self.exists(path)]
         latest = max(previous, key=self.updated_at) if previous else {}
         partial = {
             "schema_version": 1, "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -314,5 +326,5 @@ class InventoryStore:
                     {"name": name, "slot": slot, "color": color}
                     for name, slot, color in sorted(protected)]}
         data = self.prepare(partial, source=source)
-        write_json(self.last_scan_path, data)
+        self.account.save_blessing("last_scan", data)
         return data

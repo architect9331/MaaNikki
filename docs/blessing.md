@@ -45,7 +45,7 @@
 
 ## JSON 保存什么
 
-统一格式为 `schema_version: 1`，文件位于 `config/blessing/`。`inventory.json` 保留最近一次完整数量记录，`last_scan.json` 保存最新尝试，包括中断和数量待核对状态。后续任务读取最新状态，不绕过较新的失败记录使用旧基准。日志目录也保存同格式快照及操作证据。
+账号状态保存在 `config/account_state.json`（`schema_version: 2`）；其中 `blessing.inventory` 保留最近一次完整数量记录，`blessing.last_scan` 保存最新尝试，包括中断和数量待核对状态。两个嵌套快照沿用 `schema_version: 1`。旧 `config/blessing/` 下的同名 JSON 会在首次写入时整体导入并保留为备份。后续任务读取最新状态，不绕过较新的失败记录使用旧基准。日志目录也保存同格式快照及操作证据。
 
 | 字段 | 内容 |
 | --- | --- |

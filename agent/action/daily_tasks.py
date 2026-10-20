@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 import json
 import re
-from task_control import TaskStopped, task_time as time
+from task_control import task_time as time
 
 import cv2
 
@@ -213,22 +213,6 @@ class DailyRun(Executors):
         try:
             if self.mode == "zhaoxi":
                 run_state.clear(self)
-            force_crystal = self.mode == "xinghai" and self.setting(self.mode).get("force_crystal", True)
-            forced_crystal_ok = False
-            if force_crystal:
-                self.log("已开启跑图收集星光结晶，先执行收集流程（包含摇铃）。")
-                card = classify("xinghai", "收集10个星光结晶", -1)
-                try:
-                    forced_crystal_ok = self.execute(self.mode, card)
-                except TaskStopped:
-                    raise
-                except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
-                    self.log(f"跑图收集星光结晶未完成：{error}。")
-                self.events.append({"task": "crystal", "success": forced_crystal_ok, "forced": True})
-                if self.stopped:
-                    return False
-                if not forced_crystal_ok:
-                    self.log("跑图收集星光结晶未完成，继续核实积分、完成其他星海拾光任务并领取奖励。")
             if not self.open_score_page():
                 self.log(f"未能打开{self.title}页面。")
                 return False
@@ -242,16 +226,11 @@ class DailyRun(Executors):
             if not self.setting(self.mode).get("auto_complete", True):
                 self.log(f"{self.title}当前 {score}/500，仅领取已经解锁的奖励。")
                 return self.claim()
-            # Do not retry forced collection. If it failed before ringing the
-            # bell, an unfinished bell card can still contribute daily points.
             cards = self.scan()
             if cards is None:
                 return False
             available = []
             for card in cards:
-                if card.rule and (force_crystal and card.rule.key == "crystal"
-                                  or forced_crystal_ok and card.rule.key == "bell"):
-                    continue
                 if self.available(self.mode, card):
                     available.append(card)
                 elif card.rule:
@@ -358,6 +337,28 @@ class DailyRun(Executors):
             except OSError:
                 pass
             if not self.handoff_ok:
+                return False
+
+
+@agent_action("nikki.collect_starlight_crystals")
+class CollectStarlightCrystalsAction(CustomAction):
+    def run(self, context, argv) -> bool:
+        runtime = Executors(context)
+        try:
+            runtime.log("开始每日跑图收集星光结晶，不受星海拾光积分和子任务开关影响。")
+            card = classify("xinghai", "收集10个星光结晶", -1)
+            # Call the same collector directly; daily-task selection applies
+            # only to the score planner's execute() entry point.
+            completed = runtime.crystals("xinghai", card)
+            if completed and not runtime.stopped:
+                runtime.log("跑图收集星光结晶已完成。")
+            return bool(completed and not runtime.stopped)
+        except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
+            runtime.log(f"跑图收集星光结晶未完成：{error}。")
+            return False
+        finally:
+            if not runtime.stopped and not runtime.finish("MaaNikki_CollectStarlightCrystals")[1]:
+                runtime.log("星光结晶收集后未能恢复任务衔接页面。")
                 return False
 
 

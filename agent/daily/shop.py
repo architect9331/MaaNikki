@@ -7,12 +7,19 @@ from datetime import datetime
 import cv2
 
 from .settings import ROOT
+from account_state import AccountState, period_key
 
 
 class ShopWorkflow:
     def __init__(self, runtime):
         self.rt, self.ui = runtime, runtime.ui
-        self.completed = {}
+        self.account = AccountState(ROOT)
+        self.period = period_key(self.TASK)
+        self.completed = self.account.completed_items(self.TASK, self.period)
+
+    def confirm(self, name, outcome):
+        self.account.confirm(self.TASK, name, outcome, period=self.period)
+        self.completed[name] = outcome
 
     def fail(self, reason):
         self.rt.log(f"{self.LABEL}：{reason}，本项未完成。")
@@ -48,6 +55,9 @@ class ShopWorkflow:
 
     def run(self):
         try:
+            if self.account.complete(self.TASK):
+                self.rt.log(f"{self.LABEL}：当前周期已完成，跳过。")
+                return True
             return self.scan() if self.open() else self.fail("未能进入目标商城页面")
         finally:
             if not self.rt.stopped:
@@ -58,6 +68,7 @@ class ShopWorkflow:
 
 
 class WeeklyShop(ShopWorkflow):
+    TASK = "weekly_free_gifts"
     ENTRY = "MaaNikki_WeeklyFreeGifts"
     LABEL = "每周免费礼包"
     LIST_ROI = [285, 60, 930, 625]
@@ -114,7 +125,7 @@ class WeeklyShop(ShopWorkflow):
             "roi": self.status_roi(box)}, image=image) if image is not None else None)
         if not sold_out or not sold_out.hit:
             return self.fail(f"{name}领取后未确认已售罄")
-        self.completed[name] = "claimed"
+        self.confirm(name, "claimed")
         self.rt.log(f"每周免费礼包：已领取{name}。")
         return True
 
@@ -148,7 +159,7 @@ class WeeklyShop(ShopWorkflow):
                 sold_out = self.rt.recognize("MaaNikki_Shop_SoldOut", {
                     "roi": self.status_roi(box)}, image=image)
                 if sold_out and sold_out.hit:
-                    self.completed[name] = "sold_out"
+                    self.confirm(name, "sold_out")
                     self.rt.log(f"每周免费礼包：{name}本周已领取，跳过。")
                 else:
                     if not self.rt.image_current(image) or not self.claim(name, box):

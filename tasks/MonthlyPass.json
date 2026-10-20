@@ -1,60 +1,80 @@
 {
-    "task": [
-        {
-            "name": "monthly_pass",
-            "label": "奇迹之旅奖励",
-            "entry": "MaaNikki_MonthlyPass",
-            "group": ["daily"],
-            "default_check": true,
-            "description": "先处理当前打开的界面，再通过左下角切换处理另一个。奇迹之旅领取所选任务与秘宝，乐园构想只领取任务奖励。",
-            "option": ["MonthlyIntro", "MonthlyPages"]
-        }
-    ],
-    "option": {
-        "MonthlyIntro": {
-            "type": "switch",
-            "label": "处理首次介绍动画",
-            "cases": [
-                {
-                    "name": "Yes",
-                    "label": "自动跳过",
-                    "pipeline_override": {
-                        "MaaNikki_Monthly_IntroSkip": {"enabled": true}
-                    }
-                },
-                {
-                    "name": "No",
-                    "label": "不处理",
-                    "pipeline_override": {
-                        "MaaNikki_Monthly_IntroSkip": {"enabled": false}
-                    }
-                }
-            ],
-            "default_case": "Yes"
+  "task": [
+    {
+      "name": "monthly_pass",
+      "label": "奇迹之旅奖励",
+      "entry": "MaaNikki_MonthlyPass",
+      "group": [
+        "daily"
+      ],
+      "default_check": true,
+      "description": "领取所选的旅行任务、旅行秘宝和乐园构想奖励。",
+      "option": [
+        "MonthlyPages"
+      ],
+      "pipeline_override": {
+        "MaaNikki_Monthly_IntroSkip": {
+          "enabled": true
         },
-        "MonthlyPages": {
-            "type": "checkbox",
-            "label": "领取页签",
-            "description": "两个界面都会处理。奇迹之旅先检查旅行秘宝但暂不领取，再领取旅行任务；秘宝原本可领或任务领取成功时，返回秘宝统一检查并领取，两者均不可领则不再返回。只处理勾选的页签。乐园构想沿用旅行任务选项，只领取乐园纪事奖励。",
-            "cases": [
-                {
-                    "name": "Task",
-                    "label": "旅行任务",
-                    "pipeline_override": {
-                        "MaaNikki_Monthly_TaskTab": {"enabled": true}
-                    }
-                },
-                {
-                    "name": "Treasure",
-                    "label": "旅行秘宝",
-                    "pipeline_override": {
-                        "MaaNikki_Monthly_TreasureTab": {"enabled": true}
-                    }
-                }
-            ],
-            "default_case": ["Task", "Treasure"],
-            "min_count": 1,
-            "max_count": 2
+        "MaaNikki_Monthly_TaskTab": {
+          "enabled": false
+        },
+        "MaaNikki_Monthly_TreasureTab": {
+          "enabled": false
+        },
+        "MaaNikki_Monthly_ParadiseEnabled": {
+          "enabled": false
+        },
+        "MaaNikki_Monthly_ParadiseTaskTab": {
+          "enabled": false
         }
+      }
     }
+  ],
+  "option": {
+    "MonthlyPages": {
+      "type": "checkbox",
+      "label": "领取页签",
+      "description": "领取勾选项目的奖励。",
+      "cases": [
+        {
+          "name": "Task",
+          "label": "旅行任务",
+          "pipeline_override": {
+            "MaaNikki_Monthly_TaskTab": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "Treasure",
+          "label": "旅行秘宝",
+          "pipeline_override": {
+            "MaaNikki_Monthly_TreasureTab": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "name": "Paradise",
+          "label": "乐园构想",
+          "pipeline_override": {
+            "MaaNikki_Monthly_ParadiseEnabled": {
+              "enabled": true
+            },
+            "MaaNikki_Monthly_ParadiseTaskTab": {
+              "enabled": true
+            }
+          }
+        }
+      ],
+      "default_case": [
+        "Task",
+        "Treasure",
+        "Paradise"
+      ],
+      "min_count": 0,
+      "max_count": 3
+    }
+  }
 }

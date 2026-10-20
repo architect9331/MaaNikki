@@ -1,0 +1,13 @@
+{
+  "task": [
+    {
+      "name": "starlight_crystals",
+      "label": "跑图收集星光结晶",
+      "entry": "MaaNikki_CollectStarlightCrystals",
+      "group": ["daily"],
+      "default_check": true,
+      "description": "每日定位星光结晶，完整执行匹配路线；各视野均无标记时视为今日已收集。跑图需提前解锁地图与传送点，并使用前台输入。",
+      "option": []
+    }
+  ]
+}

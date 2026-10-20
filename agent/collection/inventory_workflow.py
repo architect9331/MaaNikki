@@ -309,7 +309,7 @@ class FiveStarInventory(BlessingLocker):
         self.checkpoint()
         self.report["inventory"] = {"published": False, "collection_saved": True,
                                     "quantity_state": "needs_rescan",
-                                    "path": str(self.store.last_scan_path)}
+                                    "path": self.store.reference(self.store.last_scan_path)}
         self.rt.log("已保存收藏颜色、锁定状态和待处理队列；未锁定材料数量不统计，本轮直接结束。", detail=True)
         self.save()
         return True

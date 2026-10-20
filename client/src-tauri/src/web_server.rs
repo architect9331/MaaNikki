@@ -207,6 +207,7 @@ pub async fn start_web_server(
     let api_routes = Router::new()
         // 配置 & 接口
         .route("/interface", get(handle_get_interface))
+        .route("/account-state", get(handle_get_account_state))
         .route(
             "/config",
             get(handle_get_config)
@@ -1319,4 +1320,11 @@ async fn handle_restart_as_admin(State(state): State<WebState>) -> impl IntoResp
         )
             .into_response(),
     }
+}
+
+async fn handle_get_account_state() -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    crate::commands::account_state::get_account_state()
+        .await
+        .map(Json)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))
 }

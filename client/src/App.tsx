@@ -1,3 +1,5 @@
+import { useAccountStateStore } from '@/stores/accountStateStore';
+import { BlessingProgressPage } from '@/components/BlessingProgressPage';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import {
   useAppStore,
@@ -138,6 +140,13 @@ const LazyVersionWarningModal = lazy(async () => {
 });
 
 function App() {
+  useEffect(() => {
+    const refresh = () => void useAccountStateStore.getState().refresh().catch(() => {});
+    refresh();
+    const timer = window.setInterval(refresh, 10000);
+    window.addEventListener("focus", refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
+  }, []);
   const [loadingState, setLoadingState] = useState<LoadingState>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [versionWarning, setVersionWarning] = useState<{ current: string; minimum: string } | null>(
@@ -866,6 +875,39 @@ function App() {
         } else if (currentInstances.length === 0) {
           // 无预设或已初始化且无实例 → 创建默认实例
           createInstance(t('instance.defaultName'));
+        }
+
+        // Upgrade the three default pages once, retaining saved task choices
+        // and any additional pages the user created.
+        if (pi?.name === 'MaaNikki' && presets?.some((preset) => preset.name === 'BlessingCollection') &&
+            useAppStore.getState().nikkiPresetVersion < 1) {
+          const defaultIds: string[] = [];
+          for (const preset of presets) {
+            const state = useAppStore.getState();
+            const label = state.resolveI18nText(preset.label, getInterfaceLangKey(state.language)) || preset.name;
+            const existing = state.instances.find((instance) => instance.name === label ||
+              (preset.name === 'Daily' && instance.name === '日常'));
+            const id = existing?.id ?? state.createInstance(label, true);
+            if (!existing) state.applyPreset(id, preset.name);
+            else if (existing.name !== label) state.renameInstance(id, label);
+            defaultIds.push(id);
+          }
+          useAppStore.setState((state) => ({
+            instances: [
+              ...defaultIds.flatMap((id) => state.instances.filter((instance) => instance.id === id)
+                .map((instance) => {
+                  if (instance.id !== defaultIds[0]) return instance;
+                  const tasks = [...instance.selectedTasks];
+                  const crystalIndex = tasks.findIndex((task) => task.taskName === 'starlight_crystals');
+                  if (crystalIndex < 0 || !tasks.some((task) => task.taskName === 'xinghai')) return instance;
+                  const [crystal] = tasks.splice(crystalIndex, 1);
+                  tasks.splice(tasks.findIndex((task) => task.taskName === 'xinghai'), 0, crystal);
+                  return { ...instance, selectedTasks: tasks };
+                })),
+              ...state.instances.filter((instance) => !defaultIds.includes(instance.id)),
+            ],
+            nikkiPresetVersion: 1,
+          }));
         }
       }, 0);
 
@@ -1792,6 +1834,17 @@ function App() {
       }}
     />
   );
+
+  if (currentPage === "blessing") {
+    return (
+      <div className="h-full flex flex-col bg-bg-primary relative">
+        <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
+        <BlessingProgressPage onClose={() => useAppStore.getState().setCurrentPage("main")} />
+        <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
+        {toaster}
+      </div>
+    );
+  }
 
   // 设置页面
   if (currentPage === 'settings') {

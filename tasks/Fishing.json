@@ -8,7 +8,7 @@
         "assist"
       ],
       "default_check": false,
-      "description": "站在钓鱼点、面向水面后启动。自动聚焦游戏，切换钓鱼能力并抛竿；默认最多 3 竿，鱼已钓光或位置不适合时结束。收获按鱼的条数记录。",
+      "description": "站在钓点并面向水面后启动，自动准备能力并抛竿。默认最多 3 竿，鱼已钓光时结束。",
       "option": [
         "FishingCastCount",
         "FishingAbilityPlan",
@@ -23,7 +23,7 @@
         "assist"
       ],
       "default_check": false,
-      "description": "选择已登记的钓点路线，自动聚焦游戏、准备钓鱼能力、必要时传送并沿路线到点钓鱼。鱼已钓光时继续后续路线；切出游戏暂停，切回后自动继续，停止按钮可中断。",
+      "description": "沿所选路线依次到点钓鱼，自动准备能力并按需传送。鱼已钓光时前往后续钓点，切出游戏时暂停。",
       "option": [
         "FishingRouteSelection",
         "FishingRouteCastCount",
@@ -59,7 +59,7 @@
       "type": "select",
       "label": "钓鱼允许使用的能力方案",
       "default_case": "Plan3",
-      "description": "钓鱼或打窝能力未装备时，在所选方案中配置；轮盘已有时直接沿用。",
+      "description": "优先沿用当前钓鱼与打窝能力，缺少时在所选方案中配置。",
       "cases": [
         {
           "name": "Plan1",
@@ -100,7 +100,7 @@
       "type": "switch",
       "label": "钓鱼前打窝",
       "default_case": "No",
-      "description": "开启后先使用已解锁的万物交响能力，再切换钓鱼能力。",
+      "description": "钓鱼前使用已解锁的万物交响能力，然后切换到钓鱼能力。",
       "cases": [
         {
           "name": "Yes",
@@ -147,7 +147,7 @@
     "FishingRouteCastCount": {
       "type": "input",
       "label": "每个钓点最多抛竿次数",
-      "description": "留空时沿用路线指定次数，未指定时最多 3 竿。填写后统一覆盖各钓点次数；鱼已钓光时提前收竿。",
+      "description": "填写每个钓点的抛竿次数；留空时沿用路线设置，路线未指定时最多 3 竿。",
       "inputs": [
         {
           "name": "cast_count",

@@ -1,3 +1,6 @@
+import { useAccountStateStore, periodCompleted, periodTaskLabel } from '@/stores/accountStateStore';
+import { realmOptionActive } from '@/utils/nikkiOptions';
+import { XinghaiScoreHint } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
@@ -20,6 +23,7 @@ import { generateTaskPipelineOverride } from '@/utils';
 import { OptionEditor, SwitchGrid, switchHasNestedOptions } from './OptionEditor';
 import { ContextMenu, useContextMenu } from './ContextMenu';
 import { Tooltip } from './ui/Tooltip';
+import { HelpTip } from './ui/HelpTip';
 import { ConfirmDialog } from './ConfirmDialog';
 import { buildListItemMenuItems, InlineNameEditor } from './listItemShared';
 import { TriStateCheckbox, getTaskCheckboxState } from './ui/TriStateCheckbox';
@@ -171,6 +175,7 @@ function isOptionResourceIncompatible(
 function OptionListRenderer({
   instanceId,
   taskId,
+  taskName,
   optionKeys,
   optionValues,
   disabled,
@@ -179,6 +184,7 @@ function OptionListRenderer({
 }: {
   instanceId: string;
   taskId: string;
+  taskName: string;
   optionKeys: string[];
   optionValues: Record<string, import('@/types/interface').OptionValue>;
   disabled: boolean;
@@ -305,6 +311,11 @@ function OptionListRenderer({
             optionKey={group.optionKey}
             value={optionValues[group.optionKey]}
             disabled={disabled || optionIncompatible}
+            inactiveHint={taskName === 'realm_challenge' && !realmOptionActive(group.optionKey, optionValues)
+              ? group.optionKey === 'WeeklyTargets'
+                ? { label: '周本优先已关闭', description: '开启“优先完成每周幻境”后，按此处所选目标使用本周剩余挑战次数。' }
+                : { label: '补分备用', description: '朝夕心愿允许用体力补分时，会根据当天心愿按需使用此处设置。剩余体力按上方所选消耗方式处理。' }
+              : undefined}
             controllerIncompatible={optionIncompatible}
             parentIncompatibilityReason={parentIncompatibilityReason}
           />
@@ -315,6 +326,10 @@ function OptionListRenderer({
 }
 
 export function TaskItem({ instanceId, task }: TaskItemProps) {
+  const account = useAccountStateStore((s) => s.data);
+  const accountError = useAccountStateStore((s) => s.error);
+  const completedPeriod = periodCompleted(account, task.taskName);
+  const periodLabel = periodTaskLabel(task.taskName, completedPeriod, Boolean(task.enabled || task.runOnce));
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -550,8 +565,8 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
   const hasOptions = !!taskDef?.option && taskDef.option.length > 0;
   // 判断是否有描述内容（包括正在加载的情况）
   const hasDescription = !!resolvedDescription.html || resolvedDescription.loading;
-  // 有选项或有描述时都可以展开
-  const canExpand = hasOptions || hasDescription;
+  // 说明通过标题旁的问号展示，展开区域只保留选项。
+  const canExpand = hasOptions;
 
   // 生成选项预览信息（最多显示3个）
   const optionPreviews = useMemo(() => {
@@ -567,6 +582,9 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
     const maxPreviews = 3;
 
     for (const optionKey of taskDef.option || []) {
+      if (task.taskName === 'realm_challenge' && !realmOptionActive(optionKey, task.optionValues)) {
+        continue;
+      }
       if (previews.length >= maxPreviews) break;
 
       // 优先从 projectInterface 查找，MXU 特殊任务从注册表查找
@@ -841,6 +859,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
           'group bg-bg-secondary/50 rounded-lg border border-border/50 overflow-hidden',
           'transition-all duration-200',
           isDragging && 'shadow-lg opacity-50',
+          completedPeriod && 'opacity-60',
           isAnimating && 'animate-task-slide-in',
         )}
       >
@@ -857,6 +876,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
 
           {/* 任务名称 - 紧凑显示 */}
           <span className="text-xs text-text-muted/70 truncate">{displayName}</span>
+          {periodLabel && <span className="ml-auto text-[11px] text-text-muted">{periodLabel}</span>}
         </div>
 
         {/* 右键菜单 */}
@@ -875,6 +895,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
       className={clsx(
         'group bg-bg-secondary rounded-lg border border-border transition-shadow relative overflow-hidden',
         isDragging && 'shadow-lg opacity-50',
+        completedPeriod && 'opacity-60',
         taskRunStatus === 'running' && 'task-item-running',
         isAnimating && 'animate-task-slide-in',
       )}
@@ -956,7 +977,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 <span
                   className={clsx(
                     'min-w-0 text-sm font-medium truncate',
-                    task.enabled
+                    completedPeriod ? 'text-text-muted' : task.enabled
                       ? 'text-text-primary'
                       : task.runOnce
                         ? 'text-accent'
@@ -965,12 +986,23 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 >
                   {displayName}
                 </span>
+                {periodLabel && (
+                  <span className="shrink-0 text-[11px] text-text-muted rounded bg-bg-tertiary px-1.5 py-0.5"
+                    title={accountError ? `账号状态读取失败：${accountError}` : completedPeriod ? "保留勾选，当前周期自动跳过；下个周期自动恢复。" : "执行前会再次读取账号状态。"}>
+                    {accountError ? "状态读取失败" : periodLabel}
+                  </span>
+                )}
                 {task.customName && (
                   <span className="min-w-0 truncate text-xs text-text-muted">
                     ({originalLabel})
                   </span>
                 )}
               </div>
+
+              {hasDescription && <HelpTip label={`${displayName}说明`} content={
+                <DescriptionContent html={resolvedDescription.html} loading={resolvedDescription.loading}
+                  type={resolvedDescription.type} loaded={resolvedDescription.loaded} error={resolvedDescription.error} />
+              } />}
 
               {/* 不带选项的任务：直接显示不兼容警告 */}
               {!canExpand && isIncompatible && (
@@ -1051,6 +1083,12 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
         )}
       </div>
 
+      {task.taskName === 'xinghai' && !task.expanded && (
+        <div className="px-3 pb-2 empty:hidden">
+          <XinghaiScoreHint values={task.optionValues} compact />
+        </div>
+      )}
+
       {/* 展开面板（描述和/或选项）- 使用 grid 动画实现平滑展开/折叠 */}
       {canExpand && (
         <div
@@ -1059,18 +1097,6 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
         >
           <div className={clsx('min-h-0', task.expanded ? 'overflow-visible' : 'overflow-hidden')}>
             <div className="border-t border-border bg-bg-tertiary p-3 rounded-b-lg">
-              {/* 任务描述 */}
-              {hasDescription && (
-                <div className={hasOptions || isIncompatible ? 'mb-5' : ''}>
-                  <DescriptionContent
-                    html={resolvedDescription.html}
-                    loading={resolvedDescription.loading}
-                    type={resolvedDescription.type}
-                    loaded={resolvedDescription.loaded}
-                    error={resolvedDescription.error}
-                  />
-                </div>
-              )}
               {/* 不兼容提示 - 独立于选项列表显示 */}
               {isIncompatible && (
                 <Tooltip content={supportedControllerHint || undefined}>
@@ -1090,6 +1116,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 <OptionListRenderer
                   instanceId={instanceId}
                   taskId={task.id}
+                  taskName={task.taskName}
                   optionKeys={taskDef.option || []}
                   optionValues={task.optionValues}
                   disabled={!canEditOptions || isIncompatible}
@@ -1097,6 +1124,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                   currentResourceName={currentResourceName}
                 />
               )}
+              {task.taskName === "xinghai" && <div className="mt-3"><XinghaiScoreHint values={task.optionValues} /></div>}
             </div>
           </div>
         </div>

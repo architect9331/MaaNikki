@@ -44,6 +44,8 @@ export interface AccentTheme {
   hover: string;
   light: string; // 浅色模式下的背景色
   lightDark: string; // 深色模式下的背景色
+  /** 深色模式的强调色前景；缺省时沿用 default / hover。 */
+  dark?: { default: string; hover: string };
 }
 
 /** 语义色（固定，不随主题变化） */

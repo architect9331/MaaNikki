@@ -190,6 +190,8 @@ export interface MxuConfig {
   lastActiveInstanceId?: string;
   /** 是否已完成预设初始化（首次启动自动创建预设 tab） */
   presetInitialized?: boolean;
+  /** MaaNikki 默认页签布局版本，用于一次性更新默认预设。 */
+  nikkiPresetVersion?: number;
 }
 
 // 默认窗口大小

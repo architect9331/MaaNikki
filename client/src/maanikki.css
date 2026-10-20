@@ -17,9 +17,24 @@ button, input, select, textarea { font-family: inherit; }
 /* Light pastel controls need dark labels in the night palette. */
 html.dark[data-maanikki-accent='rosegold'] .bg-accent.text-white,
 html.dark[data-maanikki-accent='rosegold'] .bg-accent-hover.text-white {
-  color: #3a2030;
+  color: #42232e;
 }
-html.dark .bg-success.text-white { color: #193b2c; }
+html.dark[data-maanikki-accent='rosegold'] .bg-accent .text-white\/80 {
+  color: #68404d;
+}
+html.dark .bg-success.text-white,
+html.dark .bg-success\/80.text-white,
+html.dark .bg-success\/90.text-white { color: #193b2c; }
+html.dark .bg-warning.text-white { color: #493419; }
+html.dark .bg-error.text-white { color: #4c202b; }
+
+/* Night logs use theme colors even when rich text includes a daytime color. */
+#logs-panel .focus-content a { color: var(--color-log-info); }
+html.dark #logs-panel .focus-content [style*='color'],
+html.dark #logs-panel .focus-content [color] {
+  color: inherit !important;
+  background-color: transparent !important;
+}
 
 /* Restrained satin surfaces; do not cover custom wallpapers or modal layers. */
 .bg-bg-secondary.rounded-lg, .bg-bg-secondary.rounded-xl {

@@ -5,6 +5,6 @@
     "entry": "MaaNikki_MonthlyCrystalExchange",
     "group": ["daily"],
     "default_check": true,
-    "description": "进入商城共鸣商店的静谧水滴兑换，按游戏允许的最大数量兑换启示水晶和共鸣水晶，每种每月最多5个。右侧只检查当前画面，没找到或已售罄的商品跳过。"
+    "description": "每月兑换启示水晶和共鸣水晶各 5 个，记录兑换进度。本月完成后自动跳过，下月恢复。"
   }]
 }

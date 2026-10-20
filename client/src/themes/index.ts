@@ -59,13 +59,11 @@ const registeredCustomAccentNames = new Set<AccentColor>();
 
 /**
  * 语义色配置
- * - success: 跟随强调色（用于成功状态、开关等）
- * - warning/error: 固定颜色（保持语义一致性）
- * - info: 跟随强调色（用于信息提示）
+ * 成功、警告、错误按昼夜模式配置，信息色跟随当前模式的强调色。
  */
-const fixedSemanticColors = {
-  warning: '#f59e0b',
-  error: '#ef4444',
+const semanticColors = {
+  light: { success: '#347452', warning: '#92601c', error: '#b94255' },
+  dark: { success: '#9ed8b8', warning: '#f0ca8b', error: '#ffa4b0' },
 };
 
 /** 当前主题状态 */
@@ -102,16 +100,20 @@ function applyCSSVariables(mode: ModeTheme, accent: AccentTheme, isDark: boolean
   root.style.setProperty('--shadow-lg', mode.shadow.lg);
 
   // 强调色（根据模式选择浅色或深色背景）
-  root.style.setProperty('--color-accent', isDark && accent.name === 'rosegold' ? '#ed9db9' : accent.default);
-  root.style.setProperty('--color-accent-hover', isDark && accent.name === 'rosegold' ? '#f4b4ca' : accent.hover);
+  const accentColor = isDark ? accent.dark?.default ?? accent.default : accent.default;
+  const accentHover = isDark ? accent.dark?.hover ?? accent.hover : accent.hover;
+  root.style.setProperty('--color-accent', accentColor);
+  root.style.setProperty('--color-accent-hover', accentHover);
   root.style.setProperty('--color-accent-light', isDark ? accent.lightDark : accent.light);
 
   // 语义色
-  // success 和 info 使用强调色，让 UI 更统一
-  root.style.setProperty('--color-success', isDark ? '#86c8aa' : '#327557');
-  root.style.setProperty('--color-info', accent.default);
-  root.style.setProperty('--color-warning', fixedSemanticColors.warning);
-  root.style.setProperty('--color-error', fixedSemanticColors.error);
+  const semantic = semanticColors[isDark ? 'dark' : 'light'];
+  root.style.setProperty('--color-success', semantic.success);
+  root.style.setProperty('--color-info', accentColor);
+  root.style.setProperty('--color-warning', semantic.warning);
+  root.style.setProperty('--color-error', semantic.error);
+  // Logs have their own readable information color even with a dark custom accent.
+  root.style.setProperty('--color-log-info', isDark ? '#f4aac1' : '#b94168');
 }
 
 /**

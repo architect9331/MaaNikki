@@ -8,10 +8,15 @@
                 "energy"
             ],
             "default_check": true,
-            "description": "请排在朝夕心愿之后执行。普通模式先按开关处理周本，再使用所选幻境消耗剩余体力。五星全收集须先完整运行祝福闪光整理：根据 JSON 选择一个缺色副本，一批刷完剩余体力，再升级胚子；已收齐时不消耗体力。同轮朝夕最后只复核积分和领奖。",
+            "description": "先处理所选周本，再按消耗方式使用剩余体力。与朝夕心愿同轮运行时，请排在朝夕心愿之后。",
             "option": [
                 "WeeklyEnabled",
-                "RealmTypes"
+                "WeeklyTargets",
+                "RealmTypes",
+                "JihuaTarget",
+                "JihuaMaterialMode",
+                "BlessTarget",
+                "MonsterTarget"
             ]
         }
     ],
@@ -19,14 +24,11 @@
         "WeeklyEnabled": {
             "type": "switch",
             "label": "优先完成每周幻境",
-            "description": "开启后先检查本周剩余挑战次数；本周已完成时自动跳过。之后使用剩余活跃能量挑战下面选择的幻境。",
+            "description": "优先完成本周尚余次数的每周幻境，然后继续处理剩余体力。",
             "cases": [
                 {
                     "name": "Yes",
                     "label": "开启",
-                    "option": [
-                        "WeeklyTargets"
-                    ],
                     "pipeline_override": {
                         "MaaNikki_RealmWeekly": {
                             "enabled": true
@@ -48,15 +50,11 @@
         "RealmTypes": {
             "type": "select",
             "label": "剩余体力消耗方式",
-            "description": "五星全收集需要完整的祝福闪光整理基准；一次运行只选一个缺色副本，用剩余体力快速挑战，再按队列升级。使用五星及以下未锁定素材，优先续升上次未完成对象。缺噗灵或材料正常保存退出，不自动素材激化；请自行切换模式获取噗灵。换号或手动升级、解锁、分解后须重新整理。",
+            "description": "选择剩余体力的用途。五星全收集根据整理记录选择缺色副本，刷取后升级胚子；使用前请完成一次祝福闪光整理。",
             "cases": [
                 {
                     "name": "Jihua",
                     "label": "素材激化",
-                    "option": [
-                        "JihuaTarget",
-                        "JihuaMaterialMode"
-                    ],
                     "pipeline_override": {
                         "MaaNikki_RealmEnergy": {
                             "next": [
@@ -68,9 +66,6 @@
                 {
                     "name": "Bless",
                     "label": "祝福闪光",
-                    "option": [
-                        "BlessTarget"
-                    ],
                     "pipeline_override": {
                         "MaaNikki_RealmEnergy": {
                             "next": [
@@ -82,9 +77,6 @@
                 {
                     "name": "Monster",
                     "label": "魔物试炼",
-                    "option": [
-                        "MonsterTarget"
-                    ],
                     "pipeline_override": {
                         "MaaNikki_RealmEnergy": {
                             "next": [
@@ -115,7 +107,7 @@
         },
         "JihuaTarget": {
             "type": "select",
-            "label": "兑换目标",
+            "label": "素材激化目标",
             "cases": [
                 {
                     "name": "Bubble",
@@ -159,7 +151,7 @@
         "JihuaMaterialMode": {
             "type": "select",
             "label": "消耗材料选择方式",
-            "description": "选择数量最多的材料，或使用指定的首选与备选材料。",
+            "description": "选择数量最多的材料，或按指定的首选与备选顺序使用。",
             "cases": [
                 {
                     "name": "Priority",
@@ -194,7 +186,7 @@
         "JihuaMaterials": {
             "type": "input",
             "label": "消耗材料优先级",
-            "description": "填写材料在游戏中的完整名称。首选材料不可用时尝试备选材料。",
+            "description": "填写材料的完整名称，按首选、备选顺序尝试。",
             "inputs": [
                 {
                     "name": "Primary",
@@ -230,8 +222,8 @@
         },
         "BlessTarget": {
             "type": "select",
-            "label": "目标关卡",
-            "description": "选择需要快速挑战的关卡。请确保已解锁该关卡的困难难度与快速挑战。",
+            "label": "祝福闪光目标",
+            "description": "选择祝福闪光副本。运行前需解锁对应困难难度和快速挑战。",
             "cases": [
                 {
                     "name": "Well",
@@ -364,8 +356,8 @@
         },
         "MonsterTarget": {
             "type": "select",
-            "label": "目标关卡",
-            "description": "根据所需制衣或焕新材料选择关卡。请确保已解锁快速挑战。",
+            "label": "魔物试炼目标",
+            "description": "按所需制衣或焕新材料选择关卡。运行前需解锁快速挑战。",
             "cases": [
                 {
                     "name": "Energy",
@@ -553,7 +545,7 @@
         "WeeklyTargets": {
             "type": "checkbox",
             "label": "每周幻境目标",
-            "description": "检查一次本周完成次数；仍需挑战时，依次尝试所选目标，每个目标一次。之后处理普通幻境。",
+            "description": "本周仍有挑战次数时，按所选目标依次挑战，每个目标一次。",
             "cases": [
                 {
                     "name": "Qiggeda",

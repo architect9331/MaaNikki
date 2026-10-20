@@ -8,84 +8,35 @@
         "daily"
       ],
       "default_check": true,
-      "description": "默认先跑图收集一次星光结晶，流程已包含召唤摇铃；收集失败也会继续核实积分、完成其他任务并领取奖励，不重复尝试结晶收集。若摇铃任务仍未完成，会单独补做。关闭跑图收集后，按积分和未完成任务安排执行。遇到遮挡任务文字的摇铃提示会等待其消失。召唤流星会选择对应任务卡片，点击立即前往、关闭地图对话框，识别四个已登记点位并传送寻路，到终点长按摇铃。整批核实积分并领取奖励，结束后退出任务页面。地图和传送点需提前解锁，自动路线请使用前台输入。",
+      "description": "按所选子任务和执行优先级补足 500 分并领奖。跑图需提前解锁地图与传送点，并使用前台输入。",
       "option": [
-        "XinghaiAuto",
+        "XinghaiTask_bell",
+        "XinghaiTask_animal_three",
+        "XinghaiTask_photo",
+        "XinghaiTask_place",
+        "XinghaiTask_like",
+        "XinghaiTask_music",
+        "XinghaiTask_chat",
+        "XinghaiTask_animal_one",
+        "XinghaiTask_bottle",
+        "XinghaiTask_bottle_photo",
+        "XinghaiTask_meteor",
+        "XinghaiTask_wing_photo",
+        "XinghaiTask_delivery",
+        "XinghaiTask_bubble",
         "XinghaiForceCrystal",
-        "XinghaiBubble",
-        "XinghaiChat",
+        "XinghaiChatText",
         "XinghaiPhoto",
-        "XinghaiClaim",
-        "XinghaiMaxClaims",
-        "XinghaiLookbook"
+        "XinghaiClaim"
       ]
     }
   ],
   "option": {
-    "XinghaiBubble": {
-      "type": "switch",
-      "label": "已装备泡泡漂浮套装",
-      "default_case": "No",
-      "description": "仅装备能制造泡泡的漂浮套装后开启。普通漂浮能力不等于制造泡泡能力；关闭时跳过制造泡泡任务。",
-      "cases": [
-        {
-          "name": "Yes",
-          "label": "已装备",
-          "pipeline_override": {
-            "MaaNikki_Xinghai_DailyBubble": {
-              "custom_action_param": {
-                "value": true
-              }
-            }
-          }
-        },
-        {
-          "name": "No",
-          "label": "跳过泡泡任务",
-          "pipeline_override": {
-            "MaaNikki_Xinghai_DailyBubble": {
-              "custom_action_param": {
-                "value": false
-              }
-            }
-          }
-        }
-      ]
-    },
-    "XinghaiAuto": {
-      "type": "switch",
-      "label": "自动完成已适配的任务",
-      "default_case": "Yes",
-      "cases": [
-        {
-          "name": "Yes",
-          "label": "开启",
-          "pipeline_override": {
-            "MaaNikki_Xinghai_DailyAuto": {
-              "custom_action_param": {
-                "value": true
-              }
-            }
-          }
-        },
-        {
-          "name": "No",
-          "label": "关闭自动补分",
-          "pipeline_override": {
-            "MaaNikki_Xinghai_DailyAuto": {
-              "custom_action_param": {
-                "value": false
-              }
-            }
-          }
-        }
-      ]
-    },
     "XinghaiForceCrystal": {
       "type": "switch",
-      "label": "跑图收集星光结晶",
+      "label": "收集星光结晶（100 分）",
       "default_case": "Yes",
-      "description": "每次运行先收集一次星光结晶，即使当天没有结晶任务或已达 500 分也会执行。发现 1～3 个结晶标记并明确匹配路线后，完整跑完该路线。正常检查全部预设视野后均未发现结晶标记，视为今日已收集并跳过跑图。收集失败后继续完成其他任务和领奖，不重复收集；失败后若摇铃任务仍未完成，会单独补做。此选项独立于自动完成任务开关，后续任务仍遵循自动完成任务开关。",
+      "description": "当天出现结晶任务且需要补分时，执行星光结晶收集流程。",
       "cases": [
         {
           "name": "Yes",
@@ -103,39 +54,6 @@
           "label": "关闭",
           "pipeline_override": {
             "MaaNikki_Xinghai_DailyForceCrystal": {
-              "custom_action_param": {
-                "value": false
-              }
-            }
-          }
-        }
-      ]
-    },
-    "XinghaiChat": {
-      "type": "switch",
-      "label": "允许发送聚会频道消息",
-      "default_case": "No",
-      "description": "仅在识别出聚会频道后发送一次设置的消息，默认关闭；不会向世界或私聊频道发送。",
-      "cases": [
-        {
-          "name": "Yes",
-          "label": "允许",
-          "option": [
-            "XinghaiChatText"
-          ],
-          "pipeline_override": {
-            "MaaNikki_Xinghai_DailyChat": {
-              "custom_action_param": {
-                "value": true
-              }
-            }
-          }
-        },
-        {
-          "name": "No",
-          "label": "关闭",
-          "pipeline_override": {
-            "MaaNikki_Xinghai_DailyChat": {
               "custom_action_param": {
                 "value": false
               }
@@ -146,6 +64,7 @@
     },
     "XinghaiChatText": {
       "type": "input",
+      "layout": "inline",
       "label": "聚会消息",
       "inputs": [
         {
@@ -162,7 +81,8 @@
             "value": "{Text}"
           }
         }
-      }
+      },
+      "description": "当天需要完成聊天任务时，向聚会频道发送一次此消息。"
     },
     "XinghaiPhoto": {
       "type": "switch",
@@ -218,57 +138,412 @@
       ],
       "default_case": "Yes"
     },
-    "XinghaiMaxClaims": {
-      "type": "input",
-      "label": "最大奖励领取次数",
-      "inputs": [
-        {
-          "name": "MaxClaims",
-          "label": "次数",
-          "default": "5",
-          "pipeline_type": "int",
-          "verify": "^[1-5]$",
-          "pattern_msg": "请输入 1 到 5。"
-        }
-      ],
-      "pipeline_override": {
-        "MaaNikki_ClaimXinghaiRewards": {
-          "custom_action_param": {
-            "roi": [
-              1165,
-              135,
-              65,
-              345
-            ],
-            "max_claims": "{MaxClaims}"
-          }
-        }
-      }
-    },
-    "XinghaiLookbook": {
+    "XinghaiTask_photo": {
       "type": "switch",
-      "label": "自动完成星绘图册点赞",
+      "label": "拍照（200 分）",
+      "default_case": "Yes",
       "cases": [
         {
           "name": "Yes",
-          "label": "开启",
+          "label": "执行",
           "pipeline_override": {
-            "MaaNikki_Xinghai_LookbookDetected": {
-              "enabled": true
+            "MaaNikki_Xinghai_Selected_photo": {
+              "custom_action_param": {
+                "value": true
+              }
             }
           }
         },
         {
           "name": "No",
-          "label": "关闭",
+          "label": "跳过",
           "pipeline_override": {
-            "MaaNikki_Xinghai_LookbookDetected": {
-              "enabled": false
+            "MaaNikki_Xinghai_Selected_photo": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_place": {
+      "type": "switch",
+      "label": "放置摆饰（200 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_place": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_place": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_music": {
+      "type": "switch",
+      "label": "更改音乐（100 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_music": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_music": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_chat": {
+      "type": "switch",
+      "label": "聚会聊天（100 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_chat": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_chat": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_like": {
+      "type": "switch",
+      "label": "星绘图册点赞（200 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_like": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_like": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_bottle": {
+      "type": "switch",
+      "label": "漂流瓶查看（200 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_bottle": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_bottle": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_delivery": {
+      "type": "switch",
+      "label": "投递信笺（200 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_delivery": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_delivery": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_bottle_photo": {
+      "type": "switch",
+      "label": "星愿瓶合影（200 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_bottle_photo": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_bottle_photo": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_meteor": {
+      "type": "switch",
+      "label": "召唤流星（200 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_meteor": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_meteor": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_bell": {
+      "type": "switch",
+      "label": "召唤摇铃（100 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_bell": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_bell": {
+              "custom_action_param": {
+                "value": false
+              }
             }
           }
         }
       ],
-      "default_case": "Yes"
+      "description": "完成当天的摇铃任务。"
+    },
+    "XinghaiTask_wing_photo": {
+      "type": "switch",
+      "label": "星芒之翼合影（200 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_wing_photo": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_wing_photo": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_bubble": {
+      "type": "switch",
+      "label": "制造泡泡（200 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_bubble": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_bubble": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_animal_three": {
+      "type": "switch",
+      "label": "动物互动3次（300 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_animal_three": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_animal_three": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "XinghaiTask_animal_one": {
+      "type": "switch",
+      "label": "不同动物互动（100 分）",
+      "default_case": "Yes",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "执行",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_animal_one": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "跳过",
+          "pipeline_override": {
+            "MaaNikki_Xinghai_Selected_animal_one": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

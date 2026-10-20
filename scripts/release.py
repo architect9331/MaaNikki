@@ -24,7 +24,7 @@ CACHE = ROOT / ".build" / "downloads"
 SOURCE_DIRS = ("agent", "client", "resource", "tasks", "options", "build", "scripts", "licenses", ".github")
 SOURCE_FILES = ("interface.json", ".gitignore", ".gitattributes", ".node-version",
                 "rust-toolchain.toml", "requirements.txt", "requirements.lock",
-                "README.md", "AGENTS.md", "BUILDING.md", "docs/usage.md", "docs/blessing.md",
+                "README.md", "CHANGELOG.md", "AGENTS.md", "BUILDING.md", "docs/usage.md", "docs/blessing.md",
                 "THIRD_PARTY_NOTICES.md", "LICENSE", "LICENSE.md")
 RUNTIME_DIRS = ("agent", "resource", "tasks", "options")
 GENERATED_DIRS = {"node_modules", "target", "dist", "__pycache__", ".git", "schemas"}
@@ -191,7 +191,7 @@ def prepare(output: Path) -> Path:
     shutil.copy2(ROOT / "interface.json", output / "interface.json")
     if (ROOT / "licenses").is_dir():
         shutil.copytree(ROOT / "licenses", output / "licenses", dirs_exist_ok=True)
-    for name in ("README.md", "docs/usage.md", "docs/blessing.md",
+    for name in ("README.md", "CHANGELOG.md", "docs/usage.md", "docs/blessing.md",
                  "THIRD_PARTY_NOTICES.md", "LICENSE", "LICENSE.md"):
         if (ROOT / name).is_file():
             (output / name).parent.mkdir(parents=True, exist_ok=True)

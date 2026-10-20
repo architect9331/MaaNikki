@@ -407,5 +407,117 @@
     "template": "game/daily/bottle_close.png",
     "threshold": 0.7,
     "action": "DoNothing"
+  },
+  "MaaNikki_Xinghai_Selected_photo": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_place": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_music": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_chat": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_like": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_bottle": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_delivery": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_bottle_photo": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_meteor": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_bell": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_wing_photo": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_bubble": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_animal_three": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
+  },
+  "MaaNikki_Xinghai_Selected_animal_one": {
+    "recognition": "DirectHit",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    },
+    "action": "Custom"
   }
 }

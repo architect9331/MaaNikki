@@ -157,17 +157,17 @@ export function LogsPanel() {
   const getLogColor = (type: LogType) => {
     switch (type) {
       case 'success':
-        return 'text-success'; // 跟随主题强调色
+        return 'text-success';
       case 'warning':
         return 'text-warning';
       case 'error':
         return 'text-error';
       case 'agent':
-        return 'text-text-muted';
+        return 'text-text-secondary';
       case 'focus':
-        return 'text-accent'; // 跟随主题强调色
+        return 'text-[var(--color-log-info)]';
       case 'info':
-        return 'text-info'; // 跟随主题强调色
+        return 'text-[var(--color-log-info)]';
       default:
         return 'text-text-secondary';
     }
@@ -346,7 +346,7 @@ export function LogsPanel() {
                       getLogColor(log.type),
                     )}
                   >
-                    <span className="text-text-muted/90 w-[64px] flex-shrink-0 tabular-nums text-[11px] leading-4">
+                    <span className="text-text-muted w-[64px] flex-shrink-0 tabular-nums text-[11px] leading-4">
                       {formatLogTime(log.timestamp, i18n.language)}
                     </span>
                     <span
@@ -361,7 +361,7 @@ export function LogsPanel() {
                       getLogColor(log.type),
                     )}
                   >
-                    <span className="text-text-muted/90 w-[64px] flex-shrink-0 tabular-nums text-[11px] leading-4">
+                    <span className="text-text-muted w-[64px] flex-shrink-0 tabular-nums text-[11px] leading-4">
                       {formatLogTime(log.timestamp, i18n.language)}
                     </span>
                     <span className="min-w-0 flex-1 break-words whitespace-pre-wrap leading-4">

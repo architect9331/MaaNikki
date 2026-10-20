@@ -1,3 +1,4 @@
+import { realmOptionActive } from './nikkiOptions';
 /**
  * Pipeline Override 生成工具
  * 用于生成任务的 pipeline_override JSON
@@ -611,6 +612,7 @@ export const generateTaskPipelineOverride = (
     // 4. 任务级选项（优先级最高）
     if (taskDef.option) {
       for (const optionKey of taskDef.option) {
+        if (selectedTask.taskName === "realm_challenge" && !realmOptionActive(optionKey, selectedTask.optionValues)) continue;
         collectOptionOverrides(
           optionKey,
           selectedTask.optionValues,

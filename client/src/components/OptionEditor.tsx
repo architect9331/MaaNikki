@@ -7,6 +7,7 @@ import {
   useRef,
   useId,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +17,6 @@ import type { OptionValue, CaseItem, InputItem, OptionDefinition } from '@/types
 import { findMxuOptionByKey } from '@/types/specialTasks';
 import clsx from 'clsx';
 import {
-  Info,
   AlertCircle,
   Loader2,
   FileText,
@@ -33,6 +33,7 @@ import { SwitchButton, TextInput, FileInput, TimeInput, HotkeyInput } from './Fo
 import { GameKeyInput } from './GameKeyInput';
 import { RichLabel } from './RichLabel';
 import { Tooltip } from './ui/Tooltip';
+import { HelpTip } from './ui/HelpTip';
 
 /** 判断 switch 类型的选项是否有子选项 */
 export function switchHasNestedOptions(optionDef: OptionDefinition): boolean {
@@ -102,6 +103,11 @@ function AsyncIcon({
   return <img src={iconUrl} alt="" className={className} />;
 }
 
+interface OptionUsageHint {
+  label: string;
+  description: string;
+}
+
 interface OptionEditorProps {
   /** 全局作用域下可省略（值读写 store.globalOptionValues） */
   instanceId?: string;
@@ -118,6 +124,8 @@ interface OptionEditorProps {
   controllerIncompatible?: boolean;
   /** 父级不兼容原因（用于嵌套提示文案） */
   parentIncompatibilityReason?: IncompatibilityReason;
+  /** 选项的使用场景提示，保留编辑能力。 */
+  inactiveHint?: OptionUsageHint;
 }
 
 type IncompatibilityReason = 'controller' | 'resource';
@@ -152,15 +160,29 @@ function OptionLabelWithIncompatible({
   icon,
   basePath,
   incompatibleReason,
+  description,
+  translations,
+  inactiveHint,
 }: {
   label: string;
   icon?: string;
   basePath: string;
   incompatibleReason?: string;
+  description?: string;
+  translations?: Record<string, string>;
+  inactiveHint?: OptionUsageHint;
 }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
       <OptionLabel label={label} icon={icon} basePath={basePath} />
+      <OptionDescription description={description} basePath={basePath} translations={translations} label={`${stripInlineRichText(label)}说明`} />
+      {inactiveHint && (
+        <Tooltip content={inactiveHint.description}>
+          <span tabIndex={0} className="cursor-help rounded bg-bg-primary px-1.5 py-0.5 text-[11px] text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
+            {inactiveHint.label}
+          </span>
+        </Tooltip>
+      )}
       {incompatibleReason && (
         <Tooltip content={incompatibleReason}>
           <AlertCircle className="w-3.5 h-3.5 text-warning flex-shrink-0" />
@@ -193,27 +215,26 @@ function OptionDescription({
   description,
   basePath,
   translations,
+  label = '说明',
+  inverted = false,
 }: {
   description?: string;
   basePath: string;
   translations?: Record<string, string>;
+  label?: string;
+  inverted?: boolean;
 }) {
   const { t } = useTranslation();
   const resolved = useResolvedContent(description, basePath, translations);
 
   if (!description && !resolved.loading) return null;
 
-  if (resolved.loading) {
-    return (
-      <div className="flex items-center gap-1.5 text-xs text-text-muted">
-        <Loader2 className="w-3 h-3 animate-spin" />
-        <span>{t('optionEditor.loadingDescription')}</span>
-      </div>
-    );
-  }
-
   return (
+    <HelpTip label={label} inverted={inverted} content={
     <div className="space-y-1">
+      {resolved.loading && <div className="flex items-center gap-1.5 text-xs text-text-muted">
+        <Loader2 className="w-3 h-3 animate-spin" /><span>{t('optionEditor.loadingDescription')}</span>
+      </div>}
       {/* 来源提示 */}
       {resolved.loaded && resolved.type !== 'text' && (
         <div className="flex items-center gap-1 text-[10px] text-text-muted">
@@ -248,6 +269,7 @@ function OptionDescription({
         />
       )}
     </div>
+    } />
   );
 }
 
@@ -262,6 +284,7 @@ function InputField({
   disabled,
   isMxuOption = false,
   isHotkey = false,
+  labelContent,
   t,
 }: {
   input: InputItem;
@@ -273,6 +296,7 @@ function InputField({
   disabled?: boolean;
   isMxuOption?: boolean;
   isHotkey?: boolean;
+  labelContent?: ReactNode;
   t?: (key: string) => string;
 }) {
   // 对于 MXU 内置选项，使用 t() 翻译
@@ -313,23 +337,24 @@ function InputField({
     return null;
   }, [input.verify, value, patternMsg]);
 
+  const controlClassName = labelContent
+    ? 'min-w-0 flex-1 basis-0'
+    : 'min-w-[min(12rem,100%)] flex-1 basis-[30%]';
+
   return (
     <div className="space-y-1">
-      <div className="flex flex-wrap items-center gap-3 min-w-0">
-        <div className="flex items-center gap-1.5 min-w-0 flex-1 basis-[14rem]">
-          {input.icon && (
+      <div className={clsx('flex items-center gap-3 min-w-0', !labelContent && 'flex-wrap')}>
+        <div className={clsx('flex items-center gap-1.5 min-w-0',
+          labelContent ? 'max-w-[50%] shrink-0' : 'flex-1 basis-[14rem]')}>
+          {!labelContent && input.icon && (
             <AsyncIcon
               icon={input.icon}
               basePath={basePath}
               className="w-4 h-4 object-contain flex-shrink-0"
             />
           )}
-          <RichLabel text={inputLabel} className="text-sm text-text-tertiary truncate" />
-          {inputDescription && (
-            <Tooltip content={inputDescription} side="top" align="start" maxWidth="max-w-[200px]">
-              <Info className="w-3.5 h-3.5 text-text-muted cursor-help flex-shrink-0" />
-            </Tooltip>
-          )}
+          {labelContent || <RichLabel text={inputLabel} className="text-sm text-text-tertiary truncate" />}
+          <HelpTip content={inputDescription} label={`${stripInlineRichText(inputLabel)}说明`} />
         </div>
         {isHotkey ? (
           <HotkeyInput
@@ -337,25 +362,25 @@ function InputField({
             onChange={onChange}
             placeholder={inputPlaceholder}
             disabled={disabled}
-            className="min-w-[min(12rem,100%)] flex-1 basis-[30%]"
+            className={controlClassName}
           />
         ) : input.input_type === 'key' ? (
           <GameKeyInput value={value} onChange={onChange} placeholder={inputPlaceholder}
-            disabled={disabled} className="min-w-[min(12rem,100%)] flex-1 basis-[30%]" />
+            disabled={disabled} className={controlClassName} />
         ) : input.input_type === 'file' ? (
           <FileInput
             value={value}
             onChange={onChange}
             placeholder={inputPlaceholder}
             disabled={disabled}
-            className="min-w-[min(12rem,100%)] flex-1 basis-[30%]"
+            className={controlClassName}
           />
         ) : input.input_type === 'time' ? (
           <TimeInput
             value={value}
             onChange={onChange}
             disabled={disabled}
-            className="min-w-[min(12rem,100%)] flex-1 basis-[30%]"
+            className={controlClassName}
           />
         ) : (
           <TextInput
@@ -364,7 +389,7 @@ function InputField({
             placeholder={inputPlaceholder}
             disabled={disabled}
             hasError={!!validationError}
-            className="min-w-[min(12rem,100%)] flex-1 basis-[30%]"
+            className={controlClassName}
             type={input.password ? 'password' : input.pipeline_type === 'int' ? 'number' : 'text'}
             inputMode={input.pipeline_type === 'int' ? 'numeric' : undefined}
             step={input.pipeline_type === 'int' ? 1 : undefined}
@@ -392,6 +417,7 @@ export function OptionEditor({
   globalScope = false,
   controllerIncompatible = false,
   parentIncompatibilityReason,
+  inactiveHint,
 }: OptionEditorProps) {
   const { t } = useTranslation();
   const {
@@ -553,11 +579,9 @@ export function OptionEditor({
               icon={optionDef.icon}
               basePath={basePath}
               incompatibleReason={incompatibleReason}
-            />
-            <OptionDescription
               description={optionDescription}
-              basePath={basePath}
               translations={translations}
+              inactiveHint={inactiveHint}
             />
           </div>
           {nestedOptionKeys.length > 0 && (
@@ -596,6 +620,7 @@ export function OptionEditor({
                     globalScope={globalScope}
                     controllerIncompatible={isOptionIncompatible}
                     parentIncompatibilityReason={incompatibleReasonType}
+                    inactiveHint={inactiveHint}
                   />
                 ))}
               </div>
@@ -637,11 +662,9 @@ export function OptionEditor({
           icon={optionDef.icon}
           basePath={basePath}
           incompatibleReason={incompatibleReason}
-        />
-        <OptionDescription
           description={optionDescription}
-          basePath={basePath}
           translations={translations}
+          inactiveHint={inactiveHint}
         />
         <div className="grid grid-cols-4 gap-1">
           {optionDef.cases.map((caseItem) => {
@@ -725,6 +748,18 @@ export function OptionEditor({
       effectiveValue?.type === 'input' || effectiveValue?.type === 'hotkey'
         ? effectiveValue.values
         : {};
+    const inline = optionDef.type === 'input' && optionDef.layout === 'inline' && fields.length === 1;
+    const labelContent = (
+      <OptionLabelWithIncompatible
+        label={optionLabel}
+        icon={optionDef.icon}
+        basePath={basePath}
+        incompatibleReason={incompatibleReason}
+        description={optionDescription}
+        translations={translations}
+        inactiveHint={inactiveHint}
+      />
+    );
 
     return (
       <div
@@ -734,19 +769,7 @@ export function OptionEditor({
           isOptionIncompatible && 'opacity-60',
         )}
       >
-        <div className="max-w-[60%]">
-          <OptionLabelWithIncompatible
-            label={optionLabel}
-            icon={optionDef.icon}
-            basePath={basePath}
-            incompatibleReason={incompatibleReason}
-          />
-          <OptionDescription
-            description={optionDescription}
-            basePath={basePath}
-            translations={translations}
-          />
-        </div>
+        {!inline && <div className="max-w-[60%]">{labelContent}</div>}
         {fields.map((input) => {
           const inputValue = inputValues[input.name] ?? input.default ?? '';
           const isHotkey = optionDef.type === 'hotkey';
@@ -755,6 +778,7 @@ export function OptionEditor({
             <InputField
               key={input.name}
               input={input}
+              labelContent={inline ? labelContent : undefined}
               value={inputValue}
               isHotkey={isHotkey}
               onChange={(newVal) => {
@@ -802,11 +826,9 @@ export function OptionEditor({
             icon={optionDef.icon}
             basePath={basePath}
             incompatibleReason={incompatibleReason}
-          />
-          <OptionDescription
             description={optionDescription}
-            basePath={basePath}
             translations={translations}
+            inactiveHint={inactiveHint}
           />
         </div>
         {nestedOptionKeys.length > 0 && (
@@ -861,6 +883,7 @@ export function OptionEditor({
                   globalScope={globalScope}
                   controllerIncompatible={isOptionIncompatible}
                   parentIncompatibilityReason={incompatibleReasonType}
+                  inactiveHint={inactiveHint}
                 />
               ))}
             </div>
@@ -1534,7 +1557,7 @@ interface SwitchGridProps {
 
 /** Switch 网格组件：用于显示多个无子选项的 switch */
 export function SwitchGrid({ instanceId, taskId, items, disabled = false }: SwitchGridProps) {
-  const { setTaskOptionValue } = useAppStore();
+  const { setTaskOptionValue, basePath, interfaceTranslations, language } = useAppStore();
   const { t } = useTranslation();
 
   const handleToggle = (optionKey: string, currentValue: boolean, itemDisabled: boolean) => {
@@ -1549,29 +1572,27 @@ export function SwitchGrid({ instanceId, taskId, items, disabled = false }: Swit
     <div className="grid grid-cols-4 gap-1">
       {items.map((item) => {
         const itemDisabled = disabled || !!item.controllerIncompatible;
-        const tooltipContent = item.controllerIncompatible
-          ? item.description
-            ? `${t('optionEditor.incompatibleController')} — ${item.description}`
-            : t('optionEditor.incompatibleController')
-          : item.description;
         return (
-          <Tooltip key={item.optionKey} content={tooltipContent}>
+          <div key={item.optionKey} className={clsx('flex items-center gap-1 px-2 py-1.5 text-xs rounded border transition-colors min-w-0',
+            item.isChecked ? 'bg-accent text-white border-accent' : 'bg-bg-primary text-text-secondary border-border',
+            itemDisabled && 'opacity-60')}>
+            <Tooltip content={item.controllerIncompatible ? t('optionEditor.incompatibleController') : undefined}>
             <button
               type="button"
               onClick={() => handleToggle(item.optionKey, item.isChecked, itemDisabled)}
               disabled={itemDisabled}
-              className={clsx(
-                'px-2 py-1.5 text-xs rounded border transition-colors truncate',
-                item.isChecked
-                  ? 'bg-accent text-white border-accent'
-                  : 'bg-bg-primary text-text-secondary border-border hover:border-accent hover:text-accent',
-                itemDisabled && 'opacity-60 cursor-not-allowed',
-              )}
-              title={item.description || stripInlineRichText(item.label)}
+              className={clsx('min-w-0 flex-1 truncate text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                itemDisabled ? 'cursor-not-allowed' : !item.isChecked && 'hover:text-accent')}
+              title={stripInlineRichText(item.label)}
+              aria-pressed={item.isChecked}
             >
               <RichLabel text={item.label} />
             </button>
-          </Tooltip>
+            </Tooltip>
+            <OptionDescription description={item.description} basePath={basePath}
+              translations={interfaceTranslations[getInterfaceLangKey(language)]}
+              label={`${stripInlineRichText(item.label)}说明`} inverted={item.isChecked} />
+          </div>
         );
       })}
     </div>

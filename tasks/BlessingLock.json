@@ -2,13 +2,13 @@
   "task": [
     {
       "name": "blessing_lock",
-      "label": "祝福闪光整理",
+      "label": "一键整理祝福闪光",
       "entry": "MaaNikki_BlessingLock",
       "group": [
         "collection"
       ],
       "default_check": false,
-      "description": "清除筛选后运行。按获得时间从新到旧记录三个部位，保护每款每部位每色的满级闪光，不升级。默认保留已有锁定；可选择解锁未满级和多余重复项。完整整理及库存核对后建立全收集基准，保存统一 JSON；未完整完成禁止使用全收集。月桂兔自动跳过。首次整理会核对完整仓库，日常升级只读取新增区域及目标附近。",
+      "description": "扫描三个部位的祝福闪光，锁定每款每色的满级收藏，并保存全收集基准。运行前请清除仓库筛选；换号或手动整理库存后请重新运行。",
       "option": [
         "BlessingLockUnlockNonconforming"
       ]
@@ -18,7 +18,7 @@
     "BlessingLockUnlockNonconforming": {
       "type": "select",
       "label": "解锁不符合要求的祝福闪光",
-      "description": "关闭时保留已有锁定，只补锁缺少的满级款色；开启时同时解锁未满级和多余重复项。先核对已有锁定，避免获得时间排序下重复补锁。",
+      "description": "关闭时补锁缺少的满级颜色；开启时同时解锁未满级和多余重复项。",
       "default_case": "Off",
       "cases": [
         {

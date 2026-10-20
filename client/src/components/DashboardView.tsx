@@ -1,3 +1,4 @@
+import { useAccountStateStore, periodCompleted } from '@/stores/accountStateStore';
 import { useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -119,7 +120,8 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
   const instance = instances.find((i) => i.id === instanceId);
   const isRunning = instance?.isRunning || false;
   const tasks = instance?.selectedTasks || [];
-  const enabledTasks = tasks.filter((task) => task.enabled &&
+  const account = useAccountStateStore((s) => s.data);
+  const enabledTasks = tasks.filter((task) => task.enabled && !periodCompleted(account, task.taskName) &&
     isTaskAvailable(projectInterface?.task.find((def) => def.name === task.taskName), devMode));
   const hasLaunchTask = enabledTasks.some(
     (task) => Boolean(getPretaskItem(projectInterface, task.taskName)?.entry),
@@ -242,9 +244,14 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
         setIsStarting(true);
 
         try {
+          const currentAccount = await useAccountStateStore.getState().refresh();
+          const enabledTasks = tasks.filter((task) => task.enabled && !periodCompleted(currentAccount, task.taskName) &&
+            isTaskAvailable(projectInterface?.task.find((def) => def.name === task.taskName), devMode));
+          if (enabledTasks.length === 0) { setIsStarting(false); return; }
           if (hasLaunchTask) {
             // Share the controller discovery and cancellable prerequisite flow.
             await taskStartService.start(instance);
+            setIsStarting(false);
             return;
           }
           const compatibleEnabledTasks = enabledTasks.filter((task) => {

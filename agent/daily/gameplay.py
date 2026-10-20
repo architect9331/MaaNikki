@@ -417,8 +417,10 @@ class Gameplay:
         for index, page in enumerate(pages):
             if index == 2 and not (treasure_available or task_claimed):
                 continue
-            node = f"MaaNikki_Monthly_{page}Tab"
-            if not (self.rt.context.get_node_data(node) or {}).get("enabled", False):
+            node = ("MaaNikki_Monthly_ParadiseTaskTab" if kind == "paradise"
+                    else f"MaaNikki_Monthly_{page}Tab")
+            selection_node = "MaaNikki_Monthly_ParadiseEnabled" if kind == "paradise" else node
+            if not (self.rt.context.get_node_data(selection_node) or {}).get("enabled", False):
                 continue
             if index == 2:
                 self.rt.log("正在检查并领取旅行秘宝奖励。")
@@ -484,6 +486,14 @@ class Gameplay:
     def monthly(self):
         kind, label = "unknown", "奇迹之旅／乐园构想"
         completed = set()
+        selected = {
+            "travel": any((self.rt.context.get_node_data(f"MaaNikki_Monthly_{page}Tab") or {}).get("enabled", False)
+                          for page in ("Task", "Treasure")),
+            "paradise": (self.rt.context.get_node_data("MaaNikki_Monthly_ParadiseEnabled") or {}).get("enabled", False),
+        }
+        if not any(selected.values()):
+            self.rt.log("未选择奇迹之旅或乐园构想奖励，跳过。")
+            return True
         try:
             if not self.ui.monthly_page():
                 self.rt.log("未能确认奇迹之旅或乐园构想页面。")
@@ -499,17 +509,20 @@ class Gameplay:
                 if kind in completed:
                     self.monthly_diagnostic(kind, "switch_unconfirmed", "切换后仍停留在已处理页面")
                     return False
-                if not self.monthly_rewards(kind):
+                if selected[kind] and not self.monthly_rewards(kind):
                     return False
                 completed.add(kind)
                 if index == 0:
+                    other = "travel" if kind == "paradise" else "paradise"
+                    if not selected[other]:
+                        break
                     target = "Travel" if kind == "paradise" else "Paradise"
                     target_label = "奇迹之旅" if kind == "paradise" else "乐园构想"
                     self.rt.log(f"{label}处理完成，点击左下角切换到{target_label}。")
                     if not self.rt.click_template(f"MaaNikki_Monthly_To{target}"):
                         self.monthly_diagnostic(kind, "switch_unconfirmed", f"未能切换到{target_label}")
                         return False
-            self.rt.log("奇迹之旅与乐园构想奖励均已处理。")
+            self.rt.log("所选奇迹之旅与乐园构想奖励已处理。")
             return True
         finally:
             if self.rt.stopped:

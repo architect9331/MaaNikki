@@ -1,7 +1,7 @@
 {
   "name": "light",
-  "bg": {"primary": "#fff8f5", "secondary": "#fffefd", "tertiary": "#f9eeeb", "hover": "#f5e1e3", "active": "#ecd0d5"},
-  "text": {"primary": "#49323d", "secondary": "#715561", "tertiary": "#886c77", "muted": "#967b85"},
-  "border": {"default": "#efdee0", "strong": "#dbc1c8"},
-  "shadow": {"sm": "0 1px 3px rgb(105 54 74 / 0.06)", "md": "0 4px 14px rgb(105 54 74 / 0.08)", "lg": "0 12px 36px rgb(105 54 74 / 0.12)"}
+  "bg": {"primary": "#fff5f6", "secondary": "#fffcfc", "tertiary": "#fcecef", "hover": "#f8e0e6", "active": "#f1ccd7"},
+  "text": {"primary": "#4b3038", "secondary": "#76545f", "tertiary": "#825a65", "muted": "#8b616e"},
+  "border": {"default": "#efd5dc", "strong": "#d9aebc"},
+  "shadow": {"sm": "0 1px 3px rgb(132 62 83 / 0.06)", "md": "0 4px 14px rgb(132 62 83 / 0.08)", "lg": "0 12px 36px rgb(132 62 83 / 0.12)"}
 }

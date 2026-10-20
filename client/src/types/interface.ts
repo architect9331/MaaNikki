@@ -67,6 +67,8 @@ export interface SentryTelemetryConfig {
  * 由项目在 interface.json 中声明，Client 应在连接 Controller 前按顺序执行这些外部程序。
  */
 export interface PretaskItem {
+  /** Add this prerequisite to newly created configurations. */
+  default_check?: boolean;
   /** 要执行的程序路径，可以是系统 PATH 中的可执行文件 */
   exec: string;
   /** 💡 v2.8.1: 指定适用的控制器列表（controller.name） */
@@ -316,6 +318,8 @@ export interface SwitchOption {
 
 export interface InputOption {
   type: 'input';
+  /** MXU 扩展：单字段输入与选项标题在同一行展示。 */
+  layout?: 'inline';
   /** 可选。UI 展示名称，支持国际化字符串（以 $ 开头）。MXU 扩展：支持行内 Markdown，渲染见 components/RichLabel.tsx */
   label?: string;
   description?: string;

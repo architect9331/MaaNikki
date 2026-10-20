@@ -8,7 +8,7 @@
         "daily"
       ],
       "default_check": true,
-      "description": "沿家园日常路线钓星；首个点位已执行钓星或确认陨星耗尽时，走捷径直达下落攻击点赞位置，否则继续前往第二个钓星点。随后前往终点下落攻击领奖，结束后检查巨陨星提示。",
+      "description": "沿家园路线钓星，完成下落攻击和点赞领奖，最后检查巨陨星提示。根据当前钓星进度选择后续路线。",
       "option": [
         "HomeAbilityPlan"
       ]
@@ -19,7 +19,7 @@
       "type": "select",
       "label": "采星允许使用的能力方案",
       "default_case": "Plan3",
-      "description": "采星能力未装备时，在所选方案中配置；当前轮盘已有采星时直接沿用。",
+      "description": "优先沿用当前采星能力，缺少时在所选方案中配置。",
       "cases": [
         {
           "name": "Plan1",

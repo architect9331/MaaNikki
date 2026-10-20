@@ -57,6 +57,11 @@
     "next": [],
     "custom_action": "nikki.daily_fail"
   },
+  "MaaNikki_CollectStarlightCrystals": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.collect_starlight_crystals"
+  },
   "MaaNikki_Xinghai": {
     "recognition": "DirectHit",
     "action": "Custom",
@@ -294,13 +299,23 @@
   },
   "MaaNikki_Xinghai_LookbookReady": {
     "recognition": "OCR",
-    "roi": [65, 15, 150, 45],
+    "roi": [
+      65,
+      15,
+      150,
+      45
+    ],
     "expected": "星绘图册",
     "action": "DoNothing"
   },
   "MaaNikki_Xinghai_PhotoReady": {
     "recognition": "OCR",
-    "roi": [65, 15, 150, 45],
+    "roi": [
+      65,
+      15,
+      150,
+      45
+    ],
     "expected": "详情界面",
     "action": "DoNothing"
   },
@@ -397,7 +412,12 @@
   },
   "MaaNikki_Monthly_ToTravel": {
     "recognition": "OCR",
-    "roi": [0, 630, 260, 80],
+    "roi": [
+      0,
+      630,
+      260,
+      80
+    ],
     "expected": "奇迹之旅",
     "action": "Custom",
     "custom_action": "nikki.ui_click",
@@ -410,7 +430,12 @@
   },
   "MaaNikki_Monthly_ToParadise": {
     "recognition": "OCR",
-    "roi": [0, 630, 260, 80],
+    "roi": [
+      0,
+      630,
+      260,
+      80
+    ],
     "expected": "乐园构想",
     "action": "Custom",
     "custom_action": "nikki.ui_click",
@@ -453,7 +478,12 @@
   },
   "MaaNikki_Monthly_ParadiseClaim": {
     "recognition": "TemplateMatch",
-    "roi": [940, 600, 230, 90],
+    "roi": [
+      940,
+      600,
+      230,
+      90
+    ],
     "template": "game/monthly/claim.png",
     "threshold": 0.65,
     "action": "Custom",
@@ -463,13 +493,23 @@
   },
   "MaaNikki_Monthly_ParadiseClaimEmpty": {
     "recognition": "OCR",
-    "roi": [940, 600, 230, 90],
+    "roi": [
+      940,
+      600,
+      230,
+      90
+    ],
     "expected": "^进行中(的)?$|^已领取$",
     "next": []
   },
   "MaaNikki_Monthly_ParadiseTaskOngoing": {
     "recognition": "TemplateMatch",
-    "roi": [1070, 155, 65, 425],
+    "roi": [
+      1070,
+      155,
+      65,
+      425
+    ],
     "template": "game/monthly/paradise_task_ongoing.png",
     "threshold": 0.85,
     "action": "DoNothing",
@@ -560,5 +600,24 @@
     "custom_action_param": {
       "name": "skip"
     }
+  },
+  "MaaNikki_Monthly_ParadiseEnabled": {
+    "recognition": "DirectHit",
+    "enabled": false
+  },
+  "MaaNikki_Monthly_ParadiseTaskTab": {
+    "enabled": false,
+    "recognition": "OCR",
+    "roi": [
+      590,
+      0,
+      200,
+      80
+    ],
+    "expected": "旅行任务|乐园纪事",
+    "action": "Custom",
+    "post_delay": 650,
+    "next": [],
+    "custom_action": "nikki.ui_click"
   }
 }

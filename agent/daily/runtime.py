@@ -363,17 +363,28 @@ class Runtime:
         result = dict(parameters(self.context, prefix + "Settings"))
         # Maa replaces custom_action_param rather than deep-merging it. Keep
         # independently selectable options in separate parameter-only nodes.
-        flags = [("Auto", "auto_complete"), ("Photo", "delete_photo")]
+        flags = [("Photo", "delete_photo")]
         if mode == "xinghai":
-            flags += [("Bubble", "bubble_equipped"), ("ForceCrystal", "force_crystal")]
+            flags += [("ChatText", "chat_text")]
         else:
-            flags += [("AbilityPlan", "ability_plan")]
-        flags += [("Energy", "allow_energy")] if mode == "zhaoxi" else [("Chat", "allow_chat"), ("ChatText", "chat_text")]
+            flags += [("AbilityPlan", "ability_plan"), ("Energy", "allow_energy")]
         for suffix, key in flags:
             value = parameters(self.context, prefix + suffix)
             if "value" in value:
                 result[key] = value["value"]
+        result["auto_complete"] = True
+        if mode == "xinghai":
+            result.update(bubble_equipped=True, allow_chat=True)
         return result
+
+    def task_selected(self, mode, key):
+        if mode != "xinghai":
+            return True
+        # Retain the original node name so existing crystal choices survive
+        # the split into a standalone collector and an on-demand daily card.
+        node = ("MaaNikki_Xinghai_DailyForceCrystal" if key == "crystal"
+                else "MaaNikki_Xinghai_Selected_" + key)
+        return parameters(self.context, node).get("value", True)
 
     def routes(self, name):
         from navigation.models import load_route
@@ -530,15 +541,13 @@ INTERACTION_ROI = [265, 97, 897, 534]
 class Executors(Runtime):
     def available(self, mode: str, card: Card) -> bool:
         rule = card.rule
-        if not rule or not rule.executor:
+        if not rule or not rule.executor or not self.task_selected(mode, rule.key):
             return False
         options = self.setting(mode)
         if not options.get("auto_complete", True):
             return False
         if rule.energy:
             return options.get("allow_energy", True)
-        if rule.key == "like" and not (self.context.get_node_data("MaaNikki_Xinghai_LookbookDetected") or {}).get("enabled", True):
-            return False
         if rule.key == "chat" and not options.get("allow_chat", False):
             return False
         if rule.key == "bubble" and not options.get("bubble_equipped", False):
@@ -586,6 +595,8 @@ class Executors(Runtime):
 
     def execute(self, mode: str, card: Card):
         rule = card.rule
+        if not rule or not self.task_selected(mode, rule.key):
+            return False
         if not self.main() or self.stopped:
             return False
         if rule.executor == "crystal":

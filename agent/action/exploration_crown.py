@@ -6,6 +6,8 @@ from maa.custom_action import CustomAction
 from registration import agent_action
 from daily.exploration import Exploration
 from daily.crown import Crown
+from daily.settings import ROOT
+from account_state import AccountState, period_key
 
 
 @agent_action("nikki.feature_settings")
@@ -30,7 +32,15 @@ class CrownAction(CustomAction):
     def run(self, context, argv):
         rt = Crown(context)
         try:
-            return rt.run_crown()
+            account = AccountState(ROOT)
+            period = period_key("crown")
+            if account.complete("crown"):
+                rt.log("巅峰赛：本期已完成，跳过。")
+                return True
+            completed = rt.run_crown()
+            if completed and not rt.stopped:
+                account.confirm("crown", "challenge", "completed", period=period)
+            return completed
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             rt.log(f"巅峰赛未完成：{error}。")
             return False

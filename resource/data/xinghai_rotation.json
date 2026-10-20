@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "anchor": "2026-10-06",
+  "timezone": "Asia/Shanghai",
+  "reset_hour": 4,
+  "target_score": 500,
+  "evidence": "2026-10-06 至 2026-10-20 本地 daily/xinghai 日志；06～12 与 14～20 日逐日重复，13 日为动物互动组合。海螺及跳泡泡未适配，不计入可执行分数。",
+  "tasks": {
+    "photo": {
+      "label": "拍照",
+      "score": 200,
+      "adapted": true
+    },
+    "place": {
+      "label": "放置摆饰",
+      "score": 200,
+      "adapted": true
+    },
+    "music": {
+      "label": "更改音乐",
+      "score": 100,
+      "adapted": true
+    },
+    "chat": {
+      "label": "聚会聊天",
+      "score": 100,
+      "adapted": true
+    },
+    "like": {
+      "label": "星绘图册点赞",
+      "score": 200,
+      "adapted": true
+    },
+    "coco": {
+      "label": "椰果采摘",
+      "score": 300,
+      "adapted": false
+    },
+    "coco_photo": {
+      "label": "椰果拍照",
+      "score": 200,
+      "adapted": false
+    },
+    "fragment": {
+      "label": "星愿碎片投递",
+      "score": 300,
+      "adapted": false
+    },
+    "fragment_photo": {
+      "label": "星愿碎片拍照",
+      "score": 200,
+      "adapted": false
+    },
+    "bottle": {
+      "label": "漂流瓶查看",
+      "score": 200,
+      "adapted": true
+    },
+    "delivery": {
+      "label": "投递信笺",
+      "score": 200,
+      "adapted": true
+    },
+    "bottle_photo": {
+      "label": "星愿瓶合影",
+      "score": 200,
+      "adapted": true
+    },
+    "crystal": {
+      "label": "星光结晶",
+      "score": 100,
+      "adapted": true
+    },
+    "meteor": {
+      "label": "召唤流星",
+      "score": 200,
+      "adapted": true
+    },
+    "bell": {
+      "label": "召唤摇铃",
+      "score": 100,
+      "adapted": true
+    },
+    "wing_photo": {
+      "label": "星芒之翼合影",
+      "score": 200,
+      "adapted": true
+    },
+    "bubble": {
+      "label": "制造泡泡",
+      "score": 200,
+      "adapted": true
+    },
+    "bubble_photo": {
+      "label": "泡泡合影",
+      "score": 200,
+      "adapted": false
+    },
+    "animal_three": {
+      "label": "动物互动3次",
+      "score": 300,
+      "adapted": true
+    },
+    "conch": {
+      "label": "海螺收集",
+      "adapted": false
+    },
+    "conch_photo": {
+      "label": "海螺拍照",
+      "adapted": false
+    },
+    "bubble_jump": {
+      "label": "跳上泡泡",
+      "adapted": false
+    },
+    "animal_one": {
+      "label": "不同动物互动",
+      "score": 100,
+      "adapted": true
+    }
+  },
+  "cycles": [
+    {
+      "label": "椰果",
+      "tasks": [
+        "bell",
+        "chat",
+        "coco",
+        "coco_photo",
+        "like",
+        "place"
+      ]
+    },
+    {
+      "label": "星愿碎片",
+      "tasks": [
+        "bell",
+        "chat",
+        "fragment",
+        "fragment_photo",
+        "like",
+        "place"
+      ]
+    },
+    {
+      "label": "星芒之翼",
+      "tasks": [
+        "bell",
+        "crystal",
+        "like",
+        "meteor",
+        "place",
+        "wing_photo"
+      ]
+    },
+    {
+      "label": "制造泡泡",
+      "tasks": [
+        "bell",
+        "bottle",
+        "bubble",
+        "bubble_photo",
+        "crystal",
+        "like"
+      ]
+    },
+    {
+      "label": "海螺",
+      "tasks": [
+        "bell",
+        "chat",
+        "music",
+        "place",
+        "conch",
+        "conch_photo"
+      ]
+    },
+    {
+      "label": "椰果与结晶",
+      "tasks": [
+        "bell",
+        "coco",
+        "coco_photo",
+        "crystal",
+        "like",
+        "place"
+      ]
+    },
+    {
+      "label": "泡泡梦屿",
+      "tasks": [
+        "bell",
+        "bottle",
+        "crystal",
+        "meteor",
+        "photo",
+        "bubble_jump"
+      ]
+    },
+    {
+      "label": "动物互动",
+      "tasks": [
+        "animal_one",
+        "animal_three",
+        "bell",
+        "bottle",
+        "bottle_photo",
+        "delivery"
+      ]
+    }
+  ]
+}

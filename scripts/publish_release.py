@@ -91,6 +91,24 @@ def report(message: str):
             stream.write(message + "\n")
 
 
+def release_notes(version: str, tag: str, sha: str) -> str:
+    changelog = ROOT / "CHANGELOG.md"
+    if not changelog.is_file():
+        return api("releases/generate-notes", "POST", {
+            "tag_name": tag, "target_commitish": sha,
+        })["body"]
+    match = re.search(
+        rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## |\Z)",
+        changelog.read_text(encoding="utf-8-sig"), re.MULTILINE | re.DOTALL,
+    )
+    if match is None or not match[1].strip():
+        raise ValueError(f"CHANGELOG.md has no release notes for {version}")
+    # Relative links in repository documentation need a commit URL on Releases.
+    body = match[1].strip()
+    base = f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/{os.environ['GITHUB_REPOSITORY']}/blob/{sha}/"
+    return re.sub(r"(\]\()(docs/[^)]+)(\))", lambda m: m[1] + base + m[2] + m[3], body)
+
+
 def main():
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise ValueError("This publisher must run in GitHub Actions")
@@ -117,14 +135,14 @@ def main():
     packages = verify_packages(version)
     if release is not None and release["target_commitish"] != sha:
         raise ValueError(f"Draft {tag} belongs to another commit; rerun its original build")
+    body = release_notes(version, tag, sha)
     ensure_tag(tag, sha)
     if release is None:
-        notes = api("releases/generate-notes", "POST", {"tag_name": tag, "target_commitish": sha})
         release = api("releases", "POST", {
             "tag_name": tag,
             "target_commitish": sha,
             "name": f"MaaNikki {tag}",
-            "body": notes["body"],
+            "body": body,
             "draft": True,
             "prerelease": True,
         })
@@ -143,7 +161,7 @@ def main():
         if asset["state"] != "uploaded" or asset.get("digest") != f"sha256:{checksum}":
             raise ValueError(f"Uploaded asset checksum mismatch: {name}")
     published = api(f"releases/{release['id']}", "PATCH", {
-        "draft": False, "prerelease": True, "make_latest": "false",
+        "draft": False, "prerelease": True, "make_latest": "false", "body": body,
     })
     report(f"Published prerelease [{tag}]({published['html_url']}) with verified attachments.")
 

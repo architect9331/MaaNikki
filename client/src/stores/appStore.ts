@@ -40,6 +40,7 @@ import type { ConnectionStatus, TaskStatus } from '@/types/maa';
 import { getMxuSpecialTask, isMxuSpecialTask, MXU_SPECIAL_TASKS } from '@/types/specialTasks';
 import {
   getPretaskItems,
+  buildPretaskDef,
   pretaskName,
   isPretaskName,
   getPretaskItem,
@@ -405,8 +406,9 @@ export const useAppStore = create<AppState>()(
         // 获取默认控制器名称，用于检查任务兼容性
         const defaultControllerName = pi.controller[0]?.name;
 
-        pi.task.forEach((task) => {
-          if (!task.default_check) return;
+        const definitions = [...getPretaskItems(pi).filter((item) => item.default_check).map(buildPretaskDef), ...pi.task];
+        definitions.forEach((task) => {
+          if (!isPretaskName(task.name) && !task.default_check) return;
 
           // 检查任务是否支持默认控制器
           const isControllerCompatible =
@@ -622,7 +624,8 @@ export const useAppStore = create<AppState>()(
       const newTasks: SelectedTask[] = [];
 
       for (const presetTask of preset.task) {
-        const taskDef = pi.task.find((t) => t.name === presetTask.name);
+        const prerequisite = getPretaskItems(pi).find((item) => item.name === presetTask.name || pretaskName(item) === presetTask.name);
+        const taskDef = pi.task.find((t) => t.name === presetTask.name) || (prerequisite ? buildPretaskDef(prerequisite) : undefined);
         if (!taskDef) {
           loggers.task.warn(
             `[applyPreset] Task "${presetTask.name}" referenced in preset "${presetName}" not found in project interface and will be skipped.`,
@@ -646,7 +649,7 @@ export const useAppStore = create<AppState>()(
 
         newTasks.push({
           id: generateId(),
-          taskName: presetTask.name,
+          taskName: taskDef.name,
           enabled: presetTask.enabled !== false,
           optionValues,
           expanded: true,
@@ -1174,6 +1177,7 @@ export const useAppStore = create<AppState>()(
 
     // v2.3.0: 预设初始化标记（持久化）
     presetInitialized: false,
+    nikkiPresetVersion: 0,
     setPresetInitialized: (value) => set({ presetInitialized: value }),
 
     // 全局 UI 状态
@@ -1369,6 +1373,29 @@ export const useAppStore = create<AppState>()(
             };
           });
 
+        // Split the former forced prepass into its own task once on upgrade.
+        // The interface snapshot prevents re-adding it after manual removal.
+        if (pi?.task.some((task) => task.name === 'starlight_crystals') &&
+            !snapshotTaskNames.has('starlight_crystals') &&
+            !savedTasks.some((task) => task.taskName === 'starlight_crystals')) {
+          const xinghaiIndex = savedTasks.findIndex((task) => task.taskName === 'xinghai');
+          if (xinghaiIndex >= 0) {
+            const source = savedTasks[xinghaiIndex];
+            const crystalOption = source.optionValues.XinghaiForceCrystal;
+            const wasSelected = crystalOption?.type === 'switch' ? crystalOption.value : true;
+            savedTasks.splice(xinghaiIndex, 0, {
+              id: generateId(),
+              taskName: 'starlight_crystals',
+              enabled: source.enabled && wasSelected,
+              enabledByController: source.enabledByController && Object.fromEntries(
+                Object.entries(source.enabledByController).map(([name, enabled]) => [name, enabled && wasSelected]),
+              ),
+              optionValues: {},
+              expanded: false,
+            });
+          }
+        }
+
         return {
           id: inst.id,
           name: inst.name,
@@ -1544,6 +1571,7 @@ export const useAppStore = create<AppState>()(
         showAddTaskPanel: detectedNewTaskNames.length > 0,
         // v2.3.0: 恢复预设初始化标记
         presetInitialized: config.presetInitialized ?? false,
+        nikkiPresetVersion: config.nikkiPresetVersion ?? 0,
         // 全局任务设置值：以 global_option 的默认值为基底，合并已保存值（保存值优先）
         globalOptionValues: (() => {
           const globalKeys = pi?.global_option;
@@ -2504,6 +2532,7 @@ function generateConfig(): MxuConfig {
     lastActiveInstanceId: state.activeInstanceId || undefined,
     // 保存预设初始化标记
     presetInitialized: state.presetInitialized || undefined,
+    nikkiPresetVersion: state.nikkiPresetVersion || undefined,
   };
 }
 
@@ -2571,6 +2600,7 @@ useAppStore.subscribe(
     recentlyClosed: state.recentlyClosed,
     newTaskNames: state.newTaskNames,
     presetInitialized: state.presetInitialized,
+    nikkiPresetVersion: state.nikkiPresetVersion,
   }),
   () => {
     debouncedSaveConfig();

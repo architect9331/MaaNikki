@@ -17,6 +17,7 @@
 pub mod types;
 pub mod utils;
 
+pub mod account_state;
 pub mod app_config;
 pub mod download;
 pub mod file_ops;

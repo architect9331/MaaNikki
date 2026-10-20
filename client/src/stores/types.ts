@@ -43,7 +43,7 @@ export interface LogEntry {
 
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'system' | 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP' | 'ko-KR';
-export type PageView = 'main' | 'settings';
+export type PageView = 'main' | 'settings' | 'blessing';
 
 // 定时执行状态信息
 export interface ScheduleExecutionInfo {
@@ -182,6 +182,7 @@ export interface AppState {
   skippedPresetInstanceIds: Set<string>;
   /** v2.3.0: 是否已完成预设初始化（首次启动自动建立预设 tab） */
   presetInitialized: boolean;
+  nikkiPresetVersion: number;
   setPresetInitialized: (value: boolean) => void;
   /** @deprecated 使用 addMxuSpecialTask 代替 */
   addSleepTaskToInstance: (instanceId: string, sleepTime?: number) => string;
