@@ -17,6 +17,12 @@
     },
     "post_delay": 1000
   },
+  "MaaNikki_StartGame_Intro": {
+    "recognition": "OCR",
+    "roi": [300, 180, 680, 430],
+    "expected": "健康游戏忠告|抵制不良游戏|警告.*游戏前详阅|健康遊戲忠告|抵制不良遊戲|警告.*遊戲前詳閱",
+    "action": "DoNothing"
+  },
   "MaaNikki_StartGame_UpdateTitle": {
     "recognition": "OCR",
     "roi": [480, 230, 320, 60],

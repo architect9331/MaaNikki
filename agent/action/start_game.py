@@ -28,6 +28,7 @@ class StartGameAction(CustomAction):
         entered, logged_in, update_attempts = 0, 0, 0
         update_waiting = False
         waiting_logged = False
+        intro_logged = False
         unknown_since = None
 
         def incomplete(reason="尚未完成进入游戏"):
@@ -98,7 +99,9 @@ class StartGameAction(CustomAction):
                 main = not restart and not update and runtime.hit("MaaNikki_MainDetected")
                 enter = not update and not main and runtime.hit("MaaNikki_StartGame_Enter")
                 login = not update and not main and not enter and runtime.hit("MaaNikki_StartGame_Login")
-            if restart or update or reward or main or enter or login:
+                intro = (not restart and not update and not reward and not main
+                         and not enter and not login and runtime.hit("MaaNikki_StartGame_Intro"))
+            if restart or update or reward or main or enter or login or intro:
                 unknown_since = None
             if restart:
                 if not bootstrap or options.get("allow_restart", True) is not True:
@@ -155,6 +158,10 @@ class StartGameAction(CustomAction):
                 logged_in += 1
                 if not advance("MaaNikki_StartGame_Login", transition_ready):
                     return incomplete()
+            elif intro:
+                if not intro_logged:
+                    runtime.log("正在播放健康提示或光敏警告，等待启动画面结束。")
+                    intro_logged = True
             elif any(runtime.hit(node) for node in (
                     "MaaNikki_MenuReady", "MaaNikki_CalendarReady", "MaaNikki_Monthly_PageReady")):
                 if runtime.main():
@@ -173,6 +180,16 @@ class StartGameAction(CustomAction):
                         if runtime.main():
                             runtime.log("已恢复到游戏主页，继续后续任务。")
                             return complete()
+                        # Recovery can overlap a cold-start transition. The
+                        # login/enter screen needs the startup handler, not Esc.
+                        with runtime.observe(fresh=True):
+                            startup_ready = (transition_ready()
+                                             or runtime.hit("MaaNikki_StartGame_Login")
+                                             or runtime.hit("MaaNikki_StartGame_Intro"))
+                        if startup_ready:
+                            unknown_since = None
+                            runtime.log("已识别启动页面，继续等待登录或进入游戏。")
+                            continue
                         return incomplete("无法从未知页面恢复到游戏主页，请手动返回主页后重试")
             if not waiting_logged:
                 runtime.log("正在等待进入游戏；切出窗口会暂停，切回后继续。")
