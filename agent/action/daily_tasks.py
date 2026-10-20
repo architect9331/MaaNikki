@@ -216,19 +216,19 @@ class DailyRun(Executors):
             force_crystal = self.mode == "xinghai" and self.setting(self.mode).get("force_crystal", True)
             forced_crystal_ok = False
             if force_crystal:
-                self.log("已开启强制收集星光结晶，先执行收集流程（包含摇铃）。")
+                self.log("已开启跑图收集星光结晶，先执行收集流程（包含摇铃）。")
                 card = classify("xinghai", "收集10个星光结晶", -1)
                 try:
                     forced_crystal_ok = self.execute(self.mode, card)
                 except TaskStopped:
                     raise
                 except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
-                    self.log(f"强制收集星光结晶未完成：{error}。")
+                    self.log(f"跑图收集星光结晶未完成：{error}。")
                 self.events.append({"task": "crystal", "success": forced_crystal_ok, "forced": True})
                 if self.stopped:
                     return False
                 if not forced_crystal_ok:
-                    self.log("强制收集星光结晶未完成，继续核实积分、完成其他星海拾光任务并领取奖励。")
+                    self.log("跑图收集星光结晶未完成，继续核实积分、完成其他星海拾光任务并领取奖励。")
             if not self.open_score_page():
                 self.log(f"未能打开{self.title}页面。")
                 return False
