@@ -148,7 +148,7 @@ class BlessingLocker(InventoryScanner):
         top = max(70, 70 + int(starts[0]) - 6)
         return [left, top, 328, min(126, 720 - top)]
 
-    def read_details(self, box, generation, index):
+    def read_details(self, box, generation, index, *, retry_hover=True):
         self.check_generation(generation)
         old = self._hover_read
         # The next card to the right cannot be covered by the current tooltip.
@@ -241,11 +241,20 @@ class BlessingLocker(InventoryScanner):
             if reads >= 3:
                 break
         diagnostic = {"box": list(box), "roi": roi, "reads": reads,
-                      "captures": captures, "ocr": last_lines}
+                      "captures": captures, "ocr": last_lines, "direct": direct}
+        if reads == 0 and retry_hover:
+            # Selection can dismiss a tooltip or delay the next hover. Re-enter
+            # once from a confirmed clear page; never click or relax identity.
+            self.report.setdefault("hover_recoveries", []).append(diagnostic)
+            self.image(f"detail_{index:05d}_hover_retry.png", frame)
+            self._hover_read = None
+            self.rt.log("祝福闪光详情未显示，正在重新悬停核对。", detail=True)
+            return self.read_details(box, generation, index, retry_hover=False)
         self.report["detail_failure"] = diagnostic
         write_json(self.folder / f"detail_{index:05d}_unknown.json", diagnostic)
         self.image(f"detail_{index:05d}_unknown.png", frame)
-        raise RuntimeError("提示框局部名称、等级或颜色未能确认，已保存识别内容")
+        raise RuntimeError("重新悬停后详情仍未显示或更新，已保存截图" if reads == 0
+                           else "提示框局部名称、等级或颜色未能确认，已保存识别内容")
 
     @staticmethod
     def key(facts):
@@ -389,13 +398,17 @@ class BlessingLocker(InventoryScanner):
                 not self.rt.action("Click", target=point, ui_click=False) or not self.rt.pause(.15)):
             raise RuntimeError("未能选中目标闪光")
         frame = self.frame(generation)
+        proof = self._hover_read
+        same_tooltip = (proof is not None and proof[0] == tuple(box) and proof[1] == generation
+                        and self.key(proof[2]) == self.key(facts) and proof[2]["level"] == facts["level"]
+                        and self.same_fields(proof[3], frame, facts))
+        if not same_tooltip:
+            # Clicking can close the panel even when the pointer stays put.
+            # A later adjacent read must not reuse that dismissed tooltip.
+            self._hover_read = None
         if not self.selected(frame, box):
             raise RuntimeError("未确认目标格子的选中高亮，未操作锁按钮")
         if verify_details:
-            proof = self._hover_read
-            same_tooltip = (proof is not None and proof[0] == tuple(box) and proof[1] == generation
-                            and self.key(proof[2]) == self.key(facts) and proof[2]["level"] == facts["level"]
-                            and self.same_fields(proof[3], frame, facts))
             if not same_tooltip:
                 self.counter += 1
                 selected, _ = self.read_details(box, generation, self.counter)
