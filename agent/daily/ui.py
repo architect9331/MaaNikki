@@ -1,6 +1,8 @@
 """Shared screenshot-driven page, search and reward operations."""
 from __future__ import annotations
 
+from file_io import write_json
+
 from functools import lru_cache
 from contextlib import contextmanager
 from datetime import datetime
@@ -539,8 +541,8 @@ class GameUI:
                                 "recovered" if any(e["type"] == "arrived" for e in events) else "failed",
                       "events": events}
             path = directory / (stamp.strftime("%Y%m%d-%H%M%S-%f")+"-page.json")
-            path.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
-        except OSError:
+            write_json(path, record)
+        except (OSError, ValueError):
             self.rt.log("页面进入记录未能保存。")
 
     def recover_page(self, page):

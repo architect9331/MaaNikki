@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 
@@ -20,6 +21,31 @@ def active_instance(root: Path) -> tuple[str, dict] | None:
     instance = next((item for item in config.get("instances", [])
                      if item.get("id") == config.get("lastActiveInstanceId")), None)
     return ("mxu", instance) if instance else None
+
+
+def active_controller(root: Path) -> dict | None:
+    """The submitted controller overrides the tab currently saved by the UI."""
+    value = os.environ.get("PI_CONTROLLER")
+    if value is not None:
+        try:
+            controller = json.loads(value)
+            return controller if isinstance(controller, dict) else None
+        except (ValueError, TypeError):
+            return None
+    saved = active_instance(root)
+    if saved is None:
+        return None
+    return next((item for item in read_json(root / "interface.json").get("controller", [])
+                 if item.get("name") == saved[1].get("controllerName")), None)
+
+
+def supports_foreground_inputs(controller):
+    if not isinstance(controller, dict) or controller.get("type") != "Win32":
+        return False
+    win32 = controller.get("win32")
+    allowed = {"Seize", "SeizeWithBlockInput"}
+    return (isinstance(win32, dict) and win32.get("mouse") in allowed
+            and win32.get("keyboard") in allowed)
 
 
 def task_options(task: dict, definitions: dict) -> dict:

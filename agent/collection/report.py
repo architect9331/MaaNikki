@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import html
 import json
-import os
-from pathlib import Path
 import re
-import tempfile
+
+from file_io import write_json
 
 from .blessing import SLOTS, summarize_scan
 from .policy import definition_for, normalize_scope, protected_inventory, reconcile_exclusions
@@ -23,22 +22,6 @@ def amount(value):
 
 def cell(value):
     return str(value).replace("|", "／").replace("\n", " ")
-
-
-def write_json(path, data):
-    # A stopped run should never replace a valid snapshot with truncated JSON.
-    content = json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, filename = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
-    temporary = Path(filename)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(content)
-            stream.flush()
-            os.fsync(stream.fileno())
-        temporary.replace(path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def report_html(markdown):

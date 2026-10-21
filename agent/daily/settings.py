@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
-from client_config import active_instance, task_options, read_json
+from client_config import active_controller, active_instance, supports_foreground_inputs, task_options, read_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -11,14 +11,7 @@ TASKS = ROOT / "tasks"
 
 
 def foreground_inputs() -> bool:
-    saved = active_instance(ROOT)
-    if saved is None:
-        return False
-    controller = next((item for item in read_json(ROOT / "interface.json").get("controller", [])
-                       if item["name"] == saved[1].get("controllerName")), {})
-    win32 = controller.get("win32", {})
-    allowed = {"Seize", "SeizeWithBlockInput"}
-    return win32.get("mouse") in allowed and win32.get("keyboard") in allowed
+    return supports_foreground_inputs(active_controller(ROOT))
 
 
 def saved_task(name: str) -> dict | None:

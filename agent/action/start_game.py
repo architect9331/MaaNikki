@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from file_io import write_json
+
 from datetime import datetime
 import json
 
@@ -45,8 +47,7 @@ class StartGameAction(CustomAction):
                 image = runtime.capture()
                 if image is not None and cv2.imwrite(str(folder / (name+".png")), image):
                     record["screenshot"] = "logs/startup/"+name+".png"
-                (folder / (name+".json")).write_text(
-                    json.dumps(record, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+                write_json(folder / (name+".json"), record)
                 runtime.log(f"{reason}，本轮停止；记录：logs/startup/{name}.json。")
                 context.tasker.post_stop()
             return False

@@ -1,12 +1,14 @@
 """Starsea hub, bell and crystal-location workflow."""
 from __future__ import annotations
+
+from file_io import write_json
 import math
 from task_control import task_time as time
-import json
 from datetime import datetime
 import cv2
 from .settings import ROOT
-from navigation.models import NavigationError, load_route, maps
+from navigation.models import NavigationError, Point, load_route, maps
+from navigation.geometry import route_distance
 from navigation.vision import Locator
 from navigation.teleport import Teleporter
 from navigation.controller import ForegroundInput
@@ -48,24 +50,12 @@ def select_crystal_route(location):
 def select_partial_crystal_route(locations, routes):
     # A remaining marker can be far from the original three-marker centroid.
     # Match every visible marker to the actual route, including its segments.
-    def distance_to_route(location, points):
-        nearest = math.inf
-        for index, end in enumerate(points):
-            begin = points[max(0, index-1)] if end.action != "teleport" else end
-            dx, dy = end.x-begin.x, end.y-begin.y
-            length = dx*dx+dy*dy
-            fraction = max(0, min(1, ((location[0]-begin.x)*dx+
-                (location[1]-begin.y)*dy)/length)) if length else 0
-            nearest = min(nearest, math.hypot(location[0]-begin.x-fraction*dx,
-                                            location[1]-begin.y-fraction*dy))
-        return nearest
-
     center = tuple(sum(location[axis] for location in locations)/len(locations) for axis in (0, 1))
     centers = {f"xinghai_crystal_{n}": (x/2, y/2)
                for n, (x, y) in enumerate(CRYSTAL_CENTERS, 1)}
     distances = []
     for route in routes:
-        marker_distances = [distance_to_route(location, route.points) for location in locations]
+        marker_distances = [route_distance(Point(*location), route.points) for location in locations]
         reference = centers[route.id]
         distances.append({"route": route.id, "distance": max(marker_distances),
                           "center_distance": math.hypot(center[0]-reference[0], center[1]-reference[1]),
@@ -100,9 +90,8 @@ class Starsea:
             directory = ROOT / "logs/navigation"
             directory.mkdir(parents=True, exist_ok=True)
             file = directory / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-starsea.json")
-            file.write_text(json.dumps({"operation": operation, "events": self.events},
-                                       ensure_ascii=False, indent=2), encoding="utf-8")
-        except OSError:
+            write_json(file, {"operation": operation, "events": self.events})
+        except (OSError, ValueError):
             self.rt.log("星海导航记录未能保存。")
 
     def hub(self):

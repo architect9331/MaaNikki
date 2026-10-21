@@ -18,14 +18,16 @@ from threading import Timer
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "logs/startup" / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-launch.json")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from file_io import write_json
+
 PROGRAMS = ("InfinityNikki.exe", "X6Game.exe", "X6Game-Win64-Shipping.exe")
 
 
 def save_record(record):
     try:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
-        REPORT.write_text(json.dumps(record, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
-    except OSError:
+        write_json(REPORT, record)
+    except (OSError, ValueError):
         pass
 
 

@@ -1,0 +1,576 @@
+{
+  "schema_version": 3,
+  "id": "xinghai_bottle_survey",
+  "title": "星海 · 漂流瓶合并巡查（旧线优先，两段）",
+  "map": "starsea",
+  "start_radius": 9,
+  "timeout": 900,
+  "capacity": null,
+  "material": "",
+  "teleport": {
+    "name": "无界枢纽",
+    "province": "星海",
+    "region": "星海",
+    "x": 834.327,
+    "y": 1019.073
+  },
+  "source": {
+    "kind": "legacy_route_and_user_map_screenshots",
+    "date": "2026-10-21",
+    "samples": {
+      "A": "第一批 8 张截图",
+      "B": "第二批 19 张截图"
+    },
+    "note": "先按原顺序检查旧路线 6 点，再沿北岸向东；远端完成后传回无界枢纽，检查圆台内侧与周边新增点。保留全部 27 个截图采样终点，每个拾取点容差 0.25。",
+    "coordinate_method": "SIFT terrain correspondences + RANSAC partial affine; transform game-client center (961, 571), excluding title bar and border.",
+    "hub_railing": {
+      "center": {
+        "x": 856.8,
+        "y": 1014.4
+      },
+      "rim_radius_approx": 22.5,
+      "detour_radius": 28.5,
+      "west_opening": [
+        {
+          "x": 828.0,
+          "y": 1016.7,
+          "radius": 0.6,
+          "jump": false
+        },
+        {
+          "x": 833.0,
+          "y": 1016.7,
+          "radius": 0.6,
+          "jump": false
+        }
+      ],
+      "note": "以参考地图圆台外缘规划绕行，西侧开口作为进出通道；西侧采样点经开口接近，北侧贴近外缘的采样点由外向内接近。拾取终点保持截图中心坐标。"
+    },
+    "legacy_route": "xinghai_bottle",
+    "pickup_radius": 0.25,
+    "legs": [
+      {
+        "name": "旧路线与远端北岸",
+        "pickup_count": 13,
+        "first_point_index": 0
+      },
+      {
+        "name": "枢纽与近岸",
+        "pickup_count": 20,
+        "first_point_index": 14,
+        "return_via": "无界枢纽"
+      }
+    ],
+    "routing_note": "外侧点序按避开半径 23 的栏杆圆优化，必要绕行点位于半径 28.5；内侧点集中经西侧开口进出。几何路长用于规划，实跑耗时与通行性待确认。"
+  },
+  "points": [
+    {
+      "x": 834.25,
+      "y": 1016.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 823.056,
+      "y": 1012.44,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "O01",
+        "sample_position": {
+          "x": 823.056,
+          "y": 1012.44
+        },
+        "source_route": "xinghai_bottle"
+      }
+    },
+    {
+      "x": 820.65,
+      "y": 988.7,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "O02",
+        "sample_position": {
+          "x": 820.65,
+          "y": 988.7
+        },
+        "source_route": "xinghai_bottle"
+      }
+    },
+    {
+      "x": 811.85,
+      "y": 969.9,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "O03",
+        "sample_position": {
+          "x": 811.85,
+          "y": 969.9
+        },
+        "source_route": "xinghai_bottle"
+      }
+    },
+    {
+      "x": 817.7,
+      "y": 961.55,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "O04",
+        "sample_position": {
+          "x": 817.7,
+          "y": 961.55
+        },
+        "source_route": "xinghai_bottle"
+      }
+    },
+    {
+      "x": 829.8,
+      "y": 955.4,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "O05",
+        "sample_position": {
+          "x": 829.8,
+          "y": 955.4
+        },
+        "source_route": "xinghai_bottle"
+      }
+    },
+    {
+      "x": 844.055,
+      "y": 951.196,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "O06",
+        "sample_position": {
+          "x": 844.055,
+          "y": 951.196
+        },
+        "source_route": "xinghai_bottle"
+      }
+    },
+    {
+      "x": 845.476,
+      "y": 951.845,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B18",
+        "sample_position": {
+          "x": 845.476,
+          "y": 951.845
+        }
+      }
+    },
+    {
+      "x": 853.785,
+      "y": 903.379,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B19",
+        "sample_position": {
+          "x": 853.785,
+          "y": 903.379
+        }
+      }
+    },
+    {
+      "x": 926.333,
+      "y": 919.658,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "A04",
+        "sample_position": {
+          "x": 926.333,
+          "y": 919.658
+        }
+      }
+    },
+    {
+      "x": 959.27,
+      "y": 888.02,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "A05",
+        "sample_position": {
+          "x": 959.27,
+          "y": 888.02
+        }
+      }
+    },
+    {
+      "x": 960.845,
+      "y": 872.346,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "A06",
+        "sample_position": {
+          "x": 960.845,
+          "y": 872.346
+        }
+      }
+    },
+    {
+      "x": 1005.511,
+      "y": 861.232,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "A07",
+        "sample_position": {
+          "x": 1005.511,
+          "y": 861.232
+        }
+      }
+    },
+    {
+      "x": 1053.078,
+      "y": 848.397,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "A08",
+        "sample_position": {
+          "x": 1053.078,
+          "y": 848.397
+        }
+      }
+    },
+    {
+      "x": 834.327,
+      "y": 1019.073,
+      "radius": 1.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "无界枢纽",
+          "province": "星海",
+          "region": "星海",
+          "x": 834.327,
+          "y": 1019.073
+        }
+      }
+    },
+    {
+      "x": 834.25,
+      "y": 1016.7,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 841.549,
+      "y": 1027.475,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B01",
+        "sample_position": {
+          "x": 841.549,
+          "y": 1027.475
+        }
+      }
+    },
+    {
+      "x": 839.579,
+      "y": 1003.95,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B12",
+        "sample_position": {
+          "x": 839.579,
+          "y": 1003.95
+        }
+      }
+    },
+    {
+      "x": 839.906,
+      "y": 1003.383,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B06",
+        "sample_position": {
+          "x": 839.906,
+          "y": 1003.383
+        }
+      }
+    },
+    {
+      "x": 841.267,
+      "y": 998.717,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B07",
+        "sample_position": {
+          "x": 841.267,
+          "y": 998.717
+        }
+      }
+    },
+    {
+      "x": 841.623,
+      "y": 998.339,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B13",
+        "sample_position": {
+          "x": 841.623,
+          "y": 998.339
+        }
+      }
+    },
+    {
+      "x": 833,
+      "y": 1016.7,
+      "radius": 0.6,
+      "jump": false
+    },
+    {
+      "x": 828,
+      "y": 1016.7,
+      "radius": 0.6,
+      "jump": false
+    },
+    {
+      "x": 838.501,
+      "y": 1032.048,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B02",
+        "sample_position": {
+          "x": 838.501,
+          "y": 1032.048
+        }
+      }
+    },
+    {
+      "x": 846.994,
+      "y": 1039.591,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B03",
+        "sample_position": {
+          "x": 846.994,
+          "y": 1039.591
+        }
+      }
+    },
+    {
+      "x": 845.607,
+      "y": 1039.908,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "A01",
+        "sample_position": {
+          "x": 845.607,
+          "y": 1039.908
+        }
+      }
+    },
+    {
+      "x": 842.144,
+      "y": 1045.411,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B04",
+        "sample_position": {
+          "x": 842.144,
+          "y": 1045.411
+        }
+      }
+    },
+    {
+      "x": 831.331,
+      "y": 1057.524,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B05",
+        "sample_position": {
+          "x": 831.331,
+          "y": 1057.524
+        }
+      }
+    },
+    {
+      "x": 813.287,
+      "y": 971.267,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B15",
+        "sample_position": {
+          "x": 813.287,
+          "y": 971.267
+        }
+      }
+    },
+    {
+      "x": 817.737,
+      "y": 962.953,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B16",
+        "sample_position": {
+          "x": 817.737,
+          "y": 962.953
+        }
+      }
+    },
+    {
+      "x": 829.934,
+      "y": 956.664,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B17",
+        "sample_position": {
+          "x": 829.934,
+          "y": 956.664
+        }
+      }
+    },
+    {
+      "x": 840.17,
+      "y": 980.133,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B14",
+        "sample_position": {
+          "x": 840.17,
+          "y": 980.133
+        }
+      }
+    },
+    {
+      "x": 840.01,
+      "y": 980.509,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "A02",
+        "sample_position": {
+          "x": 840.01,
+          "y": 980.509
+        }
+      }
+    },
+    {
+      "x": 861.61,
+      "y": 980.272,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B10",
+        "sample_position": {
+          "x": 861.61,
+          "y": 980.272
+        }
+      }
+    },
+    {
+      "x": 861.303,
+      "y": 987.141,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B09",
+        "sample_position": {
+          "x": 861.303,
+          "y": 987.141
+        }
+      }
+    },
+    {
+      "x": 865.438,
+      "y": 992.911,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B08",
+        "sample_position": {
+          "x": 865.438,
+          "y": 992.911
+        }
+      }
+    },
+    {
+      "x": 870.098,
+      "y": 985.855,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "A03",
+        "sample_position": {
+          "x": 870.098,
+          "y": 985.855
+        }
+      }
+    },
+    {
+      "x": 873.254,
+      "y": 969.277,
+      "radius": 0.25,
+      "jump": false,
+      "action": "bottle",
+      "params": {
+        "sample": "B11",
+        "sample_position": {
+          "x": 873.254,
+          "y": 969.277
+        }
+      }
+    }
+  ]
+}

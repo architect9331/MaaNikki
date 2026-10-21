@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 
-from collection.report import write_json
+from file_io import write_json
 
 GAME_TIMEZONE = timezone(timedelta(hours=8))
 PERIOD_TASKS = {

@@ -7,7 +7,9 @@ import cv2
 import numpy as np
 from daily.ui import catalog
 from .models import NavigationError
-from .engine import Motion, Navigator
+from .engine import Motion
+from .session import create_navigator
+from .frames import minimap_crop, reference_frame
 
 from .ability import Ability, WHITE
 
@@ -55,8 +57,7 @@ class Insect(Ability):
         return self.tracking
 
     def degree(self, frame):
-        reference = cv2.resize(frame, (1920, 1080), interpolation=cv2.INTER_LINEAR)
-        mini = reference[22:222, 81:281]
+        mini = minimap_crop(reference_frame(frame))
         mask = cv2.inRange(cv2.cvtColor(mini, cv2.COLOR_BGR2HSV), np.array([13, 90, 160]), np.array([15, 200, 255]))
         cv2.circle(mask, (100, 100), 10, 255, -1)
         circles = cv2.HoughCircles(cv2.GaussianBlur(mask, (3, 3), 1), cv2.HOUGH_GRADIENT,
@@ -84,15 +85,12 @@ class Insect(Ability):
             raise NavigationError("捕虫动作不能与移动方向使用同一按键。")
         if not self.track():
             return False
-        navigator = Navigator(self.actions.teleporter.locator, self.inputs, self.rt.capture,
-                              lambda: self.rt.stopped, self.rt.pause, self.actions.event,
-                              page_detector=lambda frame: bool(
-                                  (result := self.rt.recognize("MaaNikki_MainDetected", image=frame)) and result.hit))
+        navigator = create_navigator(self.rt, self.actions.teleporter, event=self.actions.event)
         route_navigator = self.actions.navigator
         if route_navigator is not None:
             navigator.turn_ratio = route_navigator.turn_ratio
             self.actions.event({"type": "camera_calibration_reused", "pixels_per_degree": navigator.turn_ratio})
-        motion = Motion(self.inputs)
+        motion = Motion(self.inputs, self.actions.event)
         navigator.motion = motion
         initial = self.actions.count
         end = time.monotonic()+60
@@ -131,8 +129,8 @@ class Insect(Ability):
                             break
                         motion.wait(.1)
                     else:
-                        pose = self.actions.teleporter.locator.locate(frame)
-                        if not self.actions.teleporter.locator.heading_diagnostics.get("position_reliable", True):
+                        pose = self.actions.teleporter.locator.locate(frame, progress=motion.tick)
+                        if pose.heading is None:
                             motion.stop()
                             failed += 1
                             if failed > 5:

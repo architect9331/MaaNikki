@@ -1,8 +1,9 @@
 """Run one selected daily executor, independently of daily score and scheduling."""
 from __future__ import annotations
 
+from file_io import write_json
+
 from datetime import datetime
-import json
 import os
 
 import cv2
@@ -11,8 +12,8 @@ from action.daily_tasks import DailyRun
 from .startup import focus_game
 from .gameplay import Gameplay
 from .planner import Card, XINGHAI, ZHAOXI
-from .route_test import TestInputs, inputs_allowed
-from .settings import ROOT
+from .route_test import TestInputs
+from .settings import ROOT, foreground_inputs as inputs_allowed
 from navigation.models import NavigationError
 
 
@@ -154,9 +155,8 @@ class SubtaskTest(DailyRun):
                 cv2.imencode(".png", frame)[1].tofile(str(self.test_directory / "failure.png"))
             report = {**result, "scans": self.scans, "events": self.events,
                       "time": datetime.now().isoformat(timespec="seconds")}
-            content = json.dumps(report, ensure_ascii=False, indent=2)
-            (self.test_directory / "result.json").write_text(content, encoding="utf-8")
-            (self.test_directory.parent / "latest.json").write_text(content, encoding="utf-8")
+            write_json(self.test_directory / "result.json", report)
+            write_json(self.test_directory.parent / "latest.json", report)
             self.log("子任务测试"+("执行结束" if result["success"] else "未完成")+"，日志："+str(self.test_directory))
         except (OSError, ValueError, cv2.error):
             self.log("子任务测试日志保存失败。")

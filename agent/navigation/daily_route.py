@@ -313,6 +313,10 @@ class RouteActions:
                             "pickup_detected": bool(found), "interacted": bool(interacted),
                             "recognition": diagnostics, "frame": evidence})
                 self.rt.log("此点未确认拾取漂流瓶，继续沿路线查找。")
+            self.event({"type": "bottle_result", "x": point.x, "y": point.y,
+                        "sample": point.params.get("sample"), "success": bool(ok),
+                        "pickup_detected": bool(found), "interacted": bool(interacted),
+                        "count": self.count})
         elif kind == "delivery":
             ok = self.rt.interaction("delivery")
         elif kind == "animal":

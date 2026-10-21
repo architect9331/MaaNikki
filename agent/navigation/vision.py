@@ -1,15 +1,17 @@
-"""Map correlation and camera-cone boundaries; screenshot-only Maa adapter."""
+"""Shared minimap localization policy and trusted position history."""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from task_control import task_time as time
 import cv2
 import numpy as np
-from scipy.signal import find_peaks
-from .models import MapSpec, NavigationError
+from .camera import camera_heading
+from .frames import minimap_crop, reference_frame
+from .matching import MIN_KNOWN_COVERAGE, coverage, luma, match_map
+from .models import MINIMAP_POSITION_SCORE, MapSpec, NavigationError
 
 
-MINIMAP_POSITION_SCORE = .55
+MIN_HEADING_CONFIDENCE = .3
 
 
 @dataclass(frozen=True)
@@ -20,27 +22,17 @@ class Pose:
     margin: float
     heading: float | None
     heading_confidence: float
+    position_reliable: bool = True
 
     def dict(self):
         return asdict(self)
 
 
-def luma(frame):
-    return cv2.cvtColor(frame, cv2.COLOR_BGR2YUV)[:, :, 0] if frame.ndim == 3 else frame
-
-
-def circular_smooth(values, radius):
-    return sum(np.roll(values, n)*(radius-abs(n))//radius for n in range(1-radius, radius))
-
-
-def prominence(values):
-    length = values.size
-    peaks, info = find_peaks(np.tile(values, 3), height=0, prominence=10)
-    heights = sorted((height for p, height in zip(peaks, info["peak_heights"]) if length <= p < 2*length), reverse=True)
-    return float((heights[0]-heights[1])/heights[0]) if len(heights) > 1 and heights[0] else 1.0
-
-
 class Locator:
+    # Keep the existing tooling entry point; the implementation lives in the
+    # shared map matcher so legacy callers also receive missing-tile fixes.
+    match = staticmethod(match_map)
+
     def __init__(self, spec: MapSpec):
         self.spec = spec
         if not spec.image.is_file():
@@ -50,204 +42,127 @@ class Locator:
             raise NavigationError("地图图片尺寸不符合清单。")
         coarse = spec.image.with_name(spec.id+"_bigmap.png")
         mask = spec.image.with_name(spec.id+"_mask.png")
-        self.coarse = cv2.imread(str(coarse), cv2.IMREAD_GRAYSCALE) if coarse.is_file() else cv2.resize(self.map, None, fx=.25, fy=.25)
+        self.coarse = (cv2.imread(str(coarse), cv2.IMREAD_GRAYSCALE) if coarse.is_file()
+                       else cv2.resize(self.map, None, fx=.25, fy=.25))
         self.bigmap_mask = cv2.imread(str(mask), cv2.IMREAD_GRAYSCALE) if mask.is_file() else None
         self.previous = None
         self.position_time = time.monotonic()-30
         self.heading_diagnostics = {}
         self.last_frame = None
 
-    @staticmethod
-    def match(image, patch, mask=None, peak_mask=None, kernel=5, minimum_score=None,
-              terrain_edges=False):
-        if image.shape[0] < patch.shape[0] or image.shape[1] < patch.shape[1]:
-            raise NavigationError("地图匹配区域不足。")
-        rates = (Locator.terrain_rates(image, patch, mask) if terrain_edges else
-                 cv2.matchTemplate(image, patch, cv2.TM_CCOEFF_NORMED, mask=mask))
-        rates = np.nan_to_num(rates, nan=-1, posinf=-1, neginf=-1)
-        local = rates-cv2.GaussianBlur(rates, (kernel, kernel), 0)
-        if peak_mask is not None:
-            h, w = local.shape
-            # Stored masks describe big-map correlation centers. A mini-map
-            # patch is smaller and produces a larger response grid; extend
-            # the mask with forbidden border centers instead of resizing it
-            # or rejecting an otherwise valid global mini-map lookup.
-            mh, mw = peak_mask.shape
-            dh, dw = max(0, h-mh), max(0, w-mw)
-            if dh or dw:
-                peak_mask = cv2.copyMakeBorder(peak_mask, dh//2, dh-dh//2, dw//2, dw-dw//2,
-                                               cv2.BORDER_CONSTANT, value=0)
-            oy, ox = (peak_mask.shape[0]-h)//2, (peak_mask.shape[1]-w)//2
-            local = np.where(peak_mask[oy:oy+h, ox:ox+w] > 0, local, -np.inf)
-        if minimum_score is not None:
-            # A sharp local peak can still be a poor terrain match. Rank
-            # sharpness only among correlations close to the strongest valid
-            # candidate; otherwise animation/flat terrain can win with a
-            # near-zero or even negative absolute correlation.
-            eligible = np.isfinite(local)
-            strongest = float(np.max(rates[eligible])) if np.any(eligible) else -1
-            credible = eligible & (rates >= max(minimum_score, strongest - .12))
-            if np.any(credible):
-                local = np.where(credible, local, -np.inf)
-        _, detail, _, (px, py) = cv2.minMaxLoc(local)
-        left, top = max(0, px-4), max(0, py-4)
-        fine = rates[top:min(rates.shape[0], py+4), left:min(rates.shape[1], px+4)]
-        if not fine.size or not np.isfinite(detail):
-            raise NavigationError("没有可识别的地图区域。")
-        _, score, _, (fx, fy) = cv2.minMaxLoc(cv2.resize(fine, None, fx=20, fy=20, interpolation=cv2.INTER_CUBIC))
-        return left+fx/20-1+patch.shape[1]/2, top+fy/20-1+patch.shape[0]/2, float(score), float(detail)
+    def reset(self):
+        self.previous = None
+        self.position_time = time.monotonic()-30
 
-    @staticmethod
-    def terrain_rates(image, patch, mask):
-        """Correlate terrain detail over known reference pixels at each offset."""
-        # Black pixels are unrecorded map tiles. Remove their blur boundary as
-        # well; neither that artificial edge nor the camera's broad lighting
-        # cone should count as terrain, including on fully recorded maps.
-        valid = cv2.erode((image > 0).astype(np.uint8), np.ones((7, 7), np.uint8)).astype(np.float32)
-        source, target = image.astype(np.float32), patch.astype(np.float32)
-        # Suppress subpixel rasterization changes as well as broad lighting.
-        # A raw high-pass retains aliasing from thin map contour lines.
-        source = (cv2.GaussianBlur(source, (0, 0), 1)
-                  - cv2.GaussianBlur(source, (0, 0), 2)) * valid
-        target = (cv2.GaussianBlur(target, (0, 0), 1)
-                  - cv2.GaussianBlur(target, (0, 0), 2))
-        weights = (mask > 0).astype(np.float32)
+    def accept(self, pose):
+        if not pose.position_reliable:
+            raise NavigationError("未通过校验的位置不能更新导航记录。")
+        self.previous = pose
+        self.position_time = time.monotonic()
 
-        def correlate(a, b):
-            return cv2.matchTemplate(a, b, cv2.TM_CCORR)
+    def camera_heading(self, reference, x, y):
+        heading, confidence, self.heading_diagnostics = camera_heading(reference, self.map, self.spec, x, y)
+        return heading, confidence
 
-        count = correlate(valid, weights)
-        size = np.maximum(count, 1)
-        source_sum = correlate(source, weights)
-        target_sum = correlate(valid, target * weights)
-        source_var = np.maximum(correlate(source * source, weights) - source_sum**2 / size, 0)
-        target_var = np.maximum(correlate(valid, target * target * weights) - target_sum**2 / size, 0)
-        covariance = correlate(source, target * weights) - source_sum * target_sum / size
-        denominator = np.sqrt(source_var * target_var)
-        rates = covariance / np.maximum(denominator, 1)
-        # A small surviving sliver cannot establish a position.
-        return np.where((count >= weights.sum() * .6) & (denominator > 1),
-                        np.clip(rates, -1, 1), -1).astype(np.float32)
-
-    def _frame(self, frame):
-        if frame is None or frame.shape[:2] != (720, 1280):
-            raise NavigationError("导航需要 16:9 游戏画面，截图基准为 1280×720。")
-        return cv2.resize(frame, (1920, 1080), interpolation=cv2.INTER_LINEAR)
-
-    def locate(self, frame, hint=None, search_radius=75, *, commit=True, reset_continuity=False):
+    def locate(self, frame, hint=None, search_radius=75, *, commit=True, reset_continuity=False,
+               progress=None):
         self.last_frame = frame
-        reference = self._frame(frame)
-        gray = luma(reference[22:222, 81:281])
+        reference = reference_frame(frame)
+        gray = luma(minimap_crop(reference))
         yy, xx = np.indices(gray.shape)
-        ring = ((xx-100)**2+(yy-100)**2 <= 100**2) & ((xx-100)**2+(yy-100)**2 > 13**2)
+        radius_squared = (xx-100)**2+(yy-100)**2
+        ring = (radius_squared <= 100**2) & (radius_squared > 13**2)
         scale = self.spec.scale/1.5
         patch = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
-        mask = cv2.resize(ring.astype(np.uint8)*255, (patch.shape[1], patch.shape[0]), interpolation=cv2.INTER_NEAREST)
+        mask = cv2.resize(ring.astype(np.uint8), (patch.shape[1], patch.shape[0]),
+                          interpolation=cv2.INTER_NEAREST)
         if hint is None and self.previous:
             hint = self.previous.x, self.previous.y
         if hint is None:
             small = cv2.resize(patch, None, fx=.25, fy=.25, interpolation=cv2.INTER_NEAREST)
-            px, py, _, _ = self.match(self.coarse, small, kernel=9, peak_mask=self.bigmap_mask)
+            px, py, _, _ = match_map(self.coarse, small, kernel=9, peak_mask=self.bigmap_mask)
             hint = px*4, py*4
-        pad_x = max(patch.shape[1]*1.3/2, search_radius)
-        pad_y = max(patch.shape[0]*1.3/2, search_radius)
+        pad_x, pad_y = max(patch.shape[1]*1.3/2, search_radius), max(patch.shape[0]*1.3/2, search_radius)
         x, y = max(0, round(hint[0]-pad_x)), max(0, round(hint[1]-pad_y))
-        local = self.map[y:min(self.spec.height, round(hint[1]+pad_y)), x:min(self.spec.width, round(hint[0]+pad_x))]
-        px, py, score, detail = self.match(local, patch, mask, minimum_score=MINIMAP_POSITION_SCORE)
-        position_match = "luma"
-        match_diagnostics = {"luma_score": score}
-        if score < MINIMAP_POSITION_SCORE and (self.spec.id == "starsea" or np.any(local == 0)):
-            # Starsea's camera-cone lighting can depress luminance correlation
-            # even on complete maps. Other maps retain the missing-tile fallback.
-            # Terrain detail must still meet the same score floor.
-            # Insets exclude the minimap rim and player marker from correlation.
-            edge_ring = ((xx-100)**2+(yy-100)**2 <= 96**2) & ((xx-100)**2+(yy-100)**2 > 16**2)
+        local = self.map[y:min(self.spec.height, round(hint[1]+pad_y)),
+                         x:min(self.spec.width, round(hint[0]+pad_x))]
+        matches = {}
+
+        def attempt(name, sample, sample_mask, floor, *, edges=False):
+            try:
+                result = match_map(local, sample, sample_mask, minimum_score=floor, edges=edges)
+                mx, my, score, peak = result
+                matches[name] = {"position": [mx+x+.25, my+y+.25], "score": score, "local_peak": peak}
+                return result
+            except (NavigationError, cv2.error) as error:
+                matches[name] = {"error": str(error)}
+                return None
+            finally:
+                if progress:
+                    progress()
+
+        floor = self.spec.position_score_floor
+        match_floor = MINIMAP_POSITION_SCORE if floor is None else floor
+        selected = initial = attempt("luma", patch, mask, match_floor)
+        method = "luma"
+        if selected is None or selected[2] < match_floor:
+            edge_ring = (radius_squared <= 96**2) & (radius_squared > 16**2)
             edge_mask = cv2.resize(edge_ring.astype(np.uint8), (patch.shape[1], patch.shape[0]),
                                    interpolation=cv2.INTER_NEAREST)
             edge_patch = cv2.resize(gray, (patch.shape[1], patch.shape[0]), interpolation=cv2.INTER_AREA)
-            ex, ey, edge_score, edge_detail = self.match(
-                local, edge_patch, edge_mask, minimum_score=MINIMAP_POSITION_SCORE, terrain_edges=True)
-            match_diagnostics.update(terrain_score=edge_score, terrain_peak=edge_detail,
-                                     terrain_position=[ex+x+.25, ey+y+.25])
-            if edge_score >= MINIMAP_POSITION_SCORE:
-                px, py, score, detail = ex, ey, edge_score, edge_detail
-                position_match = "known_terrain_edges"
+            edge = attempt("known_terrain_edges", edge_patch, edge_mask, match_floor, edges=True)
+            if edge is not None and edge[2] >= match_floor:
+                selected, method = edge, "known_terrain_edges"
+            elif initial is not None:
+                # A failed edge candidate has no vote over this fallback.
+                lx, ly = initial[:2]
+                direction, confidence = self.camera_heading(reference, lx+x+.25, ly+y+.25)
+                matches["outside_camera_cone"] = {"heading": direction, "confidence": confidence,
+                                                   "accepted": False}
+                if progress:
+                    progress()
+                if direction is not None and confidence >= .5:
+                    angles = np.degrees(np.arctan2(xx-100, 100-yy))
+                    outside = edge_ring & (np.abs((angles-direction+180) % 360-180) > 55)
+                    cone_mask = cv2.resize(outside.astype(np.uint8), (patch.shape[1], patch.shape[0]),
+                                          interpolation=cv2.INTER_NEAREST)
+                    cone_floor = max(.65, match_floor)
+                    cone = attempt("outside_camera_cone", edge_patch, cone_mask, cone_floor)
+                    diagnostics = matches["outside_camera_cone"]
+                    diagnostics.update(heading=direction, confidence=confidence, accepted=False)
+                    if cone is not None:
+                        cx, cy, score, peak = cone
+                        agreement = float(np.hypot(cx-lx, cy-ly))
+                        known_fraction = coverage(local, patch.shape, cone_mask, (cx, cy))
+                        accepted = (score >= cone_floor and peak >= .02 and agreement <= 2
+                                    and known_fraction >= MIN_KNOWN_COVERAGE)
+                        diagnostics.update(method_agreement=agreement, known_fraction=known_fraction, accepted=accepted)
+                        if accepted:
+                            selected, method = cone, "outside_camera_cone"
+        px, py, score, detail = selected or (hint[0]-x-.25, hint[1]-y-.25, 0.0, 0.0)
         px, py = px+x+.25, py+y+.25
-        # Local peak height measures sharpness, not correctness. Keep both
-        # correlation scores for diagnostics; validate motion by continuity.
-        # Coordinates here use the half-size map (50 px/s, 0.5 px allowance).
-        candidate = (px, py)
+        candidate = [px, py]
         elapsed = time.monotonic()-self.position_time
-        # Miraland's existing routes locate correctly around .3, so preserve
-        # their legacy score acceptance. Other maps retain the current floor;
-        # rejected positions can trigger independent big-map recovery.
-        score_floor = None if self.spec.id == "miraland" else MINIMAP_POSITION_SCORE
-        unreliable = not np.isfinite(score) or score_floor is not None and score < score_floor
+        unreliable = selected is None or not np.isfinite(score) or (floor is not None and score < floor)
         rejected = bool(self.previous and not reset_continuity and elapsed <= 20
                         and np.hypot(px-self.previous.x, py-self.previous.y) >= 50*elapsed+.5)
         if rejected or unreliable:
             px, py = (self.previous.x, self.previous.y) if self.previous else hint
-        elif commit:
-            self.position_time = time.monotonic()
-        # Keep camera diagnostics independent, but only a trustworthy position
-        # may advance the coordinate history or be used by route movement.
-        self.heading_diagnostics = {}
         heading, confidence = self.camera_heading(reference, px, py)
-        self.heading_diagnostics.update({"position_method": "correlation_rejected" if unreliable else
-                                         "speed_rejected" if rejected else "map_correlation",
-                                         "position_reliable": not (unreliable or rejected),
-                                         "candidate_position": list(candidate), "position_elapsed": elapsed,
-                                         "score": score, "local_peak": detail,
-                                         "position_match": position_match,
-                                         "position_matches": match_diagnostics,
-                                         "position_score_floor": score_floor})
-        pose = Pose(px, py, score, detail, heading, confidence)
-        if commit and not unreliable and not rejected:
-            self.previous = pose
+        self.heading_diagnostics.update(position_method="correlation_rejected" if unreliable else
+            "speed_rejected" if rejected else "map_correlation", position_reliable=not (unreliable or rejected),
+            candidate_position=candidate, position_elapsed=elapsed, score=score, local_peak=detail,
+            position_match=method, position_matches=matches, position_score_floor=floor)
+        # Every consumer receives the same trust decision, including local
+        # insect approaches and teleport checks that do not use Navigator.
+        if unreliable or rejected:
+            self.heading_diagnostics.update(camera_method=self.heading_diagnostics.get("method"),
+                                            method="position_unavailable")
+            heading, confidence = None, 0.0
+        elif heading is not None and confidence < MIN_HEADING_CONFIDENCE:
+            self.heading_diagnostics["method"] = "heading_uncertain"
+            heading = None
+        pose = Pose(px, py, score, detail, heading, confidence, not (unreliable or rejected))
+        if commit and pose.position_reliable:
+            self.accept(pose)
         return pose
-
-    def camera_heading(self, reference, x, y):
-        observed = luma(reference[20:224, 79:283])
-        scale = self.spec.scale/1.5
-        radius = 102*scale
-        left, top = max(0, int(x-radius*1.15)), max(0, int(y-radius*1.15))
-        background = self.map[top:min(self.spec.height, int(y+radius*1.15)), left:min(self.spec.width, int(x+radius*1.15))]
-        background = cv2.resize(background, None, fx=1/scale, fy=1/scale, interpolation=cv2.INTER_LINEAR)
-        if min(background.shape) < 204:
-            self.heading_diagnostics = {"method": "camera_background_unavailable"}
-            return None, 0.0
-        rates = cv2.matchTemplate(background, observed, cv2.TM_CCOEFF_NORMED)
-        _, _, _, (bx, by) = cv2.minMaxLoc(cv2.resize(rates, None, fx=20, fy=20, interpolation=cv2.INTER_CUBIC))
-        yy, xx = np.indices((204, 204), dtype=np.float32)
-        aligned = cv2.remap(background, xx+bx/20, yy+by/20, cv2.INTER_LINEAR)
-        cone = np.clip((255-aligned.astype(float))/(255-observed.astype(float)+.1)*64, 0, 255).astype(np.uint8)
-        cone = cv2.GaussianBlur(cone, (3, 3), 0)
-        d = 204
-        radial, angular = np.indices((d, d), dtype=np.float32)
-        angle = angular*2*np.pi/d
-        polar = cv2.remap(cone, d/2+radial/2*np.cos(angle), d/2+radial/2*np.sin(angle), cv2.INTER_LINEAR)
-        polar = cv2.resize(polar[d*2//10:d*7//10].astype(np.float32), None, fx=2, fy=2)
-        gradient = cv2.Scharr(polar, cv2.CV_32F, 1, 0)
-        width = d*2
-        rising = np.bincount(find_peaks(gradient.ravel(), height=150, wlen=width)[0] % width, minlength=width)
-        falling = np.bincount(find_peaks(-gradient.ravel(), height=150, wlen=width)[0] % width, minlength=width)
-        left_edge, right_edge = np.maximum(rising-falling, 0), np.maximum(falling-rising, 0)
-        profiles = []
-        for shift in range(-3, 4):
-            profile = left_edge*circular_smooth(np.roll(right_edge, -width//4+shift), 6)
-            profile -= left_edge*circular_smooth(np.roll(right_edge, shift), 20)//5
-            profiles.append(circular_smooth(profile, 6))
-        profiles = np.maximum(profiles, 1)
-        signal = profiles.max(axis=0)
-        if prominence(signal) <= .3:
-            signal = circular_smooth(signal*profiles.mean(axis=0)*profiles.min(axis=0), 4)
-        if not rising.any() or not falling.any() or float(signal.max()) <= 1 or np.ptp(signal) <= 0:
-            self.heading_diagnostics = {"method": "cone_boundaries", "edges": 0}
-            return None, 0.0
-        # Polar coordinates begin east-clockwise; center is 45 degrees after
-        # the rising cone boundary. Expose north-clockwise degrees to movement.
-        heading = (int(signal.argmax())/width*360+135) % 360
-        confidence = prominence(signal)
-        self.heading_diagnostics = {"method": "cone_boundaries", "heading": heading, "confidence": confidence}
-        return float(heading), confidence
-

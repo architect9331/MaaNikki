@@ -1,5 +1,7 @@
-"""File-based navigation trials with optional home workflow actions."""
+"""File-based navigation trials with optional home or bottle actions."""
 from __future__ import annotations
+
+from file_io import write_json
 
 import ctypes
 from copy import deepcopy
@@ -15,10 +17,10 @@ from task_control import task_time as time
 import cv2
 
 from .runtime import Runtime, RESOURCE
-from .settings import ROOT, foreground_inputs
+from .settings import ROOT, foreground_inputs as inputs_allowed
 from .startup import focus_game
 from navigation.controller import ForegroundInput
-from navigation.engine import Navigator
+from navigation.session import create_navigator
 from navigation.models import NavigationError, maps, parse_route
 from navigation.teleport import Teleporter
 from navigation.vision import Locator
@@ -27,29 +29,14 @@ from navigation.vision import Locator
 NAVIGATION_ACTIONS = {"", "teleport", "wait"}
 
 
-def inputs_allowed():
-    # The running instance can differ from the configuration's active tab.
-    # Prefer the controller definition sent with this actual task submission.
-    value = os.environ.get("PI_CONTROLLER")
-    if value is None:
-        return foreground_inputs()
-    try:
-        controller = json.loads(value)
-        win32 = controller.get("win32", {})
-        allowed = {"Seize", "SeizeWithBlockInput"}
-        return (controller.get("type") == "Win32" and win32.get("mouse") in allowed
-                and win32.get("keyboard") in allowed)
-    except (ValueError, TypeError, AttributeError):
-        return False
-
-
 def test_document(resource: Path, settings: dict):
     """Read one fixed snapshot and validate before connecting or sending input."""
     filename, name = settings.get("file", ""), settings.get("route", "")
     mode = settings.get("mode", "movement")
-    if mode not in {"movement", "home"}:
+    if mode not in {"movement", "home", "bottle"}:
         raise NavigationError("路线测试模式无效。")
     home = mode == "home"
+    bottle = mode == "bottle"
     if filename:
         if not isinstance(filename, str):
             raise NavigationError("路线文件路径无效。")
@@ -74,6 +61,8 @@ def test_document(resource: Path, settings: dict):
         raise NavigationError("路线地图不受支持。")
     if home and document.get("map") != "home":
         raise NavigationError("家园测试路线必须使用家园地图。")
+    if bottle and document.get("map") != "starsea":
+        raise NavigationError("漂流瓶测试路线必须使用星海地图。")
 
     def number(value, minimum, maximum):
         return type(value) in (int, float) and math.isfinite(value) and minimum <= value <= maximum
@@ -89,6 +78,8 @@ def test_document(resource: Path, settings: dict):
             raise NavigationError(f"第 {index+1} 点的动作或参数格式无效。")
         if action == "wait" and not number(param.get("seconds"), 0, 60):
             raise NavigationError(f"第 {index+1} 点的等待时间须为 0–60 秒。")
+        if bottle and action not in NAVIGATION_ACTIONS | {"bottle"}:
+            raise NavigationError(f"第 {index+1} 点不是支持的漂流瓶测试动作。")
         if home:
             if action not in {"", "teleport", "fishing_star", "macro", "wait"}:
                 raise NavigationError(f"第 {index+1} 点不是支持的家园动作。")
@@ -97,6 +88,8 @@ def test_document(resource: Path, settings: dict):
         if (not number(point.get("x"), 0, spec.width) or not number(point.get("y"), 0, spec.height)
                 or not number(point.get("radius", 3), .1, 30) or type(point.get("jump", False)) is not bool):
             raise NavigationError(f"第 {index+1} 点的坐标、半径或跳跃设置无效。")
+    if bottle and not any(point.get("action") == "bottle" for point in document["points"]):
+        raise NavigationError("漂流瓶测试路线缺少拾取点位。")
     checkpoints = [document.get("teleport")]
     checkpoints += [point.get("params", {}).get("checkpoint") for point in document["points"]
                     if point.get("action") == "teleport"]
@@ -121,8 +114,13 @@ def navigation_route(model):
     skipped = []
     for index, point in enumerate(document["points"]):
         if point.get("action", "") not in NAVIGATION_ACTIONS:
-            skipped.append({"index": index, "action": point.pop("action")})
+            action = point.pop("action")
+            skipped.append({"index": index, "action": action})
             point.pop("params", None)
+            if action == "bottle":
+                # Compare the same settled pickup position in navigation mode,
+                # while leaving the bottle interaction disabled.
+                point.update(action="wait", params={"seconds": 0})
     return parse_route(document), skipped
 
 
@@ -164,6 +162,10 @@ class RouteTest(Runtime):
         self.stage = "preflight"
         self.last_capture = None
         self.progress_message = None
+        self.bottle_results = []
+        self.review_points = []
+        self.last_pose = None
+        self.arrival_evidence = {}
 
     def capture(self):
         frame = super().capture()
@@ -172,6 +174,37 @@ class RouteTest(Runtime):
         return frame
 
     def event(self, value):
+        if value.get("type") == "pose":
+            self.last_pose = value
+        if value.get("type") == "waypoint" and self.review_points:
+            index = value["index"]
+            point = self.review_points[index]
+            if point.get("action") == "bottle":
+                # Bottle arrivals (including navigation-only waits) are settled
+                # with movement released by Navigator.
+                # Reuse its observation, without another capture or input pulse.
+                evidence = {"index": index, "sample": point.get("params", {}).get("sample"),
+                            "target": {key: point[key] for key in ("x", "y")},
+                            "sample_position": point.get("params", {}).get("sample_position"),
+                            "pose": self.last_pose, "frame": None}
+                if self.directory and self.last_capture is not None:
+                    try:
+                        frame = self.last_capture.copy()
+                        height, width = frame.shape[:2]
+                        frame[round(height*.955):, :round(width*.2)] = 0
+                        filename = f"point-{index+1:03d}.png"
+                        cv2.imencode(".png", frame)[1].tofile(str(self.directory / filename))
+                        evidence["frame"] = filename
+                    except (OSError, ValueError, cv2.error):
+                        pass
+                self.arrival_evidence = evidence
+                self.event({"type": "bottle_arrival", **evidence})
+        if value.get("type") == "bottle_result":
+            value = {**value, "arrival": self.arrival_evidence}
+            self.bottle_results.append(value)
+            label = value.get("sample") or str(len(self.bottle_results))
+            status = "已拾取" if value["success"] else "未确认拾取"
+            self.progress_message = f"漂流瓶点位 {label}：{status}，继续下一个点位。"
         if self.directory:
             with (self.directory / "events.jsonl").open("a", encoding="utf-8") as stream:
                 stream.write(json.dumps({"time": time.time(), **value}, ensure_ascii=False)+"\n")
@@ -201,6 +234,7 @@ class RouteTest(Runtime):
                 raise NavigationError("路线测试已停止。")
             model, spec = test_document(RESOURCE, settings)
             source_document = model.document
+            self.review_points = source_document["points"]
             skipped = []
             if mode == "movement":
                 model, skipped = navigation_route(model)
@@ -208,13 +242,14 @@ class RouteTest(Runtime):
             actions = None
             if mode == "home" or any(point.action for point in model.points):
                 from navigation.daily_route import RouteActions, preflight
-                preflight(RESOURCE, model, "home" if mode == "home" else "navigation")
+                executor = {"home": "home", "bottle": "bottle"}.get(mode, "navigation")
+                preflight(RESOURCE, model, executor)
             if not inputs_allowed():
                 raise NavigationError("路线测试需要当前连接使用前台鼠标和键盘（Seize）。")
             self.directory = ROOT / "logs" / "navigation" / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-route-test")
             self.directory.mkdir(parents=True)
-            (self.directory / "route.json").write_text(json.dumps(source_document, ensure_ascii=False, indent=2), encoding="utf-8")
-            (self.directory / "execution.json").write_text(json.dumps(model.document, ensure_ascii=False, indent=2), encoding="utf-8")
+            write_json(self.directory / "route.json", source_document)
+            write_json(self.directory / "execution.json", model.document)
             if skipped:
                 self.log(f"导航模式跳过任务动作：{skipped}。",
                          ui_text=f"本轮验证路线导航，跳过 {len(skipped)} 个任务动作。")
@@ -227,7 +262,8 @@ class RouteTest(Runtime):
             self.event({"type": "window_ready", **inputs.focus_details()})
             teleporter = TestTeleporter(self, locator, self.event, inputs)
             if mode == "home" or any(point.action for point in model.points):
-                executor = "home" if mode == "home" else "navigation"
+                # The trial has no daily quota: every bottle stop must run.
+                executor = {"home": "home", "bottle": "bottle_test"}.get(mode, "navigation")
                 card = SimpleNamespace(rule=SimpleNamespace(executor=executor), remaining=None)
                 actions = RouteActions(self, RESOURCE, model, executor, card, inputs, self.event)
                 actions.teleporter = teleporter
@@ -236,13 +272,13 @@ class RouteTest(Runtime):
                 if not self.main() or not actions.fishing.configure():
                     raise NavigationError("家园测试的采星能力配置未完成。")
             self.phase("prepare", "正在准备路线："+str(model.document.get("title", model.id))+"。")
+            if mode == "bottle":
+                planned = sum(point.action == "bottle" for point in model.points)
+                result["bottle_points_planned"] = planned
+                self.log(f"漂流瓶全点位：共 {planned} 个拾取点，拾取成功后继续跑完整条路线。")
             teleporter.prepare(model)
             self.phase("follow", "正在检查第 1 点并沿路线行走。")
-            navigator = Navigator(locator, inputs, self.capture, lambda: self.stopped, self.pause, self.event,
-                                  point_action=actions, waypoint=actions.waypoint if actions else None,
-                                  point_prepare=actions.prepare_point if actions else None,
-                                  walking=self.ui.walking, page_detector=lambda frame: bool(
-                                      (found := self.recognize("MaaNikki_MainDetected", image=frame)) and found.hit))
+            navigator = create_navigator(self, teleporter, actions=actions, event=self.event)
             pose = navigator.follow(model)
             success = actions.complete() if mode == "home" else True
             result.update(success=success, final=pose.dict())
@@ -264,6 +300,10 @@ class RouteTest(Runtime):
                 except (OSError, ValueError, cv2.error):
                     pass
         finally:
+            if mode == "bottle":
+                result.update(bottle_points_attempted=len(self.bottle_results),
+                              bottles_collected=sum(item["success"] for item in self.bottle_results),
+                              bottle_results=self.bottle_results)
             if inputs:
                 try:
                     inputs.release()
@@ -275,9 +315,12 @@ class RouteTest(Runtime):
             self.navigation_inputs = previous_inputs
             if self.directory:
                 try:
-                    (self.directory / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+                    write_json(self.directory / "result.json", result)
                     status = "路线测试完成。" if result["success"] else "路线测试结束，请查看异常提示。"
+                    if mode == "bottle":
+                        status += (f"已尝试 {len(self.bottle_results)} 个漂流瓶点，"
+                                   f"确认拾取 {result['bottles_collected']} 次。")
                     self.log(status+"日志："+str(self.directory), ui_text=status)
-                except OSError:
+                except (OSError, ValueError):
                     self.log("路线测试日志保存失败。")
         return result["success"]

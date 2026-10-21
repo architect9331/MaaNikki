@@ -1,6 +1,8 @@
 """MVP page workflows shared by standalone and daily-task execution."""
 from __future__ import annotations
 
+from file_io import write_json
+
 import re
 import json
 from datetime import datetime
@@ -225,10 +227,9 @@ class Gameplay:
                 if ok:
                     (folder / (name+".png")).write_bytes(png.tobytes())
                     record["image"] = name+".png"
-            (folder / (name+".json")).write_text(
-                json.dumps(record, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+            write_json(folder / (name+".json"), record)
             self.rt.log(f"幻境关卡查找记录已保存：logs/realm/{name}.json")
-        except (OSError, cv2.error) as error:
+        except (OSError, ValueError, cv2.error) as error:
             self.rt.log(f"幻境关卡查找记录未能保存：{error}。")
 
     def jihua(self, maximize, allow_exhausted=False, fixed_count=None):
@@ -351,10 +352,9 @@ class Gameplay:
                 if ok:
                     (folder / (name+".png")).write_bytes(png.tobytes())
                     record["image"] = name+".png"
-            (folder / (name+".json")).write_text(
-                json.dumps(record, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+            write_json(folder / (name+".json"), record)
             self.rt.log(f"奖励页面记录已保存：logs/monthly/{name}.json")
-        except (OSError, cv2.error) as error:
+        except (OSError, ValueError, cv2.error) as error:
             self.rt.log(f"奖励页面记录未能保存：{error}。")
 
     def paradise_reward_return(self):

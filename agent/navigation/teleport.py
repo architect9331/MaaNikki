@@ -5,7 +5,8 @@ import re
 from task_control import task_time as time
 import cv2
 from .models import NavigationError
-from .vision import Locator, luma
+from .vision import Locator
+from .matching import luma, match_map
 
 REGION_NAME = [1030, 48, 200, 45]
 REGION_LIST = [885, 64, 310, 600]
@@ -234,7 +235,7 @@ class Teleporter:
             raise NavigationError("地图截图尺寸不符合要求。")
         scale = self.locator.spec.bigmap_scale*.25
         patch = cv2.resize(luma(frame), None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
-        x, y, score, detail = Locator.match(self.locator.coarse, patch,
+        x, y, score, detail = match_map(self.locator.coarse, patch,
                                            peak_mask=self.locator.bigmap_mask, kernel=9)
         if not all(math.isfinite(v) for v in (x, y, score, detail)) or score <= 0 or detail <= 0:
             raise NavigationError("地图画面没有可用的定位特征，未继续拖动或选择点位。")
@@ -273,7 +274,7 @@ class Teleporter:
                 x1 = min(self.locator.spec.width, math.ceil(cx+patch.shape[1]/2+12))
                 y1 = min(self.locator.spec.height, math.ceil(cy+patch.shape[0]/2+12))
                 try:
-                    x, y, score, peak = Locator.match(
+                    x, y, score, peak = match_map(
                         self.locator.map[y0:y1, x0:x1], patch, minimum_score=.65)
                 except NavigationError:
                     continue
@@ -422,7 +423,7 @@ class Teleporter:
         if not self.rt.ui.enter_page(lambda: self.confirm_transport(checkpoint),
                 "MaaNikki_MainDetected", source=selection_visible, attempts=1, seconds=60):
             raise NavigationError("传送后未恢复主界面。")
-        self.locator.previous = None
+        self.locator.reset()
         self.hint = checkpoint["x"], checkpoint["y"]
         self.event({"type": "teleport", "checkpoint": checkpoint})
 
@@ -435,7 +436,7 @@ class Teleporter:
             self.transport(checkpoint)
             return
         pose = self.locator.locate(self.rt.capture(), (origin.x, origin.y))
-        if not self.locator.heading_diagnostics.get("position_reliable", True):
+        if not pose.position_reliable:
             raise NavigationError("路线起点的小地图位置未能可信匹配，尚未开始移动。")
         if math.hypot(pose.x-origin.x, pose.y-origin.y) > route.start_radius:
             raise NavigationError("当前不在路线起点，且路线没有登记传送点。")
@@ -448,7 +449,7 @@ class Teleporter:
         A low-confidence/global-search failure falls back to normal transport.
         """
         previous = None
-        self.locator.previous = None
+        self.locator.reset()
         for _ in range(2):
             if self.inputs:
                 self.inputs.check()
@@ -457,19 +458,19 @@ class Teleporter:
             frame = self.rt.capture()
             found = self.rt.recognize("MaaNikki_MainDetected", image=frame) if frame is not None else None
             if not found or not found.hit:
-                self.locator.previous = None
+                self.locator.reset()
                 return False
             try:
                 hint = (previous.x, previous.y) if previous else None
                 pose = self.locator.locate(frame, hint)
             except NavigationError:
-                self.locator.previous = None
+                self.locator.reset()
                 return False
             reliable = (pose.score >= .75 and pose.margin >= .05 and pose.heading is not None
-                        and self.locator.heading_diagnostics.get("position_reliable", True))
+                        and pose.position_reliable)
             near = math.hypot(pose.x-checkpoint["x"], pose.y-checkpoint["y"]) < 15
             if not reliable or not near or previous and math.hypot(pose.x-previous.x, pose.y-previous.y) > 1:
-                self.locator.previous = None
+                self.locator.reset()
                 return False
             previous = pose
             if not self.rt.pause(.2):

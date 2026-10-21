@@ -1,7 +1,8 @@
 """Shared shop entry, diagnostics, and weekly free gift claims."""
 from __future__ import annotations
 
-import json
+from file_io import write_json
+
 from datetime import datetime
 
 import cv2
@@ -39,9 +40,8 @@ class ShopWorkflow:
                     image_name = name+"_"+self.ENTRY+".png"
                     (image_folder / image_name).write_bytes(png.tobytes())
                     record["image"] = "on_error/"+image_name
-            (folder / (name+".json")).write_text(
-                json.dumps(record, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
-        except (OSError, cv2.error):
+            write_json(folder / (name+".json"), record)
+        except (OSError, ValueError, cv2.error):
             self.rt.log("商城现场记录未能保存。")
         return False
 

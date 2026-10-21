@@ -4,7 +4,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime
-import json
+from file_io import write_json
 from pathlib import Path
 import time
 from uuid import uuid4
@@ -58,11 +58,8 @@ class Performance:
         try:
             self.directory.mkdir(parents=True, exist_ok=True)
             path = self.directory / self.filename
-            temporary = path.with_suffix(".tmp")
-            temporary.write_text(json.dumps(self.snapshot(), ensure_ascii=False, indent=2)+"\n",
-                                 encoding="utf-8")
-            temporary.replace(path)
-        except OSError:
+            write_json(path, self.snapshot())
+        except (OSError, ValueError):
             pass
         finally:
             # An unwritable log directory must not cause a retry every frame.

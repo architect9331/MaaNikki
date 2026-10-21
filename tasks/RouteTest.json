@@ -6,8 +6,8 @@
     "group": ["developer"],
     "developer_only": true,
     "default_check": false,
-    "description": "选择路线 JSON，按文件中的地图和点位运行。支持内置路线、工坊导出和本地编辑的路线。切出游戏后暂停，切回继续。",
-    "option": ["RouteTestFile", "RouteTestMode"]
+    "description": "选择执行内容和路线，按点位运行。切出游戏后暂停，切回继续。",
+    "option": ["RouteTestMode"]
   }],
   "option": {
     "RouteTestFile": {
@@ -26,14 +26,40 @@
           "name": "movement",
           "label": "路线导航",
           "description": "执行移动、跳跃、传送和等待，跳过采集、拍照等任务动作。",
+          "option": ["RouteTestFile"],
           "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"mode": "movement"}}}
         },
         {
           "name": "home",
           "label": "家园完整流程",
           "description": "按家园路线执行钓星、下落攻击、传送和等待，消耗实际钓星次数。",
-          "option": ["HomeAbilityPlan"],
+          "option": ["RouteTestFile", "HomeAbilityPlan"],
           "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"mode": "home"}}}
+        },
+        {
+          "name": "bottle",
+          "label": "漂流瓶全点位",
+          "description": "逐点尝试拾取，成功后继续跑完整条路线，记录各点结果及总拾取次数。",
+          "option": ["RouteTestBottleRoute"],
+          "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"mode": "bottle"}}}
+        }
+      ]
+    },
+    "RouteTestBottleRoute": {
+      "type": "select",
+      "label": "漂流瓶路线",
+      "default_case": "survey",
+      "cases": [
+        {
+          "name": "survey",
+          "label": "旧线优先 · 两段巡查（33 个点）",
+          "description": "先检查旧路线与远端北岸，再传回无界枢纽检查周边点位。所有拾取点停稳后尝试交互。",
+          "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_bottle_survey", "file": ""}}}
+        },
+        {
+          "name": "file",
+          "label": "本地路线文件",
+          "option": ["RouteTestFile"]
         }
       ]
     }

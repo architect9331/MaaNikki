@@ -10,7 +10,7 @@ from task_control import TaskStopped
 from daily.runtime import Executors, parameters
 from daily.settings import ROOT
 from collection.organization import BlessingOrganizer
-from collection.report import write_json
+from file_io import write_json
 from collection.storage import InventoryStore
 from collection.scanner import RescanSlot
 

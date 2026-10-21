@@ -4,6 +4,7 @@ import math
 from statistics import median
 from task_control import task_time as time
 from .models import NavigationError, Point, Route
+from .geometry import project_segment, segment_distance
 from .vision import Locator, Pose
 
 
@@ -19,11 +20,12 @@ def angle_delta(target, current):
     return (target-current+180) % 360-180
 
 
-def segment_distance(p, a, b):
-    dx, dy = b.x-a.x, b.y-a.y
-    length = dx*dx+dy*dy
-    fraction = max(0, min(1, ((p.x-a.x)*dx+(p.y-a.y)*dy)/length)) if length else 0
-    return math.hypot(p.x-a.x-fraction*dx, p.y-a.y-fraction*dy)
+def steering_tolerance(remaining, radius):
+    """Allow near-point angular noise within half the arrival radius."""
+    if remaining > radius+2:
+        return 5.0
+    lateral = math.degrees(math.asin(min(1, radius*.5/max(remaining, .001))))
+    return max(3.0, min(15.0, lateral))
 
 
 class Motion:
@@ -37,13 +39,16 @@ class Motion:
     FLOAT_PRESS = .08
     JUMP_PENDING = {"first", "second_wait", "second_hold"}
 
-    def __init__(self, inputs):
+    def __init__(self, inputs, event=lambda value: None):
         self.inputs = inputs
+        self.event = event
         self.until = 0
         self.jump_state = "idle"
         self.jump_at = 0
         self.forward_started = None
         self.forward_seconds = 0
+        self.release_costs = []
+        self.last_stop = None
         self.generation = getattr(inputs, "generation", 0)
 
     def forward(self, seconds):
@@ -63,13 +68,26 @@ class Motion:
         self.tick()
 
     def stop(self):
+        deadline = self.until
         self.until = 0
+        started = time.monotonic()
         try:
             self.inputs.key_up("forward")
         finally:
+            completed = time.monotonic()
             if self.forward_started is not None:
-                self.forward_seconds += time.monotonic()-self.forward_started
+                self.forward_seconds += completed-self.forward_started
                 self.forward_started = None
+                elapsed = completed-started
+                self.release_costs = (self.release_costs+[elapsed])[-5:]
+                self.last_stop = {"release_seconds": elapsed,
+                                  "deadline_lateness": max(0, started-deadline) if deadline else 0}
+                self.event({"type": "forward_stop", **self.last_stop})
+
+    def release_lead(self):
+        # Account for observed key-up RPC cost plus the cooperative timer tick.
+        # This measures input submission, not the game's animation/deceleration.
+        return max(.06, min(.3, max(self.release_costs, default=0)*1.25+.02))
 
     def forward_elapsed(self):
         return self.forward_seconds+(time.monotonic()-self.forward_started
@@ -221,7 +239,7 @@ class Navigator:
                 self.locator.heading_diagnostics = {"method": "reward_overlay"}
                 anchor = hint if hint is not None else ((self.locator.previous.x, self.locator.previous.y)
                                                        if self.locator.previous else (0.0, 0.0))
-                return Pose(anchor[0], anchor[1], 0.0, 0.0, None, 0.0)
+                return Pose(anchor[0], anchor[1], 0.0, 0.0, None, 0.0, False)
         # Validate the page separately from map correlation. Loading/menu frames
         # must not update the position history, regardless of their match score.
         page_ready = self.page_detector(frame) if self.page_detector else self.inputs.ready()
@@ -232,27 +250,19 @@ class Navigator:
             self.locator.heading_diagnostics = {"method": "page_unavailable"}
             previous = self.locator.previous
             anchor = (previous.x, previous.y) if previous else (hint or (0.0, 0.0))
-            pose = Pose(anchor[0], anchor[1], 0.0, 0.0, None, 0.0)
+            pose = Pose(anchor[0], anchor[1], 0.0, 0.0, None, 0.0, False)
         else:
             pose = self.locator.locate(frame, hint, search_radius=26, commit=commit,
-                                       reset_continuity=reset_continuity)
-            if not self.locator.heading_diagnostics.get("position_reliable", True):
-                # Retained coordinates are an anchor for recovery, not a new
-                # arrival or permission to keep walking/turning on bad matches.
+                                       reset_continuity=reset_continuity,
+                                       progress=self.motion.tick if self.motion else None)
+            if pose.heading is None:
                 if self.motion:
                     self.motion.close()
-                self.locator.heading_diagnostics.update(
-                    camera_method=self.locator.heading_diagnostics.get("method"),
-                    method="position_unavailable")
-                pose = Pose(pose.x, pose.y, pose.score, pose.margin, None, 0.0)
-            elif pose.heading is not None and pose.heading_confidence < .3:
-                if self.motion:
-                    self.motion.close()
-                self.locator.heading_diagnostics.update(method="heading_uncertain")
-                pose = Pose(pose.x, pose.y, pose.score, pose.margin, None, pose.heading_confidence)
         if self.motion:
             self.motion.tick()
-        self.event({"type": "pose", **pose.dict(), "heading_diagnostics": dict(self.locator.heading_diagnostics)})
+        self.event({"type": "pose", **pose.dict(), "heading_diagnostics": dict(self.locator.heading_diagnostics),
+                    "capture_age_seconds": time.monotonic()-self.pose_at,
+                    "input_since_capture": max(0, self.motion.forward_elapsed()-self.pose_input) if self.motion else 0})
         self.read_costs["observe"] = max(self.read_costs.get("observe", 0)*.8, time.monotonic()-begin)
         return pose
 
@@ -319,6 +329,8 @@ class Navigator:
 
     def turn(self, target_heading, pose, *, stationary=False, tolerance=5):
         generation = getattr(self.inputs, "generation", 0)
+        previous_delta = None
+        correction_gain = 1.0
         if pose.heading is None:
             raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
         if self.turn_ratio is not None and abs(angle_delta(target_heading, pose.heading)) <= tolerance:
@@ -332,13 +344,18 @@ class Navigator:
             if getattr(self.inputs, "generation", 0) != generation:
                 raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
             delta = angle_delta(target_heading, pose.heading)
-            self.camera(delta*self.turn_ratio)
+            previous_delta = delta
+            pixels = self.camera(delta*self.turn_ratio)
             self.pause(.04)
             after = self.observe((pose.x, pose.y))
             if getattr(self.inputs, "generation", 0) != generation:
                 raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
             if after.heading is None:
                 raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
+            self.event({"type": "camera_turn", "target": target_heading, "before": pose.heading,
+                        "after": after.heading, "pixels": pixels,
+                        "rotation": angle_delta(after.heading, pose.heading), "gain": correction_gain,
+                        "stationary": False})
             if abs(angle_delta(target_heading, after.heading)) <= tolerance:
                 return after
             pose = after
@@ -359,14 +376,28 @@ class Navigator:
                     return pose
                 if time.monotonic() >= deadline:
                     break
+                # Reduce corrections when feedback crosses the target instead
+                # of repeating full-size opposite turns on the same bearing.
+                if previous_delta is not None and delta*previous_delta < 0:
+                    correction_gain = max(.125, correction_gain*.5)
+                previous_delta = delta
                 before = pose.heading
-                pixels = self.camera(delta*self.turn_ratio)
+                pixels = self.camera(delta*self.turn_ratio*correction_gain)
                 self.pause(.15)
                 pose = self.stable_heading(pose)
                 actual = angle_delta(pose.heading, before)
                 self.event({"type": "camera_turn", "target": target_heading, "before": before,
-                            "after": pose.heading, "pixels": pixels, "rotation": actual})
-                if abs(actual) < 1:
+                            "after": pose.heading, "pixels": pixels, "rotation": actual,
+                            "gain": correction_gain, "stationary": True,
+                            "remaining_error": abs(angle_delta(target_heading, pose.heading)),
+                            "tolerance": tolerance})
+                # A small final turn can reach tolerance on the same read that
+                # would otherwise trip the accumulated no-response counter.
+                if abs(angle_delta(target_heading, pose.heading)) <= tolerance:
+                    return pose
+                # Cone headings have roughly 0.88-degree bins. A one-bin move
+                # is real feedback, even though it is smaller than one degree.
+                if abs(actual) < .5:
                     unresponsive += 1
                     if unresponsive >= 3:
                         raise NavigationError("镜头连续没有响应转向，已停止移动。")
@@ -429,12 +460,28 @@ class Navigator:
                                 reset_continuity=self.relocalized)
             if pose.heading is not None:
                 if previous is not None and distance(pose, previous) < 2:
-                    if self.relocalized and distance(pose, anchor) > 6:
+                    anchor_distance = distance(pose, anchor)
+                    if not self.relocalized and anchor_distance > 4:
+                        # A repeated candidate is stable, not independently
+                        # verified. Once movement has stopped, waiting must not
+                        # turn a rejected position jump into a trusted anchor.
+                        self.event({"type": "scene_anchor_conflict",
+                                    "anchor": [anchor.x, anchor.y],
+                                    "candidate": [pose.x, pose.y],
+                                    "distance": anchor_distance,
+                                    "verification": "bigmap" if self.relocalize else "unavailable"})
+                        if not self.relocalize:
+                            raise NavigationError("小地图恢复位置与中断前不一致，缺少大地图复核入口。")
+                        force_map = True
+                        previous = None
+                        continue
+                    if self.relocalized and anchor_distance > 6:
                         raise NavigationError("大地图角色位置与小地图定位不一致，未继续移动。")
                     # Tentative reads never replace the last trusted position.
-                    self.locator.previous = pose
-                    self.locator.position_time = time.monotonic()
-                    self.event({"type": "scene_resumed", **pose.dict()})
+                    self.locator.accept(pose)
+                    self.event({"type": "scene_resumed", **pose.dict(),
+                                "verification": "bigmap" if self.relocalized else "local_continuity",
+                                "anchor_distance": anchor_distance})
                     return pose
                 previous = pose
             else:
@@ -442,6 +489,18 @@ class Navigator:
                 failures += 1
         if not page_ready:
             raise NavigationError("等待返回可移动的主界面超时。")
+        diagnostics = self.locator.heading_diagnostics
+        if diagnostics.get("method") == "position_unavailable":
+            matches = diagnostics.get("position_matches", {})
+            cone = matches.get("outside_camera_cone", {})
+            cone_score = cone.get("score")
+            cone_message = (f"，光锥外 {cone_score:.4f}" if cone_score is not None else "")
+            raise NavigationError(
+                "主界面已恢复，但小地图位置匹配未通过校验"
+                f"（灰度相似度 {matches.get('luma', {}).get('score', 0):.4f}，"
+                f"地形边缘 {matches.get('known_terrain_edges', {}).get('score', 0):.4f}{cone_message}）。")
+        if diagnostics.get("method") == "heading_uncertain":
+            raise NavigationError("主界面已恢复，但小地图视角方向识别置信度不足。")
         raise NavigationError("主界面已恢复，但小地图位置或视角方向未能恢复稳定。")
 
     def rejoin_point(self, route, index, pose):
@@ -451,10 +510,8 @@ class Navigator:
         # preceding point; once prepared, return directly to that endpoint.
         if b.action == "teleport":
             a = b
-        dx, dy = b.x-a.x, b.y-a.y
-        length = dx*dx+dy*dy
-        fraction = max(0, min(1, ((pose.x-a.x)*dx+(pose.y-a.y)*dy)/length)) if length else 1
-        point = Point(a.x+fraction*dx, a.y+fraction*dy, min(b.radius, 2), b.jump)
+        x, y = project_segment(pose, a, b)
+        point = Point(x, y, min(b.radius, 2), b.jump)
         self.event({"type": "route_rejoin", "index": index,
                     "from": [pose.x, pose.y], "target": [point.x, point.y],
                     "distance": distance(pose, point)})
@@ -484,7 +541,8 @@ class Navigator:
         # Aim toward the point centre, reserving only the input-release delay.
         # Subtracting half the radius too made 50 ms restart attempts near
         # the circle edge, shorter than the character's movement startup.
-        duration = remaining/velocity-advanced_seconds-.06
+        release_lead = motion.release_lead()
+        duration = remaining/velocity-advanced_seconds-release_lead
         if duration <= 0 and advanced_seconds > 0:
             motion.stop()
             return self.observe((pose.x, pose.y)), False
@@ -526,6 +584,7 @@ class Navigator:
                     "recovery": recovery, "planning_speed": velocity,
                     "input_seconds": input_seconds, "observation_seconds": observation_seconds,
                     "capture_interval": self.pose_at-before_at, "compensated_input_seconds": advanced_seconds,
+                    "release_lead_seconds": release_lead,
                     "before": [pose.x, pose.y], "after": [after.x, after.y],
                     "remaining_before": remaining, "remaining_after": distance(after, target),
                     "measured_speed": measured, "feedback_valid": learned})
@@ -543,7 +602,7 @@ class Navigator:
         deadline = time.monotonic()+route.timeout
         origin = route.points[0]
         pose = self.observe((origin.x, origin.y))
-        motion = Motion(self.inputs)
+        motion = Motion(self.inputs, self.event)
         self.motion = motion
         if self.point_action:
             self.point_action.motion = motion
@@ -570,7 +629,7 @@ class Navigator:
                 current_generation = getattr(self.inputs, "generation", 0)
                 if current_generation != generation:
                     generation = current_generation
-                    self.locator.previous = None
+                    self.locator.reset()
                     pose = self.observe((last_good.x, last_good.y))
                     last_good = stuck_anchor = pose
                     stuck_since, recovered = time.monotonic(), False
@@ -591,13 +650,10 @@ class Navigator:
                         pending_transport = route.points[index].action == "teleport" and prepared_index != index
                         rejoin = None if pending_transport else self.rejoin_point(route, index, pose)
                         map_checked = True
-                    elif distance(pose, last_good) > 4:
-                        nearest = min(range(index+1), key=lambda n: distance(pose, route.points[n]))
-                        if distance(pose, route.points[nearest]) > 12:
-                            raise NavigationError("画面恢复后已偏离当前路线，请重新运行本项。")
-                        index = nearest
-                        prepared_index = None
-                        self.event({"type": "route_resume", "index": index})
+                    # Local recovery already verified continuity. Larger
+                    # corrections require the independent map anchor above and
+                    # rejoin the current segment, preserving completed actions.
+                    # Distance to waypoints cannot judge a long segment's middle.
                     last_good = stuck_anchor = pose
                     stuck_since, recovered = time.monotonic(), False
                     best_distance = distance(pose, rejoin or route.points[index])
@@ -614,7 +670,7 @@ class Navigator:
                 last_good = pose
                 if rejoin is None and self.point_prepare and prepared_index != index:
                     if self.point_prepare(target, pose):
-                        self.locator.previous = None
+                        self.locator.reset()
                         pose = self.observe((target.x, target.y))
                         last_good = pose
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
@@ -634,11 +690,18 @@ class Navigator:
                            and segment_distance(target, last, pose) <= radius)
                 if distance(pose, target) <= radius or crossed:
                     if precise:
+                        arrival_pose = pose
                         motion.stop()
                         motion.jump(False, self.walking())
                         self.pause(.12)
                         confirmed = self.observe((pose.x, pose.y))
                         settled = distance(pose, confirmed) <= max(.15, min(.4, radius*.25))
+                        self.event({"type": "arrival_check", "index": index,
+                                    "target": [target.x, target.y], "radius": radius,
+                                    "before_stop": [arrival_pose.x, arrival_pose.y],
+                                    "after_stop": [confirmed.x, confirmed.y],
+                                    "drift": distance(arrival_pose, confirmed), "settled": settled,
+                                    "remaining": distance(confirmed, target), "stop": motion.last_stop})
                         pose = confirmed
                         last = None
                         if (pose.heading is None or distance(pose, target) > radius or not settled
@@ -663,7 +726,7 @@ class Navigator:
                         if outcome == "done":
                             break
                         # Page actions/collection change both timers and pose.
-                        self.locator.previous = None
+                        self.locator.reset()
                         pose = self.observe((target.x, target.y))
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
                         if self.route_branch:
@@ -709,17 +772,29 @@ class Navigator:
                         speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
                         continue
                 turn_begin = time.monotonic()
+                turn_input = motion.forward_elapsed()
                 before_turn = pose
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
-                tolerance = 3 if remaining_distance <= radius+2 else 5
-                stationary_turn = self.turn_ratio is None or abs(angle_delta(bearing, pose.heading)) >= 45
+                tolerance = steering_tolerance(remaining_distance, radius)
+                near_target = remaining_distance <= radius+2
+                if (near_target and motion.forward_started is not None
+                        and abs(angle_delta(bearing, pose.heading)) > tolerance):
+                    # Recompute the bearing from the stopped position before a
+                    # close correction; coasting can move the target behind us.
+                    motion.stop()
+                    self.pause(.12)
+                    pose = self.observe((pose.x, pose.y))
+                    last = None
+                    continue
                 try:
-                    pose = self.turn(bearing, pose, tolerance=tolerance)
+                    pose = self.turn(bearing, pose, tolerance=tolerance, stationary=near_target)
                 except SceneUnavailable:
                     scene_interrupted = True
                     continue
-                if stationary_turn:
-                    stuck_since += time.monotonic()-turn_begin
+                # Small moving corrections can fall back to a stopped turn too.
+                # Only time actually holding forward counts toward being stuck.
+                stuck_since += max(0, time.monotonic()-turn_begin
+                                   -(motion.forward_elapsed()-turn_input))
                 if self.stopped() or time.monotonic() >= deadline:
                     raise NavigationError("导航已停止或超时。")
                 if getattr(self.inputs, "generation", 0) != generation:
@@ -730,6 +805,7 @@ class Navigator:
                     continue
                 # Coasting during a turn can change the target bearing.
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
+                tolerance = steering_tolerance(distance(pose, target), radius)
                 if abs(angle_delta(bearing, pose.heading)) > tolerance:
                     last = None
                     continue

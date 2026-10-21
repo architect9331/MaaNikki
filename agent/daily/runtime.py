@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from file_io import write_json
+
 import json
 import math
 from pathlib import Path
@@ -400,9 +402,10 @@ class Runtime:
             self.log(f"路线无法读取：{name}。")
             return False
         from navigation.controller import ForegroundInput
-        from navigation.engine import Navigator
+        from navigation.session import create_navigator
         from navigation.models import NavigationError, maps, parse_route
         from navigation.vision import Locator
+        from navigation.teleport import Teleporter
         inputs = actions = locator = teleporter = None
         stage = "map_loading"
         events = [{"type": "initializing", "stage": stage}]
@@ -425,9 +428,9 @@ class Runtime:
                 focus_game(self, inputs)
             self.navigation_inputs = inputs
             events.append({"type": "window_ready", "hwnd": inputs.hwnd, "foreground": inputs.foreground()})
+            teleporter = Teleporter(self, locator, events.append, inputs)
             if route["schema_version"] == 3:
                 from navigation.daily_route import RouteActions, preflight
-                from navigation.teleport import Teleporter
                 if mode is None or card is None:
                     raise NavigationError("此路线需要从相应日常任务执行。")
                 stage = "action_validation"
@@ -443,7 +446,6 @@ class Runtime:
                 if card.rule.executor == "bubble" and not self.setting(mode).get("bubble_equipped", False):
                     raise NavigationError("请先装备泡泡漂浮套装，并在星海任务设置中确认。")
                 stage = "teleport"
-                teleporter = Teleporter(self, locator, events.append, inputs)
                 if actions:
                     actions.teleporter = teleporter
                 if actions and card.rule.executor in {"home", "fishing"}:
@@ -459,14 +461,7 @@ class Runtime:
                 stage = "ability_selection"
                 if card.rule.executor == "insect" and not actions.select_insect():
                     raise NavigationError("捕虫能力配置未完成，本项尚未开始。")
-            navigator = Navigator(locator, inputs, self.capture, lambda: self.stopped, self.pause, events.append,
-                                  point_action=actions, waypoint=actions.waypoint if actions else None,
-                                  walking=self.ui.walking, page_detector=lambda frame: bool(
-                                      (result := self.recognize("MaaNikki_MainDetected", image=frame)) and result.hit),
-                                  relocalize=teleporter.player_location if teleporter else None,
-                                  route_branch=actions.branch_route if actions and card.rule.executor == "home" else None,
-                                  point_prepare=actions.prepare_point if actions and any(
-                                      point.action == "teleport" for point in model.points) else None)
+            navigator = create_navigator(self, teleporter, actions=actions, event=events.append)
             self.log("正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。")
             stage = "route_execution"
             navigator.follow(model)
@@ -527,9 +522,8 @@ class Runtime:
             folder = ROOT / "logs" / "navigation"
             try:
                 folder.mkdir(parents=True, exist_ok=True)
-                (folder / (datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".json")).write_text(
-                    json.dumps({"route": name, "events": events}, ensure_ascii=False, indent=2), encoding="utf-8")
-            except OSError:
+                write_json(folder / (datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".json"), {"route": name, "events": events})
+            except (OSError, ValueError):
                 self.log("导航日志保存失败，请检查日志目录权限和磁盘空间。")
 
 

@@ -12,6 +12,7 @@
     },
     {
       "id": "miraland",
+      "position_score_floor": null,
       "title": "奇迹大陆",
       "image": "maps/miraland.png",
       "scale_720": 0.73125,

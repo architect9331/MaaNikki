@@ -13,7 +13,7 @@ from daily.runtime import parameters
 from daily.settings import ROOT
 from .blessing import summarize_scan
 from .icons import IconMatcher
-from .details import HEADER, VerifiedVariants, tooltip_facts
+from .details import COLOR_OCR_THRESHOLD, HEADER, VerifiedVariants, tooltip_facts
 from .policy import reconcile_exclusions
 
 
@@ -422,7 +422,8 @@ class InventoryScanner:
             fields_retried = fields_retried or (previous is not None and read_roi == self.detail_roi(previous))
             self.check_generation(generation)
             facts, lines = tooltip_facts(results, self.catalog,
-                threshold=self.layout.get("tooltip_ocr_threshold", .85))
+                threshold=self.layout.get("tooltip_ocr_threshold", .85),
+                color_threshold=COLOR_OCR_THRESHOLD)
             if facts is None:
                 # Retry the same local band first: absent text often means
                 # a delayed tooltip, not an incorrect layout. Only unusual

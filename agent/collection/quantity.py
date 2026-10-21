@@ -4,7 +4,7 @@ import re
 import cv2
 import numpy as np
 
-from .report import write_json
+from file_io import write_json
 
 
 def stack_badge(frame, box):

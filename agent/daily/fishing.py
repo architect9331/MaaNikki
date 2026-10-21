@@ -1,8 +1,9 @@
 """Foreground fishing sessions shared by a current-point task and assistance."""
 from __future__ import annotations
 
+from file_io import write_json
+
 from datetime import datetime
-import json
 import math
 import re
 from types import SimpleNamespace
@@ -92,8 +93,8 @@ def run_fishing(runtime, inputs, *, passive=False, max_cast_count=None, use_rhyt
             folder = ROOT / "logs/fishing"
             folder.mkdir(parents=True, exist_ok=True)
             filename = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+".json"
-            (folder / filename).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-        except OSError:
+            write_json(folder / filename, result)
+        except (OSError, ValueError):
             runtime.log("钓鱼记录未能保存。")
 
 

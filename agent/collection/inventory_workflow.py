@@ -8,7 +8,7 @@ from uuid import uuid4
 from daily.runtime import parameters
 from .blessing import SLOTS
 from .locking import BlessingLocker
-from .report import write_json
+from file_io import write_json
 from .storage import InventoryStore
 from .upgrade import UpgradeUI
 from .ordered import OrderedView, merge_prefix, pending

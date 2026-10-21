@@ -25,6 +25,7 @@ SOURCE_DIRS = ("agent", "client", "resource", "tasks", "options", "build", "scri
 SOURCE_FILES = ("interface.json", ".gitignore", ".gitattributes", ".node-version",
                 "rust-toolchain.toml", "requirements.txt", "requirements.lock",
                 "README.md", "CHANGELOG.md", "AGENTS.md", "BUILDING.md", "docs/usage.md", "docs/blessing.md",
+                "docs/architecture.md",
                 "THIRD_PARTY_NOTICES.md", "LICENSE", "LICENSE.md")
 RUNTIME_DIRS = ("agent", "resource", "tasks", "options")
 GENERATED_DIRS = {"node_modules", "target", "dist", "__pycache__", ".git", "schemas"}

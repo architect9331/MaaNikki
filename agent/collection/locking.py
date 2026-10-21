@@ -11,8 +11,8 @@ from task_control import TaskStopped
 from daily.runtime import parameters
 from daily.settings import ROOT
 from .blessing import SLOTS
-from .details import tooltip_facts
-from .report import write_json
+from .details import COLOR_OCR_THRESHOLD, tooltip_facts
+from file_io import write_json
 from .policy import capabilities
 from .quantity import stack_badge
 from .scanner import InventoryScanner
@@ -182,13 +182,15 @@ class BlessingLocker(InventoryScanner):
                 or not capabilities(self.catalog, facts["name"], observed=facts)["lock_mutable"]
                 or not self.is_maximum(facts) and (self.inventory_read or self.allow_unlock))
 
-        def read_facts(results, threshold):
-            facts, lines = tooltip_facts(results, self.catalog, threshold=threshold)
+        def read_facts(results, threshold, *, color_threshold=None):
+            facts, lines = tooltip_facts(results, self.catalog, threshold=threshold,
+                                         color_threshold=color_threshold)
             if facts is not None:
                 return facts, lines
             # Unknown titles are records only: require a locked card and the
             # complete three-star pill, including its right edge (not 3/5 stars).
             facts, lines = tooltip_facts(results, self.catalog, threshold=threshold,
+                                         color_threshold=color_threshold,
                                          allow_protected=True)
             if (facts is None or not facts.get("protected_inventory") or facts["color"] is None
                     or self.card_lock_state(frame, box, []) != "locked"):
@@ -248,7 +250,7 @@ class BlessingLocker(InventoryScanner):
             strict, lines = read_facts(results, .90)
             facts = strict
             if not usable(facts):
-                facts, lines = read_facts(results, .85)
+                facts, lines = read_facts(results, .85, color_threshold=COLOR_OCR_THRESHOLD)
             last_lines = lines
             self.check_generation(generation)
             if usable(facts):
@@ -269,7 +271,9 @@ class BlessingLocker(InventoryScanner):
             if reads >= 3:
                 break
         diagnostic = {"box": list(box), "roi": roi, "reads": reads,
-                      "captures": captures, "ocr": last_lines, "direct": direct}
+                      "captures": captures, "ocr": last_lines, "direct": direct,
+                      "recognized_fields": {key: previous_facts.get(key) for key in
+                                            ("name", "slot", "level", "color")} if previous_facts else {}}
         if reads == 0 and retry_hover:
             # Selection can dismiss a tooltip or delay the next hover. Re-enter
             # once from a confirmed clear page; never click or relax identity.

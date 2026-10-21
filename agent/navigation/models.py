@@ -9,6 +9,9 @@ class NavigationError(ValueError):
     pass
 
 
+MINIMAP_POSITION_SCORE = .55
+
+
 @dataclass(frozen=True)
 class MapSpec:
     id: str
@@ -20,6 +23,7 @@ class MapSpec:
     bigmap_scale: float = 0.465
     center: tuple[float, float] = (120.667, 81.333)
     radius: float = 66.667
+    position_score_floor: float | None = MINIMAP_POSITION_SCORE
 
 
 def maps(resource: Path) -> dict[str, MapSpec]:
@@ -31,6 +35,8 @@ def maps(resource: Path) -> dict[str, MapSpec]:
                 item["id"], item["title"], catalog.parent / item["image"],
                 float(item["scale_720"]), int(item["width"]), int(item["height"]),
                 float(item.get("bigmap_scale_720", 0.465)),
+                position_score_floor=(float(item.get("position_score_floor", MINIMAP_POSITION_SCORE))
+                                      if item.get("position_score_floor", MINIMAP_POSITION_SCORE) is not None else None),
             ) for item in items
         }
     except (OSError, KeyError, TypeError, ValueError) as error:

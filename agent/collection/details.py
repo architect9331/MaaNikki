@@ -12,11 +12,14 @@ TITLE = re.compile(r"^(.+?)[·.．・:：]?\s*(头部|手部|脚部)$")
 LEVEL = re.compile(r"(?:等级|[Ll][Vv]|级)[\s.．·:：]*(10|[0-9])(?=\D|$)")
 COLORS = {color + "色": color for color in "蓝绿紫红粉黄白彩"}
 COLORS.update({"彩虹色": "彩", "炫彩色": "彩"})
+COLOR_OCR_THRESHOLD = .70
+COLOR_DECORATIONS = "●○◯〇•·"
 TEXT_NORMALIZATION = str.maketrans("頭腳", "头脚")
 
 
-def tooltip_facts(results, catalog, *, threshold=.85, allow_protected=False):
+def tooltip_facts(results, catalog, *, threshold=.85, color_threshold=None, allow_protected=False):
     """Accept exact catalogue names and spatially adjacent tooltip fields."""
+    color_threshold = threshold if color_threshold is None else color_threshold
     raw = []
     for item in results:
         text = re.sub(r"\s+", "", getattr(item, "text", "")).translate(TEXT_NORMALIZATION)
@@ -70,19 +73,28 @@ def tooltip_facts(results, catalog, *, threshold=.85, allow_protected=False):
     top = min(line["box"][1] for line in title)
     # Colour and level live on the right of this tooltip's header. Grid
     # labels just outside the panel must not become competing field values.
-    fields = [line for line in lines if left + 180 <= line["box"][0] <= left + 305
+    fields = [line for line in raw if left + 180 <= line["box"][0] <= left + 305
               and line["box"][0] + line["box"][2] <= left + 312
               and top + 25 <= line["box"][1] <= top + 105]
     levels, colors, field_boxes = set(), set(), [line["box"] for line in title]
     for line in fields:
-        found = LEVEL.search(line["text"])
+        found = LEVEL.search(line["text"]) if line["score"] >= threshold else None
         if found:
             levels.add(int(found.group(1)))
             field_boxes.append(line["box"])
-        for label, color in COLORS.items():
-            if label in line["text"]:
-                colors.add(color)
-                field_boxes.append(line["box"])
+        if line["score"] >= max(threshold, color_threshold):
+            matched = {color for label, color in COLORS.items() if label in line["text"]}
+        elif line["score"] >= color_threshold:
+            # The colour dot can be included in the OCR line and lower its
+            # aggregate confidence. Only a complete colour label, optionally
+            # preceded by dot glyphs, qualifies for the lower field threshold.
+            color = COLORS.get(line["text"].lstrip(COLOR_DECORATIONS))
+            matched = {color} if color is not None else set()
+        else:
+            matched = set()
+        if matched:
+            colors.update(matched)
+            field_boxes.append(line["box"])
     unknown = name not in definitions
     definition = definitions.get(name, {"rarity": 3, "colors": list("蓝绿紫红粉黄白彩")})
     maximum = catalog["upgrade_costs"][str(definition["rarity"])]["max_level"]
