@@ -24,7 +24,8 @@ def signature(row):
 
 
 def anchor(row):
-    return signature(row) if row["locked"] and row["maximum"] and row.get("anchor_eligible", True) else None
+    return signature(row) if (row["locked"] and row["maximum"] and row.get("mutable", True)
+                              and row.get("anchor_eligible", True)) else None
 
 
 def anchors(rows):
@@ -38,8 +39,10 @@ def pending(row):
 
 
 def make_row(owner, facts, locked, ordinal):
-    flags = capabilities(owner.catalog, facts["name"])
+    flags = capabilities(owner.catalog, facts["name"], observed=facts)
     return {**{key: facts[key] for key in ("name", "slot", "rarity", "level", "color")},
+            **({"protected_inventory": True, "inventory_evidence": facts["inventory_evidence"]}
+               if facts.get("protected_inventory") else {}),
             "id": uuid4().hex, "locked": locked, "maximum": owner.is_maximum(facts),
             "collectible": flags["collection_target"], "mutable": flags["lock_mutable"],
             "ordinal": ordinal, "priority": 0}
@@ -132,7 +135,7 @@ class OrderedView:
         facts, evidence = self.o.confirm_copy(frame, box, match, level, self.generation, self.o.counter)
         if facts is None or facts["slot"] != self.slot:
             raise RuntimeError("顺序记录身份或部位无法确认")
-        flags = capabilities(self.o.catalog, facts["name"])
+        flags = capabilities(self.o.catalog, facts["name"], observed=facts)
         state = "locked" if not flags["lock_mutable"] else self.o.card_lock_state(frame, box, self.labels)
         stats = self.o.report.setdefault("selection_stats", {"badge_reads": 0, "clicked_reads": 0})
         selected = flags["lock_mutable"] and (verify_selection or state is None)
@@ -147,11 +150,6 @@ class OrderedView:
         if quantities:
             row["count"], row["count_evidence"] = read_count(
                 self.o, frame, box, locked, self.labels, self.generation, self.o.counter)
-        if not flags["collection_target"]:
-            self.o.special_items[(facts["name"], facts["slot"])] = {
-                **{key: facts[key] for key in ("name", "slot", "rarity", "color", "level")},
-                **flags, "count": 1, "xp": 0, "xp_known": False,
-                "locked_count": int(locked), "lock_state_known": True, "observed": True}
         return row, facts, {**evidence, "selected_for_observation": selected}
 
     def ordinal(self, box):

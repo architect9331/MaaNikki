@@ -251,9 +251,29 @@ class Fishing:
 
     def cast(self):
         started = False
+        retried = False
         deadline = time.monotonic()+5
         while not self.rt.stopped:
             if time.monotonic() >= deadline:
+                if self.kind == "home" and not retried:
+                    # Retry only from a fresh, confirmed entrance; R can also
+                    # withdraw the rod if fishing has already started.
+                    pending = self.state()
+                    if pending != FishingState.UNKNOWN:
+                        break
+                    frame = self.last_state_frame
+                    ready = (self.rt.recognize("MaaNikki_Home_StarCollectActive", image=frame)
+                             if frame is not None else None)
+                    box = (self.ui.asset("IconAbilityFish", image=frame,
+                               roi=self.ui.roi("AreaSubAbilityButton"), color=WHITE, threshold=.8)
+                           if ready and ready.hit else None)
+                    if box:
+                        retried = True
+                        self.actions.event({"type": "star_fishing_retry", "attempt": 2, "box": box})
+                        self.rt.log("钓星未启动，已确认副能力可用，重试一次。")
+                        self.switch_fishing()
+                        deadline = time.monotonic()+5
+                        continue
                 self.fail_state(f"已触发{self.label}，但未识别到{self.label}操作提示。")
             pending = self.state()
             if pending != FishingState.UNKNOWN:

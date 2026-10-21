@@ -16,6 +16,7 @@ from .report import validate_snapshot
 from account_state import AccountState
 from .protection import keeper_keys
 from .blessing import SLOTS
+from .policy import capabilities, definition_for, protected_inventory
 
 
 class InventoryStore:
@@ -163,24 +164,26 @@ class InventoryStore:
         operation = order.get("pending_operation")
         if operation is not None and (not isinstance(operation, dict) or operation.get("kind") != "realm"):
             raise ValueError("上次库存修改尚未确认，请重新运行祝福闪光整理")
-        definitions = {item["name"]: item for item in self.catalog["sets"]}
         identifiers = set()
         protected = set()
         for slot, rows in order["slots"].items():
             if not isinstance(rows, list) or len(rows) > 10000:
                 raise ValueError("顺序基准格式无效，请重新整理")
             for row in rows:
-                definition = definitions.get(row.get("name")) if isinstance(row, dict) else None
-                if not definition:
+                if not isinstance(row, dict):
                     raise ValueError("顺序基准含未知闪光，请重新整理")
+                definition = definition_for(self.catalog, row.get("name"), observed=row)
+                flags = capabilities(self.catalog, row.get("name"), observed=row)
                 maximum = self.catalog["upgrade_costs"][str(definition["rarity"])]["max_level"]
                 if (row.get("slot") != slot or row.get("rarity") != definition["rarity"]
                         or type(row.get("level")) is not int or not 0 <= row["level"] <= maximum
                         or row.get("color") is not None and row["color"] not in definition["colors"]
                         or any(type(row.get(field)) is not bool for field in ("locked", "maximum", "mutable", "collectible"))
                         or row["maximum"] != (row["level"] == maximum)
-                        or row["collectible"] != definition.get("collection_target", True)
-                        or row["mutable"] != definition.get("lock_mutable", True)
+                        or row["collectible"] != flags["collection_target"]
+                        or row["mutable"] != flags["lock_mutable"]
+                        or row.get("protected_inventory") and not protected_inventory(row)
+                        or protected_inventory(row) and not row["locked"]
                         or any(type(row.get(field)) is not int or row[field] < 0 for field in ("ordinal", "priority"))
                         or row["priority"] == 0 or not isinstance(row.get("id"), str) or row["id"] in identifiers):
                     raise ValueError("顺序基准条目无效，请重新整理")
@@ -230,8 +233,10 @@ class InventoryStore:
     def canonical_items(snapshot):
         """One record per variant/level/XP; copies and lock counts are explicit."""
         grouped = {}
+        known_locks = {}
         fields = ("name", "slot", "rarity", "color", "level", "xp", "xp_known",
-                  "identity_known", "color_known", "collection_target", "lock_mutable", "decomposable")
+                  "identity_known", "color_known", "collection_target", "lock_mutable", "decomposable",
+                  "protected_inventory", "inventory_evidence")
         for item in snapshot["items"]:
             item.setdefault("xp_known", False)
             key = tuple(item.get(field) for field in ("name", "slot", "color", "level", "xp", "xp_known"))
@@ -239,6 +244,10 @@ class InventoryStore:
                                              "count": 0, "locked_count": None,
                                              "lock_state_known": False, "evidence": []})
             entry["count"] += item["count"]
+            if (not item["lock_mutable"] and item.get("lock_state_known")
+                    and item.get("locked_count") is not None):
+                entry["locked_count"] = (entry["locked_count"] or 0) + item["locked_count"]
+                known_locks[key] = known_locks.get(key, 0) + item["count"]
             if isinstance(item.get("evidence"), list):
                 entry["evidence"].extend(item["evidence"])
             else:
@@ -247,7 +256,12 @@ class InventoryStore:
                 if proof:
                     entry["evidence"].append(proof)
         locks = snapshot["locks"]
-        for entry in grouped.values():
+        for key, entry in grouped.items():
+            if not entry["lock_mutable"]:
+                entry["lock_state_known"] = known_locks.get(key, 0) == entry["count"]
+                if not entry["lock_state_known"]:
+                    entry["locked_count"] = None
+                continue
             exact = [group for group in locks["groups"] if all(
                 group.get(field) == entry.get(field) for field in ("name", "slot", "color", "level"))]
             base = [group for group in locks["groups"] if all(

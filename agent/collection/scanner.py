@@ -648,10 +648,5 @@ class InventoryScanner:
         if not scan["coverage_complete"]:
             scan["warnings"].append(f"库存容量 {scan['reported_capacity']}，实际遍历 {scan['visited_copies']} 个；"
                                     "请确认列表无筛选，锁定项是否可见，数量未一致时按部分库存处理。")
-        elif scan["capacity_includes_excluded"]:
-            basis = ("按当前仅有月桂兔特殊套装的假设，由容量差推断"
-                     if scan["excluded_owned_source"] == "capacity_difference" else "普通页面实际核对")
-            scan["warnings"].append(f"{basis}特殊闪光 {scan['excluded_copies']} 个；"
-                                    "这些物品不在分解列表且不计入追全目标，数量依据单独记录。")
         scan["warnings"].append("批量图标扫描不读取等级内已积累经验，升级预算按该等级的起点估算。")
         return self.snapshot

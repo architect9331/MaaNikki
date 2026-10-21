@@ -51,7 +51,6 @@ class BlessingLocker(InventoryScanner):
                        "complete": False, "slots": {}, "operations": [], "reason": "尚未完成"}
         self.pending = None
         self.inventory_read = False
-        self.special_items = {}
         self.inventory_snapshot = None
         self.lock_groups = {}
         self._hover_read = None
@@ -63,6 +62,11 @@ class BlessingLocker(InventoryScanner):
             raise ValueError("列表锁标资源缺失")
         self.card_lock_template = self.white_mask(badge) > 0
         self.card_lock_gray = cv2.cvtColor(badge, cv2.COLOR_BGR2GRAY)
+        stars_path = ROOT / "resource/image/blessing_lock/three_stars.png"
+        stars = cv2.imdecode(np.fromfile(str(stars_path), np.uint8), cv2.IMREAD_GRAYSCALE)
+        if stars is None:
+            raise ValueError("三星提示框图像资源缺失")
+        self.three_stars = stars
 
     def save(self):
         write_json(self.folder / "locking.json", self.report)
@@ -175,8 +179,30 @@ class BlessingLocker(InventoryScanner):
 
         def usable(facts):
             return facts is not None and (facts.get("color") is not None
-                or not capabilities(self.catalog, facts["name"])["lock_mutable"]
+                or not capabilities(self.catalog, facts["name"], observed=facts)["lock_mutable"]
                 or not self.is_maximum(facts) and (self.inventory_read or self.allow_unlock))
+
+        def read_facts(results, threshold):
+            facts, lines = tooltip_facts(results, self.catalog, threshold=threshold)
+            if facts is not None:
+                return facts, lines
+            # Unknown titles are records only: require a locked card and the
+            # complete three-star pill, including its right edge (not 3/5 stars).
+            facts, lines = tooltip_facts(results, self.catalog, threshold=threshold,
+                                         allow_protected=True)
+            if (facts is None or not facts.get("protected_inventory") or facts["color"] is None
+                    or self.card_lock_state(frame, box, []) != "locked"):
+                return None, lines
+            left, top = facts["header_box"]
+            area = [max(0, left - 12), top + 30, 105, 38]
+            gray = cv2.cvtColor(self.region(frame, area), cv2.COLOR_BGR2GRAY)
+            score = float(cv2.matchTemplate(gray, self.three_stars, cv2.TM_CCOEFF_NORMED).max())
+            if not np.isfinite(score) or score < .94:
+                return None, lines
+            x, y, w, h = box
+            facts["field_boxes"].extend((area, [x + w - 30, y + h - 35, 30, 32]))
+            facts["inventory_evidence"] = {"basis": "three_star_locked_card", "rarity_score": round(score, 4)}
+            return facts, lines
 
         def finish(facts, lines, confirmation):
             self._hover_read = (tuple(box), generation, facts, frame)
@@ -184,6 +210,8 @@ class BlessingLocker(InventoryScanner):
                         "roi": roi, "confirmation": confirmation,
                         "image": self.image(f"detail_{index:05d}.png",
                                             self.region(frame, self.detail_roi(facts)))}
+            if facts.get("protected_inventory"):
+                evidence["inventory_evidence"] = facts["inventory_evidence"]
             self.report["last_detail"] = {"name": facts["name"], "level": facts["level"],
                                           "reads": reads, "captures": captures, "roi": roi}
             return facts, evidence
@@ -217,10 +245,10 @@ class BlessingLocker(InventoryScanner):
                 continue
             results = self.ocr(roi, frame)
             reads += 1
-            strict, lines = tooltip_facts(results, self.catalog, threshold=.90)
+            strict, lines = read_facts(results, .90)
             facts = strict
             if not usable(facts):
-                facts, lines = tooltip_facts(results, self.catalog, threshold=.85)
+                facts, lines = read_facts(results, .85)
             last_lines = lines
             self.check_generation(generation)
             if usable(facts):
@@ -497,7 +525,7 @@ class BlessingLocker(InventoryScanner):
                 raise RuntimeError("库存格子存在识别空缺，未执行后续补锁")
 
     def change_lock(self, box, facts, evidence, generation, *, target="locked", reason="missing_maximum"):
-        if not capabilities(self.catalog, facts["name"])["lock_mutable"]:
+        if not capabilities(self.catalog, facts["name"], observed=facts)["lock_mutable"]:
             raise RuntimeError("特殊闪光不可修改锁定状态")
         if target not in ("locked", "unlocked"):
             raise ValueError("目标锁定状态无效")

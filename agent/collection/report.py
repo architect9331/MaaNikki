@@ -9,7 +9,7 @@ import re
 import tempfile
 
 from .blessing import SLOTS, summarize_scan
-from .policy import capabilities, definition_for, normalize_scope, reconcile_exclusions
+from .policy import definition_for, normalize_scope, protected_inventory, reconcile_exclusions
 
 
 TITLES = {1: "一级：每套、每部位至少一个满级，颜色不限",
@@ -171,7 +171,6 @@ def load_snapshot(path, catalog):
 
 def validate_snapshot(data, catalog):
     """Validate and refresh completeness after importing or updating inventory."""
-    definitions = {item["name"]: item for item in catalog["sets"]}
     if (not isinstance(data, dict) or data.get("schema_version") != 1
             or not isinstance(data.get("items"), list) or len(data["items"]) > 10000):
         raise ValueError("不支持的库存快照格式")
@@ -181,8 +180,8 @@ def validate_snapshot(data, catalog):
     for item in data["items"] + data["excluded_items"]:
         if not isinstance(item, dict):
             raise ValueError("库存条目必须是对象")
-        definition = definitions.get(item.get("name"))
-        if not definition or item.get("slot") not in SLOTS:
+        definition = definition_for(catalog, item.get("name"), observed=item)
+        if item.get("slot") not in SLOTS:
             raise ValueError("库存快照含未登记名称或部位")
         item["rarity"] = definition["rarity"]
         item.update(identity_known=True, color_known=bool(item.get("color")))
@@ -202,6 +201,11 @@ def validate_snapshot(data, catalog):
                     type(item["locked_count"]) is not int or not 0 <= item["locked_count"] <= item["count"])):
             raise ValueError("库存快照含无效的经验或锁定数量")
         item.setdefault("xp_known", False)
+        if item.get("protected_inventory") and (
+                not protected_inventory(item) or item["lock_mutable"]
+                or item.get("locked_count") != item["count"]
+                or item.get("lock_state_known") is not True):
+            raise ValueError("受保护三星库存缺少已确认的锁定状态")
     if not isinstance(data.get("scan"), dict) or not isinstance(data.get("created"), str):
         raise ValueError("库存快照缺少扫描信息")
     data.setdefault("unresolved", [])
@@ -210,19 +214,6 @@ def validate_snapshot(data, catalog):
     exclusions = scan.setdefault("excluded_owned", [])
     if not isinstance(exclusions, list):
         raise ValueError("特殊闪光持有数量记录必须为列表")
-    names = set()
-    for excluded in exclusions:
-        if not isinstance(excluded, dict):
-            raise ValueError("特殊闪光持有数量记录必须为对象")
-        definition = definition_for(catalog, excluded.get("name"))
-        if (definition.get("decomposable", True) or definition.get("collection_target", True)
-                or definition["name"] in names or type(excluded.get("count")) is not int
-                or not 0 <= excluded["count"] <= definition["maximum_owned"]
-                or excluded.get("basis") not in (
-                    "configured_owned_count", "observed_normal_inventory", "capacity_difference")):
-            raise ValueError("无效的特殊闪光容量排除记录")
-        names.add(definition["name"])
-        excluded.update(capabilities(catalog, definition["name"]))
     locks = data["locks"]
     if (not isinstance(locks, dict) or type(locks.get("complete")) is not bool
             or not isinstance(locks.get("groups"), list)):

@@ -121,7 +121,9 @@ class BlessingOrganizer(BlessingLocker):
                 snapshot["items"].append({
                     **{key: row[key] for key in ("name", "slot", "rarity", "level", "color", "count")},
                     "xp": 0, "xp_known": row["maximum"],
-                    "locked_count": int(row["locked"]), "lock_state_known": True,
+                    **({"protected_inventory": True, "inventory_evidence": row["inventory_evidence"]}
+                       if row.get("protected_inventory") else {}),
+                    "locked_count": row["count"] if row["locked"] else 0, "lock_state_known": True,
                     "identity_known": True, "color_known": row["color"] is not None,
                     "observed": True, "evidence": [{"source": "normal_inventory",
                         "ordinal": row["ordinal"], "quantity": row["count_evidence"]}]})

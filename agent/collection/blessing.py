@@ -16,24 +16,17 @@ def summarize_scan(snapshot, traversed, reason):
     total = sum(item["count"] for item in snapshot["items"])
     pending = sum(item["count"] for item in snapshot["items"] if not item.get("color"))
     visited = total + len(snapshot["unresolved"])
-    excluded = sum(item["count"] for item in scan.get("excluded_owned", []))
     capacity = scan.get("reported_capacity")
     expected = capacity
-    includes_excluded = False if capacity == visited else None
-    if scan.get("view") == "normal_inventory" and capacity is not None:
-        expected, includes_excluded = capacity - excluded, bool(excluded)
-    elif (scan.get("view") == "decomposition" and excluded and capacity is not None
-            and capacity - excluded == visited):
-        expected, includes_excluded = capacity - excluded, True
     coverage = bool(traversed and expected == visited)
     identity = bool(coverage and not snapshot["unresolved"])
     colors = bool(identity and not pending)
     scan.update(complete=colors, traversed=bool(traversed), coverage_complete=coverage,
                 identity_complete=identity, color_complete=colors, recorded_copies=total,
                 visited_copies=visited, color_unresolved_copies=pending)
-    scan.update(expected_collectible_capacity=expected, excluded_copies=excluded,
-                capacity_includes_excluded=includes_excluded,
-                total_owned_copies=visited + excluded if coverage else None)
+    scan.update(expected_collectible_capacity=expected, excluded_copies=0,
+                capacity_includes_excluded=False,
+                total_owned_copies=visited if coverage else None)
     details = []
     if not coverage:
         details.append("库存数量或遍历范围待核对")

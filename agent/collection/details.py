@@ -15,7 +15,7 @@ COLORS.update({"彩虹色": "彩", "炫彩色": "彩"})
 TEXT_NORMALIZATION = str.maketrans("頭腳", "头脚")
 
 
-def tooltip_facts(results, catalog, *, threshold=.85):
+def tooltip_facts(results, catalog, *, threshold=.85, allow_protected=False):
     """Accept exact catalogue names and spatially adjacent tooltip fields."""
     raw = []
     for item in results:
@@ -42,7 +42,7 @@ def tooltip_facts(results, catalog, *, threshold=.85):
         if not match:
             return
         name = match.group(1).rstrip("·.．・:：")
-        if name in definitions:
+        if name in definitions or allow_protected and 1 <= len(name) <= 64:
             key = (name, match.group(2), min(part["box"][0] for part in parts),
                    min(part["box"][1] for part in parts))
             titles[key] = (name, match.group(2), parts)
@@ -83,7 +83,8 @@ def tooltip_facts(results, catalog, *, threshold=.85):
             if label in line["text"]:
                 colors.add(color)
                 field_boxes.append(line["box"])
-    definition = definitions[name]
+    unknown = name not in definitions
+    definition = definitions.get(name, {"rarity": 3, "colors": list("蓝绿紫红粉黄白彩")})
     maximum = catalog["upgrade_costs"][str(definition["rarity"])]["max_level"]
     if len(levels) != 1 or not 0 <= next(iter(levels)) <= maximum:
         return None, raw
@@ -91,8 +92,11 @@ def tooltip_facts(results, catalog, *, threshold=.85):
     color = next(iter(colors)) if len(colors) == 1 else None
     if color not in definition["colors"] or color == "彩" and level != maximum:
         color = None
-    return {"name": name, "slot": slot, "rarity": definition["rarity"], "level": level,
-            "color": color, "header_box": [left, top], "field_boxes": field_boxes}, raw
+    facts = {"name": name, "slot": slot, "rarity": definition["rarity"], "level": level,
+             "color": color, "header_box": [left, top], "field_boxes": field_boxes}
+    if unknown:
+        facts["protected_inventory"] = True
+    return facts, raw
 
 
 class VerifiedVariants:
@@ -127,7 +131,7 @@ class VerifiedVariants:
         return None
 
     def remember(self, frame, box, facts, evidence):
-        if facts.get("color") is None:
+        if facts.get("color") is None or facts.get("protected_inventory"):
             return
         group = self.matcher.group_lookup[(facts["name"], facts["slot"])]
         features = self.matcher.fingerprint(frame, box, group)
