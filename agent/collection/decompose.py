@@ -133,6 +133,7 @@ class LowRarityDecomposer:
         raise RuntimeError("分解后容量或粒子变化未确认，已停止且不重复分解")
 
     def run(self):
+        self.o.ensure_known_materials()
         self.o.report["phase"] = "decompose_low_rarity"
         self.o.report["decomposition"] = summary = {"complete": False, "batches": 0, "copies": 0, "particles": 0}
         self.o.organization["decomposition_pending"] = True

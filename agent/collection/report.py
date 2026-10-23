@@ -8,7 +8,7 @@ import re
 from file_io import write_json
 
 from .blessing import SLOTS, summarize_scan
-from .policy import definition_for, normalize_scope, protected_inventory, reconcile_exclusions
+from .policy import definition_for, normalize_scope, protected_inventory, reconcile_exclusions, unregistered_inventory
 
 
 TITLES = {1: "一级：每套、每部位至少一个满级，颜色不限",
@@ -189,6 +189,10 @@ def validate_snapshot(data, catalog):
                 or item.get("locked_count") != item["count"]
                 or item.get("lock_state_known") is not True):
             raise ValueError("受保护三星库存缺少已确认的锁定状态")
+        if item.get("catalog_unknown") and (
+                not unregistered_inventory(item) or item["lock_mutable"]
+                or item.get("lock_state_known") is not True or item.get("locked_count") is None):
+            raise ValueError("图鉴外库存缺少星级或锁定状态识别依据")
     if not isinstance(data.get("scan"), dict) or not isinstance(data.get("created"), str):
         raise ValueError("库存快照缺少扫描信息")
     data.setdefault("unresolved", [])

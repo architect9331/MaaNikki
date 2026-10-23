@@ -118,7 +118,7 @@ export default {
       'Show a confirmation dialog before delete/clear list and other dangerous actions.',
     helpImproveSoftware: 'Help Improve the Software',
     helpImproveSoftwareHint:
-      'Anonymously send crash reports, task statistics, and relevant logs and error screenshots from failed tasks to help find common issues.',
+      'Send crash reports, task statistics, and relevant logs and error screenshots from failed tasks to Sentry for troubleshooting. Logs and screenshots may contain game account information. You can turn this off at any time.',
     helpImproveSoftwareDisabledHint:
       'Anonymous data reporting is disabled in debug / development builds.',
     maxLogsPerInstance: 'Max logs per instance',

@@ -116,7 +116,7 @@ export default {
     confirmBeforeDeleteHint: '删除任务、清空列表等危险操作会先弹出确认对话框',
     helpImproveSoftware: '帮助改进软件',
     helpImproveSoftwareHint:
-      '匿名发送崩溃、任务统计及失败任务的相关日志与错误截图，帮助发现常见问题',
+      '向 Sentry 发送崩溃、任务统计及失败任务的相关日志与错误截图，帮助排查问题。日志和截图可能包含游戏账号信息，可随时关闭。',
     helpImproveSoftwareDisabledHint: '当前为调试 / 开发版本，已禁用匿名数据上报',
     maxLogsPerInstance: '每个实例保留的日志上限',
     maxLogsPerInstanceHint: '超过上限会自动丢弃最旧的日志（建议 500～2000）',

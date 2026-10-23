@@ -6,7 +6,7 @@ import re
 from .blessing import SLOTS, summarize_scan
 from .locking import BlessingLocker
 from .ordered import OrderedView, baseline, signature
-from .policy import normalize_scope, reconcile_exclusions
+from .policy import normalize_scope, observation_fields, reconcile_exclusions
 from .scanner import clean_text
 
 
@@ -121,8 +121,7 @@ class BlessingOrganizer(BlessingLocker):
                 snapshot["items"].append({
                     **{key: row[key] for key in ("name", "slot", "rarity", "level", "color", "count")},
                     "xp": 0, "xp_known": row["maximum"],
-                    **({"protected_inventory": True, "inventory_evidence": row["inventory_evidence"]}
-                       if row.get("protected_inventory") else {}),
+                    **observation_fields(row),
                     "locked_count": row["count"] if row["locked"] else 0, "lock_state_known": True,
                     "identity_known": True, "color_known": row["color"] is not None,
                     "observed": True, "evidence": [{"source": "normal_inventory",
@@ -153,6 +152,11 @@ class BlessingOrganizer(BlessingLocker):
         if not complete:
             snapshot["scan"]["warnings"].append("普通仓库堆叠数量与容量不一致，未发布全收集基准。")
         snapshot["scan"]["warnings"].append("未读取等级内已积累经验，中间等级的升级预算按等级起点估算。")
+        unknown = sorted({row["name"] for rows in self.organization["slots"].values()
+                          for row in rows if row.get("catalog_unknown")})
+        if unknown:
+            snapshot["scan"]["warnings"].append(
+                "图鉴外闪光仅记录实测库存，不自动整理或追全：" + "、".join(unknown) + "。请更新图鉴。")
         self.report.update(complete=complete, phase="complete" if complete else "inventory_incomplete",
                            reason="三个部位整理及普通仓库数量核对完成" if complete else snapshot["scan"]["reason"])
         return snapshot

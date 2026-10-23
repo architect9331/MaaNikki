@@ -94,6 +94,7 @@ class UpgradeUI:
         return color, frame
 
     def run(self, box, facts, evidence, generation):
+        self.owner.ensure_known_materials()
         if facts["rarity"] != 5 or not 0 <= facts["level"] < 10:
             raise RuntimeError("只允许升级未满级五星祝福闪光")
         self.owner.check_generation(generation)

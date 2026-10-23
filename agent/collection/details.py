@@ -17,7 +17,8 @@ COLOR_DECORATIONS = "●○◯〇•·"
 TEXT_NORMALIZATION = str.maketrans("頭腳", "头脚")
 
 
-def tooltip_facts(results, catalog, *, threshold=.85, color_threshold=None, allow_protected=False):
+def tooltip_facts(results, catalog, *, threshold=.85, color_threshold=None, allow_protected=False,
+                  allow_unknown=False, unknown_rarity=None):
     """Accept exact catalogue names and spatially adjacent tooltip fields."""
     color_threshold = threshold if color_threshold is None else color_threshold
     raw = []
@@ -45,7 +46,7 @@ def tooltip_facts(results, catalog, *, threshold=.85, color_threshold=None, allo
         if not match:
             return
         name = match.group(1).rstrip("·.．・:：")
-        if name in definitions or allow_protected and 1 <= len(name) <= 64:
+        if name in definitions or (allow_protected or allow_unknown) and 1 <= len(name) <= 64:
             key = (name, match.group(2), min(part["box"][0] for part in parts),
                    min(part["box"][1] for part in parts))
             titles[key] = (name, match.group(2), parts)
@@ -96,8 +97,11 @@ def tooltip_facts(results, catalog, *, threshold=.85, color_threshold=None, allo
             colors.update(matched)
             field_boxes.append(line["box"])
     unknown = name not in definitions
-    definition = definitions.get(name, {"rarity": 3, "colors": list("蓝绿紫红粉黄白彩")})
-    maximum = catalog["upgrade_costs"][str(definition["rarity"])]["max_level"]
+    rarity = unknown_rarity if allow_unknown else 3
+    definition = definitions.get(name, {"rarity": rarity, "colors": list("蓝绿紫红粉黄白彩")})
+    # An unknown title can first locate the rarity pill without assigning a
+    # star count. The caller must recognize it before accepting these facts.
+    maximum = catalog["upgrade_costs"][str(definition["rarity"] or 5)]["max_level"]
     if len(levels) != 1 or not 0 <= next(iter(levels)) <= maximum:
         return None, raw
     level = next(iter(levels))
@@ -107,7 +111,7 @@ def tooltip_facts(results, catalog, *, threshold=.85, color_threshold=None, allo
     facts = {"name": name, "slot": slot, "rarity": definition["rarity"], "level": level,
              "color": color, "header_box": [left, top], "field_boxes": field_boxes}
     if unknown:
-        facts["protected_inventory"] = True
+        facts["catalog_unknown" if allow_unknown else "protected_inventory"] = True
     return facts, raw
 
 
@@ -143,7 +147,7 @@ class VerifiedVariants:
         return None
 
     def remember(self, frame, box, facts, evidence):
-        if facts.get("color") is None or facts.get("protected_inventory"):
+        if facts.get("color") is None or facts.get("protected_inventory") or facts.get("catalog_unknown"):
             return
         group = self.matcher.group_lookup[(facts["name"], facts["slot"])]
         features = self.matcher.fingerprint(frame, box, group)

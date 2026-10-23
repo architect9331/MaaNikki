@@ -1,6 +1,7 @@
 {
   "schema_version": 3,
   "id": "xinghai_bottle",
+  "fallback_routes": ["xinghai_bottle_2"],
   "map": "starsea",
   "start_radius": 9,
   "timeout": 240,

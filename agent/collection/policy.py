@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 
+class UnregisteredMaterials(RuntimeError):
+    """A read-only discovery found items unsafe for automatic material input."""
+
+
 def protected_inventory(item):
     if not (isinstance(item, dict) and item.get("protected_inventory") is True
             and type(item.get("rarity")) is int and item["rarity"] == 3):
@@ -11,13 +15,30 @@ def protected_inventory(item):
             and type(proof.get("rarity_score")) in (int, float) and .94 <= proof["rarity_score"] <= 1)
 
 
+def unregistered_inventory(item):
+    """Unknown names need observed rarity, not a guessed catalogue entry."""
+    if not (isinstance(item, dict) and item.get("catalog_unknown") is True
+            and type(item.get("rarity")) is int and item["rarity"] in (3, 4, 5)):
+        return False
+    proof = item.get("inventory_evidence")
+    return (isinstance(proof, dict) and proof.get("basis") == "tooltip_rarity"
+            and proof.get("rarity") == item["rarity"]
+            and type(proof.get("rarity_score")) in (int, float) and .94 <= proof["rarity_score"] <= 1)
+
+
+def observation_fields(item):
+    return {**{key: True for key in ("protected_inventory", "catalog_unknown") if item.get(key) is True},
+            **({"inventory_evidence": item["inventory_evidence"]}
+               if item.get("protected_inventory") or item.get("catalog_unknown") else {})}
+
+
 def definition_for(catalog, name, *, observed=None):
     definition = next((item for item in catalog["sets"] if item["name"] == name), None)
     if definition is None:
-        if (protected_inventory(observed) and observed.get("name") == name
+        if ((protected_inventory(observed) or unregistered_inventory(observed)) and observed.get("name") == name
                 and isinstance(name, str) and 1 <= len(name) <= 64
                 and not any(ord(char) < 32 for char in name)):
-            return {"name": name, "rarity": 3, "colors": list("蓝绿紫红粉黄白彩"),
+            return {"name": name, "rarity": observed["rarity"], "colors": list("蓝绿紫红粉黄白彩"),
                     "collection_target": False, "lock_mutable": False, "decomposable": False}
         raise ValueError(f"未登记的祝福闪光：{name}")
     return definition
@@ -52,7 +73,10 @@ def normalize_scope(snapshot, catalog):
         item.update(flags)
     snapshot["items"].extend(excluded)
     snapshot["excluded_items"] = []
+    known = {definition["name"] for definition in catalog["sets"]}
     for item in snapshot["items"]:
+        if item["name"] in known:
+            item.pop("catalog_unknown", None)
         item.update(capabilities(catalog, item["name"], observed=item))
     snapshot.setdefault("locks", {"complete": False, "groups": [], "reason": "本次未读取锁定状态"})
     return snapshot

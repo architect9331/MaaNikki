@@ -1,5 +1,15 @@
 {
   "source": "User-provided normal Eureka inventory screenshots, 2026-10-15; states explicitly confirmed by the user",
+  "four_stars.png": {
+    "description": "Complete four-star tooltip pill, including its rounded right edge; no personal UI fields",
+    "source": "Existing inventory detail screenshot, 2026-10-17, snowmelt head slot (雪绒融)",
+    "roi_in_detail": [9, 49, 79, 22]
+  },
+  "five_stars.png": {
+    "description": "Complete five-star tooltip pill, including its rounded right edge; no personal UI fields",
+    "source": "Existing inventory detail screenshot, 2026-10-17, mirror firefly head slot (镜中萤)",
+    "roi_in_detail": [9, 49, 94, 22]
+  },
   "unlocked.png": {
     "description": "Unlocked state from the earlier hand-slot screenshot; confirmed by the user. No personal UI fields included",
     "normalized_frame": [1280, 720],

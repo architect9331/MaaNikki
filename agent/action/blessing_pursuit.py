@@ -13,6 +13,7 @@ from collection.pursuit import FiveStarPursuit
 from collection.inventory_workflow import FiveStarInventory
 from collection.ordered import IncompleteLookup
 from collection.scanner import RescanSlot
+from collection.policy import UnregisteredMaterials
 
 
 @agent_action("nikki.blessing_pursuit")
@@ -49,7 +50,7 @@ class BlessingPursuitAction(CustomAction):
                 if pursuit.organization is not None:
                     # An incomplete read did not mutate the candidate or prove
                     # it absent. Preserve the established baseline for retry.
-                    resumable = (isinstance(error, IncompleteLookup)
+                    resumable = (isinstance(error, (IncompleteLookup, UnregisteredMaterials))
                                  and pursuit.pending is None
                                  and pursuit.organization.get("complete") is True)
                     pursuit.organization.update(complete=resumable, reason=reason)

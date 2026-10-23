@@ -16,7 +16,7 @@ from .report import validate_snapshot
 from account_state import AccountState
 from .protection import keeper_keys
 from .blessing import SLOTS
-from .policy import capabilities, definition_for, protected_inventory
+from .policy import capabilities, definition_for, protected_inventory, unregistered_inventory
 
 
 class InventoryStore:
@@ -183,6 +183,7 @@ class InventoryStore:
                         or row["collectible"] != flags["collection_target"]
                         or row["mutable"] != flags["lock_mutable"]
                         or row.get("protected_inventory") and not protected_inventory(row)
+                        or row.get("catalog_unknown") and not unregistered_inventory(row)
                         or protected_inventory(row) and not row["locked"]
                         or any(type(row.get(field)) is not int or row[field] < 0 for field in ("ordinal", "priority"))
                         or row["priority"] == 0 or not isinstance(row.get("id"), str) or row["id"] in identifiers):
@@ -236,7 +237,7 @@ class InventoryStore:
         known_locks = {}
         fields = ("name", "slot", "rarity", "color", "level", "xp", "xp_known",
                   "identity_known", "color_known", "collection_target", "lock_mutable", "decomposable",
-                  "protected_inventory", "inventory_evidence")
+                  "protected_inventory", "catalog_unknown", "inventory_evidence")
         for item in snapshot["items"]:
             item.setdefault("xp_known", False)
             key = tuple(item.get(field) for field in ("name", "slot", "color", "level", "xp", "xp_known"))

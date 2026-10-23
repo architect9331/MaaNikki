@@ -20,14 +20,6 @@ def angle_delta(target, current):
     return (target-current+180) % 360-180
 
 
-def steering_tolerance(remaining, radius):
-    """Allow near-point angular noise within half the arrival radius."""
-    if remaining > radius+2:
-        return 5.0
-    lateral = math.degrees(math.asin(min(1, radius*.5/max(remaining, .001))))
-    return max(3.0, min(15.0, lateral))
-
-
 class Motion:
     """Cooperative timers: only the navigation thread may call Maa APIs.
 
@@ -47,7 +39,6 @@ class Motion:
         self.jump_at = 0
         self.forward_started = None
         self.forward_seconds = 0
-        self.release_costs = []
         self.last_stop = None
         self.generation = getattr(inputs, "generation", 0)
 
@@ -79,15 +70,9 @@ class Motion:
                 self.forward_seconds += completed-self.forward_started
                 self.forward_started = None
                 elapsed = completed-started
-                self.release_costs = (self.release_costs+[elapsed])[-5:]
                 self.last_stop = {"release_seconds": elapsed,
                                   "deadline_lateness": max(0, started-deadline) if deadline else 0}
                 self.event({"type": "forward_stop", **self.last_stop})
-
-    def release_lead(self):
-        # Account for observed key-up RPC cost plus the cooperative timer tick.
-        # This measures input submission, not the game's animation/deceleration.
-        return max(.06, min(.3, max(self.release_costs, default=0)*1.25+.02))
 
     def forward_elapsed(self):
         return self.forward_seconds+(time.monotonic()-self.forward_started
@@ -541,8 +526,7 @@ class Navigator:
         # Aim toward the point centre, reserving only the input-release delay.
         # Subtracting half the radius too made 50 ms restart attempts near
         # the circle edge, shorter than the character's movement startup.
-        release_lead = motion.release_lead()
-        duration = remaining/velocity-advanced_seconds-release_lead
+        duration = remaining/velocity-advanced_seconds-.06
         if duration <= 0 and advanced_seconds > 0:
             motion.stop()
             return self.observe((pose.x, pose.y)), False
@@ -584,7 +568,6 @@ class Navigator:
                     "recovery": recovery, "planning_speed": velocity,
                     "input_seconds": input_seconds, "observation_seconds": observation_seconds,
                     "capture_interval": self.pose_at-before_at, "compensated_input_seconds": advanced_seconds,
-                    "release_lead_seconds": release_lead,
                     "before": [pose.x, pose.y], "after": [after.x, after.y],
                     "remaining_before": remaining, "remaining_after": distance(after, target),
                     "measured_speed": measured, "feedback_valid": learned})
@@ -775,19 +758,9 @@ class Navigator:
                 turn_input = motion.forward_elapsed()
                 before_turn = pose
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
-                tolerance = steering_tolerance(remaining_distance, radius)
-                near_target = remaining_distance <= radius+2
-                if (near_target and motion.forward_started is not None
-                        and abs(angle_delta(bearing, pose.heading)) > tolerance):
-                    # Recompute the bearing from the stopped position before a
-                    # close correction; coasting can move the target behind us.
-                    motion.stop()
-                    self.pause(.12)
-                    pose = self.observe((pose.x, pose.y))
-                    last = None
-                    continue
+                tolerance = 3 if remaining_distance <= radius+2 else 5
                 try:
-                    pose = self.turn(bearing, pose, tolerance=tolerance, stationary=near_target)
+                    pose = self.turn(bearing, pose, tolerance=tolerance)
                 except SceneUnavailable:
                     scene_interrupted = True
                     continue
@@ -805,7 +778,6 @@ class Navigator:
                     continue
                 # Coasting during a turn can change the target bearing.
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
-                tolerance = steering_tolerance(distance(pose, target), radius)
                 if abs(angle_delta(bearing, pose.heading)) > tolerance:
                     last = None
                     continue

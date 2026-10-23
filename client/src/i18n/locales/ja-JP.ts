@@ -118,7 +118,7 @@ export default {
     confirmBeforeDeleteHint: '削除/一覧クリア等の危険な操作の前に確認ダイアログを表示します',
     helpImproveSoftware: 'ソフトウェアの改善に協力',
     helpImproveSoftwareHint:
-      'クラッシュ、タスク統計、失敗したタスクの関連ログとエラースクリーンショットを匿名で送信し、よくある問題の発見に役立てます。',
+      'クラッシュ、タスク統計、失敗したタスクの関連ログとエラースクリーンショットを Sentry に送信し、問題の調査に役立てます。ログや画像にはゲームのアカウント情報が含まれる場合があります。いつでも無効にできます。',
     helpImproveSoftwareDisabledHint: 'デバッグ / 開発版のため、匿名データ送信は無効になっています',
     maxLogsPerInstance: 'インスタンスあたりのログ上限',
     maxLogsPerInstanceHint: '上限を超えると古いログから自動的に破棄します（推奨 500～2000）',

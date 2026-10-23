@@ -67,9 +67,48 @@ class BlessingLocker(InventoryScanner):
         if stars is None:
             raise ValueError("三星提示框图像资源缺失")
         self.three_stars = stars
+        self.rarity_templates = {3: stars}
+        for rarity, filename in ((4, "four_stars.png"), (5, "five_stars.png")):
+            path = ROOT / "resource/image/blessing_lock" / filename
+            template = cv2.imdecode(np.fromfile(str(path), np.uint8), cv2.IMREAD_GRAYSCALE)
+            if template is None:
+                raise ValueError(f"{rarity}星提示框图像资源缺失")
+            self.rarity_templates[rarity] = template
 
     def save(self):
         write_json(self.folder / "locking.json", self.report)
+
+    def record_card(self, frame, box, row, evidence, generation, index, *, error=None):
+        """Keep the original card, quantity corner and lock corner together."""
+        self.check_generation(generation)
+        x, y, w, h = box
+        badge_roi = [x + w - 51, y + h - 28, 48, 21]
+        lock_roi = [x + w - 30, y + h - 35, 30, 32]
+        prefix = f"card_{index:05d}"
+        lock_recognition = dict(self.report.get("last_card_lock", {}))
+        if not row["mutable"] and not row.get("catalog_unknown"):
+            lock_recognition = {"source": "catalogue_immutable", "state": "locked"}
+        elif lock_recognition.get("box") != list(box):
+            lock_recognition = {"source": "unavailable"}
+        diagnostic = {
+            "index": index, "box": list(box), "badge_roi": badge_roi, "lock_roi": lock_roi,
+            "reading_window": dict(self.report.get("reading_window", {})),
+            "item": {key: row.get(key) for key in
+                     ("name", "slot", "rarity", "level", "color", "ordinal", "locked", "count",
+                      "catalog_unknown", "inventory_evidence", "count_evidence")},
+            "lock_recognition": lock_recognition,
+            "selected_for_observation": evidence.get("selected_for_observation", False),
+            "selected_lock_button": dict(self.report.get("lock_recognition", {}))
+                                    if evidence.get("selected_for_observation") else None,
+            "detail": evidence.get("image"),
+            "card": self.image(prefix + ".png", self.region(frame, box)),
+            "badge": self.image(prefix + "_badge.png", self.region(frame, badge_roi)),
+            "lock": self.image(prefix + "_lock.png", self.region(frame, lock_roi)),
+        }
+        if error is not None:
+            diagnostic.update(error=error, page=self.image(prefix + "_page.png", frame),
+                              quantity_failure=self.report.get("quantity_failure"))
+        write_json(self.folder / (prefix + ".json"), diagnostic)
 
     def frame(self, generation):
         frame = self.rt.capture()
@@ -187,23 +226,31 @@ class BlessingLocker(InventoryScanner):
                                          color_threshold=color_threshold)
             if facts is not None:
                 return facts, lines
-            # Unknown titles are records only: require a locked card and the
-            # complete three-star pill, including its right edge (not 3/5 stars).
+            # Catalogue updates can lag game drops. Recognize the complete
+            # rarity pill before accepting a new title; never guess three stars.
             facts, lines = tooltip_facts(results, self.catalog, threshold=threshold,
                                          color_threshold=color_threshold,
-                                         allow_protected=True)
-            if (facts is None or not facts.get("protected_inventory") or facts["color"] is None
-                    or self.card_lock_state(frame, box, []) != "locked"):
+                                         allow_unknown=True)
+            if facts is None or not facts.get("catalog_unknown"):
                 return None, lines
             left, top = facts["header_box"]
-            area = [max(0, left - 12), top + 30, 105, 38]
+            area = [max(0, left - 12), top + 30, 130, 38]
             gray = cv2.cvtColor(self.region(frame, area), cv2.COLOR_BGR2GRAY)
-            score = float(cv2.matchTemplate(gray, self.three_stars, cv2.TM_CCOEFF_NORMED).max())
-            if not np.isfinite(score) or score < .94:
+            scores = {rarity: float(cv2.matchTemplate(gray, template, cv2.TM_CCOEFF_NORMED).max())
+                      for rarity, template in self.rarity_templates.items()}
+            if not all(np.isfinite(score) for score in scores.values()):
                 return None, lines
-            x, y, w, h = box
-            facts["field_boxes"].extend((area, [x + w - 30, y + h - 35, 30, 32]))
-            facts["inventory_evidence"] = {"basis": "three_star_locked_card", "rarity_score": round(score, 4)}
+            rarity, other = sorted(scores, key=scores.get, reverse=True)[:2]
+            if scores[rarity] < .94 or scores[rarity] - scores[other] < .04:
+                return None, lines
+            facts, lines = tooltip_facts(results, self.catalog, threshold=threshold,
+                                         color_threshold=color_threshold,
+                                         allow_unknown=True, unknown_rarity=rarity)
+            if facts is None:
+                return None, lines
+            facts["field_boxes"].append(area)
+            facts["inventory_evidence"] = {"basis": "tooltip_rarity", "rarity": rarity,
+                                            "rarity_score": scores[rarity], "scores": scores}
             return facts, lines
 
         def finish(facts, lines, confirmation):
@@ -212,7 +259,7 @@ class BlessingLocker(InventoryScanner):
                         "roi": roi, "confirmation": confirmation,
                         "image": self.image(f"detail_{index:05d}.png",
                                             self.region(frame, self.detail_roi(facts)))}
-            if facts.get("protected_inventory"):
+            if facts.get("protected_inventory") or facts.get("catalog_unknown"):
                 evidence["inventory_evidence"] = facts["inventory_evidence"]
             self.report["last_detail"] = {"name": facts["name"], "level": facts["level"],
                                           "reads": reads, "captures": captures, "roi": roi}
@@ -237,7 +284,8 @@ class BlessingLocker(InventoryScanner):
                 previous_facts, previous_strict = None, False
                 facts_frame, facts_roi = None, None
                 continue
-            if (usable(previous_facts) and previous_strict and facts_roi == roi
+            if (usable(previous_facts) and not previous_facts.get("catalog_unknown")
+                    and previous_strict and facts_roi == roi
                     and self.same_fields(facts_frame, frame, previous_facts)):
                 return finish(previous_facts, previous_lines, "field_pixels")
             settled = (previous_frame is not None and previous_roi == roi
@@ -254,12 +302,14 @@ class BlessingLocker(InventoryScanner):
             last_lines = lines
             self.check_generation(generation)
             if usable(facts):
-                if usable(strict) and settled and self.same_fields(previous_frame, frame, facts):
+                if (usable(strict) and not facts.get("catalog_unknown") and settled
+                        and self.same_fields(previous_frame, frame, facts)):
                     return finish(facts, lines, "stable_before_ocr")
                 # Marginal confidence requires two local OCR observations with
                 # identical identity/level/colour and stable field pixels.
                 if (usable(previous_facts) and self.key(facts) == self.key(previous_facts)
                         and facts["level"] == previous_facts["level"]
+                        and facts["rarity"] == previous_facts["rarity"]
                         and facts_roi == roi
                         and self.same_fields(facts_frame, frame, previous_facts)
                         and self.same_fields(facts_frame, frame, facts)):
@@ -380,6 +430,9 @@ class BlessingLocker(InventoryScanner):
             state, source = "unlocked", "stack_label" if counts else "stack_tab"
         stats = self.report.setdefault("card_state_sources", {})
         stats[source] = stats.get(source, 0) + 1
+        self.report["last_card_lock"] = {"box": list(box), "glyph_score": best,
+                                          "gray_score": gray_score, "count_tab": count_tab,
+                                          "counts": counts, "state": state, "source": source}
         return state
 
     def lock_state(self, generation, *, frame=None):

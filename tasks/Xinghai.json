@@ -18,13 +18,13 @@
         "XinghaiTask_music",
         "XinghaiTask_chat",
         "XinghaiTask_animal_one",
-        "XinghaiTask_bottle",
         "XinghaiTask_bottle_photo",
         "XinghaiTask_meteor",
         "XinghaiTask_wing_photo",
         "XinghaiTask_delivery",
         "XinghaiTask_bubble",
         "XinghaiForceCrystal",
+        "XinghaiTask_bottle",
         "XinghaiChatText",
         "XinghaiPhoto",
         "XinghaiClaim"
@@ -286,6 +286,7 @@
     "XinghaiTask_bottle": {
       "type": "switch",
       "label": "漂流瓶查看（200 分）",
+      "description": "其他子任务仍不足 500 分时，依次尝试各条漂流瓶路线，确认拾取完成后结束。",
       "default_case": "Yes",
       "cases": [
         {

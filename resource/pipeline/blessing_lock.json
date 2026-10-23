@@ -15,6 +15,7 @@
     "custom_action": "nikki.feature_settings",
     "custom_action_param": {
       "grid": [938, 72, 316, 560],
+      "bottom_fade_margin": 32,
       "capacity": [1120, 633, 145, 30],
       "card_size": [95, 101],
       "columns": 3,

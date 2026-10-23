@@ -10,7 +10,7 @@ from uuid import uuid4
 from task_control import task_time as time
 
 from .blessing import SLOTS
-from .policy import capabilities
+from .policy import capabilities, observation_fields
 from .quantity import read_count
 from .scanner import LEVEL, clean_text
 
@@ -41,8 +41,7 @@ def pending(row):
 def make_row(owner, facts, locked, ordinal):
     flags = capabilities(owner.catalog, facts["name"], observed=facts)
     return {**{key: facts[key] for key in ("name", "slot", "rarity", "level", "color")},
-            **({"protected_inventory": True, "inventory_evidence": facts["inventory_evidence"]}
-               if facts.get("protected_inventory") else {}),
+            **observation_fields(facts),
             "id": uuid4().hex, "locked": locked, "maximum": owner.is_maximum(facts),
             "collectible": flags["collection_target"], "mutable": flags["lock_mutable"],
             "ordinal": ordinal, "priority": 0}
@@ -113,11 +112,14 @@ class OrderedView:
                 return
         raise RuntimeError("定位滚动超过上限，请重新整理")
 
-    def cells(self):
+    def cells(self, *, at_bottom=False):
         frame = self.o.clear_hover(self.generation)
         if not self.o.rt.text([930, 15, 330, 52], self.slot, image=frame):
             raise RuntimeError("获得时间列表部位变化")
-        self.labels = self.o.ocr(self.o.grid, frame)
+        roi = list(self.o.grid)
+        if not at_bottom:
+            roi[3] -= self.o.layout.get("bottom_fade_margin", 32)
+        self.labels = self.o.ocr(roi, frame)
         # Stack counts share the page OCR, but are not level baselines and
         # must never create extra card rows or shift their coordinates.
         levels = [item for item in self.labels
@@ -125,9 +127,29 @@ class OrderedView:
         boxes = self.o.cards(frame, levels)
         if not boxes and not self.o.rt.text(self.o.grid, "暂无|没有|未获得|空空如也", image=frame):
             raise RuntimeError("获得时间列表格子无法读取")
+        # Contours can still discover cards in the faded strip. Defer the
+        # entire card, including its count and lock glyph, until it is clear.
+        visible = len(boxes)
+        boxes = [box for box in boxes if box[1] + box[3] <= roi[1] + roi[3]]
+        self.o.report["reading_window"] = {"slot": self.slot, "position": self.position,
+                                            "roi": roi, "at_bottom": at_bottom,
+                                            "deferred_cards": visible - len(boxes)}
         values = [self.o.level(box, levels) for box in boxes]
         matches = self.o.matcher.match_batch(frame, boxes, levels=values)
         return frame, list(zip(boxes, values, matches))
+
+    def pages(self, limit):
+        """Read clear cards first, then include the tail only at a proven end."""
+        for _ in range(limit):
+            frame, cells = self.cells()
+            yield frame, cells, False
+            if self.step(1) == 0 and self.step(1) == 0:
+                # The bottom fade disappears at the physical list end. Read
+                # this viewport again before coverage or absence is decided.
+                frame, cells = self.cells(at_bottom=True)
+                self.o.image(f"bottom_{self.slot}_{self.o.counter:05d}.png", frame)
+                yield frame, cells, True
+                return
 
     def observe(self, frame, cell, *, verify_selection=False, quantities=False):
         box, level, match = cell
@@ -136,9 +158,10 @@ class OrderedView:
         if facts is None or facts["slot"] != self.slot:
             raise RuntimeError("顺序记录身份或部位无法确认")
         flags = capabilities(self.o.catalog, facts["name"], observed=facts)
-        state = "locked" if not flags["lock_mutable"] else self.o.card_lock_state(frame, box, self.labels)
+        inspect_lock = flags["lock_mutable"] or facts.get("catalog_unknown")
+        state = self.o.card_lock_state(frame, box, self.labels) if inspect_lock else "locked"
         stats = self.o.report.setdefault("selection_stats", {"badge_reads": 0, "clicked_reads": 0})
-        selected = flags["lock_mutable"] and (verify_selection or state is None)
+        selected = inspect_lock and (verify_selection or state is None)
         if selected:
             state = self.o.select(box, facts, self.generation, verify_details=verify_selection)
             stats["clicked_reads"] += 1
@@ -147,10 +170,16 @@ class OrderedView:
         locked = state == "locked"
         ordinal = self.ordinal(box)
         row = make_row(self.o, facts, locked, ordinal)
+        observation = {**evidence, "selected_for_observation": selected}
         if quantities:
-            row["count"], row["count_evidence"] = read_count(
-                self.o, frame, box, locked, self.labels, self.generation, self.o.counter)
-        return row, facts, {**evidence, "selected_for_observation": selected}
+            try:
+                row["count"], row["count_evidence"] = read_count(
+                    self.o, frame, box, locked, self.labels, self.generation, self.o.counter)
+            except RuntimeError as error:
+                self.o.record_card(frame, box, row, observation, self.generation, self.o.counter, error=str(error))
+                raise
+        self.o.record_card(frame, box, row, observation, self.generation, self.o.counter)
+        return row, facts, observation
 
     def ordinal(self, box):
         return (round((box[1] + self.position - self.o.grid[1]) / self.o.layout["row_pitch"])
@@ -174,8 +203,7 @@ class OrderedView:
         if old is not None and not expected:
             self.o.rt.log(f"{slot}尚无唯一满级锁定参照，本轮仅在开始时完整读取该部位一次。",
                           ui_text=f"正在读取{slot}完整列表，建立定位参照。")
-        for page in range(limit):
-            frame, cells = self.cells()
+        for frame, cells, at_bottom in self.pages(limit):
             for cell in cells:
                 box = cell[0]
                 point = (box[0], box[1] + self.position)
@@ -200,7 +228,7 @@ class OrderedView:
             if time.monotonic() - last_notice >= 30:
                 self.o.rt.log(f"正在处理{slot}，已查看 {len(rows)} 格。")
                 last_notice = time.monotonic()
-            if self.step(1) == 0 and self.step(1) == 0:
+            if at_bottom:
                 if expected and matched != expected:
                     raise RuntimeError("未找到完整的旧锁定参照，请重新整理")
                 if seen:
@@ -263,9 +291,8 @@ class OrderedView:
             return (left_ordinal is not None and end > left_ordinal
                     and all(value in observed_ordinals for value in range(left_ordinal + 1, end)))
 
-        for _ in range(self.LOCAL_PAGES):
+        for frame, cells, at_bottom in self.pages(self.LOCAL_PAGES):
             stats["local_pages"] += 1
-            frame, cells = self.cells()
             for cell in cells:
                 box, level, match = cell
                 point = (box[0], box[1] + self.position)
@@ -309,7 +336,7 @@ class OrderedView:
                     stats["confirmed_absent"] += 1
                     return None
                 raise IncompleteLookup("定位区间读取不完整，已保留待处理项，可重新运行")
-            if self.step(1) == 0 and self.step(1) == 0:
+            if at_bottom:
                 end = max(observed_ordinals, default=-1) + 1
                 if left_seen and right is None and complete_interval(end):
                     stats["confirmed_absent"] += 1
@@ -320,9 +347,15 @@ class OrderedView:
     def target_quantity(self, frame, box, row, evidence):
         # Only the selected upgrade candidate needs a quantity. Singles use
         # the badge shape directly; stacks reuse the page's existing OCR.
-        count, proof = read_count(self.o, frame, box, row["locked"], self.labels,
-                                  self.generation, self.o.counter)
+        try:
+            count, proof = read_count(self.o, frame, box, row["locked"], self.labels,
+                                      self.generation, self.o.counter)
+        except RuntimeError as error:
+            self.o.record_card(frame, box, row, evidence, self.generation, self.o.counter, error=str(error))
+            raise
         evidence.update(copies_before=count, quantity=proof)
+        row.update(count=count, count_evidence=proof)
+        self.o.record_card(frame, box, row, evidence, self.generation, self.o.counter)
 
     def select_target(self, box, facts, locked, evidence):
         """Only matching mutation targets require selected-detail verification."""

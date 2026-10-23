@@ -48,13 +48,19 @@
     "RouteTestBottleRoute": {
       "type": "select",
       "label": "漂流瓶路线",
-      "default_case": "survey",
+      "default_case": "original",
       "cases": [
         {
-          "name": "survey",
-          "label": "旧线优先 · 两段巡查（33 个点）",
-          "description": "先检查旧路线与远端北岸，再传回无界枢纽检查周边点位。所有拾取点停稳后尝试交互。",
-          "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_bottle_survey", "file": ""}}}
+          "name": "original",
+          "label": "路线 1 · 无界枢纽（原有 6 点）",
+          "description": "从无界枢纽出发，按原路线逐点尝试拾取。",
+          "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_bottle", "file": ""}}}
+        },
+        {
+          "name": "route2",
+          "label": "路线 2 · 星梦群屿·海滩（4 个点）",
+          "description": "从星梦群屿·海滩出发，先检查最新点位，再按顺序检查之前三个点，拾取成功后继续。",
+          "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "xinghai_bottle_2", "file": ""}}}
         },
         {
           "name": "file",

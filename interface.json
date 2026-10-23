@@ -4,8 +4,17 @@
   "label": "MaaNikki",
   "title": "MaaNikki - 无限暖暖自动化",
   "description": "《无限暖暖》助手，以祝福闪光一键全收集为特色，支持日常任务、幻境挑战、巅峰赛和常驻开荒辅助。",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "github": "https://github.com/architect9331/MaaNikki",
+  "telemetry": {
+    "sentry": {
+      "dsn": "https://a18b13840bf32739804bf70e57a0beb4@o4512306542936064.ingest.us.sentry.io/4512306595561472",
+      "environment": "production",
+      "tracing": true,
+      "traces_sample_rate": 0.1,
+      "failure_attachments_sample_rate": 1.0
+    }
+  },
   "controller": [
     {
       "name": "nikki_windows",

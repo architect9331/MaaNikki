@@ -32,7 +32,7 @@ class FiveStarPursuit:
         stock.prepare("full_collection")
         if stock.progress()["complete"]:
             stock.report.update(complete=True, phase="complete",
-                                reason="五星颜色已收齐，请选择其他幻境；本次不消耗体力",
+                                reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗体力",
                                 inventory={"reused": True})
             self.rt.log(stock.report["reason"])
             stock.save()
@@ -54,11 +54,21 @@ class FiveStarPursuit:
                 detail=True)
             self.acquire("bless", sources[0], alternatives=sources[1:])
         if stock.organization.get("decomposition_pending"):
+            # Observe reward additions before the first destructive auto-fill.
+            # A new four/five-star name must not become unreviewed material.
+            if not stock.open():
+                raise RuntimeError("未能打开普通仓库核对本轮新增闪光")
+            stock.inventory_read = True
+            try:
+                stock.discover_prefixes()
+                stock.ensure_known_materials()
+            finally:
+                stock.inventory_read = False
             LowRarityDecomposer(stock).run()
         # Even with no energy, process the saved unfinished item and inventory.
         outcome = stock.process_inventory()
         reasons = {
-            "collection_complete": "五星颜色已收齐，可选择其他幻境",
+            "collection_complete": "本地图鉴内五星颜色已收齐，可选择其他幻境",
             "bling_shortage": "升级噗灵不足，已保存进度；可切换普通幻境挑战刷噗灵，补充后继续",
             "materials_shortage": "升级材料不足，已保存进度；下次刷取后优先继续当前闪光",
             "no_embryos": "本轮可升级的缺色五星已处理，保存进度",

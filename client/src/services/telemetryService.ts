@@ -24,7 +24,7 @@ const log = loggers.telemetry;
 /**
  * 构建 / 调试版本是否禁用遥测（用户开关也不可开启）。
  * - MXU 开发模式（vite dev）
- * - 资源项目为非正式版本（DEBUG_VERSION / <1.0.0 / 非 beta|rc 预发布）
+ * - 资源项目为非正式版本（DEBUG_VERSION / 非 beta|rc 预发布）
  */
 export function isTelemetryBlockedByBuild(pi?: ProjectInterface | null): boolean {
   return import.meta.env.DEV || isDebugVersion(pi?.version);

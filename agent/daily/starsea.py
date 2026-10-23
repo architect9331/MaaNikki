@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from file_io import write_json
 import math
+import re
 from task_control import task_time as time
 from datetime import datetime
 import cv2
@@ -93,6 +94,60 @@ class Starsea:
             write_json(file, {"operation": operation, "events": self.events})
         except (OSError, ValueError):
             self.rt.log("星海导航记录未能保存。")
+
+    def bottles(self, mode, card):
+        """Try the configured routes in order, carrying confirmed pickups."""
+        try:
+            first = load_route(self.resource, card.rule.route)
+            if first is None:
+                raise NavigationError("漂流瓶首条路线无法读取。")
+            fallback = first.document.get("fallback_routes", [])
+            if (not isinstance(fallback, list)
+                    or any(not isinstance(name, str) or not re.fullmatch(r"[a-zA-Z0-9_-]+", name)
+                           for name in fallback)):
+                raise NavigationError("漂流瓶后续路线列表无效。")
+            names = [card.rule.route, *fallback]
+            if len(set(names)) != len(names):
+                raise NavigationError("漂流瓶路线列表不能重复。")
+            from navigation.daily_route import preflight
+            for name in names:
+                route = first if name == card.rule.route else load_route(self.resource, name)
+                if (route is None or route.map_id != "starsea"
+                        or route.document.get("schema_version") != 3):
+                    raise NavigationError(f"漂流瓶路线无效：{name}。")
+                preflight(self.resource, route, "bottle")
+            quota = card.remaining if card.remaining is not None else 1
+            if type(quota) is not int or not 1 <= quota <= 100:
+                raise NavigationError("漂流瓶任务剩余数量无法可靠读取。")
+            count = 0
+            for index, name in enumerate(names):
+                if self.rt.stopped or not self.rt.main():
+                    return False
+                self.rt.log(f"漂流瓶：正在尝试路线 {index+1}/{len(names)}。")
+                # navigate may fail before constructing RouteActions; do not
+                # inherit another task's count in that case.
+                self.rt.navigation_count = count
+                ok = self.rt.navigate(name, mode, card, progress=count)
+                count = self.rt.navigation_count
+                self.events.append({"type": "bottle_route_result", "route": name,
+                                    "success": bool(ok), "count": count, "quota": quota})
+                if self.rt.stopped:
+                    return False
+                if ok:
+                    return True
+                # Confirmed pickups must not be repeated after a later failure.
+                if count >= quota:
+                    return self.rt.main()
+                if index+1 < len(names):
+                    self.rt.log("本条路线未完成漂流瓶拾取，返回主界面后尝试下一条路线。")
+            self.rt.log("漂流瓶路线均已尝试，仍未确认完成拾取。")
+            return False
+        except (ValueError, KeyError, OSError, RuntimeError, TypeError, cv2.error) as error:
+            self.events.append({"type": "stopped", "reason": str(error)})
+            self.rt.log(f"漂流瓶查找停止：{error}")
+            return False
+        finally:
+            self.report("bottle")
 
     def hub(self):
         try:

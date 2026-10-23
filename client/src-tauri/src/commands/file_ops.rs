@@ -243,6 +243,35 @@ fn collect_debug_subdir_files(
     Ok(files)
 }
 
+/// Include recent collection evidence stored outside debug/, including card icons.
+fn collect_recent_collection_files(data_dir: &Path) -> Result<Vec<ExportEntry>, String> {
+    let mut files = Vec::new();
+    for kind in ["blessing-lock", "blessing-pursuit"] {
+        let directory = data_dir.join("logs").join(kind);
+        if !directory.is_dir() {
+            continue;
+        }
+        let mut runs: Vec<_> = std::fs::read_dir(&directory)
+            .map_err(|e| format!("读取祝福闪光日志目录失败 [{}]: {}", directory.display(), e))?
+            .flatten()
+            .filter(|entry| entry.path().is_dir())
+            .collect();
+        // Run names start with YYYYMMDD_HHMMSS; retain the latest two attempts.
+        runs.sort_by_key(|entry| std::cmp::Reverse(entry.file_name()));
+        for run in runs.into_iter().take(2) {
+            let prefix = format!("logs/{}/{}", kind, run.file_name().to_string_lossy());
+            files.extend(
+                collect_files_recursively(&run.path(), &prefix)?
+                    .into_iter()
+                    .filter(|entry| {
+                        has_extension(&entry.source_path, &["log", "json", "png", "jpg", "jpeg"])
+                    }),
+            );
+        }
+    }
+    Ok(files)
+}
+
 pub fn resolve_local_file_path(filename: &str) -> Result<PathBuf, String> {
     let exe_dir = get_exe_directory()?;
     let file_path = normalize_path(&exe_dir.join(filename).to_string_lossy());
@@ -651,16 +680,31 @@ fn export_logs_blocking(
         &debug_dir,
         &["log", "json", "dmp"],
     )?);
+    let collection_entries = collect_recent_collection_files(&data_dir)?;
+    regular_entries.extend(
+        collection_entries
+            .iter()
+            .filter(|entry| has_extension(&entry.source_path, &["log", "json"]))
+            .cloned(),
+    );
+    let mut collection_images: Vec<_> = collection_entries
+        .into_iter()
+        .filter(|entry| is_image_file(&entry.source_path))
+        .collect();
+    collection_images.sort_by_key(|entry| {
+        std::cmp::Reverse(entry.source_path.metadata().and_then(|m| m.modified()).ok())
+    });
 
     // ─── 2. 收集图片（on_error + vision，按 mtime 新→旧） ───
     let on_error_images = collect_debug_images(&debug_dir.join("on_error"), "on_error");
     let vision_images = collect_debug_images(&debug_dir.join("vision"), "vision");
 
-    // ─── 3. 合并入卷条目：先 regular，再 on_error，再 vision ───
+    // ─── 3. 合并入卷条目：先 regular，再 on_error、collection、vision ───
     // 图片按 mtime 新→旧排在尾部，保证最近的崩溃图一定落在 part01.zip。
     let mut all_entries: Vec<ExportEntry> = Vec::new();
     all_entries.extend(regular_entries);
     all_entries.extend(on_error_images);
+    all_entries.extend(collection_images);
     all_entries.extend(vision_images);
 
     let total_entries = all_entries.len();

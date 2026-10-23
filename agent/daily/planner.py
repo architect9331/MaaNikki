@@ -42,7 +42,8 @@ XINGHAI = (
     Rule("coco_photo", "椰果拍照", ("举起椰", "照片"), 200, 0),
     Rule("fragment", "星愿碎片投递", ("星愿碎片", "投递"), 300, 0),
     Rule("fragment_photo", "星愿碎片拍照", ("星愿碎片", "照片"), 200, 0),
-    Rule("bottle", "漂流瓶查看", ("漂流瓶", "查看"), 200, 4, "bottle", route="xinghai_bottle"),
+    # Unstable pickup routes are a last resort, after on-demand crystals too.
+    Rule("bottle", "漂流瓶查看", ("漂流瓶", "查看"), 200, -1, "bottle", route="xinghai_bottle"),
     Rule("delivery", "投递信笺", ("投递", "信笺"), 200, 3, "delivery", route="xinghai_delivery"),
     Rule("bottle_photo", "星愿瓶合影", ("星愿瓶", "合影"), 200, 4, "photo", route="xinghai_bottle_photo"),
     Rule("crystal", "星光结晶", ("10个星光结晶",), 100, 0, "crystal"),

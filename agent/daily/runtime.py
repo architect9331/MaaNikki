@@ -600,6 +600,9 @@ class Executors(Runtime):
         if rule.executor == "meteor":
             from .meteor import Meteor
             return Meteor(self, RESOURCE).run(mode, card)
+        if rule.executor == "bottle":
+            from .starsea import Starsea
+            return Starsea(self, RESOURCE).bottles(mode, card)
         if rule.route and self.routes(rule.route):
             route = self.routes(rule.route)
             if route.get("schema_version") == 3:

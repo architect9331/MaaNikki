@@ -403,12 +403,8 @@ fn is_debug_version(version: &str) -> bool {
     }
 
     let normalized = version.trim_start_matches(['v', 'V']);
-    let baseline = semver::Version::new(1, 0, 0);
 
     if let Ok(parsed) = semver::Version::parse(normalized) {
-        if parsed < baseline {
-            return true;
-        }
         if parsed.pre.is_empty() {
             return false;
         }
@@ -420,32 +416,8 @@ fn is_debug_version(version: &str) -> bool {
             .any(|tag| tag == "beta" || tag == "rc");
     }
 
-    // 非标准版本号：退化为提取前导数字比较，与前端 `semver.coerce` 的兜底对应
-    coerce_version(normalized).is_some_and(|version| version < baseline)
-}
-
-/// 从非标准版本号中提取最多三段前导数字，解析不出数字时返回 None。
-fn coerce_version(version: &str) -> Option<semver::Version> {
-    let start = version.find(|c: char| c.is_ascii_digit())?;
-    let mut rest = &version[start..];
-    let mut parts = [0u64; 3];
-
-    for part in parts.iter_mut() {
-        let digits = rest
-            .find(|c: char| !c.is_ascii_digit())
-            .unwrap_or(rest.len());
-        *part = rest[..digits].parse().ok()?;
-        rest = &rest[digits..];
-        if !rest.starts_with('.') {
-            break;
-        }
-        rest = &rest[1..];
-        if !rest.starts_with(|c: char| c.is_ascii_digit()) {
-            break;
-        }
-    }
-
-    Some(semver::Version::new(parts[0], parts[1], parts[2]))
+    // 与前端一致：无法解析的版本不额外限制，也不以 1.0.0 为最低版本。
+    false
 }
 
 /// 缓存初始化参数，供运行时开关复用。
@@ -1955,4 +1927,3 @@ fn finish_run(instance_id: &str, forced_status: Option<SpanStatus>) {
         || transaction.finish(),
     );
 }
-

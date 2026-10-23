@@ -12,6 +12,7 @@ from file_io import write_json
 from .storage import InventoryStore
 from .upgrade import UpgradeUI
 from .ordered import OrderedView, merge_prefix, pending
+from .policy import UnregisteredMaterials
 
 
 class FiveStarInventory(BlessingLocker):
@@ -212,6 +213,16 @@ class FiveStarInventory(BlessingLocker):
         candidates = [row for row in rows if pending(row) and not self.part_complete(row["name"], row["slot"])]
         return min(candidates, key=lambda row: (row["priority"], -row["ordinal"])) if candidates else None
 
+    def ensure_known_materials(self):
+        """Game auto-fill ignores our catalogue and could consume new drops."""
+        unknown = sorted({row["name"] for rows in self.organization["slots"].values()
+                          for row in rows if row["name"] not in self.definitions and not row["locked"]})
+        if unknown:
+            self.report["unregistered_materials"] = unknown
+            raise UnregisteredMaterials(
+                "发现未锁定的图鉴外祝福闪光：" + "、".join(unknown)
+                + "；为避免一键放入消耗新闪光，已暂停自动升级及分解。请更新图鉴，或手动锁定后重新整理")
+
     def process_inventory(self):
         if not self.prepared:
             raise RuntimeError("需先完成祝福闪光整理基准")
@@ -223,6 +234,7 @@ class FiveStarInventory(BlessingLocker):
         self.inventory_read = True
         try:
             self.discover_prefixes()
+            self.ensure_known_materials()
             self.rt.log("开始处理五星胚子。")
             for _ in range(1000):
                 target = self.next_target()
@@ -296,6 +308,7 @@ class FiveStarInventory(BlessingLocker):
         self.rt.log(f"已读取完整获得时间基准及 {len(protected)} 个五星收藏；仅核对新增区域和待处理位置附近。", detail=True)
         self.log_progress("开始处理")
         self.save()
+        self.ensure_known_materials()
 
     def finish(self, reason):
         if not self.prepared or self.pending is not None or not self.organization.get("complete"):
@@ -319,7 +332,7 @@ class FiveStarInventory(BlessingLocker):
         self.prepare("inventory_only")
         outcome = self.process_inventory()
         reasons = {
-            "collection_complete": "五星全部部位的满级颜色已收齐并锁定",
+            "collection_complete": "本地图鉴内五星全部部位的满级颜色已收齐并锁定",
             "bling_shortage": "升级噗灵不足，已保存进度；补充后可继续",
             "materials_shortage": "升级材料不足，已保存进度；补充后可继续",
             "no_embryos": "当前库存没有可升级的缺色五星，仅升级整理模式结束",
