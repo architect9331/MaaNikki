@@ -19,6 +19,13 @@ export interface BlessingSnapshot {
   protection?: { complete?: boolean; keepers?: CollectionKey[] };
 }
 export interface AccountView {
+  observations?: {
+    giant_meteor?: {
+      game_day: string;
+      outcome: 'found' | 'not_found' | 'unconfirmed';
+      checked_at: string;
+    };
+  };
   tasks: Record<string, { period: string; items: Record<string, { outcome: string; confirmed_at: string }> }>;
   blessing: BlessingSnapshot | null;
   catalog: { version: string | number; sets: { name: string; rarity: number; source: string; colors: string[]; collection_target?: boolean }[] };

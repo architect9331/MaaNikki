@@ -46,7 +46,10 @@
       "y": 720.15,
       "radius": 1,
       "jump": false,
-      "action": "fishing_star"
+      "action": "fishing_star",
+      "params": {
+        "facing_heading": 193
+      }
     },
     {
       "x": 1054.28,
@@ -77,7 +80,10 @@
       "y": 744.7,
       "radius": 1,
       "jump": false,
-      "action": "fishing_star"
+      "action": "fishing_star",
+      "params": {
+        "facing_heading": 286
+      }
     },
     {
       "x": 1061.2,

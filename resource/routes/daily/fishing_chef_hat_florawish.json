@@ -62,7 +62,10 @@
       "y": 10109.2,
       "radius": 1,
       "jump": false,
-      "action": "fishing"
+      "action": "fishing",
+      "params": {
+        "facing_heading": 216
+      }
     },
     {
       "x": 10721.6,

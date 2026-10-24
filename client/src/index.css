@@ -1,5 +1,116 @@
 @import 'tailwindcss';
 
+/* A rare home discovery uses gold against the client's rose palette. */
+.meteor-status--found,
+.meteor-dialog--found,
+[data-sonner-toast].meteor-discovery-toast {
+  --meteor-gold: #a76820;
+  --meteor-title: #87451e;
+  --meteor-border: #e9bf76;
+  --meteor-wash: #fff3d7;
+  --meteor-rose: #ffe5ed;
+}
+
+.dark .meteor-status--found,
+.dark .meteor-dialog--found,
+.dark [data-sonner-toast].meteor-discovery-toast {
+  --meteor-gold: #f5cf83;
+  --meteor-title: #ffe2ac;
+  --meteor-border: #99764b;
+  --meteor-wash: #3d3029;
+  --meteor-rose: #442d3b;
+}
+
+.meteor-status--found {
+  overflow: hidden;
+  color: var(--meteor-title);
+  border: 1px solid var(--meteor-border);
+  background: linear-gradient(115deg, var(--meteor-wash), var(--meteor-rose) 65%, var(--meteor-wash));
+  box-shadow: 0 0 0 2px #edbc6510, 0 2px 10px #dca54e20;
+}
+
+.meteor-status--found::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  inset: -50% auto -50% -50%;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, #ffffff80, transparent);
+  transform: skewX(-20deg) translateX(-100%);
+  animation: meteor-sheen 3s ease-in-out 3;
+}
+
+.meteor-status--found:hover {
+  box-shadow: 0 0 0 2px #edbc6520, 0 3px 14px #dca54e30;
+}
+
+.meteor-emblem {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 100px;
+  color: var(--color-accent);
+}
+
+.meteor-emblem-orbit {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+.meteor-emblem-comet { width: 43px; height: 43px; }
+.meteor-emblem--discovered { color: var(--meteor-gold); }
+.meteor-emblem--discovered .meteor-emblem-orbit {
+  border-color: var(--meteor-border);
+  background: radial-gradient(circle at 35% 30%, #fff9e9, var(--meteor-wash) 75%);
+  box-shadow: 0 0 0 7px #eec87712, 0 0 0 15px #eec87709, 0 8px 24px #c78b4330;
+}
+.dark .meteor-emblem--discovered .meteor-emblem-orbit {
+  background: radial-gradient(circle at 35% 30%, #725037, var(--meteor-wash) 75%);
+}
+.meteor-emblem--discovered .meteor-emblem-comet {
+  z-index: 1;
+  filter: drop-shadow(0 2px 3px #b8752528);
+}
+.meteor-emblem-star { position: absolute; fill: currentColor; stroke-width: 1; }
+.meteor-emblem-star--one { width: 15px; height: 15px; left: 4px; top: 15px; transform: rotate(-15deg); }
+.meteor-emblem-star--two { width: 9px; height: 9px; right: 3px; bottom: 14px; transform: rotate(15deg); }
+.meteor-emblem-sparkles { position: absolute; width: 20px; height: 20px; top: 0; right: 5px; }
+.meteor-emblem--discovered .meteor-emblem-star,
+.meteor-emblem--discovered .meteor-emblem-sparkles { animation: meteor-twinkle 2.4s ease-in-out 3; }
+.meteor-emblem-star--two { animation-delay: .5s; }
+.meteor-dialog--found { border-color: var(--meteor-border); }
+.meteor-dialog--found .meteor-dialog-hero {
+  background: radial-gradient(ellipse at 50% 5%, var(--meteor-wash), transparent 72%);
+}
+.meteor-dialog--found h2 { color: var(--meteor-title); }
+.meteor-rarity { color: var(--meteor-gold); background: var(--meteor-wash); border: 1px solid var(--meteor-border); }
+[data-sonner-toast].meteor-discovery-toast {
+  color: var(--meteor-title) !important;
+  border-color: var(--meteor-border) !important;
+  background: linear-gradient(110deg, var(--meteor-wash), var(--meteor-rose)) !important;
+  box-shadow: 0 5px 24px #c78b4324;
+}
+[data-sonner-toast].meteor-discovery-toast [data-description] { color: var(--meteor-title); }
+
+@keyframes meteor-sheen {
+  0%, 30% { transform: skewX(-20deg) translateX(-100%); }
+  65%, 100% { transform: skewX(-20deg) translateX(650%); }
+}
+@keyframes meteor-twinkle {
+  0%, 100% { opacity: .65; }
+  50% { opacity: 1; filter: drop-shadow(0 0 3px #efbb58); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .meteor-status--found::after,
+  .meteor-emblem--discovered .meteor-emblem-star,
+  .meteor-emblem--discovered .meteor-emblem-sparkles { animation: none; }
+}
+
 /*
  * 主题 CSS 变量
  * 颜色值由 src/themes/index.ts 动态注入

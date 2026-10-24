@@ -94,6 +94,16 @@ class Fishing:
     def configure(self):
         return self.ability.configure() and self.rt.main()
 
+    def face_water(self, heading):
+        if heading is not None:
+            navigator = getattr(self.actions, "navigator", None)
+            if navigator is None:
+                raise NavigationError("指定钓鱼朝向需要路线导航器。")
+            navigator.face_heading(heading)
+        else:
+            timing = self.inputs.face_camera()
+            self.actions.event({"type": "character_facing", "source": "current_camera", **timing})
+
     def wait(self, seconds):
         if not self.rt.pause(seconds):
             raise NavigationError(f"{self.label}已停止。")
@@ -331,7 +341,7 @@ class Fishing:
                 self.wait(.1)
         return FishingResult.SUCCESS
 
-    def run(self, *, passive=False, max_cast_count=None, use_rhythms=False):
+    def run(self, *, passive=False, max_cast_count=None, use_rhythms=False, facing_heading=None):
         limit = cast_count(max_cast_count, None)
         if self.kind is None:
             if not passive:
@@ -342,7 +352,7 @@ class Fishing:
         if self.kind == "home" and passive:
             self.materials.setdefault("陨星", 0)
         elif self.kind == "home":
-            if not self.prepare_home():
+            if not self.prepare_home(facing_heading):
                 return True
         elif not passive:
             if use_rhythms:
@@ -357,6 +367,7 @@ class Fishing:
                 self.ability.slot = None
             if not self.ability.select():
                 return False
+            self.face_water(facing_heading)
         return self.run_casts(limit)
 
     def run_casts(self, limit=None):
@@ -392,13 +403,16 @@ class Fishing:
         found = self.rt.recognize("MaaNikki_Home_StarCollectExhausted", image=image) if image is not None else None
         return bool(found and found.hit)
 
-    def prepare_home(self):
+    def prepare_home(self, facing_heading=None):
         # Preserve the upstream key-presence check, including a zero-catch run.
         if "陨星" in self.materials:
             self.rt.log("之前已执行钓星，无需再钓。")
             return False
         if not self.ability.select():
             raise NavigationError("采星能力选择未完成。")
+        # Align before sensing hides the minimap. Camera orientation alone
+        # does not undo a character turn caused by the last position correction.
+        self.face_water(facing_heading)
         # Do not inspect the secondary action until the mode actually opens.
         # Retry only while a fresh frame still confirms the ordinary world.
         with self.ui.preserve_cursor():

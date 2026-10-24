@@ -27,10 +27,14 @@ OUTCOMES = {
 }
 
 
+def game_day(now=None):
+    return ((now or datetime.now(timezone.utc)).astimezone(GAME_TIMEZONE)
+            - timedelta(hours=4)).date()
+
+
 def period_key(task, now=None):
     # Game days turn over at 04:00 China time; weeks start on Monday.
-    day = ((now or datetime.now(timezone.utc)).astimezone(GAME_TIMEZONE)
-           - timedelta(hours=4)).date()
+    day = game_day(now)
     if task == "weekly_free_gifts":
         return (day - timedelta(days=day.weekday())).isoformat()
     if task == "crown":
@@ -113,6 +117,29 @@ class AccountState:
         if publish:
             records["inventory"] = deepcopy(snapshot)
         self.update(lambda data: data["blessing"].update(records))
+
+    def record_giant_meteor(self, outcome, *, day, text=""):
+        if outcome not in {"found", "not_found", "unconfirmed"} or day != game_day().isoformat():
+            raise ValueError("巨陨星检测结果或游戏日期无效")
+
+        def change(data):
+            observations = data.setdefault("observations", {})
+            if not isinstance(observations, dict):
+                raise ValueError("账号观测记录格式无效")
+            previous = observations.get("giant_meteor", {})
+            if isinstance(previous, dict) and previous.get("game_day") == day:
+                # A later failed read or a vanished notice must not erase a
+                # confirmed discovery from this game day.
+                if previous.get("outcome") == "found" or (outcome == "unconfirmed"
+                        and previous.get("outcome") == "not_found"):
+                    return
+            observations["giant_meteor"] = {
+                "game_day": day, "outcome": outcome,
+                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "source": "home_map", "text": str(text)[:500],
+            }
+
+        self.update(change)
 
     def completed_items(self, task, period=None):
         record = self.load()["tasks"].get(task, {})

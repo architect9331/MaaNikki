@@ -22,11 +22,11 @@ import {
   History,
   Share2,
   FileText,
-  Sparkles,
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
 import { ConfirmDialog } from './ConfirmDialog';
+import { AccountStatusActions } from './AccountStatusActions';
 import { getInterfaceLangKey } from '@/i18n';
 import { exportFileWithToast, exportWithToast } from '@/utils/tabExportImport';
 import clsx from 'clsx';
@@ -518,11 +518,7 @@ export function TabBar() {
 
       {/* 工具按钮 */}
       <div className="flex items-center gap-1 px-2">
-        <button onClick={() => setCurrentPage("blessing")}
-          className="flex items-center gap-1.5 p-2 rounded-md hover:bg-bg-hover text-text-secondary transition-colors"
-          title="祝福闪光收集进度" aria-label="祝福闪光收集进度">
-          <Sparkles className="w-4 h-4 shrink-0" /><span className="whitespace-nowrap text-xs">收集进度</span>
-        </button>
+        <AccountStatusActions onShowProgress={() => setCurrentPage('blessing')} />
         {/* 更新通知图标 - 有更新、正在下载或有错误时显示 */}
         {(updateInfo?.hasUpdate || updateInfo?.errorCode || downloadStatus === 'downloading') && (
           <button

@@ -1,42 +1,18 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Check, RefreshCw, Search, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
-import { useAccountStateStore, type CollectionKey } from '@/stores/accountStateStore';
-
-const slots = ['头部', '手部', '脚部'];
-const keyOf = (row: CollectionKey) => `${row.name}/${row.slot}/${row.color}`;
+import { useAccountStateStore } from '@/stores/accountStateStore';
+import { collectionSlots as slots, collectionKey as keyOf, getBlessingProgress } from '@/utils/blessingProgress';
 
 export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
   const { data, error, loading, refresh } = useAccountStateStore();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const snapshot = data?.blessing;
-  const sets = useMemo(() => data?.catalog?.sets.filter((s) => s.rarity === 5 && s.collection_target !== false) ?? [], [data?.catalog]);
-  const progress = useMemo(() => {
-    const owned = new Set<string>();
-    if (!snapshot || snapshot.catalog_version !== data?.catalog?.version) return { owned, known: false };
-    const definitions = new Map(sets.map((s) => [s.name, s]));
-    const add = (row: CollectionKey) => {
-      if (slots.includes(row.slot) && definitions.get(row.name)?.colors.includes(row.color)) owned.add(keyOf(row));
-    };
-    const pursuit = snapshot.pursuit;
-    if (snapshot.scan?.identity_complete && snapshot.locks?.complete) {
-      snapshot.locks.groups?.filter((r) => r.level === 10 && r.locked_count > 0).forEach(add);
-      return { owned, known: true };
-    }
-    if (pursuit?.existing_colors_checked && pursuit.parts?.length === sets.length * 3) {
-      pursuit.parts.forEach((part) => part.locked_colors.forEach((color) => add({ ...part, color })));
-      return { owned, known: true };
-    }
-    if (snapshot.protection?.complete) {
-      snapshot.protection.keepers?.forEach(add);
-      return { owned, known: true };
-    }
-    return { owned, known: false };
-  }, [snapshot, data?.catalog, sets]);
+  const progress = useMemo(() => getBlessingProgress(data), [data]);
+  const { sets, target, uncertain } = progress;
   const count = (name: string, colors: string[], slot?: string) => (slot ? [slot] : slots)
     .reduce((n, part) => n + colors.filter((color) => progress.owned.has(keyOf({ name, slot: part, color }))).length, 0);
-  const target = sets.reduce((n, s) => n + s.colors.length * 3, 0);
   const completeSets = sets.filter((s) => count(s.name, s.colors) === s.colors.length * 3).length;
   const completeParts = sets.reduce((n, s) => n + slots.filter((slot) => count(s.name, s.colors, slot) === s.colors.length).length, 0);
   const visible = sets.filter((s) => {
@@ -44,7 +20,6 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
     return `${s.name} ${s.source}`.includes(search.trim()) && (filter === 'all' || (filter === 'complete' ? complete : !complete));
   });
   const groups = [...new Set(visible.map((s) => s.source))].map((source) => ({ source, sets: visible.filter((s) => s.source === source) }));
-  const uncertain = snapshot?.pursuit?.pending_operation != null || snapshot?.pursuit?.protection_valid === false;
   const updated = snapshot?.record?.updated_at;
 
   return (

@@ -56,6 +56,11 @@ def preflight(resource, route, executor):
     for point in route.points:
         if point.action == "teleport" and not point.params.get("checkpoint"):
             raise NavigationError("路线内的传送动作未指定传送点。")
+        if point.action in {"fishing_star", "fishing"}:
+            heading = (point.params or {}).get("facing_heading")
+            if heading is not None and (type(heading) not in (int, float)
+                    or not math.isfinite(heading) or not 0 <= heading < 360):
+                raise NavigationError("钓鱼点朝向须为 0–360 度范围内的有效角度（不含 360）。")
         if point.action == "fishing":
             from .fishing import cast_count
             cast_count((point.params or {}).get("cast_count"), 3)
@@ -241,15 +246,17 @@ class RouteActions:
             ok = True
         elif kind in {"fishing_star", "fishing"}:
             try:
+                heading = (point.params or {}).get("facing_heading")
                 if kind == "fishing_star":
-                    ok = self.fishing.run()
+                    ok = self.fishing.run(facing_heading=heading)
                 else:
                     settings = self.rt.setting("fishing")
                     limit = settings.get("route_cast_count")
                     if limit is None or limit == "":
                         limit = (point.params or {}).get("cast_count")
                     ok = self.fishing.run(max_cast_count=limit,
-                                          use_rhythms=settings.get("use_rhythms", False))
+                                          use_rhythms=settings.get("use_rhythms", False),
+                                          facing_heading=heading)
                     names = self.count_materials or list(self.fishing.materials)
                     self.count = sum(self.fishing.materials.get(name, 0) for name in names)
             except NavigationError as error:

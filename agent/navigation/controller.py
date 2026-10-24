@@ -7,7 +7,7 @@ import re
 from task_control import task_time as time
 
 from .models import NavigationError
-from game_keys import GameKeys, MACRO_KEYS, MOVEMENT
+from game_keys import Binding, GameKeys, MACRO_KEYS, MOVEMENT
 
 
 MAX_CAMERA_PIXELS = 8192
@@ -177,6 +177,41 @@ class ForegroundInput:
             self.release_key(key)
         for button in list(self.buttons):
             self.release_mouse(button)
+
+    def face_camera(self):
+        """Align the character to the camera with a brief Ctrl+forward pulse."""
+        forward = self.bindings.get("forward")
+        control = Binding("key", 17)
+        if forward.kind != "key" or forward.code in {17, 162, 163}:
+            raise NavigationError("朝向对齐需要前进键为 Ctrl 以外的键盘按键。")
+        self.check()
+        if not self.ready():
+            raise NavigationError("当前不是可移动的主界面，未调整角色朝向。")
+        self.release()
+        generation = self.generation
+        hold, settle = .08, .4
+        try:
+            self._down(control)
+            if self.generation != generation:
+                raise NavigationError("调整朝向时游戏前台发生变化，请重新确认朝向。")
+            started = time.monotonic()
+            self._down(forward)
+            # Count key-down submission time within the short pulse. Never
+            # restore a held W after focus loss or perform OCR while holding it.
+            self.wait(max(0, hold-(time.monotonic()-started)), restore=False)
+        finally:
+            # Release W before Ctrl so cleanup cannot leave ordinary forward
+            # movement held. These releases also work after Stop/focus loss.
+            try:
+                self.release_key(forward.code)
+                released_at = time.monotonic()
+            finally:
+                self.release_key(control.code)
+        self.wait(settle, restore=False)
+        if self.generation != generation:
+            raise NavigationError("调整朝向时游戏前台发生变化，请重新确认朝向。")
+        return {"hold_seconds": hold, "settle_seconds": settle,
+                "forward_input_seconds": released_at-started}
 
     def release_key(self, key):
         if key not in self.held:

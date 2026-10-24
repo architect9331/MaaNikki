@@ -397,6 +397,37 @@ class Navigator:
             self.inputs.release()
             raise
 
+    def face_heading(self, heading):
+        """Turn the camera, then align the stationary character for an action."""
+        if type(heading) not in (int, float) or not math.isfinite(heading) or not 0 <= heading < 360:
+            raise NavigationError("动作朝向须为 0–360 度范围内的有效角度（不含 360）。")
+        self.inputs.check()
+        generation = getattr(self.inputs, "generation", 0)
+        if self.motion:
+            self.motion.stop()
+            self.motion.jump(False, self.walking())
+        else:
+            self.inputs.release()
+        previous = self.locator.previous
+        if previous is None:
+            raise NavigationError("缺少已确认的位置，未调整动作朝向。")
+        pose = self.observe((previous.x, previous.y))
+        pose = self.turn(heading, pose, stationary=True)
+        if getattr(self.inputs, "generation", 0) != generation:
+            raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
+        timing = self.inputs.face_camera()
+        after = self.observe((pose.x, pose.y))
+        error = abs(angle_delta(heading, after.heading)) if after.heading is not None else None
+        confirmed = (getattr(self.inputs, "generation", 0) == generation
+                     and error is not None and error <= 5)
+        self.event({"type": "character_facing", "source": "route_heading", "target": heading,
+                    "camera_heading": after.heading, "camera_error": error,
+                    "before": [pose.x, pose.y], "after": [after.x, after.y],
+                    "displacement": distance(pose, after), "camera_confirmed": confirmed, **timing})
+        if not confirmed:
+            raise SceneUnavailable("动作前的镜头朝向未能保持稳定，未开始交互。")
+        return after
+
     def walking(self):
         if self.walking_detector is not None:
             return bool(self.read_state("walking", self.walking_detector))

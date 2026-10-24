@@ -20,14 +20,21 @@ fn read_json(path: &Path) -> Result<Option<Value>, String> {
 fn read_account_state() -> Result<Value, String> {
     let root = get_app_data_dir()?;
     let account = read_json(&root.join("config/account_state.json"))?;
-    let (tasks, blessing) = if let Some(account) = account {
+    let (tasks, blessing, observations) = if let Some(account) = account {
         if account["schema_version"] != 2
             || !account["tasks"].is_object()
             || !account["blessing"].is_object()
         {
             return Err("账号状态 JSON 格式无效".into());
         }
-        (account["tasks"].clone(), account["blessing"].clone())
+        (
+            account["tasks"].clone(),
+            account["blessing"].clone(),
+            account
+                .get("observations")
+                .cloned()
+                .unwrap_or_else(|| json!({})),
+        )
     } else {
         (
             json!({}),
@@ -35,6 +42,7 @@ fn read_account_state() -> Result<Value, String> {
                 "inventory": read_json(&root.join("config/blessing/inventory.json"))?,
                 "last_scan": read_json(&root.join("config/blessing/last_scan.json"))?,
             }),
+            json!({}),
         )
     };
     let latest = ["inventory", "last_scan"]
@@ -55,6 +63,7 @@ fn read_account_state() -> Result<Value, String> {
     let resources = get_exe_directory()?.join("resource/data");
     Ok(json!({
         "tasks": tasks,
+        "observations": observations,
         "blessing": summary,
         "catalog": read_json(&resources.join("blessing_catalog.json"))?,
         "rotation": read_json(&resources.join("xinghai_rotation.json"))?,
