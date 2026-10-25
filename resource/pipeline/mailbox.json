@@ -1,0 +1,47 @@
+{
+  "MaaNikki_Mailbox": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {"kind": "mailbox"},
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Mailbox_Open": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [510, 640, 90, 65],
+      "template": "game/mailbox/menu.png",
+      "gray_limit": [175, 255],
+      "threshold": 0.85
+    },
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Mailbox_PageReady",
+      "source": "MaaNikki_MenuReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Mailbox_PageReady": {
+    "recognition": "OCR",
+    "roi": [70, 15, 60, 45],
+    "expected": "^邮件$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Mailbox_ClaimAll": {
+    "recognition": "OCR",
+    "roi": [270, 650, 195, 58],
+    "expected": "^领取全部$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_RewardLayer",
+      "source": "MaaNikki_Mailbox_PageReady"
+    },
+    "post_delay": 0,
+    "next": []
+  }
+}

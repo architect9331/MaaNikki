@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from datetime import datetime
 from task_control import task_time as time
 import re
 
@@ -10,7 +9,6 @@ import cv2
 import numpy as np
 
 from game_keys import Binding
-from daily.settings import ROOT
 from .ability import Ability, WHITE
 from .models import NavigationError
 
@@ -142,21 +140,8 @@ class Fishing:
     def fail_state(self, reason):
         record = {"type": self.event_prefix+"_unconfirmed", "reason": reason,
                   "recognition": self.last_state_details}
-        try:
-            frame = self.last_state_frame
-            if frame is not None and frame.shape[:2] == (720, 1280):
-                folder = ROOT / "logs/navigation"
-                folder.mkdir(parents=True, exist_ok=True)
-                filename = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-fishing-state.png"
-                # Fishing prompts are at the bottom; retain them and mask UID.
-                frame = frame.copy()
-                frame[700:, :240] = 0
-                ok, png = cv2.imencode(".png", frame)
-                if ok:
-                    (folder / filename).write_bytes(png.tobytes())
-                    record["file"] = filename
-        except (OSError, cv2.error):
-            record["image_status"] = "save_failed"
+        record["evidence"] = self.rt.diagnostic("fishing_state", reason,
+            image=self.last_state_frame, details={"recognition": self.last_state_details})
         self.actions.event(record)
         self.rt.log(reason+" 识别信息已记录，本轮停止。")
         # An unclassified fishing page must not reach ordinary Esc recovery.
@@ -444,17 +429,8 @@ class Fishing:
             self.wait(1)
         if not available:
             record = {"type": "star_fishing_skipped", "reason": "subability_not_detected"}
-            try:
-                if frame is not None and frame.shape[:2] == (720, 1280):
-                    folder = ROOT / "logs/navigation"
-                    folder.mkdir(parents=True, exist_ok=True)
-                    filename = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-fishing-availability.png"
-                    ok, png = cv2.imencode(".png", frame[:680])
-                    if ok:
-                        (folder / filename).write_bytes(png.tobytes())
-                        record.update(file=filename, roi=[0, 0, 1280, 680])
-            except (OSError, cv2.error):
-                record["image_status"] = "save_failed"
+            record["evidence"] = self.rt.diagnostic("star_fishing_availability",
+                "未识别到钓星副能力图标", image=frame)
             self.actions.event(record)
             self.rt.log("未识别到钓星副能力图标，跳过当前点，继续路线。")
             self.exit_home()

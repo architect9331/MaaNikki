@@ -57,12 +57,10 @@ class InventoryScanner:
 
     def image(self, filename, frame):
         if frame is not None:
-            png = filename.lower().endswith(".png")
-            success, encoded = cv2.imencode(".png" if png else ".jpg", frame,
-                [cv2.IMWRITE_PNG_COMPRESSION, 1] if png else [cv2.IMWRITE_JPEG_QUALITY, 85])
-            if not success:
-                raise OSError("扫描截图保存失败")
-            encoded.tofile(str(self.folder / filename))
+            from diagnostics import save_image
+            # Card/tooltip patches carry no account corner. Full captures do.
+            save_image(self.folder / filename, frame,
+                       full_frame=frame.shape[:2] == (720, 1280))
         return filename
 
     def ocr(self, roi, frame, expected=".+"):

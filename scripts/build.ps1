@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Check', 'Runtime', 'Build', 'Package')]
+    [ValidateSet('Check', 'Runtime', 'Build', 'Local', 'Package')]
     [string]$Action = 'Package',
     [string]$Python = 'python'
 )
@@ -16,6 +16,37 @@ function Invoke-BuildStep {
     if ($LASTEXITCODE -ne 0) {
         throw "Build step failed with exit code ${LASTEXITCODE}: $Program"
     }
+}
+
+function Update-LocalClient {
+    $builtClientPath = Join-Path $projectRoot 'client/src-tauri/target/release/mxu.exe'
+    $localClientPath = Join-Path $projectRoot 'MaaNikki.exe'
+    $expectedVersion = (Get-Content -LiteralPath 'client/package.json' -Raw | ConvertFrom-Json).version
+    if ((Get-Item -LiteralPath $builtClientPath).VersionInfo.ProductVersion -ne $expectedVersion) {
+        throw 'Built client version does not match client/package.json; local client was not replaced.'
+    }
+    $runningClient = Get-CimInstance Win32_Process -Filter "Name = 'MaaNikki.exe'" |
+        Where-Object { $_.ExecutablePath -eq $localClientPath -or -not $_.ExecutablePath }
+    if ($runningClient) {
+        throw "Client compiled, but MaaNikki.exe is running. Close it and rerun -Action Local. Built client: $builtClientPath"
+    }
+    $builtHash = (Get-FileHash -LiteralPath $builtClientPath -Algorithm SHA256).Hash
+    if (Test-Path -LiteralPath $localClientPath) {
+        if ((Get-FileHash -LiteralPath $localClientPath -Algorithm SHA256).Hash -eq $builtHash) {
+            Write-Host "Local client is already current: $localClientPath ($expectedVersion)"
+            return
+        }
+        $backupName = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N')
+        $backupDir = Join-Path $projectRoot ('.build/client-backups/' + $backupName)
+        New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+        Copy-Item -LiteralPath $localClientPath -Destination (Join-Path $backupDir 'MaaNikki.exe')
+        Write-Host "Previous client backed up: $backupDir"
+    }
+    Copy-Item -LiteralPath $builtClientPath -Destination $localClientPath -Force
+    if ((Get-FileHash -LiteralPath $localClientPath -Algorithm SHA256).Hash -ne $builtHash) {
+        throw 'Local client SHA-256 does not match the build output.'
+    }
+    Write-Host "Local client updated and verified: $localClientPath ($expectedVersion)"
 }
 
 Push-Location -LiteralPath $projectRoot
@@ -75,6 +106,9 @@ try {
         Invoke-BuildStep $pnpmCommand @('build:app')
     } finally {
         Pop-Location
+    }
+    if ($Action -eq 'Local') {
+        Update-LocalClient
     }
     if ($Action -eq 'Package') {
         Invoke-BuildStep $Python @('scripts/release.py', 'package')

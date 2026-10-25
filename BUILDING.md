@@ -48,7 +48,15 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Runtime
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Build
 ```
 
-准备出的运行环境在 `.build/runtime-<随机编号>/`。下载缓存、构建目录和输出包都被 `.gitignore` 排除。脚本不会读取或打包现有 `config/`、`cache/`、根目录可执行文件和现有 Python/DLL；编译结果保留在 `client/src-tauri/target/release/mxu.exe`。
+修改前端或桌面客户端后，默认编译并同步本机程序：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Local -Python F:/MaaNikki/python/python.exe
+```
+
+`Local` 沿用完整客户端构建，核对客户端版本后，将根目录旧 `MaaNikki.exe` 备份到 `.build/client-backups/`，替换为新程序并校验 SHA-256；相同文件跳过替换。程序正在运行时会明确停止同步，关闭后重新执行即可。此入口不启动程序、不操作游戏，也不运行测试。每轮界面修改完成后执行一次；单独运行前端 `pnpm build` 只会更新 `client/dist`，不会更新本机可执行文件中嵌入的界面。
+
+准备出的运行环境在 `.build/runtime-<随机编号>/`。下载缓存、构建目录和输出包都被 `.gitignore` 排除。运行环境与发布包的组装不会读取或打包现有 `config/`、`cache/`、根目录可执行文件和现有 Python/DLL；编译结果保留在 `client/src-tauri/target/release/mxu.exe`。`Local` 额外读取、备份并替换根目录程序。
 
 构建工具的 npm 缓存及安装诊断日志保存在 `.build/npm-cache/`。GitHub 自动构建失败时会将其中的日志保存为 `MaaNikki-build-npm-logs` 附件，保留 7 天，便于定位安装失败的具体原因。
 

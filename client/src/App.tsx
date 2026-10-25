@@ -909,6 +909,19 @@ function App() {
             nikkiPresetVersion: 1,
           }));
         }
+
+        // Add mail once to the saved daily page, preserving user task choices.
+        const mailboxTask = pi?.name === 'MaaNikki' && pi.task.find((task) => task.name === 'mailbox');
+        if (mailboxTask && useAppStore.getState().nikkiPresetVersion < 2) {
+          for (const instance of useAppStore.getState().instances) {
+            if (instance.name !== '全套日常' && instance.name !== '日常') continue;
+            const monthlyIndex = instance.selectedTasks.findIndex((task) => task.taskName === 'monthly_pass');
+            if (monthlyIndex < 0 || instance.selectedTasks.some((task) => task.taskName === 'mailbox')) continue;
+            useAppStore.getState().addTaskToInstance(instance.id, mailboxTask);
+            useAppStore.getState().reorderTasks(instance.id, instance.selectedTasks.length, monthlyIndex + 1);
+          }
+          useAppStore.setState({ nikkiPresetVersion: 2 });
+        }
       }, 0);
 
       // 检查是否为开机自启动，若配置了自动执行的实例则激活并启动任务

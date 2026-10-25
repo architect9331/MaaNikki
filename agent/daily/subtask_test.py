@@ -150,9 +150,8 @@ class SubtaskTest(DailyRun):
             if not result["success"] and frame is not None:
                 # Preserve the last recognition frame, before recovery can
                 # replace it, and exclude the account corner.
-                if frame.shape[:2] == (720, 1280):
-                    frame = frame[:680]
-                cv2.imencode(".png", frame)[1].tofile(str(self.test_directory / "failure.png"))
+                from diagnostics import save_image
+                save_image(self.test_directory / "failure.png", frame)
             report = {**result, "scans": self.scans, "events": self.events,
                       "time": datetime.now().isoformat(timespec="seconds")}
             write_json(self.test_directory / "result.json", report)

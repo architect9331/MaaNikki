@@ -4,6 +4,7 @@ import math
 import re
 from task_control import task_time as time
 import cv2
+from game_view import require_game_frame
 from .models import NavigationError
 from .vision import Locator
 from .matching import luma, match_map
@@ -231,8 +232,7 @@ class Teleporter:
             raise NavigationError("未能放大地图，请确认没有点位详情遮挡缩放按钮。")
 
     def map_pose(self, frame):
-        if frame is None or frame.shape[:2] != (720, 1280):
-            raise NavigationError("地图截图尺寸不符合要求。")
+        require_game_frame(frame)
         scale = self.locator.spec.bigmap_scale*.25
         patch = cv2.resize(luma(frame), None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
         x, y, score, detail = match_map(self.locator.coarse, patch,

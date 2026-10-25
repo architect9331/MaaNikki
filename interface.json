@@ -4,7 +4,7 @@
   "label": "MaaNikki",
   "title": "MaaNikki - 无限暖暖自动化",
   "description": "《无限暖暖》助手，以祝福闪光一键全收集为特色，支持日常任务、幻境挑战、巅峰赛和常驻开荒辅助。",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "github": "https://github.com/architect9331/MaaNikki",
   "telemetry": {
     "sentry": {
@@ -19,7 +19,7 @@
     {
       "name": "nikki_windows",
       "label": "无限暖暖（Windows）",
-      "description": "连接无限暖暖 PC 客户端窗口。自动路线需要 16:9 窗口，推荐 1920×1080。",
+      "description": "连接无限暖暖 PC 客户端窗口。所有自动任务均需要实际为 16:9 的游戏画面，推荐 1920×1080。",
       "type": "Win32",
       "permission_required": true,
       "display_short_side": 720,
@@ -95,6 +95,7 @@
     "tasks/Xinghai.json",
     "tasks/Home.json",
     "tasks/MonthlyPass.json",
+    "tasks/Mailbox.json",
     "tasks/WeeklyFreeGifts.json",
     "tasks/MonthlyCrystalExchange.json",
     "tasks/Crown.json",

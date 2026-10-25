@@ -1,10 +1,6 @@
 """Shared shop entry, diagnostics, and weekly free gift claims."""
 from __future__ import annotations
 
-from file_io import write_json
-
-from datetime import datetime
-
 import cv2
 
 from .settings import ROOT
@@ -26,23 +22,7 @@ class ShopWorkflow:
         self.rt.log(f"{self.LABEL}：{reason}，本项未完成。")
         if self.rt.stopped:
             return False
-        try:
-            folder = ROOT / "debug/shop"
-            folder.mkdir(parents=True, exist_ok=True)
-            name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-            record = {"reason": reason, "completed": self.completed}
-            image = self.rt.capture()
-            if image is not None:
-                ok, png = cv2.imencode(".png", image[:690])
-                if ok:
-                    image_folder = ROOT / "debug/on_error"
-                    image_folder.mkdir(parents=True, exist_ok=True)
-                    image_name = name+"_"+self.ENTRY+".png"
-                    (image_folder / image_name).write_bytes(png.tobytes())
-                    record["image"] = "on_error/"+image_name
-            write_json(folder / (name+".json"), record)
-        except (OSError, ValueError, cv2.error):
-            self.rt.log("商城现场记录未能保存。")
+        self.rt.diagnostic("shop", reason, details={"entry": self.ENTRY, "completed": self.completed})
         return False
 
     def open_shop(self):

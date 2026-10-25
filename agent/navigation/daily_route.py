@@ -312,7 +312,8 @@ class RouteActions:
                         folder.mkdir(parents=True, exist_ok=True)
                         file = folder / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-pickup.png")
                         x, y, w, h = diagnostics["roi"]
-                        if cv2.imwrite(str(file), frame[y:y+h, x:x+w]):
+                        from diagnostics import save_image
+                        if save_image(file, frame, roi=[x, y, w, h]):
                             evidence = file.name
                     except (OSError, cv2.error):
                         pass

@@ -48,6 +48,9 @@ class GameplayAction(CustomAction):
             if kind == "monthly_exchange":
                 from daily.monthly_exchange import MonthlyExchange
                 return MonthlyExchange(runtime).run()
+            if kind == "mailbox":
+                from daily.mailbox import Mailbox
+                return Mailbox(runtime).run()
             if kind == "home":
                 from daily.home import Home
                 return Home(runtime).run()

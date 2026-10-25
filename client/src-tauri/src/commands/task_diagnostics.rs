@@ -544,11 +544,19 @@ fn write_image<W: Write + Seek>(
     entry: &mut ImageEntry,
     options: SimpleFileOptions,
 ) -> Result<(), ImageBundleError> {
+    let mut selected = (&mut entry.source).take(entry.len);
+    let mut bytes = Vec::new();
+    selected.read_to_end(&mut bytes).map_err(|error| {
+        ImageBundleError::Io(format!("read attachment [{}]: {error}", entry.archive_name))
+    })?;
+    if entry.archive_name.to_ascii_lowercase().ends_with(".png") {
+        bytes = super::diagnostic_images::sanitize_png(&bytes)
+            .map_err(|error| ImageBundleError::Io(format!("sanitize screenshot: {error}")))?;
+    }
     archive
         .start_file(&entry.archive_name, options)
         .map_err(|error| ImageBundleError::Io(format!("start ZIP entry: {error}")))?;
-    let mut selected = (&mut entry.source).take(entry.len);
-    io::copy(&mut selected, archive).map_err(|error| {
+    archive.write_all(&bytes).map_err(|error| {
         ImageBundleError::Io(format!(
             "write attachment [{}]: {error}",
             entry.source_path.display()
@@ -681,22 +689,25 @@ fn log_priority(path: &str) -> u8 {
         .and_then(|name| name.to_str())
         .unwrap_or_default()
         .to_ascii_lowercase();
-    if file_name.starts_with("maafw.log") {
+    if first_component_is(Path::new(path), "messages") {
         0
-    } else if file_name.starts_with("maa.log") {
+    } else if file_name.starts_with("maafw.log") {
         1
-    } else if file_name.starts_with("mxu") || file_name.starts_with("log-") {
+    } else if file_name.starts_with("maa.log") {
         2
-    } else {
+    } else if file_name.starts_with("mxu") || file_name.starts_with("log-") {
         3
+    } else {
+        4
     }
 }
 
 fn log_kind(path: &str) -> &'static str {
     match log_priority(path) {
-        0 => "maafw",
-        1 => "maa",
-        2 => "mxu",
+        0 => "agent",
+        1 => "maafw",
+        2 => "maa",
+        3 => "mxu",
         _ => "other",
     }
 }
@@ -723,4 +734,3 @@ fn modified_since(metadata: &std::fs::Metadata, started_at: SystemTime) -> bool 
             .is_some_and(|adjusted| adjusted >= started_at)
     })
 }
-

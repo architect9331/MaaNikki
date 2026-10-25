@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 from datetime import datetime
 import re
+import time as wall_time
 import weakref
 from task_control import task_time as time
 import cv2
@@ -17,6 +18,7 @@ from .settings import ROOT, foreground_inputs
 from game_keys import GameKeys
 from performance import count, measure
 from message_log import write_message
+from game_view import require_game_frame
 
 
 RESOURCE = ROOT / "resource"
@@ -49,6 +51,8 @@ class Runtime:
         self._observations = []
         self._focus_generation = 0
         self._stale_images = []
+        self._frame_validated = False
+        self._evidence = None
         from .ui import GameUI
         self.ui = GameUI(self, RESOURCE)
 
@@ -136,11 +140,31 @@ class Runtime:
                 "MaaNikki_Daily_Message": {"focus": {
                     "Node.Action.Starting": display if saved else text}}})
 
+    @property
+    def evidence(self):
+        from task_control import active_session
+        session = active_session()
+        if session:
+            return session.evidence
+        if self._evidence is None:
+            from diagnostics import FailureEvidence
+            self._evidence = FailureEvidence()
+        return self._evidence
+
+    def diagnostic(self, stage, reason, *, image=None, details=None):
+        return self.evidence.save(stage, reason, image=image, details=details,
+                                  generation=self._focus_generation)
+
     def action(self, action, *, ui_click=True, **fields):
         if self.stopped:
             return False
         self.check_focus()
+        if not self.ensure_frame():
+            return False
         self.invalidate_frame()
+        self.evidence.observe("input", action=action, fields={
+            name: value for name, value in fields.items()
+            if name in {"target", "begin", "end", "key", "duration"}})
         if self.navigation_inputs:
             self.navigation_inputs.check()
         if action in {"KeyDown", "KeyUp"}:
@@ -225,6 +249,41 @@ class Runtime:
             self.release_key(key)
 
     def capture(self):
+        return self._capture()
+
+    def ensure_frame(self):
+        """Reuse an existing geometry check; capture only before the first input."""
+        from task_control import active_session
+        session = active_session()
+        validated = session.frame_validated if session else self._frame_validated
+        if validated:
+            return True
+        return self.capture() is not None
+
+    def validate_frame(self, image):
+        from task_control import active_session
+        session = active_session()
+        if session:
+            session.validate_frame(image)
+        else:
+            require_game_frame(image)
+        self._frame_validated = True
+
+    def capture_at(self, deadline, *, available, lead=.03):
+        """Overlap native capture with a resident check's remaining idle time.
+
+        Deadlines use the wall monotonic clock. There is one in-flight job and
+        no worker thread or image queue. Call only between completed decisions.
+        Ordinary capture() still requests a fresh frame immediately.
+        """
+        if not math.isfinite(deadline) or not math.isfinite(lead) or not 0 <= lead <= .05:
+            raise ValueError("截图调度时间无效。")
+        delay = deadline-wall_time.monotonic()-lead
+        if delay > 0 and not self.pause(delay):
+            return None
+        return self._capture(deadline=deadline, available=available)
+
+    def _capture(self, *, deadline=None, available=None):
         self.invalidate_frame()
         if self.stopped:
             return None
@@ -232,16 +291,46 @@ class Runtime:
         if self.navigation_inputs:
             self.navigation_inputs.check()
         while not self.stopped:
+            if available is not None and not available():
+                return None
+            self.check_focus()
+            generation = self._focus_generation
             with measure("capture"):
-                with measure("capture.wait"):
-                    result = self.controller.post_screencap().wait()
+                with measure("capture.post"):
+                    result = self.controller.post_screencap()
+                submitted_at = wall_time.monotonic()
+                expired = False
+                try:
+                    idle = 0 if deadline is None else deadline-wall_time.monotonic()
+                    if idle > 0:
+                        count("capture.prefetched")
+                        with measure("capture.overlap_idle"):
+                            self.pause(idle)
+                        # A delayed wake-up must not act on a prefetched frame
+                        # which could have completed long before this decision.
+                        expired = wall_time.monotonic()-submitted_at > .1
+                finally:
+                    # Drain the one native job even on Stop/focus exceptions;
+                    # never leave a capture queued for the next task to inherit.
+                    with measure("capture.wait"):
+                        result.wait()
+                if self.stopped or available is not None and not available():
+                    return None
+                self.check_focus()
+                if expired or generation != self._focus_generation:
+                    count("capture.discarded")
+                    continue
                 with measure("capture.transfer"):
                     image = result.get() if result.succeeded else None
-            if self.check_focus():
+            self.check_focus()
+            if generation != self._focus_generation:
+                count("capture.discarded")
                 continue
             if image is None or image.size == 0:
                 count("capture.failed")
                 return None
+            self.evidence.remember_frame(image, self._focus_generation)
+            self.validate_frame(image)
             return image
 
     def recognize(self, node, fields=None, image=None):
@@ -252,6 +341,14 @@ class Runtime:
             return None
         with measure("recognition.native"):
             result = self.context.run_recognition(node, image, {node: fields} if fields else None)
+        if not node.startswith("MaaNikki_Asset_"):
+            rows = ((getattr(result, "filtered_results", None) or getattr(result, "all_results", None) or
+                     [getattr(result, "best_result", None)]) if result else [])
+            self.evidence.observe("recognition", node=node, fields=fields,
+                hit=bool(result and result.hit),
+                results=[{key: getattr(row, key, None) for key in ("text", "score", "box")}
+                         for row in rows[:6] if row is not None],
+                detail=getattr(result, "detail", None))
         if self.check_focus():
             self._stale_images.append(weakref.ref(image))
             return None
@@ -274,6 +371,8 @@ class Runtime:
         if self.stopped:
             return False
         self.check_focus()
+        if not self.ensure_frame():
+            return False
         self.invalidate_frame()
         with measure("input.text"):
             return self.controller.post_input_text(content).wait().succeeded
@@ -337,6 +436,9 @@ class Runtime:
     def input_guard(self):
         """Guard all nested page operations as well as movement; never refocus on loss."""
         from navigation.controller import ForegroundInput
+        if not self.ensure_frame():
+            from navigation.models import NavigationError
+            raise NavigationError("未获取到游戏画面，未执行输入。")
         previous = self.navigation_inputs
         inputs = previous or ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
         self.navigation_inputs = inputs
@@ -472,6 +574,9 @@ class Runtime:
             events.append({"type": "execution_result", "success": result, "count": self.navigation_count})
             return result
         except (NavigationError, KeyError, OSError, TypeError, ValueError, RuntimeError, cv2.error) as error:
+            if not self.stopped:
+                self.diagnostic("navigation_"+stage, str(error),
+                                details={"route": name, "stage": stage, "events": events[-8:]})
             if actions:
                 self.navigation_count = actions.count
             events.append({"type": "stopped", "stage": stage, "error_type": type(error).__name__, "reason": str(error)})
@@ -489,19 +594,18 @@ class Runtime:
                     map_view = stage == 'teleport' and teleporter is not None and teleporter.last_frame is not None
                     roi = ([830, 105, 440, 600] if selection_view else
                            [240, 180, 590, 365] if map_view else [54, 14, 134, 134])
-                    x, y, w, h = roi
                     filename = datetime.now().strftime('%Y%m%d-%H%M%S-%f')+'-'+(
                         'map-details' if selection_view else 'bigmap' if map_view else 'minimap')+'.png'
-                    if cv2.imwrite(str(folder / filename), frame[y:y+h, x:x+w]):
+                    from diagnostics import save_image
+                    if save_image(folder / filename, frame, roi=roi):
                         events.append({'type': 'failure_frame', 'file': filename, 'roi': roi,
                                        'heading_diagnostics': dict(locator.heading_diagnostics) if locator else {}})
                     if stage == 'route_execution':
-                        # Include terrain/obstacles as well as the minimap;
-                        # exclude the account strip at the bottom of the scene.
+                        # Keep terrain and bottom prompts with the shared UID mask.
                         scene_file = filename.replace('-minimap.png', '-scene.png')
-                        if cv2.imwrite(str(folder / scene_file), frame[:688]):
+                        if save_image(folder / scene_file, frame):
                             events.append({'type': 'failure_scene', 'file': scene_file,
-                                           'roi': [0, 0, 1280, 688]})
+                                           'roi': [0, 0, 1280, 720]})
                 except (OSError, ValueError, cv2.error):
                     self.log('导航失败时的地图裁图未能保存。')
             if isinstance(error, NavigationError):
@@ -833,16 +937,7 @@ class Executors(Runtime):
         return False
 
     def save_placement_failure(self, stage):
-        try:
-            frame = self.capture()
-            if frame is None:
-                return
-            directory = ROOT / "logs/daily"
-            directory.mkdir(parents=True, exist_ok=True)
-            path = directory / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+f"-place-{stage}.png")
-            cv2.imwrite(str(path), frame[:680])
-        except (OSError, cv2.error):
-            pass
+        self.diagnostic("placement", stage)
 
     def energy(self, card, preferred, overrides):
         from .gameplay import Gameplay

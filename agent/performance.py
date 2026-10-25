@@ -18,6 +18,7 @@ class Performance:
     def __init__(self, action, directory):
         self.action, self.directory = action, Path(directory)
         self.started = time.perf_counter()
+        self.cpu_started = time.process_time()
         self.filename = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-"+uuid4().hex[:8]+".json"
         self.stages, self.counters = {}, {}
         self.succeeded = None
@@ -50,8 +51,10 @@ class Performance:
                             "p95_upper_ms": round(upper, 3)}
         return {"schema_version": 1, "action": self.action, "succeeded": self.succeeded,
                 "elapsed_ms": round((time.perf_counter()-self.started)*1000, 3),
+                "agent_cpu_ms": round((time.process_time()-self.cpu_started)*1000, 3),
                 "stages": stages, "counters": dict(self.counters),
-                "note": "Stages can overlap; p95_upper_ms is a histogram estimate, not an exact percentile."}
+                "note": "Stages can overlap; p95_upper_ms is a histogram estimate. "
+                        "agent_cpu_ms covers this Agent process only; capture includes overlap_idle when prefetched."}
 
     def save(self):
         # Logging errors must never interrupt gameplay or replace a task result.

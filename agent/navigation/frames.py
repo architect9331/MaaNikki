@@ -3,12 +3,11 @@ from __future__ import annotations
 
 import cv2
 
-from .models import NavigationError
+from game_view import require_game_frame
 
 
 def reference_frame(frame):
-    if frame is None or frame.shape[:2] != (720, 1280):
-        raise NavigationError("导航需要 16:9 游戏画面，截图基准为 1280×720。")
+    require_game_frame(frame)
     return cv2.resize(frame, (1920, 1080), interpolation=cv2.INTER_LINEAR)
 
 

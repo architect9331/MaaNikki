@@ -136,17 +136,25 @@ class Ability:
             ability = self.ui.feature(asset="IconAbilityFeature", threshold=.99,
                                       method=cv2.TM_CCORR_NORMED)
             def plan_entry_visible():
-                return self.parse_plan(self.ui.text(entry)) == plan
+                raw = self.ui.text(entry)
+                parsed = self.parse_plan(raw)
+                self.rt.evidence.observe("ability_plan", requested=plan, roi=entry,
+                                         raw=raw, parsed=parsed)
+                return parsed == plan
             def open_plan_list():
                 return self.ui.ability_page() and self.ui.enter_page(
                     lambda: self.rt.action("Click", target=header), plan_entry_visible,
-                    source=ability, recover=self.ui.ability_page)
+                    source=ability, recover=self.ui.ability_page,
+                    diagnostic_context={"operation": "open_ability_plan_list", "requested": plan,
+                                        "header_roi": header, "entry_roi": entry})
             if not open_plan_list():
                 raise NavigationError("未能确认能力方案列表，未更改能力轮盘。")
             def selected():
                 return bool(ability() and self.selected_plan() == plan)
             if not self.ui.enter_page(lambda: self.rt.action("Click", target=entry), selected,
-                                       source=plan_entry_visible, recover=open_plan_list):
+                                       source=plan_entry_visible, recover=open_plan_list,
+                                       diagnostic_context={"operation": "select_ability_plan",
+                                                           "requested": plan, "entry_roi": entry}):
                 return False
         if self.ui.wait_page(lambda: self.selected_plan() == plan):
             self.actions.event({"type": "ability_plan_selected", "plan": plan})

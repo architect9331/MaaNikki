@@ -31,6 +31,14 @@ See `BUILDING.md` for prerequisites. Use pinned Node/Rust versions and Python 3.
 - From `client/`, run `npx --yes pnpm@10.28.0 install --frozen-lockfile`, then `npx --yes pnpm@10.28.0 dev:app` for desktop development. Local `python/` and `maafw/` runtimes are required.
 - From `client/`, `npx --yes pnpm@10.28.0 build` runs TypeScript checking and the production frontend build.
 
+## Keep the Local Desktop Client Current
+
+- After completing a batch of frontend or desktop client changes, automatically compile and synchronize the local executable before handing off. Use `powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Local -Python F:/MaaNikki/python/python.exe` in this workspace; adapt the Python path on another host.
+- A frontend-only build updates `client/dist` but does not update the UI embedded in `MaaNikki.exe`. `-Action Local` builds the desktop app, backs up the old root executable under `.build/client-backups/`, replaces it, and checks the client version and SHA-256.
+- If the same final source and client version were already built and synchronized successfully in this task, reuse that result. Build once per completed batch, not after each file edit; agent-only or documentation-only changes do not require a desktop rebuild.
+- Do not stop a running client or launch the game to perform the update. If compilation or replacement fails, report the failure and leave the update incomplete. When the client is running, wait for the user to close it before retrying replacement; never claim the local UI is current until synchronization succeeds.
+- This local compilation requirement does not authorize tests or game control. For a release with client changes, finalize the version before compiling; after pushing, continue to follow the user's preference not to wait for GitHub Actions.
+
 ## Coding Style & Naming Conventions
 
 Use two-space indentation in TypeScript/TSX and JSON, four spaces in Python and Rust. Match surrounding formatting. Use PascalCase for React components, camelCase for TypeScript functions, and snake_case for Python/Rust functions and route filenames.

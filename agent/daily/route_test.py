@@ -189,11 +189,9 @@ class RouteTest(Runtime):
                             "pose": self.last_pose, "frame": None}
                 if self.directory and self.last_capture is not None:
                     try:
-                        frame = self.last_capture.copy()
-                        height, width = frame.shape[:2]
-                        frame[round(height*.955):, :round(width*.2)] = 0
                         filename = f"point-{index+1:03d}.png"
-                        cv2.imencode(".png", frame)[1].tofile(str(self.directory / filename))
+                        from diagnostics import save_image
+                        save_image(self.directory / filename, self.last_capture)
                         evidence["frame"] = filename
                     except (OSError, ValueError, cv2.error):
                         pass
@@ -293,10 +291,8 @@ class RouteTest(Runtime):
             self.log("路线测试停止："+str(error))
             if self.directory and self.last_capture is not None:
                 try:
-                    frame = self.last_capture.copy()
-                    height, width = frame.shape[:2]
-                    frame[round(height*.955):, round(width*.78):] = 0
-                    cv2.imencode(".png", frame)[1].tofile(str(self.directory / "failure.png"))
+                    from diagnostics import save_image
+                    save_image(self.directory / "failure.png", self.last_capture)
                 except (OSError, ValueError, cv2.error):
                     pass
         finally:

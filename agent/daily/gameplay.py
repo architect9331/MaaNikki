@@ -1,11 +1,8 @@
 """MVP page workflows shared by standalone and daily-task execution."""
 from __future__ import annotations
 
-from file_io import write_json
-
 import re
 import json
-from datetime import datetime
 import cv2
 from task_control import task_time as time
 
@@ -57,6 +54,9 @@ class Gameplay:
         frame = self.rt.capture()
         shortage = bool(frame is not None and self.rt.text(
             [380, 200, 520, 340], r"(?:活跃)?能量(?:不足|不够)|体力(?:不足|不够)", image=frame))
+        if not shortage:
+            self.rt.diagnostic("realm_confirmation", "未能确认挑战提交", image=frame,
+                                details={"kind": kind, "cancel": cancel})
         if cancel and not self.rt.click_template(cancel, attempts=1):
             self.rt.log("未能关闭挑战确认窗口，本项停止。")
             return False
@@ -211,26 +211,11 @@ class Gameplay:
 
     def realm_level_diagnostic(self, kind, node):
         """Keep the failed list before the caller returns to the calendar/main."""
-        try:
-            folder = ROOT / "logs/realm"
-            folder.mkdir(parents=True, exist_ok=True)
-            name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+f"-{kind}-level_not_found"
-            definition = fields(self.rt.context, node)
-            record = {"kind": kind, "stage": "level_not_found", "node": node,
-                      "expected": definition.get("expected"),
-                      "roi": definition.get("roi", self.REALM_LEVEL_ROI),
-                      "scroll_roi": self.REALM_SCROLL_ROI}
-            image = self.rt.capture()
-            if image is not None:
-                # Exclude the bottom account identifier; retain the whole list.
-                ok, png = cv2.imencode(".png", image[:680])
-                if ok:
-                    (folder / (name+".png")).write_bytes(png.tobytes())
-                    record["image"] = name+".png"
-            write_json(folder / (name+".json"), record)
-            self.rt.log(f"幻境关卡查找记录已保存：logs/realm/{name}.json")
-        except (OSError, ValueError, cv2.error) as error:
-            self.rt.log(f"幻境关卡查找记录未能保存：{error}。")
+        definition = fields(self.rt.context, node)
+        self.rt.diagnostic("realm_level", "未找到目标幻境关卡", details={
+            "kind": kind, "node": node, "expected": definition.get("expected"),
+            "roi": definition.get("roi", self.REALM_LEVEL_ROI),
+            "scroll_roi": self.REALM_SCROLL_ROI})
 
     def jihua(self, maximize, allow_exhausted=False, fixed_count=None):
         submitted = False
@@ -338,24 +323,7 @@ class Gameplay:
         """Retain the unfamiliar reward layer before ordinary page recovery."""
         if self.rt.stopped:
             return
-        try:
-            folder = ROOT / "logs/monthly"
-            folder.mkdir(parents=True, exist_ok=True)
-            name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+f"-{kind}-{stage}"
-            record = {"page": kind, "stage": stage, "reason": reason}
-            image = self.rt.capture()
-            if image is not None:
-                image = image.copy()
-                if image.shape[:2] == (720, 1280):
-                    image[700:, :240] = 0
-                ok, png = cv2.imencode(".png", image)
-                if ok:
-                    (folder / (name+".png")).write_bytes(png.tobytes())
-                    record["image"] = name+".png"
-            write_json(folder / (name+".json"), record)
-            self.rt.log(f"奖励页面记录已保存：logs/monthly/{name}.json")
-        except (OSError, ValueError, cv2.error) as error:
-            self.rt.log(f"奖励页面记录未能保存：{error}。")
+        self.rt.diagnostic("monthly_"+stage, reason or "奖励页面状态待确认", details={"page": kind})
 
     def paradise_reward_return(self):
         def page_returned():

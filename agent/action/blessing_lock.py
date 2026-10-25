@@ -60,6 +60,8 @@ class BlessingLockAction(CustomAction):
             raise
         except (RescanSlot, OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             reason = "前台变化使整理位置失效，请重新运行祝福闪光整理" if isinstance(error, RescanSlot) else str(error)
+            if not rt.stopped:
+                rt.diagnostic("blessing_lock", reason)
             if locker is not None:
                 locker.report.update(complete=False, reason=reason)
                 try:

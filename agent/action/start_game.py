@@ -35,7 +35,6 @@ class StartGameAction(CustomAction):
 
         def incomplete(reason="尚未完成进入游戏"):
             if not runtime.stopped:
-                import cv2
                 folder = ROOT / "logs/startup"
                 folder.mkdir(parents=True, exist_ok=True)
                 name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-enter"
@@ -45,8 +44,7 @@ class StartGameAction(CustomAction):
                     "update_attempts": update_attempts,
                 }
                 image = runtime.capture()
-                if image is not None and cv2.imwrite(str(folder / (name+".png")), image):
-                    record["screenshot"] = "logs/startup/"+name+".png"
+                record["evidence"] = runtime.diagnostic("startup", reason, image=image, details=record)
                 write_json(folder / (name+".json"), record)
                 runtime.log(f"{reason}，本轮停止；记录：logs/startup/{name}.json。")
                 context.tasker.post_stop()

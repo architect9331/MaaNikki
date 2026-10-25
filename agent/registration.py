@@ -45,8 +45,25 @@ def agent_action(name, *, stop_on_failure=False):
             succeeded = False
             with action_profile(argv.node_name) as profile, message_scope(argv.node_name):
                 try:
-                    with task_session(context, task_id):
-                        result = run(self, context, argv)
+                    with task_session(context, task_id) as session:
+                        saved = session.evidence.saved if session else 0
+                        try:
+                            result = run(self, context, argv)
+                        except TaskStopped:
+                            raise
+                        except Exception as error:
+                            if session:
+                                session.evidence.save("action_exception", str(error), details={
+                                    "node": argv.node_name, "action": name,
+                                    "traceback": traceback.format_exc()[-3000:]},
+                                    generation=session.generation)
+                            raise
+                        if (session and not result and not session.stopped()
+                                and session.evidence.saved == saved
+                                and name not in {"nikki.daily_config", "nikki.feature_settings"}):
+                            session.evidence.save("action_failed", "动作返回失败", details={
+                                "node": argv.node_name, "action": name,
+                                "phase": "after_action_return"}, generation=session.generation)
                     succeeded = bool(result)
                     if profile is not None:
                         profile.succeeded = bool(result)
@@ -103,7 +120,20 @@ def agent_recognition(name):
                             argv = copy(argv)
                             argv.image = captured.get()
                         generation = session.generation if session else 0
-                        result = analyze(self, context, argv)
+                        if session and argv.image is not None and argv.image.size:
+                            session.evidence.remember_frame(argv.image, generation)
+                            session.validate_frame(argv.image)
+                        try:
+                            result = analyze(self, context, argv)
+                        except TaskStopped:
+                            raise
+                        except Exception as error:
+                            if session:
+                                session.evidence.save("recognition_exception", str(error), details={
+                                    "node": argv.node_name, "recognition": name,
+                                    "traceback": traceback.format_exc()[-3000:]},
+                                    generation=session.generation)
+                            raise
                         if session:
                             session.wait()
                         if not session or generation == session.generation:

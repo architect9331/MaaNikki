@@ -1,0 +1,12 @@
+{
+  "task": [
+    {
+      "name": "mailbox",
+      "label": "邮箱领取",
+      "entry": "MaaNikki_Mailbox",
+      "group": ["daily"],
+      "default_check": true,
+      "description": "领取邮箱中全部可领取的附件。"
+    }
+  ]
+}

@@ -380,11 +380,11 @@ def launch_game(program, timeout, record):
         time.sleep(.5)
     record["clicks"] = clicks
     if runtime and runtime.image is not None:
-        import cv2
+        from diagnostics import save_image
         folder = ROOT / "logs/startup"
         folder.mkdir(parents=True, exist_ok=True)
         name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-launcher.png"
-        cv2.imwrite(str(folder / name), runtime.image)
+        save_image(folder / name, runtime.image, full_frame=False)
         record["screenshot"] = "logs/startup/"+name
     raise RuntimeError("等待官方启动器更新或启动游戏超时，请检查启动器提示；记录见 logs/startup。")
 

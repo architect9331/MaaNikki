@@ -5,9 +5,13 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from contextvars import ContextVar
 import time as wall_time
+import traceback
 from weakref import WeakSet
 
 from navigation.models import NavigationError
+from game_view import GameFrameSizeError, require_game_frame
+from message_log import write_message
+from diagnostics import FailureEvidence
 from performance import count
 
 
@@ -39,6 +43,9 @@ class ForegroundSession:
         self._cached_stopping = False
         self._background_observation = False
         self._observed_foreground = None
+        self.frame_validated = False
+        self._frame_failure = None
+        self.evidence = FailureEvidence()
 
     def register(self, inputs):
         self.inputs.add(inputs)
@@ -56,6 +63,34 @@ class ForegroundSession:
         self.context.run_task("MaaNikki_Daily_Message", {
             "MaaNikki_Daily_Message": {"focus": {"Node.Action.Starting": message}}})
 
+    def validate_frame(self, frame):
+        """Reject incompatible coordinates once, before any recovery can click."""
+        if self._frame_failure:
+            raise TaskStopped(self._frame_failure)
+        try:
+            require_game_frame(frame)
+        except GameFrameSizeError as error:
+            self.evidence.save("frame_size", str(error), image=frame, generation=self.generation)
+            message = f"任务已停止：{error}"
+            self._frame_failure = message
+            write_message(message, message)
+            for inputs in list(self.inputs):
+                try:
+                    inputs.release()
+                except Exception:
+                    traceback.print_exc()
+            try:
+                self.notify(message)
+            except Exception:
+                traceback.print_exc()
+            finally:
+                try:
+                    self.context.tasker.post_stop()
+                except Exception:
+                    traceback.print_exc()
+            raise TaskStopped(message) from error
+        self.frame_validated = True
+
     @contextmanager
     def coalesce_stop_queries(self, interval=.05):
         """Bound resident-helper IPC polling without caching window focus."""
@@ -71,6 +106,8 @@ class ForegroundSession:
             self._cached_stopping = False
 
     def stopped(self, *, fresh=False):
+        if self._frame_failure:
+            return True
         now = wall_time.monotonic()
         if (not fresh and self._stop_poll_interval > 0 and self._stop_checked_at is not None
                 and (self._cached_stopping or now-self._stop_checked_at < self._stop_poll_interval)):
@@ -199,12 +236,14 @@ def task_session(context, task_id):
         try:
             for inputs in list(session.inputs):
                 inputs.release()
-            if context.tasker.stopping:
+            if session._frame_failure or context.tasker.stopping:
                 _SESSIONS.pop(key, None)
         finally:
             # Native proxy/context lifetimes end with the callback. Persist
             # only pause accounting across successive pipeline nodes.
             session.inputs.clear()
+            session.evidence.release_frame()
+            session.frame_validated = False
             session.adapter = session._controller = session.context = None
             _RUNNING.pop(tasker_key, None)
             _ACTIVE.reset(token)

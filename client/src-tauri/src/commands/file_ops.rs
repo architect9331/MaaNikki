@@ -76,6 +76,7 @@ fn add_file_to_zip<W>(
     path: &Path,
     archive_name: &str,
     options: zip::write::SimpleFileOptions,
+    prepared: Option<&[u8]>,
 ) -> bool
 where
     W: Write + Seek,
@@ -95,7 +96,12 @@ where
         return false;
     }
 
-    if let Err(e) = io::copy(&mut file, zip) {
+    let copied = if let Some(bytes) = prepared {
+        zip.write_all(bytes)
+    } else {
+        io::copy(&mut file, zip).map(|_| ())
+    };
+    if let Err(e) = copied {
         log::warn!("写入 zip 失败 {}: {}", archive_name, e);
         return false;
     }
@@ -720,6 +726,9 @@ fn export_logs_blocking(
     let mut iter = all_entries.into_iter().peekable();
     let mut total_files_written: usize = 0;
     let mut first_volume_path: Option<PathBuf> = None;
+    // Prepare at most one PNG, retaining it across a volume boundary. Its actual
+    // encoded size participates in the existing volume budget.
+    let mut prepared_image: Option<Vec<u8>> = None;
 
     while iter.peek().is_some() {
         let volume_path = out_dir.join(format!(
@@ -739,13 +748,31 @@ fn export_logs_blocking(
         let mut central_dir_reserve: u64 = ZIP_EOCD_BYTES;
 
         while let Some(entry) = iter.peek() {
+            if has_extension(&entry.source_path, &["png"]) && prepared_image.is_none() {
+                let prepared = std::fs::read(&entry.source_path)
+                    .map_err(|error| error.to_string())
+                    .and_then(|bytes| super::diagnostic_images::sanitize_png(&bytes));
+                match prepared {
+                    Ok(bytes) => prepared_image = Some(bytes),
+                    Err(error) => {
+                        log::warn!("跳过无法处理的诊断截图 {}: {}", entry.archive_name, error);
+                        iter.next();
+                        continue;
+                    }
+                }
+            }
             let entry_cd_bytes = ZIP_CENTRAL_DIR_FIXED_BYTES + entry.archive_name.len() as u64;
-            let file_size = entry
-                .source_path
-                .metadata()
-                .ok()
-                .map(|m| m.len())
-                .unwrap_or(u64::MAX); // metadata 失败用极大值，保守触发预压缩
+            let file_size = prepared_image
+                .as_ref()
+                .map(|bytes| bytes.len() as u64)
+                .unwrap_or_else(|| {
+                    entry
+                        .source_path
+                        .metadata()
+                        .ok()
+                        .map(|m| m.len())
+                        .unwrap_or(u64::MAX)
+                });
 
             // 两阶段容量检查：先用保守估算快速通过大多数文件，
             // 估算触线时才实际预压缩一次拿精确值，避免每个文件都压两遍。
@@ -760,7 +787,12 @@ fn export_logs_blocking(
                     .saturating_add(entry_cd_bytes)
                     > MAX_VOLUME_BYTES
             {
-                match pre_compress_measure(&entry.source_path) {
+                let exact = if prepared_image.is_some() {
+                    Ok(file_size)
+                } else {
+                    pre_compress_measure(&entry.source_path)
+                };
+                match exact {
                     Ok(exact_delta) => {
                         let exact_delta = exact_delta.saturating_add(ZIP_LOCAL_HEADER_OVERHEAD);
                         if current_total
@@ -779,12 +811,24 @@ fn export_logs_blocking(
             }
 
             let entry = iter.next().expect("peek 已确认存在");
-            if add_file_to_zip(&mut zip, &entry.source_path, &entry.archive_name, options) {
+            let image_options = if prepared_image.is_some() {
+                options.compression_method(zip::CompressionMethod::Stored)
+            } else {
+                options
+            };
+            if add_file_to_zip(
+                &mut zip,
+                &entry.source_path,
+                &entry.archive_name,
+                image_options,
+                prepared_image.as_deref(),
+            ) {
                 central_dir_reserve = central_dir_reserve.saturating_add(entry_cd_bytes);
                 wrote_any = true;
                 volume_file_count += 1;
                 total_files_written += 1;
             }
+            prepared_image = None;
         }
 
         zip.finish()

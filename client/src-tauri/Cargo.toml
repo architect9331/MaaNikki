@@ -1,6 +1,6 @@
 [package]
 name = "mxu"
-version = "2.7.1-maanikki.12"
+version = "2.7.1-maanikki.13"
 description = "MaaNikki desktop client for Infinity Nikki automation, based on MXU"
 authors = ["MaaNikki contributors"]
 edition = "2021"
@@ -64,6 +64,7 @@ sentry = { version = "0.49.1", default-features = false, features = [
 sysinfo = "0.32"
 machine-uid = "0.5"
 sha2 = "0.10"
+image = { version = "=0.25.9", default-features = false, features = ["png"] }
 
 [profile.release]
 # 保留调试符号以生成 PDB 文件，便于崩溃分析

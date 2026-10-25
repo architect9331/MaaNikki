@@ -38,11 +38,15 @@ class CrownAction(CustomAction):
                 rt.log("巅峰赛：本期已完成，跳过。")
                 return True
             completed = rt.run_crown()
+            if not completed and not rt.stopped:
+                rt.diagnostic("crown", "巅峰赛流程未完成")
             if completed and not rt.stopped:
                 account.confirm("crown", "challenge", "completed", period=period)
             return completed
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             rt.log(f"巅峰赛未完成：{error}。")
+            if not rt.stopped:
+                rt.diagnostic("crown", str(error))
             return False
         finally:
             if not rt.stopped and not rt.finish("MaaNikki_Crown")[1]:

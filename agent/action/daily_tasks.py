@@ -80,11 +80,15 @@ class DailyRun(Executors):
             if attempt < 2 and not self.pause(.4):
                 break
         if crop is not None:
+            if not self.stopped:
+                self.diagnostic("daily_score", "无法可靠读取日常积分", details={
+                    "mode": self.mode, "roi": [x, y, w, h], "reads": self.score_reads[-8:]})
             try:
                 directory = ROOT / "logs/daily"
                 directory.mkdir(parents=True, exist_ok=True)
                 name = f"{self.mode}-score-{datetime.now():%Y%m%d-%H%M%S-%f}.png"
-                if cv2.imwrite(str(directory / name), crop):
+                from diagnostics import save_image
+                if save_image(directory / name, image, roi=[x, y, w, h]):
                     self.score_reads.append({"failure_image": name, "roi": [x, y, w, h]})
             except (OSError, cv2.error):
                 pass
@@ -292,6 +296,8 @@ class DailyRun(Executors):
             return False
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             self.log(f"{self.title}停止：{error}。")
+            if not self.stopped:
+                self.diagnostic("daily_tasks", str(error), details={"mode": self.mode})
             return False
         finally:
             self.handoff_page, self.handoff_ok = self.finish(f"MaaNikki_{self.prefix}") if not self.stopped else (None, False)

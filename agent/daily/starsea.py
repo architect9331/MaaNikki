@@ -275,6 +275,9 @@ class Starsea:
                 break
         if snapshot is not None:
             self.events.append(snapshot)
+        if not self.rt.stopped:
+            self.rt.diagnostic("crystal_route_match", "未取得能够可靠匹配路线的结晶地图", details={
+                "scan": scan, "snapshot": snapshot, "map_matching": teleporter.map_diagnostics})
         self.events.append({"type": "crystal_snapshot_missing", "elapsed": round(time.monotonic()-start, 3)})
         return None
 
@@ -324,7 +327,8 @@ class Starsea:
                         folder = ROOT / "logs/navigation"
                         folder.mkdir(parents=True, exist_ok=True)
                         path = folder / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-crystal-map.png")
-                        if cv2.imwrite(str(path), teleporter.last_frame[:680]):
+                        from diagnostics import save_image
+                        if save_image(path, teleporter.last_frame):
                             self.events.append({"type": "crystal_map_frame", "file": path.name})
                     except (OSError, cv2.error):
                         pass
@@ -340,6 +344,8 @@ class Starsea:
         except (ValueError, KeyError, OSError, RuntimeError, cv2.error) as error:
             self.events.append({"type": "stopped", "reason": str(error)})
             self.rt.log(f"星光结晶收集停止：{error}")
+            if not self.rt.stopped:
+                self.rt.diagnostic("crystal_collection", str(error), details={"events": self.events[-8:]})
             return False
         finally:
             self.report("crystals")

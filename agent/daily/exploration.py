@@ -2,31 +2,27 @@
 from __future__ import annotations
 
 from contextlib import nullcontext
-from task_control import active_session, task_time as time
+import time
+from task_control import active_session
 
 from navigation.controller import ForegroundInput
 from navigation.models import NavigationError
 from performance import checkpoint, count, measure
+from scheduling import PeriodicSchedule
 from .runtime import Runtime, parameters
 
 
-class AssistSchedule:
+class AssistSchedule(PeriodicSchedule):
     """Wall-clock checks; fishing exclusively owns input during its session."""
     INTERVALS = {"Fishing": .3, "Clear": .3, "Dialogue": .5, "Pickup": .1}
     COOLDOWNS = {"Fishing": 5, "Clear": .3, "Dialogue": .25, "Pickup": .02}
 
-    def __init__(self, enabled):
-        self.next_check = {name: 0.0 for name in self.INTERVALS if enabled.get(name, False)}
-
-    def due(self, now):
-        return [name for name, deadline in self.next_check.items() if now >= deadline]
-
-    def checked(self, name, now, *, acted=False):
-        interval = self.COOLDOWNS[name] if acted else self.INTERVALS[name]
-        self.next_check[name] = now+interval
+    def __init__(self, enabled, *, now=0.0):
+        intervals = {name: value for name, value in self.INTERVALS.items() if enabled.get(name, False)}
+        super().__init__(intervals, self.COOLDOWNS, now=now)
 
     def delay(self, now, *, clearing=False):
-        deadline = self.next_check["Clear"] if clearing else min(self.next_check.values())
+        deadline = self.deadline(["Clear"] if clearing else None)
         return min(.1, max(0, deadline-now))
 
 
@@ -48,7 +44,8 @@ class Exploration(Runtime):
         guard = ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
         binding = self.game_keys.get("interact")
         self.log("开荒辅助已启动：键盘交互支持切出游戏后继续拾取、对白和跳过；鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
-        schedule, waiting_clear = AssistSchedule(enabled), False
+        schedule = AssistSchedule(enabled, now=time.monotonic())
+        waiting_clear = False
         previous_mode = None
 
         def available():
@@ -113,13 +110,10 @@ class Exploration(Runtime):
                 if not available():
                     self.pause(.1)
                     continue
-                delay = schedule.delay(time.monotonic(), clearing=waiting_clear)
-                if delay:
-                    self.pause(delay)
-                    continue
-                # One capture per decision; after any input the next iteration
-                # captures again. Do not carry detections across scene changes.
-                frame = self.capture()
+                # A single async Maa capture overlaps the last part of the idle
+                # period. Inputs always finish before posting the next capture.
+                deadline = schedule.deadline(["Clear"] if waiting_clear else None)
+                frame = self.capture_at(deadline, available=available)
                 if frame is None:
                     self.pause(.1)
                     continue
@@ -129,7 +123,12 @@ class Exploration(Runtime):
                     schedule.checked("Clear", time.monotonic())
                     continue
                 icons = {"Clear": "IconSkip", "Dialogue": "IconSkipDialog", "Pickup": "IconPickupFeature"}
-                for helper in schedule.due(time.monotonic()):
+                # Share one frame with checks due within 10 ms; keep feature
+                # priority and submit at most one input for this decision.
+                due = schedule.due(time.monotonic()+.01)
+                count("assist.decisions")
+                count("assist.checks_due", len(due))
+                for helper in due:
                     if helper == "Fishing":
                         from .fishing import fishing_opportunity, run_fishing
                         schedule.checked(helper, time.monotonic())

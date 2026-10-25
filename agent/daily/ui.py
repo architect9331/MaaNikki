@@ -52,6 +52,8 @@ def catalog(resource):
 class GameUI:
     # Confirmed parent relationships allow Esc without returning to the world.
     PAGE_PARENTS = {
+        "MaaNikki_MenuReady": "MaaNikki_MainDetected",
+        "MaaNikki_Mailbox_PageReady": "MaaNikki_MenuReady",
         "MaaNikki_Zhaoxi_DailyReady": "MaaNikki_CalendarReady",
         "MaaNikki_Xinghai_DailyReady": "MaaNikki_CalendarReady",
         "MaaNikki_RealmPageReady": "MaaNikki_CalendarReady",
@@ -203,10 +205,13 @@ class GameUI:
         with measure("recognition.match."+name):
             rates = cv2.matchTemplate(target, template, method, mask=mask)
         rates = np.nan_to_num(rates, copy=False, nan=-1, posinf=-1, neginf=-1)
+        best_score = None
         boxes = []
         th, tw = template.shape[:2]
         for _ in range(count):
             _, score, _, (px, py) = cv2.minMaxLoc(rates)
+            if best_score is None:
+                best_score = float(score)
             if score < threshold:
                 break
             boxes.append([x+px, y+py, tw, th])
@@ -220,6 +225,9 @@ class GameUI:
             overlap = np.maximum(0, tw-np.abs(xx+left-px))*np.maximum(0, th-np.abs(yy+top-py))
             view = rates[top:bottom, left:right]
             view[overlap > tw*th*.5] = -1
+        self.rt.evidence.observe("asset", name=name, roi=roi, threshold=threshold,
+                                 score=best_score, hit=bool(boxes), template=template_path,
+                                 method=method, gray=gray, color=color)
         return boxes
 
     def asset(self, name, **kwargs):
@@ -447,9 +455,15 @@ class GameUI:
                 return False
         return False
 
-    def enter_page(self, click, destination, *, source=None, recover=None, attempts=3, seconds=5):
+    def enter_page(self, click, destination, *, source=None, recover=None, attempts=3, seconds=5,
+                   diagnostic_context=None):
         """Recheck the source or recover it before every bounded entrance retry."""
         events, failed = [], False
+        def failure_frame(attempt, stage):
+            return self.rt.diagnostic("page_entry", stage, details={
+                "attempt": attempt, "source": self.page_name(source),
+                "destination": self.page_name(destination), "events": events[-6:],
+                "context": diagnostic_context or {}}) or {}
         # Without a known source, an input can only be submitted once.
         attempts = attempts if source else 1
         try:
@@ -473,7 +487,7 @@ class GameUI:
                         return True
                     failed = True
                     events.append({"type": "source_unavailable", "attempt": attempt,
-                                   **self.entry_failure_frame(attempt)})
+                                   **failure_frame(attempt, "source_unavailable")})
                     if not recover:
                         self.rt.log("未确认目标页面或入口所在页面，本项停止。")
                         return False
@@ -499,7 +513,7 @@ class GameUI:
                 failed = True
                 events.append({"type": "not_arrived", "attempt": attempt,
                                "source_visible": bool(source and self.page_matches(source)),
-                               **self.entry_failure_frame(attempt)})
+                               **failure_frame(attempt, "not_arrived")})
                 if attempt < attempts:
                     self.rt.log(f"未确认进入目标页面，将重新检查并重试（{attempt+1}/{attempts}）。")
             self.rt.log("多次尝试后仍未进入目标页面，本项停止。")
@@ -508,34 +522,18 @@ class GameUI:
             if failed:
                 self.report_entry(source, destination, events)
 
-    def entry_failure_frame(self, attempt):
-        try:
-            from .settings import ROOT
-            frame = self.rt.capture()
-            if frame is None:
-                return {"image_status": "capture_unavailable"}
-            directory = ROOT / "logs/navigation"
-            directory.mkdir(parents=True, exist_ok=True)
-            name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+f"-page-attempt{attempt}.png"
-            # Keep interface features while excluding the account identifier.
-            ok, png = cv2.imencode(".png", frame[:680])
-            if ok:
-                (directory / name).write_bytes(png.tobytes())
-                return {"image": name}
-        except (OSError, cv2.error):
-            pass
-        return {"image_status": "save_failed"}
+    @staticmethod
+    def page_name(page):
+        return getattr(page, "__name__", str(page)) if page else None
 
     def report_entry(self, source, destination, events):
-        def name(page):
-            return getattr(page, "__name__", str(page)) if page else None
         try:
             from .settings import ROOT
             directory = ROOT / "logs/navigation"
             directory.mkdir(parents=True, exist_ok=True)
             stamp = datetime.now()
             record = {"time": stamp.isoformat(timespec="seconds"), "operation": "page_entry",
-                      "source": name(source), "destination": name(destination),
+                      "source": self.page_name(source), "destination": self.page_name(destination),
                       "stopped": bool(self.rt.stopped),
                       "status": "stopped" if self.rt.stopped else
                                 "recovered" if any(e["type"] == "arrived" for e in events) else "failed",
@@ -714,20 +712,9 @@ class GameUI:
         if frame is not None:
             main = self.rt.recognize("MaaNikki_MainDetected", image=frame)
             record["main_detected"] = bool(main and main.hit)
-        try:
-            if frame is not None and frame.shape[:2] == (720, 1280):
-                from .settings import ROOT
-                folder = ROOT / "logs/navigation"
-                folder.mkdir(parents=True, exist_ok=True)
-                filename = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+f"-map-{stage}.png"
-                # Keep page features; exclude the account identifier at bottom.
-                ok, png = cv2.imencode(".png", frame[:680])
-                if ok:
-                    (folder / filename).write_bytes(png.tobytes())
-                    record["file"] = filename
-                    record["roi"] = [0, 0, 1280, 680]
-        except (OSError, ValueError, cv2.error):
-            self.rt.log("开地图失败时的截图未能保存。")
+        record["evidence"] = self.rt.diagnostic("map_"+stage, reason, image=frame,
+                                                details={"attempt": attempt,
+                                                         "main_detected": record.get("main_detected")})
         event(record)
 
     def realm(self, kind):

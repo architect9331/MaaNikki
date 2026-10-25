@@ -32,6 +32,8 @@ class BlessingPursuitAction(CustomAction):
             pursuit = FiveStarInventory(rt, catalog, folder)
             runner = pursuit if mode == "inventory_only" else FiveStarPursuit(pursuit)
             ok = runner.run()
+            if not ok and not rt.stopped:
+                rt.diagnostic("blessing_pursuit", "祝福闪光处理未完成")
             progress_path = pursuit.report.get("inventory", {}).get("path") or pursuit.report.get("startup", {}).get("path")
             rt.log(f"五星处理记录：{folder / 'pursuit.json'}。"
                    f"收集进度：{progress_path or pursuit.store.last_scan_path}。", detail=True)
@@ -45,6 +47,8 @@ class BlessingPursuitAction(CustomAction):
             raise
         except (RescanSlot, OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             reason = "焦点变化使当前升级或列表状态失效，请重新运行核对" if isinstance(error, RescanSlot) else str(error)
+            if not rt.stopped:
+                rt.diagnostic("blessing_pursuit", reason)
             if pursuit is not None:
                 pursuit.report.update(complete=False, phase="interrupted", reason=reason)
                 if pursuit.organization is not None:

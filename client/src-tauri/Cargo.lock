@@ -3127,7 +3127,7 @@ dependencies = [
 
 [[package]]
 name = "mxu"
-version = "2.7.1-maanikki.12"
+version = "2.7.1-maanikki.13"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -3136,6 +3136,7 @@ dependencies = [
  "clap",
  "flate2",
  "futures-util",
+ "image",
  "libc",
  "log",
  "maa-framework",

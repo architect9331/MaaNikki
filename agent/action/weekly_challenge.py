@@ -46,6 +46,7 @@ class WeeklyChallengeAction(CustomAction):
                 return False
             count = read_count(rt)
             if count is None:
+                rt.diagnostic("weekly_count", "无法读取本周挑战次数")
                 rt.log("无法读取本周挑战次数，本次停止，未继续消耗活跃能量。")
                 return False
             finished, total = count
@@ -83,6 +84,8 @@ class WeeklyChallengeAction(CustomAction):
                     rt.log("未能恢复后续幻境流程，本次停止。")
             return all(results)
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
+            if not rt.stopped:
+                rt.diagnostic("weekly_challenge", str(error))
             rt.log(f"每周幻境停止：{error}")
             return False
         finally:
