@@ -318,7 +318,7 @@ class Gameplay:
             self.rt.diagnostic("jihua_table", reason, details={
                 "prompt_roi": INTERACTION_ROI, "approach_steps": steps,
                 "planned_move_seconds": round(steps*.5, 2)})
-            self.rt.log(reason+"，现场已保存。")
+            self.rt.log(reason+"。")
         return False
 
     def jihua_select_target(self):
@@ -479,7 +479,7 @@ class Gameplay:
             else:
                 if kind == "paradise" and not empty:
                     self.monthly_diagnostic(kind, "claim_unconfirmed", "未能确定一键领取按钮状态")
-                    self.rt.log("乐园构想领取按钮状态未确认，已保存现场，本项未完成。")
+                    self.rt.log("乐园构想领取按钮状态未确认，本项未完成。")
                     return False
             if not self.rt.pause(.5):
                 return False
@@ -532,5 +532,5 @@ class Gameplay:
                 return False
             if not self.rt.main():
                 self.monthly_diagnostic(kind, "exit_unconfirmed", "未能返回主界面")
-                self.rt.log(f"{label}处理后未能返回主界面，现场已记录，本项未正常结束。")
+                self.rt.log(f"{label}处理后未能返回主界面，本项未正常结束。")
                 return False

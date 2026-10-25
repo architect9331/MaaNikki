@@ -6,8 +6,8 @@ from task_control import task_time as time
 import cv2
 import numpy as np
 from .camera import camera_heading
-from .frames import minimap_crop, reference_frame
-from .matching import MIN_KNOWN_COVERAGE, coverage, luma, match_map
+from .frames import minimap_sample, reference_frame
+from .matching import MIN_KNOWN_COVERAGE, coverage, match_map
 from .models import MINIMAP_POSITION_SCORE, MapSpec, NavigationError
 
 
@@ -68,14 +68,14 @@ class Locator:
                progress=None):
         self.last_frame = frame
         reference = reference_frame(frame)
-        gray = luma(minimap_crop(reference))
-        yy, xx = np.indices(gray.shape)
-        radius_squared = (xx-100)**2+(yy-100)**2
-        ring = (radius_squared <= 100**2) & (radius_squared > 13**2)
+        patch = minimap_sample(frame, self.spec)
         scale = self.spec.scale/1.5
-        patch = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
-        mask = cv2.resize(ring.astype(np.uint8), (patch.shape[1], patch.shape[0]),
-                          interpolation=cv2.INTER_NEAREST)
+        anchor = ((patch.shape[1]-1)/2, (patch.shape[0]-1)/2)
+        yy, xx = np.indices(patch.shape, dtype=np.float32)
+        xx, yy = (xx-anchor[0])/scale, (yy-anchor[1])/scale
+        radius_squared = xx**2+yy**2
+        ring = (radius_squared <= (self.spec.radius*1.5)**2) & (radius_squared > 13**2)
+        mask = ring.astype(np.uint8)
         if hint is None and self.previous:
             hint = self.previous.x, self.previous.y
         if hint is None:
@@ -90,9 +90,10 @@ class Locator:
 
         def attempt(name, sample, sample_mask, floor, *, edges=False):
             try:
-                result = match_map(local, sample, sample_mask, minimum_score=floor, edges=edges)
+                result = match_map(local, sample, sample_mask, minimum_score=floor,
+                                   edges=edges, anchor=anchor)
                 mx, my, score, peak = result
-                matches[name] = {"position": [mx+x+.25, my+y+.25], "score": score, "local_peak": peak}
+                matches[name] = {"position": [mx+x, my+y], "score": score, "local_peak": peak}
                 return result
             except (NavigationError, cv2.error) as error:
                 matches[name] = {"error": str(error)}
@@ -107,25 +108,23 @@ class Locator:
         method = "luma"
         if selected is None or selected[2] < match_floor:
             edge_ring = (radius_squared <= 96**2) & (radius_squared > 16**2)
-            edge_mask = cv2.resize(edge_ring.astype(np.uint8), (patch.shape[1], patch.shape[0]),
-                                   interpolation=cv2.INTER_NEAREST)
-            edge_patch = cv2.resize(gray, (patch.shape[1], patch.shape[0]), interpolation=cv2.INTER_AREA)
+            edge_mask = edge_ring.astype(np.uint8)
+            edge_patch = patch
             edge = attempt("known_terrain_edges", edge_patch, edge_mask, match_floor, edges=True)
             if edge is not None and edge[2] >= match_floor:
                 selected, method = edge, "known_terrain_edges"
             elif initial is not None:
                 # A failed edge candidate has no vote over this fallback.
                 lx, ly = initial[:2]
-                direction, confidence = self.camera_heading(reference, lx+x+.25, ly+y+.25)
+                direction, confidence = self.camera_heading(reference, lx+x, ly+y)
                 matches["outside_camera_cone"] = {"heading": direction, "confidence": confidence,
                                                    "accepted": False}
                 if progress:
                     progress()
                 if direction is not None and confidence >= .5:
-                    angles = np.degrees(np.arctan2(xx-100, 100-yy))
+                    angles = np.degrees(np.arctan2(xx, -yy))
                     outside = edge_ring & (np.abs((angles-direction+180) % 360-180) > 55)
-                    cone_mask = cv2.resize(outside.astype(np.uint8), (patch.shape[1], patch.shape[0]),
-                                          interpolation=cv2.INTER_NEAREST)
+                    cone_mask = outside.astype(np.uint8)
                     cone_floor = max(.65, match_floor)
                     cone = attempt("outside_camera_cone", edge_patch, cone_mask, cone_floor)
                     diagnostics = matches["outside_camera_cone"]
@@ -133,14 +132,14 @@ class Locator:
                     if cone is not None:
                         cx, cy, score, peak = cone
                         agreement = float(np.hypot(cx-lx, cy-ly))
-                        known_fraction = coverage(local, patch.shape, cone_mask, (cx, cy))
+                        known_fraction = coverage(local, patch.shape, cone_mask, (cx+.5, cy+.5))
                         accepted = (score >= cone_floor and peak >= .02 and agreement <= 2
                                     and known_fraction >= MIN_KNOWN_COVERAGE)
                         diagnostics.update(method_agreement=agreement, known_fraction=known_fraction, accepted=accepted)
                         if accepted:
                             selected, method = cone, "outside_camera_cone"
-        px, py, score, detail = selected or (hint[0]-x-.25, hint[1]-y-.25, 0.0, 0.0)
-        px, py = px+x+.25, py+y+.25
+        px, py, score, detail = selected or (hint[0]-x, hint[1]-y, 0.0, 0.0)
+        px, py = px+x, py+y
         candidate = [px, py]
         elapsed = time.monotonic()-self.position_time
         unreliable = selected is None or not np.isfinite(score) or (floor is not None and score < floor)
@@ -152,7 +151,9 @@ class Locator:
         self.heading_diagnostics.update(position_method="correlation_rejected" if unreliable else
             "speed_rejected" if rejected else "map_correlation", position_reliable=not (unreliable or rejected),
             candidate_position=candidate, position_elapsed=elapsed, score=score, local_peak=detail,
-            position_match=method, position_matches=matches, position_score_floor=floor)
+            position_match=method, position_matches=matches, position_score_floor=floor,
+            position_sampling="native_centered_antialias", position_center=list(self.spec.center),
+            position_patch_shape=list(patch.shape))
         # Every consumer receives the same trust decision, including local
         # insect approaches and teleport checks that do not use Navigator.
         if unreliable or rejected:

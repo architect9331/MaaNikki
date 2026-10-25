@@ -10,6 +10,10 @@ class NavigationError(ValueError):
 
 
 MINIMAP_POSITION_SCORE = .55
+# Coordinates use pixel edges, shared by native sampling and reference crops.
+# Paired player-centered maps place the minimap arrow pivot at (181, 124) in 1080p.
+MINIMAP_CENTER = (181/1.5, 124/1.5)
+MINIMAP_RADIUS = 100/1.5
 
 
 @dataclass(frozen=True)
@@ -21,8 +25,8 @@ class MapSpec:
     width: int
     height: int
     bigmap_scale: float = 0.465
-    center: tuple[float, float] = (120.667, 81.333)
-    radius: float = 66.667
+    center: tuple[float, float] = MINIMAP_CENTER
+    radius: float = MINIMAP_RADIUS
     position_score_floor: float | None = MINIMAP_POSITION_SCORE
 
 

@@ -518,7 +518,7 @@ const collectOptionOverrides = (
 
 /**
  * 为单个任务生成 pipeline override JSON
- * 返回数组格式的 JSON 字符串，MaaFramework 会按顺序依次覆盖（同名字段完整替换）
+ * 返回数组格式的 JSON 字符串，自定义动作参数先合并，其余字段保留顺序覆盖语义。
  *
  * v2.3.0 覆盖顺序：global_option < resource.option < controller.option < task.option
  */
@@ -626,7 +626,7 @@ export const generateTaskPipelineOverride = (
     }
   }
 
-  return JSON.stringify(overrides);
+  return JSON.stringify(mergeCustomActionParameters(overrides));
 };
 
 /**
@@ -655,6 +655,37 @@ const deepMergeObjects = (...sources: Record<string, unknown>[]): Record<string,
     }
   }
   return result;
+};
+
+/**
+ * 多个选项可以分别提供同一动作的模式、路线等参数。
+ * MaaFramework 会整块替换 custom_action_param，因此逐项累积对象参数，
+ * 保持其他 Pipeline 字段（包括数组）的原有覆盖顺序；非对象参数仍按整块替换处理。
+ */
+const mergeCustomActionParameters = (
+  overrides: Record<string, unknown>[],
+): Record<string, unknown>[] => {
+  const parametersByNode = new Map<string, Record<string, unknown>>();
+  return overrides.map((override) => {
+    const merged = { ...override };
+    for (const [nodeName, value] of Object.entries(override)) {
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) continue;
+      const node = value as Record<string, unknown>;
+      if (!Object.prototype.hasOwnProperty.call(node, 'custom_action_param')) continue;
+      const parameters = node.custom_action_param;
+      if (parameters === null || typeof parameters !== 'object' || Array.isArray(parameters)) {
+        parametersByNode.delete(nodeName);
+        continue;
+      }
+      const combined = deepMergeObjects(
+        parametersByNode.get(nodeName) ?? {},
+        parameters as Record<string, unknown>,
+      );
+      parametersByNode.set(nodeName, combined);
+      merged[nodeName] = { ...node, custom_action_param: combined };
+    }
+    return merged;
+  });
 };
 
 /**

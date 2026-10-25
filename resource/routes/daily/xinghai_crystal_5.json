@@ -3,7 +3,7 @@
   "id": "xinghai_crystal_5",
   "map": "starsea",
   "start_radius": 9,
-  "timeout": 240,
+  "timeout": 900,
   "capacity": null,
   "material": "",
   "teleport": {

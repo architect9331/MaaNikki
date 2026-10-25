@@ -1,4 +1,4 @@
-"""Route geometry shared by movement, recovery and partial-marker selection."""
+"""Route geometry shared by movement, recovery and crystal-marker selection."""
 from __future__ import annotations
 
 import math

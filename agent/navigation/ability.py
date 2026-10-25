@@ -8,6 +8,8 @@ import numpy as np
 from .models import NavigationError
 
 WHITE = ([0, 0, 230], [180, 60, 255])
+# List thumbnails are smaller than wheel icons, in both list layouts.
+LIST_ICON_SCALE = 5/8
 SLOTS = ((1063, 257), (1205, 433), (1199, 640), (1048, 829),
          (641, 829), (498, 640), (485, 433), (610, 257))
 
@@ -68,26 +70,31 @@ class Ability:
                 if self.selected_plan() != plan:
                     raise NavigationError("未能确认允许修改的能力方案，未更改能力轮盘。")
                 x, y = SLOTS[slot-1]
-                save = self.ui.feature(asset="ButtonAbilitySave", threshold=.75)
                 def permitted_plan():
-                    return bool(self.ui.asset("IconAbilityFeature", threshold=.99)
-                                and self.selected_plan() == plan and not save())
-                def restore_plan():
-                    return self.rt.main() and self.ui.ability_page() and self.change_plan(plan)
-                if not self.ui.enter_page(lambda: self.rt.action(
-                        "Click", target=[round(x*2/3), round(y*2/3)]), save,
-                        source=permitted_plan, recover=restore_plan):
+                    return bool(self.ui.asset("IconAbilityFeature", threshold=.99,
+                                             method=cv2.TM_CCORR_NORMED)
+                                and self.selected_plan() == plan)
+                # Save is also visible before choosing a slot. It cannot be
+                # used as an entrance destination that skips the slot click.
+                if (not self.ui.wait_page(permitted_plan) or not self.rt.action(
+                        "Click", target=[round(x*2/3), round(y*2/3)])
+                        or not self.ui.wait_page(permitted_plan)):
                     return False
-                if not self.ui.asset("ButtonAbilityConfig"):
-                    text = self.ui.text(self.ui.roi("AreaAbilityChange"))
-                    if len(text.split()) < 8 and not self.ui.click_asset("ButtonAbilityChangeList"):
-                        return False
-                if not self.ui.find(roi=self.ui.roi("AreaAbilityChange"), text=self.label):
-                    raise NavigationError(f"能力配置列表中未找到{self.label}，请检查该能力是否已解锁。")
-                if not self.ui.wait_page(save) or not self.ui.click_asset("ButtonAbilitySave"):
+                self.actions.event({"type": "ability_slot_requested", "ability": self.ability_id,
+                                    "plan": plan, "slot": slot})
+                # The text is a category heading in the grouped list. Choose
+                # the actual icon at the list thumbnail size in either layout.
+                # Do not infer the layout from OCR word counts or a swap button.
+                if not self.ui.find(roi=self.ui.roi("AreaAbilityChange"), asset=self.icon,
+                                    scale=LIST_ICON_SCALE, color=WHITE, threshold=.8):
+                    raise NavigationError(f"能力列表中未能识别{self.label}图标，本项停止。")
+                def configured():
+                    return permitted_plan() and self.find_slot() == slot
+                if not self.ui.wait_page(configured):
+                    raise NavigationError(f"未能确认{self.label}已配置到快捷键{slot}，尚未保存搭配。")
+                if not self.ui.click_asset("ButtonAbilitySave"):
                     return False
-                if (not self.ui.wait_page(asset="IconAbilityFeature") or self.selected_plan() != plan
-                        or self.find_slot() != slot):
+                if not self.ui.wait_page(configured):
                     raise NavigationError(f"未能确认所选方案已装备{self.label}，本项停止。")
                 self.actions.event({"type": "ability_configured", "ability": self.ability_id, "plan": plan, "slot": slot})
         self.slot = slot
@@ -109,7 +116,7 @@ class Ability:
         raise NavigationError(f"已切换{self.label}快捷键，但未能确认当前能力图标。")
 
     def find_slot(self):
-        frame = self.rt.capture()
+        frame = self.rt.frame()
         if frame is None:
             raise NavigationError("无法读取能力轮盘，未更改能力配置。")
         for index, (x, y) in enumerate(SLOTS, 1):

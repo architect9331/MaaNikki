@@ -242,17 +242,17 @@ class DailyRun(Executors):
                     self.log(f"{card.rule.label}：{reason}，本轮跳过。")
             free = [c for c in available if not c.rule.energy]
             expected_free = sum(c.rule.score for c in free)
-            self.log(f"当前 {score}/500；可执行的不耗体力任务预计贡献 {expected_free} 分。"
+            self.log(f"当前 {score}/500；可执行的不耗活跃能量任务预计贡献 {expected_free} 分。"
                      + ("优先仅使用这些任务凑分。" if score+expected_free >= 500 else
                         "先做这些任务，不足部分再考虑当天幻境。" if self.mode == "zhaoxi" else
-                        "先做可执行任务；其余任务不会使用幻境体力补分。"))
+                        "先做可执行任务；其余任务不会使用幻境活跃能量补分。"))
             while score < 500 and any(c.slot not in self.attempted for c in free) and not self.stopped:
                 if not self.main():
                     return False
                 self.free_batch(free, score)
                 score = self.check_group()
                 if score is None:
-                    self.log("本批积分识别失败，不继续消耗体力。")
+                    self.log("本批积分识别失败，不继续消耗活跃能量。")
                     return False
                 # Every batch consumes at least one unattempted card. Recheck
                 # only between batches, but exhaust free alternatives before
@@ -266,7 +266,7 @@ class DailyRun(Executors):
                     while predicted < 500 and pending and not self.stopped:
                         card = select_energy(pending, predicted, preferred)
                         pending.remove(card)
-                        self.log(f"不耗体力任务不足，使用{card.rule.label}补分；保留其余体力。")
+                        self.log(f"不耗活跃能量任务不足，使用{card.rule.label}补分；保留其余活跃能量。")
                         ok = self.energy(card, preferred, overrides)
                         self.events.append({"slot": card.slot, "task": card.rule.key, "success": ok})
                         if ok:
@@ -333,7 +333,7 @@ class DailyRun(Executors):
                 self.log("朝夕心愿已完成 500 分，奖励处理结束。" if claimed else
                          "朝夕心愿已达 500 分，但奖励未能确认领取。")
                 return claimed
-            self.log(f"清体力后朝夕心愿实际 {score}/500；不再追加挑战，剩余任务需要手动完成。")
+            self.log(f"清活跃能量后朝夕心愿实际 {score}/500；不再追加挑战，剩余任务需要手动完成。")
             return False
         finally:
             self.handoff_page, self.handoff_ok = self.finish("MaaNikki_RealmChallenge") if not self.stopped else (None, False)

@@ -240,6 +240,9 @@ class RouteActions:
         ok = False
         if kind == "wait":
             self.inputs.wait(point.params["seconds"])
+            if point.params.get("compare_map_positions") is True:
+                from .position_review import compare_map_positions
+                compare_map_positions(self.rt, self.teleporter, point, self.event)
             ok = True
         elif kind == "teleport":
             # Navigation's preparation hook already handled this point.

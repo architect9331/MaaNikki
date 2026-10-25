@@ -108,6 +108,7 @@ class BlessingLocker(InventoryScanner):
         if error is not None:
             diagnostic.update(error=error, page=self.image(prefix + "_page.png", frame),
                               quantity_failure=self.report.get("quantity_failure"))
+            self.rt.diagnostic("blessing_quantity", error, image=frame, details=diagnostic)
         write_json(self.folder / (prefix + ".json"), diagnostic)
 
     def frame(self, generation):
@@ -364,7 +365,9 @@ class BlessingLocker(InventoryScanner):
         # Both states compete over the COMPLETE glyph, including the chain in
         # the confirmed locked screenshot. The common lock body is insufficient.
         scores = {state: 0.0 for state in self.lock_templates}
+        shackle_scores = {state: 0.0 for state in self.lock_templates}
         height, width = raw.shape
+        shackle_height = height // 2
         for dy in range(-2, 3):
             for dx in range(-2, 3):
                 aligned = cv2.warpAffine(raw, np.float32([[1, 0, dx], [0, 1, dy]]),
@@ -373,6 +376,11 @@ class BlessingLocker(InventoryScanner):
                     union = np.count_nonzero(aligned | template)
                     score = np.count_nonzero(aligned & template) / union if union else 0
                     scores[state] = max(scores[state], float(score))
+                    shackle = aligned[:shackle_height]
+                    reference = template[:shackle_height]
+                    union = np.count_nonzero(shackle | reference)
+                    score = np.count_nonzero(shackle & reference) / union if union else 0
+                    shackle_scores[state] = max(shackle_scores[state], float(score))
         ranked = sorted(scores, key=scores.get, reverse=True)
         best, other = ranked
         # Preserve anti-aliased shackle/chain pixels that a binary white mask
@@ -383,15 +391,30 @@ class BlessingLocker(InventoryScanner):
         gray_scores = {state: float(cv2.matchTemplate(gray, template, cv2.TM_CCOEFF_NORMED).max())
                        for state, template in self.lock_gray_templates.items()}
         gray_best, gray_other = sorted(gray_scores, key=gray_scores.get, reverse=True)
+        shackle_best, shackle_other = sorted(shackle_scores, key=shackle_scores.get, reverse=True)
         self.report["lock_recognition"] = {"scores": scores, "best": best,
                                            "minimum_score": .90, "minimum_margin": .06,
                                            "gray_scores": gray_scores, "gray_best": gray_best,
-                                           "gray_minimum_score": .94, "gray_minimum_margin": .06}
+                                           "gray_minimum_score": .94, "gray_minimum_margin": .06,
+                                           "shackle_scores": shackle_scores,
+                                           "shackle_best": shackle_best,
+                                           "shackle_height": shackle_height,
+                                           "shackle_minimum_score": .90,
+                                           "shackle_minimum_margin": .06}
         decisions = set()
         if scores[best] >= .90 and scores[best] - scores[other] >= .06:
             decisions.add(best)
         if gray_scores[gray_best] >= .94 and gray_scores[gray_best] - gray_scores[gray_other] >= .06:
             decisions.add(gray_best)
+        # Both states share most of the lock body. A strong full-glyph match
+        # may therefore miss the margin even when the open shackle is clear.
+        # Require both the full glyph and a separate discriminating match;
+        # conflicting evidence still leaves the state unknown.
+        full_match = ((shackle_best == best and scores[best] >= .90)
+                      or (shackle_best == gray_best and gray_scores[gray_best] >= .94))
+        if (full_match and shackle_scores[shackle_best] >= .90
+                and shackle_scores[shackle_best] - shackle_scores[shackle_other] >= .06):
+            decisions.add(shackle_best)
         state = next(iter(decisions)) if len(decisions) == 1 else None
         self.report["lock_recognition"]["state"] = state
         return state
@@ -457,8 +480,11 @@ class BlessingLocker(InventoryScanner):
             previous = current
         self.counter += 1
         self.image(f"lock_{self.counter:05d}_unknown.png", frame)
-        raise RuntimeError("锁按钮已点击，但未能确认结果，已停止且不会再次点击" if submitted
-                           else "操作前无法区分锁定与解锁，未点击锁按钮")
+        reason = ("锁按钮已点击，但未能确认结果，已停止且不会再次点击" if submitted
+                  else "操作前无法区分锁定与解锁，未点击锁按钮")
+        self.rt.diagnostic("blessing_lock_state", reason, image=frame,
+                           details=self.report.get("lock_recognition", {}))
+        raise RuntimeError(reason)
 
     def selected(self, frame, box):
         x, y, w, h = box

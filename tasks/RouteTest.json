@@ -30,6 +30,12 @@
           "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"mode": "movement"}}}
         },
         {
+          "name": "map_compare",
+          "label": "大小地图定位对照",
+          "description": "从星梦群屿·海滩出发，在起点及路线二四个点停稳，记录大小地图坐标、差值和截图。",
+          "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"mode": "movement", "route": "xinghai_bottle_map_compare", "file": ""}}}
+        },
+        {
           "name": "home",
           "label": "家园完整流程",
           "description": "按家园路线执行钓星、下落攻击、传送和等待，消耗实际钓星次数。",

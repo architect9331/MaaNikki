@@ -44,7 +44,7 @@
     "recognition": "TemplateMatch",
     "roi": [285, 60, 930, 625],
     "template": "game/shop/free.png",
-    "threshold": 0.85,
+    "threshold": 0.75,
     "method": 5,
     "action": "DoNothing"
   },

@@ -28,22 +28,22 @@ def stack_badge(frame, box):
             continue
         possible = True
         mask = (labels[by:by + bh, bx:bx + bw] == label).astype(np.uint8)
-        if bw < 24 or bh < 12 or area / (bw * bh) < .60 or mask[-3:].mean() < .75:
+        if bw < 24 or bh < 12 or area / (bw * bh) < .60:
             continue
-        # Fill holes (the digits) while retaining the tab's rounded outline.
-        # Everything outside this shape becomes white before digit OCR.
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        filled = np.zeros_like(mask)
-        cv2.drawContours(filled, contours, -1, 1, cv2.FILLED)
+        hull = cv2.convexHull(np.vstack([contour.reshape(-1, 2) for contour in contours]))
+        outline = np.zeros_like(mask)
+        cv2.drawContours(outline, [hull], -1, 1, cv2.FILLED)
+        # Digits such as 18 can touch the bottom edge of a genuine tab. Check
+        # the backing's outline here, rather than treating dark digits as gaps.
+        if outline[-3:].mean() < .75:
+            continue
+        # Preserve holes and open notches alike: either can be part of a digit.
+        # Only the area outside the confirmed tab outline becomes white.
         patch = crop[by:by + bh, bx:bx + bw].copy()
-        if np.count_nonzero((patch.max(axis=2) < 195) & (filled > 0)) < 8:
-            # A digit touching the tab edge is an open notch, not a contour
-            # hole. Restore it only after the original tab-shape checks pass.
-            hull = cv2.convexHull(np.vstack([contour.reshape(-1, 2) for contour in contours]))
-            cv2.drawContours(filled, [hull], -1, 1, cv2.FILLED)
-            if np.count_nonzero((patch.max(axis=2) < 195) & (filled > 0)) < 8:
-                continue
-        patch[filled == 0] = 255
+        if np.count_nonzero((patch.max(axis=2) < 195) & (outline > 0)) < 8:
+            continue
+        patch[outline == 0] = 255
         return {"state": "stack", "roi": [left + bx, top + by, bw, bh], "patch": patch}
     return {"state": "uncertain" if possible else "single", "roi": [left, top, crop.shape[1], crop.shape[0]]}
 

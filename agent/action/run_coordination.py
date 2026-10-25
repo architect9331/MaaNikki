@@ -31,7 +31,7 @@ class RunCoordinationAction(CustomAction):
                     total = sum(len(item["colors"]) * 3 for item in catalog["sets"]
                                 if item["rarity"] == 5 and item.get("collection_target", True))
                     if len(protected) == total:
-                        rt.log("五星祝福闪光颜色已收齐；本次不消耗体力，请选择其他幻境。")
+                        rt.log("五星祝福闪光颜色已收齐；本次不消耗活跃能量，请选择其他幻境。")
                         run_state.begin_realm(rt, task_id)
                         return context.override_pipeline({"MaaNikki_RealmChallenge": {"next": ["MaaNikki_RealmReview"]}})
                 run_state.begin_realm(rt, task_id)

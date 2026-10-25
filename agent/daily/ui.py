@@ -227,7 +227,7 @@ class GameUI:
             view[overlap > tw*th*.5] = -1
         self.rt.evidence.observe("asset", name=name, roi=roi, threshold=threshold,
                                  score=best_score, hit=bool(boxes), template=template_path,
-                                 method=method, gray=gray, color=color)
+                                 method=method, scale=scale, gray=gray, color=color)
         return boxes
 
     def asset(self, name, **kwargs):
@@ -686,10 +686,10 @@ class GameUI:
         self.rt.log("未能进入能力配置，请检查换装页面；若仍是旧版界面，请先接取“变强吧大喵”任务。")
         return False
 
-    def open_map(self, event=lambda value: None):
+    def open_map(self, event=lambda value: None, *, attempts=3, seconds=5):
         """Retry only from a confirmed main page; never toggle an unknown page."""
         node = "MaaNikki_Navigation_MapFeature"
-        if self.rt.hit(node) and self.wait_page(node):
+        if self.rt.hit(node) and self.wait_page(node, seconds=seconds):
             return True
         if not self.main():
             self.map_failure(0, "main_unavailable", event)
@@ -700,7 +700,8 @@ class GameUI:
             attempt += 1
             event({"type": "map_open_attempt", "attempt": attempt})
             return self.rt.key("map", 0)
-        if self.enter_page(open_once, node, source="MaaNikki_MainDetected", recover=self.main):
+        if self.enter_page(open_once, node, source="MaaNikki_MainDetected", recover=self.main,
+                           attempts=attempts, seconds=seconds):
             event({"type": "map_opened", "attempt": attempt})
             return True
         self.map_failure(attempt, "not_detected_after_retries", event)

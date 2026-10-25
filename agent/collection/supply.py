@@ -52,7 +52,7 @@ class CollectionSupply:
                     operation = self.journal.begin_change(
                         "realm", None, {"source": "challenge_confirmation"}, child.capture(),
                         realm=kind, source=candidate, energy_before=energy)
-                    self.rt.log(f"五星追全实际选择 {candidate}，使用剩余体力快速挑战一批。",
+                    self.rt.log(f"五星追全实际选择 {candidate}，使用剩余活跃能量快速挑战一批。",
                                 ui_text=f"开始刷取：{candidate}。")
 
                 ok = game.realm(kind, maximize=True, allow_exhausted=True, return_page="calendar",
@@ -62,16 +62,16 @@ class CollectionSupply:
                     # no energy was consumed before allowing a different realm.
                     remaining = game.read_energy()
                     if remaining is None:
-                        raise RuntimeError("快速挑战不可用后无法核对体力，停止换本")
+                        raise RuntimeError("快速挑战不可用后无法核对活跃能量，停止换本")
                     if remaining < game.MIN_ENERGY[kind]:
                         return {"status": "energy_exhausted"}
                     if remaining < energy:
-                        raise RuntimeError("快速挑战检查期间体力减少，停止换本并保留记录")
+                        raise RuntimeError("快速挑战检查期间活跃能量减少，停止换本并保留记录")
                     entry.update(status="quick_unavailable", energy_before=energy, energy_after=remaining)
                     # Natural regeneration during list checks is harmless.
                     energy = remaining
                     self.journal.save()
-                    self.rt.log(f"{candidate} 快速挑战不可用，已核对未消耗体力，本次跳过并检查下一顺位。",
+                    self.rt.log(f"{candidate} 快速挑战不可用，已核对未消耗活跃能量，本次跳过并检查下一顺位。",
                                 ui_text=f"跳过 {candidate}：快速挑战不可用。")
                     continue
                 if not ok:
@@ -86,7 +86,7 @@ class CollectionSupply:
                     raise RuntimeError("缺少幻境提交记录，停止重复挑战")
                 remaining = game.read_energy()
                 if remaining is None or remaining >= energy:
-                    raise RuntimeError("未确认幻境体力实际消耗，停止重复提交")
+                    raise RuntimeError("未确认幻境活跃能量实际消耗，停止重复提交")
                 self.journal.confirm_change(operation, energy_after=remaining)
                 entry["status"] = "reward_confirmed"
                 self.journal.save()

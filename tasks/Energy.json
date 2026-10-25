@@ -8,7 +8,7 @@
                 "energy"
             ],
             "default_check": true,
-            "description": "先处理所选周本，再按消耗方式使用剩余体力。与朝夕心愿同轮运行时，请排在朝夕心愿之后。",
+            "description": "先处理所选周本，再按消耗方式使用剩余活跃能量。与朝夕心愿同轮运行时，请排在朝夕心愿之后。",
             "option": [
                 "WeeklyEnabled",
                 "WeeklyTargets",
@@ -24,7 +24,7 @@
         "WeeklyEnabled": {
             "type": "switch",
             "label": "优先完成每周幻境",
-            "description": "优先完成本周尚余次数的每周幻境，然后继续处理剩余体力。",
+            "description": "优先完成本周尚余次数的每周幻境，然后继续处理剩余活跃能量。",
             "cases": [
                 {
                     "name": "Yes",
@@ -49,8 +49,8 @@
         },
         "RealmTypes": {
             "type": "select",
-            "label": "剩余体力消耗方式",
-            "description": "选择剩余体力的用途。五星全收集根据整理记录选择缺色副本，刷取后升级胚子；使用前请完成一次祝福闪光整理。",
+            "label": "剩余活跃能量消耗方式",
+            "description": "选择剩余活跃能量的用途。五星全收集根据整理记录选择缺色副本，刷取后升级胚子；使用前请完成一次祝福闪光整理。",
             "cases": [
                 {
                     "name": "Jihua",

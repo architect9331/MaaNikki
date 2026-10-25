@@ -21,7 +21,7 @@ def prominence(values):
 
 
 def camera_heading(reference, map_image, spec, x, y):
-    observed = luma(minimap_crop(reference, padding=2))
+    observed = luma(minimap_crop(reference, padding=2, spec=spec))
     scale = spec.scale/1.5
     radius = 102*scale
     left, top = max(0, int(x-radius*1.15)), max(0, int(y-radius*1.15))

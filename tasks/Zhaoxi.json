@@ -8,7 +8,7 @@
         "daily"
       ],
       "default_check": true,
-      "description": "优先完成已适配的免费项目，按需通过幻境补足 500 分并领奖。同轮幻境挑战结束后复核累计体力积分。",
+      "description": "优先完成已适配的免费项目，按需通过幻境补足 500 分并领奖。同轮幻境挑战结束后复核累计活跃能量积分。",
       "option": [
         "ZhaoxiAbilityPlan",
         "ZhaoxiEnergy",
@@ -61,7 +61,7 @@
     },
     "ZhaoxiEnergy": {
       "type": "switch",
-      "label": "允许用体力补足心愿积分",
+      "label": "允许用活跃能量补足心愿积分",
       "default_case": "Yes",
       "description": "积分不足 500 分时，按当天要求和游戏默认最少次数挑战幻境。目标与材料沿用幻境挑战设置。",
       "cases": [
@@ -78,7 +78,7 @@
         },
         {
           "name": "No",
-          "label": "不消耗体力",
+          "label": "不消耗活跃能量",
           "pipeline_override": {
             "MaaNikki_Zhaoxi_DailyEnergy": {
               "custom_action_param": {

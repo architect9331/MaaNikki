@@ -39,6 +39,7 @@ def crystal_pan(dx, dy):
 
 
 def select_crystal_route(location):
+    """Legacy center lookup for offline callers; collection uses route geometry."""
     distances = sorted([{"route": f"xinghai_crystal_{n}", "distance": math.hypot(
         location[0]-CRYSTAL_CENTERS[n-1][0]/2, location[1]-CRYSTAL_CENTERS[n-1][1]/2)}
         for n in CRYSTAL_ROUTE_ORDER], key=lambda item: item["distance"])
@@ -48,23 +49,18 @@ def select_crystal_route(location):
     return selected, distances
 
 
-def select_partial_crystal_route(locations, routes):
-    # A remaining marker can be far from the original three-marker centroid.
-    # Match every visible marker to the actual route, including its segments.
-    center = tuple(sum(location[axis] for location in locations)/len(locations) for axis in (0, 1))
-    centers = {f"xinghai_crystal_{n}": (x/2, y/2)
-               for n, (x, y) in enumerate(CRYSTAL_CENTERS, 1)}
+def select_crystal_route_by_path(locations, routes):
+    """Choose a route covering every marker, for any supported marker count."""
     distances = []
     for route in routes:
         marker_distances = [route_distance(Point(*location), route.points) for location in locations]
-        reference = centers[route.id]
         distances.append({"route": route.id, "distance": max(marker_distances),
-                          "center_distance": math.hypot(center[0]-reference[0], center[1]-reference[1]),
+                          "mean_distance": sum(marker_distances)/len(marker_distances),
                           "marker_distances": marker_distances})
-    distances.sort(key=lambda item: (item["distance"], item["center_distance"]))
+    distances.sort(key=lambda item: (item["distance"], item["mean_distance"]))
     # Some routes share collection segments. Either can cover the remaining
-    # markers, so accept the nearest path without a runner-up margin; use the
-    # original island centers only to break equal path distances.
+    # markers, so accept the nearest path without a runner-up margin. Equal
+    # worst distances use the mean marker distance, then the fixed route order.
     selected = distances[0] if distances[0]["distance"] < 25 else None
     return selected, distances
 
@@ -207,12 +203,20 @@ class Starsea:
         snapshot = None
         self.crystal_selection = None
         self.crystal_marker_count = 0
+        teleporter.last_frame = None
+        teleporter.map_diagnostics = []
         scan = {"type": "crystal_view_scan", "center": list(self.crystal_view),
                 "max_markers": 0, "view_confirmed": False, "capture_failed": False}
         self.crystal_scans.append(scan)
         self.events.append(scan)
-        if not self.rt.key("map", 0):
-            raise NavigationError("未能打开结晶地图。")
+        # A map key immediately after the bell can leave the HUD open. Use the shared
+        # entrance guard, with short confirmation windows for expiring markers;
+        # a retry is allowed only after confirming the source page again.
+        scan["map_opened"] = self.rt.ui.open_map(self.events.append, attempts=2, seconds=1)
+        if not scan["map_opened"]:
+            self.events.append({"type": "crystal_snapshot_missing", "reason": "map_unavailable",
+                                "elapsed": round(time.monotonic()-start, 3)})
+            return None
         while not self.rt.stopped and time.monotonic()-start < 5:
             frame = self.rt.capture()
             if frame is None:
@@ -220,6 +224,8 @@ class Starsea:
                 return None
             ready = self.rt.recognize("MaaNikki_Navigation_MapFeature", image=frame)
             maximum = self.rt.recognize("MaaNikki_Navigation_MapMaxScale", image=frame)
+            scan["map_ready"] = bool(ready and ready.hit)
+            scan["maximum_scale"] = bool(maximum and maximum.hit)
             if ready and ready.hit and maximum and maximum.hit:
                 boxes = self.boxes(frame)
                 scan["max_markers"] = max(scan["max_markers"], len(boxes))
@@ -235,20 +241,15 @@ class Starsea:
                     scale = teleporter.locator.spec.bigmap_scale
                     location = marker_location(pose, boxes, scale)
                     locations = [marker_location(pose, [box], scale) for box in boxes]
-                    if len(boxes) == 3:
-                        selected, distances = select_crystal_route(location)
-                        matching = "centroid"
-                    else:
-                        if self.crystal_routes is None:
-                            self.crystal_routes = [load_route(self.resource, f"xinghai_crystal_{n}")
-                                                   for n in CRYSTAL_ROUTE_ORDER]
-                            if any(route is None for route in self.crystal_routes):
-                                raise NavigationError("星光结晶跑图路线无法读取。")
-                        selected, distances = select_partial_crystal_route(locations, self.crystal_routes)
-                        matching = "route_path"
+                    if self.crystal_routes is None:
+                        self.crystal_routes = [load_route(self.resource, f"xinghai_crystal_{n}")
+                                               for n in CRYSTAL_ROUTE_ORDER]
+                        if any(route is None for route in self.crystal_routes):
+                            raise NavigationError("星光结晶跑图路线无法读取。")
+                    selected, distances = select_crystal_route_by_path(locations, self.crystal_routes)
                     snapshot = {"type": "crystal_snapshot", "boxes": boxes,
                         "marker_count": len(boxes), "marker_locations": locations,
-                        "map_pose": list(pose), "location": list(location), "matching": matching,
+                        "map_pose": list(pose), "location": list(location), "matching": "route_path",
                         "candidates": distances, "selected": selected,
                         "elapsed": round(time.monotonic()-start, 3)}
                     if selected is not None:

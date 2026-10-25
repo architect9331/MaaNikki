@@ -24,7 +24,7 @@
     {
       "x": 1559.333,
       "y": 1126.925,
-      "radius": 1.0,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle",
       "params": {
@@ -37,9 +37,9 @@
       }
     },
     {
-      "x": 1560.892,
-      "y": 1135.758,
-      "radius": 1.0,
+      "x": 1560.633,
+      "y": 1135.917,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle",
       "params": {
@@ -48,13 +48,25 @@
           "x": 1560.892,
           "y": 1135.758
         },
-        "source_entry": "20261023-234838-d01f6a44"
+        "source_entry": "20261023-234838-d01f6a44",
+        "pickup_range_reference": {
+          "source_entries": [
+            "20261025-221347-2acb939a",
+            "20261025-221405-9f4ecfdc"
+          ],
+          "endpoints": [
+            {"x": 1561.15, "y": 1136.308},
+            {"x": 1560.117, "y": 1135.525}
+          ],
+          "diameter": 1.297,
+          "coordinate_system": "navigation_map_pixels"
+        }
       }
     },
     {
       "x": 1568.667,
       "y": 1131.608,
-      "radius": 1.0,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle",
       "params": {
@@ -67,9 +79,9 @@
       }
     },
     {
-      "x": 1574.2,
-      "y": 1122.633,
-      "radius": 1.0,
+      "x": 1574.15,
+      "y": 1122.342,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle",
       "params": {
@@ -78,7 +90,19 @@
           "x": 1574.2,
           "y": 1122.633
         },
-        "source_entry": "20261023-235000-fcba6a6a"
+        "source_entry": "20261023-235000-fcba6a6a",
+        "pickup_range_reference": {
+          "source_entries": [
+            "20261025-214956-c43e713e",
+            "20261025-215017-191f86bd"
+          ],
+          "endpoints": [
+            {"x": 1573.483, "y": 1122.758},
+            {"x": 1574.817, "y": 1121.925}
+          ],
+          "diameter": 1.572,
+          "coordinate_system": "navigation_map_pixels"
+        }
       }
     }
   ]

@@ -64,7 +64,8 @@ def correlation_rates(image, patch, mask=None, *, edges=False):
                          nan=-1, posinf=-1, neginf=-1).astype(np.float32)
 
 
-def match_map(image, patch, mask=None, peak_mask=None, kernel=5, minimum_score=None, *, edges=False):
+def match_map(image, patch, mask=None, peak_mask=None, kernel=5, minimum_score=None, *, edges=False,
+              anchor=None):
     rates = correlation_rates(image, patch, mask, edges=edges)
     # Invalid candidates must not manufacture sharp peaks next to missing tiles.
     valid = (rates > -1).astype(np.float32)
@@ -93,6 +94,13 @@ def match_map(image, patch, mask=None, peak_mask=None, kernel=5, minimum_score=N
         raise NavigationError("没有可识别的地图区域。")
     _, score, _, (fx, fy) = cv2.minMaxLoc(
         cv2.resize(fine, None, fx=20, fy=20, interpolation=cv2.INTER_CUBIC))
+    if anchor is not None:
+        # OpenCV resize maps destination pixel centers back to source centers.
+        # Report the caller's actual sample anchor, not a rounded patch center.
+        return (left+(fx+.5)/20-.5+anchor[0], top+(fy+.5)/20-.5+anchor[1],
+                float(score), float(detail))
+    # Preserve existing big-map/tool coordinate conventions until those callers
+    # explicitly supply their own sample anchors.
     return (left+fx/20-1+patch.shape[1]/2, top+fy/20-1+patch.shape[0]/2,
             float(score), float(detail))
 

@@ -24,42 +24,42 @@
     {
       "x": 823.056,
       "y": 1012.44,
-      "radius": 1.0,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 820.65,
       "y": 988.7,
-      "radius": 1.0,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 811.85,
       "y": 969.9,
-      "radius": 1.0,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 817.7,
       "y": 961.55,
-      "radius": 1.0,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 829.8,
       "y": 955.4,
-      "radius": 1.0,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 844.055,
       "y": 951.196,
-      "radius": 1.0,
+      "radius": 0.4,
       "jump": false,
       "action": "bottle"
     }

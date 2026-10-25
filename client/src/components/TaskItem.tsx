@@ -23,7 +23,6 @@ import { generateTaskPipelineOverride } from '@/utils';
 import { OptionEditor, SwitchGrid, switchHasNestedOptions } from './OptionEditor';
 import { ContextMenu, useContextMenu } from './ContextMenu';
 import { Tooltip } from './ui/Tooltip';
-import { HelpTip } from './ui/HelpTip';
 import { ConfirmDialog } from './ConfirmDialog';
 import { buildListItemMenuItems, InlineNameEditor } from './listItemShared';
 import { TriStateCheckbox, getTaskCheckboxState } from './ui/TriStateCheckbox';
@@ -48,26 +47,22 @@ function OptionPreviewTag({
   value: string;
   type: 'select' | 'checkbox' | 'switch' | 'input';
 }) {
-  // 截断过长的显示值
-  const truncateText = (text: string, max: number) =>
-    text.length > max ? text.slice(0, max) + '…' : text;
-
-  // label 可能含行内 Markdown（图标等），预览标签空间有限，统一按纯文本处理
+  // 摘要保留完整文字；空间不足时按项换行。
   const plainLabel = stripInlineRichText(label);
+  const plainValue = stripInlineRichText(value);
 
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded',
+        'inline-flex min-w-0 max-w-full shrink-0 items-center gap-1 px-1.5 py-0.5 text-xs rounded',
         'text-text-tertiary',
-        'max-w-[140px]',
       )}
-      title={`${plainLabel}: ${value}`}
+      title={`${plainLabel}: ${plainValue}`}
     >
       {type === 'switch' ? (
         // Switch 类型：显示选项名 + 状态圆点
         <>
-          <span className="truncate">{truncateText(plainLabel, 6)}</span>
+          <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]">{plainLabel}</span>
           <span
             className={clsx(
               'w-1.5 h-1.5 rounded-full flex-shrink-0',
@@ -76,12 +71,10 @@ function OptionPreviewTag({
           />
         </>
       ) : (
-        // Select/Input 类型：显示选项名: 值
-        <>
-          <span className="truncate flex-shrink-0">{truncateText(plainLabel, 4)}</span>
-          <span className="flex-shrink-0">:</span>
-          <span className="truncate">{truncateText(value, 6)}</span>
-        </>
+        // 名称和值作为完整的一项排布，较长内容可在本项内换行。
+        <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+          {plainLabel}: {plainValue}
+        </span>
       )}
     </span>
   );
@@ -138,7 +131,7 @@ function DescriptionContent({
       {/* 内容 */}
       {html && (
         <div
-          className="text-xs text-text-secondary [&_p]:my-0.5 [&_a]:text-accent [&_a]:hover:underline"
+          className="text-xs leading-relaxed break-words text-text-secondary [&_p]:my-0.5 [&_a]:text-accent [&_a]:hover:underline [&_img]:max-w-full"
           dangerouslySetInnerHTML={{ __html: html }}
         />
       )}
@@ -314,7 +307,7 @@ function OptionListRenderer({
             inactiveHint={taskName === 'realm_challenge' && !realmOptionActive(group.optionKey, optionValues)
               ? group.optionKey === 'WeeklyTargets'
                 ? { label: '周本优先已关闭', description: '开启“优先完成每周幻境”后，按此处所选目标使用本周剩余挑战次数。' }
-                : { label: '补分备用', description: '朝夕心愿允许用体力补分时，会根据当天心愿按需使用此处设置。剩余体力按上方所选消耗方式处理。' }
+                : { label: '补分备用', description: '朝夕心愿允许用活跃能量补分时，会根据当天心愿按需使用此处设置。剩余活跃能量按上方所选消耗方式处理。' }
               : undefined}
             controllerIncompatible={optionIncompatible}
             parentIncompatibilityReason={parentIncompatibilityReason}
@@ -564,9 +557,9 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
   const displayName = task.customName || originalLabel;
   const hasOptions = !!taskDef?.option && taskDef.option.length > 0;
   // 判断是否有描述内容（包括正在加载的情况）
-  const hasDescription = !!resolvedDescription.html || resolvedDescription.loading;
-  // 说明通过标题旁的问号展示，展开区域只保留选项。
-  const canExpand = hasOptions;
+  const hasDescription = !!resolvedDescription.html || resolvedDescription.loading || !!resolvedDescription.error;
+  // 任务说明直接展示在展开面板；选项说明仍通过各自的小问号展示。
+  const canExpand = hasOptions || hasDescription;
 
   // 生成选项预览信息（最多显示3个）
   const optionPreviews = useMemo(() => {
@@ -969,6 +962,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
               <div
                 className={clsx(
                   'flex items-center gap-1 min-w-0 overflow-hidden',
+                  canExpand && 'max-w-[45%] shrink-0',
                   isInstanceRunning || isIncompatible ? 'cursor-not-allowed' : 'cursor-pointer',
                 )}
                 onClick={handleNameClick}
@@ -999,11 +993,6 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 )}
               </div>
 
-              {hasDescription && <HelpTip label={`${displayName}说明`} content={
-                <DescriptionContent html={resolvedDescription.html} loading={resolvedDescription.loading}
-                  type={resolvedDescription.type} loaded={resolvedDescription.loaded} error={resolvedDescription.error} />
-              } />}
-
               {/* 不带选项的任务：直接显示不兼容警告 */}
               {!canExpand && isIncompatible && (
                 <div className="flex-1 flex items-center gap-1.5 mx-2 overflow-hidden">
@@ -1025,7 +1014,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 >
                   {/* 选项预览标签 - 未展开时显示：不兼容时显示警告，否则显示选项预览 */}
                   {!task.expanded && (
-                    <div className="flex-1 flex items-center gap-1.5 mx-2 overflow-hidden">
+                    <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-1.5 gap-y-1 mx-2 py-0.5">
                       {isIncompatible ? (
                         <Tooltip content={supportedControllerHint || undefined}>
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-warning">
@@ -1097,6 +1086,17 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
         >
           <div className={clsx('min-h-0', task.expanded ? 'overflow-visible' : 'overflow-hidden')}>
             <div className="border-t border-border bg-bg-tertiary p-3 rounded-b-lg">
+              {hasDescription && (
+                <div className={clsx((hasOptions || isIncompatible) && 'mb-3')}>
+                  <DescriptionContent
+                    html={resolvedDescription.html}
+                    loading={resolvedDescription.loading}
+                    type={resolvedDescription.type}
+                    loaded={resolvedDescription.loaded}
+                    error={resolvedDescription.error}
+                  />
+                </div>
+              )}
               {/* 不兼容提示 - 独立于选项列表显示 */}
               {isIncompatible && (
                 <Tooltip content={supportedControllerHint || undefined}>

@@ -123,10 +123,12 @@ class WeeklyShop(ShopWorkflow):
         for _ in range(60):
             if self.rt.stopped:
                 return False
-            # Cached glyph matching locates all free labels in a single frame.
-            # OCR is limited to the small title/status of each candidate card.
+            # Free labels on dimmed sold-out cards can correlate below .85.
+            # This only discovers candidates: exact names and sold-out status,
+            # or the detail page's free/zero-total checks, still confirm them.
             boxes = self.ui.asset_boxes("ButtonShopFree", image=image, roi=self.LIST_ROI,
-                                        threshold=.85, count=10, method=cv2.TM_CCOEFF_NORMED)
+                                        threshold=.75, count=10, method=cv2.TM_CCOEFF_NORMED)
+            self.rt.evidence.observe("shop.gift_candidates", boxes=boxes)
             claimed = False
             for box in sorted(boxes, key=lambda item: (item[1], item[0])):
                 bx, by, bw, _ = box

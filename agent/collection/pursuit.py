@@ -21,10 +21,10 @@ class FiveStarPursuit:
         self.inventory.checkpoint()
         if outcome["status"] == "reward_confirmed":
             spent = outcome["energy_before"] - outcome["energy_after"]
-            self.rt.log(f"本轮刷取完成：{outcome['source']}，消耗 {spent} 点体力；新增胚子待升级后计入满级颜色收藏。",
-                        ui_text=f"刷取完成：{outcome['source']}，消耗 {spent} 点体力。")
+            self.rt.log(f"本轮刷取完成：{outcome['source']}，消耗 {spent} 点活跃能量；新增胚子待升级后计入满级颜色收藏。",
+                        ui_text=f"刷取完成：{outcome['source']}，消耗 {spent} 点活跃能量。")
         elif outcome["status"] == "energy_exhausted":
-            self.rt.log("体力不足，本次只处理已有闪光。")
+            self.rt.log("活跃能量不足，本次只处理已有闪光。")
         return outcome["status"] == "reward_confirmed"
 
     def run(self):
@@ -32,7 +32,7 @@ class FiveStarPursuit:
         stock.prepare("full_collection")
         if stock.progress()["complete"]:
             stock.report.update(complete=True, phase="complete",
-                                reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗体力",
+                                reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量",
                                 inventory={"reused": True})
             self.rt.log(stock.report["reason"])
             stock.save()
@@ -50,7 +50,7 @@ class FiveStarPursuit:
             stock.save()
             self.rt.log("五星追全幻境顺位（缺少满级颜色数）：" + " → ".join(
                 f"{source}（{missing[source]}）" for source in sources)
-                + "。按顺位选择能快速挑战的副本，用剩余体力挑战一批，然后升级。",
+                + "。按顺位选择能快速挑战的副本，用剩余活跃能量挑战一批，然后升级。",
                 detail=True)
             self.acquire("bless", sources[0], alternatives=sources[1:])
         if stock.organization.get("decomposition_pending"):

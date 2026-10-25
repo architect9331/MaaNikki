@@ -48,8 +48,35 @@ class Teleporter:
         if browse and not self.rt.hit("MaaNikki_Navigation_MapFeature"):
             raise NavigationError("未能确认地图浏览页面。")
 
-    def dark_text(self, roi):
-        return self.rt.ui.text(roi, color=([0, 0, 0], [180, 255, 180]))
+    def region_name(self, expected=None):
+        """Read the small map header without discarding its antialiased strokes."""
+        frame = self.rt.frame()
+        if frame is None:
+            return ""
+        x, y, w, h = self.rt.ui.roi("AreaBigMapRegionName")
+        # Leave room around the glyphs instead of fitting text detection into
+        # the original 27-pixel-high click region.
+        left, top = max(0, x-4), max(0, y-6)
+        right, bottom = min(frame.shape[1], x+w+4), min(frame.shape[0], y+h+6)
+        roi = [left, top, right-left, bottom-top]
+        raw = normalized(self.rt.ui.text(roi, image=frame))
+        wanted = normalized(expected) if expected is not None else None
+        readings = [{"method": "original", "text": raw}]
+        value = raw
+        if not raw or wanted is not None and raw != wanted:
+            # Re-read the same pixels at a useful OCR size. A mismatch is not
+            # an alias: only the exact requested name can confirm the region.
+            patch = cv2.resize(frame[top:bottom, left:right], None, fx=3, fy=3,
+                               interpolation=cv2.INTER_CUBIC)
+            patch = cv2.copyMakeBorder(patch, 8, 8, 8, 8, cv2.BORDER_REPLICATE)
+            enlarged = normalized(self.rt.text([0, 0, patch.shape[1], patch.shape[0]],
+                                               image=patch))
+            readings.append({"method": "enlarged", "text": enlarged})
+            if not raw or wanted is not None and enlarged == wanted:
+                value = enlarged
+        self.rt.evidence.observe("map_region_name", roi=roi, expected=wanted,
+                                 readings=readings, selected=value)
+        return value
 
     def region_menu_visible(self):
         # An expanded province can push every destination out of view. The
@@ -77,7 +104,7 @@ class Teleporter:
             return self.home_region(region_roi, list_roi)
 
         def read_region():
-            value = normalized(self.dark_text(region_roi))
+            value = self.region_name(wanted)
             self.event({"type": "map_region_observed", "wanted": wanted, "actual": value})
             return value
 
@@ -121,7 +148,11 @@ class Teleporter:
             if not open_region_menu():
                 raise NavigationError("地图区域列表未展开，未继续滚动或选择点位。")
             if self.rt.ui.enter_page(select_region, region_ready, source=menu_visible,
-                                      recover=open_region_menu, seconds=8):
+                                      recover=open_region_menu, seconds=8,
+                                      diagnostic_context={"operation": "select_map_region",
+                                                          "province": province, "wanted": wanted,
+                                                          "header_roi": region_roi,
+                                                          "list_roi": list_roi}):
                 return
             raise NavigationError("地图区域切换未完成。")
         except NavigationError as error:
@@ -132,10 +163,10 @@ class Teleporter:
     def home_region(self, region_roi, list_roi):
         color = ([10, 0, 190], [30, 80, 255])
         menu_visible = self.region_menu_visible
-        current = normalized(self.dark_text(region_roi))
+        current = self.region_name()
         def known_home_ready():
             return (self.rt.hit("MaaNikki_Navigation_MapFeature") and not menu_visible()
-                    and normalized(self.dark_text(region_roi)) == self.home_region_name)
+                    and self.region_name(self.home_region_name) == self.home_region_name)
         if current and current == self.home_region_name:
             if menu_visible() and not self.close_region_menu():
                 raise NavigationError("当前已在家园，但地图区域列表未能关闭。")
@@ -177,7 +208,7 @@ class Teleporter:
                                                      recover=open_menu, seconds=8):
                 # Remember only a confirmed home selection for this route.
                 # Empty/changed names still use the glyph-based entrance.
-                actual = normalized(self.dark_text(region_roi))
+                actual = self.region_name(home_name)
                 self.home_region_name = home_name if home_name and actual == home_name else None
                 self.event({"type": "map_home_selected"})
                 return
@@ -195,7 +226,7 @@ class Teleporter:
             raise NavigationError("未能打开地图确认是否位于家园。")
         region_roi = self.rt.ui.roi("AreaBigMapRegionName")
         list_roi = self.rt.ui.roi("AreaBigMapRegionSelect")
-        current = normalized(self.dark_text(region_roi))
+        current = self.region_name()
         if not current:
             raise NavigationError("未能读取当前地图名称，无法确认是否位于家园。")
         if not self.rt.ui.enter_page(lambda: self.rt.ui.click_box(region_roi),
@@ -232,6 +263,7 @@ class Teleporter:
             raise NavigationError("未能放大地图，请确认没有点位详情遮挡缩放按钮。")
 
     def map_pose(self, frame):
+        self.map_diagnostics = []
         require_game_frame(frame)
         scale = self.locator.spec.bigmap_scale*.25
         patch = cv2.resize(luma(frame), None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)

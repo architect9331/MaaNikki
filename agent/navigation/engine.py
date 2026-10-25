@@ -769,8 +769,8 @@ class Navigator:
                     best_distance = remaining_distance
                     map_checked = False
                 stuck_time = time.monotonic()-stuck_since
-                if stuck_time > 15:
-                    raise NavigationError("原地卡住超过 15 秒，停止路线。")
+                if stuck_time > 30:
+                    raise NavigationError("原地卡住超过 30 秒，停止路线。")
                 recovery = stuck_time > 5 and not recovered
                 if recovery:
                     self.event({"type": "unstuck", "seconds": stuck_time, "index": index,
