@@ -275,16 +275,51 @@ class Gameplay:
         return self.ui.skip_reward()
 
     def jihua_open_table(self):
-        for _ in range(3):
-            if not self.rt.hold("forward", .8) or not self.rt.pause(.2):
+        from .runtime import INTERACTION_ROI
+        # World interaction labels move with the object/camera. Use the same
+        # search area as other world prompts, rather than the old sample crop.
+        prompt = self.ui.feature(text=r"素\s*材\s*激\s*化\s*台", roi=INTERACTION_ROI)
+        steps = 0
+        reason = "未找到素材激化台交互提示"
+        for _ in range(6):
+            # Check before the first move and allow a delayed prompt to settle
+            # while stopped. Cap total movement at 2.5 seconds.
+            if self.ui.wait_page(prompt, seconds=1.2):
+                opened = self.ui.enter_page(lambda: self.rt.key("interact", 0),
+                    "MaaNikki_Jihua_Target", source=prompt, recover=self.rt.main)
+                if opened:
+                    return True
+                reason = "已识别素材激化台提示，但未能确认打开兑换界面"
+                break
+            if self.rt.stopped:
                 return False
-            if self.rt.text(self.ui.roi("AreaTextJihuatai"), "激化台"):
-                return self.ui.enter_page(lambda: self.rt.key("interact", 0),
-                    "MaaNikki_Jihua_Target", source=self.ui.feature(
-                        text="激化台", roi=self.ui.roi("AreaTextJihuatai")), recover=self.rt.main)
-        else:
-            self.rt.log("未找到素材激化台。")
-            return False
+            if steps >= 5:
+                break
+            # HUD can briefly reappear before the actual loading screen starts.
+            # Wait without inputs when it disappears, rather than aborting.
+            if not self.rt.hit("MaaNikki_MainDetected"):
+                self.rt.log("正在等待素材激化幻境加载完成。")
+                if not self.ui.wait_page("MaaNikki_MainDetected", seconds=30):
+                    reason = "等待素材激化幻境主界面恢复超时"
+                    break
+                # Loading may have ended beside the table; recheck its prompt
+                # before moving so arrival does not cause an unnecessary step.
+                if self.ui.wait_page(prompt, seconds=1.2):
+                    opened = self.ui.enter_page(lambda: self.rt.key("interact", 0),
+                        "MaaNikki_Jihua_Target", source=prompt, recover=self.rt.main)
+                    if opened:
+                        return True
+                    reason = "已识别素材激化台提示，但未能确认打开兑换界面"
+                    break
+            if not self.rt.hold("forward", .5):
+                return False
+            steps += 1
+        if not self.rt.stopped:
+            self.rt.diagnostic("jihua_table", reason, details={
+                "prompt_roi": INTERACTION_ROI, "approach_steps": steps,
+                "planned_move_seconds": round(steps*.5, 2)})
+            self.rt.log(reason+"，现场已保存。")
+        return False
 
     def jihua_select_target(self):
         if not self.ui.find(roi=self.ui.roi("AreaJihuaTargetSelect"), node="MaaNikki_Jihua_Target"):
