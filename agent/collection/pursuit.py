@@ -54,16 +54,9 @@ class FiveStarPursuit:
                 detail=True)
             self.acquire("bless", sources[0], alternatives=sources[1:])
         if stock.organization.get("decomposition_pending"):
-            # Observe reward additions before the first destructive auto-fill.
-            # A new four/five-star name must not become unreviewed material.
-            if not stock.open():
-                raise RuntimeError("未能打开普通仓库核对本轮新增闪光")
-            stock.inventory_read = True
-            try:
-                stock.discover_prefixes()
-                stock.ensure_known_materials()
-            finally:
-                stock.inventory_read = False
+            # Clear low-rarity drops before reading acquisition order. The
+            # decomposer updates old position hints; process_inventory then
+            # discovers the surviving prefix once, before five-star auto-fill.
             LowRarityDecomposer(stock).run()
         # Even with no energy, process the saved unfinished item and inventory.
         outcome = stock.process_inventory()
