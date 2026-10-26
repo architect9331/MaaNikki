@@ -40,13 +40,29 @@
     "next": []
   },
   "MaaNikki_Shop_QuietSelected": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Shop_QuietTab", "MaaNikki_Shop_QuietSelectedLeft", "MaaNikki_Shop_QuietSelectedRight"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_QuietSelectedLeft": {
     "recognition": "Custom",
     "custom_recognition": "nikki.ui_template",
     "custom_recognition_param": {
-      "roi": [500, 63, 237, 43],
-      "template": ["game/shop/quiet_selected_light.png", "game/shop/quiet_selected.png"],
+      "roi": [500, 70, 35, 30],
+      "template": "game/shop/tab_selected_star.png",
       "color": [[0, 0, 140], [180, 90, 255]],
-      "threshold": 0.92
+      "threshold": 0.88
+    },
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_QuietSelectedRight": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [700, 70, 35, 30],
+      "template": "game/shop/tab_selected_star_right.png",
+      "color": [[0, 0, 140], [180, 90, 255]],
+      "threshold": 0.88
     },
     "action": "DoNothing"
   },

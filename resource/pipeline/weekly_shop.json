@@ -15,10 +15,9 @@
     "action": "DoNothing"
   },
   "MaaNikki_Shop_GiftsTab": {
-    "recognition": "TemplateMatch",
+    "recognition": "Or",
     "roi": [20, 100, 220, 575],
-    "template": "game/shop/gifts_tab.png",
-    "threshold": 0.85,
+    "any_of": ["MaaNikki_Shop_GiftsTabText", "MaaNikki_Shop_GiftsTabImage"],
     "action": "Custom",
     "custom_action": "nikki.ui_click",
     "custom_action_param": {
@@ -27,6 +26,20 @@
     },
     "post_delay": 0,
     "next": []
+  },
+  "MaaNikki_Shop_GiftsTabText": {
+    "recognition": "OCR",
+    "roi": [20, 100, 220, 575],
+    "expected": "^甄\\s*选\\s*礼\\s*包$",
+    "threshold": 0.8,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_GiftsTabImage": {
+    "recognition": "TemplateMatch",
+    "roi": [20, 100, 220, 575],
+    "template": "game/shop/gifts_tab.png",
+    "threshold": 0.85,
+    "action": "DoNothing"
   },
   "MaaNikki_Shop_GiftsSelected": {
     "recognition": "TemplateMatch",
