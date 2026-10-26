@@ -300,12 +300,19 @@ class GameUI:
             self.last_pickup_diagnostics["method"] = "pickup_text"
         return found
 
-    def scroll(self, roi, amount):
+    def scroll(self, roi, amount, *, paged=False):
         x, y, w, h = roi
         # post_scroll(dx, dy) uses a default target of (0, 0) and moves
         # there even after post_touch_move. Supply the target atomically.
-        return (self.rt.action("Scroll", target=[x+w-8, y+h-8], dx=0, dy=amount)
-                and self.rt.pause(.2))
+        target = [round(x+w/2), round(y+h/2)] if paged else [x+w-8, y+h-8]
+        # Paged menus need the pointer inside the grid before the wheel event.
+        # A single notch avoids skipping pages; allow the slide to finish.
+        if paged:
+            amount = 120 if amount > 0 else -120 if amount < 0 else 0
+        if paged and not (self.rt.action("TouchMove", target=target) and self.rt.pause(.3)):
+            return False
+        return (self.rt.action("Scroll", target=target, dx=0, dy=amount)
+                and self.rt.pause(.6 if paged else .2))
 
     def menu(self):
         if self.page_matches("MaaNikki_MenuReady") and self.wait_page("MaaNikki_MenuReady"):
@@ -315,16 +322,25 @@ class GameUI:
         return self.enter_page(lambda: self.rt.key("menu", 0), "MaaNikki_MenuReady",
                                source="MaaNikki_MainDetected", recover=self.main)
 
-    def find_menu_entry(self, *, node):
-        """All current Esc entrances are on page one; never scroll this menu."""
+    def find_menu_entry(self, *, node, scroll=False):
+        """Open a verified Esc entrance, optionally searching its left-hand pages."""
         from .runtime import parameters
         ready = parameters(self.rt.context, node).get("ready")
         if ready and self.page_matches(ready) and self.wait_page(ready):
             return True
-        return self.menu() and self.rt.click_template(node)
+        if not self.menu():
+            return False
+        if scroll:
+            # Only the feature grid scrolls. Keep the profile, bottom toolbar
+            # and page dots outside both recognition and scrolling comparisons.
+            roi = fields(self.rt.context, node).get("roi", [70, 130, 660, 460])
+            if not self.find(node=node, roi=roi, scroll_roi=[70, 130, 660, 460],
+                             click=False, paged=True):
+                return False
+        return self.rt.click_template(node)
 
     def find(self, *, roi, text=None, node=None, asset=None, scale=1, threshold=.75,
-             color=None, exact=False, scroll=True, click=True, scroll_roi=None):
+             color=None, exact=False, scroll=True, click=True, scroll_roi=None, paged=False):
         """Search current view, then top to bottom; optionally return the box without clicking."""
         if node:
             definition = fields(self.rt.context, node)
@@ -372,23 +388,33 @@ class GameUI:
             before = raw_image[y:y+h, x:x+w].copy()
             if not reset:
                 for _ in range(12):
-                    if not self.scroll(scroll_roi, 1800):
+                    if not self.scroll(scroll_roi, 1800, paged=paged):
                         return False
                     frame = self.rt.capture()
                     if frame is None:
                         return False
                     current = frame[y:y+h, x:x+w]
-                    if self.similarity(before, current) > .99:
+                    similarity = self.similarity(before, current)
+                    if paged:
+                        self.rt.evidence.observe("menu_scroll", direction="start", similarity=similarity)
+                    if similarity > .99:
                         break
                     before = current.copy()
                 next_image = frame
                 reset = True
                 continue
-            if not self.scroll(scroll_roi, -600):
+            if not self.scroll(scroll_roi, -600, paged=paged):
                 return False
             frame = self.rt.capture()
-            if frame is None or self.similarity(before, frame[y:y+h, x:x+w]) > .99:
+            if frame is None:
                 return False
+            similarity = self.similarity(before, frame[y:y+h, x:x+w])
+            if paged:
+                self.rt.evidence.observe("menu_scroll", direction="next", similarity=similarity)
+            if similarity > .99:
+                # Even at the end, recognize the final frame before reporting
+                # absence: the comparison must not discard a matching entry.
+                scroll = False
             next_image = frame
         return False
 
@@ -746,12 +772,20 @@ class GameUI:
         destination = "MaaNikki_Monthly_PageReady"
         if self.page_matches("MaaNikki_Monthly_Start") and self.wait_page("MaaNikki_Monthly_Start"):
             return True
-        def travel_opened():
-            return any(self.rt.hit(node) for node in (
-                destination, "MaaNikki_Monthly_IntroSkip", "MaaNikki_Monthly_Start"))
-        if not (self.main() and self.enter_page(lambda: self.rt.key("monthly", 0), travel_opened,
-                source="MaaNikki_MainDetected", recover=self.main, seconds=10)):
+        if not (self.main() and self.rt.key("monthly", 0)):
             return False
+        # In Home, the shortcut can point to the unavailable Paradise season.
+        # Try it once, then use Travel's own menu entrance without teleporting.
+        # A missing shortcut landing is expected here; only failure of the
+        # independent menu entrance should report a page-entry failure.
+        if not self.wait_page("MaaNikki_Monthly_Opened", seconds=5):
+            if self.rt.stopped:
+                return False
+            self.rt.log("快捷入口未打开，正在从美鸭梨菜单查找奇迹之旅。")
+            if not self.find_menu_entry(node="MaaNikki_Monthly_MenuEntrance", scroll=True):
+                if not self.rt.stopped:
+                    self.rt.diagnostic("monthly_menu_entry", "未能从美鸭梨菜单进入奇迹之旅")
+                return False
         if self.page_matches(destination):
             return False
         if self.rt.hit("MaaNikki_Monthly_IntroSkip"):

@@ -164,7 +164,7 @@ class Runtime:
         self.invalidate_frame()
         self.evidence.observe("input", action=action, fields={
             name: value for name, value in fields.items()
-            if name in {"target", "begin", "end", "key", "duration"}})
+            if name in {"target", "begin", "end", "key", "duration", "dx", "dy"}})
         if self.navigation_inputs:
             self.navigation_inputs.check()
         if action in {"KeyDown", "KeyUp"}:

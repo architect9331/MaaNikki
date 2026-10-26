@@ -486,6 +486,47 @@ class Gameplay:
         self.rt.log(f"{label}奖励已领取。" if claimed else f"{label}所选页签没有可领取的奖励。")
         return not self.rt.stopped
 
+    def monthly_paradise_entry(self):
+        """Accept the closed-season return only after a verified entrance click."""
+        source = "MaaNikki_Monthly_TravelReady"
+        destination = "MaaNikki_Monthly_ParadiseReady"
+        node = "MaaNikki_Monthly_ToParadise"
+        if not self.ui.wait_page(source):
+            return "failed"
+
+        def entrance_absent():
+            with self.rt.observe():
+                return self.ui.page_matches(source) and not self.rt.hit(node)
+
+        # Some seasons remove the switch altogether. Require its absence on
+        # separate captures of the known travel page, not an unknown screen.
+        if entrance_absent() and self.ui.wait_page(entrance_absent, seconds=2):
+            return "unavailable"
+
+        submitted = False
+
+        def click():
+            nonlocal submitted
+            submitted = self.rt.click_template(node, attempts=1, wait_seconds=0, verify=False)
+            return submitted
+
+        def arrived():
+            with self.rt.observe():
+                return (self.ui.page_matches(destination)
+                        or (submitted and self.ui.page_matches("MaaNikki_MainDetected")))
+
+        # An expired Paradise switch can close Travel and return to the world.
+        # Treat that confirmed outcome as unavailable; retrying the entrance
+        # would reopen Travel and repeat the same closed-season transition.
+        if not self.ui.enter_page(click, arrived, source=source, attempts=1, seconds=8,
+                                  diagnostic_context={"page": "paradise", "optional": True}):
+            return "failed"
+        if self.ui.page_matches(destination):
+            return "ready"
+        if submitted and self.ui.page_matches("MaaNikki_MainDetected"):
+            return "unavailable"
+        return "failed"
+
     def monthly(self):
         kind, label = "unknown", "奇迹之旅／乐园构想"
         completed = set()
@@ -522,10 +563,18 @@ class Gameplay:
                     target = "Travel" if kind == "paradise" else "Paradise"
                     target_label = "奇迹之旅" if kind == "paradise" else "乐园构想"
                     self.rt.log(f"{label}处理完成，点击左下角切换到{target_label}。")
-                    if not self.rt.click_template(f"MaaNikki_Monthly_To{target}"):
+                    if other == "paradise":
+                        result = self.monthly_paradise_entry()
+                        if result == "unavailable":
+                            self.rt.log("本轮乐园构想入口不可用，已跳过。")
+                            break
+                        switched = result == "ready"
+                    else:
+                        switched = self.rt.click_template(f"MaaNikki_Monthly_To{target}")
+                    if not switched:
                         self.monthly_diagnostic(kind, "switch_unconfirmed", f"未能切换到{target_label}")
                         return False
-            self.rt.log("所选奇迹之旅与乐园构想奖励已处理。")
+            self.rt.log("所选奇迹之旅与乐园构想奖励检查完成。")
             return True
         finally:
             if self.rt.stopped:

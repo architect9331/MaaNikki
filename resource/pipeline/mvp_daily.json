@@ -359,6 +359,19 @@
       "kind": "monthly"
     }
   },
+  "MaaNikki_Monthly_MenuEntrance": {
+    "recognition": "OCR",
+    "roi": [70, 130, 660, 460],
+    "expected": "^奇迹之旅$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Monthly_Opened",
+      "source": "MaaNikki_MenuReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
   "MaaNikki_Monthly_IntroSkip": {
     "enabled": true,
     "recognition": "Custom",

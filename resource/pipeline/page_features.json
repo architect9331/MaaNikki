@@ -18,6 +18,11 @@
     "expected": "旅行任务|旅行秘宝|构想契约|乐园纪事|构想百货",
     "action": "DoNothing"
   },
+  "MaaNikki_Monthly_Opened": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Monthly_PageReady", "MaaNikki_Monthly_IntroSkip", "MaaNikki_Monthly_Start"],
+    "action": "DoNothing"
+  },
   "MaaNikki_Monthly_TravelReady": {
     "recognition": "OCR",
     "roi": [450, 0, 350, 80],
