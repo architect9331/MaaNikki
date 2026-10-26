@@ -14,7 +14,7 @@ from .runtime import Runtime, parameters
 
 class AssistSchedule(PeriodicSchedule):
     """Wall-clock checks; fishing exclusively owns input during its session."""
-    INTERVALS = {"Fishing": .3, "Clear": .3, "Dialogue": .5, "Pickup": .1}
+    INTERVALS = {"Fishing": .3, "Clear": .3, "Dialogue": .5, "Pickup": .1, "MapMask": .05}
     COOLDOWNS = {"Fishing": 5, "Clear": .3, "Dialogue": .25, "Pickup": .02}
 
     def __init__(self, enabled, *, now=0.0):
@@ -38,6 +38,9 @@ class Exploration(Runtime):
         enabled = {key: parameters(self.context, "MaaNikki_Assist_" + key).get("value", True)
                    for key in ("Pickup", "Clear", "Dialogue")}
         enabled["Fishing"] = parameters(self.context, "MaaNikki_Assist_Fishing").get("value", False)
+        map_kinds = {kind for key, kind in (("MapStar", "star"), ("MapDewdrop", "dewdrop"))
+                     if parameters(self.context, "MaaNikki_Assist_" + key).get("value", False)}
+        enabled["MapMask"] = bool(map_kinds)
         if not any(enabled.values()):
             self.log("请至少开启一项开荒辅助功能。")
             return False
@@ -47,6 +50,7 @@ class Exploration(Runtime):
         schedule = AssistSchedule(enabled, now=time.monotonic())
         waiting_clear = False
         previous_mode = None
+        map_mask = None
 
         def available():
             return (not self.stopped and guard.user32.IsWindow(guard.hwnd)
@@ -91,6 +95,17 @@ class Exploration(Runtime):
                                       threshold=.75 if name == "IconPickupFeature" else .73))
 
         try:
+            if enabled["MapMask"]:
+                try:
+                    from map_mask.service import MapMask
+                    map_mask = MapMask(self, guard.hwnd, map_kinds)
+                    self.log("地图标记已启动，打开大地图后自动识别缩放并校准。")
+                except Exception as error:
+                    self.log(f"地图标记启动失败（{type(error).__name__}）。")
+                    enabled["MapMask"] = False
+                    if not any(enabled.values()):
+                        return False
+                    schedule = AssistSchedule(enabled, now=time.monotonic())
             while not self.stopped:
                 checkpoint()
                 if not guard.user32.IsWindow(guard.hwnd):
@@ -108,6 +123,8 @@ class Exploration(Runtime):
                               "paused": "交互键设置为鼠标按键，切出游戏后暂停；切回后继续。"}[mode])
                     previous_mode = mode
                 if not available():
+                    if map_mask:
+                        map_mask.hide()
                     self.pause(.1)
                     continue
                 # A single async Maa capture overlaps the last part of the idle
@@ -117,6 +134,22 @@ class Exploration(Runtime):
                 if frame is None:
                     self.pause(.1)
                     continue
+                if map_mask:
+                    try:
+                        map_mask.observe(frame, foreground=guard.foreground())
+                    except Exception as error:
+                        self.log(f"地图标记已暂停（{type(error).__name__}），重新运行开荒辅助可重试。")
+                        map_mask.close()
+                        map_mask = None
+                        enabled["MapMask"] = False
+                        if not any(enabled.values()):
+                            return False
+                        schedule = AssistSchedule(enabled, now=time.monotonic())
+                # A map deadline must advance even when a higher-priority helper
+                # handles this frame and exits the decision loop early.
+                now = time.monotonic()
+                if "MapMask" in schedule.next_check and now+.01 >= schedule.next_check["MapMask"]:
+                    schedule.checked("MapMask", now)
                 if waiting_clear:
                     if not found("IconSkip", frame):
                         waiting_clear = False
@@ -129,6 +162,9 @@ class Exploration(Runtime):
                 count("assist.decisions")
                 count("assist.checks_due", len(due))
                 for helper in due:
+                    if helper == "MapMask":
+                        schedule.checked(helper, time.monotonic())
+                        continue
                     if helper == "Fishing":
                         from .fishing import fishing_opportunity, run_fishing
                         schedule.checked(helper, time.monotonic())
@@ -168,4 +204,6 @@ class Exploration(Runtime):
                     break
             return True
         finally:
+            if map_mask:
+                map_mask.close()
             guard.release()

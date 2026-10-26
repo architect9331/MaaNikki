@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "pearpal-login",
+  "description": "Official PearPal login window",
+  "windows": ["pearpal-login"],
+  "remote": { "urls": ["https://myl.nuanpaper.com/*"] },
+  "permissions": []
+}

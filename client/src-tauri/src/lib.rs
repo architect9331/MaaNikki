@@ -11,6 +11,24 @@ use tauri::Manager;
 use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 use ws_broadcast::WsBroadcast;
 
+fn restrict_login_handler<F>(
+    handler: F,
+) -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static
+where
+    F: Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static,
+{
+    move |invoke| {
+        // Remote login content has access to one purpose-specific command.
+        if invoke.message.webview_ref().label() == "pearpal-login"
+            && invoke.message.command() != "pearpal_complete_login"
+        {
+            invoke.resolver.reject("登录窗口仅可提交美鸭梨登录信息。");
+            return true;
+        }
+        handler(invoke)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // 日志目录：exe 目录/debug/logs（与前端日志同目录）
@@ -215,7 +233,11 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
+        .invoke_handler(restrict_login_handler(tauri::generate_handler![
+            commands::pearpal::pearpal_status,
+            commands::pearpal::pearpal_open_login,
+            commands::pearpal::pearpal_complete_login,
+            commands::pearpal::pearpal_logout,
             commands::account_state::get_account_state,
             // Maa 核心命令
             commands::maa_core::maa_init,
@@ -320,8 +342,11 @@ pub fn run() {
             // 匿名遥测命令
             commands::telemetry::telemetry_init,
             commands::telemetry::telemetry_set_enabled,
-        ])
+        ]))
         .on_window_event(|window, event| {
+            if window.label() != "main" {
+                return;
+            }
             match event {
                 // 窗口关闭请求：检查是否最小化到托盘
                 tauri::WindowEvent::CloseRequested { api, .. } => {

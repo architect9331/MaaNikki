@@ -8,12 +8,14 @@
         "assist"
       ],
       "default_check": false,
-      "description": "持续处理拾取、清洁跳过和对白推进，停止任务后结束。钓鱼先手动抛竿；钓鱼与鼠标操作在游戏前台执行，键盘交互支持后台。",
+      "description": "持续辅助拾取、清洁跳过、对白和钓鱼。可叠加美鸭梨未收集点位，支持大地图和小地图；停止任务后结束。钓鱼先手动抛竿。",
       "option": [
         "AssistPickup",
         "AssistClear",
         "AssistDialogue",
-        "AssistFishing"
+        "AssistFishing",
+        "AssistMapStar",
+        "AssistMapDewdrop"
       ]
     }
   ],
@@ -129,6 +131,66 @@
           "label": "关闭",
           "pipeline_override": {
             "MaaNikki_Assist_Fishing": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AssistMapStar": {
+      "type": "switch",
+      "label": "奇想星地图标记",
+      "default_case": "No",
+      "description": "在设置的通用页面登录美鸭梨后，标记未收集的奇想星。打开大地图自动识别常用缩放并校准，返回场景后跟随小地图。支持奇迹大陆、万相境及 16:9 窗口。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_Assist_MapStar": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "pipeline_override": {
+            "MaaNikki_Assist_MapStar": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AssistMapDewdrop": {
+      "type": "switch",
+      "label": "灵感露珠地图标记",
+      "default_case": "No",
+      "description": "在设置的通用页面登录美鸭梨后，标记未收集的灵感露珠。打开大地图自动识别常用缩放并校准，返回场景后跟随小地图。支持奇迹大陆、万相境及 16:9 窗口。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_Assist_MapDewdrop": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "pipeline_override": {
+            "MaaNikki_Assist_MapDewdrop": {
               "custom_action_param": {
                 "value": false
               }
