@@ -2,7 +2,7 @@
   "task": [
     {
       "name": "blessing_lock",
-      "label": "一键整理祝福闪光",
+      "label": "祝福闪光仓库读取",
       "entry": "MaaNikki_BlessingLock",
       "group": [
         "collection"

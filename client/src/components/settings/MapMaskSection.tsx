@@ -61,9 +61,9 @@ export function MapMaskSection() {
       <div className="flex items-start gap-3">
         <MapPin className="w-5 h-5 text-accent shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="font-medium text-text-primary">开荒辅助 · 地图标记</div>
+          <div className="font-medium text-text-primary">美鸭梨账号</div>
           <p className="text-xs text-text-muted">
-            登录正在游玩的美鸭梨国服账号，在开荒辅助中开启奇想星、灵感露珠标记。打开大地图自动识别常用缩放并校准，返回场景后跟随小地图。
+            登录正在游玩的美鸭梨国服账号，在辅助功能中开启奇想星、灵感露珠标记。打开大地图自动识别常用缩放并校准，返回场景后跟随小地图。
           </p>
           <p className="text-xs text-text-muted">
             首版支持奇迹大陆、万相境及 16:9 游戏窗口。粉色星形表示奇想星，蓝色水滴表示灵感露珠。收集进度在辅助运行时定期同步。

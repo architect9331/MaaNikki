@@ -43,7 +43,7 @@ export interface LogEntry {
 
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'system' | 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP' | 'ko-KR';
-export type PageView = 'main' | 'settings' | 'blessing';
+export type PageView = 'main' | 'settings' | 'blessing' | 'exploration';
 
 // 定时执行状态信息
 export interface ScheduleExecutionInfo {
@@ -357,11 +357,6 @@ export interface AppState {
   setConnectionPanelExpanded: (expanded: boolean) => void;
   setScreenshotPanelExpanded: (expanded: boolean) => void;
 
-  // 中控台视图模式
-  dashboardView: boolean;
-  setDashboardView: (enabled: boolean) => void;
-  toggleDashboardView: () => void;
-
   // 窗口大小
   windowSize: WindowSize;
   setWindowSize: (size: WindowSize) => void;
@@ -405,6 +400,8 @@ export interface AppState {
 
   // 通信兼容模式
   tcpCompatMode: boolean;
+  explorationSettings: import('@/types/exploration').ExplorationSettings;
+  setExplorationFeature: (key: import('@/types/exploration').ExplorationFeature, enabled: boolean) => void;
   setTcpCompatMode: (enabled: boolean) => void;
 
   /** Web 服务器是否启用（默认 true，重启生效） */

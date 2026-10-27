@@ -1,4 +1,8 @@
 fn main() {
+    // Rebuild embedded Windows resources when the application icons change.
+    println!("cargo:rerun-if-changed=icons/icon.ico");
+    println!("cargo:rerun-if-changed=icons/icon.png");
+
     // rust-embed 在编译期需要 folder 路径存在，
     // dev 模式下可能未运行 pnpm build 导致 ../dist 不存在，创建占位目录避免编译失败
     let dist_dir = std::path::Path::new("../dist");

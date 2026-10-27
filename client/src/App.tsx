@@ -1,5 +1,7 @@
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { BlessingProgressPage } from '@/components/BlessingProgressPage';
+import { ExplorationPage } from '@/components/ExplorationPage';
+import { explorationOwnsWindow, monitorExploration, useExplorationStore } from '@/services/explorationService';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import {
   useAppStore,
@@ -13,7 +15,6 @@ import {
   TaskList,
   AddTaskPanel,
   Toolbar,
-  ScreenshotPanel,
   LogsPanel,
   ConnectionPanel,
 } from '@/components';
@@ -109,11 +110,6 @@ const LazyAutoWelcomeDialog = lazy(async () => {
   return { default: module.AutoWelcomeDialog };
 });
 
-const LazyDashboardView = lazy(async () => {
-  const module = await import('@/components/DashboardView');
-  return { default: module.DashboardView };
-});
-
 const LazyInstallConfirmModal = lazy(async () => {
   const module = await import('@/components/InstallConfirmModal');
   return { default: module.InstallConfirmModal };
@@ -140,6 +136,7 @@ const LazyVersionWarningModal = lazy(async () => {
 });
 
 function App() {
+  useEffect(() => monitorExploration(), []);
   useEffect(() => {
     const refresh = () => void useAccountStateStore.getState().refresh().catch(() => {});
     refresh();
@@ -162,7 +159,6 @@ function App() {
 
   // 页面过渡状态
   const [isSettingsExiting, setIsSettingsExiting] = useState(false);
-  const [isDashboardExiting, setIsDashboardExiting] = useState(false);
 
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -192,8 +188,6 @@ function App() {
     interfaceTranslations,
     language,
     sidePanelExpanded,
-    dashboardView,
-    setDashboardView,
     setWindowSize: setWindowSizeStore,
     setWindowPosition: setWindowPositionStore,
     setUpdateInfo,
@@ -234,8 +228,6 @@ function App() {
       interfaceTranslations: state.interfaceTranslations,
       language: state.language,
       sidePanelExpanded: state.sidePanelExpanded,
-      dashboardView: state.dashboardView,
-      setDashboardView: state.setDashboardView,
       setWindowSize: state.setWindowSize,
       setWindowPosition: state.setWindowPosition,
       setUpdateInfo: state.setUpdateInfo,
@@ -345,15 +337,6 @@ function App() {
     }, PAGE_TRANSITION_DURATION);
   }, [setCurrentPage]);
 
-  // 带退出动画的中控台关闭
-  const closeDashboardWithAnimation = useCallback(() => {
-    setIsDashboardExiting(true);
-    setTimeout(() => {
-      setDashboardView(false);
-      setIsDashboardExiting(false);
-    }, PAGE_TRANSITION_DURATION);
-  }, [setDashboardView]);
-
   const isResizingRef = useRef(false);
 
   // 调整右侧面板宽度
@@ -427,6 +410,8 @@ function App() {
     if (state.autoInstallPending) return;
     if (autoTaskLaunchPendingRef.current) return;
     if (state.instances.some((i) => i.isRunning)) return;
+    const exploration = useExplorationStore.getState();
+    if (exploration.enabled || explorationOwnsWindow() || !['off', 'error'].includes(exploration.status)) return;
 
     log.info('自动安装更新：条件满足，弹出安装');
     state.setAutoInstallPending(true);
@@ -445,6 +430,12 @@ function App() {
       }
     });
   }, [tryAutoInstallUpdate]);
+
+  useEffect(() => useExplorationStore.subscribe((state, prev) => {
+    if (state.status !== prev.status && !state.enabled && ['off', 'error'].includes(state.status)) {
+      tryAutoInstallUpdate();
+    }
+  }), [tryAutoInstallUpdate]);
 
   // 自动下载函数
   const startAutoDownload = useCallback(
@@ -877,15 +868,16 @@ function App() {
           createInstance(t('instance.defaultName'));
         }
 
-        // Upgrade the three default pages once, retaining saved task choices
+        // Upgrade the default pages once, retaining saved task choices
         // and any additional pages the user created.
-        if (pi?.name === 'MaaNikki' && presets?.some((preset) => preset.name === 'BlessingCollection') &&
+        if (pi?.name === 'MaaNikki' && presets?.some((preset) => preset.name === 'Initialization') &&
             useAppStore.getState().nikkiPresetVersion < 1) {
           const defaultIds: string[] = [];
           for (const preset of presets) {
             const state = useAppStore.getState();
             const label = state.resolveI18nText(preset.label, getInterfaceLangKey(state.language)) || preset.name;
             const existing = state.instances.find((instance) => instance.name === label ||
+              (preset.name === 'Initialization' && instance.name === '祝福闪光全收集') ||
               (preset.name === 'Daily' && instance.name === '日常'));
             const id = existing?.id ?? state.createInstance(label, true);
             if (!existing) state.applyPreset(id, preset.name);
@@ -921,6 +913,34 @@ function App() {
             useAppStore.getState().reorderTasks(instance.id, instance.selectedTasks.length, monthlyIndex + 1);
           }
           useAppStore.setState({ nikkiPresetVersion: 2 });
+        }
+
+        // Replace the former collection preset with a one-time warehouse baseline page.
+        if (pi?.name === 'MaaNikki' && presets?.some((preset) => preset.name === 'Initialization') &&
+            useAppStore.getState().nikkiPresetVersion < 3) {
+          const state = useAppStore.getState();
+          const instance = state.instances.find((item) => item.name === '祝福闪光全收集') ??
+            state.instances.find((item) => item.name === '初始化表' || item.name === '全收集初始化');
+          if (instance) {
+            state.renameInstance(instance.id, '全收集初始化');
+            state.applyPreset(instance.id, 'Initialization');
+            useAppStore.setState((current) => ({
+              instances: current.instances.map((item) => item.id !== instance.id ? item : {
+                ...item,
+                selectedTasks: item.selectedTasks.map((task) =>
+                  instance.selectedTasks.find((old) => old.taskName === task.taskName) ?? task),
+              }),
+            }));
+          }
+          useAppStore.setState({ nikkiPresetVersion: 3 });
+        }
+
+        if (pi?.name === 'MaaNikki' && useAppStore.getState().nikkiPresetVersion < 4) {
+          const state = useAppStore.getState();
+          for (const instance of state.instances) {
+            if (instance.name === '初始化表') state.renameInstance(instance.id, '全收集初始化');
+          }
+          useAppStore.setState({ nikkiPresetVersion: 4 });
         }
       }, 0);
 
@@ -1848,6 +1868,17 @@ function App() {
     />
   );
 
+  if (currentPage === 'exploration') {
+    return (
+      <div className="h-full flex flex-col bg-bg-primary relative">
+        <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
+        <ExplorationPage onClose={() => useAppStore.getState().setCurrentPage('main')} />
+        <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
+        {toaster}
+      </div>
+    );
+  }
+
   if (currentPage === "blessing") {
     return (
       <div className="h-full flex flex-col bg-bg-primary relative">
@@ -1969,7 +2000,7 @@ function App() {
         )}
 
         {/* 新用户引导覆盖层 - 仅在右侧面板可见时显示 */}
-        {!onboardingCompleted && !rightPanelCollapsed && !dashboardView && (
+        {!onboardingCompleted && !rightPanelCollapsed && (
           <Suspense fallback={null}>
             <LazyOnboardingOverlay />
           </Suspense>
@@ -2013,17 +2044,7 @@ function App() {
         {/* 顶部标签栏 */}
         <TabBar />
 
-        {/* 中控台视图 */}
-        {dashboardView ? (
-          <div
-            key="dashboard-view"
-            className={`flex-1 min-h-0 ${isDashboardExiting ? 'page-slide-top-exit' : 'page-slide-top-enter'}`}
-          >
-            <Suspense fallback={null}>
-              <LazyDashboardView onClose={closeDashboardWithAnimation} />
-            </Suspense>
-          </div>
-        ) : isMobile ? (
+        {isMobile ? (
           /* 移动端竖屏布局：单列纵向堆叠 */
           <div key="main-view-mobile" className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* 可滚动主内容区 */}
@@ -2031,11 +2052,6 @@ function App() {
               {/* 连接设置 */}
               <div className="p-2">
                 <ConnectionPanel />
-              </div>
-
-              {/* 实时截图 */}
-              <div className="p-2">
-                <ScreenshotPanel />
               </div>
 
               {/* 任务列表 */}
@@ -2125,7 +2141,7 @@ function App() {
                   flexShrink: 1,
                 }}
               >
-                {/* 连接设置和实时截图（可折叠）- 使用 grid 动画 */}
+                {/* 连接设置（可折叠）- 使用 grid 动画 */}
                 <div
                   className="grid transition-[grid-template-rows] duration-150 ease-out"
                   style={{ gridTemplateRows: sidePanelExpanded ? '1fr' : '0fr' }}
@@ -2134,8 +2150,6 @@ function App() {
                     {/* 连接设置（设备/资源选择） */}
                     <ConnectionPanel />
 
-                    {/* 实时截图 */}
-                    <ScreenshotPanel />
                   </div>
                 </div>
 

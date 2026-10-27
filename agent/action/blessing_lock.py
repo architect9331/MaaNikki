@@ -28,7 +28,7 @@ class BlessingLockAction(CustomAction):
             catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
             options = parameters(context, argv.node_name)
             store = InventoryStore(ROOT, catalog)
-            store.invalidate("祝福闪光整理已开始，完整结束前禁止全收集", source="organization")
+            store.invalidate("祝福闪光仓库读取已开始，完整结束前禁止全收集", source="organization")
             locker = BlessingOrganizer(rt, catalog, folder,
                                     allow_unlock=options.get("unlock_nonconforming", False))
             locker.run()
@@ -44,7 +44,7 @@ class BlessingLockAction(CustomAction):
             operations = locker.report["operations"]
             added = sum(op["status"] == "confirmed" and op["kind"] == "lock" for op in operations)
             removed = sum(op["status"] == "confirmed" and op["kind"] == "unlock" for op in operations)
-            status = "祝福闪光整理完成" if published else "整理结束，仓库数量核对异常，请重新整理"
+            status = "祝福闪光仓库读取完成" if published else "整理结束，仓库数量核对异常，请重新整理"
             rt.log(f"{status}：头部、手部、脚部共新增锁定 {added} 个，解锁 {removed} 个。"
                    f"报告：{folder / 'locking.json'}。",
                    ui_text=f"{status}：新增锁定 {added} 个，解锁 {removed} 个。")
@@ -59,7 +59,7 @@ class BlessingLockAction(CustomAction):
                                      reason="用户停止；已提交但未确认的操作请检查报告，重新运行会重新核对已有锁定")
             raise
         except (RescanSlot, OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
-            reason = "前台变化使整理位置失效，请重新运行祝福闪光整理" if isinstance(error, RescanSlot) else str(error)
+            reason = "前台变化使整理位置失效，请重新运行祝福闪光仓库读取" if isinstance(error, RescanSlot) else str(error)
             if not rt.stopped:
                 rt.diagnostic("blessing_lock", reason)
             if locker is not None:
@@ -68,8 +68,8 @@ class BlessingLockAction(CustomAction):
                     locker.image("interrupted.png", rt.capture())
                 except (OSError, RuntimeError, cv2.error):
                     pass  # Saving the operation history must survive capture failure.
-            rt.log(f"祝福闪光整理暂停：{reason}。操作记录：{folder}。",
-                   ui_text=f"祝福闪光整理暂停：{reason}。")
+            rt.log(f"祝福闪光仓库读取暂停：{reason}。操作记录：{folder}。",
+                   ui_text=f"祝福闪光仓库读取暂停：{reason}。")
             return False
         finally:
             if locker is not None:

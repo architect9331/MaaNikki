@@ -33,8 +33,8 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
       </div>
       <div className="flex-1 min-h-0 overflow-auto p-4 space-y-4">
         {error && <div className="rounded-md border border-error/30 bg-error/5 p-3 text-xs text-error" role="alert">无法读取账号状态：{error}</div>}
-        {!error && !progress.known && <div className="rounded-md border border-border bg-bg-secondary p-3 text-sm text-text-secondary">{loading ? '正在读取本地记录…' : '尚无完整的五星收藏记录，请先运行祝福闪光整理。'}</div>}
-        {uncertain && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />存在未确认操作或收藏保护待复核，以下展示上次已确认的记录，请重新运行祝福闪光整理核对。</p>}
+        {!error && !progress.known && <div className="rounded-md border border-border bg-bg-secondary p-3 text-sm text-text-secondary">{loading ? '正在读取本地记录…' : '尚无完整的五星收藏记录，请先运行祝福闪光仓库读取。'}</div>}
+        {uncertain && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />存在未确认操作或收藏保护待复核，以下展示上次已确认的记录，请重新运行祝福闪光仓库读取核对。</p>}
         <div className="grid grid-cols-3 gap-3">
           {[
             ['已收集颜色', progress.owned.size, target],

@@ -8,7 +8,6 @@ import {
   Sun,
   Moon,
   Check,
-  LayoutGrid,
   Copy,
   Edit3,
   XCircle,
@@ -27,7 +26,6 @@ import { useAppStore } from '@/stores/appStore';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 import { AccountStatusActions } from './AccountStatusActions';
-import { getInterfaceLangKey } from '@/i18n';
 import { exportFileWithToast, exportWithToast } from '@/utils/tabExportImport';
 import clsx from 'clsx';
 
@@ -73,10 +71,6 @@ export function TabBar() {
     setTheme,
     setCurrentPage,
     projectInterface,
-    resolveI18nText,
-    language,
-    dashboardView,
-    toggleDashboardView,
     updateInfo,
     recentlyClosed,
     downloadStatus,
@@ -173,7 +167,6 @@ export function TabBar() {
     setTheme(currentMode === 'light' ? 'dark' : 'light');
   };
 
-  const langKey = getInterfaceLangKey(language);
 
   // 右键菜单处理
   const handleTabContextMenu = useCallback(
@@ -379,9 +372,9 @@ export function TabBar() {
   }, [dragState.isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className="flex items-center h-10 bg-bg-secondary border-b border-border select-none">
+    <div className="flex shrink-0 items-center h-12 bg-bg-secondary border-b border-border select-none">
       {/* 标签页区域 */}
-      <div id="tab-bar-area" className="flex-1 flex items-center h-full overflow-x-auto">
+      <div id="tab-bar-area" className="min-w-0 flex-1 flex items-center h-full overflow-x-auto">
         {instances.map((instance, index) => {
           const isAnimatingIn = animatingTabIds.includes(instance.id);
           const isClosing = closingTabIds.includes(instance.id);
@@ -477,7 +470,7 @@ export function TabBar() {
                   {instance.isRunning && (
                     <span className="w-2 h-2 rounded-full bg-accent task-running-indicator flex-shrink-0" />
                   )}
-                  <span className="flex-1 truncate text-sm" title={t('titleBar.renameInstance')}>
+                  <span className="flex-1 truncate text-[15px]" title={t('titleBar.renameInstance')}>
                     {instance.name}
                   </span>
                   {!isClosing && (
@@ -504,20 +497,15 @@ export function TabBar() {
         {/* 新建标签按钮 */}
         <button
           onClick={handleNewTab}
-          className="flex items-center justify-center w-8 h-full hover:bg-bg-hover transition-colors"
+          className="flex shrink-0 items-center justify-center w-10 h-full hover:bg-bg-hover transition-colors"
           title={t('titleBar.newTab')}
         >
-          <Plus className="w-4 h-4 text-text-secondary" />
+          <Plus className="w-5 h-5 text-text-secondary" />
         </button>
       </div>
 
-      {/* 项目名称（根据协议，label 是 UI 显示名称，title 是窗口标题；移动端隐藏节省空间） */}
-      <div className="hidden md:block px-4 text-sm font-medium text-text-secondary">
-        {resolveI18nText(projectInterface?.label, langKey) || projectInterface?.name || 'MXU'}
-      </div>
-
       {/* 工具按钮 */}
-      <div className="flex items-center gap-1 px-2">
+      <div className="flex shrink-0 items-center gap-1.5 px-3">
         <AccountStatusActions onShowProgress={() => setCurrentPage('blessing')} />
         {/* 更新通知图标 - 有更新、正在下载或有错误时显示 */}
         {(updateInfo?.hasUpdate || updateInfo?.errorCode || downloadStatus === 'downloading') && (
@@ -538,7 +526,7 @@ export function TabBar() {
           >
             <Bell
               className={clsx(
-                'w-4 h-4',
+                'w-5 h-5',
                 // 有错误码时用 warning 色，否则用 accent 色
                 updateInfo?.errorCode ? 'text-warning' : 'text-accent',
                 !showUpdatePanel && 'animate-bell-shake',
@@ -568,19 +556,9 @@ export function TabBar() {
             )}
             title={t('recentlyClosed.title')}
           >
-            <History className="w-4 h-4" />
+            <History className="w-5 h-5" />
           </button>
         )}
-        <button
-          onClick={toggleDashboardView}
-          className={clsx(
-            'p-2 rounded-md transition-colors',
-            dashboardView ? 'bg-accent/10 text-accent' : 'hover:bg-bg-hover text-text-secondary',
-          )}
-          title={t('dashboard.toggle')}
-        >
-          <LayoutGrid className="w-4 h-4" />
-        </button>
         <button
           onClick={toggleTheme}
           className="p-2 rounded-md hover:bg-bg-hover transition-colors"
@@ -589,9 +567,9 @@ export function TabBar() {
           }
         >
           {resolveThemeMode(theme) === 'light' ? (
-            <Moon className="w-4 h-4 text-text-secondary" />
+            <Moon className="w-5 h-5 text-text-secondary" />
           ) : (
-            <Sun className="w-4 h-4 text-text-secondary" />
+            <Sun className="w-5 h-5 text-text-secondary" />
           )}
         </button>
         <button
@@ -599,7 +577,7 @@ export function TabBar() {
           className="p-2 rounded-md hover:bg-bg-hover transition-colors"
           title={t('titleBar.settings')}
         >
-          <Settings className="w-4 h-4 text-text-secondary" />
+          <Settings className="w-5 h-5 text-text-secondary" />
         </button>
       </div>
 

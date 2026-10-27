@@ -23,7 +23,7 @@ class ExplorationAction(CustomAction):
         try:
             return rt.run_assist()
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
-            rt.log(f"开荒辅助已停止：{error}。")
+            rt.log(f"辅助功能已停止：{error}。")
             return False
 
 

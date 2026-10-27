@@ -54,6 +54,7 @@ import {
 import { loggers } from '@/utils/logger';
 import { findSwitchCase } from '@/utils/optionHelpers';
 import { create } from 'zustand';
+import { normalizeExplorationSettings } from '@/types/exploration';
 import { subscribeWithSelector } from 'zustand/middleware';
 
 import { clearLogsOnBackend, logToStdout, pushLogToBackend } from '@/utils/logStdout';
@@ -1250,6 +1251,10 @@ export const useAppStore = create<AppState>()(
     // 配置导入
     importConfig: (config) => {
       const pi = get().projectInterface;
+      const oldExploration = [...config.instances].sort((a, b) =>
+        Number(b.id === config.lastActiveInstanceId) - Number(a.id === config.lastActiveInstanceId))
+        .flatMap((instance) => instance.tasks).find((task) => task.taskName === 'exploration');
+      const explorationSettings = normalizeExplorationSettings(config.settings.exploration, oldExploration?.optionValues);
 
       // 折叠状态本地优先：其他客户端修改配置触发 importConfig 时沿用内存中的值，
       // 只有冷启动（内存为空）才回落到配置里持久化的值，避免别的端把当前正在看的面板收起来。
@@ -1287,9 +1292,14 @@ export const useAppStore = create<AppState>()(
         ...getPretaskItems(pi).map((item) => pretaskName(item)),
       ]);
 
-      const instances: Instance[] = config.instances.map((inst) => {
+      const instances: Instance[] = config.instances.filter((inst) => !(
+        pi?.name === 'MaaNikki' && inst.name === '开荒辅助' &&
+        inst.tasks.some((task) => task.taskName === 'exploration') &&
+        inst.tasks.every((task) => task.taskName === 'exploration' || !task.enabled) &&
+        !inst.schedulePolicies?.length && !inst.preActions?.length && !inst.preAction
+      )).map((inst) => {
         // 记录被过滤掉的无效任务
-        const invalidTasks = inst.tasks.filter((t) => !validTaskNames.has(t.taskName));
+        const invalidTasks = inst.tasks.filter((t) => t.taskName !== 'exploration' && !validTaskNames.has(t.taskName));
         if (invalidTasks.length > 0) {
           loggers.config.warn(
             `实例 "${inst.name}" 中有 ${invalidTasks.length} 个无效任务被移除:`,
@@ -1490,6 +1500,7 @@ export const useAppStore = create<AppState>()(
       set({
         instances,
         activeInstanceId,
+        explorationSettings,
         theme: effectiveTheme,
         accentColor: effectiveAccentColor,
         language: effectiveLanguage,
@@ -1989,11 +2000,6 @@ export const useAppStore = create<AppState>()(
       if (!isTauri()) patchWebUILayout({ screenshotPanelExpanded: expanded });
     },
 
-    // 中控台视图模式
-    dashboardView: false,
-    setDashboardView: (enabled) => set({ dashboardView: enabled }),
-    toggleDashboardView: () => set((state) => ({ dashboardView: !state.dashboardView })),
-
     // 窗口大小
     windowSize: defaultWindowSize,
     setWindowSize: (size) => {
@@ -2047,6 +2053,10 @@ export const useAppStore = create<AppState>()(
 
     // 通信兼容模式
     tcpCompatMode: false,
+    explorationSettings: normalizeExplorationSettings(),
+    setExplorationFeature: (key, enabled) => set((state) => ({
+      explorationSettings: { ...state.explorationSettings, [key]: enabled },
+    })),
     setTcpCompatMode: (enabled) => set({ tcpCompatMode: enabled }),
 
     // 局域网访问（Web UI 绑定 0.0.0.0，需重启生效）
@@ -2508,6 +2518,7 @@ function generateConfig(): MxuConfig {
           welcomeShownHash: state.welcomeShownHash,
           devMode: state.devMode,
           tcpCompatMode: state.tcpCompatMode,
+          exploration: state.explorationSettings,
           allowLanAccess: state.allowLanAccess,
           webServerEnabled: state.webServerEnabled,
           webServerPort: state.webServerPort,
@@ -2588,6 +2599,7 @@ useAppStore.subscribe(
     welcomeShownHash: state.welcomeShownHash,
     devMode: state.devMode,
     tcpCompatMode: state.tcpCompatMode,
+    explorationSettings: state.explorationSettings,
     allowLanAccess: state.allowLanAccess,
     webServerEnabled: state.webServerEnabled,
     webServerPort: state.webServerPort,

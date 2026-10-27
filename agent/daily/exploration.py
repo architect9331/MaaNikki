@@ -42,11 +42,11 @@ class Exploration(Runtime):
                      if parameters(self.context, "MaaNikki_Assist_" + key).get("value", False)}
         enabled["MapMask"] = bool(map_kinds)
         if not any(enabled.values()):
-            self.log("请至少开启一项开荒辅助功能。")
+            self.log("请至少开启一项辅助功能。")
             return False
         guard = ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
         binding = self.game_keys.get("interact")
-        self.log("开荒辅助已启动：键盘交互支持切出游戏后继续拾取、对白和跳过；鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
+        self.log("辅助功能已启动：键盘交互支持切出游戏后继续拾取、对白和跳过；鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
         schedule = AssistSchedule(enabled, now=time.monotonic())
         waiting_clear = False
         previous_mode = None
@@ -117,9 +117,9 @@ class Exploration(Runtime):
                 mode = ("minimized" if guard.user32.IsIconic(guard.hwnd) else
                         "foreground" if foreground else "background" if binding.kind == "key" else "paused")
                 if mode != previous_mode:
-                    self.log({"foreground": "开荒辅助在游戏前台运行，键盘交互使用 PostMessage。",
-                              "background": "开荒辅助继续后台识别，交互键通过 PostMessage 发往游戏窗口。",
-                              "minimized": "游戏已最小化，开荒辅助暂停识别和输入。",
+                    self.log({"foreground": "辅助功能在游戏前台运行，键盘交互使用 PostMessage。",
+                              "background": "辅助功能继续后台识别，交互键通过 PostMessage 发往游戏窗口。",
+                              "minimized": "游戏已最小化，辅助功能暂停识别和输入。",
                               "paused": "交互键设置为鼠标按键，切出游戏后暂停；切回后继续。"}[mode])
                     previous_mode = mode
                 if not available():
@@ -138,7 +138,7 @@ class Exploration(Runtime):
                     try:
                         map_mask.observe(frame, foreground=guard.foreground())
                     except Exception as error:
-                        self.log(f"地图标记已暂停（{type(error).__name__}），重新运行开荒辅助可重试。")
+                        self.log(f"地图标记已暂停（{type(error).__name__}），重新运行辅助功能可重试。")
                         map_mask.close()
                         map_mask = None
                         enabled["MapMask"] = False

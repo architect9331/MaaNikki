@@ -133,7 +133,7 @@ class BlessingLocker(InventoryScanner):
 
     def check_generation(self, generation):
         if self.rt.stopped:
-            raise TaskStopped("用户停止祝福闪光整理")
+            raise TaskStopped("用户停止祝福闪光仓库读取")
         super().check_generation(generation)
 
     def open(self):

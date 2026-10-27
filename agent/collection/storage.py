@@ -146,24 +146,24 @@ class InventoryStore:
         candidates = [(self.read_snapshot(path), path)
                       for path in (self.path, self.last_scan_path) if self.exists(path)]
         if not candidates:
-            raise ValueError("请先完整运行一次“祝福闪光整理”")
+            raise ValueError("请先完整运行一次“祝福闪光仓库读取”")
         data, path = max(candidates, key=lambda pair: self.updated_at(pair[0]))
         order = deepcopy(data.get("organization"))
         if (data.get("catalog_version") != self.catalog["version"] or not isinstance(order, dict)
                 or order.get("version") != 1
                 or order.get("sort") != "acquired_desc"
                 or set(order.get("slots", {})) != set(SLOTS)):
-            raise ValueError("缺少完整的获得时间整理基准，请先完整运行“祝福闪光整理”（旧锁定记录不能代替）")
+            raise ValueError("缺少完整的获得时间整理基准，请先完整运行“祝福闪光仓库读取”（旧锁定记录不能代替）")
         recovered = False
         if order.get("complete") is not True:
             recovered = self.recover_legacy_lookup(data, order)
             if not recovered:
                 raise ValueError("整理基准需重新核对："
                                  + str(order.get("reason") or "尚未完成完整整理")
-                                 + "；请运行“祝福闪光整理”")
+                                 + "；请运行“祝福闪光仓库读取”")
         operation = order.get("pending_operation")
         if operation is not None and (not isinstance(operation, dict) or operation.get("kind") != "realm"):
-            raise ValueError("上次库存修改尚未确认，请重新运行祝福闪光整理")
+            raise ValueError("上次库存修改尚未确认，请重新运行祝福闪光仓库读取")
         identifiers = set()
         protected = set()
         for slot, rows in order["slots"].items():

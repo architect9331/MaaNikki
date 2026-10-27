@@ -36,7 +36,7 @@ function formatLogTime(date: Date, locale?: string) {
   });
 }
 
-export function LogsPanel() {
+export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
   const { t, i18n } = useTranslation();
   const isMobile = useIsMobile();
   const logsContainerRef = useRef<HTMLDivElement>(null);
@@ -49,11 +49,12 @@ export function LogsPanel() {
   const {
     sidePanelExpanded,
     toggleSidePanelExpanded,
-    activeInstanceId,
+    activeInstanceId: selectedInstanceId,
     instanceLogs,
     clearLogs,
     setMaxLogsPerInstance,
   } = useAppStore();
+  const activeInstanceId = instanceId ?? selectedInstanceId;
   const { state: menuState, show: showMenu, hide: hideMenu } = useContextMenu();
   const { exportModal, handleExportLogs, closeExportModal, openExportedFile } = useExportLogs();
 
@@ -103,9 +104,11 @@ export function LogsPanel() {
     if (activeInstanceId) {
       clearLogs(activeInstanceId);
     }
-    clearPersistedRuntimeLogs();
-    clearLogFiles();
-  }, [activeInstanceId, clearLogFiles, clearLogs]);
+    if (!instanceId) {
+      clearPersistedRuntimeLogs();
+      clearLogFiles();
+    }
+  }, [activeInstanceId, instanceId, clearLogFiles, clearLogs]);
 
   const handleCopyAll = useCallback(() => {
     const text = visibleLogs
@@ -210,10 +213,11 @@ export function LogsPanel() {
         },
       ];
 
-      showMenu(e, menuItems);
+      showMenu(e, instanceId ? menuItems.filter((item) => item.id !== 'toggle-panel' && item.id !== 'divider-1') : menuItems);
     },
     [
       t,
+      instanceId,
       logs.length,
       sidePanelExpanded,
       handleExportLogs,
@@ -229,17 +233,17 @@ export function LogsPanel() {
       id="logs-panel"
       className={clsx(
         'flex flex-col bg-bg-secondary rounded-lg ring-1 ring-inset ring-border overflow-hidden',
-        // 2.5rem = TabBar h-10；若 TabBar 高度变更需同步更新
-        isMobile ? 'h-[calc(100dvh-2.5rem)]' : 'flex-1 min-h-50',
+        // 3rem = TabBar h-12；若 TabBar 高度变更需同步更新
+        instanceId ? 'h-full min-h-0' : isMobile ? 'h-[calc(100dvh-3rem)]' : 'flex-1 min-h-50',
       )}
     >
       {/* 标题栏（桌面端可点击展开/折叠上方面板，移动端仅显示标题） */}
       <div
-        role={isMobile ? undefined : 'button'}
-        tabIndex={isMobile ? undefined : 0}
-        onClick={isMobile ? undefined : toggleSidePanelExpanded}
+        role={isMobile || instanceId ? undefined : 'button'}
+        tabIndex={isMobile || instanceId ? undefined : 0}
+        onClick={isMobile || instanceId ? undefined : toggleSidePanelExpanded}
         onKeyDown={
-          isMobile
+          isMobile || instanceId
             ? undefined
             : (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -250,7 +254,7 @@ export function LogsPanel() {
         }
         className={clsx(
           'flex items-center justify-between px-3 py-2 border-b border-border transition-colors shrink-0 rounded-t-lg',
-          !isMobile &&
+          !isMobile && !instanceId &&
             'hover:bg-bg-hover cursor-pointer focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 outline-none',
         )}
       >
@@ -288,7 +292,7 @@ export function LogsPanel() {
           >
             <Eraser className="w-3.5 h-3.5" />
           </button>
-          {!isMobile && (
+          {!isMobile && !instanceId && (
             <span
               className={clsx(
                 'p-0.5 rounded transition-colors',

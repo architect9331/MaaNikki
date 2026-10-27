@@ -667,7 +667,7 @@ export const maaService = {
       // pendingTaskIds 保留整轮执行历史，结束/停止后仍可能非空。
       // 是否还在执行以 MaaTaskerRunning 的实时结果为准。
       if (Object.values(state.instances).some(item => item.isRunning))
-        throw new Error('请先停止正在运行的任务组，再启动日常或开荒辅助。');
+        throw new Error('请先停止正在运行的任务组，再启动日常或辅助功能。');
     piEnvs = { ...piEnvs, PI_MAANIKKI_DEV_MODE: devMode ? '1' : '0', PI_MAANIKKI_RUN_PLAN: JSON.stringify({
       schema_version: 1, id: crypto.randomUUID(), instance: instanceId,
       entries: tasks.map(task => task.entry),

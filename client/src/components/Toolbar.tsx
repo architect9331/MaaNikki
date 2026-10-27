@@ -61,6 +61,7 @@ import {
 import { scheduleService } from '@/services/scheduleService';
 import { stopInstanceTasks } from '@/services/taskStopService';
 import { taskStartService, type TaskStartOptions } from '@/services/taskStartService';
+import { reserveDailyWindow } from '@/services/explorationService';
 import { isTaskSelectedForRun, filterTasksForRun } from '@/utils/taskRunFilter';
 import { isTaskAvailable } from '@/utils/developerTasks';
 import { isTauri } from '@/utils/paths';
@@ -486,7 +487,9 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         return failStart(t('taskList.autoConnect.needConfig'));
       }
 
+      let releaseExploration: (() => void) | undefined;
       try {
+        releaseExploration = await reserveDailyWindow();
         let needsReconnect = false;
         let shouldDelayAfterAdbConnected = false;
 
@@ -1356,6 +1359,8 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         }
 
         return false;
+      } finally {
+        releaseExploration?.();
       }
     },
     [

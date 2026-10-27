@@ -59,4 +59,6 @@ PRs should explain changed behavior, link related issues, list validation comman
 
 ## Configuration & Release Hygiene
 
+Keep `docs/manual.md` current with user-facing changes to features, options, defaults, task behavior, and setup steps. Before each release, review the manual against the changes being shipped and update affected sections in the same batch. Refresh affected UI screenshots in `docs/images/` when documented screens change. Keep usage instructions in this unified manual, with README focused on downloads and feature highlights. Use concise, friendly wording consistent with the MAA series and omit defensive explanations.
+
 Keep personal configuration, caches, logs, credentials, runtimes, and binaries out of Git. Synchronize Python requirements and runtime manifests; update model hashes when changing OCR assets. Preserve upstream notices in `licenses/` and `THIRD_PARTY_NOTICES.md`.

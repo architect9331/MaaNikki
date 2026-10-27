@@ -1,47 +1,74 @@
+<div align="center">
+
+<img src="resource/icon.png" alt="MaaNikki" width="256" height="256" />
+
 # MaaNikki
 
-《无限暖暖》PC 自动化助手，支持 Windows 10/11 x64。
+✨ 一款《无限暖暖》游戏小助手 ✨
 
-> **QQ 交流群：654174255**
->
-> 欢迎加入，反馈 Bug、提出建议或交流使用经验。
+[![版本](https://img.shields.io/github/v/release/architect9331/MaaNikki?label=release&color=f28fa8)](https://github.com/architect9331/MaaNikki/releases/latest)
+[![下载量](https://img.shields.io/github/downloads/architect9331/MaaNikki/total?color=f4b85e)](https://github.com/architect9331/MaaNikki/releases)
+[![平台](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-8b9dcc)](https://github.com/architect9331/MaaNikki/releases/latest)
+[![许可](https://img.shields.io/badge/license-AGPL--3.0--only-a7bca0)](LICENSE)
 
-## 功能
+基于图像识别，一键完成日常，自动追全祝福闪光颜色。
 
-| 功能 | 内容 |
-| --- | --- |
-| **祝福闪光** | **一键全收集五星满级颜色**：按缺色选本、刷取升级、锁定新颜色、保存进度；支持仓库整理与仅升级 |
-| 日常任务 | 美鸭梨挖掘、朝夕心愿、星海拾光、家园日常、奇迹之旅领奖 |
-| 幻境挑战 | 每周幻境、素材激化、祝福闪光、魔物试炼 |
-| 商城与巅峰赛 | 免费礼包、每月五抽兑换、巅峰赛搭配挑战与领奖兑换 |
-| 开荒辅助 | 自动拾取、对白跳过、动物清洁，美鸭梨未收集奇想星／灵感露珠地图标记 |
-| 自动钓鱼 | 当前点钓鱼、路线钓鱼 |
-| 运行管理 | 启动游戏、多配置、任务预设、账号周期状态、键位设置、定时执行、日志与失败恢复 |
+Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https://github.com/MistEO/MXU)
 
-全收集首次需完整运行“一键整理祝福闪光”，再开启「幻境挑战 → 五星祝福闪光全收集」。缺噗灵或材料时保存退出，下次继续。右上角“收集进度”可查看已收集颜色。[查看使用说明](docs/blessing.md)
+[下载最新版](https://github.com/architect9331/MaaNikki/releases/latest) · [用户手册](docs/manual.md) · [更新日志](CHANGELOG.md)
 
-## 快速开始
+</div>
 
-1. 从 [Releases](https://github.com/architect9331/MaaNikki/releases) 下载 Windows x64 运行包，完整解压后启动 `MaaNikki.exe`。
-2. 使用 16:9 游戏窗口，推荐 1920×1080；核对按键设置，提前解锁任务所需地图、能力和关卡。
-3. 默认提供“全套日常”“开荒辅助”“祝福闪光全收集”三个页签，朝夕心愿排在幻境挑战之前。可配置官方启动器路径，启动游戏任务会优先执行。
-4. 自动路线运行时保持游戏在前台；定时任务需保持 MaaNikki 运行。开荒辅助单独运行，手动停止。
+## 下载与安装
 
-客户端支持从 GitHub 检查和安装更新。源码包不含运行环境。
+前往 [Releases](https://github.com/architect9331/MaaNikki/releases/latest) 下载 **Windows x64 运行包**，完整解压后启动 `MaaNikki.exe`。
 
-## 使用须知
+首次使用请参阅[快速开始](docs/manual.md#快速开始)，配置游戏窗口、按键和任务预设。客户端支持自动检查和下载更新。
 
-- 祝福闪光升级使用**五星及以下未锁定素材，极端情况下会使用其他五星胚子**；全收集模式刷取后会分解四星及以下未锁定闪光，请提前锁定需要保留的四星及以下普通祝福闪光。
-- 朝夕心愿和星海拾光仅执行已适配项目，具体范围见[任务说明](docs/usage.md)。
-- 星海子任务默认全选，可按需关闭聚会聊天等项目；巅峰赛兑换默认关闭，每月五抽兑换会消耗静谧水滴。
+## 功能一览
 
-详细说明：[使用与任务范围](docs/usage.md) · [祝福闪光与库存 JSON](docs/blessing.md) · [更新日志](CHANGELOG.md) · [开发与构建](BUILDING.md)
+- 🌈 **祝福闪光一键全收集**：按缺失颜色选本，自动刷取、升级、锁定五星满级新颜色，保存进度、接续处理。右上角随时查看收集情况。
+- 📅 **日常自动化**：美鸭梨挖掘、朝夕心愿、星海拾光、家园日常、奇迹之旅与邮箱领奖，一键安排。
+- ⚔️ **幻境挑战**：每周幻境、素材激化、祝福闪光、魔物试炼，按需使用活跃能量。
+- 🎁 **商城与巅峰赛**：免费礼包、每月五抽兑换、巅峰赛搭配挑战与奖励兑换。
+- 🧭 **探索辅助**：自动拾取、对白推进、清洁动画跳过；将美鸭梨未收集的奇想星、灵感露珠标记到游戏地图。右上角开关随手启停。
+- 🎣 **钓鱼与采集**：当前点钓鱼、路线钓鱼、每日星光结晶路线采集。
+- ⏰ **任务管理**：自动启动游戏、多配置与预设、定时执行、周期状态记录、键位设置和日志导出。
 
-## 来源与致谢
+![MaaNikki 主界面：日常任务与右上角辅助入口](docs/images/overview-light.png)
 
-- [Whimbox（奇想盒）](https://github.com/nikkigallery/Whimbox)：部分路线及匹配截图来自该项目。
+<details>
+<summary>🌈 看看祝福闪光收集进度</summary>
+
+![祝福闪光收集进度：按副本、套组和部位查看已收集颜色](docs/images/collection-progress.png)
+
+</details>
+
+## 使用说明
+
+功能设置、任务范围、祝福闪光全收集和常见问题，统一收录在[用户手册](docs/manual.md)。
+
+首次追全祝福闪光，运行「**全收集初始化**」，再开启「**幻境挑战 → 五星祝福闪光全收集**」。[查看完整流程 →](docs/manual.md#祝福闪光全收集)
+
+## 参与开发
+
+欢迎提交代码、分享使用经验和完善文档。开发环境与打包流程见[构建指南](BUILDING.md)，模块划分与调试工具见[开发文档](docs/architecture.md)。
+
+## 交流与反馈
+
+**QQ 交流群：654174255**
+
+使用问题、功能建议，欢迎在群里交流，也可以提交 [Issue](https://github.com/architect9331/MaaNikki/issues)。
+
+## 致谢
+
 - [MaaFramework](https://github.com/MaaXYZ/MaaFramework)：自动化框架。
-- [MXU](https://github.com/MistEO/MXU)：桌面客户端基于该项目修改。
+- [MXU](https://github.com/MistEO/MXU)：桌面客户端基础。
+- [Whimbox（奇想盒）](https://github.com/nikkigallery/Whimbox)：部分路线与匹配截图。
 - [MaaCommonAssets](https://github.com/MaaXYZ/MaaCommonAssets) / [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)：OCR 模型。
 
-本项目代码采用 **AGPL-3.0-only**，第三方组件及素材保留各自的许可与来源说明，详见 [LICENSE](LICENSE)、[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [licenses/](licenses/)。本项目与游戏官方无关联。
+感谢参与开发、反馈问题和分享使用经验的朋友！
+
+## 开源许可
+
+本项目代码采用 **[AGPL-3.0-only](LICENSE)**。第三方组件及素材的许可与来源见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [licenses/](licenses/)。

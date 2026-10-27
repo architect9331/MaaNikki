@@ -219,7 +219,7 @@ class OrderedView:
                 key = anchor(row)
                 if old is not None and key in old_anchors:
                     if len(matched) >= len(expected) or key != expected[len(matched)]:
-                        raise RuntimeError("已有锁定参照顺序改变，请重新运行祝福闪光整理")
+                        raise RuntimeError("已有锁定参照顺序改变，请重新运行祝福闪光仓库读取")
                     matched.append(key)
                     if matched == expected:
                         self.o.check_coverage(seen)
@@ -234,7 +234,7 @@ class OrderedView:
                 if seen:
                     self.o.check_coverage(seen)
                 return rows, len(old or [])
-        raise RuntimeError("新增区域超过定位上限，请重新运行祝福闪光整理建立基准")
+        raise RuntimeError("新增区域超过定位上限，请重新运行祝福闪光仓库读取建立基准")
 
     def locate(self, target, rows, *, exact_lock=None, quantities=False):
         """Check a bounded neighbourhood, with anchor proof for absence.

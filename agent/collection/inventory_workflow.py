@@ -196,7 +196,7 @@ class FiveStarInventory(BlessingLocker):
             old_keys = {self.key(row) for row in old[:cut] if row["locked"] and row["maximum"]}
             new_keys = {self.key(row) for row in prefix if row["locked"] and row["maximum"]}
             if not old_keys <= new_keys:
-                raise RuntimeError("新增区核对发现旧收藏改变，请重新运行祝福闪光整理")
+                raise RuntimeError("新增区核对发现旧收藏改变，请重新运行祝福闪光仓库读取")
             unfinished = self.organization["unfinished"]
             if unfinished and any(row["id"] == unfinished for row in old) and not any(
                     row["id"] == unfinished for row in rows):
@@ -225,7 +225,7 @@ class FiveStarInventory(BlessingLocker):
 
     def process_inventory(self):
         if not self.prepared:
-            raise RuntimeError("需先完成祝福闪光整理基准")
+            raise RuntimeError("需先完成祝福闪光仓库读取基准")
         if self.progress()["complete"] and not self.organization["unfinished"]:
             return self.batch_result("collection_complete")
         self.report["phase"] = "upgrade_queue"

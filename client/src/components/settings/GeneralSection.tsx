@@ -21,8 +21,6 @@ import { defaultAddTaskPanelHeight, defaultWindowSize } from '@/types/config';
 import { isTauri } from '@/utils/paths';
 import { SwitchButton } from '@/components/FormControls';
 import { DesktopOnlyWrapper } from '@/components/ui/DesktopOnlyWrapper';
-import { FrameRateSelector } from '../FrameRateSelector';
-import { MapMaskSection } from './MapMaskSection';
 
 export function GeneralSection() {
   const { t } = useTranslation();
@@ -158,7 +156,6 @@ export function GeneralSection() {
       </h2>
 
       {/* 自动化启动设置组 */}
-      <MapMaskSection />
       <DesktopOnlyWrapper>
         <div className="bg-bg-secondary rounded-xl p-4 border border-border space-y-4">
           {/* ① 开机自启动 */}
@@ -317,7 +314,6 @@ export function GeneralSection() {
       </div>
 
       {/* ⑥ 帧率选择器 */}
-      <FrameRateSelector />
 
       {/* 自动清理运行日志 */}
       <div className="bg-bg-secondary rounded-xl p-4 border border-border">

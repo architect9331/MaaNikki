@@ -134,6 +134,7 @@ export interface HotkeySettings {
 
 // 应用设置
 export interface AppSettings {
+  exploration?: import('./exploration').ExplorationSettings;
   theme: 'light' | 'dark' | 'system';
   accentColor?: AccentColor; // 强调色
   language: 'system' | 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP' | 'ko-KR';

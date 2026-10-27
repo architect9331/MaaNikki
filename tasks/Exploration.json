@@ -1,24 +1,5 @@
 {
-  "task": [
-    {
-      "name": "exploration",
-      "label": "开荒辅助",
-      "entry": "MaaNikki_Exploration",
-      "group": [
-        "assist"
-      ],
-      "default_check": false,
-      "description": "持续辅助拾取、清洁跳过、对白和钓鱼。可叠加美鸭梨未收集点位，支持大地图和小地图；停止任务后结束。钓鱼先手动抛竿。",
-      "option": [
-        "AssistPickup",
-        "AssistClear",
-        "AssistDialogue",
-        "AssistFishing",
-        "AssistMapStar",
-        "AssistMapDewdrop"
-      ]
-    }
-  ],
+  "task": [],
   "option": {
     "AssistPickup": {
       "type": "switch",
@@ -143,7 +124,7 @@
       "type": "switch",
       "label": "奇想星地图标记",
       "default_case": "No",
-      "description": "在设置的通用页面登录美鸭梨后，标记未收集的奇想星。打开大地图自动识别常用缩放并校准，返回场景后跟随小地图。支持奇迹大陆、万相境及 16:9 窗口。",
+      "description": "在辅助功能设置中登录美鸭梨后，标记未收集的奇想星。打开大地图自动识别常用缩放并校准，返回场景后跟随小地图。支持奇迹大陆、万相境及 16:9 窗口。",
       "cases": [
         {
           "name": "Yes",
@@ -173,7 +154,7 @@
       "type": "switch",
       "label": "灵感露珠地图标记",
       "default_case": "No",
-      "description": "在设置的通用页面登录美鸭梨后，标记未收集的灵感露珠。打开大地图自动识别常用缩放并校准，返回场景后跟随小地图。支持奇迹大陆、万相境及 16:9 窗口。",
+      "description": "在辅助功能设置中登录美鸭梨后，标记未收集的灵感露珠。打开大地图自动识别常用缩放并校准，返回场景后跟随小地图。支持奇迹大陆、万相境及 16:9 窗口。",
       "cases": [
         {
           "name": "Yes",

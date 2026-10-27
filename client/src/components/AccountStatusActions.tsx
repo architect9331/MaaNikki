@@ -6,6 +6,7 @@ import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
 import { getBlessingProgress } from '@/utils/blessingProgress';
 import { ModalPortal, useModalFocusTrap } from './ui/Modal';
 import { Tooltip } from './ui/Tooltip';
+import { ExplorationControl } from './ExplorationControl';
 
 function MeteorIcon({ className }: { className?: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
@@ -79,9 +80,9 @@ function GiantMeteorStatus() {
       <button onClick={() => setOpen(true)} aria-label={label} aria-haspopup="dialog"
         className={clsx('meteor-status relative flex shrink-0 items-center gap-1.5 rounded-md p-2 transition-colors focus-visible:outline-2 focus-visible:outline-accent',
           found ? 'meteor-status--found' : 'text-text-secondary hover:bg-bg-hover')}>
-        <MeteorIcon className="relative z-10 w-[18px] h-[18px] shrink-0" />
+        <MeteorIcon className="relative z-10 w-5 h-5 shrink-0" />
         {found ? <>
-          <span className="relative z-10 whitespace-nowrap text-xs font-semibold">巨陨星降临！</span>
+          <span className="relative z-10 whitespace-nowrap text-sm font-semibold">巨陨星降临！</span>
           <Sparkles className="relative z-10 w-3 h-3" aria-hidden="true" />
         </> : <span aria-hidden="true" className={clsx('absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full ring-2 ring-bg-secondary',
           error || record?.outcome === 'unconfirmed' ? 'bg-warning' : absent ? 'bg-success' : 'bg-text-muted')} />}
@@ -123,17 +124,18 @@ export function AccountStatusActions({ onShowProgress }: { onShowProgress: () =>
   const percentage = progress.percentage === null ? '—' : `${progress.percentage}%`;
   const detail = error ? '账号状态读取失败' : progress.known
     ? `已收集 ${progress.owned.size} / ${progress.target} 个颜色${progress.uncertain ? ' · 上次确认记录，待复核' : ''}`
-    : '尚无完整记录，请先运行祝福闪光整理';
+    : '尚无完整记录，请先运行祝福闪光仓库读取';
   return <>
     <GiantMeteorStatus />
     <Tooltip side="bottom" content={<div className="space-y-1"><p className="font-medium">祝福闪光收集进度 {percentage}</p><p className="text-text-secondary">{detail}</p></div>}>
       <button onClick={onShowProgress}
         className="flex shrink-0 items-center gap-1.5 rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent"
         aria-label={`祝福闪光收集进度 ${percentage}`}>
-        <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span className="whitespace-nowrap text-xs">收集进度</span>
-        <span className="text-[13px] font-semibold tabular-nums text-accent">{percentage}</span>
+        <Sparkles className="h-5 w-5 shrink-0" aria-hidden="true" />
+        <span className="whitespace-nowrap text-sm">收集进度</span>
+        <span className="text-[15px] font-semibold tabular-nums text-accent">{percentage}</span>
       </button>
     </Tooltip>
+    <ExplorationControl />
   </>;
 }

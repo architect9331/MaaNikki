@@ -44,7 +44,7 @@ pub fn init_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     // 创建托盘图标
     let tray = TrayIconBuilder::<Wry>::new()
         .icon(icon)
-        .tooltip("MXU")
+        .tooltip("MaaNikki")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| {
