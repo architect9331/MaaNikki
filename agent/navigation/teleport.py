@@ -368,13 +368,22 @@ class Teleporter:
             if not self.rt.stopped and not self.rt.main():
                 raise NavigationError("复核角色位置后未能返回主界面。")
 
-    def center(self, x, y, force=False):
+    def center(self, x, y, force=False, *, allow_visible=False):
         while True:
             self.check()
             px, py = self.locate_map()
             dx, dy = (x-px)/self.locator.spec.bigmap_scale, (y-py)/self.locator.spec.bigmap_scale
+            target = [round(640+dx), round(360+dy)]
+            # A crystal-map handoff can already show the checkpoint. Use a
+            # fresh, reliable terrain match and keep clear of fixed controls,
+            # the region switcher and the point-selection panel on the right.
+            if allow_visible and not force and 240 <= target[0] <= 820 and 140 <= target[1] <= 580:
+                pose = self.map_diagnostics[0]
+                if pose["score"] >= .6 and pose["local_peak"] >= .01:
+                    self.event({"type": "checkpoint_visible", "target": target})
+                    return target
             if math.hypot(dx, dy) < (20/2/self.locator.spec.bigmap_scale if force else 200*2/3):
-                return [round(640+dx), round(360+dy)]
+                return target
             begin, end = terrain_pan(dx, dy)
             self.event({"type": "map_pan", "begin": begin, "end": end})
             if not self.rt.action("Swipe", begin=begin, end=end, duration=300):
@@ -426,14 +435,24 @@ class Teleporter:
                 self.rt.ui.map_failure(0, str(error), self.event, stage="selection")
             raise
 
-    def transport(self, checkpoint):
+    def transport(self, checkpoint, *, on_map_ready=None, reuse_map=False):
         self.deadline = time.monotonic()+120
         self.check()
-        if not self.rt.ui.open_map(self.event):
+        # Confirm the handed-off page before any recovery that may close it.
+        # A short feature miss should wait on this map rather than reopen it.
+        map_reused = reuse_map and self.rt.ui.wait_page(
+            "MaaNikki_Navigation_MapFeature", seconds=1.5)
+        if reuse_map:
+            self.event({"type": "map_handoff", "reused": bool(map_reused),
+                        "checkpoint": checkpoint["name"]})
+        if not map_reused and not self.rt.ui.open_map(self.event):
             raise NavigationError("无法打开地图。")
         self.region(checkpoint)
-        self.rt.pause(.5)
+        if not map_reused:
+            self.rt.pause(.5)
         self.zoom()
+        if on_map_ready is not None:
+            on_map_ready()
         def selection_visible():
             return (normalized(self.rt.ui.text(self.rt.ui.roi("AreaBigMapTeleportButton")))
                     in ("传送", "追踪") or bool(self.rt.text(
@@ -446,7 +465,7 @@ class Teleporter:
             return True
         def select_checkpoint():
             self.check(browse=True)
-            target = self.center(checkpoint["x"], checkpoint["y"])
+            target = self.center(checkpoint["x"], checkpoint["y"], allow_visible=map_reused)
             self.event({"type": "checkpoint_click", "name": checkpoint["name"], "target": target})
             return self.rt.action("Click", target=target)
         if not self.rt.ui.enter_page(select_checkpoint, selection_visible,

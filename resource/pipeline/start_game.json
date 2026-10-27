@@ -23,6 +23,12 @@
     "expected": "健康游戏忠告|抵制不良游戏|警告.*游戏前详阅|健康遊戲忠告|抵制不良遊戲|警告.*遊戲前詳閱",
     "action": "DoNothing"
   },
+  "MaaNikki_StartGame_Loading": {
+    "recognition": "OCR",
+    "roi": [300, 560, 680, 130],
+    "expected": "正在[进進]入奇[迹跡]大[陆陸]",
+    "action": "DoNothing"
+  },
   "MaaNikki_StartGame_UpdateTitle": {
     "recognition": "OCR",
     "roi": [480, 230, 320, 60],
@@ -61,6 +67,7 @@
     "recognition": "Or",
     "any_of": [
       "MaaNikki_StartGame_Enter", "MaaNikki_StartGame_Login",
+      "MaaNikki_StartGame_Loading",
       "MaaNikki_MainDetected", "MaaNikki_RewardLayer", "MaaNikki_StartGame_RestartConfirm"
     ],
     "action": "DoNothing"

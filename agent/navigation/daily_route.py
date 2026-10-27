@@ -79,7 +79,7 @@ class RouteActions:
         self.quota = card.remaining if card.remaining is not None else {"plant": 5, "insect": 3, "bottle": 1, "crystal": 10}.get(self.executor)
         if self.quota is not None and (type(self.quota) is not int or not 1 <= self.quota <= 100):
             raise NavigationError("任务剩余数量无法可靠读取。")
-        self.material = route.document.get("material", "") or ("星光结晶" if self.executor == "crystal" else "")
+        self.material = route.document.get("material", "")
         self.count_materials = tuple(dict.fromkeys(
             [self.material] + route.document.get("count_materials", []))) if self.material else ()
         self.last_notice = ""
@@ -334,7 +334,8 @@ class RouteActions:
             ok = self.rt.animal(self.card, times=point.params.get("times", 1))
         else:
             raise NavigationError("路线动作尚未适配。")
-        self.event({"type": "action_result", "action": kind, "success": bool(ok), "count": self.count})
+        self.event({"type": "action_result", "action": kind, "success": bool(ok),
+                    **({"count": self.count} if self.executor != "crystal" else {})})
         if ok and kind != "wait":
             self.successes += 1
         if kind not in {"wait", "collect", "insect", "bottle", "fishing_star", "fishing"} and not ok:
@@ -361,12 +362,3 @@ class RouteActions:
             return self.quota is not None and self.count >= self.quota
         # Macro completion is only an execution estimate, never confirmed kills/points.
         return self.successes > 0
-
-    def waypoint(self, point):
-        if self.executor != "crystal":
-            return None
-        self.inputs.check()
-        # Passing a transit point must not add a polling delay while W is held.
-        self.obtained(self.last_notice, seconds=.25, single=True)
-        # Crystal runs traverse the chosen island route in full. Toasts may
-        # persist or change order; they are diagnostics, not an early-stop quota.

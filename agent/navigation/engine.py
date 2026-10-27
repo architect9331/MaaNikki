@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from statistics import median
 from task_control import task_time as time
-from .models import NavigationError, Point, Route
+from .models import NavigationError, NavigationStuckError, Point, Route
 from .geometry import project_segment, segment_distance
 from .vision import Locator, Pose
 
@@ -78,29 +78,39 @@ class Motion:
         return self.forward_seconds+(time.monotonic()-self.forward_started
                                      if self.forward_started is not None else 0)
 
-    def jump(self, wanted, walking):
+    def jump_transition(self, state, reason, **details):
+        now = time.monotonic()
+        self.event({"type": "jump_transition", "before": self.jump_state, "after": state,
+                    "phase_seconds": now-self.jump_at if self.jump_state != "idle" else None,
+                    "reason": reason, **details})
+        self.jump_state, self.jump_at = state, now
+
+    def jump(self, wanted, walking, *, reason="route"):
         if not wanted:
             if self.jump_state == "idle":
                 return
             # Cancel a queued second jump before tick can submit it.
             self.inputs.key_up("jump")
             cancel_float = self.jump_state == "air" and not walking
-            self.jump_state = "idle"
+            self.jump_transition("idle", reason, walking=walking, cancel_float=cancel_float)
             if cancel_float:
                 self.inputs.key_down("jump")
+                pressed_at = time.monotonic()
                 try:
                     self.wait(self.FLOAT_PRESS)
                 finally:
                     self.inputs.key_up("jump")
+                    self.event({"type": "jump_cancel_input", "reason": reason,
+                                "held_seconds": time.monotonic()-pressed_at})
             return
         self.tick()
         now = time.monotonic()
         if walking and (self.jump_state == "idle" or self.jump_state == "air" and now-self.jump_at > .2):
             self.inputs.key_down("jump")
-            self.jump_state, self.jump_at = "first", time.monotonic()
+            self.jump_transition("first", "ground_jump_down", walking=walking)
         elif not walking and self.jump_state == "idle":
             self.inputs.key_down("jump")
-            self.jump_state, self.jump_at = "second_hold", time.monotonic()
+            self.jump_transition("second_hold", "air_jump_down", walking=walking)
 
     def tick(self):
         self.inputs.check()
@@ -116,13 +126,13 @@ class Motion:
             self.stop()
         if self.jump_state == "first" and now-self.jump_at >= self.JUMP_HOLD:
             self.inputs.key_up("jump")
-            self.jump_state, self.jump_at = "second_wait", time.monotonic()
+            self.jump_transition("second_wait", "first_jump_up")
         elif self.jump_state == "second_wait" and now-self.jump_at >= self.JUMP_GAP:
             self.inputs.key_down("jump")
-            self.jump_state, self.jump_at = "second_hold", time.monotonic()
+            self.jump_transition("second_hold", "second_jump_down")
         elif self.jump_state == "second_hold" and now-self.jump_at >= self.FLOAT_PRESS:
             self.inputs.key_up("jump")
-            self.jump_state, self.jump_at = "air", time.monotonic()
+            self.jump_transition("air", "second_jump_up")
 
     def guard(self, blocking_seconds):
         """Keep cruising unless the next blocking read could miss release.
@@ -150,7 +160,8 @@ class Motion:
 
     def close(self):
         self.until = 0
-        self.jump_state = "idle"
+        if self.jump_state != "idle":
+            self.jump_transition("idle", "motion_close")
         if self.forward_started is not None:
             self.forward_seconds += time.monotonic()-self.forward_started
         self.forward_started = None
@@ -405,7 +416,7 @@ class Navigator:
         generation = getattr(self.inputs, "generation", 0)
         if self.motion:
             self.motion.stop()
-            self.motion.jump(False, self.walking())
+            self.motion.jump(False, self.walking(), reason="point_facing")
         else:
             self.inputs.release()
         previous = self.locator.previous
@@ -568,11 +579,11 @@ class Navigator:
         if getattr(self.inputs, "generation", 0) != generation:
             motion.close()
             return pose, False
-        motion.jump(jumping, walking)
+        motion.jump(jumping, walking, reason="unstuck" if recovery else "segment")
         if recovery:
             self.pause(1.5)
             motion.stop()
-            motion.jump(False, self.walking())
+            motion.jump(False, self.walking(), reason="unstuck_complete")
         elif motion.jump_state in motion.JUMP_PENDING:
             # Preserve the original full-height jump and second jump timing.
             # The independent forward deadline can release W during this wait.
@@ -706,7 +717,7 @@ class Navigator:
                     if precise:
                         arrival_pose = pose
                         motion.stop()
-                        motion.jump(False, self.walking())
+                        motion.jump(False, self.walking(), reason="waypoint_arrival")
                         self.pause(.12)
                         confirmed = self.observe((pose.x, pose.y))
                         settled = distance(pose, confirmed) <= max(.15, min(.4, radius*.25))
@@ -735,7 +746,7 @@ class Navigator:
                         break
                     if target.action:
                         motion.stop()
-                        motion.jump(False, self.walking())
+                        motion.jump(False, self.walking(), reason="point_action")
                         outcome = self.point_action(target)
                         if outcome == "done":
                             break
@@ -770,7 +781,7 @@ class Navigator:
                     map_checked = False
                 stuck_time = time.monotonic()-stuck_since
                 if stuck_time > 30:
-                    raise NavigationError("原地卡住超过 30 秒，停止路线。")
+                    raise NavigationStuckError("原地卡住超过 30 秒，停止路线。")
                 recovery = stuck_time > 5 and not recovered
                 if recovery:
                     self.event({"type": "unstuck", "seconds": stuck_time, "index": index,

@@ -58,7 +58,7 @@
     {
       "x": 1050.8,
       "y": 720.15,
-      "radius": 1,
+      "radius": 0.35,
       "jump": false,
       "action": "fishing_star",
       "params": {

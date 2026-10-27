@@ -391,7 +391,7 @@ class Gameplay:
 
     def monthly_tab_selected(self, page):
         """Travel tabs use a gold selected background and dark inactive tabs."""
-        with self.rt.observe(fresh=True):
+        with self.rt.observe():
             frame = self.rt.frame()
             result = self.rt.recognize(f"MaaNikki_Monthly_{page}Tab", image=frame)
             if frame is None or not result or not result.hit:
@@ -410,6 +410,46 @@ class Gameplay:
                                    (10, 40, 100), (35, 200, 255))
             return cv2.countNonZero(selected) / selected.size >= .45
 
+    def monthly_travel_tab(self, page):
+        """Continue as soon as the requested tab is selected."""
+        if self.monthly_tab_selected(page):
+            return True
+        if not self.ui.page_matches("MaaNikki_Monthly_TravelReady"):
+            return False
+        if not self.rt.click_template(f"MaaNikki_Monthly_{page}Tab", attempts=1, wait_seconds=0):
+            return False
+        deadline = time.monotonic()+5
+        while not self.rt.stopped and time.monotonic() < deadline:
+            if self.monthly_tab_selected(page):
+                return True
+            if not self.rt.pause(.1):
+                return False
+        self.monthly_diagnostic("travel", "tab_unconfirmed", f"{page}页签切换待确认")
+        return False
+
+    def monthly_travel_claim_return(self, page):
+        """Finish on the actual receipt or settled task-button update."""
+        deadline, dismissed = time.monotonic()+10, 0
+        claim = f"MaaNikki_Monthly_Claim{page}"
+        while not self.rt.stopped and time.monotonic() < deadline:
+            with self.rt.observe(fresh=True):
+                reward = self.rt.hit("MaaNikki_RewardLayer")
+                returned = (not reward and self.monthly_tab_selected(page)
+                            and (dismissed > 0 or page == "Task" and not self.rt.hit(claim)))
+            if reward:
+                if dismissed >= 3:
+                    break
+                if not self.rt.key("skip", .25):
+                    return False
+                dismissed += 1
+            elif returned:
+                return True
+            if not self.rt.pause(.2):
+                return False
+        self.monthly_diagnostic("travel", "claim_unconfirmed", f"{page}领取结果待确认")
+        self.rt.log("奇迹之旅奖励领取状态待确认，本项停止。")
+        return False
+
     def monthly_rewards(self, kind):
         label = "乐园构想" if kind == "paradise" else "奇迹之旅"
         self.rt.log(f"已识别{label}，开始处理奖励。")
@@ -427,15 +467,18 @@ class Gameplay:
                 continue
             if index == 2:
                 self.rt.log("正在检查并领取旅行秘宝奖励。")
-            selected = kind == "travel" and self.monthly_tab_selected(page)
-            if not selected and not self.rt.click_template(node):
-                return False
-            if not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
-                return False
+            if kind == "travel":
+                if not self.monthly_travel_tab(page):
+                    return False
+            else:
+                if not self.rt.click_template(node):
+                    return False
+                if not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
+                    return False
             claim = ("MaaNikki_Monthly_ParadiseClaim" if kind == "paradise"
                      else f"MaaNikki_Monthly_Claim{page}")
             empty = False
-            for attempt in range(3):
+            for attempt in range(1 if kind == "travel" else 3):
                 with self.rt.observe(fresh=True):
                     available = self.rt.hit(claim)
                     if kind == "paradise" and not available and attempt == 2:
@@ -451,7 +494,7 @@ class Gameplay:
                     if kind == "travel" and index == 0:
                         treasure_available = True
                         break
-                    if not self.rt.click_template(claim, wait_seconds=.5):
+                    if not self.rt.click_template(claim, wait_seconds=0 if kind == "travel" else .5):
                         return False
                     if kind == "paradise":
                         self.monthly_diagnostic(kind, "after_claim")
@@ -459,29 +502,20 @@ class Gameplay:
                             return False
                         claimed = True
                         break
-                    rewarded = self.ui.skip_reward()
-                    # Task progress need not produce an item reward layer;
-                    # Treasure requires that layer as its receipt.
-                    if not rewarded and page == "Treasure":
-                        self.rt.log("奇迹之旅奖励未确认领取。")
-                        return False
-                    if self.rt.stopped:
-                        return False
-                    if not rewarded and not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
-                        self.rt.log("领取旅行任务后页面未能确认，本项停止。")
+                    if not self.monthly_travel_claim_return(page):
                         return False
                     claimed = True
                     if page == "Task":
                         task_claimed = True
                     break
-                if attempt < 2 and not self.rt.pause(1):
+                if kind == "paradise" and attempt < 2 and not self.rt.pause(1):
                     return False
             else:
                 if kind == "paradise" and not empty:
                     self.monthly_diagnostic(kind, "claim_unconfirmed", "未能确定一键领取按钮状态")
                     self.rt.log("乐园构想领取按钮状态未确认，本项未完成。")
                     return False
-            if not self.rt.pause(.5):
+            if kind == "paradise" and not self.rt.pause(.5):
                 return False
         self.rt.log(f"{label}奖励已领取。" if claimed else f"{label}所选页签没有可领取的奖励。")
         return not self.rt.stopped
@@ -501,6 +535,7 @@ class Gameplay:
         # Some seasons remove the switch altogether. Require its absence on
         # separate captures of the known travel page, not an unknown screen.
         if entrance_absent() and self.ui.wait_page(entrance_absent, seconds=2):
+            self.ui.monthly_paradise_unavailable = True
             return "unavailable"
 
         submitted = False
@@ -513,9 +548,10 @@ class Gameplay:
         def arrived():
             with self.rt.observe():
                 return (self.ui.page_matches(destination)
-                        or (submitted and self.ui.page_matches("MaaNikki_MainDetected")))
+                        or (submitted and (self.ui.page_matches("MaaNikki_MainDetected")
+                                           or self.ui.page_matches("MaaNikki_MenuReady"))))
 
-        # An expired Paradise switch can close Travel and return to the world.
+        # An expired Paradise switch can return to the world or its menu.
         # Treat that confirmed outcome as unavailable; retrying the entrance
         # would reopen Travel and repeat the same closed-season transition.
         if not self.ui.enter_page(click, arrived, source=source, attempts=1, seconds=8,
@@ -523,12 +559,16 @@ class Gameplay:
             return "failed"
         if self.ui.page_matches(destination):
             return "ready"
-        if submitted and self.ui.page_matches("MaaNikki_MainDetected"):
+        if submitted and (self.ui.page_matches("MaaNikki_MainDetected")
+                          or self.ui.page_matches("MaaNikki_MenuReady")):
+            self.ui.monthly_paradise_unavailable = True
             return "unavailable"
         return "failed"
 
     def monthly(self):
         kind, label = "unknown", "奇迹之旅／乐园构想"
+        # Availability belongs to this run; a new season can reopen Paradise.
+        self.ui.monthly_paradise_unavailable = False
         completed = set()
         selected = {
             "travel": any((self.rt.context.get_node_data(f"MaaNikki_Monthly_{page}Tab") or {}).get("enabled", False)
@@ -559,6 +599,9 @@ class Gameplay:
                 if index == 0:
                     other = "travel" if kind == "paradise" else "paradise"
                     if not selected[other]:
+                        break
+                    if other == "paradise" and self.ui.monthly_paradise_unavailable:
+                        self.rt.log("本轮乐园构想入口不可用，已跳过。")
                         break
                     target = "Travel" if kind == "paradise" else "Paradise"
                     target_label = "奇迹之旅" if kind == "paradise" else "乐园构想"

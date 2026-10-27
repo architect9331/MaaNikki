@@ -9,6 +9,10 @@ class NavigationError(ValueError):
     pass
 
 
+class NavigationStuckError(NavigationError):
+    """Movement made no progress for the route's stuck timeout."""
+
+
 MINIMAP_POSITION_SCORE = .55
 # Coordinates use pixel edges, shared by native sampling and reference crops.
 # Paired player-centered maps place the minimap arrow pivot at (181, 124) in 1080p.

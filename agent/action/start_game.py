@@ -31,6 +31,7 @@ class StartGameAction(CustomAction):
         update_waiting = False
         waiting_logged = False
         intro_logged = False
+        loading_logged = False
         unknown_since = None
 
         def incomplete(reason="尚未完成进入游戏"):
@@ -66,6 +67,7 @@ class StartGameAction(CustomAction):
                 return (runtime.hit("MaaNikki_MainDetected")
                         or runtime.hit("MaaNikki_RewardLayer")
                         or runtime.ui.asset("IconUILoading", threshold=.99)
+                        or runtime.hit("MaaNikki_StartGame_Loading")
                         or runtime.hit("MaaNikki_StartGame_Enter"))
 
         def advance(node, destination):
@@ -100,7 +102,10 @@ class StartGameAction(CustomAction):
                 login = not update and not main and not enter and runtime.hit("MaaNikki_StartGame_Login")
                 intro = (not restart and not update and not reward and not main
                          and not enter and not login and runtime.hit("MaaNikki_StartGame_Intro"))
-            if restart or update or reward or main or enter or login or intro:
+                loading = (not restart and not update and not reward and not main
+                           and not enter and not login and not intro
+                           and runtime.hit("MaaNikki_StartGame_Loading"))
+            if restart or update or reward or main or enter or login or intro or loading:
                 unknown_since = None
             if restart:
                 if not bootstrap or options.get("allow_restart", True) is not True:
@@ -161,6 +166,10 @@ class StartGameAction(CustomAction):
                 if not intro_logged:
                     runtime.log("正在播放健康提示或光敏警告，等待启动画面结束。")
                     intro_logged = True
+            elif loading:
+                if not loading_logged:
+                    runtime.log("正在加载奇迹大陆，等待进入主页。")
+                    loading_logged = True
             elif any(runtime.hit(node) for node in (
                     "MaaNikki_MenuReady", "MaaNikki_CalendarReady", "MaaNikki_Monthly_PageReady")):
                 if runtime.main():

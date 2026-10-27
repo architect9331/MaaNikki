@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from task_control import task_time as time
 import cv2
 import numpy as np
-from .camera import camera_heading
+from .camera import CameraBackground, camera_heading
 from .frames import minimap_sample, reference_frame
 from .matching import MIN_KNOWN_COVERAGE, coverage, match_map
 from .models import MINIMAP_POSITION_SCORE, MapSpec, NavigationError
@@ -49,10 +49,12 @@ class Locator:
         self.position_time = time.monotonic()-30
         self.heading_diagnostics = {}
         self.last_frame = None
+        self.camera_background = CameraBackground()
 
     def reset(self):
         self.previous = None
         self.position_time = time.monotonic()-30
+        self.camera_background.reset()
 
     def accept(self, pose):
         if not pose.position_reliable:
@@ -60,8 +62,10 @@ class Locator:
         self.previous = pose
         self.position_time = time.monotonic()
 
-    def camera_heading(self, reference, x, y):
-        heading, confidence, self.heading_diagnostics = camera_heading(reference, self.map, self.spec, x, y)
+    def camera_heading(self, reference, x, y, *, use_terrain=False):
+        heading, confidence, self.heading_diagnostics = camera_heading(
+            reference, self.map, self.spec, x, y,
+            terrain=self.camera_background if use_terrain else None)
         return heading, confidence
 
     def locate(self, frame, hint=None, search_radius=75, *, commit=True, reset_continuity=False,
@@ -147,7 +151,8 @@ class Locator:
                         and np.hypot(px-self.previous.x, py-self.previous.y) >= 50*elapsed+.5)
         if rejected or unreliable:
             px, py = (self.previous.x, self.previous.y) if self.previous else hint
-        heading, confidence = self.camera_heading(reference, px, py)
+        heading, confidence = self.camera_heading(
+            reference, px, py, use_terrain=not (unreliable or rejected))
         self.heading_diagnostics.update(position_method="correlation_rejected" if unreliable else
             "speed_rejected" if rejected else "map_correlation", position_reliable=not (unreliable or rejected),
             candidate_position=candidate, position_elapsed=elapsed, score=score, local_peak=detail,

@@ -64,6 +64,7 @@ class GameUI:
         self.rt, self.resource = runtime, resource
         self._preserve_cursor = False
         self._asset_definitions = self._asset_paths = None
+        self.monthly_paradise_unavailable = False
 
     @contextmanager
     def cache_assets(self):
@@ -781,6 +782,14 @@ class GameUI:
         if not self.wait_page("MaaNikki_Monthly_Opened", seconds=5):
             if self.rt.stopped:
                 return False
+            # Home's shortcut points to Paradise. Retain a confirmed return
+            # to the world/menu so Travel will not try that entrance again.
+            def returned():
+                with self.rt.observe():
+                    return (self.page_matches("MaaNikki_MainDetected")
+                            or self.page_matches("MaaNikki_MenuReady"))
+            if self.wait_page(returned, seconds=1.5):
+                self.monthly_paradise_unavailable = True
             self.rt.log("快捷入口未打开，正在从美鸭梨菜单查找奇迹之旅。")
             if not self.find_menu_entry(node="MaaNikki_Monthly_MenuEntrance", scroll=True):
                 if not self.rt.stopped:

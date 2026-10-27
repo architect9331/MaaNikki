@@ -495,7 +495,8 @@ class Runtime:
         route = load_route(RESOURCE, name)
         return route.document if route else None
 
-    def navigate(self, name, mode=None, card=None, progress=None, *, meteor_travel=False):
+    def navigate(self, name, mode=None, card=None, progress=None, *, meteor_travel=False,
+                 crystal_map_open=False):
         if not foreground_inputs():
             self.log("路线导航需要前台鼠标和键盘输入，请将两者设置为 Seize。")
             return False
@@ -505,7 +506,7 @@ class Runtime:
             return False
         from navigation.controller import ForegroundInput
         from navigation.session import create_navigator
-        from navigation.models import NavigationError, maps, parse_route
+        from navigation.models import NavigationError, NavigationStuckError, maps, parse_route
         from navigation.vision import Locator
         from navigation.teleport import Teleporter
         inputs = actions = locator = teleporter = None
@@ -558,20 +559,53 @@ class Runtime:
                 if meteor_travel:
                     # Keep the map opened by Go Now; transport handles an arbitrary viewport.
                     teleporter.transport(route["teleport"])
+                elif crystal_map_open and actions.executor == "crystal" and model.map_id == "starsea":
+                    # Crystal selection leaves a usable map open. Skip the
+                    # main-page nearby check and continue selecting its start.
+                    teleporter.transport(route["teleport"], reuse_map=True)
                 else:
                     teleporter.prepare(model)
                 stage = "ability_selection"
                 if card.rule.executor == "insect" and not actions.select_insect():
                     raise NavigationError("捕虫能力配置未完成，本项尚未开始。")
-            navigator = create_navigator(self, teleporter, actions=actions, event=events.append)
-            self.log("正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。")
-            stage = "route_execution"
-            navigator.follow(model)
+            crystal_retries = (3 if actions and actions.executor == "crystal"
+                               and model.map_id == "starsea" and route.get("teleport") else 0)
+            for attempt in range(crystal_retries+1):
+                # Each attempt gets fresh calibration, stuck/recovery state and
+                # its own route time budget.
+                navigator = create_navigator(self, teleporter, actions=actions, event=events.append)
+                if crystal_retries:
+                    events.append({"type": "crystal_route_attempt", "attempt": attempt+1,
+                                   "max_attempts": crystal_retries+1})
+                if attempt == 0:
+                    self.log("正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。")
+                stage = "route_execution"
+                try:
+                    navigator.follow(model)
+                    break
+                except NavigationStuckError as error:
+                    if self.stopped or not crystal_retries:
+                        raise
+                    if attempt >= crystal_retries:
+                        raise NavigationStuckError(
+                            f"星光结晶路线已重试 {crystal_retries} 次，仍卡住，本轮停止。") from error
+                    events.append({"type": "crystal_route_retry", "retry": attempt+1,
+                                   "max_retries": crystal_retries, "reason": str(error),
+                                   "pose": locator.previous.dict() if locator.previous else None})
+                    self.log(f"星光结晶路线卡住，返回起点重试（{attempt+1}/{crystal_retries}）。")
+                    # Bypass prepare's nearby shortcut: a lower island can have
+                    # the same minimap position as the intended route start.
+                    inputs.release()
+                    inputs.check()
+                    stage = "teleport"
+                    teleporter.transport(route["teleport"])
             result = actions.complete() if actions else True
             if actions and not result:
                 self.log(f"路线动作结束，获得 {actions.count}，目标 {actions.quota}。")
             self.navigation_count = actions.count if actions else 0
-            events.append({"type": "execution_result", "success": result, "count": self.navigation_count})
+            events.append({"type": "execution_result", "success": result,
+                           **({"count": self.navigation_count}
+                              if actions is None or actions.executor != "crystal" else {})})
             return result
         except (NavigationError, KeyError, OSError, TypeError, ValueError, RuntimeError, cv2.error) as error:
             if not self.stopped:
