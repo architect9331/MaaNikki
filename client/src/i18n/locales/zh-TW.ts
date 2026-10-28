@@ -121,8 +121,8 @@ export default {
     maxLogsPerInstanceHint: '超出上限會自動丟棄最舊的日誌（建議 500～2000）',
     resetWindowLayout: '重設視窗佈局',
     resetWindowLayoutHint: '將視窗大小恢復為預設值，並置中顯示',
-    autoClearLogsOnLaunch: '自動清理運行日誌',
-    autoClearLogsOnLaunchHint: '每次啟動項目時，自動清理運行日誌與除錯檔案',
+    autoClearLogsOnLaunch: '啟動時清空前端日誌',
+    autoClearLogsOnLaunchHint: '每次啟動時清空日誌面板，保留日誌檔案',
   },
 
   // 特殊任務
@@ -548,6 +548,16 @@ export default {
 
   // 除錯
   debug: {
+    logRetention: '日誌檔案保留時間',
+    logRetentionHint: '每週檢查一次，依檔案修改時間清理過期日誌',
+    keepAllLogs: '保留全部',
+    keepLogDays: '保留 {{days}} 天',
+    logRetentionConfirm: '啟用後每週自動刪除 {{days}} 天前的日誌與截圖。確定啟用？',
+    clearLogFiles: '清理日誌檔案',
+    clearLogFilesConfirm: '將刪除歷史日誌、錯誤截圖和日誌匯出檔案，保留目前工作階段日誌。確定清理？',
+    clearLogFilesDone: '日誌檔案已清理',
+    clearLogFilesFailed: '日誌檔案清理失敗',
+    clearLogFilesBusy: '請先停止任務和輔助功能',
     title: '除錯',
     versions: '版本資訊',
     interfaceVersion: '{{name}} 版本',

@@ -84,7 +84,7 @@ class Crown(Runtime):
                 self.ui.roi("AreaPickup"), r"^(?:开始挑战|继续挑战|对话)$"))
 
     def start_challenge_dialogue(self):
-        self.log("正在等待巅峰赛入场过渡结束，再向前靠近挑战交互点。")
+        self.log("正在等待巅峰赛入场过渡结束，再向前靠近挑战交互点。", detail=True)
         walked = 0.0
         deadline = time.monotonic() + 60
         controls_ready_since = None
@@ -93,9 +93,9 @@ class Crown(Runtime):
             # Stop on the first image or text candidate and confirm while
             # stationary, including after the final movement step.
             if self.challenge_talk_visible():
-                self.log(f"检测到挑战交互提示，累计向前移动 {walked:.2f} 秒，原地确认。")
+                self.log(f"检测到挑战交互提示，累计向前移动 {walked:.2f} 秒，原地确认。", detail=True)
                 if self.ui.wait_page(self.challenge_talk_visible, seconds=1.5):
-                    self.log(f"已确认挑战对话按钮，累计向前移动 {walked:.2f} 秒，开始交互。")
+                    self.log(f"已确认挑战对话按钮，累计向前移动 {walked:.2f} 秒，开始交互。", detail=True)
                     self.require(self.key("interact", 0), "未能开始挑战对话")
                     return
             if walked >= 12:
@@ -106,7 +106,7 @@ class Crown(Runtime):
             if not self.hit("MaaNikki_MainDetected"):
                 controls_ready_since = None
                 if not waiting:
-                    self.log("赛场界面正在过渡，暂停移动并等待控制恢复。")
+                    self.log("赛场界面正在过渡，暂停移动并等待控制恢复。", detail=True)
                     waiting = True
                 self.require(self.pause(.25), "挑战已停止")
                 continue
@@ -116,7 +116,7 @@ class Crown(Runtime):
                 self.require(self.pause(.25), "挑战已停止")
                 continue
             if waiting:
-                self.log("已持续确认赛场界面，开始向前靠近挑战交互点。")
+                self.log("已持续确认赛场界面，开始向前靠近挑战交互点。", detail=True)
                 waiting = False
             self.require(self.hold("forward", .25) and self.pause(.25), "前往挑战对话失败")
             walked += .25
@@ -129,7 +129,7 @@ class Crown(Runtime):
         if not self.ui.find_menu_entry(node="MaaNikki_Crown_Open"):
             return False
         if self.hit("MaaNikki_Crown_ModeReady"):
-            self.log("已进入奇迹之冠玩法选择页，正在选择搭配赛。")
+            self.log("已进入奇迹之冠玩法选择页，正在选择搭配赛。", detail=True)
             # The label identifies the mode; the arena above it receives the
             # click. Keep the pointer there while the entrance animates.
             with self.ui.preserve_cursor():
@@ -143,7 +143,7 @@ class Crown(Runtime):
 
     def settle_summit_entry(self):
         if self.hit("MaaNikki_Crown_ReportReady"):
-            self.log("检测到巅峰赛速报，正在领取奖励并等待奖励动画。")
+            self.log("检测到巅峰赛速报，正在领取奖励并等待奖励动画。", detail=True)
             # Claim once. A missing reward layer must stop this entrance rather
             # than recover through the menu and submit another claim.
             self.require(self.click_template("MaaNikki_Crown_ReportClaim", attempts=1,
@@ -151,7 +151,7 @@ class Crown(Runtime):
                          "领取速报奖励后未能确认奖励弹层")
             self.report_reward_claimed = True
         if self.hit("MaaNikki_Crown_EntryRewardReady"):
-            self.log("已确认速报奖励，正在关闭奖励弹层。")
+            self.log("已确认速报奖励，正在关闭奖励弹层。", detail=True)
             self.require(self.click_template("MaaNikki_Crown_EntryRewardContinue", attempts=1,
                                               wait_seconds=.25),
                          "未能关闭速报奖励弹层并返回巅峰赛页面")
@@ -177,7 +177,7 @@ class Crown(Runtime):
         return True
 
     def challenge(self):
-        self.log("正在进入奇迹之冠巅峰赛。")
+        self.log("正在进入奇迹之冠巅峰赛。", detail=True)
         self.require(self.open_summit(), "未能进入巅峰赛")
         quick_reward = self.report_reward_claimed
         if not quick_reward:
@@ -210,7 +210,7 @@ class Crown(Runtime):
             self.require(self.skip_dialogue(), "挑战已停止")
             self.wait_asset("ButtonMiraCrownNextStep")
             self.pause(1)
-            self.log("正在使用推荐搭配完成本关挑战。")
+            self.log("正在使用推荐搭配完成本关挑战。", detail=True)
             self.require(self.ui.find(roi=self.ui.roi("AreaMiraCrownAutoMatchButton"),
                                       text="推荐搭配", scroll=False), "未找到推荐搭配按钮")
             self.pause(5)
@@ -234,7 +234,7 @@ class Crown(Runtime):
 
     def rewards(self):
         if not parameters(self.context, "MaaNikki_Crown_Rewards").get("value", False):
-            self.log("未开启赛事嘉奖与兑换，本次跳过。")
+            self.log("未开启赛事嘉奖与兑换，本次跳过。", detail=True)
             return
         self.require(self.open_summit(), "未能进入巅峰赛")
         award = self.ui.feature(text="赛事嘉奖", roi=[0, 0, 1280, 230])
@@ -243,7 +243,7 @@ class Crown(Runtime):
         if self.wait_asset("ButtonMiraCrownRewardGet", click=True):
             self.reward_popup()
         else:
-            self.log("当前暂无赛事嘉奖可领取。")
+            self.log("当前暂无赛事嘉奖可领取。", detail=True)
         self.require(self.ui.enter_page(lambda: self.key("menu", 0), "MaaNikki_Crown_SummitReady",
             source=award, recover=self.open_summit), "未能关闭赛事嘉奖")
         shop = self.ui.feature(text="晶石兑换", roi=[0, 0, 1280, 230])
@@ -273,7 +273,7 @@ class Crown(Runtime):
             with self.input_guard():
                 teleporter = travel.teleporter()
                 if teleporter.player_in_home():
-                    self.log("当前位于家园，正在传送到星海无界枢纽后检查奇迹之冠。")
+                    self.log("当前位于家园，正在传送到星海无界枢纽后检查奇迹之冠。", detail=True)
                     teleporter.transport(HUB)
                 else:
                     self.require(self.main(), "确认当前地图后未能返回主界面")
@@ -302,7 +302,7 @@ class Crown(Runtime):
             state = self.challenge()
             if state == "rewards":
                 if not parameters(self.context, "MaaNikki_Crown_Rewards").get("value", False):
-                    self.log("未开启赛事嘉奖与兑换，本次跳过。")
+                    self.log("未开启赛事嘉奖与兑换，本次跳过。", detail=True)
                     return not self.stopped
                 self.rewards()
                 return self.main() and not self.stopped

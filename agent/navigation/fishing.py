@@ -70,6 +70,7 @@ class Fishing:
         self.last_state_frame = None
         self.last_state_details = None
         self.previous_state = None
+        self.last_known_state = None
 
     @property
     def label(self):
@@ -132,6 +133,8 @@ class Fishing:
                     found, source = state, "text"
                     break
         self.last_state_details = {"state": found.name, "source": source, "text": text, "roi": area}
+        if found != FishingState.UNKNOWN:
+            self.last_known_state = found
         if found != self.previous_state:
             self.actions.event({"type": self.event_prefix+"_state", **self.last_state_details})
             self.previous_state = found
@@ -143,7 +146,11 @@ class Fishing:
         record["evidence"] = self.rt.diagnostic("fishing_state", reason,
             image=self.last_state_frame, details={"recognition": self.last_state_details})
         self.actions.event(record)
-        self.rt.log(reason+" 识别信息已记录，本轮停止。")
+        phase = {FishingState.FINISH: "等待上钩", FishingState.STRIKE: "提竿",
+                 FishingState.PULL_LINE: "拉线", FishingState.REEL_IN: "收线",
+                 FishingState.SKIP: "领取钓获"}.get(self.last_known_state, "识别操作提示")
+        self.rt.log(reason+" 识别信息已记录，本轮停止。",
+                    ui_text=f"{self.label}在{phase}阶段停止：{reason}")
         # An unclassified fishing page must not reach ordinary Esc recovery.
         self.rt.navigation_halted = True
         raise NavigationError(reason)
@@ -181,7 +188,7 @@ class Fishing:
         return pixels
 
     def pull_line(self):
-        self.rt.log(f"{self.label}：拉扯鱼线。")
+        self.rt.log(f"{self.label}：拉扯鱼线。", detail=True)
         pixels = self.tension()
         while not self.rt.stopped:
             pixels = self.pull_direction("A", pixels)
@@ -192,7 +199,7 @@ class Fishing:
                 break
 
     def reel_in(self):
-        self.rt.log(f"{self.label}：收线。")
+        self.rt.log(f"{self.label}：收线。", detail=True)
         while not self.rt.stopped:
             begin = time.monotonic()
             self.press("fishing_reel")
@@ -234,7 +241,7 @@ class Fishing:
         event = {"type": "star_fished" if self.kind == "home" else "fish_caught",
                  "material": name, "count": self.materials[name]}
         self.actions.event(event)
-        self.rt.log(f"获得{name}，本次累计 {self.materials[name]}。")
+        self.rt.log(f"获得{name}，本次累计 {self.materials[name]}。", detail=True)
 
     def wait_main(self, gap):
         deadline = time.monotonic()+5
@@ -245,6 +252,7 @@ class Fishing:
             self.wait(gap)
 
     def cast(self):
+        self.last_known_state = None
         started = False
         retried = False
         deadline = time.monotonic()+5
@@ -356,11 +364,14 @@ class Fishing:
         return self.run_casts(limit)
 
     def run_casts(self, limit=None):
+        caught_before = self.materials.get("陨星", 0)
+        if self.kind == "home":
+            self.rt.log("开始钓星。")
         for _ in range(limit if limit is not None else (5 if self.kind == "home" else 3)):
             self.inputs.check()
             if self.kind == "home" and self.home_exhausted():
                 self.actions.event({"type": "star_fishing_skipped", "reason": "meteors_exhausted"})
-                self.rt.log("可感应陨星已耗尽，停止钓星。")
+                self.rt.log("可感应陨星已耗尽，停止钓星。", detail=True)
                 break
             result = self.cast()
             self.wait(.5)
@@ -368,8 +379,9 @@ class Fishing:
                 break
         if self.kind == "home":
             self.wait(2)
-            self.rt.log("结束采星能力。")
+            self.rt.log("结束采星能力。", detail=True)
             self.exit_home()
+            self.rt.log(f"钓星完成：本次钓获 {self.materials.get('陨星', 0)-caught_before} 次。")
         return True
 
     def exit_home(self):
@@ -391,7 +403,7 @@ class Fishing:
     def prepare_home(self, facing_heading=None):
         # Preserve the upstream key-presence check, including a zero-catch run.
         if "陨星" in self.materials:
-            self.rt.log("之前已执行钓星，无需再钓。")
+            self.rt.log("之前已执行钓星，无需再钓。", detail=True)
             return False
         if not self.ability.select():
             raise NavigationError("采星能力选择未完成。")
@@ -415,7 +427,7 @@ class Fishing:
             if frame is not None and self.home_exhausted(frame):
                 self.materials["陨星"] = 0
                 self.actions.event({"type": "star_fishing_skipped", "reason": "meteors_exhausted"})
-                self.rt.log("可感应陨星已耗尽，跳过钓星并继续路线。")
+                self.rt.log("可感应陨星已耗尽，跳过钓星并继续路线。", detail=True)
                 self.exit_home()
                 return False
             box = self.ui.asset("IconAbilityFish", image=frame, roi=area,

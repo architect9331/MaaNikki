@@ -19,7 +19,7 @@ class Home:
         if self.rt.stopped:
             return False
         # Upstream checks this notice even when the route reports a failed action.
-        self.rt.log("检测是否有巨陨星。")
+        self.rt.log("检测是否有巨陨星。", detail=True)
         day = game_day().isoformat()
         outcome, text = "unconfirmed", ""
         if not self.rt.main() or not self.ui.open_map():

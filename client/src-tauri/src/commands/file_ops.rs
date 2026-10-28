@@ -428,17 +428,87 @@ fn clear_log_dirs(debug_dir: &Path, exports_dir: &Path, exclude_file_name: Optio
 }
 
 /// 递归删除 debug 目录（含所有子目录）中的 .log 文件，清空 on_error/、vision/ 内的调试产物
-/// 以及 debug_exports/ 下的日志导出产物（保留这几个目录本身）。
+/// 以及 logs/ 任务记录与 debug_exports/ 日志导出产物（保留目录本身）。
 /// 可选择排除一个当前正在使用的日志文件。返回删除的文件与产物总数。
 #[tauri::command]
-pub fn clear_log_files(exclude_file_name: Option<String>) -> Result<u64, String> {
+pub fn clear_log_files(exclude_file_name: Option<String>, confirmed: bool) -> Result<u64, String> {
+    if !confirmed {
+        return Err("请在设置中确认清理日志文件".to_string());
+    }
     let data_dir = get_app_data_dir()?;
 
-    Ok(clear_log_dirs(
+    let mut deleted = clear_log_dirs(
         &data_dir.join(DEBUG_DIR),
         &data_dir.join(DEBUG_EXPORTS_DIR),
         exclude_file_name.as_deref(),
-    ))
+    );
+    let task_logs = data_dir.join("logs");
+    if task_logs.is_dir() && !task_logs.is_symlink() {
+        deleted = deleted.saturating_add(clear_dir_contents(&task_logs));
+    }
+    Ok(deleted)
+}
+
+fn remove_expired_logs(dir: &Path, cutoff: std::time::SystemTime, exclude: Option<&str>) -> u64 {
+    if dir.is_symlink() {
+        return 0;
+    }
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return 0;
+    };
+    let mut deleted = 0;
+    for entry in entries.flatten() {
+        let Ok(kind) = entry.file_type() else {
+            continue;
+        };
+        if kind.is_symlink() {
+            continue;
+        }
+        let path = entry.path();
+        if kind.is_dir() {
+            deleted += remove_expired_logs(&path, cutoff, exclude);
+        } else if kind.is_file() && exclude != path.file_name().and_then(|name| name.to_str()) {
+            let expired = entry
+                .metadata()
+                .and_then(|metadata| metadata.modified())
+                .is_ok_and(|modified| modified < cutoff);
+            if expired {
+                match std::fs::remove_file(&path) {
+                    Ok(()) => deleted += 1,
+                    Err(error) => log::debug!(
+                        "Failed to remove expired log [{}]: {}",
+                        path.display(),
+                        error
+                    ),
+                }
+            }
+        }
+    }
+    deleted
+}
+
+/// Retention applies to individual files; directory timestamps do not expire newer reports.
+#[tauri::command]
+pub async fn cleanup_expired_logs(
+    retention_days: u32,
+    exclude_file_name: Option<String>,
+) -> Result<u64, String> {
+    if ![7, 30, 90].contains(&retention_days) {
+        return Err("日志保留时间应为 7、30 或 90 天".to_string());
+    }
+    let data_dir = get_app_data_dir()?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let cutoff = std::time::SystemTime::now()
+            - std::time::Duration::from_secs(u64::from(retention_days) * 86400);
+        [DEBUG_DIR, "logs", DEBUG_EXPORTS_DIR]
+            .iter()
+            .map(|name| {
+                remove_expired_logs(&data_dir.join(name), cutoff, exclude_file_name.as_deref())
+            })
+            .sum()
+    })
+    .await
+    .map_err(|error| error.to_string())
 }
 
 /// 获取当前工作目录

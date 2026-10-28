@@ -10,15 +10,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Eraser, Copy, ChevronUp, ChevronDown, Archive } from 'lucide-react';
 import clsx from 'clsx';
-import { invoke } from '@tauri-apps/api/core';
 import { useAppStore, type LogType } from '@/stores/appStore';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
 import { isTauri } from '@/utils/paths';
 import { useExportLogs } from '@/utils/useExportLogs';
 import { ExportLogsModal } from './settings/ExportLogsModal';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { getCurrentLogFileName } from '@/utils/logger';
-import { clearPersistedRuntimeLogs } from '@/utils/runtimeLogPersistence';
 import { getAllLogsFromBackend } from '@/utils/logStdout';
 import { loadPersistedRuntimeLogs, mergeRuntimeLogs } from '@/utils/runtimeLogPersistence';
 import type { LogEntry } from '@/stores/types';
@@ -89,26 +86,11 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
     isFollowingTailRef.current = bottom;
   }, []);
 
-  const clearLogFiles = useCallback(async () => {
-    if (!isTauri()) return;
-    try {
-      await invoke<number>('clear_log_files', {
-        excludeFileName: getCurrentLogFileName(),
-      });
-    } catch {
-      // ignore cleanup errors
-    }
-  }, []);
-
   const handleClear = useCallback(() => {
     if (activeInstanceId) {
       clearLogs(activeInstanceId);
     }
-    if (!instanceId) {
-      clearPersistedRuntimeLogs();
-      clearLogFiles();
-    }
-  }, [activeInstanceId, instanceId, clearLogFiles, clearLogs]);
+  }, [activeInstanceId, clearLogs]);
 
   const handleCopyAll = useCallback(() => {
     const text = visibleLogs

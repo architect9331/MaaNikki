@@ -147,7 +147,7 @@ class FiveStarInventory(BlessingLocker):
         key = self.key(facts)
         if key in self.protected:
             self.rt.log(f"{facts['name']}·{facts['slot']}·{facts['color']}色已有满级收藏，保留当前重复项未锁定。",
-                        ui_text=f"重复颜色：{facts['name']}·{facts['slot']}·{facts['color']}色，留作素材。")
+                        detail=True)
             return False
         if facts["rarity"] != 5 or facts["level"] != 10 or facts["color"] is None:
             raise RuntimeError("不能将未确认的五星满级颜色记为收藏")

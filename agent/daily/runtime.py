@@ -578,7 +578,7 @@ class Runtime:
                     events.append({"type": "crystal_route_attempt", "attempt": attempt+1,
                                    "max_attempts": crystal_retries+1})
                 if attempt == 0:
-                    self.log("正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。")
+                    self.log("正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。", detail=True)
                 stage = "route_execution"
                 try:
                     navigator.follow(model)
@@ -945,7 +945,7 @@ class Executors(Runtime):
                 confirmed = success or returned and not preview or recover_ready and not recover_before
                 confirmations = confirmations+1 if confirmed else 0
                 if confirmations >= 2:
-                    self.log("已确认摆饰放置完成，稍后核实任务积分。")
+                    self.log("已确认摆饰放置完成，稍后核实任务积分。", detail=True)
                     return self.main()
                 if not self.pause(.3):
                     return False

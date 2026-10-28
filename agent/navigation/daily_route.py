@@ -128,9 +128,9 @@ class RouteActions:
         # Use exactly the same gate as prepare_home's second-point skip,
         # including confirmed exhaustion and a completed zero-catch attempt.
         if "陨星" not in self.fishing.materials:
-            self.rt.log("首个点位尚未执行钓星，继续前往第二个钓星点。")
+            self.rt.log("首个点位尚未执行钓星，继续前往第二个钓星点。", detail=True)
             return None
-        self.rt.log("钓星已执行或陨星已耗尽，沿捷径前往点赞位置。")
+        self.rt.log("钓星已执行或陨星已耗尽，沿捷径前往点赞位置。", detail=True)
         return self.home_shortcut
 
     def notification(self):
@@ -158,7 +158,7 @@ class RouteActions:
                 for name, amount in amounts.items():
                     self.count += amount
                     self.event({"type": "obtained", "material": name, "amount": amount, "total": self.count, "text": text})
-                    self.rt.log(f"已识别获得{name}，本次累计 {self.count}。")
+                    self.rt.log(f"已识别获得{name}，本次累计 {self.count}。", detail=True)
                 return True
             if not any(name in compact for name in self.count_materials):
                 self.last_notice = ""
@@ -323,7 +323,7 @@ class RouteActions:
                 self.event({"type": "bottle_unconfirmed", "x": point.x, "y": point.y,
                             "pickup_detected": bool(found), "interacted": bool(interacted),
                             "recognition": diagnostics, "frame": evidence})
-                self.rt.log("此点未确认拾取漂流瓶，继续沿路线查找。")
+                self.rt.log("此点未确认拾取漂流瓶，继续沿路线查找。", detail=True)
             self.event({"type": "bottle_result", "x": point.x, "y": point.y,
                         "sample": point.params.get("sample"), "success": bool(ok),
                         "pickup_detected": bool(found), "interacted": bool(interacted),

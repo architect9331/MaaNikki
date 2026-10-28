@@ -2,6 +2,7 @@ from functools import wraps
 from copy import copy
 from contextlib import contextmanager
 from contextvars import ContextVar
+from threading import Event
 import traceback
 from performance import action_profile
 from message_log import message_scope
@@ -25,6 +26,21 @@ def local_registration(resource):
         # Imports are cached across game restarts; bind fresh instances each time.
         for name, cls in _ACTION_TYPES.items():
             handler = cls()
+            finished = Event()
+            finished.set()
+            run = handler.run
+
+            def local_run(context, argv, run=run, finished=finished):
+                finished.clear()
+                try:
+                    return run(context, argv)
+                finally:
+                    finished.set()
+
+            # Native cancellation may finish a job before its Python callback.
+            # The startup owner must retain the Tasker until both have ended.
+            handler.run = local_run
+            handler.callback_finished = finished
             if not resource.register_custom_action(name, handler):
                 raise RuntimeError(f"无法注册启动动作：{name}")
             handlers[name] = handler

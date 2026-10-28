@@ -440,12 +440,21 @@ def prepare_game(timeout, record):
         action = handlers["nikki.start_game"]
         record["stage"] = "enter_game"
         save_record(record)
-        result = tasker.post_task("MaaNikki_StartGame", {
-            "MaaNikki_StartGame": {"custom_action_param": {
-                "timeout": min(900, int(remaining)), "bootstrap": True,
-                "allow_restart": restarts < 3,
-            }},
-        }).wait().get()
+        try:
+            result = tasker.post_task("MaaNikki_StartGame", {
+                "MaaNikki_StartGame": {"custom_action_param": {
+                    "timeout": min(900, int(remaining)), "bootstrap": True,
+                    "allow_restart": restarts < 3,
+                }},
+            }).wait().get()
+        finally:
+            # A stop requested inside a local callback can complete the task
+            # job before the callback returns. Drain the stop queue before the
+            # owning Tasker is destroyed, including on failure or restart.
+            with startup_step(record, "close_game_session"):
+                action.callback_finished.wait()
+                tasker.post_stop().wait()
+            record["stage"] = "enter_game"
         remaining -= action.elapsed_seconds
         if not action.restart_requested:
             if result and result.status.succeeded:

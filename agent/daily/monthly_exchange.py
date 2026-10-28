@@ -61,7 +61,7 @@ class MonthlyExchange(ShopWorkflow):
                 "roi": self.LIST_ROI, "expected": "^"+name+"$"}, image=image)
             if not result or not result.hit:
                 self.confirm(name, "already_exchanged")
-                self.rt.log(f"{self.LABEL}：{name}本月已兑换，跳过。")
+                self.rt.log(f"{self.LABEL}：{name}本月已兑换，跳过。", detail=True)
                 continue
             box = list(result.box)
             x, y, w, _ = box
@@ -69,7 +69,7 @@ class MonthlyExchange(ShopWorkflow):
                 "roi": [max(285, round(x+w/2)-60), max(120, y-85), 120, 65]}, image=image)
             if sold and sold.hit:
                 self.confirm(name, "sold_out")
-                self.rt.log(f"{self.LABEL}：{name}本月已兑换，跳过。")
+                self.rt.log(f"{self.LABEL}：{name}本月已兑换，跳过。", detail=True)
                 continue
             if not self.rt.image_current(image) or not self.exchange(name, box):
                 return False

@@ -161,7 +161,7 @@ class Starsea:
             for index, name in enumerate(names):
                 if self.rt.stopped or not self.rt.main():
                     return False
-                self.rt.log(f"漂流瓶：正在尝试路线 {index+1}/{len(names)}。")
+                self.rt.log(f"漂流瓶：正在尝试路线 {index+1}/{len(names)}。", detail=True)
                 # navigate may fail before constructing RouteActions; do not
                 # inherit another task's count in that case.
                 self.rt.navigation_count = count
@@ -202,16 +202,16 @@ class Starsea:
     def ring(self, at_hub=False, timed=False):
         try:
             if not at_hub:
-                self.rt.log("正在前往无界枢纽，准备召唤摇铃。")
+                self.rt.log("正在前往无界枢纽，准备召唤摇铃。", detail=True)
                 if not self.hub():
                     return False
-            self.rt.log("正在长按摇铃键（4 秒）。")
+            self.rt.log("正在长按摇铃键（4 秒）。", detail=True)
             ok = self.rt.hold("bell", 4)
             if ok and not timed:
                 ok = self.rt.ui.wait_page("MaaNikki_MainDetected", seconds=10)
             self.events.append({"type": "bell", "input_completed": bool(ok), "duration": 4})
             if ok and not at_hub:
-                self.rt.log("摇铃操作已结束，稍后统一核实积分。")
+                self.rt.log("摇铃操作已结束，稍后统一核实积分。", detail=True)
             return bool(ok)
         except (ValueError, KeyError, OSError, RuntimeError, cv2.error) as error:
             self.events.append({"type": "stopped", "reason": str(error)})
@@ -462,7 +462,7 @@ class Starsea:
                         clicks += 1
                         scan["edge_clicks"] = clicks
                         if clicks == 1:
-                            self.rt.log("点击结晶边缘提示，定位实际位置。")
+                            self.rt.log("点击结晶边缘提示，定位实际位置。", detail=True)
                         previous, stable_since = None, time.monotonic()
                         continue
                     # No usable indicator: expose targets hidden by fixed UI.
@@ -507,7 +507,7 @@ class Starsea:
             def record_start():
                 self.collection_start = self.read_collection_statistics("before")
             teleporter.transport(HUB, on_map_ready=record_start)
-            self.rt.log("开始收集星光结晶，摇铃后打开地图定位路线。")
+            self.rt.log("开始收集星光结晶，摇铃后打开地图定位路线。", detail=True)
             self.crystal_scans = []
             self.crystal_locations = []
             self.crystal_remaining = None
@@ -542,7 +542,7 @@ class Starsea:
                 if selected is not None:
                     break
                 if index+1 < len(CRYSTAL_VIEWS):
-                    self.rt.log("切换地图视野，继续定位剩余结晶。")
+                    self.rt.log("切换地图视野，继续定位剩余结晶。", detail=True)
             if selected is None:
                 # Absence only counts after every known viewport was reached
                 # on a reliable map frame. Partial markers still need routing.
@@ -553,7 +553,7 @@ class Starsea:
                                     and not scan["capture_failed"] for scan in self.crystal_scans)
                                 for center in CRYSTAL_VIEWS)):
                     self.events.append({"type": "crystals_already_collected"})
-                    self.rt.log("各结晶视野均未发现路线标记，读取地图收集统计。")
+                    self.rt.log("各结晶视野均未发现路线标记，读取地图收集统计。", detail=True)
                     return self.report_collection_statistics()
                 if teleporter.last_frame is not None:
                     try:
@@ -573,7 +573,7 @@ class Starsea:
                 return False
             name = selected["route"]
             self.rt.log(f"已发现 {self.crystal_marker_count} 个结晶路线标记，"
-                        f"匹配路线 {name}，开始完整跑图收集。")
+                        f"匹配路线 {name}，开始完整跑图收集。", detail=True)
             if not self.rt.navigate(name, mode, card, crystal_map_open=True):
                 return False
             return self.report_collection_statistics()

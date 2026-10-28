@@ -126,9 +126,8 @@ export default {
       'Oldest logs will be discarded when exceeding the limit (recommended 500–2000)',
     resetWindowLayout: 'Reset Window Layout',
     resetWindowLayoutHint: 'Restore window size to default and center the window',
-    autoClearLogsOnLaunch: 'Auto-clear Runtime Logs',
-    autoClearLogsOnLaunchHint:
-      'Automatically clear runtime logs and debug files every time the project is launched',
+    autoClearLogsOnLaunch: 'Clear Log Panel on Launch',
+    autoClearLogsOnLaunchHint: 'Clear displayed logs on launch; keep log files',
   },
 
   // Special tasks
@@ -569,6 +568,16 @@ export default {
 
   // Debug
   debug: {
+    logRetention: 'Log File Retention',
+    logRetentionHint: 'Check weekly and remove files older than the retention period',
+    keepAllLogs: 'Keep all',
+    keepLogDays: 'Keep {{days}} days',
+    logRetentionConfirm: 'Automatically delete logs and screenshots older than {{days}} days once a week?',
+    clearLogFiles: 'Clear Log Files',
+    clearLogFilesConfirm: 'Delete historical logs, error screenshots and exported logs? The current session log is kept.',
+    clearLogFilesDone: 'Log files cleared',
+    clearLogFilesFailed: 'Failed to clear log files',
+    clearLogFilesBusy: 'Stop tasks and assistance first',
     title: 'Debug',
     versions: 'Versions',
     interfaceVersion: '{{name}} version',

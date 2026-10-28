@@ -145,6 +145,8 @@ export interface AppSettings {
   /** 每个实例最多保留的日志条数（超出自动丢弃最旧的） */
   maxLogsPerInstance?: number;
   autoClearLogsOnLaunch?: boolean;
+  logRetentionDays?: number;
+  lastLogCleanupAt?: number;
   windowSize?: WindowSize;
   windowPosition?: WindowPosition; // 窗口位置
   mirrorChyan?: MirrorChyanSettings;
@@ -246,7 +248,9 @@ export const defaultConfig: MxuConfig = {
     language: 'system',
     confirmBeforeDelete: false,
     maxLogsPerInstance: DEFAULT_MAX_LOGS_PER_INSTANCE,
-    autoClearLogsOnLaunch: false,
+    autoClearLogsOnLaunch: true,
+    logRetentionDays: 0,
+    lastLogCleanupAt: 0,
     windowSize: defaultWindowSize,
     mirrorChyan: defaultMirrorChyanSettings,
     helpImproveSoftware: true,

@@ -122,8 +122,8 @@ export default {
     maxLogsPerInstanceHint: '한도를 초과하면 가장 오래된 로그가 자동으로 삭제됩니다(권장 500~2000)',
     resetWindowLayout: '창 레이아웃 초기화',
     resetWindowLayoutHint: '창 크기를 기본값으로 복원하고 화면 중앙에 배치합니다',
-    autoClearLogsOnLaunch: '로그 자동 지우기',
-    autoClearLogsOnLaunchHint: '프로젝트를 시작할 때 런타임 로그와 디버그 파일을 자동으로 지웁니다',
+    autoClearLogsOnLaunch: '시작 시 로그 표시 지우기',
+    autoClearLogsOnLaunchHint: '시작할 때 표시된 로그만 지우고 로그 파일은 보관합니다',
   },
 
   // 특수 작업
@@ -559,6 +559,16 @@ export default {
 
   // 디버그
   debug: {
+    logRetention: '로그 파일 보관 기간',
+    logRetentionHint: '매주 한 번 수정 시간을 기준으로 오래된 로그를 정리합니다',
+    keepAllLogs: '모두 보관',
+    keepLogDays: '{{days}}일 보관',
+    logRetentionConfirm: '매주 {{days}}일 이전의 로그와 스크린샷을 자동 삭제할까요?',
+    clearLogFiles: '로그 파일 정리',
+    clearLogFilesConfirm: '이전 로그, 오류 스크린샷 및 내보낸 로그를 삭제할까요? 현재 세션 로그는 유지됩니다.',
+    clearLogFilesDone: '로그 파일을 정리했습니다',
+    clearLogFilesFailed: '로그 파일 정리에 실패했습니다',
+    clearLogFilesBusy: '먼저 작업과 보조 기능을 중지하세요',
     title: '디버그',
     versions: '버전 정보',
     interfaceVersion: '{{name}} 버전',

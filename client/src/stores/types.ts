@@ -122,6 +122,8 @@ export interface AppState {
   /** 每个实例最多保留的日志条数（超出自动丢弃最旧的） */
   maxLogsPerInstance: number;
   autoClearLogsOnLaunch: boolean;
+  logRetentionDays: number;
+  lastLogCleanupAt: number;
   /** 是否开启匿名遥测（帮助改进软件），默认 true；调试 / 开发版本强制关闭 */
   helpImproveSoftware: boolean;
   customAccents: CustomAccent[];
@@ -133,6 +135,8 @@ export interface AppState {
   setConfirmBeforeDelete: (enabled: boolean) => void;
   setMaxLogsPerInstance: (value: number) => void;
   setAutoClearLogsOnLaunch: (enabled: boolean) => void;
+  setLogRetentionDays: (days: number) => void;
+  setLastLogCleanupAt: (timestamp: number) => void;
   setHelpImproveSoftware: (enabled: boolean) => void;
   addCustomAccent: (accent: CustomAccent) => void;
   updateCustomAccent: (id: string, accent: CustomAccent) => void;

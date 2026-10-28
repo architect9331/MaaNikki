@@ -238,7 +238,9 @@ export const useAppStore = create<AppState>()(
     backgroundOpacity: 50,
     confirmBeforeDelete: false,
     maxLogsPerInstance: DEFAULT_MAX_LOGS_PER_INSTANCE,
-    autoClearLogsOnLaunch: false,
+    autoClearLogsOnLaunch: true,
+    logRetentionDays: 0,
+    lastLogCleanupAt: 0,
     helpImproveSoftware: true,
     customAccents: [],
     setTheme: (theme) => {
@@ -279,6 +281,10 @@ export const useAppStore = create<AppState>()(
     setAutoClearLogsOnLaunch: (enabled) => {
       set({ autoClearLogsOnLaunch: enabled });
     },
+    setLogRetentionDays: (days) => {
+      if ([0, 7, 30, 90].includes(days)) set({ logRetentionDays: days, lastLogCleanupAt: 0 });
+    },
+    setLastLogCleanupAt: (timestamp) => set({ lastLogCleanupAt: timestamp }),
     setHelpImproveSoftware: (enabled) => {
       // 调试 / 开发版本强制关闭，忽略开启请求
       const blocked = isTelemetryBlockedByBuild(get().projectInterface);
@@ -1508,7 +1514,10 @@ export const useAppStore = create<AppState>()(
         backgroundOpacity: effectiveBgOpacity,
         confirmBeforeDelete: config.settings.confirmBeforeDelete ?? false,
         maxLogsPerInstance: config.settings.maxLogsPerInstance ?? DEFAULT_MAX_LOGS_PER_INSTANCE,
-        autoClearLogsOnLaunch: config.settings.autoClearLogsOnLaunch ?? false,
+        autoClearLogsOnLaunch: config.settings.autoClearLogsOnLaunch ?? true,
+        logRetentionDays: [7, 30, 90].includes(config.settings.logRetentionDays ?? 0)
+          ? config.settings.logRetentionDays! : 0,
+        lastLogCleanupAt: config.settings.lastLogCleanupAt ?? 0,
         // 默认开启；调试 / 开发版本强制关闭
         helpImproveSoftware: isTelemetryBlockedByBuild(get().projectInterface)
           ? false
@@ -2498,6 +2507,8 @@ function generateConfig(): MxuConfig {
           confirmBeforeDelete: state.confirmBeforeDelete,
           maxLogsPerInstance: state.maxLogsPerInstance,
           autoClearLogsOnLaunch: state.autoClearLogsOnLaunch,
+          logRetentionDays: state.logRetentionDays,
+          lastLogCleanupAt: state.lastLogCleanupAt,
           helpImproveSoftware: state.helpImproveSoftware,
           windowSize: bl?.windowSize ?? state.windowSize,
           windowPosition: bl?.windowPosition ?? state.windowPosition,
@@ -2593,6 +2604,8 @@ useAppStore.subscribe(
     confirmBeforeDelete: state.confirmBeforeDelete,
     maxLogsPerInstance: state.maxLogsPerInstance,
     autoClearLogsOnLaunch: state.autoClearLogsOnLaunch,
+    logRetentionDays: state.logRetentionDays,
+    lastLogCleanupAt: state.lastLogCleanupAt,
     helpImproveSoftware: state.helpImproveSoftware,
     mirrorChyanSettings: state.mirrorChyanSettings,
     proxySettings: state.proxySettings,

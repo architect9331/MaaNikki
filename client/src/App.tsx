@@ -60,7 +60,8 @@ async function getGlobalShortcut() {
 }
 import { loggers } from '@/utils/logger';
 import { setBackendPort, getApiBase, apiGet } from '@/utils/backendApi';
-import { getAllLogsFromBackend } from '@/utils/logStdout';
+import { getAllLogsFromBackend, type LogEntryDto } from '@/utils/logStdout';
+import { cleanupExpiredLogs } from '@/utils/logRetention';
 import { useMaaCallbackLogger, useMaaAgentLogger } from '@/utils/useMaaCallbackLogger';
 import { getInterfaceLangKey } from '@/i18n';
 import { applyTheme, resolveThemeMode, registerCustomAccent, clearCustomAccents } from '@/themes';
@@ -72,7 +73,6 @@ import {
   mergeRuntimeLogs,
   persistRuntimeLogs,
 } from '@/utils/runtimeLogPersistence';
-import { getCurrentLogFileName } from '@/utils/logger';
 import {
   isTauri,
   isValidWindowSize,
@@ -136,6 +136,7 @@ const LazyVersionWarningModal = lazy(async () => {
 });
 
 function App() {
+  const logRetentionDays = useAppStore((state) => state.logRetentionDays);
   useEffect(() => monitorExploration(), []);
   useEffect(() => {
     const refresh = () => void useAccountStateStore.getState().refresh().catch(() => {});
@@ -145,6 +146,12 @@ function App() {
     return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
   }, []);
   const [loadingState, setLoadingState] = useState<LoadingState>('loading');
+  useEffect(() => {
+    if (loadingState !== 'success' || !isTauri() || !logRetentionDays) return;
+    void cleanupExpiredLogs();
+    const timer = window.setInterval(() => { void cleanupExpiredLogs(); }, 60 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [loadingState, logRetentionDays]);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [versionWarning, setVersionWarning] = useState<{ current: string; minimum: string } | null>(
     null,
@@ -753,7 +760,10 @@ function App() {
 
       // 从后端恢复运行日志（跨页面刷新持久化）
       try {
-        const backendLogs = await getAllLogsFromBackend();
+        const backendLogs: Record<string, LogEntryDto[]> = await getAllLogsFromBackend().catch((error) => {
+          log.warn('读取运行日志缓冲区失败:', error);
+          return {};
+        });
         const store = useAppStore.getState();
         const restoredBackendLogs: Record<string, import('@/stores/types').LogEntry[]> = {};
         for (const [instanceId, entries] of Object.entries(backendLogs || {})) {
@@ -767,18 +777,13 @@ function App() {
         }
 
         if (store.autoClearLogsOnLaunch) {
-          if (isTauri()) {
-            try {
-              const deleted = await invoke<number>('clear_log_files', {
-                excludeFileName: getCurrentLogFileName(),
-              });
-              log.info('Auto-cleared log files and debug artifacts on launch:', deleted);
-            } catch {
-              // ignore cleanup errors
-            }
+          for (const instanceId of new Set([
+            ...Object.keys(backendLogs || {}), ...Object.keys(store.instanceLogs),
+          ])) {
+            store.clearLogs(instanceId);
           }
           clearPersistedRuntimeLogs();
-          log.info('Restored runtime logs: skipped (auto-clear on launch enabled)');
+          log.info('已清空前端日志展示');
         } else {
           const restoredPersistentLogs = loadPersistedRuntimeLogs(store.maxLogsPerInstance);
           const mergedLogs = mergeRuntimeLogs(

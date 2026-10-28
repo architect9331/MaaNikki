@@ -9,6 +9,7 @@ from maa.custom_action import CustomAction
 from registration import agent_action
 from task_control import task_time as time
 from daily.runtime import Executors, ROOT
+from game_view import GameFrameSizeError, require_game_frame
 
 
 @agent_action("nikki.start_game", stop_on_failure=True)
@@ -92,6 +93,31 @@ class StartGameAction(CustomAction):
             return runtime.click_template(
                 "MaaNikki_StartGame_UpdateConfirm", attempts=1, wait_seconds=0, verify=False)
 
+        # The health warning can open at the launcher's aspect ratio before
+        # Unreal applies the saved game resolution. Observe only during this
+        # short transition; ordinary recognition/input keeps its geometry guard.
+        frame_deadline = min(deadline, started_at+30)
+        frame_wait_logged = False
+        while not runtime.stopped:
+            runtime.check_focus()
+            captured = runtime.controller.post_screencap().wait()
+            image = captured.get() if captured.succeeded else None
+            if runtime.check_focus():
+                continue
+            if image is None or image.size == 0:
+                return incomplete("未获取到游戏启动画面")
+            try:
+                require_game_frame(image)
+                break
+            except GameFrameSizeError:
+                if time.monotonic() >= frame_deadline:
+                    runtime.validate_frame(image)
+                if not frame_wait_logged:
+                    runtime.log("正在等待游戏启动画面切换至 16:9 分辨率。")
+                    frame_wait_logged = True
+            if not runtime.pause(.25):
+                return False
+
         while not runtime.stopped and time.monotonic() < deadline:
             with runtime.observe(fresh=True):
                 restart = runtime.hit("MaaNikki_StartGame_RestartConfirm")
@@ -164,11 +190,11 @@ class StartGameAction(CustomAction):
                     return incomplete()
             elif intro:
                 if not intro_logged:
-                    runtime.log("正在播放健康提示或光敏警告，等待启动画面结束。")
+                    runtime.log("正在播放健康提示或光敏警告，等待启动画面结束。", detail=True)
                     intro_logged = True
             elif loading:
                 if not loading_logged:
-                    runtime.log("正在加载奇迹大陆，等待进入主页。")
+                    runtime.log("正在加载奇迹大陆，等待进入主页。", detail=True)
                     loading_logged = True
             elif any(runtime.hit(node) for node in (
                     "MaaNikki_MenuReady", "MaaNikki_CalendarReady", "MaaNikki_Monthly_PageReady")):
@@ -196,7 +222,7 @@ class StartGameAction(CustomAction):
                                              or runtime.hit("MaaNikki_StartGame_Intro"))
                         if startup_ready:
                             unknown_since = None
-                            runtime.log("已识别启动页面，继续等待登录或进入游戏。")
+                            runtime.log("已识别启动页面，继续等待登录或进入游戏。", detail=True)
                             continue
                         return incomplete("无法从未知页面恢复到游戏主页，请手动返回主页后重试")
             if not waiting_logged:

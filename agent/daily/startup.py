@@ -12,7 +12,7 @@ def focus_game(runtime, inputs):
     if session is not None and session.started:
         inputs.check()
         return
-    runtime.log("正在自动聚焦已连接的游戏窗口。")
+    runtime.log("正在自动聚焦已连接的游戏窗口。", detail=True)
     if not inputs.foreground():
         # Seize activates the connected window on key-up too. Releasing Alt
         # avoids the old cursor warp to the top-left during scene startup.

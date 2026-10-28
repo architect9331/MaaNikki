@@ -88,7 +88,7 @@ class Gameplay:
             if not self.ui.wait_page(choice):
                 self.rt.log(f"未确认挖掘收取界面的“{label}”按钮，本项停止。")
                 return False
-            self.rt.log(f"挖掘收取方式：{label}。")
+            self.rt.log(f"挖掘收取方式：{label}。", detail=True)
             # Submit exactly one choice. Again returns directly to the dig page.
             if not self.rt.click_template(choice, attempts=1):
                 return False
@@ -122,7 +122,7 @@ class Gameplay:
         if not self.rt.click_template(node):
             return False
         # Like toggles: submit once, then leave without clicking again.
-        self.rt.log("已点击照片点赞按钮。")
+        self.rt.log("已点击照片点赞按钮。", detail=True)
         return self.rt.main()
 
     def realm(self, kind, maximize=True, entered=False, weekly_node=None, allow_exhausted=False,
@@ -248,14 +248,14 @@ class Gameplay:
                 return False
 
     def jihua_leave(self):
-        self.rt.log("素材激化结束，正在后退穿过传送门离开幻境。")
+        self.rt.log("素材激化结束，正在后退穿过传送门离开幻境。", detail=True)
         if (self.rt.main() and self.rt.hold("backward", 3)
                 and self.ui.wait_page("MaaNikki_MainDetected", seconds=30)
                 and self.ui.calendar()
                 and self.rt.click_template("MaaNikki_Jihua_Huanjing", attempts=1, wait_seconds=0)):
             # The ordinary HUD is also present inside this realm. A working
             # realm entrance proves we have actually returned to the world.
-            self.rt.log("已离开素材激化幻境，幻境挑战入口已恢复。")
+            self.rt.log("已离开素材激化幻境，幻境挑战入口已恢复。", detail=True)
             return True
         if self.rt.stopped:
             return False
@@ -298,7 +298,7 @@ class Gameplay:
             # HUD can briefly reappear before the actual loading screen starts.
             # Wait without inputs when it disappears, rather than aborting.
             if not self.rt.hit("MaaNikki_MainDetected"):
-                self.rt.log("正在等待素材激化幻境加载完成。")
+                self.rt.log("正在等待素材激化幻境加载完成。", detail=True)
                 if not self.ui.wait_page("MaaNikki_MainDetected", seconds=30):
                     reason = "等待素材激化幻境主界面恢复超时"
                     break
@@ -378,7 +378,7 @@ class Gameplay:
                 if dismissed >= 3:
                     break
                 dismissed += 1
-                self.rt.log("乐园构想：已识别奖励继续提示，尝试关闭奖励页面。")
+                self.rt.log("乐园构想：已识别奖励继续提示，尝试关闭奖励页面。", detail=True)
                 if not self.rt.key("skip", .5):
                     return False
             elif returned and dismissed:
@@ -452,7 +452,7 @@ class Gameplay:
 
     def monthly_rewards(self, kind):
         label = "乐园构想" if kind == "paradise" else "奇迹之旅"
-        self.rt.log(f"已识别{label}，开始处理奖励。")
+        self.rt.log(f"已识别{label}，开始处理奖励。", detail=True)
         claimed, task_claimed, treasure_available = False, False, False
         # Inspect Treasure first without claiming. Return after Task only
         # for an existing treasure reward or newly claimed task progress.
@@ -466,7 +466,7 @@ class Gameplay:
             if not (self.rt.context.get_node_data(selection_node) or {}).get("enabled", False):
                 continue
             if index == 2:
-                self.rt.log("正在检查并领取旅行秘宝奖励。")
+                self.rt.log("正在检查并领取旅行秘宝奖励。", detail=True)
             if kind == "travel":
                 if not self.monthly_travel_tab(page):
                     return False
@@ -605,7 +605,7 @@ class Gameplay:
                         break
                     target = "Travel" if kind == "paradise" else "Paradise"
                     target_label = "奇迹之旅" if kind == "paradise" else "乐园构想"
-                    self.rt.log(f"{label}处理完成，点击左下角切换到{target_label}。")
+                    self.rt.log(f"{label}处理完成，点击左下角切换到{target_label}。", detail=True)
                     if other == "paradise":
                         result = self.monthly_paradise_entry()
                         if result == "unavailable":
@@ -617,7 +617,7 @@ class Gameplay:
                     if not switched:
                         self.monthly_diagnostic(kind, "switch_unconfirmed", f"未能切换到{target_label}")
                         return False
-            self.rt.log("所选奇迹之旅与乐园构想奖励检查完成。")
+            self.rt.log("所选奇迹之旅与乐园构想奖励检查完成。", detail=True)
             return True
         finally:
             if self.rt.stopped:

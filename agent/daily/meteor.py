@@ -139,7 +139,7 @@ class Meteor(Starsea):
                 raise NavigationError("召唤流星必须从星海拾光的对应任务执行。")
             routes = meteor_routes(self.resource)
             with self.rt.input_guard():
-                self.rt.log("正在打开召唤流星任务的立即前往入口。")
+                self.rt.log("正在打开召唤流星任务的立即前往入口。", detail=True)
                 if not self.open_target(card) or not self.close_dialog():
                     raise NavigationError("未能打开并关闭流星地图对话框。")
                 teleporter = self.teleporter()
@@ -148,7 +148,7 @@ class Meteor(Starsea):
                 teleporter.deadline = time.monotonic()+20
                 teleporter.zoom()
                 name = self.locate_target(teleporter, routes)
-                self.rt.log(f"已匹配流星点位 {name[-1]}，开始传送并沿路线前往。")
+                self.rt.log(f"已匹配流星点位 {name[-1]}，开始传送并沿路线前往。", detail=True)
                 arrived = self.rt.navigate(name, mode, card, meteor_travel=True)
                 self.events.append({"type": "meteor_travel_result", "route": name,
                                     "arrived": bool(arrived)})
@@ -159,7 +159,7 @@ class Meteor(Starsea):
                 ok = self.ring(at_hub=True)
                 self.events.append({"type": "meteor_input_completed", "success": bool(ok)})
                 if ok:
-                    self.rt.log("召唤流星摇铃操作已结束，稍后统一核实积分。")
+                    self.rt.log("召唤流星摇铃操作已结束，稍后统一核实积分。", detail=True)
                 return bool(ok)
         except (ValueError, KeyError, TypeError, OSError, RuntimeError, cv2.error) as error:
             self.events.append({"type": "stopped", "reason": str(error)})

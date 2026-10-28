@@ -166,7 +166,7 @@ class DailyRun(Executors):
             return None
         score = self.score()
         if score is not None:
-            self.log(f"{self.title}本批执行后实际积分：{score}/500。")
+            self.log(f"{self.title}本批执行后实际积分：{score}/500。", detail=True)
         return score
 
     def free_batch(self, available, score):
@@ -179,7 +179,8 @@ class DailyRun(Executors):
             card = chosen[0]
             self.attempted.add(card.slot)
             rule = card.rule
-            self.log(f"正在完成{self.title}：{rule.label}（{rule.score} 分，不消耗活跃能量）。")
+            self.log(f"正在完成{self.title}：{rule.label}（{rule.score} 分，不消耗活跃能量）。",
+                     ui_text=f"{self.title}：{rule.label}。")
             linked = rule.key == "animal_one" and "animal_three" in self.successful
             ok = linked or self.execute(self.mode, card)
             self.events.append({"slot": card.slot, "task": rule.key, "success": ok, "linked": linked})
@@ -239,13 +240,14 @@ class DailyRun(Executors):
                     available.append(card)
                 elif card.rule:
                     reason = "缺少已校准的路线或当前交互位置不匹配" if card.rule.route else "暂未适配或已关闭"
-                    self.log(f"{card.rule.label}：{reason}，本轮跳过。")
+                    self.log(f"{card.rule.label}：{reason}，本轮跳过。", detail=True)
             free = [c for c in available if not c.rule.energy]
             expected_free = sum(c.rule.score for c in free)
             self.log(f"当前 {score}/500；可执行的不耗活跃能量任务预计贡献 {expected_free} 分。"
                      + ("优先仅使用这些任务凑分。" if score+expected_free >= 500 else
                         "先做这些任务，不足部分再考虑当天幻境。" if self.mode == "zhaoxi" else
-                        "先做可执行任务；其余任务不会使用幻境活跃能量补分。"))
+                        "先做可执行任务；其余任务不会使用幻境活跃能量补分。"),
+                     ui_text=f"{self.title}：当前 {score}/500，开始完成任务。")
             while score < 500 and any(c.slot not in self.attempted for c in free) and not self.stopped:
                 if not self.main():
                     return False
@@ -351,13 +353,13 @@ class CollectStarlightCrystalsAction(CustomAction):
     def run(self, context, argv) -> bool:
         runtime = Executors(context)
         try:
-            runtime.log("开始每日跑图收集星光结晶，不受星海拾光积分和子任务开关影响。")
+            runtime.log("开始每日跑图收集星光结晶，不受星海拾光积分和子任务开关影响。", detail=True)
             card = classify("xinghai", "收集10个星光结晶", -1)
             # Call the same collector directly; daily-task selection applies
             # only to the score planner's execute() entry point.
             completed = runtime.crystals("xinghai", card)
             if completed and not runtime.stopped:
-                runtime.log("跑图收集星光结晶已完成。")
+                runtime.log("跑图收集星光结晶已完成。", detail=True)
             return bool(completed and not runtime.stopped)
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             runtime.log(f"跑图收集星光结晶未完成：{error}。")

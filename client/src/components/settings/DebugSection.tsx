@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bug, RefreshCw, FolderOpen, ScrollText, Network, Archive } from 'lucide-react';
+import { Bug, RefreshCw, FolderOpen, ScrollText, Network, Archive, Eraser } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
+import { toast } from 'sonner';
 
 import { useAppStore } from '@/stores/appStore';
 import { maaService } from '@/services/maaService';
-import { loggers } from '@/utils/logger';
+import { getCurrentLogFileName, loggers } from '@/utils/logger';
+import { useExplorationStore } from '@/services/explorationService';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { isTauri, getDebugDir, getConfigDir, openDirectory } from '@/utils/paths';
 import { useExportLogs } from '@/utils/useExportLogs';
 import { SwitchButton } from '@/components/FormControls';
@@ -23,7 +27,32 @@ export function DebugSection() {
     setTcpCompatMode,
     backendOS,
     backendArch,
+    instances,
+    logRetentionDays,
+    setLogRetentionDays,
   } = useAppStore();
+  const explorationEnabled = useExplorationStore((state) => state.enabled);
+  const [confirmClearLogs, setConfirmClearLogs] = useState(false);
+  const [clearingLogs, setClearingLogs] = useState(false);
+  const [pendingRetentionDays, setPendingRetentionDays] = useState<number | null>(null);
+  const logsInUse = instances.some((instance) => instance.isRunning) || explorationEnabled;
+
+  const handleClearLogFiles = async () => {
+    if (clearingLogs || logsInUse) return;
+    setConfirmClearLogs(false);
+    setClearingLogs(true);
+    try {
+      await invoke<number>('clear_log_files', {
+        excludeFileName: getCurrentLogFileName(), confirmed: true,
+      });
+      toast.success(t('debug.clearLogFilesDone'));
+    } catch (error) {
+      loggers.ui.error('清理日志文件失败:', error);
+      toast.error(t('debug.clearLogFilesFailed'));
+    } finally {
+      setClearingLogs(false);
+    }
+  };
 
   const [mxuVersion, setMxuVersion] = useState<string | null>(null);
   const [maafwVersion, setMaafwVersion] = useState<string | null>(null);
@@ -246,7 +275,41 @@ export function DebugSection() {
             <Archive className="w-4 h-4" />
             {t('debug.exportLogs')}
           </button>
+          {isTauri() && (
+            <button
+              onClick={() => setConfirmClearLogs(true)}
+              disabled={clearingLogs || logsInUse}
+              title={logsInUse ? t('debug.clearLogFilesBusy') : t('debug.clearLogFiles')}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-bg-tertiary hover:bg-bg-hover rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Eraser className="w-4 h-4" />
+              {t('debug.clearLogFiles')}
+            </button>
+          )}
         </div>
+
+        {isTauri() && (
+          <div className="flex items-center justify-between gap-3 pt-4 border-t border-border">
+            <div>
+              <span className="font-medium text-text-primary">{t('debug.logRetention')}</span>
+              <p className="text-xs text-text-muted mt-0.5">{t('debug.logRetentionHint')}</p>
+            </div>
+            <select
+              value={logRetentionDays}
+              onChange={(event) => {
+                const days = Number(event.target.value);
+                if (days === 0) setLogRetentionDays(0);
+                else setPendingRetentionDays(days);
+              }}
+              className="px-3 py-2 text-sm bg-bg-tertiary rounded-lg border border-border"
+            >
+              <option value={0}>{t('debug.keepAllLogs')}</option>
+              {[7, 30, 90].map((days) => (
+                <option key={days} value={days}>{t('debug.keepLogDays', { days })}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* 开发模式 */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
@@ -285,6 +348,30 @@ export function DebugSection() {
         </div>
       </div>
 
+      <ConfirmDialog
+        open={pendingRetentionDays !== null}
+        title={t('debug.logRetention')}
+        message={t('debug.logRetentionConfirm', { days: pendingRetentionDays })}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        destructive
+        onConfirm={() => {
+          if (pendingRetentionDays !== null) setLogRetentionDays(pendingRetentionDays);
+          setPendingRetentionDays(null);
+        }}
+        onCancel={() => setPendingRetentionDays(null)}
+      />
+      <ConfirmDialog
+        open={confirmClearLogs}
+        title={t('debug.clearLogFiles')}
+        message={t('debug.clearLogFilesConfirm')}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        destructive
+        confirmDisabled={clearingLogs || logsInUse}
+        onConfirm={handleClearLogFiles}
+        onCancel={() => setConfirmClearLogs(false)}
+      />
       {/* 导出日志 Modal */}
       <ExportLogsModal
         show={exportModal.show}

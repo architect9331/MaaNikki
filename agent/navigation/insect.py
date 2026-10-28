@@ -125,7 +125,7 @@ class Insect(Ability):
                         motion.stop()
                         failed += 1
                         if failed > 5:
-                            self.rt.log("附近没有可追踪的昆虫，继续后续点位。")
+                            self.rt.log("附近没有可追踪的昆虫，继续后续点位。", detail=True)
                             break
                         motion.wait(.1)
                     else:

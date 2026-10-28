@@ -122,8 +122,8 @@ export default {
     maxLogsPerInstanceHint: '超过上限会自动丢弃最旧的日志（建议 500～2000）',
     resetWindowLayout: '重置窗口布局',
     resetWindowLayoutHint: '将窗口大小恢复为默认值，并居中显示',
-    autoClearLogsOnLaunch: '自动清理运行日志',
-    autoClearLogsOnLaunchHint: '每次启动项目时，自动清理运行日志与调试文件',
+    autoClearLogsOnLaunch: '启动时清空前端日志',
+    autoClearLogsOnLaunchHint: '每次启动时清空日志面板，日志文件保留',
   },
 
   // 特殊任务
@@ -552,6 +552,16 @@ export default {
 
   // 调试
   debug: {
+    logRetention: '日志文件保留时间',
+    logRetentionHint: '每周检查一次，按文件修改时间清理过期日志',
+    keepAllLogs: '保留全部',
+    keepLogDays: '保留 {{days}} 天',
+    logRetentionConfirm: '启用后每周自动删除 {{days}} 天前的日志和截图。确定启用？',
+    clearLogFiles: '清理日志文件',
+    clearLogFilesConfirm: '将删除历史日志、错误截图和日志导出文件，保留当前会话日志。确定清理？',
+    clearLogFilesDone: '日志文件已清理',
+    clearLogFilesFailed: '日志文件清理失败',
+    clearLogFilesBusy: '请先停止任务和辅助功能',
     title: '调试',
     versions: '版本信息',
     interfaceVersion: '{{name}} 版本',

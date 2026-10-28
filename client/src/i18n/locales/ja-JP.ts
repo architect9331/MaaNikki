@@ -124,9 +124,8 @@ export default {
     maxLogsPerInstanceHint: '上限を超えると古いログから自動的に破棄します（推奨 500～2000）',
     resetWindowLayout: 'ウィンドウレイアウトをリセット',
     resetWindowLayoutHint: 'ウィンドウサイズをデフォルトに戻し、中央に配置します',
-    autoClearLogsOnLaunch: '実行ログの自動クリア',
-    autoClearLogsOnLaunchHint:
-      'プロジェクトの起動時に実行ログとデバッグファイルを自動でクリアします',
+    autoClearLogsOnLaunch: '起動時にログ表示をクリア',
+    autoClearLogsOnLaunchHint: '起動時にログパネルをクリアし、ログファイルは保持します',
   },
 
   // 特殊タスク
@@ -568,6 +567,16 @@ export default {
 
   // デバッグ
   debug: {
+    logRetention: 'ログファイルの保存期間',
+    logRetentionHint: '週に一度、更新日時を基準に古いログを削除します',
+    keepAllLogs: 'すべて保持',
+    keepLogDays: '{{days}} 日間保持',
+    logRetentionConfirm: '毎週、{{days}} 日より古いログと画像を自動削除します。有効にしますか？',
+    clearLogFiles: 'ログファイルを削除',
+    clearLogFilesConfirm: '過去のログ、エラー画像、エクスポートしたログを削除します。現在のセッションログは保持します。削除しますか？',
+    clearLogFilesDone: 'ログファイルを削除しました',
+    clearLogFilesFailed: 'ログファイルの削除に失敗しました',
+    clearLogFilesBusy: '先にタスクとアシストを停止してください',
     title: 'デバッグ',
     versions: 'バージョン情報',
     interfaceVersion: '{{name}} バージョン',

@@ -142,7 +142,7 @@ class WeeklyShop(ShopWorkflow):
                     "roi": self.status_roi(box)}, image=image)
                 if sold_out and sold_out.hit:
                     self.confirm(name, "sold_out")
-                    self.rt.log(f"每周免费礼包：{name}本周已领取，跳过。")
+                    self.rt.log(f"每周免费礼包：{name}本周已领取，跳过。", detail=True)
                 else:
                     if not self.rt.image_current(image) or not self.claim(name, box):
                         return False
