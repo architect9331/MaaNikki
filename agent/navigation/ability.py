@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import cv2
 import numpy as np
+from vision import read_image
 
 from .models import NavigationError
 
@@ -27,7 +28,7 @@ def ability_matches(runtime, node):
     path = (root / template).resolve()
     if not path.is_relative_to(root):
         return False
-    image, frame = cv2.imread(str(path)), runtime.capture()
+    image, frame = read_image(path), runtime.capture()
     if image is None or frame is None:
         return False
     x, y, w, h = definition.get("roi", runtime.ui.roi("AreaAbilityButton"))

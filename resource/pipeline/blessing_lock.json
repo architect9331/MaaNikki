@@ -26,6 +26,7 @@
       "scroll_step": 1200,
       "tooltip_view": [0, 70, 1254, 550],
       "lock_icon": [230, 642, 31, 34],
+      "lock_background": [220, 634, 50, 50],
       "lock_button": [245, 660],
       "sort_label": [1055, 663, 158, 37],
       "slot_buttons": [[895, 110], [895, 180], [895, 252]]

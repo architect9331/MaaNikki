@@ -68,10 +68,12 @@ jobs:
           name: MaaNikki-Windows-x64
           path: artifacts
       - name: Publish a new project version
+        id: publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/publish_release.py
       - name: Trigger MirrorChyanUploading
+        if: steps.publish.outputs.published == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

@@ -473,6 +473,7 @@ function App() {
           url: updateResult.downloadUrl,
           savePath,
           totalSize: updateResult.fileSize,
+          sha256: updateResult.sha256,
           proxySettings: proxyForDownload,
           onProgress: (progress: DownloadProgress) => {
             setDownloadProgress(progress);
@@ -1149,7 +1150,7 @@ function App() {
               currentVersion: result.interface.version,
               cdk: appState.mirrorChyanSettings.cdk || undefined,
               channel: appState.mirrorChyanSettings.channel,
-              userAgent: 'MXU',
+              userAgent: 'MaaNikki',
               githubUrl: result.interface.github,
               githubPat: appState.mirrorChyanSettings.githubPat || undefined,
               proxyUrl: appState.proxySettings?.url,

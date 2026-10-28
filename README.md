@@ -23,6 +23,8 @@ Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https:
 
 前往 [Releases](https://github.com/architect9331/MaaNikki/releases) 下载 **Windows x64 运行包**，完整解压后启动 `MaaNikki.exe`。
 
+[已有 Mirror酱 CDK？前往 Mirror酱高速下载 →](https://mirrorchyan.com/zh/projects?rid=MaaNikki&source=maanikki_readme)
+
 首次使用请参阅[快速开始](docs/manual.md#快速开始)，配置游戏窗口、按键和任务预设。客户端支持自动检查和下载更新。
 
 ## 功能一览
@@ -64,6 +66,7 @@ Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https:
 
 - [MaaFramework](https://github.com/MaaXYZ/MaaFramework)：自动化框架。
 - [MXU](https://github.com/MistEO/MXU)：桌面客户端基础。
+- [Mirror酱](https://mirrorchyan.com/zh/projects?rid=MaaNikki&source=maanikki_readme)：高速下载与更新分发。
 - [Whimbox（奇想盒）](https://github.com/nikkigallery/Whimbox)：部分路线与匹配截图。
 - [MaaCommonAssets](https://github.com/MaaXYZ/MaaCommonAssets) / [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)：OCR 模型。
 

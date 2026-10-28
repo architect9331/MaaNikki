@@ -78,10 +78,10 @@ export function UpdateSection() {
     resolveI18nText(projectInterface?.label, translations) || projectInterface?.name || 'MXU';
   const hasMirrorChyan = !!projectInterface?.mirrorchyan_rid;
 
-  // 检查是否禁用代理（填写了 MirrorChyan CDK）
+  // Mirror酱下载直连；回退 GitHub 后仍可配置代理。
   const isProxyDisabled = useMemo(() => {
-    return hasMirrorChyan && mirrorChyanSettings.cdk.trim() !== '';
-  }, [hasMirrorChyan, mirrorChyanSettings.cdk]);
+    return downloadStatus === 'downloading' && updateInfo?.downloadSource === 'mirrorchyan';
+  }, [downloadStatus, updateInfo?.downloadSource]);
 
   // 判断是否为调试版本（interface 调试版本，或 MXU 自身开发模式）
   const isDebugMode = useMemo(() => {
@@ -144,6 +144,7 @@ export function UpdateSection() {
           url: info.downloadUrl,
           savePath,
           totalSize: info.fileSize,
+          sha256: info.sha256,
           proxySettings: proxyForDownload,
           onProgress: (progress) => {
             setDownloadProgress(progress);
@@ -224,8 +225,10 @@ export function UpdateSection() {
             currentVersion: projectInterface!.version || '',
             cdk: newCdk,
             channel: mirrorChyanSettings.channel,
-            userAgent: 'MXU',
+            userAgent: 'MaaNikki',
             githubUrl: projectInterface!.github,
+            githubPat: mirrorChyanSettings.githubPat || undefined,
+            proxyUrl: proxySettings?.url,
             projectName: projectInterface!.name,
           });
 
@@ -251,6 +254,8 @@ export function UpdateSection() {
     [
       mirrorChyanSettings.cdk,
       mirrorChyanSettings.channel,
+      mirrorChyanSettings.githubPat,
+      proxySettings,
       setMirrorChyanCdk,
       downloadStatus,
       updateInfo,
@@ -330,7 +335,7 @@ export function UpdateSection() {
         currentVersion: projectInterface.version,
         cdk: mirrorChyanSettings.cdk || undefined,
         channel: mirrorChyanSettings.channel,
-        userAgent: 'MXU',
+        userAgent: 'MaaNikki',
         githubUrl: projectInterface.github,
         githubPat: mirrorChyanSettings.githubPat || undefined,
         proxyUrl: proxySettings?.url,
@@ -425,7 +430,7 @@ export function UpdateSection() {
                     <Key className="w-5 h-5 text-accent" />
                     <span className="font-medium text-text-primary">{t('mirrorChyan.cdk')}</span>
                     <button
-                      onClick={() => openMirrorChyanWebsite('mxu_settings')}
+                      onClick={() => openMirrorChyanWebsite('maanikki_settings')}
                       className="ml-auto text-xs text-accent hover:underline flex items-center gap-1"
                     >
                       {t('mirrorChyan.getCdk')}
@@ -451,7 +456,7 @@ export function UpdateSection() {
                   <div className="mt-3 text-xs text-text-muted leading-relaxed">
                     <p>
                       <button
-                        onClick={() => openMirrorChyanWebsite('mxu_settings_hint')}
+                        onClick={() => openMirrorChyanWebsite('maanikki_settings_hint')}
                         className="text-accent hover:underline"
                       >
                         {t('mirrorChyan.serviceName')}

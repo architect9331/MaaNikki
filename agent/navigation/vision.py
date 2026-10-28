@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass
 from task_control import task_time as time
 import cv2
 import numpy as np
+from vision import read_image
 from .camera import CameraBackground, camera_heading
 from .frames import minimap_sample, reference_frame
 from .matching import MIN_KNOWN_COVERAGE, coverage, match_map
@@ -37,14 +38,14 @@ class Locator:
         self.spec = spec
         if not spec.image.is_file():
             raise NavigationError("地图资源缺失。")
-        self.map = cv2.imread(str(spec.image), cv2.IMREAD_GRAYSCALE)
+        self.map = read_image(spec.image, cv2.IMREAD_GRAYSCALE)
         if self.map is None or self.map.shape != (spec.height, spec.width):
             raise NavigationError("地图图片尺寸不符合清单。")
         coarse = spec.image.with_name(spec.id+"_bigmap.png")
         mask = spec.image.with_name(spec.id+"_mask.png")
-        self.coarse = (cv2.imread(str(coarse), cv2.IMREAD_GRAYSCALE) if coarse.is_file()
+        self.coarse = (read_image(coarse, cv2.IMREAD_GRAYSCALE) if coarse.is_file()
                        else cv2.resize(self.map, None, fx=.25, fy=.25))
-        self.bigmap_mask = cv2.imread(str(mask), cv2.IMREAD_GRAYSCALE) if mask.is_file() else None
+        self.bigmap_mask = read_image(mask, cv2.IMREAD_GRAYSCALE) if mask.is_file() else None
         self.previous = None
         self.position_time = time.monotonic()-30
         self.heading_diagnostics = {}

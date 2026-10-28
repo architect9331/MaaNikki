@@ -17,12 +17,21 @@ class Template:
     mask: np.ndarray | None
 
 
+def read_image(path, flags=cv2.IMREAD_COLOR):
+    """Read through Python's filesystem API so Windows Unicode paths work."""
+    try:
+        encoded = np.fromfile(path, dtype=np.uint8)
+        return cv2.imdecode(encoded, flags) if encoded.size else None
+    except (OSError, ValueError, cv2.error):
+        return None
+
+
 @lru_cache(maxsize=64)
 def _decode(path, revision, grayscale):
     del revision  # Part of the key: replacing a file invalidates its cached pixels.
     with measure("template.decode"):
         count("template.decodes")
-        image = cv2.imread(path, cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_UNCHANGED)
+        image = read_image(path, cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_UNCHANGED)
         if image is None:
             raise ValueError("任务图像资源缺失。")
         image.setflags(write=False)

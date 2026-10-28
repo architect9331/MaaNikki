@@ -45,6 +45,13 @@ class BlessingLocker(InventoryScanner):
                 raise ValueError(f"锁按钮图像资源缺失或尺寸不符：{state}")
             self.lock_templates[state] = self.white_mask(image) > 0
             self.lock_gray_templates[state] = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        reference = ROOT / "resource/image/blessing_lock/locked_background.png"
+        background = cv2.imdecode(np.fromfile(str(reference), np.uint8), cv2.IMREAD_UNCHANGED)
+        if (background is None or background.ndim != 3 or background.shape[2] != 4
+                or background.shape[:2] != tuple(reversed(self.layout["lock_background"][2:]))):
+            raise ValueError("锁按钮背景资源缺失或尺寸不符")
+        self.lock_background_mask = background[:, :, 3] > 0
+        self.lock_background_lab = cv2.cvtColor(background[:, :, :3], cv2.COLOR_BGR2LAB)
         self.counter = 0
         self.report = {"created": datetime.now().isoformat(timespec="seconds"),
                        "unlock_nonconforming": allow_unlock,
@@ -355,6 +362,36 @@ class BlessingLocker(InventoryScanner):
         cutoff = max(140, float(np.median(low)) + 35)
         return ((low >= cutoff) & (high.astype(np.int16) - low <= 40)).astype(np.uint8) * 255
 
+    def button_background(self, frame):
+        """Observe the gold fill independently of the translucent lock glyph."""
+        crop = self.region(frame, self.layout["lock_background"])
+        if crop.shape != self.lock_background_lab.shape:
+            return {"state": None}
+        lab = cv2.cvtColor(crop, cv2.COLOR_BGR2LAB).astype(np.int16)
+        difference = np.abs(lab - self.lock_background_lab.astype(np.int16))
+        # The locked fill is opaque. Compare its colour in four separated
+        # sectors so a gold garment behind an open lock is not enough.
+        similar = np.all(difference <= np.array([25, 8, 8]), axis=2)
+        mask = self.lock_background_mask
+        height, width = mask.shape
+        sectors = []
+        for ys in (slice(0, height // 2), slice(height // 2, height)):
+            for xs in (slice(0, width // 2), slice(width // 2, width)):
+                sector = mask[ys, xs]
+                if not sector.any():
+                    return {"state": None}
+                sectors.append(float(similar[ys, xs][sector].mean()))
+        fraction = float(similar[mask].mean())
+        state = None
+        if fraction >= .88 and min(sectors) >= .75:
+            state = "locked"
+        elif fraction <= .20 and max(sectors) <= .35:
+            state = "unlocked"
+        return {"state": state, "gold_fraction": fraction, "sector_fractions": sectors,
+                "lab_tolerance": [25, 8, 8], "gold_minimum": .88,
+                "gold_sector_minimum": .75, "transparent_maximum": .20,
+                "transparent_sector_maximum": .35}
+
     def icon_state(self, frame):
         """Compare both user-labelled states; never infer state from geometry."""
         crop = self.region(frame, self.layout["lock_icon"])
@@ -392,6 +429,7 @@ class BlessingLocker(InventoryScanner):
                        for state, template in self.lock_gray_templates.items()}
         gray_best, gray_other = sorted(gray_scores, key=gray_scores.get, reverse=True)
         shackle_best, shackle_other = sorted(shackle_scores, key=shackle_scores.get, reverse=True)
+        background = self.button_background(frame)
         self.report["lock_recognition"] = {"scores": scores, "best": best,
                                            "minimum_score": .90, "minimum_margin": .06,
                                            "gray_scores": gray_scores, "gray_best": gray_best,
@@ -399,6 +437,7 @@ class BlessingLocker(InventoryScanner):
                                            "shackle_scores": shackle_scores,
                                            "shackle_best": shackle_best,
                                            "shackle_height": shackle_height,
+                                           "background": background,
                                            "shackle_minimum_score": .90,
                                            "shackle_minimum_margin": .06}
         decisions = set()
@@ -415,7 +454,18 @@ class BlessingLocker(InventoryScanner):
         if (full_match and shackle_scores[shackle_best] >= .90
                 and shackle_scores[shackle_best] - shackle_scores[shackle_other] >= .06):
             decisions.add(shackle_best)
+        # A transparent button can show the player's outfit through the lower
+        # lock body. Keep the shackle threshold and replace only that polluted
+        # full-glyph requirement with independent button-fill evidence.
+        background_match = (background["state"] == shackle_best
+                            and shackle_scores[shackle_best] >= .90
+                            and shackle_scores[shackle_best] - shackle_scores[shackle_other] >= .06)
+        if background_match:
+            decisions.add(shackle_best)
         state = next(iter(decisions)) if len(decisions) == 1 else None
+        if background["state"] is not None and state != background["state"]:
+            state = None
+        self.report["lock_recognition"]["shackle_background_match"] = background_match
         self.report["lock_recognition"]["state"] = state
         return state
 

@@ -1,5 +1,10 @@
 {
   "source": "User-provided normal Eureka inventory screenshots, 2026-10-15; states explicitly confirmed by the user",
+  "locked_background.png": {
+    "description": "Gold filled lock-button background from the confirmed locked_0014.png capture, 2026-10-28. Alpha samples four inner-ring sectors, excluding the glyph, chain and outer outline; no personal UI fields",
+    "normalized_frame": [1280, 720],
+    "roi": [220, 634, 50, 50]
+  },
   "four_stars.png": {
     "description": "Complete four-star tooltip pill, including its rounded right edge; no personal UI fields",
     "source": "Existing inventory detail screenshot, 2026-10-17, snowmelt head slot (雪绒融)",

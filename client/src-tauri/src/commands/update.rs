@@ -5,6 +5,7 @@
 use log::{info, warn};
 
 use super::file_ops::get_exe_dir;
+use super::project_patch::checked_join;
 use super::types::ChangesJson;
 
 /// 解压压缩文件到指定目录，支持 zip 和 tar.gz/tgz 格式
@@ -40,7 +41,7 @@ fn extract_zip_file(zip_path: &str, dest_dir: &str) -> Result<(), String> {
 
         let outpath = match file.enclosed_name() {
             Some(path) => std::path::Path::new(dest_dir).join(path),
-            None => continue,
+            None => return Err(format!("更新包文件路径无效：{}", file.name())),
         };
 
         if file.name().ends_with('/') {
@@ -218,25 +219,6 @@ fn remove_path(path: &std::path::Path) -> std::io::Result<()> {
     }
 }
 
-/// 规范化增量包中的相对路径，移除常见前缀（./ .\ / \）
-fn normalize_relative_path(raw: &str) -> &str {
-    let mut s = raw.trim();
-    loop {
-        if let Some(stripped) = s.strip_prefix("./") {
-            s = stripped;
-        } else if let Some(stripped) = s.strip_prefix(".\\") {
-            s = stripped;
-        } else if let Some(stripped) = s.strip_prefix('/') {
-            s = stripped;
-        } else if let Some(stripped) = s.strip_prefix('\\') {
-            s = stripped;
-        } else {
-            break;
-        }
-    }
-    s
-}
-
 /// 应用增量更新：将 deleted 中的文件移动到 old 文件夹，然后复制新文件
 /// 即使移动旧文件失败，也会继续复制新文件，确保程序可用
 #[tauri::command]
@@ -244,19 +226,36 @@ pub fn apply_incremental_update(
     extract_dir: String,
     target_dir: String,
     deleted_files: Vec<String>,
+    deleted_dirs: Option<Vec<String>>,
 ) -> Result<(), String> {
     info!("apply_incremental_update called");
     info!("extract_dir: {}, target_dir: {}", extract_dir, target_dir);
     info!("deleted_files: {:?}", deleted_files);
 
     let target_path = std::path::Path::new(&target_dir);
+    // Validate all declared paths before mutating the installation, including
+    // directories supplied by MirrorChyan's incremental manifest.
+    let changes = check_changes_json(extract_dir.clone())?
+        .ok_or_else(|| "增量包缺少 changes.json".to_string())?;
+    for name in changes
+        .added
+        .iter()
+        .chain(&changes.modified)
+        .chain(&changes.deleted)
+        .chain(&changes.added_dir)
+        .chain(&changes.deleted_dir)
+    {
+        checked_join(target_path, name)?;
+    }
+    let removed: Vec<_> = deleted_files
+        .into_iter()
+        .chain(deleted_dirs.unwrap_or_default())
+        .map(|name| checked_join(target_path, &name))
+        .collect::<Result<_, _>>()?;
     let mut move_errors: Vec<String> = Vec::new();
 
     // 1. 尝试将 deleted 中列出的文件移动到 old 文件夹（失败时兜底直接删除）
-    for file in &deleted_files {
-        // 规范化 changes.json 里的相对路径，避免前导分隔符导致 join 偏离 target_dir
-        let normalized = normalize_relative_path(file);
-        let file_path = target_path.join(normalized);
+    for file_path in removed {
         if file_path.exists() {
             if let Err(e) = move_to_old_folder(&file_path) {
                 warn!("移动旧文件失败（将继续更新）: {}", e);
@@ -274,6 +273,13 @@ pub fn apply_incremental_update(
                 }
             }
         }
+    }
+
+    // Empty added directories may exist only in the manifest.
+    for name in &changes.added_dir {
+        let path = checked_join(target_path, name)?;
+        std::fs::create_dir_all(&path)
+            .map_err(|error| format!("无法创建更新目录 {}：{error}", path.display()))?;
     }
 
     // 2. 复制新包内容到目标目录（覆盖）- 这一步必须执行

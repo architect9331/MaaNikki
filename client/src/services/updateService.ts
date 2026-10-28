@@ -261,6 +261,7 @@ async function fetchUpdateFromBase(
 ): Promise<MirrorChyanApiResponse> {
   const url = `${apiBase}/${resourceId}/latest?${params.toString()}`;
   const response = await tauriFetch(url, {
+    signal: AbortSignal.timeout(10_000),
     headers: {
       'User-Agent': await buildUserAgent(),
     },
@@ -279,7 +280,7 @@ export async function checkUpdate(options: CheckUpdateOptions): Promise<UpdateIn
     return null;
   }
 
-  const { resourceId, currentVersion, cdk, channel = 'stable', userAgent = 'MXU' } = options;
+  const { resourceId, currentVersion, cdk, channel = 'stable', userAgent = 'MaaNikki' } = options;
 
   if (!resourceId) {
     log.warn('未配置 mirrorchyan_rid，跳过更新检查');
@@ -287,7 +288,8 @@ export async function checkUpdate(options: CheckUpdateOptions): Promise<UpdateIn
   }
 
   const params = new URLSearchParams();
-  params.set('current_version', currentVersion);
+  // The supplied upload workflow uses v-prefixed release tags.
+  params.set('current_version', `v${currentVersion.replace(/^v/i, '')}`);
   params.set('user_agent', userAgent);
   params.set('channel', channel);
 
@@ -298,8 +300,8 @@ export async function checkUpdate(options: CheckUpdateOptions): Promise<UpdateIn
   if (arch) params.set('arch', arch);
 
   // CDK 是可选的，无 CDK 时也可以检查版本（但无法获取下载链接）
-  if (cdk) {
-    params.set('cdk', cdk);
+  if (cdk?.trim()) {
+    params.set('cdk', cdk.trim());
   }
 
   log.info(`检查更新: ${resourceId}, 当前版本: ${currentVersion}, 频道: ${channel}`);
@@ -320,8 +322,9 @@ export async function checkUpdate(options: CheckUpdateOptions): Promise<UpdateIn
       log.warn(`${apiBase} 返回错误: code=${data.code}, msg=${data.msg}，尝试备用站...`);
       lastError = new Error(`API error: code=${data.code}, msg=${data.msg}`);
     } catch (error) {
-      log.warn(`${apiBase} 请求失败:`, error);
-      lastError = error;
+      // HTTP errors can contain the request URL, which includes the user's CDK.
+      log.warn(`${apiBase} 请求失败，尝试备用站`);
+      lastError = new Error('Mirror酱连接失败或超时');
       // 网络错误，继续尝试备用站
     }
   }
@@ -374,7 +377,11 @@ export async function checkUpdate(options: CheckUpdateOptions): Promise<UpdateIn
     update_type,
     channel: respChannel,
     filesize,
+    sha256,
   } = data.data;
+  const checksum = sha256?.replace(/^sha256:/i, '').toLowerCase();
+  const usableUrl = !sha256 || (checksum && /^[a-f0-9]{64}$/.test(checksum)) ? downloadUrl : undefined;
+  if (downloadUrl && !usableUrl) log.warn('Mirror酱下载校验值无效，改用免费线路');
 
   // 比较版本号判断是否有更新
   const hasUpdate = compareVersions(version_name, currentVersion) > 0;
@@ -388,12 +395,13 @@ export async function checkUpdate(options: CheckUpdateOptions): Promise<UpdateIn
     hasUpdate,
     versionName: version_name,
     releaseNote: release_note || '',
-    downloadUrl,
+    downloadUrl: usableUrl,
+    sha256: usableUrl ? checksum : undefined,
     updateType: update_type,
     channel: respChannel,
     fileSize: filesize,
     filename,
-    downloadSource: downloadUrl ? 'mirrorchyan' : undefined,
+    downloadSource: usableUrl ? 'mirrorchyan' : undefined,
   };
 }
 
@@ -725,6 +733,7 @@ interface DownloadUpdateOptions {
   url: string;
   savePath: string;
   totalSize?: number;
+  sha256?: string;
   onProgress?: (progress: DownloadProgress) => void;
   proxySettings?: ProxySettings; // 代理设置
 }
@@ -778,9 +787,9 @@ export async function downloadUpdate(
     return { success: false };
   }
 
-  const { url, savePath, totalSize, onProgress, proxySettings } = options;
+  const { url, savePath, totalSize, sha256, onProgress, proxySettings } = options;
 
-  log.info(`开始下载更新: ${url}`);
+  log.info(`开始下载更新: ${new URL(url).host}`);
   log.info(`保存路径: ${savePath}`);
 
   isDownloading = true;
@@ -822,6 +831,7 @@ export async function downloadUpdate(
     if (downloadCancelled || generation !== downloadGeneration) return { success: false };
     const result = await downloadWithProxy(url, savePath, {
       totalSize,
+      sha256,
       proxyUrl: proxySettings?.url,
     });
     if (generation !== downloadGeneration) return { success: false };
@@ -869,7 +879,7 @@ export interface CheckAndDownloadOptions extends CheckUpdateOptions {
 /**
  * 未接入 Mirror酱时，直接选择 GitHub 中最新的可安装正式版或预发布版。
  */
-async function checkGitHubUpdate(options: CheckAndDownloadOptions): Promise<UpdateInfo | null> {
+async function checkGitHubUpdate(options: CheckAndDownloadOptions, targetVersion?: string): Promise<UpdateInfo | null> {
   const { githubUrl, currentVersion, githubPat, proxyUrl } = options;
   const repository = githubUrl ? parseGitHubUrl(githubUrl) : null;
   if (!repository) return null;
@@ -882,7 +892,8 @@ async function checkGitHubUpdate(options: CheckAndDownloadOptions): Promise<Upda
   const candidates = releases
     .filter(
       (release) => !release.draft && semver.valid(release.tag_name.replace(/^v/i, ''))
-        && !isDebugVersion(release.tag_name),
+        && !isDebugVersion(release.tag_name)
+        && (!targetVersion || compareVersions(release.tag_name, targetVersion) === 0),
     )
     .sort((a, b) => compareVersions(b.tag_name, a.tag_name));
 
@@ -933,52 +944,29 @@ export async function checkAndPrepareDownload(
     return checkGitHubUpdate(options);
   }
 
-  const { githubUrl, cdk, channel, githubPat, projectName, proxyUrl, ...checkOptions } = options;
-
-  // 始终使用 Mirror酱 检查更新
-  const updateInfo = await checkUpdate({ ...checkOptions, cdk, channel });
-
-  if (!updateInfo || !updateInfo.hasUpdate) {
-    return updateInfo;
-  }
-
-  // 如果有 CDK 且返回了下载链接，直接使用
-  if (cdk && updateInfo.downloadUrl) {
+  const updateInfo = await checkUpdate(options);
+  if (updateInfo && !updateInfo.hasUpdate && !updateInfo.errorCode) return updateInfo;
+  if (updateInfo?.hasUpdate && updateInfo.downloadUrl) {
     log.info('使用 Mirror酱 下载链接');
     return updateInfo;
   }
-
-  // 如果有错误码（如 CDK 问题），不尝试 GitHub，直接返回更新信息（包含错误）
-  if (updateInfo.errorCode) {
-    log.info('Mirror酱 返回错误码，不尝试 GitHub');
-    return updateInfo;
-  }
-
-  // 没有 CDK 且没有错误码，尝试使用 GitHub
-  if (githubUrl) {
-    log.info(`无 CDK，尝试从 GitHub 获取版本 ${updateInfo.versionName}`);
-    const githubDownload = await getGitHubDownloadUrl({
-      githubUrl,
-      targetVersion: updateInfo.versionName,
-      githubPat,
-      projectName, // 用于 API 失败时拼接直接下载链接
-      proxyUrl,
-    });
-
-    if (githubDownload) {
-      return {
-        ...updateInfo,
-        downloadUrl: githubDownload.url,
-        fileSize: githubDownload.size,
-        filename: githubDownload.filename,
-        downloadSource: 'github',
-      };
+  if (options.githubUrl) {
+    try {
+      // Use the same selector as GitHub-only installs, including project patches.
+      const github = await checkGitHubUpdate(options,
+        updateInfo?.hasUpdate && !updateInfo.errorCode ? updateInfo.versionName : undefined);
+      if (github) {
+        const cdkError = updateInfo?.errorCode && updateInfo.errorCode >= 7001 && updateInfo.errorCode <= 7005;
+        return {
+          ...github,
+          errorCode: cdkError ? updateInfo.errorCode : undefined,
+          errorMessage: cdkError ? updateInfo.errorMessage : undefined,
+        };
+      }
+    } catch {
+      log.warn('免费更新线路暂不可用');
     }
-
-    log.warn('GitHub 下载链接获取失败');
   }
-
-  // 既没有 Mirror酱 链接也没有 GitHub 链接
   return updateInfo;
 }
 
@@ -1008,6 +996,7 @@ interface ChangesJson {
   added: string[];
   deleted: string[];
   modified: string[];
+  deleted_dir: string[];
 }
 
 export interface InstallUpdateOptions {
@@ -1016,6 +1005,7 @@ export interface InstallUpdateOptions {
   newVersion: string; // 新版本号（用于兜底时创建文件夹）
   projectName?: string; // 项目名称（用于备份配置文件）
   fullPackage?: FullUpdatePackage;
+  updateType?: 'incremental' | 'full';
   onProgress?: (stage: string, detail?: string) => void;
 }
 
@@ -1079,6 +1069,7 @@ async function installUpdatePackage(options: InstallUpdateOptions): Promise<bool
 
   // 生成临时解压目录
   const extractDir = joinPath(await dirname(zipPath), 'update_extract');
+  let isIncremental = options.updateType === 'incremental' || /\.patch\.zip$/i.test(zipPath);
 
   try {
     // 先清理上次可能残留的解压目录，避免历史文件混入本次更新
@@ -1102,6 +1093,7 @@ async function installUpdatePackage(options: InstallUpdateOptions): Promise<bool
     });
 
     if (changesJson) {
+      isIncremental = true;
       // 增量更新
       log.info(
         `增量更新: deleted=${changesJson.deleted.length}, added=${
@@ -1117,10 +1109,11 @@ async function installUpdatePackage(options: InstallUpdateOptions): Promise<bool
       } else {
         await invoke('apply_incremental_update', {
           extractDir, targetDir, deletedFiles: changesJson.deleted,
+          deletedDirs: changesJson.deleted_dir,
         });
       }
     } else {
-      if (/\.patch\.zip$/i.test(zipPath)) throw new Error('增量包缺少 changes.json');
+      if (isIncremental) throw new Error('增量包缺少 changes.json');
       // 全量更新
       log.info('全量更新');
       onProgress?.('applying', 'full');
@@ -1155,15 +1148,30 @@ async function installUpdatePackage(options: InstallUpdateOptions): Promise<bool
   } catch (error) {
     log.error('更新安装失败:', error);
 
-    if (/\.patch\.zip$/i.test(zipPath)) {
+    if (isIncremental) {
       // A patch alone is not a runnable application. Recover using the full
       // archive, including when the baseline changed after it was downloaded.
       await invoke('cleanup_extract_dir', { extractDir }).catch(() => {});
-      const full = options.fullPackage;
+      const state = useAppStore.getState();
+      let full = options.fullPackage;
+      // Mirror酱 uses ordinary archive names for patches. Resolve a complete
+      // package only when recovery is needed, without delaying its download.
+      if (!full && state.projectInterface?.github) {
+        try {
+          full = await getGitHubDownloadUrl({
+            githubUrl: state.projectInterface.github,
+            targetVersion: newVersion,
+            githubPat: state.mirrorChyanSettings.githubPat || undefined,
+            proxyUrl: state.proxySettings?.url,
+            projectName: state.projectInterface.name,
+          }) || undefined;
+        } catch {
+          log.warn('完整更新包查询失败');
+        }
+      }
       if (!full) throw error;
       log.warn('增量更新未完成，切换完整包:', error);
       onProgress?.('downloadingFull');
-      const state = useAppStore.getState();
       const fullPath = await getUpdateSavePath(full.filename);
       const result = await downloadUpdate({
         url: full.url, savePath: fullPath, totalSize: full.size,
@@ -1174,13 +1182,16 @@ async function installUpdatePackage(options: InstallUpdateOptions): Promise<bool
       if (state.updateInfo) state.setUpdateInfo({
         ...state.updateInfo, updateType: 'full', fileSize: full.size,
         filename: full.filename, downloadUrl: full.url, fullPackage: undefined,
+        downloadSource: 'github', sha256: undefined,
       });
       savePendingUpdateInfo({
         versionName: newVersion, releaseNote: state.updateInfo?.releaseNote || '',
         channel: state.updateInfo?.channel, downloadSavePath: result.actualSavePath,
         fileSize: full.size, updateType: 'full', downloadSource: 'github', timestamp: Date.now(),
       });
-      return installUpdatePackage({ ...options, zipPath: result.actualSavePath, fullPackage: undefined });
+      return installUpdatePackage({
+        ...options, zipPath: result.actualSavePath, fullPackage: undefined, updateType: 'full',
+      });
     }
 
     // 兜底逻辑：尝试将新文件解压到 v版本号 文件夹

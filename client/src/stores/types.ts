@@ -66,6 +66,7 @@ export interface UpdateInfo {
   updateType?: 'incremental' | 'full';
   channel?: string;
   fileSize?: number;
+  sha256?: string;
   filename?: string;
   downloadSource?: 'mirrorchyan' | 'github';
   fullPackage?: FullUpdatePackage;

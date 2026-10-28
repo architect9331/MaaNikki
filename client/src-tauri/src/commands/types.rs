@@ -432,6 +432,10 @@ pub struct ChangesJson {
     pub deleted: Vec<String>,
     #[serde(default)]
     pub modified: Vec<String>,
+    #[serde(default)]
+    pub added_dir: Vec<String>,
+    #[serde(default)]
+    pub deleted_dir: Vec<String>,
 }
 
 /// 下载进度事件数据

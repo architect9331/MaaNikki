@@ -109,16 +109,16 @@ export function createProxySettings(url: string): ProxySettings | undefined {
  */
 export function shouldUseProxy(
   proxySettings: ProxySettings | undefined,
-  mirrorChyanCdk: string,
+  _mirrorChyanCdk: string,
 ): boolean {
   return (
-    !mirrorChyanCdk?.trim() && !!proxySettings?.url?.trim() && isValidProxyUrl(proxySettings.url)
+    !!proxySettings?.url?.trim() && isValidProxyUrl(proxySettings.url)
   );
 }
 
 /**
  * 更新包下载传给 downloadUpdate 的代理设置（与 App 自动下载路径一致）。
- * 仅 GitHub 源且满足 shouldUseProxy（已配置有效代理、无 Mirror 酱 CDK）时返回代理；Mirror 酱不走 HTTP 代理。
+ * GitHub 使用已配置的代理，Mirror酱直连；按实际下载源决定。
  */
 export function proxySettingsForUpdateDownload(
   downloadSource: 'mirrorchyan' | 'github' | undefined,
@@ -170,6 +170,7 @@ export async function downloadWithProxy(
   savePath: string,
   options?: {
     totalSize?: number;
+    sha256?: string;
     proxyUrl?: string | null;
   },
 ): Promise<DownloadResult> {
@@ -179,16 +180,17 @@ export async function downloadWithProxy(
     const parsed = parseProxyUrl(options.proxyUrl!);
     if (parsed) {
       log.info(`[下载] 使用代理: ${parsed.type}://${parsed.host}:${parsed.port}`);
-      log.info(`[下载] 目标: ${url}`);
+      log.info(`[下载] 目标: ${new URL(url).host}`);
     }
   } else {
-    log.info(`[下载] 直连（无代理）: ${url}`);
+    log.info(`[下载] 直连（无代理）: ${new URL(url).host}`);
   }
 
   return invoke<DownloadResult>('download_file', {
     url,
     savePath,
     totalSize: options?.totalSize || null,
+    expectedSha256: options?.sha256 || null,
     proxyUrl: options?.proxyUrl || null,
   });
 }

@@ -44,7 +44,7 @@ fn relative_path(name: &str) -> Result<PathBuf, String> {
     Ok(parts.iter().collect())
 }
 
-fn checked_join(root: &Path, name: &str) -> Result<PathBuf, String> {
+pub(super) fn checked_join(root: &Path, name: &str) -> Result<PathBuf, String> {
     let relative = relative_path(name)?;
     let mut path = root.to_path_buf();
     for part in relative.components() {

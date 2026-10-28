@@ -226,6 +226,9 @@ def main():
     published = api(f"releases/{release['id']}", "PATCH", {
         "draft": False, "prerelease": True, "make_latest": "false", "body": body,
     })
+    if output := os.environ.get("GITHUB_OUTPUT"):
+        with open(output, "a", encoding="utf-8") as stream:
+            stream.write("published=true\n")
     report(f"Published prerelease [{tag}]({published['html_url']}) with verified attachments.")
 
 

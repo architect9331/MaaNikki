@@ -65,6 +65,7 @@ export function InstallConfirmModal() {
         targetDir: basePath,
         newVersion: updateInfo.versionName,
         fullPackage: updateInfo.fullPackage,
+        updateType: updateInfo.updateType,
         projectName,
         onProgress: (stage, detail) => {
           const stageText = t(`mirrorChyan.installStages.${stage}`, stage);
@@ -172,6 +173,7 @@ export function InstallConfirmModal() {
             targetDir: basePath,
             newVersion: updateInfo.versionName,
             fullPackage: updateInfo.fullPackage,
+            updateType: updateInfo.updateType,
             projectName,
             onProgress: (stage, detail) => {
               const stageText = t(`mirrorChyan.installStages.${stage}`, stage);

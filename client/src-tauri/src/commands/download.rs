@@ -195,11 +195,23 @@ pub async fn download_file(
     save_path: String,
     total_size: Option<u64>,
     proxy_url: Option<String>,
+    expected_sha256: Option<String>,
 ) -> Result<DownloadResult, String> {
     let session_id = CURRENT_DOWNLOAD_SESSION.fetch_add(1, Ordering::SeqCst) + 1;
     DOWNLOAD_CANCELLED.store(false, Ordering::SeqCst);
     let official_asset = update_mirrors::release_asset(&url);
-    let mut expected = update_mirrors::integrity(&url);
+    let supplied_integrity = expected_sha256
+        .map(|hash| {
+            if hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+                return Err("下载校验值无效".to_string());
+            }
+            Ok(AssetIntegrity {
+                size: total_size.unwrap_or(0),
+                sha256: hash.to_ascii_lowercase(),
+            })
+        })
+        .transpose()?;
+    let mut expected = update_mirrors::integrity(&url).or(supplied_integrity);
     if official_asset.is_some() && expected.is_none() {
         let (owner, repo) = update_mirrors::CONFIG.repository.split_once('/').unwrap();
         let lookup = get_github_releases(owner.into(), repo.into(), None, proxy_url.clone());
@@ -455,7 +467,6 @@ async fn download_file_attempt(
     if let Some(ref proxy) = proxy_url {
         if !proxy.is_empty() {
             info!("[下载] 使用代理: {}", proxy);
-            info!("[下载] 目标: {}", url);
             let reqwest_proxy = reqwest::Proxy::all(proxy).map_err(|e| {
                 error!("代理配置失败: {} (代理地址: {})", e, proxy);
                 format!(
@@ -465,10 +476,10 @@ async fn download_file_attempt(
             })?;
             client_builder = client_builder.proxy(reqwest_proxy);
         } else {
-            info!("[下载] 直连（无代理）: {}", url);
+            info!("[下载] 直连（无代理）");
         }
     } else {
-        info!("[下载] 直连（无代理）: {}", url);
+        info!("[下载] 直连（无代理）");
     }
 
     let client = client_builder
@@ -479,7 +490,7 @@ async fn download_file_attempt(
         _ = download_cancelled(session_id) => return Err("下载已取消".into()),
         response = tokio::time::timeout(Duration::from_secs(15), client.get(&url).send()) => {
             response.map_err(|_| "连接线路超时".to_string())?
-                .map_err(|e| format!("请求失败: {e}"))?
+                .map_err(|e| format!("请求失败: {}", e.without_url()))?
         }
     };
 
@@ -529,6 +540,7 @@ async fn download_file_attempt(
     let total = expected
         .as_ref()
         .map(|asset| asset.size)
+        .filter(|size| *size > 0)
         .or(total_size)
         .or(content_length)
         .unwrap_or(0);
@@ -658,7 +670,7 @@ async fn download_file_attempt(
         let chunk = match chunk {
             Ok(c) => c,
             Err(e) => {
-                download_err = Some(format!("下载数据失败: {}", e));
+                download_err = Some(format!("下载数据失败: {}", e.without_url()));
                 break;
             }
         };
