@@ -51,6 +51,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
+      actions: write
     concurrency:
       group: publish-release
       cancel-in-progress: false
@@ -70,6 +71,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/publish_release.py
+      - name: Trigger MirrorChyanUploading
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(python -c 'import json; print("v" + json.load(open("interface.json", encoding="utf-8-sig"))["version"])')
+          gh workflow run --repo "$GITHUB_REPOSITORY" mirrorchyan_release.yml -f "tag=$tag"
+          gh workflow run --repo "$GITHUB_REPOSITORY" mirrorchyan_release_note.yml -f "tag=$tag"
 
   mirrors:
     needs: publish
