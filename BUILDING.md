@@ -74,7 +74,7 @@ Release 公开后，服务器上的 QQ 机器人通过 GitHub Webhook 向交流�
 
 ### 更新备用线路
 
-线路统一配置在 `build/update-mirrors.json`，由客户端编译时内嵌，发布脚本共用。客户端先尝试 GitHub（沿用用户的网络代理设置），失败后依次尝试 GH-Proxy 多节点、SourceForge、R2；版本查询也支持这些线路。连接超时、20 秒无数据、持续 30 秒低于 8 KiB/s、文件大小或 SHA-256 不符时切换下一条线路。GitHub PAT 仅用于 GitHub API。
+线路统一配置在 `build/update-mirrors.json`，由客户端编译时内嵌，发布脚本共用。大于 1 MiB 且有公开 SHA-256 的更新包，下载前并发比较 GitHub 和 GH-Proxy 多节点，每条线路最多读取 512 KiB、等待 6 秒；GH-Proxy 快 20% 以上时优先使用。GitHub 沿用用户的网络代理设置，其他线路直连。下载中每 15 秒评估速度，下一线路测速快 50% 以上，且计入重下成本后预计节省至少 25% 剩余时间时换线；没有测速结果的备用线路保留持续 30 秒低于 8 KiB/s 且进度不足四分之一的换线规则。连接超时、20 秒无数据、文件大小或 SHA-256 不符时也会换线。SourceForge、R2 保留为最后备用，不参与测速；版本查询仍依次尝试各线路。GitHub PAT 仅用于 GitHub API。
 
 GitHub 发布成功后，独立的 `Sync update mirrors` 工作流同步完整包、增量包和校验文件，所有附件上传成功后再写入 `releases.json`。同步失败可单独重新运行此工作流。源码包和逐文件版本清单保留在 GitHub。
 

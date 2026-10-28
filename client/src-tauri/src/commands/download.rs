@@ -214,8 +214,35 @@ pub async fn download_file(
     if expected.is_some() {
         sources.extend(update_mirrors::download_mirrors(&url));
     }
+    let mut candidates: Vec<_> = sources
+        .into_iter()
+        .map(|url| DownloadSource { url, speed: None })
+        .collect();
+    if official_asset.is_some()
+        && expected
+            .as_ref()
+            .is_some_and(|asset| asset.size > 1024 * 1024)
+        && candidates.len() > 1
+    {
+        let _ = app.emit(
+            "download-progress",
+            DownloadProgressEvent {
+                session_id,
+                source_name: "正在选择下载线路".into(),
+                downloaded_size: 0,
+                total_size: expected.as_ref().map_or(0, |asset| asset.size),
+                speed: 0,
+                progress: 0.0,
+            },
+        );
+        tokio::select! {
+            _ = download_cancelled(session_id) => return Err("下载已取消".into()),
+            _ = rank_download_sources(&mut candidates, &url, proxy_url.as_deref(), expected.as_ref().unwrap().size) => {}
+        }
+    }
     let mut errors = Vec::new();
-    for (index, source) in sources.iter().enumerate() {
+    for (index, candidate) in candidates.iter().enumerate() {
+        let source = &candidate.url;
         if is_download_cancelled(session_id) {
             return Err("下载已取消".into());
         }
@@ -227,18 +254,23 @@ pub async fn download_file(
             "[下载] 使用线路: {} ({}/{})",
             name,
             index + 1,
-            sources.len()
+            candidates.len()
         );
         let result = download_file_attempt(
             app.clone(),
             source.clone(),
             save_path.clone(),
             total_size,
-            if index == 0 { proxy_url.clone() } else { None },
+            if source == &url {
+                proxy_url.clone()
+            } else {
+                None
+            },
             session_id,
             expected.clone(),
             official_asset.is_some(),
-            index + 1 < sources.len(),
+            index + 1 < candidates.len(),
+            candidates.get(index + 1).and_then(|source| source.speed),
         )
         .await;
         match result {
@@ -262,6 +294,121 @@ pub async fn download_file(
     Err(format!("所有下载线路均不可用: {}", errors.join("; ")))
 }
 
+struct DownloadSource {
+    url: String,
+    speed: Option<u64>,
+}
+
+/// Compare only GitHub and the free GH-Proxy nodes; paid-capacity backups stay last.
+async fn rank_download_sources(
+    sources: &mut [DownloadSource],
+    original: &str,
+    proxy: Option<&str>,
+    size: u64,
+) {
+    let count = 1 + update_mirrors::CONFIG.github_proxies.len();
+    let count = count.min(sources.len());
+    let speeds = futures_util::future::join_all(sources[..count].iter().map(|source| {
+        probe_download_speed(
+            &source.url,
+            if source.url == original { proxy } else { None },
+            size,
+        )
+    }))
+    .await;
+    for (source, speed) in sources[..count].iter_mut().zip(speeds) {
+        info!(
+            "[下载测速] {}: {:?} KiB/s",
+            source.url,
+            speed.map(|s| s / 1024)
+        );
+        source.speed = speed;
+    }
+    // A mirror must be at least 20% faster to displace GitHub. Stable sorting
+    // preserves configured fallback priority when probes fail or tie.
+    sources[..count].sort_by_key(|source| {
+        std::cmp::Reverse(
+            source
+                .speed
+                .unwrap_or(0)
+                .saturating_mul(if source.url == original { 120 } else { 100 }),
+        )
+    });
+}
+
+async fn probe_download_speed(url: &str, proxy: Option<&str>, size: u64) -> Option<u64> {
+    use futures_util::StreamExt;
+    use tokio::time::{Duration, Instant};
+
+    const SAMPLE: u64 = 512 * 1024;
+    let mut builder = reqwest::Client::builder()
+        .user_agent(build_user_agent())
+        .connect_timeout(Duration::from_secs(3))
+        // The outer deadline keeps partial samples from becoming reqwest errors.
+        .timeout(Duration::from_secs(7))
+        .no_proxy();
+    if let Some(proxy) = proxy.filter(|s| !s.is_empty()) {
+        builder = builder.proxy(reqwest::Proxy::all(proxy).ok()?);
+    }
+    let client = builder.build().ok()?;
+    let start = Instant::now();
+    let deadline = start + Duration::from_secs(6);
+    let response = tokio::time::timeout_at(
+        deadline,
+        client
+            .get(url)
+            .header("Range", format!("bytes=0-{}", SAMPLE - 1))
+            .send(),
+    )
+    .await
+    .ok()?
+    .ok()?;
+    if ![
+        reqwest::StatusCode::OK,
+        reqwest::StatusCode::PARTIAL_CONTENT,
+    ]
+    .contains(&response.status())
+        || response
+            .headers()
+            .get("content-type")
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.contains("text/") || value.contains("json"))
+    {
+        return None;
+    }
+    if response.status() == reqwest::StatusCode::PARTIAL_CONTENT {
+        let range = format!("bytes 0-{}/{size}", SAMPLE - 1);
+        if response
+            .headers()
+            .get("content-range")
+            .and_then(|value| value.to_str().ok())
+            != Some(range.as_str())
+        {
+            return None;
+        }
+    } else if response
+        .content_length()
+        .is_some_and(|length| length != size)
+    {
+        return None;
+    }
+    // Even servers ignoring Range are read only up to the sample limit. A slow
+    // but live stream can still provide a useful estimate when the deadline ends.
+    let mut stream = response.bytes_stream();
+    let mut bytes = 0u64;
+    loop {
+        match tokio::time::timeout_at(deadline, stream.next()).await {
+            Ok(Some(Ok(chunk))) => bytes += (chunk.len() as u64).min(SAMPLE - bytes),
+            Ok(Some(Err(_))) => return None,
+            Ok(None) | Err(_) => break,
+        }
+        if bytes >= SAMPLE {
+            break;
+        }
+    }
+    (bytes >= 32 * 1024).then(|| (bytes as f64 / start.elapsed().as_secs_f64().max(0.001)) as u64)
+}
+
 fn is_download_cancelled(session_id: u64) -> bool {
     DOWNLOAD_CANCELLED.load(Ordering::SeqCst)
         || CURRENT_DOWNLOAD_SESSION.load(Ordering::SeqCst) != session_id
@@ -283,6 +430,7 @@ async fn download_file_attempt(
     expected: Option<AssetIntegrity>,
     fixed_filename: bool,
     try_next_if_slow: bool,
+    next_source_speed: Option<u64>,
 ) -> Result<DownloadResult, String> {
     use futures_util::StreamExt;
     use std::io::Write;
@@ -522,14 +670,27 @@ async fn download_file_attempt(
         }
         downloaded += len;
         downloaded_shared.store(downloaded, Ordering::Relaxed);
-        if try_next_if_slow && total > 1024 * 1024 && speed_window.elapsed().as_secs() >= 30 {
+        if try_next_if_slow && total > 1024 * 1024 && speed_window.elapsed().as_secs() >= 15 {
             let speed = (downloaded - window_bytes) / speed_window.elapsed().as_secs().max(1);
-            if speed < 8 * 1024 {
-                download_err = Some("线路持续低速，切换备用线路".into());
+            let remaining_seconds = total.saturating_sub(downloaded) as f64 / speed.max(1) as f64;
+            let faster = next_source_speed.is_some_and(|next| {
+                next as f64 > speed as f64 * 1.5
+                    && 6.0 + total as f64 / (next.max(1) as f64) < remaining_seconds * 0.75
+            });
+            // Switching restarts the file. Include that cost and leave nearly
+            // completed downloads alone; unknown backups retain the old stall rule.
+            let stalled = next_source_speed.is_none()
+                && speed < 8 * 1024
+                && downloaded < total / 4
+                && speed_window.elapsed().as_secs() >= 30;
+            if remaining_seconds > 15.0 && (faster || stalled) {
+                download_err = Some("备用线路预计更快，切换下载线路".into());
                 break;
             }
-            speed_window = tokio::time::Instant::now();
-            window_bytes = downloaded;
+            if next_source_speed.is_some() || speed_window.elapsed().as_secs() >= 30 {
+                speed_window = tokio::time::Instant::now();
+                window_bytes = downloaded;
+            }
         }
     }
 
