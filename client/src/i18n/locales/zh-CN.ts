@@ -717,6 +717,7 @@ export default {
     installNow: '立即安装',
     installUpdate: '安装更新',
     installStages: {
+      downloadingFull: '正在下载完整更新包...',
       extracting: '正在解压...',
       checking: '检查更新类型...',
       applying: '正在应用更新...',

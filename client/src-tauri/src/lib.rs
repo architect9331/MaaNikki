@@ -295,6 +295,7 @@ pub fn run() {
             commands::update::extract_zip,
             commands::update::check_changes_json,
             commands::update::apply_incremental_update,
+            commands::project_patch::apply_project_patch,
             commands::update::apply_full_update,
             commands::update::cleanup_extract_dir,
             commands::update::fallback_update,

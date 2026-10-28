@@ -425,6 +425,8 @@ pub struct VersionCheckResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChangesJson {
     #[serde(default)]
+    pub maanikki_patch: Option<u32>,
+    #[serde(default)]
     pub added: Vec<String>,
     #[serde(default)]
     pub deleted: Vec<String>,

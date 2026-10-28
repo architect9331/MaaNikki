@@ -6,22 +6,22 @@
 
 ✨ 一款《无限暖暖》游戏小助手 ✨
 
-[![版本](https://img.shields.io/github/v/release/architect9331/MaaNikki?label=release&color=f28fa8)](https://github.com/architect9331/MaaNikki/releases/latest)
+[![版本](https://img.shields.io/github/v/release/architect9331/MaaNikki?include_prereleases&label=release&color=f28fa8)](https://github.com/architect9331/MaaNikki/releases)
 [![下载量](https://img.shields.io/github/downloads/architect9331/MaaNikki/total?color=f4b85e)](https://github.com/architect9331/MaaNikki/releases)
-[![平台](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-8b9dcc)](https://github.com/architect9331/MaaNikki/releases/latest)
+[![平台](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-8b9dcc)](https://github.com/architect9331/MaaNikki/releases)
 [![许可](https://img.shields.io/badge/license-AGPL--3.0--only-a7bca0)](LICENSE)
 
 基于图像识别，一键完成日常，自动追全祝福闪光颜色。
 
 Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https://github.com/MistEO/MXU)
 
-[下载最新版](https://github.com/architect9331/MaaNikki/releases/latest) · [用户手册](docs/manual.md) · [更新日志](CHANGELOG.md)
+[下载最新版](https://github.com/architect9331/MaaNikki/releases) · [用户手册](docs/manual.md) · [更新日志](CHANGELOG.md)
 
 </div>
 
 ## 下载与安装
 
-前往 [Releases](https://github.com/architect9331/MaaNikki/releases/latest) 下载 **Windows x64 运行包**，完整解压后启动 `MaaNikki.exe`。
+前往 [Releases](https://github.com/architect9331/MaaNikki/releases) 下载 **Windows x64 运行包**，完整解压后启动 `MaaNikki.exe`。
 
 首次使用请参阅[快速开始](docs/manual.md#快速开始)，配置游戏窗口、按键和任务预设。客户端支持自动检查和下载更新。
 

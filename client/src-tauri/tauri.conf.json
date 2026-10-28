@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "MaaNikki",
-  "version": "2.7.1-maanikki.16",
+  "version": "2.7.1-maanikki.17",
   "identifier": "org.maanikki.desktop",
   "build": {
     "beforeDevCommand": "pnpm dev",

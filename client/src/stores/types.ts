@@ -52,6 +52,12 @@ export interface ScheduleExecutionInfo {
 }
 
 // 更新信息类型
+export interface FullUpdatePackage {
+  url: string;
+  filename: string;
+  size: number;
+}
+
 export interface UpdateInfo {
   hasUpdate: boolean;
   versionName: string;
@@ -62,6 +68,7 @@ export interface UpdateInfo {
   fileSize?: number;
   filename?: string;
   downloadSource?: 'mirrorchyan' | 'github';
+  fullPackage?: FullUpdatePackage;
   // MirrorChyan API 错误信息
   errorCode?: number;
   errorMessage?: string;

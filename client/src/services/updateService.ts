@@ -2,6 +2,7 @@
 // API 文档: https://github.com/MirrorChyan/docs
 
 import type { DownloadProgress, UpdateInfo } from '@/stores/appStore';
+import type { FullUpdatePackage } from '@/stores/types';
 import { useAppStore } from '@/stores/appStore';
 import type { ProxySettings, UpdateChannel } from '@/types/config';
 import { loggers } from '@/utils/logger';
@@ -619,7 +620,7 @@ async function matchGitHubAsset(assets: GitHubAsset[]): Promise<GitHubAsset | nu
 
   for (const asset of assets) {
     const name = asset.name.toLowerCase();
-    if (!/\.(zip|tar\.gz|dmg|exe)$/.test(name) || /(?:source|symbols|pdb)/.test(name)) continue;
+    if (!/\.(zip|tar\.gz|dmg|exe)$/.test(name) || /(?:source|symbols|pdb|\.patch\.zip$)/.test(name)) continue;
 
     // 检查 OS 匹配
     const osMatch = osAliases.some((alias) => name.includes(alias.toLowerCase()));
@@ -885,17 +886,26 @@ async function checkGitHubUpdate(options: CheckAndDownloadOptions): Promise<Upda
     const asset = await matchGitHubAsset(release.assets);
     if (!asset) continue;
     const hasUpdate = compareVersions(release.tag_name, currentVersion) > 0;
+    const version = release.tag_name.replace(/^v/i, '');
+    const baseVersion = currentVersion.replace(/^v/i, '');
+    const patch = hasUpdate && asset.name === `MaaNikki-v${version}-win-x86_64.zip`
+      ? release.assets.find((item) => item.name === `MaaNikki-v${version}-from-v${baseVersion}.patch.zip`
+        && item.size > 0 && item.size < asset.size)
+      : undefined;
+    const selected = patch || asset;
+    if (patch) log.info(`选择增量更新: ${baseVersion} → ${version}，${patch.size} 字节`);
     log.info(`GitHub 更新检查完成: 最新版本=${release.tag_name}, 有更新=${hasUpdate}`);
     return {
       hasUpdate,
       versionName: hasUpdate ? release.tag_name : currentVersion,
       releaseNote: release.body || '',
-      downloadUrl: hasUpdate ? asset.browser_download_url : undefined,
-      filename: asset.name,
-      fileSize: asset.size,
+      downloadUrl: hasUpdate ? selected.browser_download_url : undefined,
+      filename: selected.name,
+      fileSize: selected.size,
       channel: release.prerelease ? 'beta' : 'stable',
-      updateType: 'full',
+      updateType: patch ? 'incremental' : 'full',
       downloadSource: 'github',
+      fullPackage: patch ? { url: asset.browser_download_url, filename: asset.name, size: asset.size } : undefined,
     };
   }
   log.warn('GitHub 未找到适合当前系统和架构的更新包');
@@ -990,6 +1000,7 @@ export async function getUpdateSavePath(filename?: string): Promise<string> {
 
 // changes.json 结构（增量包标识）
 interface ChangesJson {
+  maanikki_patch?: number;
   added: string[];
   deleted: string[];
   modified: string[];
@@ -1000,6 +1011,7 @@ export interface InstallUpdateOptions {
   targetDir: string; // 目标安装目录
   newVersion: string; // 新版本号（用于兜底时创建文件夹）
   projectName?: string; // 项目名称（用于备份配置文件）
+  fullPackage?: FullUpdatePackage;
   onProgress?: (stage: string, detail?: string) => void;
 }
 
@@ -1028,142 +1040,181 @@ export async function installUpdate(options: InstallUpdateOptions): Promise<bool
   }
   isInstalling = true;
 
+  try {
+    return await installUpdatePackage(options);
+  } finally {
+    isInstalling = false;
+  }
+}
+
+async function installUpdatePackage(options: InstallUpdateOptions): Promise<boolean> {
   const { zipPath, targetDir, newVersion, projectName, onProgress } = options;
 
   log.info(`开始安装更新: ${zipPath} -> ${targetDir}`);
 
-  try {
-    await backupConfigBeforeUpdate(targetDir, projectName);
+  await backupConfigBeforeUpdate(targetDir, projectName);
 
-    // 对于 exe/dmg 文件，直接打开而不是解压
-    if (isExecutableInstaller(zipPath)) {
-      log.info(`检测到可执行安装程序，直接打开: ${zipPath}`);
-      onProgress?.('opening', zipPath);
-
-      try {
-        // 在 Unix 系统上设置执行权限（Windows 上此调用无操作）
-        await invoke('set_executable', { filePath: zipPath });
-
-        await openPath(zipPath);
-        log.info('已打开安装程序');
-        onProgress?.('done');
-        return true;
-      } catch (error) {
-        log.error('打开安装程序失败:', error);
-        throw error;
-      }
-    }
-
-    // 生成临时解压目录
-    const extractDir = joinPath(await dirname(zipPath), 'update_extract');
+  // 对于 exe/dmg 文件，直接打开而不是解压
+  if (isExecutableInstaller(zipPath)) {
+    log.info(`检测到可执行安装程序，直接打开: ${zipPath}`);
+    onProgress?.('opening', zipPath);
 
     try {
-      // 先清理上次可能残留的解压目录，避免历史文件混入本次更新
-      await invoke('cleanup_extract_dir', { extractDir }).catch(() => {});
+      // 在 Unix 系统上设置执行权限（Windows 上此调用无操作）
+      await invoke('set_executable', { filePath: zipPath });
 
-      // 1. 解压更新包
-      onProgress?.('extracting', zipPath);
-      log.info(`解压更新包到: ${extractDir}`);
-
-      await invoke('extract_zip', {
-        zipPath,
-        destDir: extractDir,
-      });
-
-      // 2. 检查是否为增量包
-      onProgress?.('checking', 'changes.json');
-      log.info('检查更新包类型...');
-
-      const changesJson = await invoke<ChangesJson | null>('check_changes_json', {
-        extractDir,
-      });
-
-      if (changesJson) {
-        // 增量更新
-        log.info(
-          `增量更新: deleted=${changesJson.deleted.length}, added=${
-            changesJson.added.length
-          }, modified=${changesJson.modified.length}`,
-        );
-        onProgress?.('applying', 'incremental');
-
-        await invoke('apply_incremental_update', {
-          extractDir,
-          targetDir,
-          deletedFiles: changesJson.deleted,
-        });
-      } else {
-        // 全量更新
-        log.info('全量更新');
-        onProgress?.('applying', 'full');
-
-        await invoke('apply_full_update', {
-          extractDir,
-          targetDir,
-        });
-      }
-
-      // 3. 清理临时文件
-      onProgress?.('cleanup');
-      log.info('清理临时文件...');
-
-      await invoke('cleanup_extract_dir', { extractDir });
-
-      // 将下载的 zip 文件移动到 old 文件夹
-      await moveToOldFolder(zipPath);
-
-      // 清理更新残留产物：target_dir/changes.json 和 cache/*.downloading
-      const cacheDir = await getCacheDir();
-      await invoke('cleanup_update_artifacts', { targetDir, cacheDir }).catch((e) => {
-        log.warn('清理更新残留产物失败（忽略）:', e);
-      });
-
-      log.info('更新安装完成');
+      await openPath(zipPath);
+      log.info('已打开安装程序');
       onProgress?.('done');
-
       return true;
     } catch (error) {
-      log.error('更新安装失败:', error);
-
-      // 兜底逻辑：尝试将新文件解压到 v版本号 文件夹
-      try {
-        log.info('尝试兜底更新...');
-        onProgress?.('fallback', newVersion);
-
-        const fallbackDir = await invoke<string>('fallback_update', {
-          extractDir,
-          targetDir,
-          newVersion,
-        });
-
-        log.info(`兜底更新成功，新文件已解压到: ${fallbackDir}`);
-
-        // 清理临时解压目录
-        await invoke('cleanup_extract_dir', { extractDir }).catch(() => {});
-        // 清理下载的 zip 文件
-        await moveToOldFolder(zipPath);
-
-        // 抛出特殊错误，告知用户可以使用兜底文件夹
-        throw new FallbackUpdateError(
-          `更新失败，但已将新版本文件解压到 ${fallbackDir}，您可以临时使用该文件夹中的程序`,
-          fallbackDir,
-        );
-      } catch (fallbackError) {
-        // 如果是兜底错误，直接抛出
-        if (fallbackError instanceof FallbackUpdateError) {
-          throw fallbackError;
-        }
-
-        log.error('兜底更新也失败:', fallbackError);
-
-        // 尝试清理临时目录
-        await invoke('cleanup_extract_dir', { extractDir }).catch(() => {});
-
-        throw error; // 抛出原始错误
-      }
+      log.error('打开安装程序失败:', error);
+      throw error;
     }
-  } finally {
-    isInstalling = false;
+  }
+
+  // 生成临时解压目录
+  const extractDir = joinPath(await dirname(zipPath), 'update_extract');
+
+  try {
+    // 先清理上次可能残留的解压目录，避免历史文件混入本次更新
+    await invoke('cleanup_extract_dir', { extractDir }).catch(() => {});
+
+    // 1. 解压更新包
+    onProgress?.('extracting', zipPath);
+    log.info(`解压更新包到: ${extractDir}`);
+
+    await invoke('extract_zip', {
+      zipPath,
+      destDir: extractDir,
+    });
+
+    // 2. 检查是否为增量包
+    onProgress?.('checking', 'changes.json');
+    log.info('检查更新包类型...');
+
+    const changesJson = await invoke<ChangesJson | null>('check_changes_json', {
+      extractDir,
+    });
+
+    if (changesJson) {
+      // 增量更新
+      log.info(
+        `增量更新: deleted=${changesJson.deleted.length}, added=${
+          changesJson.added.length
+        }, modified=${changesJson.modified.length}`,
+      );
+      onProgress?.('applying', 'incremental');
+
+      if (changesJson.maanikki_patch === 1) {
+        await invoke('apply_project_patch', { extractDir, targetDir, newVersion });
+      } else if (/\.patch\.zip$/i.test(zipPath)) {
+        throw new Error('增量包缺少版本和文件校验信息');
+      } else {
+        await invoke('apply_incremental_update', {
+          extractDir, targetDir, deletedFiles: changesJson.deleted,
+        });
+      }
+    } else {
+      if (/\.patch\.zip$/i.test(zipPath)) throw new Error('增量包缺少 changes.json');
+      // 全量更新
+      log.info('全量更新');
+      onProgress?.('applying', 'full');
+
+      await invoke('apply_full_update', {
+        extractDir,
+        targetDir,
+      });
+    }
+
+    // 3. 清理临时文件
+    onProgress?.('cleanup');
+    log.info('清理临时文件...');
+
+    await invoke('cleanup_extract_dir', { extractDir }).catch((error) => {
+      log.warn('清理解压目录失败:', error);
+    });
+
+    // 将下载的 zip 文件移动到 old 文件夹
+    await moveToOldFolder(zipPath);
+
+    // 清理更新残留产物：target_dir/changes.json 和 cache/*.downloading
+    const cacheDir = await getCacheDir();
+    await invoke('cleanup_update_artifacts', { targetDir, cacheDir }).catch((e) => {
+      log.warn('清理更新残留产物失败（忽略）:', e);
+    });
+
+    log.info('更新安装完成');
+    onProgress?.('done');
+
+    return true;
+  } catch (error) {
+    log.error('更新安装失败:', error);
+
+    if (/\.patch\.zip$/i.test(zipPath)) {
+      // A patch alone is not a runnable application. Recover using the full
+      // archive, including when the baseline changed after it was downloaded.
+      await invoke('cleanup_extract_dir', { extractDir }).catch(() => {});
+      const full = options.fullPackage;
+      if (!full) throw error;
+      log.warn('增量更新未完成，切换完整包:', error);
+      onProgress?.('downloadingFull');
+      const state = useAppStore.getState();
+      const fullPath = await getUpdateSavePath(full.filename);
+      const result = await downloadUpdate({
+        url: full.url, savePath: fullPath, totalSize: full.size,
+        proxySettings: state.proxySettings,
+      });
+      if (!result.success) throw new Error('完整更新包下载失败，请重新检查更新');
+      state.setDownloadSavePath(result.actualSavePath);
+      if (state.updateInfo) state.setUpdateInfo({
+        ...state.updateInfo, updateType: 'full', fileSize: full.size,
+        filename: full.filename, downloadUrl: full.url, fullPackage: undefined,
+      });
+      savePendingUpdateInfo({
+        versionName: newVersion, releaseNote: state.updateInfo?.releaseNote || '',
+        channel: state.updateInfo?.channel, downloadSavePath: result.actualSavePath,
+        fileSize: full.size, updateType: 'full', downloadSource: 'github', timestamp: Date.now(),
+      });
+      return installUpdatePackage({ ...options, zipPath: result.actualSavePath, fullPackage: undefined });
+    }
+
+    // 兜底逻辑：尝试将新文件解压到 v版本号 文件夹
+    try {
+      log.info('尝试兜底更新...');
+      onProgress?.('fallback', newVersion);
+
+      const fallbackDir = await invoke<string>('fallback_update', {
+        extractDir,
+        targetDir,
+        newVersion,
+      });
+
+      log.info(`兜底更新成功，新文件已解压到: ${fallbackDir}`);
+
+      // 清理临时解压目录
+      await invoke('cleanup_extract_dir', { extractDir }).catch(() => {});
+      // 清理下载的 zip 文件
+      await moveToOldFolder(zipPath);
+
+      // 抛出特殊错误，告知用户可以使用兜底文件夹
+      throw new FallbackUpdateError(
+        `更新失败，但已将新版本文件解压到 ${fallbackDir}，您可以临时使用该文件夹中的程序`,
+        fallbackDir,
+      );
+    } catch (fallbackError) {
+      // 如果是兜底错误，直接抛出
+      if (fallbackError instanceof FallbackUpdateError) {
+        throw fallbackError;
+      }
+
+      log.error('兜底更新也失败:', fallbackError);
+
+      // 尝试清理临时目录
+      await invoke('cleanup_extract_dir', { extractDir }).catch(() => {});
+
+      throw error; // 抛出原始错误
+    }
   }
 }
 
@@ -1213,6 +1264,7 @@ export interface PendingUpdateInfo {
   fileSize?: number;
   updateType?: 'incremental' | 'full';
   downloadSource?: 'mirrorchyan' | 'github';
+  fullPackage?: FullUpdatePackage;
   timestamp: number;
 }
 

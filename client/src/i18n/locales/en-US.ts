@@ -740,6 +740,7 @@ export default {
     installNow: 'Install Now',
     installUpdate: 'Install Update',
     installStages: {
+      downloadingFull: 'Downloading the full update...',
       extracting: 'Extracting...',
       checking: 'Checking update type...',
       applying: 'Applying update...',

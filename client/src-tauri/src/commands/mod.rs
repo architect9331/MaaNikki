@@ -25,6 +25,7 @@ pub mod file_ops;
 pub mod maa_agent;
 pub mod maa_core;
 pub mod pearpal;
+pub mod project_patch;
 pub mod state;
 pub mod system;
 mod task_diagnostics;

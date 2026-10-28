@@ -1,0 +1,11 @@
+{
+  "app_id": "QQ_OPEN_PLATFORM_APP_ID",
+  "app_secret": "QQ_OPEN_PLATFORM_APP_SECRET",
+  "repository": "architect9331/MaaNikki",
+  "webhook_secret": "REPLACE_WITH_A_RANDOM_SECRET_AT_LEAST_32_CHARACTERS",
+  "binding_code": "REPLACE_WITH_A_RANDOM_BINDING_CODE",
+  "host": "127.0.0.1",
+  "port": 18960,
+  "database": "/var/lib/nonebot-github/state.sqlite3",
+  "show_links": false
+}

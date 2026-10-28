@@ -90,6 +90,7 @@ export function UpdatePanel({ onClose, anchorRef }: UpdatePanelProps) {
           fileSize: updateInfo.fileSize,
           updateType: updateInfo.updateType,
           downloadSource: updateInfo.downloadSource,
+          fullPackage: updateInfo.fullPackage,
           timestamp: Date.now(),
         });
       } else {

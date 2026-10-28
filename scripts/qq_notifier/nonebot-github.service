@@ -1,0 +1,30 @@
+[Unit]
+Description=NoneBot QQ official GitHub notifications
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=nonebot-github
+Group=nonebot-github
+WorkingDirectory=/opt/nonebot-github
+Environment=CONFIG_FILE=/etc/nonebot-github/config.json
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/nonebot-github/.venv/bin/python /opt/nonebot-github/bot.py
+Restart=on-failure
+RestartSec=10
+StateDirectory=nonebot-github
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+MemoryMax=256M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

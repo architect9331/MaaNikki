@@ -487,6 +487,7 @@ function App() {
             fileSize: updateResult.fileSize,
             updateType: updateResult.updateType,
             downloadSource: updateResult.downloadSource,
+            fullPackage: updateResult.fullPackage,
             timestamp: Date.now(),
           });
 
@@ -1111,6 +1112,7 @@ function App() {
             fileSize: pendingUpdate.fileSize,
             updateType: pendingUpdate.updateType,
             downloadSource: pendingUpdate.downloadSource,
+            fullPackage: pendingUpdate.fullPackage,
           });
           setDownloadSavePath(pendingUpdate.downloadSavePath);
           // 先设置 installStatus，再设置 downloadStatus，
