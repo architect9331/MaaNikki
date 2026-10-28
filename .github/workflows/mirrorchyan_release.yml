@@ -1,0 +1,32 @@
+name: mirrorchyan_release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        default: ''
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  mirrorchyan:
+    if: ${{ github.repository_owner == 'architect9331' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: MirrorChyan/uploading-action@v1
+        with:
+          filetype: latest-release
+          filename: MaaNikki-v*-win-x86_64.zip
+          mirrorchyan_rid: MaaNikki
+          tag: ${{ inputs.tag }}
+
+          os: win
+          arch: x64
+
+          owner: architect9331
+          repo: MaaNikki
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          upload_token: ${{ secrets.MirrorChyanUploadToken }}

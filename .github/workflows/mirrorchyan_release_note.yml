@@ -1,0 +1,29 @@
+name: mirrorchyan_release_note
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        default: ''
+        required: false
+  release:
+    types: [edited]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  mirrorchyan:
+    if: ${{ github.repository_owner == 'architect9331' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: MirrorChyan/release-note-action@v1
+        with:
+          mirrorchyan_rid: MaaNikki
+          version_name: ${{ inputs.tag || github.event.release.tag_name }}
+
+          owner: architect9331
+          repo: MaaNikki
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          upload_token: ${{ secrets.MirrorChyanUploadToken }}
