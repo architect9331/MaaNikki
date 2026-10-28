@@ -76,6 +76,7 @@ export interface UpdateInfo {
 
 // 下载进度类型
 export interface DownloadProgress {
+  sourceName?: string;
   downloadedSize: number;
   totalSize: number;
   speed: number;

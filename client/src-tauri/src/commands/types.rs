@@ -438,6 +438,7 @@ pub struct ChangesJson {
 #[derive(Clone, Serialize)]
 pub struct DownloadProgressEvent {
     pub session_id: u64,
+    pub source_name: String,
     pub downloaded_size: u64,
     pub total_size: u64,
     pub speed: u64,
@@ -469,6 +470,8 @@ pub struct GitHubAsset {
     pub name: String,
     pub browser_download_url: String,
     pub size: u64,
+    #[serde(default)]
+    pub digest: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

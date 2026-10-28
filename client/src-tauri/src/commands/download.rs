@@ -10,7 +10,8 @@ use std::sync::Arc;
 use tauri::Emitter;
 
 use super::types::GitHubRelease;
-use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
+use super::update_mirrors::{self, AssetIntegrity};
+use reqwest::header::{ACCEPT, AUTHORIZATION};
 
 use super::types::{DownloadProgressEvent, DownloadResult};
 use super::update::move_to_old_folder;
@@ -72,59 +73,82 @@ pub async fn get_github_releases(
         owner, repo
     );
 
-    // 构造请求头
-    let mut client_builder = reqwest::Client::builder()
-        .user_agent("mxu")
+    let official_repository = format!("{owner}/{repo}") == update_mirrors::CONFIG.repository;
+    let mut sources = vec![url.clone()];
+    if official_repository {
+        sources.extend(update_mirrors::metadata_mirrors(&url));
+    }
+    let mut errors = Vec::new();
+    for (index, source) in sources.iter().enumerate() {
+        // Credentials and the user's network proxy belong only to GitHub itself.
+        let result = fetch_releases(
+            source,
+            if index == 0 {
+                github_pat.as_deref()
+            } else {
+                None
+            },
+            if index == 0 {
+                proxy_url.as_deref()
+            } else {
+                None
+            },
+        )
+        .await;
+        match result {
+            Ok(releases)
+                if releases
+                    .iter()
+                    .any(|release| !release.draft && !release.assets.is_empty()) =>
+            {
+                info!("[检查更新] 线路可用: {}", source);
+                update_mirrors::remember(&releases);
+                return Ok(releases);
+            }
+            Ok(_) => errors.push(format!("{source}: 未找到发布包")),
+            Err(error) => {
+                warn!("[检查更新] 线路失败: {}: {}", source, error);
+                errors.push(format!("{source}: {error}"));
+            }
+        }
+    }
+    Err(format!("所有更新线路均不可用: {}", errors.join("; ")))
+}
+
+async fn fetch_releases(
+    url: &str,
+    github_pat: Option<&str>,
+    proxy_url: Option<&str>,
+) -> Result<Vec<GitHubRelease>, String> {
+    let mut builder = reqwest::Client::builder()
+        .user_agent(build_user_agent())
         .timeout(std::time::Duration::from_secs(10))
-        .connect_timeout(std::time::Duration::from_secs(3));
-
-    // 添加代理配置（如果提供）
-    if let Some(ref proxy) = proxy_url {
-        if !proxy.is_empty() {
-            info!("[检查更新] 使用代理: {}", proxy);
-            info!("[检查更新] 目标: {}", url);
-            let reqwest_proxy = reqwest::Proxy::all(proxy).map_err(|e| {
-                error!("代理配置失败: {} (代理地址: {})", e, proxy);
-                format!(
-                    "代理配置失败: {}。请检查代理格式是否正确（支持 http:// 或 socks5://）",
-                    e
-                )
-            })?;
-            client_builder = client_builder.proxy(reqwest_proxy);
-        }
+        .connect_timeout(std::time::Duration::from_secs(3))
+        .no_proxy();
+    if let Some(proxy) = proxy_url.filter(|s| !s.is_empty()) {
+        builder = builder.proxy(reqwest::Proxy::all(proxy).map_err(|e| e.to_string())?);
     }
-
-    let client = client_builder
-        .build()
-        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))?;
-
+    let client = builder.build().map_err(|e| e.to_string())?;
     let mut request = client
-        .get(&url)
-        .header(ACCEPT, "application/vnd.github.v3+json")
-        .header(USER_AGENT, "mxu");
-
-    // 添加 PAT 认证（如果提供）
-    if let Some(pat) = github_pat {
-        if !pat.trim().is_empty() {
-            request = request.header(AUTHORIZATION, format!("token {}", pat.trim()));
-        }
+        .get(url)
+        .header(ACCEPT, "application/vnd.github+json");
+    if let Some(pat) = github_pat.filter(|s| !s.trim().is_empty()) {
+        request = request.header(AUTHORIZATION, format!("Bearer {}", pat.trim()));
     }
-
     let response = request
         .send()
         .await
-        .map_err(|e| format!("请求失败: {}", e))?;
-
-    if !response.status().is_success() {
-        return Err(format!("GitHub API 错误: {}", response.status()));
+        .map_err(|e| e.to_string())?
+        .error_for_status()
+        .map_err(|e| e.to_string())?;
+    // A mirror index contains only release metadata, never full file manifests.
+    if response.content_length().unwrap_or(0) > 8 * 1024 * 1024 {
+        return Err("版本索引过大".into());
     }
-
-    let releases: Vec<GitHubRelease> = response
+    response
         .json()
         .await
-        .map_err(|e| format!("解析 JSON 失败: {}", e))?;
-
-    Ok(releases)
+        .map_err(|e| format!("版本索引无效: {e}"))
 }
 
 /// 根据版本号获取 GitHub Release，供 Mirror酱查询版本后的下载流程复用。
@@ -172,18 +196,97 @@ pub async fn download_file(
     total_size: Option<u64>,
     proxy_url: Option<String>,
 ) -> Result<DownloadResult, String> {
+    let session_id = CURRENT_DOWNLOAD_SESSION.fetch_add(1, Ordering::SeqCst) + 1;
+    DOWNLOAD_CANCELLED.store(false, Ordering::SeqCst);
+    let official_asset = update_mirrors::release_asset(&url);
+    let mut expected = update_mirrors::integrity(&url);
+    if official_asset.is_some() && expected.is_none() {
+        let (owner, repo) = update_mirrors::CONFIG.repository.split_once('/').unwrap();
+        let lookup = get_github_releases(owner.into(), repo.into(), None, proxy_url.clone());
+        tokio::select! {
+            _ = download_cancelled(session_id) => return Err("下载已取消".into()),
+            _ = lookup => {}
+        }
+        expected = update_mirrors::integrity(&url);
+    }
+    let mut sources = vec![url.clone()];
+    // Public mirrors require a published SHA-256; never install unchecked mirror data.
+    if expected.is_some() {
+        sources.extend(update_mirrors::download_mirrors(&url));
+    }
+    let mut errors = Vec::new();
+    for (index, source) in sources.iter().enumerate() {
+        if is_download_cancelled(session_id) {
+            return Err("下载已取消".into());
+        }
+        let name = reqwest::Url::parse(source)
+            .ok()
+            .and_then(|url| url.host_str().map(str::to_owned))
+            .unwrap_or_default();
+        info!(
+            "[下载] 使用线路: {} ({}/{})",
+            name,
+            index + 1,
+            sources.len()
+        );
+        let result = download_file_attempt(
+            app.clone(),
+            source.clone(),
+            save_path.clone(),
+            total_size,
+            if index == 0 { proxy_url.clone() } else { None },
+            session_id,
+            expected.clone(),
+            official_asset.is_some(),
+            index + 1 < sources.len(),
+        )
+        .await;
+        match result {
+            Ok(result) => return Ok(result),
+            Err(error) => {
+                if is_download_cancelled(session_id) {
+                    return Err("下载已取消".into());
+                }
+                // Disk errors cannot be repaired by changing the download source.
+                if ["无法创建", "写入", "磁盘", "刷新", "同步", "重命名"]
+                    .iter()
+                    .any(|prefix| error.starts_with(prefix))
+                {
+                    return Err(error);
+                }
+                warn!("[下载] 线路失败: {}: {}", name, error);
+                errors.push(format!("{name}: {error}"));
+            }
+        }
+    }
+    Err(format!("所有下载线路均不可用: {}", errors.join("; ")))
+}
+
+fn is_download_cancelled(session_id: u64) -> bool {
+    DOWNLOAD_CANCELLED.load(Ordering::SeqCst)
+        || CURRENT_DOWNLOAD_SESSION.load(Ordering::SeqCst) != session_id
+}
+
+async fn download_cancelled(session_id: u64) {
+    while !is_download_cancelled(session_id) {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+}
+
+async fn download_file_attempt(
+    app: tauri::AppHandle,
+    url: String,
+    save_path: String,
+    total_size: Option<u64>,
+    proxy_url: Option<String>,
+    session_id: u64,
+    expected: Option<AssetIntegrity>,
+    fixed_filename: bool,
+    try_next_if_slow: bool,
+) -> Result<DownloadResult, String> {
     use futures_util::StreamExt;
     use std::io::Write;
     use tokio::time::{sleep, Duration};
-
-    info!("download_file: {} -> {}", url, save_path);
-
-    // 生成新的 session ID，使旧下载的进度事件无效
-    let session_id = CURRENT_DOWNLOAD_SESSION.fetch_add(1, Ordering::SeqCst) + 1;
-    info!("download_file session_id: {}", session_id);
-
-    // 重置取消标志
-    DOWNLOAD_CANCELLED.store(false, Ordering::SeqCst);
 
     let save_path_obj = std::path::Path::new(&save_path);
 
@@ -196,7 +299,9 @@ pub async fn download_file(
     let mut client_builder = reqwest::Client::builder()
         .user_agent(build_user_agent())
         .timeout(std::time::Duration::from_secs(1800)) // 30 分钟超时，足够下载大文件但防止无限挂起
-        .connect_timeout(std::time::Duration::from_secs(10));
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .read_timeout(std::time::Duration::from_secs(20))
+        .no_proxy();
 
     // 配置代理（如果提供）
     if let Some(ref proxy) = proxy_url {
@@ -222,18 +327,33 @@ pub async fn download_file(
         .build()
         .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))?;
 
-    let response = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| format!("请求失败: {}", e))?;
+    let response = tokio::select! {
+        _ = download_cancelled(session_id) => return Err("下载已取消".into()),
+        response = tokio::time::timeout(Duration::from_secs(15), client.get(&url).send()) => {
+            response.map_err(|_| "连接线路超时".to_string())?
+                .map_err(|e| format!("请求失败: {e}"))?
+        }
+    };
 
     if !response.status().is_success() {
         return Err(format!("HTTP 错误: {}", response.status()));
     }
 
     // 尝试从 Content-Disposition header 或最终 URL 提取文件名
-    let detected_filename = extract_filename_from_response(&response);
+    if fixed_filename
+        && response
+            .headers()
+            .get("content-type")
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.contains("text/html"))
+    {
+        return Err("线路返回了网页".into());
+    }
+    let detected_filename = if fixed_filename {
+        None
+    } else {
+        extract_filename_from_response(&response)
+    };
     if let Some(ref name) = detected_filename {
         info!("[下载] 检测到文件名: {}", name);
     }
@@ -258,7 +378,12 @@ pub async fn download_file(
 
     // 获取文件大小
     let content_length = response.content_length();
-    let total = total_size.or(content_length).unwrap_or(0);
+    let total = expected
+        .as_ref()
+        .map(|asset| asset.size)
+        .or(total_size)
+        .or(content_length)
+        .unwrap_or(0);
 
     // 有界通道将网络读取与磁盘写入解耦：
     // - 下载循环纯异步，不阻塞 runtime，可全速消费 TCP 流
@@ -292,6 +417,11 @@ pub async fn download_file(
 
     // 启动独立任务定期上报进度，避免在下载循环中因 emit 阻塞导致”卡卡停停”
     let app_for_emitter = app.clone();
+    let source_name = reqwest::Url::parse(&url)
+        .ok()
+        .and_then(|url| url.host_str().map(str::to_owned))
+        .unwrap_or_default();
+    let source_for_emitter = source_name.clone();
     let (stop_tx, mut stop_rx) = tokio::sync::oneshot::channel::<()>();
     let progress_guard = ProgressEmitterGuard(Some(stop_tx));
     tokio::spawn(async move {
@@ -335,6 +465,7 @@ pub async fn download_file(
                         "download-progress",
                         DownloadProgressEvent {
                             session_id,
+                            source_name: source_for_emitter.clone(),
                             downloaded_size: downloaded,
                             total_size: total,
                             speed: smoothed_speed as u64,
@@ -357,7 +488,17 @@ pub async fn download_file(
     let mut downloaded: u64 = 0;
     let mut download_err: Option<String> = None;
 
-    while let Some(chunk) = stream.next().await {
+    let mut speed_window = tokio::time::Instant::now();
+    let mut window_bytes = 0u64;
+    loop {
+        let next = tokio::select! {
+            _ = download_cancelled(session_id) => {
+                download_err = Some("下载已取消".into());
+                break;
+            }
+            chunk = stream.next() => chunk
+        };
+        let Some(chunk) = next else { break };
         if DOWNLOAD_CANCELLED.load(Ordering::SeqCst)
             || CURRENT_DOWNLOAD_SESSION.load(Ordering::SeqCst) != session_id
         {
@@ -381,6 +522,15 @@ pub async fn download_file(
         }
         downloaded += len;
         downloaded_shared.store(downloaded, Ordering::Relaxed);
+        if try_next_if_slow && total > 1024 * 1024 && speed_window.elapsed().as_secs() >= 30 {
+            let speed = (downloaded - window_bytes) / speed_window.elapsed().as_secs().max(1);
+            if speed < 8 * 1024 {
+                download_err = Some("线路持续低速，切换备用线路".into());
+                break;
+            }
+            speed_window = tokio::time::Instant::now();
+            window_bytes = downloaded;
+        }
     }
 
     // 最后再检查一次取消标志
@@ -412,11 +562,46 @@ pub async fn download_file(
     }
     write_thread_result?;
 
+    if total > 0 && downloaded != total {
+        return Err(format!("下载大小不符: 预期 {total}，实际 {downloaded}"));
+    }
+    if let Some(expected) = expected {
+        let path = temp_path.clone();
+        let actual = tokio::task::spawn_blocking(move || -> Result<String, String> {
+            use sha2::{Digest, Sha256};
+            use std::io::Read;
+            let mut file =
+                std::fs::File::open(path).map_err(|e| format!("无法创建校验读取: {e}"))?;
+            let mut hasher = Sha256::new();
+            let mut buffer = vec![0u8; 512 * 1024];
+            loop {
+                let read = file
+                    .read(&mut buffer)
+                    .map_err(|e| format!("磁盘读取失败: {e}"))?;
+                if read == 0 {
+                    break;
+                }
+                hasher.update(&buffer[..read]);
+            }
+            Ok(format!("{:x}", hasher.finalize()))
+        })
+        .await
+        .map_err(|e| format!("磁盘校验任务失败: {e}"))??;
+        if actual != expected.sha256 {
+            return Err("下载包 SHA-256 不符".into());
+        }
+        info!("[下载] SHA-256 校验通过");
+    }
+    if is_download_cancelled(session_id) {
+        return Err("下载已取消".into());
+    }
+
     // 发送最终进度
     let _ = app.emit(
         "download-progress",
         DownloadProgressEvent {
             session_id,
+            source_name,
             downloaded_size: downloaded,
             total_size: if total > 0 { total } else { downloaded },
             speed: 0,

@@ -289,9 +289,9 @@ export function DownloadProgressBar({
       {/* 下载来源标识 */}
       {downloadSource && (
         <div className="text-xs text-text-muted">
-          {downloadSource === 'github'
+          {downloadProgress?.sourceName || (downloadSource === 'github'
             ? t('mirrorChyan.downloadFromGitHub')
-            : t('mirrorChyan.downloadFromMirrorChyan')}
+            : t('mirrorChyan.downloadFromMirrorChyan'))}
         </div>
       )}
 

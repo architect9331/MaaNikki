@@ -28,7 +28,7 @@ SOURCE_FILES = ("interface.json", ".gitignore", ".gitattributes", ".node-version
                 "docs/architecture.md",
                 "THIRD_PARTY_NOTICES.md", "LICENSE", "LICENSE.md")
 RUNTIME_DIRS = ("agent", "resource", "tasks", "options")
-GENERATED_DIRS = {"node_modules", "target", "dist", "__pycache__", ".git", "schemas"}
+GENERATED_DIRS = {"node_modules", "target", "dist", "__pycache__", ".git", "schemas", ".cloudflare", ".wrangler"}
 GENERATED_SUFFIXES = {".pyc", ".pyo", ".pdb"}
 
 
@@ -58,7 +58,7 @@ def source_files():
             dirs[:] = sorted(d for d in dirs if d not in GENERATED_DIRS)
             for filename in sorted(files):
                 path = Path(current) / filename
-                if path.suffix not in GENERATED_SUFFIXES and not filename.startswith(".env"):
+                if path.suffix not in GENERATED_SUFFIXES and not filename.startswith((".env", ".dev.vars")):
                     yield path
 
 

@@ -70,3 +70,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/publish_release.py
+
+  mirrors:
+    needs: publish
+    uses: ./.github/workflows/sync-update-mirrors.yml
+    secrets: inherit

@@ -1,0 +1,66 @@
+name: Sync update mirrors
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-mirrors
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [sourceforge, r2]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.10'
+      - name: Read mirror configuration
+        id: config
+        env:
+          PROVIDER: ${{ matrix.provider }}
+        run: |
+          python - <<'PY'
+          import json, os
+          config = json.load(open('build/update-mirrors.json'))
+          enabled = bool(config['r2' if os.environ['PROVIDER'] == 'r2' else 'sourceforge_project'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f'enabled={str(enabled).lower()}\n')
+          PY
+      - name: Install Cloudflare CLI
+        if: steps.config.outputs.enabled == 'true' && matrix.provider == 'r2'
+        run: npm install --global cf@1.0.0-beta.16
+      - name: Configure SourceForge SSH
+        if: steps.config.outputs.enabled == 'true' && matrix.provider == 'sourceforge'
+        env:
+          SF_KEY: ${{ secrets.SOURCEFORGE_SSH_KEY }}
+          SF_HOSTS: ${{ secrets.SOURCEFORGE_KNOWN_HOSTS }}
+        run: |
+          test -n "$SF_KEY" && test -n "$SF_HOSTS"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SF_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$SF_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Upload release and publish version index
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.UPDATE_R2_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.UPDATE_R2_ACCOUNT_ID }}
+          SOURCEFORGE_USERNAME: ${{ vars.SOURCEFORGE_USERNAME }}
+          PROVIDER: ${{ matrix.provider }}
+        run: python scripts/sync_update_mirrors.py "$PROVIDER"

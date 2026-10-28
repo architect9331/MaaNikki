@@ -23,6 +23,7 @@ const log = loggers.app;
 let isDownloading = false;
 // 下载是否被用户主动取消
 let downloadCancelled = false;
+let downloadGeneration = 0;
 // 安装互斥锁，防止并发 installUpdate 导致目录竞争
 let isInstalling = false;
 
@@ -58,6 +59,7 @@ export async function cancelDownload(): Promise<boolean> {
 
   // 标记为用户主动取消，让 downloadUpdate 知道不需要再重置状态
   downloadCancelled = true;
+  downloadGeneration += 1;
 
   try {
     // 调用 Rust 后端设置取消标志
@@ -734,6 +736,7 @@ let currentDownloadPath: string | null = null;
 // 字段是 snake_case，不能直接套用前端 camelCase 的 DownloadProgress
 interface DownloadProgressEventPayload {
   session_id: number;
+  source_name?: string;
   downloaded_size: number;
   total_size: number;
   speed: number;
@@ -782,6 +785,7 @@ export async function downloadUpdate(
 
   isDownloading = true;
   downloadCancelled = false;
+  const generation = ++downloadGeneration;
   currentDownloadPath = savePath;
 
   // 设置进度监听器
@@ -790,12 +794,6 @@ export async function downloadUpdate(
   let currentSessionId: number | null = null;
 
   try {
-    // 使用统一的代理下载接口（内部已包含日志记录）
-    const downloadPromise = downloadWithProxy(url, savePath, {
-      totalSize,
-      proxyUrl: proxySettings?.url,
-    });
-
     // 监听 Rust 后端发送的下载进度事件
     if (onProgress) {
       const { listen } = await import('@tauri-apps/api/event');
@@ -809,8 +807,9 @@ export async function downloadUpdate(
           currentSessionId = event.payload.session_id;
         }
         // 如果已被取消，忽略进度更新
-        if (downloadCancelled) return;
+        if (downloadCancelled || generation !== downloadGeneration) return;
         onProgress({
+          sourceName: event.payload.source_name,
           downloadedSize: event.payload.downloaded_size,
           totalSize: event.payload.total_size,
           speed: event.payload.speed,
@@ -820,7 +819,12 @@ export async function downloadUpdate(
     }
 
     // 等待下载完成，返回下载结果
-    const result = await downloadPromise;
+    if (downloadCancelled || generation !== downloadGeneration) return { success: false };
+    const result = await downloadWithProxy(url, savePath, {
+      totalSize,
+      proxyUrl: proxySettings?.url,
+    });
+    if (generation !== downloadGeneration) return { success: false };
     currentSessionId = result.session_id;
 
     log.info(`下载完成 (session ${result.session_id})`);
@@ -836,7 +840,7 @@ export async function downloadUpdate(
     };
   } catch (error) {
     // 如果是用户主动取消，不记录为错误
-    if (downloadCancelled) {
+    if (downloadCancelled || generation !== downloadGeneration) {
       log.info('下载已被用户取消');
     } else {
       log.error('下载失败:', error);
@@ -848,7 +852,7 @@ export async function downloadUpdate(
       unlisten();
     }
     // 只有在未被取消时才重置状态（取消时 cancelDownload 已经重置了）
-    if (!downloadCancelled) {
+    if (!downloadCancelled && generation === downloadGeneration) {
       isDownloading = false;
       currentDownloadPath = null;
     }
