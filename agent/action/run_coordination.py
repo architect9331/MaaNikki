@@ -1,4 +1,4 @@
-"""Batch boundaries and read-only daily settlement; no cross-task execution."""
+"""Batch boundaries, daily settlement and an explicitly deferred single upgrade."""
 from __future__ import annotations
 
 import json
@@ -25,16 +25,20 @@ class RunCoordinationAction(CustomAction):
                 energy = context.get_node_data("MaaNikki_RealmEnergy") or {}
                 next_names = {item if isinstance(item, str) else item.get("name")
                               for item in energy.get("next", []) if isinstance(item, (str, dict))}
-                if options.get("five_star_collection") is True or "MaaNikki_BlessingPursuit" in next_names:
+                collection = options.get("five_star_collection") is True or "MaaNikki_BlessingPursuit" in next_names
+                kind = "bless" if collection or "MaaNikki_Bless" in next_names else (
+                    "jihua" if "MaaNikki_Jihua" in next_names else
+                    "monster" if "MaaNikki_Monster" in next_names else None)
+                if collection:
                     catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
                     _, protected, _ = InventoryStore(ROOT, catalog).load_organization()
                     total = sum(len(item["colors"]) * 3 for item in catalog["sets"]
                                 if item["rarity"] == 5 and item.get("collection_target", True))
                     if len(protected) == total:
                         rt.log("五星祝福闪光颜色已收齐；本次不消耗活跃能量，请选择其他幻境。")
-                        run_state.begin_realm(rt, task_id)
+                        run_state.begin_realm(rt, task_id, kind=kind, collection=collection)
                         return context.override_pipeline({"MaaNikki_RealmChallenge": {"next": ["MaaNikki_RealmReview"]}})
-                run_state.begin_realm(rt, task_id)
+                run_state.begin_realm(rt, task_id, kind=kind, collection=collection)
                 # Overrides belong only to this RealmChallenge context. Daily
                 # minimum challenges and independent realm entries are unchanged.
                 overrides = {node: {
@@ -67,9 +71,9 @@ class RunCoordinationAction(CustomAction):
             if not clone.override_pipeline(pending.claim_overrides):
                 rt.log("朝夕领奖设置未能恢复，本次未复核。")
                 return False
-            # This service only reads the score and claims rewards. It never
-            # rescans/reexecutes free tasks or launches another realm challenge.
-            reviewed = DailyRun(clone, "zhaoxi").review_after_energy(pending)
+            # Only a specifically deferred upgrade can run here. All other
+            # daily actions and realm challenges remain in their own stages.
+            reviewed = DailyRun(clone, "zhaoxi").review_after_energy(pending, realm_ok=realm_ok)
             return realm_ok and reviewed
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             rt.log(f"本轮任务衔接未完成：{error}。")

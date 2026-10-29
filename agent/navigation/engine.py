@@ -20,6 +20,22 @@ def angle_delta(target, current):
     return (target-current+180) % 360-180
 
 
+def crossed_waypoint(target, start, end, radius, pass_radius):
+    """Use a wider pass margin only after crossing the target's closest point."""
+    if start is None:
+        return False
+    closest = segment_distance(target, start, end)
+    if closest <= radius:
+        return True
+    if closest > pass_radius:
+        return False
+    dx, dy = end.x-start.x, end.y-start.y
+    # Both endpoints must straddle the perpendicular through the target. This
+    # excludes standing still or merely approaching inside the wider margin.
+    return ((target.x-start.x)*dx+(target.y-start.y)*dy > 0
+            and (target.x-end.x)*dx+(target.y-end.y)*dy <= 0)
+
+
 class Motion:
     """Cooperative timers: only the navigation thread may call Maa APIs.
 
@@ -175,7 +191,7 @@ class Navigator:
 
     def __init__(self, locator: Locator, inputs, capture, stopped, pause, event=lambda value: None,
                  point_action=None, waypoint=None, walking=None, page_detector=None, point_prepare=None,
-                 route_branch=None, relocalize=None):
+                 route_branch=None, relocalize=None, scene_recovery=None):
         self.locator, self.inputs, self.capture, self.stopped, self._pause, self.event = locator, inputs, capture, stopped, pause, event
         self.point_action, self.waypoint = point_action, waypoint
         self.point_prepare = point_prepare
@@ -186,6 +202,7 @@ class Navigator:
         self.motion = None
         self.next_skip_check = 0
         self.relocalize = relocalize
+        self.scene_recovery = scene_recovery
         self.map_recoveries = 0
         self.relocalized = False
         self.read_costs = {}
@@ -323,6 +340,17 @@ class Navigator:
                 return pose
         raise NavigationError("镜头校准结果不稳定，请检查游戏前台和小地图显示。")
 
+    def travel_tolerance(self, remaining, radius):
+        """Account for small position changes in the near-point bearing."""
+        spec = self.locator.spec
+        if remaining > radius+2:
+            return spec.heading_tolerance_far
+        # Cap lateral uncertainty at a quarter of the actual arrival radius.
+        # Arrival itself still uses the unchanged radius and settled-pose check.
+        slack = min(spec.heading_position_slack, radius*.25)
+        uncertainty = math.degrees(math.atan2(slack, max(remaining, .01)))
+        return max(spec.heading_tolerance_near, min(5.0, uncertainty))
+
     def turn(self, target_heading, pose, *, stationary=False, tolerance=5):
         generation = getattr(self.inputs, "generation", 0)
         previous_delta = None
@@ -351,7 +379,7 @@ class Navigator:
             self.event({"type": "camera_turn", "target": target_heading, "before": pose.heading,
                         "after": after.heading, "pixels": pixels,
                         "rotation": angle_delta(after.heading, pose.heading), "gain": correction_gain,
-                        "stationary": False})
+                        "stationary": False, "tolerance": tolerance})
             if abs(angle_delta(target_heading, after.heading)) <= tolerance:
                 return after
             pose = after
@@ -463,6 +491,14 @@ class Navigator:
                 break
             page_ready = self.inputs.ready()
             if not page_ready:
+                if self.scene_recovery:
+                    revived = self.scene_recovery()
+                    if revived is not None:
+                        if revived:
+                            # Respawn may change height or location. Let the
+                            # route owner restart from its teleport checkpoint.
+                            raise NavigationStuckError("角色落水后已复活，需要从起点重新运行路线。")
+                        raise NavigationError("角色落水后未能完成复活，本条路线停止。")
                 if self.point_action and self.point_action.rt.hit("MaaNikki_Energy_SkipReward"):
                     if not self.point_action.rt.key("skip", .5):
                         raise NavigationError("未能跳过获取提示。")
@@ -626,6 +662,13 @@ class Navigator:
             raise NavigationError("跳跃按键不能与移动方向相同，请检查游戏键位设置。")
         deadline = time.monotonic()+route.timeout
         origin = route.points[0]
+        spec = self.locator.spec
+        self.event({"type": "navigation_profile", "map": route.map_id,
+                    "transit_radius_scale": spec.transit_radius_scale,
+                    "transit_pass_radius_scale": spec.transit_pass_radius_scale,
+                    "heading_tolerance_far": spec.heading_tolerance_far,
+                    "heading_tolerance_near": spec.heading_tolerance_near,
+                    "heading_position_slack": spec.heading_position_slack})
         pose = self.observe((origin.x, origin.y))
         motion = Motion(self.inputs, self.event)
         self.motion = motion
@@ -640,6 +683,7 @@ class Navigator:
         prepared_index = None
         last_good = pose
         scene_interrupted, scene_retries = False, 0
+        heading_rechecks = 0
         rejoin = None
         map_checked = False
         generation = getattr(self.inputs, "generation", 0)
@@ -664,6 +708,7 @@ class Navigator:
                     speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
                     self.turn_ratio = None
                     scene_interrupted = False
+                    heading_rechecks = 0
                     continue
                 target = rejoin or route.points[index]
                 if scene_interrupted or pose.heading is None or not self.read_state("ready", self.inputs.ready):
@@ -683,6 +728,7 @@ class Navigator:
                     stuck_since, recovered = time.monotonic(), False
                     best_distance = distance(pose, rejoin or route.points[index])
                     scene_interrupted, last = False, None
+                    heading_rechecks = 0
                     speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
                     continue
                 # A guarded page read may have reached the release deadline.
@@ -702,6 +748,7 @@ class Navigator:
                         best_distance = distance(pose, target)
                         map_checked = False
                         last = None
+                        heading_rechecks = 0
                         speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
                     prepared_index = index
                     if pose.heading is None or getattr(self.inputs, "generation", 0) != generation:
@@ -710,10 +757,17 @@ class Navigator:
                     raise NavigationError("当前位置不在路线起点附近，未开始移动，请先传送或手动到达起点。")
                 # Pickup locations require closer arrival than transit points.
                 radius = min(target.radius, 1) if target.action == "bottle" else target.radius
+                pass_radius = radius
                 precise = bool(target.action) or rejoin is not None or index == len(route.points)-1
+                # Tighten ordinary transit points. Preserve action/recovery
+                # arrivals and explicitly broad endpoints such as meteor routes.
+                if not precise and radius <= 1:
+                    pass_radius *= max(spec.transit_radius_scale, spec.transit_pass_radius_scale)
+                    radius *= spec.transit_radius_scale
                 crossed = (not precise and last is not None
-                           and segment_distance(target, last, pose) <= radius)
+                           and crossed_waypoint(target, last, pose, radius, pass_radius))
                 if distance(pose, target) <= radius or crossed:
+                    heading_rechecks = 0
                     if precise:
                         arrival_pose = pose
                         motion.stop()
@@ -741,7 +795,11 @@ class Navigator:
                         self.event({"type": "route_rejoined", "index": index, **pose.dict()})
                         continue
                     scene_retries = 0
-                    self.event({"type": "waypoint", "index": index, "total": len(route.points)-1})
+                    self.event({"type": "waypoint", "index": index, "total": len(route.points)-1,
+                                "pose": pose.dict(), "target": [target.x, target.y],
+                                "radius": radius, "pass_radius": pass_radius,
+                                "remaining": distance(pose, target),
+                                "crossed": crossed})
                     if self.waypoint and self.waypoint(target) == "done":
                         break
                     if target.action:
@@ -776,6 +834,7 @@ class Navigator:
                     # Jitter or drifting sideways along a wall is not progress
                     # toward this waypoint and must not reset recovery timers.
                     scene_retries = 0
+                    heading_rechecks = 0
                     stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
                     best_distance = remaining_distance
                     map_checked = False
@@ -800,7 +859,7 @@ class Navigator:
                 turn_input = motion.forward_elapsed()
                 before_turn = pose
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
-                tolerance = 3 if remaining_distance <= radius+2 else 5
+                tolerance = self.travel_tolerance(remaining_distance, radius)
                 try:
                     pose = self.turn(bearing, pose, tolerance=tolerance)
                 except SceneUnavailable:
@@ -808,21 +867,36 @@ class Navigator:
                     continue
                 # Small moving corrections can fall back to a stopped turn too.
                 # Only time actually holding forward counts toward being stuck.
-                stuck_since += max(0, time.monotonic()-turn_begin
-                                   -(motion.forward_elapsed()-turn_input))
+                turn_forward = max(0, motion.forward_elapsed()-turn_input)
+                stuck_since += max(0, time.monotonic()-turn_begin-turn_forward)
                 if self.stopped() or time.monotonic() >= deadline:
                     raise NavigationError("导航已停止或超时。")
                 if getattr(self.inputs, "generation", 0) != generation:
                     continue
                 if (distance(pose, target) <= radius or not precise
-                        and segment_distance(target, before_turn, pose) <= radius):
+                        and crossed_waypoint(target, before_turn, pose, radius, pass_radius)):
                     last = before_turn
                     continue
                 # Coasting during a turn can change the target bearing.
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
+                tolerance = self.travel_tolerance(distance(pose, target), radius)
                 if abs(angle_delta(bearing, pose.heading)) > tolerance:
+                    heading_rechecks = 0 if turn_forward > .02 else heading_rechecks+1
+                    self.event({"type": "heading_recheck", "index": index,
+                                "attempt": heading_rechecks, "target": [target.x, target.y],
+                                "bearing": bearing, "heading": pose.heading,
+                                "tolerance": tolerance, "displacement": distance(before_turn, pose),
+                                "forward_seconds": turn_forward,
+                                "recovery": heading_rechecks >= 3})
+                    # Turning time is excluded from the movement-stuck clock.
+                    # Bound this separate loop so noisy bearings cannot keep
+                    # correcting indefinitely without another forward attempt.
+                    if heading_rechecks >= 3:
+                        motion.stop()
+                        scene_interrupted = True
                     last = None
                     continue
+                heading_rechecks = 0
                 before_move = pose
                 pose, recovery_done = self.advance(pose, target, radius, speeds, recovery=recovery)
                 last = None if recovery else before_move

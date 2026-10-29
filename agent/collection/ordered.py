@@ -5,6 +5,7 @@ immutable locked anchors (or physical list ends) can prove an item absent.
 """
 from collections import Counter
 from copy import deepcopy
+from functools import wraps
 import re
 from uuid import uuid4
 from task_control import task_time as time
@@ -12,7 +13,26 @@ from task_control import task_time as time
 from .blessing import SLOTS
 from .policy import capabilities, observation_fields
 from .quantity import read_count
-from .scanner import LEVEL, clean_text
+from .scanner import LEVEL, RescanSlot, clean_text
+
+
+def resumable_observation(method):
+    """Only organization opts into a bounded retry of a read/selection."""
+    @wraps(method)
+    def run(self, *args, **kwargs):
+        for attempt in range(2):
+            try:
+                return method(self, *args, **kwargs)
+            except (RescanSlot, RuntimeError):
+                recover = getattr(self.o, "recover_ordered_focus", None)
+                if (attempt or self._recovering_focus or self.o.rt.stopped or recover is None
+                        or self.generation == self.o.rt._focus_generation):
+                    raise
+                result = recover(self, method.__name__, args)
+                if method.__name__ == "step":
+                    return result
+        raise RuntimeError("前台恢复次数超过上限")
+    return run
 
 
 class IncompleteLookup(RuntimeError):
@@ -56,7 +76,16 @@ class OrderedView:
         self.slot = None
         self.position = 0
         self.generation = None
+        self._focus_checkpoint = None
+        self._page_frame = None
+        self._page_cells = []
+        self._recovering_focus = False
 
+    def remember_view(self, frame, boxes):
+        self._focus_checkpoint = {"frame": frame, "boxes": list(boxes),
+                                  "slot": self.slot, "position": self.position}
+
+    @resumable_observation
     def enter(self, slot):
         if self.slot == slot:
             self.o.check_generation(self.generation)
@@ -68,9 +97,13 @@ class OrderedView:
         if self.o.top() is None:
             raise RuntimeError("未确认获得时间列表顶部")
         self.slot, self.position = slot, 0
+        self._focus_checkpoint = None
 
+    @resumable_observation
     def step(self, direction):
         before = self.o.clear_hover(self.generation, settle_card=True)
+        boxes = self._focus_checkpoint["boxes"] if self._focus_checkpoint else []
+        self.remember_view(before, boxes)
         if direction > 0:
             after, delta = self.o.advance(before, self.generation)
         else:
@@ -94,6 +127,10 @@ class OrderedView:
         if after is None or delta is None:
             raise RuntimeError("获得时间列表位移无法确认，请重新整理")
         self.position = max(0, self.position + direction * delta)
+        self.remember_view(after, [[x, y - direction * delta, w, h] for x, y, w, h in boxes
+                                  if self.o.grid[1] <= y - direction * delta
+                                  and y - direction * delta + h <= self.o.grid[1] + self.o.grid[3]])
+        self._page_frame, self._page_cells = None, []
         return delta
 
     def seek(self, ordinal):
@@ -112,6 +149,7 @@ class OrderedView:
                 return
         raise RuntimeError("定位滚动超过上限，请重新整理")
 
+    @resumable_observation
     def cells(self, *, at_bottom=False):
         frame = self.o.clear_hover(self.generation)
         if not self.o.rt.text([930, 15, 330, 52], self.slot, image=frame):
@@ -136,7 +174,9 @@ class OrderedView:
                                             "deferred_cards": visible - len(boxes)}
         values = [self.o.level(box, levels) for box in boxes]
         matches = self.o.matcher.match_batch(frame, boxes, levels=values)
-        return frame, list(zip(boxes, values, matches))
+        self._page_frame, self._page_cells = frame, list(zip(boxes, values, matches))
+        self.remember_view(frame, boxes)
+        return frame, self._page_cells
 
     def pages(self, limit):
         """Read clear cards first, then include the tail only at a proven end."""
@@ -151,7 +191,16 @@ class OrderedView:
                 yield frame, cells, True
                 return
 
+    @resumable_observation
     def observe(self, frame, cell, *, verify_selection=False, quantities=False):
+        if self._page_frame is not None and frame is not self._page_frame:
+            # A resumed page has fresh OCR, icon and quantity observations.
+            original_box = cell[0]
+            frame = self._page_frame
+            cell = next((value for value in self._page_cells
+                         if all(abs(a - b) <= 2 for a, b in zip(value[0], original_box))), None)
+            if cell is None:
+                raise RuntimeError("恢复后目标格子位置未能确认")
         box, level, match = cell
         self.o.counter += 1
         facts, evidence = self.o.confirm_copy(frame, box, match, level, self.generation, self.o.counter)
@@ -357,6 +406,7 @@ class OrderedView:
         row.update(count=count, count_evidence=proof)
         self.o.record_card(frame, box, row, evidence, self.generation, self.o.counter)
 
+    @resumable_observation
     def select_target(self, box, facts, locked, evidence):
         """Only matching mutation targets require selected-detail verification."""
         selected = evidence.get("selected_for_observation", False)

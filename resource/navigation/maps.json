@@ -3,6 +3,11 @@
   "maps": [
     {
       "id": "starsea",
+      "transit_radius_scale": 0.75,
+      "transit_pass_radius_scale": 0.8,
+      "heading_tolerance_far": 4,
+      "heading_tolerance_near": 3,
+      "heading_position_slack": 0.1,
       "title": "星海",
       "image": "maps/starsea.png",
       "scale_720": 0.6,

@@ -564,6 +564,8 @@ export default {
     license: 'License',
     contact: 'Contact',
     github: 'GitHub Repository',
+    supportProject: 'Support the project',
+    supportProjectHint: 'Star {{projectName}} on GitHub',
   },
 
   // Debug

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "kind": "route_collection",
+  "id": "starsea_all",
+  "title": "星海跑图合集",
+  "map": "starsea",
+  "continue_on_failure": true,
+  "routes": [
+    {"route": "xinghai_crystal_1", "title": "结晶路线 1"},
+    {"route": "xinghai_crystal_2", "title": "结晶路线 2"},
+    {"route": "xinghai_crystal_3", "title": "结晶路线 3"},
+    {"route": "xinghai_crystal_4", "title": "结晶路线 4"},
+    {"route": "xinghai_crystal_5", "title": "结晶路线 5"},
+    {"route": "xinghai_crystal_6", "title": "结晶路线 6"},
+    {"route": "xinghai_crystal_7", "title": "结晶路线 7"},
+    {"route": "xinghai_crystal_8", "title": "结晶路线 8"},
+    {"route": "xinghai_animal_one", "title": "不同动物互动路线"},
+    {"route": "xinghai_animal_three", "title": "动物互动三次路线"},
+    {"route": "xinghai_bottle", "title": "漂流瓶路线 1"},
+    {"route": "xinghai_bottle_2", "title": "漂流瓶路线 2"},
+    {"route": "xinghai_bottle_photo", "title": "星愿瓶合影路线"},
+    {"route": "xinghai_bubble", "title": "泡泡路线"},
+    {"route": "xinghai_chat", "title": "聊天路线"},
+    {"route": "xinghai_delivery", "title": "交付路线"},
+    {"route": "xinghai_music", "title": "音乐路线"},
+    {"route": "xinghai_place", "title": "摆放路线"},
+    {"route": "xinghai_wing_photo", "title": "星芒之翼合影路线"},
+    {"route": "xinghai_meteor1", "title": "巨陨星路线 1"},
+    {"route": "xinghai_meteor2", "title": "巨陨星路线 2"},
+    {"route": "xinghai_meteor3", "title": "巨陨星路线 3"},
+    {"route": "xinghai_meteor4", "title": "巨陨星路线 4"}
+  ]
+}

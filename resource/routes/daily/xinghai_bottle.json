@@ -7,6 +7,33 @@
   "timeout": 240,
   "capacity": null,
   "material": "",
+  "coordinate_migration": {
+    "from": "legacy_resized_minimap",
+    "to": "native_centered_antialias",
+    "method": "median_paired_recorded_frames",
+    "reference_runs": [
+      "20261029-121438-199916-route-collection/route-11",
+      "20261029-160439-687635-route-test"
+    ],
+    "previous_positions": [
+      [834.25, 1016.7],
+      [823.056, 1012.44],
+      [820.65, 988.7],
+      [811.85, 969.9],
+      [817.7, 961.55],
+      [829.8, 955.4],
+      [844.055, 951.196]
+    ],
+    "point_offsets": [
+      [0.225, 0.925],
+      [0.225, 0.95],
+      [0.175, 0.925],
+      [0.275, 0.9],
+      [-0.025, 1.25],
+      [0.225, 0.975],
+      [0.325, 0.825]
+    ]
+  },
   "teleport": {
     "name": "无界枢纽",
     "province": "星海",
@@ -16,49 +43,49 @@
   },
   "points": [
     {
-      "x": 834.25,
-      "y": 1016.7,
+      "x": 834.475,
+      "y": 1017.625,
       "radius": 1.0,
       "jump": false
     },
     {
-      "x": 823.056,
-      "y": 1012.44,
+      "x": 823.281,
+      "y": 1013.39,
       "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
-      "x": 820.65,
-      "y": 988.7,
+      "x": 820.825,
+      "y": 989.625,
       "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
-      "x": 811.85,
-      "y": 969.9,
+      "x": 812.125,
+      "y": 970.8,
       "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
-      "x": 817.7,
-      "y": 961.55,
+      "x": 817.675,
+      "y": 962.8,
       "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
-      "x": 829.8,
-      "y": 955.4,
+      "x": 830.025,
+      "y": 956.375,
       "radius": 0.4,
       "jump": false,
       "action": "bottle"
     },
     {
-      "x": 844.055,
-      "y": 951.196,
+      "x": 844.38,
+      "y": 952.021,
       "radius": 0.4,
       "jump": false,
       "action": "bottle"

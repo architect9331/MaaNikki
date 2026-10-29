@@ -7,6 +7,8 @@ import json
 import os
 import time
 
+from .planner import Card
+
 
 def run_plan():
     try:
@@ -46,6 +48,9 @@ class PendingReview:
     scans: list
     created: float
     realm_task_id: int | None = None
+    upgrade_card: Card | None = None
+    realm_kind: str | None = None
+    collection_mode: bool = False
 
 
 _pending: dict[tuple[str, str], PendingReview] = {}
@@ -69,27 +74,46 @@ def can_review():
             and entries.index("MaaNikki_Zhaoxi") < entries.index("MaaNikki_RealmChallenge"))
 
 
-def defer(runtime, task_id, score, energy_card):
+def planned_realm():
+    """Saved realm options only guide scheduling within an actual later stage."""
+    if not can_review():
+        return None
+    from .settings import realm_settings
+    try:
+        preferred, overrides = realm_settings()
+    except (OSError, ValueError, KeyError, TypeError):
+        # Missing optional scheduling hints must not block other daily wishes.
+        return None
+    collection = overrides.get("MaaNikki_RealmChallenge", {}).get(
+        "custom_action_param", {}).get("five_star_collection") is True
+    names = overrides.get("MaaNikki_RealmEnergy", {}).get("next", [])
+    return {"kind": "bless" if collection else preferred,
+            "collection": collection or "MaaNikki_BlessingPursuit" in names}
+
+
+def defer(runtime, task_id, score, energy_card=None, *, upgrade_card=None):
     if not can_review() or runtime.stopped:
         return False
     claim_node = "MaaNikki_ClaimZhaoxiRewards"
     from .runtime import parameters
     claim = runtime.context.get_node_data(claim_node) or {}
     _pending[key(runtime)] = PendingReview(
-        source_task_id=task_id, score=score, energy_remaining=energy_card.remaining,
+        source_task_id=task_id, score=score, energy_remaining=energy_card.remaining if energy_card else None,
         claim_overrides={claim_node: {"enabled": claim.get("enabled", True),
                                      "custom_action_param": deepcopy(parameters(runtime.context, claim_node))}},
-        events=deepcopy(runtime.events), scans=deepcopy(runtime.scans), created=time.monotonic())
+        events=deepcopy(runtime.events), scans=deepcopy(runtime.scans), created=time.monotonic(),
+        upgrade_card=deepcopy(upgrade_card))
     return True
 
 
-def begin_realm(runtime, task_id):
+def begin_realm(runtime, task_id, *, kind=None, collection=False):
     pending = _pending.get(key(runtime))
     if pending:
         if pending.source_task_id >= task_id or time.monotonic()-pending.created >= 3600:
             clear(runtime)
             raise ValueError("朝夕待复核记录已过期或任务顺序不一致，请重新运行本轮任务")
         pending.realm_task_id = task_id
+        pending.realm_kind, pending.collection_mode = kind, collection
     else:
         clear(runtime)
 

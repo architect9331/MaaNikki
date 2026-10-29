@@ -133,7 +133,7 @@ class FiveStarInventory(BlessingLocker):
     def confirm_upgrade(self, operation, old, new):
         if self.active is None:
             raise RuntimeError("升级缺少持久化处理对象")
-        self.active.update(level=new["level"], color=new["color"], maximum=new["level"] == 10)
+        self.active.update(level=new["level"], color=new["color"], maximum=self.is_maximum(new))
         self.report["latest_upgrade"] = {
             **{key: new[key] for key in ("name", "slot", "color", "level")},
             "previous_level": old["level"], "experience": operation.get("experience_after"),
@@ -141,7 +141,9 @@ class FiveStarInventory(BlessingLocker):
         self.confirm_change(operation, result={key: new[key] for key in ("name", "slot", "color", "level")})
         self.verified.clear()
         self.rt.log(f"升级完成：{new['name']}·{new['slot']}，{old['level']} → {new['level']} 级。"
-                    + (f"满级颜色：{new['color']}色。" if new["level"] == 10 else "继续放入素材升级。"), detail=True)
+                    + (f"满级颜色：{new['color']}色。" if self.is_maximum(new) else
+                       "本次心愿升级已完成。" if self.report.get("mode") == "daily_upgrade" else
+                       "继续放入素材升级。"), detail=True)
 
     def protect_selected(self, facts, generation):
         key = self.key(facts)

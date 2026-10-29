@@ -604,15 +604,17 @@ class BlessingLocker(InventoryScanner):
         generation = self.rt._focus_generation
         frame = self.clear_hover(generation)
         if not self.rt.text(self.layout["sort_label"], "获得时间", image=frame):
+            # Capacity text sits beside the final option and can merge into its OCR line.
             if (not self.rt.action("Click", target=self.layout["sort_label"])
                     or not self.rt.pause(.2)
-                    or not self.rt.click_text("^获得时间$", [1055, 550, 205, 110])
+                    or not self.rt.click_text("^获得时间$", [1055, 550, 84, 110])
                     or not self.rt.pause(.3)):
                 raise RuntimeError("未能切换获得时间排序")
         reference = ROOT / "resource/image/blessing_lock/acquired_desc.png"
         template = cv2.imdecode(np.fromfile(str(reference), np.uint8), cv2.IMREAD_GRAYSCALE)
         if template is None:
             raise RuntimeError("获得时间排序方向资源缺失")
+        self._acquired_desc_template = template
         for attempt in range(2):
             frame = self.clear_hover(generation)
             if not self.rt.text(self.layout["sort_label"], "获得时间", image=frame):
@@ -682,13 +684,17 @@ class BlessingLocker(InventoryScanner):
                      "kind": "lock" if target == "locked" else "unlock", "reason": reason,
                      "expected_state": target,
                      "status": "submitted_unconfirmed", "evidence": evidence,
+                     "input_status": "prepared",
                      "before": self.image(f"before_{len(self.report['operations']):03d}.png", current)}
         self.pending = operation
         self.report["operations"].append(operation)
         self.save()
         # The lock toggle is submitted once even if delivery/verification fails.
-        if not self.rt.action("Click", target=self.layout["lock_button"], ui_click=False):
+        if not self.rt.action("Click", target=self.layout["lock_button"], ui_click=False,
+                              focus_generation=generation):
+            operation["input_status"] = "uncertain"
             raise RuntimeError(f"{verb}输入结果不确定，停止且不重试，请检查当前物品")
+        operation["input_status"] = "succeeded"
         if not self.rt.pause(.4):
             raise RuntimeError(f"{verb}后核对被中断")
         self.check_generation(generation)

@@ -155,12 +155,15 @@ class Runtime:
         return self.evidence.save(stage, reason, image=image, details=details,
                                   generation=self._focus_generation)
 
-    def action(self, action, *, ui_click=True, **fields):
+    def action(self, action, *, ui_click=True, focus_generation=None, **fields):
         if self.stopped:
             return False
         self.check_focus()
         if not self.ensure_frame():
             return False
+        if focus_generation is not None and self._focus_generation != focus_generation:
+            from task_control import ForegroundChanged
+            raise ForegroundChanged("前台切换后已取消本次输入，等待重新核对")
         self.invalidate_frame()
         self.evidence.observe("input", action=action, fields={
             name: value for name, value in fields.items()
@@ -190,9 +193,15 @@ class Runtime:
             point = [round(value) for value in point]
             # Maa's rectangular Click target is random inside the box. UI
             # icons can have dead edges, and Seize must settle after moving.
-            if not self.action("TouchMove", target=point) or not self.pause(.3):
+            if (not self.action("TouchMove", target=point, focus_generation=focus_generation)
+                    or not self.pause(.3)):
                 return False
             fields = {**fields, "target": point}
+        if focus_generation is not None:
+            self.check_focus()
+            if self._focus_generation != focus_generation:
+                from task_control import ForegroundChanged
+                raise ForegroundChanged("前台切换后已取消本次输入，等待重新核对")
         with measure("input.action"):
             result = self.context.run_action("MaaNikki_Daily_Action", pipeline_override={
                 "MaaNikki_Daily_Action": {"action": action, **fields}})
@@ -771,6 +780,10 @@ class Executors(Runtime):
             result = self.chat(mode)
         elif rule.executor == "animal":
             result = self.animal(card)
+        elif rule.executor == "upgrade":
+            from collection.daily_upgrade import upgrade_once
+            self.daily_upgrade_result = upgrade_once(self)
+            result = self.daily_upgrade_result["status"] == "upgraded"
         else:
             return False
         return self.main() and result

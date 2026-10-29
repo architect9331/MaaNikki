@@ -19,6 +19,10 @@ class TaskStopped(NavigationError):
     pass
 
 
+class ForegroundChanged(RuntimeError):
+    """A guarded input was cancelled before submission after a focus pause."""
+
+
 _ACTIVE = ContextVar("foreground_task", default=None)
 _SESSIONS = OrderedDict()
 _RUNNING = {}

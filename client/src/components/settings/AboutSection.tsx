@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Info, Mail, FileText, Loader2, Sparkles } from 'lucide-react';
+import { Info, Mail, FileText, Loader2, Sparkles, Star, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 import { useAppStore } from '@/stores/appStore';
 import { ManualWelcomeDialog } from '@/components/WelcomeDialog';
 import { getInterfaceLangKey } from '@/i18n';
+import { isTauri, loggers } from '@/utils';
 import {
   resolveContent,
   loadIconAsDataUrl,
@@ -39,6 +41,7 @@ export function AboutSection() {
 
   const projectName =
     resolveI18nText(projectInterface?.label, translations) || projectInterface?.name || 'MXU';
+  const repositoryUrl = projectInterface?.github || 'https://github.com/architect9331/MaaNikki';
   //   const version = projectInterface?.version || '0.1.0';
 
   // 解析内容（支持文件路径、URL、国际化）
@@ -126,6 +129,26 @@ export function AboutSection() {
 
             {/* 信息列表 */}
             <div className="space-y-2">
+              <a
+                href={repositoryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t('about.supportProjectHint', { projectName })}
+                onClick={(event) => {
+                  if (isTauri()) {
+                    event.preventDefault();
+                    void openUrl(repositoryUrl).catch((error) => {
+                      loggers.ui.error('打开项目仓库失败:', error);
+                    });
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-bg-tertiary hover:bg-bg-hover text-sm font-medium text-text-primary transition-colors flex items-center justify-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <Star className="w-5 h-5 text-amber-500 fill-amber-500/15" aria-hidden="true" />
+                {t('about.supportProject')}
+                <ExternalLink className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+              </a>
+
               {/* 欢迎信息 */}
               {projectInterface?.welcome && (
                 <button

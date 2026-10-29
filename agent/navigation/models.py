@@ -32,6 +32,11 @@ class MapSpec:
     center: tuple[float, float] = MINIMAP_CENTER
     radius: float = MINIMAP_RADIUS
     position_score_floor: float | None = MINIMAP_POSITION_SCORE
+    transit_radius_scale: float = 1.0
+    heading_tolerance_far: float = 5.0
+    heading_tolerance_near: float = 3.0
+    heading_position_slack: float = 0.0
+    transit_pass_radius_scale: float = 1.0
 
 
 def maps(resource: Path) -> dict[str, MapSpec]:
@@ -45,6 +50,12 @@ def maps(resource: Path) -> dict[str, MapSpec]:
                 float(item.get("bigmap_scale_720", 0.465)),
                 position_score_floor=(float(item.get("position_score_floor", MINIMAP_POSITION_SCORE))
                                       if item.get("position_score_floor", MINIMAP_POSITION_SCORE) is not None else None),
+                transit_radius_scale=float(item.get("transit_radius_scale", 1.0)),
+                heading_tolerance_far=float(item.get("heading_tolerance_far", 5.0)),
+                heading_tolerance_near=float(item.get("heading_tolerance_near", 3.0)),
+                heading_position_slack=float(item.get("heading_position_slack", 0.0)),
+                transit_pass_radius_scale=float(item.get("transit_pass_radius_scale",
+                                                        item.get("transit_radius_scale", 1.0))),
             ) for item in items
         }
     except (OSError, KeyError, TypeError, ValueError) as error:

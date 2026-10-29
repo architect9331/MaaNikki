@@ -606,6 +606,31 @@ class GameUI:
                                    self.star_collect_world_ready,
                                    source="MaaNikki_Home_StarCollectReady")
 
+    def revive_deep_water(self, event=lambda value: None):
+        """Return None for other pages; only revive a confirmed deep-water screen."""
+        if self.rt.stopped:
+            return None
+        with self.rt.observe(fresh=True):
+            if not self.rt.hit("MaaNikki_Navigation_DeepWaterWarning"):
+                return None
+        if self.rt.navigation_inputs:
+            self.rt.navigation_inputs.release()
+        self.rt.log("角色落水，正在复活。")
+        # Recheck after releasing inputs and reporting the interruption, so a
+        # focus transition cannot leave a stale death-screen click behind.
+        with self.rt.observe(fresh=True):
+            if not self.rt.hit("MaaNikki_Navigation_DeepWaterWarning"):
+                return None
+            button = self.rt.recognize("MaaNikki_Navigation_ReviveButton")
+            box = getattr(getattr(button, "best_result", None), "box", None)
+        clicked = bool(button and button.hit and box is not None and self.click_box(box))
+        event({"type": "deep_water_revive", "clicked": clicked})
+        restored = bool(clicked and self.wait_page("MaaNikki_MainDetected", seconds=60))
+        event({"type": "deep_water_recovered", "success": restored})
+        if not restored and not self.rt.stopped:
+            self.rt.diagnostic("deep_water_revive", "落水后未能完成复活并返回主界面。")
+        return restored
+
     def main(self):
         # The chat icon remains visible in star sensing and is insufficient
         # to establish that ordinary world controls are available.
@@ -624,6 +649,8 @@ class GameUI:
                     page = "star_collect"
                 elif self.rt.hit("MaaNikki_MainDetected"):
                     page = "main"
+                elif self.rt.hit("MaaNikki_Navigation_DeepWaterWarning"):
+                    page = "deep_water"
                 elif self.asset("IconDungeonFeature", threshold=.9, gray=(230, 255), method=cv2.TM_CCORR_NORMED):
                     page = "dungeon"
                 elif self.rt.hit("MaaNikki_Energy_SkipReward"):
@@ -638,6 +665,8 @@ class GameUI:
                 if self.wait_page("MaaNikki_MainDetected", seconds=2):
                     return True
                 continue
+            elif page == "deep_water":
+                return bool(self.revive_deep_water())
             elif page == "dungeon":
                 if not (self.rt.key("exit", 0)
                         and self.wait_page(asset="ButtonDungeonQuitOK", threshold=.75)

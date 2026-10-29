@@ -548,6 +548,8 @@ export default {
     license: '许可证',
     contact: '联系方式',
     github: 'GitHub 仓库',
+    supportProject: '支持项目',
+    supportProjectHint: '在 GitHub 上给 {{projectName}} 点个 Star',
   },
 
   // 调试

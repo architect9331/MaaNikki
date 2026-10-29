@@ -555,6 +555,8 @@ export default {
     license: '라이선스',
     contact: '연락처',
     github: 'GitHub 저장소',
+    supportProject: '프로젝트 응원하기',
+    supportProjectHint: 'GitHub에서 {{projectName}}에 Star 남기기',
   },
 
   // 디버그

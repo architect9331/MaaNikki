@@ -8,7 +8,7 @@
         "daily"
       ],
       "default_check": true,
-      "description": "优先完成已适配的免费项目，按需通过幻境补足 500 分并领奖。同轮幻境挑战结束后复核累计活跃能量积分。",
+      "description": "优先完成已适配项目，按需通过幻境补足 500 分并领奖。升级心愿优先选择五星；同轮全收集时等待其升级后复核领奖。",
       "option": [
         "ZhaoxiAbilityPlan",
         "ZhaoxiEnergy",

@@ -82,21 +82,23 @@ class UpgradeUI:
         if self.integer(fields["material_count"]) != 0:
             raise RuntimeError("未确认升级材料为空")
 
-    def full_color(self, generation, name):
+    def full_color(self, generation, name, maximum=10):
         fields, frame = self.read(generation, ("name", "level", "maxed", "color"))
         colors = {mapped for label, mapped in COLORS.items() if label in fields["color"]}
-        if (fields["name"] != name or self.integer(fields["level"]) != 10
+        if (fields["name"] != name or self.integer(fields["level"]) != maximum
                 or "等级已满" not in fields["maxed"] or len(colors) != 1):
-            raise RuntimeError("未同时确认名称、十级、等级已满提示和颜色")
+            raise RuntimeError("未同时确认名称、满级等级、等级已满提示和颜色")
         color = next(iter(colors))
         if color not in self.owner.definitions[name]["colors"]:
             raise RuntimeError("满级页颜色不在当前图鉴中")
         return color, frame
 
-    def run(self, box, facts, evidence, generation):
+    def run(self, box, facts, evidence, generation, *, once=False):
         self.owner.ensure_known_materials()
-        if facts["rarity"] != 5 or not 0 <= facts["level"] < 10:
-            raise RuntimeError("只允许升级未满级五星祝福闪光")
+        maximum = self.owner.catalog["upgrade_costs"][str(facts["rarity"])]["max_level"]
+        if (facts["rarity"] not in ((3, 4, 5) if once else (5,))
+                or not 0 <= facts["level"] < maximum):
+            raise RuntimeError("升级对象星级或等级不符合当前处理模式")
         self.owner.check_generation(generation)
         if not self.rt.ui.enter_page(
                 lambda: self.rt.action("Click", target=self.layout["entrance"]),
@@ -110,7 +112,7 @@ class UpgradeUI:
             # with no selected materials. Only clear a nonempty rejected batch.
             fields, frame = self.read(generation)
             if fields["name"] != current["name"] or self.integer(fields["level"]) != current["level"]:
-                raise RuntimeError("升级页名称或当前等级与选中五星不一致")
+                raise RuntimeError("升级页名称或当前等级与选中闪光不一致")
             old_xp = self.experience(fields["xp"])
             if not re.fullmatch(FILTER, self.text("material_filter", frame)):
                 if (not self.rt.action("Click", target=self.layout["material_filter"])
@@ -130,7 +132,7 @@ class UpgradeUI:
                 raise RuntimeError("放入材料后升级对象发生变化")
             levels = [int(value) for value in re.findall(r"\d+", fields["level"])]
             if (not 1 <= len(levels) <= 2 or levels[0] != current["level"]
-                    or any(not current["level"] <= value <= 10 for value in levels)):
+                    or any(not current["level"] <= value <= maximum for value in levels)):
                 raise RuntimeError("升级预览等级无效，未提交升级")
             amount = self.integer(fields["material_count"])
             if amount is None:
@@ -162,20 +164,21 @@ class UpgradeUI:
             fields, frame = self.read(generation)
             level, xp = self.integer(fields["level"]), self.experience(fields["xp"])
             if (fields["name"] != current["name"] or level is None
-                    or not current["level"] <= level <= 10
+                    or not current["level"] <= level <= maximum
                     or level == current["level"] and (xp is None or old_xp is None or xp <= old_xp)):
                 raise RuntimeError("升级后未确认同一对象的等级或经验增长，停止且不重试")
             updated = {**current, "level": level, "color": None}
-            if level == 10:
-                updated["color"], frame = self.full_color(generation, current["name"])
+            if level == maximum and (not once or facts["rarity"] == 5):
+                updated["color"], frame = self.full_color(generation, current["name"], maximum)
             operation["result_image"] = self.owner.image(
                 f"upgrade_result_{len(self.owner.journal['operations']):04d}.png", frame)
             operation["experience_after"] = xp
             self.owner.confirm_upgrade(operation, current, updated)
-            if level == 10:
+            if level == maximum or once:
                 self.return_list(generation)
                 # Esc preserves the selected item even after its cell moved.
-                self.owner.protect_selected(updated, generation)
+                if level == maximum and facts["rarity"] == 5:
+                    self.owner.protect_selected(updated, generation)
                 return {"status": "upgraded", "facts": updated}
             current = updated
         raise RuntimeError("同一闪光连续升级次数超过上限，已保存进度")

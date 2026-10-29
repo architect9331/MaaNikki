@@ -183,11 +183,14 @@ class DailyRun(Executors):
                      ui_text=f"{self.title}：{rule.label}。")
             linked = rule.key == "animal_one" and "animal_three" in self.successful
             ok = linked or self.execute(self.mode, card)
-            self.events.append({"slot": card.slot, "task": rule.key, "success": ok, "linked": linked})
+            event = {"slot": card.slot, "task": rule.key, "success": ok, "linked": linked}
+            if rule.key == "upgrade":
+                event["result"] = getattr(self, "daily_upgrade_result", None)
+            self.events.append(event)
             if ok:
                 predicted += rule.score
                 self.successful.add(rule.key)
-            else:
+            elif rule.key != "upgrade":
                 self.log(f"{rule.label}未完成，尝试其他可执行任务。")
             if not self.main():
                 break
@@ -241,7 +244,13 @@ class DailyRun(Executors):
                 elif card.rule:
                     reason = "缺少已校准的路线或当前交互位置不匹配" if card.rule.route else "暂未适配或已关闭"
                     self.log(f"{card.rule.label}：{reason}，本轮跳过。", detail=True)
-            free = [c for c in available if not c.rule.energy]
+            upgrade_card = next((c for c in available if c.rule.key == "upgrade"), None)
+            later_realm = run_state.planned_realm() if self.mode == "zhaoxi" and upgrade_card else None
+            wait_collection = bool(later_realm and later_realm["collection"])
+            free = [c for c in available if not c.rule.energy
+                    and not (wait_collection and c.rule.key == "upgrade")]
+            if wait_collection:
+                self.log("朝夕心愿：升级祝福闪光留待本轮全收集处理后复核。", detail=True)
             expected_free = sum(c.rule.score for c in free)
             self.log(f"当前 {score}/500；可执行的不耗活跃能量任务预计贡献 {expected_free} 分。"
                      + ("优先仅使用这些任务凑分。" if score+expected_free >= 500 else
@@ -260,7 +269,8 @@ class DailyRun(Executors):
                 # only between batches, but exhaust free alternatives before
                 # any energy supplement when predicted points were optimistic.
             if score < 500 and self.mode == "zhaoxi":
-                energy = [c for c in available if c.rule.energy and c.rule.key != "energy"]
+                energy = [c for c in available if c.rule.energy and c.rule.key != "energy"
+                          and not (wait_collection and c.rule.key == "bless")]
                 if energy:
                     preferred, overrides = realm_settings()
                     predicted = score
@@ -277,6 +287,15 @@ class DailyRun(Executors):
                     score = self.check_group()
                     if score is None:
                         return False
+                    if (score < 500 and upgrade_card and not wait_collection
+                            and "bless" in self.successful
+                            and getattr(self, "daily_upgrade_result", {}).get("status") == "no_candidate"):
+                        self.log("朝夕心愿：刷取已完成，尝试升级新获得的祝福闪光。")
+                        self.attempted.discard(upgrade_card.slot)
+                        self.free_batch([upgrade_card], score)
+                        score = self.check_group()
+                        if score is None:
+                            return False
             elif not free:
                 # Still on the task page if there were no actions at all.
                 if not self.open_page():
@@ -289,10 +308,17 @@ class DailyRun(Executors):
                          f"{self.title}已达 500 分，但奖励未能确认领取。")
                 return claimed
             energy_card = next((card for card in cards if card.rule and card.rule.key == "energy"), None)
-            if claimed and self.mode == "zhaoxi" and energy_card and self.task_id is not None:
-                self.deferred = run_state.defer(self, self.task_id, score, energy_card)
+            pending_upgrade = (upgrade_card if upgrade_card and "upgrade" not in self.successful
+                               and later_realm and (wait_collection or later_realm["kind"] == "bless"
+                               and getattr(self, "daily_upgrade_result", {}).get("status") == "no_candidate")
+                               else None)
+            if (claimed and self.mode == "zhaoxi" and (energy_card or pending_upgrade)
+                    and self.task_id is not None):
+                self.deferred = run_state.defer(self, self.task_id, score, energy_card,
+                                                upgrade_card=pending_upgrade)
                 if self.deferred:
-                    self.log(f"朝夕心愿当前 {score}/500，本阶段已结束；将在本轮幻境挑战后仅复核积分和领奖。")
+                    followup = "处理待补升级并复核积分和领奖" if pending_upgrade else "复核积分和领奖"
+                    self.log(f"朝夕心愿当前 {score}/500，将在本轮幻境挑战后{followup}。")
                     return claimed
             self.log(f"{self.title}当前实际 {score}/500；剩余任务需要手动完成，本轮未达标。")
             return False
@@ -314,8 +340,8 @@ class DailyRun(Executors):
             if not self.handoff_ok:
                 return False
 
-    def review_after_energy(self, pending):
-        """Final settlement only; never runs the daily task planner again."""
+    def review_after_energy(self, pending, *, realm_ok=True):
+        """Settle the score, optionally completing the one explicitly deferred wish."""
         self.phase = "after_energy"
         self.events, self.scans = pending.events, pending.scans
         score = None
@@ -330,6 +356,27 @@ class DailyRun(Executors):
             self.events.append({"type": "after_energy_review", "source_task_id": pending.source_task_id,
                                 "before_score": pending.score, "actual_score": score,
                                 "energy_remaining_before": pending.energy_remaining})
+            if (score < 500 and pending.upgrade_card and realm_ok
+                    and pending.realm_kind == "bless" and not pending.collection_mode):
+                # Re-read only the saved wish, as another action may already
+                # have completed it without reaching 500 total points.
+                layout = parameters(self.context, "MaaNikki_Zhaoxi_DailyLayout")
+                slot = pending.upgrade_card.slot
+                center = layout["card_centers"][slot]
+                if not self.action("Click", target=center) or not self.pause(.3):
+                    return False
+                result = self.read_card(slot, center, layout["detail_roi"])
+                if result is None:
+                    return False
+                card, finished = result
+                if not card.rule or card.rule.key != "upgrade":
+                    self.log("朝夕心愿任务已变化，本次结束复核。")
+                    return False
+                if not finished:
+                    self.free_batch([card], score)
+                    score = self.check_group()
+                    if score is None:
+                        return False
             claimed = self.claim()
             if score == 500:
                 self.log("朝夕心愿已完成 500 分，奖励处理结束。" if claimed else

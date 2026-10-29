@@ -544,6 +544,8 @@ export default {
     license: '授權',
     contact: '聯絡方式',
     github: 'GitHub 儲存庫',
+    supportProject: '支持專案',
+    supportProjectHint: '在 GitHub 上為 {{projectName}} 點個 Star',
   },
 
   // 除錯

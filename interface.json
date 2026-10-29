@@ -5,7 +5,7 @@
   "title": "MaaNikki - 无限暖暖自动化",
   "icon": "resource/icon.png",
   "description": "《无限暖暖》助手，以祝福闪光一键全收集为特色，支持日常任务、幻境挑战、巅峰赛和常驻辅助功能。",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "mirrorchyan_rid": "MaaNikki",
   "mirrorchyan_multiplatform": true,
   "github": "https://github.com/architect9331/MaaNikki",

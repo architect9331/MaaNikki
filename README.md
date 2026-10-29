@@ -62,12 +62,14 @@ Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https:
 
 使用问题、功能建议，欢迎在群里交流，也可以提交 [Issue](https://github.com/architect9331/MaaNikki/issues)。
 
+如果 MaaNikki 帮你省下了时间，欢迎点个 [⭐ Star](https://github.com/architect9331/MaaNikki) 支持我们！
+
 ## 致谢
 
 - [MaaFramework](https://github.com/MaaXYZ/MaaFramework)：自动化框架。
 - [MXU](https://github.com/MistEO/MXU)：桌面客户端基础。
 - [Mirror酱](https://mirrorchyan.com/zh/projects?rid=MaaNikki&source=maanikki_readme)：高速下载与更新分发。
-- [Whimbox（奇想盒）](https://github.com/nikkigallery/Whimbox)：部分路线与匹配截图。
+- [Whimbox（奇想盒）](https://github.com/nikkigallery/Whimbox)：部分基础功能实现参考。
 - [MaaCommonAssets](https://github.com/MaaXYZ/MaaCommonAssets) / [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)：OCR 模型。
 
 感谢参与开发、反馈问题和分享使用经验的朋友！

@@ -13,7 +13,7 @@
     "RouteTestFile": {
       "type": "input",
       "label": "路线文件",
-      "description": "内置路线位于 resource/routes/daily/。运行时保存路线快照和执行记录到 logs/navigation/。",
+      "description": "单条路线位于 resource/routes/daily/；星海合集为 resource/routes/collections/starsea_all.json。记录保存到 logs/navigation/。",
       "inputs": [{"name": "file", "label": "路线 JSON", "default": "", "input_type": "file"}],
       "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "", "file": "{file}"}}}
     },

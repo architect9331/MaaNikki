@@ -563,6 +563,8 @@ export default {
     license: 'ライセンス',
     contact: 'お問い合わせ',
     github: 'GitHub リポジトリ',
+    supportProject: 'プロジェクトを応援',
+    supportProjectHint: 'GitHub で {{projectName}} に Star を付ける',
   },
 
   // デバッグ
