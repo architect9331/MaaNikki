@@ -15,6 +15,7 @@ from .blessing import summarize_scan
 from .icons import IconMatcher
 from .details import COLOR_OCR_THRESHOLD, HEADER, VerifiedVariants, tooltip_facts
 from .policy import reconcile_exclusions
+from .scroll_color import distinguish
 
 
 LEVEL = r"(?:等级|[Ll][Vv]|级)[\s.．·:：]*(10|[0-9])(?=\D|$)"
@@ -166,33 +167,29 @@ class InventoryScanner:
         width, height = self.layout["card_size"]
         boxes = self.cards(before, [])
         boxes = [box for box in boxes if gy + gh / 2 <= box[1] <= gy + gh - height - 8]
-        anchor_source = "lower_contours"
-        if (len(boxes) < 6 or len({round((box[0] - self.layout["first_x"]) / self.layout["column_pitch"])
-                                  for box in boxes}) < 3):
-            # Selected/glowing cards can break a contour, leaving fewer than
-            # three columns in the lower half (2026-10-15 normal inventory).
-            # One row with three columns is also too fragile: a selected card
-            # can fail to match, leaving only two votes (20:58 locking run).
-            # Recover row geometry from level text in the same BEFORE frame
-            # and use all complete visible cards. Artwork must still vote for
-            # the same translation across three independent columns below.
-            levels = self.ocr(self.grid, before, LEVEL)
-            boxes = self.cards(before, levels)
-            boxes = [box for box in boxes if gy <= box[1] <= gy + gh - height - 8]
-            anchor_source = "levels_and_contours"
 
         def features(frame):
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
             return gray - cv2.GaussianBlur(gray, (0, 0), 3)
 
         first, second = features(before), features(after)
-        votes = []
         maximum = gh - height - self.layout.get("row_pitch", 123)
-        for bx, by, _, _ in boxes:
+        matched = {}
+
+        def match_card(box):
+            key = tuple(box)
+            if key not in matched:
+                matched[key] = read_card(box)
+            return matched[key]
+
+        def read_card(box):
+            bx, by, _, _ = box
+            column = round((bx - self.layout["first_x"]) / self.layout["column_pitch"])
+            result = {"box": list(box), "column": column, "accepted": False}
             left, right, top, bottom = bx + 12, bx + width - 12, by + 22, by + height - 30
             template = first[top:bottom, left:right]
             if float(np.std(template)) < 2:
-                continue
+                return {**result, "reason": "insufficient_texture"}
             low, high = max(gy, top - maximum), min(top + 3, gy + gh - template.shape[0])
             search = second[low:high + template.shape[0], left:right]
             scores = cv2.matchTemplate(search, template, cv2.TM_CCOEFF_NORMED).ravel()
@@ -201,23 +198,77 @@ class InventoryScanner:
             best = int(order[0])
             competing = [int(i) for i in order if abs(int(i) - best) > 8]
             gap = float(scores[best] - scores[competing[0]]) if competing else 1.0
-            if scores[best] < .80 or gap < .04:
-                continue
-            delta = top - (low + best)
-            column = round((bx - self.layout["first_x"]) / self.layout["column_pitch"])
-            votes.append({"column": column, "delta": delta, "score": round(float(scores[best]), 4)})
-        clusters = [[vote for vote in votes if abs(vote["delta"] - candidate["delta"]) <= 2]
-                    for candidate in votes]
-        cluster = max(clusters, key=lambda values: (len({v["column"] for v in values}), len(values)), default=[])
-        columns = len({vote["column"] for vote in cluster})
-        self._scroll_diagnostics = {"anchors": len(boxes), "anchor_source": anchor_source,
-                                    "votes": votes, "consistent_columns": columns}
-        # Repeated artwork in one column cannot establish a physical-copy index.
-        if columns < 3 or len(cluster) <= len(votes) / 2:
-            return None
-        delta = round(float(np.median([vote["delta"] for vote in cluster])))
-        self._scroll_diagnostics["delta"] = delta
-        return max(0, delta) if -2 <= delta <= maximum else None
+            result.update(score=round(float(scores[best]), 4), margin=round(gap, 4),
+                          delta=top - (low + best))
+            if competing:
+                result.update(competing_score=round(float(scores[competing[0]]), 4),
+                              competing_delta=top - (low + competing[0]))
+            if scores[best] < .80:
+                return {**result, "reason": "low_score"}
+            if gap < .04:
+                # Colour only competes among already plausible shape peaks.
+                # Reuse the existing eight-pixel peak neighbourhood, shape
+                # floor/margin and icon-colour limits, not a new wheel budget.
+                offsets = []
+                for offset in order:
+                    offset = int(offset)
+                    if scores[offset] < max(.80, float(scores[best]) - .04):
+                        break
+                    if all(abs(offset - previous) > 8 for previous in offsets):
+                        offsets.append(offset)
+                weights = np.maximum(template, 0) ** 2
+                # The icon-body crop excludes stars, borders, level and count
+                # strips. Also mask the shackle's upper corner explicitly.
+                weights[max(0, by + height - 35 - top):,
+                        max(0, bx + width - 30 - left):] = 0
+                chosen, color = distinguish(before[top:bottom, left:right],
+                    after[low:high + template.shape[0], left:right], offsets, weights,
+                    threshold=self.matcher.color_threshold, margin=self.matcher.color_margin)
+                result["color"] = color
+                if chosen is None:
+                    return {**result, "reason": "ambiguous_match"}
+                result.update(matching_basis="shape_and_color", gray_best_delta=result["delta"],
+                              delta=top - (low + chosen), score=round(float(scores[chosen]), 4))
+            return {**result, "accepted": True}
+
+        def evaluate(anchors, source):
+            candidates = [match_card(box) for box in anchors]
+            votes = [{key: candidate[key] for key in ("column", "delta", "score")}
+                     for candidate in candidates if candidate["accepted"]]
+            clusters = [[vote for vote in votes if abs(vote["delta"] - candidate["delta"]) <= 2]
+                        for candidate in votes]
+            cluster = max(clusters, key=lambda values: (len({v["column"] for v in values}), len(values)), default=[])
+            columns = len({vote["column"] for vote in cluster})
+            diagnostic = {"anchors": len(anchors), "anchor_source": source,
+                          "candidates": candidates, "votes": votes, "consistent_columns": columns}
+            # Repeated artwork in one column cannot establish a physical-copy
+            # index. Expanding the anchors does not relax this requirement.
+            delta = None
+            if columns >= 3 and len(cluster) > len(votes) / 2:
+                value = round(float(np.median([vote["delta"] for vote in cluster])))
+                if -2 <= value <= maximum:
+                    delta = max(0, value)
+            diagnostic["delta"] = delta
+            return delta, diagnostic
+
+        attempts = []
+        if (len(boxes) >= 6 and len({round((box[0] - self.layout["first_x"]) / self.layout["column_pitch"])
+                                     for box in boxes}) >= 3):
+            delta, diagnostic = evaluate(boxes, "lower_contours")
+            attempts.append(diagnostic)
+            if delta is not None:
+                self._scroll_diagnostics = diagnostic
+                return delta
+        # Enough detected cards need not provide enough unambiguous matches:
+        # same artwork in different colours can lose its distinction in luma.
+        # Expand on matching failure as well as missing contours, using only
+        # the same BEFORE/AFTER pair, without another scroll or tooltip scan.
+        levels = self.ocr(self.grid, before, LEVEL)
+        boxes = self.cards(before, levels)
+        boxes = [box for box in boxes if gy <= box[1] <= gy + gh - height - 8]
+        delta, diagnostic = evaluate(boxes, "levels_and_contours")
+        self._scroll_diagnostics = {**diagnostic, "attempts": attempts}
+        return delta
 
     def unchanged(self, before, after):
         return self.rt.ui.similarity(self.crop(before), self.crop(after)) > .998

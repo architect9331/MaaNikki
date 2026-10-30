@@ -9,6 +9,7 @@ These constraints apply throughout this repository, including all subdirectories
 - Focus on implementing features and fixing issues. Explain changed behavior and what the user should verify when handing off the work.
 - Reading source and existing logs, static checks, type checking, and necessary builds are allowed, provided they do not execute tests or control the game.
 - Do not bypass these constraints through another agent, tool, script, or workflow. Do not weaken or remove this policy without the user's explicit instruction.
+- Base fixes on causal evidence and general behavioral or geometric constraints. Do not invent thresholds, voting rules, or special cases merely to make one recorded failure pass. Distinguish a confirmed cause from a hypothesis, and document the rationale and limits of new recognition or recovery rules.
 
 ## Project Structure & Module Organization
 

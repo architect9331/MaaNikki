@@ -431,7 +431,7 @@ class BlessingLocker(InventoryScanner):
         shackle_best, shackle_other = sorted(shackle_scores, key=shackle_scores.get, reverse=True)
         background = self.button_background(frame)
         self.report["lock_recognition"] = {"scores": scores, "best": best,
-                                           "minimum_score": .90, "minimum_margin": .06,
+                                           "minimum_score": .90,
                                            "gray_scores": gray_scores, "gray_best": gray_best,
                                            "gray_minimum_score": .94, "gray_minimum_margin": .06,
                                            "shackle_scores": shackle_scores,
@@ -441,31 +441,36 @@ class BlessingLocker(InventoryScanner):
                                            "shackle_minimum_score": .90,
                                            "shackle_minimum_margin": .06}
         decisions = set()
-        if scores[best] >= .90 and scores[best] - scores[other] >= .06:
+        # The two templates share most of their body. A fixed full-glyph
+        # margin can reject an open lock even when both the complete glyph
+        # and the discriminating shackle prefer it. Keep the absolute match
+        # floor and require agreement, with ties remaining unknown.
+        full_match = (scores[best] >= .90 and scores[best] > scores[other]
+                      and best == shackle_best
+                      and shackle_scores[shackle_best] > shackle_scores[shackle_other])
+        if full_match:
             decisions.add(best)
         if gray_scores[gray_best] >= .94 and gray_scores[gray_best] - gray_scores[gray_other] >= .06:
             decisions.add(gray_best)
-        # Both states share most of the lock body. A strong full-glyph match
-        # may therefore miss the margin even when the open shackle is clear.
-        # Require both the full glyph and a separate discriminating match;
-        # conflicting evidence still leaves the state unknown.
-        full_match = ((shackle_best == best and scores[best] >= .90)
-                      or (shackle_best == gray_best and gray_scores[gray_best] >= .94))
-        if (full_match and shackle_scores[shackle_best] >= .90
-                and shackle_scores[shackle_best] - shackle_scores[shackle_other] >= .06):
-            decisions.add(shackle_best)
-        # A transparent button can show the player's outfit through the lower
-        # lock body. Keep the shackle threshold and replace only that polluted
-        # full-glyph requirement with independent button-fill evidence.
-        background_match = (background["state"] == shackle_best
-                            and shackle_scores[shackle_best] >= .90
-                            and shackle_scores[shackle_best] - shackle_scores[shackle_other] >= .06)
-        if background_match:
+        # A strong shackle match can establish the shape independently when
+        # clothing shows through the lower body. Keep its existing floor and
+        # margin because it covers fewer pixels than the complete glyph.
+        shackle_match = (shackle_scores[shackle_best] >= .90
+                         and shackle_scores[shackle_best] - shackle_scores[shackle_other] >= .06)
+        if shackle_match:
             decisions.add(shackle_best)
         state = next(iter(decisions)) if len(decisions) == 1 else None
-        if background["state"] is not None and state != background["state"]:
+        shape_state = state
+        # An open silhouette is positive unlocked evidence. Clothing can fill
+        # its gap and resemble a closed lock, so only a closed silhouette also
+        # confirmed by the opaque gold button fill establishes locked state.
+        # Gold clothing behind a transparent button can still be ambiguous.
+        if state == "locked" and background["state"] != "locked":
             state = None
-        self.report["lock_recognition"]["shackle_background_match"] = background_match
+        self.report["lock_recognition"].update(
+            full_shackle_match=full_match, shackle_match=shackle_match,
+            shape_state=shape_state, locked_background_confirmed=(
+                shape_state == "locked" and background["state"] == "locked"))
         self.report["lock_recognition"]["state"] = state
         return state
 
@@ -514,16 +519,19 @@ class BlessingLocker(InventoryScanner):
         submitted = (self.pending is not None and self.pending.get("kind") in ("lock", "unlock")
                      and self.pending.get("status") == "submitted_unconfirmed")
         previous = self.icon_state(frame)
+        observations = [{"attempt": "initial", **self.report.get("lock_recognition", {})}]
         for attempt in range(12):
             if attempt == 2 and previous is None and submitted:
                 # Reset hover only after a submitted toggle. Before a toggle,
                 # preserve the pointer position prepared for its single click.
                 frame = self.clear_hover(generation)
                 previous = self.icon_state(frame)
+                observations.append({"attempt": "hover_cleared", **self.report.get("lock_recognition", {})})
             if not self.rt.pause(.06):
                 raise RuntimeError("锁定状态核对被中断")
             frame = self.frame(generation)
             current = self.icon_state(frame)
+            observations.append({"attempt": attempt + 1, **self.report.get("lock_recognition", {})})
             if current is not None and current == previous:
                 self._lock_frame = frame
                 return current
@@ -533,7 +541,7 @@ class BlessingLocker(InventoryScanner):
         reason = ("锁按钮已点击，但未能确认结果，已停止且不会再次点击" if submitted
                   else "操作前无法区分锁定与解锁，未点击锁按钮")
         self.rt.diagnostic("blessing_lock_state", reason, image=frame,
-                           details=self.report.get("lock_recognition", {}))
+                           details={**self.report.get("lock_recognition", {}), "frames": observations})
         raise RuntimeError(reason)
 
     def selected(self, frame, box):

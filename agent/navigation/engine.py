@@ -1,15 +1,21 @@
 """Camera-aligned forward movement with timed movement and jump state."""
 from __future__ import annotations
 import math
+from dataclasses import replace
 from statistics import median
 from task_control import task_time as time
 from .models import NavigationError, NavigationStuckError, Point, Route
 from .geometry import project_segment, segment_distance
 from .vision import Locator, Pose
+from .heading import HeadingContinuity
 
 
 class SceneUnavailable(NavigationError):
     """A temporary scene/map interruption, recoverable by the route loop."""
+
+
+class HeadingUncertain(NavigationError):
+    """Position is usable; confirm camera direction locally without opening a map."""
 
 
 def distance(a, b):
@@ -208,6 +214,12 @@ class Navigator:
         self.read_costs = {}
         self.pose_at = time.monotonic()
         self.pose_input = 0.0
+        self.heading_state = HeadingContinuity()
+        self.heading_turn_at = -math.inf
+        self.heading_turn_input = 0.0
+        self.heading_last_frame = None
+        self.heading_evidence_saved = False
+        self.heading_recheck_count = 0
 
     def pause(self, seconds):
         return self.motion.wait(seconds) if self.motion else self._pause(seconds)
@@ -224,7 +236,7 @@ class Navigator:
             if self.motion:
                 self.motion.tick()
 
-    def observe(self, hint, *, commit=True, reset_continuity=False):
+    def observe(self, hint, *, commit=True, reset_continuity=False, verify_heading=True):
         self.inputs.check()
         if self.motion:
             self.motion.guard(self.read_costs.get("observe", .3)*1.25+.03)
@@ -265,12 +277,39 @@ class Navigator:
             anchor = (previous.x, previous.y) if previous else (hint or (0.0, 0.0))
             pose = Pose(anchor[0], anchor[1], 0.0, 0.0, None, 0.0, False)
         else:
+            if self.locator.previous is None or reset_continuity:
+                self.heading_state.reset()
+                self.heading_last_frame = None
+                self.heading_turn_at, self.heading_turn_input = self.pose_at, input_begin
             pose = self.locator.locate(frame, hint, search_radius=26, commit=commit,
                                        reset_continuity=reset_continuity,
                                        progress=self.motion.tick if self.motion else None)
+            if pose.heading is not None and verify_heading:
+                evidence = self.heading_state.evidence(pose.heading)
+                arrow = self.locator.heading_diagnostics.get("player_arrow", {}).get("heading")
+                # The character follows W after the camera turns. Only use its
+                # arrow once forward has been held beyond the turn transition;
+                # standing arrows are stale camera evidence by definition.
+                arrow_ready = bool(self.motion and self.motion.forward_started is not None
+                                   and self.pose_at-self.motion.forward_started >= .25
+                                   and self.pose_at-self.heading_turn_at >= .25
+                                   and input_begin-self.heading_turn_input >= .25)
+                corroborated = (arrow_ready and arrow is not None
+                                and abs(angle_delta(arrow, pose.heading)) <= 8)
+                self.locator.heading_diagnostics["continuity"] = {
+                    **evidence, "arrow_ready": arrow_ready, "arrow_corroborated": corroborated}
+                if not evidence["agrees"] and not corroborated:
+                    self.locator.heading_diagnostics.update(method="heading_discontinuity",
+                                                           raw_heading=pose.heading)
+                    pose = replace(pose, heading=None)
+                else:
+                    self.heading_state.accept(pose.heading)
+                    self.heading_last_frame = frame
             if pose.heading is None:
                 if self.motion:
                     self.motion.close()
+                if pose.position_reliable:
+                    self.save_heading_evidence(frame)
         if self.motion:
             self.motion.tick()
         self.event({"type": "pose", **pose.dict(), "heading_diagnostics": dict(self.locator.heading_diagnostics),
@@ -278,6 +317,24 @@ class Navigator:
                     "input_since_capture": max(0, self.motion.forward_elapsed()-self.pose_input) if self.motion else 0})
         self.read_costs["observe"] = max(self.read_costs.get("observe", 0)*.8, time.monotonic()-begin)
         return pose
+
+    def save_heading_evidence(self, frame):
+        if self.heading_evidence_saved or not self.point_action:
+            return
+        self.heading_evidence_saved = True
+        rt = self.point_action.rt
+        if self.heading_last_frame is not None:
+            rt.diagnostic("navigation_heading_reference", "方向复核前的可信画面",
+                          image=self.heading_last_frame)
+        rt.diagnostic("navigation_heading", "小地图方向需要复核", image=frame,
+                      details=dict(self.locator.heading_diagnostics))
+
+    @staticmethod
+    def require_heading(pose):
+        if pose.heading is None:
+            if pose.position_reliable:
+                raise HeadingUncertain("小地图方向需要重新确认。")
+            raise SceneUnavailable("小地图位置或主界面需要重新确认。")
 
     def camera(self, pixels):
         from .controller import MAX_CAMERA_PIXELS, relative_camera
@@ -290,29 +347,61 @@ class Navigator:
             raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
         if part and not relative_camera(self.inputs.controller, part, 0):
             raise NavigationError("转动镜头失败。")
+        if part:
+            self.heading_state.command(part, self.turn_ratio)
+            self.heading_turn_at = time.monotonic()
+            self.heading_turn_input = self.motion.forward_elapsed() if self.motion else 0
         return part
 
-    def stable_heading(self, pose):
+    def stable_heading(self, pose, *, deadline=None):
         generation = getattr(self.inputs, "generation", 0)
-        previous = None
-        stable = 0
-        for _ in range(6):
+        deadline = min(deadline, time.monotonic()+2) if deadline is not None else time.monotonic()+2
+        stable_since = None
+        origin = None
+        lower = upper = 0.0
+        while time.monotonic() < deadline:
             self.inputs.check()
             if self.stopped() or self.pause(.04) is False:
                 raise NavigationError("已停止导航。")
-            pose = self.observe((pose.x, pose.y))
+            pose = self.observe((pose.x, pose.y), verify_heading=False)
             if getattr(self.inputs, "generation", 0) != generation:
                 raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
+            if not pose.position_reliable:
+                raise SceneUnavailable("小地图位置或主界面需要重新确认。")
             if pose.heading is None:
-                raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
-            if pose.heading is not None and previous is not None and abs(angle_delta(pose.heading, previous)) < 5:
-                stable += 1
-                if stable >= 2:
-                    return pose
-            else:
-                stable = 0
-            previous = pose.heading
-        raise NavigationError("小地图方向尚未稳定，已停止移动。")
+                stable_since = origin = None
+                continue
+            if time.monotonic() >= deadline:
+                break
+            now = self.pose_at
+            offset = angle_delta(pose.heading, origin) if origin is not None else 0
+            lower, upper = min(lower, offset), max(upper, offset)
+            if stable_since is None or upper-lower >= 5:
+                stable_since, origin, lower, upper = now, pose.heading, 0.0, 0.0
+            # Confirm a settled camera interval, rather than counting/voting
+            # frames. The interval covers the existing .15-second camera ease;
+            # any unsupported read or angular excursion starts it over.
+            if now-stable_since >= .2:
+                evidence = self.heading_state.accept(pose.heading)
+                self.event({"type": "heading_confirmed", **evidence,
+                            "heading": pose.heading, "stable_seconds": now-stable_since})
+                self.heading_last_frame = self.locator.last_frame
+                self.heading_evidence_saved = False
+                return pose
+        self.event({"type": "heading_unstable", "diagnostics": dict(self.locator.heading_diagnostics)})
+        raise HeadingUncertain("小地图方向未能稳定，已停止移动。")
+
+    def recheck_heading(self, pose, deadline):
+        """Keep the current position; reacquire a possibly user-changed camera."""
+        if self.motion:
+            self.motion.close()
+        else:
+            self.inputs.release()
+        self.heading_recheck_count += 1
+        if self.heading_recheck_count > 3:
+            raise NavigationError("多次复核方向后仍无法继续前进，已停止路线。")
+        self.event({"type": "heading_recheck_started", "attempt": self.heading_recheck_count})
+        return self.stable_heading(pose, deadline=deadline)
 
     def calibrate(self, pose):
         ratios = []
@@ -355,8 +444,7 @@ class Navigator:
         generation = getattr(self.inputs, "generation", 0)
         previous_delta = None
         correction_gain = 1.0
-        if pose.heading is None:
-            raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
+        self.require_heading(pose)
         if self.turn_ratio is not None and abs(angle_delta(target_heading, pose.heading)) <= tolerance:
             return pose
         if (not stationary and self.turn_ratio is not None
@@ -370,15 +458,17 @@ class Navigator:
             delta = angle_delta(target_heading, pose.heading)
             previous_delta = delta
             pixels = self.camera(delta*self.turn_ratio)
+            expected_rotation = pixels/self.turn_ratio
             self.pause(.04)
             after = self.observe((pose.x, pose.y))
             if getattr(self.inputs, "generation", 0) != generation:
                 raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
-            if after.heading is None:
-                raise SceneUnavailable("小地图暂时不可用，等待画面恢复。")
+            self.require_heading(after)
             self.event({"type": "camera_turn", "target": target_heading, "before": pose.heading,
                         "after": after.heading, "pixels": pixels,
                         "rotation": angle_delta(after.heading, pose.heading), "gain": correction_gain,
+                        "expected_rotation": expected_rotation,
+                        "feedback_valid": self.heading_state.feedback_valid,
                         "stationary": False, "tolerance": tolerance})
             if abs(angle_delta(target_heading, after.heading)) <= tolerance:
                 return after
@@ -407,12 +497,15 @@ class Navigator:
                 previous_delta = delta
                 before = pose.heading
                 pixels = self.camera(delta*self.turn_ratio*correction_gain)
+                expected_rotation = pixels/self.turn_ratio
                 self.pause(.15)
                 pose = self.stable_heading(pose)
                 actual = angle_delta(pose.heading, before)
                 self.event({"type": "camera_turn", "target": target_heading, "before": before,
                             "after": pose.heading, "pixels": pixels, "rotation": actual,
                             "gain": correction_gain, "stationary": True,
+                            "expected_rotation": expected_rotation,
+                            "feedback_valid": self.heading_state.feedback_valid,
                             "remaining_error": abs(angle_delta(target_heading, pose.heading)),
                             "tolerance": tolerance})
                 # A small final turn can reach tolerance on the same read that
@@ -428,7 +521,7 @@ class Navigator:
                 else:
                     unresponsive = 0
                     measured = pixels/actual
-                    if (measured*self.turn_ratio > 0 and 8 <= abs(actual) <= 90
+                    if (self.heading_state.feedback_valid and measured*self.turn_ratio > 0 and 8 <= abs(actual) <= 90
                             and .75 <= abs(measured/self.turn_ratio) <= 1.33):
                         self.turn_ratio = .8*self.turn_ratio+.2*measured
             raise NavigationError("镜头未能稳定朝向路线，已停止移动。")
@@ -472,14 +565,15 @@ class Navigator:
             return bool(self.read_state("walking", self.walking_detector))
         return not self.point_action or self.read_state("walking", self.point_action.rt.ui.walking)
 
-    def recover_scene(self, anchor, deadline, *, force_map=False):
+    def reacquire_position(self, anchor, deadline, *, force_map=False):
         self.motion.close()
         self.relocalized = False
         reason = ("page_unavailable" if not self.inputs.ready() else
                   self.locator.heading_diagnostics.get("method", "camera_unavailable"))
-        self.event({"type": "scene_wait", "reason": reason})
+        self.event({"type": "position_recheck_started", "reason": reason})
         end = min(deadline, time.monotonic()+15)
         previous = None
+        steady_since = None
         page_ready = False
         failures = 0
         while time.monotonic() < end:
@@ -503,6 +597,7 @@ class Navigator:
                     if not self.point_action.rt.key("skip", .5):
                         raise NavigationError("未能跳过获取提示。")
                 previous = None
+                steady_since = None
                 continue
             # Waiting on unchanged terrain cannot repair a lost local search.
             # Use a freshly opened, player-centered map as an independent anchor.
@@ -514,15 +609,20 @@ class Navigator:
                 anchor = Pose(x, y, 0.0, 0.0, None, 0.0)
                 self.relocalized = True
                 previous = None
+                steady_since = None
                 end = min(deadline, time.monotonic()+15)
                 self.event({"type": "map_position_anchor", "x": x, "y": y,
                             "attempt": self.map_recoveries})
                 if self.stopped() or time.monotonic() >= deadline:
                     raise NavigationError("导航已停止或超时。")
             pose = self.observe((anchor.x, anchor.y), commit=False,
-                                reset_continuity=self.relocalized)
+                                reset_continuity=self.relocalized, verify_heading=False)
             if pose.heading is not None:
-                if previous is not None and distance(pose, previous) < 2:
+                now = time.monotonic()
+                if (previous is None or distance(pose, previous) >= 2
+                        or abs(angle_delta(pose.heading, previous.heading)) >= 5):
+                    steady_since = now
+                if steady_since is not None and now-steady_since >= .2:
                     anchor_distance = distance(pose, anchor)
                     if not self.relocalized and anchor_distance > 4:
                         # A repeated candidate is stable, not independently
@@ -537,19 +637,24 @@ class Navigator:
                             raise NavigationError("小地图恢复位置与中断前不一致，缺少大地图复核入口。")
                         force_map = True
                         previous = None
+                        steady_since = None
                         continue
                     if self.relocalized and anchor_distance > 6:
                         raise NavigationError("大地图角色位置与小地图定位不一致，未继续移动。")
                     # Tentative reads never replace the last trusted position.
                     self.locator.accept(pose)
-                    self.event({"type": "scene_resumed", **pose.dict(),
+                    self.heading_state.accept(pose.heading)
+                    self.heading_last_frame = self.locator.last_frame
+                    self.heading_evidence_saved = False
+                    self.event({"type": "position_confirmed", **pose.dict(),
                                 "verification": "bigmap" if self.relocalized else "local_continuity",
                                 "anchor_distance": anchor_distance})
                     return pose
                 previous = pose
             else:
                 previous = None
-                failures += 1
+                steady_since = None
+                failures += int(not pose.position_reliable)
         if not page_ready:
             raise NavigationError("等待返回可移动的主界面超时。")
         diagnostics = self.locator.heading_diagnostics
@@ -683,6 +788,7 @@ class Navigator:
         prepared_index = None
         last_good = pose
         scene_interrupted, scene_retries = False, 0
+        self.heading_recheck_count = 0
         heading_rechecks = 0
         rejoin = None
         map_checked = False
@@ -707,15 +813,26 @@ class Navigator:
                     last = None
                     speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
                     self.turn_ratio = None
+                    self.heading_recheck_count = 0
                     scene_interrupted = False
                     heading_rechecks = 0
                     continue
                 target = rejoin or route.points[index]
+                if (not scene_interrupted and pose.heading is None and pose.position_reliable
+                        and self.read_state("ready", self.inputs.ready)):
+                    began = time.monotonic()
+                    try:
+                        pose = self.recheck_heading(pose, deadline)
+                    except SceneUnavailable:
+                        scene_interrupted = True
+                    stuck_since += time.monotonic()-began
+                    last = None
+                    continue
                 if scene_interrupted or pose.heading is None or not self.read_state("ready", self.inputs.ready):
                     scene_retries += 1
                     if scene_retries > 3:
                         raise NavigationError("路线多次中断，已停止，请检查当前位置。")
-                    pose = self.recover_scene(last_good, deadline)
+                    pose = self.reacquire_position(last_good, deadline)
                     if self.relocalized:
                         pending_transport = route.points[index].action == "teleport" and prepared_index != index
                         rejoin = None if pending_transport else self.rejoin_point(route, index, pose)
@@ -795,6 +912,7 @@ class Navigator:
                         self.event({"type": "route_rejoined", "index": index, **pose.dict()})
                         continue
                     scene_retries = 0
+                    self.heading_recheck_count = 0
                     self.event({"type": "waypoint", "index": index, "total": len(route.points)-1,
                                 "pose": pose.dict(), "target": [target.x, target.y],
                                 "radius": radius, "pass_radius": pass_radius,
@@ -846,7 +964,7 @@ class Navigator:
                     self.event({"type": "unstuck", "seconds": stuck_time, "index": index,
                                 "remaining": remaining_distance, "best_remaining": best_distance})
                     if self.relocalize and not map_checked and self.map_recoveries < 3:
-                        pose = self.recover_scene(last_good, deadline, force_map=True)
+                        pose = self.reacquire_position(last_good, deadline, force_map=True)
                         rejoin = self.rejoin_point(route, index, pose)
                         map_checked = True
                         last_good = stuck_anchor = pose
@@ -862,6 +980,15 @@ class Navigator:
                 tolerance = self.travel_tolerance(remaining_distance, radius)
                 try:
                     pose = self.turn(bearing, pose, tolerance=tolerance)
+                except HeadingUncertain:
+                    try:
+                        pose = self.recheck_heading(pose, deadline)
+                    except SceneUnavailable:
+                        scene_interrupted = True
+                    stuck_since += max(0, time.monotonic()-turn_begin
+                                       -max(0, motion.forward_elapsed()-turn_input))
+                    last = None
+                    continue
                 except SceneUnavailable:
                     scene_interrupted = True
                     continue
@@ -893,12 +1020,16 @@ class Navigator:
                     # correcting indefinitely without another forward attempt.
                     if heading_rechecks >= 3:
                         motion.stop()
-                        scene_interrupted = True
+                        pose = replace(pose, heading=None)
                     last = None
                     continue
                 heading_rechecks = 0
                 before_move = pose
+                forward_before = motion.forward_elapsed()
                 pose, recovery_done = self.advance(pose, target, radius, speeds, recovery=recovery)
+                if (pose.heading is not None and pose.position_reliable
+                        and motion.forward_elapsed()-forward_before >= .08):
+                    self.heading_recheck_count = 0
                 last = None if recovery else before_move
                 if recovery_done:
                     recovered = True

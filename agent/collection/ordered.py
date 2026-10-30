@@ -101,6 +101,7 @@ class OrderedView:
 
     @resumable_observation
     def step(self, direction):
+        scroll_index = len(self.o.snapshot["scan"]["scrolls"])
         before = self.o.clear_hover(self.generation, settle_card=True)
         boxes = self._focus_checkpoint["boxes"] if self._focus_checkpoint else []
         self.remember_view(before, boxes)
@@ -125,6 +126,19 @@ class OrderedView:
                 if not self.o.unchanged(before, restored):
                     break
         if after is None or delta is None:
+            scrolls = self.o.snapshot["scan"]["scrolls"]
+            # The scanner's local before/after files are outside Sentry's
+            # attachment selection. Publish the terminal pair at the existing
+            # failure boundary, including rejected candidate scores.
+            if not self.o.rt.stopped and len(scrolls) > scroll_index:
+                details = {"slot": self.slot, "position": self.position, "direction": direction,
+                           "scroll": scrolls[-1]}
+                current = after if after is not None else self.o.rt.evidence.frame
+                self.o.rt.diagnostic("blessing_scroll_before", "列表位移未确认：滚动前画面",
+                                     image=before, details=details)
+                if current is not None and current is not before:
+                    self.o.rt.diagnostic("blessing_scroll_after", "列表位移未确认：滚动后画面",
+                                         image=current, details=details)
             raise RuntimeError("获得时间列表位移无法确认，请重新整理")
         self.position = max(0, self.position + direction * delta)
         self.remember_view(after, [[x, y - direction * delta, w, h] for x, y, w, h in boxes
@@ -228,6 +242,10 @@ class OrderedView:
                 self.o.record_card(frame, box, row, observation, self.generation, self.o.counter, error=str(error))
                 raise
         self.o.record_card(frame, box, row, observation, self.generation, self.o.counter)
+        if selected:
+            remember = getattr(self.o, "remember_ordered_selection", None)
+            if remember is not None:
+                remember(self)
         return row, facts, observation
 
     def ordinal(self, box):
@@ -415,6 +433,9 @@ class OrderedView:
         stats["clicked_reads"] += int(not selected)
         if state != ("locked" if locked else "unlocked"):
             raise RuntimeError("选中目标后锁定状态发生变化，未操作锁按钮")
+        remember = getattr(self.o, "remember_ordered_selection", None)
+        if remember is not None and not selected:
+            remember(self)
 
 
 def merge_prefix(old, prefix, cut, next_priority):

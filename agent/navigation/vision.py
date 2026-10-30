@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from vision import read_image
 from .camera import CameraBackground, camera_heading
+from .heading import player_heading
 from .frames import minimap_sample, reference_frame
 from .matching import MIN_KNOWN_COVERAGE, coverage, match_map
 from .models import MINIMAP_POSITION_SCORE, MapSpec, NavigationError
@@ -154,6 +155,7 @@ class Locator:
             px, py = (self.previous.x, self.previous.y) if self.previous else hint
         heading, confidence = self.camera_heading(
             reference, px, py, use_terrain=not (unreliable or rejected))
+        self.heading_diagnostics["player_arrow"] = player_heading(reference, self.spec)
         self.heading_diagnostics.update(position_method="correlation_rejected" if unreliable else
             "speed_rejected" if rejected else "map_correlation", position_reliable=not (unreliable or rejected),
             candidate_position=candidate, position_elapsed=elapsed, score=score, local_peak=detail,

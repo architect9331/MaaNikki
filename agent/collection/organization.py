@@ -42,6 +42,15 @@ class BlessingOrganizer(BlessingLocker):
         return (self.same_ordered_cards(checkpoint, frame, ignore_box=ignore_box)
                 and self.same_pixels(checkpoint["frame"], frame, [1256, 72, 14, 550]))
 
+    def remember_ordered_selection(self, view):
+        # Selection changes the gold backing but not acquisition order. Keep
+        # the reference current after our own confirmed selection, before the
+        # next tooltip observation can be interrupted by a focus switch.
+        checkpoint = view._focus_checkpoint
+        if checkpoint is not None:
+            frame = self.clear_hover(view.generation, settle_card=True)
+            view.remember_view(frame, checkpoint["boxes"])
+
     def resumed_scene(self, view):
         checkpoint = view._focus_checkpoint
         if checkpoint is None or checkpoint["slot"] != view.slot:
@@ -94,6 +103,12 @@ class BlessingOrganizer(BlessingLocker):
         delta = 0
         if not self.same_ordered_view(checkpoint, frame):
             if phase != "step":
+                self.report["focus_mismatch"] = {
+                    "phase": phase, "slot": view.slot, "position": view.position,
+                    "before": self.image(f"focus_{generation}_before.png", checkpoint["frame"]),
+                    "after": self.image(f"focus_{generation}_after.png", frame),
+                    "cards_match": self.same_ordered_cards(checkpoint, frame),
+                    "scrollbar_match": self.same_pixels(checkpoint["frame"], frame, [1256, 72, 14, 550])}
                 raise RuntimeError("切回后当前页条目或滚动位置改变，请重新读取仓库")
             direction = args[0]
             delta = (self.scroll_position(checkpoint["frame"], frame) if direction > 0

@@ -121,8 +121,14 @@ def camera_heading(reference, map_image, spec, x, y, *, terrain=None):
     gradient = cv2.Scharr(polar, cv2.CV_32F, 1, 0)
     gradient[polar_valid == 0] = 0
     width = d*2
-    rising = np.bincount(find_peaks(gradient.ravel(), height=150, wlen=width)[0] % width, minlength=width)
-    falling = np.bincount(find_peaks(-gradient.ravel(), height=150, wlen=width)[0] % width, minlength=width)
+    rising_peaks = find_peaks(gradient.ravel(), height=150, wlen=width)[0]
+    falling_peaks = find_peaks(-gradient.ravel(), height=150, wlen=width)[0]
+    rising = np.bincount(rising_peaks % width, minlength=width)
+    falling = np.bincount(falling_peaks % width, minlength=width)
+    rising_rows = np.zeros(gradient.shape, bool)
+    falling_rows = np.zeros(gradient.shape, bool)
+    rising_rows.ravel()[rising_peaks] = True
+    falling_rows.ravel()[falling_peaks] = True
     left_edge, right_edge = np.maximum(rising-falling, 0), np.maximum(falling-rising, 0)
     profiles = []
     for shift in range(-3, 4):
@@ -137,27 +143,45 @@ def camera_heading(reference, map_image, spec, x, y, *, terrain=None):
         diagnostics = {"method": "cone_boundaries", "edges": 0,
                        "live_background_pixels": live_pixels}
         return None, 0.0, diagnostics
-    # Polar coordinates begin east-clockwise; center is 45 degrees after
-    # the rising cone boundary. Expose north-clockwise degrees to movement.
-    heading = (int(signal.argmax())/width*360+135) % 360
-    confidence = prominence(signal)
-    boundary = int(signal.argmax())
-    left_support = int(left_edge[(boundary+np.arange(-6, 7)) % width].max())
-    right_support = int(right_edge[(boundary+width//4+np.arange(-9, 10)) % width].max())
-    # A distinct peak can still be made by a few short terrain lines once a
-    # missing boundary is excluded. Require radial evidence on both cone sides.
-    # With no live terrain, missing map regions can leave short, sharp terrain
-    # lines as the only candidate. Prominence alone cannot establish a cone.
-    support_floor = polar.shape[0]*(.1 if live_pixels else .2)
-    supported = not incomplete or min(left_support, right_support) >= support_floor
+    # Evaluate separated angular peaks before selecting a direction. A bright
+    # road can win the relative peak score without forming two radial rays.
+    peaks = find_peaks(np.tile(signal, 3), distance=width//24)[0]
+    peaks = [int(peak-width) for peak in peaks if width <= peak < 2*width]
+    peaks.sort(key=lambda peak: float(signal[peak]), reverse=True)
+    coverage_floor = .1 if live_pixels else .2
+    candidates = []
+    for boundary in peaks:
+        left_bins = (boundary+np.arange(-6, 7)) % width
+        right_bins = (boundary+width//4+np.arange(-9, 10)) % width
+        support = [int(left_edge[left_bins].max()), int(right_edge[right_bins].max())]
+        rows = [rising_rows[:, left_bins].any(axis=1), falling_rows[:, right_bins].any(axis=1)]
+        radial_coverage = [float(value.mean()) for value in rows]
+        halves = [float(part.mean()) for value in rows for part in np.array_split(value, 2)]
+        # Keep the existing missing-background support allowance, but apply
+        # evidence checks to complete maps too. Both rays must extend across
+        # the inner and outer sampling bands, not just a small terrain arc.
+        supported = (min(support) >= polar.shape[0]*coverage_floor
+                     and min(radial_coverage) >= coverage_floor
+                     and min(halves) >= coverage_floor/2)
+        candidates.append({"heading": (boundary/width*360+135) % 360,
+                           "strength": float(signal[boundary]), "edge_support": support,
+                           "radial_coverage": radial_coverage, "radial_halves": halves,
+                           "supported": supported})
+    accepted = [candidate for candidate in candidates if candidate["supported"]]
+    best = accepted[0] if accepted else candidates[0] if candidates else None
+    heading = best["heading"] if best else None
+    confidence = (1-float(accepted[1]["strength"])/accepted[0]["strength"]
+                  if len(accepted) > 1 else 1.0 if accepted else 0.0)
     diagnostics = {"method": "cone_boundaries", "heading": heading, "confidence": confidence,
                    "live_background_pixels": live_pixels,
-                   "edge_support": [left_support, right_support], "edges_supported": supported}
-    if not supported:
+                   "edge_support": best["edge_support"] if best else [0, 0],
+                   "edges_supported": bool(accepted), "candidates": candidates[:6],
+                   "selected": best, "coverage_floor": coverage_floor}
+    if not accepted:
         if terrain is not None:
             terrain.candidate = None
         return None, 0.0, diagnostics
     if terrain is not None and incomplete:
         terrain.remember(observed, x, y, heading, confidence,
-                         strong_edges=min(left_support, right_support) >= polar.shape[0]*.25)
+                         strong_edges=min(best["radial_coverage"]) >= .25)
     return float(heading), confidence, diagnostics

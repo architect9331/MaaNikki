@@ -388,9 +388,9 @@
     "recognition": "TemplateMatch",
     "roi": [
       25,
-      45,
-      105,
-      105
+      25,
+      170,
+      125
     ],
     "template": "game/daily/group_chat.png",
     "threshold": 0.75,
