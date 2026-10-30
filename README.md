@@ -15,7 +15,7 @@
 
 Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https://github.com/MistEO/MXU)
 
-[下载最新版](https://github.com/architect9331/MaaNikki/releases) · [用户手册](docs/manual.md) · [更新日志](CHANGELOG.md)
+[项目主页](https://maanikki.cn) · [下载最新版](https://github.com/architect9331/MaaNikki/releases) · [用户手册](docs/manual.md) · [更新日志](CHANGELOG.md)
 
 </div>
 

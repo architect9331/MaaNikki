@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main, master]
+    paths-ignore:
+      - 'website/**'
+      - '.github/workflows/deploy-website.yml'
+      - 'README.md'
   pull_request:
 
 permissions:
