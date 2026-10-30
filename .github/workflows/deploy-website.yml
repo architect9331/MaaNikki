@@ -5,15 +5,15 @@ on:
   push:
     branches: [main]
     paths:
-      - 'website/**'
-      - 'docs/manual.md'
-      - 'docs/images/**'
-      - 'resource/icon.png'
-      - '.github/workflows/deploy-website.yml'
+      - "website/**"
+      - "docs/manual.md"
+      - "docs/images/**"
+      - "resource/icon.png"
+      - ".github/workflows/deploy-website.yml"
   release:
     types: [published]
   workflow_run:
-    workflows: ['Build Windows x64']
+    workflows: ["Build Windows x64"]
     types: [completed]
     branches: [main]
 
