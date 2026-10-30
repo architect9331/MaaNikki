@@ -495,9 +495,9 @@
   "MaaNikki_Monthly_ParadiseClaim": {
     "recognition": "TemplateMatch",
     "roi": [
-      940,
+      690,
       600,
-      230,
+      480,
       90
     ],
     "template": "game/monthly/claim.png",
@@ -510,9 +510,9 @@
   "MaaNikki_Monthly_ParadiseClaimEmpty": {
     "recognition": "OCR",
     "roi": [
-      940,
+      690,
       600,
-      230,
+      480,
       90
     ],
     "expected": "^进行中(的)?$|^已领取$",

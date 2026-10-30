@@ -36,7 +36,7 @@ class BlessingPursuitAction(CustomAction):
                 rt.diagnostic("blessing_pursuit", "祝福闪光处理未完成")
             progress_path = pursuit.report.get("inventory", {}).get("path") or pursuit.report.get("startup", {}).get("path")
             rt.log(f"五星处理记录：{folder / 'pursuit.json'}。"
-                   f"收集进度：{progress_path or pursuit.store.last_scan_path}。", detail=True)
+                   f"收集进度：{progress_path or pursuit.store.reference(pursuit.store.last_scan_path)}。", detail=True)
             if options.get("return_page") == "calendar":
                 return rt.ui.calendar() and ok
             _, finished = rt.finish(argv.node_name)

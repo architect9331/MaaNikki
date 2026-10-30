@@ -1,6 +1,8 @@
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { BlessingProgressPage } from '@/components/BlessingProgressPage';
 import { ExplorationPage } from '@/components/ExplorationPage';
+import { ResonancePage } from '@/components/ResonancePage';
+import { monitorResonance } from '@/services/resonanceService';
 import { explorationOwnsWindow, monitorExploration, useExplorationStore } from '@/services/explorationService';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import {
@@ -138,6 +140,7 @@ const LazyVersionWarningModal = lazy(async () => {
 function App() {
   const logRetentionDays = useAppStore((state) => state.logRetentionDays);
   useEffect(() => monitorExploration(), []);
+  useEffect(() => monitorResonance(), []);
   useEffect(() => {
     const refresh = () => void useAccountStateStore.getState().refresh().catch(() => {});
     refresh();
@@ -1875,6 +1878,17 @@ function App() {
       }}
     />
   );
+
+  if (currentPage === 'resonance') {
+    return (
+      <div className="h-full flex flex-col bg-bg-primary relative">
+        <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
+        <ResonancePage onClose={() => useAppStore.getState().setCurrentPage('main')} />
+        <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
+        {toaster}
+      </div>
+    );
+  }
 
   if (currentPage === 'exploration') {
     return (

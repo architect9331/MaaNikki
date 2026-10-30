@@ -19,6 +19,8 @@ export interface BlessingSnapshot {
   protection?: { complete?: boolean; keepers?: CollectionKey[] };
 }
 export interface AccountView {
+  account_key?: string | null;
+  uid?: string | null;
   observations?: {
     giant_meteor?: {
       game_day: string;

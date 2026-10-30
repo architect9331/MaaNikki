@@ -20,15 +20,15 @@ from .policy import capabilities, definition_for, protected_inventory, unregiste
 
 
 class InventoryStore:
-    def __init__(self, root, catalog):
+    def __init__(self, root, catalog, runtime):
         self.directory = Path(root) / "config" / "blessing"
         self.path = self.directory / "inventory.json"
         self.last_scan_path = self.directory / "last_scan.json"
         self.catalog = catalog
-        self.account = AccountState(root)
+        self.account = AccountState.for_runtime(root, runtime)
 
     def exists(self, path):
-        return path.stem in self.account.load()["blessing"]
+        return self.account.load()["blessing"].get(path.stem) is not None
 
     def reference(self, path):
         return f"{self.account.path}#blessing/{path.stem}"

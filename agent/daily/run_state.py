@@ -47,6 +47,7 @@ class PendingReview:
     events: list
     scans: list
     created: float
+    uid: str
     realm_task_id: int | None = None
     upgrade_card: Card | None = None
     realm_kind: str | None = None
@@ -102,13 +103,16 @@ def defer(runtime, task_id, score, energy_card=None, *, upgrade_card=None):
         claim_overrides={claim_node: {"enabled": claim.get("enabled", True),
                                      "custom_action_param": deepcopy(parameters(runtime.context, claim_node))}},
         events=deepcopy(runtime.events), scans=deepcopy(runtime.scans), created=time.monotonic(),
-        upgrade_card=deepcopy(upgrade_card))
+        upgrade_card=deepcopy(upgrade_card), uid=runtime.account_uid())
     return True
 
 
 def begin_realm(runtime, task_id, *, kind=None, collection=False):
     pending = _pending.get(key(runtime))
     if pending:
+        if pending.uid != runtime.account_uid():
+            clear(runtime)
+            raise ValueError("朝夕待复核记录属于另一 UID，请重新运行本轮任务")
         if pending.source_task_id >= task_id or time.monotonic()-pending.created >= 3600:
             clear(runtime)
             raise ValueError("朝夕待复核记录已过期或任务顺序不一致，请重新运行本轮任务")
@@ -120,6 +124,8 @@ def begin_realm(runtime, task_id, *, kind=None, collection=False):
 
 def take(runtime, task_id):
     pending = _pending.pop(key(runtime), None)
+    if pending and pending.uid != runtime.account_uid():
+        raise ValueError("待复核记录属于另一 UID，本次未继续领奖")
     if pending and (pending.realm_task_id != task_id or time.monotonic()-pending.created >= 3600):
         raise ValueError("待复核记录与本次幻境不匹配或已过期，未继续领奖")
     return pending

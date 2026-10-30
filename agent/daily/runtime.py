@@ -53,6 +53,9 @@ class Runtime:
         self._stale_images = []
         self._frame_validated = False
         self._evidence = None
+        self._account_uid = None
+        self._account_generation = None
+        self._account_mismatch = False
         from .ui import GameUI
         self.ui = GameUI(self, RESOURCE)
 
@@ -431,6 +434,82 @@ class Runtime:
 
     def main(self):
         return self.ui.main()
+
+    def account_uid(self):
+        """Confirm identity from the game, never from the desktop selection/login."""
+        from task_control import active_session
+        from account_state import AccountState
+        session = active_session()
+        if self._account_mismatch or getattr(session, "account_mismatch", False):
+            raise ValueError("游戏 UID 已变化，请重新运行任务")
+        uid = self._account_uid or (getattr(session, "account_uid", None) if session else None)
+        if uid:
+            self._account_uid = uid
+            self.verify_account_uid()
+            return uid
+        image = self.frame()
+        observed = self.read_account_uid(image)
+        if observed is None:
+            if not self.main():
+                raise ValueError("未能打开游戏主界面确认 UID")
+            observed = self.read_account_uid(self.capture())
+        if observed is None:
+            raise ValueError("未能识别左下角 UID，请确认游戏画面完整")
+        AccountState.bind(ROOT, observed)
+        self._account_uid = observed
+        self._account_generation = self._focus_generation
+        if session:
+            session.account_uid = observed
+            session.account_generation = session.generation
+        return observed
+
+    def read_account_uid(self, image):
+        if image is None:
+            return None
+        from diagnostics import image_policy
+        # The existing diagnostic mask specifies the UID's exact screen area.
+        # A labeled, whole-text match cannot mistake a nearby task count for UID.
+        x, y, w, h = image_policy()["uid_roi"]
+        crop = image[y:y+h, x:x+w]
+        if crop.size == 0:
+            return None
+        # UID is only a small footer. Enlarge the same pixels rather than
+        # expanding into unrelated screen numbers or substituting OCR digits.
+        crop = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+        result = self.recognize("MaaNikki_Asset_AccountUid", {
+            "roi": [0, 0, w*3, h*3], "expected": ".+"}, image=crop)
+        if not result or not result.hit:
+            return None
+        rows = getattr(result, "filtered_results", []) or [result.best_result]
+        text = "".join(str(getattr(row, "text", "")) for row in rows)
+        text = re.sub(r"\s+", "", text)
+        match = re.fullmatch(r"(?i)UID[:：]?([0-9]{1,32})", text)
+        return match[1] if match else None
+
+    def verify_account_uid(self):
+        """Recheck visible identity before saving; hidden UID keeps only this task's binding."""
+        from task_control import active_session
+        session = active_session()
+        generation = (getattr(session, "account_generation", None) if session else self._account_generation)
+        if self._account_mismatch or getattr(session, "account_mismatch", False):
+            raise ValueError("游戏 UID 已变化，请重新运行任务")
+        # Stop still publishes the interrupted journal for its already-bound
+        # owner, without requesting new game captures after cancellation.
+        if self.stopped and generation == self._focus_generation:
+            return
+        image = self.frame()
+        observed = self.read_account_uid(image)
+        if observed is not None and observed != self._account_uid:
+            self._account_mismatch = True
+            if session:
+                session.account_mismatch = True
+            raise ValueError("游戏账号已切换，本次处理记录仍保留在原 UID，请重新运行任务")
+        if observed is None and (image is None or generation != self._focus_generation):
+            raise ValueError("切回游戏后未能确认 UID，本次账号记录暂未更新")
+        if observed is not None:
+            self._account_generation = self._focus_generation
+            if session:
+                session.account_generation = session.generation
 
     def finish(self, entry):
         """Leave a verified page suited to the next submitted task."""

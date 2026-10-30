@@ -22,6 +22,75 @@ fn desktop(window: &WebviewWindow) -> Result<(), String> {
     Ok(())
 }
 
+// Shared internally with the read-only resonance worker; never exposed through IPC.
+pub(super) fn credentials() -> Result<Value, String> {
+    let _guard = LOGIN_WRITE.lock().map_err(|_| "无法读取美鸭梨登录信息。")?;
+    let encrypted =
+        std::fs::read(directory()?.join("login.dat")).map_err(|_| "请先登录美鸭梨。")?;
+    let mut raw = unprotect(&encrypted)?;
+    let result = serde_json::from_slice(&raw).map_err(|_| "请重新登录美鸭梨。".to_string());
+    raw.fill(0);
+    result
+}
+
+#[cfg(windows)]
+fn unprotect(bytes: &[u8]) -> Result<Vec<u8>, String> {
+    use std::ffi::c_void;
+    #[repr(C)]
+    struct Blob {
+        size: u32,
+        data: *mut u8,
+    }
+    #[link(name = "Crypt32")]
+    extern "system" {
+        fn CryptUnprotectData(
+            input: *const Blob,
+            description: *mut *mut u16,
+            entropy: *const Blob,
+            reserved: *const c_void,
+            prompt: *const c_void,
+            flags: u32,
+            output: *mut Blob,
+        ) -> i32;
+    }
+    #[link(name = "Kernel32")]
+    extern "system" {
+        fn LocalFree(pointer: *mut c_void) -> *mut c_void;
+    }
+    let source = Blob {
+        size: bytes.len() as u32,
+        data: bytes.as_ptr() as *mut u8,
+    };
+    let mut output = Blob {
+        size: 0,
+        data: std::ptr::null_mut(),
+    };
+    unsafe {
+        if CryptUnprotectData(
+            &source,
+            std::ptr::null_mut(),
+            std::ptr::null(),
+            std::ptr::null(),
+            std::ptr::null(),
+            1,
+            &mut output,
+        ) == 0
+        {
+            return Err("请重新登录美鸭梨。".into());
+        }
+        let buffer = std::slice::from_raw_parts_mut(output.data, output.size as usize);
+        let decrypted = buffer.to_vec();
+        buffer.fill(0);
+        LocalFree(output.data.cast());
+        Ok(decrypted)
+    }
+}
+
+#[cfg(not(windows))]
+fn unprotect(_bytes: &[u8]) -> Result<Vec<u8>, String> {
+    Err("美鸭梨登录支持 Windows。".into())
+}
+
 #[cfg(windows)]
 fn protect(bytes: &[u8]) -> Result<Vec<u8>, String> {
     use std::ffi::c_void;
@@ -233,6 +302,8 @@ pub async fn pearpal_complete_login(
         "dewdrop_collected": response["data"]["dewdrop"].as_array().map(Vec::len),
     });
     let _ = std::fs::write(folder.join("status.json"), status.to_string());
+    drop(_guard);
+    super::resonance::login_changed(&app);
     let _ = app.emit_to("main", "pearpal-login-changed", true);
     let _ = window.close();
     Ok(())
@@ -252,6 +323,7 @@ pub async fn pearpal_logout(app: tauri::AppHandle, window: WebviewWindow) -> Res
         }
     }
     let _ = app.emit_to("main", "pearpal-login-changed", false);
+    super::resonance::login_changed(&app);
     let login = if let Some(login) = app.get_webview_window("pearpal-login") {
         login
     } else {

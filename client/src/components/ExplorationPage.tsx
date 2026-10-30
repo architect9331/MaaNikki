@@ -6,6 +6,7 @@ import { explorationStatusLabels, useExplorationStore } from '@/services/explora
 import { ExplorationControl } from './ExplorationControl';
 import { MapMaskSection } from './settings/MapMaskSection';
 import { LogsPanel } from './LogsPanel';
+import { SwitchTrack } from './ui/SwitchTrack';
 
 export function ExplorationPage({ onClose }: { onClose: () => void }) {
   const settings = useAppStore((state) => state.explorationSettings);
@@ -36,9 +37,7 @@ export function ExplorationPage({ onClose }: { onClose: () => void }) {
               {features.map(({ key, label, description }) => <label key={key} className="flex cursor-pointer items-center gap-5 px-4 py-3.5 hover:bg-bg-hover/50">
                 <div className="flex-1 space-y-1"><span className="text-sm font-medium">{label}</span><p className="text-xs leading-5 text-text-secondary">{description}</p></div>
                 <input type="checkbox" role="switch" className="peer sr-only" checked={settings[key]} onChange={(event) => setFeature(key, event.target.checked)} />
-                <span aria-hidden="true" className={clsx('relative h-5 w-9 shrink-0 rounded-full transition-colors peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent', settings[key] ? 'bg-accent' : 'bg-text-muted/35')}>
-                  <span className={clsx('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform', settings[key] ? 'translate-x-[18px]' : 'translate-x-0.5')} />
-                </span>
+                <SwitchTrack checked={settings[key]} />
               </label>)}
             </div>
             {title === '交互辅助' && <p className="border-t border-border px-4 py-3 text-xs leading-5 text-text-muted">键盘交互支持后台拾取、对白和跳过；鼠标交互及钓鱼在游戏前台运行，游戏最小化后暂停。</p>}

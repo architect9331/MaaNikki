@@ -17,6 +17,11 @@ class CrownReadyRecognition(CustomRecognition):
             result = context.run_recognition(node, image)
             if result and result.hit:
                 return CustomRecognition.AnalyzeResult(box=None, detail={"blocking": node})
+        # The Summit tab icon is also visible while Match is selected. It is
+        # an entrance there, not evidence that the Summit page has opened.
+        result = context.run_recognition("MaaNikki_Crown_MatchTitle", image)
+        if result and result.hit:
+            return None
         result = context.run_recognition("MaaNikki_Crown_SummitFeature", image)
         if result and result.hit:
             return CustomRecognition.AnalyzeResult(

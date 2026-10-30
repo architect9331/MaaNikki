@@ -32,7 +32,7 @@ class CrownAction(CustomAction):
     def run(self, context, argv):
         rt = Crown(context)
         try:
-            account = AccountState(ROOT)
+            account = AccountState.for_runtime(ROOT, rt)
             period = period_key("crown")
             if account.complete("crown"):
                 rt.log("巅峰赛：本期已完成，跳过。")

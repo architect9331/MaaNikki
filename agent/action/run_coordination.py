@@ -22,6 +22,7 @@ class RunCoordinationAction(CustomAction):
             options = json.loads(options or "{}") if isinstance(options, str) else options
             task_id = argv.task_detail.task_id
             if options.get("stage") == "begin_realm":
+                rt.account_uid()
                 energy = context.get_node_data("MaaNikki_RealmEnergy") or {}
                 next_names = {item if isinstance(item, str) else item.get("name")
                               for item in energy.get("next", []) if isinstance(item, (str, dict))}
@@ -31,7 +32,7 @@ class RunCoordinationAction(CustomAction):
                     "monster" if "MaaNikki_Monster" in next_names else None)
                 if collection:
                     catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
-                    _, protected, _ = InventoryStore(ROOT, catalog).load_organization()
+                    _, protected, _ = InventoryStore(ROOT, catalog, rt).load_organization()
                     total = sum(len(item["colors"]) * 3 for item in catalog["sets"]
                                 if item["rarity"] == 5 and item.get("collection_target", True))
                     if len(protected) == total:

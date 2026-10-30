@@ -64,6 +64,7 @@ class GameUI:
         self.rt, self.resource = runtime, resource
         self._preserve_cursor = False
         self._asset_definitions = self._asset_paths = None
+        self._tutorial = None
         self.monthly_paradise_unavailable = False
 
     @contextmanager
@@ -443,6 +444,12 @@ class GameUI:
         with self.rt.observe():
             return bool(page() if callable(page) else self.rt.hit(page))
 
+    def dismiss_tutorial(self):
+        if self._tutorial is None:
+            from .tutorial import TutorialOverlay
+            self._tutorial = TutorialOverlay(self.rt)
+        return self._tutorial.dismiss()
+
     @measure("wait.page")
     def wait_page(self, node=None, *, asset=None, text=None, threshold=.99, seconds=5,
                   roi=None, stable=False):
@@ -463,6 +470,16 @@ class GameUI:
             # Two confirmations must come from separate captures, even inside
             # a caller's observation scope.
             with self.rt.observe(fresh=True):
+                tutorial_started = time.monotonic()
+                tutorial = self.dismiss_tutorial()
+                if tutorial is False:
+                    return False
+                if tutorial:
+                    # Finish the overlay before evaluating the underlying page,
+                    # then give that page its original transition time.
+                    deadline += time.monotonic()-tutorial_started
+                    confirmations = 0
+                    continue
                 matched = self.page_matches(page)
                 if (matched and confirmations == 0 and page != "MaaNikki_MainDetected"
                         and not self.unhover()):
@@ -498,6 +515,8 @@ class GameUI:
                 if self.rt.stopped:
                     return False
                 with self.rt.observe():
+                    if self.dismiss_tutorial() is False:
+                        return False
                     destination_visible = self.page_matches(destination)
                     source_visible = bool(source and not destination_visible and self.page_matches(source))
                 if destination_visible and self.wait_page(destination, seconds=seconds):
@@ -645,6 +664,13 @@ class GameUI:
         while not self.rt.stopped and time.monotonic() < deadline and escapes < 8:
             # Reclassify before every input; animated backgrounds need not stop.
             with self.rt.observe():
+                tutorial_started = time.monotonic()
+                tutorial = self.dismiss_tutorial()
+                if tutorial is False:
+                    return False
+                if tutorial:
+                    deadline += time.monotonic()-tutorial_started
+                    continue
                 if self.rt.hit("MaaNikki_Home_StarCollectReady"):
                     page = "star_collect"
                 elif self.rt.hit("MaaNikki_MainDetected"):
@@ -727,8 +753,12 @@ class GameUI:
         return False
 
     def ability_page(self):
-        wardrobe = self.feature(asset="IconWardrobeFeature", threshold=.99,
-                                method=cv2.TM_CCORR_NORMED)
+        wardrobe_icon = self.feature(asset="IconWardrobeFeature", threshold=.99,
+                                     method=cv2.TM_CCORR_NORMED)
+        def wardrobe():
+            # Header artwork changes with the wardrobe background. The paired
+            # tabs and Save Outfit label identify the same actionable page.
+            return wardrobe_icon() or self.rt.hit("MaaNikki_Wardrobe_TextReady")
         ability = self.feature(asset="IconAbilityFeature", threshold=.99,
                                method=cv2.TM_CCORR_NORMED)
         if self.page_matches(ability) and self.wait_page(ability):
@@ -826,7 +856,12 @@ class GameUI:
                 return False
         if self.page_matches(destination):
             return False
+        return self.monthly_intro_start()
+
+    def monthly_intro_start(self):
+        """Resolve the version intro for both direct and Paradise entrances."""
         if self.rt.hit("MaaNikki_Monthly_IntroSkip"):
+            self.rt.log("正在跳过奇迹之旅开场动画。", detail=True)
             if not self.rt.hold("skip", 3):
                 return False
         return self.wait_page("MaaNikki_Monthly_Start")

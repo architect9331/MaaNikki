@@ -54,6 +54,11 @@ class UITemplateRecognition(CustomRecognition):
                       cv2.threshold(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY),
                                     gray[0], gray[1], cv2.THRESH_BINARY)[1])
             preprocessing = {"color": color} if color else {"gray_limit": gray}
+            masked = param.get("mask", False)
+            if type(masked) is not bool:
+                raise ValueError("页面模板遮罩参数无效。")
+            if masked:
+                preprocessing["mask"] = "alpha"
             best_score, best_box, best_template = -1.0, None, None
             for name, threshold in zip(templates, thresholds):
                 if not isinstance(name, str) or not isinstance(threshold, (int, float)) or not 0 <= threshold <= 1:
@@ -61,14 +66,16 @@ class UITemplateRecognition(CustomRecognition):
                 path = (image_root / name).resolve()
                 if not path.is_relative_to(image_root):
                     raise ValueError("页面图像资源路径无效。")
-                template = prepared_template(path, grayscale=not bool(color),
-                                             gray=None if color else gray, color=color).image
+                prepared = prepared_template(path, grayscale=not bool(color) and not masked,
+                                             gray=None if color else gray, color=color)
+                template = prepared.image
                 if not template.size:
                     raise ValueError("页面图像没有可识别的亮色特征。")
                 th, tw = template.shape[:2]
                 if tw > width or th > height:
                     continue
-                rates = cv2.matchTemplate(target, template, cv2.TM_CCORR_NORMED)
+                rates = cv2.matchTemplate(target, template, cv2.TM_CCORR_NORMED,
+                                         mask=prepared.mask if masked else None)
                 rates = np.nan_to_num(rates, copy=False, nan=-1, posinf=-1, neginf=-1)
                 _, score, _, point = cv2.minMaxLoc(rates)
                 if score > best_score:

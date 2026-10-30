@@ -53,6 +53,14 @@ class StartGameAction(CustomAction):
             return False
 
         def complete():
+            # Read only after the ordinary HUD has been established by the
+            # startup flow. Binding also refreshes the desktop account view.
+            try:
+                runtime.account_uid()
+            except (OSError, ValueError) as error:
+                # Startup also serves tasks which do not persist role data.
+                # Account-bound tasks confirm identity at their own entrance.
+                runtime.log(f"账号识别待重试：{error}。", detail=True)
             if bootstrap:
                 self.elapsed_seconds = time.monotonic()-started_at
                 return True
@@ -72,10 +80,28 @@ class StartGameAction(CustomAction):
                         or runtime.hit("MaaNikki_StartGame_Enter"))
 
         def advance(node, destination):
+            def click():
+                nonlocal entered, logged_in
+                if runtime.stopped or time.monotonic() >= deadline:
+                    return False
+                if node == "MaaNikki_StartGame_Enter":
+                    if entered >= 3:
+                        return False
+                    entered += 1
+                    runtime.log(f"点击进入游戏（{entered}/3）。", detail=True)
+                else:
+                    if logged_in >= 3:
+                        return False
+                    logged_in += 1
+                    runtime.log(f"点击登录（{logged_in}/3）。", detail=True)
+                return runtime.click_template(node, attempts=1, wait_seconds=0, verify=False)
+
+            # Use the shared page-transition budget for each input response.
+            # Downloads and loading remain bounded by the outer startup deadline.
             return runtime.ui.enter_page(
-                lambda: runtime.click_template(node, attempts=1, wait_seconds=0, verify=False),
-                destination, source=node, attempts=1,
-                seconds=max(.1, deadline-time.monotonic()))
+                click, destination, source=node,
+                attempts=3-entered if node == "MaaNikki_StartGame_Enter" else 3-logged_in,
+                seconds=min(5, max(.1, deadline-time.monotonic())))
 
         def entered_game():
             with runtime.observe():
@@ -180,12 +206,14 @@ class StartGameAction(CustomAction):
                     runtime.log("已进入游戏主页。" if waiting_logged
                                 else "游戏已在主页，跳过启动流程，继续后续任务。")
                     return complete()
-            elif enter and entered < 3:
-                entered += 1
+            elif enter:
+                if entered >= 3:
+                    return incomplete("点击进入游戏后仍停留在入口页面")
                 if not advance("MaaNikki_StartGame_Enter", entered_game):
                     return incomplete()
-            elif login and logged_in < 3:
-                logged_in += 1
+            elif login:
+                if logged_in >= 3:
+                    return incomplete("点击登录后仍停留在登录页面")
                 if not advance("MaaNikki_StartGame_Login", transition_ready):
                     return incomplete()
             elif intro:

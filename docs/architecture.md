@@ -191,7 +191,13 @@ Esc 菜单的挖掘、星绘图册、奇迹之冠入口共用 `find_menu_entry`�
 
 ### 账号状态字段
 
-`config/account_state.json` 使用 `schema_version: 2`。`blessing.inventory` 保存最近一次完整数量记录，`blessing.last_scan` 保存最新处理状态；嵌套库存快照使用 `schema_version: 1`。首次写入时导入旧 `config/blessing/` 文件并保留备份。
+账号文件为 `config/accounts/CN/<UID>.json`，外层 `schema_version: 3`，包含 `uid`、`region`、`tasks`、`blessing`、`observations`、`resonance`。Python 与 Rust 通过 `config/accounts/store.lock` 互斥并原子替换文件，更新时保留其他模块字段。
+
+任务从左下角 UID 标签确认游戏角色，绑定本次任务的读写目标；写入前复核可见 UID，前台变化后身份未确认时保留原存档。周期任务由游戏端绑定 UID 后判断完成状态，前端只显示已记录状态。美鸭梨登录仅决定共鸣数据归属，不切换当前游戏角色索引。
+
+`index.json` 保存最近确认的游戏账号和旧数据迁移归属。旧版 `account_state.json` 的无 UID 任务、仓库和观测数据，在首次游戏 UID 确认时绑定到该角色；迁移归属先预留，账号文件保存后再发布活动索引，中断后仅原 UID 可恢复迁移。旧共鸣记录依其自带 UID 迁移，所有旧文件保留。
+
+`blessing.inventory` 保存最近一次完整数量记录，`blessing.last_scan` 保存最新处理状态；嵌套库存快照保留 `schema_version: 1`。
 
 | 字段 | 内容 |
 | --- | --- |

@@ -7,6 +7,7 @@ import { getBlessingProgress } from '@/utils/blessingProgress';
 import { ModalPortal, useModalFocusTrap } from './ui/Modal';
 import { Tooltip } from './ui/Tooltip';
 import { ExplorationControl } from './ExplorationControl';
+import { ResonanceControl } from './ResonanceControl';
 
 function MeteorIcon({ className }: { className?: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
@@ -55,9 +56,10 @@ function GiantMeteorStatus() {
   }) : null;
 
   useEffect(() => {
-    if (!found || announced.current === today) return;
-    announced.current = today;
-    const key = `maanikki:giant-meteor:${today}`;
+    const account = data?.account_key ?? 'legacy';
+    const key = `maanikki:giant-meteor:${account}:${today}`;
+    if (!found || announced.current === key) return;
+    announced.current = key;
     try {
       if (window.sessionStorage.getItem(key)) return;
       window.sessionStorage.setItem(key, 'announced');
@@ -69,7 +71,7 @@ function GiantMeteorStatus() {
       className: 'meteor-discovery-toast',
       duration: 8000,
     });
-  }, [found, today]);
+  }, [found, today, data?.account_key]);
 
   return <>
     <Tooltip side="bottom" content={<div className="space-y-1">
@@ -103,6 +105,7 @@ function GiantMeteorStatus() {
             <p id="giant-meteor-description" className="mt-3 text-sm leading-6 text-text-secondary">{description}</p>
           </div>
           <div className="mx-5 rounded-lg border border-border bg-bg-primary/70 px-4 py-3 text-xs">
+            {data?.uid && <div className="mb-2 flex justify-between gap-3"><span className="text-text-secondary">游戏 UID</span><span className="tabular-nums">{data.uid}</span></div>}
             <div className="flex justify-between gap-3"><span className="text-text-secondary">游戏日期</span><span className="tabular-nums">{today}</span></div>
             <div className="mt-2 flex justify-between gap-3"><span className="text-text-secondary">检测时间</span><span className="tabular-nums">{checkedAt ?? '尚未检测'}</span></div>
           </div>
@@ -137,5 +140,6 @@ export function AccountStatusActions({ onShowProgress }: { onShowProgress: () =>
       </button>
     </Tooltip>
     <ExplorationControl />
+    <ResonanceControl />
   </>;
 }

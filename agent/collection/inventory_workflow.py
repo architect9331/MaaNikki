@@ -27,7 +27,7 @@ class FiveStarInventory(BlessingLocker):
         self.report.update(workflow="five_star_pursuit", phase="load_baseline", goal_rarity=5,
                            material_rarity=5, complete=False, stop_reason=None)
         self.journal = self.report
-        self.store = InventoryStore(folder.parents[2], catalog)
+        self.store = InventoryStore(folder.parents[2], catalog, runtime)
         self.working = deepcopy(self.snapshot)
         self.working["scan"]["view"] = "normal_inventory"
         self.prepared = False

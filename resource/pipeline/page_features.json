@@ -1,4 +1,11 @@
 {
+  "MaaNikki_Asset_AccountUid": {
+    "recognition": "OCR",
+    "roi": [0, 700, 200, 20],
+    "expected": ".+",
+    "order_by": "Horizontal",
+    "action": "DoNothing"
+  },
   "MaaNikki_MenuReady": {
     "recognition": "OCR",
     "roi": [66, 15, 153, 37],
@@ -27,6 +34,11 @@
     "recognition": "OCR",
     "roi": [450, 0, 350, 80],
     "expected": "旅行任务|旅行秘宝",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Monthly_TravelOpened": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Monthly_TravelReady", "MaaNikki_Monthly_IntroSkip", "MaaNikki_Monthly_Start"],
     "action": "DoNothing"
   },
   "MaaNikki_Monthly_ParadiseReady": {
@@ -98,7 +110,46 @@
     ],
     "action": "DoNothing"
   },
+  "MaaNikki_Wardrobe_TextReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Wardrobe_Tabs", "MaaNikki_Wardrobe_Save"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Wardrobe_Tabs": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Wardrobe_DressTab", "MaaNikki_Wardrobe_AbilityTab"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Wardrobe_DressTab": {
+    "recognition": "OCR",
+    "roi": [450, 0, 130, 75],
+    "expected": "^换装$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Wardrobe_AbilityTab": {
+    "recognition": "OCR",
+    "roi": [580, 0, 140, 75],
+    "expected": "^能力配置$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Wardrobe_Save": {
+    "recognition": "OCR",
+    "roi": [25, 615, 270, 85],
+    "expected": "^保存搭配$",
+    "action": "DoNothing"
+  },
   "MaaNikki_Crown_PageReady": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Crown_MatchTitle", "MaaNikki_Crown_LegacyPageReady"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_MatchTitle": {
+    "recognition": "OCR",
+    "roi": [55, 85, 550, 65],
+    "expected": "奇迹之冠搭配赛",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Crown_LegacyPageReady": {
     "recognition": "TemplateMatch",
     "roi": [92, 203, 169, 134],
     "template": "game/ui/areamiracrownentrance.png",

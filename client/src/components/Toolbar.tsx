@@ -1,4 +1,3 @@
-import { useAccountStateStore, periodCompleted } from '@/stores/accountStateStore';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -340,28 +339,14 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         return false;
       };
 
-      let account;
-      try {
-        account = await useAccountStateStore.getState().refresh();
-      } catch (error) {
-        return failStart(`账号状态读取失败：${String(error)}`);
-      }
+      // UID is confirmed inside the game task before consulting period state.
       const candidates = filterTasksForRun(targetTasks, { startFromTaskId, singleTaskId });
-      for (const task of candidates) {
-        if (periodCompleted(account, task.taskName)) addLog(targetId, { type: "info", message: `${task.customName || task.taskName}：当前周期已完成，自动跳过（保留勾选）。` });
-      }
       const currentDevMode = useAppStore.getState().devMode;
-      const tasksToRun = candidates.filter((task) => !periodCompleted(account, task.taskName)).filter(
+      const tasksToRun = candidates.filter(
         (task) => isTaskAvailable(projectInterface?.task.find((def) => def.name === task.taskName), currentDevMode),
       );
       if (tasksToRun.length === 0) {
-        if (candidates.length > 0 && candidates.every((task) => periodCompleted(account, task.taskName))) {
-          onPhaseChange?.("idle");
-          return true;
-        }
-        if (singleTaskId || startFromTaskId) {
-          return failStart(t('taskList.autoConnect.taskNotFound'));
-        }
+        if (singleTaskId || startFromTaskId) return failStart(t('taskList.autoConnect.taskNotFound'));
         return failStart(t('dashboard.noEnabledTasks'));
       }
 

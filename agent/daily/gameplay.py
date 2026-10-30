@@ -127,6 +127,8 @@ class Gameplay:
 
     def realm(self, kind, maximize=True, entered=False, weekly_node=None, allow_exhausted=False,
               return_page="main", fixed_count=None, *, allow_unavailable=False, before_submit=None):
+        if kind == "bless":
+            self.rt.account_uid()
         if fixed_count is not None and (type(fixed_count) is not int or fixed_count != 1):
             raise ValueError("固定挑战数量目前仅支持一次")
         self.energy_exhausted = False
@@ -199,7 +201,7 @@ class Gameplay:
         # acquisition never silently leaves an older full snapshot reusable.
         from collection.storage import InventoryStore
         catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
-        InventoryStore(ROOT, catalog).invalidate(reason, source="realm_bless")
+        InventoryStore(ROOT, catalog, self.rt).invalidate(reason, source="realm_bless")
 
     def select_realm_level(self, kind, node):
         if self.ui.find(roi=self.REALM_LEVEL_ROI, node=node, scroll_roi=self.REALM_SCROLL_ROI):
@@ -613,7 +615,14 @@ class Gameplay:
                             break
                         switched = result == "ready"
                     else:
-                        switched = self.rt.click_template(f"MaaNikki_Monthly_To{target}")
+                        # A new Travel season can land on its intro or Start
+                        # screen. Resolve those before requiring the reward tabs.
+                        switched = self.rt.click_template(
+                            f"MaaNikki_Monthly_To{target}", ready="MaaNikki_Monthly_TravelOpened")
+                        if switched and not self.ui.page_matches("MaaNikki_Monthly_TravelReady"):
+                            switched = (self.ui.monthly_intro_start()
+                                        and self.rt.click_template(
+                                            "MaaNikki_Monthly_Start", ready="MaaNikki_Monthly_TravelReady"))
                     if not switched:
                         self.monthly_diagnostic(kind, "switch_unconfirmed", f"未能切换到{target_label}")
                         return False

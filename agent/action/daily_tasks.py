@@ -219,6 +219,7 @@ class DailyRun(Executors):
     def run_daily(self):
         score = None
         try:
+            self.account_uid()
             if self.mode == "zhaoxi":
                 run_state.clear(self)
             if not self.open_score_page():

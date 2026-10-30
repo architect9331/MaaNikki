@@ -1,0 +1,37 @@
+{
+  "MaaNikki_Tutorial_FrameTopLeft": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [150, 25, 400, 230],
+      "template": "nikki/common/tutorial_top_left.png",
+      "mask": true,
+      "gray_limit": [230, 255],
+      "threshold": 0.8
+    },
+    "action": "DoNothing"
+  },
+  "MaaNikki_Tutorial_FrameBottomRight": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [780, 350, 380, 230],
+      "template": "nikki/common/tutorial_bottom_right.png",
+      "mask": true,
+      "gray_limit": [230, 255],
+      "threshold": 0.8
+    },
+    "action": "DoNothing"
+  },
+  "MaaNikki_Tutorial_Frame": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Tutorial_FrameTopLeft", "MaaNikki_Tutorial_FrameBottomRight"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Tutorial_Button": {
+    "recognition": "OCR",
+    "roi": [300, 560, 680, 140],
+    "expected": "^\\s*(下\\s*一\\s*[页頁]|知\\s*道\\s*了)\\s*$",
+    "action": "DoNothing"
+  }
+}

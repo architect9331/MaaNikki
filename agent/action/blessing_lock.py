@@ -27,7 +27,7 @@ class BlessingLockAction(CustomAction):
         try:
             catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
             options = parameters(context, argv.node_name)
-            store = InventoryStore(ROOT, catalog)
+            store = InventoryStore(ROOT, catalog, rt)
             store.invalidate("祝福闪光仓库读取已开始，完整结束前禁止全收集", source="organization")
             locker = BlessingOrganizer(rt, catalog, folder,
                                     allow_unlock=options.get("unlock_nonconforming", False))
@@ -36,7 +36,7 @@ class BlessingLockAction(CustomAction):
             snapshot, published = store.save_scan(snapshot, folder, source="locking")
             inventory_saved = True
             write_json(folder / "inventory.json", snapshot)
-            locker.report["inventory"] = {"published": published, "path": str(store.path),
+            locker.report["inventory"] = {"published": published, "path": store.reference(store.path),
                                            "snapshot": "inventory.json", "reason": snapshot["scan"]["reason"]}
             if not published:
                 locker.report.update(complete=False, reason="锁定整理已完成，但普通仓库数量核对未通过")
@@ -48,7 +48,7 @@ class BlessingLockAction(CustomAction):
             rt.log(f"{status}：头部、手部、脚部共新增锁定 {added} 个，解锁 {removed} 个。"
                    f"报告：{folder / 'locking.json'}。",
                    ui_text=f"{status}：新增锁定 {added} 个，解锁 {removed} 个。")
-            rt.log(f"统一库存 JSON：{store.path if published else store.last_scan_path}。"
+            rt.log(f"统一库存 JSON：{store.reference(store.path if published else store.last_scan_path)}。"
                    + ("可供后续任务复用。" if published else "数量核对未通过，未覆盖原有完整库存，请重新整理。"),
                    detail=True)
             _, finished = rt.finish(argv.node_name)
@@ -85,7 +85,7 @@ class BlessingLockAction(CustomAction):
                         partial, _ = store.save_scan(partial, folder, source="locking")
                         write_json(folder / "inventory.json", partial)
                         locker.report["inventory"] = {
-                            "published": False, "path": str(store.last_scan_path),
+                            "published": False, "path": store.reference(store.last_scan_path),
                             "snapshot": "inventory.json", "reason": partial["scan"]["reason"]}
                 except (OSError, ValueError, KeyError, TypeError) as error:
                     rt.log(f"部分库存保存失败：{error}。")

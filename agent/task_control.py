@@ -48,6 +48,9 @@ class ForegroundSession:
         self._background_observation = False
         self._observed_foreground = None
         self.frame_validated = False
+        self.account_uid = None
+        self.account_generation = None
+        self.account_mismatch = False
         self._frame_failure = None
         self.evidence = FailureEvidence()
 

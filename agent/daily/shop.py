@@ -10,7 +10,7 @@ from account_state import AccountState, period_key
 class ShopWorkflow:
     def __init__(self, runtime):
         self.rt, self.ui = runtime, runtime.ui
-        self.account = AccountState(ROOT)
+        self.account = AccountState.for_runtime(ROOT, runtime)
         self.period = period_key(self.TASK)
         self.completed = self.account.completed_items(self.TASK, self.period)
 

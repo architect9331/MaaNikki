@@ -191,6 +191,7 @@ class Motion:
 
 
 class Navigator:
+    CAMERA_SETTLE_SECONDS = .15
     # World-map units per second. Low displacement (wall contact, animation,
     # noisy localization) must never turn into an arbitrarily long W hold.
     MIN_PLANNING_SPEED = 6.0
@@ -238,6 +239,13 @@ class Navigator:
 
     def observe(self, hint, *, commit=True, reset_continuity=False, verify_heading=True):
         self.inputs.check()
+        if self.heading_state.pending:
+            # Camera input reaches the renderer after the RPC returns. A frame
+            # captured during the existing camera-ease interval can still show
+            # the old cone; it cannot validate or reject the commanded turn.
+            remaining = self.heading_turn_at+self.CAMERA_SETTLE_SECONDS-time.monotonic()
+            if remaining > 0 and self.pause(remaining) is False:
+                raise NavigationError("已停止导航。")
         if self.motion:
             self.motion.guard(self.read_costs.get("observe", .3)*1.25+.03)
         begin = time.monotonic()
@@ -459,10 +467,17 @@ class Navigator:
             previous_delta = delta
             pixels = self.camera(delta*self.turn_ratio)
             expected_rotation = pixels/self.turn_ratio
-            self.pause(.04)
             after = self.observe((pose.x, pose.y))
             if getattr(self.inputs, "generation", 0) != generation:
                 raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
+            if (after.heading is None and after.position_reliable and self.heading_state.pending
+                    and self.locator.heading_diagnostics.get("method") == "heading_discontinuity"):
+                # Finish observing this commanded turn while stationary. A
+                # delayed renderer update is part of the turn, not a new
+                # uncommanded direction failure consuming route recoveries.
+                # stable_heading also rejects unsupported/continuously moving
+                # cones and invalidates calibration feedback for external turns.
+                after = self.stable_heading(after)
             self.require_heading(after)
             self.event({"type": "camera_turn", "target": target_heading, "before": pose.heading,
                         "after": after.heading, "pixels": pixels,
@@ -498,7 +513,6 @@ class Navigator:
                 before = pose.heading
                 pixels = self.camera(delta*self.turn_ratio*correction_gain)
                 expected_rotation = pixels/self.turn_ratio
-                self.pause(.15)
                 pose = self.stable_heading(pose)
                 actual = angle_delta(pose.heading, before)
                 self.event({"type": "camera_turn", "target": target_heading, "before": before,

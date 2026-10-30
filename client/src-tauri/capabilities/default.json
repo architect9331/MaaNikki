@@ -74,6 +74,7 @@
     "fs:allow-appdata-write-recursive",
     "dialog:default",
     "dialog:allow-open",
+    "dialog:allow-save",
     "core:path:default",
     {
       "identifier": "http:default",

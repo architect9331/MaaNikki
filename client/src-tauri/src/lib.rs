@@ -109,6 +109,7 @@ pub fn run() {
             // 先注册共享状态，再启动依赖这些状态的后台任务，避免启动竞态
             app.manage(ws_broadcast.clone());
             app.manage(app_config.clone());
+            commands::resonance::start(app.handle());
 
             // 启动 HTTP Web 服务器（后台 tokio 任务，不阻塞 Tauri 启动）
             {
@@ -238,6 +239,11 @@ pub fn run() {
             commands::pearpal::pearpal_open_login,
             commands::pearpal::pearpal_complete_login,
             commands::pearpal::pearpal_logout,
+            commands::resonance::resonance_status,
+            commands::resonance::resonance_set_enabled,
+            commands::resonance::resonance_sync,
+            commands::resonance::resonance_history,
+            commands::resonance::resonance_export,
             commands::account_state::get_account_state,
             // Maa 核心命令
             commands::maa_core::maa_init,

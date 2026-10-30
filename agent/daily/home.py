@@ -14,6 +14,7 @@ class Home:
     def run(self):
         if not self.rt.main() or self.rt.stopped:
             return False
+        self.account = AccountState.for_runtime(ROOT, self.rt)
         card = SimpleNamespace(rule=SimpleNamespace(executor="home"), remaining=None)
         result = self.rt.navigate("home_daily", "home", card)
         if self.rt.stopped:
@@ -52,6 +53,6 @@ class Home:
 
     def save_meteor(self, outcome, day, text):
         try:
-            AccountState(ROOT).record_giant_meteor(outcome, day=day, text=text)
+            self.account.record_giant_meteor(outcome, day=day, text=text)
         except (OSError, ValueError) as error:
             self.rt.log(f"巨陨星检测结果未能保存：{error}")

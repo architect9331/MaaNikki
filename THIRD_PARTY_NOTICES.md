@@ -2,6 +2,8 @@
 
 地图标记参考 [Whimbox](https://github.com/nikkigallery/Whimbox/tree/2a75df818c28e9f4af2b3e81c0db12d7694a20d1) 的美鸭梨接口、坐标转换和 Snappy 解码实现（GPL-3.0，许可证见 licenses/Routes-GPL-3.0.txt）。透明遮罩和 Tauri 登录界面在本项目中实现。
 
+共鸣记录接口和导出格式参考 [Gongeo Infinity Nikki Tracker](https://github.com/dastrokes/gongeo.us-nikki-tracker)。内置卡池目录、中文物品名及星级摘取自该项目，更新于 2026-10-31；采用 MIT 许可，全文见 `licenses/Gongeo-MIT.txt`。
+
 本项目代码采用 AGPL-3.0-only，全文见根目录 `LICENSE`。第三方组件、图片和模型保留各自的权利与许可。本文件列出主要来源，不替代各组件的许可证或完整的依赖许可核查。
 
 部分路线及匹配截图经适配后用于 MaaNikki，来源见 README 的“来源与致谢”。相关上游仓库采用 GPL-3.0，许可证见 `licenses/Routes-GPL-3.0.txt`。游戏截图与地图用于界面识别和路线定位，《无限暖暖》的名称及相关游戏素材权利归相应权利人。

@@ -167,13 +167,18 @@ class Crown(Runtime):
         if (self.hit("MaaNikki_Crown_SummitArrivalReady")
                 and self.ui.wait_page("MaaNikki_Crown_SummitArrivalReady")):
             return self.settle_summit_entry()
-        if not self.ui.enter_page(lambda: self.area_click("AreaMiraCrownEntrance"),
+        def enter_summit():
+            # The current Match page has three portals; its old entrance
+            # coordinates are no longer a Summit entrance. Use the Summit tab.
+            if self.hit("MaaNikki_Crown_MatchTitle"):
+                return self.wait_asset("ButtonMiraCrownRank", attempts=1, click=True)
+            return self.area_click("AreaMiraCrownEntrance")
+        if not self.ui.enter_page(enter_summit,
             "MaaNikki_Crown_SummitArrivalReady", source="MaaNikki_Crown_PageReady",
             recover=self.open_crown):
             return False
         if not self.settle_summit_entry():
             return False
-        self.wait_asset("ButtonMiraCrownRank", attempts=1, click=True)
         return True
 
     def challenge(self):
