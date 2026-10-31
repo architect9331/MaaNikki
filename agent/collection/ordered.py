@@ -184,9 +184,37 @@ class OrderedView:
         # entire card, including its count and lock glyph, until it is clear.
         visible = len(boxes)
         boxes = [box for box in boxes if box[1] + box[3] <= roi[1] + roi[3]]
+        deferred = visible - len(boxes)
+        # The list is packed left-to-right, then top-to-bottom. An observed
+        # card proves that earlier columns on that row are occupied, even
+        # when level OCR and a broken outline both miss one of those cards.
+        # A later observed row also proves that the previous row is full.
+        # Infer only candidate geometry; normal icon/tooltip and lock reads
+        # still establish each item's identity and state. Never extend the
+        # last row to the right, where the list can actually be empty.
+        card_rows = []
+        for box in boxes:
+            row = next((row for row in card_rows if abs(row[0][1] - box[1]) < 12), None)
+            if row is None:
+                row = []
+                card_rows.append(row)
+            row.append(box)
+        inferred = []
+        first_x, pitch = self.o.layout["first_x"], self.o.layout["column_pitch"]
+        for index, row in enumerate(card_rows):
+            columns = {round((box[0] - first_x) / pitch) for box in row}
+            top = sorted(box[1] for box in row)[len(row) // 2]
+            end = (self.o.layout["columns"] if index < len(card_rows) - 1
+                   else max(columns) + 1)
+            for column in range(end):
+                if column not in columns:
+                    inferred.append([round(first_x + column * pitch), top,
+                                     *self.o.layout["card_size"]])
+        boxes = sorted(boxes + inferred, key=self.ordinal)
         self.o.report["reading_window"] = {"slot": self.slot, "position": self.position,
                                             "roi": roi, "at_bottom": at_bottom,
-                                            "deferred_cards": visible - len(boxes)}
+                                            "deferred_cards": deferred,
+                                            "inferred_cards": inferred}
         values = [self.o.level(box, levels) for box in boxes]
         matches = self.o.matcher.match_batch(frame, boxes, levels=values)
         self._page_frame, self._page_cells = frame, list(zip(boxes, values, matches))
