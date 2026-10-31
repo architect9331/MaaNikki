@@ -5,7 +5,6 @@
 use super::types::MaaState;
 use super::types::SystemInfo;
 use super::types::WebView2DirInfo;
-use super::utils::get_maafw_dir;
 use clap::Parser;
 use log::info;
 #[cfg(windows)]
@@ -722,28 +721,9 @@ pub async fn run_pretask(
 
 /// 重新尝试加载 MaaFramework 库
 #[tauri::command]
-pub async fn retry_load_maa_library() -> Result<String, String> {
+pub async fn retry_load_maa_library(state: State<'_, Arc<MaaState>>) -> Result<String, String> {
     info!("retry_load_maa_library");
-
-    let maafw_dir = get_maafw_dir()?;
-    if !maafw_dir.exists() {
-        return Err("MaaFramework directory not found".to_string());
-    }
-
-    // Load library
-    #[cfg(windows)]
-    let dll_path = maafw_dir.join("MaaFramework.dll");
-    #[cfg(target_os = "macos")]
-    let dll_path = maafw_dir.join("libMaaFramework.dylib");
-    #[cfg(target_os = "linux")]
-    let dll_path = maafw_dir.join("libMaaFramework.so");
-
-    maa_framework::load_library(&dll_path).map_err(|e| e.to_string())?;
-
-    let version = maa_framework::maa_version().to_string();
-    info!("MaaFramework loaded successfully, version: {}", version);
-
-    Ok(version)
+    super::maa_library::load(&state, None)
 }
 
 /// 检查是否检测到 VC++ 运行库缺失（检查后自动清除标记）

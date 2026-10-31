@@ -2,7 +2,7 @@
 //!
 //! 提供 MaaFramework 初始化、版本检查、设备搜索、控制器、资源和任务管理
 
-use log::{debug, error, info, warn};
+use log::{debug, info, warn};
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -360,70 +360,10 @@ fn update_instance_controller(
 pub fn maa_init(state: State<Arc<MaaState>>, lib_dir: Option<String>) -> Result<String, String> {
     info!("maa_init called, lib_dir: {:?}", lib_dir);
 
-    let lib_path = match lib_dir {
-        Some(dir) if !dir.is_empty() => std::path::PathBuf::from(&dir),
-        _ => get_maafw_dir()?,
-    };
-
-    info!("maa_init using path: {:?}", lib_path);
-
-    if !lib_path.exists() {
-        let err = format!(
-            "MaaFramework library directory not found: {}",
-            lib_path.display()
-        );
-        error!("{}", err);
-        return Err(err);
-    }
-
-    // Windows: 将 lib_dir 添加到 DLL 搜索路径，确保依赖 DLL 能被找到
-    #[cfg(windows)]
-    {
-        let dll_dir = if lib_path.is_file() {
-            lib_path.parent().unwrap_or(&lib_path)
-        } else {
-            &lib_path
-        };
-
-        debug!("SetDllDirectoryW set to {:?}", dll_dir);
-        let result = winsafe::SetDllDirectory(Some(&dll_dir.to_string_lossy()));
-        if result.is_err() {
-            warn!("SetDllDirectoryW failed");
-        }
-    }
-
-    // 先设置 lib_dir
-    let effective_dir = if lib_path.is_file() {
-        lib_path
-            .parent()
-            .unwrap_or(lib_path.as_path())
-            .to_path_buf()
-    } else {
-        lib_path.clone()
-    };
-    *state.lib_dir.lock().map_err(|e| e.to_string())? = Some(effective_dir);
-
-    // 加载库
-    // 允许用户指定具体的文件路径，或者只指定目录
-    let dll_path = if lib_path.is_file() {
-        lib_path.clone()
-    } else {
-        #[cfg(windows)]
-        let name = "MaaFramework.dll";
-        #[cfg(target_os = "macos")]
-        let name = "libMaaFramework.dylib";
-        #[cfg(target_os = "linux")]
-        let name = "libMaaFramework.so";
-        lib_path.join(name)
-    };
-
-    match maa_framework::load_library(&dll_path) {
-        Ok(()) => info!("maa_init library loaded successfully"),
-        Err(e) if e.contains("already loaded") => {
-            info!("maa_init library already loaded, skipping");
-        }
-        Err(e) => return Err(e),
-    }
+    let lib_path = lib_dir
+        .filter(|dir| !dir.is_empty())
+        .map(std::path::PathBuf::from);
+    let version = super::maa_library::load(&state, lib_path)?;
 
     // 初始化 Toolkit
     // 初始化 Toolkit 配置，user_path 指向应用数据目录
@@ -437,7 +377,6 @@ pub fn maa_init(state: State<Arc<MaaState>>, lib_dir: Option<String>) -> Result<
         warn!("Failed to init toolkit option: {}", e);
     }
 
-    let version = maa_framework::maa_version().to_string();
     info!("maa_init success, version: {}", version);
 
     Ok(version)
@@ -461,12 +400,8 @@ pub fn maa_set_resource_dir(
 
 /// 获取 MaaFramework 版本
 #[tauri::command]
-pub fn maa_get_version() -> Result<String, String> {
-    debug!("maa_get_version called");
-    let version = std::panic::catch_unwind(|| maa_framework::maa_version().to_string())
-        .map_err(|_| "MaaFramework library not loaded".to_string())?;
-    info!("maa_get_version result: {}", version);
-    Ok(version)
+pub fn maa_get_version(state: State<Arc<MaaState>>) -> Result<String, String> {
+    super::maa_library::version(&state)
 }
 
 /// 检查 MaaFramework 版本是否满足最小要求
@@ -474,33 +409,7 @@ pub fn maa_get_version() -> Result<String, String> {
 pub fn maa_check_version(state: State<Arc<MaaState>>) -> Result<VersionCheckResult, String> {
     debug!("maa_check_version called");
 
-    let lib_dir = state.lib_dir.lock().map_err(|e| e.to_string())?.clone();
-
-    if let Some(dir) = lib_dir {
-        #[cfg(windows)]
-        let dll_path = dir.join("MaaFramework.dll");
-        #[cfg(target_os = "macos")]
-        let dll_path = dir.join("libMaaFramework.dylib");
-        #[cfg(target_os = "linux")]
-        let dll_path = dir.join("libMaaFramework.so");
-
-        if let Err(e) = maa_framework::load_library(&dll_path) {
-            if !e.contains("already loaded") {
-                error!(
-                    "Failed to load MaaFramework library from {:?}: {:?}",
-                    dll_path, e
-                );
-                return Err(format!("MaaFramework library failed to load: {}", e));
-            }
-        }
-    }
-
-    let current_str = std::panic::catch_unwind(|| maa_framework::maa_version().to_string())
-        .map_err(|_| "MaaFramework library not loaded (panic in maa_version)".to_string())?;
-
-    if current_str == "unknown" || current_str.is_empty() {
-        return Err("MaaFramework not initialized".to_string());
-    }
+    let current_str = super::maa_library::version(&state)?;
 
     // 去掉版本号前缀 'v'（如 "v5.12.1" -> "5.12.1"）
     let current_clean = current_str.trim_start_matches('v');

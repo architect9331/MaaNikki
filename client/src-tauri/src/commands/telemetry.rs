@@ -283,6 +283,29 @@ pub fn is_active() -> bool {
     TELEMETRY_GUARD.lock().map(|g| g.is_some()).unwrap_or(false)
 }
 
+/// 每个进程首次动态库加载失败时报告，原始系统错误保留在诊断字段中。
+pub fn capture_library_load_failure(path: Option<&std::path::Path>, error: &str) -> bool {
+    if !is_active() {
+        return false;
+    }
+    let mut event = sentry::protocol::Event {
+        message: Some("MaaFramework library failed to load".to_string()),
+        level: sentry::Level::Error,
+        logger: Some("mxu.framework".to_string()),
+        fingerprint: Cow::Owned(vec![Cow::Borrowed("mxu-framework-load-failure")]),
+        ..Default::default()
+    };
+    event.extra.insert("loader.error".to_string(), error.into());
+    if let Some(path) = path {
+        event.extra.insert(
+            "library.path".to_string(),
+            path.to_string_lossy().into_owned().into(),
+        );
+    }
+    sentry::capture_event(event);
+    true
+}
+
 /// 启动期初始化，在 Tauri `setup()` 中调用（interface / config 加载之后）。
 ///
 /// 相比等前端 `telemetry_init`，这里能覆盖 WebView2 缺失、interface 解析失败等

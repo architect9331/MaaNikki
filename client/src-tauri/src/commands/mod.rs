@@ -24,6 +24,7 @@ pub mod download;
 pub mod file_ops;
 pub mod maa_agent;
 pub mod maa_core;
+pub mod maa_library;
 pub mod pearpal;
 pub mod project_patch;
 pub mod resonance;

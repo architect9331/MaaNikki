@@ -316,7 +316,7 @@ impl LogBuffer {
 /// MaaFramework 运行时状态
 #[derive(Default)]
 pub struct MaaState {
-    pub lib_dir: Mutex<Option<PathBuf>>,
+    pub library: Mutex<super::maa_library::LibraryState>,
     pub resource_dir: Mutex<Option<PathBuf>>,
     pub instances: Mutex<HashMap<String, InstanceRuntime>>,
     /// 前置程序停止请求（用于中断等待退出）

@@ -190,41 +190,18 @@ pub fn run() {
                 }
             }
 
-            // 启动时自动加载 MaaFramework DLL
-            if let Ok(maafw_dir) = commands::get_maafw_dir() {
-                if maafw_dir.exists() {
-                    #[cfg(windows)]
-                    let dll_path = maafw_dir.join("MaaFramework.dll");
-                    #[cfg(target_os = "macos")]
-                    let dll_path = maafw_dir.join("libMaaFramework.dylib");
-                    #[cfg(target_os = "linux")]
-                    let dll_path = maafw_dir.join("libMaaFramework.so");
-
-                    match maa_framework::load_library(&dll_path) {
-                        Ok(()) => {
-                            log::info!("MaaFramework loaded from {:?}", dll_path);
-                            // 预先设置 lib_dir，使 HTTP /api/maa/initialized 立即反映加载状态
-                            *maa_state.lib_dir.lock().unwrap() = Some(maafw_dir.clone());
-                        }
-                        Err(e) => {
-                            log::error!("Failed to load MaaFramework: {}", e);
-                            // 检查是否是 DLL 存在但加载失败的情况（可能是运行库缺失）
-                            if dll_path.exists() {
-                                log::warn!(
-                                    "DLLs exist but failed to load, possibly missing VC++ runtime: {}",
-                                    e
-                                );
-                                // 设置标记，前端加载完成后会查询此标记
-                                commands::system::set_vcredist_missing(true);
-                            }
-                        }
+            // 启动、手动初始化和安装运行库后的重试共用加载状态。
+            if let Err(error) = commands::maa_library::load(&maa_state, None) {
+                log::error!("MaaFramework startup initialization failed: {}", error);
+                #[cfg(windows)]
+                if let Ok(maafw_dir) = commands::get_maafw_dir() {
+                    if maafw_dir.join("MaaFramework.dll").exists() {
+                        log::warn!("MaaFramework DLL exists but failed to load; VC++ runtime may be missing");
+                        commands::system::set_vcredist_missing(true);
                     }
-                } else {
-                    log::warn!("MaaFramework directory not found: {:?}", maafw_dir);
                 }
             }
 
-            // DLL 加载完成后再注册 maa_state（确保 lib_dir 已设置）
             app.manage(maa_state);
 
             // 初始化系统托盘

@@ -678,30 +678,19 @@ async fn handle_get_maa_state(State(state): State<WebState>) -> impl IntoRespons
 /// GET /api/maa/initialized
 /// 返回 Maa 库初始化状态及版本号
 async fn handle_get_maa_initialized(State(state): State<WebState>) -> impl IntoResponse {
-    let lib_dir_set = match state.maa_state.lib_dir.lock() {
-        Ok(lib_dir) => lib_dir.is_some(),
-        Err(_) => {
+    let version = match crate::commands::maa_library::initialized_version(&state.maa_state) {
+        Ok(version) => version,
+        Err(error) => {
+            log::error!(
+                "Failed to read MaaFramework initialization state: {}",
+                error
+            );
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({ "error": "读取 Maa 初始化状态失败" })),
             )
                 .into_response();
         }
-    };
-
-    // 库已加载时尝试获取版本号（load_library 后才可调用 maa_version）
-    let version = if lib_dir_set {
-        std::panic::catch_unwind(|| maa_framework::maa_version().to_string())
-            .ok()
-            .and_then(|v| {
-                if v.is_empty() || v == "unknown" {
-                    None
-                } else {
-                    Some(v)
-                }
-            })
-    } else {
-        None
     };
     let initialized = version.is_some();
 

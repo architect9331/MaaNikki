@@ -878,16 +878,8 @@ function App() {
       }
 
       // 检查 MaaFramework 版本兼容性
-      // 注意：即使完整库加载失败（旧版本缺少某些函数），版本检查仍应工作
       try {
-        // 尝试初始化，即使失败也会设置 lib_dir
-        try {
-          await maaService.init();
-        } catch (initErr) {
-          log.warn('MaaFramework 初始化失败（可能是版本过低）:', initErr);
-        }
-
-        // 版本检查使用独立的版本获取，不依赖完整库加载
+        await maaService.init();
         const versionCheck = await maaService.checkVersion();
         if (!versionCheck.is_compatible) {
           log.warn(
