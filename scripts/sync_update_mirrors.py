@@ -63,61 +63,6 @@ def prepare(tag: str) -> tuple[Path, list[str]]:
     return folder, [asset["name"] for asset in assets]
 
 
-def sync_r2(folder: Path, names: list[str], tag: str):
-    config = CONFIG["r2"]
-    bucket = config["bucket"]
-    if config.get("require_workers_free") is not True:
-        raise ValueError("R2 requires the Workers Free gateway")
-    # The gateway's deploy command checks Workers Free with the maintainer's
-    # login. CI only has R2 permissions and cannot change the Workers plan.
-    managed = json.loads(run("cf", "r2", "buckets", "domains", "managed", "list",
-                             "--bucket-name", bucket, capture=True))
-    custom = json.loads(run("cf", "r2", "buckets", "domains", "custom", "list",
-                            "--bucket-name", bucket, capture=True))
-    if managed.get("enabled") or custom.get("domains"):
-        raise ValueError("R2 must stay private; public access bypasses the free gateway")
-    objects = json.loads(run("cf", "r2", "objects", "list", "--bucket-name", bucket,
-                             "--per-page", "1000", capture=True))
-    if not isinstance(objects, list) or len(objects) >= 1000:
-        raise ValueError("R2 inventory is too large; clean old release folders before uploading")
-    existing = {item["key"]: int(item["size"]) for item in objects}
-    etags = {item["key"]: item.get("etag", "").strip('"') for item in objects}
-    if "releases.json" in existing:
-        previous = json.loads(run("cf", "r2", "objects", "get", "releases.json",
-                                  "--bucket-name", bucket, "--text", capture=True))
-        version = lambda value: tuple(map(int, re.match(r"v(\d+)\.(\d+)\.(\d+)", value).groups()))
-        if previous and version(previous[0]["tag_name"]) > version(tag):
-            raise ValueError("A newer R2 release is already published; refusing to replace its index")
-    sizes = dict(existing)
-    for name in [*names, "releases.json"]:
-        key = name if name == "releases.json" else f"{tag}/{name}"
-        # Reserve space for the old and new index until its replacement completes.
-        sizes[key] = max(existing.get(key, 0), (folder / name).stat().st_size)
-    limit = min(int(config["storage_limit_bytes"]), 2 * 1024 ** 3)
-    if sum(sizes.values()) + 1024 * 1024 > limit:
-        raise ValueError("R2 storage limit reached (2 GiB); clean old release folders before uploading")
-    if len(names) > 20:
-        raise ValueError("Too many uploads for one release")
-    for name in [*names, "releases.json"]:
-        path = folder / name
-        if path.stat().st_size > 300_000_000:
-            raise ValueError(f"{name} exceeds the cf upload API's 300 MB limit")
-        key = name if name == "releases.json" else f"{tag}/{name}"
-        if key in existing:
-            with path.open("rb") as stream:
-                md5 = hashlib.file_digest(stream, "md5").hexdigest()
-            if existing[key] == path.stat().st_size and etags[key] == md5:
-                print(f"r2: already uploaded {key}", flush=True)
-                continue
-            if name != "releases.json":
-                raise ValueError(f"R2 release asset already exists with different content: {key}")
-        print(f"r2: uploading {key} ({path.stat().st_size} bytes)", flush=True)
-        run("cf", "r2", "objects", "put", key, "--bucket-name", bucket,
-            "--file", str(path), "--content-type",
-            "application/json" if name.endswith(".json") else
-            "application/zip" if name.endswith(".zip") else "text/plain")
-
-
 def sync_sourceforge(folder: Path, names: list[str], tag: str):
     project = CONFIG["sourceforge_project"]
     username = os.environ["SOURCEFORGE_USERNAME"]
@@ -134,19 +79,16 @@ def sync_sourceforge(folder: Path, names: list[str], tag: str):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("provider", choices=["r2", "sourceforge"])
+    parser.add_argument("provider", choices=["sourceforge"])
     parser.add_argument("--tag")
     args = parser.parse_args()
-    configured = CONFIG["r2" if args.provider == "r2" else "sourceforge_project"]
+    configured = CONFIG["sourceforge_project"]
     if not configured:
         print(f"{args.provider}: not configured; skipped", flush=True)
         return
     tag = args.tag or "v" + json.loads((ROOT / "interface.json").read_text(encoding="utf-8-sig"))["version"]
     folder, names = prepare(tag)
-    if args.provider == "r2":
-        sync_r2(folder, names, tag)
-    else:
-        sync_sourceforge(folder, names, tag)
+    sync_sourceforge(folder, names, tag)
     print(f"{args.provider}: {tag} mirrored ({len(names)} assets + release index)", flush=True)
 
 

@@ -74,18 +74,12 @@ Release 公开后，服务器上的 QQ 机器人通过 GitHub Webhook 向交流�
 
 ### 更新备用线路
 
-线路统一配置在 `build/update-mirrors.json`，由客户端编译时内嵌，发布脚本共用。大于 1 MiB 且有公开 SHA-256 的更新包，下载前并发比较 GitHub 和 GH-Proxy 多节点，每条线路最多读取 512 KiB、等待 6 秒；GH-Proxy 快 20% 以上时优先使用。GitHub 沿用用户的网络代理设置，其他线路直连。下载中每 15 秒评估速度，下一线路测速快 50% 以上，且计入重下成本后预计节省至少 25% 剩余时间时换线；没有测速结果的备用线路保留持续 30 秒低于 8 KiB/s 且进度不足四分之一的换线规则。连接超时、20 秒无数据、文件大小或 SHA-256 不符时也会换线。SourceForge、R2 保留为最后备用，不参与测速；版本查询仍依次尝试各线路。GitHub PAT 仅用于 GitHub API。
+线路统一配置在 `build/update-mirrors.json`，由客户端编译时内嵌，发布脚本共用。大于 1 MiB 且有公开 SHA-256 的更新包，下载前并发比较 GitHub 和 GH-Proxy 多节点，每条线路最多读取 512 KiB、等待 6 秒；GH-Proxy 快 20% 以上时优先使用。GitHub 沿用用户的网络代理设置，其他线路直连。下载中每 15 秒评估速度，下一线路测速快 50% 以上，且计入重下成本后预计节省至少 25% 剩余时间时换线；没有测速结果的备用线路保留持续 30 秒低于 8 KiB/s 且进度不足四分之一的换线规则。连接超时、20 秒无数据、文件大小或 SHA-256 不符时也会换线。SourceForge 保留为最后备用，不参与测速；版本查询仍依次尝试各线路。GitHub PAT 仅用于 GitHub API。
 
 GitHub 发布成功后，独立的 `Sync update mirrors` 工作流同步完整包、增量包和校验文件，所有附件上传成功后再写入 `releases.json`。同步失败可单独重新运行此工作流。源码包和逐文件版本清单保留在 GitHub。
 
 - SourceForge：创建项目并添加上传用 SSH 公钥，在配置中填写 `sourceforge_project`。仓库变量 `SOURCEFORGE_USERNAME` 保存用户名；密钥 `SOURCEFORGE_SSH_KEY` 保存私钥，`SOURCEFORGE_KNOWN_HOSTS` 保存核对过官方指纹的 `frs.sourceforge.net` 主机密钥。
-- R2：使用标准存储私有桶，由 `scripts/update_mirror_worker` 的 Workers Free 网关提供下载，在配置的 `r2` 中填写桶名和网关地址。仓库变量 `UPDATE_R2_ACCOUNT_ID` 保存账户 ID，密钥 `UPDATE_R2_API_TOKEN` 保存仅含 R2 Storage Write 的 API Token。cf 使用 REST 上传，需要账户级 R2 权限；单个文件上限 300 MB。
-
-R2 下载入口为 `https://updates.arc9331.top`。网关每次请求最多读取一个对象，Workers Free 每天 10 万次请求后返回 1027；按 31 天计算，最多约 310 万次读取，低于 R2 每月 1000 万次免费读取。发布脚本拒绝公开桶、限制单次上传数量，并在存储将超过 2 GiB 时停止上传。保留 Workers Free 套餐和私有桶设置，这些限制依赖该套餐的请求上限；免费额度与账户中的其他 R2 用量共享。
-
-部署网关时，在 `scripts/update_mirror_worker` 执行 `npm ci`、`npm run typecheck`、`npm run deploy -- --dry-run` 和 `npm run deploy`。部署脚本通过维护者的 cf 登录核对 Workers 套餐，遇到付费套餐或无法读取套餐时停止。CI 上传凭据不含修改 Workers 套餐的权限。Cloudflare 变更计价或账户升级 Workers 套餐时，先关闭此线路并重新核对额度。
-
-首次启用时，先用 `python scripts/sync_update_mirrors.py sourceforge --tag v<版本>` 或 `python scripts/sync_update_mirrors.py r2 --tag v<版本>` 同步当前版本，核对公开的 `releases.json` 与附件，再发布包含线路配置的新客户端。尚未开通的线路使用 `null`。当前脚本保留历史附件，可按需在托管端清理旧版本目录；保留当前版本目录和根目录的 `releases.json`。
+首次启用 SourceForge 时，先用 `python scripts/sync_update_mirrors.py sourceforge --tag v<版本>` 同步当前版本，核对公开的 `releases.json` 与附件，再发布包含线路配置的新客户端。尚未开通时将 `sourceforge_project` 设为 `null`。历史附件可按需在托管端清理，保留当前版本目录和根目录的 `releases.json`。
 
 发布失败时，附件不完整的 Release 会保持为草稿。可以在原构建运行中重新运行失败的发布任务，以同一提交恢复上传；也可在默认分支手动启动构建。已有标签或草稿属于其他提交时会停止发布，不移动标签或混用不同提交的附件，应重新运行原构建，或递增版本号发布新的提交。构建失败不会启动发布任务。
 

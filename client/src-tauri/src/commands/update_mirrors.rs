@@ -7,16 +7,10 @@ use serde::Deserialize;
 use super::types::GitHubRelease;
 
 #[derive(Deserialize)]
-pub struct R2Mirror {
-    pub public_url: String,
-}
-
-#[derive(Deserialize)]
 pub struct MirrorConfig {
     pub repository: String,
     pub github_proxies: Vec<String>,
     pub sourceforge_project: Option<String>,
-    pub r2: Option<R2Mirror>,
 }
 
 pub static CONFIG: LazyLock<MirrorConfig> = LazyLock::new(|| {
@@ -75,12 +69,6 @@ pub fn metadata_mirrors(api_url: &str) -> Vec<String> {
             "https://downloads.sourceforge.net/project/{project}/releases.json"
         ));
     }
-    if let Some(r2) = &CONFIG.r2 {
-        urls.push(format!(
-            "{}/releases.json",
-            r2.public_url.trim_end_matches('/')
-        ));
-    }
     urls
 }
 
@@ -122,12 +110,6 @@ pub fn download_mirrors(url: &str) -> Vec<String> {
     if let Some(project) = &CONFIG.sourceforge_project {
         urls.push(format!(
             "https://downloads.sourceforge.net/project/{project}/{tag}/{filename}"
-        ));
-    }
-    if let Some(r2) = &CONFIG.r2 {
-        urls.push(format!(
-            "{}/{tag}/{filename}",
-            r2.public_url.trim_end_matches('/')
         ));
     }
     urls

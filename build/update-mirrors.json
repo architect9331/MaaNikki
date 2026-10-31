@@ -5,12 +5,5 @@
     "https://cdn.gh-proxy.com",
     "https://hk.gh-proxy.com"
   ],
-  "sourceforge_project": null,
-  "r2": {
-    "bucket": "maanikki-updates",
-    "public_url": "https://updates.arc9331.top",
-    "storage_limit_bytes": 2147483648,
-    "worker": "maanikki-update-mirror",
-    "require_workers_free": true
-  }
+  "sourceforge_project": null
 }
