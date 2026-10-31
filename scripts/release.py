@@ -5,6 +5,7 @@ Requires Python 3.11+ on the build host. Uses only the standard library.
 from __future__ import annotations
 
 import argparse
+from fnmatch import fnmatchcase
 import hashlib
 import json
 import os
@@ -24,12 +25,33 @@ CACHE = ROOT / ".build" / "downloads"
 SOURCE_DIRS = ("agent", "client", "resource", "tasks", "options", "docs/images", "build", "scripts", "licenses", ".github")
 SOURCE_FILES = ("interface.json", ".gitignore", ".gitattributes", ".node-version",
                 "rust-toolchain.toml", "requirements.txt", "requirements.lock",
-                "README.md", "CHANGELOG.md", "AGENTS.md", "BUILDING.md", "docs/manual.md",
+                "README.md", "CHANGELOG.md", "BUILDING.md", "docs/manual.md",
                 "docs/architecture.md",
                 "THIRD_PARTY_NOTICES.md", "LICENSE", "LICENSE.md")
 RUNTIME_DIRS = ("agent", "resource", "tasks", "options")
 GENERATED_DIRS = {"node_modules", "target", "dist", "__pycache__", ".git", "schemas", ".cloudflare", ".wrangler"}
 GENERATED_SUFFIXES = {".pyc", ".pyo", ".pdb"}
+LOCAL_HELPER_PATTERNS = (
+    "AGENTS*.md", "CLAUDE*.md", "GEMINI*.md", "SKILL.md",
+    ".agents", ".codex", ".claude", ".gemini", ".cursor", ".windsurf",
+    ".opencode", ".continue", ".cline", ".roo", ".kilocode", ".aider*",
+    ".cursorrules", ".cursorignore", ".clinerules", ".windsurfrules",
+    ".roorules", ".roomodes", ".mcp.json", ".local",
+)
+LOCAL_GITHUB_HELPERS = {"copilot-instructions.md", "instructions", "prompts", "agents"}
+
+
+def is_local_helper(path: Path) -> bool:
+    # Archives may be built from an extracted source tree without Git metadata.
+    parts = path.relative_to(ROOT).parts
+    return (any(fnmatchcase(part, pattern) for part in parts for pattern in LOCAL_HELPER_PATTERNS)
+            or (len(parts) >= 2 and parts[0] == ".github" and parts[1] in LOCAL_GITHUB_HELPERS))
+
+
+def runtime_ignored(directory: str, names: list[str]) -> list[str]:
+    return [name for name in names
+            if name == "__pycache__" or name.endswith(".pyc")
+            or is_local_helper(Path(directory) / name)]
 
 
 def read_json(path: Path):
@@ -47,7 +69,7 @@ def sha256(path: Path) -> str:
 def source_files():
     for name in SOURCE_FILES:
         path = ROOT / name
-        if path.is_file():
+        if path.is_file() and not is_local_helper(path):
             yield path
     for name in SOURCE_DIRS:
         directory = ROOT / name
@@ -55,10 +77,13 @@ def source_files():
             continue
         # Prune generated directories before descending (Cargo targets can be huge).
         for current, dirs, files in os.walk(directory):
-            dirs[:] = sorted(d for d in dirs if d not in GENERATED_DIRS)
+            dirs[:] = sorted(d for d in dirs
+                             if d not in GENERATED_DIRS and not is_local_helper(Path(current) / d))
             for filename in sorted(files):
                 path = Path(current) / filename
-                if path.suffix not in GENERATED_SUFFIXES and not filename.startswith((".env", ".dev.vars")):
+                if (path.suffix not in GENERATED_SUFFIXES
+                        and not filename.startswith((".env", ".dev.vars"))
+                        and not is_local_helper(path)):
                     yield path
 
 
@@ -188,12 +213,12 @@ def prepare(output: Path) -> Path:
                     relative = member.filename
                 extract_member(archive, member, output / "python/Lib/site-packages", relative)
     for directory in RUNTIME_DIRS:
-        shutil.copytree(ROOT / directory, output / directory, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        shutil.copytree(ROOT / directory, output / directory, ignore=runtime_ignored)
     shutil.copy2(ROOT / "interface.json", output / "interface.json")
     if (ROOT / "licenses").is_dir():
         shutil.copytree(ROOT / "licenses", output / "licenses", dirs_exist_ok=True)
     shutil.copytree(ROOT / "docs/images", output / "docs/images", dirs_exist_ok=True)
-    for name in ("README.md", "CHANGELOG.md", "AGENTS.md", "BUILDING.md", "docs/manual.md", "docs/architecture.md",
+    for name in ("README.md", "CHANGELOG.md", "BUILDING.md", "docs/manual.md", "docs/architecture.md",
                  "THIRD_PARTY_NOTICES.md", "LICENSE", "LICENSE.md"):
         if (ROOT / name).is_file():
             (output / name).parent.mkdir(parents=True, exist_ok=True)
