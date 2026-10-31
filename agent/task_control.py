@@ -8,7 +8,7 @@ import time as wall_time
 import traceback
 from weakref import WeakSet
 
-from navigation.models import NavigationError
+from navigation.models import GameWindowClosed, NavigationError
 from game_view import GameFrameSizeError, require_game_frame
 from message_log import write_message
 from diagnostics import FailureEvidence
@@ -152,7 +152,7 @@ class ForegroundSession:
         if not adapter.user32.IsWindow(adapter.hwnd):
             for inputs in list(self.inputs):
                 inputs.release()
-            raise NavigationError("连接的游戏窗口已经关闭，请重新连接。")
+            raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
         if not self.started:
             if self.stopped():
                 raise TaskStopped("任务已停止。")
@@ -186,7 +186,7 @@ class ForegroundSession:
                 if self.stopped() or adapter.stopped():
                     raise TaskStopped("任务已停止。")
                 if not adapter.user32.IsWindow(adapter.hwnd):
-                    raise NavigationError("连接的游戏窗口已经关闭，请重新连接。")
+                    raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
                 now = wall_time.monotonic()
                 if adapter.foreground():
                     stable_since = now if stable_since is None else stable_since

@@ -3,10 +3,13 @@ from __future__ import annotations
 
 from contextlib import nullcontext
 import time
+
+import cv2
+
 from task_control import active_session
 
 from navigation.controller import ForegroundInput
-from navigation.models import NavigationError
+from navigation.models import GameWindowClosed, NavigationError
 from performance import checkpoint, count, measure
 from scheduling import PeriodicSchedule
 from .runtime import Runtime, parameters
@@ -31,8 +34,14 @@ class Exploration(Runtime):
         session = active_session()
         polling = session.coalesce_stop_queries() if session else nullcontext()
         observation = session.background_observation() if session else nullcontext()
-        with self.ui.cache_assets(), polling, observation:
-            return self._run_assist()
+        try:
+            with self.ui.cache_assets(), polling, observation:
+                return self._run_assist()
+        except GameWindowClosed:
+            # Resident assistance ends normally when its bound window closes.
+            # Daily tasks still receive the NavigationError subtype as before.
+            self.log("游戏已关闭，辅助功能已停止。")
+            return True
 
     def _run_assist(self):
         enabled = {key: parameters(self.context, "MaaNikki_Assist_" + key).get("value", True)
@@ -100,7 +109,11 @@ class Exploration(Runtime):
                     from map_mask.service import MapMask
                     map_mask = MapMask(self, guard.hwnd, map_kinds)
                     self.log("地图标记已启动，打开大地图后自动识别缩放并校准。")
+                except GameWindowClosed:
+                    raise
                 except Exception as error:
+                    if not guard.user32.IsWindow(guard.hwnd):
+                        raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。") from error
                     self.log(f"地图标记启动失败（{type(error).__name__}）。")
                     enabled["MapMask"] = False
                     if not any(enabled.values()):
@@ -109,10 +122,7 @@ class Exploration(Runtime):
             while not self.stopped:
                 checkpoint()
                 if not guard.user32.IsWindow(guard.hwnd):
-                    # Stay resident until manually stopped, but never send to a stale HWND.
-                    if not self.pause(.5):
-                        break
-                    continue
+                    raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
                 foreground = guard.foreground()
                 mode = ("minimized" if guard.user32.IsIconic(guard.hwnd) else
                         "foreground" if foreground else "background" if binding.kind == "key" else "paused")
@@ -137,7 +147,11 @@ class Exploration(Runtime):
                 if map_mask:
                     try:
                         map_mask.observe(frame, foreground=guard.foreground())
+                    except GameWindowClosed:
+                        raise
                     except Exception as error:
+                        if not guard.user32.IsWindow(guard.hwnd):
+                            raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。") from error
                         self.log(f"地图标记已暂停（{type(error).__name__}），重新运行辅助功能可重试。")
                         map_mask.close()
                         map_mask = None
@@ -203,7 +217,16 @@ class Exploration(Runtime):
                     # Skips/dialogue precede pickup when multiple features match.
                     break
             return True
+        except (NavigationError, OSError, RuntimeError, cv2.error) as error:
+            # Closure can race a capture or PostMessage after its window check.
+            # Recheck the bound HWND; focus loss and errors on a live window
+            # retain their ordinary handling.
+            if not guard.user32.IsWindow(guard.hwnd):
+                raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。") from error
+            raise
         finally:
-            if map_mask:
-                map_mask.close()
-            guard.release()
+            try:
+                if map_mask:
+                    map_mask.close()
+            finally:
+                guard.release()

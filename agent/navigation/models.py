@@ -9,6 +9,10 @@ class NavigationError(ValueError):
     pass
 
 
+class GameWindowClosed(NavigationError):
+    """The controller's game window no longer exists."""
+
+
 class NavigationStuckError(NavigationError):
     """Movement made no progress for the route's stuck timeout."""
 

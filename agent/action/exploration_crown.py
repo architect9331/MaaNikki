@@ -1,6 +1,8 @@
 """Maa callbacks for exploration assistance and summit challenges."""
 from __future__ import annotations
 
+import traceback
+
 import cv2
 from maa.custom_action import CustomAction
 from registration import agent_action
@@ -23,7 +25,10 @@ class ExplorationAction(CustomAction):
         try:
             return rt.run_assist()
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
-            rt.log(f"辅助功能已停止：{error}。")
+            if not rt.stopped:
+                rt.diagnostic("exploration", str(error), details={
+                    "traceback": traceback.format_exc()[-3000:]})
+            rt.log(f"辅助功能已停止：{str(error).rstrip('。')}。")
             return False
 
 

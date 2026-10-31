@@ -83,6 +83,14 @@ async function reconcile() {
   const state = useAppStore.getState();
   const signature = JSON.stringify([state.explorationSettings, state.globalOptionValues]);
   if (active && !backend.instances[instanceId]?.isRunning) {
+    const result = backend.instances[instanceId]?.taskRunState;
+    if (result?.overallStatus === 'Succeeded' || result?.statuses[instanceId] === 'succeeded') {
+      revision++;
+      useExplorationStore.setState({ enabled: false, status: 'stopping', error: '' });
+      await stop(true);
+      useExplorationStore.setState({ status: 'off' });
+      return;
+    }
     throw new Error('辅助功能已结束，请查看日志后重新开启。');
   }
   if (active && signature === appliedSettings) {

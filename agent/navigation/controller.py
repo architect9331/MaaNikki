@@ -6,7 +6,7 @@ import os
 import re
 from task_control import task_time as time
 
-from .models import NavigationError
+from .models import GameWindowClosed, NavigationError
 from game_keys import Binding, GameKeys, MACRO_KEYS, MOVEMENT
 
 
@@ -76,7 +76,7 @@ class ForegroundInput:
         self.user32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
         self.user32.GetClassNameW.restype = ctypes.c_int
         if not self.user32.IsWindow(self.hwnd):
-            raise NavigationError("连接的游戏窗口已经关闭，请重新连接。")
+            raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
         class_name = ctypes.create_unicode_buffer(257)
         if (not self.user32.GetClassNameW(self.hwnd, class_name, len(class_name))
                 or class_name.value != "UnrealWindow"):
@@ -109,7 +109,7 @@ class ForegroundInput:
                 if self.stopped():
                     raise NavigationError("任务已停止。")
                 if not self.user32.IsWindow(self.hwnd):
-                    raise NavigationError("连接的游戏窗口已经关闭，请重新连接。")
+                    raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
                 time.sleep(.05)
 
     def click_window_key(self, key, pause, seconds=.05):

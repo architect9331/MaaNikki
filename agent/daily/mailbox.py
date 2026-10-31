@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import cv2
 
-from .ui import fields
-
 
 class Mailbox:
     ENTRY = "MaaNikki_Mailbox"
     PAGE = "MaaNikki_Mailbox_PageReady"
     CLAIM = "MaaNikki_Mailbox_ClaimAll"
+    # Sample the button fill in the normalized 1280x720 frame. The OCR search
+    # area also includes the gold frame and page background in the disabled state.
+    BUTTON_FILL_ROI = (300, 670, 128, 25)
 
     def __init__(self, runtime):
         self.rt, self.ui = runtime, runtime.ui
@@ -29,7 +30,7 @@ class Mailbox:
         button = self.rt.recognize(self.CLAIM, image=image)
         if not page or not page.hit or not button or not button.hit:
             return "unknown", None, image
-        x, y, w, h = fields(self.rt.context, self.CLAIM)["roi"]
+        x, y, w, h = self.BUTTON_FILL_ROI
         hsv = cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2HSV)
         gold = cv2.countNonZero(cv2.inRange(hsv, (10, 85, 130), (35, 255, 255))) / (w*h)
         gray = cv2.countNonZero(cv2.inRange(hsv, (0, 0, 85), (180, 65, 235))) / (w*h)
