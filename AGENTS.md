@@ -54,7 +54,7 @@ Agents must follow the mandatory project constraints above: do not write, modify
 
 ## Commit & Pull Request Guidelines
 
-There is no commit history yet. Use scoped, imperative messages such as `fix(agent): correct route recovery`. Keep commits focused.
+Use scoped, imperative messages such as `fix(agent): correct route recovery`. Commit each independent feature or fix separately, keeping its related source, resources, and documentation together. Split changes within shared files by hunk when needed. For a release, keep version and release-note changes in a final release commit, then push the complete batch once so GitHub Actions builds only the final state. Compile the completed batch once locally; separate commits do not require separate builds.
 
 PRs should explain changed behavior, link related issues, list validation commands/results, and include sanitized screenshots for UI changes. Disclose untested game behavior.
 
