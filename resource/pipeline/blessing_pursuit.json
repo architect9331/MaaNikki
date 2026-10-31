@@ -18,9 +18,20 @@
     "on_error": []
   },
   "MaaNikki_Pursuit_UpgradeReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Pursuit_UpgradeColorLabel", "MaaNikki_Pursuit_UpgradeButton"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Pursuit_UpgradeColorLabel": {
     "recognition": "OCR",
-    "roi": [70, 15, 300, 50],
-    "expected": "祝福闪光升级",
+    "roi": [948, 180, 80, 35],
+    "expected": "颜色",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Pursuit_UpgradeButton": {
+    "recognition": "OCR",
+    "roi": [1070, 635, 175, 48],
+    "expected": "^(升级|已满级)$",
     "action": "DoNothing"
   },
   "MaaNikki_Pursuit_UpgradeResult": {

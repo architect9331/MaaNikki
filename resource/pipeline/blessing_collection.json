@@ -28,21 +28,32 @@
     "action": "DoNothing"
   },
   "MaaNikki_Blessing_DecomposeEntrance": {
-    "recognition": "OCR",
-    "roi": [735, 625, 110, 78],
-    "expected": "^分解$",
+    "recognition": "And",
+    "all_of": ["MaaNikki_Blessing_InventoryReady"],
     "action": "Custom",
     "custom_action": "nikki.ui_click",
     "custom_action_param": {
+      "target": [780, 655],
       "ready": "MaaNikki_Blessing_DecomposeReady",
       "source": "MaaNikki_Blessing_InventoryReady"
     },
     "post_delay": 300
   },
   "MaaNikki_Blessing_DecomposeReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Blessing_DecomposeParticleLabel", "MaaNikki_Blessing_DecomposeButton"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Blessing_DecomposeParticleLabel": {
     "recognition": "OCR",
-    "roi": [75, 15, 300, 55],
-    "expected": "祝福闪光.*分解",
+    "roi": [970, 165, 155, 40],
+    "expected": "闪光粒子",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Blessing_DecomposeButton": {
+    "recognition": "OCR",
+    "roi": [1070, 635, 175, 48],
+    "expected": "^分解$",
     "action": "DoNothing"
   },
   "MaaNikki_Blessing_Layout": {
