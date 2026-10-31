@@ -436,6 +436,7 @@ class Teleporter:
             raise
 
     def transport(self, checkpoint, *, on_map_ready=None, reuse_map=False):
+        """Prepare the map; an explicit False from its precheck skips transport."""
         self.deadline = time.monotonic()+120
         self.check()
         # Confirm the handed-off page before any recovery that may close it.
@@ -452,7 +453,10 @@ class Teleporter:
             self.rt.pause(.5)
         self.zoom()
         if on_map_ready is not None:
-            on_map_ready()
+            if on_map_ready() is False:
+                self.event({"type": "teleport_skipped", "reason": "map_precheck",
+                            "checkpoint": checkpoint["name"]})
+                return False
         def selection_visible():
             return (normalized(self.rt.ui.text(self.rt.ui.roi("AreaBigMapTeleportButton")))
                     in ("传送", "追踪") or bool(self.rt.text(

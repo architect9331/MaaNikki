@@ -279,19 +279,21 @@ class Starsea:
                             "values": result, "readings": readings})
         return result
 
-    def report_collection_statistics(self):
+    def report_collection_statistics(self, *, result=None):
         if self.rt.stopped:
             return False
-        if not self.rt.ui.open_map(self.events.append):
-            self.rt.log("跑图后未能打开地图读取收集统计。")
-            return self.rt.main()
-        result = self.read_collection_statistics("after")
+        before_only = result is not None
+        if result is None:
+            if not self.rt.ui.open_map(self.events.append):
+                self.rt.log("跑图后未能打开地图读取收集统计。")
+                return self.rt.main()
+            result = self.read_collection_statistics("after")
         totals, changes = [], []
         for key, label, total, roi in COLLECTION_STATISTICS:
             value = result.get(key)
             totals.append(f"{label} {value['collected']}/{total}" if value else f"{label} 待确认")
             before = (self.collection_start or {}).get(key)
-            if value and before and value["collected"] >= before["collected"]:
+            if not before_only and value and before and value["collected"] >= before["collected"]:
                 changes.append(f"{label} +{value['collected']-before['collected']}")
         self.rt.log("今日收集："+"，".join(totals)+"。")
         if changes:
@@ -389,6 +391,10 @@ class Starsea:
                         "remaining": self.crystal_remaining, "seen": self.crystal_seen})
                     self.crystal_remaining = None
                     self.crystal_counter_conflict = True
+                if self.crystal_remaining == 0 and not boxes and not self.crystal_locations:
+                    scan["reason"] = "already_collected"
+                    self.events.append({"type": "crystals_already_collected", "source": "marker_counter"})
+                    return None
                 teleporter.last_frame = frame
                 try:
                     pose, _ = teleporter.map_pose(frame)
@@ -506,11 +512,22 @@ class Starsea:
             self.collection_start = None
             def record_start():
                 self.collection_start = self.read_collection_statistics("before")
+                souls = self.collection_start.get("star_soul")
+                return souls is None or souls["collected"] < souls["total"]
             teleporter.transport(HUB, on_map_ready=record_start)
+            souls = (self.collection_start or {}).get("star_soul")
+            if souls is not None and souls["collected"] == souls["total"]:
+                self.events.append({"type": "crystals_already_collected", "source": "before_statistics",
+                                    "statistics": self.collection_start})
+                self.rt.log("星之魄已收集 3/3，本次跑图结晶任务已完成。")
+                return self.report_collection_statistics(result=self.collection_start)
             self.rt.log("开始收集星光结晶，摇铃后打开地图定位路线。", detail=True)
             self.crystal_scans = []
             self.crystal_locations = []
-            self.crystal_remaining = None
+            self.crystal_remaining = souls["total"]-souls["collected"] if souls is not None else None
+            if self.crystal_remaining is not None:
+                self.rt.log(f"星之魄已收集 {souls['collected']}/3，按剩余 {self.crystal_remaining} 个标记匹配路线。",
+                            detail=True)
             self.crystal_counter_votes = {}
             self.crystal_counter_conflict = False
             self.crystal_seen = 0
@@ -524,6 +541,9 @@ class Starsea:
                     if not self.ring(at_hub=True, timed=True):
                         return False
                     location = self.locate_crystals(teleporter)
+                    if self.crystal_scans[-1]["reason"] == "already_collected":
+                        self.rt.log("星之魄已收集 3/3，本次跑图结晶任务已完成。")
+                        return self.report_collection_statistics()
                     if location is not None:
                         selected, distances = self.crystal_selection
                         self.events.append({"type": "crystal_route_selection", "location": list(location),
