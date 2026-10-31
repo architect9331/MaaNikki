@@ -12,6 +12,23 @@
     "expected": "^美鸭梨$",
     "action": "DoNothing"
   },
+  "MaaNikki_RewardOverlayReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_RewardOverlayTitle", "MaaNikki_RewardOverlayContinue"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_RewardOverlayTitle": {
+    "recognition": "OCR",
+    "roi": [480, 140, 320, 110],
+    "expected": "^恭喜获得$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_RewardOverlayContinue": {
+    "recognition": "OCR",
+    "roi": [1050, 655, 230, 65],
+    "expected": "空白区域继续|点击.*继续|轻触.*继续",
+    "action": "DoNothing"
+  },
   "MaaNikki_Dig_PageReady": {
     "recognition": "TemplateMatch",
     "roi": [0, 0, 1280, 720],

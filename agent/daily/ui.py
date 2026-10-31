@@ -318,11 +318,23 @@ class GameUI:
 
     def menu(self):
         if self.page_matches("MaaNikki_MenuReady") and self.wait_page("MaaNikki_MenuReady"):
-            return True
+            return self.dismiss_reward() is not False
         if not self.main():
             return False
-        return self.enter_page(lambda: self.rt.key("menu", 0), "MaaNikki_MenuReady",
-                               source="MaaNikki_MainDetected", recover=self.main)
+        opened = self.enter_page(lambda: self.rt.key("menu", 0), "MaaNikki_MenuReady",
+                                 source="MaaNikki_MainDetected", recover=self.main)
+        return opened and self.dismiss_reward() is not False
+
+    def dismiss_reward(self):
+        """Close a confirmed reward popup before using the menu underneath."""
+        page = "MaaNikki_RewardOverlayReady"
+        if not self.page_matches(page):
+            return None
+        if not self.rt.key("skip", 0):
+            return False
+        # The menu title can remain readable through the popup. Verify that
+        # the popup itself disappears instead of accepting that same title.
+        return self.wait_page(lambda: not self.page_matches(page))
 
     def find_menu_entry(self, *, node, scroll=False):
         """Open a verified Esc entrance, optionally searching its left-hand pages."""
@@ -516,6 +528,8 @@ class GameUI:
                     return False
                 with self.rt.observe():
                     if self.dismiss_tutorial() is False:
+                        return False
+                    if source == "MaaNikki_MenuReady" and self.dismiss_reward() is False:
                         return False
                     destination_visible = self.page_matches(destination)
                     source_visible = bool(source and not destination_visible and self.page_matches(source))
