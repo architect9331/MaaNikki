@@ -1,9 +1,11 @@
 {
   "source": "User-provided normal Eureka inventory screenshots, 2026-10-15; states explicitly confirmed by the user",
   "locked_background.png": {
-    "description": "Gold filled lock-button background from the confirmed locked_0014.png capture, 2026-10-28. Alpha samples four inner-ring sectors, excluding the glyph, chain and outer outline; no personal UI fields",
+    "description": "Gold filled lock-button background from the confirmed locked_0014.png capture, 2026-10-28. Alpha samples four inner-ring sectors around the measured button center, excluding the glyph, chain and outer outline; no personal UI fields",
     "normalized_frame": [1280, 720],
-    "roi": [220, 634, 50, 50]
+    "roi": [220, 634, 50, 50],
+    "sample_center": [23.5, 25.5],
+    "sample_radii": [18, 21]
   },
   "four_stars.png": {
     "description": "Complete four-star tooltip pill, including its rounded right edge; no personal UI fields",

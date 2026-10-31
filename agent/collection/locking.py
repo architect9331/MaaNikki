@@ -37,14 +37,41 @@ class BlessingLocker(InventoryScanner):
         self.grid = self.layout["grid"]
         self._ordered_scroll_step = self.layout["scroll_step"]
         self.lock_templates = {}
-        self.lock_gray_templates = {}
+        references = {}
         for state in ("locked", "unlocked"):
             reference = ROOT / f"resource/image/blessing_lock/{state}.png"
             image = cv2.imdecode(np.fromfile(str(reference), np.uint8), cv2.IMREAD_COLOR)
             if image is None or image.shape[:2] != tuple(reversed(self.layout["lock_icon"][2:])):
                 raise ValueError(f"锁按钮图像资源缺失或尺寸不符：{state}")
             self.lock_templates[state] = self.white_mask(image) > 0
-            self.lock_gray_templates[state] = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            references[state] = image
+        # Extract the connected upper-left stroke that exists only when closed.
+        # The shared body/keyhole and the right-hand chain never decide state.
+        closed, opened = self.lock_templates["locked"], self.lock_templates["unlocked"]
+        height, width = closed.shape
+        gap = (closed & ~opened).astype(np.uint8)
+        gap[height // 2:] = 0
+        gap[:, width // 2:] = 0
+        count, labels, areas, _ = cv2.connectedComponentsWithStats(gap)
+        if count <= 1:
+            raise ValueError("锁扣素材缺少已锁与未锁的左上缺口差异")
+        component = 1 + int(np.argmax(areas[1:, cv2.CC_STAT_AREA]))
+        self.lock_gap_mask = labels == component
+        gx, gy, gw, gh = [int(value) for value in areas[component, :4]]
+        self.lock_gap_roi = [gx, gy, gw, gh]
+        # Shared upper/right strokes align the gap within the existing +/-2 px
+        # capture tolerance. The gap itself is excluded from alignment scoring.
+        self.lock_shackle_anchor = closed & opened
+        self.lock_shackle_anchor[gy + gh:] = False
+        if not self.lock_shackle_anchor.any():
+            raise ValueError("锁扣素材缺少可对齐的共同锁梁")
+        # Learn white brightness from the labelled white/non-white gap patches,
+        # independently of whichever clothing appears behind the live button.
+        white_floor = float(references["locked"][self.lock_gap_mask].min(axis=1).min())
+        open_ceiling = float(references["unlocked"][self.lock_gap_mask].min(axis=1).max())
+        if white_floor <= open_ceiling:
+            raise ValueError("锁扣缺口素材无法区分白色与非白色")
+        self.lock_white_cutoff = (white_floor + open_ceiling) / 2
         reference = ROOT / "resource/image/blessing_lock/locked_background.png"
         background = cv2.imdecode(np.fromfile(str(reference), np.uint8), cv2.IMREAD_UNCHANGED)
         if (background is None or background.ndim != 3 or background.shape[2] != 4
@@ -373,10 +400,15 @@ class BlessingLocker(InventoryScanner):
         if crop.shape != self.lock_background_lab.shape:
             return {"state": None}
         lab = cv2.cvtColor(crop, cv2.COLOR_BGR2LAB).astype(np.int16)
-        difference = np.abs(lab - self.lock_background_lab.astype(np.int16))
-        # The locked fill is opaque. Compare its colour in four separated
-        # sectors so a gold garment behind an open lock is not enough.
-        similar = np.all(difference <= np.array([25, 8, 8]), axis=2)
+        reference = self.lock_background_lab.astype(np.int16)
+        # The yellow button's brightness and saturation vary with the scene.
+        # Saved closed-lock captures retain the yellow fill but are darker
+        # than the reference, especially along the upper rim. Verify colour
+        # rather than reference luminance: preserve the existing red/green
+        # tolerance and minimum yellow chroma; stronger yellow is still yellow.
+        # The four separated sectors continue to require a filled background.
+        similar = ((np.abs(lab[:, :, 1] - reference[:, :, 1]) <= 8)
+                   & (lab[:, :, 2] >= reference[:, :, 2] - 8))
         mask = self.lock_background_mask
         height, width = mask.shape
         sectors = []
@@ -387,96 +419,54 @@ class BlessingLocker(InventoryScanner):
                     return {"state": None}
                 sectors.append(float(similar[ys, xs][sector].mean()))
         fraction = float(similar[mask].mean())
-        state = None
-        if fraction >= .88 and min(sectors) >= .75:
-            state = "locked"
-        elif fraction <= .20 and max(sectors) <= .35:
-            state = "unlocked"
+        state = "locked" if fraction >= .88 and min(sectors) >= .75 else "unlocked"
         return {"state": state, "gold_fraction": fraction, "sector_fractions": sectors,
-                "lab_tolerance": [25, 8, 8], "gold_minimum": .88,
-                "gold_sector_minimum": .75, "transparent_maximum": .20,
-                "transparent_sector_maximum": .35}
+                "lab_chroma_tolerance": 8, "luminance_checked": False,
+                "stronger_yellow_allowed": True, "gold_minimum": .88,
+                "gold_sector_minimum": .75}
 
     def icon_state(self, frame):
-        """Compare both user-labelled states; never infer state from geometry."""
-        crop = self.region(frame, self.layout["lock_icon"])
-        raw = self.white_mask(crop)
-        if any(raw.shape != template.shape for template in self.lock_templates.values()):
+        """Non-white gap is open; a white gap requires the gold-fill check."""
+        x, y, w, h = self.layout["lock_icon"]
+        search = self.region(frame, [x - 2, y - 2, w + 4, h + 4])
+        if search.shape[:2] != (h + 4, w + 4):
+            self.report["lock_recognition"] = {"state": None, "reason": "incomplete_lock_crop"}
             return None
-        # Allow capture scaling to shift the entire glyph by up to two pixels.
-        # Both states compete over the COMPLETE glyph, including the chain in
-        # the confirmed locked screenshot. The common lock body is insufficient.
-        scores = {state: 0.0 for state in self.lock_templates}
-        shackle_scores = {state: 0.0 for state in self.lock_templates}
-        height, width = raw.shape
-        shackle_height = height // 2
+        low, high = search.min(axis=2), search.max(axis=2)
+        white = ((low >= self.lock_white_cutoff)
+                 & (high.astype(np.int16) - low <= 40))
+        # Only the invariant upper/right shackle locates the sampling mask.
+        # Prefer the calibrated position for equal support; never select a
+        # translation because it makes the gap look open or closed.
+        candidates = []
         for dy in range(-2, 3):
             for dx in range(-2, 3):
-                aligned = cv2.warpAffine(raw, np.float32([[1, 0, dx], [0, 1, dy]]),
-                                         (width, height), flags=cv2.INTER_NEAREST) > 0
-                for state, template in self.lock_templates.items():
-                    union = np.count_nonzero(aligned | template)
-                    score = np.count_nonzero(aligned & template) / union if union else 0
-                    scores[state] = max(scores[state], float(score))
-                    shackle = aligned[:shackle_height]
-                    reference = template[:shackle_height]
-                    union = np.count_nonzero(shackle | reference)
-                    score = np.count_nonzero(shackle & reference) / union if union else 0
-                    shackle_scores[state] = max(shackle_scores[state], float(score))
-        ranked = sorted(scores, key=scores.get, reverse=True)
-        best, other = ranked
-        # Preserve anti-aliased shackle/chain pixels that a binary white mask
-        # loses against the brighter locked-button background. Both complete
-        # state templates still compete; the common lock body is insufficient.
-        x, y, w, h = self.layout["lock_icon"]
-        gray = cv2.cvtColor(self.region(frame, [x - 2, y - 2, w + 4, h + 4]), cv2.COLOR_BGR2GRAY)
-        gray_scores = {state: float(cv2.matchTemplate(gray, template, cv2.TM_CCOEFF_NORMED).max())
-                       for state, template in self.lock_gray_templates.items()}
-        gray_best, gray_other = sorted(gray_scores, key=gray_scores.get, reverse=True)
-        shackle_best, shackle_other = sorted(shackle_scores, key=shackle_scores.get, reverse=True)
-        background = self.button_background(frame)
-        self.report["lock_recognition"] = {"scores": scores, "best": best,
-                                           "minimum_score": .90,
-                                           "gray_scores": gray_scores, "gray_best": gray_best,
-                                           "gray_minimum_score": .94, "gray_minimum_margin": .06,
-                                           "shackle_scores": shackle_scores,
-                                           "shackle_best": shackle_best,
-                                           "shackle_height": shackle_height,
-                                           "background": background,
-                                           "shackle_minimum_score": .90,
-                                           "shackle_minimum_margin": .06}
-        decisions = set()
-        # The two templates share most of their body. A fixed full-glyph
-        # margin can reject an open lock even when both the complete glyph
-        # and the discriminating shackle prefer it. Keep the absolute match
-        # floor and require agreement, with ties remaining unknown.
-        full_match = (scores[best] >= .90 and scores[best] > scores[other]
-                      and best == shackle_best
-                      and shackle_scores[shackle_best] > shackle_scores[shackle_other])
-        if full_match:
-            decisions.add(best)
-        if gray_scores[gray_best] >= .94 and gray_scores[gray_best] - gray_scores[gray_other] >= .06:
-            decisions.add(gray_best)
-        # A strong shackle match can establish the shape independently when
-        # clothing shows through the lower body. Keep its existing floor and
-        # margin because it covers fewer pixels than the complete glyph.
-        shackle_match = (shackle_scores[shackle_best] >= .90
-                         and shackle_scores[shackle_best] - shackle_scores[shackle_other] >= .06)
-        if shackle_match:
-            decisions.add(shackle_best)
-        state = next(iter(decisions)) if len(decisions) == 1 else None
-        shape_state = state
-        # An open silhouette is positive unlocked evidence. Clothing can fill
-        # its gap and resemble a closed lock, so only a closed silhouette also
-        # confirmed by the opaque gold button fill establishes locked state.
-        # Gold clothing behind a transparent button can still be ambiguous.
-        if state == "locked" and background["state"] != "locked":
-            state = None
-        self.report["lock_recognition"].update(
-            full_shackle_match=full_match, shackle_match=shackle_match,
-            shape_state=shape_state, locked_background_confirmed=(
-                shape_state == "locked" and background["state"] == "locked"))
-        self.report["lock_recognition"]["state"] = state
+                patch = white[2 + dy:2 + dy + h, 2 + dx:2 + dx + w]
+                support = int(np.count_nonzero(patch[self.lock_shackle_anchor]))
+                candidates.append((support, -(dx * dx + dy * dy), dx, dy))
+        support, _, dx, dy = max(candidates, key=lambda item: item[:2])
+        if support == 0:
+            self.report["lock_recognition"] = {"state": None, "reason": "shackle_not_visible"}
+            return None
+        patch = white[2 + dy:2 + dy + h, 2 + dx:2 + dx + w]
+        white_pixels = int(np.count_nonzero(patch[self.lock_gap_mask]))
+        gap_pixels = int(np.count_nonzero(self.lock_gap_mask))
+        gap_white = white_pixels == gap_pixels
+        # Follow the requested asymmetric rule exactly: any non-white gap
+        # establishes unlocked state. White alone may come from clothing, so
+        # only that branch checks the independent opaque yellow background.
+        background = self.button_background(frame) if gap_white else {"checked": False}
+        state = background.get("state") if gap_white else "unlocked"
+        gx, gy, gw, gh = self.lock_gap_roi
+        self.report["lock_recognition"] = {
+            "strategy": "shackle_gap_then_gold_background",
+            "gap_roi": [x + dx + gx, y + dy + gy, gw, gh],
+            "gap_pixels": gap_pixels, "white_pixels": white_pixels,
+            "gap_white": gap_white, "white_cutoff": self.lock_white_cutoff,
+            "white_channel_spread": 40,
+            "alignment_shift": [dx, dy], "alignment_white_pixels": support,
+            "alignment_pixels": int(np.count_nonzero(self.lock_shackle_anchor)),
+            "background": background, "state": state}
         return state
 
     def card_lock_state(self, frame, box, labels):
