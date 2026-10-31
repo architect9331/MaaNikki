@@ -1,7 +1,7 @@
 {
   "MaaNikki_Asset_AccountUid": {
     "recognition": "OCR",
-    "roi": [0, 700, 200, 20],
+    "roi": [0, 700, 120, 20],
     "expected": ".+",
     "order_by": "Horizontal",
     "action": "DoNothing"

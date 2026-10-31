@@ -466,25 +466,43 @@ class Runtime:
     def read_account_uid(self, image):
         if image is None:
             return None
-        from diagnostics import image_policy
-        # The existing diagnostic mask specifies the UID's exact screen area.
-        # A labeled, whole-text match cannot mistake a nearby task count for UID.
-        x, y, w, h = image_policy()["uid_roi"]
+        from .ui import fields
+        node = "MaaNikki_Asset_AccountUid"
+        # OCR ends before the network status; diagnostic masking deliberately
+        # covers a wider footer and is not the recognition area's definition.
+        x, y, w, h = fields(self.context, node)["roi"]
         crop = image[y:y+h, x:x+w]
         if crop.size == 0:
             return None
         # UID is only a small footer. Enlarge the same pixels rather than
         # expanding into unrelated screen numbers or substituting OCR digits.
         crop = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
-        result = self.recognize("MaaNikki_Asset_AccountUid", {
+        result = self.recognize(node, {
             "roi": [0, 0, w*3, h*3], "expected": ".+"}, image=crop)
         if not result or not result.hit:
             return None
-        rows = getattr(result, "filtered_results", []) or [result.best_result]
-        text = "".join(str(getattr(row, "text", "")) for row in rows)
-        text = re.sub(r"\s+", "", text)
-        match = re.fullmatch(r"(?i)UID[:：]?([0-9]{1,32})", text)
-        return match[1] if match else None
+        rows = list(getattr(result, "filtered_results", []) or [result.best_result])
+        candidates = set()
+        for index, row in enumerate(rows):
+            text = re.sub(r"\s+", "", str(getattr(row, "text", "")))
+            if re.fullmatch(r"(?i)UID[:：]?", text) and index + 1 < len(rows):
+                # OCR may split the label and number. Join only neighboring
+                # blocks on the same line, with the number right of its label.
+                following = rows[index + 1]
+                number = re.sub(r"\s+", "", str(getattr(following, "text", "")))
+                label_box = getattr(row, "box", None)
+                number_box = getattr(following, "box", None)
+                if (label_box is not None and number_box is not None
+                        and re.fullmatch(r"[0-9]{1,32}", number)
+                        and number_box[0] >= label_box[0] + label_box[2]
+                        and max(label_box[1], number_box[1])
+                        < min(label_box[1] + label_box[3], number_box[1] + number_box[3])):
+                    text += number
+            match = re.fullmatch(r"(?i)UID[:：]?([0-9]{1,32})", text)
+            if match:
+                candidates.add(match[1])
+        # Multiple distinct identities are ambiguous; never bind one by order.
+        return next(iter(candidates)) if len(candidates) == 1 else None
 
     def verify_account_uid(self):
         """Recheck visible identity before saving; hidden UID keeps only this task's binding."""
