@@ -5,7 +5,7 @@ import re
 from daily.runtime import parameters
 from daily.settings import ROOT
 from task_control import task_time as time
-from .scanner import clean_text
+from .scanner import IncompleteObservation, clean_text
 
 
 READY = "MaaNikki_Blessing_DecomposeReady"
@@ -71,7 +71,7 @@ class LowRarityDecomposer:
         frame = self.rt.capture()
         self.o.check_generation(self.generation)
         if frame is None or frame.shape[:2] != (720, 1280):
-            raise RuntimeError("分解截图尺寸无效")
+            raise IncompleteObservation("分解截图尺寸无效")
         return frame
 
     def read(self):
@@ -80,14 +80,14 @@ class LowRarityDecomposer:
             frame = self.frame()
             ready = self.rt.recognize(READY, image=frame)
             if not ready or not ready.hit:
-                raise RuntimeError("未确认祝福闪光分解页面")
+                raise IncompleteObservation("未确认祝福闪光分解页面")
             current = self.values(frame)
             if current is not None and current == previous:
                 return current, frame
             previous = current
             if not self.rt.pause(.2):
                 break
-        raise RuntimeError("分解材料数量、容量或粒子信息未稳定，未继续提交")
+        raise IncompleteObservation("分解材料数量、容量或粒子信息未稳定，未继续提交")
 
     def click(self, field):
         self.o.check_generation(self.generation)
@@ -141,7 +141,7 @@ class LowRarityDecomposer:
         self.rt.log("正在分解四星及以下素材。")
         last_notice = time.monotonic()
         if not self.o.open() or not self.rt.click_template("MaaNikki_Blessing_DecomposeEntrance"):
-            raise RuntimeError("未能打开祝福闪光分解页面")
+            raise IncompleteObservation("未能打开祝福闪光分解页面")
         self.generation = self.rt._focus_generation
         state, _ = self.read()
         # Discard any previous/manual selection before applying the rarity cap.
@@ -172,13 +172,14 @@ class LowRarityDecomposer:
                 self.rt.log(f"四星及以下清理完成：共分解 {summary['copies']} 件，获得 {summary['particles']} 闪光粒子。")
                 if not self.rt.ui.enter_page(lambda: self.rt.key(27, 0),
                         "MaaNikki_Blessing_InventoryReady", source=READY, attempts=1):
-                    raise RuntimeError("分解结束未能返回祝福闪光列表")
+                    raise IncompleteObservation("分解结束未能返回祝福闪光列表")
                 return
             if selected["gain"] is None or selected["gain"] <= 0:
                 raise RuntimeError("预计分解粒子数量无法确认")
             self.o.check_generation(self.generation)
             operation = self.o.begin_change("decompose", None, {"source": "four_star_auto_fill"}, frame,
                                             rarity_max=4, **selected)
+            self.o.submit_change(operation)
             self.click("submit")  # Never retry a destructive submission.
             after, frame = self.await_result(selected)
             summary["batches"] += 1

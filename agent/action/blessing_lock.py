@@ -28,9 +28,9 @@ class BlessingLockAction(CustomAction):
             catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
             options = parameters(context, argv.node_name)
             store = InventoryStore(ROOT, catalog, rt)
-            store.invalidate("祝福闪光仓库读取已开始，完整结束前禁止全收集", source="organization")
             locker = BlessingOrganizer(rt, catalog, folder,
                                     allow_unlock=options.get("unlock_nonconforming", False))
+            locker.baseline_store = store
             locker.run()
             snapshot = locker.capture_inventory()
             snapshot, published = store.save_scan(snapshot, folder, source="locking")

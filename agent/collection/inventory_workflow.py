@@ -7,12 +7,15 @@ from uuid import uuid4
 
 from daily.runtime import parameters
 from .blessing import SLOTS
-from .locking import BlessingLocker
+from .locking import BlessingLocker, READY
 from file_io import write_json
 from .storage import InventoryStore
-from .upgrade import UpgradeUI
-from .ordered import OrderedView, merge_prefix, pending
+from .upgrade import UpgradeUI, RESULT
+from .ordered import OrderedView, merge_prefix
 from .policy import UnregisteredMaterials
+from .protection import pending_reward
+from .scanner import IncompleteObservation
+from .recovery import RecheckSlot, operation_scope
 
 
 class FiveStarInventory(BlessingLocker):
@@ -53,6 +56,7 @@ class FiveStarInventory(BlessingLocker):
                 "stop_reason": self.report.get("stop_reason"),
                 "latest_upgrade": self.report.get("latest_upgrade"),
                 "pending_operation": self.pending,
+                "recovery": deepcopy(self.organization.get("recovery")) if self.organization else None,
                 "confirmed_locked_colors": len(self.protected),
                 "target_colors": sum(len(item["colors"]) * len(SLOTS) for item in self.targets),
                 "changes": self.collection_changes(),
@@ -90,6 +94,161 @@ class FiveStarInventory(BlessingLocker):
             if self.pending is not None:
                 self.rt.log("尚未确认的操作未计入收集变化。", detail=True)
 
+    def record_interruption(self, error, *, reason=None):
+        """Invalidate only changes whose effect on existing keepers is unknown."""
+        reason = str(error) if reason is None else reason
+        self.report.update(complete=False, phase="interrupted", reason=reason)
+        if self.organization is None:
+            return
+        observation = isinstance(error, IncompleteObservation)
+        scope = operation_scope(self.pending) if self.pending is not None else []
+        resumable = self.organization.get("complete") is True and scope is not None
+        if resumable and isinstance(error, RecheckSlot):
+            self.request_recheck(error.slot, reason)
+        if resumable and self.pending is not None:
+            for slot in scope:
+                self.request_recheck(slot, reason)
+        self.report["interruption"] = {
+            "kind": ("operation_pending" if self.pending is not None else
+                     "order_recheck" if isinstance(error, RecheckSlot) else
+                     "observation_incomplete" if observation else "no_inventory_change"),
+            "pending_operation": self.pending is not None,
+            "baseline_preserved": resumable,
+            "recovery_slots": list(self.organization.get("recovery", {}).get("slots", []))}
+        self.organization.update(complete=resumable, reason=reason)
+
+    def request_recheck(self, slot, reason):
+        recovery = self.organization.setdefault("recovery", {"slots": [], "reasons": {}})
+        if slot not in recovery["slots"]:
+            recovery["slots"].append(slot)
+        recovery["reasons"][slot] = str(reason)
+
+    def recover_inventory(self):
+        """Repair only affected slots before any fresh material consumption."""
+        recovery = self.organization.get("recovery") or {}
+        if self.pending is None and not recovery.get("slots"):
+            return
+        if not self.open_recovery():
+            raise IncompleteObservation("恢复仓库进度时未能打开祝福闪光列表")
+        self.inventory_read = True
+        try:
+            # Reward submissions only add a prefix. Four-star decomposition
+            # is restarted from an empty selection of the remaining materials.
+            if self.pending is not None and operation_scope(self.pending) == []:
+                operation = self.pending
+                if pending_reward(operation) and operation.get("input_attempted") is not False:
+                    self.report["recovered_reward"] = deepcopy(operation)
+                if (operation.get("input_attempted") is not False
+                        and operation.get("kind") in ("realm", "decompose")):
+                    self.organization["decomposition_pending"] = True
+                self.reconcile_change("not_submitted" if operation.get("input_attempted") is False else
+                                      "remaining_inventory")
+                if operation.get("kind") == "decompose" and operation.get("input_attempted") is not False:
+                    from .decompose import LowRarityDecomposer
+                    LowRarityDecomposer(self).run()
+            for slot in list(recovery.get("slots", [])):
+                self.rebuild_slot(slot)
+            self.organization.pop("recovery", None)
+            self.organization["reason"] = None
+            self.checkpoint()
+        finally:
+            self.inventory_read = False
+
+    def open_recovery(self):
+        """Leave recognised operation pages without submitting more materials."""
+        upgrade = UpgradeUI(self)
+        if self.rt.hit(RESULT):
+            if not self.rt.ui.enter_page(lambda: self.rt.key("skip", 0), upgrade.upgrade_ready,
+                                         source=RESULT, attempts=1):
+                return False
+        if upgrade.upgrade_ready():
+            return self.rt.ui.enter_page(lambda: self.rt.key(27, 0), READY,
+                                         source=upgrade.upgrade_ready, attempts=1)
+        decompose = "MaaNikki_Blessing_DecomposeReady"
+        if self.rt.hit(decompose):
+            # Esc also safely cancels a still-open confirmation. Recheck the
+            # decomposition page before trying the parent entrance again.
+            return self.rt.ui.enter_page(lambda: self.rt.key(27, 0), READY,
+                                         source=decompose, attempts=2)
+        return self.open()
+
+    def reconcile_change(self, outcome):
+        """Archive an uncertain operation without inventing its item/XP delta."""
+        if self.pending is None:
+            return
+        operation = deepcopy(self.pending)
+        operation.update(status="reconciled", outcome=outcome,
+                         reconciled=datetime.now().isoformat(timespec="seconds"))
+        self.report.setdefault("recovered_operations", []).append(operation)
+        self.pending = None
+        self.checkpoint()
+
+    def rebuild_slot(self, slot):
+        """Reobserve one changed slot once, retaining the other two unchanged."""
+        if slot in self.report.get("recovered_slots", []):
+            raise RecheckSlot(slot, "该部位仍待核对，保留已确认进度")
+        self.request_recheck(slot, "核对受影响部位的顺序及收藏")
+        self.checkpoint()
+        self.rt.log(f"正在恢复{slot}进度。")
+        old = self.organization["slots"][slot]
+        unfinished = next((row for row in old if row["id"] == self.organization["unfinished"]), None)
+        observed, _ = self.view.scan(slot)
+        # scan() reaches the physical end and checks every intervening cell.
+        # No keeper is removed on an incomplete observation.
+        rows, priority = merge_prefix(old, observed, len(old), self.organization["next_priority"])
+        old_keys = {key for key in self.protected if key[1] == slot}
+        present = {self.key(row) for row in rows if row["rarity"] == 5
+                   and row["maximum"] and row["collectible"]}
+        self.protected.difference_update(old_keys - present)
+        self.protected.update(self.key(row) for row in rows if row["rarity"] == 5
+                              and row["maximum"] and row["collectible"] and row["locked"])
+        # A formerly protected copy found unlocked needs protection again.
+        locked = {self.key(row) for row in rows if row["locked"] and row["maximum"]}
+        self.protected.difference_update(old_keys - locked)
+        self.organization["slots"][slot] = rows
+        self.organization["next_priority"] = priority
+        if unfinished is not None:
+            retained = next((row for row in rows if row["id"] == unfinished["id"]), None)
+            candidates = [row for row in rows if row["name"] == unfinished["name"]
+                          and not row["locked"] and not row["maximum"] and row["level"] > 0]
+            # A split stack can leave the old zero-level signature behind.
+            # Prefer the uniquely observed partial upgrade over that remainder;
+            # otherwise let the normal queue finish partial items first.
+            changed = [row for row in candidates if row["level"] > unfinished["level"]]
+            resumed = (changed[0] if len(changed) == 1 else
+                       retained if retained is not None and retained["level"] > 0 else
+                       candidates[0] if len(candidates) == 1 else
+                       retained if not candidates else None)
+            self.organization["unfinished"] = resumed["id"] if resumed is not None else None
+        if self.pending is not None and slot in (operation_scope(self.pending) or []):
+            self.reconcile_change("slot_reobserved")
+        self.checkpoint()
+        # Full-level results can merge with a more recent stack. Protect every
+        # newly observed colour before auto-fill is allowed to consume it.
+        for row in rows:
+            if (row["rarity"] != 5 or not row["maximum"] or not row["collectible"]
+                    or self.key(row) in self.protected):
+                continue
+            found = self.view.locate(row, rows, exact_lock=row["locked"])
+            if found is None:
+                raise RecheckSlot(slot, "恢复中的满级颜色尚未重新定位")
+            self.active = row
+            row["anchor_eligible"] = False
+            self.protect_selected(found[1], found[3])
+            self.active = None
+            self.checkpoint()
+        if self.organization["unfinished"] in {row["id"] for row in rows if row["locked"] and row["maximum"]}:
+            self.organization["unfinished"] = None
+        recovery = self.organization["recovery"]
+        recovery["slots"].remove(slot)
+        recovery["reasons"].pop(slot, None)
+        self.view.slot = None
+        self.verified.clear()
+        self.report.setdefault("recovered_slots", []).append(slot)
+        self.checkpoint()
+        removed = old_keys - self.protected
+        self.rt.log(f"{slot}进度已恢复。" + (f"核对移除 {len(removed)} 个已不在仓库中的收藏颜色。" if removed else ""))
+
     def save(self):
         self.report["collection"] = self.progress()
         write_json(self.folder / "pursuit.json", self.report)
@@ -116,14 +275,24 @@ class FiveStarInventory(BlessingLocker):
         if self.pending is not None:
             raise RuntimeError("上一次操作尚未确认，停止继续提交")
         operation = {"kind": kind, "status": "submitted_unconfirmed",
+                     "input_attempted": False,
                      "started": datetime.now().isoformat(timespec="seconds"),
                      "facts": {key: facts[key] for key in ("name", "slot", "rarity", "level", "color")}
                      if facts else None, "evidence": evidence, **details,
                      "before": self.image(f"before_{len(self.report['operations']):04d}.png", frame)}
+        if self.active is not None:
+            operation["target_id"] = self.active["id"]
         self.report["operations"].append(operation)
         self.pending = operation
         self.checkpoint()
         return operation
+
+    def submit_change(self, operation):
+        """Persist uncertainty before input, so a process exit remains recoverable."""
+        if self.pending is not operation:
+            raise RuntimeError("操作记录与当前待提交项不一致")
+        operation["input_attempted"] = True
+        self.checkpoint()
 
     def confirm_change(self, operation, **details):
         operation.update(status="confirmed", confirmed=datetime.now().isoformat(timespec="seconds"), **details)
@@ -164,6 +333,7 @@ class FiveStarInventory(BlessingLocker):
             if not self.rt.action("TouchMove", target=self.layout["lock_button"]) or not self.rt.pause(.3):
                 raise RuntimeError("未能准备新颜色锁定")
             self.check_generation(generation)
+            self.submit_change(operation)
             if not self.rt.action("Click", target=self.layout["lock_button"], ui_click=False):
                 raise RuntimeError("新颜色锁定提交不确定，已停止且不重试")
             if not self.rt.pause(.4) or self.lock_state(generation, frame=self.frame(generation)) != "locked":
@@ -192,28 +362,41 @@ class FiveStarInventory(BlessingLocker):
         """Connect only the new prefix to the last complete order, once per slot."""
         for slot in SLOTS:
             old = self.organization["slots"][slot]
-            prefix, cut = self.view.scan(slot, old=old)
+            try:
+                prefix, cut = self.view.scan(slot, old=old)
+            except RecheckSlot:
+                self.rebuild_slot(slot)
+                continue
             rows, next_priority = merge_prefix(old, prefix, cut, self.organization["next_priority"])
             # Saved locked keepers must survive the observed replacement.
             old_keys = {self.key(row) for row in old[:cut] if row["locked"] and row["maximum"]}
             new_keys = {self.key(row) for row in prefix if row["locked"] and row["maximum"]}
             if not old_keys <= new_keys:
-                raise RuntimeError("新增区核对发现旧收藏改变，请重新运行祝福闪光仓库读取")
+                self.rebuild_slot(slot)
+                continue
             unfinished = self.organization["unfinished"]
             if unfinished and any(row["id"] == unfinished for row in old) and not any(
                     row["id"] == unfinished for row in rows):
-                raise RuntimeError("上次未完成对象无法与新顺序衔接，请重新整理")
+                self.rebuild_slot(slot)
+                continue
             self.organization["slots"][slot] = rows
             self.organization["next_priority"] = next_priority
             self.checkpoint()
 
     def next_target(self):
         rows = [row for slot in SLOTS for row in self.organization["slots"][slot]]
+        unprotected = [row for row in rows if row["rarity"] == 5 and row["maximum"]
+                       and row["collectible"] and not row["locked"] and self.key(row) not in self.protected]
+        if unprotected:
+            return min(unprotected, key=lambda row: (row["priority"], -row["ordinal"]))
         unfinished = self.organization["unfinished"]
         if unfinished:
             return next(row for row in rows if row["id"] == unfinished)
-        candidates = [row for row in rows if pending(row) and not self.part_complete(row["name"], row["slot"])]
-        return min(candidates, key=lambda row: (row["priority"], -row["ordinal"])) if candidates else None
+        candidates = [row for row in rows if row["rarity"] == 5 and not row["locked"] and row["collectible"]
+                      and (row["maximum"] and self.key(row) not in self.protected
+                           or not row["maximum"] and not self.part_complete(row["name"], row["slot"]))]
+        return min(candidates, key=lambda row: (not row["maximum"], row["level"] == 0,
+                                               row["priority"], -row["ordinal"])) if candidates else None
 
     def ensure_known_materials(self):
         """Game auto-fill ignores our catalogue and could consume new drops."""
@@ -232,7 +415,7 @@ class FiveStarInventory(BlessingLocker):
             return self.batch_result("collection_complete")
         self.report["phase"] = "upgrade_queue"
         if not self.open():
-            raise RuntimeError("未能返回祝福闪光列表")
+            raise IncompleteObservation("未能返回祝福闪光列表")
         self.inventory_read = True
         try:
             self.discover_prefixes()
@@ -247,10 +430,19 @@ class FiveStarInventory(BlessingLocker):
                     self.organization["unfinished"] = None
                     self.checkpoint()
                     continue
-                found = self.view.locate(target, rows, quantities=True)
+                try:
+                    found = self.view.locate(target, rows, quantities=True)
+                except RecheckSlot:
+                    if target["slot"] in self.report.get("recovered_slots", []):
+                        raise
+                    self.rebuild_slot(target["slot"])
+                    continue
                 if found is None:
                     if target["id"] == self.organization["unfinished"]:
-                        raise RuntimeError("上次未完成对象在定位区间内消失，请重新整理")
+                        if target["slot"] in self.report.get("recovered_slots", []):
+                            raise RecheckSlot(target["slot"], "未完成对象仍待核对，保留进度")
+                        self.rebuild_slot(target["slot"])
+                        continue
                     # Both immutable boundaries were seen: a fed/merged old
                     # candidate is absent. No warehouse-wide lookup is needed.
                     rows.remove(target)
@@ -302,25 +494,30 @@ class FiveStarInventory(BlessingLocker):
         order, protected, origin = self.store.load_organization()
         self.organization, self.protected = order, protected
         self.initial_protected = set(protected)
-        if origin.get("recovery") == "pending_reward":
+        if (origin.get("recovery") == "pending_reward"
+                and order["pending_operation"].get("input_attempted") is not False):
             # Preserve the unknown submission in the new journal, without
             # claiming a reward or resubmitting it. Reconcile the new prefix.
             self.report["recovered_reward"] = deepcopy(order["pending_operation"])
             self.organization["decomposition_pending"] = True
-        self.organization["pending_operation"] = None
+        self.pending = deepcopy(self.organization.get("pending_operation"))
         self.prepared = True
         self.report["startup"] = {"mode": "ordered_json", "keepers": len(protected), **origin}
-        if origin.get("recovery") == "confirmed_legacy_lookup":
+        if origin.get("recovery") in ("confirmed_legacy_lookup", "unsubmitted_observation"):
             self.rt.log(f"已核对上次操作记录，恢复 {len(protected)} 个已收藏颜色及待处理进度。")
         elif origin.get("recovery") == "pending_reward":
             self.rt.log(f"上次刷取结果待核对，保留 {len(protected)} 个已收藏颜色，本次先处理仓库。")
+        elif origin.get("recovery") == "pending_operation":
+            self.rt.log(f"保留 {len(protected)} 个已收藏颜色，正在核对上次操作。")
         self.rt.log(f"已读取完整获得时间基准及 {len(protected)} 个五星收藏；仅核对新增区域和待处理位置附近。", detail=True)
         self.log_progress("开始处理")
         self.save()
         self.ensure_known_materials()
+        self.recover_inventory()
 
     def finish(self, reason):
-        if not self.prepared or self.pending is not None or not self.organization.get("complete"):
+        if (not self.prepared or self.pending is not None or not self.organization.get("complete")
+                or self.organization.get("recovery", {}).get("slots")):
             raise RuntimeError("收集进度仍有未确认状态，不能正常结束")
         self.report.update(stop_reason=reason, reason=reason, collection_complete=self.progress()["complete"])
         shortage = self.report.get("batch_result", {}).get("status")

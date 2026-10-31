@@ -52,6 +52,7 @@ class CollectionSupply:
                     operation = self.journal.begin_change(
                         "realm", None, {"source": "challenge_confirmation"}, child.capture(),
                         realm=kind, source=candidate, energy_before=energy)
+                    self.journal.submit_change(operation)
                     self.rt.log(f"五星追全实际选择 {candidate}，使用剩余活跃能量快速挑战一批。",
                                 ui_text=f"开始刷取：{candidate}。")
 

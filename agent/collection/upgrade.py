@@ -5,7 +5,7 @@ import re
 
 from .details import COLORS
 from .locking import READY
-from .scanner import clean_text
+from .scanner import IncompleteObservation, clean_text
 
 
 UPGRADE = "MaaNikki_Pursuit_UpgradeReady"
@@ -19,23 +19,22 @@ class UpgradeUI:
         self.layout = owner.upgrade_layout
 
     def upgrade_ready(self):
-        # The result overlay leaves the upgrade title visible behind it.
-        # Requiring the overlay to disappear prevents enter_page from treating
-        # the destination as already open and skipping the F input.
+        # The fixed right-hand panel is present at every upgrade level. The
+        # result overlay can leave it visible, so require that overlay to close.
         return self.rt.hit(UPGRADE) and not self.rt.hit(RESULT)
 
     def frame(self, generation, page=UPGRADE):
         frame = self.rt.capture()
         self.owner.check_generation(generation)
         if frame is None or frame.shape[:2] != (720, 1280):
-            raise RuntimeError("升级截图尺寸无效")
+            raise IncompleteObservation("升级截图尺寸无效")
         result = self.rt.recognize(page, image=frame)
         self.owner.check_generation(generation)
         if not result or not result.hit:
-            raise RuntimeError("升级页面特征未确认")
+            raise IncompleteObservation("升级页面特征未确认")
         overlay = self.rt.recognize(RESULT, image=frame) if page == UPGRADE else None
         if overlay and overlay.hit:
-            raise RuntimeError("升级结果弹层尚未关闭，未读取底下升级页")
+            raise IncompleteObservation("升级结果弹层尚未关闭，未读取底下升级页")
         return frame
 
     def text(self, field, frame):
@@ -51,8 +50,8 @@ class UpgradeUI:
                 return fields, frame
             previous = fields
             if not self.rt.pause(.2):
-                raise RuntimeError("升级信息核对中断")
-        raise RuntimeError("升级页面信息未稳定")
+                raise IncompleteObservation("升级信息核对中断")
+        raise IncompleteObservation("升级页面信息未稳定")
 
     @staticmethod
     def integer(text):
@@ -71,7 +70,7 @@ class UpgradeUI:
         self.owner.check_generation(generation)
         if not self.rt.ui.enter_page(lambda: self.rt.key(27, 0), READY,
                                      source=self.upgrade_ready, attempts=1):
-            raise RuntimeError("升级页面未能返回祝福闪光列表")
+            raise IncompleteObservation("升级页面未能返回祝福闪光列表")
         self.owner.check_generation(generation)
 
     def clear(self, generation):
@@ -103,7 +102,7 @@ class UpgradeUI:
         if not self.rt.ui.enter_page(
                 lambda: self.rt.action("Click", target=self.layout["entrance"]),
                 self.upgrade_ready, source=READY, attempts=1):
-            raise RuntimeError("未确认祝福闪光升级页面")
+            raise IncompleteObservation("未确认祝福闪光升级页面")
         current = dict(facts)
         # Each auto-fill may stop at an intermediate level. Keep this selection
         # until maxed or short of resources; never infer colour from the overlay.
@@ -151,8 +150,10 @@ class UpgradeUI:
                 raise RuntimeError("提交前升级素材选项发生变化")
             self.owner.check_generation(generation)
             operation = self.owner.begin_change("upgrade", current, evidence, frame,
-                                                preview_level=levels[-1], cost=cost, bling_before=bling)
+                                                preview_level=levels[-1], cost=cost, bling_before=bling,
+                                                material_rarity_max=5, experience_before=old_xp)
             self.owner.check_generation(generation)
+            self.owner.submit_change(operation)
             if not self.rt.action("Click", target=self.layout["submit"]):
                 raise RuntimeError("升级提交结果不确定，已停止且不重试")
             if not self.rt.ui.wait_page(RESULT, seconds=20):

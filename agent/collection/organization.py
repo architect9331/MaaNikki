@@ -12,6 +12,22 @@ from .scanner import RescanSlot, clean_text
 
 
 class BlessingOrganizer(BlessingLocker):
+    def save(self):
+        super().save()
+        # Persist a dirty slot before submitting any toggle. A stopped read
+        # alone leaves an earlier complete baseline intact.
+        count = getattr(self, "_baseline_operations", 0)
+        store = getattr(self, "baseline_store", None)
+        changed = getattr(self, "_baseline_slots", set())
+        if store is not None:
+            for operation in self.report["operations"][count:]:
+                slot = operation["key"][1]
+                if slot not in changed:
+                    store.mark_organization_change(slot)
+                    changed.add(slot)
+            self._baseline_slots = changed
+            self._baseline_operations = len(self.report["operations"])
+
     def same_ordered_cards(self, checkpoint, frame, *, shift=0, ignore_box=None):
         before = checkpoint["frame"]
         checked = []

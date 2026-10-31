@@ -15,7 +15,7 @@ from .details import COLOR_OCR_THRESHOLD, tooltip_facts
 from file_io import write_json
 from .policy import capabilities
 from .quantity import stack_badge
-from .scanner import InventoryScanner
+from .scanner import IncompleteObservation, InventoryScanner
 
 
 READY = "MaaNikki_Blessing_InventoryReady"
@@ -116,13 +116,18 @@ class BlessingLocker(InventoryScanner):
             diagnostic.update(error=error, page=self.image(prefix + "_page.png", frame),
                               quantity_failure=self.report.get("quantity_failure"))
             self.rt.diagnostic("blessing_quantity", error, image=frame, details=diagnostic)
+        if evidence.get("selected_for_observation", False):
+            # The card badge may be ambiguous while selected. Retain the
+            # actual button frame used for its gap/background classification,
+            # rather than only the earlier hover screenshot.
+            diagnostic["selected_page"] = self.image(prefix + "_selected.png", self._lock_frame)
         write_json(self.folder / (prefix + ".json"), diagnostic)
 
     def frame(self, generation):
         frame = self.rt.capture()
         self.check_generation(generation)
         if frame is None or frame.shape[:2] != (720, 1280) or not self.ready(frame):
-            raise RuntimeError("未确认祝福闪光普通库存页（需要 16:9 窗口）")
+            raise IncompleteObservation("未确认祝福闪光普通库存页（需要 16:9 窗口）")
         return frame
 
     def ready(self, frame):
@@ -155,7 +160,7 @@ class BlessingLocker(InventoryScanner):
         self._hover_box = None
         if not self.rt.action("TouchMove", target=[900, 32]) or not self.rt.pause(.06):
             self.check_generation(generation)
-            raise RuntimeError("未能关闭悬停信息")
+            raise IncompleteObservation("未能关闭悬停信息")
         previous = None
         for _ in range(8 if settle_card else 6):
             frame = self.frame(generation)
@@ -170,7 +175,7 @@ class BlessingLocker(InventoryScanner):
                 previous = None
             if not self.rt.pause(.04):
                 self.check_generation(generation)
-        raise RuntimeError("悬停提示或格子高亮尚未稳定，未继续读取或翻页")
+        raise IncompleteObservation("悬停提示或格子高亮尚未稳定，未继续读取或翻页")
 
     def scroll_amounts(self):
         # Keep roughly two rows of overlap. Once a large move is ambiguous,
@@ -528,6 +533,8 @@ class BlessingLocker(InventoryScanner):
                 previous = self.icon_state(frame)
                 observations.append({"attempt": "hover_cleared", **self.report.get("lock_recognition", {})})
             if not self.rt.pause(.06):
+                if not submitted:
+                    raise IncompleteObservation("锁定状态核对被中断")
                 raise RuntimeError("锁定状态核对被中断")
             frame = self.frame(generation)
             current = self.icon_state(frame)
@@ -542,6 +549,8 @@ class BlessingLocker(InventoryScanner):
                   else "操作前无法区分锁定与解锁，未点击锁按钮")
         self.rt.diagnostic("blessing_lock_state", reason, image=frame,
                            details={**self.report.get("lock_recognition", {}), "frames": observations})
+        if not submitted:
+            raise IncompleteObservation(reason)
         raise RuntimeError(reason)
 
     def selected(self, frame, box):
@@ -567,6 +576,14 @@ class BlessingLocker(InventoryScanner):
                 not self.rt.action("Click", target=point, ui_click=False) or not self.rt.pause(.15)):
             raise RuntimeError("未能选中目标闪光")
         frame = self.frame(generation)
+        if not self.selected(frame, box):
+            # Click delivery and the selection animation are asynchronous.
+            # Keep the pointer in place and observe the same target until its
+            # existing highlight predicate passes; never submit another click.
+            with self.rt.ui.preserve_cursor():
+                if not self.rt.ui.wait_page(lambda: self.selected(self.frame(generation), box)):
+                    raise IncompleteObservation("目标格子的选中高亮尚未确认，保留进度")
+            frame = self.frame(generation)
         proof = self._hover_read
         same_tooltip = (proof is not None and proof[0] == tuple(box) and proof[1] == generation
                         and self.key(proof[2]) == self.key(facts) and proof[2]["level"] == facts["level"]
@@ -575,8 +592,6 @@ class BlessingLocker(InventoryScanner):
             # Clicking can close the panel even when the pointer stays put.
             # A later adjacent read must not reuse that dismissed tooltip.
             self._hover_read = None
-        if not self.selected(frame, box):
-            raise RuntimeError("未确认目标格子的选中高亮，未操作锁按钮")
         if verify_details:
             if not same_tooltip:
                 self.counter += 1

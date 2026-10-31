@@ -17,6 +17,7 @@ from account_state import AccountState
 from .protection import keeper_keys, pending_reward
 from .blessing import SLOTS
 from .policy import capabilities, definition_for, protected_inventory, unregistered_inventory
+from .recovery import operation_scope
 
 
 class InventoryStore:
@@ -185,8 +186,91 @@ class InventoryStore:
                 and all(isinstance(op, dict) and op.get("status") == "confirmed"
                         for op in operations[:-1]))
 
+    def recover_unsubmitted_observation(self, data, order):
+        """Restore a stopped baseline when every mutation was confirmed."""
+        reason = order.get("reason")
+        progress = data.get("pursuit")
+        record = data.get("record", {})
+        if (order.get("complete") is not False or not isinstance(reason, str) or not reason
+                or order.get("pending_operation") is not None
+                or record.get("source") not in ("pursuit", "daily_upgrade") or not isinstance(progress, dict)
+                or progress.get("phase") != "interrupted"
+                or progress.get("existing_colors_checked") is not True
+                or progress.get("protection_valid") is not True
+                or progress.get("pending_operation") is not None):
+            return False
+        startup = progress.get("startup")
+        if not isinstance(startup, dict) or startup.get("mode") != "ordered_json":
+            return False
+        folder = Path(record.get("evidence_dir", "")).resolve()
+        logs = self.directory.parents[1] / "logs"
+        if not any(folder.is_relative_to((logs / name).resolve())
+                   for name in ("blessing-pursuit", "daily-upgrade")):
+            return False
+        evidence = []
+        for name in ("pursuit.json", "inventory.json"):
+            path = folder / name
+            if not path.is_file() or path.stat().st_size > 20 * 1024 * 1024:
+                return False
+            evidence.append(json.loads(path.read_text(encoding="utf-8")))
+        report, snapshot = evidence
+        if not isinstance(report, dict) or not isinstance(snapshot, dict):
+            return False
+        operations = report.get("operations")
+        # The exception message is not evidence of a mutation. These exact
+        # snapshot/journal matches prove that the established baseline has no
+        # outstanding submission. Live prefix checks repair ordering changes.
+        return (report.get("workflow") in ("five_star_pursuit", "daily_upgrade")
+                and report.get("phase") == "interrupted" and report.get("reason") == reason
+                and report.get("startup") == startup and report.get("collection") == progress
+                and snapshot.get("organization") == order and snapshot.get("pursuit") == progress
+                and snapshot.get("record") == record
+                and isinstance(operations, list)
+                and all(isinstance(operation, dict) and operation.get("status") == "confirmed"
+                        for operation in operations))
+
+    def recover_scoped_operation(self, data, order):
+        """Allow live reconciliation for a journalled, bounded inventory change."""
+        operation = order.get("pending_operation")
+        progress = data.get("pursuit")
+        if (operation_scope(operation) is None or not isinstance(progress, dict)
+                or progress.get("existing_colors_checked") is not True
+                or progress.get("protection_valid") is not True
+                or progress.get("pending_operation") != operation
+                or not isinstance(progress.get("startup"), dict)
+                or progress["startup"].get("mode") != "ordered_json"):
+            return False
+        if order.get("complete") is True:
+            return True
+        record = data.get("record", {})
+        if record.get("source") != "pursuit":
+            return False
+        folder = Path(record.get("evidence_dir", "")).resolve()
+        logs = self.directory.parents[1] / "logs"
+        if not any(folder.is_relative_to((logs / name).resolve())
+                   for name in ("blessing-pursuit", "daily-upgrade")):
+            return False
+        evidence = []
+        for name in ("pursuit.json", "inventory.json"):
+            path = folder / name
+            if not path.is_file() or path.stat().st_size > 20 * 1024 * 1024:
+                return False
+            evidence.append(json.loads(path.read_text(encoding="utf-8")))
+        report, snapshot = evidence
+        if not isinstance(report, dict) or not isinstance(snapshot, dict):
+            return False
+        operations = report.get("operations")
+        return (report.get("workflow") in ("five_star_pursuit", "daily_upgrade")
+                and report.get("collection") == progress
+                and snapshot.get("organization") == order and snapshot.get("pursuit") == progress
+                and snapshot.get("record") == record
+                and isinstance(operations, list) and bool(operations)
+                and operations[-1] == operation
+                and all(isinstance(op, dict) and op.get("status") == "confirmed"
+                        for op in operations[:-1]))
+
     def load_organization(self):
-        """Full collection requires the newest complete ordered baseline."""
+        """Load an established baseline, including bounded work to reconcile."""
         candidates = [(self.read_snapshot(path), path)
                       for path in (self.path, self.last_scan_path) if self.exists(path)]
         if not candidates:
@@ -200,15 +284,25 @@ class InventoryStore:
             raise ValueError("缺少完整的获得时间整理基准，请先完整运行“祝福闪光仓库读取”（旧锁定记录不能代替）")
         operation = order.get("pending_operation")
         reward_recovery = self.recover_reward_submission(data, order) if pending_reward(operation) else False
+        operation_recovery = self.recover_scoped_operation(data, order) if operation is not None else False
         recovered = False
+        observation_recovery = False
         if order.get("complete") is not True:
             recovered = self.recover_legacy_lookup(data, order)
-            if not recovered and not reward_recovery:
+            observation_recovery = self.recover_unsubmitted_observation(data, order)
+            if not recovered and not reward_recovery and not observation_recovery and not operation_recovery:
                 raise ValueError("整理基准需重新核对："
                                  + str(order.get("reason") or "尚未完成完整整理")
                                  + "；请运行“祝福闪光仓库读取”")
-        if operation is not None and not reward_recovery:
-            raise ValueError("上次库存修改尚未确认，请重新运行祝福闪光仓库读取")
+        if operation is not None and not (reward_recovery or operation_recovery):
+            raise ValueError("上次操作可能影响已锁定收藏，需重新运行祝福闪光仓库读取")
+        recovery = order.get("recovery")
+        if recovery is not None and (not isinstance(recovery, dict)
+                or not isinstance(recovery.get("slots"), list)
+                or any(slot not in SLOTS for slot in recovery["slots"])
+                or len(set(recovery["slots"])) != len(recovery["slots"])
+                or not isinstance(recovery.get("reasons"), dict)):
+            raise ValueError("局部恢复记录格式无效，请重新读取仓库")
         identifiers = set()
         protected = set()
         for slot, rows in order["slots"].items():
@@ -251,11 +345,30 @@ class InventoryStore:
                 or order.get("unfinished") is not None and order["unfinished"] not in identifiers):
             raise ValueError("顺序进度无效，请重新整理")
         origin = {"path": self.reference(path), "updated_at": data["record"]["updated_at"]}
-        if recovered or reward_recovery:
+        if recovered or reward_recovery or observation_recovery or operation_recovery:
             if protected != keeper_keys(data, self.catalog):
                 raise ValueError("顺序基准与已确认收藏不一致，请重新整理")
             order.update(complete=True, reason=None)
-            origin["recovery"] = "pending_reward" if reward_recovery else "confirmed_legacy_lookup"
+            origin["recovery"] = ("pending_reward" if reward_recovery else
+                                  "pending_operation" if operation_recovery else
+                                  "unsubmitted_observation" if observation_recovery else "confirmed_legacy_lookup")
+        if operation_recovery:
+            recovery = order.setdefault("recovery", {"slots": [], "reasons": {}})
+            for slot in operation_scope(operation):
+                if slot not in recovery["slots"]:
+                    recovery["slots"].append(slot)
+                recovery["reasons"][slot] = "上次操作结果待核对"
+        # A confirmed full-level upgrade can stop before its lock submission.
+        # Keep it in the queue; a new lock is required before more auto-fill.
+        unprotected = [row for rows in order["slots"].values() for row in rows
+                       if row["rarity"] == 5 and row["maximum"] and row["collectible"]
+                       and not row["locked"] and (row["name"], row["slot"], row["color"]) not in protected]
+        if unprotected:
+            recovery = order.setdefault("recovery", {"slots": [], "reasons": {}})
+            for row in unprotected:
+                if row["slot"] not in recovery["slots"]:
+                    recovery["slots"].append(row["slot"])
+                recovery["reasons"][row["slot"]] = "满级颜色待保护"
         order["anchor_policy_version"] = 2
         return order, protected, origin
 
@@ -339,20 +452,51 @@ class InventoryStore:
 
     def save_scan(self, snapshot, evidence_dir, *, source="scan"):
         """Always retain the latest attempt, publishing only complete identities."""
-        if source == "scan" and "organization" not in snapshot:
-            # A read-only quantity scan cannot create an ordered baseline, but
-            # must not discard an already valid one either.
+        incomplete_order = not snapshot.get("organization", {}).get("complete")
+        if (source == "scan" and "organization" not in snapshot
+                or source == "locking" and incomplete_order):
+            # A stopped reread cannot erase an established baseline. Lock
+            # changes already recorded their affected slots before input.
             try:
-                order, _, _ = self.load_organization()
+                order, protected, _ = self.load_organization()
             except (OSError, ValueError, KeyError, TypeError):
                 pass
             else:
                 snapshot = deepcopy(snapshot)
                 snapshot["organization"] = order
+                previous = [self.read_snapshot(path) for path in (self.path, self.last_scan_path) if self.exists(path)]
+                latest = max(previous, key=self.updated_at)
+                if isinstance(latest.get("pursuit"), dict):
+                    snapshot["pursuit"] = deepcopy(latest["pursuit"])
+                snapshot["protection"] = {"complete": True, "keepers": [
+                    {"name": name, "slot": slot, "color": color}
+                    for name, slot, color in sorted(protected)]}
         data = self.prepare(snapshot, source=source, evidence_dir=evidence_dir)
         published = data["scan"]["identity_complete"]
         self.account.save_blessing("last_scan", data, publish=published)
         return data, published
+
+    def mark_organization_change(self, slot):
+        """Keep an established baseline, with a slot audit required after toggles."""
+        try:
+            order, protected, _ = self.load_organization()
+        except (ValueError, KeyError, TypeError):
+            # First-time initialization still requires all three slots.
+            return
+        recovery = order.setdefault("recovery", {"slots": [], "reasons": {}})
+        if slot not in recovery["slots"]:
+            recovery["slots"].append(slot)
+        recovery["reasons"][slot] = "仓库读取期间锁定状态发生变化"
+        previous = [self.read_snapshot(path) for path in (self.path, self.last_scan_path) if self.exists(path)]
+        partial = deepcopy(max(previous, key=self.updated_at))
+        partial["organization"] = order
+        partial["scan"].update(complete=False, traversed=False, slots={}, reported_capacity=None,
+                               workflow="inventory_invalidated", reason="相关部位待核对")
+        partial["protection"] = {"complete": True, "keepers": [
+            {"name": name, "slot": part, "color": color}
+            for name, part, color in sorted(protected)]}
+        data = self.prepare(partial, source="organization")
+        self.account.save_blessing("last_scan", data)
 
     def invalidate(self, reason, *, source):
         """Mark stock stale before a reward submission without scanning the UI.

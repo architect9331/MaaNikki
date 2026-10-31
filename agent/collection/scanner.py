@@ -29,6 +29,10 @@ class RescanSlot(Exception):
     """Restart traversal when a foreground pause invalidates list positions."""
 
 
+class IncompleteObservation(RuntimeError):
+    """A read was inconclusive without changing or contradicting the inventory."""
+
+
 class InventoryScanner:
     def __init__(self, runtime, catalog, folder):
         self.rt, self.catalog, self.folder = runtime, catalog, folder

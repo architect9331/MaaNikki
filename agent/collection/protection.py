@@ -1,5 +1,6 @@
 """Read confirmed five-star keeper identities independently of stock quantities."""
 from .blessing import SLOTS
+from .recovery import operation_scope
 
 
 def pending_reward(operation):
@@ -52,7 +53,7 @@ def keeper_keys(snapshot, catalog):
         if progress.get("protection_valid", True) is not True:
             raise ValueError("上次收藏保护复核未通过")
         operation = progress.get("pending_operation")
-        if operation is not None and not pending_reward(operation):
+        if operation is not None and operation_scope(operation) is None:
             raise ValueError("上次仍有未确认操作，需要重新核对")
         parts = progress.get("parts")
         if not isinstance(parts, list):
@@ -87,13 +88,17 @@ def keeper_keys(snapshot, catalog):
         if last is not None:
             if not isinstance(last, dict):
                 raise ValueError("最近升级记录无效")
-            if last.get("level") == 10 and (last.get("name"), last.get("slot"), last.get("color")) not in protected:
-                raise ValueError("最近升级的满级颜色尚未保护")
+            # An upgraded colour awaiting its own lock does not remove any
+            # previously confirmed keeper. The processing queue protects it
+            # before selecting more upgrade materials.
         return protected
 
-    # Only reward-only invalidation may carry this compact protection proof.
-    if (snapshot.get("record", {}).get("source") == "realm_bless"
-            and snapshot["scan"].get("workflow") == "inventory_invalidated"):
+    # Rereads retain the earlier keeper proof; a dirty slot is reconciled
+    # before new materials are consumed. They cannot create an initial proof.
+    order = snapshot.get("organization", {})
+    if (snapshot.get("record", {}).get("source") in ("realm_bless", "organization", "locking", "scan")
+            and (snapshot["scan"].get("workflow") == "inventory_invalidated"
+                 or isinstance(order, dict) and order.get("complete") is True)):
         proof = snapshot.get("protection")
         if isinstance(proof, dict) and proof.get("complete") is True:
             return keys(proof.get("keepers"))

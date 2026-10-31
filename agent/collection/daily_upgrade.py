@@ -8,10 +8,10 @@ from uuid import uuid4
 from daily.settings import ROOT
 from .blessing import SLOTS
 from .inventory_workflow import FiveStarInventory
-from .ordered import IncompleteLookup
-from .policy import UnregisteredMaterials, capabilities
-from .scanner import RescanSlot
+from .policy import capabilities
+from .scanner import IncompleteObservation, RescanSlot
 from .upgrade import UpgradeUI
+from .recovery import RecheckSlot
 
 
 class DailyUpgrade(FiveStarInventory):
@@ -49,7 +49,13 @@ class DailyUpgrade(FiveStarInventory):
                                          row["priority"]))
         for target in candidates:
             rows = self.organization["slots"][target["slot"]]
-            found = self.view.locate(target, rows, exact_lock=target["locked"], quantities=True)
+            try:
+                found = self.view.locate(target, rows, exact_lock=target["locked"], quantities=True)
+            except RecheckSlot:
+                if target["slot"] in self.report.get("recovered_slots", []):
+                    raise
+                self.rebuild_slot(target["slot"])
+                return self.ordered_candidate()
             if found is not None:
                 if found[2]["copies_before"] > 1 and target["id"] != self.organization["unfinished"]:
                     active = deepcopy(target)
@@ -60,7 +66,10 @@ class DailyUpgrade(FiveStarInventory):
                     active = target
                 return active, found
             if target["id"] == self.organization["unfinished"]:
-                raise RuntimeError("上次未完成的祝福闪光无法确认，请重新读取仓库")
+                if target["slot"] in self.report.get("recovered_slots", []):
+                    raise RecheckSlot(target["slot"], "上次未完成对象仍待核对，保留进度")
+                self.rebuild_slot(target["slot"])
+                return self.ordered_candidate()
             rows.remove(target)
             self.checkpoint()
         return None
@@ -123,7 +132,7 @@ class DailyUpgrade(FiveStarInventory):
             else:
                 self.prepare("daily_upgrade")
             if not self.open():
-                raise RuntimeError("未能打开祝福闪光列表")
+                raise IncompleteObservation("未能打开祝福闪光列表")
             self.inventory_read = True
             selected = self.ordered_candidate() if self.prepared else self.live_candidate()
             if selected is None:
@@ -159,12 +168,7 @@ class DailyUpgrade(FiveStarInventory):
                 self.rt.log(f"朝夕心愿：{reason}，本次升级结束。")
             return result
         except BaseException as error:
-            self.report.update(complete=False, phase="interrupted")
-            if self.prepared:
-                self.organization["complete"] = (
-                    isinstance(error, (IncompleteLookup, UnregisteredMaterials))
-                    and self.pending is None and self.organization.get("complete") is True)
-                self.organization["reason"] = str(error)
+            self.record_interruption(error)
             raise
         finally:
             self.inventory_read = False

@@ -11,10 +11,7 @@ from daily.runtime import Executors, parameters
 from daily.settings import ROOT
 from collection.pursuit import FiveStarPursuit
 from collection.inventory_workflow import FiveStarInventory
-from collection.ordered import IncompleteLookup
 from collection.scanner import RescanSlot
-from collection.policy import UnregisteredMaterials
-from collection.protection import pending_reward
 
 
 @agent_action("nikki.blessing_pursuit")
@@ -42,26 +39,16 @@ class BlessingPursuitAction(CustomAction):
                 return rt.ui.calendar() and ok
             _, finished = rt.finish(argv.node_name)
             return finished and ok
-        except TaskStopped:
+        except TaskStopped as error:
             if pursuit is not None:
-                pursuit.report.update(complete=False, phase="interrupted", reason="用户停止，保留已确认进度及未确认操作")
+                pursuit.record_interruption(error, reason="用户停止，进度已保存")
             raise
         except (RescanSlot, OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             reason = "焦点变化使当前升级或列表状态失效，请重新运行核对" if isinstance(error, RescanSlot) else str(error)
             if not rt.stopped:
                 rt.diagnostic("blessing_pursuit", reason)
             if pursuit is not None:
-                pursuit.report.update(complete=False, phase="interrupted", reason=reason)
-                if pursuit.organization is not None:
-                    # An incomplete read did not mutate the candidate or prove
-                    # it absent. Preserve the established baseline for retry.
-                    # Unconfirmed realm rewards only add a new prefix; the
-                    # existing locked baseline is still valid for reconciliation.
-                    resumable = (pursuit.organization.get("complete") is True
-                                 and (pending_reward(pursuit.pending)
-                                      or isinstance(error, (IncompleteLookup, UnregisteredMaterials))
-                                      and pursuit.pending is None))
-                    pursuit.organization.update(complete=resumable, reason=reason)
+                pursuit.record_interruption(error, reason=reason)
                 try:
                     pursuit.image("interrupted.png", rt.capture())
                 except (OSError, RuntimeError, cv2.error):
@@ -73,9 +60,8 @@ class BlessingPursuitAction(CustomAction):
             if pursuit is not None:
                 try:
                     pursuit.log_progress("本轮结束" if pursuit.report.get("complete") else "本轮中断")
-                    # Invalidate old stock after any uncertain/incomplete run.
-                    # Saved collection progress remains valid if only the
-                    # final navigation was interrupted; quantities stay unknown.
+                    # Save confirmed keepers and scoped recovery independently
+                    # of stale, untracked material quantities.
                     if pursuit.prepared and "inventory" not in pursuit.report:
                         pursuit.checkpoint()
                     else:

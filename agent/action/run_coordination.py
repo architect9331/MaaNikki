@@ -32,10 +32,11 @@ class RunCoordinationAction(CustomAction):
                     "monster" if "MaaNikki_Monster" in next_names else None)
                 if collection:
                     catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
-                    _, protected, _ = InventoryStore(ROOT, catalog, rt).load_organization()
+                    order, protected, _ = InventoryStore(ROOT, catalog, rt).load_organization()
                     total = sum(len(item["colors"]) * 3 for item in catalog["sets"]
                                 if item["rarity"] == 5 and item.get("collection_target", True))
-                    if len(protected) == total:
+                    if (len(protected) == total and order.get("pending_operation") is None
+                            and not order.get("recovery", {}).get("slots")):
                         rt.log("五星祝福闪光颜色已收齐；本次不消耗活跃能量，请选择其他幻境。")
                         run_state.begin_realm(rt, task_id, kind=kind, collection=collection)
                         return context.override_pipeline({"MaaNikki_RealmChallenge": {"next": ["MaaNikki_RealmReview"]}})

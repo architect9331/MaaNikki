@@ -13,7 +13,8 @@ from task_control import task_time as time
 from .blessing import SLOTS
 from .policy import capabilities, observation_fields
 from .quantity import read_count
-from .scanner import LEVEL, RescanSlot, clean_text
+from .scanner import LEVEL, IncompleteObservation, RescanSlot, clean_text
+from .recovery import RecheckSlot
 
 
 def resumable_observation(method):
@@ -35,7 +36,7 @@ def resumable_observation(method):
     return run
 
 
-class IncompleteLookup(RuntimeError):
+class IncompleteLookup(IncompleteObservation):
     """A read-only interval observation failed; saved identities are intact."""
 
 
@@ -139,7 +140,7 @@ class OrderedView:
                 if current is not None and current is not before:
                     self.o.rt.diagnostic("blessing_scroll_after", "列表位移未确认：滚动后画面",
                                          image=current, details=details)
-            raise RuntimeError("获得时间列表位移无法确认，请重新整理")
+            raise IncompleteLookup("获得时间列表位移未确认，保留进度")
         self.position = max(0, self.position + direction * delta)
         self.remember_view(after, [[x, y - direction * delta, w, h] for x, y, w, h in boxes
                                   if self.o.grid[1] <= y - direction * delta
@@ -161,7 +162,7 @@ class OrderedView:
                 if direction < 0:
                     self.position = 0
                 return
-        raise RuntimeError("定位滚动超过上限，请重新整理")
+        raise IncompleteLookup("定位滚动达到上限，保留进度")
 
     @resumable_observation
     def cells(self, *, at_bottom=False):
@@ -286,7 +287,7 @@ class OrderedView:
                 key = anchor(row)
                 if old is not None and key in old_anchors:
                     if len(matched) >= len(expected) or key != expected[len(matched)]:
-                        raise RuntimeError("已有锁定参照顺序改变，请重新运行祝福闪光仓库读取")
+                        raise RecheckSlot(slot, "已有锁定参照顺序改变，核对该部位")
                     matched.append(key)
                     if matched == expected:
                         self.o.check_coverage(seen)
@@ -297,11 +298,11 @@ class OrderedView:
                 last_notice = time.monotonic()
             if at_bottom:
                 if expected and matched != expected:
-                    raise RuntimeError("未找到完整的旧锁定参照，请重新整理")
+                    raise RecheckSlot(slot, "未找到完整的旧锁定参照，核对该部位")
                 if seen:
                     self.o.check_coverage(seen)
                 return rows, len(old or [])
-        raise RuntimeError("新增区域超过定位上限，请重新运行祝福闪光仓库读取建立基准")
+        raise RecheckSlot(slot, "新增区域超出原有参照范围，核对该部位")
 
     def locate(self, target, rows, *, exact_lock=None, quantities=False):
         """Check a bounded neighbourhood, with anchor proof for absence.
@@ -398,7 +399,7 @@ class OrderedView:
                     "right": list(right[0]), "right_ordinal": right_ordinal,
                     "observed_ordinals": sorted(observed_ordinals)}
                 if right_ordinal <= left_ordinal:
-                    raise RuntimeError("定位参照的实际顺序与记录不一致，已保存参照位置")
+                    raise RecheckSlot(target["slot"], "定位参照顺序变化，核对该部位")
                 if complete_interval(right_ordinal):
                     stats["confirmed_absent"] += 1
                     return None
@@ -409,7 +410,7 @@ class OrderedView:
                     stats["confirmed_absent"] += 1
                     return None
                 break
-        raise RuntimeError("目标附近未能确认对象或完整边界，已停止局部查找；请重新整理，未反复扫描全仓")
+        raise RecheckSlot(target["slot"], "目标已超出原有局部定位范围，核对该部位")
 
     def target_quantity(self, frame, box, row, evidence):
         # Only the selected upgrade candidate needs a quantity. Singles use
