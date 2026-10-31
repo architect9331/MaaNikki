@@ -56,6 +56,8 @@ Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https:
 
 欢迎提交代码、分享使用经验和完善文档。开发环境与打包流程见[构建指南](BUILDING.md)，模块划分与调试工具见[开发文档](docs/architecture.md)。
 
+官网页面在 [MaaNikki-website](https://github.com/architect9331/MaaNikki-website) 独立维护，用户手册、截图和图标从本仓库自动同步。
+
 ## 交流与反馈
 
 **QQ 交流群：654174255**

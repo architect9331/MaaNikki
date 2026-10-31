@@ -1,0 +1,59 @@
+name: Sync website
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/manual.md'
+      - 'docs/images/**'
+      - 'resource/icon.png'
+      - '.github/workflows/sync-website.yml'
+  release:
+    types: [published]
+  workflow_run:
+    workflows: ['Build Windows x64']
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-website
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: architect9331/MaaNikki-website
+          ref: main
+          ssh-key: ${{ secrets.WEBSITE_DEPLOY_KEY }}
+      - name: Update website content reference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/architect9331/MaaNikki/commits/main --jq .sha > /tmp/maanikki-sha
+          gh api 'repos/architect9331/MaaNikki/releases?per_page=10' > /tmp/maanikki-releases.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          releases = json.loads(Path('/tmp/maanikki-releases.json').read_text())
+          release = next((item['tag_name'] for item in releases if not item['draft'] and any(asset['name'].endswith('-win-x86_64.zip') for asset in item['assets'])), None)
+          payload = {'repository': 'architect9331/MaaNikki', 'commit': Path('/tmp/maanikki-sha').read_text().strip(), 'release': release}
+          Path('upstream.json').write_text(json.dumps(payload, indent=2) + chr(10))
+          PY
+          git add upstream.json
+          if git diff --cached --quiet; then
+            echo 'Website content is current.'
+            exit 0
+          fi
+          git config user.name 'MaaNikki website sync'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(content): sync MaaNikki docs and release'
+          git push origin HEAD:main
