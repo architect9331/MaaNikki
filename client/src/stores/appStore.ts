@@ -1507,6 +1507,7 @@ export const useAppStore = create<AppState>()(
         instances,
         activeInstanceId,
         explorationSettings,
+        explorationEnabled: config.settings.explorationEnabled ?? false,
         theme: effectiveTheme,
         accentColor: effectiveAccentColor,
         language: effectiveLanguage,
@@ -2062,6 +2063,8 @@ export const useAppStore = create<AppState>()(
 
     // 通信兼容模式
     tcpCompatMode: false,
+    explorationEnabled: false,
+    setExplorationEnabledPreference: (enabled) => set({ explorationEnabled: enabled }),
     explorationSettings: normalizeExplorationSettings(),
     setExplorationFeature: (key, enabled) => set((state) => ({
       explorationSettings: { ...state.explorationSettings, [key]: enabled },
@@ -2529,6 +2532,7 @@ function generateConfig(): MxuConfig {
           welcomeShownHash: state.welcomeShownHash,
           devMode: state.devMode,
           tcpCompatMode: state.tcpCompatMode,
+          explorationEnabled: state.explorationEnabled,
           exploration: state.explorationSettings,
           allowLanAccess: state.allowLanAccess,
           webServerEnabled: state.webServerEnabled,
@@ -2612,6 +2616,7 @@ useAppStore.subscribe(
     welcomeShownHash: state.welcomeShownHash,
     devMode: state.devMode,
     tcpCompatMode: state.tcpCompatMode,
+    explorationEnabled: state.explorationEnabled,
     explorationSettings: state.explorationSettings,
     allowLanAccess: state.allowLanAccess,
     webServerEnabled: state.webServerEnabled,

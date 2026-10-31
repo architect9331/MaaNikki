@@ -135,6 +135,8 @@ export interface HotkeySettings {
 // 应用设置
 export interface AppSettings {
   exploration?: import('./exploration').ExplorationSettings;
+  /** 辅助功能开关状态；游戏关闭时保留，重新连接后自动运行 */
+  explorationEnabled?: boolean;
   theme: 'light' | 'dark' | 'system';
   accentColor?: AccentColor; // 强调色
   language: 'system' | 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP' | 'ko-KR';

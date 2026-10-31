@@ -14,7 +14,7 @@ import { startGlobalCallbackListener, waitForCtrlResult, waitForResResult } from
 import { maaService } from './maaService';
 import { stopInstanceTasks } from './taskStopService';
 
-type Status = 'off' | 'starting' | 'running' | 'paused' | 'stopping' | 'error';
+type Status = 'off' | 'starting' | 'running' | 'waiting' | 'paused' | 'stopping' | 'error';
 export const useExplorationStore = create<{
   enabled: boolean;
   status: Status;
@@ -22,7 +22,7 @@ export const useExplorationStore = create<{
 }>(() => ({ enabled: false, status: 'off', error: '' }));
 
 export const explorationStatusLabels: Record<Status, string> = {
-  off: '已关闭', starting: '启动中', running: '运行中', paused: '日常期间暂停', stopping: '停止中', error: '启动或运行失败',
+  off: '已关闭', starting: '启动中', running: '运行中', waiting: '等待游戏', paused: '日常期间暂停', stopping: '停止中', error: '启动或运行失败',
 };
 
 let queue: Promise<unknown> = Promise.resolve();
@@ -74,7 +74,10 @@ async function reconcile() {
     return;
   }
   const backend = await maaService.getAllStates();
-  if (!backend) throw new Error('无法读取任务运行状态。');
+  if (!backend) {
+    useExplorationStore.setState({ status: 'waiting', error: '' });
+    return;
+  }
   if (Object.entries(backend.instances).some(([id, state]) => id !== instanceId && state.isRunning)) {
     await stop();
     useExplorationStore.setState({ status: 'paused' });
@@ -86,9 +89,11 @@ async function reconcile() {
     const result = backend.instances[instanceId]?.taskRunState;
     if (result?.overallStatus === 'Succeeded' || result?.statuses[instanceId] === 'succeeded') {
       revision++;
-      useExplorationStore.setState({ enabled: false, status: 'stopping', error: '' });
+      // The game window can close while the user still wants assistance on
+      // the next launch. Keep the preference enabled and wait for reconnection.
+      useExplorationStore.setState({ status: 'stopping', error: '' });
       await stop(true);
-      useExplorationStore.setState({ status: 'off' });
+      useExplorationStore.setState({ status: 'paused' });
       return;
     }
     throw new Error('辅助功能已结束，请查看日志后重新开启。');
@@ -121,7 +126,11 @@ async function reconcile() {
   const { classRegex, titleRegex } = getDesktopWindowFilters(controller);
   const windows = await maaService.findWin32Windows(classRegex, titleRegex);
   const window = windows[0];
-  if (!window) throw new Error('请打开无限暖暖游戏窗口后再开启辅助功能。');
+  if (!window) {
+    await stop(true);
+    useExplorationStore.setState({ status: 'waiting', error: '' });
+    return;
+  }
   const config = buildDesktopWindowControllerConfig(controller, window.handle);
   if (!config) throw new Error('辅助功能的窗口控制器配置无效。');
   const ctrlId = await maaService.connectController(instanceId, config);
@@ -186,8 +195,16 @@ async function reconcileSafely() {
 
 export function setExplorationEnabled(enabled: boolean) {
   revision++;
+  useAppStore.getState().setExplorationEnabledPreference(enabled);
   useExplorationStore.setState({ enabled, error: '', status: enabled ? 'starting' : 'stopping' });
   void serialize(reconcileSafely);
+}
+
+/** Hydrate the persisted preference after the project config is loaded. */
+export function initializeExploration(enabled: boolean) {
+  revision++;
+  useExplorationStore.setState({ enabled, error: '', status: enabled ? 'starting' : 'off' });
+  if (enabled) void serialize(reconcileSafely);
 }
 
 export function explorationOwnsWindow() {

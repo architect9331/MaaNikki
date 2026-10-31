@@ -413,6 +413,8 @@ export interface AppState {
 
   // 通信兼容模式
   tcpCompatMode: boolean;
+  explorationEnabled: boolean;
+  setExplorationEnabledPreference: (enabled: boolean) => void;
   explorationSettings: import('@/types/exploration').ExplorationSettings;
   setExplorationFeature: (key: import('@/types/exploration').ExplorationFeature, enabled: boolean) => void;
   setTcpCompatMode: (enabled: boolean) => void;

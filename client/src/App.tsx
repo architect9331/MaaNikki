@@ -3,7 +3,7 @@ import { BlessingProgressPage } from '@/components/BlessingProgressPage';
 import { ExplorationPage } from '@/components/ExplorationPage';
 import { ResonancePage } from '@/components/ResonancePage';
 import { monitorResonance } from '@/services/resonanceService';
-import { explorationOwnsWindow, monitorExploration, useExplorationStore } from '@/services/explorationService';
+import { explorationOwnsWindow, initializeExploration, monitorExploration, useExplorationStore } from '@/services/explorationService';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import {
   useAppStore,
@@ -728,6 +728,7 @@ function App() {
       if (config.instances.length > 0) {
         importConfig(config);
       }
+      initializeExploration(config.settings.explorationEnabled ?? false);
 
       // 初始化匿名遥测（仅当 interface 声明了 telemetry.sentry.dsn 且非调试 / 开发版本）
       // 即便用户当前关闭，也传入配置以便后端缓存，用户在设置中开启时无需重启
