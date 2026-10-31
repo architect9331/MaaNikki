@@ -48,13 +48,13 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Runtime
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Build
 ```
 
-修改前端或桌面客户端后，默认编译并同步本机程序：
+需要编译并同步本机桌面程序时，运行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Local -Python F:/MaaNikki/python/python.exe
 ```
 
-`Local` 构建桌面客户端，核对版本，将根目录旧 `MaaNikki.exe` 备份到 `.build/client-backups/`，替换后校验 SHA-256。每轮界面修改完成后执行一次，同步前请退出客户端。前端 `pnpm build` 的产物位于 `client/dist`，桌面程序使用 `Local` 更新。
+`Local` 构建桌面客户端，核对版本，将根目录旧 `MaaNikki.exe` 备份到 `.build/client-backups/`，替换后校验 SHA-256。同批修改只需构建一次，同步前请退出客户端。前端 `pnpm build` 的产物位于 `client/dist`，桌面程序使用 `Local` 更新。
 
 准备出的运行环境位于 `.build/runtime-<随机编号>/`，客户端产物位于 `client/src-tauri/target/release/mxu.exe`。发布包从锁定依赖与源码组装；下载缓存、构建目录和输出包由 `.gitignore` 排除。
 
@@ -62,7 +62,13 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Local -Python
 
 ## GitHub 自动发布
 
-准备发布新版本时，更新 `interface.json` 中的项目版本号并推送到默认分支 `main`。Windows 自动构建成功后，发布任务会创建指向本次构建提交的 `v<版本号>` 标签，上传运行包、源码包和 SHA-256 校验文件，核对 GitHub 上的附件哈希后公开 Release。新版本标为预发布，更新说明取自 `CHANGELOG.md` 中对应版本的内容。
+普通提交和推送只同步源码。准备发布新版本时，递增 `interface.json` 中的项目版本号、完善 `CHANGELOG.md`，并将相关提交推送到默认分支 `main`，随后手动触发「Build Windows x64」工作流：
+
+```powershell
+gh workflow run build-windows.yml --ref main
+```
+
+Windows 构建成功后，发布任务会创建指向本次构建提交的 `v<版本号>` 标签，上传运行包、源码包和 SHA-256 校验文件，核对 GitHub 上的附件哈希后公开 Release。新版本标为预发布，更新说明取自 `CHANGELOG.md` 中对应版本的内容。
 
 Release 公开后，服务器上的 QQ 机器人通过 GitHub Webhook 向交流群发送更新公告，包含版本号、完整更新日志和更新方式，长公告自动分条。程序与维护说明见 [QQ 更新公告](scripts/qq_notifier/README.md)。
 
@@ -70,7 +76,7 @@ Release 公开后，服务器上的 QQ 机器人通过 GitHub Webhook 向交流�
 
 客户端根据当前项目版本匹配增量包，安装前核对本地基准、全部变更文件及删除清单，保留配置与账号数据。文件按原路径备份，应用失败时恢复，项目版本最后写入；增量包不适用时自动改下完整包。旧客户端继续识别原来的 Windows 完整运行包，新客户端首次安装后才会选择增量包。
 
-同一版本已经公开时，后续普通提交只构建，不覆盖该版本的标签和附件；拉取请求与非默认分支的手动构建不发布。每次需要新安装包供用户更新时，必须递增项目版本号，客户端版本仍只在客户端本身需要更新时调整。
+工作流仅通过手动触发运行，普通推送和拉取请求均不触发软件构建。非默认分支的手动构建只产出构建附件；默认分支构建成功后发布新版本，同一版本已公开时保留原有标签和附件。每次需要新安装包供用户更新时，必须递增项目版本号，客户端版本仍只在客户端本身需要更新时调整。
 
 ### 更新备用线路
 
