@@ -63,6 +63,15 @@ struct BannerHistory {
     pulls: Vec<Pull>,
     updated_at: i64,
     possible_gap: bool,
+    // The oldest second in the first page of a successfully synchronized,
+    // descending API window. Old/imported histories establish this on a full read.
+    #[serde(default)]
+    incremental_since: Option<i64>,
+}
+
+struct BannerFetch {
+    pulls: Vec<Pull>,
+    incremental_since: Option<i64>,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -205,9 +214,7 @@ fn migrate_history(old: History, marker: &str) -> Result<(), String> {
             .into_values()
             .flat_map(|rows| rows.into_values())
             .collect();
-        history.notebook = merge_notebook(&history.notebook, old_pulls)
-            .map_err(|e| e.message)?
-            .0;
+        merge_notebook(&mut history.notebook, old_pulls).map_err(|e| e.message)?;
         history.notebook.updated_at = notebook_time;
         history.last_success = history.last_success.max(old.last_success);
         role["resonance"] = serde_json::to_value(history).map_err(|_| "共鸣记录编码失败。")?;
@@ -620,6 +627,9 @@ async fn fetch_notebook(
     token: &str,
     openid: &str,
 ) -> Result<Vec<NotebookPull>, SyncError> {
+    // This endpoint returns one compressed snapshot. Observed records are
+    // grouped by pool with increasing pool_cnt; the sequence is an identity,
+    // not a pagination cursor. Keep this independent of paged resonance history.
     let response = response_value(
         client
             .post("https://myl-api.nuanpaper.com/v1/strategy/user/note/book/info")
@@ -668,27 +678,46 @@ async fn fetch_notebook(
         .collect()
 }
 
-fn merge_notebook(
-    previous: &Notebook,
-    fetched: Vec<NotebookPull>,
-) -> Result<(Notebook, usize), SyncError> {
-    let mut merged = previous.clone();
-    let before: usize = previous.pulls.values().map(|rows| rows.len()).sum();
+fn merge_notebook(previous: &mut Notebook, fetched: Vec<NotebookPull>) -> Result<usize, SyncError> {
+    let snapshot_rows = fetched.len();
+    let mut additions = BTreeMap::<String, BTreeMap<u64, NotebookPull>>::new();
     for pull in fetched {
-        let rows = merged.pulls.entry(pull.card_pool_id.clone()).or_default();
-        if let Some(saved) = rows.get(&pull.pool_cnt) {
+        let saved = previous
+            .pulls
+            .get(&pull.card_pool_id)
+            .and_then(|rows| rows.get(&pull.pool_cnt))
+            .or_else(|| {
+                additions
+                    .get(&pull.card_pool_id)
+                    .and_then(|rows| rows.get(&pull.pool_cnt))
+            });
+        if let Some(saved) = saved {
             // The API's per-pool pull ordinal is the stable identity. Preserve
             // the previous snapshot on conflict instead of adding both drops.
             if saved != &pull {
                 return Err(failure("美鸭梨手账同一抽数的记录发生冲突，已保留原记录。"));
             }
         } else {
-            rows.insert(pull.pool_cnt, pull);
+            additions
+                .entry(pull.card_pool_id.clone())
+                .or_default()
+                .insert(pull.pool_cnt, pull);
         }
     }
-    merged.updated_at = Some(Utc::now().timestamp());
-    let after: usize = merged.pulls.values().map(|rows| rows.len()).sum();
-    Ok((merged, after - before))
+    // Validate the complete snapshot before mutating the archive. Repeated
+    // snapshots allocate only new records instead of cloning all saved pulls;
+    // conflicts, including duplicates within the response, leave it untouched.
+    let added = additions.values().map(|rows| rows.len()).sum();
+    for (pool, rows) in additions {
+        previous.pulls.entry(pool).or_default().extend(rows);
+    }
+    previous.updated_at = Some(Utc::now().timestamp());
+    log::debug!(
+        "Resonance notebook: single snapshot, {} records, {} added",
+        snapshot_rows,
+        added
+    );
+    Ok(added)
 }
 
 fn timestamp(value: &str) -> Option<i64> {
@@ -711,7 +740,8 @@ fn timestamp(value: &str) -> Option<i64> {
 
 // A complete API window contains all occurrences of each (time, item) pair.
 // Multiset union uses the larger count, preserving real repeated drops within a second.
-// We fetch every page before merging so page boundaries cannot truncate that count.
+// Full reads cover the entire API window. Incremental reads include every row at
+// their boundary second; a partial older second is excluded before merging.
 fn merge(previous: &mut BannerHistory, fetched: Vec<Pull>) -> Result<usize, SyncError> {
     let oldest = fetched.iter().filter_map(|p| timestamp(&p.0)).min();
     let newest_saved = previous.pulls.iter().filter_map(|p| timestamp(&p.0)).max();
@@ -926,10 +956,9 @@ async fn synchronize(
     state.publish(app);
     match fetch_notebook(&client, token, openid)
         .await
-        .and_then(|rows| merge_notebook(&history.notebook, rows))
+        .and_then(|rows| merge_notebook(&mut history.notebook, rows))
     {
-        Ok((notebook, count)) => {
-            history.notebook = notebook;
+        Ok(count) => {
             notebook_added = count;
             commit_history(app, state, generation, &history, added, notebook_added)?;
         }
@@ -956,12 +985,15 @@ async fn synchronize(
             if completed > 0 {
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
-            let fetched =
-                fetch_banner(&client, authority, &end_time, banner, app, state, completed).await;
+            let mut entry = history.banners.get(&banner.id).cloned().unwrap_or_default();
+            let fetched = fetch_banner(
+                &client, authority, &end_time, banner, &entry, app, state, completed,
+            )
+            .await;
             match fetched {
-                Ok(pulls) => {
-                    let mut entry = history.banners.get(&banner.id).cloned().unwrap_or_default();
-                    let count = merge(&mut entry, pulls)?;
+                Ok(fetched) => {
+                    let count = merge(&mut entry, fetched.pulls)?;
+                    entry.incremental_since = fetched.incremental_since;
                     history.banners.insert(banner.id.clone(), entry);
                     added += count;
                     commit_history(app, state, generation, &history, added, notebook_added)?;
@@ -1024,11 +1056,30 @@ async fn fetch_banner(
     authority: &str,
     end_time: &str,
     banner: &Banner,
+    previous: &BannerHistory,
     app: &tauri::AppHandle,
     state: &ResonanceState,
     completed: usize,
-) -> Result<Vec<Pull>, SyncError> {
+) -> Result<BannerFetch, SyncError> {
     let mut pulls = Vec::new();
+    // The previous first page provides a page-sized overlap without assuming a
+    // fixed number of rows or a wall-clock lookback. A checkpoint is written
+    // only after a successful full/closed incremental window, never from an
+    // imported history or a partially fetched page sequence.
+    let since = previous.incremental_since;
+    let mut expected_boundary = BTreeMap::<Pull, usize>::new();
+    if let Some(since) = since {
+        for pull in &previous.pulls {
+            if timestamp(&pull.0) == Some(since) {
+                *expected_boundary.entry(pull.clone()).or_default() += 1;
+            }
+        }
+    }
+    let mut allow_incremental = !expected_boundary.is_empty();
+    let mut seen_boundary = BTreeMap::<Pull, usize>::new();
+    let mut descending = true;
+    let mut last_time = None;
+    let mut head_since = None;
     // Resource bound only; never commit an unfinished API window.
     for page in 1..=10_000 {
         state.progress(app, banner, page, completed);
@@ -1046,12 +1097,87 @@ async fn fetch_banner(
         .await?;
         require_success(&response, "卡池记录获取")?;
         let rows = parse_page(&response["data"])?;
-        pulls.extend(rows);
-        match response["data"]["end"].as_bool() {
-            Some(true) => return Ok(pulls),
-            Some(false) => tokio::time::sleep(Duration::from_secs(1)).await,
-            None => return Err(failure("共鸣记录分页格式发生变化。")),
+        let end = response["data"]["end"]
+            .as_bool()
+            .ok_or_else(|| failure("共鸣记录分页格式发生变化。"))?;
+        let mut crossed_boundary = false;
+        // Real API responses are observed newest-first, including page
+        // boundaries and repeated timestamps. Keep checking each page and
+        // its boundary; unexpected order finishes the full read and clears
+        // the incremental checkpoint.
+        for pull in &rows {
+            let time = timestamp(&pull.0).ok_or_else(|| failure("共鸣记录时间格式发生变化。"))?;
+            if last_time.is_some_and(|last| time > last) {
+                if descending {
+                    log::warn!(
+                        "Resonance banner {}: non-descending API order; reading full history",
+                        banner.id
+                    );
+                }
+                descending = false;
+                allow_incremental = false;
+            }
+            last_time = Some(time);
+            if page == 1 {
+                head_since = Some(head_since.map_or(time, |head: i64| head.min(time)));
+            }
+            if let Some(since) = since {
+                crossed_boundary |= time < since;
+                if time == since {
+                    *seen_boundary.entry(pull.clone()).or_default() += 1;
+                }
+            }
         }
+        if rows.is_empty() && !end {
+            descending = false;
+            allow_incremental = false;
+        }
+        pulls.extend(rows);
+        if end {
+            log::debug!(
+                "Resonance banner {}: full window, {} pages, {} records",
+                banner.id,
+                page,
+                pulls.len()
+            );
+            return Ok(BannerFetch {
+                pulls,
+                incremental_since: if descending { head_since } else { None },
+            });
+        }
+        if allow_incremental && crossed_boundary {
+            let overlap_complete = expected_boundary
+                .iter()
+                .all(|(pull, count)| seen_boundary.get(pull).unwrap_or(&0) >= count);
+            if overlap_complete {
+                if let Some(since) = since {
+                    // The first strictly older second may be split across the
+                    // next page. Exclude it entirely so multiset merging sees
+                    // complete counts for every included second, including ten
+                    // pulls with repeated items in the same second.
+                    pulls.retain(|pull| timestamp(&pull.0).is_some_and(|time| time >= since));
+                    log::debug!(
+                        "Resonance banner {}: incremental window, {} pages, {} records",
+                        banner.id,
+                        page,
+                        pulls.len()
+                    );
+                    return Ok(BannerFetch {
+                        pulls,
+                        incremental_since: head_since.map(|head| head.max(since)),
+                    });
+                }
+            }
+            // Retention or a changed response can remove the saved boundary.
+            // Finish this same request sequence in full instead of committing
+            // an unproven overlap or discarding the existing archive.
+            log::warn!(
+                "Resonance banner {}: saved overlap missing; reading full history",
+                banner.id
+            );
+            allow_incremental = false;
+        }
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
     Err(failure("共鸣记录页数过多，本次保留原记录。"))
 }
