@@ -491,6 +491,7 @@ export default {
       // 连接消息
       connecting: '正在连接{{target}}...',
       connected: '{{target}}连接成功:',
+      screencapFallback: '{{method}} 备用截图',
       connectFailed: '{{target}}连接失败:',
       targetDevice: '设备',
       targetWindow: '窗口',

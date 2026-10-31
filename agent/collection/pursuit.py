@@ -40,7 +40,7 @@ class FiveStarPursuit:
         missing = Counter()
         for part in stock.progress()["parts"]:
             missing[part["source"]] += len(part["missing_colors"])
-        if any(missing.values()):
+        if any(missing.values()) and "recovered_reward" not in stock.report:
             # Stable sorting keeps catalog order for equal missing-color counts.
             sources = sorted((source for source in missing if missing[source]),
                              key=lambda source: -missing[source])

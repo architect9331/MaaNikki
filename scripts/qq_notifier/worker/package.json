@@ -1,0 +1,13 @@
+{
+  "name": "maanikki-qq-notifier",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "cf deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^2.0.0-beta.v.8",
+    "cf": "1.0.0-beta.16",
+    "vite": "^8.3.5"
+  }
+}

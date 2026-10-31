@@ -428,7 +428,14 @@ function handleCallback(
           ctrlType === 'window' ? t('logs.messages.targetWindow') : t('logs.messages.targetDevice');
         addLog(instanceId, {
           type: 'success',
-          message: `${t('logs.messages.connected', { target: targetText })} ${deviceName}`,
+          message: `${t('logs.messages.connected', { target: targetText })} ${deviceName}${
+            details.screencap_fallback && details.screencap_method
+              ? ` · ${t('logs.messages.screencapFallback', {
+                  method: details.screencap_method === 'DXGI_DesktopDup_Window'
+                    ? 'DXGI' : details.screencap_method,
+                })}`
+              : ''
+          }`,
         });
       }
       break;
@@ -449,7 +456,7 @@ function handleCallback(
           ctrlType === 'window' ? t('logs.messages.targetWindow') : t('logs.messages.targetDevice');
         addLog(instanceId, {
           type: 'error',
-          message: `${t('logs.messages.connectFailed', { target: targetText })} ${deviceName}`,
+          message: details.error || `${t('logs.messages.connectFailed', { target: targetText })} ${deviceName}`,
         });
       }
       break;

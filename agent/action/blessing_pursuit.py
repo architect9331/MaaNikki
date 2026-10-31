@@ -14,6 +14,7 @@ from collection.inventory_workflow import FiveStarInventory
 from collection.ordered import IncompleteLookup
 from collection.scanner import RescanSlot
 from collection.policy import UnregisteredMaterials
+from collection.protection import pending_reward
 
 
 @agent_action("nikki.blessing_pursuit")
@@ -54,9 +55,12 @@ class BlessingPursuitAction(CustomAction):
                 if pursuit.organization is not None:
                     # An incomplete read did not mutate the candidate or prove
                     # it absent. Preserve the established baseline for retry.
-                    resumable = (isinstance(error, (IncompleteLookup, UnregisteredMaterials))
-                                 and pursuit.pending is None
-                                 and pursuit.organization.get("complete") is True)
+                    # Unconfirmed realm rewards only add a new prefix; the
+                    # existing locked baseline is still valid for reconciliation.
+                    resumable = (pursuit.organization.get("complete") is True
+                                 and (pending_reward(pursuit.pending)
+                                      or isinstance(error, (IncompleteLookup, UnregisteredMaterials))
+                                      and pursuit.pending is None))
                     pursuit.organization.update(complete=resumable, reason=reason)
                 try:
                     pursuit.image("interrupted.png", rt.capture())

@@ -171,7 +171,11 @@ class Crown(Runtime):
             # The current Match page has three portals; its old entrance
             # coordinates are no longer a Summit entrance. Use the Summit tab.
             if self.hit("MaaNikki_Crown_MatchTitle"):
-                return self.wait_asset("ButtonMiraCrownRank", attempts=1, click=True)
+                # The tab's selected and unselected glyphs differ. Its fixed
+                # hit area is safe once the Match page title is confirmed;
+                # enter_page still requires the Summit arrival feature.
+                return self.click_template("MaaNikki_Crown_SummitTab", attempts=1,
+                                           wait_seconds=0, verify=False)
             return self.area_click("AreaMiraCrownEntrance")
         if not self.ui.enter_page(enter_summit,
             "MaaNikki_Crown_SummitArrivalReady", source="MaaNikki_Crown_PageReady",

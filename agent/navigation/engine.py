@@ -192,6 +192,7 @@ class Motion:
 
 class Navigator:
     CAMERA_SETTLE_SECONDS = .15
+    CAMERA_PROBE_PIXELS = 180
     # World-map units per second. Low displacement (wall contact, animation,
     # noisy localization) must never turn into an arbitrarily long W hold.
     MIN_PLANNING_SPEED = 6.0
@@ -206,6 +207,7 @@ class Navigator:
         self.walking_detector = walking
         self.page_detector = page_detector
         self.turn_ratio = None
+        self.camera_probe_pixels = self.CAMERA_PROBE_PIXELS
         self.motion = None
         self.next_skip_check = 0
         self.relocalize = relocalize
@@ -409,11 +411,31 @@ class Navigator:
         if self.heading_recheck_count > 3:
             raise NavigationError("多次复核方向后仍无法继续前进，已停止路线。")
         self.event({"type": "heading_recheck_started", "attempt": self.heading_recheck_count})
-        return self.stable_heading(pose, deadline=deadline)
+        try:
+            return self.stable_heading(pose, deadline=deadline)
+        except HeadingUncertain:
+            diagnostics = self.locator.heading_diagnostics
+            if (time.monotonic() >= deadline
+                    or not diagnostics.get("position_reliable")
+                    or diagnostics.get("method") != "cone_boundaries"
+                    or diagnostics.get("edges_supported") is not False):
+                raise
+            if not self.inputs.ready():
+                raise SceneUnavailable("方向复核时主界面已变化。")
+            # At a fixed position, a cone ray can remain unreadable over bright
+            # terrain. Re-reading the same angle cannot restore its missing
+            # boundary. Reuse the calibration probe while stationary to expose
+            # another angle; both rays must still pass the normal checks.
+            self.event({"type": "heading_visibility_probe",
+                        "attempt": self.heading_recheck_count,
+                        "pixels": self.camera_probe_pixels,
+                        "diagnostics": dict(diagnostics)})
+            self.camera(self.camera_probe_pixels)
+            return self.stable_heading(pose, deadline=deadline)
 
     def calibrate(self, pose):
         ratios = []
-        probe_pixels = 180
+        probe_pixels = self.CAMERA_PROBE_PIXELS
         for _ in range(6):
             before = pose.heading
             pixels = self.camera(probe_pixels)
@@ -433,6 +455,7 @@ class Navigator:
             if len(ratios) >= 3 or (len(ratios) == 2 and
                                     max(map(abs, ratios))/min(map(abs, ratios)) <= 1.15):
                 self.turn_ratio = median(ratios)
+                self.camera_probe_pixels = probe_pixels
                 self.event({"type": "camera_calibrated", "pixels_per_degree": self.turn_ratio})
                 return pose
         raise NavigationError("镜头校准结果不稳定，请检查游戏前台和小地图显示。")

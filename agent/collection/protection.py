@@ -2,6 +2,14 @@
 from .blessing import SLOTS
 
 
+def pending_reward(operation):
+    """A realm submission can add items, but cannot consume or unlock keepers."""
+    return (isinstance(operation, dict) and operation.get("kind") == "realm"
+            and operation.get("realm") == "bless"
+            and operation.get("status") == "submitted_unconfirmed"
+            and operation.get("facts") is None)
+
+
 def keeper_keys(snapshot, catalog):
     if snapshot.get("catalog_version") != catalog["version"]:
         raise ValueError("锁定记录的图鉴版本不一致")
@@ -43,7 +51,8 @@ def keeper_keys(snapshot, catalog):
     if isinstance(progress, dict) and progress.get("existing_colors_checked") is True:
         if progress.get("protection_valid", True) is not True:
             raise ValueError("上次收藏保护复核未通过")
-        if progress.get("pending_operation") is not None:
+        operation = progress.get("pending_operation")
+        if operation is not None and not pending_reward(operation):
             raise ValueError("上次仍有未确认操作，需要重新核对")
         parts = progress.get("parts")
         if not isinstance(parts, list):

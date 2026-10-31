@@ -42,6 +42,7 @@ export interface Win32ControllerConfig {
   type: 'Win32';
   handle: number;
   screencap_method: number;
+  screencap_fallbacks?: number[];
   mouse_method: number;
   keyboard_method: number;
   display_short_side?: number;

@@ -8,6 +8,13 @@ export function getBlessingProgress(data: AccountView | null) {
   const sets = data?.catalog?.sets.filter((s) => s.rarity === 5 && s.collection_target !== false) ?? [];
   const target = sets.reduce((n, s) => n + s.colors.length * collectionSlots.length, 0);
   const snapshot = data?.blessing;
+  const operation = snapshot?.pursuit?.pending_operation;
+  const rewardPending = operation != null && typeof operation === 'object'
+    && 'kind' in operation && operation.kind === 'realm'
+    && 'realm' in operation && operation.realm === 'bless'
+    && 'status' in operation && operation.status === 'submitted_unconfirmed'
+    && 'facts' in operation && operation.facts === null;
+  const protectionUncertain = snapshot?.pursuit?.protection_valid === false;
   const owned = new Set<string>();
   let known = false;
   if (snapshot && snapshot.catalog_version === data?.catalog?.version && target > 0) {
@@ -32,6 +39,7 @@ export function getBlessingProgress(data: AccountView | null) {
   return {
     sets, target, owned, known,
     percentage: known ? Math.round(owned.size / target * 100) : null,
-    uncertain: snapshot?.pursuit?.pending_operation != null || snapshot?.pursuit?.protection_valid === false,
+    rewardPending: rewardPending && !protectionUncertain,
+    uncertain: (operation != null && !rewardPending) || protectionUncertain,
   };
 }

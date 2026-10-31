@@ -408,6 +408,8 @@ function App() {
 
   const initialized = useRef(false);
   const downloadStartedRef = useRef(false);
+  const updateCheckRunningRef = useRef(false);
+  const lastAutoUpdateCheckRef = useRef(Date.now());
   const pendingAutoTasksRef = useRef(false);
   // 自动任务已分发但尚未完成启动时，也要阻止下载完成触发自动安装。
   // 否则小体积更新可能在 500ms 的任务分发延迟或连接准备期间先完成下载。
@@ -519,6 +521,72 @@ function App() {
     },
     [setDownloadStatus, setDownloadProgress, setDownloadSavePath, tryAutoInstallUpdate],
   );
+
+  const checkAutomaticUpdate = useCallback(async (background = false) => {
+    const state = useAppStore.getState();
+    const project = state.projectInterface;
+    if (!project?.version || !(project.mirrorchyan_rid || project.github)) return;
+    if (import.meta.env.DEV || isDebugVersion(project.version)) return;
+    if (updateCheckRunningRef.current || downloadStartedRef.current) return;
+    if (['downloading', 'completed'].includes(state.downloadStatus)) return;
+    if (state.installStatus !== 'idle' || state.autoInstallPending) return;
+
+    updateCheckRunningRef.current = true;
+    lastAutoUpdateCheckRef.current = Date.now();
+    try {
+      const result = await checkAndPrepareDownload({
+        resourceId: project.mirrorchyan_rid || '',
+        currentVersion: project.version,
+        cdk: state.mirrorChyanSettings.cdk || undefined,
+        channel: state.mirrorChyanSettings.channel,
+        userAgent: 'MaaNikki',
+        githubUrl: project.github,
+        githubPat: state.mirrorChyanSettings.githubPat || undefined,
+        proxyUrl: state.proxySettings?.url,
+        projectName: project.name,
+      });
+      // 手动操作可能在检查期间开始下载或安装，沿用它的更新状态。
+      const current = useAppStore.getState();
+      if (downloadStartedRef.current || ['downloading', 'completed'].includes(current.downloadStatus)
+        || current.installStatus !== 'idle' || current.autoInstallPending) return;
+      if (!result) return;
+      current.setUpdateInfo(result);
+      if (result.hasUpdate) {
+        log.info(`发现新版本: ${result.versionName}`);
+        if (!background) current.setShowUpdateDialog(true);
+        if (result.downloadUrl) void startAutoDownload(result);
+      } else if (result.errorCode) {
+        log.warn(`更新检查返回错误: code=${result.errorCode}`);
+        if (!background) current.setShowUpdateDialog(true);
+      }
+    } catch (error) {
+      log.warn('自动检查更新失败:', error);
+    } finally {
+      updateCheckRunningRef.current = false;
+    }
+  }, [startAutoDownload]);
+
+  useEffect(() => {
+    if (loadingState !== 'success') return;
+    const interval = 6 * 60 * 60 * 1000;
+    const checkIfDue = () => {
+      const elapsed = Date.now() - lastAutoUpdateCheckRef.current;
+      if (elapsed < 0) lastAutoUpdateCheckRef.current = Date.now();
+      else if (elapsed >= interval) void checkAutomaticUpdate(true);
+    };
+    // 按实际经过时间判定，兼顾托盘运行、睡眠恢复和恢复网络。
+    const timer = window.setInterval(checkIfDue, 60 * 1000);
+    window.addEventListener('focus', checkIfDue);
+    window.addEventListener('online', checkIfDue);
+    document.addEventListener('visibilitychange', checkIfDue);
+    checkIfDue();
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', checkIfDue);
+      window.removeEventListener('online', checkIfDue);
+      document.removeEventListener('visibilitychange', checkIfDue);
+    };
+  }, [loadingState, checkAutomaticUpdate]);
 
   // 设置窗口标题（根据 ProjectInterface V2 协议）
   useEffect(() => {
@@ -1139,44 +1207,7 @@ function App() {
         }
       }
 
-      // 自动检查更新并下载（调试版本跳过，MXU 开发模式跳过）
-      if ((result.interface.mirrorchyan_rid || result.interface.github) && result.interface.version) {
-        if (import.meta.env.DEV) {
-          log.info('MXU 开发模式，跳过自动更新检查');
-        } else if (isDebugVersion(result.interface.version)) {
-          log.info(`非正式版本 (${result.interface.version})，跳过自动更新检查`);
-        } else {
-          const appState = useAppStore.getState();
-          try {
-            const updateResult = await checkAndPrepareDownload({
-              resourceId: result.interface.mirrorchyan_rid || '',
-              currentVersion: result.interface.version,
-              cdk: appState.mirrorChyanSettings.cdk || undefined,
-              channel: appState.mirrorChyanSettings.channel,
-              userAgent: 'MaaNikki',
-              githubUrl: result.interface.github,
-              githubPat: appState.mirrorChyanSettings.githubPat || undefined,
-              proxyUrl: appState.proxySettings?.url,
-              projectName: result.interface.name,
-            });
-            if (updateResult) {
-              setUpdateInfo(updateResult);
-              if (updateResult.hasUpdate) {
-                log.info(`发现新版本: ${updateResult.versionName}`);
-                useAppStore.getState().setShowUpdateDialog(true);
-                if (updateResult.downloadUrl) {
-                  startAutoDownload(updateResult);
-                }
-              } else if (updateResult.errorCode) {
-                log.warn(`更新检查返回错误: code=${updateResult.errorCode}`);
-                useAppStore.getState().setShowUpdateDialog(true);
-              }
-            }
-          } catch (err) {
-            log.warn('自动检查更新失败:', err);
-          }
-        }
-      }
+      await checkAutomaticUpdate();
 
       // 更新检查完毕，分发挂起的自动任务。
       // 自动下载在后台进行，不阻塞本次任务；仅上面的待安装包分支会保留挂起状态。
@@ -1372,6 +1403,9 @@ function App() {
       if (isTaskKind(kind)) pendingTaskKind = true;
       if (kind === 'tasks-completed') {
         useAppStore.getState().clearAllTaskRunOnce(instanceId);
+        if (useAppStore.getState().instances.some((item) => item.id === instanceId)) {
+          void focusWindow();
+        }
       }
       if (debounceTimer) clearTimeout(debounceTimer);
       const shouldSyncRunning = pendingTaskKind;

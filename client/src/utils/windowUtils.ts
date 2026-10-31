@@ -151,13 +151,14 @@ export async function showWindow(): Promise<void> {
 
 /**
  * 将窗口带到前台并获取焦点
- * 用于更新重启后确保窗口在前台显示
+ * 用于更新重启或任务结束后显示主窗口
  */
 export async function focusWindow(): Promise<void> {
   if (isTauri()) {
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const currentWindow = getCurrentWindow();
+      await currentWindow.show();
       // 先取消最小化（如果有）
       await currentWindow.unminimize();
       // 设置焦点，将窗口带到前台

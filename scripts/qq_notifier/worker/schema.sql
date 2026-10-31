@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS subscriptions (
+  group_id TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS events (
+  id TEXT PRIMARY KEY, kind TEXT NOT NULL, parts TEXT NOT NULL,
+  created INTEGER NOT NULL, enqueued INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id),
+  group_id TEXT NOT NULL, parts TEXT NOT NULL, next_part INTEGER NOT NULL DEFAULT 0,
+  created INTEGER NOT NULL, due INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+  sent INTEGER NOT NULL DEFAULT 0, reply_msg_id TEXT
+);
+CREATE INDEX IF NOT EXISTS notifications_pending ON notifications(sent, due);
+CREATE TABLE IF NOT EXISTS runtime_state (
+  key TEXT PRIMARY KEY, value TEXT NOT NULL, expires_at INTEGER NOT NULL
+);

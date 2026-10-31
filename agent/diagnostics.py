@@ -11,6 +11,7 @@ import time
 from uuid import uuid4
 
 import cv2
+import numpy as np
 
 from file_io import write_json
 from message_log import write_message
@@ -92,6 +93,7 @@ class FailureEvidence:
         self.generation = None
         self.observations = deque(maxlen=24)
         self.saved = 0
+        self.records = deque(maxlen=24)
         self._last_saved = None
 
     def remember_frame(self, image, generation):
@@ -143,8 +145,32 @@ class FailureEvidence:
             write_message("失败现场："+json.dumps(record, ensure_ascii=False, allow_nan=False), None)
             self.saved += 1
             self._last_saved = key
-            return {"image": record.get("image"), "image_status": record["image_status"],
-                    "record": "on_error/"+stem+".json"}
+            reference = {"image": record.get("image"), "image_status": record["image_status"],
+                         "record": "on_error/"+stem+".json"}
+            self.records.append(reference)
+            return reference
         except Exception as error:
             write_message(f"失败现场保存未完成：{type(error).__name__}: {error}", None)
             return {"image_status": "save_failed"}
+
+    def republish(self, references):
+        """Carry an earlier stage's evidence into the failing task's attachment window."""
+        folder = (ROOT / "debug/on_error").resolve()
+        for reference in references:
+            try:
+                path = (ROOT / "debug" / reference["record"]).resolve()
+                if path.parent != folder or path.suffix != ".json":
+                    continue
+                original = json.loads(path.read_text(encoding="utf-8"))
+                image = (ROOT / "debug" / original["image"]).resolve()
+                if image.parent != folder or image.suffix != ".jpg":
+                    continue
+                frame = cv2.imdecode(np.frombuffer(image.read_bytes(), dtype=np.uint8),
+                                     cv2.IMREAD_COLOR)
+                if frame is None:
+                    continue
+                self.save("daily_deferred_origin", original["reason"], image=frame, details={
+                    "source_record": reference["record"], "source_time": original["time"],
+                    "source_stage": original["stage"], "source_details": original["details"]})
+            except (OSError, ValueError, KeyError, TypeError, cv2.error) as error:
+                write_message(f"朝夕前置失败现场保留未完成：{type(error).__name__}: {error}", None)

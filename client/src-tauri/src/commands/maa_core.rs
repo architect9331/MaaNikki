@@ -796,8 +796,124 @@ pub fn maa_destroy_instance(
 // 控制器命令
 // ============================================================================
 
-/// 连接控制器的内部实现（可从 Tauri 命令和 HTTP 处理器共享调用）
-///
+/// Try configured window captures in order, publishing one connection result.
+fn connect_win32_ordered(
+    state: &MaaState,
+    instance_id: &str,
+    config: ControllerConfig,
+    on_event: &Arc<dyn Fn(&str, &str) + Send + Sync + 'static>,
+) -> Result<i64, String> {
+    let ControllerConfig::Win32 {
+        handle,
+        screencap_method,
+        screencap_fallbacks,
+        mouse_method,
+        keyboard_method,
+        display_short_side,
+    } = &config
+    else {
+        return Err("Ordered screenshot fallback requires a Win32 controller".to_string());
+    };
+    let mut methods = vec![*screencap_method];
+    for method in screencap_fallbacks {
+        if *method != 0 && !methods.contains(method) {
+            methods.push(*method);
+        }
+    }
+    let conn_id = next_synthetic_conn_id();
+    let mut details = serde_json::json!({"ctrl_id": conn_id, "action": "Connect"});
+    on_event("Controller.Action.Starting", &details.to_string());
+    let mut last_controller = None;
+    let mut selected_method = None;
+    let mut failures = Vec::new();
+    for method in methods {
+        use maa_framework::common::{Win32InputMethod, Win32ScreencapMethod};
+        let name = if method == Win32ScreencapMethod::FRAME_POOL.bits() {
+            "FramePool"
+        } else if method == Win32ScreencapMethod::DXGI_DESKTOP_DUP_WINDOW.bits() {
+            "DXGI_DesktopDup_Window"
+        } else if method == Win32ScreencapMethod::SCREEN_DC.bits() {
+            "ScreenDC"
+        } else {
+            "custom"
+        };
+        info!("Trying Win32 screenshot method {name} ({method})");
+        // Native bitmask selection chooses the fastest candidate. Separate
+        // controllers preserve the configured preference instead.
+        let controller = match Controller::new_win32(
+            *handle as *mut std::ffi::c_void,
+            Win32ScreencapMethod::from_bits_truncate(method).bits(),
+            Win32InputMethod::from_bits_truncate(*mouse_method).bits(),
+            Win32InputMethod::from_bits_truncate(*keyboard_method).bits(),
+        ) {
+            Ok(controller) => controller,
+            Err(error) => {
+                failures.push(format!("{name}: {error}"));
+                continue;
+            }
+        };
+        controller
+            .set_screenshot_target_short_side(display_short_side.unwrap_or(720))
+            .map_err(|e| e.to_string())?;
+        let connected = match controller.post_connection() {
+            Ok(id) => controller.wait(id).succeeded() && controller.connected(),
+            Err(error) => {
+                warn!("Win32 {name} connection could not start: {error}");
+                false
+            }
+        };
+        last_controller = Some(controller);
+        if connected {
+            selected_method = Some(method);
+            details["screencap_method"] = name.into();
+            details["screencap_fallback"] = (method != *screencap_method).into();
+            info!("Win32 screenshot method selected: {name} ({method})");
+            break;
+        }
+        warn!("Win32 screenshot method {name} failed to connect");
+        failures.push(format!("{name}: connection failed"));
+    }
+    if selected_method.is_none() {
+        warn!(
+            "All Win32 screenshot methods failed: {}",
+            failures.join("; ")
+        );
+        details["error"] =
+            "游戏截图初始化失败，已尝试全部截图方式。请检查游戏窗口和系统截图功能。".into();
+    }
+    let Some(controller) = last_controller else {
+        on_event("Controller.Action.Failed", &details.to_string());
+        return Err(details["error"]
+            .as_str()
+            .unwrap_or("无法创建游戏截图控制器")
+            .to_string());
+    };
+    // Internal connection failures are hidden until the fallback chain ends.
+    // Register the normal sink only after all connection work has completed.
+    let sink = on_event.clone();
+    controller
+        .add_sink(move |message, detail| sink(message, detail))
+        .map_err(|e| e.to_string())?;
+    if selected_method.is_some() {
+        state
+            .controller_pool
+            .lock()
+            .map_err(|e| e.to_string())?
+            .insert(config.clone(), controller.clone());
+    }
+    update_instance_controller(state, instance_id, controller, config)?;
+    on_event(
+        if selected_method.is_some() {
+            "Controller.Action.Succeeded"
+        } else {
+            "Controller.Action.Failed"
+        },
+        &details.to_string(),
+    );
+    Ok(conn_id)
+}
+
+/// 连接控制器的内部实现（可从 Tauri 命令和 HTTP 处理器共享调用）。
 /// `on_event(message, details)` 用于向客户端推送 Maa 回调事件。
 pub async fn connect_controller_impl(
     state_arc: Arc<MaaState>,
@@ -846,6 +962,11 @@ pub async fn connect_controller_impl(
             "ControllerPool miss: creating new controller for {:?}",
             config
         );
+        if matches!(&config, ControllerConfig::Win32 { screencap_fallbacks, .. }
+            if !screencap_fallbacks.is_empty())
+        {
+            return connect_win32_ordered(&state_arc, &instance_id, config, &on_event);
+        }
 
         let controller = match &config {
             ControllerConfig::Adb {

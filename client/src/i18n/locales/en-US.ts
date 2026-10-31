@@ -505,6 +505,7 @@ export default {
       // Connection messages
       connecting: 'Connecting to {{target}}...',
       connected: '{{target}} connected:',
+      screencapFallback: '{{method}} fallback capture',
       connectFailed: '{{target}} connection failed:',
       targetDevice: 'device',
       targetWindow: 'window',

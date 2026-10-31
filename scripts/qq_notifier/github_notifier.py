@@ -132,9 +132,14 @@ def format_event(event_type, payload):
         if action != "completed":
             return None
         run = payload.get("workflow_run", {})
-        result = clean(run.get("conclusion", "unknown"))
-        result = {"success": "成功", "failure": "失败", "cancelled": "已取消", "timed_out": "超时", "skipped": "已跳过"}.get(result, result)
-        lines = [header, f"构建/工作流 {clean(run.get('name'))}：{result}", f"分支：{clean(run.get('head_branch'))} · #{run.get('run_number', '')}"]
+        # Successful workflows are covered by the published release announcement.
+        result = {
+            "failure": "失败", "timed_out": "超时",
+            "action_required": "需要处理", "startup_failure": "启动失败",
+        }.get(run.get("conclusion"))
+        if result is None:
+            return None
+        lines = [header, f"工作流 {clean(run.get('name'))}：{result}", f"分支：{clean(run.get('head_branch'))} · #{run.get('run_number', '')}"]
         url = run.get("html_url", "")
     else:
         return None
@@ -315,7 +320,7 @@ async def handle_message(bot: Bot, event: Event):
                     response = "机器人已绑定其他群，请联系机器人管理员更换。"
                 else:
                     connection.execute("INSERT INTO subscriptions(group_id, enabled) VALUES (?, 1) ON CONFLICT(group_id) DO UPDATE SET enabled=1", (group_id,))
-                    response = f"已订阅 {repository} 的提交、Issue、PR、版本发布和构建结果。请在机器人资料中开启主动消息。"
+                    response = f"已订阅 {repository} 的提交、Issue、PR、版本发布和工作流异常。请在机器人资料中开启主动消息。"
             else:
                 connection.execute("DELETE FROM queue WHERE group_id=?", (group_id,))
                 connection.execute("DELETE FROM subscriptions WHERE group_id=?", (group_id,))

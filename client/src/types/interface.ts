@@ -182,6 +182,8 @@ export interface Win32Config {
   mouse?: string;
   keyboard?: string;
   screencap?: string | string[];
+  /** MaaNikki extension: try these methods in order after the preferred method fails. */
+  screencap_fallbacks?: string[];
 }
 
 export interface MacOSConfig {

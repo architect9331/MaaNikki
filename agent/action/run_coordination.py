@@ -75,6 +75,11 @@ class RunCoordinationAction(CustomAction):
             # Only a specifically deferred upgrade can run here. All other
             # daily actions and realm challenges remain in their own stages.
             reviewed = DailyRun(clone, "zhaoxi").review_after_energy(pending, realm_ok=realm_ok)
+            if not reviewed and not rt.stopped:
+                # The original daily stage can return successfully to defer its
+                # score check. Its failed entrances predate this task's Sentry
+                # attachment window, so retain them with their original times.
+                rt.evidence.republish(pending.failure_evidence)
             return realm_ok and reviewed
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             rt.log(f"本轮任务衔接未完成：{error}。")

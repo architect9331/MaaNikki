@@ -29,6 +29,17 @@
       "ready_timeout": 10
     }
   },
+  "MaaNikki_Crown_SummitTab": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Crown_MatchTitle"],
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "source": "MaaNikki_Crown_MatchTitle",
+      "ready": "MaaNikki_Crown_SummitArrivalReady",
+      "target": [736, 9, 50, 50]
+    }
+  },
   "MaaNikki_Crown_ReportClaim": {
     "recognition": "OCR",
     "roi": [540, 475, 200, 60],

@@ -58,6 +58,12 @@ class ForegroundInput:
                 or not 0 < hwnd < 2**(ctypes.sizeof(ctypes.c_void_p)*8)):
             raise NavigationError("当前连接没有有效的 Windows 游戏窗口，导航已停止。")
         self.hwnd = hwnd
+        from maa.define import MaaWin32ScreencapMethodEnum
+        capture_method = info.get("screencap_method", 0)
+        screen_methods = int(MaaWin32ScreencapMethodEnum.Foreground
+                             | MaaWin32ScreencapMethodEnum.DXGI_DesktopDup)
+        self.capture_requires_foreground = bool(type(capture_method) is int
+                                                and capture_method & screen_methods)
         self.user32 = ctypes.WinDLL("user32", use_last_error=True)
         self.user32.GetForegroundWindow.argtypes = []
         self.user32.GetForegroundWindow.restype = wintypes.HWND

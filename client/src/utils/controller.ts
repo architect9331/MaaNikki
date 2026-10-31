@@ -85,6 +85,7 @@ export function buildDesktopWindowControllerConfig(
       type: 'Win32',
       handle,
       screencap_method: parseWin32ScreencapMethod(controller.win32?.screencap || ''),
+      screencap_fallbacks: controller.win32?.screencap_fallbacks?.map(parseWin32ScreencapMethod),
       mouse_method: parseWin32InputMethod(controller.win32?.mouse || ''),
       keyboard_method: parseWin32InputMethod(controller.win32?.keyboard || ''),
       display_short_side: controller.display_short_side,

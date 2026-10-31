@@ -91,6 +91,9 @@ export interface MaaCallbackEvent {
 
 /** 回调消息详情（通用字段） */
 export interface MaaCallbackDetails {
+  screencap_method?: string;
+  screencap_fallback?: boolean;
+  error?: string;
   res_id?: number;
   ctrl_id?: number;
   task_id?: number;

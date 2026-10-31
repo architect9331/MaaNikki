@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .report import validate_snapshot
 from account_state import AccountState
-from .protection import keeper_keys
+from .protection import keeper_keys, pending_reward
 from .blessing import SLOTS
 from .policy import capabilities, definition_for, protected_inventory, unregistered_inventory
 
@@ -141,6 +141,50 @@ class InventoryStore:
             return False
         return True
 
+    def recover_reward_submission(self, data, order):
+        """Resume acquisition-only uncertainty with the saved journal as evidence."""
+        operation = order.get("pending_operation")
+        progress = data.get("pursuit")
+        record = data.get("record", {})
+        if (not pending_reward(operation)
+                or not isinstance(progress, dict)
+                or progress.get("existing_colors_checked") is not True
+                or progress.get("protection_valid") is not True
+                or progress.get("pending_operation") != operation):
+            return False
+        startup = progress.get("startup")
+        if not isinstance(startup, dict) or startup.get("mode") != "ordered_json":
+            return False
+        # New records keep the established baseline complete. Only repair the
+        # older blanket invalidation using its matching local journal.
+        if order.get("complete") is True:
+            return True
+        if record.get("source") != "pursuit":
+            return False
+        folder = Path(record.get("evidence_dir", "")).resolve()
+        logs = (self.directory.parents[1] / "logs/blessing-pursuit").resolve()
+        if not folder.is_relative_to(logs):
+            return False
+        evidence = []
+        for name in ("pursuit.json", "inventory.json"):
+            path = folder / name
+            if not path.is_file() or path.stat().st_size > 20 * 1024 * 1024:
+                return False
+            evidence.append(json.loads(path.read_text(encoding="utf-8")))
+        report, snapshot = evidence
+        if not isinstance(report, dict) or not isinstance(snapshot, dict):
+            return False
+        operations = report.get("operations")
+        return (report.get("workflow") == "five_star_pursuit"
+                and report.get("collection") == progress
+                and snapshot.get("organization") == order
+                and snapshot.get("pursuit") == progress
+                and snapshot.get("record") == record
+                and isinstance(operations, list) and bool(operations)
+                and operations[-1] == operation
+                and all(isinstance(op, dict) and op.get("status") == "confirmed"
+                        for op in operations[:-1]))
+
     def load_organization(self):
         """Full collection requires the newest complete ordered baseline."""
         candidates = [(self.read_snapshot(path), path)
@@ -154,15 +198,16 @@ class InventoryStore:
                 or order.get("sort") != "acquired_desc"
                 or set(order.get("slots", {})) != set(SLOTS)):
             raise ValueError("缺少完整的获得时间整理基准，请先完整运行“祝福闪光仓库读取”（旧锁定记录不能代替）")
+        operation = order.get("pending_operation")
+        reward_recovery = self.recover_reward_submission(data, order) if pending_reward(operation) else False
         recovered = False
         if order.get("complete") is not True:
             recovered = self.recover_legacy_lookup(data, order)
-            if not recovered:
+            if not recovered and not reward_recovery:
                 raise ValueError("整理基准需重新核对："
                                  + str(order.get("reason") or "尚未完成完整整理")
                                  + "；请运行“祝福闪光仓库读取”")
-        operation = order.get("pending_operation")
-        if operation is not None and (not isinstance(operation, dict) or operation.get("kind") != "realm"):
+        if operation is not None and not reward_recovery:
             raise ValueError("上次库存修改尚未确认，请重新运行祝福闪光仓库读取")
         identifiers = set()
         protected = set()
@@ -206,11 +251,11 @@ class InventoryStore:
                 or order.get("unfinished") is not None and order["unfinished"] not in identifiers):
             raise ValueError("顺序进度无效，请重新整理")
         origin = {"path": self.reference(path), "updated_at": data["record"]["updated_at"]}
-        if recovered:
+        if recovered or reward_recovery:
             if protected != keeper_keys(data, self.catalog):
                 raise ValueError("顺序基准与已确认收藏不一致，请重新整理")
             order.update(complete=True, reason=None)
-            origin["recovery"] = "confirmed_legacy_lookup"
+            origin["recovery"] = "pending_reward" if reward_recovery else "confirmed_legacy_lookup"
         order["anchor_policy_version"] = 2
         return order, protected, origin
 

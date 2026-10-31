@@ -302,11 +302,18 @@ class FiveStarInventory(BlessingLocker):
         order, protected, origin = self.store.load_organization()
         self.organization, self.protected = order, protected
         self.initial_protected = set(protected)
+        if origin.get("recovery") == "pending_reward":
+            # Preserve the unknown submission in the new journal, without
+            # claiming a reward or resubmitting it. Reconcile the new prefix.
+            self.report["recovered_reward"] = deepcopy(order["pending_operation"])
+            self.organization["decomposition_pending"] = True
         self.organization["pending_operation"] = None
         self.prepared = True
         self.report["startup"] = {"mode": "ordered_json", "keepers": len(protected), **origin}
         if origin.get("recovery") == "confirmed_legacy_lookup":
             self.rt.log(f"已核对上次操作记录，恢复 {len(protected)} 个已收藏颜色及待处理进度。")
+        elif origin.get("recovery") == "pending_reward":
+            self.rt.log(f"上次刷取结果待核对，保留 {len(protected)} 个已收藏颜色，本次先处理仓库。")
         self.rt.log(f"已读取完整获得时间基准及 {len(protected)} 个五星收藏；仅核对新增区域和待处理位置附近。", detail=True)
         self.log_progress("开始处理")
         self.save()

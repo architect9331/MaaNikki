@@ -10,7 +10,7 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
   const [filter, setFilter] = useState('all');
   const snapshot = data?.blessing;
   const progress = useMemo(() => getBlessingProgress(data), [data]);
-  const { sets, target, uncertain } = progress;
+  const { sets, target, uncertain, rewardPending } = progress;
   const count = (name: string, colors: string[], slot?: string) => (slot ? [slot] : slots)
     .reduce((n, part) => n + colors.filter((color) => progress.owned.has(keyOf({ name, slot: part, color }))).length, 0);
   const completeSets = sets.filter((s) => count(s.name, s.colors) === s.colors.length * 3).length;
@@ -36,6 +36,7 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
         {error && <div className="rounded-md border border-error/30 bg-error/5 p-3 text-xs text-error" role="alert">无法读取账号状态：{error}</div>}
         {!error && !progress.known && <div className="rounded-md border border-border bg-bg-secondary p-3 text-sm text-text-secondary">{loading ? '正在读取本地记录…' : '尚无完整的五星收藏记录，请先运行祝福闪光仓库读取。'}</div>}
         {uncertain && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />存在未确认操作或收藏保护待复核，以下展示上次已确认的记录，请重新运行祝福闪光仓库读取核对。</p>}
+        {rewardPending && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />上次刷取结果待核对，已收藏颜色保留，下次全收集将先处理仓库。</p>}
         <div className="grid grid-cols-3 gap-3">
           {[
             ['已收集颜色', progress.owned.size, target],

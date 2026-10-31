@@ -84,6 +84,8 @@ pub enum ControllerConfig {
     Win32 {
         handle: u64,
         screencap_method: u64,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        screencap_fallbacks: Vec<u64>,
         mouse_method: u64,
         keyboard_method: u64,
         #[serde(default)]

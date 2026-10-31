@@ -60,6 +60,8 @@ PRs should explain changed behavior, link related issues, list validation comman
 
 ## Configuration & Release Hygiene
 
+Write release announcements in the MaaEnd style: group concise bullet points under relevant headings such as ✨ 新功能, 🐛 Bug 修复, 🚀 优化, and 📚 文档; omit empty categories. Credit the verified implementer(s) on each item using GitHub handles from the relevant commits or PRs, including co-authors where applicable.
+
 Before each release, review `docs/manual.md` and update it only when users need the information to understand or use the current application. Edit the relevant existing section in place; keep release history, routine fixes, and implementation details in `CHANGELOG.md`. Size additions by user importance and the length of comparable existing sections, rather than giving every new feature a long explanation. Refresh UI screenshots in `docs/images/` when needed to keep documented steps accurate. Keep usage instructions in this unified manual, with README focused on downloads and feature highlights. Use concise, friendly wording consistent with the MAA series and omit defensive explanations.
 
 Keep personal configuration, caches, logs, credentials, runtimes, and binaries out of Git. Synchronize Python requirements and runtime manifests; update model hashes when changing OCR assets. Preserve upstream notices in `licenses/` and `THIRD_PARTY_NOTICES.md`.
