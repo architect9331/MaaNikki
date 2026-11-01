@@ -55,6 +55,11 @@
     "action": "DoNothing"
   },
   "MaaNikki_RewardLayer": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_RewardLayerPrompt", "MaaNikki_RewardOverlayContinue"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_RewardLayerPrompt": {
     "recognition": "Custom",
     "custom_recognition": "nikki.ui_template",
     "custom_recognition_param": {
@@ -69,7 +74,7 @@
         210,
         255
       ],
-      "threshold": 0.75
+      "threshold": 0.7
     },
     "action": "DoNothing"
   },

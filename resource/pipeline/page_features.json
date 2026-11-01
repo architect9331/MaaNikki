@@ -13,14 +13,8 @@
     "action": "DoNothing"
   },
   "MaaNikki_RewardOverlayReady": {
-    "recognition": "And",
-    "all_of": ["MaaNikki_RewardOverlayTitle", "MaaNikki_RewardOverlayContinue"],
-    "action": "DoNothing"
-  },
-  "MaaNikki_RewardOverlayTitle": {
-    "recognition": "OCR",
-    "roi": [480, 140, 320, 110],
-    "expected": "^恭喜获得$",
+    "recognition": "Or",
+    "any_of": ["MaaNikki_RewardLayer"],
     "action": "DoNothing"
   },
   "MaaNikki_RewardOverlayContinue": {

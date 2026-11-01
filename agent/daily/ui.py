@@ -436,7 +436,11 @@ class GameUI:
         deadline = time.monotonic()+10
         while not self.rt.stopped and time.monotonic() < deadline:
             if self.rt.hit(node):
-                return self.rt.pause(1) and self.rt.key("skip", .5)
+                if not self.rt.pause(1) or not self.rt.key("skip", 0):
+                    return False
+                # Input submission alone does not establish that the popup
+                # closed. Its page underneath may remain visible throughout.
+                return self.wait_page(lambda: not self.rt.hit(node))
             if not self.rt.pause(.3):
                 break
         return False
@@ -665,6 +669,10 @@ class GameUI:
         return restored
 
     def main(self):
+        # Reward layers can leave underlying page features visible. Close the
+        # confirmed overlay before accepting the world or sending Esc.
+        if self.dismiss_reward() is False:
+            return False
         # The chat icon remains visible in star sensing and is insufficient
         # to establish that ordinary world controls are available.
         with self.rt.observe():
@@ -691,6 +699,8 @@ class GameUI:
                     continue
                 if self.rt.hit("MaaNikki_Home_StarCollectReady"):
                     page = "star_collect"
+                elif self.rt.hit("MaaNikki_RewardOverlayReady"):
+                    page = "reward_overlay"
                 elif self.rt.hit("MaaNikki_MainDetected"):
                     page = "main"
                 elif self.rt.hit("MaaNikki_Navigation_DeepWaterWarning"):
@@ -730,6 +740,9 @@ class GameUI:
                 if not (self.rt.key("exit", 0)
                         and self.wait_page(asset="ButtonDungeonQuitOK", threshold=.75)
                         and self.click_asset("ButtonDungeonQuitOK", attempts=1)):
+                    return False
+            elif page == "reward_overlay":
+                if self.dismiss_reward() is not True:
                     return False
             elif page == "reward":
                 if not self.rt.key("skip", .5):
