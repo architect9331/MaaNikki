@@ -375,8 +375,8 @@ class Runtime:
             for inputs in list(session.inputs):
                 inputs.release_key(key)
 
-    def hit(self, node):
-        result = self.recognize(node)
+    def hit(self, node, *, image=None):
+        result = self.recognize(node, image=image)
         return bool(result and result.hit)
 
     def input_text(self, content):
@@ -469,17 +469,19 @@ class Runtime:
         generation = self._focus_generation
         from .ui import fields
         node = "MaaNikki_Asset_AccountUid"
-        # OCR ends before the network status; diagnostic masking deliberately
-        # covers a wider footer and is not the recognition area's definition.
+        # This fixed footer crop contains only the UID digits, excluding the
+        # Latin label on its left and status/artwork on its right. Diagnostic
+        # masking intentionally covers a wider area than recognition.
         x, y, w, h = fields(self.context, node)["roi"]
         crop = image[y:y+h, x:x+w]
         if crop.size == 0:
             return None
-        # The fixed footer ends before network/status numbers. Its Latin
-        # label is decorative for identity: OCR may omit or misread it.
+        # The entire crop is one known text line. Recognition-only OCR avoids
+        # detecting separate text blocks in its tiny margins/background.
         crop = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
         result = self.recognize(node, {
-            "roi": [0, 0, w*3, h*3], "expected": ".+"}, image=crop)
+            "roi": [0, 0, w*3, h*3], "only_rec": True,
+            "expected": r"^[0-9\s]+$"}, image=crop)
         if self._focus_generation != generation:
             return None
         candidates = self.account_uid_candidates(result)
@@ -493,12 +495,11 @@ class Runtime:
         candidates = set()
         for row in rows:
             text = re.sub(r"\s+", "", str(getattr(row, "text", "")))
-            # Read the trailing number independently of the prefix, including
-            # a number-only OCR block. Do not substitute letters into digits.
-            match = re.search(r"(?<![0-9])([0-9]{1,32})$", text)
+            # The cropped line contains digits only. Reject a mixed result
+            # instead of extracting a shorter numeric suffix after a letter.
+            match = re.fullmatch(r"[0-9]{1,32}", text)
             if match:
-                candidates.add(match[1])
-        # Distinct number blocks remain ambiguous; never choose one by order.
+                candidates.add(match[0])
         return candidates
 
     def verify_account_uid(self):

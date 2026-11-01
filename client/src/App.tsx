@@ -2,6 +2,7 @@ import { useAccountStateStore } from '@/stores/accountStateStore';
 import { BlessingProgressPage } from '@/components/BlessingProgressPage';
 import { ExplorationPage } from '@/components/ExplorationPage';
 import { ResonancePage } from '@/components/ResonancePage';
+import { WardrobePage } from '@/components/WardrobePage';
 import { monitorResonance } from '@/services/resonanceService';
 import { explorationOwnsWindow, initializeExploration, monitorExploration, useExplorationStore } from '@/services/explorationService';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
@@ -1939,6 +1940,17 @@ function App() {
       }}
     />
   );
+
+  if (currentPage === 'wardrobe') {
+    return (
+      <div className="h-full flex flex-col bg-bg-primary relative">
+        <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
+        <WardrobePage onClose={() => useAppStore.getState().setCurrentPage('main')} />
+        <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
+        {toaster}
+      </div>
+    );
+  }
 
   if (currentPage === 'resonance') {
     return (

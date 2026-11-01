@@ -36,6 +36,7 @@ pub mod telemetry;
 pub mod tray;
 pub mod update;
 mod update_mirrors;
+pub mod wardrobe_scoring;
 
 // 重新导出类型（供 lib.rs 使用）
 pub use app_config::AppConfigState;

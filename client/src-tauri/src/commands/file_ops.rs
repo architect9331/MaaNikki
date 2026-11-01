@@ -252,13 +252,13 @@ fn collect_debug_subdir_files(
 /// Include recent collection evidence stored outside debug/, including card icons.
 fn collect_recent_collection_files(data_dir: &Path) -> Result<Vec<ExportEntry>, String> {
     let mut files = Vec::new();
-    for kind in ["blessing-lock", "blessing-pursuit"] {
+    for kind in ["blessing-lock", "blessing-pursuit", "wardrobe"] {
         let directory = data_dir.join("logs").join(kind);
         if !directory.is_dir() {
             continue;
         }
         let mut runs: Vec<_> = std::fs::read_dir(&directory)
-            .map_err(|e| format!("读取祝福闪光日志目录失败 [{}]: {}", directory.display(), e))?
+            .map_err(|e| format!("读取收集日志目录失败 [{}]: {}", directory.display(), e))?
             .flatten()
             .filter(|entry| entry.path().is_dir())
             .collect();

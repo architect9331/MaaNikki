@@ -15,6 +15,7 @@ from action import daily_tasks as _daily_tasks
 from action import game_key as _game_key
 from action import gameplay as _gameplay
 from action import blessing_lock as _blessing_lock
+from action import wardrobe as _wardrobe
 from action import blessing_pursuit as _blessing_pursuit
 from action import run_coordination as _run_coordination
 from action import exploration_crown as _exploration_crown

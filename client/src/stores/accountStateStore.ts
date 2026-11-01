@@ -5,6 +5,17 @@ import { apiGet } from '@/utils/backendApi';
 import type { OptionValue } from '@/types/interface';
 
 export interface CollectionKey { name: string; slot: string; color: string }
+export interface WardrobeSnapshot {
+  complete: boolean;
+  updated_at: string;
+  scanned_count: number;
+  completed_parts: number;
+  total_parts?: number;
+  ambiguous_count: number;
+  unconfirmed_count?: number;
+  reason?: string | null;
+  parts: Record<string, { name: string; scanned_count: number; ambiguous_count: number; complete: boolean }>;
+}
 export interface BlessingSnapshot {
   catalog_version: string | number;
   record?: { updated_at?: string; source?: string };
@@ -20,6 +31,7 @@ export interface BlessingSnapshot {
   protection?: { complete?: boolean; keepers?: CollectionKey[] };
 }
 export interface AccountView {
+  wardrobe?: { inventory?: WardrobeSnapshot; last_scan?: WardrobeSnapshot };
   account_key?: string | null;
   uid?: string | null;
   observations?: {

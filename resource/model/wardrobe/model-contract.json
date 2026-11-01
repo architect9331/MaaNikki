@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "version": "wardrobe-convnext-tiny-v1",
+  "input": {
+    "name": "images",
+    "shape": [
+      "batch",
+      3,
+      160,
+      160
+    ],
+    "color": "RGB",
+    "range": [
+      0,
+      1
+    ]
+  },
+  "output": {
+    "name": "embedding",
+    "dimensions": 768,
+    "normalization": "L2"
+  },
+  "heads": "Select weights by known part_id; logits = embedding @ weights.T * scale",
+  "classes": "Part-local class_id indexes labels.json; return all item_ids in that row",
+  "label_fingerprint": "d19293f1025dc0371985cabe9209e0101f66ba5b294d94b1ff8b5d4b2ce9978c",
+  "preprocess_sha256": "2aa9b1f4223222dc911db574d923c74a7d9f4c184d3be71b0f9e1dedad183ca3",
+  "best_epoch": 8,
+  "open_set": "Closed-set training; unknown acceptance has not been calibrated",
+  "files": {
+    "weights-000.bin": {
+      "bytes": 33423768,
+      "sha256": "78b488331435881148e3745ee6ee2a31b835dd58d6f4fe37fba8755c522ecd8d"
+    },
+    "weights-001.bin": {
+      "bytes": 30670848,
+      "sha256": "a6ab06ba91eaeadad36a391d342d1130246ba83a64a13f378c64b8778a126ae9"
+    },
+    "weights-002.bin": {
+      "bytes": 28311552,
+      "sha256": "32dc2bff64ebf126ca62d9687895bc48d0502a93f0edec959374c082385816e0"
+    },
+    "weights-003.bin": {
+      "bytes": 18874368,
+      "sha256": "6103782c1aa1337232372ca6cb94a04442fb61e81bfd5a8d1ab41c23211582f9"
+    },
+    "backbone.onnx": {
+      "bytes": 95706,
+      "sha256": "42e6a01b0b954ca7281bc8c7ff7bc3c5cfbde2c35a06097bded4e9ce22e7a165"
+    },
+    "heads.npz": {
+      "bytes": 25143837,
+      "sha256": "1e33ce4d5bb0198cbc3d9f42c4ee0b6bb68a2f0a9f728cab0c4f73c729350532"
+    },
+    "preprocess.json": {
+      "bytes": 1484,
+      "sha256": "2aa9b1f4223222dc911db574d923c74a7d9f4c184d3be71b0f9e1dedad183ca3"
+    },
+    "parts.json": {
+      "bytes": 2787,
+      "sha256": "755282f6c4005726a8787837e34b347c8331bd545fc8c466007ea9cc75102a93"
+    },
+    "coverage.json": {
+      "bytes": 64909,
+      "sha256": "e0eaae5109b03a6497084974e05ffeea798265fa2da3f24624277ea70bdcbc6f"
+    },
+    "labels.json": {
+      "bytes": 732916,
+      "sha256": "d133234d19776ba55702861efdd2318dd680011f8b4932a9adc141138be7ac30"
+    }
+  },
+  "storage": "FP32 initializers preserved verbatim in external shards; no quantization"
+}

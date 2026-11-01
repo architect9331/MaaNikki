@@ -21,6 +21,108 @@
       "size": 87586,
       "sha256": "6d375b3f47f42261bfeaa13a05a7f92dda1707d374f58b9fef9161baeb26bf3d",
       "source": "MaaNikki confirmed inventory badge crops; scripts/train_blessing_badge.py"
+    },
+    {
+      "path": "resource/model/blessing_identity.onnx",
+      "sha256": "65cfc33f73b5fa056a6447f000185676f0cec3a5643f11cc412fb540aac04e4e",
+      "size": 5123998,
+      "source": "MaaNikki blessing identity model and label metadata, 2026-11-01"
+    },
+    {
+      "path": "resource/model/blessing_identity.json",
+      "sha256": "9968ed070970f3bf50c63ac989a5c359e40272d1a3bb6196aec35110a181662b",
+      "size": 70664,
+      "source": "MaaNikki blessing identity model and label metadata, 2026-11-01"
+    },
+    {
+      "path": "resource/model/blessing_badge.onnx",
+      "sha256": "08abcaa5689e43ff8527dd30dcfe8d3709f68272e519d63f952dadeabdbce049",
+      "size": 108330,
+      "source": "MaaNikki blessing badge model and label metadata, 2026-11-01"
+    },
+    {
+      "path": "resource/model/blessing_badge.json",
+      "sha256": "7083e2c4281b2db790616c2a117ed990028bcbd6cda2a18785f5e250820b8794",
+      "size": 2769,
+      "source": "MaaNikki blessing badge model and label metadata, 2026-11-01"
+    },
+    {
+      "path": "resource/model/blessing_level.onnx",
+      "sha256": "b215cad5dbc0967fe7a96985de25f941f8e2c9ff46452a8569c1f24922f1bdc2",
+      "size": 451522,
+      "source": "MaaNikki blessing level model and label metadata, 2026-11-01"
+    },
+    {
+      "path": "resource/model/blessing_level.json",
+      "sha256": "c524be3c4e10f0240d0e28f051110ecc1d45ffadae20976bf50fa855449c5ad4",
+      "size": 477,
+      "source": "MaaNikki blessing level model and label metadata, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/weights-000.bin",
+      "size": 33423768,
+      "sha256": "78b488331435881148e3745ee6ee2a31b835dd58d6f4fe37fba8755c522ecd8d",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/weights-001.bin",
+      "size": 30670848,
+      "sha256": "a6ab06ba91eaeadad36a391d342d1130246ba83a64a13f378c64b8778a126ae9",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/weights-002.bin",
+      "size": 28311552,
+      "sha256": "32dc2bff64ebf126ca62d9687895bc48d0502a93f0edec959374c082385816e0",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/weights-003.bin",
+      "size": 18874368,
+      "sha256": "6103782c1aa1337232372ca6cb94a04442fb61e81bfd5a8d1ab41c23211582f9",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/backbone.onnx",
+      "size": 95706,
+      "sha256": "42e6a01b0b954ca7281bc8c7ff7bc3c5cfbde2c35a06097bded4e9ce22e7a165",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/heads.npz",
+      "size": 25143837,
+      "sha256": "1e33ce4d5bb0198cbc3d9f42c4ee0b6bb68a2f0a9f728cab0c4f73c729350532",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/preprocess.json",
+      "size": 1484,
+      "sha256": "2aa9b1f4223222dc911db574d923c74a7d9f4c184d3be71b0f9e1dedad183ca3",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/parts.json",
+      "size": 2787,
+      "sha256": "755282f6c4005726a8787837e34b347c8331bd545fc8c466007ea9cc75102a93",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/coverage.json",
+      "size": 64909,
+      "sha256": "e0eaae5109b03a6497084974e05ffeea798265fa2da3f24624277ea70bdcbc6f",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/labels.json",
+      "size": 732916,
+      "sha256": "d133234d19776ba55702861efdd2318dd680011f8b4932a9adc141138be7ac30",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+    },
+    {
+      "path": "resource/model/wardrobe/model-contract.json",
+      "size": 2324,
+      "sha256": "c9551b22b7775b4441de05048b6c1e7e7beaecdb924a9433da803473f89530ad",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
     }
   ],
   "source": {

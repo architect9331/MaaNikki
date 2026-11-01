@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, RefreshCw, Sparkles, Star, X } from 'lucide-react';
+import { Check, RefreshCw, Sparkles, Star, X, Shirt } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
@@ -8,6 +8,7 @@ import { ModalPortal, useModalFocusTrap } from './ui/Modal';
 import { Tooltip } from './ui/Tooltip';
 import { ExplorationControl } from './ExplorationControl';
 import { ResonanceControl } from './ResonanceControl';
+import { useAppStore } from '@/stores/appStore';
 
 function MeteorIcon({ className }: { className?: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
@@ -141,5 +142,11 @@ export function AccountStatusActions({ onShowProgress }: { onShowProgress: () =>
     </Tooltip>
     <ExplorationControl />
     <ResonanceControl />
+    <Tooltip side="bottom" content="衣柜读取与搭配计算">
+      <button onClick={() => useAppStore.getState().setCurrentPage('wardrobe')} aria-label="衣柜"
+        className="flex shrink-0 items-center rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent">
+        <Shirt className="h-5 w-5" aria-hidden="true" />
+      </button>
+    </Tooltip>
   </>;
 }

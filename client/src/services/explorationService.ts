@@ -212,6 +212,10 @@ export function explorationOwnsWindow() {
 }
 
 /** Reserve the window before prerequisites, connection changes, or task submission. */
+export function dailyWindowReserved() {
+  return dailyReservations > 0;
+}
+
 export async function reserveDailyWindow(): Promise<() => void> {
   dailyReservations++;
   revision++;

@@ -209,6 +209,10 @@ pub async fn start_web_server(
         .route("/interface", get(handle_get_interface))
         .route("/account-state", get(handle_get_account_state))
         .route(
+            "/wardrobe-scoring",
+            get(handle_get_wardrobe_scoring).put(handle_save_wardrobe_scoring),
+        )
+        .route(
             "/config",
             get(handle_get_config)
                 .put(handle_put_config)
@@ -1316,4 +1320,21 @@ async fn handle_get_account_state() -> Result<Json<serde_json::Value>, (StatusCo
         .await
         .map(Json)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))
+}
+
+async fn handle_get_wardrobe_scoring() -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    crate::commands::wardrobe_scoring::get_wardrobe_scoring()
+        .await
+        .map(Json)
+        .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error))
+}
+
+async fn handle_save_wardrobe_scoring(
+    Json(body): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let key = body["account_key"].as_str().unwrap_or("").to_owned();
+    crate::commands::wardrobe_scoring::save_wardrobe_scoring(key, body["settings"].clone())
+        .await
+        .map(|()| Json(serde_json::json!({"ok": true})))
+        .map_err(|error| (StatusCode::BAD_REQUEST, error))
 }

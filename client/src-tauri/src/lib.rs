@@ -215,6 +215,8 @@ pub fn run() {
             commands::resonance::resonance_history,
             commands::resonance::resonance_export,
             commands::account_state::get_account_state,
+            commands::wardrobe_scoring::get_wardrobe_scoring,
+            commands::wardrobe_scoring::save_wardrobe_scoring,
             // Maa 核心命令
             commands::maa_core::maa_init,
             commands::maa_core::maa_set_resource_dir,

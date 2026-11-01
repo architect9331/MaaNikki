@@ -156,9 +156,26 @@ fn read_account_state() -> Result<Value, String> {
         record
     });
     let resources = get_exe_directory()?.join("resource/data");
+    let mut wardrobe = source
+        .and_then(|v| v.get("wardrobe"))
+        .cloned()
+        .unwrap_or(json!({}));
+    for name in ["inventory", "last_scan"] {
+        if let Some(parts) = wardrobe
+            .get_mut(name)
+            .and_then(|v| v.get_mut("parts"))
+            .and_then(Value::as_object_mut)
+        {
+            for part in parts.values_mut() {
+                if let Some(object) = part.as_object_mut() {
+                    object.remove("items");
+                }
+            }
+        }
+    }
     Ok(json!({
         "account_key": key, "uid": account.as_ref().and_then(|v| v["uid"].as_str()),
-        "tasks": tasks, "observations": observations, "blessing": summary,
+        "tasks": tasks, "observations": observations, "blessing": summary, "wardrobe": wardrobe,
         "catalog": read_json(&resources.join("blessing_catalog.json"))?,
         "rotation": read_json(&resources.join("xinghai_rotation.json"))?,
     }))

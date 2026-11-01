@@ -1,0 +1,30 @@
+{
+  "MaaNikki_WardrobeRead": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.wardrobe_read",
+    "custom_action_param": {
+      "ready": "MaaNikki_WardrobeReady",
+      "source": "MaaNikki_MainDetected"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_WardrobeReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_WardrobeTab", "MaaNikki_WardrobeSave"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_WardrobeTab": {
+    "recognition": "OCR",
+    "roi": [415, 18, 90, 45],
+    "expected": "^换装$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_WardrobeSave": {
+    "recognition": "OCR",
+    "roi": [55, 637, 140, 65],
+    "expected": "保存搭配",
+    "action": "DoNothing"
+  }
+}
