@@ -193,13 +193,6 @@ pub fn run() {
             // 启动、手动初始化和安装运行库后的重试共用加载状态。
             if let Err(error) = commands::maa_library::load(&maa_state, None) {
                 log::error!("MaaFramework startup initialization failed: {}", error);
-                #[cfg(windows)]
-                if let Ok(maafw_dir) = commands::get_maafw_dir() {
-                    if maafw_dir.join("MaaFramework.dll").exists() {
-                        log::warn!("MaaFramework DLL exists but failed to load; VC++ runtime may be missing");
-                        commands::system::set_vcredist_missing(true);
-                    }
-                }
             }
 
             app.manage(maa_state);
@@ -307,6 +300,7 @@ pub fn run() {
             commands::system::get_process_path_from_hwnd,
             commands::system::retry_load_maa_library,
             commands::system::check_vcredist_missing,
+            commands::system::get_maa_library_failure,
             commands::system::autostart_enable,
             commands::system::autostart_disable,
             commands::system::autostart_is_enabled,

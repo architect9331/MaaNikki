@@ -726,6 +726,13 @@ pub async fn retry_load_maa_library(state: State<'_, Arc<MaaState>>) -> Result<S
     super::maa_library::load(&state, None)
 }
 
+#[tauri::command]
+pub fn get_maa_library_failure(
+    state: State<'_, Arc<MaaState>>,
+) -> Result<Option<super::library_diagnostics::FailureNotice>, String> {
+    super::maa_library::failure_notice(&state)
+}
+
 /// 检查是否检测到 VC++ 运行库缺失（检查后自动清除标记）
 #[tauri::command]
 pub fn check_vcredist_missing() -> bool {

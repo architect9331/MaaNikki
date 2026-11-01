@@ -224,6 +224,15 @@ def prepare(output: Path) -> Path:
             (output / name).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / name, output / name)
     shutil.copy2(ROOT / "build/runtime.lock.json", output / "runtime-manifest.json")
+    # This inventory is read only after a client-side DLL load failure.
+    # Keeping it beside the DLLs also lets incremental updates replace it.
+    framework_files = {
+        path.name: {"size": path.stat().st_size, "sha256": sha256(path)}
+        for path in sorted((output / "maafw").glob("*.dll"))
+    }
+    (output / "maafw/integrity.json").write_text(json.dumps({
+        "schema_version": 1, "maafw_version": lock["maafw_version"], "files": framework_files,
+    }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     verify_runtime(output)
     print(f"Runtime prepared: {output}", flush=True)
     return output

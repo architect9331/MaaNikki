@@ -22,6 +22,7 @@ pub mod app_config;
 mod diagnostic_images;
 pub mod download;
 pub mod file_ops;
+mod library_diagnostics;
 pub mod maa_agent;
 pub mod maa_core;
 pub mod maa_library;

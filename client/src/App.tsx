@@ -895,6 +895,40 @@ function App() {
         }
       } catch (err) {
         log.warn('版本检查失败:', err);
+        if (isTauri()) {
+          try {
+            const failure = await invoke<{ message: string; recovery: string } | null>(
+              'get_maa_library_failure',
+            );
+            // The VC++ installer has its own existing dialog. Other causes get
+            // a concise notice and a recovery action appropriate to that cause.
+            if (failure && failure.recovery !== 'install_vcredist') {
+              toast.error(failure.message, {
+                id: 'maafw-load-failure',
+                duration: Infinity,
+                action: failure.recovery === 'download_full_package'
+                  ? {
+                    label: t('framework.downloadFullPackage', '下载完整包'),
+                    onClick: () => {
+                      void import('@tauri-apps/plugin-opener')
+                        .then(({ openUrl }) => openUrl('https://github.com/architect9331/MaaNikki/releases/latest'))
+                        .catch((error) => log.warn('打开下载页面失败:', error));
+                    },
+                  }
+                  : {
+                    label: t('common.retry', '重试'),
+                    onClick: () => {
+                      void maaService.init()
+                        .then(() => toast.success(t('framework.loaded', '框架加载成功')))
+                        .catch((error) => toast.error(String(error)));
+                    },
+                  },
+              });
+            }
+          } catch (error) {
+            log.warn('读取框架加载诊断失败:', error);
+          }
+        }
       }
 
       log.info('加载完成, 项目:', result.interface.name);

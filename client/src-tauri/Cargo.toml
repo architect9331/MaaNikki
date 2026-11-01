@@ -72,6 +72,7 @@ image = { version = "=0.25.9", default-features = false, features = ["png"] }
 debug = true
 
 [target.'cfg(windows)'.dependencies]
+libloading = "=0.8.9"
 winsafe = { version = "0.0.28", features = [
     "advapi",
     "kernel",

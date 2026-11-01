@@ -283,8 +283,12 @@ pub fn is_active() -> bool {
     TELEMETRY_GUARD.lock().map(|g| g.is_some()).unwrap_or(false)
 }
 
-/// 每个进程首次动态库加载失败时报告，原始系统错误保留在诊断字段中。
-pub fn capture_library_load_failure(path: Option<&std::path::Path>, error: &str) -> bool {
+/// 每个进程首次加载失败时报告，绑定错误与失败后的独立诊断分开保留。
+pub fn capture_library_load_failure(
+    path: Option<&std::path::Path>,
+    error: &str,
+    diagnostics: &serde_json::Value,
+) -> bool {
     if !is_active() {
         return false;
     }
@@ -296,6 +300,14 @@ pub fn capture_library_load_failure(path: Option<&std::path::Path>, error: &str)
         ..Default::default()
     };
     event.extra.insert("loader.error".to_string(), error.into());
+    event
+        .extra
+        .insert("loader.diagnostics".to_string(), diagnostics.clone().into());
+    if let Some(category) = diagnostics["category"].as_str() {
+        event
+            .tags
+            .insert("loader.category".to_string(), category.to_string());
+    }
     if let Some(path) = path {
         event.extra.insert(
             "library.path".to_string(),

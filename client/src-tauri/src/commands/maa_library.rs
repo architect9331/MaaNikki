@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
+use super::library_diagnostics::{self, FailureNotice};
 use super::types::MaaState;
 
 struct LoadedLibrary {
@@ -13,6 +14,7 @@ struct LoadedLibrary {
 pub struct LibraryState {
     loaded: Option<LoadedLibrary>,
     last_error: Option<String>,
+    failure_notice: Option<FailureNotice>,
     failure_reported: bool,
 }
 
@@ -35,11 +37,16 @@ fn load_failed(library: &mut LibraryState, path: Option<&Path>, error: String) -
         None => format!("Failed to locate MaaFramework: {}", error),
     };
     log::error!("{}", message);
-    library.last_error = Some(message.clone());
+    let failure = library_diagnostics::diagnose(path, &error);
+    log::error!("MaaFramework load diagnostics: {}", failure.details);
+    super::system::set_vcredist_missing(failure.notice.recovery == "install_vcredist");
+    library.last_error = Some(failure.notice.message.clone());
+    library.failure_notice = Some(failure.notice.clone());
     if !library.failure_reported {
-        library.failure_reported = super::telemetry::capture_library_load_failure(path, &error);
+        library.failure_reported =
+            super::telemetry::capture_library_load_failure(path, &error, &failure.details);
     }
-    message
+    failure.notice.message
 }
 
 pub fn load(state: &MaaState, path: Option<PathBuf>) -> Result<String, String> {
@@ -86,8 +93,14 @@ pub fn load(state: &MaaState, path: Option<PathBuf>) -> Result<String, String> {
         version: version.clone(),
     });
     library.last_error = None;
+    library.failure_notice = None;
     super::system::set_vcredist_missing(false);
     Ok(version)
+}
+
+pub fn failure_notice(state: &MaaState) -> Result<Option<FailureNotice>, String> {
+    let library = state.library.lock().map_err(|e| e.to_string())?;
+    Ok(library.failure_notice.clone())
 }
 
 /// 状态查询只读缓存，不调用尚未加载的动态库。
