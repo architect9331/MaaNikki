@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import time
 
 
 def write_json(path, data):
@@ -19,6 +20,18 @@ def write_json(path, data):
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
-        temporary.replace(path)
+        # Windows readers/scanners may briefly deny deletion of either file.
+        # Retry only the atomic publish, keeping the fsynced snapshot and old
+        # destination intact. Persistent access failures still reach callers
+        # after at most 0.75 seconds of backoff; successful writes never wait.
+        for attempt in range(5):
+            try:
+                temporary.replace(path)
+                break
+            except PermissionError as error:
+                if (os.name != "nt" or getattr(error, "winerror", None) not in {5, 32, 33}
+                        or attempt == 4):
+                    raise
+                time.sleep(.05 * (2 ** attempt))
     finally:
         temporary.unlink(missing_ok=True)
