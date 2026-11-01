@@ -38,6 +38,33 @@ class Gameplay:
                 break
         return None
 
+    def weekly_state(self, image=None):
+        """Read the selected boss's quota and the realm's own energy counter."""
+        image = self.rt.capture() if image is None else image
+        if image is None:
+            return None, None
+        ready = self.rt.recognize("MaaNikki_Weekly_PageReady", image=image)
+        if not ready or not ready.hit:
+            return None, None
+        # The calendar x/2 is a total; each boss has its own remaining quota.
+        # Both counters stay visible on the boss page and through its dialog.
+        quota = self.rt.text([890, 580, 340, 65], image=image)
+        match = re.search(r"(\d+)\s*[/／]\s*(\d+)", quota)
+        remaining = None
+        if match:
+            current, total = map(int, match.groups())
+            if 0 <= current <= total and total > 0:
+                remaining = current
+        raw_energy = self.rt.text([1100, 15, 150, 50], image=image)
+        match = re.fullmatch(r"\s*(\d+)\s*[/／]\s*(\d+)\s*", raw_energy)
+        energy = None
+        if match:
+            current, total = map(int, match.groups())
+            if 0 <= current <= 9999 and 0 < total <= 9999:
+                energy = current
+        self.rt.evidence.observe("weekly_state", remaining=remaining, energy=energy)
+        return remaining, energy
+
     def exhausted(self, allow_exhausted, energy=None):
         if self.rt.stopped:
             return False
@@ -54,14 +81,20 @@ class Gameplay:
         frame = self.rt.capture()
         shortage = bool(frame is not None and self.rt.text(
             [380, 200, 520, 340], r"(?:活跃)?能量(?:不足|不够)|体力(?:不足|不够)", image=frame))
-        if not shortage:
+        remaining, energy = self.weekly_state(frame) if kind == "weekly" else (None, None)
+        quota_used = remaining == 0
+        shortage = shortage or (energy is not None and energy < self.MIN_ENERGY[kind])
+        if not shortage and not quota_used:
             self.rt.diagnostic("realm_confirmation", "未能确认挑战提交", image=frame,
                                 details={"kind": kind, "cancel": cancel})
         if cancel and not self.rt.click_template(cancel, attempts=1):
             self.rt.log("未能关闭挑战确认窗口，本项停止。")
             return False
+        if quota_used:
+            self.rt.log("当前每周幻境的奖励次数已用完，跳过。")
+            return True
         if shortage:
-            return self.exhausted(allow_exhausted)
+            return self.exhausted(allow_exhausted, energy)
         # Re-read after returning safely, including when preflight OCR missed.
         if self.ui.calendar():
             energy = self.read_energy()
@@ -148,6 +181,20 @@ class Gameplay:
             node = weekly_node if kind == "weekly" else f"MaaNikki_{prefix}_Level"
             if not self.select_realm_level(kind, node):
                 return False
+            if kind == "weekly":
+                # Selecting a different boss changes this panel asynchronously.
+                # Its quota must belong to the requested boss, not the one
+                # whose reward was just claimed.
+                if not self.ui.wait_page(text=fields(self.rt.context, node)["expected"],
+                                         roi=[600, 90, 600, 150]):
+                    self.realm_level_diagnostic(kind, node)
+                    return False
+                remaining, energy = self.weekly_state()
+                if remaining == 0:
+                    self.rt.log("当前每周幻境的奖励次数已用完，跳过。")
+                    return True
+                if energy is not None and energy < self.MIN_ENERGY[kind]:
+                    return self.exhausted(allow_exhausted, energy)
             if kind == "bless" and not self.rt.click_template("MaaNikki_Bless_Difficulty"):
                 return False
             quick = "MaaNikki_Weekly_Quick_Qiggeda" if kind == "weekly" else f"MaaNikki_{prefix}_Quick"

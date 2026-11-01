@@ -51,7 +51,7 @@ class WeeklyChallengeAction(CustomAction):
                 return False
             finished, total = count
             rt.log(f"本周幻境已完成 {finished}/{total} 次。")
-            if finished >= total or finished >= len(targets):
+            if finished >= total:
                 rt.log("本周所选目标已无需挑战。")
                 return True
             game = Gameplay(rt)
