@@ -460,17 +460,22 @@ class Gameplay:
             return cv2.countNonZero(selected) / selected.size >= .45
 
     def monthly_travel_tab(self, page):
-        """Continue as soon as the requested tab is selected."""
-        if self.monthly_tab_selected(page):
-            return True
-        if not self.ui.page_matches("MaaNikki_Monthly_TravelReady"):
-            return False
-        if not self.rt.click_template(f"MaaNikki_Monthly_{page}Tab", attempts=1, wait_seconds=0):
-            return False
+        """Retry transient OCR misses; submit a tab click only once."""
         deadline = time.monotonic()+5
+        submitted = False
         while not self.rt.stopped and time.monotonic() < deadline:
-            if self.monthly_tab_selected(page):
-                return True
+            with self.rt.observe(fresh=True):
+                if self.monthly_tab_selected(page):
+                    return True
+                if not submitted and self.ui.page_matches("MaaNikki_Monthly_TravelReady"):
+                    # Read the entrance and its source from the same frame.
+                    # Reward transitions can temporarily distort the tab text.
+                    result = self.rt.recognize(f"MaaNikki_Monthly_{page}Tab")
+                    if result and result.hit:
+                        if not self.rt.action("Click", target=list(result.box)):
+                            self.monthly_diagnostic("travel", "tab_click_failed", f"{page}页签点击未完成")
+                            return False
+                        submitted = True
             if not self.rt.pause(.1):
                 return False
         self.monthly_diagnostic("travel", "tab_unconfirmed", f"{page}页签切换待确认")
