@@ -292,7 +292,7 @@ class LauncherRuntime:
         # Only the lower-right game button area, excluding top-bar launcher updates.
         roi = (width//2, height*3//4, width-width//2, height-height*3//4)
         job = self.tasker.post_recognition("OCR", JOCR(
-            roi=roi, expected=[r"^\s*(启动(游戏)?|啟動(遊戲)?|开始游戏|更新(游戏)?|更新遊戲|运行中|運行中|[Ss][Tt][Aa][Rr][Tt]( [Gg][Aa][Mm][Ee])?|[Uu][Pp][Dd][Aa][Tt][Ee]( [Gg][Aa][Mm][Ee])?|[Rr][Uu][Nn][Nn][Ii][Nn][Gg])\s*$"],
+            roi=roi, expected=[r"^\s*(启动(游戏)?|啟動(遊戲)?|开始游戏|更新(游戏)?|游戏更新|更新遊戲|遊戲更新|运行中|運行中|[Ss][Tt][Aa][Rr][Tt]( [Gg][Aa][Mm][Ee])?|[Uu][Pp][Dd][Aa][Tt][Ee]( [Gg][Aa][Mm][Ee])?|[Rr][Uu][Nn][Nn][Ii][Nn][Gg])\s*$"],
             threshold=.6), self.image)
         detail = job.wait().get()
         if not detail or not detail.nodes:
