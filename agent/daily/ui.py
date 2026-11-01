@@ -675,7 +675,11 @@ class GameUI:
             if self.wait_page("MaaNikki_MainDetected"):
                 return True
         deadline, escapes = time.monotonic()+15, 0
-        while not self.rt.stopped and time.monotonic() < deadline and escapes < 8:
+        # Match the existing teleport wait budget. Loading has its own bounded
+        # allowance and does not consume the time used to navigate UI layers.
+        loading_remaining = 60.0
+        while not self.rt.stopped:
+            observed_at = time.monotonic()
             # Reclassify before every input; animated backgrounds need not stop.
             with self.rt.observe():
                 tutorial_started = time.monotonic()
@@ -704,7 +708,22 @@ class GameUI:
             elif page == "main":
                 if self.wait_page("MaaNikki_MainDetected", seconds=2):
                     return True
+                if time.monotonic() >= deadline:
+                    break
                 continue
+            elif page == "loading":
+                if loading_remaining <= 0:
+                    self.rt.diagnostic("main_loading_timeout", "返回主界面时场景加载超过60秒")
+                    self.rt.log("场景加载超过60秒，本项停止。")
+                    return False
+                if not self.rt.pause(min(.5, loading_remaining)):
+                    return False
+                elapsed = time.monotonic()-observed_at
+                loading_remaining -= elapsed
+                deadline += elapsed
+                continue
+            elif time.monotonic() >= deadline:
+                break
             elif page == "deep_water":
                 return bool(self.revive_deep_water())
             elif page == "dungeon":
@@ -715,12 +734,11 @@ class GameUI:
             elif page == "reward":
                 if not self.rt.key("skip", .5):
                     return False
-            elif page == "loading":
-                if not self.rt.pause(.5):
-                    return False
             else:
                 if self.rt.hit("MaaNikki_MainDetected"):
                     continue
+                if escapes >= 8:
+                    break
                 escapes += 1
                 if not self.rt.key("menu", .35):
                     return False
