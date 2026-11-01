@@ -11,7 +11,7 @@ from task_control import TaskStopped
 from daily.runtime import parameters
 from daily.settings import ROOT
 from .blessing import SLOTS
-from .details import COLOR_OCR_THRESHOLD, tooltip_facts
+from .details import COLOR_OCR_THRESHOLD, HEADER, tooltip_facts
 from file_io import write_json
 from .policy import capabilities
 from .quantity import stack_badge
@@ -89,6 +89,7 @@ class BlessingLocker(InventoryScanner):
         self.lock_groups = {}
         self._hover_read = None
         self._hover_box = None
+        self._hover_panel = None
         self.stack_count_cache = {}
         badge_path = ROOT / "resource/image/blessing_lock/card_locked.png"
         badge = cv2.imdecode(np.fromfile(str(badge_path), np.uint8), cv2.IMREAD_COLOR)
@@ -183,6 +184,9 @@ class BlessingLocker(InventoryScanner):
 
     def clear_hover(self, generation, *, settle_card=False):
         old_box = self._hover_box
+        panel = self._hover_panel
+        if panel is not None and (panel[0] != old_box or panel[1] != generation):
+            panel = None
         self._hover_read = None
         self._hover_box = None
         if not self.rt.action("TouchMove", target=[900, 32]) or not self.rt.pause(.06):
@@ -191,9 +195,24 @@ class BlessingLocker(InventoryScanner):
         previous = None
         for _ in range(8 if settle_card else 6):
             frame = self.frame(generation)
-            if old_box is None or self.header_region(frame, old_box) is None:
+            visible = False
+            if old_box is not None:
+                roi = self.detail_roi(panel[2]) if panel is not None else self.header_region(frame, old_box)
+                if roi is not None:
+                    if panel is not None and self.same_fields(panel[3], frame, panel[2]):
+                        visible = True
+                    elif not (self.same_structure(frame, self._page_frame, roi)
+                              or previous is not None and self.same_structure(previous, frame, roi)):
+                        # Bright clothing can look like the tooltip's paper.
+                        # The clear-page reference handles unchanged scenery;
+                        # after selection/camera changes, verify local header
+                        # text using the scanner's existing stale-panel check.
+                        visible = bool(self.ocr(roi, frame, HEADER))
+                        self.check_generation(generation)
+            if not visible:
                 if (not settle_card or old_box is None or previous is not None
                         and self.same_structure(previous, frame, old_box, threshold=.997)):
+                    self._hover_panel = None
                     return frame
                 # The tooltip can disappear before the hovered card's glow
                 # fades. That glow defeated the third-column scroll matches.
@@ -202,7 +221,8 @@ class BlessingLocker(InventoryScanner):
                 previous = None
             if not self.rt.pause(.04):
                 self.check_generation(generation)
-        raise IncompleteObservation("悬停提示或格子高亮尚未稳定，未继续读取或翻页")
+        reason = "悬停提示尚未关闭" if visible else "格子高亮尚未稳定"
+        raise IncompleteObservation(reason + "，未继续读取或翻页")
 
     def scroll_amounts(self):
         # Keep roughly two rows of overlap. Once a large move is ambiguous,
@@ -295,6 +315,10 @@ class BlessingLocker(InventoryScanner):
 
         def finish(facts, lines, confirmation):
             self._hover_read = (tuple(box), generation, facts, frame)
+            # Selection may dismiss the tooltip and invalidate direct reuse.
+            # Retain its verified field locations until clear_hover confirms
+            # closure, independently of whether it can serve the next read.
+            self._hover_panel = self._hover_read
             evidence = {"ocr": lines, "reads": reads, "captures": captures,
                         "roi": roi, "confirmation": confirmation,
                         "image": self.image(f"detail_{index:05d}.png",

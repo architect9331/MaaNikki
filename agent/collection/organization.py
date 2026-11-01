@@ -96,6 +96,7 @@ class BlessingOrganizer(BlessingLocker):
         self.check_generation(generation)
         view.generation = self.organization_generation = generation
         self._hover_read = self._hover_box = None
+        self._hover_panel = None
         self._page_frame = self._ready_frame = frame
         self._ready_generation = generation
         self.verified.clear()
