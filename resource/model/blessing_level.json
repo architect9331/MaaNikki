@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "model_version": "20261101-convnext-level",
+  "roi": [
+    29,
+    75,
+    30,
+    21
+  ],
+  "classes": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "input": "RGB NCHW 0..1",
+  "outputs": [
+    "level_logits"
+  ],
+  "architecture": "ConvNeXt-style 24/48, two residual blocks per stage",
+  "selection": "argmax over catalog-valid levels; non-original colour establishes maximum"
+}

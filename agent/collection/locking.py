@@ -1,9 +1,8 @@
-"""Lock one text-verified maximum-level Eureka per set, slot and colour."""
+"""Lock one model-identified maximum-level Eureka per set, slot and colour."""
 from __future__ import annotations
 
 from datetime import datetime
 import re
-from zipfile import BadZipFile
 
 import cv2
 import numpy as np
@@ -11,9 +10,9 @@ import numpy as np
 from task_control import TaskStopped
 from daily.runtime import parameters
 from daily.settings import ROOT
-from .badge_classifier import BadgeClassifier, badge_roi as classifier_roi
+from .card_models import CardModels, badge_roi as classifier_roi
 from .blessing import SLOTS
-from .details import COLOR_OCR_THRESHOLD, HEADER, tooltip_facts
+from .details import HEADER
 from file_io import write_json
 from .policy import capabilities
 from .scanner import IncompleteObservation, InventoryScanner
@@ -83,6 +82,7 @@ class BlessingLocker(InventoryScanner):
         self.counter = 0
         self.report = {"created": datetime.now().isoformat(timespec="seconds"),
                        "unlock_nonconforming": allow_unlock,
+                       "configured_scroll_step": self._ordered_scroll_step,
                        "complete": False, "slots": {}, "operations": [], "reason": "尚未完成"}
         self.pending = None
         self.inventory_read = False
@@ -92,23 +92,9 @@ class BlessingLocker(InventoryScanner):
         self._hover_box = None
         self._hover_panel = None
         self.stack_count_cache = {}
-        self.badge_classifier = None
-        try:
-            self.badge_classifier = BadgeClassifier(ROOT / "resource/model/blessing_badge.npz")
-        except (OSError, ValueError, KeyError, TypeError, EOFError, BadZipFile) as error:
-            self.rt.log(f"祝福闪光角标模型不可用，改用点击核验：{error}。", detail=True)
-        stars_path = ROOT / "resource/image/blessing_lock/three_stars.png"
-        stars = cv2.imdecode(np.fromfile(str(stars_path), np.uint8), cv2.IMREAD_GRAYSCALE)
-        if stars is None:
-            raise ValueError("三星提示框图像资源缺失")
-        self.three_stars = stars
-        self.rarity_templates = {3: stars}
-        for rarity, filename in ((4, "four_stars.png"), (5, "five_stars.png")):
-            path = ROOT / "resource/image/blessing_lock" / filename
-            template = cv2.imdecode(np.fromfile(str(path), np.uint8), cv2.IMREAD_GRAYSCALE)
-            if template is None:
-                raise ValueError(f"{rarity}星提示框图像资源缺失")
-            self.rarity_templates[rarity] = template
+        self.card_models = CardModels(ROOT / "resource/model", catalog)
+        self._model_slot = None
+        self.snapshot["scan"].update(verification_policy="page_card_models", model_cards=0, model_seconds=0.0)
 
     def save(self):
         write_json(self.folder / "locking.json", self.report)
@@ -136,6 +122,8 @@ class BlessingLocker(InventoryScanner):
             "selected_lock_button": dict(self.report.get("lock_recognition", {}))
                                     if evidence.get("selected_for_observation") else None,
             "detail": evidence.get("image"),
+            "recognition": {key: evidence[key] for key in ("source", "model_versions", "level_source",
+                                                           "identity_logit_gap", "colour_logit_gap") if key in evidence},
             "card": self.image(prefix + ".png", self.region(frame, box)),
             "badge": self.image(prefix + "_badge.png", self.region(frame, badge_roi)),
             "lock": self.image(prefix + "_lock.png", self.region(frame, lock_roi)),
@@ -225,9 +213,22 @@ class BlessingLocker(InventoryScanner):
         reason = "悬停提示尚未关闭" if visible else "格子高亮尚未稳定"
         raise IncompleteObservation(reason + "，未继续读取或翻页")
 
+    def scroll_list(self, amount):
+        # Generic ui.scroll waits .2 s with the pointer still over the grid;
+        # the scanner then moves it away and waits another .25 s. Issue both
+        # inputs together here and retain the full post-move settling window.
+        # advance() still verifies translation before reading the next page.
+        x, y, w, h = self.grid
+        return (self.rt.action("Scroll", target=[x + w - 8, y + h - 8], dx=0, dy=amount)
+                and self.rt.action("TouchMove", target=[420, 32]) and self.rt.pause(.25))
+
     def scroll_amounts(self):
-        # Keep roughly two rows of overlap. Once a large move is ambiguous,
-        # retain the smaller setting instead of repeating the same rollback.
+        # Observed 1200 wheel units move 213 px; 1800 targets about 320 px.
+        # In the 560 px grid this leaves roughly two rows of overlap, within
+        # scroll_position's 343 px matching range (grid - card - row pitch).
+        # Smaller amounts are retries of this move only. Repeated artwork or
+        # missing contours in a local overlap do not imply a smaller wheel
+        # budget is necessary for the rest of the inventory.
         step = self._ordered_scroll_step
         smaller = max(120, step // 240 * 120)
         return tuple(dict.fromkeys((step, smaller, 120)))
@@ -235,8 +236,9 @@ class BlessingLocker(InventoryScanner):
     def record_scroll(self, before, after, amount, delta, phase):
         super().record_scroll(before, after, amount, delta, phase)
         if delta is None and phase in ("down", "ordered_up") and abs(amount) > 120:
-            self._ordered_scroll_step = min(self._ordered_scroll_step, max(120, abs(amount) // 240 * 120))
-            self.report["scroll_step"] = self._ordered_scroll_step
+            self.report.setdefault("local_scroll_fallbacks", []).append({
+                "slot": self._model_slot, "wheel_amount": amount,
+                "scroll_index": len(self.snapshot["scan"]["scrolls"]) - 1})
 
     def header_region(self, frame, box):
         """Locate the light tooltip panel left of a card without OCR."""
@@ -252,156 +254,40 @@ class BlessingLocker(InventoryScanner):
         top = max(70, 70 + int(starts[0]) - 6)
         return [left, top, 328, min(126, 720 - top)]
 
-    def read_details(self, box, generation, index, *, retry_hover=True):
+    def recognize_cards(self, frame, boxes, slot, *, purpose="page"):
+        generation = self.rt._focus_generation
         self.check_generation(generation)
-        old = self._hover_read
-        # The next card to the right cannot be covered by the current tooltip.
-        # Keep the existing clear-page reference and switch directly. Row wraps,
-        # cached/unknown hovers and mutation rereads retain the clear-hover path.
-        direct = (old is not None and self._hover_box == old[0] and old[1] == generation
-                  and abs(box[1] - old[0][1]) < 12
-                  and abs(box[0] - old[0][0] - self.layout["column_pitch"]) < 8
-                  and self._page_frame is not None)
-        baseline = self._page_frame if direct else self.clear_hover(generation)
-        stats = self.report.setdefault("hover_navigation", {"direct": 0, "cleared": 0})
-        stats["direct" if direct else "cleared"] += 1
-        self._hover_read = None
-        x, y, w, h = box
-        if not self.rt.action("TouchMove", target=[round(x + w / 2), round(y + h * .45)]):
-            raise RuntimeError("未能悬停祝福闪光")
-        self._hover_box = tuple(box)
-        self._page_frame = baseline
-        previous_frame, previous_roi = None, None
-        previous_facts, previous_lines, previous_strict = None, [], False
-        facts_frame, facts_roi = None, None
-        reads, captures, last_lines = 0, 0, []
-        frame, roi = baseline, None
+        matches = self.card_models.match_batch(frame, boxes, slot)
+        self.check_generation(generation)
+        timing = {**self.card_models.last_timing, "slot": slot, "purpose": purpose}
+        if boxes:
+            self.report.setdefault("model_batches", []).append(timing)
+            scan = self.snapshot["scan"]
+            scan["model_cards"] += len(boxes)
+            scan["model_seconds"] = round(scan["model_seconds"] + timing["seconds"], 6)
+            if purpose == "page":
+                self.rt.log(f"祝福闪光{slot}：批量识别 {len(boxes)} 个新格子，模型耗时 {timing['seconds']:.3f} 秒。",
+                            detail=True)
+        return matches
 
-        def usable(facts):
-            return facts is not None and (facts.get("color") is not None
-                or not capabilities(self.catalog, facts["name"], observed=facts)["lock_mutable"]
-                or not self.is_maximum(facts) and (self.inventory_read or self.allow_unlock))
+    def confirm_copy(self, frame, box, match, level, generation, index):
+        self.check_generation(generation)
+        facts = match.get("model_facts")
+        if facts is None:
+            raise IncompleteObservation("当前格子缺少批量模型识别结果，保留已有进度")
+        return dict(facts), dict(match["model_evidence"])
 
-        def read_facts(results, threshold, *, color_threshold=None):
-            facts, lines = tooltip_facts(results, self.catalog, threshold=threshold,
-                                         color_threshold=color_threshold)
-            if facts is not None:
-                return facts, lines
-            # Catalogue updates can lag game drops. Recognize the complete
-            # rarity pill before accepting a new title; never guess three stars.
-            facts, lines = tooltip_facts(results, self.catalog, threshold=threshold,
-                                         color_threshold=color_threshold,
-                                         allow_unknown=True)
-            if facts is None or not facts.get("catalog_unknown"):
-                return None, lines
-            left, top = facts["header_box"]
-            area = [max(0, left - 12), top + 30, 130, 38]
-            gray = cv2.cvtColor(self.region(frame, area), cv2.COLOR_BGR2GRAY)
-            scores = {rarity: float(cv2.matchTemplate(gray, template, cv2.TM_CCOEFF_NORMED).max())
-                      for rarity, template in self.rarity_templates.items()}
-            if not all(np.isfinite(score) for score in scores.values()):
-                return None, lines
-            rarity, other = sorted(scores, key=scores.get, reverse=True)[:2]
-            if scores[rarity] < .94 or scores[rarity] - scores[other] < .04:
-                return None, lines
-            facts, lines = tooltip_facts(results, self.catalog, threshold=threshold,
-                                         color_threshold=color_threshold,
-                                         allow_unknown=True, unknown_rarity=rarity)
-            if facts is None:
-                return None, lines
-            facts["field_boxes"].append(area)
-            facts["inventory_evidence"] = {"basis": "tooltip_rarity", "rarity": rarity,
-                                            "rarity_score": scores[rarity], "scores": scores}
-            return facts, lines
+    def read_details(self, box, generation, index, *, retry_hover=True):
+        """Recheck a selected card directly; no pointer move or tooltip wait."""
+        frame = self.frame(generation)
+        result, = self.recognize_cards(frame, [box], self._model_slot, purpose="selected_recheck")
+        return self.confirm_copy(frame, box, result, result["model_facts"]["level"], generation, index)
 
-        def finish(facts, lines, confirmation):
-            self._hover_read = (tuple(box), generation, facts, frame)
-            # Selection may dismiss the tooltip and invalidate direct reuse.
-            # Retain its verified field locations until clear_hover confirms
-            # closure, independently of whether it can serve the next read.
-            self._hover_panel = self._hover_read
-            evidence = {"ocr": lines, "reads": reads, "captures": captures,
-                        "roi": roi, "confirmation": confirmation,
-                        "image": self.image(f"detail_{index:05d}.png",
-                                            self.region(frame, self.detail_roi(facts)))}
-            if facts.get("protected_inventory") or facts.get("catalog_unknown"):
-                evidence["inventory_evidence"] = facts["inventory_evidence"]
-            self.report["last_detail"] = {"name": facts["name"], "level": facts["level"],
-                                          "reads": reads, "captures": captures, "roi": roi}
-            return facts, evidence
-
-        # Wait for pixels, not eight repeated OCR calls over half the screen.
-        for attempt in range(18):
-            if not self.rt.pause(.12 if attempt == 0 and not direct else .04):
-                raise RuntimeError("悬停核对被中断")
-            frame = self.frame(generation)
-            captures += 1
-            # Never accept the previous card's still-visible tooltip as the new
-            # item. Pixel stability is considered only after its fields change.
-            if direct and self.same_fields(old[3], frame, old[2]):
-                previous_frame, previous_roi = None, None
-                previous_facts, previous_strict = None, False
-                facts_frame, facts_roi = None, None
-                continue
-            roi = self.header_region(frame, box)
-            if roi is None or not self.tooltip_visible(frame, roi):
-                previous_frame, previous_roi = None, None
-                previous_facts, previous_strict = None, False
-                facts_frame, facts_roi = None, None
-                continue
-            if (usable(previous_facts) and not previous_facts.get("catalog_unknown")
-                    and previous_strict and facts_roi == roi
-                    and self.same_fields(facts_frame, frame, previous_facts)):
-                return finish(previous_facts, previous_lines, "field_pixels")
-            settled = (previous_frame is not None and previous_roi == roi
-                       and self.tooltip_stable(previous_frame, frame, roi))
-            if not settled and attempt < 8:
-                previous_frame, previous_roi = frame, roi
-                continue
-            results = self.ocr(roi, frame)
-            reads += 1
-            strict, lines = read_facts(results, .90)
-            facts = strict
-            if not usable(facts):
-                facts, lines = read_facts(results, .85, color_threshold=COLOR_OCR_THRESHOLD)
-            last_lines = lines
-            self.check_generation(generation)
-            if usable(facts):
-                if (usable(strict) and not facts.get("catalog_unknown") and settled
-                        and self.same_fields(previous_frame, frame, facts)):
-                    return finish(facts, lines, "stable_before_ocr")
-                # Marginal confidence requires two local OCR observations with
-                # identical identity/level/colour and stable field pixels.
-                if (usable(previous_facts) and self.key(facts) == self.key(previous_facts)
-                        and facts["level"] == previous_facts["level"]
-                        and facts["rarity"] == previous_facts["rarity"]
-                        and facts_roi == roi
-                        and self.same_fields(facts_frame, frame, previous_facts)
-                        and self.same_fields(facts_frame, frame, facts)):
-                    return finish(facts, lines, "two_local_reads")
-            previous_facts, previous_lines = facts, lines
-            previous_strict = usable(strict)
-            facts_frame, facts_roi = frame, roi
-            previous_frame, previous_roi = frame, roi
-            if reads >= 3:
-                break
-        diagnostic = {"box": list(box), "roi": roi, "reads": reads,
-                      "captures": captures, "ocr": last_lines, "direct": direct,
-                      "recognized_fields": {key: previous_facts.get(key) for key in
-                                            ("name", "slot", "level", "color")} if previous_facts else {}}
-        if reads == 0 and retry_hover:
-            # Selection can dismiss a tooltip or delay the next hover. Re-enter
-            # once from a confirmed clear page; never click or relax identity.
-            self.report.setdefault("hover_recoveries", []).append(diagnostic)
-            self.image(f"detail_{index:05d}_hover_retry.png", frame)
-            self._hover_read = None
-            self.rt.log("祝福闪光详情未显示，正在重新悬停核对。", detail=True)
-            return self.read_details(box, generation, index, retry_hover=False)
-        self.report["detail_failure"] = diagnostic
-        write_json(self.folder / f"detail_{index:05d}_unknown.json", diagnostic)
-        self.image(f"detail_{index:05d}_unknown.png", frame)
-        raise RuntimeError("重新悬停后详情仍未显示或更新，已保存截图" if reads == 0
-                           else "提示框局部名称、等级或颜色未能确认，已保存识别内容")
+    def same_card_facts(self, actual, expected):
+        # Upgrades always continue to the maximum indicator. Intermediate
+        # numeral estimates do not decide whether the selected target matches.
+        return (self.key(actual) == self.key(expected) and actual["rarity"] == expected["rarity"]
+                and self.is_maximum(actual) == self.is_maximum(expected))
 
     @staticmethod
     def key(facts):
@@ -494,10 +380,9 @@ class BlessingLocker(InventoryScanner):
             "background": background, "state": state}
         return state
 
-    def card_lock_state(self, frame, box):
-        """Classify colour/gradient badges once; uncertain cases use selection."""
-        result = (self.badge_classifier.classify(frame, box) if self.badge_classifier is not None
-                  else {"badge_state": None, "reason": "model_unavailable"})
+    def card_lock_state(self, frame, box, *, classification=None):
+        """Reuse the page batch; only ambiguous badges need button selection."""
+        result = classification if classification is not None else self.card_models.badges(frame, [box])[0]
         kind = result["badge_state"]
         state = "locked" if kind == "locked" else "unlocked" if kind in ("stack", "single") else None
         source = "classifier_" + kind if kind is not None else "ambiguous"
@@ -551,18 +436,17 @@ class BlessingLocker(InventoryScanner):
 
     def select(self, box, facts, generation, *, verify_details=True, already_selected=False):
         self.check_generation(generation)
-        # read_details leaves the pointer on this card. Use that exact point:
-        # Runtime's generic click would move, wait and unhover it again.
+        # One direct click selects the card; no preparatory tooltip hover.
         x, y, w, h = box
         point = [round(x + w / 2), round(y + h * .45)]
-        if self._hover_box != tuple(box):
-            self._hover_read = None
-            if not self.rt.action("TouchMove", target=point) or not self.rt.pause(.15):
-                raise RuntimeError("未能定位目标闪光")
-            self._hover_box = tuple(box)
+        self._hover_read = self._hover_box = None
         if not already_selected and (
                 not self.rt.action("Click", target=point, ui_click=False) or not self.rt.pause(.15)):
             raise RuntimeError("未能选中目标闪光")
+        if not already_selected:
+            # Track the pointer only so scrolling can wait for its highlight
+            # to fade after moving away. No tooltip metadata are read.
+            self._hover_box = tuple(box)
         frame = self.frame(generation)
         if not self.selected(frame, box):
             # Click delivery and the selection animation are asynchronous.
@@ -572,21 +456,10 @@ class BlessingLocker(InventoryScanner):
                 if not self.rt.ui.wait_page(lambda: self.selected(self.frame(generation), box)):
                     raise IncompleteObservation("目标格子的选中高亮尚未确认，保留进度")
             frame = self.frame(generation)
-        proof = self._hover_read
-        same_tooltip = (proof is not None and proof[0] == tuple(box) and proof[1] == generation
-                        and self.key(proof[2]) == self.key(facts) and proof[2]["level"] == facts["level"]
-                        and self.same_fields(proof[3], frame, facts))
-        if not same_tooltip:
-            # Clicking can close the panel even when the pointer stays put.
-            # A later adjacent read must not reuse that dismissed tooltip.
-            self._hover_read = None
         if verify_details:
-            if not same_tooltip:
-                self.counter += 1
-                selected, _ = self.read_details(box, generation, self.counter)
-                if self.key(selected) != self.key(facts) or selected["level"] != facts["level"]:
-                    raise RuntimeError("选中后闪光信息发生变化，未操作锁按钮")
-                frame = self.frame(generation)
+            selected, = self.recognize_cards(frame, [box], self._model_slot, purpose="selected_recheck")
+            if not self.same_card_facts(selected["model_facts"], facts):
+                raise RuntimeError("选中后闪光信息发生变化，未操作锁按钮")
         # The lock button is outside the card tooltip. Keep the pointer here;
         # both its state and the selection are read from fresh captures.
         return self.lock_state(generation, frame=frame)
@@ -606,9 +479,13 @@ class BlessingLocker(InventoryScanner):
     def set_slot(self, slot):
         node = "MaaNikki_Blessing_" + slot
         index = SLOTS.index(slot)
-        return self.rt.ui.enter_page(
+        ready = self.rt.ui.enter_page(
             lambda: self.rt.action("Click", target=self.layout["slot_buttons"][index]),
             node, source=READY, attempts=2)
+        if ready:
+            self._model_slot = slot
+            self._ordered_scroll_step = self.layout["scroll_step"]
+        return ready
 
     def acquisition_sort(self):
         """Select acquisition order and confirm the user-supplied down arrow."""

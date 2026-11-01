@@ -16,6 +16,7 @@ from .icons import IconMatcher
 from .details import COLOR_OCR_THRESHOLD, HEADER, VerifiedVariants, tooltip_facts
 from .policy import reconcile_exclusions
 from .scroll_color import distinguish
+from .scroll_joint import translation as joint_translation
 
 
 LEVEL = r"(?:等级|[Ll][Vv]|级)[\s.．·:：]*(10|[0-9])(?=\D|$)"
@@ -166,10 +167,11 @@ class InventoryScanner:
         return found[0] if len(found) == 1 else None
 
     def scroll_position(self, before, after):
-        """Confirm translation from independent columns of local card artwork."""
+        """Confirm translation with individual anchors or a shared column profile."""
         gx, gy, gw, gh = self.grid
         width, height = self.layout["card_size"]
-        boxes = self.cards(before, [])
+        contours = self.cards(before, [])
+        boxes = contours
         boxes = [box for box in boxes if gy + gh / 2 <= box[1] <= gy + gh - height - 8]
 
         def features(frame):
@@ -263,14 +265,30 @@ class InventoryScanner:
             if delta is not None:
                 self._scroll_diagnostics = diagnostic
                 return delta
+
+        def joint(anchors, source):
+            delta, evidence = joint_translation(before, after, first, second, anchors, self.layout,
+                                                threshold=.80, margin=.04, neighbourhood=8,
+                                                color_threshold=self.matcher.color_threshold,
+                                                color_margin=self.matcher.color_margin)
+            return delta, {"anchor_source": source, "delta": delta, "joint": evidence}
+
+        delta, diagnostic = joint(contours, "joint_contours")
+        if delta is not None:
+            self._scroll_diagnostics = {**diagnostic, "attempts": attempts}
+            return delta
+        attempts.append(diagnostic)
         # Enough detected cards need not provide enough unambiguous matches:
         # same artwork in different colours can lose its distinction in luma.
         # Expand on matching failure as well as missing contours, using only
         # the same BEFORE/AFTER pair, without another scroll or tooltip scan.
-        levels = self.ocr(self.grid, before, LEVEL)
+        levels = self.ocr(self.grid, before, LEVEL) if self.layout.get("scroll_anchor_ocr", True) else []
         boxes = self.cards(before, levels)
         boxes = [box for box in boxes if gy <= box[1] <= gy + gh - height - 8]
         delta, diagnostic = evaluate(boxes, "levels_and_contours")
+        if delta is None:
+            attempts.append(diagnostic)
+            delta, diagnostic = joint(boxes, "joint_levels_and_contours")
         self._scroll_diagnostics = {**diagnostic, "attempts": attempts}
         return delta
 

@@ -72,6 +72,9 @@ def save_report(folder, catalog, snapshot, result):
         status = "部件及等级扫描完整，部分颜色待确认；一级目标可按已确认库存计算"
     color_pending = sum(item["count"] for item in snapshot["items"] if not item.get("color"))
     verification = []
+    if scan.get("verification_policy") == "page_card_models":
+        verification = [f"按页批量识别 {scan.get('model_cards', 0)} 格，模型耗时 {scan.get('model_seconds', 0):.3f} 秒。"
+                        "种类、颜色、等级与角标由模型识别；堆叠数量由 OCR 读取。"]
     if scan.get("verification_policy") == "tooltip_first_variant":
         verification = [f"游戏内悬停文字核对 {scan.get('tooltip_verified', 0)} 个，"
                         f"复用已核对重复条目 {scan.get('cached_verified', 0)} 个。"

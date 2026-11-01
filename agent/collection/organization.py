@@ -169,7 +169,7 @@ class BlessingOrganizer(BlessingLocker):
                     self.accept_ordered_focus(view, frame, resumed, "confirm_lock")
                     self.counter += 1
                     actual, _ = self.read_details(box, resumed, self.counter)
-                    if self.key(actual) != self.key(facts) or actual["level"] != facts["level"]:
+                    if not self.same_card_facts(actual, facts):
                         raise RuntimeError("切回后选中闪光与操作记录不一致") from error
                     self.confirm_selected_lock(resumed)
                     view.remember_view(self.clear_hover(resumed), checkpoint["boxes"])

@@ -80,6 +80,7 @@ class OrderedView:
         self._focus_checkpoint = None
         self._page_frame = None
         self._page_cells = []
+        self._slot_header = None
         self._recovering_focus = False
 
     def remember_view(self, frame, boxes):
@@ -99,9 +100,11 @@ class OrderedView:
             raise RuntimeError("未确认获得时间列表顶部")
         self.slot, self.position = slot, 0
         self._focus_checkpoint = None
+        self._slot_header = None
 
     @resumable_observation
     def step(self, direction):
+        started = time.monotonic()
         scroll_index = len(self.o.snapshot["scan"]["scrolls"])
         before = self.o.clear_hover(self.generation, settle_card=True)
         boxes = self._focus_checkpoint["boxes"] if self._focus_checkpoint else []
@@ -146,6 +149,11 @@ class OrderedView:
                                   if self.o.grid[1] <= y - direction * delta
                                   and y - direction * delta + h <= self.o.grid[1] + self.o.grid[3]])
         self._page_frame, self._page_cells = None, []
+        self.o.report.setdefault("page_turns", []).append({
+            "slot": self.slot, "direction": direction, "delta": delta,
+            "scroll_step": self.o._ordered_scroll_step,
+            "attempts": len(self.o.snapshot["scan"]["scrolls"]) - scroll_index,
+            "seconds": round(time.monotonic() - started, 6)})
         return delta
 
     def seek(self, ordinal):
@@ -165,10 +173,20 @@ class OrderedView:
         raise IncompleteLookup("定位滚动达到上限，保留进度")
 
     @resumable_observation
-    def cells(self, *, at_bottom=False):
+    def cells(self, *, at_bottom=False, seen=None):
+        started = time.monotonic()
         frame = self.o.clear_hover(self.generation)
-        if not self.o.rt.text([930, 15, 330, 52], self.slot, image=frame):
-            raise RuntimeError("获得时间列表部位变化")
+        header_roi = [930, 15, 330, 52]
+        cached = self._slot_header
+        # Wheel input changes the list, not the title. Reuse a verified title
+        # only while its pixels retain the existing page-cache tolerance and
+        # the foreground generation is unchanged. Changed titles need OCR.
+        if (cached is None or cached[0] != self.generation
+                or not self.o.same_structure(frame, cached[1], header_roi, threshold=.997)):
+            if not self.o.rt.text(header_roi, self.slot, image=frame):
+                raise RuntimeError("获得时间列表部位变化")
+            self._slot_header = (self.generation, frame)
+        self.o.check_generation(self.generation)
         roi = list(self.o.grid)
         if not at_bottom:
             roi[3] -= self.o.layout.get("bottom_fade_margin", 32)
@@ -189,7 +207,7 @@ class OrderedView:
         # card proves that earlier columns on that row are occupied, even
         # when level OCR and a broken outline both miss one of those cards.
         # A later observed row also proves that the previous row is full.
-        # Infer only candidate geometry; normal icon/tooltip and lock reads
+        # Infer only candidate geometry; normal icon models and lock reads
         # still establish each item's identity and state. Never extend the
         # last row to the right, where the list can actually be empty.
         card_rows = []
@@ -215,21 +233,30 @@ class OrderedView:
                                             "roi": roi, "at_bottom": at_bottom,
                                             "deferred_cards": deferred,
                                             "inferred_cards": inferred}
-        values = [self.o.level(box, levels) for box in boxes]
-        matches = self.o.matcher.match_batch(frame, boxes, levels=values)
-        self._page_frame, self._page_cells = frame, list(zip(boxes, values, matches))
+        # Known scroll translation keeps the acquisition-order coordinates
+        # stable. Skip overlap before cropping or running any of the models.
+        new_boxes = [box for box in boxes if seen is None or not any(
+            abs(box[0] - x) < 12 and abs(box[1] + self.position - y) < 12 for x, y in seen)]
+        self.o.check_generation(self.generation)
+        matches = self.o.recognize_cards(frame, new_boxes, self.slot)
+        self.o.check_generation(self.generation)
+        values = [match["model_facts"]["level"] for match in matches]
+        self._page_frame, self._page_cells = frame, list(zip(new_boxes, values, matches))
+        self.o.report["reading_window"].update(new_cards=len(new_boxes), overlap_cards=len(boxes) - len(new_boxes),
+                                              read_seconds=round(time.monotonic() - started, 6))
+        self.o.report.setdefault("page_reads", []).append(dict(self.o.report["reading_window"]))
         self.remember_view(frame, boxes)
         return frame, self._page_cells
 
-    def pages(self, limit):
+    def pages(self, limit, *, seen=None):
         """Read clear cards first, then include the tail only at a proven end."""
         for _ in range(limit):
-            frame, cells = self.cells()
+            frame, cells = self.cells(seen=seen)
             yield frame, cells, False
             if self.step(1) == 0 and self.step(1) == 0:
                 # The bottom fade disappears at the physical list end. Read
                 # this viewport again before coverage or absence is decided.
-                frame, cells = self.cells(at_bottom=True)
+                frame, cells = self.cells(at_bottom=True, seen=seen)
                 self.o.image(f"bottom_{self.slot}_{self.o.counter:05d}.png", frame)
                 yield frame, cells, True
                 return
@@ -251,7 +278,7 @@ class OrderedView:
             raise RuntimeError("顺序记录身份或部位无法确认")
         flags = capabilities(self.o.catalog, facts["name"], observed=facts)
         inspect_lock = flags["lock_mutable"] or facts.get("catalog_unknown")
-        state = self.o.card_lock_state(frame, box) if inspect_lock else "locked"
+        state = self.o.card_lock_state(frame, box, classification=match.get("badge_classification")) if inspect_lock else "locked"
         badge_classification = dict(self.o.report["last_card_lock"]) if inspect_lock else None
         stats = self.o.report.setdefault("selection_stats", {"badge_reads": 0, "clicked_reads": 0})
         selected = inspect_lock and (verify_selection or state is None)
@@ -302,7 +329,7 @@ class OrderedView:
         if old is not None and not expected:
             self.o.rt.log(f"{slot}尚无唯一满级锁定参照，本轮仅在开始时完整读取该部位一次。",
                           ui_text=f"正在读取{slot}完整列表，建立定位参照。")
-        for frame, cells, at_bottom in self.pages(limit):
+        for frame, cells, at_bottom in self.pages(limit, seen=seen):
             for cell in cells:
                 box = cell[0]
                 point = (box[0], box[1] + self.position)

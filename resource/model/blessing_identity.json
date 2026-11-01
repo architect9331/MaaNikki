@@ -1,0 +1,4025 @@
+{
+  "schema_version": 1,
+  "model_version": "20261101-mobilenetv3-game-adapted",
+  "input_size": [
+    96,
+    96
+  ],
+  "card_size": [
+    95,
+    101
+  ],
+  "entries": [
+    {
+      "name": "初雪",
+      "slot": "头部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "手部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "脚部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "初雪",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "光之羽",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "曦晖",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "雨铃落",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "头部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "手部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "脚部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "梦之舞",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "迷离浪",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "头部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "手部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "脚部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "咏月",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "游鱼",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "瑰爱",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "燎原",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "风荷",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "头部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "手部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "脚部",
+      "color": "白",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "墨影",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "月莲笙",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "生命之书",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "星月仪",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "谕火",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "别红尘",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "山水遥",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "甜心派对",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 5
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "弦中诗",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "头部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "手部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 5
+    },
+    {
+      "name": "镜中萤",
+      "slot": "脚部",
+      "color": "彩",
+      "rarity": 5
+    },
+    {
+      "name": "假面魔术",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 4
+    },
+    {
+      "name": "假面魔术",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 4
+    },
+    {
+      "name": "假面魔术",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 4
+    },
+    {
+      "name": "假面魔术",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 4
+    },
+    {
+      "name": "假面魔术",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 4
+    },
+    {
+      "name": "假面魔术",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 4
+    },
+    {
+      "name": "假面魔术",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 4
+    },
+    {
+      "name": "假面魔术",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 4
+    },
+    {
+      "name": "假面魔术",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 4
+    },
+    {
+      "name": "心之吻",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 4
+    },
+    {
+      "name": "心之吻",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 4
+    },
+    {
+      "name": "心之吻",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "心之吻",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 4
+    },
+    {
+      "name": "心之吻",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 4
+    },
+    {
+      "name": "心之吻",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "心之吻",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 4
+    },
+    {
+      "name": "心之吻",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 4
+    },
+    {
+      "name": "心之吻",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 4
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 4
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 4
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 4
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 4
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 4
+    },
+    {
+      "name": "雪绒融",
+      "slot": "头部",
+      "color": "白",
+      "rarity": 4
+    },
+    {
+      "name": "雪绒融",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "雪绒融",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 4
+    },
+    {
+      "name": "雪绒融",
+      "slot": "手部",
+      "color": "白",
+      "rarity": 4
+    },
+    {
+      "name": "雪绒融",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "雪绒融",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 4
+    },
+    {
+      "name": "雪绒融",
+      "slot": "脚部",
+      "color": "白",
+      "rarity": 4
+    },
+    {
+      "name": "雪绒融",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "雪绒融",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 4
+    },
+    {
+      "name": "风之律",
+      "slot": "头部",
+      "color": "绿",
+      "rarity": 4
+    },
+    {
+      "name": "风之律",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "风之律",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 4
+    },
+    {
+      "name": "风之律",
+      "slot": "手部",
+      "color": "绿",
+      "rarity": 4
+    },
+    {
+      "name": "风之律",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "风之律",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 4
+    },
+    {
+      "name": "风之律",
+      "slot": "脚部",
+      "color": "绿",
+      "rarity": 4
+    },
+    {
+      "name": "风之律",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 4
+    },
+    {
+      "name": "风之律",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 4
+    },
+    {
+      "name": "星芒",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 3
+    },
+    {
+      "name": "星芒",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 3
+    },
+    {
+      "name": "星芒",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 3
+    },
+    {
+      "name": "落玫",
+      "slot": "头部",
+      "color": "紫",
+      "rarity": 3
+    },
+    {
+      "name": "落玫",
+      "slot": "手部",
+      "color": "紫",
+      "rarity": 3
+    },
+    {
+      "name": "落玫",
+      "slot": "脚部",
+      "color": "紫",
+      "rarity": 3
+    },
+    {
+      "name": "蜜丝糖",
+      "slot": "头部",
+      "color": "粉",
+      "rarity": 3
+    },
+    {
+      "name": "蜜丝糖",
+      "slot": "手部",
+      "color": "粉",
+      "rarity": 3
+    },
+    {
+      "name": "蜜丝糖",
+      "slot": "脚部",
+      "color": "粉",
+      "rarity": 3
+    },
+    {
+      "name": "银月",
+      "slot": "头部",
+      "color": "白",
+      "rarity": 3
+    },
+    {
+      "name": "银月",
+      "slot": "手部",
+      "color": "白",
+      "rarity": 3
+    },
+    {
+      "name": "银月",
+      "slot": "脚部",
+      "color": "白",
+      "rarity": 3
+    },
+    {
+      "name": "陨星",
+      "slot": "头部",
+      "color": "红",
+      "rarity": 3
+    },
+    {
+      "name": "陨星",
+      "slot": "手部",
+      "color": "红",
+      "rarity": 3
+    },
+    {
+      "name": "陨星",
+      "slot": "脚部",
+      "color": "红",
+      "rarity": 3
+    },
+    {
+      "name": "泪之华",
+      "slot": "头部",
+      "color": "蓝",
+      "rarity": 3
+    },
+    {
+      "name": "泪之华",
+      "slot": "手部",
+      "color": "蓝",
+      "rarity": 3
+    },
+    {
+      "name": "泪之华",
+      "slot": "脚部",
+      "color": "蓝",
+      "rarity": 3
+    },
+    {
+      "name": "月桂兔",
+      "slot": "头部",
+      "color": "黄",
+      "rarity": 3
+    },
+    {
+      "name": "月桂兔",
+      "slot": "手部",
+      "color": "黄",
+      "rarity": 3
+    },
+    {
+      "name": "月桂兔",
+      "slot": "脚部",
+      "color": "黄",
+      "rarity": 3
+    }
+  ],
+  "groups": [
+    [
+      "初雪",
+      "头部"
+    ],
+    [
+      "初雪",
+      "手部"
+    ],
+    [
+      "初雪",
+      "脚部"
+    ],
+    [
+      "光之羽",
+      "头部"
+    ],
+    [
+      "光之羽",
+      "手部"
+    ],
+    [
+      "光之羽",
+      "脚部"
+    ],
+    [
+      "曦晖",
+      "头部"
+    ],
+    [
+      "曦晖",
+      "手部"
+    ],
+    [
+      "曦晖",
+      "脚部"
+    ],
+    [
+      "雨铃落",
+      "头部"
+    ],
+    [
+      "雨铃落",
+      "手部"
+    ],
+    [
+      "雨铃落",
+      "脚部"
+    ],
+    [
+      "梦之舞",
+      "头部"
+    ],
+    [
+      "梦之舞",
+      "手部"
+    ],
+    [
+      "梦之舞",
+      "脚部"
+    ],
+    [
+      "迷离浪",
+      "头部"
+    ],
+    [
+      "迷离浪",
+      "手部"
+    ],
+    [
+      "迷离浪",
+      "脚部"
+    ],
+    [
+      "咏月",
+      "头部"
+    ],
+    [
+      "咏月",
+      "手部"
+    ],
+    [
+      "咏月",
+      "脚部"
+    ],
+    [
+      "黑洞狩猎",
+      "头部"
+    ],
+    [
+      "黑洞狩猎",
+      "手部"
+    ],
+    [
+      "黑洞狩猎",
+      "脚部"
+    ],
+    [
+      "游鱼",
+      "头部"
+    ],
+    [
+      "游鱼",
+      "手部"
+    ],
+    [
+      "游鱼",
+      "脚部"
+    ],
+    [
+      "瑰爱",
+      "头部"
+    ],
+    [
+      "瑰爱",
+      "手部"
+    ],
+    [
+      "瑰爱",
+      "脚部"
+    ],
+    [
+      "燎原",
+      "头部"
+    ],
+    [
+      "燎原",
+      "手部"
+    ],
+    [
+      "燎原",
+      "脚部"
+    ],
+    [
+      "风荷",
+      "头部"
+    ],
+    [
+      "风荷",
+      "手部"
+    ],
+    [
+      "风荷",
+      "脚部"
+    ],
+    [
+      "墨影",
+      "头部"
+    ],
+    [
+      "墨影",
+      "手部"
+    ],
+    [
+      "墨影",
+      "脚部"
+    ],
+    [
+      "晴雨悠游",
+      "头部"
+    ],
+    [
+      "晴雨悠游",
+      "手部"
+    ],
+    [
+      "晴雨悠游",
+      "脚部"
+    ],
+    [
+      "月莲笙",
+      "头部"
+    ],
+    [
+      "月莲笙",
+      "手部"
+    ],
+    [
+      "月莲笙",
+      "脚部"
+    ],
+    [
+      "生命之书",
+      "头部"
+    ],
+    [
+      "生命之书",
+      "手部"
+    ],
+    [
+      "生命之书",
+      "脚部"
+    ],
+    [
+      "菇眠曲",
+      "头部"
+    ],
+    [
+      "菇眠曲",
+      "手部"
+    ],
+    [
+      "菇眠曲",
+      "脚部"
+    ],
+    [
+      "霜刃之誓",
+      "头部"
+    ],
+    [
+      "霜刃之誓",
+      "手部"
+    ],
+    [
+      "霜刃之誓",
+      "脚部"
+    ],
+    [
+      "星月仪",
+      "头部"
+    ],
+    [
+      "星月仪",
+      "手部"
+    ],
+    [
+      "星月仪",
+      "脚部"
+    ],
+    [
+      "谕火",
+      "头部"
+    ],
+    [
+      "谕火",
+      "手部"
+    ],
+    [
+      "谕火",
+      "脚部"
+    ],
+    [
+      "别红尘",
+      "头部"
+    ],
+    [
+      "别红尘",
+      "手部"
+    ],
+    [
+      "别红尘",
+      "脚部"
+    ],
+    [
+      "山水遥",
+      "头部"
+    ],
+    [
+      "山水遥",
+      "手部"
+    ],
+    [
+      "山水遥",
+      "脚部"
+    ],
+    [
+      "甜心派对",
+      "头部"
+    ],
+    [
+      "甜心派对",
+      "手部"
+    ],
+    [
+      "甜心派对",
+      "脚部"
+    ],
+    [
+      "祈晴夜",
+      "头部"
+    ],
+    [
+      "祈晴夜",
+      "手部"
+    ],
+    [
+      "祈晴夜",
+      "脚部"
+    ],
+    [
+      "稚意沫影",
+      "头部"
+    ],
+    [
+      "稚意沫影",
+      "手部"
+    ],
+    [
+      "稚意沫影",
+      "脚部"
+    ],
+    [
+      "稚意酣眠",
+      "头部"
+    ],
+    [
+      "稚意酣眠",
+      "手部"
+    ],
+    [
+      "稚意酣眠",
+      "脚部"
+    ],
+    [
+      "弦中诗",
+      "头部"
+    ],
+    [
+      "弦中诗",
+      "手部"
+    ],
+    [
+      "弦中诗",
+      "脚部"
+    ],
+    [
+      "镜中萤",
+      "头部"
+    ],
+    [
+      "镜中萤",
+      "手部"
+    ],
+    [
+      "镜中萤",
+      "脚部"
+    ],
+    [
+      "假面魔术",
+      "头部"
+    ],
+    [
+      "假面魔术",
+      "手部"
+    ],
+    [
+      "假面魔术",
+      "脚部"
+    ],
+    [
+      "心之吻",
+      "头部"
+    ],
+    [
+      "心之吻",
+      "手部"
+    ],
+    [
+      "心之吻",
+      "脚部"
+    ],
+    [
+      "摇篮曲",
+      "头部"
+    ],
+    [
+      "摇篮曲",
+      "手部"
+    ],
+    [
+      "摇篮曲",
+      "脚部"
+    ],
+    [
+      "雪绒融",
+      "头部"
+    ],
+    [
+      "雪绒融",
+      "手部"
+    ],
+    [
+      "雪绒融",
+      "脚部"
+    ],
+    [
+      "风之律",
+      "头部"
+    ],
+    [
+      "风之律",
+      "手部"
+    ],
+    [
+      "风之律",
+      "脚部"
+    ],
+    [
+      "星芒",
+      "头部"
+    ],
+    [
+      "星芒",
+      "手部"
+    ],
+    [
+      "星芒",
+      "脚部"
+    ],
+    [
+      "落玫",
+      "头部"
+    ],
+    [
+      "落玫",
+      "手部"
+    ],
+    [
+      "落玫",
+      "脚部"
+    ],
+    [
+      "蜜丝糖",
+      "头部"
+    ],
+    [
+      "蜜丝糖",
+      "手部"
+    ],
+    [
+      "蜜丝糖",
+      "脚部"
+    ],
+    [
+      "银月",
+      "头部"
+    ],
+    [
+      "银月",
+      "手部"
+    ],
+    [
+      "银月",
+      "脚部"
+    ],
+    [
+      "陨星",
+      "头部"
+    ],
+    [
+      "陨星",
+      "手部"
+    ],
+    [
+      "陨星",
+      "脚部"
+    ],
+    [
+      "泪之华",
+      "头部"
+    ],
+    [
+      "泪之华",
+      "手部"
+    ],
+    [
+      "泪之华",
+      "脚部"
+    ],
+    [
+      "月桂兔",
+      "头部"
+    ],
+    [
+      "月桂兔",
+      "手部"
+    ],
+    [
+      "月桂兔",
+      "脚部"
+    ]
+  ],
+  "original_colours": [
+    {
+      "name": "初雪",
+      "slot": "头部",
+      "color": "白"
+    },
+    {
+      "name": "初雪",
+      "slot": "手部",
+      "color": "白"
+    },
+    {
+      "name": "初雪",
+      "slot": "脚部",
+      "color": "白"
+    },
+    {
+      "name": "光之羽",
+      "slot": "头部",
+      "color": "黄"
+    },
+    {
+      "name": "光之羽",
+      "slot": "手部",
+      "color": "黄"
+    },
+    {
+      "name": "光之羽",
+      "slot": "脚部",
+      "color": "黄"
+    },
+    {
+      "name": "雨铃落",
+      "slot": "头部",
+      "color": "绿"
+    },
+    {
+      "name": "雨铃落",
+      "slot": "手部",
+      "color": "绿"
+    },
+    {
+      "name": "雨铃落",
+      "slot": "脚部",
+      "color": "绿"
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "头部",
+      "color": "紫"
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "手部",
+      "color": "紫"
+    },
+    {
+      "name": "黑洞狩猎",
+      "slot": "脚部",
+      "color": "紫"
+    },
+    {
+      "name": "瑰爱",
+      "slot": "头部",
+      "color": "粉"
+    },
+    {
+      "name": "瑰爱",
+      "slot": "手部",
+      "color": "粉"
+    },
+    {
+      "name": "瑰爱",
+      "slot": "脚部",
+      "color": "粉"
+    },
+    {
+      "name": "银月",
+      "slot": "头部",
+      "color": "白"
+    },
+    {
+      "name": "银月",
+      "slot": "手部",
+      "color": "白"
+    },
+    {
+      "name": "银月",
+      "slot": "脚部",
+      "color": "白"
+    },
+    {
+      "name": "星芒",
+      "slot": "头部",
+      "color": "黄"
+    },
+    {
+      "name": "星芒",
+      "slot": "手部",
+      "color": "黄"
+    },
+    {
+      "name": "星芒",
+      "slot": "脚部",
+      "color": "黄"
+    },
+    {
+      "name": "陨星",
+      "slot": "头部",
+      "color": "红"
+    },
+    {
+      "name": "陨星",
+      "slot": "手部",
+      "color": "红"
+    },
+    {
+      "name": "陨星",
+      "slot": "脚部",
+      "color": "红"
+    },
+    {
+      "name": "落玫",
+      "slot": "头部",
+      "color": "紫"
+    },
+    {
+      "name": "落玫",
+      "slot": "手部",
+      "color": "紫"
+    },
+    {
+      "name": "落玫",
+      "slot": "脚部",
+      "color": "紫"
+    },
+    {
+      "name": "蜜丝糖",
+      "slot": "头部",
+      "color": "粉"
+    },
+    {
+      "name": "蜜丝糖",
+      "slot": "手部",
+      "color": "粉"
+    },
+    {
+      "name": "蜜丝糖",
+      "slot": "脚部",
+      "color": "粉"
+    },
+    {
+      "name": "风之律",
+      "slot": "头部",
+      "color": "绿"
+    },
+    {
+      "name": "风之律",
+      "slot": "手部",
+      "color": "绿"
+    },
+    {
+      "name": "风之律",
+      "slot": "脚部",
+      "color": "绿"
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "头部",
+      "color": "黄"
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "手部",
+      "color": "黄"
+    },
+    {
+      "name": "摇篮曲",
+      "slot": "脚部",
+      "color": "黄"
+    },
+    {
+      "name": "雪绒融",
+      "slot": "头部",
+      "color": "白"
+    },
+    {
+      "name": "雪绒融",
+      "slot": "手部",
+      "color": "白"
+    },
+    {
+      "name": "雪绒融",
+      "slot": "脚部",
+      "color": "白"
+    },
+    {
+      "name": "假面魔术",
+      "slot": "头部",
+      "color": "紫"
+    },
+    {
+      "name": "假面魔术",
+      "slot": "手部",
+      "color": "紫"
+    },
+    {
+      "name": "假面魔术",
+      "slot": "脚部",
+      "color": "紫"
+    },
+    {
+      "name": "心之吻",
+      "slot": "头部",
+      "color": "粉"
+    },
+    {
+      "name": "心之吻",
+      "slot": "手部",
+      "color": "粉"
+    },
+    {
+      "name": "心之吻",
+      "slot": "脚部",
+      "color": "粉"
+    },
+    {
+      "name": "曦晖",
+      "slot": "头部",
+      "color": "黄"
+    },
+    {
+      "name": "曦晖",
+      "slot": "手部",
+      "color": "黄"
+    },
+    {
+      "name": "曦晖",
+      "slot": "脚部",
+      "color": "黄"
+    },
+    {
+      "name": "梦之舞",
+      "slot": "头部",
+      "color": "粉"
+    },
+    {
+      "name": "梦之舞",
+      "slot": "手部",
+      "color": "粉"
+    },
+    {
+      "name": "梦之舞",
+      "slot": "脚部",
+      "color": "粉"
+    },
+    {
+      "name": "咏月",
+      "slot": "头部",
+      "color": "白"
+    },
+    {
+      "name": "咏月",
+      "slot": "手部",
+      "color": "白"
+    },
+    {
+      "name": "咏月",
+      "slot": "脚部",
+      "color": "白"
+    },
+    {
+      "name": "迷离浪",
+      "slot": "头部",
+      "color": "蓝"
+    },
+    {
+      "name": "迷离浪",
+      "slot": "手部",
+      "color": "蓝"
+    },
+    {
+      "name": "迷离浪",
+      "slot": "脚部",
+      "color": "蓝"
+    },
+    {
+      "name": "风荷",
+      "slot": "头部",
+      "color": "黄"
+    },
+    {
+      "name": "风荷",
+      "slot": "手部",
+      "color": "黄"
+    },
+    {
+      "name": "风荷",
+      "slot": "脚部",
+      "color": "黄"
+    },
+    {
+      "name": "游鱼",
+      "slot": "头部",
+      "color": "蓝"
+    },
+    {
+      "name": "游鱼",
+      "slot": "手部",
+      "color": "蓝"
+    },
+    {
+      "name": "游鱼",
+      "slot": "脚部",
+      "color": "蓝"
+    },
+    {
+      "name": "燎原",
+      "slot": "头部",
+      "color": "粉"
+    },
+    {
+      "name": "燎原",
+      "slot": "手部",
+      "color": "粉"
+    },
+    {
+      "name": "燎原",
+      "slot": "脚部",
+      "color": "粉"
+    },
+    {
+      "name": "月桂兔",
+      "slot": "头部",
+      "color": "黄"
+    },
+    {
+      "name": "月桂兔",
+      "slot": "手部",
+      "color": "黄"
+    },
+    {
+      "name": "月桂兔",
+      "slot": "脚部",
+      "color": "黄"
+    },
+    {
+      "name": "月莲笙",
+      "slot": "头部",
+      "color": "紫"
+    },
+    {
+      "name": "月莲笙",
+      "slot": "手部",
+      "color": "紫"
+    },
+    {
+      "name": "月莲笙",
+      "slot": "脚部",
+      "color": "紫"
+    },
+    {
+      "name": "墨影",
+      "slot": "头部",
+      "color": "白"
+    },
+    {
+      "name": "墨影",
+      "slot": "手部",
+      "color": "白"
+    },
+    {
+      "name": "墨影",
+      "slot": "脚部",
+      "color": "白"
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "头部",
+      "color": "粉"
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "手部",
+      "color": "粉"
+    },
+    {
+      "name": "晴雨悠游",
+      "slot": "脚部",
+      "color": "粉"
+    },
+    {
+      "name": "生命之书",
+      "slot": "头部",
+      "color": "绿"
+    },
+    {
+      "name": "生命之书",
+      "slot": "手部",
+      "color": "绿"
+    },
+    {
+      "name": "生命之书",
+      "slot": "脚部",
+      "color": "绿"
+    },
+    {
+      "name": "谕火",
+      "slot": "头部",
+      "color": "黄"
+    },
+    {
+      "name": "谕火",
+      "slot": "手部",
+      "color": "黄"
+    },
+    {
+      "name": "谕火",
+      "slot": "脚部",
+      "color": "黄"
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "头部",
+      "color": "蓝"
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "手部",
+      "color": "蓝"
+    },
+    {
+      "name": "霜刃之誓",
+      "slot": "脚部",
+      "color": "蓝"
+    },
+    {
+      "name": "星月仪",
+      "slot": "头部",
+      "color": "紫"
+    },
+    {
+      "name": "星月仪",
+      "slot": "手部",
+      "color": "紫"
+    },
+    {
+      "name": "星月仪",
+      "slot": "脚部",
+      "color": "紫"
+    },
+    {
+      "name": "泪之华",
+      "slot": "头部",
+      "color": "蓝"
+    },
+    {
+      "name": "泪之华",
+      "slot": "手部",
+      "color": "蓝"
+    },
+    {
+      "name": "泪之华",
+      "slot": "脚部",
+      "color": "蓝"
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "头部",
+      "color": "黄"
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "手部",
+      "color": "黄"
+    },
+    {
+      "name": "菇眠曲",
+      "slot": "脚部",
+      "color": "黄"
+    },
+    {
+      "name": "山水遥",
+      "slot": "头部",
+      "color": "绿"
+    },
+    {
+      "name": "山水遥",
+      "slot": "手部",
+      "color": "绿"
+    },
+    {
+      "name": "山水遥",
+      "slot": "脚部",
+      "color": "绿"
+    },
+    {
+      "name": "别红尘",
+      "slot": "头部",
+      "color": "绿"
+    },
+    {
+      "name": "别红尘",
+      "slot": "手部",
+      "color": "绿"
+    },
+    {
+      "name": "别红尘",
+      "slot": "脚部",
+      "color": "绿"
+    },
+    {
+      "name": "甜心派对",
+      "slot": "头部",
+      "color": "粉"
+    },
+    {
+      "name": "甜心派对",
+      "slot": "手部",
+      "color": "粉"
+    },
+    {
+      "name": "甜心派对",
+      "slot": "脚部",
+      "color": "粉"
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "头部",
+      "color": "蓝"
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "手部",
+      "color": "蓝"
+    },
+    {
+      "name": "祈晴夜",
+      "slot": "脚部",
+      "color": "蓝"
+    },
+    {
+      "name": "镜中萤",
+      "slot": "头部",
+      "color": "蓝"
+    },
+    {
+      "name": "镜中萤",
+      "slot": "手部",
+      "color": "蓝"
+    },
+    {
+      "name": "镜中萤",
+      "slot": "脚部",
+      "color": "蓝"
+    },
+    {
+      "name": "弦中诗",
+      "slot": "头部",
+      "color": "黄"
+    },
+    {
+      "name": "弦中诗",
+      "slot": "手部",
+      "color": "黄"
+    },
+    {
+      "name": "弦中诗",
+      "slot": "脚部",
+      "color": "黄"
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "头部",
+      "color": "蓝"
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "手部",
+      "color": "蓝"
+    },
+    {
+      "name": "稚意沫影",
+      "slot": "脚部",
+      "color": "蓝"
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "头部",
+      "color": "蓝"
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "手部",
+      "color": "蓝"
+    },
+    {
+      "name": "稚意酣眠",
+      "slot": "脚部",
+      "color": "蓝"
+    }
+  ],
+  "crop": {
+    "left": 0.07,
+    "right": 0.94,
+    "top": 0.14,
+    "bottom": 0.79
+  },
+  "normalization": "RGB 0..1; ImageNet mean/std embedded in graph",
+  "outputs": [
+    "identity_logits",
+    "colour_logits"
+  ]
+}
