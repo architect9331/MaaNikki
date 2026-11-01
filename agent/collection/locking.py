@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import re
+from zipfile import BadZipFile
 
 import cv2
 import numpy as np
@@ -10,11 +11,11 @@ import numpy as np
 from task_control import TaskStopped
 from daily.runtime import parameters
 from daily.settings import ROOT
+from .badge_classifier import BadgeClassifier, badge_roi as classifier_roi
 from .blessing import SLOTS
 from .details import COLOR_OCR_THRESHOLD, HEADER, tooltip_facts
 from file_io import write_json
 from .policy import capabilities
-from .quantity import stack_badge
 from .scanner import IncompleteObservation, InventoryScanner
 
 
@@ -91,12 +92,11 @@ class BlessingLocker(InventoryScanner):
         self._hover_box = None
         self._hover_panel = None
         self.stack_count_cache = {}
-        badge_path = ROOT / "resource/image/blessing_lock/card_locked.png"
-        badge = cv2.imdecode(np.fromfile(str(badge_path), np.uint8), cv2.IMREAD_COLOR)
-        if badge is None:
-            raise ValueError("列表锁标资源缺失")
-        self.card_lock_template = self.white_mask(badge) > 0
-        self.card_lock_gray = cv2.cvtColor(badge, cv2.COLOR_BGR2GRAY)
+        self.badge_classifier = None
+        try:
+            self.badge_classifier = BadgeClassifier(ROOT / "resource/model/blessing_badge.npz")
+        except (OSError, ValueError, KeyError, TypeError, EOFError, BadZipFile) as error:
+            self.rt.log(f"祝福闪光角标模型不可用，改用点击核验：{error}。", detail=True)
         stars_path = ROOT / "resource/image/blessing_lock/three_stars.png"
         stars = cv2.imdecode(np.fromfile(str(stars_path), np.uint8), cv2.IMREAD_GRAYSCALE)
         if stars is None:
@@ -139,6 +139,7 @@ class BlessingLocker(InventoryScanner):
             "card": self.image(prefix + ".png", self.region(frame, box)),
             "badge": self.image(prefix + "_badge.png", self.region(frame, badge_roi)),
             "lock": self.image(prefix + "_lock.png", self.region(frame, lock_roi)),
+            "classifier_patch": self.image(prefix + "_classifier.png", self.region(frame, classifier_roi(box))),
         }
         if error is not None:
             diagnostic.update(error=error, page=self.image(prefix + "_page.png", frame),
@@ -493,43 +494,16 @@ class BlessingLocker(InventoryScanner):
             "background": background, "state": state}
         return state
 
-    def card_lock_state(self, frame, box, labels):
-        """Positive evidence only: lock glyph, or a stack's white count tab."""
-        x, y, w, h = box
-        crop = self.region(frame, [x + w - 30, y + h - 35, 30, 32])
-        mask = self.white_mask(crop) > 0
-        template = self.card_lock_template
-        th, tw = template.shape
-        best = 0.0
-        for dy in range(mask.shape[0] - th + 1):
-            for dx in range(mask.shape[1] - tw + 1):
-                candidate = mask[dy:dy + th, dx:dx + tw]
-                union = np.count_nonzero(candidate | template)
-                best = max(best, np.count_nonzero(candidate & template) / union if union else 0)
-        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-        gray_score = float(cv2.matchTemplate(gray, self.card_lock_gray, cv2.TM_CCOEFF_NORMED).max())
-        # Tiny count digits are often absent from page OCR (22:23 run).
-        # Their broad white backing and dark strokes are still visible. A
-        # locked card has only a small lock glyph, never this count tab.
-        count_tab = stack_badge(frame, box)["state"] == "stack"
-        counts = []
-        for item in labels:
-            bx, by, bw, bh = list(item.box)
-            text = getattr(item, "text", "").strip()
-            if (float(getattr(item, "score", 0)) >= .90 and re.fullmatch(r"[0-9]{1,4}", text)
-                    and x + w - 32 <= bx and bx + bw <= x + w + 2
-                    and y + h - 30 <= by and by + bh <= y + h + 2 and int(text) >= 2):
-                counts.append(int(text))
-        state, source = None, "ambiguous"
-        if (best >= .90 or gray_score >= .94) and not counts and not count_tab:
-            state, source = "locked", "lock_glyph"
-        elif (len(counts) == 1 or count_tab) and best < .70 and gray_score < .70:
-            state, source = "unlocked", "stack_label" if counts else "stack_tab"
+    def card_lock_state(self, frame, box):
+        """Classify colour/gradient badges once; uncertain cases use selection."""
+        result = (self.badge_classifier.classify(frame, box) if self.badge_classifier is not None
+                  else {"badge_state": None, "reason": "model_unavailable"})
+        kind = result["badge_state"]
+        state = "locked" if kind == "locked" else "unlocked" if kind in ("stack", "single") else None
+        source = "classifier_" + kind if kind is not None else "ambiguous"
         stats = self.report.setdefault("card_state_sources", {})
         stats[source] = stats.get(source, 0) + 1
-        self.report["last_card_lock"] = {"box": list(box), "glyph_score": best,
-                                          "gray_score": gray_score, "count_tab": count_tab,
-                                          "counts": counts, "state": state, "source": source}
+        self.report["last_card_lock"] = {**result, "box": list(box), "state": state, "source": source}
         return state
 
     def lock_state(self, generation, *, frame=None):

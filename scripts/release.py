@@ -108,7 +108,7 @@ def verify_source():
     for model in read_json(ROOT / "build/resource-models.lock.json")["files"]:
         path = ROOT / model["path"]
         if path.stat().st_size != model["size"] or sha256(path) != model["sha256"]:
-            raise ValueError(f"OCR model changed: {model['path']}")
+            raise ValueError(f"Resource model changed: {model['path']}")
     interface = read_json(ROOT / "interface.json")
     for imported in interface.get("import", []):
         if not (ROOT / imported).is_file():
@@ -123,7 +123,7 @@ def verify_source():
         if path.stat().st_size >= 100 * 1024 * 1024:
             raise ValueError(f"Source file exceeds GitHub's 100 MiB limit: {path}")
     size = sum(path.stat().st_size for path in files)
-    print(f"Source verified: {len(files)} files, {size / 1024**2:.1f} MiB. OCR hashes verified.", flush=True)
+    print(f"Source verified: {len(files)} files, {size / 1024**2:.1f} MiB. Resource model hashes verified.", flush=True)
     return files
 
 

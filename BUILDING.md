@@ -60,6 +60,16 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Local -Python
 
 构建工具的 npm 缓存及安装诊断日志保存在 `.build/npm-cache/`。GitHub 自动构建失败时会将其中的日志保存为 `MaaNikki-build-npm-logs` 附件，保留 7 天，便于定位安装失败的具体原因。
 
+## 祝福闪光角标模型
+
+发布包包含训练好的三分类模型，运行时使用现有 NumPy 和 OpenCV。需要重新训练时，在开发 Python 中安装 `build/requirements-model-training.txt`，然后运行：
+
+```powershell
+python scripts/train_blessing_badge.py --logs logs/blessing-lock --version <模型版本> --update-lock
+```
+
+训练使用经锁按钮核验的锁定状态、已确认的堆叠数量，以及整仓容量核对通过的单个未锁定样本。模型保存彩色像素与梯度特征的线性 SVM 权重；训练日志和原图保留在本地。分类分数处于模型间隔内或特征超出训练范围时，仓库读取会改用点击核验。新模型的游戏内表现由实际运行确认。
+
 ## GitHub 自动发布
 
 普通提交和推送只同步源码。准备发布新版本时，递增 `interface.json` 中的项目版本号、完善 `CHANGELOG.md`，并将相关提交推送到默认分支 `main`，随后手动触发「Build Windows x64」工作流：

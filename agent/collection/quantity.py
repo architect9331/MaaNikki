@@ -48,7 +48,7 @@ def stack_badge(frame, box):
     return {"state": "uncertain" if possible else "single", "roi": [left, top, crop.shape[1], crop.shape[0]]}
 
 
-def read_count(owner, frame, box, locked, labels, generation, index):
+def read_count(owner, frame, box, locked, labels, generation, index, *, classification=None):
     """No digit OCR for single copies; ambiguous badges never default to one."""
     owner.check_generation(generation)
     stats = owner.report.setdefault("quantity_reads", {"single": 0, "page_ocr": 0, "local_ocr": 0, "cached": 0})
@@ -56,7 +56,23 @@ def read_count(owner, frame, box, locked, labels, generation, index):
     if locked:
         stats["single"] += 1
         return 1, {"source": "locked_single"}
+    kind = (classification.get("badge_state") if isinstance(classification, dict)
+            and classification.get("box") == list(box) else None)
+    # A clicked button is stronger evidence of lock state. Discard the model
+    # result if it disagrees with the caller's independently verified state.
+    if kind == "locked":
+        kind = None
+    if kind == "single":
+        stats["single"] += 1
+        return 1, {"source": "badge_classifier_single", "roi": classification["roi"],
+                   "model_version": classification["model_version"]}
     badge = stack_badge(frame, box)
+    if kind == "stack" and badge["state"] != "stack":
+        # Classification establishes that a count exists. Segmentation is an
+        # OCR aid, not a second vote that can silently turn a stack into one.
+        x, y, w, h = badge["roi"]
+        badge = {"state": "stack", "roi": [x, y, w, h],
+                 "patch": frame[y:y + h, x:x + w].copy()}
     if badge["state"] == "single":
         stats["single"] += 1
         return 1, {"source": "no_stack_badge", "roi": badge["roi"]}

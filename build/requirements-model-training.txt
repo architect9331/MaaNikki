@@ -1,0 +1,4 @@
+# Development-only training; exported models need the existing runtime NumPy/OpenCV.
+numpy==1.26.4
+opencv-python==4.10.0.84
+scikit-learn==1.4.2

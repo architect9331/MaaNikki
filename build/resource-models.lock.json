@@ -15,6 +15,12 @@
       "path": "resource/model/ocr/rec.onnx",
       "sha256": "7dcf6298d77d2a6eb44c1ebeed990826ca895a9c68d955a3eace00763d052949",
       "size": 21146753
+    },
+    {
+      "path": "resource/model/blessing_badge.npz",
+      "size": 87586,
+      "sha256": "6d375b3f47f42261bfeaa13a05a7f92dda1707d374f58b9fef9161baeb26bf3d",
+      "source": "MaaNikki confirmed inventory badge crops; scripts/train_blessing_badge.py"
     }
   ],
   "source": {

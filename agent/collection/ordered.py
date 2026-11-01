@@ -251,7 +251,8 @@ class OrderedView:
             raise RuntimeError("顺序记录身份或部位无法确认")
         flags = capabilities(self.o.catalog, facts["name"], observed=facts)
         inspect_lock = flags["lock_mutable"] or facts.get("catalog_unknown")
-        state = self.o.card_lock_state(frame, box, self.labels) if inspect_lock else "locked"
+        state = self.o.card_lock_state(frame, box) if inspect_lock else "locked"
+        badge_classification = dict(self.o.report["last_card_lock"]) if inspect_lock else None
         stats = self.o.report.setdefault("selection_stats", {"badge_reads": 0, "clicked_reads": 0})
         selected = inspect_lock and (verify_selection or state is None)
         if selected:
@@ -262,11 +263,13 @@ class OrderedView:
         locked = state == "locked"
         ordinal = self.ordinal(box)
         row = make_row(self.o, facts, locked, ordinal)
-        observation = {**evidence, "selected_for_observation": selected}
+        observation = {**evidence, "selected_for_observation": selected,
+                       "badge_classification": badge_classification}
         if quantities:
             try:
                 row["count"], row["count_evidence"] = read_count(
-                    self.o, frame, box, locked, self.labels, self.generation, self.o.counter)
+                    self.o, frame, box, locked, self.labels, self.generation, self.o.counter,
+                    classification=badge_classification)
             except RuntimeError as error:
                 self.o.record_card(frame, box, row, observation, self.generation, self.o.counter, error=str(error))
                 raise
@@ -441,11 +444,12 @@ class OrderedView:
         raise RecheckSlot(target["slot"], "目标已超出原有局部定位范围，核对该部位")
 
     def target_quantity(self, frame, box, row, evidence):
-        # Only the selected upgrade candidate needs a quantity. Singles use
-        # the badge shape directly; stacks reuse the page's existing OCR.
+        # Only the selected upgrade candidate needs a quantity. Reuse its
+        # same-frame badge classification; stacks then enter count OCR.
         try:
             count, proof = read_count(self.o, frame, box, row["locked"], self.labels,
-                                      self.generation, self.o.counter)
+                                      self.generation, self.o.counter,
+                                      classification=evidence.get("badge_classification"))
         except RuntimeError as error:
             self.o.record_card(frame, box, row, evidence, self.generation, self.o.counter, error=str(error))
             raise
