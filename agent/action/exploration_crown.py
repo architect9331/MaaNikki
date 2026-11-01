@@ -9,7 +9,7 @@ from registration import agent_action
 from daily.exploration import Exploration
 from daily.crown import Crown
 from daily.settings import ROOT
-from account_state import AccountState, period_key
+from account_state import AccountState
 
 
 @agent_action("nikki.feature_settings")
@@ -38,15 +38,14 @@ class CrownAction(CustomAction):
         rt = Crown(context)
         try:
             account = AccountState.for_runtime(ROOT, rt)
-            period = period_key("crown")
-            if account.complete("crown"):
-                rt.log("巅峰赛：本期已完成，跳过。")
+            target = rt.target_stars()
+            progress = account.crown_progress()
+            if account.complete("crown", target_stars=target):
+                rt.log(f"巅峰赛：本期 {progress[0]}/{progress[1]} 星，已达标并领完嘉奖，跳过。")
                 return True
-            completed = rt.run_crown()
+            completed = rt.run_crown(account, target)
             if not completed and not rt.stopped:
                 rt.diagnostic("crown", "巅峰赛流程未完成")
-            if completed and not rt.stopped:
-                account.confirm("crown", "challenge", "completed", period=period)
             return completed
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             rt.log(f"巅峰赛未完成：{error}。")

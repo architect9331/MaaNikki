@@ -2,13 +2,19 @@
   "task": [{
     "name": "crown", "label": "奇迹之冠巅峰赛", "entry": "MaaNikki_Crown",
     "group": ["daily"], "default_check": true,
-    "description": "使用游戏推荐搭配连续挑战已解锁的巅峰赛，并领取可用奖励。本期完成后自动跳过，下期恢复。",
-    "option": ["CrownRewards"]
+    "description": "使用游戏推荐搭配连续挑战并领取嘉奖，记录本期星数。达到目标且领完嘉奖后自动跳过，下期恢复。",
+    "option": ["CrownTargetStars", "CrownRewards"]
   }],
   "option": {
+    "CrownTargetStars": {
+      "type": "input", "layout": "inline", "label": "完成目标星数",
+      "description": "本期达到目标且领完嘉奖后自动跳过。星数达标时直接领奖；开始挑战后会持续挑战至流程结束。",
+      "inputs": [{"name": "stars", "label": "星数", "default": "12", "pipeline_type": "int", "verify": "^(?:[1-9]|1[0-9]|2[0-4])$", "pattern_msg": "请输入1至24之间的星数。"}],
+      "pipeline_override": {"MaaNikki_Crown_TargetStars": {"custom_action_param": {"value": "{stars}"}}}
+    },
     "CrownRewards": {
-      "type": "switch", "label": "赛事嘉奖与兑换", "default_case": "No",
-      "description": "挑战结束后领取赛事嘉奖，按清单顺序兑换商品，每项使用当前最大可兑换数量。兑换会消耗赛事货币。",
+      "type": "switch", "label": "晶石兑换", "default_case": "No",
+      "description": "领取嘉奖后，按清单顺序使用赛事货币兑换商品，每项使用当前最大可兑换数量。",
       "cases": [
         {"name": "Yes", "label": "开启", "option": ["CrownTargets"], "pipeline_override": {"MaaNikki_Crown_Rewards": {"custom_action_param": {"value": true}}}},
         {"name": "No", "label": "关闭", "pipeline_override": {"MaaNikki_Crown_Rewards": {"custom_action_param": {"value": false}}}}

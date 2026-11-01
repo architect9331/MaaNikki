@@ -100,6 +100,13 @@
     "post_delay": 0,
     "next": []
   },
+  "MaaNikki_Crown_TargetStars": {
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": 12
+    }
+  },
   "MaaNikki_Crown_Rewards": {
     "action": "Custom",
     "custom_action": "nikki.feature_settings",

@@ -1,4 +1,4 @@
-import { useAccountStateStore, periodCompleted, periodTaskLabel } from '@/stores/accountStateStore';
+import { useAccountStateStore, periodCompleted, periodTaskLabel, crownTargetStars, crownProgress } from '@/stores/accountStateStore';
 import { realmOptionActive } from '@/utils/nikkiOptions';
 import { XinghaiScoreHint } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -321,8 +321,15 @@ function OptionListRenderer({
 export function TaskItem({ instanceId, task }: TaskItemProps) {
   const account = useAccountStateStore((s) => s.data);
   const accountError = useAccountStateStore((s) => s.error);
-  const completedPeriod = periodCompleted(account, task.taskName);
-  const periodLabel = periodTaskLabel(task.taskName, completedPeriod, Boolean(task.enabled || task.runOnce));
+  const crownTarget = crownTargetStars(task.optionValues);
+  const completedPeriod = periodCompleted(account, task.taskName, crownTarget);
+  const progress = task.taskName === 'crown' ? crownProgress(account) : null;
+  const crownStatus = completedPeriod ? '已完成'
+    : task.enabled || task.runOnce ? (progress && progress.stars >= crownTarget ? '待领奖' : '将挑战')
+    : '未勾选';
+  const periodLabel = progress
+    ? `本期 ${progress.stars}/${progress.total} 星 · ${crownStatus}`
+    : periodTaskLabel(task.taskName, completedPeriod, Boolean(task.enabled || task.runOnce));
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

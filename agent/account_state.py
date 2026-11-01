@@ -151,6 +151,19 @@ class AccountState:
             if (not isinstance(record, dict) or not isinstance(record.get("period"), str)
                     or not isinstance(record.get("items"), dict)):
                 raise ValueError("账号周期任务记录格式无效")
+            if task == "crown" and "stars" in record:
+                if (type(record["stars"]) is not int or type(record.get("total")) is not int
+                        or not 0 <= record["stars"] <= record["total"] == 24
+                        or not isinstance(record.get("observed_at"), str)
+                        or datetime.fromisoformat(record["observed_at"]).tzinfo is None):
+                    raise ValueError("巅峰赛星数记录无效")
+            if task == "crown" and "awards" in record:
+                awards = record["awards"]
+                if (not isinstance(awards, dict) or type(awards.get("claimed_stars")) is not int
+                        or not 0 <= awards["claimed_stars"] <= 24
+                        or not isinstance(awards.get("confirmed_at"), str)
+                        or datetime.fromisoformat(awards["confirmed_at"]).tzinfo is None):
+                    raise ValueError("巅峰赛领奖记录无效")
             for item, receipt in record["items"].items():
                 if (item not in PERIOD_TASKS[task] or not isinstance(receipt, dict)
                         or receipt.get("outcome") not in OUTCOMES[task]
@@ -197,10 +210,54 @@ class AccountState:
         record = self.load()["tasks"].get(task, {})
         return dict(record.get("items", {})) if record.get("period") == (period or period_key(task)) else {}
 
-    def complete(self, task):
+    def crown_progress(self):
+        record = self.load()["tasks"].get("crown", {})
+        # Old completion receipts carry no star count. Keep them readable until
+        # the next calendar observation replaces them, but never infer stars.
+        if record.get("period") == period_key("crown") and "stars" in record:
+            return record["stars"], record["total"]
+        return None
+
+    def record_crown_progress(self, stars, total, *, period, source="calendar"):
+        if (type(stars) is not int or type(total) is not int
+                or not 0 <= stars <= total == 24 or source not in {"calendar", "awards"}):
+            raise ValueError("巅峰赛星数无效")
+        def change(data):
+            previous = data["tasks"].get("crown", {})
+            record = {
+                "period": period, "items": {}, "stars": stars, "total": total,
+                "observed_at": datetime.now(timezone.utc).isoformat(), "source": source,
+            }
+            if previous.get("period") == period and "awards" in previous:
+                record["awards"] = previous["awards"]
+            data["tasks"]["crown"] = record
+        self.update(change)
+
+    def record_crown_awards(self, stars, *, period):
+        if type(stars) is not int or not 0 <= stars <= 24:
+            raise ValueError("巅峰赛领奖星数无效")
+        def change(data):
+            record = data["tasks"].get("crown", {})
+            if record.get("period") != period or record.get("stars") != stars:
+                raise ValueError("巅峰赛领奖记录与当前星数不一致")
+            record["awards"] = {
+                "claimed_stars": stars, "confirmed_at": datetime.now(timezone.utc).isoformat(),
+                "source": "awards_list",
+            }
+        self.update(change)
+
+    def complete(self, task, *, target_stars=12):
+        if task == "crown":
+            record = self.load()["tasks"].get("crown", {})
+            stars = record.get("stars")
+            return (record.get("period") == period_key("crown") and stars is not None
+                    and stars >= target_stars
+                    and record.get("awards", {}).get("claimed_stars", -1) >= stars)
         return set(PERIOD_TASKS[task]).issubset(self.completed_items(task))
 
     def confirm(self, task, item, outcome, *, period):
+        if task == "crown":
+            raise ValueError("巅峰赛应记录实际星数")
         if item not in PERIOD_TASKS[task] or outcome not in OUTCOMES[task]:
             raise ValueError("未知的周期任务项目")
         def change(data):

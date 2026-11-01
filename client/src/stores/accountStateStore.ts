@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { isTauri } from '@/utils/paths';
 import { apiGet } from '@/utils/backendApi';
+import type { OptionValue } from '@/types/interface';
 
 export interface CollectionKey { name: string; slot: string; color: string }
 export interface BlessingSnapshot {
@@ -28,7 +29,12 @@ export interface AccountView {
       checked_at: string;
     };
   };
-  tasks: Record<string, { period: string; items: Record<string, { outcome: string; confirmed_at: string }> }>;
+  tasks: Record<string, {
+    period: string;
+    items: Record<string, { outcome: string; confirmed_at: string }>;
+    stars?: number; total?: number; observed_at?: string;
+    awards?: { claimed_stars: number; confirmed_at: string };
+  }>;
   blessing: BlessingSnapshot | null;
   catalog: { version: string | number; sets: { name: string; rarity: number; source: string; colors: string[]; collection_target?: boolean }[] };
   rotation: {
@@ -55,13 +61,36 @@ export function periodKey(task: string, now = Date.now()): string {
   const month = day.toISOString().slice(0, 7);
   return task === 'crown' ? `${month}-${day.getUTCDate() < 16 ? '01' : '16'}` : month;
 }
-export function periodCompleted(data: AccountView | null, task: string): boolean {
+export function crownTargetStars(values: Record<string, OptionValue>): number {
+  const option = values.CrownTargetStars;
+  const raw = option?.type === 'input' ? option.values.stars : undefined;
+  return raw && /^(?:[1-9]|1[0-9]|2[0-4])$/.test(raw) ? Number(raw) : 12;
+}
+export function crownProgress(data: AccountView | null): { stars: number; total: number } | null {
+  const record = data?.tasks?.crown;
+  if (record?.period !== periodKey('crown') || typeof record.stars !== 'number' ||
+      !Number.isInteger(record.stars) || record.total !== 24 ||
+      record.stars < 0 || record.stars > record.total ||
+      !record.observed_at || !Number.isFinite(Date.parse(record.observed_at))) return null;
+  return { stars: record.stars, total: record.total };
+}
+export function crownAwardsClaimed(data: AccountView | null): boolean {
+  const progress = crownProgress(data);
+  const awards = data?.tasks?.crown?.awards;
+  return Boolean(progress && awards && Number.isInteger(awards.claimed_stars) &&
+    awards.claimed_stars >= progress.stars && awards.claimed_stars <= progress.total &&
+    Number.isFinite(Date.parse(awards.confirmed_at)));
+}
+export function periodCompleted(data: AccountView | null, task: string, targetStars = 12): boolean {
+  if (task === 'crown') {
+    const progress = crownProgress(data);
+    return progress !== null && progress.stars >= targetStars && crownAwardsClaimed(data);
+  }
   const required = requiredItems[task];
   const record = data?.tasks?.[task];
   const outcomes: Record<string, string[]> = {
     weekly_free_gifts: ["claimed", "sold_out"],
     monthly_crystal_exchange: ["exchanged", "already_exchanged", "sold_out"],
-    crown: ["completed"],
   };
   return Boolean(required && record?.period === periodKey(task) && required.every((key) =>
     record.items?.[key] && outcomes[task].includes(record.items[key].outcome) &&

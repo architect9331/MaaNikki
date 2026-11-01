@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from task_control import task_time as time
 import re
+import cv2
 
+from account_state import period_key
 from .runtime import Runtime, parameters
 
 
@@ -13,7 +15,7 @@ def parse_progress(raw):
     if len(matches) != 1:
         return None
     current, total = map(int, matches[0])
-    return (current, total) if 0 <= current <= total <= 999 and total > 0 else None
+    return (current, total) if 0 <= current <= total == 24 else None
 
 
 class Crown(Runtime):
@@ -57,24 +59,85 @@ class Crown(Runtime):
     def area_click(self, name):
         return self.action("Click", target=self.ui.roi(name))
 
+    def dialogue_visible(self):
+        with self.observe():
+            return bool(self.asset("IconSkipDialog") or self.text(
+                self.ui.roi("IconSkipDialog"), r"跳过$"))
+
     def skip_dialogue(self):
         # Confirm absence twice: a transition frame can temporarily hide the prompt.
         while not self.stopped:
             if not self.pause(.5):
                 return False
-            if not self.asset("IconSkipDialog"):
+            if not self.dialogue_visible():
                 if not self.pause(.5):
                     return False
-                if not self.asset("IconSkipDialog"):
+                if not self.dialogue_visible():
                     return True
             if not self.key("interact", 0):
                 return False
         return False
 
     def reward_popup(self):
-        if self.wait_asset("IconClickSkip"):
-            return self.pause(1) and self.key("interact", 0)
-        return False
+        def visible():
+            with self.observe():
+                return bool(self.hit("MaaNikki_RewardOverlayReady") or self.asset("IconClickSkip"))
+
+        if not self.ui.wait_page(visible, seconds=3):
+            return False
+        if self.hit("MaaNikki_RewardOverlayReady"):
+            # A challenge reward returns to arena dialogue, while an entry
+            # reward returns to the lobby. Confirm dismissal, not its parent.
+            return bool(self.click_template("MaaNikki_Crown_EntryRewardContinue",
+                                            attempts=1, wait_seconds=0, verify=False)
+                        and self.ui.wait_page(lambda: not self.hit("MaaNikki_RewardOverlayReady")))
+        return bool(self.pause(1) and self.key("skip", 0)
+                    and self.ui.wait_page(lambda: not visible()))
+
+    def challenge_transition(self, *, result_dismissed=False):
+        """Follow arena rewards and dialogue until a positive next-state signal."""
+        # Use the arena's existing 60-second transition budget. A missing
+        # dialogue option is an unknown state, not evidence of completion.
+        deadline, dialogue_seen = time.monotonic()+60, False
+        roi = self.ui.roi("AreaDialogSelection")
+
+        def world_ready():
+            with self.observe():
+                return (not self.hit("MaaNikki_RewardOverlayReady")
+                        and not self.dialogue_visible()
+                        and not self.text(roi, r"继续挑战|开始挑战")
+                        and self.hit("MaaNikki_MainDetected"))
+
+        while not self.stopped and time.monotonic() < deadline:
+            with self.observe(fresh=True):
+                reward = bool(self.hit("MaaNikki_RewardOverlayReady") or self.asset("IconClickSkip"))
+                choice = None if reward else self.recognize("MaaNikki_Daily_OCR", {
+                    "roi": roi, "expected": "继续挑战|开始挑战"})
+                choice = choice if choice and choice.hit else None
+                dialogue = not (reward or choice) and self.dialogue_visible()
+                settled = not (reward or choice or dialogue)
+                summit = settled and self.hit("MaaNikki_Crown_SummitReady")
+                world = (settled and (dialogue_seen or result_dismissed)
+                         and self.hit("MaaNikki_MainDetected"))
+                if choice:
+                    self.require(self.action("Click", target=list(choice.box)), "未能选择继续挑战")
+                    return "challenge"
+            if reward:
+                self.require(self.reward_popup(), "未能关闭本关挑战奖励")
+                result_dismissed = True
+            elif dialogue:
+                dialogue_seen = True
+                self.require(self.key("skip", .5), "未能继续赛场对话")
+            elif summit and self.ui.wait_page("MaaNikki_Crown_SummitReady"):
+                return "rewards"
+            elif world and self.ui.wait_page(world_ready, seconds=2):
+                return "rewards"
+            elif not self.pause(.25):
+                break
+        if self.stopped:
+            return "stopped"
+        self.diagnostic("crown_challenge_transition", "未能确认继续挑战选项或挑战结束页面")
+        raise RuntimeError("等待赛场奖励与对话结束超时")
 
     def challenge_talk_visible(self):
         # Prompt text can be readable before the old white-letter template
@@ -210,12 +273,12 @@ class Crown(Runtime):
             recover=lambda: self.open_summit() and choose_door(), seconds=30), "未进入巅峰赛内部")
         self.start_challenge_dialogue()
 
+        result_dismissed = False
         while not self.stopped:
-            self.require(self.skip_dialogue() and self.pause(.5), "挑战已停止")
-            roi = self.ui.roi("AreaDialogSelection")
-            if not (self.ui.find(roi=roi, text="继续挑战", scroll=False)
-                    or self.ui.find(roi=roi, text="开始挑战", scroll=False)):
-                return "rewards"
+            state = self.challenge_transition(result_dismissed=result_dismissed)
+            if state != "challenge":
+                return state
+            result_dismissed = False
             self.require(self.skip_dialogue(), "挑战已停止")
             self.wait_asset("ButtonMiraCrownNextStep")
             self.pause(1)
@@ -228,6 +291,8 @@ class Crown(Runtime):
             deadline = time.monotonic() + 20
             while not self.stopped and time.monotonic() < deadline:
                 self.wait_asset("ButtonMiraCrownSkipAll", attempts=1, click=True)
+                if self.hit("MaaNikki_RewardOverlayReady"):
+                    break
                 if self.asset("IconClickSkip"):
                     self.key("interact", 0)
                     break
@@ -236,30 +301,65 @@ class Crown(Runtime):
                 if not self.stopped:
                     self.key("interact", 0)
             self.pause(2)
-            self.reward_popup()
-            if self.hit("MaaNikki_MainDetected"):
-                return "rewards"
+            result_dismissed = self.reward_popup()
         return "stopped"
 
-    def rewards(self):
-        if not parameters(self.context, "MaaNikki_Crown_Rewards").get("value", False):
-            self.log("未开启赛事嘉奖与兑换，本次跳过。", detail=True)
+    def claim_awards(self, account, award):
+        period = period_key("crown")
+        stars, _ = self.read_progress(account, source="awards")
+        # Claimable rewards are always at the top of the opened list.
+        # Search the visible gift-button column without scrolling.
+        gifts = [820, 230, 60, 290]
+        deadline = time.monotonic()+60
+        claimed = False
+
+        def page_frame():
+            with self.observe(fresh=True):
+                frame = self.frame()
+                self.require(frame is not None and self.ui.page_matches(award), "未能确认嘉奖列表")
+                return frame
+
+        while not self.stopped and time.monotonic() < deadline:
+            frame = page_frame()
+            # Compare the white gift glyph, not its pink button background.
+            # Mean-centered correlation distinguishes the gift structure from
+            # both the claimed checkmark and a similarly colored empty row.
+            box = self.ui.asset("ButtonMiraCrownRewardGet", image=frame, roi=gifts,
+                                color=([0, 0, 210], [180, 50, 255]),
+                                method=cv2.TM_CCOEFF_NORMED)
+            if box:
+                self.require(self.action("Click", target=box), "未能点击嘉奖领取按钮")
+                self.require(self.reward_popup(), "未能确认嘉奖领取结果")
+                self.require(self.ui.wait_page(award), "领取后未能返回嘉奖列表")
+                claimed = True
+                continue
+            if not self.stopped:
+                account.record_crown_awards(stars, period=period)
+                self.log("巅峰赛嘉奖已领取。" if claimed else "巅峰赛嘉奖已领完。")
             return
+        if not self.stopped:
+            self.diagnostic("crown_awards", "嘉奖列表领取超时")
+            raise RuntimeError("等待嘉奖领取完成超时")
+
+    def rewards(self, account):
         self.require(self.open_summit(), "未能进入巅峰赛")
-        award = self.ui.feature(text="赛事嘉奖", roi=[0, 0, 1280, 230])
+        award = self.ui.feature(text="赛事嘉奖|献予胜者的嘉奖", roi=[0, 0, 1280, 230])
         self.require(self.ui.enter_page(lambda: self.wait_asset("ButtonMiraCrownAward", click=True),
             award, source="MaaNikki_Crown_SummitReady", recover=self.open_summit), "未能进入赛事嘉奖")
-        if self.wait_asset("ButtonMiraCrownRewardGet", click=True):
-            self.reward_popup()
-        else:
-            self.log("当前暂无赛事嘉奖可领取。", detail=True)
+        self.claim_awards(account, award)
+        if self.stopped:
+            return
         self.require(self.ui.enter_page(lambda: self.key("menu", 0), "MaaNikki_Crown_SummitReady",
             source=award, recover=self.open_summit), "未能关闭赛事嘉奖")
+        if not parameters(self.context, "MaaNikki_Crown_Rewards").get("value", False):
+            return
+        raw = parameters(self.context, "MaaNikki_Crown_Targets").get("value", "启示水晶,共鸣水晶")
+        targets = [part.strip() for part in raw.replace("，", ",").split(",") if part.strip()]
+        if not targets:
+            return
         shop = self.ui.feature(text="晶石兑换", roi=[0, 0, 1280, 230])
         self.require(self.ui.enter_page(lambda: self.wait_asset("ButtonMiraCrownShop", click=True),
             shop, source="MaaNikki_Crown_SummitReady", recover=self.open_summit), "未能进入晶石兑换")
-        raw = parameters(self.context, "MaaNikki_Crown_Targets").get("value", "启示水晶,共鸣水晶")
-        targets = [part.strip() for part in raw.replace("，", ",").split(",") if part.strip()]
         for target in dict.fromkeys(targets):
             if self.stopped:
                 return
@@ -274,23 +374,21 @@ class Crown(Runtime):
             self.log(f"已兑换“{target}”。")
             self.pause(.5)
 
-    def run_crown(self):
-        self.log("正在检查巅峰赛进度；切出游戏会暂停，切回后自动继续。")
-        from .starsea import HUB, Starsea
-        travel = Starsea(self, self.ui.resource)
-        try:
-            with self.input_guard():
-                teleporter = travel.teleporter()
-                if teleporter.player_in_home():
-                    self.log("当前位于家园，正在传送到星海无界枢纽后检查奇迹之冠。", detail=True)
-                    teleporter.transport(HUB)
-                else:
-                    self.require(self.main(), "确认当前地图后未能返回主界面")
-        finally:
-            travel.report("crown_world")
-        self.require(self.ui.calendar(), "未能打开奇想日历")
+    def target_stars(self):
+        raw = parameters(self.context, "MaaNikki_Crown_TargetStars").get("value", 12)
+        if isinstance(raw, bool) or re.fullmatch(r"(?:[1-9]|1[0-9]|2[0-4])", str(raw)) is None:
+            raise ValueError("巅峰赛完成目标须为1至24星")
+        return int(raw)
+
+    def read_progress(self, account, *, source="calendar"):
+        if source == "calendar":
+            self.require(self.ui.calendar(), "未能打开奇想日历")
+            roi = self.ui.roi("AreaMiraCrownOverview")
+        elif source == "awards":
+            roi = [820, 175, 110, 45]
+        else:
+            raise ValueError("未知的巅峰赛星数来源")
         previous, progress = None, None
-        roi = self.ui.roi("AreaMiraCrownOverview")
         for _ in range(6):
             frame = self.capture()
             raw = self.text(roi, image=frame) if frame is not None else ""
@@ -302,17 +400,46 @@ class Crown(Runtime):
             if not self.pause(.4):
                 break
         self.require(progress is not None, "未能读取巅峰赛进度")
-        current, total = progress
-        self.log(f"奇迹之冠巅峰赛进度：{current}/{total}。")
-        if current > 12:
-            self.log("本期巅峰赛已挑战，本次跳过。")
+        # Persist only an observed star count, including zero. Successful
+        # inputs or a completed challenge flow do not establish its star score.
+        account.record_crown_progress(*progress, period=period_key("crown"), source=source)
+        return progress
+
+    def run_crown(self, account, target):
+        self.log("正在检查巅峰赛进度；切出游戏会暂停，切回后自动继续。")
+        # The calendar exposes the same star count inside and outside home.
+        # World preparation is needed only when entering the challenge/lobby.
+        current, total = self.read_progress(account)
+        self.log(f"奇迹之冠巅峰赛进度：{current}/{total} 星，完成目标 {target} 星。")
+        if account.complete("crown", target_stars=target):
+            self.log("本期巅峰赛已达标并领完嘉奖，跳过。")
             return True
+        challenge_needed = current < target
+        if not challenge_needed:
+            self.log("本期巅峰赛星数已达标，直接领取嘉奖。")
+        from .starsea import HUB, Starsea
+        travel = Starsea(self, self.ui.resource)
+        try:
+            with self.input_guard():
+                teleporter = travel.teleporter()
+                if teleporter.player_in_home():
+                    self.log("当前位于家园，正在传送到星海无界枢纽后处理巅峰赛。", detail=True)
+                    teleporter.transport(HUB)
+                else:
+                    self.require(self.main(), "确认当前地图后未能返回主界面")
+        finally:
+            travel.report("crown_world")
         with self.input_guard():
-            state = self.challenge()
-            if state == "rewards":
-                if not parameters(self.context, "MaaNikki_Crown_Rewards").get("value", False):
-                    self.log("未开启赛事嘉奖与兑换，本次跳过。", detail=True)
-                    return not self.stopped
-                self.rewards()
-                return self.main() and not self.stopped
-            return state == "finished" and not self.stopped
+            if challenge_needed:
+                state = self.challenge()
+                if state not in {"rewards", "finished"}:
+                    return False
+            if self.stopped:
+                return False
+            self.rewards(account)
+            if self.stopped:
+                return False
+            self.require(self.main(), "挑战后未能返回主界面")
+            final, total = self.read_progress(account)
+            self.log(f"巅峰赛本期星数：{current} → {final}/{total} 星，完成目标 {target} 星。")
+            return not self.stopped
