@@ -23,7 +23,7 @@
   "heads": "Select weights by known part_id; logits = embedding @ weights.T * scale",
   "classes": "Part-local class_id indexes labels.json; return all item_ids in that row",
   "label_fingerprint": "d19293f1025dc0371985cabe9209e0101f66ba5b294d94b1ff8b5d4b2ce9978c",
-  "preprocess_sha256": "2aa9b1f4223222dc911db574d923c74a7d9f4c184d3be71b0f9e1dedad183ca3",
+  "preprocess_sha256": "f5514b28c4fefc128059d20d6f0b58d5f240209abfe580b4a69a9459185ad70e",
   "best_epoch": 8,
   "open_set": "Closed-set training; unknown acceptance has not been calibrated",
   "files": {
@@ -52,16 +52,16 @@
       "sha256": "1e33ce4d5bb0198cbc3d9f42c4ee0b6bb68a2f0a9f728cab0c4f73c729350532"
     },
     "preprocess.json": {
-      "bytes": 1484,
-      "sha256": "2aa9b1f4223222dc911db574d923c74a7d9f4c184d3be71b0f9e1dedad183ca3"
+      "bytes": 1362,
+      "sha256": "f5514b28c4fefc128059d20d6f0b58d5f240209abfe580b4a69a9459185ad70e"
     },
     "parts.json": {
-      "bytes": 2787,
-      "sha256": "755282f6c4005726a8787837e34b347c8331bd545fc8c466007ea9cc75102a93"
+      "bytes": 2641,
+      "sha256": "2c44fd6ba8a178d37ce491d891aef5a9fea435af5c5c7979ff2f6c5c86db02f6"
     },
     "coverage.json": {
-      "bytes": 64909,
-      "sha256": "e0eaae5109b03a6497084974e05ffeea798265fa2da3f24624277ea70bdcbc6f"
+      "bytes": 62231,
+      "sha256": "f0ae96d255e75ed2a688adefb6f60b6f076ae2bd251dee894c8750d1f11fd3b6"
     },
     "labels.json": {
       "bytes": 732916,
