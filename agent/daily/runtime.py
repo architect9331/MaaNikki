@@ -464,8 +464,9 @@ class Runtime:
         return observed
 
     def read_account_uid(self, image):
-        if image is None:
+        if image is None or not self.image_current(image):
             return None
+        generation = self._focus_generation
         from .ui import fields
         node = "MaaNikki_Asset_AccountUid"
         # OCR ends before the network status; diagnostic masking deliberately
@@ -474,35 +475,31 @@ class Runtime:
         crop = image[y:y+h, x:x+w]
         if crop.size == 0:
             return None
-        # UID is only a small footer. Enlarge the same pixels rather than
-        # expanding into unrelated screen numbers or substituting OCR digits.
+        # The fixed footer ends before network/status numbers. Its Latin
+        # label is decorative for identity: OCR may omit or misread it.
         crop = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
         result = self.recognize(node, {
             "roi": [0, 0, w*3, h*3], "expected": ".+"}, image=crop)
-        if not result or not result.hit:
+        if self._focus_generation != generation:
             return None
+        candidates = self.account_uid_candidates(result)
+        return next(iter(candidates)) if len(candidates) == 1 else None
+
+    @staticmethod
+    def account_uid_candidates(result):
+        if not result or not result.hit:
+            return set()
         rows = list(getattr(result, "filtered_results", []) or [result.best_result])
         candidates = set()
-        for index, row in enumerate(rows):
+        for row in rows:
             text = re.sub(r"\s+", "", str(getattr(row, "text", "")))
-            if re.fullmatch(r"(?i)UID[:：]?", text) and index + 1 < len(rows):
-                # OCR may split the label and number. Join only neighboring
-                # blocks on the same line, with the number right of its label.
-                following = rows[index + 1]
-                number = re.sub(r"\s+", "", str(getattr(following, "text", "")))
-                label_box = getattr(row, "box", None)
-                number_box = getattr(following, "box", None)
-                if (label_box is not None and number_box is not None
-                        and re.fullmatch(r"[0-9]{1,32}", number)
-                        and number_box[0] >= label_box[0] + label_box[2]
-                        and max(label_box[1], number_box[1])
-                        < min(label_box[1] + label_box[3], number_box[1] + number_box[3])):
-                    text += number
-            match = re.fullmatch(r"(?i)UID[:：]?([0-9]{1,32})", text)
+            # Read the trailing number independently of the prefix, including
+            # a number-only OCR block. Do not substitute letters into digits.
+            match = re.search(r"(?<![0-9])([0-9]{1,32})$", text)
             if match:
                 candidates.add(match[1])
-        # Multiple distinct identities are ambiguous; never bind one by order.
-        return next(iter(candidates)) if len(candidates) == 1 else None
+        # Distinct number blocks remain ambiguous; never choose one by order.
+        return candidates
 
     def verify_account_uid(self):
         """Recheck visible identity before saving; hidden UID keeps only this task's binding."""
@@ -517,6 +514,14 @@ class Runtime:
             return
         image = self.frame()
         observed = self.read_account_uid(image)
+        if (observed is not None and self._account_uid is not None
+                and len(observed) == len(self._account_uid)
+                and sum(left != right for left, right in zip(observed, self._account_uid)) == 1):
+            # The account stays fixed during this run. One substituted OCR
+            # digit reuses the already-bound save, rather than changing its
+            # owner. Fresh runs still bind from the observed number directly.
+            self.evidence.observe("account_uid", method="bound_uid_reuse", differing_digits=1)
+            observed = self._account_uid
         if observed is not None and observed != self._account_uid:
             self._account_mismatch = True
             if session:
