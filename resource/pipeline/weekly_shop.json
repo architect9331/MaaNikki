@@ -8,10 +8,9 @@
     "next": []
   },
   "MaaNikki_Shop_PageReady": {
-    "recognition": "TemplateMatch",
+    "recognition": "OCR",
     "roi": [65, 15, 80, 45],
-    "template": "game/shop/title.png",
-    "threshold": 0.88,
+    "expected": "^商城$",
     "action": "DoNothing"
   },
   "MaaNikki_Shop_GiftsTab": {
