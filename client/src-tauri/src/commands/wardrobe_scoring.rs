@@ -32,10 +32,7 @@ fn load() -> Result<Value, String> {
             }
         }
     }
-    let blessing = ["inventory", "last_scan"]
-        .iter()
-        .filter_map(|name| role["blessing"].get(name).filter(|value| value.is_object()))
-        .max_by_key(|value| value["record"]["updated_at"].as_str().unwrap_or(""));
+    let blessing = blessing_profile(&role["blessing"]);
     let catalog = read_json(&get_exe_directory()?.join("resource/data/wardrobe_scoring.json"))?
         .ok_or("缺少搭配计分资料，请更新资源。")?;
     if catalog["schema_version"] != 1 {
@@ -43,9 +40,50 @@ fn load() -> Result<Value, String> {
     }
     Ok(json!({
         "account_key": key, "uid": role["uid"], "snapshot": snapshot,
-        "blessing": blessing.map(|value| json!({"locks": value["locks"], "items": value["items"]})),
+        "blessing": blessing,
         "settings": wardrobe.get("scoring"), "catalog": catalog,
     }))
+}
+
+/// Pursuit snapshots do not read lock states, so their own lock list is empty even
+/// though they are the newest. Locks come from the last snapshot that read them, plus
+/// the pieces a later pursuit confirmed locked, which are always five-star full level.
+fn blessing_profile(blessing: &Value) -> Option<Value> {
+    let updated_at = |value: &&Value| {
+        value["record"]["updated_at"]
+            .as_str()
+            .unwrap_or("")
+            .to_owned()
+    };
+    let snapshots: Vec<&Value> = ["inventory", "last_scan"]
+        .iter()
+        .filter_map(|name| blessing.get(name).filter(|value| value.is_object()))
+        .collect();
+    let latest = snapshots.iter().copied().max_by_key(updated_at)?;
+    let read = snapshots
+        .iter()
+        .copied()
+        .filter(|value| {
+            value["locks"]["groups"]
+                .as_array()
+                .is_some_and(|groups| !groups.is_empty())
+        })
+        .max_by_key(updated_at);
+    let mut locks = read.map_or_else(|| latest["locks"].clone(), |value| value["locks"].clone());
+    let newer = read.is_none_or(|value| updated_at(&value) < updated_at(&latest));
+    if newer && latest["pursuit"]["existing_colors_checked"] == true {
+        let confirmed = latest["pursuit"]["parts"].as_array().into_iter().flatten().flat_map(|part| {
+            part["locked_colors"].as_array().into_iter().flatten().map(|color| {
+                json!({"name": part["name"], "slot": part["slot"], "color": color, "level": 10, "locked_count": 1})
+            })
+        });
+        let confirmed: Vec<Value> = confirmed.collect();
+        match locks.get_mut("groups").and_then(Value::as_array_mut) {
+            Some(groups) => groups.extend(confirmed),
+            None => locks = json!({"groups": confirmed}),
+        }
+    }
+    Some(json!({"locks": locks, "items": latest["items"]}))
 }
 
 fn nonnegative(value: &Value) -> bool {
