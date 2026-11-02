@@ -404,6 +404,16 @@ class FiveStarInventory(BlessingLocker):
         except (OSError, ValueError, KeyError, TypeError) as error:
             self.rt.log(f"噗灵统计保存失败：{error}。", detail=True)
 
+    def warehouse_full(self):
+        """True only on a confirmed full count: an unread label must not stop farming."""
+        try:
+            if not self.open():
+                return False
+            counts = self.capacity_values(self.clear_hover(self.rt._focus_generation))
+        except IncompleteObservation:
+            return False
+        return len(counts) == 1 and counts[0][0] >= counts[0][1]
+
     def observe_bling(self, balance):
         """Keep the balance the upgrade page showed; it also prices the last refill."""
         refill = self.organization.pop("bling_refill", None)

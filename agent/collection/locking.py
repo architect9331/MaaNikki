@@ -15,7 +15,7 @@ from .blessing import SLOTS
 from .details import HEADER
 from file_io import write_json
 from .policy import capabilities
-from .scanner import IncompleteObservation, InventoryScanner
+from .scanner import IncompleteObservation, InventoryScanner, clean_text
 
 
 READY = "MaaNikki_Blessing_InventoryReady"
@@ -212,6 +212,17 @@ class BlessingLocker(InventoryScanner):
                 self.check_generation(generation)
         reason = "悬停提示尚未关闭" if visible else "格子高亮尚未稳定"
         raise IncompleteObservation(reason + "，未继续读取或翻页")
+
+    def capacity_values(self, frame):
+        """Used and total copies; the game can show more used than total, e.g. 1006/1000."""
+        counts = []
+        for item in self.ocr(self.layout["capacity"], frame):
+            match = re.search(r"(\d+)[/／](\d+)", clean_text(item.text))
+            if match and float(getattr(item, "score", 0)) >= .90:
+                used, limit = int(match.group(1)), int(match.group(2))
+                if 0 <= used <= 10000 and 0 < limit <= 10000:
+                    counts.append((used, limit))
+        return counts
 
     def scroll_list(self, amount):
         # Generic ui.scroll waits .2 s with the pointer still over the grid;

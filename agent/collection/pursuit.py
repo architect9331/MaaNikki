@@ -21,23 +21,35 @@ class FiveStarPursuit:
         inventory.share_statistics = share_statistics
         self.supply = CollectionSupply(self.rt, inventory)
 
-    def clear_duplicates(self):
-        """Optional cleanup: unsubmitted failures never affect the finished work."""
-        if not self.decompose_duplicates:
-            return
+    def make_room(self):
+        """A full warehouse blocks farming, though the last batch may overflow it.
+
+        Returns whether farming can go ahead. A decomposition failure before
+        submission only skips today's farming; a submitted batch stays pending.
+        """
         stock = self.inventory
-        try:
-            DuplicateDecomposer(stock).run()
-        except TaskStopped:
-            raise
-        except (RuntimeError, ValueError, KeyError, TypeError, RescanSlot, cv2.error) as error:
-            if stock.pending is not None:
-                raise  # A submitted batch stays pending for the next recovery.
-            stock.report["duplicate_decomposition"] = {
-                **stock.report.get("duplicate_decomposition", {}), "complete": False, "reason": str(error)}
-            self.rt.diagnostic("blessing_duplicates", str(error))
-            self.rt.log(f"五星重复分解未完成：{error}。本步骤未提交的选择不会生效，刷本和升级结果不受影响。",
-                        ui_text=f"五星重复分解跳过：{error}。")
+        if not stock.warehouse_full():
+            return True
+        # New drops must be read and queued before auto-fill could reach them.
+        stock.process_inventory()
+        if self.decompose_duplicates:
+            try:
+                DuplicateDecomposer(stock).run()
+            except TaskStopped:
+                raise
+            except (RuntimeError, ValueError, KeyError, TypeError, RescanSlot, cv2.error) as error:
+                if stock.pending is not None:
+                    raise
+                stock.report["duplicate_decomposition"] = {"complete": False, "reason": str(error)}
+                self.rt.diagnostic("blessing_duplicates", str(error))
+                self.rt.log(f"五星分解未完成：{error}。", ui_text=f"五星分解未完成：{error}。")
+        if not stock.warehouse_full():
+            return True
+        message = ("祝福闪光仓库已满且本次未能腾出空间，今天不刷本。" if self.decompose_duplicates else
+                   "祝福闪光仓库已满，今天不刷本。请开启「分解五星祝福闪光」或手动分解。")
+        stock.report["warehouse_full"] = True
+        self.rt.log(message, ui_text=message)
+        return False
 
     def acquire(self, kind, source=None, *, alternatives=()):
         self.inventory.report["phase"] = "realm_supply"
@@ -98,7 +110,6 @@ class FiveStarPursuit:
                                 reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量",
                                 inventory={"reused": True})
             self.rt.log(stock.report["reason"])
-            self.clear_duplicates()
             stock.save()
             return True
         # One decision per day. Existing embryos go first; only what they leave decides.
@@ -108,7 +119,7 @@ class FiveStarPursuit:
             self.rt.log("素材激化未消耗活跃能量（可能缺少材料），今天继续刷胚子。",
                         ui_text="素材激化未执行，改刷胚子。")
             short = False
-        if not short and "recovered_reward" not in stock.report:
+        if not short and "recovered_reward" not in stock.report and self.make_room():
             self.spend_energy()
         if stock.organization.get("decomposition_pending"):
             # Clear low-rarity drops before reading acquisition order. The
@@ -117,7 +128,6 @@ class FiveStarPursuit:
             LowRarityDecomposer(stock).run()
         # Even with no energy, process the saved unfinished item and inventory.
         outcome = stock.process_inventory()
-        self.clear_duplicates()
         reasons = {
             "collection_complete": "本地图鉴内五星颜色已收齐，可选择其他幻境",
             "bling_shortage": "升级噗灵不足，已保存进度；可切换普通幻境挑战刷噗灵，补充后继续",

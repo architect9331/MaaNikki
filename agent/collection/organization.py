@@ -264,16 +264,8 @@ class BlessingOrganizer(BlessingLocker):
 
     def read_capacity(self):
         frame = self.clear_hover(self.organization_generation)
-        labels = self.ocr(self.layout["capacity"], frame)
+        counts = self.capacity_values(frame)
         self.check_generation(self.organization_generation)
-        counts = []
-        for item in labels:
-            match = re.search(r"(\d+)[/／](\d+)", clean_text(item.text))
-            if match and float(getattr(item, "score", 0)) >= .90:
-                used, limit = int(match.group(1)), int(match.group(2))
-                # Storage can be overfilled: the game shows values such as 1006/1000.
-                if 0 <= used <= 10000 and 0 < limit <= 10000:
-                    counts.append((used, limit))
         if len(counts) != 1:
             self.image("normal_capacity_unknown.png", frame)
             raise RuntimeError("普通仓库容量未能确认，未发布完整库存")

@@ -31,9 +31,8 @@ class RunCoordinationAction(CustomAction):
                     "jihua" if "MaaNikki_Jihua" in next_names else
                     "monster" if "MaaNikki_Monster" in next_names else None)
                 # Without a usable record the pursuit step organizes first. Finished
-                # collections skip it unless a requested cleanup or reread remains.
-                if (collection and parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto") == "auto"
-                        and parameters(context, "MaaNikki_Pursuit_DecomposeOption").get("enabled") is not True):
+                # collections skip it unless a requested reread remains.
+                if collection and parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto") == "auto":
                     catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
                     try:
                         order, protected, _ = InventoryStore(ROOT, catalog, rt).load_organization()
