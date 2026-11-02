@@ -234,7 +234,8 @@ pub fn restart_as_admin(app_handle: tauri::AppHandle) -> Result<(), String> {
 
 /// 设置全局选项 - 保存调试图像
 #[tauri::command]
-pub fn maa_set_save_draw(enabled: bool) -> Result<bool, String> {
+pub fn maa_set_save_draw(state: State<'_, Arc<MaaState>>, enabled: bool) -> Result<bool, String> {
+    super::maa_library::ensure_loaded(&state)?;
     maa_framework::set_save_draw(enabled)
         .map(|_| {
             info!("保存调试图像: {}", if enabled { "启用" } else { "禁用" });
