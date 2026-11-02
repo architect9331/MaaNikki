@@ -601,7 +601,7 @@ export default {
     openLogDir: 'ログフォルダを開く',
     exportLogs: 'ログをエクスポート',
     exportLogsHint:
-      'ログと config を zip にまとめ、約 24.5 MB まで最新のデバッグ画像を自動で保持; 「デバッグ画像を保存」有効時は vision 画像も含める',
+      '24.5 MB 以下の zip 1 つにまとめ、そのまま Issue に添付できます。最新の実行ログと失敗時のスクリーンショットを優先して保持し、古いファイルは同梱のリストに記載します',
     exportingLogs: 'ログをエクスポート中...',
     logsExported: 'ログをエクスポートしました',
     exportLogsFailed: 'ログのエクスポートに失敗しました',

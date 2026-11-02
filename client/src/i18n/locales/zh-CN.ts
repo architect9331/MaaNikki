@@ -587,7 +587,7 @@ export default {
     openLogDir: '打开日志目录',
     exportLogs: '导出日志',
     exportLogsHint:
-      '打包日志和 config，并按压缩包 24.5 MB 上限自动保留最近调试图片；开启「保存调试图像」时同时打包 vision 图片',
+      '打包为一个不超过 24.5 MB 的压缩包，可直接上传到 Issue；优先保留最新运行的日志和失败截图，较早的文件会列在包内清单中',
     exportingLogs: '正在导出日志...',
     logsExported: '日志已导出',
     exportLogsFailed: '导出日志失败',

@@ -603,7 +603,7 @@ export default {
     openLogDir: 'Open Log Dir',
     exportLogs: 'Export Logs',
     exportLogsHint:
-      'Pack logs and config into a zip archive, keeping newest debug images until it reaches about 24.5 MB; when "Save debug images" is on, vision images are also included',
+      'Pack everything into one zip of at most 24.5 MB, ready to attach to an issue; the latest logs and failure screenshots are kept first, and older files are listed in the included manifest',
     exportingLogs: 'Exporting logs...',
     logsExported: 'Logs exported',
     exportLogsFailed: 'Failed to export logs',
