@@ -118,10 +118,7 @@ pub fn run() {
                 let ws_clone = ws_broadcast.clone();
                 let app_handle = app.handle().clone();
 
-                let settings = app_config
-                    .config
-                    .lock()
-                    .unwrap();
+                let settings = app_config.config.lock().unwrap();
                 let settings_obj = settings.get("settings");
 
                 let web_server_enabled = settings_obj
@@ -155,7 +152,7 @@ pub fn run() {
                             web_port,
                             allow_lan_access,
                         )
-                            .await;
+                        .await;
                     });
                 }
             }

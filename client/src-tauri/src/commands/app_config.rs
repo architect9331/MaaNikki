@@ -785,4 +785,3 @@ fn strip_jsonc_comments(content: &str) -> String {
 
     result
 }
-
