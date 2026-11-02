@@ -115,7 +115,7 @@
 
 巨陨星观测保存在同一账号状态文件的可选 `observations.giant_meteor` 中，包含 `game_day`、`outcome`（`found` / `not_found` / `unconfirmed`）、`checked_at` 和地图提示原文，沿用 schema 2。日期与周期任务共用中国时区 04:00 刷新规则；普通日提示区域可以为空，只有确认地图页面后连续两次未识别到提示才记录未发现。一次已确认的发现会保留至当天结束，后续未发现或未确认不会抹去它。客户端沿用账号状态轮询，过期结果显示未检测；庆祝通知在同一客户端会话的同一游戏日只展示一次。
 
-`client/src/utils/blessingProgress.ts` 统一计算五星收集范围和已确认颜色，供进度页与主界面百分比共用；无完整记录时显示空缺标记，未确认操作继续标注为上次确认记录。
+`client/src/services/collectionForecast.ts` 在 Worker 中按当前存量蒙特卡洛模拟全收集流程，供进度页预估。`client/src/utils/blessingProgress.ts` 统一计算五星收集范围和已确认颜色，供进度页与主界面百分比共用；无完整记录时显示空缺标记，未确认操作继续标注为上次确认记录。
 ## 页面与识别调度
 
 页面入口使用 `GameUI.enter_page`，等待使用 `GameUI.wait_page`。通常连续两次识别到局部特征后确认到达；需要等待图像稳定时显式配置 `stable=True` 与 `roi`。

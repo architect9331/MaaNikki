@@ -108,6 +108,7 @@ class BlessingPursuitAction(CustomAction):
             if pursuit is not None:
                 try:
                     pursuit.log_progress("本轮结束" if pursuit.report.get("complete") else "本轮中断")
+                    pursuit.record_history()
                     if pursuit.share_statistics:
                         upload(pursuit.store.account, ROOT, catalog_version=pursuit.catalog["version"])
                     # Save confirmed keepers and scoped recovery independently

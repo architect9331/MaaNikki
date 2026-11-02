@@ -9,6 +9,7 @@ from daily.runtime import parameters
 from .blessing import SLOTS
 from .locking import BlessingLocker, READY
 from file_io import write_json
+from account_state import game_day
 from .storage import InventoryStore
 from .upgrade import UpgradeUI, RESULT
 from .statistics import queue_change
@@ -80,9 +81,40 @@ class FiveStarInventory(BlessingLocker):
                 "pending_operation": self.pending,
                 "recovery": deepcopy(self.organization.get("recovery")) if self.organization else None,
                 "confirmed_locked_colors": len(self.protected),
+                "resources": self.resources(),
                 "target_colors": sum(len(item["colors"]) * len(SLOTS) for item in self.targets),
                 "changes": self.collection_changes(),
                 "operations_file": str(self.folder / "pursuit.json")}
+
+    def resources(self):
+        """Stocks for the progress page. Duplicates are inferred from the warehouse count."""
+        order = self.organization
+        if not order or not self.prepared:
+            return None
+        rows = [row for part in order["slots"].values() for row in part]
+        waiting = self.queued_rolls()
+        spare = sum(row.get("count", 1) for row in rows if row["rarity"] == 5 and not row["maximum"]
+                    and not row["locked"]) - waiting
+        capacity = order.get("capacity")
+        listed = sum(row.get("count", 1) for row in rows if row["rarity"] == 5 and row["maximum"] and not row["locked"])
+        duplicates = (max(0, capacity[0] - sum(row.get("count", 1) for row in rows if row["locked"]) - waiting - spare)
+                      if capacity else listed)
+        return {"bling": order.get("bling"), "particles": order.get("particles"), "capacity": capacity,
+                "duplicates": duplicates, "embryos": waiting, "spare_embryos": spare,
+                "bling_per_run": order.get("bling_per_run")}
+
+    def record_history(self):
+        """One progress point per game day, for the forecast's actual line."""
+        if not self.prepared:
+            return
+        point = {"owned": len(self.protected)}
+
+        def change(data):
+            history = data["observations"].setdefault("collection_history", {})
+            history[str(game_day())] = point
+            for day in sorted(history)[:-1000]:
+                del history[day]
+        self.store.account.update(change)
 
     def collection_changes(self):
         if self.initial_protected is None:
@@ -334,6 +366,11 @@ class FiveStarInventory(BlessingLocker):
         if operation.get("bling_before") is not None and operation.get("cost") is not None:
             self.observe_bling(operation["bling_before"])
             self.organization["bling"] = operation["bling_before"] - operation["cost"]
+        particles = self.organization.get("particles")
+        if type(particles) is int:
+            # Ten experience per particle; the next decomposition page corrects this.
+            spent = sum(self.catalog["upgrade_costs"][str(new["rarity"])]["exp"][old["level"]:new["level"]]) // 10
+            self.organization["particles"] = max(0, particles - spent)
         if self.is_maximum(new) and new["color"] is not None:
             self.record_colour(new)
         self.rt.log(f"升级完成：{new['name']}·{new['slot']}，{old['level']} → {new['level']} 级。"
@@ -412,13 +449,18 @@ class FiveStarInventory(BlessingLocker):
             counts = self.capacity_values(self.clear_hover(self.rt._focus_generation))
         except IncompleteObservation:
             return False
-        return len(counts) == 1 and counts[0][0] >= counts[0][1]
+        if len(counts) != 1:
+            return False
+        self.organization["capacity"] = list(counts[0])
+        return counts[0][0] >= counts[0][1]
 
     def observe_bling(self, balance):
         """Keep the balance the upgrade page showed; it also prices the last refill."""
         refill = self.organization.pop("bling_refill", None)
-        if refill and balance > refill["before"]:
-            self.record_bling(refill["energy"], balance - refill["before"])
+        if refill and balance > refill["before"] and refill["energy"] > 0:
+            gain = balance - refill["before"]
+            self.organization["bling_per_run"] = round(gain * 40 / refill["energy"])
+            self.record_bling(refill["energy"], gain)
         self.organization["bling"] = balance
 
     def part_complete(self, name, slot):

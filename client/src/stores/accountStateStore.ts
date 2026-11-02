@@ -27,6 +27,10 @@ export interface BlessingSnapshot {
     protection_valid?: boolean;
     pending_operation?: unknown;
     parts?: { name: string; slot: string; locked_colors: string[]; missing_colors: string[] }[];
+    resources?: {
+      bling?: number | null; particles?: number | null; capacity?: [number, number] | null;
+      duplicates?: number; embryos?: number; spare_embryos?: number; bling_per_run?: number | null;
+    } | null;
   };
   protection?: { complete?: boolean; keepers?: CollectionKey[] };
 }
@@ -37,6 +41,7 @@ export interface AccountView {
   observations?: {
     eureka_rolls?: { total: number; colors: Record<string, number> };
     anonymous_statistics?: { reporter?: string };
+    collection_history?: Record<string, { owned: number }>;
     giant_meteor?: {
       game_day: string;
       outcome: 'found' | 'not_found' | 'unconfirmed';
@@ -50,7 +55,11 @@ export interface AccountView {
     awards?: { claimed_stars: number; confirmed_at: string };
   }>;
   blessing: BlessingSnapshot | null;
-  catalog: { version: string | number; sets: { name: string; rarity: number; source: string; colors: string[]; collection_target?: boolean }[] };
+  catalog: {
+    version: string | number;
+    sets: { name: string; rarity: number; source: string; colors: string[]; collection_target?: boolean }[];
+    probability?: { iridescent: number; samples: number; successes: number; scenarios: number[] };
+  };
   rotation: {
     anchor: string; reset_hour: number; target_score: number;
     tasks: Record<string, { label: string; score?: number; adapted: boolean }>;

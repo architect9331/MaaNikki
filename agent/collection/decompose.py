@@ -84,6 +84,9 @@ class LowRarityDecomposer:
                 raise IncompleteObservation("未确认祝福闪光分解页面")
             current = self.values(frame)
             if current is not None and current == previous:
+                if self.o.organization is not None:
+                    limit = (self.o.organization.get("capacity") or [0, 1000])[1]
+                    self.o.organization.update(particles=current["particles"], capacity=[current["capacity"], limit])
                 return current, frame
             previous = current
             if not self.rt.pause(.2):
