@@ -132,11 +132,6 @@ const LazyFirstRunSetup = lazy(async () => {
   return { default: module.FirstRunSetup };
 });
 
-const LazyOverviewPage = lazy(async () => {
-  const module = await import('@/components/OverviewPage');
-  return { default: module.OverviewPage };
-});
-
 const LazyOnboardingOverlay = lazy(async () => {
   const module = await import('@/components/OnboardingOverlay');
   return { default: module.OnboardingOverlay };
@@ -1971,19 +1966,6 @@ function App() {
       <div className="h-full flex flex-col bg-bg-primary relative">
         <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
         <ExplorationPage onClose={() => useAppStore.getState().setCurrentPage('main')} />
-        <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
-        {toaster}
-      </div>
-    );
-  }
-
-  if (currentPage === 'overview') {
-    return (
-      <div className="h-full flex flex-col bg-bg-primary relative">
-        <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
-        <Suspense fallback={<div className="flex-1" />}>
-          <LazyOverviewPage onClose={() => useAppStore.getState().setCurrentPage('main')} />
-        </Suspense>
         <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
         {toaster}
       </div>
