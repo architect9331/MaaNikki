@@ -15,6 +15,7 @@ import {
   Link,
   AlertCircle,
   Play,
+  ChevronsDown,
   CircleDot,
 } from 'lucide-react';
 import { useAppStore, type TaskRunStatus } from '@/stores/appStore';
@@ -1071,6 +1072,20 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
             </>
           )}
         </div>
+
+        {/* 单独运行与从此处运行 */}
+        {!isEditing && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            {([[Play, t('contextMenu.runSingleTask'), handleRunSingle], [ChevronsDown, t('contextMenu.runFromHere'), handleRunFromHere]] as const).map(([Icon, label, run]) =>
+              <Tooltip key={label} content={label}>
+                <button type="button" aria-label={label} disabled={isInstanceRunning || isIncompatible}
+                  onClick={(event) => { event.stopPropagation(); void run(); }}
+                  className="rounded-lg p-1 text-text-muted transition-colors hover:bg-accent/10 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-text-muted">
+                  <Icon className="h-4 w-4" />
+                </button>
+              </Tooltip>)}
+          </div>
+        )}
 
         {/* 删除按钮 - hover 时显示，运行时隐藏 */}
         {!isEditing && canDelete && (
