@@ -1022,16 +1022,16 @@ function App() {
 
         // Organization now runs inside the realm task: retire the default pages
         // whose only job was the removed warehouse task, keeping customized ones.
-        if (pi?.name === 'MaaNikki' && useAppStore.getState().nikkiPresetVersion < 5) {
+        if (pi?.name === 'MaaNikki' && useAppStore.getState().nikkiPresetVersion < 6) {
           for (const instance of useAppStore.getState().instances) {
             const state = useAppStore.getState();
             if (state.instances.length > 1 && ['全收集初始化', '初始化表', '祝福闪光全收集'].includes(instance.name)
-                && instance.selectedTasks.every((task) => task.taskName === 'start_game')
+                && instance.selectedTasks.every((task) => task.taskName === '__MXU_PRETASK__start_game')
                 && !instance.schedulePolicies?.length) {
               state.removeInstance(instance.id);
             }
           }
-          useAppStore.setState({ nikkiPresetVersion: 5 });
+          useAppStore.setState({ nikkiPresetVersion: 6 });
         }
       }, 0);
 
