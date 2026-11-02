@@ -25,6 +25,20 @@ def checksum(path: Path) -> str:
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def mirrored_assets(release: dict) -> list[dict]:
+    return [asset for asset in release["assets"] if
+            asset["name"].endswith(("-win-x86_64.zip", ".patch.zip", "-SHA256SUMS.txt"))]
+
+
+def index_entry(release: dict, assets: list[dict]) -> dict:
+    return {
+        "tag_name": release["tag_name"], "name": release["name"], "body": release["body"],
+        "prerelease": release["prerelease"], "draft": False,
+        "assets": [{key: asset[key] for key in ("name", "size", "browser_download_url", "digest")}
+                   for asset in assets],
+    }
+
+
 def prepare(tag: str) -> tuple[Path, list[str]]:
     if not re.fullmatch(r"v\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?", tag):
         raise ValueError("Invalid release tag")
@@ -36,8 +50,7 @@ def prepare(tag: str) -> tuple[Path, list[str]]:
     folder.mkdir(parents=True, exist_ok=True)
     # Source archives and rolling manifests remain on GitHub; clients need the
     # full runtime, patches and checksum file. This keeps mirror storage small.
-    assets = [asset for asset in release["assets"] if
-              asset["name"].endswith(("-win-x86_64.zip", ".patch.zip", "-SHA256SUMS.txt"))]
+    assets = mirrored_assets(release)
     if not any(asset["name"] == f"MaaNikki-{tag}-win-x86_64.zip" for asset in assets):
         raise ValueError("Release has no Windows runtime")
     for asset in assets:
@@ -53,12 +66,14 @@ def prepare(tag: str) -> tuple[Path, list[str]]:
                 "--pattern", name, "--dir", str(folder), "--clobber")
         if path.stat().st_size != asset["size"] or checksum(path) != expected[7:]:
             raise ValueError(f"Release asset validation failed: {name}")
-    index = [{
-        "tag_name": tag, "name": release["name"], "body": release["body"],
-        "prerelease": release["prerelease"], "draft": False,
-        "assets": [{key: asset[key] for key in ("name", "size", "browser_download_url", "digest")}
-                   for asset in assets],
-    }]
+    index = [index_entry(release, assets)]
+    # Stable clients skip a newer beta, so the index also keeps the last stable
+    # release, whose files were mirrored when it was promoted.
+    if release["prerelease"]:
+        releases = json.loads(run("gh", "api", f"repos/{repo}/releases?per_page=100", capture=True))
+        stable = next((item for item in releases if not item["draft"] and not item["prerelease"]), None)
+        if stable:
+            index.append(index_entry(stable, mirrored_assets(stable)))
     (folder / "releases.json").write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
     return folder, [asset["name"] for asset in assets]
 

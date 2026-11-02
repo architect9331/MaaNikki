@@ -713,6 +713,7 @@ export default {
     channel: '更新チャンネル',
     channelStable: '安定版',
     channelBeta: 'ベータ版',
+    channelHint: '安定版はベータでの検証を経ています。ベータ版は新機能や修正を早く受け取れますが、新しい問題が起きることがあります。',
     cdk: 'Mirror醤 CDK',
     cdkPlaceholder: 'CDK を入力（任意）',
     serviceName: 'Mirror醤',

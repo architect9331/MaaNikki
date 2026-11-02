@@ -692,6 +692,7 @@ export default {
     channel: '更新频道',
     channelStable: '正式版',
     channelBeta: '公测版',
+    channelHint: '正式版经过公测验证，更稳定；公测版更快收到新功能和修复，可能遇到新问题。',
     cdk: 'Mirror酱 CDK',
     cdkPlaceholder: '输入您的 CDK（可选）',
     serviceName: 'Mirror酱',
