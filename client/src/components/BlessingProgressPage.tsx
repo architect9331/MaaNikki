@@ -49,7 +49,7 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
           </div>)}
         </div>
         {!!data?.observations?.eureka_rolls?.total && <p className="text-xs text-text-secondary">
-          本账号统计：升满 {data.observations.eureka_rolls.total} 次，其中彩色 {data.observations.eureka_rolls.colors['彩'] ?? 0} 次（{((data.observations.eureka_rolls.colors['彩'] ?? 0) / data.observations.eureka_rolls.total * 100).toFixed(1)}%）。样本少时波动很大。
+          本账号统计：升满 {data.observations.eureka_rolls.total} 次，其中彩色 {data.observations.eureka_rolls.colors['彩'] ?? 0} 次（{((data.observations.eureka_rolls.colors['彩'] ?? 0) / data.observations.eureka_rolls.total * 100).toFixed(1)}%）。样本少时波动很大。{data.observations.anonymous_statistics?.reporter && ` 匿名统计 ID：${data.observations.anonymous_statistics.reporter}`}
         </p>}
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-3 py-2 text-sm focus-within:border-accent/50">

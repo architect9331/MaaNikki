@@ -1,12 +1,15 @@
 """Anonymous aggregate statistics: level-10 colours and measured bling yield.
 
 Only catalogue names, slot, colour, counts, energy, bling gain and versions leave
-this machine: no UID, device or per-install identifier. A failed upload stays
-queued for the next run and never affects the task.
+this machine, plus a random reporter ID. As in Penguin Statistics, the server issues
+that ID on the first report and it is unrelated to the UID or device. It lets analysis
+count accounts and exclude abnormal reporters. A failed upload stays queued for the
+next run and never affects the task.
 """
 import json
 import os
 from pathlib import Path
+import re
 import threading
 from urllib import error as url_error, request
 from uuid import uuid4
@@ -55,22 +58,30 @@ def upload(account, root, catalog_version):
         return None
 
     def send():
+        headers = {"Content-Type": "application/json"}
+        if batch.get("reporter"):
+            headers["Authorization"] = "MaaNikkiID " + batch["reporter"]
         body = json.dumps({
             "schema": 1, "batch": batch["batch"], "catalog": str(catalog_version),
             "app": os.environ.get("PI_VERSION", "unknown"),
             "rolls": [[*key.split("|"), count] for key, count in batch["rolls"].items()],
             "bling": batch["bling"]}, ensure_ascii=False).encode("utf-8")
         try:
-            call = request.Request(url, body, {"Content-Type": "application/json"}, method="POST")
+            call = request.Request(url, body, headers, method="POST")
             with request.urlopen(call, timeout=TIMEOUT_SECONDS) as response:
                 if response.status >= 300:
                     return
+                issued = response.headers.get("X-MaaNikki-Set-ID", "")
         except (OSError, ValueError, url_error.URLError):
             return
 
         def clear(data):
             stats = data["observations"].get("anonymous_statistics")
-            if not stats or stats["batch"] != batch["batch"]:
+            if not stats:
+                return
+            if re.fullmatch(r"[0-9a-f]{32}", issued):
+                stats["reporter"] = issued
+            if stats["batch"] != batch["batch"]:
                 return  # New entries arrived: the merged queue resends under a new key.
             stats.update(batch=None, rolls={}, bling=[])
 

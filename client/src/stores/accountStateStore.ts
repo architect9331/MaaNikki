@@ -36,6 +36,7 @@ export interface AccountView {
   uid?: string | null;
   observations?: {
     eureka_rolls?: { total: number; colors: Record<string, number> };
+    anonymous_statistics?: { reporter?: string };
     giant_meteor?: {
       game_day: string;
       outcome: 'found' | 'not_found' | 'unconfirmed';
