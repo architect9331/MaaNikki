@@ -45,7 +45,10 @@ async function summary(env) {
   const bling = await env.DB.prepare(
     `SELECT COUNT(*) AS runs, SUM(energy) AS energy, SUM(gain) AS gain FROM bling_runs
      WHERE reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)`).first();
-  const reporters = await env.DB.prepare('SELECT COUNT(*) AS count FROM reporters WHERE excluded = 0').first();
+  // A lost response can orphan an issued ID, so count only IDs that hold data.
+  const reporters = await env.DB.prepare(
+    `SELECT COUNT(*) AS count FROM reporters WHERE excluded = 0
+     AND (id IN (SELECT reporter FROM rolls) OR id IN (SELECT reporter FROM bling_runs))`).first();
   return Response.json({ reporters: reporters.count, colors: colors.results, bling });
 }
 
