@@ -60,6 +60,38 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Local -Python
 
 构建工具的 npm 缓存及安装诊断日志保存在 `.build/npm-cache/`。GitHub 自动构建失败时会将其中的日志保存为 `MaaNikki-build-npm-logs` 附件，保留 7 天，便于定位安装失败的具体原因。
 
+## 识别模型更新
+
+`scripts/model_update.py` 负责游戏更新后的祝福闪光种类、等级、角标和衣柜种类模型，OCR 模型不在其中。工具只离线工作，不启动游戏。素材路径放在 `.local/model-update/config.json`，产物放在 `.build/model-update/<run>/`，两者都不进入仓库。
+
+按顺序运行，`<run>` 取一个版本名：
+
+| 步骤 | 命令（`python scripts/model_update.py ...`） | 约需 | 人工确认 |
+| --- | --- | --- | --- |
+| 0. 解包新版本物品表、图标和衣柜卡片 | 本机私有流程 | 约 20 分钟 | 卡片抽查 |
+| 1. 记录基线 | `init --run <run>` | 秒级 | |
+| 2. 对比差异 | `discover --run <run>` | 秒级 | 查看 `diff.json` 的新增、移除、改名 |
+| 3. 列出缺口 | `assets --run <run>` | 秒级 | 祝福名称和颜色自动取自游戏配置表，配置表缺的项才要手填 `blessing-labels.json`；确实缺图时用 `--accept-gaps "<原因>"` |
+| 4. 训练祝福 | `train --run <run> --model identity` | 约 2 分钟 | |
+| 5. 更新衣柜 | `train --run <run> --model wardrobe` | 10–40 分钟 | 被门禁拦下时换 `--mode full`（约 40 分钟） |
+| 6. 对比评估 | `evaluate --run <run> --model blessing`，`--model wardrobe` | 各数分钟 | 不通过时查看 `evaluation/*-gate.json` |
+| 7. 打包校验 | `package --run <run>` | 约 1 分钟 | 查看 `package.json` |
+| 8. 替换模型 | `promote --run <run> --confirm` | 约 1 分钟 | 由人决定是否替换 |
+
+衣柜默认只微调受影响部位的分类头，骨干权重文件保持不变，原有类别编号也不变。`prototypes` 模式只追加新类原型，更快，但新类余弦值明显高于学习得到的头，会抢走旧类样本，门禁通常不会放行。
+
+等级和角标的类别不随新祝福变化，第 6 步会检查它们在新图标上的表现。只有检查不通过或卡片界面变了才需要 `train --model level` 或 `badge`；界面变了还要先取得新的界面捕获。
+
+替换门禁：
+
+- 原有类别的准确率不能下降。下降就拦下；只有配对检验不显著时，才能用 `--waive "<检查名>=<原因>"` 记录原因后放行。
+- 新类别与原有类别在同样的合成条件下比较，不能显著偏低，并且必须认得自己的原始卡片。
+- 模型文件校验、标签一致性和打包运行环境中的实际加载都必须通过。
+
+门禁指标主要来自合成卡片和同一账号的截图，不代表真实游戏中的准确率。替换后仍需在游戏内核对新衣服和新祝福闪光。第 8 步只改工作区：它会更新模型、`build/resource-models.lock.json`、`model-contract.json` 和祝福闪光图鉴，并运行 `python scripts/release.py check`，失败时自动还原。提交、发版和本地客户端同步要另外进行。
+
+祝福闪光的模板回退图标来自公开 Wiki（`resource/image/blessing/`），需要另行补充。游戏导出素材不能放进仓库。
+
 ## 祝福闪光角标模型
 
 发布包包含训练好的三分类模型，运行时使用现有 NumPy 和 OpenCV。需要重新训练时，在开发 Python 中安装 `build/requirements-model-training.txt`，然后运行：
