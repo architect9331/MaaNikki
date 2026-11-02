@@ -137,7 +137,9 @@ class Exploration(Runtime):
                               "minimized": "游戏已最小化，辅助功能暂停识别和输入。",
                               "paused": ("当前使用前台截图，切出游戏后辅助功能暂停；切回后继续。"
                                          if guard.capture_requires_foreground else
-                                         "交互键设置为鼠标按键，切出游戏后暂停；切回后继续。")}[mode])
+                                         "交互键设置为鼠标按键，切出游戏后暂停；切回后继续。")}[mode],
+                             # Alt-tabbing changes the mode constantly; the startup message explains it.
+                             detail=True)
                     previous_mode = mode
                 if not available():
                     if map_mask:
