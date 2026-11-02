@@ -67,11 +67,6 @@
       "default_expand": true
     },
     {
-      "name": "assist",
-      "label": "手动辅助",
-      "default_expand": true
-    },
-    {
       "name": "developer",
       "label": "开发者工具",
       "default_expand": true

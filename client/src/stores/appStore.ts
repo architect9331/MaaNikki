@@ -120,6 +120,12 @@ function migratePreActions(inst: {
   return undefined;
 }
 
+/** Fishing options moved from the removed task to global options; an earlier choice carries over. */
+function legacyFishingOptions(instances: { tasks: { taskName: string; optionValues?: Record<string, OptionValue> }[] }[]) {
+  const values = instances.flatMap((instance) => instance.tasks).find((task) => task.taskName === 'fishing')?.optionValues ?? {};
+  return Object.fromEntries(Object.entries(values).filter(([key]) => key.startsWith('Fishing')));
+}
+
 function cleanOptionValues(
   optionValues: Record<string, OptionValue>,
   pi: ProjectInterface | null,
@@ -1609,12 +1615,12 @@ export const useAppStore = create<AppState>()(
           const globalKeys = pi?.global_option;
           const projectName = pi?.name;
           if (!globalKeys || globalKeys.length === 0 || !pi?.option) {
-            return restoreOptionValuesFromConfig(config.globalOptionValues || {}, pi, projectName);
+            return restoreOptionValuesFromConfig({ ...legacyFishingOptions(config.instances), ...config.globalOptionValues }, pi, projectName);
           }
           const defaults = initializeAllOptionValues(globalKeys, pi.option);
           return {
             ...defaults,
-            ...restoreOptionValuesFromConfig(config.globalOptionValues || {}, pi, projectName),
+            ...restoreOptionValuesFromConfig({ ...legacyFishingOptions(config.instances), ...config.globalOptionValues }, pi, projectName),
           };
         })(),
       });

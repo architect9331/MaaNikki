@@ -1,20 +1,8 @@
 {
-  "task": [
-    {
-      "name": "fishing",
-      "label": "当前点钓鱼",
-      "entry": "MaaNikki_Fishing",
-      "group": [
-        "assist"
-      ],
-      "default_check": false,
-      "description": "站在钓点并面向水面后启动，自动准备能力并抛竿。默认最多 3 竿，鱼已钓光时结束。",
-      "option": [
-        "FishingCastCount",
-        "FishingAbilityPlan",
-        "FishingRhythms"
-      ]
-    }
+  "global_option": [
+    "FishingCastCount",
+    "FishingAbilityPlan",
+    "FishingRhythms"
   ],
   "option": {
     "FishingCastCount": {

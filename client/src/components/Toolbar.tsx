@@ -64,6 +64,7 @@ import { stopInstanceTasks } from '@/services/taskStopService';
 import { taskStartService, type TaskStartOptions } from '@/services/taskStartService';
 import { reserveDailyWindow } from '@/services/explorationService';
 import { wardrobeBusy } from '@/services/wardrobeService';
+import { fishingBusy } from '@/services/fishingService';
 import { isTaskSelectedForRun, filterTasksForRun } from '@/utils/taskRunFilter';
 import { isTaskAvailable } from '@/utils/developerTasks';
 import { isTauri } from '@/utils/paths';
@@ -344,6 +345,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
       };
 
       if (wardrobeBusy()) return failStart('衣柜正在读取，请先停止衣柜读取。');
+      if (fishingBusy()) return failStart('正在钓鱼，请先停止钓鱼。');
 
       // UID is confirmed inside the game task before consulting period state.
       const candidates = filterTasksForRun(targetTasks, { startFromTaskId, singleTaskId });
@@ -481,6 +483,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
       let releaseExploration: (() => void) | undefined;
       try {
         if (wardrobeBusy()) throw new Error('衣柜正在读取，请先停止衣柜读取。');
+        if (fishingBusy()) throw new Error('正在钓鱼，请先停止钓鱼。');
         releaseExploration = await reserveDailyWindow();
         let needsReconnect = false;
         let shouldDelayAfterAdbConnected = false;

@@ -9,6 +9,7 @@ import { maaService, type MaaCallbackDetails } from '@/services/maaService';
 import { useAppStore, type LogType } from '@/stores/appStore';
 import { EXPLORATION_INSTANCE_ID } from '@/types/exploration';
 import { wardrobeBusy, WARDROBE_INSTANCE_ID } from '@/services/wardrobeService';
+import { fishingBusy } from '@/services/fishingService';
 import { loggers } from '@/utils/logger';
 import i18n, { getInterfaceLangKey } from '@/i18n';
 import { getMxuSpecialTask } from '@/types/specialTasks';
@@ -245,7 +246,7 @@ export function useMaaCallbackLogger() {
           // Wardrobe reading owns the window while its standalone instance is
           // connected. Nested action messages can precede task-id registration.
           const currentActiveId = explorationEvent ? EXPLORATION_INSTANCE_ID
-            : wardrobeEvent || wardrobeBusy() ? WARDROBE_INSTANCE_ID : state.activeInstanceId;
+            : wardrobeEvent || wardrobeBusy() ? WARDROBE_INSTANCE_ID : fishingBusy() ? EXPLORATION_INSTANCE_ID : state.activeInstanceId;
           if (!currentActiveId) return;
 
           // 根据消息类型处理

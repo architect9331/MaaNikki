@@ -13,7 +13,6 @@ const HINTS: Record<string, string> = {
   weekly_free_gifts: '请确认商城页面能正常打开。',
   monthly_crystal_exchange: '请确认静谧水滴足够兑换。',
   crown: '请确认奇迹之冠已解锁且本期赛事正在开放。',
-  fishing: '请先站在钓点面向水面，并确认已配置钓鱼能力方案。',
   blessing_lock: '请清除祝福闪光仓库的筛选后重试。',
 };
 
