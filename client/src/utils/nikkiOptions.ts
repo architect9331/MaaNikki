@@ -3,7 +3,7 @@ import type { OptionValue } from '@/types/interface';
 const REALM_MODE_TARGETS: Record<string, string> = {
   JihuaTarget: 'Jihua', JihuaMaterialMode: 'Jihua', JihuaMaterials: 'Jihua', MonsterTarget: 'Monster',
 };
-const COLLECTION_OPTIONS = new Set(['CollectionDecompose', 'CollectionOrganize']);
+const COLLECTION_OPTIONS = new Set(['CollectionPriority', 'CollectionBling', 'CollectionDecompose', 'CollectionOrganize']);
 
 export const realmCollectionEnabled = (values: Record<string, OptionValue>): boolean =>
   values.CollectionMode?.type === 'switch' && values.CollectionMode.value;
@@ -19,6 +19,11 @@ export function realmOptionActive(key: string, values: Record<string, OptionValu
   // In collection mode the blessing target is the failed-organization fallback.
   if (key === 'BlessTarget' && collection) return true;
   if (key === 'RealmTypes') return !collection;
+  // Collection mode's bling runs spend the configured materials.
+  if (collection && (key === 'JihuaMaterialMode' || key === 'JihuaMaterials')) {
+    const bling = values.CollectionBling;
+    return bling?.type !== 'switch' || bling.value;
+  }
   const selected = values.RealmTypes;
   const current = collection ? '' : selected?.type === 'select' ? selected.caseName : 'Bless';
   if (key === 'BlessTarget') return current === 'Bless';

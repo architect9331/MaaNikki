@@ -37,6 +37,29 @@ class FiveStarInventory(BlessingLocker):
         self.organization = None
         self.active = None
         self.view = OrderedView(self)
+        self.chance_priority = True
+
+    def new_colour_chance(self, name, slot):
+        """Chance that one level-10 result is a colour this part still lacks.
+
+        The catalogue's iridescent rate is an unverified community figure; the
+        remaining colours share the rest evenly. Only the ranking depends on it,
+        and that ranking is the same across the published rate range.
+        """
+        colors = self.definitions[name]["colors"]
+        rainbow = self.catalog["probability"]["iridescent"]
+        ordinary = (1 - rainbow) / (len(colors) - 1)
+        return sum(rainbow if color == "彩" else ordinary for color in colors
+                   if (name, slot, color) not in self.protected)
+
+    def upgrade_cost(self):
+        return sum(self.catalog["upgrade_costs"]["5"]["bling"])
+
+    def queued_rolls(self):
+        """Copies known to await an upgrade; new drops join after the prefix read."""
+        return sum(row.get("count", 1) for rows in self.organization["slots"].values() for row in rows
+                   if row["rarity"] == 5 and not row["maximum"] and not row["locked"]
+                   and row["collectible"] and not self.part_complete(row["name"], row["slot"]))
 
     def progress(self):
         parts = []
@@ -309,6 +332,10 @@ class FiveStarInventory(BlessingLocker):
             "confirmed_at": datetime.now().isoformat(timespec="seconds")}
         self.confirm_change(operation, result={key: new[key] for key in ("name", "slot", "color", "level")})
         self.verified.clear()
+        if operation.get("bling_before") is not None and operation.get("cost") is not None:
+            self.organization["bling"] = operation["bling_before"] - operation["cost"]
+        if self.is_maximum(new) and new["color"] is not None:
+            self.record_colour(new["color"])
         self.rt.log(f"升级完成：{new['name']}·{new['slot']}，{old['level']} → {new['level']} 级。"
                     + (f"满级颜色：{new['color']}色。" if self.is_maximum(new) else
                        "本次心愿升级已完成。" if self.report.get("mode") == "daily_upgrade" else
@@ -355,6 +382,17 @@ class FiveStarInventory(BlessingLocker):
                 self.active["locked"] = True
         return changed
 
+    def record_colour(self, color):
+        """Local level-10 tally: the evidence the iridescent rate currently lacks."""
+        def change(data):
+            stats = data["observations"].setdefault("eureka_rolls", {"total": 0, "colors": {}})
+            stats["total"] += 1
+            stats["colors"][color] = stats["colors"].get(color, 0) + 1
+        try:
+            self.store.account.update(change)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            self.rt.log(f"颜色统计保存失败：{error}。", detail=True)
+
     def part_complete(self, name, slot):
         return all((name, slot, color) in self.protected for color in self.definitions[name]["colors"])
 
@@ -395,8 +433,14 @@ class FiveStarInventory(BlessingLocker):
         candidates = [row for row in rows if row["rarity"] == 5 and not row["locked"] and row["collectible"]
                       and (row["maximum"] and self.key(row) not in self.protected
                            or not row["maximum"] and not self.part_complete(row["name"], row["slot"]))]
-        return min(candidates, key=lambda row: (not row["maximum"], row["level"] == 0,
-                                               row["priority"], -row["ordinal"])) if candidates else None
+        if not candidates:
+            return None
+        # A roll costs the same everywhere, so the best one has the highest chance
+        # of a new colour. Partial upgrades finish first: their cost is already paid.
+        return min(candidates, key=lambda row: (
+            not row["maximum"], row["level"] == 0,
+            -self.new_colour_chance(row["name"], row["slot"]) if self.chance_priority else 0,
+            row["priority"], -row["ordinal"]))
 
     def ensure_known_materials(self):
         """Game auto-fill ignores our catalogue and could consume new drops."""
@@ -468,6 +512,8 @@ class FiveStarInventory(BlessingLocker):
                 else:
                     result = UpgradeUI(self).run(*found)
                 if result["status"] != "upgraded":
+                    if result["status"] == "bling_shortage":
+                        self.organization["bling"] = result["bling"]
                     self.report["shortage"] = result
                     return self.batch_result(result["status"], **{k: v for k, v in result.items() if k != "status"})
                 if not self.active["locked"]:

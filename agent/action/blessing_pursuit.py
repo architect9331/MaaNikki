@@ -63,7 +63,10 @@ class BlessingPursuitAction(CustomAction):
                     rt.log("本次整理未完成，继续使用上一份有效记录。")
             pursuit = FiveStarInventory(rt, catalog, folder)
             decompose = parameters(context, "MaaNikki_Pursuit_DecomposeOption").get("enabled") is True
-            ok = FiveStarPursuit(pursuit, decompose_duplicates=decompose).run()
+            auto_bling = parameters(context, "MaaNikki_Pursuit_BlingOption").get("enabled") is not False
+            priority = parameters(context, "MaaNikki_Pursuit_PriorityOption").get("mode", "chance")
+            ok = FiveStarPursuit(pursuit, decompose_duplicates=decompose, auto_bling=auto_bling,
+                                 chance_priority=priority != "oldest").run()
             if not ok and not rt.stopped:
                 rt.diagnostic("blessing_pursuit", "祝福闪光处理未完成")
             progress_path = pursuit.report.get("inventory", {}).get("path") or pursuit.report.get("startup", {}).get("path")

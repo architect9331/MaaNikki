@@ -48,6 +48,9 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
             <div className="mt-2.5 h-1.5 rounded-full bg-bg-tertiary overflow-hidden"><div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${progress.known && Number(total) ? Number(current) / Number(total) * 100 : 0}%` }} /></div>
           </div>)}
         </div>
+        {!!data?.observations?.eureka_rolls?.total && <p className="text-xs text-text-secondary">
+          本账号统计：升满 {data.observations.eureka_rolls.total} 次，其中彩色 {data.observations.eureka_rolls.colors['彩'] ?? 0} 次（{((data.observations.eureka_rolls.colors['彩'] ?? 0) / data.observations.eureka_rolls.total * 100).toFixed(1)}%）。样本少时波动很大。
+        </p>}
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-3 py-2 text-sm focus-within:border-accent/50">
             <Search className="w-4 h-4 text-text-muted" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索套组或副本" aria-label="搜索套组或副本" className="w-36 bg-transparent outline-none" />

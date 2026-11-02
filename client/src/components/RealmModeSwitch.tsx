@@ -9,7 +9,7 @@ import type { OptionValue } from '@/types/interface';
 
 const MODES = [
   { collection: false, icon: Flame, title: '日常消耗', detail: '按选定方式清理剩余活跃能量' },
-  { collection: true, icon: Sparkles, title: '五星全收集', detail: '按缺色选本，刷取、升级并锁定新颜色' },
+  { collection: true, icon: Sparkles, title: '五星全收集', detail: '按预期新色选本，刷取、升级并锁定新颜色' },
 ] as const;
 
 /** The two realm modes share the weekly step but keep separate settings. */
@@ -21,7 +21,9 @@ export function RealmModeSwitch({ instanceId, taskId, values, disabled }: {
   const progress = useMemo(() => getBlessingProgress(account), [account]);
   const collection = realmCollectionEnabled(values);
   const decompose = values.CollectionDecompose?.type === 'switch' && values.CollectionDecompose.value;
-  const steps = [...progress.known ? [] : ['首次整理全部闪光'], '按缺色选副本', '刷取', '升级', ...decompose ? ['分解重复五星'] : []];
+  const autoBling = values.CollectionBling?.type !== 'switch' || values.CollectionBling.value;
+  const steps = [...progress.known ? [] : ['首次整理全部闪光'], autoBling ? '刷胚子或补噗灵' : '按预期新色刷取',
+    '优先升高概率部位', ...decompose ? ['分解重复五星'] : []];
   return <div className="mb-4 space-y-2">
     <div role="radiogroup" aria-label="幻境挑战模式" className="grid grid-cols-2 gap-2">
       {MODES.map(({ collection: target, icon: Icon, title, detail }) => {

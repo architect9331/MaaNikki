@@ -101,6 +101,33 @@ class CollectionSupply:
         finally:
             self.rt.navigation_halted |= child.navigation_halted
 
+    def bling(self):
+        """Spend the remaining energy on bling; no inventory item changes."""
+        if not self.rt.ui.calendar():
+            raise RuntimeError("未能打开幻境挑战入口")
+        game = Gameplay(self.rt)
+        before = game.read_energy()
+        if before is None:
+            raise RuntimeError("无法读取当前活跃能量，未提交素材激化")
+        if before < game.MIN_ENERGY["jihua"]:
+            return {"status": "energy_exhausted"}
+        clone = self.rt.context.clone()
+        child = Executors(clone)
+        try:
+            if not clone.override_pipeline({"MaaNikki_Jihua_Target": {"expected": "噗灵"},
+                                            "MaaNikki_Jihua_TargetRetry": {"expected": "噗灵"}}):
+                raise RuntimeError("素材激化目标设置未能应用")
+            ok = Gameplay(child).realm("jihua", maximize=True, allow_exhausted=True, return_page="calendar")
+        finally:
+            self.rt.navigation_halted |= child.navigation_halted
+        if self.rt.stopped or not self.rt.ui.calendar():
+            raise RuntimeError("素材激化后未能返回日程页")
+        after = Gameplay(self.rt).read_energy()
+        if after is None:
+            raise RuntimeError("素材激化后无法核对活跃能量")
+        return {"status": "bling_confirmed" if after < before else "not_spent", "ok": ok,
+                "energy_before": before, "energy_after": after}
+
     @staticmethod
     def check_list(runtime):
         if runtime.stopped or runtime.navigation_halted or not runtime.hit("MaaNikki_Bless_PageReady"):
