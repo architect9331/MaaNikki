@@ -646,29 +646,32 @@ class GameUI:
                                    self.star_collect_world_ready,
                                    source="MaaNikki_Home_StarCollectReady")
 
-    def revive_deep_water(self, event=lambda value: None):
-        """Return None for other pages; only revive a confirmed deep-water screen."""
-        if self.rt.stopped:
-            return None
+    def revive_button(self):
         with self.rt.observe(fresh=True):
-            if not self.rt.hit("MaaNikki_Navigation_DeepWaterWarning"):
-                return None
-        if self.rt.navigation_inputs:
-            self.rt.navigation_inputs.release()
-        self.rt.log("角色落水，正在复活。")
-        # Recheck after releasing inputs and reporting the interruption, so a
-        # focus transition cannot leave a stale death-screen click behind.
-        with self.rt.observe(fresh=True):
-            if not self.rt.hit("MaaNikki_Navigation_DeepWaterWarning"):
+            if self.rt.hit("MaaNikki_MainDetected"):
                 return None
             button = self.rt.recognize("MaaNikki_Navigation_ReviveButton")
             box = getattr(getattr(button, "best_result", None), "box", None)
-        clicked = bool(button and button.hit and box is not None and self.click_box(box))
-        event({"type": "deep_water_revive", "clicked": clicked})
+        return box if button and button.hit else None
+
+    def revive(self, event=lambda value: None):
+        """Return None for other pages; every death screen offers the same button."""
+        if self.rt.stopped or self.revive_button() is None:
+            return None
+        if self.rt.navigation_inputs:
+            self.rt.navigation_inputs.release()
+        self.rt.log("角色倒下，正在复活。")
+        # Recheck after releasing inputs and reporting the interruption, so a
+        # focus transition cannot leave a stale death-screen click behind.
+        box = self.revive_button()
+        if box is None:
+            return None
+        clicked = bool(self.click_box(box))
+        event({"type": "revive", "clicked": clicked})
         restored = bool(clicked and self.wait_page("MaaNikki_MainDetected", seconds=60))
-        event({"type": "deep_water_recovered", "success": restored})
+        event({"type": "revive_recovered", "success": restored})
         if not restored and not self.rt.stopped:
-            self.rt.diagnostic("deep_water_revive", "落水后未能完成复活并返回主界面。")
+            self.rt.diagnostic("revive", "未能完成复活并返回主界面。")
         return restored
 
     def main(self):
@@ -706,8 +709,8 @@ class GameUI:
                     page = "reward_overlay"
                 elif self.rt.hit("MaaNikki_MainDetected"):
                     page = "main"
-                elif self.rt.hit("MaaNikki_Navigation_DeepWaterWarning"):
-                    page = "deep_water"
+                elif self.rt.hit("MaaNikki_Navigation_ReviveButton"):
+                    page = "death"
                 elif self.asset("IconDungeonFeature", threshold=.9, gray=(230, 255), method=cv2.TM_CCORR_NORMED):
                     page = "dungeon"
                 elif self.rt.hit("MaaNikki_Energy_SkipReward"):
@@ -737,8 +740,8 @@ class GameUI:
                 continue
             elif time.monotonic() >= deadline:
                 break
-            elif page == "deep_water":
-                return bool(self.revive_deep_water())
+            elif page == "death":
+                return bool(self.revive())
             elif page == "dungeon":
                 if not (self.rt.key("exit", 0)
                         and self.wait_page(asset="ButtonDungeonQuitOK", threshold=.75)

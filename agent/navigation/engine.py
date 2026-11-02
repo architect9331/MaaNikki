@@ -628,8 +628,8 @@ class Navigator:
                         if revived:
                             # Respawn may change height or location. Let the
                             # route owner restart from its teleport checkpoint.
-                            raise NavigationStuckError("角色落水后已复活，需要从起点重新运行路线。")
-                        raise NavigationError("角色落水后未能完成复活，本条路线停止。")
+                            raise NavigationStuckError("角色倒下后已复活，需要从起点重新运行路线。")
+                        raise NavigationError("角色倒下后未能完成复活，本条路线停止。")
                 if self.point_action and self.point_action.rt.hit("MaaNikki_Energy_SkipReward"):
                     if not self.point_action.rt.key("skip", .5):
                         raise NavigationError("未能跳过获取提示。")
