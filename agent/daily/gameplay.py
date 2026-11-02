@@ -160,7 +160,8 @@ class Gameplay:
         return self.rt.main()
 
     def realm(self, kind, maximize=True, entered=False, weekly_node=None, allow_exhausted=False,
-              return_page="main", fixed_count=None, *, allow_unavailable=False, before_submit=None):
+              return_page="main", fixed_count=None, *, allow_unavailable=False, before_submit=None,
+              energy_target=None):
         if kind == "bless":
             self.rt.account_uid()
         if fixed_count is not None and (type(fixed_count) is not int or fixed_count != 1):
@@ -178,7 +179,7 @@ class Gameplay:
             if not entered and not self.ui.realm(kind):
                 return False
             if kind == "jihua":
-                return self.jihua(maximize, allow_exhausted, fixed_count=fixed_count)
+                return self.jihua(maximize, allow_exhausted, fixed_count=fixed_count, energy_target=energy_target)
             node = weekly_node if kind == "weekly" else f"MaaNikki_{prefix}_Level"
             if not self.select_realm_level(kind, node):
                 return False
@@ -267,7 +268,7 @@ class Gameplay:
             "roi": definition.get("roi", self.REALM_LEVEL_ROI),
             "scroll_roi": self.REALM_SCROLL_ROI})
 
-    def jihua(self, maximize, allow_exhausted=False, fixed_count=None):
+    def jihua(self, maximize, allow_exhausted=False, fixed_count=None, energy_target=None):
         submitted = False
 
         def enter():
@@ -284,7 +285,10 @@ class Gameplay:
                 return False
             if fixed_count is not None and not self.rt.set_amount("jihua", 0):
                 return False
-            if fixed_count is None and maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
+            if energy_target is not None and not self.rt.set_amount("jihua", energy_target):
+                return False
+            if (fixed_count is None and energy_target is None and maximize
+                    and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2)):
                 return False
             if not self.rt.click_template("MaaNikki_Jihua_NumConfirm"):
                 return False

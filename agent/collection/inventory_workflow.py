@@ -11,6 +11,7 @@ from .locking import BlessingLocker, READY
 from file_io import write_json
 from .storage import InventoryStore
 from .upgrade import UpgradeUI, RESULT
+from .statistics import queue_change
 from .ordered import OrderedView, merge_prefix
 from .policy import UnregisteredMaterials
 from .protection import pending_reward
@@ -38,6 +39,7 @@ class FiveStarInventory(BlessingLocker):
         self.active = None
         self.view = OrderedView(self)
         self.chance_priority = True
+        self.share_statistics = False
 
     def new_colour_chance(self, name, slot):
         """Chance that one level-10 result is a colour this part still lacks.
@@ -335,7 +337,7 @@ class FiveStarInventory(BlessingLocker):
         if operation.get("bling_before") is not None and operation.get("cost") is not None:
             self.organization["bling"] = operation["bling_before"] - operation["cost"]
         if self.is_maximum(new) and new["color"] is not None:
-            self.record_colour(new["color"])
+            self.record_colour(new)
         self.rt.log(f"升级完成：{new['name']}·{new['slot']}，{old['level']} → {new['level']} 级。"
                     + (f"满级颜色：{new['color']}色。" if self.is_maximum(new) else
                        "本次心愿升级已完成。" if self.report.get("mode") == "daily_upgrade" else
@@ -382,16 +384,55 @@ class FiveStarInventory(BlessingLocker):
                 self.active["locked"] = True
         return changed
 
-    def record_colour(self, color):
-        """Local level-10 tally: the evidence the iridescent rate currently lacks."""
+    def record_colour(self, facts):
+        """Level-10 tally: the evidence the iridescent rate currently lacks."""
         def change(data):
             stats = data["observations"].setdefault("eureka_rolls", {"total": 0, "colors": {}})
             stats["total"] += 1
-            stats["colors"][color] = stats["colors"].get(color, 0) + 1
+            stats["colors"][facts["color"]] = stats["colors"].get(facts["color"], 0) + 1
+            if self.share_statistics:
+                queue_change(data, colour=self.key(facts))
         try:
             self.store.account.update(change)
         except (OSError, ValueError, KeyError, TypeError) as error:
             self.rt.log(f"颜色统计保存失败：{error}。", detail=True)
+
+    def record_bling(self, energy, gain):
+        def change(data):
+            if self.share_statistics:
+                queue_change(data, bling=(energy, gain))
+        try:
+            self.store.account.update(change)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            self.rt.log(f"噗灵统计保存失败：{error}。", detail=True)
+
+    def read_bling(self):
+        """Read the balance from the upgrade page without selecting any material."""
+        upgrade = UpgradeUI(self)
+        if not self.open():
+            return None
+        self.inventory_read = True
+        try:
+            for slot in SLOTS:
+                self.view.enter(slot)
+                frame, cells = self.view.cells()
+                if cells:
+                    break
+            else:
+                return None
+            row, facts, evidence = self.view.observe(frame, cells[0])
+            self.view.select_target(cells[0][0], facts, row["locked"], evidence)
+            generation = self.view.generation
+            if not self.rt.ui.enter_page(lambda: self.rt.action("Click", target=self.upgrade_layout["entrance"]),
+                                         upgrade.upgrade_ready, source=READY, attempts=1):
+                return None
+            fields, _ = upgrade.read(generation, ("bling",))
+            bling = upgrade.integer(fields["bling"])
+            upgrade.return_list(generation)
+            self.organization["bling"] = bling
+            return bling
+        finally:
+            self.inventory_read = False
 
     def part_complete(self, name, slot):
         return all((name, slot, color) in self.protected for color in self.definitions[name]["colors"])

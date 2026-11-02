@@ -9,6 +9,9 @@
   "mirrorchyan_rid": "MaaNikki",
   "mirrorchyan_multiplatform": true,
   "github": "https://github.com/architect9331/MaaNikki",
+  "statistics": {
+    "endpoint": "https://stats.maanikki.cn/v1/report"
+  },
   "telemetry": {
     "sentry": {
       "dsn": "https://a18b13840bf32739804bf70e57a0beb4@o4512306542936064.ingest.us.sentry.io/4512306595561472",

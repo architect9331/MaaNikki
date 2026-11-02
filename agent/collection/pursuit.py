@@ -1,22 +1,31 @@
 """Schedule independent inventory processing and resource acquisition."""
 from collections import Counter
+from math import ceil
 
 import cv2
 
+from daily.gameplay import Gameplay
 from task_control import TaskStopped
 from .scanner import RescanSlot
 from .supply import CollectionSupply
 from .decompose import DuplicateDecomposer, LowRarityDecomposer
 
 
+RUN_ENERGY = 40
+# Observed 20000 bling per 10 energy; replaced by the account's own measured yield.
+DEFAULT_BLING_PER_RUN = 80000
+
+
 class FiveStarPursuit:
-    def __init__(self, inventory, *, decompose_duplicates=False, auto_bling=True, chance_priority=True):
+    def __init__(self, inventory, *, decompose_duplicates=False, auto_bling=True, chance_priority=True,
+                 share_statistics=False):
         self.inventory = inventory
         self.rt = inventory.rt
         self.decompose_duplicates = decompose_duplicates
         self.auto_bling = auto_bling
         self.chance_priority = chance_priority
         inventory.chance_priority = chance_priority
+        inventory.share_statistics = share_statistics
         self.supply = CollectionSupply(self.rt, inventory)
 
     def clear_duplicates(self):
@@ -53,31 +62,80 @@ class FiveStarPursuit:
             self.rt.log("活跃能量不足，本次只处理已有闪光。")
         return outcome["status"] == "reward_confirmed"
 
-    def needs_bling(self):
-        """Bling buys rolls for embryos already held; more embryos cannot help yet.
+    def bling_energy(self, bling, energy):
+        """Energy for bling so today's embryos and the queue are all affordable.
 
-        The figure comes from the last upgrade page. It is unknown after a bling
-        run until the next upgrade reads it, so the two activities cannot lock up.
+        Solves (queue + embryo_runs * useful) * cost = bling + bling_runs * run_yield
+        with embryo_runs + bling_runs = energy // 40. `useful` is the share of the
+        best source's parts still lacking a colour; surplus bling means zero.
         """
         stock = self.inventory
-        bling = stock.organization.get("bling")
-        return (self.auto_bling and type(bling) is int
-                and stock.queued_rolls() * stock.upgrade_cost() > bling)
+        runs = energy // RUN_ENERGY
+        if not runs:
+            return 0
+        parts = [part for part in stock.progress()["parts"]]
+        by_source = {}
+        for part in parts:
+            by_source.setdefault(part["source"], []).append(part)
+        best = max(by_source.values(), key=lambda group: sum(
+            stock.new_colour_chance(part["name"], part["slot"]) for part in group))
+        useful = sum(bool(part["missing_colors"]) for part in best) / len(best)
+        cost = stock.upgrade_cost()
+        run_yield = stock.organization.get("bling_per_run") or DEFAULT_BLING_PER_RUN
+        missing = (stock.queued_rolls() + runs * useful) * cost - bling
+        if missing <= 0:
+            return 0
+        return min(runs, ceil(missing / (useful * cost + run_yield))) * RUN_ENERGY
+
+    def refill_bling(self):
+        """Read the balance before spending anything, and buy only the shortfall."""
+        stock = self.inventory
+        if not self.auto_bling:
+            return
+        try:
+            before = stock.read_bling()
+        except TaskStopped:
+            raise
+        except (RuntimeError, RescanSlot) as error:
+            before = None
+            self.rt.log(f"未能读取噗灵余额（{error}），本轮全部刷胚子。", detail=True)
+        if before is None:
+            return
+        if not self.rt.ui.calendar():
+            raise RuntimeError("未能打开幻境挑战入口")
+        energy = Gameplay(self.rt).read_energy()
+        if energy is None:
+            return
+        spend = self.bling_energy(before, energy)
+        stock.report["bling_plan"] = {"bling": before, "energy": energy, "spend": spend,
+                                      "queued": stock.queued_rolls()}
+        if not spend:
+            return
+        self.rt.log(f"噗灵 {before} 不够升级胚子和今日刷取，先用 {spend} 点活跃能量刷噗灵。",
+                    ui_text=f"噗灵不足，先用 {spend} 点活跃能量刷噗灵。")
+        stock.report["phase"] = "realm_bling"
+        outcome = self.supply.bling(spend)
+        stock.report["bling_supply"] = outcome
+        stock.organization["bling"] = None
+        stock.checkpoint()
+        if outcome["status"] != "bling_confirmed":
+            self.rt.log("素材激化未消耗活跃能量（可能缺少材料），本轮继续刷胚子。",
+                        ui_text="素材激化未执行，改刷胚子。")
+            return
+        try:
+            after = stock.read_bling()
+        except TaskStopped:
+            raise
+        except (RuntimeError, RescanSlot):
+            return
+        spent = outcome["energy_before"] - outcome["energy_after"]
+        if after is not None and after > before and spent > 0:
+            stock.organization["bling_per_run"] = round((after - before) * RUN_ENERGY / spent)
+            stock.record_bling(spent, after - before)
 
     def spend_energy(self):
         stock = self.inventory
-        if self.needs_bling():
-            self.rt.log(f"噗灵不够升级已有胚子（约 {stock.organization['bling']}），本轮活跃能量改刷噗灵。",
-                        ui_text="噗灵不足，本轮改刷噗灵。")
-            stock.report["phase"] = "realm_bling"
-            outcome = self.supply.bling()
-            stock.report["bling_supply"] = outcome
-            stock.organization["bling"] = None
-            stock.checkpoint()
-            if outcome["status"] != "not_spent":
-                return
-            self.rt.log("素材激化未消耗活跃能量（可能缺少材料），本轮继续刷胚子。",
-                        ui_text="素材激化未执行，改刷胚子。")
+        self.refill_bling()
         value = Counter()
         for part in stock.progress()["parts"]:
             value[part["source"]] += (stock.new_colour_chance(part["name"], part["slot"])

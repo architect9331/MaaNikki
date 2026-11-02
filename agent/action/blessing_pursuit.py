@@ -13,6 +13,7 @@ from collection.pursuit import FiveStarPursuit
 from collection.inventory_workflow import FiveStarInventory
 from collection.organize import organize_inventory
 from collection.scanner import RescanSlot
+from collection.statistics import upload
 from collection.storage import InventoryStore
 
 ORGANIZE_OPTIONS = {"auto": None, "always": False, "always_unlock": True}
@@ -65,8 +66,10 @@ class BlessingPursuitAction(CustomAction):
             decompose = parameters(context, "MaaNikki_Pursuit_DecomposeOption").get("enabled") is True
             auto_bling = parameters(context, "MaaNikki_Pursuit_BlingOption").get("enabled") is not False
             priority = parameters(context, "MaaNikki_Pursuit_PriorityOption").get("mode", "chance")
+            share = parameters(context, "MaaNikki_Pursuit_StatsOption").get("enabled") is not False
             ok = FiveStarPursuit(pursuit, decompose_duplicates=decompose, auto_bling=auto_bling,
-                                 chance_priority=priority != "oldest").run()
+                                 chance_priority=priority != "oldest",
+                                 share_statistics=share).run()
             if not ok and not rt.stopped:
                 rt.diagnostic("blessing_pursuit", "祝福闪光处理未完成")
             progress_path = pursuit.report.get("inventory", {}).get("path") or pursuit.report.get("startup", {}).get("path")
@@ -105,6 +108,8 @@ class BlessingPursuitAction(CustomAction):
             if pursuit is not None:
                 try:
                     pursuit.log_progress("本轮结束" if pursuit.report.get("complete") else "本轮中断")
+                    if pursuit.share_statistics:
+                        upload(pursuit.store.account, ROOT, catalog_version=pursuit.catalog["version"])
                     # Save confirmed keepers and scoped recovery independently
                     # of stale, untracked material quantities.
                     if pursuit.prepared and "inventory" not in pursuit.report:

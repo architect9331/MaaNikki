@@ -18,6 +18,7 @@
                 "CollectionBling",
                 "CollectionDecompose",
                 "CollectionOrganize",
+                "CollectionStats",
                 "JihuaTarget",
                 "JihuaMaterialMode",
                 "BlessTarget",
@@ -155,7 +156,7 @@
         "CollectionBling": {
             "type": "switch",
             "label": "噗灵不足时改刷噗灵",
-            "description": "推荐开启：每次升级要 72000 噗灵，全收集时噗灵比胚子先用完。噗灵不够升级已有胚子时，当轮活跃能量改做素材激化，消耗下方设置的材料。",
+            "description": "推荐开启：每次升级要 72000 噗灵，全收集时噗灵比胚子先用完。刷本前先读噗灵余额，不够升级现有胚子和今日新胚子时，只把差额部分的活跃能量改做素材激化，消耗下方设置的材料。",
             "cases": [
                 {
                     "name": "Yes",
@@ -252,6 +253,36 @@
                 }
             ],
             "default_case": "Auto"
+        },
+        "CollectionStats": {
+            "type": "switch",
+            "label": "匿名上报祝福闪光统计",
+            "description": "上报满级颜色次数和刷噗灵产出，帮助确认彩色概率、优化推荐策略。只包含闪光名称、部位、颜色、数量和版本号，不含 UID 或设备信息，上报失败不影响任务。",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "label": "开启",
+                    "pipeline_override": {
+                        "MaaNikki_Pursuit_StatsOption": {
+                            "custom_action_param": {
+                                "enabled": true
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "label": "关闭",
+                    "pipeline_override": {
+                        "MaaNikki_Pursuit_StatsOption": {
+                            "custom_action_param": {
+                                "enabled": false
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "Yes"
         },
         "JihuaTarget": {
             "type": "select",

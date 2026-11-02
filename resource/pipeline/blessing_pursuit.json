@@ -32,6 +32,12 @@
     "custom_action": "nikki.feature_settings",
     "custom_action_param": {"mode": "chance"}
   },
+  "MaaNikki_Pursuit_StatsOption": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {"enabled": true}
+  },
   "MaaNikki_Pursuit_UpgradeReady": {
     "recognition": "And",
     "all_of": ["MaaNikki_Pursuit_UpgradeColorLabel", "MaaNikki_Pursuit_UpgradeButton"],
