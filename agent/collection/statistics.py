@@ -58,7 +58,8 @@ def upload(account, root, catalog_version):
         return None
 
     def send():
-        headers = {"Content-Type": "application/json"}
+        # Cloudflare rejects urllib's default User-Agent with error 1010.
+        headers = {"Content-Type": "application/json", "User-Agent": "MaaNikki"}
         if batch.get("reporter"):
             headers["Authorization"] = "MaaNikkiID " + batch["reporter"]
         body = json.dumps({
