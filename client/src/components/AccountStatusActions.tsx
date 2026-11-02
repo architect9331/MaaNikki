@@ -137,7 +137,7 @@ export function AccountStatusActions({ onShowProgress }: { onShowProgress: () =>
         aria-label={`祝福闪光收集进度 ${percentage}`}>
         <Sparkles className="h-5 w-5 shrink-0" aria-hidden="true" />
         <span className="whitespace-nowrap text-sm">收集进度</span>
-        <span className="text-[15px] font-semibold tabular-nums text-accent">{percentage}</span>
+        <span className="text-[15px] font-semibold tabular-nums text-accent-secondary">{percentage}</span>
       </button>
     </Tooltip>
     <ExplorationControl />

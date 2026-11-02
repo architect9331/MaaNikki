@@ -124,11 +124,6 @@
   --radius-xl: 0.875rem;
 }
 
-/* The primary action carries both theme colours; both pass contrast with --color-on-accent. */
-.accent-gradient {
-  background: linear-gradient(115deg, var(--color-accent) 35%, var(--color-accent-secondary) 130%);
-}
-
 /* Base styles */
 * {
   box-sizing: border-box;

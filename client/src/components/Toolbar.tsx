@@ -1822,7 +1822,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
                   ? 'bg-success text-white'
                   : isDisabled
                     ? 'bg-bg-active text-text-tertiary cursor-not-allowed'
-                    : 'accent-gradient text-on-accent hover:brightness-95',
+                    : 'bg-accent hover:bg-accent-hover text-on-accent',
           )}
           title={getButtonTitle()}
         >
