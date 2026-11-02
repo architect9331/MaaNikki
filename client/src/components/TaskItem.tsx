@@ -1,7 +1,7 @@
 import { useAccountStateStore, periodCompleted, periodTaskLabel, crownTargetStars, crownProgress } from '@/stores/accountStateStore';
 import { realmOptionActive, realmOptionBackup, realmOptionLabel } from '@/utils/nikkiOptions';
 import { RealmModeSwitch } from './RealmModeSwitch';
-import { XinghaiScoreHint } from './XinghaiScoreHint';
+import { XinghaiScoreHint, xinghaiSummary } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
@@ -583,6 +583,15 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
     }[] = [];
     const maxPreviews = 3;
 
+    if (task.taskName === 'xinghai') {
+      const summary = xinghaiSummary(task.optionValues, account?.rotation);
+      if (summary) {
+        previews.push({ key: 'today', label: '今日可达', value: `${summary.reachable} 分`, type: 'select' },
+          { key: 'tasks', label: '已选任务', value: `${summary.enabled}/${summary.total}`, type: 'select' });
+        return previews;
+      }
+    }
+
     for (const optionKey of taskDef.option || []) {
       if (task.taskName === 'realm_challenge' && !realmOptionActive(optionKey, task.optionValues)) {
         continue;
@@ -660,6 +669,8 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
 
     return previews;
   }, [
+    account?.rotation,
+    task.taskName,
     hasOptions,
     projectInterface?.option,
     taskDef?.option,

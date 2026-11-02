@@ -1,7 +1,29 @@
-import { useAccountStateStore, gameDay } from '@/stores/accountStateStore';
+import { useAccountStateStore, gameDay, type AccountView } from '@/stores/accountStateStore';
 import type { OptionValue } from '@/types/interface';
 import { AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
+
+/** What a collapsed star-sea task should say: today's reachable score and how many tasks are on. */
+export function xinghaiSummary(values: Record<string, OptionValue>, rotation: AccountView['rotation'] | undefined) {
+  if (!rotation) return null;
+  const selected = (key: string) => {
+    const value = values[`XinghaiTask_${key}`];
+    return value?.type === 'switch' ? value.value : true;
+  };
+  const today = gameDay();
+  const index = ((Math.floor((Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) -
+    Date.parse(rotation.anchor + 'T00:00:00Z')) / 86400000) % 8) + 8) % 8;
+  const adapted = Object.entries(rotation.tasks).filter(([key, task]) => task.adapted && key !== 'crystal').map(([key]) => key);
+  const todayTasks = rotation.cycles[index]?.tasks ?? [];
+  return {
+    reachable: todayTasks.filter((key) => rotation.tasks[key]?.adapted && (key === 'crystal'
+      ? values.XinghaiForceCrystal?.type !== 'switch' || values.XinghaiForceCrystal.value : selected(key)))
+      .reduce((sum, key) => sum + (rotation.tasks[key].score ?? 0), 0),
+    target: rotation.target_score,
+    enabled: adapted.filter(selected).length,
+    total: adapted.length,
+  };
+}
 
 export function XinghaiScoreHint({ values, compact = false }: {
   values: Record<string, OptionValue>;
