@@ -20,13 +20,14 @@ export interface ForecastInput {
   decompose: boolean;
 }
 export interface ForecastMilestone { key: string; label: string; low: number | null; day: number | null; high: number | null }
-export interface ForecastResult {
+export interface ForecastSeries { low: number[]; median: number[]; high: number[] }
+export type ForecastResource = 'bling' | 'particles' | 'embryos' | 'capacity';
+export interface ForecastResult extends ForecastSeries {
   owned: number;
   total: number;
   days: number[];
-  low: number[];
-  median: number[];
-  high: number[];
+  /** End-of-day stocks, sampled on the same days as the colour curve. */
+  resources: Record<ForecastResource, ForecastSeries>;
   milestones: ForecastMilestone[];
 }
 
@@ -73,6 +74,7 @@ function trial(input: ForecastInput, seed: number) {
   let firstBling: number | null = null;
   let firstFull: number | null = null;
   const curve: number[] = [];
+  const stocks: Record<ForecastResource, number[]> = { bling: [], particles: [], embryos: [], capacity: [] };
   const reached: (number | null)[] = [null, null, null];
   let normalDay: number | null = normalTotal ? null : 0;
 
@@ -154,10 +156,15 @@ function trial(input: ForecastInput, seed: number) {
     }
     upgrade();
     curve.push(done);
+    stocks.bling.push(bling);
+    // Spare duplicates become particles on demand, so they count as available.
+    stocks.particles.push(particles + duplicates * DUPLICATE_PARTICLES);
+    stocks.embryos.push(queue.length);
+    stocks.capacity.push(capacity);
     [0.25, 0.5, 0.75].forEach((share, index) => { if (reached[index] === null && total && done >= total * share) reached[index] = day; });
     if (normalDay === null && normalDone >= normalTotal) normalDay = day;
   }
-  return { curve, total, reached, normalDay, allDay: done >= total ? curve.length : null, firstBling, firstFull };
+  return { curve, stocks, total, reached, normalDay, allDay: done >= total ? curve.length : null, firstBling, firstFull };
 }
 
 const percentile = (sorted: number[], share: number) => sorted[Math.min(sorted.length - 1, Math.floor(share * sorted.length))];
@@ -173,12 +180,24 @@ export function forecast(input: ForecastInput): ForecastResult {
   const low = [owned];
   const median = [owned];
   const high = [owned];
+  const starts: Record<ForecastResource, number> = { bling: input.bling, embryos: input.embryos, capacity: input.capacity,
+    particles: input.particles + input.duplicates * DUPLICATE_PARTICLES };
+  const keys = Object.keys(starts) as ForecastResource[];
+  const resources = Object.fromEntries(keys.map((key) => [key,
+    { low: [starts[key]], median: [starts[key]], high: [starts[key]] }])) as Record<ForecastResource, ForecastSeries>;
   for (let day = step; day <= horizon; day += step) {
     const values = trials.map((run) => owned + (run.curve[Math.min(day, run.curve.length) - 1] ?? 0)).sort((a, b) => a - b);
     days.push(day);
     low.push(percentile(values, 0.1));
     median.push(percentile(values, 0.5));
     high.push(percentile(values, 0.9));
+    for (const key of keys) {
+      // A finished trial keeps its final stocks rather than dropping out of the band.
+      const stocks = trials.map((run) => run.stocks[key][Math.min(day, run.stocks[key].length) - 1] ?? starts[key]).sort((a, b) => a - b);
+      resources[key].low.push(percentile(stocks, 0.1));
+      resources[key].median.push(percentile(stocks, 0.5));
+      resources[key].high.push(percentile(stocks, 0.9));
+    }
   }
   const milestone = (key: string, label: string, pick: (run: ReturnType<typeof trial>) => number | null): ForecastMilestone => {
     const values = trials.map(pick);
@@ -187,7 +206,7 @@ export function forecast(input: ForecastInput): ForecastResult {
     if (known.length < TRIALS / 2) return { key, label, low: null, day: null, high: null };
     return { key, label, low: percentile(known, 0.1), day: percentile(known, 0.5), high: percentile(known, 0.9) };
   };
-  return { owned, total: owned + total, days, low, median, high, milestones: [
+  return { owned, total: owned + total, days, low, median, high, resources, milestones: [
     milestone('bling', '噗灵开始不够，要穿插刷噗灵', (run) => run.firstBling),
     milestone('half', '缺的颜色收齐一半', (run) => run.reached[1]),
     milestone('full', '仓库第一次满', (run) => run.firstFull),

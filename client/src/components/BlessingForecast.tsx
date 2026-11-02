@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import clsx from 'clsx';
-import type { ForecastInput, ForecastResult } from '@/services/collectionForecast';
+import type { ForecastInput, ForecastResult, ForecastSeries } from '@/services/collectionForecast';
+import { Segmented } from './ui/FeaturePage';
 
 export interface RainbowPreset { id: string; label: string; rate: number; note: string }
 export interface HistoryPoint { day: string; owned: number }
@@ -14,7 +15,22 @@ function loadSaved() {
   try { return JSON.parse(localStorage.getItem(SAVED) ?? '{}') as Record<string, number | string>; } catch { return {}; }
 }
 
-function ForecastChart({ result, history }: { result: ForecastResult; history: HistoryPoint[] }) {
+const METRICS = [
+  { id: 'colors', label: '颜色', unit: '色' },
+  { id: 'bling', label: '噗灵', unit: '' },
+  { id: 'particles', label: '可用粒子', unit: '' },
+  { id: 'embryos', label: '待升胚子', unit: '个' },
+  { id: 'capacity', label: '仓库', unit: '格' },
+] as const;
+type Metric = (typeof METRICS)[number]['id'];
+
+const compact = (value: number) => value >= 10000
+  ? `${(value / 10000).toLocaleString('zh-CN', { maximumFractionDigits: value >= 1000000 ? 0 : 1 })} 万`
+  : Math.round(value).toLocaleString('zh-CN');
+const fullDate = (date: Date) => `${date.getFullYear()} 年 ${date.getMonth() + 1} 月 ${date.getDate()} 日`;
+const seriesOf = (result: ForecastResult, metric: Metric): ForecastSeries => metric === 'colors' ? result : result.resources[metric];
+
+function ForecastChart({ result, history, metric }: { result: ForecastResult; history: HistoryPoint[]; metric: Metric }) {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(720);
   const [hover, setHover] = useState<number | null>(null);
@@ -25,16 +41,19 @@ function ForecastChart({ result, history }: { result: ForecastResult; history: H
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+  const series = seriesOf(result, metric);
+  const colors = metric === 'colors';
   const height = 260;
-  const margin = { left: 38, right: 14, top: 12, bottom: 26 };
-  const past = history.map((point) => ({ x: Math.round((new Date(point.day).getTime() - Date.now()) / DAY_MS), y: point.owned }));
+  const margin = { left: 52, right: 14, top: 12, bottom: 26 };
+  const past = colors ? history.map((point) => ({ x: Math.round((new Date(point.day).getTime() - Date.now()) / DAY_MS), y: point.owned })) : [];
   const start = Math.min(0, ...past.map((point) => point.x));
   const end = Math.max(1, result.days[result.days.length - 1]);
+  const top = colors ? result.total || 1 : Math.max(1, ...series.high) * 1.05;
   const scaleX = (day: number) => margin.left + (day - start) / (end - start) * (width - margin.left - margin.right);
-  const scaleY = (value: number) => margin.top + (1 - value / (result.total || 1)) * (height - margin.top - margin.bottom);
+  const scaleY = (value: number) => margin.top + (1 - value / top) * (height - margin.top - margin.bottom);
   const line = (values: number[]) => values.map((value, index) => `${index ? 'L' : 'M'}${scaleX(result.days[index]).toFixed(1)} ${scaleY(value).toFixed(1)}`).join('');
-  const band = `${line(result.high)}L${[...result.low].reverse().map((value, index) => `${scaleX(result.days[result.days.length - 1 - index]).toFixed(1)} ${scaleY(value).toFixed(1)}`).join('L')}Z`;
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((share) => Math.round(result.total * share));
+  const band = `${line(series.high)}L${[...series.low].reverse().map((value, index) => `${scaleX(result.days[result.days.length - 1 - index]).toFixed(1)} ${scaleY(value).toFixed(1)}`).join('L')}Z`;
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((share) => top * share);
   const xTicks = useMemo(() => {
     const months = end <= 400 ? 3 : end <= 900 ? 6 : 12;
     const ticks: { day: number; label: string }[] = [];
@@ -50,8 +69,9 @@ function ForecastChart({ result, history }: { result: ForecastResult; history: H
   }, [end]);
   const hovered = hover === null ? null : result.days.findIndex((day) => day >= hover);
   const pointer = hovered !== null && hovered >= 0 ? hovered : null;
+  const current = METRICS.find((item) => item.id === metric)!;
   return <div ref={box} className="relative">
-    <svg width={width} height={height} role="img" aria-label={`收集进度预测：当前 ${result.owned} 色，目标 ${result.total} 色`}
+    <svg width={width} height={height} role="img" aria-label={`${current.label}预测：当前 ${compact(series.median[0])}`}
       onMouseMove={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect();
         const day = start + (event.clientX - bounds.left - margin.left) / (width - margin.left - margin.right) * (end - start);
@@ -59,22 +79,27 @@ function ForecastChart({ result, history }: { result: ForecastResult; history: H
       }} onMouseLeave={() => setHover(null)}>
       {yTicks.map((tick) => <g key={tick}>
         <line x1={margin.left} x2={width - margin.right} y1={scaleY(tick)} y2={scaleY(tick)} stroke="var(--color-border)" strokeWidth={1} />
-        <text x={margin.left - 6} y={scaleY(tick) + 4} textAnchor="end" fontSize={11} fill="var(--color-text-muted)">{tick}</text>
+        <text x={margin.left - 6} y={scaleY(tick) + 4} textAnchor="end" fontSize={11} fill="var(--color-text-muted)">{compact(tick)}</text>
       </g>)}
       {xTicks.map((tick) => <text key={tick.label} x={scaleX(tick.day)} y={height - 8} textAnchor="middle" fontSize={11} fill="var(--color-text-muted)">{tick.label}</text>)}
       <path d={band} fill="var(--color-accent)" opacity={0.14} />
-      <path d={line(result.median)} fill="none" stroke="var(--color-accent)" strokeWidth={2} strokeLinejoin="round" />
+      <path d={line(series.median)} fill="none" stroke="var(--color-accent)" strokeWidth={2} strokeLinejoin="round" />
       {past.length > 1 && <path d={past.map((point, index) => `${index ? 'L' : 'M'}${scaleX(point.x).toFixed(1)} ${scaleY(point.y).toFixed(1)}`).join('')} fill="none" stroke="var(--color-text-primary)" strokeWidth={2} strokeLinejoin="round" />}
-      <circle cx={scaleX(0)} cy={scaleY(result.owned)} r={4} fill="var(--color-text-primary)" stroke="var(--color-bg-secondary)" strokeWidth={2} />
+      <circle cx={scaleX(0)} cy={scaleY(series.median[0])} r={4} fill="var(--color-text-primary)" stroke="var(--color-bg-secondary)" strokeWidth={2} />
       {pointer !== null && <g>
-        <line x1={scaleX(result.days[pointer])} x2={scaleX(result.days[pointer])} y1={margin.top} y2={height - margin.bottom} stroke="var(--color-text-muted)" strokeWidth={1} />
-        <circle cx={scaleX(result.days[pointer])} cy={scaleY(result.median[pointer])} r={4} fill="var(--color-accent)" stroke="var(--color-bg-secondary)" strokeWidth={2} />
+        <line x1={scaleX(result.days[pointer])} x2={scaleX(result.days[pointer])} y1={margin.top} y2={height - margin.bottom} stroke="var(--color-text-muted)" strokeWidth={1} strokeDasharray="3 3" />
+        <circle cx={scaleX(result.days[pointer])} cy={scaleY(series.median[pointer])} r={4} fill="var(--color-accent)" stroke="var(--color-bg-secondary)" strokeWidth={2} />
       </g>}
     </svg>
-    {pointer !== null && <div className="pointer-events-none absolute top-2 rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 text-xs shadow-md"
+    {pointer !== null && <div className="pointer-events-none absolute top-2 min-w-44 rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 text-xs shadow-md"
       style={scaleX(result.days[pointer]) > width / 2 ? { right: width - scaleX(result.days[pointer]) + 10 } : { left: scaleX(result.days[pointer]) + 10 }}>
-      <p className="font-medium">{dateLabel(dayAfter(result.days[pointer]))}</p>
-      <p className="mt-0.5 tabular-nums text-text-secondary">约 {result.median[pointer]} 色（{result.low[pointer]}～{result.high[pointer]}）</p>
+      <p className="font-medium tabular-nums">{fullDate(dayAfter(result.days[pointer]))}</p>
+      <dl className="mt-1 space-y-0.5 tabular-nums">{METRICS.map((item) => {
+        const values = seriesOf(result, item.id);
+        return <div key={item.id} className={clsx('flex justify-between gap-4', item.id === metric ? 'font-medium text-text-primary' : 'text-text-secondary')}>
+          <dt>{item.label}</dt><dd>约 {compact(values.median[pointer])}{item.unit}</dd></div>;
+      })}</dl>
+      <p className="mt-1 tabular-nums text-text-muted">{current.label}八成区间 {compact(series.low[pointer])}～{compact(series.high[pointer])}</p>
     </div>}
   </div>;
 }
@@ -93,6 +118,7 @@ export function BlessingForecast({ input, presets, defaultPreset, history }: {
   const [extraParticles, setExtraParticles] = useState(0);
   const [result, setResult] = useState<ForecastResult | null>(null);
   const [busy, setBusy] = useState(true);
+  const [metric, setMetric] = useState<Metric>('colors');
   const chosen = presets.find((item) => item.id === preset) ?? presets.find((item) => item.id === defaultPreset) ?? presets[0];
   const rainbow = chosen?.rate ?? 0.054;
   const key = JSON.stringify({ input, rainbow, energy, income, extraBling, extraParticles });
@@ -136,7 +162,8 @@ export function BlessingForecast({ input, presets, defaultPreset, history }: {
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm bg-accent/15" />八成区间</span>
       </div>
     </div>
-    <div className="mt-3">{result ? <ForecastChart result={result} history={history} /> : <div className="h-[260px]" />}</div>
+    <div className="mt-3"><Segmented label="预估走势" value={metric} onChange={setMetric} options={METRICS.map((item) => [item.id, item.label] as const)} /></div>
+    <div className="mt-2">{result ? <ForecastChart result={result} history={history} metric={metric} /> : <div className="h-[260px]" />}</div>
     {result && <ol className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{[...result.milestones].sort((a, b) => (a.day ?? Infinity) - (b.day ?? Infinity)).map((item) =>
       <li key={item.key} className="rounded-lg bg-bg-primary px-3 py-2">
         <p className="text-sm font-medium tabular-nums">{item.day === null ? '—' : dateLabel(dayAfter(item.day))}</p>
