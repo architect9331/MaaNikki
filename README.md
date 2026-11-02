@@ -42,7 +42,23 @@ Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https:
 <details>
 <summary>🌈 看看祝福闪光收集进度</summary>
 
-![祝福闪光收集进度：按副本、套组和部位查看已收集颜色](docs/images/collection-progress.png)
+![祝福闪光收集进度：总览已收集颜色、资源和预计完成时间](docs/images/collection-progress.png)
+
+![按副本、套组和部位查看已收集颜色](docs/images/collection-detail.png)
+
+</details>
+
+<details>
+<summary>👗 看看衣柜与搭配计算</summary>
+
+![搭配计算：选择场次后计算最高分搭配](docs/images/wardrobe-calc.png)
+
+</details>
+
+<details>
+<summary>🌙 看看深色主题</summary>
+
+![深色主题](docs/images/overview-dark.png)
 
 </details>
 
