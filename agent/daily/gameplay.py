@@ -13,6 +13,7 @@ from .settings import ROOT
 class Gameplay:
     # Minimum energy for one challenge, not the selected batch's total cost.
     MIN_ENERGY = {"jihua": 10, "bless": 40, "monster": 40, "weekly": 60}
+    PARADISE_CLAIM_LIMIT = 5
     REALM_LEVEL_ROI = [145, 90, 410, 600]
     # The level list ends before the recognition ROI's right/bottom margins.
     REALM_SCROLL_ROI = [165, 105, 335, 545]
@@ -504,6 +505,53 @@ class Gameplay:
         self.rt.log("奇迹之旅奖励领取状态待确认，本项停止。")
         return False
 
+    def paradise_claim_state(self, claim):
+        """Read the claim button; progress and the button can update after a reward closes."""
+        for attempt in range(3):
+            with self.rt.observe(fresh=True):
+                if self.rt.hit(claim):
+                    return "available"
+                # With no claimable rewards, Paradise can show only ongoing-task
+                # glyphs and omit the bottom claim button.
+                if attempt == 2 and (self.ui.page_matches("MaaNikki_Monthly_ParadiseReady")
+                                     and (self.rt.hit("MaaNikki_Monthly_ParadiseClaimEmpty")
+                                          or self.rt.hit("MaaNikki_Monthly_ParadiseTaskOngoing"))
+                                     and not self.rt.hit("MaaNikki_RewardLayer")
+                                     and not self.rt.hit("MaaNikki_Monthly_ParadiseReward")
+                                     and not self.rt.hit("MaaNikki_Monthly_ParadiseContinue")):
+                    return "empty"
+            if attempt < 2 and not self.rt.pause(1):
+                return None
+        return "unknown"
+
+    def paradise_claims(self, claim):
+        """Claim until no reward remains; return whether any reward was claimed.
+
+        Claimed Paradise rewards can count toward cumulative milestones and
+        make another reward claimable, so one claim does not end this page.
+        The limit only stops a button that keeps matching without any effect.
+        """
+        claimed = False
+        for _ in range(self.PARADISE_CLAIM_LIMIT):
+            state = self.paradise_claim_state(claim)
+            if state is None or self.rt.stopped:
+                return None
+            if state == "empty":
+                return claimed
+            if state == "unknown":
+                self.monthly_diagnostic("paradise", "claim_unconfirmed", "未能确定一键领取按钮状态")
+                self.rt.log("乐园构想领取按钮状态未确认，本项未完成。")
+                return None
+            if not self.rt.click_template(claim, wait_seconds=.5):
+                return None
+            self.monthly_diagnostic("paradise", "after_claim")
+            if not self.paradise_reward_return():
+                return None
+            claimed = True
+        self.monthly_diagnostic("paradise", "claim_repeated", "多次领取后仍显示可领取")
+        self.rt.log("乐园构想多次领取后仍显示可领取，本项未完成。")
+        return None
+
     def monthly_rewards(self, kind):
         label = "乐园构想" if kind == "paradise" else "奇迹之旅"
         self.rt.log(f"已识别{label}，开始处理奖励。", detail=True)
@@ -531,46 +579,25 @@ class Gameplay:
                     return False
             claim = ("MaaNikki_Monthly_ParadiseClaim" if kind == "paradise"
                      else f"MaaNikki_Monthly_Claim{page}")
-            empty = False
-            for attempt in range(1 if kind == "travel" else 3):
-                with self.rt.observe(fresh=True):
-                    available = self.rt.hit(claim)
-                    if kind == "paradise" and not available and attempt == 2:
-                        # With no claimable rewards, Paradise can show only
-                        # ongoing-task glyphs and omit the bottom claim button.
-                        empty = (self.ui.page_matches("MaaNikki_Monthly_ParadiseReady")
-                                 and (self.rt.hit("MaaNikki_Monthly_ParadiseClaimEmpty")
-                                      or self.rt.hit("MaaNikki_Monthly_ParadiseTaskOngoing"))
-                                 and not self.rt.hit("MaaNikki_RewardLayer")
-                                 and not self.rt.hit("MaaNikki_Monthly_ParadiseReward")
-                                 and not self.rt.hit("MaaNikki_Monthly_ParadiseContinue"))
-                if available:
-                    if kind == "travel" and index == 0:
-                        treasure_available = True
-                        break
-                    if not self.rt.click_template(claim, wait_seconds=0 if kind == "travel" else .5):
-                        return False
-                    if kind == "paradise":
-                        self.monthly_diagnostic(kind, "after_claim")
-                        if not self.paradise_reward_return():
-                            return False
-                        claimed = True
-                        break
-                    if not self.monthly_travel_claim_return(page):
-                        return False
-                    claimed = True
-                    if page == "Task":
-                        task_claimed = True
-                    break
-                if kind == "paradise" and attempt < 2 and not self.rt.pause(1):
+            if kind == "paradise":
+                result = self.paradise_claims(claim)
+                if result is None or not self.rt.pause(.5):
                     return False
-            else:
-                if kind == "paradise" and not empty:
-                    self.monthly_diagnostic(kind, "claim_unconfirmed", "未能确定一键领取按钮状态")
-                    self.rt.log("乐园构想领取按钮状态未确认，本项未完成。")
+                claimed = claimed or result
+                continue
+            with self.rt.observe(fresh=True):
+                available = self.rt.hit(claim)
+            if available:
+                if index == 0:
+                    treasure_available = True
+                    continue
+                if not self.rt.click_template(claim, wait_seconds=0):
                     return False
-            if kind == "paradise" and not self.rt.pause(.5):
-                return False
+                if not self.monthly_travel_claim_return(page):
+                    return False
+                claimed = True
+                if page == "Task":
+                    task_claimed = True
         self.rt.log(f"{label}奖励已领取。" if claimed else f"{label}所选页签没有可领取的奖励。")
         return not self.rt.stopped
 
