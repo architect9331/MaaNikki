@@ -68,7 +68,6 @@ export function FirstRunSetup() {
       <ShieldAlert className="mt-1 h-4 w-4 shrink-0 text-warning" />
       <p>MaaNikki 是非官方的开源工具，与游戏开发商无关。它只通过截图和模拟键鼠操作游戏，不修改游戏文件，也不读写内存，但第三方工具仍可能不符合游戏规则。<strong className="font-medium text-text-primary">使用风险由你自行承担。</strong></p>
     </div>
-    <p className="text-xs leading-5">软件默认上报崩溃、版本、硬件摘要、任务结果，以及失败任务的日志和截图（遮罩 UID），用来发现和修复问题。可在「设置 → 通用」关闭。</p>
     <Toggle checked={accepted} onChange={setAccepted} title="我已了解以上内容，继续使用" />
   </div>;
 
