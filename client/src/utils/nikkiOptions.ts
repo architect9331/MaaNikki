@@ -3,7 +3,7 @@ import type { OptionValue } from '@/types/interface';
 const REALM_MODE_TARGETS: Record<string, string> = {
   JihuaTarget: 'Jihua', JihuaMaterialMode: 'Jihua', JihuaMaterials: 'Jihua', MonsterTarget: 'Monster',
 };
-const COLLECTION_OPTIONS = new Set(['CollectionPriority', 'CollectionBling', 'CollectionDecompose', 'CollectionOrganize', 'CollectionStats']);
+const COLLECTION_OPTIONS = new Set(['CollectionPriority', 'CollectionBling', 'CollectionDecompose', 'CollectionOrganize']);
 
 export const realmCollectionEnabled = (values: Record<string, OptionValue>): boolean =>
   values.CollectionMode?.type === 'switch' && values.CollectionMode.value;

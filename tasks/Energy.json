@@ -18,12 +18,24 @@
                 "CollectionBling",
                 "CollectionDecompose",
                 "CollectionOrganize",
-                "CollectionStats",
                 "JihuaTarget",
                 "JihuaMaterialMode",
                 "BlessTarget",
                 "MonsterTarget"
             ]
+        }
+    ],
+    "global_option": [
+        "CollectionStats"
+    ],
+    "setting": [
+        {
+            "name": "collection_statistics",
+            "label": "祝福闪光统计",
+            "option": [
+                "CollectionStats"
+            ],
+            "default_expand": true
         }
     ],
     "option": {

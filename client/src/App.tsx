@@ -1046,6 +1046,17 @@ function App() {
           }
           useAppStore.setState({ nikkiPresetVersion: 6 });
         }
+
+        // Statistics moved from the realm task to settings: keep an earlier opt-out.
+        if (pi?.name === 'MaaNikki' && useAppStore.getState().nikkiPresetVersion < 7) {
+          const state = useAppStore.getState();
+          const optedOut = state.instances.some((instance) => instance.selectedTasks.some((task) => {
+            const saved = task.optionValues.CollectionStats;
+            return saved?.type === 'switch' && !saved.value;
+          }));
+          if (optedOut) state.setGlobalOptionValue('CollectionStats', { type: 'switch', value: false });
+          useAppStore.setState({ nikkiPresetVersion: 7 });
+        }
       }, 0);
 
       // 检查是否为开机自启动，若配置了自动执行的实例则激活并启动任务
