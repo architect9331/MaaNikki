@@ -17,7 +17,8 @@
       "dsn": "https://a18b13840bf32739804bf70e57a0beb4@o4512306542936064.ingest.us.sentry.io/4512306595561472",
       "environment": "production",
       "tracing": true,
-      "traces_sample_rate": 0.1,
+      "traces_sample_rate": 1.0,
+      "node_trace_sample_rate": 0.1,
       "failure_attachments_sample_rate": 1.0
     }
   },

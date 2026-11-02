@@ -67,6 +67,9 @@ pub struct TelemetryInitConfig {
     pub tracing: bool,
     /// 事务采样率 0~1。
     pub traces_sample_rate: f32,
+    /// 节点 Span 按运行采样 0~1；任务级 Span 不受影响，用于统计成功率。
+    #[serde(default = "default_sample_rate")]
+    pub node_trace_sample_rate: f32,
     /// 失败截图附件独立采样率 0~1；Error Event 与结构化日志不受此值影响。
     #[serde(default = "default_sample_rate")]
     pub failure_attachments_sample_rate: f32,
@@ -109,6 +112,8 @@ struct RunState {
     tags: BTreeMap<String, String>,
     /// 是否已有任务失败。
     has_failed: bool,
+    /// 本次运行是否上报节点 Span。
+    trace_nodes: bool,
     /// 本次运行创建时的项目与截图附件配置，避免运行中切换项目导致事件错配。
     event_config: FailureEventConfig,
 }
@@ -118,6 +123,7 @@ struct FailureEventConfig {
     app_name: String,
     app_version: String,
     mxu_version: String,
+    node_trace_sample_rate: f32,
     failure_attachments_sample_rate: f32,
 }
 
@@ -127,6 +133,7 @@ impl From<&TelemetryInitConfig> for FailureEventConfig {
             app_name: config.app_name.clone(),
             app_version: config.app_version.clone(),
             mxu_version: config.mxu_version.clone(),
+            node_trace_sample_rate: config.node_trace_sample_rate.clamp(0.0, 1.0),
             failure_attachments_sample_rate: config.failure_attachments_sample_rate.clamp(0.0, 1.0),
         }
     }
@@ -410,6 +417,10 @@ fn build_startup_config(app_config: &AppConfigState) -> Option<TelemetryInitConf
             .get("traces_sample_rate")
             .and_then(|v| v.as_f64())
             .unwrap_or(1.0) as f32,
+        node_trace_sample_rate: sentry_cfg
+            .get("node_trace_sample_rate")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(1.0) as f32,
         failure_attachments_sample_rate: sentry_cfg
             .get("failure_attachments_sample_rate")
             .and_then(|v| v.as_f64())
@@ -609,6 +620,8 @@ fn do_init(config: &TelemetryInitConfig) {
         .enable_logs(true)
         // 隐私：不采集用户 IP、请求头等 PII
         .send_default_pii(false)
+        // 隐私：不上报电脑名；留空时 SDK 会自动填入主机名
+        .server_name("anonymous")
         // Session（Release Health）：一次进程运行一条，init 时自动开始
         .auto_session_tracking(true)
         .session_mode(sentry::SessionMode::Application)
@@ -747,6 +760,8 @@ pub fn on_run_start(instance_id: &str, task_names: &[String], controller: Option
         .ok()
         .and_then(|config| config.as_ref().map(FailureEventConfig::from))
         .unwrap_or_default();
+    let trace_nodes = (sentry::types::random_uuid().as_bytes()[0] as f32) / 256.0
+        < event_config.node_trace_sample_rate;
     let ctx = sentry::TransactionContext::new("mxu.task_run", "mxu.run");
     let transaction: sentry::TransactionOrSpan = sentry::start_transaction(ctx).into();
     transaction.set_data("run_id", run_id.clone().into());
@@ -787,6 +802,7 @@ pub fn on_run_start(instance_id: &str, task_names: &[String], controller: Option
                 active_task: None,
                 tags,
                 has_failed: false,
+                trace_nodes,
                 event_config,
             },
         );
@@ -1052,6 +1068,10 @@ fn record_node_event(
                 duration_ms,
             },
         );
+    }
+
+    if !run.trace_nodes {
+        return;
     }
 
     let count = run.traced_nodes.entry(owner_id).or_insert(0);

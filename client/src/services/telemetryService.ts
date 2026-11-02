@@ -165,6 +165,8 @@ export interface TelemetryInitConfig {
   tracing: boolean;
   /** 事务采样率 0~1 */
   tracesSampleRate: number;
+  /** 节点 Span 按运行采样率 0~1 */
+  nodeTraceSampleRate: number;
   /** 失败附件独立采样率 0~1 */
   failureAttachmentsSampleRate: number;
   /** 资源项目名（interface.name），用于 tag app.name */
