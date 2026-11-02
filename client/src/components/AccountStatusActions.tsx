@@ -139,10 +139,10 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
       status={error ? '读取失败' : progress.percentage === null ? '尚无记录' : `${progress.percentage}%`}
       tooltip={<div className="space-y-1"><p className="font-medium">祝福闪光收集进度</p><p className="text-text-secondary">{detail}</p></div>}
       onClick={() => open('blessing')} />
-    <FeatureTile icon={Shirt} title="衣柜" compact={compact} busy={wardrobeBusy}
+    <FeatureTile icon={Shirt} title="衣柜与搭配" compact={compact} busy={wardrobeBusy}
       status={wardrobeBusy || wardrobeStatus === 'error' ? wardrobeLabels[wardrobeStatus] : wardrobe ? `${wardrobe.scanned_count} 件` : '尚未读取'}
       warn={wardrobeStatus === 'error'}
-      tooltip={<p className="font-medium">衣柜读取与搭配计算</p>}
+      tooltip={<div className="space-y-1"><p className="font-medium">衣柜与搭配</p><p className="text-text-secondary">读取衣柜，计算巅峰赛等比赛的最高分搭配。</p></div>}
       onClick={() => open('wardrobe')} />
     <FeatureTile icon={Compass} title="辅助功能" compact={compact} busy={explorationBusy}
       status={explorationStatusLabels[exploration.status]} warn={exploration.status === 'error'}

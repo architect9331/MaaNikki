@@ -1,11 +1,11 @@
-import { Check, Clock, RefreshCw, Play, Square, Shirt } from 'lucide-react';
+import { Calculator, Check, Clock, RefreshCw, Play, Square, Shirt } from 'lucide-react';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { useWardrobeStore, startWardrobeRead, stopWardrobeRead, wardrobeLabels } from '@/services/wardrobeService';
 import { isTauri } from '@/utils/paths';
 import { LogsPanel } from './LogsPanel';
-import { Card, FeaturePage, primaryButton, secondaryButton, Segmented, Stat, StatusBar } from './ui/FeaturePage';
+import { Card, FeaturePage, primaryButton, secondaryButton, Stat, StatusBar } from './ui/FeaturePage';
 import { WARDROBE_INSTANCE_ID } from '@/services/wardrobeService';
 import { WardrobeCalculator } from './WardrobeCalculator';
 
@@ -20,12 +20,18 @@ export function WardrobePage({ onClose }: { onClose: () => void }) {
   const parts = Object.entries(scan?.parts ?? {});
   useEffect(() => { void refresh().catch(() => {}); }, [refresh]);
   const tone = error || accountError ? 'warn' : busy ? 'busy' : scan?.complete ? 'ok' : 'idle';
-  return <FeaturePage icon={Shirt} title="衣柜" onBack={onClose} actions={<>
+  return <FeaturePage icon={Shirt} title="衣柜与搭配" onBack={onClose} actions={<>
     {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
-    <Segmented label="衣柜页面" value={tab} options={[['read', '衣柜读取'], ['calculate', '搭配计算']] as const}
-      onChange={(id) => { setTab(id); if (id === 'calculate') setCalculatorOpened(true); }} />
     <button onClick={() => void refresh().then(() => setRefreshToken((previous) => previous + 1)).catch(() => {})} disabled={loading} title="刷新衣柜记录" aria-label="刷新衣柜记录" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><RefreshCw className={clsx('h-4 w-4', loading && 'animate-spin')} /></button>
   </>}>
+    <div role="tablist" aria-label="衣柜功能" className="grid grid-cols-2 gap-2">
+      {([['read', Shirt, '衣柜读取', '读取并记录你拥有的衣服'], ['calculate', Calculator, '搭配计算', '算出最高分搭配和要养成什么']] as const).map(([id, Icon, label, detail]) =>
+        <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => { setTab(id); if (id === 'calculate') setCalculatorOpened(true); }}
+          className={clsx('rounded-xl border p-3 text-left transition-colors', tab === id ? 'border-accent bg-accent/10' : 'border-border bg-bg-secondary hover:bg-bg-hover')}>
+          <span className="flex items-center gap-2 text-sm font-semibold"><Icon className={clsx('h-4 w-4', tab === id ? 'text-accent' : 'text-text-muted')} />{label}</span>
+          <span className="mt-1 block text-xs text-text-secondary">{detail}</span>
+        </button>)}
+    </div>
     <div className={clsx('space-y-4', tab !== 'read' && 'hidden')}>
       <StatusBar tone={tone} title={wardrobeLabels[status]} detail={error || accountError || '进入游戏主界面并清空衣柜筛选后开始，读取期间保持游戏在前台。中断后可继续，再次读取会沿用已有记录并识别新增衣服。'}>
         <button disabled={!isTauri() || status === 'stopping'} onClick={() => busy ? stopWardrobeRead() : void startWardrobeRead()} className={busy ? secondaryButton : primaryButton}>

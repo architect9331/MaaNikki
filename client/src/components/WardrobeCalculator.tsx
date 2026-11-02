@@ -264,11 +264,11 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
   if (loading) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在读取账号衣柜与计分资料</div>;
   if (!payload || !profile) return <p className={clsx(card, 'text-sm text-warning')} role="alert">{error || '请先读取衣柜。'}</p>;
 
-  return <div className="grid items-start gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+  return <div className="space-y-4">
+    <WardrobeMatchPicker matches={payload.catalog.matches} value={matchId} onChange={(id) => { setMatchId(id); setChoice(null); }} />
+    <div className="grid items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
     <aside className="space-y-3 lg:sticky lg:top-0">
       <section className={clsx(card, 'space-y-3')}>
-        <div><p className="mb-1.5 text-xs text-text-secondary">搭配关卡</p>
-          <WardrobeMatchPicker matches={payload.catalog.matches} value={matchId} onChange={(id) => { setMatchId(id); setChoice(null); }} /></div>
         <label className="block space-y-1.5 text-xs text-text-secondary"><span>计算目标</span>
           <select className={field} value={goal} onChange={(event) => setGoal(event.target.value as typeof goal)}><option value="stars">优先满足星级条件</option><option value="score">最高评分</option></select></label>
         {!!match?.choices.length && <label className="block space-y-1.5 text-xs text-text-secondary"><span>场地加成</span>
@@ -326,7 +326,7 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
         <div className="flex items-center justify-between text-xs text-text-muted"><span>计算用时 {result.elapsedMs < 100 ? '不足 0.1' : (result.elapsedMs / 1000).toFixed(1)} 秒</span>
           <button onClick={() => void copyOutfit()} disabled={!result[mode]} className="flex items-center gap-1 hover:text-text-primary disabled:opacity-40">{copied ? <Check className="h-3.5 w-3.5" /> : <ClipboardCopy className="h-3.5 w-3.5" />}{copied ? '已复制' : '复制搭配'}</button></div>
         <div className={clsx(stale && 'opacity-60')}><OutfitView outfit={result[mode]} payload={payload} settings={settings} match={resultMatch} potential={mode === 'potential'} setLevel={setLevel} /></div>
-      </> : <div className={clsx(card, 'py-10 text-center text-sm text-text-secondary')}>{profile.items.length ? '选好关卡后开始计算，这里会显示推荐搭配。' : '读取衣柜后才能计算搭配。'}</div>}
+      </> : <div className={clsx(card, 'py-10 text-center text-sm text-text-secondary')}>{profile.items.length ? '选好场次后开始计算，这里会显示推荐搭配。' : '读取衣柜后才能计算搭配。'}</div>}
 
       <details className={card} open={unknownCount > 0 && !result}><summary className="cursor-pointer text-sm font-medium">补充衣服等级 <span className="ml-1 text-xs font-normal text-text-muted">{profile.groups.length} 组，{unknownCount} 组未知</span></summary>
         <p className="mt-3 text-xs leading-5 text-text-secondary">同一养成组的各颜色共享等级。按当前关卡的焕新分数从高到低排列，从上往下填最划算；填 0～10，11 表示已焕新，用 Tab 跳到下一项。</p>
@@ -356,6 +356,7 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
         <div className="mt-4 max-w-40"><NumberField label="展示加成 %" value={settings.heart.display}
           onChange={(display) => changeSettings((previous) => ({ ...previous, heart: { ...previous.heart, display } }))} /></div>
       </details>
+    </div>
     </div>
   </div>;
 }

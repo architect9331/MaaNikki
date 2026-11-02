@@ -1,92 +1,81 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Trophy } from 'lucide-react';
 import clsx from 'clsx';
 import type { Match } from '@/services/scoring/types';
+import { Segmented } from './ui/FeaturePage';
 
-interface Series { id: string; stages: [string, Match][] }
+type Category = 'current' | 'past' | 'contest' | 'other';
+interface Series { group: string; label: string; region: string; date: string; stages: [string, Match][] }
 
-/** Series keep catalog order; dated contests sort newest first within a region. */
-function buildTree(matches: Record<string, Match>) {
-  const regions = new Map<string, Map<string, Series>>();
+const CROWN = '奇迹之冠';
+const PEAK = '巅峰赛';
+const CATEGORIES = [['current', '当期巅峰赛'], ['past', '往期巅峰赛'], ['contest', '搭配赛'], ['other', '其他搭配']] as const;
+/** Contests change on the 1st and 16th, so a period lasts at most 16 days. */
+const PERIOD_DAYS = 16;
+
+function buildSeries(matches: Record<string, Match>): Series[] {
+  const series = new Map<string, Series>();
   for (const entry of Object.entries(matches)) {
-    const [region, series = region] = entry[1].group.split(' / ');
-    const group = regions.get(region) ?? new Map<string, Series>();
-    regions.set(region, group);
-    const row = group.get(series) ?? { id: entry[1].group, stages: [] };
+    const { group } = entry[1];
+    const [region, label = region] = group.split(' / ');
+    const row = series.get(group) ?? { group, label, region, date: /\d{4}-\d{2}-\d{2}/.exec(group)?.[0] ?? '', stages: [] };
     row.stages.push(entry);
-    group.set(series, row);
+    series.set(group, row);
   }
-  return [...regions].map(([region, series]) => ({ region, series: [...series].sort((a, b) => {
-    const dated = (name: string) => /\d{4}-\d{2}-\d{2}/.exec(name)?.[0] ?? '';
-    return dated(b[0]).localeCompare(dated(a[0]));
-  }) }));
+  return [...series.values()];
 }
 
+const isPeak = (row: Series) => row.region === CROWN && row.label.includes(PEAK);
+const categoryOf = (row: Series, latest: Series | undefined): Category =>
+  isPeak(row) ? (row === latest ? 'current' : 'past') : row.region === CROWN ? 'contest' : 'other';
+
+/** The peak contest is the entry point; past periods and other contests sit beside it. */
 export function WardrobeMatchPicker({ matches, value, onChange }: {
   matches: Record<string, Match>; value: string; onChange: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const root = useRef<HTMLDivElement>(null);
-  const tree = useMemo(() => buildTree(matches), [matches]);
-  const current = matches[value];
-  const siblings = useMemo(() => Object.keys(matches).filter((id) => matches[id].group === current?.group), [matches, current?.group]);
-  const position = siblings.indexOf(value);
-  const needle = query.trim().toLowerCase();
+  const all = useMemo(() => buildSeries(matches), [matches]);
+  const peaks = useMemo(() => all.filter(isPeak).sort((a, b) => b.date.localeCompare(a.date)), [all]);
+  const latest = peaks[0];
+  const selected = all.find((row) => row.stages.some(([id]) => id === value));
+  const [category, setCategory] = useState<Category>('current');
+  useEffect(() => { if (selected) setCategory(categoryOf(selected, latest)); }, [selected, latest]);
 
-  useEffect(() => {
-    if (!open) return;
-    setExpanded(new Set(current ? [current.group] : []));
-    const close = (event: MouseEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [open, current]);
+  const inCategory = useMemo(() => all.filter((row) => categoryOf(row, latest) === category)
+    .sort((a, b) => b.date.localeCompare(a.date)), [all, latest, category]);
+  const series = selected && inCategory.includes(selected) ? selected : inCategory[0];
+  const regions = useMemo(() => [...new Set(inCategory.map((row) => row.region))], [inCategory]);
+  const stale = !!latest?.date && (Date.now() - Date.parse(latest.date)) / 86400000 >= PERIOD_DAYS;
 
-  const choose = (id: string) => { onChange(id); setOpen(false); setQuery(''); };
-  return <div ref={root} className="relative">
-    <div className="flex items-stretch gap-1.5">
-      <button type="button" aria-expanded={open} onClick={() => setOpen((previous) => !previous)}
-        className="min-w-0 flex-1 rounded-lg border border-border bg-bg-primary px-3 py-2 text-left hover:border-accent/60">
-        <span className="flex items-center gap-2"><span className="min-w-0 flex-1">
-          <span className="block truncate text-[11px] text-text-muted">{current?.group ?? '选择关卡'}</span>
-          <span className="mt-0.5 block truncate text-sm font-medium">{current?.name ?? '未选择'}</span></span>
-        {open ? <ChevronUp className="h-4 w-4 shrink-0 text-text-muted" /> : <ChevronDown className="h-4 w-4 shrink-0 text-text-muted" />}</span>
-      </button>
-      {([[-1, ChevronLeft, '上一场'], [1, ChevronRight, '下一场']] as const).map(([step, Icon, label]) =>
-        <button key={label} type="button" aria-label={label} title={label} disabled={!siblings[position + step]}
-          onClick={() => onChange(siblings[position + step])}
-          className="rounded-lg border border-border px-1.5 hover:bg-bg-hover disabled:opacity-30"><Icon className="h-4 w-4" /></button>)}
+  function chooseCategory(next: Category) {
+    setCategory(next);
+    const first = all.filter((row) => categoryOf(row, latest) === next)
+      .sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (first) onChange(first.stages[0][0]);
+  }
+
+  return <section className="rounded-xl border border-border bg-bg-secondary p-4">
+    <div className="flex flex-wrap items-center gap-3">
+      <Segmented label="比赛类型" value={category} options={CATEGORIES} onChange={chooseCategory} />
+      {category === 'current' && latest && <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
+        <Trophy className="h-4 w-4 shrink-0 text-accent-secondary" /><span className="truncate">{latest.label.replace(/\s*\(.*\)/, '')}</span>
+        <span className="shrink-0 text-xs font-normal tabular-nums text-text-muted">{latest.date} 开始</span></p>}
+      {category !== 'current' && <select aria-label="选择比赛" value={series?.group ?? ''} onChange={(event) => {
+        const row = inCategory.find((item) => item.group === event.target.value);
+        if (row) onChange(row.stages[0][0]);
+      }} className="min-w-48 rounded-lg border border-border bg-bg-primary px-3 py-1.5 text-sm outline-none focus:border-accent">
+        {regions.length > 1
+          ? regions.map((region) => <optgroup key={region} label={region}>{inCategory.filter((row) => row.region === region)
+            .map((row) => <option key={row.group} value={row.group}>{row.label}</option>)}</optgroup>)
+          : inCategory.map((row) => <option key={row.group} value={row.group}>{row.label}</option>)}
+      </select>}
     </div>
-    {open && <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-border bg-bg-primary shadow-lg">
-      <label className="flex items-center gap-2 border-b border-border px-3 py-2"><Search className="h-3.5 w-3.5 text-text-muted" />
-        <input autoFocus aria-label="搜索关卡" placeholder="搜索关卡或系列" value={query} onChange={(event) => setQuery(event.target.value)}
-          className="w-full bg-transparent text-sm outline-none" /></label>
-      <div className="max-h-96 overflow-auto py-1 text-sm">
-        {tree.map(({ region, series }) => {
-          const rows = series.map(([name, row]) => ({ name, row, stages: needle && !`${region} ${name}`.toLowerCase().includes(needle)
-            ? row.stages.filter(([, stage]) => stage.name.toLowerCase().includes(needle)) : row.stages }))
-            .filter((row) => row.stages.length);
-          if (!rows.length) return null;
-          return <div key={region}><p className="px-3 pb-1 pt-2 text-[11px] font-medium text-text-muted">{region}</p>
-            {rows.map(({ name, row, stages }) => {
-              const show = !!needle || expanded.has(row.id);
-              return <div key={row.id}>
-                <button type="button" aria-expanded={show} onClick={() => setExpanded((previous) => {
-                  const next = new Set(previous);
-                  if (next.has(row.id)) next.delete(row.id); else next.add(row.id);
-                  return next;
-                })} className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left hover:bg-bg-hover">
-                  <ChevronRight className={clsx('h-3.5 w-3.5 shrink-0 text-text-muted transition-transform', show && 'rotate-90')} />
-                  <span className="min-w-0 flex-1 truncate">{name}</span><span className="text-[11px] text-text-muted">{stages.length} 场</span>
-                </button>
-                {show && stages.map(([id, stage]) => <button key={id} type="button" onClick={() => choose(id)}
-                  className={clsx('block w-full truncate py-1.5 pl-9 pr-3 text-left text-xs hover:bg-bg-hover', id === value && 'bg-accent/10 font-medium text-accent')}>{stage.name}</button>)}
-              </div>;
-            })}
-          </div>;
-        })}
-      </div>
-    </div>}
-  </div>;
+    {category === 'current' && stale && <p className="mt-2 text-xs text-warning">资料还没有更新到最新一期，这里显示的是已收录的最近一期。</p>}
+    <div className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-1.5" role="group" aria-label="选择场次">
+      {series?.stages.map(([id, stage]) => <button key={id} type="button" onClick={() => onChange(id)} aria-pressed={id === value} title={stage.name}
+        className={clsx('min-w-0 truncate rounded-lg border px-2.5 py-2 text-left text-xs transition-colors',
+          id === value ? 'border-accent bg-accent/10 font-medium text-text-primary' : 'border-border bg-bg-primary text-text-secondary hover:bg-bg-hover')}>
+        {stage.name}
+      </button>)}
+    </div>
+  </section>;
 }
