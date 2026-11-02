@@ -277,15 +277,21 @@
     "action": "DoNothing"
   },
   "MaaNikki_Daily_PhotoReady": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Daily_PhotoTitle", "MaaNikki_Daily_PhotoModeTab"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_PhotoTitle": {
+    "recognition": "OCR",
+    "roi": [70, 15, 220, 40],
+    "expected": "大喵相机",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_PhotoModeTab": {
     "recognition": "TemplateMatch",
-    "roi": [
-      1150,
-      60,
-      110,
-      115
-    ],
-    "template": "game/daily/photo_ready.png",
-    "threshold": 0.7,
+    "roi": [560, 18, 90, 52],
+    "template": "game/daily/camera_mode_tab.png",
+    "threshold": 0.85,
     "action": "DoNothing"
   },
   "MaaNikki_Daily_PhotoTaken": {
