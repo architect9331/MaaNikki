@@ -57,7 +57,7 @@ class BlessingPursuitAction(CustomAction):
                     rt.log(f"需要整理的原因：{issue}。", detail=True)
                 result = organize_inventory(rt, catalog, allow_unlock=bool(ORGANIZE_OPTIONS[organize]))
                 if not result["published"] and organization_issue(rt, catalog) is not None:
-                    rt.log("整理未完成且没有可用记录，本轮改用「祝福闪光目标」刷取，下次运行重新整理。",
+                    rt.log("整理未完成且没有可用记录，本轮改用「备选副本」刷取，下次运行重新整理。",
                            ui_text="整理未完成，本轮改刷备用副本。")
                     return fallback_realm(context, rt, argv.node_name)
                 if not result["published"]:
@@ -100,7 +100,7 @@ class BlessingPursuitAction(CustomAction):
                 op.get("kind") == "realm" and op.get("input_attempted") is not False
                 for op in pursuit.report["operations"])
             if not rt.stopped and not farmed:
-                rt.log("本轮尚未刷取，改用「祝福闪光目标」刷取，已保存的进度下次继续。",
+                rt.log("本轮尚未刷取，改用「备选副本」刷取，已保存的进度下次继续。",
                        ui_text="全收集流程未完成，本轮改刷备用副本。")
                 return fallback_realm(context, rt, argv.node_name)
             return False

@@ -8,6 +8,11 @@ const COLLECTION_OPTIONS = new Set(['CollectionPriority', 'CollectionBling', 'Co
 export const realmCollectionEnabled = (values: Record<string, OptionValue>): boolean =>
   values.CollectionMode?.type === 'switch' && values.CollectionMode.value;
 
+/** In collection mode the blessing target is only the fallback for a failed organization. */
+export function realmOptionLabel(key: string, values: Record<string, OptionValue>): string | undefined {
+  return key === 'BlessTarget' && realmCollectionEnabled(values) ? '备选副本' : undefined;
+}
+
 // Target choices remain saved while a different consumption mode is active.
 export function realmOptionActive(key: string, values: Record<string, OptionValue>): boolean {
   if (key === 'WeeklyTargets') {

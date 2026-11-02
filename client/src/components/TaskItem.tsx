@@ -1,5 +1,5 @@
 import { useAccountStateStore, periodCompleted, periodTaskLabel, crownTargetStars, crownProgress } from '@/stores/accountStateStore';
-import { realmOptionActive, realmOptionBackup } from '@/utils/nikkiOptions';
+import { realmOptionActive, realmOptionBackup, realmOptionLabel } from '@/utils/nikkiOptions';
 import { RealmModeSwitch } from './RealmModeSwitch';
 import { XinghaiScoreHint } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -305,6 +305,7 @@ function OptionListRenderer({
             optionKey={group.optionKey}
             value={optionValues[group.optionKey]}
             disabled={disabled || optionIncompatible}
+            labelOverride={taskName === 'realm_challenge' ? realmOptionLabel(group.optionKey, optionValues) : undefined}
             inactiveHint={taskName === 'realm_challenge' && !realmOptionActive(group.optionKey, optionValues)
               ? group.optionKey === 'WeeklyTargets'
                 ? { label: '周本优先已关闭', description: '开启“优先完成每周幻境”后，按此处所选目标使用本周剩余挑战次数。' }
@@ -596,9 +597,10 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
       if (!optionDef) continue;
 
       // MXU 特殊任务的 label 是 i18n key，需要用 t() 翻译
-      const optionLabel = isMxuOption
-        ? t(optionDef.label || optionKey)
-        : resolveI18nText(optionDef.label, langKey) || optionKey;
+      const optionLabel = (task.taskName === 'realm_challenge' && realmOptionLabel(optionKey, task.optionValues))
+        || (isMxuOption
+          ? t(optionDef.label || optionKey)
+          : resolveI18nText(optionDef.label, langKey) || optionKey);
       const optionValue = task.optionValues[optionKey];
 
       if (optionDef.type === 'switch') {

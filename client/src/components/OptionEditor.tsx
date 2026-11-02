@@ -126,6 +126,8 @@ interface OptionEditorProps {
   parentIncompatibilityReason?: IncompatibilityReason;
   /** 选项的使用场景提示，保留编辑能力。 */
   inactiveHint?: OptionUsageHint;
+  /** 同一选项在当前模式下的用途不同时，替换显示名称。 */
+  labelOverride?: string;
 }
 
 type IncompatibilityReason = 'controller' | 'resource';
@@ -421,6 +423,7 @@ export function OptionEditor({
   controllerIncompatible = false,
   parentIncompatibilityReason,
   inactiveHint,
+  labelOverride,
 }: OptionEditorProps) {
   const { t } = useTranslation();
   const {
@@ -476,9 +479,9 @@ export function OptionEditor({
 
   const langKey = getInterfaceLangKey(language);
   // 对于 MXU 内置选项，使用 t() 翻译
-  const optionLabel = isMxuOption
+  const optionLabel = labelOverride ?? (isMxuOption
     ? t(optionDef.label || optionKey)
-    : resolveI18nText(optionDef.label, langKey) || optionKey;
+    : resolveI18nText(optionDef.label, langKey) || optionKey);
   const optionDescription = isMxuOption
     ? optionDef.description
       ? t(optionDef.description)
