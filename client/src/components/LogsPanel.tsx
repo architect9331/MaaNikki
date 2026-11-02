@@ -71,7 +71,9 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
   useLayoutEffect(() => {
     if (!isFollowingTailRef.current) return;
 
-    logsEndRef.current?.scrollIntoView({ block: 'end' });
+    // scrollIntoView would also scroll the page holding this panel.
+    const el = logsContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [logs.length, visibleLogLimit]);
 
   const handleLogsScroll = useCallback(() => {
