@@ -41,9 +41,16 @@ def stack_badge(frame, box):
         # Preserve holes and open notches alike: either can be part of a digit.
         # Only the area outside the confirmed tab outline becomes white.
         patch = crop[by:by + bh, bx:bx + bw].copy()
+        patch[outline == 0] = 255
+        # Bright artwork can join the tab's component and widen its outline.
+        # Its dark remainder then enters from the left or top, sides that digits
+        # do not reach (they can touch only the bottom edge, as noted above).
+        dark = (patch.max(axis=2) < 195).astype(np.uint8)
+        _, marks = cv2.connectedComponents(dark, connectivity=8)
+        artwork = np.setdiff1d(np.concatenate((marks[0], marks[:, 0])), [0])
+        patch[np.isin(marks, artwork)] = 255
         if np.count_nonzero((patch.max(axis=2) < 195) & (outline > 0)) < 8:
             continue
-        patch[outline == 0] = 255
         return {"state": "stack", "roi": [left + bx, top + by, bw, bh], "patch": patch}
     return {"state": "uncertain" if possible else "single", "roi": [left, top, crop.shape[1], crop.shape[0]]}
 
