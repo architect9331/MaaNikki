@@ -83,7 +83,7 @@ export function MapMaskSection() {
       <div className="flex gap-2 pl-8">
         <button
           type="button"
-          className="px-3 py-1.5 rounded-lg text-sm bg-accent text-white disabled:opacity-50"
+          className="px-3 py-1.5 rounded-lg text-sm bg-accent text-on-accent disabled:opacity-50"
           disabled={busy}
           onClick={() => void run('pearpal_open_login')}
         >{status.has_login ? '重新登录' : '登录美鸭梨'}</button>

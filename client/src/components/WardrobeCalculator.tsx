@@ -25,7 +25,7 @@ const LEVEL_PAGE = 60;
 
 /** Type 0-10, or 11 for refreshed; clearing the field marks the level unknown. */
 function LevelInput({ value, onChange, inferred }: { value: number | null; onChange: (level: number | null) => void; inferred?: string | null }) {
-  if (inferred) return <span className="shrink-0 rounded-md bg-accent/10 px-2 py-1 text-xs text-accent">已焕新</span>;
+  if (inferred) return <span className="shrink-0 rounded-lg bg-accent/10 px-2 py-1 text-xs text-accent">已焕新</span>;
   return <input aria-label="共享养成等级，0 到 10，11 表示已焕新" type="number" min="0" max="11" placeholder="未知" value={value ?? ''}
     className={clsx(field, '!w-16 shrink-0 !px-2 !py-1 text-center !text-xs tabular-nums')}
     onChange={(event) => {
@@ -65,7 +65,7 @@ function MatchBrief({ match }: { match: Match }) {
       <p className="mt-1 text-[11px] tabular-nums text-text-muted">×{number(match.weights[index])}</p>
     </div>)}</div>
     {!!match.bonuses.length && <div className="mt-3 flex flex-wrap gap-1.5">{match.bonuses.map((bonus, index) =>
-      <span key={index} className="rounded-md bg-accent/10 px-2 py-0.5 text-xs text-accent">{bonusLabel(bonus)}</span>)}</div>}
+      <span key={index} className="rounded-lg bg-accent/10 px-2 py-0.5 text-xs text-accent">{bonusLabel(bonus)}</span>)}</div>}
     {!!match.stars.length && <ul className="mt-3 space-y-1 text-xs text-text-secondary">{match.stars.map((_, index) =>
       <li key={index} className="flex gap-1.5"><Star className="mt-0.5 h-3 w-3 shrink-0 text-text-muted" />{starLabel(match, index)}</li>)}</ul>}
   </section>;
@@ -290,7 +290,7 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
             }} />
           </label>)}</div></div>}
         <button onClick={stage ? () => { worker.current?.terminate(); worker.current = null; setStage(''); } : run} disabled={!profile.items.length || !match}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-40">
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-on-accent hover:bg-accent-hover disabled:opacity-40">
           {stage ? <Square className="h-4 w-4" /> : stale ? <RefreshCw className="h-4 w-4" /> : <Calculator className="h-4 w-4" />}{stage ? '停止计算' : stale ? '重新计算' : '开始计算'}</button>
         {stage && <p className="flex items-center gap-1.5 text-xs text-text-secondary"><Loader2 className="h-3.5 w-3.5 animate-spin" />{stage}</p>}
         {error && <p className="flex items-start gap-1.5 text-xs text-warning" role="alert"><AlertCircle className="h-4 w-4 shrink-0" />{error}</p>}
@@ -332,7 +332,7 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
         <p className="mt-3 text-xs leading-5 text-text-secondary">同一养成组的各颜色共享等级。按当前关卡的焕新分数从高到低排列，从上往下填最划算；填 0～10，11 表示已焕新，用 Tab 跳到下一项。</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <div className="flex gap-1 rounded-lg bg-bg-primary p-0.5">{([['unknown', '未知'], ['used', '当前搭配'], ['all', '全部']] as const).map(([id, label]) =>
-            <button key={id} onClick={() => setLevelFilter(id)} className={clsx('rounded-md px-2.5 py-1 text-xs', levelFilter === id ? 'bg-accent/10 font-medium text-accent' : 'text-text-secondary hover:text-text-primary')}>{label}</button>)}</div>
+            <button key={id} onClick={() => setLevelFilter(id)} className={clsx('rounded-lg px-2.5 py-1 text-xs', levelFilter === id ? 'bg-accent/10 font-medium text-accent' : 'text-text-secondary hover:text-text-primary')}>{label}</button>)}</div>
           <label className="flex min-w-40 flex-1 items-center gap-2"><Search className="h-4 w-4 shrink-0 text-text-muted" /><input className={clsx(field, '!py-1.5 !text-xs')} placeholder="搜索衣服名称或部位" aria-label="搜索养成组" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
         </div>
         <div className="mt-3 divide-y divide-border">{matching.slice(0, levelLimit).map((group) => <div key={group.id} className="flex items-center gap-3 py-2">

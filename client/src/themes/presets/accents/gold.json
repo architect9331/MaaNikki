@@ -1,0 +1,10 @@
+{
+  "name": "gold",
+  "label": {"zh-CN": "奇迹流金", "zh-TW": "奇跡流金", "en-US": "Miracle Gold"},
+  "default": "#8f6a1f",
+  "hover": "#785818",
+  "secondary": "#b4536f",
+  "light": "#f5ecd8",
+  "lightDark": "#3a3122",
+  "dark": {"default": "#e0bd72", "hover": "#e9cc8e", "secondary": "#f0a8bd"}
+}

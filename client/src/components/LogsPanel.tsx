@@ -249,7 +249,7 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
             }}
             disabled={!isTauri() || (exportModal.show && exportModal.status === 'exporting')}
             className={clsx(
-              'p-1 rounded-md transition-colors',
+              'p-1 rounded-lg transition-colors',
               !isTauri()
                 ? 'text-text-muted cursor-not-allowed'
                 : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary',
@@ -265,7 +265,7 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
             }}
             disabled={!isTauri() && logs.length === 0}
             className={clsx(
-              'p-1 rounded-md transition-colors',
+              'p-1 rounded-lg transition-colors',
               !isTauri() && logs.length === 0
                 ? 'text-text-muted cursor-not-allowed'
                 : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary',
@@ -277,7 +277,7 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
           {!isMobile && !instanceId && (
             <span
               className={clsx(
-                'p-0.5 rounded transition-colors',
+                'p-0.5 rounded-lg transition-colors',
                 !sidePanelExpanded ? 'text-accent bg-accent-light' : 'text-text-muted',
               )}
             >
@@ -328,7 +328,7 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
                   // 富文本内容（focus 消息支持 Markdown/HTML）
                   <div
                     className={clsx(
-                      'py-1.5 px-2 rounded-md flex items-start gap-3',
+                      'py-1.5 px-2 rounded-lg flex items-start gap-3',
                       getLogColor(log.type),
                     )}
                   >
@@ -343,7 +343,7 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
                 ) : (
                   <div
                     className={clsx(
-                      'py-1.5 px-2 rounded-md flex items-start gap-3',
+                      'py-1.5 px-2 rounded-lg flex items-start gap-3',
                       getLogColor(log.type),
                     )}
                   >

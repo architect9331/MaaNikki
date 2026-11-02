@@ -193,7 +193,7 @@ export function RecentlyClosedPanel({ onClose, anchorRef }: RecentlyClosedPanelP
               {t('recentlyClosed.title')}
             </span>
             {recentlyClosed.length > 0 && (
-              <span className="px-1.5 py-0.5 bg-bg-active text-text-muted text-xs rounded">
+              <span className="px-1.5 py-0.5 bg-bg-active text-text-muted text-xs rounded-lg">
                 {recentlyClosed.length}
               </span>
             )}
@@ -202,7 +202,7 @@ export function RecentlyClosedPanel({ onClose, anchorRef }: RecentlyClosedPanelP
             {recentlyClosed.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="p-1 rounded-md hover:bg-bg-hover transition-colors text-text-muted hover:text-error"
+                className="p-1 rounded-lg hover:bg-bg-hover transition-colors text-text-muted hover:text-error"
                 title={t('recentlyClosed.clearAll')}
               >
                 <Trash2 className="w-4 h-4" />
@@ -210,7 +210,7 @@ export function RecentlyClosedPanel({ onClose, anchorRef }: RecentlyClosedPanelP
             )}
             <button
               onClick={onClose}
-              className="p-1 rounded-md hover:bg-bg-hover transition-colors"
+              className="p-1 rounded-lg hover:bg-bg-hover transition-colors"
             >
               <X className="w-4 h-4 text-text-muted" />
             </button>
@@ -249,14 +249,14 @@ export function RecentlyClosedPanel({ onClose, anchorRef }: RecentlyClosedPanelP
                           e.stopPropagation();
                           handleReopen(item.id);
                         }}
-                        className="p-1 rounded-md hover:bg-accent/10 text-accent transition-colors"
+                        className="p-1 rounded-lg hover:bg-accent/10 text-accent transition-colors"
                         title={t('recentlyClosed.reopen')}
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={(e) => handleRemove(e, item.id)}
-                        className="p-1 rounded-md hover:bg-error/10 text-text-muted hover:text-error transition-colors"
+                        className="p-1 rounded-lg hover:bg-error/10 text-text-muted hover:text-error transition-colors"
                         title={t('recentlyClosed.remove')}
                       >
                         <X className="w-3.5 h-3.5" />

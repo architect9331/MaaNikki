@@ -249,7 +249,7 @@ export function GeneralSection() {
 
             {/* 被删除的自动执行配置提示 */}
             {autoStartRemovedInstanceName && (
-              <div className="flex items-center gap-2 mt-2 px-2.5 py-1.5 rounded-md bg-error/10 text-error text-xs">
+              <div className="flex items-center gap-2 mt-2 px-2.5 py-1.5 rounded-lg bg-error/10 text-error text-xs">
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>
                   {t('settings.autoStartInstanceRemoved', { name: autoStartRemovedInstanceName })}

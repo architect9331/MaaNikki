@@ -1,0 +1,10 @@
+{
+  "name": "starsea",
+  "label": {"zh-CN": "星海幽蓝", "zh-TW": "星海幽藍", "en-US": "Sea of Stars"},
+  "default": "#4a5a9c",
+  "hover": "#3d4b85",
+  "secondary": "#7a5aa6",
+  "light": "#e8ebf6",
+  "lightDark": "#272c40",
+  "dark": {"default": "#a9b6ec", "hover": "#bdc8f2", "secondary": "#c6aeea"}
+}

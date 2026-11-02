@@ -225,6 +225,11 @@ export type {
 // 最近关闭列表最大条目数
 const MAX_RECENTLY_CLOSED = 30;
 
+/** 已移除的内置强调色，读取旧配置时回到默认主题。 */
+const RETIRED_ACCENTS = new Set<string>([
+  'emerald', 'lava', 'titanium', 'celadon', 'danxia', 'deepsea', 'cambrian', 'pearl',
+]);
+
 export const useAppStore = create<AppState>()(
   subscribeWithSelector((set, get) => ({
     // 启动流程完成前禁止落盘，避免空状态覆盖已有配置
@@ -1466,7 +1471,9 @@ export const useAppStore = create<AppState>()(
         }
       });
 
-      const configAccentColor = (config.settings.accentColor as AccentColor) || 'rosegold';
+      // 配置里可能保存着已移除的旧预设，自定义强调色稍后注册，这里只认旧预设名。
+      const savedAccent = config.settings.accentColor as AccentColor | undefined;
+      const configAccentColor: AccentColor = !savedAccent || RETIRED_ACCENTS.has(savedAccent) ? 'rosegold' : savedAccent;
 
       // WebUI 模式下：缓存后端外观 & 布局设置，使用 localStorage 本地值
       const isWebUI = !isTauri();

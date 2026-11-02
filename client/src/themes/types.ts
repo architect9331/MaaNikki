@@ -45,7 +45,9 @@ export interface AccentTheme {
   light: string; // 浅色模式下的背景色
   lightDark: string; // 深色模式下的背景色
   /** 深色模式的强调色前景；缺省时沿用 default / hover。 */
-  dark?: { default: string; hover: string };
+  dark?: { default: string; hover: string; secondary?: string };
+  /** 辅助色，与强调色搭配使用的点缀。缺省时沿用强调色。 */
+  secondary?: string;
 }
 
 /** 语义色（固定，不随主题变化） */
@@ -67,15 +69,13 @@ export type ThemeMode = 'light' | 'dark';
 
 /** 预设强调色名称（内置） */
 export type PresetAccentColor =
-  | 'emerald' // 宝石绿
-  | 'lava' // 熔岩橙
-  | 'titanium' // 钛金属
-  | 'celadon' // 影青色
-  | 'rosegold' // 流金粉
-  | 'danxia' // 丹霞紫
-  | 'deepsea' // 深海蓝
-  | 'cambrian' // 寒武岩灰
-  | 'pearl'; // 珍珠白
+  | 'rosegold' // 暖暖粉金
+  | 'gold' // 奇迹流金
+  | 'celeste' // 星澜青金
+  | 'meadow' // 微风绿野
+  | 'starsea' // 星海幽蓝
+  | 'dream' // 奇想星紫
+  | 'slate'; // 云岩素灰
 
 /** 支持的强调色名称
  *
@@ -89,6 +89,8 @@ export interface AccentInfo {
   name: AccentColor;
   label: string;
   color: string;
+  /** 辅助色，用于色板预览 */
+  secondary?: string;
   /** 是否为自定义强调色（用于在 UI 中区分） */
   isCustom?: boolean;
 }

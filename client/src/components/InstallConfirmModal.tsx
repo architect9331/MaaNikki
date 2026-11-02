@@ -313,7 +313,7 @@ export function InstallConfirmModal() {
               {displayVersionName}
             </span>
             {displayChannel && displayChannel !== 'stable' && (
-              <span className="px-1.5 py-0.5 bg-warning/20 text-warning text-xs rounded font-medium">
+              <span className="px-1.5 py-0.5 bg-warning/20 text-warning text-xs rounded-lg font-medium">
                 {displayChannel}
               </span>
             )}
@@ -423,7 +423,7 @@ export function InstallConfirmModal() {
           {isJustUpdatedMode && (
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm bg-accent text-white hover:bg-accent-hover rounded-lg transition-colors"
+              className="px-4 py-2 text-sm bg-accent text-on-accent hover:bg-accent-hover rounded-lg transition-colors"
             >
               {t('mirrorChyan.gotIt')}
             </button>
@@ -454,7 +454,7 @@ export function InstallConfirmModal() {
           {!isJustUpdatedMode && isDownloadComplete && installStatus === 'idle' && (
             <button
               onClick={handleInstall}
-              className="flex items-center gap-2 px-4 py-2 text-sm bg-accent text-white hover:bg-accent-hover rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent hover:bg-accent-hover rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
               {t('mirrorChyan.installNow')}
@@ -486,7 +486,7 @@ export function InstallConfirmModal() {
                   resetInstallState();
                   handleInstall();
                 }}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-accent text-white hover:bg-accent-hover rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent hover:bg-accent-hover rounded-lg transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
                 {t('mirrorChyan.retry')}

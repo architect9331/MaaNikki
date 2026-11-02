@@ -38,10 +38,10 @@ export function TriStateCheckbox({
       }}
       onContextMenu={onContextMenu}
       className={clsx(
-        'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
+        'w-4 h-4 rounded-lg border flex items-center justify-center flex-shrink-0 transition-colors',
         disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
         state === 'off' && 'border-border-strong bg-bg-primary hover:border-accent/60',
-        state === 'on' && 'border-accent bg-accent text-white',
+        state === 'on' && 'border-accent bg-accent text-on-accent',
         state === 'once' && 'border-accent bg-accent/15 text-accent hover:bg-accent/25',
       )}
     >

@@ -99,7 +99,7 @@ function TaskButton({
         ) : null}
         {/* 不兼容提示 */}
         {disabled && incompatibleReason && (
-          <div className="px-2 py-1.5 rounded-md bg-warning/10 text-warning space-y-1">
+          <div className="px-2 py-1.5 rounded-lg bg-warning/10 text-warning space-y-1">
             <div className="flex items-center gap-1.5">
               <AlertCircle className="w-3 h-3 shrink-0" />
               <span>{incompatibleReason}</span>
@@ -117,7 +117,7 @@ function TaskButton({
       <button
         onClick={() => !disabled && onClick()}
         className={clsx(
-          'relative flex min-w-0 items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors text-left',
+          'relative flex min-w-0 items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left',
           disabled
             ? 'bg-bg-secondary/50 text-text-muted border border-border/50 cursor-not-allowed opacity-60'
             : 'bg-bg-secondary hover:bg-bg-hover text-text-primary border border-border hover:border-accent',
@@ -131,7 +131,7 @@ function TaskButton({
         )}
         {/* 新增任务标记 - 仅在非禁用时显示 */}
         {isNew && !disabled && (
-          <span className="absolute -top-2 -right-2 flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-accent text-white animate-pulse-glow-accent">
+          <span className="absolute -top-2 -right-2 flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-accent text-on-accent animate-pulse-glow-accent">
             <Sparkles className="w-3 h-3" />
             new
           </span>
@@ -736,7 +736,7 @@ export function AddTaskPanel() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('addTaskPanel.searchPlaceholder')}
               className={clsx(
-                'w-full pl-9 pr-3 py-2 text-sm rounded-md border border-border',
+                'w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border',
                 'bg-bg-secondary text-text-primary placeholder:text-text-muted',
                 'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20',
               )}
@@ -744,7 +744,7 @@ export function AddTaskPanel() {
           </div>
           <button
             onClick={() => setShowAddTaskPanel(false)}
-            className="shrink-0 p-2 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors"
+            className="shrink-0 p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors"
             title={t('addTaskPanel.collapse')}
           >
             <ChevronsDown className="w-4 h-4" />
@@ -831,7 +831,7 @@ export function AddTaskPanel() {
                       }}
                       disabled={instance.isRunning}
                       className={clsx(
-                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors',
+                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors',
                         'bg-bg-secondary/70 hover:bg-bg-hover text-text-secondary border border-border/70 hover:border-accent',
                         instance.isRunning && 'opacity-50 cursor-not-allowed',
                       )}
@@ -845,7 +845,7 @@ export function AddTaskPanel() {
                           key={specialTask.taskName}
                           onClick={() => handleAddSpecialTask(specialTask)}
                           className={clsx(
-                            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors',
+                            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors',
                             'bg-bg-secondary/70 hover:bg-bg-hover text-text-secondary border border-border/70 hover:border-accent',
                           )}
                         >

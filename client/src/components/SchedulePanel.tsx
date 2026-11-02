@@ -109,7 +109,7 @@ function PolicyCard({
         {/* 单个策略启用开关（靠右，位于展开按钮左侧） */}
         <button
           onClick={() => onUpdate({ enabled: !policy.enabled })}
-          className="p-1 rounded hover:bg-bg-hover"
+          className="p-1 rounded-lg hover:bg-bg-hover"
           title={policy.enabled ? t('schedule.disable') : t('schedule.enable')}
         >
           {policy.enabled ? (
@@ -120,7 +120,7 @@ function PolicyCard({
         </button>
 
         {/* 展开/折叠 */}
-        <button onClick={onToggleExpand} className="p-1 rounded hover:bg-bg-hover">
+        <button onClick={onToggleExpand} className="p-1 rounded-lg hover:bg-bg-hover">
           {isExpanded ? (
             <ChevronDown className="w-4 h-4 text-text-secondary" />
           ) : (
@@ -137,7 +137,7 @@ function PolicyCard({
               onDelete();
             }
           }}
-          className="p-1 rounded hover:bg-error/10 text-text-muted hover:text-error"
+          className="p-1 rounded-lg hover:bg-error/10 text-text-muted hover:text-error"
           title={t('common.delete')}
         >
           <Trash2 className="w-4 h-4" />
@@ -162,7 +162,7 @@ function PolicyCard({
                 }
               }}
               className={clsx(
-                'w-full px-2 py-1.5 text-sm rounded border',
+                'w-full px-2 py-1.5 text-sm rounded-lg border',
                 'bg-bg-primary text-text-primary border-border',
                 'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20',
               )}
@@ -179,9 +179,9 @@ function PolicyCard({
               <button
                 onClick={handleSelectAllWeekdays}
                 className={clsx(
-                  'px-2 py-1 text-xs rounded border transition-colors',
+                  'px-2 py-1 text-xs rounded-lg border transition-colors',
                   policy.weekdays.length === 7
-                    ? 'bg-accent text-white border-accent'
+                    ? 'bg-accent text-on-accent border-accent'
                     : 'bg-bg-primary text-text-secondary border-border hover:border-accent hover:text-accent',
                 )}
               >
@@ -192,9 +192,9 @@ function PolicyCard({
                   key={day}
                   onClick={() => handleToggleWeekday(day)}
                   className={clsx(
-                    'px-2 py-1 text-xs rounded border transition-colors',
+                    'px-2 py-1 text-xs rounded-lg border transition-colors',
                     policy.weekdays.includes(day)
-                      ? 'bg-accent text-white border-accent'
+                      ? 'bg-accent text-on-accent border-accent'
                       : 'bg-bg-primary text-text-secondary border-border hover:border-accent hover:text-accent',
                   )}
                 >
@@ -225,7 +225,7 @@ function PolicyCard({
                   }
                 }}
                 className={clsx(
-                  'flex-1 px-2 py-1.5 text-sm rounded border',
+                  'flex-1 px-2 py-1.5 text-sm rounded-lg border',
                   'bg-bg-primary text-text-primary border-border',
                   'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20',
                 )}
@@ -234,7 +234,7 @@ function PolicyCard({
                 onClick={handleAddTime}
                 disabled={!TIME_PATTERN.test(timeDraft) || policy.times.includes(timeDraft)}
                 className={clsx(
-                  'flex items-center gap-1 px-2 py-1.5 text-xs rounded border transition-colors',
+                  'flex items-center gap-1 px-2 py-1.5 text-xs rounded-lg border transition-colors',
                   'border-border text-text-secondary',
                   'hover:border-accent hover:text-accent',
                   'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:text-text-secondary',
@@ -251,12 +251,12 @@ function PolicyCard({
                 {policy.times.map((time) => (
                   <span
                     key={time}
-                    className="flex items-center gap-1 pl-2 pr-1 py-1 text-xs rounded border border-accent bg-accent/10 text-accent"
+                    className="flex items-center gap-1 pl-2 pr-1 py-1 text-xs rounded-lg border border-accent bg-accent/10 text-accent"
                   >
                     {time}
                     <button
                       onClick={() => handleRemoveTime(time)}
-                      className="p-0.5 rounded hover:bg-accent/20"
+                      className="p-0.5 rounded-lg hover:bg-accent/20"
                       title={t('common.delete')}
                     >
                       <X className="w-3 h-3" />
@@ -396,7 +396,7 @@ export function SchedulePanel({ instanceId, onClose }: SchedulePanelProps) {
             onClick={handleToggleAll}
             disabled={policies.length === 0}
             className={clsx(
-              'p-1 rounded hover:bg-bg-hover',
+              'p-1 rounded-lg hover:bg-bg-hover',
               policies.length === 0 && 'opacity-50 cursor-not-allowed',
             )}
             title={anyEnabled ? t('schedule.disableAll') : t('schedule.enableAll')}
@@ -407,7 +407,7 @@ export function SchedulePanel({ instanceId, onClose }: SchedulePanelProps) {
               <ToggleLeft className="w-5 h-5 text-text-muted" />
             )}
           </button>
-          <button onClick={onClose} className="p-1 rounded hover:bg-bg-hover">
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-bg-hover">
             <X className="w-4 h-4 text-text-muted" />
           </button>
         </div>

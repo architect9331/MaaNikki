@@ -170,7 +170,7 @@ export function InlineNameEditor({
         placeholder={placeholder}
         autoFocus
         className={clsx(
-          'flex-1 px-2 py-1 text-sm rounded border border-accent',
+          'flex-1 px-2 py-1 text-sm rounded-lg border border-accent',
           'bg-bg-primary text-text-primary',
           'focus:outline-none focus:ring-1 focus:ring-accent/20',
         )}
@@ -181,7 +181,7 @@ export function InlineNameEditor({
           e.stopPropagation();
           onSave();
         }}
-        className="p-1 rounded hover:bg-success/10 text-success"
+        className="p-1 rounded-lg hover:bg-success/10 text-success"
       >
         <Check className="w-4 h-4" />
       </button>
@@ -191,7 +191,7 @@ export function InlineNameEditor({
           e.stopPropagation();
           onCancel();
         }}
-        className="p-1 rounded hover:bg-error/10 text-error"
+        className="p-1 rounded-lg hover:bg-error/10 text-error"
       >
         <X className="w-4 h-4" />
       </button>

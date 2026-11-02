@@ -439,7 +439,7 @@ export function TabBar() {
                     onBlur={handleSaveEdit}
                     autoFocus
                     className={clsx(
-                      'flex-1 w-full px-1 py-0.5 text-sm rounded border border-accent',
+                      'flex-1 w-full px-1 py-0.5 text-sm rounded-lg border border-accent',
                       'bg-bg-primary text-text-primary',
                       'focus:outline-none',
                     )}
@@ -450,7 +450,7 @@ export function TabBar() {
                       e.stopPropagation();
                       handleSaveEdit();
                     }}
-                    className="p-0.5 rounded hover:bg-success/10 text-success"
+                    className="p-0.5 rounded-lg hover:bg-success/10 text-success"
                   >
                     <Check className="w-3 h-3" />
                   </button>
@@ -460,7 +460,7 @@ export function TabBar() {
                       e.stopPropagation();
                       handleCancelEdit();
                     }}
-                    className="p-0.5 rounded hover:bg-error/10 text-error"
+                    className="p-0.5 rounded-lg hover:bg-error/10 text-error"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -478,7 +478,7 @@ export function TabBar() {
                       onClick={(e) => handleCloseTab(e, instance.id)}
                       disabled={instances.length <= 1}
                       className={clsx(
-                        'p-0.5 rounded transition-all',
+                        'p-0.5 rounded-lg transition-all',
                         instances.length > 1
                           ? 'opacity-0 group-hover:opacity-100 text-text-muted hover:bg-error/10 hover:text-error'
                           : 'opacity-30 cursor-not-allowed',
@@ -513,7 +513,7 @@ export function TabBar() {
             ref={bellButtonRef}
             onClick={() => setShowUpdatePanel(!showUpdatePanel)}
             className={clsx(
-              'relative p-2 rounded-md transition-colors',
+              'relative p-2 rounded-lg transition-colors',
               showUpdatePanel ? 'bg-accent/10' : 'hover:bg-bg-hover',
             )}
             title={
@@ -549,7 +549,7 @@ export function TabBar() {
             ref={recentlyClosedButtonRef}
             onClick={() => setShowRecentlyClosedPanel(!showRecentlyClosedPanel)}
             className={clsx(
-              'p-2 rounded-md transition-colors',
+              'p-2 rounded-lg transition-colors',
               showRecentlyClosedPanel
                 ? 'bg-accent/10 text-accent'
                 : 'hover:bg-bg-hover text-text-secondary',
@@ -561,7 +561,7 @@ export function TabBar() {
         )}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-md hover:bg-bg-hover transition-colors"
+          className="p-2 rounded-lg hover:bg-bg-hover transition-colors"
           title={
             resolveThemeMode(theme) === 'light' ? t('settings.themeDark') : t('settings.themeLight')
           }
@@ -574,7 +574,7 @@ export function TabBar() {
         </button>
         <button
           onClick={() => setCurrentPage('settings')}
-          className="p-2 rounded-md hover:bg-bg-hover transition-colors"
+          className="p-2 rounded-lg hover:bg-bg-hover transition-colors"
           title={t('titleBar.settings')}
         >
           <Settings className="w-5 h-5 text-text-secondary" />

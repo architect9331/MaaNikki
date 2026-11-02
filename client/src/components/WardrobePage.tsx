@@ -20,10 +20,10 @@ export function WardrobePage({ onClose }: { onClose: () => void }) {
   useEffect(() => { void refresh().catch(() => {}); }, [refresh]);
   return <div className="flex min-h-0 flex-1 flex-col bg-bg-primary text-text-primary">
     <div className="flex items-center gap-3 border-b border-border bg-bg-secondary px-5 py-3">
-      <button onClick={onClose} className="rounded-md p-2 hover:bg-bg-hover" aria-label="返回任务列表"><ArrowLeft className="h-4 w-4" /></button>
+      <button onClick={onClose} className="rounded-lg p-2 hover:bg-bg-hover" aria-label="返回任务列表"><ArrowLeft className="h-4 w-4" /></button>
       <Shirt className="h-5 w-5 text-accent" /><h1 className="flex-1 text-lg font-semibold">衣柜</h1>
       {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
-      <button onClick={() => void refresh().then(() => setRefreshToken((previous) => previous + 1)).catch(() => {})} disabled={loading} aria-label="刷新衣柜记录" className="rounded-md p-2 hover:bg-bg-hover disabled:opacity-40"><RefreshCw className={clsx('h-4 w-4', loading && 'animate-spin')} /></button>
+      <button onClick={() => void refresh().then(() => setRefreshToken((previous) => previous + 1)).catch(() => {})} disabled={loading} aria-label="刷新衣柜记录" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><RefreshCw className={clsx('h-4 w-4', loading && 'animate-spin')} /></button>
     </div>
     <div className="flex gap-5 border-b border-border bg-bg-secondary px-5">{([['read', '衣柜读取'], ['calculate', '搭配计算']] as const).map(([id, label]) =>
       <button key={id} onClick={() => { setTab(id); if (id === 'calculate') setCalculatorOpened(true); }}
@@ -35,7 +35,7 @@ export function WardrobePage({ onClose }: { onClose: () => void }) {
           <div className="flex items-center justify-between gap-4">
             <div><h2 className="text-sm font-semibold">{wardrobeLabels[status]}</h2><p className="mt-1.5 text-xs leading-5 text-text-secondary">按获得时间逐部位读取，记录自动保存到当前游戏账号。</p></div>
             <button disabled={!isTauri() || status === 'stopping'} onClick={() => busy ? stopWardrobeRead() : void startWardrobeRead()}
-              className={clsx('inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-40', busy ? 'border border-border hover:bg-bg-hover' : 'bg-accent text-white hover:bg-accent-hover')}>
+              className={clsx('inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-40', busy ? 'border border-border hover:bg-bg-hover' : 'bg-accent text-on-accent hover:bg-accent-hover')}>
               {busy ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}{busy ? '停止读取' : scan ? scan.complete ? '更新读取' : '继续读取' : '开始读取'}
             </button>
           </div>

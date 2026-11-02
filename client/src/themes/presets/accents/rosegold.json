@@ -1,9 +1,10 @@
 {
   "name": "rosegold",
-  "label": {"zh-CN": "樱花粉", "zh-TW": "櫻花粉", "en-US": "Sakura Rose", "ja-JP": "桜色", "ko-KR": "벚꽃 핑크"},
-  "default": "#b94168",
-  "hover": "#aa365a",
-  "light": "#fbe1e9",
-  "lightDark": "#593440",
-  "dark": {"default": "#f4aac1", "hover": "#ffc3d3"}
+  "label": {"zh-CN": "暖暖粉金", "zh-TW": "暖暖粉金", "en-US": "Nikki Rose Gold"},
+  "default": "#b4536f",
+  "hover": "#9c4560",
+  "secondary": "#8f6a1f",
+  "light": "#f8e9ec",
+  "lightDark": "#3b2a30",
+  "dark": {"default": "#f0a8bd", "hover": "#f5bccd", "secondary": "#e0bd72"}
 }

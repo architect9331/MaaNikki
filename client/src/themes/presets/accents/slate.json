@@ -1,0 +1,10 @@
+{
+  "name": "slate",
+  "label": {"zh-CN": "云岩素灰", "zh-TW": "雲岩素灰", "en-US": "Cloud Slate"},
+  "default": "#5a6476",
+  "hover": "#4a5363",
+  "secondary": "#8f6a1f",
+  "light": "#e9ebef",
+  "lightDark": "#2b2e34",
+  "dark": {"default": "#b0bac9", "hover": "#c2cad6", "secondary": "#e0bd72"}
+}

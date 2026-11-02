@@ -1717,7 +1717,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
           onClick={handleSelectAll}
           disabled={tasks.length === 0}
           className={clsx(
-            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors',
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors',
             tasks.length === 0
               ? 'text-text-muted cursor-not-allowed'
               : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
@@ -1735,7 +1735,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
           onClick={handleCollapseAll}
           disabled={tasks.length === 0}
           className={clsx(
-            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors',
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors',
             tasks.length === 0
               ? 'text-text-muted cursor-not-allowed'
               : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
@@ -1757,7 +1757,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
           id="add-task-button"
           onClick={onToggleAddPanel}
           className={clsx(
-            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors',
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors',
             showAddPanel
               ? 'bg-accent/10 text-accent'
               : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
@@ -1822,7 +1822,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
                   ? 'bg-success text-white'
                   : isDisabled
                     ? 'bg-bg-active text-text-tertiary cursor-not-allowed'
-                    : 'bg-accent hover:bg-accent-hover text-white',
+                    : 'accent-gradient text-on-accent hover:brightness-95',
           )}
           title={getButtonTitle()}
         >

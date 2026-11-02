@@ -33,7 +33,7 @@ const defaultValues: Omit<ActionConfig, 'id'> = {
 function ActionPreviewTag({ label, on }: { label: string; on: boolean }) {
   return (
     <span
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded text-text-tertiary max-w-[140px]"
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded-lg text-text-tertiary max-w-[140px]"
       title={`${label}: ${on ? 'ON' : 'OFF'}`}
     >
       <span className="truncate">{label}</span>
@@ -205,7 +205,7 @@ export function ActionItem({
           {...attributes}
           {...listeners}
           className={clsx(
-            'p-1 rounded',
+            'p-1 rounded-lg',
             canReorder
               ? 'cursor-grab active:cursor-grabbing hover:bg-bg-hover'
               : 'opacity-30 cursor-not-allowed',
@@ -227,7 +227,7 @@ export function ActionItem({
             checked={currentAction.enabled}
             onChange={() => {}}
             disabled={disabled}
-            className="w-4 h-4 rounded border-border-strong accent-accent disabled:cursor-not-allowed"
+            className="w-4 h-4 rounded-lg border-border-strong accent-accent disabled:cursor-not-allowed"
           />
         </label>
 
@@ -273,7 +273,7 @@ export function ActionItem({
                   <div className="flex-1 flex items-center gap-1.5 mx-2 overflow-hidden">
                     {hasConfig ? (
                       <>
-                        <span className="inline-flex items-center px-1.5 py-0.5 text-xs rounded text-text-tertiary max-w-[180px] truncate">
+                        <span className="inline-flex items-center px-1.5 py-0.5 text-xs rounded-lg text-text-tertiary max-w-[180px] truncate">
                           {currentAction.program.split(/[/\\]/).pop()}
                         </span>
                         <ActionPreviewTag
@@ -309,7 +309,7 @@ export function ActionItem({
               handleRemove();
             }}
             className={clsx(
-              'p-1 rounded opacity-0 group-hover:opacity-100 transition-all',
+              'p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all',
               'text-text-muted hover:bg-error/10 hover:text-error',
             )}
             title={t('common.delete')}

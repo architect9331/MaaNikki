@@ -231,7 +231,7 @@ export function UpdatePanel({ onClose, anchorRef }: UpdatePanelProps) {
               {t('mirrorChyan.checkFailed')}
             </span>
           </div>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-bg-hover transition-colors">
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-bg-hover transition-colors">
             <X className="w-4 h-4 text-text-muted" />
           </button>
         </div>
@@ -283,12 +283,12 @@ export function UpdatePanel({ onClose, anchorRef }: UpdatePanelProps) {
             {updateInfo.versionName}
           </span>
           {updateInfo.channel && updateInfo.channel !== 'stable' && (
-            <span className="px-1.5 py-0.5 bg-warning/20 text-warning text-xs rounded font-medium">
+            <span className="px-1.5 py-0.5 bg-warning/20 text-warning text-xs rounded-lg font-medium">
               {updateInfo.channel}
             </span>
           )}
         </div>
-        <button onClick={onClose} className="p-1 rounded-md hover:bg-bg-hover transition-colors">
+        <button onClick={onClose} className="p-1 rounded-lg hover:bg-bg-hover transition-colors">
           <X className="w-4 h-4 text-text-muted" />
         </button>
       </div>
@@ -305,7 +305,7 @@ export function UpdatePanel({ onClose, anchorRef }: UpdatePanelProps) {
             {updateInfo.releaseNote && (
               <button
                 onClick={handleOpenModal}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-accent hover:bg-accent/10 rounded-md transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-xs text-accent hover:bg-accent/10 rounded-lg transition-colors"
                 title={t('mirrorChyan.viewDetails')}
               >
                 <Maximize2 className="w-3 h-3" />

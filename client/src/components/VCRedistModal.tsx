@@ -306,7 +306,7 @@ export function VCRedistModal({ show, onClose }: VCRedistModalProps) {
                   hasStarted.current = false;
                   runAutoProcess();
                 }}
-                className="px-4 py-2 text-sm bg-accent text-white hover:bg-accent-hover rounded-lg transition-colors"
+                className="px-4 py-2 text-sm bg-accent text-on-accent hover:bg-accent-hover rounded-lg transition-colors"
               >
                 {t('vcredist.retry', '重试')}
               </button>
@@ -317,7 +317,7 @@ export function VCRedistModal({ show, onClose }: VCRedistModalProps) {
           {(status === 'success' || status === 'failed') && (
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm bg-accent text-white hover:bg-accent-hover rounded-lg transition-colors"
+              className="px-4 py-2 text-sm bg-accent text-on-accent hover:bg-accent-hover rounded-lg transition-colors"
             >
               {t('common.confirm', '确定')}
             </button>

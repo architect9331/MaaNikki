@@ -142,7 +142,7 @@ export function TextInput({
       inputMode={inputMode}
       step={step}
       className={clsx(
-        'px-3 py-1.5 text-sm rounded-md border',
+        'px-3 py-1.5 text-sm rounded-lg border',
         'bg-bg-secondary text-text-primary',
         'focus:outline-none focus:ring-1',
         disabled && 'opacity-60 cursor-not-allowed',
@@ -215,7 +215,7 @@ export function NumberInput({
       }}
       disabled={disabled}
       className={clsx(
-        'w-24 px-3 py-1.5 text-sm rounded-md border',
+        'w-24 px-3 py-1.5 text-sm rounded-lg border',
         'bg-bg-secondary text-text-primary border-border',
         'focus:outline-none focus:ring-1 focus:ring-accent/20 focus:border-accent',
         disabled && 'opacity-60 cursor-not-allowed',
@@ -340,7 +340,7 @@ export function HotkeyInput({
         onChange(combo);
       }}
       className={clsx(
-        'px-3 py-1.5 text-sm rounded-md border cursor-pointer',
+        'px-3 py-1.5 text-sm rounded-lg border cursor-pointer',
         'bg-bg-secondary text-text-primary',
         'focus:outline-none focus:ring-1 focus:border-accent focus:ring-accent/20 border-border',
         disabled && 'opacity-60 cursor-not-allowed',
@@ -358,7 +358,7 @@ export function TimeInput({ value, onChange, disabled, className }: TimeInputPro
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       className={clsx(
-        'px-3 py-1.5 text-sm rounded-md border',
+        'px-3 py-1.5 text-sm rounded-lg border',
         'bg-bg-secondary text-text-primary border-border',
         'focus:outline-none focus:ring-1 focus:ring-accent/20 focus:border-accent',
         disabled && 'opacity-60 cursor-not-allowed',
@@ -427,7 +427,7 @@ export function FileInput({
           onClick={handleSelectFile}
           disabled={disabled}
           className={clsx(
-            'px-2.5 py-1.5 rounded-md border border-border',
+            'px-2.5 py-1.5 rounded-lg border border-border',
             'bg-bg-secondary hover:bg-bg-hover text-text-secondary',
             'transition-colors',
             disabled && 'opacity-60 cursor-not-allowed',

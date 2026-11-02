@@ -375,7 +375,7 @@ export function CustomAccentModal({
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent-hover transition-colors shadow-sm"
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-accent text-on-accent hover:bg-accent-hover transition-colors shadow-sm"
           >
             {t('common.save')}
           </button>

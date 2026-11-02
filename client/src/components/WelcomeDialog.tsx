@@ -167,7 +167,7 @@ function WelcomeDialogView({ html, isLoading = false, onClose, title }: WelcomeD
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full px-4 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-lg font-medium transition-colors"
+                className="w-full px-4 py-2.5 bg-accent hover:bg-accent-hover text-on-accent rounded-lg font-medium transition-colors"
               >
                 {t('welcome.dismiss')}
               </button>

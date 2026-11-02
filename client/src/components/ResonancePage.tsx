@@ -120,13 +120,13 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
   const best = [...distribution].sort((a, b) => b.count - a.count)[0];
   return <div className="flex min-h-0 flex-1 flex-col bg-bg-primary text-text-primary">
     <div className="flex items-center gap-3 border-b border-border bg-bg-secondary px-5 py-3">
-      <button onClick={onClose} className="rounded-md p-2 hover:bg-bg-hover" aria-label="返回任务列表"><ArrowLeft className="h-4 w-4" /></button>
+      <button onClick={onClose} className="rounded-lg p-2 hover:bg-bg-hover" aria-label="返回任务列表"><ArrowLeft className="h-4 w-4" /></button>
       <h1 className="flex-1 text-lg font-semibold">共鸣记录</h1>
       <select value={accountKey} onChange={(event) => setSelected(event.target.value)} aria-label="记录账号" className={clsx(selectStyle, '!py-1.5')}>
         {!status.accounts.length && <option value="">尚无账号记录</option>}
         {status.accounts.map((item) => <option key={item.key} value={item.key}>UID {item.uid}</option>)}
       </select>
-      <button disabled={!current || action} onClick={() => void exportHistory()} title="导出 JSON" aria-label="导出 JSON" className="rounded-md p-2 hover:bg-bg-hover disabled:opacity-40"><Download className="h-4 w-4" /></button>
+      <button disabled={!current || action} onClick={() => void exportHistory()} title="导出 JSON" aria-label="导出 JSON" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><Download className="h-4 w-4" /></button>
       <ResonanceControl showSettings={false} />
     </div>
     <div className="min-h-0 flex-1 overflow-auto p-4">
@@ -137,7 +137,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
           <p className="min-w-40 flex-1 text-xs text-text-muted">{status.busy ? status.banner ? status.banner + (status.page ? ' · 第 ' + status.page + ' 页' : '') : '正在验证美鸭梨账号'
             : '最近同步 ' + timeLabel(account?.last_success) + (status.enabled && !!status.next_sync && !status.auth_paused ? ' · 下次 ' + timeLabel(status.next_sync) : '')}</p>
           <button disabled={!isTauri() || action} onClick={() => void run('pearpal_open_login')} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-bg-hover disabled:opacity-40">{login ? '切换美鸭梨账号' : '登录美鸭梨'}</button>
-          <button disabled={!isTauri() || action || status.busy} onClick={() => void run('resonance_sync')} className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs text-white hover:bg-accent-hover disabled:opacity-40"><RefreshCw className={clsx('h-3.5 w-3.5', status.busy && 'animate-spin')} />立即同步</button>
+          <button disabled={!isTauri() || action || status.busy} onClick={() => void run('resonance_sync')} className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs text-on-accent hover:bg-accent-hover disabled:opacity-40"><RefreshCw className={clsx('h-3.5 w-3.5', status.busy && 'animate-spin')} />立即同步</button>
         </section>
         {(status.error || connectionError || error) && <p role="alert" className="flex items-center gap-2 rounded-xl border border-error/25 bg-error/5 p-3 text-sm text-error"><AlertCircle className="h-4 w-4 shrink-0" />{connectionError || error || status.error}</p>}
 
@@ -181,8 +181,8 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
 
         <section className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-md border border-border bg-bg-secondary p-0.5">{[{ id: 'outfits' as const, label: '套装收藏' }, { id: 'records' as const, label: '逐条记录' }].map(({ id, label }) =>
-              <button key={id} onClick={() => setView(id)} aria-pressed={view === id} className={clsx('rounded px-3 py-1 text-xs transition-colors', view === id ? 'bg-accent/10 font-medium text-accent' : 'text-text-secondary hover:bg-bg-hover')}>{label}</button>)}</div>
+            <div className="inline-flex rounded-lg border border-border bg-bg-secondary p-0.5">{[{ id: 'outfits' as const, label: '套装收藏' }, { id: 'records' as const, label: '逐条记录' }].map(({ id, label }) =>
+              <button key={id} onClick={() => setView(id)} aria-pressed={view === id} className={clsx('rounded-lg px-3 py-1 text-xs transition-colors', view === id ? 'bg-accent/10 font-medium text-accent' : 'text-text-secondary hover:bg-bg-hover')}>{label}</button>)}</div>
             <select value={banner} onChange={(event) => setBanner(event.target.value)} aria-label="卡池" className={clsx(selectStyle, '!py-1.5 max-w-44')}><option value="all">全部卡池</option>{knownBanners.map((id) => <option key={id} value={id}>{banners.get(id)?.name || '共鸣 ' + id}</option>)}</select>
             <select value={rarity} onChange={(event) => setRarity(event.target.value)} aria-label="星级" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部星级</option><option value="5">五星</option><option value="4">四星</option>{view === 'records' && <option value="3">三星</option>}</select>
             {view === 'outfits' && <select value={completion} onChange={(event) => setCompletion(event.target.value)} aria-label="套装进度" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部进度</option><option value="incomplete">尚未集齐</option><option value="complete">已集齐</option></select>}
@@ -208,7 +208,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
                 <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">{outfit.parts.map((part) => {
                   const lucky = part.count > 0 && part.pity[0] === low && low <= (outfit.rarity === 5 ? 10 : 5);
                   return <li key={part.item} title={part.name + (part.count ? ` · 第 ${part.pity.join('、')} 抽` : ' · 未获得')}
-                    className={clsx('flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-xs', part.count ? 'bg-bg-primary' : 'border border-dashed border-border-strong text-text-muted')}>
+                    className={clsx('flex min-w-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs', part.count ? 'bg-bg-primary' : 'border border-dashed border-border-strong text-text-muted')}>
                     <span className="min-w-0 flex-1 truncate">{part.name}</span>
                     {part.count > 1 && <span className="shrink-0 tabular-nums text-text-muted">×{part.count}</span>}
                     {part.count > 0 && <strong className={clsx('shrink-0 font-semibold tabular-nums', lucky && 'text-accent')}>{part.pity[0]}</strong>}
@@ -217,7 +217,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
               </article>;
             })}</div>
             : <div className="overflow-auto rounded-xl border border-border bg-bg-secondary"><table className="w-full text-xs"><thead className="text-left text-text-muted"><tr><th className="px-4 py-2.5 font-normal">抽取时间</th><th className="px-4 py-2.5 font-normal">共鸣结果</th><th className="px-4 py-2.5 font-normal">所属卡池</th></tr></thead><tbody>{rows.slice(currentPage * size, currentPage * size + size).map((row) => <tr key={row.key} className={clsx('border-t border-border/60 hover:bg-bg-hover/50', row.rarity === 5 && 'bg-warning/5')}><td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-text-secondary">{pullTime(row.time)}</td><td className="px-4 py-2.5"><span className={clsx('mr-2 text-[11px] tabular-nums', row.rarity === 5 ? 'font-semibold text-warning' : row.rarity === 4 ? 'text-accent' : 'text-text-muted')}>{row.rarity || '—'}★</span><span title={row.item} className={clsx(row.rarity === 5 && 'font-medium')}>{row.name}</span></td><td className="px-4 py-2.5 text-text-secondary">{banners.get(row.bannerId)?.name || '共鸣 ' + row.bannerId}</td></tr>)}</tbody></table></div>}
-          {count > size && <div className="flex items-center gap-3 text-xs text-text-secondary"><span className="mr-auto">{count} {view === 'records' ? '条记录' : '套'} · {currentPage + 1}/{pages} 页</span><button disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)} className="rounded-md border border-border px-2.5 py-1 hover:bg-bg-hover disabled:opacity-30">上一页</button><button disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)} className="rounded-md border border-border px-2.5 py-1 hover:bg-bg-hover disabled:opacity-30">下一页</button></div>}
+          {count > size && <div className="flex items-center gap-3 text-xs text-text-secondary"><span className="mr-auto">{count} {view === 'records' ? '条记录' : '套'} · {currentPage + 1}/{pages} 页</span><button disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)} className="rounded-lg border border-border px-2.5 py-1 hover:bg-bg-hover disabled:opacity-30">上一页</button><button disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)} className="rounded-lg border border-border px-2.5 py-1 hover:bg-bg-hover disabled:opacity-30">下一页</button></div>}
         </section>
         <p className="px-1 text-[11px] leading-5 text-text-muted">套装和抽数来自美鸭梨手账，逐条记录来自游戏内共鸣历史。卡池最后一件四星之后的抽数看不到，所以累计和“距上次五星”都是下限。本地存档：config/accounts/CN/{current?.history.uid || '<UID>'}.json · 目录更新：{status.catalog_updated_at || '—'}</p>
       </div>

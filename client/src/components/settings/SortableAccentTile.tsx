@@ -68,7 +68,7 @@ export function SortableAccentTile({
             e.stopPropagation();
             onEdit();
           }}
-          className="p-1 rounded-md text-text-muted hover:text-text-secondary hover:bg-bg-hover"
+          className="p-1 rounded-lg text-text-muted hover:text-text-secondary hover:bg-bg-hover"
           title={t('settings.editCustomAccent')}
         >
           <Pencil className="w-3 h-3" />
@@ -79,7 +79,7 @@ export function SortableAccentTile({
             e.stopPropagation();
             onDelete();
           }}
-          className="p-1 rounded-md text-text-muted hover:text-error hover:bg-error/10"
+          className="p-1 rounded-lg text-text-muted hover:text-error hover:bg-error/10"
           title={t('settings.deleteCustomAccent')}
         >
           <Trash2 className="w-3 h-3" />

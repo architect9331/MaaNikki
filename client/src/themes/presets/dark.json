@@ -1,7 +1,7 @@
 {
   "name": "dark",
-  "bg": {"primary": "#241c1e", "secondary": "#302427", "tertiary": "#3a2b2e", "hover": "#493439", "active": "#5b4047"},
-  "text": {"primary": "#fff3f4", "secondary": "#e9cbd3", "tertiary": "#d0abb6", "muted": "#bd98a3"},
-  "border": {"default": "#51383f", "strong": "#7b535f"},
-  "shadow": {"sm": "0 1px 3px rgb(18 8 11 / 0.22)", "md": "0 4px 14px rgb(18 8 11 / 0.28)", "lg": "0 12px 36px rgb(18 8 11 / 0.36)"}
+  "bg": {"primary": "#1f1c1d", "secondary": "#2a2627", "tertiary": "#332e2f", "hover": "#3e3839", "active": "#4b4445"},
+  "text": {"primary": "#f6f0ea", "secondary": "#d3c9c0", "tertiary": "#bdb2a8", "muted": "#ab9f96"},
+  "border": {"default": "#433c3c", "strong": "#655b59"},
+  "shadow": {"sm": "0 1px 3px rgb(0 0 0 / 0.22)", "md": "0 4px 14px rgb(0 0 0 / 0.28)", "lg": "0 12px 36px rgb(0 0 0 / 0.36)"}
 }

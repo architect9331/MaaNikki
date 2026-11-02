@@ -134,7 +134,7 @@ export function ColorPickerPopover({
 
             <div className="flex items-center gap-2">
               <div
-                className="w-8 h-8 rounded-md border border-border-strong shadow-sm flex-shrink-0"
+                className="w-8 h-8 rounded-lg border border-border-strong shadow-sm flex-shrink-0"
                 style={{ backgroundColor: color }}
               />
               <div className="flex items-center gap-1 flex-1">
@@ -146,7 +146,7 @@ export function ColorPickerPopover({
                     max={255}
                     value={rgbInput.r}
                     onChange={handleRgbChange('r')}
-                    className="w-full px-1.5 py-1 rounded-md bg-bg-tertiary border border-border text-[11px] font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-accent/60 focus:border-accent/60"
+                    className="w-full px-1.5 py-1 rounded-lg bg-bg-tertiary border border-border text-[11px] font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-accent/60 focus:border-accent/60"
                   />
                 </div>
                 <div className="flex flex-col gap-0.5 flex-1">
@@ -157,7 +157,7 @@ export function ColorPickerPopover({
                     max={255}
                     value={rgbInput.g}
                     onChange={handleRgbChange('g')}
-                    className="w-full px-1.5 py-1 rounded-md bg-bg-tertiary border border-border text-[11px] font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-accent/60 focus:border-accent/60"
+                    className="w-full px-1.5 py-1 rounded-lg bg-bg-tertiary border border-border text-[11px] font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-accent/60 focus:border-accent/60"
                   />
                 </div>
                 <div className="flex flex-col gap-0.5 flex-1">
@@ -168,7 +168,7 @@ export function ColorPickerPopover({
                     max={255}
                     value={rgbInput.b}
                     onChange={handleRgbChange('b')}
-                    className="w-full px-1.5 py-1 rounded-md bg-bg-tertiary border border-border text-[11px] font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-accent/60 focus:border-accent/60"
+                    className="w-full px-1.5 py-1 rounded-lg bg-bg-tertiary border border-border text-[11px] font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-accent/60 focus:border-accent/60"
                   />
                 </div>
               </div>

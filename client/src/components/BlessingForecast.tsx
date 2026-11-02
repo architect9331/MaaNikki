@@ -71,7 +71,7 @@ function ForecastChart({ result, history }: { result: ForecastResult; history: H
         <circle cx={scaleX(result.days[pointer])} cy={scaleY(result.median[pointer])} r={4} fill="var(--color-accent)" stroke="var(--color-bg-secondary)" strokeWidth={2} />
       </g>}
     </svg>
-    {pointer !== null && <div className="pointer-events-none absolute top-2 rounded-md border border-border bg-bg-primary px-2.5 py-1.5 text-xs shadow-md"
+    {pointer !== null && <div className="pointer-events-none absolute top-2 rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 text-xs shadow-md"
       style={scaleX(result.days[pointer]) > width / 2 ? { right: width - scaleX(result.days[pointer]) + 10 } : { left: scaleX(result.days[pointer]) + 10 }}>
       <p className="font-medium">{dateLabel(dayAfter(result.days[pointer]))}</p>
       <p className="mt-0.5 tabular-nums text-text-secondary">约 {result.median[pointer]} 色（{result.low[pointer]}～{result.high[pointer]}）</p>
@@ -79,7 +79,7 @@ function ForecastChart({ result, history }: { result: ForecastResult; history: H
   </div>;
 }
 
-const CONTROL = 'w-full rounded-md border border-border bg-bg-primary px-2 py-1.5 text-sm tabular-nums outline-none focus:border-accent';
+const CONTROL = 'w-full rounded-lg border border-border bg-bg-primary px-2 py-1.5 text-sm tabular-nums outline-none focus:border-accent';
 
 export function BlessingForecast({ input, presets, defaultPreset, history }: {
   input: Omit<ForecastInput, 'rainbow' | 'runsPerDay' | 'blingPerDay' | 'blingPerRun'> & { blingPerRun: number };
@@ -131,8 +131,8 @@ export function BlessingForecast({ input, presets, defaultPreset, history }: {
       </div>
       {all?.day != null && <p className="pb-1 text-xs text-text-secondary tabular-nums">约 {all.day} 天，八成概率在 {all.low}～{all.high} 天之间</p>}
       <div className="ml-auto flex items-center gap-4 pb-1 text-xs text-text-secondary">
-        <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded bg-text-primary" />实际</span>
-        <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded bg-accent" />预估中位</span>
+        <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded-lg bg-text-primary" />实际</span>
+        <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded-lg bg-accent" />预估中位</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm bg-accent/15" />八成区间</span>
       </div>
     </div>
@@ -147,7 +147,7 @@ export function BlessingForecast({ input, presets, defaultPreset, history }: {
       <div className="mt-3 space-y-3">
         <div><p className="mb-1.5 text-xs text-text-secondary">彩色概率（官方未公布）</p>
           <div className="flex flex-wrap gap-1.5">{presets.map((item) => <button key={item.id} onClick={() => setPreset(item.id)} aria-pressed={item.id === chosen?.id} title={item.note}
-            className={clsx('rounded-md border px-2.5 py-1 text-xs tabular-nums', item.id === chosen?.id ? 'border-accent bg-accent/10 text-accent' : 'border-border hover:bg-bg-hover')}>
+            className={clsx('rounded-lg border px-2.5 py-1 text-xs tabular-nums', item.id === chosen?.id ? 'border-accent bg-accent/10 text-accent' : 'border-border hover:bg-bg-hover')}>
             {item.label} {(item.rate * 100).toFixed(1)}%</button>)}</div>
           {chosen && <p className="mt-1.5 text-xs text-text-muted">{chosen.note}</p>}
         </div>

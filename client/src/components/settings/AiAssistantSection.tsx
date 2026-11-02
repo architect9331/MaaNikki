@@ -15,7 +15,7 @@ function CopyBlock({ title, text }: { title: string; text: string }) {
     <div className="mb-1 flex items-center justify-between gap-2">
       <span className="text-xs font-medium text-text-secondary">{title}</span>
       <button type="button" onClick={copy} aria-label={`复制${title}`}
-        className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-text-secondary hover:bg-bg-hover">
+        className="flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs text-text-secondary hover:bg-bg-hover">
         {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}{copied ? '已复制' : '复制'}
       </button>
     </div>

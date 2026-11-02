@@ -126,19 +126,19 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-bg-primary text-text-primary">
       <div className="flex items-center gap-3 px-5 py-3 border-b border-border bg-bg-secondary">
-        <button onClick={onClose} className="p-2 rounded-md hover:bg-bg-hover" title="返回任务列表" aria-label="返回任务列表"><ArrowLeft className="w-4 h-4" /></button>
+        <button onClick={onClose} className="p-2 rounded-lg hover:bg-bg-hover" title="返回任务列表" aria-label="返回任务列表"><ArrowLeft className="w-4 h-4" /></button>
         <h1 className="text-lg font-semibold flex-1">祝福闪光收集</h1>
         {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
         <span className="hidden md:inline text-xs text-text-muted">{updated ? `更新于 ${new Date(updated).toLocaleString('zh-CN', { hour12: false })}` : '尚无收集记录'}</span>
         {progress.known && <button onClick={() => void copyShareImage()}
-          className="p-2 rounded-md hover:bg-bg-hover" title="复制分享图（不含 UID）" aria-label="复制分享图"><ImageIcon className="w-4 h-4" /></button>}
+          className="p-2 rounded-lg hover:bg-bg-hover" title="复制分享图（不含 UID）" aria-label="复制分享图"><ImageIcon className="w-4 h-4" /></button>}
         <button onClick={() => void refresh().catch(() => {})} disabled={loading}
-          className="p-2 rounded-md hover:bg-bg-hover disabled:opacity-50" title="刷新记录" aria-label="刷新记录"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
+          className="p-2 rounded-lg hover:bg-bg-hover disabled:opacity-50" title="刷新记录" aria-label="刷新记录"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
       </div>
       <div className="flex-1 min-h-0 overflow-auto p-4">
         <div className="mx-auto max-w-6xl space-y-4">
-          {error && <div className="rounded-md border border-error/30 bg-error/5 p-3 text-xs text-error" role="alert">无法读取账号状态：{error}</div>}
-          {!error && !progress.known && <div className="rounded-md border border-border bg-bg-secondary p-3 text-sm text-text-secondary">{loading ? '正在读取本地记录…' : '尚无完整的五星收藏记录。开启幻境挑战的五星全收集并运行一次，会先自动整理。'}</div>}
+          {error && <div className="rounded-lg border border-error/30 bg-error/5 p-3 text-xs text-error" role="alert">无法读取账号状态：{error}</div>}
+          {!error && !progress.known && <div className="rounded-lg border border-border bg-bg-secondary p-3 text-sm text-text-secondary">{loading ? '正在读取本地记录…' : '尚无完整的五星收藏记录。开启幻境挑战的五星全收集并运行一次，会先自动整理。'}</div>}
           {uncertain && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />存在未确认操作或收藏保护待复核，以下展示上次已确认的记录，下次全收集会自动核对。</p>}
           {rewardPending && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />上次刷取结果待核对，已收藏颜色保留，下次全收集将先处理仓库。</p>}
 
@@ -173,10 +173,10 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
           <section className="space-y-3" aria-label="收集详情">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold">收集详情</h2>
-              <div className="inline-flex rounded-md border border-border bg-bg-secondary p-0.5">
-                {[['missing', '未收齐'], ['rainbow', '只缺彩色'], ['complete', '已收齐'], ['all', '全部']].map(([value, label]) => <button key={value} onClick={() => setFilter(value)} aria-pressed={filter === value} className={clsx('rounded px-3 py-1 text-xs transition-colors', filter === value ? 'bg-accent/10 text-accent font-medium' : 'text-text-secondary hover:bg-bg-hover')}>{label}</button>)}
+              <div className="inline-flex rounded-lg border border-border bg-bg-secondary p-0.5">
+                {[['missing', '未收齐'], ['rainbow', '只缺彩色'], ['complete', '已收齐'], ['all', '全部']].map(([value, label]) => <button key={value} onClick={() => setFilter(value)} aria-pressed={filter === value} className={clsx('rounded-lg px-3 py-1 text-xs transition-colors', filter === value ? 'bg-accent/10 text-accent font-medium' : 'text-text-secondary hover:bg-bg-hover')}>{label}</button>)}
               </div>
-              <label className="flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-2.5 py-1 text-xs focus-within:border-accent/50">
+              <label className="flex items-center gap-2 rounded-lg border border-border bg-bg-secondary px-2.5 py-1 text-xs focus-within:border-accent/50">
                 <Search className="w-3.5 h-3.5 text-text-muted" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索套组或副本" aria-label="搜索套组或副本" className="w-28 bg-transparent outline-none" />
               </label>
               <div className="ml-auto flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-text-secondary">
@@ -192,7 +192,7 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
                 return <section key={group.source} className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
                   <div className="flex items-center gap-2.5 px-3 py-2.5">
                     <h3 className="flex-1 truncate text-sm font-medium">{group.source}</h3>
-                    {group.source === nextSource?.[0] && !needBling && <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[11px] text-accent">今日推荐</span>}
+                    {group.source === nextSource?.[0] && !needBling && <span className="rounded-lg bg-accent/10 px-1.5 py-0.5 text-[11px] text-accent">今日推荐</span>}
                     <span className="text-xs tabular-nums text-text-secondary">{progress.known ? groupCount : '—'} / {groupTarget}</span>
                     <div className="h-1 w-14 overflow-hidden rounded-full bg-bg-tertiary"><div className="h-full rounded-full bg-accent" style={{ width: `${groupCount / groupTarget * 100}%` }} /></div>
                   </div>

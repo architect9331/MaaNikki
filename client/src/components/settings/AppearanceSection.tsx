@@ -1,4 +1,4 @@
-import { type CSSProperties, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe, Palette, Image } from 'lucide-react';
 import clsx from 'clsx';
@@ -93,7 +93,7 @@ export function AppearanceSection({
               className={clsx(
                 'px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 language === lang
-                  ? 'bg-accent text-white'
+                  ? 'bg-accent text-on-accent'
                   : 'bg-bg-tertiary text-text-secondary hover:bg-bg-hover',
               )}
             >
@@ -127,7 +127,7 @@ export function AppearanceSection({
               className={clsx(
                 'flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 theme === t_
-                  ? 'bg-accent text-white'
+                  ? 'bg-accent text-on-accent'
                   : 'bg-bg-tertiary text-text-secondary hover:bg-bg-hover',
               )}
             >
@@ -173,20 +173,16 @@ export function AppearanceSection({
                     key={accent.name}
                     onClick={() => setAccentColor(accent.name as AccentColor)}
                     className={clsx(
-                      'relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-bg-tertiary border',
+                      'relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-bg-secondary border',
                       isSelected
-                        ? 'ring-2 ring-offset-2 ring-offset-bg-secondary border-transparent'
+                        ? 'border-accent bg-accent/10'
                         : 'border-border hover:bg-bg-hover',
                     )}
-                    style={
-                      isSelected
-                        ? ({ '--tw-ring-color': accent.color } as CSSProperties)
-                        : undefined
-                    }
+                    aria-pressed={isSelected}
                   >
                     <span
-                      className="w-4 h-4 rounded-full flex-shrink-0 border border-border-strong"
-                      style={{ backgroundColor: accent.color }}
+                      className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
+                      style={{ background: `linear-gradient(135deg, ${accent.color} 50%, ${accent.secondary ?? accent.color} 50%)` }}
                     />
                     <span className="truncate text-text-secondary">{accent.label}</span>
                   </button>

@@ -82,7 +82,7 @@ export function HotkeySection() {
 
           {/* 全局快捷键注册失败提示 */}
           {globalHotkeyError && (
-            <div className="flex items-start gap-2 px-2.5 py-1.5 rounded-md bg-error/10 text-error text-xs">
+            <div className="flex items-start gap-2 px-2.5 py-1.5 rounded-lg bg-error/10 text-error text-xs">
               <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <span>
                 {globalHotkeyError.conflict

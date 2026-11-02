@@ -1,0 +1,10 @@
+{
+  "name": "celeste",
+  "label": {"zh-CN": "星澜青金", "zh-TW": "星瀾青金", "en-US": "Celeste Gold"},
+  "default": "#2e7d7a",
+  "hover": "#256664",
+  "secondary": "#8f6a1f",
+  "light": "#e3f1f0",
+  "lightDark": "#233332",
+  "dark": {"default": "#8bd3cf", "hover": "#a5dfdb", "secondary": "#e0bd72"}
+}

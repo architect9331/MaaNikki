@@ -1,0 +1,10 @@
+{
+  "name": "dream",
+  "label": {"zh-CN": "奇想星紫", "zh-TW": "奇想星紫", "en-US": "Eureka Violet"},
+  "default": "#7a5aa6",
+  "hover": "#674b8e",
+  "secondary": "#b4536f",
+  "light": "#efe9f6",
+  "lightDark": "#32293f",
+  "dark": {"default": "#c6aeea", "hover": "#d4c1f0", "secondary": "#f0a8bd"}
+}

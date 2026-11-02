@@ -76,7 +76,7 @@ export function ExportLogsModal({
                   <p className="flex-1 text-xs text-text-muted break-all">{zipPath}</p>
                   <button
                     onClick={handleCopy}
-                    className="shrink-0 p-1 rounded hover:bg-bg-hover transition-colors"
+                    className="shrink-0 p-1 rounded-lg hover:bg-bg-hover transition-colors"
                     title={t('logs.copyAll')}
                   >
                     {copied ? (
@@ -107,7 +107,7 @@ export function ExportLogsModal({
             {status === 'success' && onOpen && (
               <button
                 onClick={onOpen}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm bg-accent text-white hover:bg-accent-hover rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm bg-accent text-on-accent hover:bg-accent-hover rounded-lg transition-colors"
               >
                 <FolderOpen className="w-4 h-4" />
                 {t('common.open')}

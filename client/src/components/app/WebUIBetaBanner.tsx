@@ -34,7 +34,7 @@ export function WebUIBetaBanner() {
       </span>
       <button
         onClick={() => setDismissed(true)}
-        className="shrink-0 p-0.5 rounded hover:bg-amber-500/20 transition-colors"
+        className="shrink-0 p-0.5 rounded-lg hover:bg-amber-500/20 transition-colors"
         aria-label={t('common.close')}
       >
         <svg

@@ -57,7 +57,7 @@ export function VersionInfo({
         <div className="flex items-center gap-2">
           <span className="font-mono text-accent font-semibold">{latestVersion}</span>
           {channel && channel !== 'stable' && (
-            <span className="px-1.5 py-0.5 bg-warning/20 text-warning text-xs rounded font-medium">
+            <span className="px-1.5 py-0.5 bg-warning/20 text-warning text-xs rounded-lg font-medium">
               {channel}
             </span>
           )}

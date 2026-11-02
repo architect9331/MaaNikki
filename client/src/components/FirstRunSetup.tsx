@@ -115,7 +115,7 @@ export function FirstRunSetup() {
           {step > 0 && <button type="button" onClick={() => setStep(step - 1)}
             className="rounded-lg bg-bg-tertiary px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-bg-hover">上一步</button>}
           <button type="button" disabled={blocked} onClick={() => last ? finish() : setStep(step + 1)}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50">
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50">
             {last ? '开始使用' : <>下一步<ArrowRight className="h-4 w-4" /></>}
           </button>
         </div>

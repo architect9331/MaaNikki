@@ -33,7 +33,7 @@ export function ScheduleButton({
           scheduleExecution
             ? 'bg-success text-white'
             : showPanel
-              ? 'bg-accent text-white'
+              ? 'bg-accent text-on-accent'
               : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
         )}
         title={
@@ -46,7 +46,7 @@ export function ScheduleButton({
         <span className="hidden sm:inline">{t('schedule.button')}</span>
         {/* 启用数量徽章 */}
         {enabledCount > 0 && !showPanel && !scheduleExecution && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-accent text-white text-xs font-medium rounded-full">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-accent text-on-accent text-xs font-medium rounded-full">
             {enabledCount}
           </span>
         )}

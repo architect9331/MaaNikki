@@ -165,13 +165,13 @@ export function GameKeyInput({ value, onChange, placeholder, disabled, className
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         aria-label="键名，可手动填写"
-        className="w-full min-w-0 px-3 py-1.5 text-sm rounded-md border bg-bg-secondary text-text-primary border-border focus:outline-none focus:ring-1 focus:border-accent focus:ring-accent/20"
+        className="w-full min-w-0 px-3 py-1.5 text-sm rounded-lg border bg-bg-secondary text-text-primary border-border focus:outline-none focus:ring-1 focus:border-accent focus:ring-accent/20"
       />
       <button
         type="button"
         disabled={disabled}
         onClick={() => { setError(''); setCapturing(true); }}
-        className="shrink-0 px-3 py-1.5 text-sm rounded-md border border-border text-accent hover:bg-bg-active disabled:opacity-50"
+        className="shrink-0 px-3 py-1.5 text-sm rounded-lg border border-border text-accent hover:bg-bg-active disabled:opacity-50"
       >录入</button>
       {capturing && !disabled && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-6" role="dialog" aria-modal="true" aria-label="录入游戏键位">
@@ -183,7 +183,7 @@ export function GameKeyInput({ value, onChange, placeholder, disabled, className
             </div>
             <p className="mt-3 text-xs text-text-muted">Esc 也可录入；取消请点击按钮。切换窗口会取消录入。</p>
             {error && <p className="mt-2 text-xs text-error" role="status">{error}</p>}
-            <div className="mt-4 flex justify-end"><button type="button" onClick={() => setCapturing(false)} className="rounded-md border border-border px-4 py-1.5 text-sm text-text-primary hover:bg-bg-active">取消</button></div>
+            <div className="mt-4 flex justify-end"><button type="button" onClick={() => setCapturing(false)} className="rounded-lg border border-border px-4 py-1.5 text-sm text-text-primary hover:bg-bg-active">取消</button></div>
           </div>
         </div>, document.body,
       )}

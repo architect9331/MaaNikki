@@ -19,15 +19,13 @@ const logger = createLogger('Theme');
 // 静态导入所有主题预设（Vite 需要静态导入才能正确打包）
 import lightTheme from './presets/light.json';
 import darkTheme from './presets/dark.json';
-import emeraldAccent from './presets/accents/emerald.json';
-import lavaAccent from './presets/accents/lava.json';
-import titaniumAccent from './presets/accents/titanium.json';
-import celadonAccent from './presets/accents/celadon.json';
 import rosegoldAccent from './presets/accents/rosegold.json';
-import danxiaAccent from './presets/accents/danxia.json';
-import deepseaAccent from './presets/accents/deepsea.json';
-import cambrianAccent from './presets/accents/cambrian.json';
-import pearlAccent from './presets/accents/pearl.json';
+import goldAccent from './presets/accents/gold.json';
+import celesteAccent from './presets/accents/celeste.json';
+import meadowAccent from './presets/accents/meadow.json';
+import starseaAccent from './presets/accents/starsea.json';
+import dreamAccent from './presets/accents/dream.json';
+import slateAccent from './presets/accents/slate.json';
 
 /** 模式主题映射 */
 const modeThemes: Record<ThemeMode, ModeTheme> = {
@@ -37,16 +35,27 @@ const modeThemes: Record<ThemeMode, ModeTheme> = {
 
 /** 强调色主题映射（内置预设） */
 const accentThemes: Record<AccentColor, AccentTheme> = {
-  emerald: emeraldAccent as AccentTheme,
-  lava: lavaAccent as AccentTheme,
-  titanium: titaniumAccent as AccentTheme,
-  celadon: celadonAccent as AccentTheme,
   rosegold: rosegoldAccent as AccentTheme,
-  danxia: danxiaAccent as AccentTheme,
-  deepsea: deepseaAccent as AccentTheme,
-  cambrian: cambrianAccent as AccentTheme,
-  pearl: pearlAccent as AccentTheme,
+  gold: goldAccent as AccentTheme,
+  celeste: celesteAccent as AccentTheme,
+  meadow: meadowAccent as AccentTheme,
+  starsea: starseaAccent as AccentTheme,
+  dream: dreamAccent as AccentTheme,
+  slate: slateAccent as AccentTheme,
 };
+
+/** 默认强调色；配置中保存的旧预设已移除时也回到这里。 */
+export const DEFAULT_ACCENT: AccentColor = 'rosegold';
+
+/** 白字在强调色上看不清时改用深色字，自定义强调色同样适用。 */
+function onAccentColor(hex: string): string {
+  const channel = (start: number) => {
+    const value = parseInt(hex.slice(start, start + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  return 1.05 / (luminance + 0.05) >= 4.5 ? '#ffffff' : '#1f1c1d';
+}
 
 /** 运行时注册的自定义强调色主题
  *
@@ -105,6 +114,11 @@ function applyCSSVariables(mode: ModeTheme, accent: AccentTheme, isDark: boolean
   root.style.setProperty('--color-accent', accentColor);
   root.style.setProperty('--color-accent-hover', accentHover);
   root.style.setProperty('--color-accent-light', isDark ? accent.lightDark : accent.light);
+  root.style.setProperty('--color-on-accent', onAccentColor(accentColor));
+  root.style.setProperty(
+    '--color-accent-secondary',
+    (isDark ? accent.dark?.secondary : accent.secondary) ?? accentColor,
+  );
 
   // 语义色
   const semantic = semanticColors[isDark ? 'dark' : 'light'];
@@ -113,7 +127,7 @@ function applyCSSVariables(mode: ModeTheme, accent: AccentTheme, isDark: boolean
   root.style.setProperty('--color-warning', semantic.warning);
   root.style.setProperty('--color-error', semantic.error);
   // Logs have their own readable information color even with a dark custom accent.
-  root.style.setProperty('--color-log-info', isDark ? '#f4aac1' : '#b94168');
+  root.style.setProperty('--color-log-info', isDark ? '#f0a8bd' : '#9c4560');
 }
 
 /**
@@ -123,7 +137,7 @@ function applyCSSVariables(mode: ModeTheme, accent: AccentTheme, isDark: boolean
  */
 export function applyTheme(mode: ThemeMode, accent: AccentColor): void {
   const modeTheme = modeThemes[mode];
-  const accentTheme = customAccentThemes[accent] || accentThemes[accent];
+  const accentTheme = customAccentThemes[accent] || accentThemes[accent] || accentThemes[DEFAULT_ACCENT];
 
   if (!modeTheme || !accentTheme) {
     logger.warn(`Theme not found: mode=${mode}, accent=${accent}`);
@@ -209,6 +223,7 @@ export function getAccentInfoList(lang: string, customAccents?: CustomAccent[]):
       name,
       label: accent.label[langKey] || accent.label['en-US'],
       color: accent.default,
+      secondary: accent.secondary,
       isCustom,
     };
   });

@@ -50,7 +50,7 @@ export function PermissionModal({
               'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
               isRestarting
                 ? 'bg-accent/70 text-white cursor-wait'
-                : 'bg-accent hover:bg-accent-hover text-white',
+                : 'bg-accent hover:bg-accent-hover text-on-accent',
             )}
           >
             {isRestarting ? (

@@ -124,7 +124,7 @@ function MenuItemComponent({
         disabled={item.disabled}
         aria-haspopup={hasChildren ? 'menu' : undefined}
         className={clsx(
-          'w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left rounded-md transition-colors',
+          'w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left rounded-lg transition-colors',
           item.disabled
             ? 'text-text-muted cursor-not-allowed'
             : item.danger

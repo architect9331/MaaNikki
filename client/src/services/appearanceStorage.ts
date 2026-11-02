@@ -27,7 +27,7 @@ export interface WebUIAppearance {
 
 const defaultAppearance: WebUIAppearance = {
   theme: 'system',
-  accentColor: 'emerald',
+  accentColor: 'rosegold',
   language: 'system',
   backgroundOpacity: 50,
   customAccents: [],

@@ -14,7 +14,7 @@ export function ExplorationPage({ onClose }: { onClose: () => void }) {
   const { status, error } = useExplorationStore();
   return <div className="flex min-h-0 flex-1 flex-col bg-bg-primary text-text-primary">
     <div className="flex items-center gap-3 border-b border-border bg-bg-secondary px-5 py-3">
-      <button onClick={onClose} className="rounded-md p-2 hover:bg-bg-hover" aria-label="返回任务列表"><ArrowLeft className="h-4 w-4" /></button>
+      <button onClick={onClose} className="rounded-lg p-2 hover:bg-bg-hover" aria-label="返回任务列表"><ArrowLeft className="h-4 w-4" /></button>
       <Compass className="h-5 w-5 text-accent" />
       <h1 className="flex-1 text-lg font-semibold">辅助功能</h1>
       <ExplorationControl showSettings={false} />

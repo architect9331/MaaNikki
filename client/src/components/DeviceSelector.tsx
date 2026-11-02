@@ -695,7 +695,7 @@ export function DeviceSelector({
             'w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
             isConnecting || !canConnect()
               ? 'bg-accent/50 text-white/70 cursor-not-allowed'
-              : 'bg-accent text-white hover:bg-accent-hover',
+              : 'bg-accent text-on-accent hover:bg-accent-hover',
           )}
         >
           {isConnecting ? (

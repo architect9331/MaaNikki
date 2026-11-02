@@ -25,7 +25,7 @@ export function PreflightDialog({ issues, onCancel, onContinue }: {
           <button type="button" onClick={onCancel}
             className="flex-1 rounded-lg bg-bg-tertiary px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-hover">先去处理</button>
           <button type="button" onClick={onContinue}
-            className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover">继续运行</button>
+            className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:bg-accent-hover">继续运行</button>
         </div>
       </div>
     </div>

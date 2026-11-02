@@ -392,7 +392,7 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
                   className={clsx(
                     'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left',
                     isActive
-                      ? 'bg-accent text-white'
+                      ? 'bg-accent text-on-accent'
                       : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                   )}
                 >
@@ -429,7 +429,7 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
                 </span>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="p-1 rounded-md hover:bg-bg-hover transition-colors"
+                  className="p-1 rounded-lg hover:bg-bg-hover transition-colors"
                   title={t('settings.closeNav')}
                   aria-label={t('settings.closeNav')}
                 >
@@ -446,7 +446,7 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
                     className={clsx(
                       'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left',
                       isActive
-                        ? 'bg-accent text-white'
+                        ? 'bg-accent text-on-accent'
                         : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                     )}
                   >

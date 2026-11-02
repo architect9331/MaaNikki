@@ -43,7 +43,7 @@ export function XinghaiScoreHint({ values, compact = false }: {
     );
   }
   return (
-    <div className="rounded-md border border-border bg-bg-secondary overflow-hidden text-xs text-text-secondary">
+    <div className="rounded-lg border border-border bg-bg-secondary overflow-hidden text-xs text-text-secondary">
       <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
         <span className="font-medium text-text-primary">8 天任务轮换</span>
         <span className="text-text-muted">今日：第 {index + 1} 天</span>
@@ -54,7 +54,7 @@ export function XinghaiScoreHint({ values, compact = false }: {
             <div className="flex items-start gap-3">
               <div className="w-14 shrink-0 pt-0.5">
                 <span className={clsx('font-medium', cycle.insufficient ? 'text-warning' : 'text-text-primary')}>第 {cycle.i + 1} 天</span>
-                {cycle.i === index && <span className="mt-1 block w-fit rounded bg-accent/10 px-1 text-[10px] text-accent">今日</span>}
+                {cycle.i === index && <span className="mt-1 block w-fit rounded-lg bg-accent/10 px-1 text-[10px] text-accent">今日</span>}
               </div>
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap gap-x-2 gap-y-1 leading-5">

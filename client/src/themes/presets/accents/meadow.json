@@ -1,0 +1,10 @@
+{
+  "name": "meadow",
+  "label": {"zh-CN": "微风绿野", "zh-TW": "微風綠野", "en-US": "Breezy Meadow"},
+  "default": "#3f7a5c",
+  "hover": "#33664c",
+  "secondary": "#8f6a1f",
+  "light": "#e4f0e8",
+  "lightDark": "#25332b",
+  "dark": {"default": "#8fcfac", "hover": "#a6dcbe", "secondary": "#e0bd72"}
+}

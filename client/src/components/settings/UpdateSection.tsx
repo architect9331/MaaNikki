@@ -404,7 +404,7 @@ export function UpdateSection() {
                       className={clsx(
                         'flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                         mirrorChyanSettings.channel === 'stable'
-                          ? 'bg-accent text-white'
+                          ? 'bg-accent text-on-accent'
                           : 'bg-bg-tertiary text-text-secondary hover:bg-bg-hover',
                       )}
                     >
@@ -415,7 +415,7 @@ export function UpdateSection() {
                       className={clsx(
                         'flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                         mirrorChyanSettings.channel === 'beta'
-                          ? 'bg-accent text-white'
+                          ? 'bg-accent text-on-accent'
                           : 'bg-bg-tertiary text-text-secondary hover:bg-bg-hover',
                       )}
                     >
@@ -514,7 +514,7 @@ export function UpdateSection() {
               ) : downloadStatus === 'completed' && installStatus === 'idle' ? (
                 <button
                   onClick={handleInstallNow}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent-hover transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-accent text-on-accent hover:bg-accent-hover transition-colors"
                 >
                   <PackageCheck className="w-4 h-4" />
                   {t('mirrorChyan.installNow')}
@@ -527,7 +527,7 @@ export function UpdateSection() {
                     'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     updateCheckLoading
                       ? 'bg-bg-tertiary text-text-muted cursor-not-allowed'
-                      : 'bg-accent text-white hover:bg-accent-hover',
+                      : 'bg-accent text-on-accent hover:bg-accent-hover',
                   )}
                 >
                   {updateCheckLoading ? (
@@ -575,7 +575,7 @@ export function UpdateSection() {
                       {updateInfo.versionName}
                     </span>
                     {updateInfo.channel && updateInfo.channel !== 'stable' && (
-                      <span className="px-1.5 py-0.5 bg-warning/20 text-warning text-xs rounded font-medium">
+                      <span className="px-1.5 py-0.5 bg-warning/20 text-warning text-xs rounded-lg font-medium">
                         {updateInfo.channel}
                       </span>
                     )}

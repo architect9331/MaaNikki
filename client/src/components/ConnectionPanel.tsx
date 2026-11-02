@@ -1618,9 +1618,9 @@ export function ConnectionPanel() {
                         }}
                         disabled={isConnecting || isSearching || isRunning}
                         className={clsx(
-                          'px-2 py-0.5 text-xs rounded-md transition-colors',
+                          'px-2 py-0.5 text-xs rounded-lg transition-colors',
                           currentControllerName === controller.name
-                            ? 'bg-accent text-white'
+                            ? 'bg-accent text-on-accent'
                             : 'bg-bg-tertiary text-text-secondary hover:bg-bg-hover',
                           (isConnecting || isSearching || isRunning) &&
                             'opacity-50 cursor-not-allowed',
@@ -1645,7 +1645,7 @@ export function ConnectionPanel() {
                   placeholder={t('controller.uinputWidth')}
                   disabled={isConnected || isConnecting || isRunning}
                   className={clsx(
-                    'flex-1 min-w-0 px-2.5 py-1.5 rounded-md border bg-bg-tertiary border-border text-sm',
+                    'flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border bg-bg-tertiary border-border text-sm',
                     'text-text-primary placeholder:text-text-muted',
                     'focus:outline-none focus:border-accent transition-colors',
                     (isConnected || isRunning) && 'opacity-60 cursor-not-allowed',
@@ -1659,7 +1659,7 @@ export function ConnectionPanel() {
                   placeholder={t('controller.uinputHeight')}
                   disabled={isConnected || isConnecting || isRunning}
                   className={clsx(
-                    'flex-1 min-w-0 px-2.5 py-1.5 rounded-md border bg-bg-tertiary border-border text-sm',
+                    'flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border bg-bg-tertiary border-border text-sm',
                     'text-text-primary placeholder:text-text-muted',
                     'focus:outline-none focus:border-accent transition-colors',
                     (isConnected || isRunning) && 'opacity-60 cursor-not-allowed',
@@ -1678,7 +1678,7 @@ export function ConnectionPanel() {
                   placeholder="127.0.0.1:1717"
                   disabled={isConnected || isConnecting || isRunning}
                   className={clsx(
-                    'flex-1 min-w-0 px-2.5 py-1.5 rounded-md border bg-bg-tertiary border-border text-sm',
+                    'flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border bg-bg-tertiary border-border text-sm',
                     'text-text-primary placeholder:text-text-muted',
                     'focus:outline-none focus:border-accent transition-colors',
                     (isConnected || isRunning) && 'opacity-60 cursor-not-allowed',
@@ -1688,12 +1688,12 @@ export function ConnectionPanel() {
                   onClick={handleConnect}
                   disabled={isConnecting || isConnected || !canConnect() || isRunning}
                   className={clsx(
-                    'flex items-center justify-center px-3 py-1.5 rounded-md border transition-colors',
+                    'flex items-center justify-center px-3 py-1.5 rounded-lg border transition-colors',
                     isConnected
                       ? 'bg-success/20 border-success/50 cursor-not-allowed'
                       : isConnecting || !canConnect() || isRunning
                         ? 'bg-bg-tertiary border-border opacity-50 cursor-not-allowed'
-                        : 'bg-accent border-accent text-white hover:bg-accent-hover',
+                        : 'bg-accent border-accent text-on-accent hover:bg-accent-hover',
                   )}
                   title={t('controller.connect')}
                 >
@@ -1722,7 +1722,7 @@ export function ConnectionPanel() {
                     }}
                     disabled={isConnecting || isRunning}
                     className={clsx(
-                      'w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-colors text-sm',
+                      'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-colors text-sm',
                       'bg-bg-tertiary border-border',
                       isConnecting || isRunning
                         ? 'opacity-60 cursor-not-allowed'
@@ -1811,7 +1811,7 @@ export function ConnectionPanel() {
                   onClick={handleSearch}
                   disabled={isSearching || isConnecting || isRunning}
                   className={clsx(
-                    'flex items-center justify-center px-3 py-1.5 rounded-md border transition-colors',
+                    'flex items-center justify-center px-3 py-1.5 rounded-lg border transition-colors',
                     'bg-bg-tertiary border-border',
                     isSearching || isConnecting || isRunning
                       ? 'opacity-50 cursor-not-allowed'
@@ -1834,7 +1834,7 @@ export function ConnectionPanel() {
 
             {/* 设备错误提示 */}
             {deviceError && (
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-error/10 text-error text-xs">
+              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-error/10 text-error text-xs">
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{deviceError}</span>
               </div>
@@ -1864,7 +1864,7 @@ export function ConnectionPanel() {
                     }}
                     disabled={isLoadingResource || activeInstance?.isRunning || false}
                     className={clsx(
-                      'w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-colors text-sm',
+                      'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-colors text-sm',
                       'bg-bg-tertiary',
                       isSelectedIncompatible ? 'border-warning/50' : 'border-border',
                       isLoadingResource || activeInstance?.isRunning
@@ -1974,7 +1974,7 @@ export function ConnectionPanel() {
 
             {/* 资源错误提示 */}
             {resourceError && (
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-error/10 text-error text-xs">
+              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-error/10 text-error text-xs">
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{resourceError}</span>
               </div>

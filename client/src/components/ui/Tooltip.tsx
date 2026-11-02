@@ -60,7 +60,7 @@ export function Tooltip({
           avoidCollisions={true}
           className={clsx(
             // 基础样式
-            'z-[9999] overflow-hidden rounded-md',
+            'z-[9999] overflow-hidden rounded-lg',
             'border border-border bg-bg-tertiary shadow-lg',
             'px-3 py-2 text-xs text-text-primary',
             // 宽度限制和文本换行

@@ -75,7 +75,7 @@ export function BadPathModal({ show, type }: BadPathModalProps) {
         <div className="flex items-center justify-end gap-2 px-4 py-3 bg-bg-tertiary border-t border-border">
           <button
             onClick={handleExit}
-            className="px-4 py-2 text-sm bg-accent text-white hover:bg-accent-hover rounded-lg transition-colors"
+            className="px-4 py-2 text-sm bg-accent text-on-accent hover:bg-accent-hover rounded-lg transition-colors"
           >
             {t('badPath.exit', '退出程序')}
           </button>

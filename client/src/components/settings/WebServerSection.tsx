@@ -196,13 +196,13 @@ export function WebServerSection() {
               <div className="flex items-center gap-2 ml-4 shrink-0">
                 <button
                   onClick={() => setShowRestartPrompt(false)}
-                  className="px-3 py-1 text-text-muted hover:text-text-primary rounded transition-colors"
+                  className="px-3 py-1 text-text-muted hover:text-text-primary rounded-lg transition-colors"
                 >
                   {t('webserver.restartLater')}
                 </button>
                 <button
                   onClick={handleRestart}
-                  className="px-3 py-1 bg-accent text-white rounded hover:bg-accent/90 transition-colors"
+                  className="px-3 py-1 bg-accent text-on-accent rounded-lg hover:bg-accent/90 transition-colors"
                 >
                   {t('webserver.restartNow')}
                 </button>

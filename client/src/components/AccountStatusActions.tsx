@@ -81,7 +81,7 @@ function GiantMeteorStatus() {
       <p className="text-text-muted">点击查看 · 每日 04:00 刷新</p>
     </div>}>
       <button onClick={() => setOpen(true)} aria-label={label} aria-haspopup="dialog"
-        className={clsx('meteor-status relative flex shrink-0 items-center gap-1.5 rounded-md p-2 transition-colors focus-visible:outline-2 focus-visible:outline-accent',
+        className={clsx('meteor-status relative flex shrink-0 items-center gap-1.5 rounded-lg p-2 transition-colors focus-visible:outline-2 focus-visible:outline-accent',
           found ? 'meteor-status--found' : 'text-text-secondary hover:bg-bg-hover')}>
         <MeteorIcon className="relative z-10 w-5 h-5 shrink-0" />
         {found ? <>
@@ -98,7 +98,7 @@ function GiantMeteorStatus() {
         <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="giant-meteor-title"
           aria-describedby="giant-meteor-description"
           className={clsx('meteor-dialog relative w-full max-w-sm overflow-hidden rounded-xl border border-border bg-bg-secondary text-text-primary shadow-xl', found && 'meteor-dialog--found')}>
-          <button onClick={close} aria-label="关闭" className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-text-secondary hover:bg-bg-hover"><X className="w-4 h-4" /></button>
+          <button onClick={close} aria-label="关闭" className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-text-secondary hover:bg-bg-hover"><X className="w-4 h-4" /></button>
           <div className="meteor-dialog-hero flex flex-col items-center px-7 pb-5 pt-7 text-center">
             <MeteorEmblem discovered={found} />
             <h2 id="giant-meteor-title" className="mt-3 text-xl font-semibold tracking-wide">{found ? '巨陨星降临' : '巨陨星状态'}</h2>
@@ -113,8 +113,8 @@ function GiantMeteorStatus() {
           <div className="flex items-center gap-2 px-5 py-4">
             <span className="mr-auto text-xs text-text-muted">每日 04:00 更新日期</span>
             <button onClick={() => void refresh().catch(() => {})} disabled={loading} title="刷新本地记录" aria-label="刷新本地记录"
-              className="rounded-md p-2 text-text-secondary hover:bg-bg-hover disabled:opacity-50"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
-            <button onClick={close} className="inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-xs font-medium text-white hover:bg-accent-hover"><Check className="w-3.5 h-3.5" />知道了</button>
+              className="rounded-lg p-2 text-text-secondary hover:bg-bg-hover disabled:opacity-50"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
+            <button onClick={close} className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-medium text-on-accent hover:bg-accent-hover"><Check className="w-3.5 h-3.5" />知道了</button>
           </div>
         </div>
       </div>
@@ -133,7 +133,7 @@ export function AccountStatusActions({ onShowProgress }: { onShowProgress: () =>
     <GiantMeteorStatus />
     <Tooltip side="bottom" content={<div className="space-y-1"><p className="font-medium">祝福闪光收集进度 {percentage}</p><p className="text-text-secondary">{detail}</p></div>}>
       <button onClick={onShowProgress}
-        className="flex shrink-0 items-center gap-1.5 rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent"
+        className="flex shrink-0 items-center gap-1.5 rounded-lg p-2 text-text-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent"
         aria-label={`祝福闪光收集进度 ${percentage}`}>
         <Sparkles className="h-5 w-5 shrink-0" aria-hidden="true" />
         <span className="whitespace-nowrap text-sm">收集进度</span>
@@ -144,7 +144,7 @@ export function AccountStatusActions({ onShowProgress }: { onShowProgress: () =>
     <ResonanceControl />
     <Tooltip side="bottom" content="衣柜读取与搭配计算">
       <button onClick={() => useAppStore.getState().setCurrentPage('wardrobe')} aria-label="衣柜"
-        className="flex shrink-0 items-center rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent">
+        className="flex shrink-0 items-center rounded-lg p-2 text-text-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent">
         <Shirt className="h-5 w-5" aria-hidden="true" />
       </button>
     </Tooltip>

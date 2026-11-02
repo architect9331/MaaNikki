@@ -2185,7 +2185,7 @@ function App() {
               onClick={() =>
                 document.getElementById('logs-panel')?.scrollIntoView({ behavior: 'smooth' })
               }
-              className="fixed bottom-4 right-4 z-50 p-3 rounded-full bg-accent text-white shadow-lg active:bg-accent-hover transition-colors"
+              className="fixed bottom-4 right-4 z-50 p-3 rounded-full bg-accent text-on-accent shadow-lg active:bg-accent-hover transition-colors"
               aria-label={t('logs.scrollToLogs')}
               title={t('logs.scrollToLogs')}
             >
