@@ -453,7 +453,10 @@ class GameUI:
             raise ValueError("文字页面特征必须指定识别区域。")
         def check():
             return (self.asset(asset, roi=roi, **options) if asset else self.rt.text(roi, text))
-        check.__name__ = asset or text
+        # Node data can supply OCR text as a list, which remains valid for
+        # recognition but cannot be used directly as a function name.
+        name = asset or text
+        check.__name__ = name if isinstance(name, str) else "|".join(map(str, name))
         return check
 
     def page_matches(self, page):
