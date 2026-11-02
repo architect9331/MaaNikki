@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { MapPin } from 'lucide-react';
+import { Card, primaryButton, secondaryButton } from '@/components/ui/FeaturePage';
 import { invoke } from '@tauri-apps/api/core';
 import { isTauri } from '@/utils/windowUtils';
 
@@ -57,45 +57,27 @@ export function MapMaskSection() {
   }
 
   return (
-    <div className="bg-bg-secondary rounded-xl p-4 border border-border space-y-3">
-      <div className="flex items-start gap-3">
-        <MapPin className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="font-medium text-text-primary">美鸭梨账号</div>
-          <p className="text-xs text-text-muted">
-            登录正在游玩的美鸭梨国服账号，在辅助功能中开启奇想星、灵感露珠标记。打开大地图自动识别常用缩放并校准，返回场景后跟随小地图。
-          </p>
-          <p className="text-xs text-text-muted">
-            首版支持奇迹大陆、万相境及 16:9 游戏窗口。粉色星形表示奇想星，蓝色水滴表示灵感露珠。收集进度在辅助运行时定期同步。
-          </p>
-          <p className="text-sm text-text-secondary">
-            {status.has_login
-              ? status.authenticated
-                ? '已登录 · 已收集奇想星 ' + (status.star_collected ?? '—') + '，灵感露珠 ' + (status.dewdrop_collected ?? '—')
-                : '已保存登录信息'
-              : '尚未登录美鸭梨'}
-          </p>
-          {(error || (status.has_login && status.error)) && (
-            <p role="status" className="text-xs text-red-400">{error || status.error}</p>
+    <Card title="美鸭梨账号" aside={<span className="text-xs text-text-secondary">{status.has_login
+      ? status.authenticated ? '已登录' : '已保存登录信息' : '尚未登录'}</span>}>
+      <div className="space-y-3 px-4 py-3">
+        <p className="text-xs leading-5 text-text-secondary">
+          登录正在游玩的国服账号后可使用地图标记：打开大地图自动校准，返回场景后跟随小地图。支持奇迹大陆、万相境和 16:9 游戏窗口，粉色星形是奇想星，蓝色水滴是灵感露珠。
+        </p>
+        {status.has_login && status.authenticated && (
+          <p className="text-xs tabular-nums text-text-secondary">已收集奇想星 {status.star_collected ?? '—'}，灵感露珠 {status.dewdrop_collected ?? '—'}</p>
+        )}
+        {(error || (status.has_login && status.error)) && (
+          <p role="status" className="text-xs text-error">{error || status.error}</p>
+        )}
+        <div className="flex gap-2">
+          <button type="button" className={primaryButton} disabled={busy} onClick={() => void run('pearpal_open_login')}>
+            {status.has_login ? '重新登录' : '登录美鸭梨'}
+          </button>
+          {status.has_login && (
+            <button type="button" className={secondaryButton} disabled={busy} onClick={() => void run('pearpal_logout')}>退出登录</button>
           )}
         </div>
       </div>
-      <div className="flex gap-2 pl-8">
-        <button
-          type="button"
-          className="px-3 py-1.5 rounded-lg text-sm bg-accent text-on-accent disabled:opacity-50"
-          disabled={busy}
-          onClick={() => void run('pearpal_open_login')}
-        >{status.has_login ? '重新登录' : '登录美鸭梨'}</button>
-        {status.has_login && (
-          <button
-            type="button"
-            className="px-3 py-1.5 rounded-lg text-sm border border-border text-text-secondary disabled:opacity-50"
-            disabled={busy}
-            onClick={() => void run('pearpal_logout')}
-          >退出登录</button>
-        )}
-      </div>
-    </div>
+    </Card>
   );
 }

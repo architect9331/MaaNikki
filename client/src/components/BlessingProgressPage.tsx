@@ -7,7 +7,7 @@ import { useAccountStateStore } from '@/stores/accountStateStore';
 import { collectionSlots as slots, collectionKey as keyOf, getBlessingProgress } from '@/utils/blessingProgress';
 import type { ForecastPart } from '@/services/collectionForecast';
 import { BlessingForecast, type RainbowPreset } from './BlessingForecast';
-import { PageHeader } from './ui/PageHeader';
+import { Card, FeaturePage, Segmented, Stat, StatusBar } from './ui/FeaturePage';
 
 const SUMMARY_URL = 'https://stats.maanikki.cn/v1/summary';
 const COLOR_FILL: Record<string, string> = {
@@ -21,14 +21,6 @@ function ColorDot({ color, collected, label }: { color: string; collected: boole
   return <span role="img" aria-label={label} title={label}
     className={clsx('inline-block h-3.5 w-3.5 shrink-0 rounded-full', collected ? 'ring-1 ring-black/10' : 'border border-dashed border-border-strong')}
     style={collected ? { background: COLOR_FILL[color] ?? 'var(--color-accent)' } : undefined} />;
-}
-
-function Stat({ label, value, detail, warn }: { label: string; value: string; detail: string; warn?: boolean }) {
-  return <div className="rounded-xl border border-border bg-bg-secondary px-4 py-3">
-    <p className="text-xs text-text-secondary">{label}</p>
-    <p className={clsx('mt-1 text-xl font-semibold tabular-nums', warn && 'text-warning')}>{value}</p>
-    <p className="mt-0.5 text-xs leading-5 text-text-muted">{detail}</p>
-  </div>;
 }
 
 export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
@@ -125,21 +117,21 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col bg-bg-primary text-text-primary">
-      <PageHeader icon={Sparkles} title="祝福闪光收集" onBack={onClose}>
+    <FeaturePage icon={Sparkles} title="祝福闪光收集" onBack={onClose} actions={<>
         {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
         <span className="hidden md:inline text-xs text-text-muted">{updated ? `更新于 ${new Date(updated).toLocaleString('zh-CN', { hour12: false })}` : '尚无收集记录'}</span>
         {progress.known && <button onClick={() => void copyShareImage()}
           className="p-2 rounded-lg hover:bg-bg-hover" title="复制分享图（不含 UID）" aria-label="复制分享图"><ImageIcon className="w-4 h-4" /></button>}
         <button onClick={() => void refresh().catch(() => {})} disabled={loading}
           className="p-2 rounded-lg hover:bg-bg-hover disabled:opacity-50" title="刷新记录" aria-label="刷新记录"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
-      </PageHeader>
-      <div className="flex-1 min-h-0 overflow-auto p-4">
-        <div className="mx-auto max-w-6xl space-y-4">
+      </>}>
           {error && <div className="rounded-lg border border-error/30 bg-error/5 p-3 text-xs text-error" role="alert">无法读取账号状态：{error}</div>}
           {!error && !progress.known && <div className="rounded-lg border border-border bg-bg-secondary p-3 text-sm text-text-secondary">{loading ? '正在读取本地记录…' : '尚无完整的五星收藏记录。开启幻境挑战的五星全收集并运行一次，会先自动整理。'}</div>}
           {uncertain && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />存在未确认操作或收藏保护待复核，以下展示上次已确认的记录，下次全收集会自动核对。</p>}
           {rewardPending && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />上次刷取结果待核对，已收藏颜色保留，下次全收集将先处理仓库。</p>}
+
+          {progress.known && <StatusBar tone={needBling ? 'warn' : 'ok'} title={needBling ? '今天建议刷噗灵' : nextSource?.[1] ? `今天建议刷「${nextSource[0]}」` : '颜色已收齐'}
+            detail={needBling ? '噗灵不够升级已有胚子，全部体力刷噗灵。' : nextSource?.[1] ? '这里的胚子最可能出新色。' : '可以把体力用在其他幻境了。'} />}
 
           <section className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
@@ -153,8 +145,6 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
                 <div><dt>收齐套组</dt><dd className="mt-0.5 text-sm font-medium tabular-nums text-text-primary">{completeSets}/{sets.length}</dd></div>
                 <div><dt>彩色</dt><dd className="mt-0.5 text-sm font-medium tabular-nums text-text-primary">{rainbowOwned}/{rainbowTotal}</dd></div>
               </dl>
-              {progress.known && <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-bg-primary px-2.5 py-2 text-xs leading-5 text-text-secondary"><Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-                {needBling ? '今天建议：噗灵不够升级已有胚子，全部体力刷噗灵。' : nextSource?.[1] ? `今天建议：刷「${nextSource[0]}」，这里的胚子最可能出新色。` : '颜色已收齐，可以把体力用在其他幻境了。'}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <Stat label="噗灵" value={resources?.bling == null ? '待读取' : wan(resources.bling)} detail={resources?.bling == null ? '下次升级时读取' : `够升级 ${Math.floor(resources.bling / 72000)} 次`} warn={needBling} />
@@ -172,9 +162,8 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
           <section className="space-y-3" aria-label="收集详情">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold">收集详情</h2>
-              <div className="inline-flex rounded-lg border border-border bg-bg-secondary p-0.5">
-                {[['missing', '未收齐'], ['rainbow', '只缺彩色'], ['complete', '已收齐'], ['all', '全部']].map(([value, label]) => <button key={value} onClick={() => setFilter(value)} aria-pressed={filter === value} className={clsx('rounded-lg px-3 py-1 text-xs transition-colors', filter === value ? 'bg-accent/10 text-accent font-medium' : 'text-text-secondary hover:bg-bg-hover')}>{label}</button>)}
-              </div>
+              <Segmented label="筛选收集状态" value={filter} onChange={setFilter}
+                options={[['missing', '未收齐'], ['rainbow', '只缺彩色'], ['complete', '已收齐'], ['all', '全部']]} />
               <label className="flex items-center gap-2 rounded-lg border border-border bg-bg-secondary px-2.5 py-1 text-xs focus-within:border-accent/50">
                 <Search className="w-3.5 h-3.5 text-text-muted" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索套组或副本" aria-label="搜索套组或副本" className="w-28 bg-transparent outline-none" />
               </label>
@@ -188,14 +177,12 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
                 const all = sets.filter((s) => s.source === group.source);
                 const groupCount = all.reduce((n, s) => n + count(s.name, s.colors), 0);
                 const groupTarget = all.reduce((n, s) => n + s.colors.length * 3, 0);
-                return <section key={group.source} className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
-                  <div className="flex items-center gap-2.5 px-3 py-2.5">
-                    <h3 className="flex-1 truncate text-sm font-medium">{group.source}</h3>
+                return <Card key={group.source} title={<span className="block truncate">{group.source}</span>} aside={<>
                     {group.source === nextSource?.[0] && !needBling && <span className="rounded-lg bg-accent/10 px-1.5 py-0.5 text-[11px] text-accent">今日推荐</span>}
                     <span className="text-xs tabular-nums text-text-secondary">{progress.known ? groupCount : '—'} / {groupTarget}</span>
                     <div className="h-1 w-14 overflow-hidden rounded-full bg-bg-tertiary"><div className="h-full rounded-full bg-accent" style={{ width: `${groupCount / groupTarget * 100}%` }} /></div>
-                  </div>
-                  <table className="w-full table-fixed border-t border-border text-xs">
+                  </>}>
+                  <table className="w-full table-fixed text-xs">
                     <thead className="text-text-muted"><tr><th className="w-24 px-3 py-1.5 text-left font-normal">套组</th>{slots.map((slot) => <th key={slot} className="py-1.5 font-normal">{slot}</th>)}</tr></thead>
                     <tbody>{group.sets.map((set) => <tr key={set.name} className="border-t border-border/50 hover:bg-bg-hover/30">
                       <th scope="row" className="truncate px-3 py-2 text-left text-sm font-normal" title={set.name}>{set.name}</th>
@@ -205,13 +192,11 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
                       })}</div></td>)}
                     </tr>)}</tbody>
                   </table>
-                </section>;
+                </Card>;
               })}
             </div>
             {data && !groups.length && <p className="py-6 text-center text-xs text-text-muted">没有符合条件的套组</p>}
           </section>
-        </div>
-      </div>
-    </div>
+    </FeaturePage>
   );
 }
