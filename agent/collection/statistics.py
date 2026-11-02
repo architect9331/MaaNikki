@@ -15,7 +15,7 @@ from urllib import error as url_error, request
 from uuid import uuid4
 
 
-TIMEOUT_SECONDS = 5
+TIMEOUT_SECONDS = 30  # Background only; cross-border links can be slow.
 MAX_ROWS = 500
 
 

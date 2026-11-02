@@ -101,8 +101,8 @@ class CollectionSupply:
         finally:
             self.rt.navigation_halted |= child.navigation_halted
 
-    def bling(self, energy):
-        """Spend this much energy on bling; no inventory item changes."""
+    def bling(self):
+        """Spend today's remaining energy on bling; no inventory item changes."""
         if not self.rt.ui.calendar():
             raise RuntimeError("未能打开幻境挑战入口")
         game = Gameplay(self.rt)
@@ -117,7 +117,7 @@ class CollectionSupply:
             if not clone.override_pipeline({"MaaNikki_Jihua_Target": {"expected": "噗灵"},
                                             "MaaNikki_Jihua_TargetRetry": {"expected": "噗灵"}}):
                 raise RuntimeError("素材激化目标设置未能应用")
-            ok = Gameplay(child).realm("jihua", allow_exhausted=True, return_page="calendar", energy_target=energy)
+            ok = Gameplay(child).realm("jihua", maximize=True, allow_exhausted=True, return_page="calendar")
         finally:
             self.rt.navigation_halted |= child.navigation_halted
         if self.rt.stopped or not self.rt.ui.calendar():

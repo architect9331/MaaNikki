@@ -22,8 +22,8 @@ export function RealmModeSwitch({ instanceId, taskId, values, disabled }: {
   const collection = realmCollectionEnabled(values);
   const decompose = values.CollectionDecompose?.type === 'switch' && values.CollectionDecompose.value;
   const autoBling = values.CollectionBling?.type !== 'switch' || values.CollectionBling.value;
-  const steps = [...progress.known ? [] : ['首次整理全部闪光'], autoBling ? '刷胚子或补噗灵' : '按预期新色刷取',
-    '优先升高概率部位', ...decompose ? ['分解重复五星'] : []];
+  const steps = [...progress.known ? [] : ['首次整理全部闪光'], '优先升高概率部位', autoBling ? '升不起时刷噗灵，否则刷胚子' : '按预期新色刷取',
+    '升级新胚子', ...decompose ? ['分解重复五星'] : []];
   return <div className="mb-4 space-y-2">
     <div role="radiogroup" aria-label="幻境挑战模式" className="grid grid-cols-2 gap-2">
       {MODES.map(({ collection: target, icon: Icon, title, detail }) => {

@@ -54,9 +54,6 @@ class FiveStarInventory(BlessingLocker):
         return sum(rainbow if color == "彩" else ordinary for color in colors
                    if (name, slot, color) not in self.protected)
 
-    def upgrade_cost(self):
-        return sum(self.catalog["upgrade_costs"]["5"]["bling"])
-
     def queued_rolls(self):
         """Copies known to await an upgrade; new drops join after the prefix read."""
         return sum(row.get("count", 1) for rows in self.organization["slots"].values() for row in rows
@@ -335,6 +332,7 @@ class FiveStarInventory(BlessingLocker):
         self.confirm_change(operation, result={key: new[key] for key in ("name", "slot", "color", "level")})
         self.verified.clear()
         if operation.get("bling_before") is not None and operation.get("cost") is not None:
+            self.observe_bling(operation["bling_before"])
             self.organization["bling"] = operation["bling_before"] - operation["cost"]
         if self.is_maximum(new) and new["color"] is not None:
             self.record_colour(new)
@@ -406,33 +404,12 @@ class FiveStarInventory(BlessingLocker):
         except (OSError, ValueError, KeyError, TypeError) as error:
             self.rt.log(f"噗灵统计保存失败：{error}。", detail=True)
 
-    def read_bling(self):
-        """Read the balance from the upgrade page without selecting any material."""
-        upgrade = UpgradeUI(self)
-        if not self.open():
-            return None
-        self.inventory_read = True
-        try:
-            for slot in SLOTS:
-                self.view.enter(slot)
-                frame, cells = self.view.cells()
-                if cells:
-                    break
-            else:
-                return None
-            row, facts, evidence = self.view.observe(frame, cells[0])
-            self.view.select_target(cells[0][0], facts, row["locked"], evidence)
-            generation = self.view.generation
-            if not self.rt.ui.enter_page(lambda: self.rt.action("Click", target=self.upgrade_layout["entrance"]),
-                                         upgrade.upgrade_ready, source=READY, attempts=1):
-                return None
-            fields, _ = upgrade.read(generation, ("bling",))
-            bling = upgrade.integer(fields["bling"])
-            upgrade.return_list(generation)
-            self.organization["bling"] = bling
-            return bling
-        finally:
-            self.inventory_read = False
+    def observe_bling(self, balance):
+        """Keep the balance the upgrade page showed; it also prices the last refill."""
+        refill = self.organization.pop("bling_refill", None)
+        if refill and balance > refill["before"]:
+            self.record_bling(refill["energy"], balance - refill["before"])
+        self.organization["bling"] = balance
 
     def part_complete(self, name, slot):
         return all((name, slot, color) in self.protected for color in self.definitions[name]["colors"])
@@ -554,7 +531,7 @@ class FiveStarInventory(BlessingLocker):
                     result = UpgradeUI(self).run(*found)
                 if result["status"] != "upgraded":
                     if result["status"] == "bling_shortage":
-                        self.organization["bling"] = result["bling"]
+                        self.observe_bling(result["bling"])
                     self.report["shortage"] = result
                     return self.batch_result(result["status"], **{k: v for k, v in result.items() if k != "status"})
                 if not self.active["locked"]:
