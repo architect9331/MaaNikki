@@ -1,33 +1,33 @@
 {
   "210": {
     "name": "发型",
-    "visual_classes": 814,
-    "item_ids": 822
+    "visual_classes": 838,
+    "item_ids": 848
   },
   "220": {
     "name": "外套",
-    "visual_classes": 306,
-    "item_ids": 309
+    "visual_classes": 320,
+    "item_ids": 323
   },
   "230": {
     "name": "上衣",
-    "visual_classes": 273,
-    "item_ids": 275
+    "visual_classes": 281,
+    "item_ids": 283
   },
   "242": {
     "name": "下装",
-    "visual_classes": 255,
-    "item_ids": 257
+    "visual_classes": 262,
+    "item_ids": 264
   },
   "250": {
     "name": "袜子",
-    "visual_classes": 561,
-    "item_ids": 562
+    "visual_classes": 577,
+    "item_ids": 580
   },
   "260": {
     "name": "鞋子",
-    "visual_classes": 888,
-    "item_ids": 892
+    "visual_classes": 917,
+    "item_ids": 923
   },
   "270": {
     "name": "饰品·臂饰",
@@ -36,23 +36,23 @@
   },
   "271": {
     "name": "饰品·发饰",
-    "visual_classes": 493,
-    "item_ids": 497
+    "visual_classes": 506,
+    "item_ids": 512
   },
   "272": {
     "name": "饰品·帽子",
-    "visual_classes": 782,
-    "item_ids": 792
+    "visual_classes": 809,
+    "item_ids": 819
   },
   "273": {
     "name": "饰品·耳饰",
-    "visual_classes": 715,
-    "item_ids": 719
+    "visual_classes": 738,
+    "item_ids": 744
   },
   "274": {
     "name": "饰品·颈饰",
-    "visual_classes": 292,
-    "item_ids": 293
+    "visual_classes": 295,
+    "item_ids": 296
   },
   "275": {
     "name": "饰品·腕饰",
@@ -61,18 +61,18 @@
   },
   "276": {
     "name": "饰品·项圈",
-    "visual_classes": 438,
-    "item_ids": 441
+    "visual_classes": 457,
+    "item_ids": 462
   },
   "277": {
     "name": "饰品·手套",
-    "visual_classes": 521,
-    "item_ids": 524
+    "visual_classes": 547,
+    "item_ids": 552
   },
   "278": {
     "name": "饰品·手持物",
-    "visual_classes": 309,
-    "item_ids": 309
+    "visual_classes": 323,
+    "item_ids": 323
   },
   "279": {
     "name": "饰品·肤绘",
@@ -81,28 +81,28 @@
   },
   "281": {
     "name": "妆容·底妆",
-    "visual_classes": 101,
-    "item_ids": 107
+    "visual_classes": 106,
+    "item_ids": 112
   },
   "282": {
     "name": "妆容·眉妆",
-    "visual_classes": 98,
-    "item_ids": 100
+    "visual_classes": 103,
+    "item_ids": 105
   },
   "283": {
     "name": "妆容·睫毛",
-    "visual_classes": 98,
-    "item_ids": 100
+    "visual_classes": 103,
+    "item_ids": 105
   },
   "284": {
     "name": "妆容·美瞳",
-    "visual_classes": 99,
-    "item_ids": 102
+    "visual_classes": 104,
+    "item_ids": 107
   },
   "285": {
     "name": "妆容·唇妆",
-    "visual_classes": 100,
-    "item_ids": 102
+    "visual_classes": 105,
+    "item_ids": 107
   },
   "286": {
     "name": "妆容·肤色",
@@ -111,28 +111,28 @@
   },
   "290": {
     "name": "连衣裙",
-    "visual_classes": 676,
-    "item_ids": 679
+    "visual_classes": 699,
+    "item_ids": 704
   },
   "292": {
     "name": "饰品·面饰",
-    "visual_classes": 178,
-    "item_ids": 183
+    "visual_classes": 180,
+    "item_ids": 185
   },
   "293": {
     "name": "饰品·胸饰",
-    "visual_classes": 66,
-    "item_ids": 66
+    "visual_classes": 70,
+    "item_ids": 72
   },
   "294": {
     "name": "饰品·挂饰",
-    "visual_classes": 120,
-    "item_ids": 121
+    "visual_classes": 132,
+    "item_ids": 133
   },
   "295": {
     "name": "饰品·背饰",
-    "visual_classes": 183,
-    "item_ids": 197
+    "visual_classes": 186,
+    "item_ids": 200
   },
   "296": {
     "name": "饰品·戒指",
@@ -141,7 +141,7 @@
   },
   "413": {
     "name": "饰品·能力手持物",
-    "visual_classes": 71,
-    "item_ids": 71
+    "visual_classes": 74,
+    "item_ids": 74
   }
 }

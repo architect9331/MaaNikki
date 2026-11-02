@@ -90,9 +90,9 @@
     },
     {
       "path": "resource/model/wardrobe/heads.npz",
-      "size": 25143837,
-      "sha256": "1e33ce4d5bb0198cbc3d9f42c4ee0b6bb68a2f0a9f728cab0c4f73c729350532",
-      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+      "size": 25986150,
+      "sha256": "ddfabc608715e944e82b3740a66c63982c8cca46f62aae8f90416996ea272cee",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-02, update 2872"
     },
     {
       "path": "resource/model/wardrobe/preprocess.json",
@@ -102,27 +102,27 @@
     },
     {
       "path": "resource/model/wardrobe/parts.json",
-      "size": 2641,
-      "sha256": "2c44fd6ba8a178d37ce491d891aef5a9fea435af5c5c7979ff2f6c5c86db02f6",
-      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+      "size": 2644,
+      "sha256": "b5e03448a955a799d791ba1a703ec830132a407aa2f8ddd67954e33674bc28a2",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-02, update 2872"
     },
     {
       "path": "resource/model/wardrobe/coverage.json",
-      "size": 62231,
-      "sha256": "f0ae96d255e75ed2a688adefb6f60b6f076ae2bd251dee894c8750d1f11fd3b6",
-      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+      "size": 4096,
+      "sha256": "4b211d6934b1fdb3e3a08d6d73b406e19c20ae0a1c5850e6ef5c45593a907e67",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-02, update 2872"
     },
     {
       "path": "resource/model/wardrobe/labels.json",
-      "size": 732916,
-      "sha256": "d133234d19776ba55702861efdd2318dd680011f8b4932a9adc141138be7ac30",
-      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+      "size": 762682,
+      "sha256": "80b5eaaacfcfee9776b6e495637d75d944123c1a09287ac3aeb3293b288d5929",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-02, update 2872"
     },
     {
       "path": "resource/model/wardrobe/model-contract.json",
-      "size": 2254,
-      "sha256": "7166313c2f3bfc3da465147874a21c0e50af72b58f6134e9f4415101ab278489",
-      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-01"
+      "size": 2412,
+      "sha256": "9339616437ae4a02b8742e25901282aad6bd97716dd8f27f372555cf9df1c12a",
+      "source": "MaaNikki wardrobe ConvNeXt-Tiny identity model, 2026-11-02, update 2872"
     }
   ],
   "source": {

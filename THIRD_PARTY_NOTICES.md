@@ -24,6 +24,6 @@ JS 和 Rust 依赖的精确版本见 `client/pnpm-lock.yaml` 和 `client/src-tau
 
 祝福闪光种类与颜色模型基于 [TorchVision](https://github.com/pytorch/vision) 的 MobileNetV3 Small 预训练权重进行迁移训练，使用游戏图标、界面合成图及本地识别截图。TorchVision 采用 BSD-3-Clause 许可，全文见 `licenses/TorchVision-BSD-3-Clause.txt`。等级与角标模型由本项目训练，模型和标签的校验值记录在 `build/resource-models.lock.json`。
 
-衣柜种类模型基于 TorchVision 的 ConvNeXt Tiny 预训练权重训练，采用共享骨干与部位分类头。训练使用 NikkiModel 整理的游戏图标与界面合成素材，游戏素材权利归相应权利人；部署文件及标签校验值见 `build/resource-models.lock.json`，模型目录内保留部位目录、预处理约定与素材覆盖名单。
+衣柜种类模型基于 TorchVision 的 ConvNeXt Tiny 预训练权重训练，采用共享骨干与部位分类头。训练使用 NikkiModel 整理的游戏图标与界面合成素材，另有少量解包缺图的类别使用 [BWIKI](https://wiki.biligame.com/wxnn) 公开图标，素材不随仓库分发，游戏素材权利归相应权利人；部署文件及标签校验值见 `build/resource-models.lock.json`，模型目录内保留部位目录、预处理约定与素材覆盖名单。
 
 搭配计算的服装属性、成长曲线、套装及关卡资料参考[无暖助手](https://nuan5.pro/score-calculate)，按本地游戏物品目录中的名称、部位和明确的变色对应关系建立映射。评分逻辑由本项目独立实现，参考该站公开的属性、标签、加成和取整规则。资料日期、来源链接及参考脚本的 SHA-256 记录于 `resource/data/wardrobe_scoring.json`；游戏数据权利归相应权利人。

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "version": "wardrobe-convnext-tiny-v1",
+  "version": "wardrobe-convnext-tiny-v1+head-train.2872",
   "input": {
     "name": "images",
     "shape": [
@@ -22,7 +22,7 @@
   },
   "heads": "Select weights by known part_id; logits = embedding @ weights.T * scale",
   "classes": "Part-local class_id indexes labels.json; return all item_ids in that row",
-  "label_fingerprint": "d19293f1025dc0371985cabe9209e0101f66ba5b294d94b1ff8b5d4b2ce9978c",
+  "label_fingerprint": "80b5eaaacfcfee9776b6e495637d75d944123c1a09287ac3aeb3293b288d5929",
   "preprocess_sha256": "f5514b28c4fefc128059d20d6f0b58d5f240209abfe580b4a69a9459185ad70e",
   "best_epoch": 8,
   "open_set": "Closed-set training; unknown acceptance has not been calibrated",
@@ -48,25 +48,31 @@
       "sha256": "42e6a01b0b954ca7281bc8c7ff7bc3c5cfbde2c35a06097bded4e9ce22e7a165"
     },
     "heads.npz": {
-      "bytes": 25143837,
-      "sha256": "1e33ce4d5bb0198cbc3d9f42c4ee0b6bb68a2f0a9f728cab0c4f73c729350532"
+      "bytes": 25986150,
+      "sha256": "ddfabc608715e944e82b3740a66c63982c8cca46f62aae8f90416996ea272cee"
     },
     "preprocess.json": {
       "bytes": 1362,
       "sha256": "f5514b28c4fefc128059d20d6f0b58d5f240209abfe580b4a69a9459185ad70e"
     },
     "parts.json": {
-      "bytes": 2641,
-      "sha256": "2c44fd6ba8a178d37ce491d891aef5a9fea435af5c5c7979ff2f6c5c86db02f6"
+      "bytes": 2644,
+      "sha256": "b5e03448a955a799d791ba1a703ec830132a407aa2f8ddd67954e33674bc28a2"
     },
     "coverage.json": {
-      "bytes": 62231,
-      "sha256": "f0ae96d255e75ed2a688adefb6f60b6f076ae2bd251dee894c8750d1f11fd3b6"
+      "bytes": 4096,
+      "sha256": "4b211d6934b1fdb3e3a08d6d73b406e19c20ae0a1c5850e6ef5c45593a907e67"
     },
     "labels.json": {
-      "bytes": 732916,
-      "sha256": "d133234d19776ba55702861efdd2318dd680011f8b4932a9adc141138be7ac30"
+      "bytes": 762682,
+      "sha256": "80b5eaaacfcfee9776b6e495637d75d944123c1a09287ac3aeb3293b288d5929"
     }
   },
-  "storage": "FP32 initializers preserved verbatim in external shards; no quantization"
+  "storage": "FP32 initializers preserved verbatim in external shards; no quantization",
+  "base_version": "wardrobe-convnext-tiny-v1",
+  "head_update": {
+    "mode": "head-train",
+    "run": "2872",
+    "backbone": "unchanged"
+  }
 }
