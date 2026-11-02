@@ -291,7 +291,7 @@
 | `logs/blessing-pursuit/` | 全收集与升级记录 |
 | `logs/wardrobe/` | 衣柜读取结果与翻页记录 |
 
-遇到问题可使用软件的「**导出日志**」，附上运行时间和当时的操作，发到 QQ 群 **654174255** 或 [Issue](https://github.com/architect9331/MaaNikki/issues)。祝福闪光导出包含读取、追全各最近两轮的报告与图片，文件较多时分卷保存。
+遇到问题可使用软件的「**导出日志**」，附上运行时间和当时的操作，发到 QQ 群 **654174255** 或 [Issue](https://github.com/architect9331/MaaNikki/issues)。导出结果是一个不超过 24.5 MB 的压缩包，优先保留最新运行的日志和失败截图，放不下的较早文件列在包内的 `export-manifest.txt` 中。祝福闪光读取、追全各最近两轮的报告与图片也会参与打包。
 
 ### 帮助改进软件
 

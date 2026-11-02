@@ -3,15 +3,25 @@
 //! 提供本地文件读取和路径检查功能
 
 use log::debug;
-use std::io::{self, BufWriter, Seek, SeekFrom, Write};
+use std::io::{self, BufRead, BufWriter, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use super::utils::{get_app_data_dir, get_exe_directory, normalize_path};
 
-/// 单个分卷 zip 的大小上限（字节）。
-const MAX_VOLUME_BYTES: u64 = 24_500_000;
+/// 导出 zip 的大小上限（字节）。GitHub issue 附件上限为 25 MB，余量用于导出时仍在增长的日志。
+const MAX_ARCHIVE_BYTES: u64 = 24_500_000;
+/// 配置和 MaaFW 以外的文本日志最多占用的预算；它们体积小，却是定位问题的基本上下文。
+const CONTEXT_BUDGET_BYTES: u64 = 4_500_000;
+/// 优先留给失败现场图片的预算。其余预算保证最新运行的 MaaFW 日志，没用完的会互相补位。
+const IMAGE_BUDGET_BYTES: u64 = 10_000_000;
+/// 剩余预算低于此值时不再保留日志结尾，这么短的片段不足以覆盖一次任务。
+const MIN_LOG_TAIL_BYTES: u64 = 256 * 1024;
+/// 为导出清单预留的字节数，足够容纳 `MAX_MANIFEST_OMITTED_ROWS` 行未压缩文本。
+const MANIFEST_RESERVE_BYTES: u64 = 128 * 1024;
+/// 清单里最多列出的被舍弃文件数。
+const MAX_MANIFEST_OMITTED_ROWS: usize = 500;
 /// EOCD 记录（zip 末尾）固定大小。
 const ZIP_EOCD_BYTES: u64 = 22;
 /// 中央目录每条记录的固定字段大小（不含文件名）。
@@ -31,7 +41,7 @@ struct ExportEntry {
     archive_name: String,
 }
 
-/// 包装真实 writer，统计已写字节数，用于在写入分卷过程中实时查询当前卷大小。
+/// 包装真实 writer，统计已写字节数，用于在写入过程中实时查询压缩包大小。
 struct CountingWriter<W: Write + Seek> {
     inner: W,
     counter: Arc<AtomicU64>,
@@ -66,7 +76,7 @@ impl<W: Write + Seek> Seek for CountingWriter<W> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         // counter 是已写字节的**上界**：zip crate 会 seek 回去重写 local header（CRC、
         // 压缩前后大小），重写的字节被 write() 重复计入；写入失败留下的占位 header
-        // 也已经进了 counter。上界对分卷预算判断是安全的（只会更早切卷）。
+        // 也已经进了 counter。上界对预算判断是安全的（只会更早停止写入）。
         self.inner.seek(pos)
     }
 }
@@ -110,41 +120,250 @@ where
 }
 
 /// zip 每条目的 local header 固定开销（30）+ DEFLATE 帧头 + 余量。
-/// 文件名部分在 local header 和中央目录各出现一次：
-/// - local header 侧：包含在此常量余量内（本应用文件名短，够用）
-/// - 中央目录侧：由 `entry_cd_bytes`（ZIP_CENTRAL_DIR_FIXED_BYTES + 文件名长度）计入
+/// 文件名部分在 local header 和中央目录各出现一次，由 `BudgetedZip::entry_overhead` 计入。
 const ZIP_LOCAL_HEADER_OVERHEAD: u64 = 64;
 
-/// 按扩展名估算压缩后**数据**大小的保守上界。
-///
-/// 注意：仅估计压缩数据，不含 zip local header / 中央目录等开销，调用侧自行加。
-fn estimate_compressed_upper_bound(path: &Path, file_size: u64) -> u64 {
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("")
-        .to_lowercase();
-    match ext.as_str() {
-        "png" | "jpg" | "jpeg" | "dmp" => file_size, // 已压缩或二进制，DEFLATE 无效
-        "log" | "json" | "txt" | "toml" | "yaml" | "yml" | "xml" | "csv" => {
-            file_size.saturating_div(4) // 实测 10-25x，4x 留有足够余量
-        }
-        _ => file_size, // 未知类型，不假设压缩
-    }
-}
-
-/// 用 flate2 预压缩文件到内存，返回 deflate 后字节数——与 zip crate 内部压缩同算法。
-///
-/// 只在保守估算触线时才调用（每卷最多一次），避免每个文件都压两遍。
-fn pre_compress_measure(path: &Path) -> io::Result<u64> {
+/// 计算 deflate 后的字节数——与 zip crate 内部压缩同算法。数据直接丢弃，不占内存。
+fn deflated_size(reader: &mut impl io::Read) -> io::Result<u64> {
     use flate2::write::DeflateEncoder;
     use flate2::Compression;
 
-    let mut src = std::fs::File::open(path)?;
-    let mut encoder = DeflateEncoder::new(Vec::new(), Compression::default());
-    std::io::copy(&mut src, &mut encoder)?;
-    let compressed = encoder.finish()?;
-    Ok(compressed.len() as u64)
+    let mut encoder = DeflateEncoder::new(io::sink(), Compression::default());
+    io::copy(reader, &mut encoder)?;
+    encoder.try_finish()?;
+    Ok(encoder.total_out())
+}
+
+/// 从 `start` 打开日志，并跳到下一行开头，避免结尾片段以半行开始。
+fn open_log_tail(path: &Path, start: u64) -> io::Result<io::BufReader<std::fs::File>> {
+    let mut file = std::fs::File::open(path)?;
+    file.seek(SeekFrom::Start(start))?;
+    let mut reader = io::BufReader::new(file);
+    if start > 0 {
+        reader.read_until(b'\n', &mut Vec::new())?;
+    }
+    Ok(reader)
+}
+
+fn sort_newest_first(entries: &mut [ExportEntry]) {
+    entries.sort_by_cached_key(|entry| {
+        std::cmp::Reverse(entry.source_path.metadata().and_then(|m| m.modified()).ok())
+    });
+}
+
+enum AddOutcome {
+    Added,
+    /// 放不下；日志会带上压缩后大小，供估算可保留的结尾长度。
+    TooLarge { compressed: u64 },
+    Failed,
+}
+
+enum LogFit {
+    Whole,
+    /// 只放下了结尾，预算已用尽。
+    Tail,
+    /// 预算已用尽，一点也放不下。
+    Omitted,
+    /// 文件读不了（比如被占用），不代表预算用尽。
+    Unreadable,
+}
+
+/// 写入前先算出条目的实际占用，保证压缩包不超过调用方给的累计上限。
+struct BudgetedZip<W: Write + Seek> {
+    zip: zip::ZipWriter<CountingWriter<W>>,
+    written: Arc<AtomicU64>,
+    /// finish() 时才写入的 EOCD、清单和累计的中央目录字节。
+    finish_reserve: u64,
+    options: zip::write::SimpleFileOptions,
+    added: usize,
+    truncated: Vec<String>,
+}
+
+impl<W: Write + Seek> BudgetedZip<W> {
+    fn new(writer: W) -> Self {
+        let (counting, written) = CountingWriter::new(writer);
+        Self {
+            zip: zip::ZipWriter::new(counting),
+            written,
+            finish_reserve: ZIP_EOCD_BYTES + MANIFEST_RESERVE_BYTES,
+            options: zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Deflated),
+            added: 0,
+            truncated: Vec::new(),
+        }
+    }
+
+    fn used_bytes(&self) -> u64 {
+        self.written
+            .load(Ordering::Relaxed)
+            .saturating_add(self.finish_reserve)
+    }
+
+    fn entry_overhead(archive_name: &str) -> u64 {
+        ZIP_LOCAL_HEADER_OVERHEAD + ZIP_CENTRAL_DIR_FIXED_BYTES + 2 * archive_name.len() as u64
+    }
+
+    /// 上限内还能放下多少压缩后数据。
+    fn available(&self, archive_name: &str, limit: u64) -> u64 {
+        limit
+            .saturating_sub(self.used_bytes())
+            .saturating_sub(Self::entry_overhead(archive_name))
+    }
+
+    fn record_added(&mut self, archive_name: &str) {
+        self.finish_reserve = self
+            .finish_reserve
+            .saturating_add(ZIP_CENTRAL_DIR_FIXED_BYTES + archive_name.len() as u64);
+        self.added += 1;
+    }
+
+    fn try_add(&mut self, entry: &ExportEntry, limit: u64) -> AddOutcome {
+        let available = self.available(&entry.archive_name, limit);
+        let path = &entry.source_path;
+        let mut prepared = None;
+        let mut options = self.options;
+
+        if is_image_file(path) {
+            // 图片已压缩，先用原始大小排除放不下的，免得逐张解码 PNG。
+            let Ok(raw_size) = path.metadata().map(|m| m.len()) else {
+                return AddOutcome::Failed;
+            };
+            if raw_size > available {
+                return AddOutcome::TooLarge {
+                    compressed: raw_size,
+                };
+            }
+            if has_extension(path, &["png"]) {
+                let sanitized = std::fs::read(path)
+                    .map_err(|error| error.to_string())
+                    .and_then(|bytes| super::diagnostic_images::sanitize_png(&bytes));
+                match sanitized {
+                    Ok(bytes) if bytes.len() as u64 > available => {
+                        return AddOutcome::TooLarge {
+                            compressed: bytes.len() as u64,
+                        };
+                    }
+                    Ok(bytes) => prepared = Some(bytes),
+                    Err(error) => {
+                        log::warn!("跳过无法处理的诊断截图 {}: {}", entry.archive_name, error);
+                        return AddOutcome::Failed;
+                    }
+                }
+            }
+            options = options.compression_method(zip::CompressionMethod::Stored);
+        } else {
+            let measured = std::fs::File::open(path)
+                .and_then(|mut file| deflated_size(&mut file));
+            match measured {
+                Ok(compressed) if compressed > available => {
+                    return AddOutcome::TooLarge { compressed };
+                }
+                Ok(_) => {}
+                Err(error) => {
+                    log::warn!("无法读取文件 {:?}: {}", path, error);
+                    return AddOutcome::Failed;
+                }
+            }
+        }
+
+        if add_file_to_zip(
+            &mut self.zip,
+            path,
+            &entry.archive_name,
+            options,
+            prepared.as_deref(),
+        ) {
+            self.record_added(&entry.archive_name);
+            AddOutcome::Added
+        } else {
+            AddOutcome::Failed
+        }
+    }
+
+    /// 依次尝试写入，返回没有写入的条目（保持原顺序）。
+    fn add_entries(&mut self, entries: Vec<ExportEntry>, limit: u64) -> Vec<ExportEntry> {
+        entries
+            .into_iter()
+            .filter(|entry| !matches!(self.try_add(entry, limit), AddOutcome::Added))
+            .collect()
+    }
+
+    /// 写入整份日志；放不下时尽量只留结尾（最新内容）。
+    fn add_log_or_tail(&mut self, entry: &ExportEntry, limit: u64) -> LogFit {
+        match self.try_add(entry, limit) {
+            AddOutcome::Added => LogFit::Whole,
+            AddOutcome::Failed => LogFit::Unreadable,
+            AddOutcome::TooLarge { compressed } => match self.add_log_tail(entry, compressed, limit) {
+                Ok(true) => LogFit::Tail,
+                Ok(false) => LogFit::Omitted,
+                Err(error) => {
+                    log::warn!("写入日志结尾失败 {}: {}", entry.archive_name, error);
+                    LogFit::Omitted
+                }
+            },
+        }
+    }
+
+    fn add_log_tail(
+        &mut self,
+        entry: &ExportEntry,
+        compressed: u64,
+        limit: u64,
+    ) -> io::Result<bool> {
+        let tail_name = tail_archive_name(&entry.archive_name);
+        let available = self.available(&tail_name, limit);
+        if available < MIN_LOG_TAIL_BYTES {
+            return Ok(false);
+        }
+        let raw_size = entry.source_path.metadata()?.len();
+        // 留 10% 余量，让压缩率随内容变化时通常一次命中；未命中就按实测比例再缩。
+        let target = available / 10 * 9;
+        let mut keep = scale_bytes(raw_size, target, compressed);
+        for _ in 0..3 {
+            let start = raw_size.saturating_sub(keep);
+            let measured = deflated_size(&mut open_log_tail(&entry.source_path, start)?)?;
+            if measured > available {
+                keep = scale_bytes(keep, target, measured);
+                continue;
+            }
+            let mut reader = open_log_tail(&entry.source_path, start)?;
+            self.zip
+                .start_file(tail_name.as_str(), self.options)
+                .map_err(io::Error::other)?;
+            io::copy(&mut reader, &mut self.zip)?;
+            self.record_added(&tail_name);
+            self.truncated.push(format!(
+                "{} keeps the last {} of {} bytes",
+                tail_name, keep, raw_size
+            ));
+            return Ok(true);
+        }
+        Ok(false)
+    }
+
+    fn finish(mut self, manifest: &str) -> Result<(), String> {
+        self.zip
+            .start_file("export-manifest.txt", self.options)
+            .map_err(|error| error.to_string())?;
+        self.zip
+            .write_all(manifest.as_bytes())
+            .map_err(|error| error.to_string())?;
+        self.zip.finish().map_err(|error| error.to_string())?;
+        Ok(())
+    }
+}
+
+/// 结尾片段换名，打开压缩包就能看出它不是完整文件。
+fn tail_archive_name(archive_name: &str) -> String {
+    match archive_name.strip_suffix(".log") {
+        Some(stem) => format!("{}.tail.log", stem),
+        None => format!("{}.tail", archive_name),
+    }
+}
+
+/// `value * numerator / denominator`，中间结果放大到 u128 防溢出。
+fn scale_bytes(value: u64, numerator: u64, denominator: u64) -> u64 {
+    (u128::from(value) * u128::from(numerator) / u128::from(denominator.max(1))) as u64
 }
 
 fn normalize_archive_path(path: &Path) -> String {
@@ -680,11 +899,12 @@ fn collect_debug_images(dir: &Path, archive_prefix: &str) -> Vec<ExportEntry> {
     entries
 }
 
-/// 导出日志文件为分卷 zip 压缩包目录
-/// 返回 part01.zip 路径（其同级目录下还有后续分卷）
+/// 导出日志文件为单个 zip，体积不超过 `MAX_ARCHIVE_BYTES`，返回 zip 路径。
+///
+/// 超出部分按时间从旧到新舍弃，被舍弃的文件列在包内的 `export-manifest.txt`。
 ///
 /// 注：`vision/` 是否有内容由 `maa_set_save_draw` 控制；导出时只要 `vision/`
-/// 下有文件就一并打包，因此本命令不接收 save_draw 参数。
+/// 下有文件就参与打包，因此本命令不接收 save_draw 参数。
 #[tauri::command]
 pub async fn export_logs(
     project_name: Option<String>,
@@ -700,8 +920,6 @@ fn export_logs_blocking(
     project_version: Option<String>,
 ) -> Result<String, String> {
     use std::fs::File;
-    use zip::write::SimpleFileOptions;
-    use zip::ZipWriter;
 
     // 日志在数据目录下（macOS: ~/Library/Application Support/MXU/debug）
     let data_dir = get_app_data_dir()?;
@@ -726,10 +944,9 @@ fn export_logs_blocking(
     std::fs::create_dir_all(&out_dir)
         .map_err(|e| format!("创建导出目录失败 [{}]: {}", out_dir.display(), e))?;
 
-    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-
-    // ─── 1. 收集常规文件（log / dmp / config / 子目录下的 log/json/dmp） ───
-    let mut regular_entries: Vec<ExportEntry> = Vec::new();
+    // ─── 1. 收集：MaaFW 日志占体积绝大部分，与其余文本日志分开排优先级 ───
+    let mut maafw_logs: Vec<ExportEntry> = Vec::new();
+    let mut other_logs: Vec<ExportEntry> = Vec::new();
 
     let entries = std::fs::read_dir(&debug_dir).map_err(|e| format!("读取日志目录失败: {}", e))?;
     for entry in entries.flatten() {
@@ -743,196 +960,170 @@ fn export_logs_blocking(
         let Some(archive_name) = path.file_name().map(|n| n.to_string_lossy().to_string()) else {
             continue;
         };
-        regular_entries.push(ExportEntry {
+        let target = if archive_name.starts_with("maafw") && has_extension(&path, &["log"]) {
+            &mut maafw_logs
+        } else {
+            &mut other_logs
+        };
+        target.push(ExportEntry {
             source_path: path,
             archive_name,
         });
     }
-    regular_entries.sort_by(|a, b| a.archive_name.cmp(&b.archive_name));
 
-    let config_dir = data_dir.join("config");
-    regular_entries.extend(collect_files_recursively(&config_dir, "config")?);
-    regular_entries.extend(collect_debug_subdir_files(
+    other_logs.extend(collect_debug_subdir_files(
         &debug_dir,
         &["log", "json", "dmp"],
     )?);
     let collection_entries = collect_recent_collection_files(&data_dir)?;
-    regular_entries.extend(
+    other_logs.extend(
         collection_entries
             .iter()
             .filter(|entry| has_extension(&entry.source_path, &["log", "json"]))
             .cloned(),
     );
-    let mut collection_images: Vec<_> = collection_entries
+    let mut images: Vec<_> = collection_entries
         .into_iter()
         .filter(|entry| is_image_file(&entry.source_path))
         .collect();
-    collection_images.sort_by_key(|entry| {
-        std::cmp::Reverse(entry.source_path.metadata().and_then(|m| m.modified()).ok())
-    });
+    images.extend(collect_debug_images(
+        &debug_dir.join("on_error"),
+        "on_error",
+    ));
+    images.extend(collect_debug_images(&debug_dir.join("vision"), "vision"));
 
-    // ─── 2. 收集图片（on_error + vision，按 mtime 新→旧） ───
-    let on_error_images = collect_debug_images(&debug_dir.join("on_error"), "on_error");
-    let vision_images = collect_debug_images(&debug_dir.join("vision"), "vision");
+    sort_newest_first(&mut maafw_logs);
+    sort_newest_first(&mut other_logs);
+    sort_newest_first(&mut images);
 
-    // ─── 3. 合并入卷条目：先 regular，再 on_error、collection、vision ───
-    // 图片按 mtime 新→旧排在尾部，保证最近的崩溃图一定落在 part01.zip。
-    let mut all_entries: Vec<ExportEntry> = Vec::new();
-    all_entries.extend(regular_entries);
-    all_entries.extend(on_error_images);
-    all_entries.extend(collection_images);
-    all_entries.extend(vision_images);
+    // 配置从小到大：小文件先进，账号存档这类大文件放不下时不挤占其它配置。
+    let mut context = collect_files_recursively(&data_dir.join("config"), "config")?;
+    context.sort_by_key(|entry| entry.source_path.metadata().map_or(u64::MAX, |m| m.len()));
+    context.extend(other_logs);
 
-    let total_entries = all_entries.len();
+    let total_entries = context.len() + maafw_logs.len() + images.len();
     if total_entries == 0 {
         return Err("没有可导出的日志文件".to_string());
     }
 
-    // ─── 4. 分卷打包 ───
-    // 卷数硬上界 = 总条目数（每文件独占一卷的退化情形）；据此选零填充宽度。
-    let width = if total_entries >= 100 { 3 } else { 2 };
+    // ─── 2. 按优先级写入：放不下的留到最后一轮，用其它类别没用完的预算再试一次 ───
+    let archive_path = out_dir.join(format!("{}.zip", dir_name));
+    let file = File::create(&archive_path)
+        .map_err(|e| format!("创建压缩包失败 [{}]: {}", archive_path.display(), e))?;
+    // 64 KB 缓冲：deflate 输出的 chunk 经常几十到几百 KB，默认 8 KB 太小。
+    let mut archive = BudgetedZip::new(BufWriter::with_capacity(64 * 1024, file));
 
-    let mut volume_idx: usize = 1;
-    let mut iter = all_entries.into_iter().peekable();
-    let mut total_files_written: usize = 0;
-    let mut first_volume_path: Option<PathBuf> = None;
-    // Prepare at most one PNG, retaining it across a volume boundary. Its actual
-    // encoded size participates in the existing volume budget.
-    let mut prepared_image: Option<Vec<u8>> = None;
+    let mut omitted_context = archive.add_entries(context, CONTEXT_BUDGET_BYTES);
 
-    while iter.peek().is_some() {
-        let volume_path = out_dir.join(format!(
-            "{}-part{:0width$}.zip",
-            dir_name,
-            volume_idx,
-            width = width
-        ));
-        let file = File::create(&volume_path)
-            .map_err(|e| format!("创建分卷文件失败 [{}]: {}", volume_path.display(), e))?;
-        // 64 KB 缓冲：deflate 输出的 chunk 经常几十到几百 KB，默认 8 KB 太小。
-        let (counting, counter) = CountingWriter::new(BufWriter::with_capacity(64 * 1024, file));
-        let mut zip = ZipWriter::new(counting);
-        let mut wrote_any = false;
-        let mut volume_file_count: usize = 0;
-        // 预留 finish() 时要写入的 EOCD + 累计的中央目录字节，避免卷写超。
-        let mut central_dir_reserve: u64 = ZIP_EOCD_BYTES;
-
-        while let Some(entry) = iter.peek() {
-            if has_extension(&entry.source_path, &["png"]) && prepared_image.is_none() {
-                let prepared = std::fs::read(&entry.source_path)
-                    .map_err(|error| error.to_string())
-                    .and_then(|bytes| super::diagnostic_images::sanitize_png(&bytes));
-                match prepared {
-                    Ok(bytes) => prepared_image = Some(bytes),
-                    Err(error) => {
-                        log::warn!("跳过无法处理的诊断截图 {}: {}", entry.archive_name, error);
-                        iter.next();
-                        continue;
-                    }
-                }
-            }
-            let entry_cd_bytes = ZIP_CENTRAL_DIR_FIXED_BYTES + entry.archive_name.len() as u64;
-            let file_size = prepared_image
-                .as_ref()
-                .map(|bytes| bytes.len() as u64)
-                .unwrap_or_else(|| {
-                    entry
-                        .source_path
-                        .metadata()
-                        .ok()
-                        .map(|m| m.len())
-                        .unwrap_or(u64::MAX)
-                });
-
-            // 两阶段容量检查：先用保守估算快速通过大多数文件，
-            // 估算触线时才实际预压缩一次拿精确值，避免每个文件都压两遍。
-            let est_delta = estimate_compressed_upper_bound(&entry.source_path, file_size)
-                .saturating_add(ZIP_LOCAL_HEADER_OVERHEAD);
-            let current_total = counter
-                .load(Ordering::Relaxed)
-                .saturating_add(central_dir_reserve);
-            if wrote_any
-                && current_total
-                    .saturating_add(est_delta)
-                    .saturating_add(entry_cd_bytes)
-                    > MAX_VOLUME_BYTES
-            {
-                let exact = if prepared_image.is_some() {
-                    Ok(file_size)
-                } else {
-                    pre_compress_measure(&entry.source_path)
-                };
-                match exact {
-                    Ok(exact_delta) => {
-                        let exact_delta = exact_delta.saturating_add(ZIP_LOCAL_HEADER_OVERHEAD);
-                        if current_total
-                            .saturating_add(exact_delta)
-                            .saturating_add(entry_cd_bytes)
-                            > MAX_VOLUME_BYTES
-                        {
-                            break;
-                        }
-                    }
-                    Err(_) => {
-                        // IO 错误打不开文件，保守切卷
-                        break;
-                    }
-                }
-            }
-
-            let entry = iter.next().expect("peek 已确认存在");
-            let image_options = if prepared_image.is_some() {
-                options.compression_method(zip::CompressionMethod::Stored)
-            } else {
-                options
-            };
-            if add_file_to_zip(
-                &mut zip,
-                &entry.source_path,
-                &entry.archive_name,
-                image_options,
-                prepared_image.as_deref(),
-            ) {
-                central_dir_reserve = central_dir_reserve.saturating_add(entry_cd_bytes);
-                wrote_any = true;
-                volume_file_count += 1;
-                total_files_written += 1;
-            }
-            prepared_image = None;
+    // 最新一份 MaaFW 日志必须留下，但要为失败现场图片让出预算。
+    let mut maafw_logs = maafw_logs.into_iter();
+    let mut omitted_maafw = Vec::new();
+    let mut maafw_full = false;
+    if let Some(newest) = maafw_logs.next() {
+        let fit = archive.add_log_or_tail(&newest, MAX_ARCHIVE_BYTES - IMAGE_BUDGET_BYTES);
+        maafw_full = !matches!(fit, LogFit::Whole | LogFit::Unreadable);
+        if matches!(fit, LogFit::Unreadable | LogFit::Omitted) {
+            omitted_maafw.push(newest);
         }
-
-        zip.finish()
-            .map_err(|e| format!("完成分卷压缩失败 [{}]: {}", volume_path.display(), e))?;
-
-        if let Ok(metadata) = std::fs::metadata(&volume_path) {
-            log::info!(
-                "分卷 {} 完成：{} 个文件，{} bytes",
-                volume_path.display(),
-                volume_file_count,
-                metadata.len()
-            );
-        }
-
-        if first_volume_path.is_none() {
-            first_volume_path = Some(volume_path);
-        }
-        volume_idx += 1;
     }
 
+    let image_limit = archive.used_bytes().saturating_add(IMAGE_BUDGET_BYTES);
+    let mut omitted_images = archive.add_entries(images, image_limit.min(MAX_ARCHIVE_BYTES));
+
+    // 更早的 MaaFW 日志按时间连续保留：第一份放不下的只留结尾，再往前的全部舍弃，
+    // 时间线上不会出现跳过大文件造成的空洞。
+    for log in maafw_logs {
+        if maafw_full {
+            omitted_maafw.push(log);
+            continue;
+        }
+        let fit = archive.add_log_or_tail(&log, MAX_ARCHIVE_BYTES);
+        maafw_full = !matches!(fit, LogFit::Whole | LogFit::Unreadable);
+        if matches!(fit, LogFit::Unreadable | LogFit::Omitted) {
+            omitted_maafw.push(log);
+        }
+    }
+
+    omitted_images = archive.add_entries(omitted_images, MAX_ARCHIVE_BYTES);
+    omitted_context = archive.add_entries(omitted_context, MAX_ARCHIVE_BYTES);
+
+    // ─── 3. 写入清单并收尾 ───
+    let mut omitted = omitted_context;
+    omitted.extend(omitted_maafw);
+    omitted.extend(omitted_images);
+    sort_newest_first(&mut omitted);
+
+    let added = archive.added;
+    let manifest = build_export_manifest(&now, added, &archive.truncated, &omitted);
+    archive
+        .finish(&manifest)
+        .map_err(|e| format!("完成压缩失败 [{}]: {}", archive_path.display(), e))?;
+
     log::info!(
-        "日志导出完成：{} 个文件分为 {} 个分卷，输出目录 {}",
-        total_files_written,
-        volume_idx - 1,
-        out_dir.display()
+        "日志导出完成：写入 {} 个文件，舍弃 {} 个较早文件，{} bytes，输出 {}",
+        added,
+        omitted.len(),
+        std::fs::metadata(&archive_path).map_or(0, |m| m.len()),
+        archive_path.display()
     );
 
     // 只保留最近 MAX_EXPORTS_TO_KEEP 次导出。清理失败仅 warn，不影响本次结果。
     prune_old_exports(&exports_root, &out_dir);
 
-    // 返回 part01.zip 路径，让前端 revealItemInDir 选中第一个分卷.
-    // total_entries == 0 已早返，所以循环至少跑过一次。
-    let reveal_target = first_volume_path.expect("至少应有一个分卷写入成功");
-    Ok(reveal_target.to_string_lossy().to_string())
+    Ok(archive_path.to_string_lossy().to_string())
+}
+
+fn build_export_manifest(
+    now: &chrono::DateTime<chrono::Local>,
+    added: usize,
+    truncated: &[String],
+    omitted: &[ExportEntry],
+) -> String {
+    use std::fmt::Write as _;
+
+    let omitted_bytes: u64 = omitted
+        .iter()
+        .filter_map(|entry| entry.source_path.metadata().ok())
+        .map(|metadata| metadata.len())
+        .sum();
+    let mut text = format!(
+        "Exported: {}\nIncluded files: {}\nOmitted files: {} ({:.1} MB before compression)\n\
+         Archive limit: {:.1} MB; newest logs and failure evidence are kept first.\n",
+        now.format("%Y-%m-%d %H:%M:%S %z"),
+        added,
+        omitted.len(),
+        omitted_bytes as f64 / 1e6,
+        MAX_ARCHIVE_BYTES as f64 / 1e6,
+    );
+    for note in truncated {
+        let _ = writeln!(text, "Truncated: {}", note);
+    }
+    if !omitted.is_empty() {
+        let _ = writeln!(
+            text,
+            "\nOmitted, newest first (modified, bytes, path; at most {} rows):",
+            MAX_MANIFEST_OMITTED_ROWS
+        );
+    }
+    for entry in omitted.iter().take(MAX_MANIFEST_OMITTED_ROWS) {
+        let metadata = entry.source_path.metadata().ok();
+        let modified = metadata
+            .as_ref()
+            .and_then(|m| m.modified().ok())
+            .map(chrono::DateTime::<chrono::Local>::from)
+            .map_or_else(
+                || "unknown".to_string(),
+                |time| time.format("%Y-%m-%d %H:%M:%S").to_string(),
+            );
+        let _ = writeln!(
+            text,
+            "{}\t{}\t{}",
+            modified,
+            metadata.map_or(0, |m| m.len()),
+            entry.archive_name
+        );
+    }
+    text
 }
 
 /// 扫描 `exports_root` 下子目录，按目录名里的时间戳新→旧排序，
