@@ -139,6 +139,8 @@ export interface PieceScore {
   tagScore: number;
   multiplier: number;
   cost: Record<string, number>;
+  /** Score above the current level; null while that level is unknown. */
+  gain?: number | null;
 }
 export interface OutfitResult {
   score: number;

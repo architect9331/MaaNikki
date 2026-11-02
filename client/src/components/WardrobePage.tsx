@@ -59,7 +59,7 @@ export function WardrobePage({ onClose }: { onClose: () => void }) {
         </section>
         <div className="h-52 overflow-hidden rounded-lg border border-border"><LogsPanel instanceId={WARDROBE_INSTANCE_ID} /></div>
       </div>
-      {calculatorOpened && <div className={clsx('mx-auto max-w-3xl', tab !== 'calculate' && 'hidden')}><WardrobeCalculator refreshToken={refreshToken} /></div>}
+      {calculatorOpened && <div className={clsx('mx-auto max-w-6xl', tab !== 'calculate' && 'hidden')}><WardrobeCalculator refreshToken={refreshToken} onOpenRead={() => setTab('read')} /></div>}
     </div>
   </div>;
 }

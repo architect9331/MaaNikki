@@ -159,7 +159,13 @@ function* contexts(request: CalculationRequest, bonuses: FieldBonus[], owned: Ow
 function summarize(request: CalculationRequest, match: Match, entries: Candidate[], choice: number | null): OutfitResult {
   const context = outfitContext(request.catalog, entries.map((entry) => ({ item: entry.owned, level: entry.level })));
   const bonuses = [...match.bonuses, ...choice === null ? [] : [match.choices[choice]]];
-  const pieces = entries.map((entry) => scorePiece(request.catalog, entry.owned, entry.level, match, request.settings.heart, bonuses, context));
+  const pieces = entries.map((entry) => {
+    const piece = scorePiece(request.catalog, entry.owned, entry.level, match, request.settings.heart, bonuses, context);
+    const from = entry.owned.level;
+    piece.gain = from === null ? null : from === entry.level ? 0
+      : piece.score - scorePiece(request.catalog, entry.owned, from, match, request.settings.heart, bonuses, context).score;
+    return piece;
+  });
   const globalScore = bonuses.reduce((sum, bonus) => sum + (bonus.global ? bonus.add * bonusCount(bonus, context) : 0), 0);
   const score = pieces.reduce((sum, piece) => sum + piece.score, globalScore);
   const stars = evaluateStars(request.catalog, match, pieces, score, request.settings.rank_thresholds[request.matchId] ?? {});
