@@ -217,14 +217,16 @@ export const maaService = {
    * @param classRegex 窗口类名正则表达式（仅 Win32/Gamepad，可选）
    * @param windowRegex 窗口标题正则表达式（可选）
    */
-  async findWin32Windows(classRegex?: string, windowRegex?: string): Promise<Win32Window[]> {
+  async findWin32Windows(classRegex?: string, windowRegex?: string, quiet = false): Promise<Win32Window[]> {
     try {
-      log.info(
-        '搜索桌面窗口, classRegex:',
-        classRegex || '(无)',
-        ', windowRegex:',
-        windowRegex || '(无)',
-      );
+      if (!quiet) {
+        log.info(
+          '搜索桌面窗口, classRegex:',
+          classRegex || '(无)',
+          ', windowRegex:',
+          windowRegex || '(无)',
+        );
+      }
       let windows: Win32Window[];
       if (isTauri()) {
         windows = await invoke<Win32Window[]>('maa_find_win32_windows', {
@@ -238,7 +240,7 @@ export const maaService = {
         const query = params.toString();
         windows = await apiGet<Win32Window[]>(`/maa/windows${query ? `?${query}` : ''}`);
       }
-      log.info('找到桌面窗口:', windows.length, '个');
+      if (!quiet) log.info('找到桌面窗口:', windows.length, '个');
       windows.forEach((win, i) => {
         log.debug(
           `  窗口[${i}]: handle=${win.handle}, class=${win.class_name}, name=${win.window_name}`,

@@ -113,24 +113,26 @@ async function reconcile() {
   const controller = pi?.controller.find((item) => item.type === 'Win32');
   const resource = pi?.resource[0];
   if (!pi || !controller || !resource) throw new Error('辅助功能需要 Windows 游戏窗口和已加载的项目资源。');
-  useExplorationStore.setState({ status: 'starting', error: '' });
-  if (await maaService.isWorkstationLocked()) throw new Error('请解锁桌面后开启辅助功能。');
   if (!state.maaInitialized) await maaService.init();
   check();
-  await startGlobalCallbackListener();
-  if (!created) {
-    await maaService.createInstance(instanceId);
-    created = true;
-  }
-  check();
+  // This runs every second while waiting, so nothing visible or costly happens before a window exists.
   const { classRegex, titleRegex } = getDesktopWindowFilters(controller);
-  const windows = await maaService.findWin32Windows(classRegex, titleRegex);
+  const windows = await maaService.findWin32Windows(classRegex, titleRegex, true);
   const window = windows[0];
   if (!window) {
     await stop(true);
     useExplorationStore.setState({ status: 'waiting', error: '' });
     return;
   }
+  check();
+  useExplorationStore.setState({ status: 'starting', error: '' });
+  if (await maaService.isWorkstationLocked()) throw new Error('请解锁桌面后开启辅助功能。');
+  await startGlobalCallbackListener();
+  if (!created) {
+    await maaService.createInstance(instanceId);
+    created = true;
+  }
+  check();
   const config = buildDesktopWindowControllerConfig(controller, window.handle);
   if (!config) throw new Error('辅助功能的窗口控制器配置无效。');
   const ctrlId = await maaService.connectController(instanceId, config);
