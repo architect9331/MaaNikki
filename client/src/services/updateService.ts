@@ -877,10 +877,11 @@ export interface CheckAndDownloadOptions extends CheckUpdateOptions {
 }
 
 /**
- * 未接入 Mirror酱时，直接选择 GitHub 中最新的可安装正式版或预发布版。
+ * 未接入 Mirror酱时，直接选择 GitHub 中最新的可安装版本。
+ * 与 Mirror酱 相同，按版本名区分频道：v1.0.1-beta.1 只发给尝鲜频道。
  */
 async function checkGitHubUpdate(options: CheckAndDownloadOptions, targetVersion?: string): Promise<UpdateInfo | null> {
-  const { githubUrl, currentVersion, githubPat, proxyUrl } = options;
+  const { githubUrl, currentVersion, githubPat, proxyUrl, channel = 'stable' } = options;
   const repository = githubUrl ? parseGitHubUrl(githubUrl) : null;
   if (!repository) return null;
 
@@ -893,7 +894,9 @@ async function checkGitHubUpdate(options: CheckAndDownloadOptions, targetVersion
     .filter(
       (release) => !release.draft && semver.valid(release.tag_name.replace(/^v/i, ''))
         && !isDebugVersion(release.tag_name)
-        && (!targetVersion || compareVersions(release.tag_name, targetVersion) === 0),
+        && (targetVersion
+          ? compareVersions(release.tag_name, targetVersion) === 0
+          : channel !== 'stable' || !semver.prerelease(release.tag_name.replace(/^v/i, ''))),
     )
     .sort((a, b) => compareVersions(b.tag_name, a.tag_name));
 
