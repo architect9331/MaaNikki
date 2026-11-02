@@ -1,0 +1,47 @@
+{
+  "global_option": [
+    "FocusLostBehavior"
+  ],
+  "setting": [
+    {
+      "name": "runtime_behavior",
+      "label": "运行行为",
+      "option": [
+        "FocusLostBehavior"
+      ],
+      "default_expand": true
+    }
+  ],
+  "option": {
+    "FocusLostBehavior": {
+      "type": "select",
+      "label": "游戏离开前台时",
+      "description": "任务运行中切出游戏时的处理方式。自动暂停：等你切回后继续。回到游戏：每隔几秒把游戏切回前台继续运行，想操作其他窗口时请先停止任务。辅助功能不受影响。",
+      "default_case": "Pause",
+      "cases": [
+        {
+          "name": "Pause",
+          "label": "自动暂停",
+          "pipeline_override": {
+            "MaaNikki_FocusLost": {
+              "custom_action_param": {
+                "mode": "pause"
+              }
+            }
+          }
+        },
+        {
+          "name": "Return",
+          "label": "回到游戏",
+          "pipeline_override": {
+            "MaaNikki_FocusLost": {
+              "custom_action_param": {
+                "mode": "return"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

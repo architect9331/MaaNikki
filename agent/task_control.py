@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from contextlib import contextmanager
 from contextvars import ContextVar
+import json
 import time as wall_time
 import traceback
 from weakref import WeakSet
@@ -24,6 +25,7 @@ class ForegroundChanged(RuntimeError):
 
 
 _ACTIVE = ContextVar("foreground_task", default=None)
+REFOCUS_INTERVAL = 3
 _SESSIONS = OrderedDict()
 _RUNNING = {}
 
@@ -97,6 +99,18 @@ class ForegroundSession:
                     traceback.print_exc()
             raise TaskStopped(message) from error
         self.frame_validated = True
+
+    def _returns_to_game(self):
+        try:
+            node = self.context.get_node_data("MaaNikki_FocusLost") or {}
+            action = node.get("action", {})
+            options = (action.get("param", {}).get("custom_action_param", {}) if isinstance(action, dict)
+                       else node.get("custom_action_param", {}))
+            options = json.loads(options) if isinstance(options, str) else options
+            return options.get("mode") == "return"
+        except Exception:
+            traceback.print_exc()
+            return False
 
     def window_closed(self):
         """Stop the queue: every task after a closed game could only fail too.
@@ -197,8 +211,11 @@ class ForegroundSession:
         try:
             for inputs in list(self.inputs):
                 inputs.release()
-            self.notify("游戏已离开前台，任务暂停；切回无限暖暖后自动继续。")
+            bring_back = not self._background_observation and self._returns_to_game()
+            self.notify("游戏已离开前台，正在切回游戏继续运行。" if bring_back
+                        else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。")
             stable_since = None
+            refocused_at = None
             while True:
                 if self.stopped() or adapter.stopped():
                     raise TaskStopped("任务已停止。")
@@ -211,6 +228,10 @@ class ForegroundSession:
                         break
                 else:
                     stable_since = None
+                    # Spaced out so a user alt-tabbing away can still reach the stop button.
+                    if bring_back and (refocused_at is None or now-refocused_at >= REFOCUS_INTERVAL):
+                        refocused_at = now
+                        adapter.controller.post_key_up(18).wait()
                 wall_time.sleep(.05)
             self.generation += 1
             self.notify("游戏已回到前台，任务继续。")
