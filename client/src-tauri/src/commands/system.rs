@@ -1035,3 +1035,24 @@ pub fn get_webview2_dir() -> WebView2DirInfo {
         }
     }
 }
+
+/// 运行结束后推送结果。地址通常含用户的推送密钥，不写入日志和错误信息。
+#[tauri::command]
+pub async fn send_run_webhook(url: String) -> Result<(), String> {
+    if !url.starts_with("https://") && !url.starts_with("http://") {
+        return Err("推送地址需要以 http:// 或 https:// 开头".to_string());
+    }
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|error| error.without_url().to_string())?;
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|error| error.without_url().to_string())?;
+    if !response.status().is_success() {
+        return Err(format!("推送服务返回 {}", response.status().as_u16()));
+    }
+    Ok(())
+}

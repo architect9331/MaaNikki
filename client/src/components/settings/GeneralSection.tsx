@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   AlertCircle,
   AppWindowMac,
+  Bell,
   BrushCleaning,
   Check,
   ChevronDown,
@@ -43,6 +44,8 @@ export function GeneralSection() {
     autoClearLogsOnLaunch,
     setAutoClearLogsOnLaunch,
     helpImproveSoftware,
+    runResultWebhook,
+    setRunResultWebhook,
     setHelpImproveSoftware,
     projectInterface,
   } = useAppStore();
@@ -377,6 +380,28 @@ export function GeneralSection() {
           />
         </div>
       </div>
+
+      {/* 运行结果推送 */}
+      {isTauri() && (
+        <div className="bg-bg-secondary rounded-xl p-4 border border-border">
+          <label htmlFor="run-result-webhook" className="flex items-center gap-3">
+            <Bell className="w-5 h-5 text-accent" />
+            <span className="font-medium text-text-primary">运行结果推送</span>
+          </label>
+          <p className="text-xs text-text-muted mt-1 ml-8 leading-5">
+            运行结束后向此地址发送 GET 请求，手动停止时不发送。可用 {'{title}'} 和 {'{content}'} 代表标题和内容，例如 Server酱：
+            https://sctapi.ftqq.com/密钥.send?title={'{title}'}&amp;desp={'{content}'}；Bark：https://api.day.app/密钥/{'{title}'}/{'{content}'}。留空则不推送。
+          </p>
+          <input
+            id="run-result-webhook"
+            type="url"
+            value={runResultWebhook}
+            onChange={(event) => setRunResultWebhook(event.target.value)}
+            placeholder="https://"
+            className="mt-2 ml-8 w-[calc(100%-2rem)] rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+          />
+        </div>
+      )}
 
       {/* ⑨ 重置窗口布局 */}
       {isTauri() && (

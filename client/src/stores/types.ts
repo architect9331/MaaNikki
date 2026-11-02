@@ -43,7 +43,7 @@ export interface LogEntry {
 
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'system' | 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP' | 'ko-KR';
-export type PageView = 'main' | 'settings' | 'blessing' | 'exploration' | 'resonance' | 'wardrobe';
+export type PageView = 'main' | 'settings' | 'overview' | 'blessing' | 'exploration' | 'resonance' | 'wardrobe';
 
 // 定时执行状态信息
 export interface ScheduleExecutionInfo {
@@ -459,6 +459,16 @@ export interface AppState {
   // 新用户引导
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
+
+  // 首次设置与运行前检查
+  setupVersion: number;
+  setSetupVersion: (version: number) => void;
+  preflightAcks: string[];
+  acknowledgePreflight: (id: string) => void;
+
+  // 运行结果推送
+  runResultWebhook: string;
+  setRunResultWebhook: (url: string) => void;
 
   /** 前置动作轮询设备就绪后、连接前的额外延迟秒数（默认 5，仅通过编辑 mxu.json 修改） */
   preActionConnectDelaySec: number;

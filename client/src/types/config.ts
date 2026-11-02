@@ -164,6 +164,9 @@ export interface AppSettings {
   addTaskPanelHeight?: number; // 添加任务面板高度
   devMode?: boolean; // 开发模式：显示开发者任务并允许 F5 刷新 UI
   onboardingCompleted?: boolean; // 新用户引导是否已完成
+  setupVersion?: number; // 已完成的首次设置和使用须知版本
+  preflightAcks?: string[]; // 运行前检查中选择不再提示的项目
+  runResultWebhook?: string; // 运行结束后推送结果的地址
   hotkeys?: HotkeySettings; // 快捷键设置
   tcpCompatMode?: boolean; // 通信兼容模式，强制使用 TCP 而非 IPC
   webServerEnabled?: boolean; // Web 服务器是否启用（默认 true，重启生效）

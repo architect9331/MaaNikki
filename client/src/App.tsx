@@ -91,6 +91,10 @@ import {
 import { LoadingScreen } from './components/app';
 import { ConnectionLostOverlay } from './components/app/ConnectionLostOverlay';
 import { WebUIBetaBanner } from './components/app/WebUIBetaBanner';
+import { useRunResultNotifier } from '@/utils/useRunResultNotifier';
+
+/** Keep in step with SETUP_VERSION in FirstRunSetup, which stays lazily loaded. */
+const SETUP_VERSION = 1;
 import { startGlobalCallbackListener } from './components/connection/callbackCache';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { ScrollText } from 'lucide-react';
@@ -121,6 +125,16 @@ const LazyInstallConfirmModal = lazy(async () => {
 const LazyVCRedistModal = lazy(async () => {
   const module = await import('@/components/VCRedistModal');
   return { default: module.VCRedistModal };
+});
+
+const LazyFirstRunSetup = lazy(async () => {
+  const module = await import('@/components/FirstRunSetup');
+  return { default: module.FirstRunSetup };
+});
+
+const LazyOverviewPage = lazy(async () => {
+  const module = await import('@/components/OverviewPage');
+  return { default: module.OverviewPage };
 });
 
 const LazyOnboardingOverlay = lazy(async () => {
@@ -176,6 +190,7 @@ function App() {
 
   // 启用 MAA 回调日志监听
   useMaaCallbackLogger();
+  useRunResultNotifier();
   useMaaAgentLogger();
 
   useEffect(() => {
@@ -219,6 +234,7 @@ function App() {
     setRightPanelWidth: _setRightPanelWidth,
     setRightPanelCollapsed: _setRightPanelCollapsed,
     onboardingCompleted,
+    setupVersion,
     backgroundImage,
     backgroundOpacity,
   } = useAppStore(
@@ -259,6 +275,7 @@ function App() {
       setRightPanelWidth: state.setRightPanelWidth,
       setRightPanelCollapsed: state.setRightPanelCollapsed,
       onboardingCompleted: state.onboardingCompleted,
+      setupVersion: state.setupVersion,
       backgroundImage: state.backgroundImage,
       backgroundOpacity: state.backgroundOpacity,
     })),
@@ -1960,6 +1977,19 @@ function App() {
     );
   }
 
+  if (currentPage === 'overview') {
+    return (
+      <div className="h-full flex flex-col bg-bg-primary relative">
+        <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
+        <Suspense fallback={<div className="flex-1" />}>
+          <LazyOverviewPage onClose={() => useAppStore.getState().setCurrentPage('main')} />
+        </Suspense>
+        <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
+        {toaster}
+      </div>
+    );
+  }
+
   if (currentPage === "blessing") {
     return (
       <div className="h-full flex flex-col bg-bg-primary relative">
@@ -2080,8 +2110,15 @@ function App() {
           </Suspense>
         )}
 
+        {/* 首次设置与使用须知 */}
+        {setupVersion < SETUP_VERSION && (
+          <Suspense fallback={<div className="fixed inset-0 z-50 pointer-events-none" aria-hidden />}>
+            <LazyFirstRunSetup />
+          </Suspense>
+        )}
+
         {/* 新用户引导覆盖层 - 仅在右侧面板可见时显示 */}
-        {!onboardingCompleted && !rightPanelCollapsed && (
+        {setupVersion >= SETUP_VERSION && !onboardingCompleted && !rightPanelCollapsed && (
           <Suspense fallback={null}>
             <LazyOnboardingOverlay />
           </Suspense>

@@ -52,6 +52,8 @@ import type {
 import { resolveI18nText } from '@/services/contentResolver';
 import { getInterfaceLangKey } from '@/i18n';
 import { PermissionModal } from './toolbar/PermissionModal';
+import { PreflightDialog } from './PreflightDialog';
+import { preflightIssues, type PreflightIssue } from '@/utils/preflight';
 import { ScheduleButton } from './toolbar/ScheduleButton';
 import {
   startGlobalCallbackListener,
@@ -202,6 +204,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
 
   // 权限提示弹窗状态
   const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [preflight, setPreflight] = useState<PreflightIssue[] | null>(null);
   const [isRestartingAsAdmin, setIsRestartingAsAdmin] = useState(false);
   const [preActionControlledInstanceId, setPreActionControlledInstanceId] = useState<string | null>(
     null,
@@ -1496,7 +1499,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
     }
   };
 
-  const handleStartStop = async () => {
+  const handleStartStop = async (skipPreflight = false) => {
     if (!instance) return;
 
     if (isStartStopRunning) {
@@ -1518,6 +1521,15 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
       startingRef.current = true;
 
       try {
+        // 手动启动时先做一次运行前检查；定时和快捷键启动不弹窗
+        if (!skipPreflight) {
+          const issues = await preflightIssues(instance);
+          if (issues.length) {
+            setPreflight(issues);
+            return;
+          }
+        }
+
         // 检查是否需要管理员权限
         const needsElevation = await checkPermissionRequired();
         if (needsElevation) {
@@ -1772,6 +1784,21 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
           <SchedulePanel instanceId={instance.id} onClose={() => setShowSchedulePanel(false)} />
         )}
 
+        {/* 运行前检查 */}
+        {preflight && (
+          <PreflightDialog
+            issues={preflight}
+            onCancel={() => setPreflight(null)}
+            onContinue={() => {
+              for (const issue of preflight) {
+                if (issue.once) useAppStore.getState().acknowledgePreflight(issue.id);
+              }
+              setPreflight(null);
+              void handleStartStop(true);
+            }}
+          />
+        )}
+
         {/* 权限提示弹窗 */}
         <PermissionModal
           isOpen={showPermissionModal}
@@ -1783,7 +1810,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         {/* 开始/停止按钮 */}
         <button
           data-role="start-stop-button"
-          onClick={handleStartStop}
+          onClick={() => void handleStartStop()}
           disabled={isDisabled || isStopping || (isStarting && !isStartStopRunning)}
           className={clsx(
             'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',

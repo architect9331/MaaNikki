@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, RefreshCw, Sparkles, Star, X, Shirt } from 'lucide-react';
+import { Check, LayoutDashboard, RefreshCw, Sparkles, Star, X, Shirt } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
@@ -130,6 +130,12 @@ export function AccountStatusActions({ onShowProgress }: { onShowProgress: () =>
     ? `已收集 ${progress.owned.size} / ${progress.target} 个颜色${progress.uncertain ? ' · 上次确认记录，待复核' : ''}`
     : '尚无完整记录，运行幻境挑战的五星全收集时会先自动整理';
   return <>
+    <Tooltip side="bottom" content="账号总览">
+      <button onClick={() => useAppStore.getState().setCurrentPage('overview')} aria-label="账号总览"
+        className="flex shrink-0 items-center rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent">
+        <LayoutDashboard className="h-5 w-5" aria-hidden="true" />
+      </button>
+    </Tooltip>
     <GiantMeteorStatus />
     <Tooltip side="bottom" content={<div className="space-y-1"><p className="font-medium">祝福闪光收集进度 {percentage}</p><p className="text-text-secondary">{detail}</p></div>}>
       <button onClick={onShowProgress}

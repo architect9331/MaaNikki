@@ -283,6 +283,7 @@ pub fn run() {
             commands::download::download_file,
             commands::download::cancel_download,
             // 系统相关命令
+            commands::system::send_run_webhook,
             commands::system::is_elevated,
             commands::system::is_workstation_locked,
             commands::system::is_autostart,

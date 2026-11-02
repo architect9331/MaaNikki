@@ -1571,6 +1571,9 @@ export const useAppStore = create<AppState>()(
         autoStartRemovedInstanceName: config.settings.autoStartRemovedInstanceName,
         minimizeToTray: config.settings.minimizeToTray ?? false,
         onboardingCompleted: config.settings.onboardingCompleted ?? false,
+        setupVersion: config.settings.setupVersion ?? 0,
+        preflightAcks: config.settings.preflightAcks ?? [],
+        runResultWebhook: config.settings.runResultWebhook ?? '',
         preActionConnectDelaySec: config.settings.preActionConnectDelaySec ?? 5,
         hotkeys: config.settings.hotkeys ?? {
           startTasks: 'F10',
@@ -2127,6 +2130,19 @@ export const useAppStore = create<AppState>()(
     onboardingCompleted: false,
     setOnboardingCompleted: (completed) => set({ onboardingCompleted: completed }),
 
+    setupVersion: 0,
+    setSetupVersion: (version) => set({ setupVersion: version }),
+    preflightAcks: [],
+    acknowledgePreflight: (id) =>
+      set((state) => ({
+        preflightAcks: state.preflightAcks.includes(id)
+          ? state.preflightAcks
+          : [...state.preflightAcks, id],
+      })),
+
+    runResultWebhook: '',
+    setRunResultWebhook: (url) => set({ runResultWebhook: url }),
+
     // 前置动作连接延迟（默认 5 秒）
     preActionConnectDelaySec: 5,
 
@@ -2543,6 +2559,9 @@ function generateConfig(): MxuConfig {
           autoStartRemovedInstanceName: state.autoStartRemovedInstanceName,
           minimizeToTray: state.minimizeToTray,
           onboardingCompleted: state.onboardingCompleted,
+          setupVersion: state.setupVersion,
+          preflightAcks: state.preflightAcks,
+          runResultWebhook: state.runResultWebhook,
           preActionConnectDelaySec: state.preActionConnectDelaySec,
           hotkeys: state.hotkeys,
         },
@@ -2627,6 +2646,9 @@ useAppStore.subscribe(
     autoStartRemovedInstanceName: state.autoStartRemovedInstanceName,
     minimizeToTray: state.minimizeToTray,
     onboardingCompleted: state.onboardingCompleted,
+    setupVersion: state.setupVersion,
+    preflightAcks: state.preflightAcks,
+    runResultWebhook: state.runResultWebhook,
     hotkeys: state.hotkeys,
     recentlyClosed: state.recentlyClosed,
     newTaskNames: state.newTaskNames,
