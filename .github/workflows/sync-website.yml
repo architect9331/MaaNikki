@@ -44,8 +44,7 @@ jobs:
           import json
           from pathlib import Path
           releases = json.loads(Path('/tmp/maanikki-releases.json').read_text())
-          installable = [item for item in releases if not item['draft'] and any(asset['name'].endswith('-win-x86_64.zip') for asset in item['assets'])]
-          release = next((item['tag_name'] for item in installable if not item['prerelease']), installable[0]['tag_name'] if installable else None)
+          release = next((item['tag_name'] for item in releases if not item['draft'] and any(asset['name'].endswith('-win-x86_64.zip') for asset in item['assets'])), None)
           payload = {'repository': 'architect9331/MaaNikki', 'commit': Path('/tmp/maanikki-sha').read_text().strip(), 'release': release}
           Path('upstream.json').write_text(json.dumps(payload, indent=2) + chr(10))
           PY

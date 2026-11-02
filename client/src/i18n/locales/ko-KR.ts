@@ -704,7 +704,6 @@ export default {
     channel: '업데이트 채널',
     channelStable: '안정 버전',
     channelBeta: '베타 버전',
-    channelHint: '안정 버전은 베타 검증을 거쳤습니다. 베타 버전은 새 기능과 수정을 더 빨리 받지만 새로운 문제가 생길 수 있습니다.',
     cdk: 'Mirror짱 CDK',
     cdkPlaceholder: 'CDK 입력 (선택사항)',
     serviceName: 'Mirror짱',

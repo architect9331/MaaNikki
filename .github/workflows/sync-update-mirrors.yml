@@ -3,10 +3,6 @@ name: Sync update mirrors
 on:
   workflow_call:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Release tag; defaults to the version in interface.json
-        required: false
 
 permissions:
   contents: read
@@ -52,5 +48,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCEFORGE_USERNAME: ${{ vars.SOURCEFORGE_USERNAME }}
-          TAG: ${{ inputs.tag }}
-        run: python scripts/sync_update_mirrors.py sourceforge ${TAG:+--tag "$TAG"}
+        run: python scripts/sync_update_mirrors.py sourceforge

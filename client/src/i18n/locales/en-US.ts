@@ -715,7 +715,6 @@ export default {
     channel: 'Update Channel',
     channelStable: 'Stable',
     channelBeta: 'Beta',
-    channelHint: 'Stable versions have passed beta testing. Beta gets new features and fixes sooner but may have new problems.',
     cdk: 'MirrorChyan CDK',
     cdkPlaceholder: 'Enter your CDK (optional)',
     serviceName: 'MirrorChyan',

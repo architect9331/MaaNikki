@@ -877,11 +877,10 @@ export interface CheckAndDownloadOptions extends CheckUpdateOptions {
 }
 
 /**
- * 未接入 Mirror酱时，直接选择 GitHub 中最新的可安装版本。
- * 正式版频道跳过尚未转正的预发布版；指定版本时以 Mirror酱 的结果为准。
+ * 未接入 Mirror酱时，直接选择 GitHub 中最新的可安装正式版或预发布版。
  */
 async function checkGitHubUpdate(options: CheckAndDownloadOptions, targetVersion?: string): Promise<UpdateInfo | null> {
-  const { githubUrl, currentVersion, githubPat, proxyUrl, channel = 'stable' } = options;
+  const { githubUrl, currentVersion, githubPat, proxyUrl } = options;
   const repository = githubUrl ? parseGitHubUrl(githubUrl) : null;
   if (!repository) return null;
 
@@ -894,9 +893,7 @@ async function checkGitHubUpdate(options: CheckAndDownloadOptions, targetVersion
     .filter(
       (release) => !release.draft && semver.valid(release.tag_name.replace(/^v/i, ''))
         && !isDebugVersion(release.tag_name)
-        && (targetVersion
-          ? compareVersions(release.tag_name, targetVersion) === 0
-          : channel === 'beta' || !release.prerelease),
+        && (!targetVersion || compareVersions(release.tag_name, targetVersion) === 0),
     )
     .sort((a, b) => compareVersions(b.tag_name, a.tag_name));
 
@@ -948,18 +945,7 @@ export async function checkAndPrepareDownload(
   }
 
   const updateInfo = await checkUpdate(options);
-  if (updateInfo && !updateInfo.hasUpdate && !updateInfo.errorCode) {
-    // Mirror酱只收录已转正的版本，公测版仍要查询 GitHub。
-    if (options.channel === 'beta' && options.githubUrl) {
-      try {
-        const github = await checkGitHubUpdate(options);
-        if (github?.hasUpdate) return github;
-      } catch {
-        log.warn('免费更新线路暂不可用');
-      }
-    }
-    return updateInfo;
-  }
+  if (updateInfo && !updateInfo.hasUpdate && !updateInfo.errorCode) return updateInfo;
   if (updateInfo?.hasUpdate && updateInfo.downloadUrl) {
     log.info('使用 Mirror酱 下载链接');
     return updateInfo;

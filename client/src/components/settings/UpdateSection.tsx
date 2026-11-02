@@ -422,7 +422,6 @@ export function UpdateSection() {
                       {t('mirrorChyan.channelBeta')}
                     </button>
                   </div>
-                  <p className="mt-2 text-xs text-text-muted">{t('mirrorChyan.channelHint')}</p>
                 </div>
 
                 {/* CDK 输入 */}
