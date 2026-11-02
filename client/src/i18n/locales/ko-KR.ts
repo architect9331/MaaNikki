@@ -47,6 +47,7 @@ export default {
   settings: {
     title: '설정',
     appearance: '외관',
+    aiAssistant: 'AI 도우미',
     hotkeys: '단축키',
     general: '일반',
     taskSettings: '작업 설정',

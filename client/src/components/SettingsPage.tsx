@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   ChevronRight,
   Globe,
+  Bot,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -33,6 +34,7 @@ import {
   AboutSection,
   CustomAccentModal,
   WebServerSection,
+  AiAssistantSection,
 } from './settings';
 
 interface SettingsPageProps {
@@ -269,6 +271,7 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
     }
     items.push({ id: 'general', icon: Settings2, labelKey: 'settings.general' });
     items.push({ id: 'hotkeys', icon: Keyboard, labelKey: 'settings.hotkeys' });
+    items.push({ id: 'ai-assistant', icon: Bot, labelKey: 'settings.aiAssistant' });
     items.push({ id: 'webserver', icon: Globe, labelKey: 'webserver.title' });
     if (projectInterface?.mirrorchyan_rid || projectInterface?.github) {
       items.push({ id: 'update', icon: Download, labelKey: 'mirrorChyan.title' });
@@ -492,6 +495,9 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
 
             {/* 快捷键设置 */}
             <HotkeySection />
+
+            {/* AI 助手接入 */}
+            <AiAssistantSection />
 
             {/* Web 服务设置 */}
             <WebServerSection />

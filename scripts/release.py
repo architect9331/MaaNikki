@@ -22,13 +22,13 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / ".build" / "downloads"
-SOURCE_DIRS = ("agent", "client", "resource", "tasks", "options", "docs/images", "build", "scripts", "licenses", ".github")
+SOURCE_DIRS = ("agent", "ai", "client", "resource", "tasks", "options", "docs/images", "build", "scripts", "licenses", ".github")
 SOURCE_FILES = ("interface.json", ".gitignore", ".gitattributes", ".node-version",
                 "rust-toolchain.toml", "requirements.txt", "requirements.lock",
                 "README.md", "CHANGELOG.md", "BUILDING.md", "docs/manual.md",
                 "docs/architecture.md",
                 "THIRD_PARTY_NOTICES.md", "LICENSE", "LICENSE.md")
-RUNTIME_DIRS = ("agent", "resource", "tasks", "options")
+RUNTIME_DIRS = ("agent", "ai", "resource", "tasks", "options")
 GENERATED_DIRS = {"node_modules", "target", "dist", "__pycache__", ".git", "schemas", ".cloudflare", ".wrangler"}
 GENERATED_SUFFIXES = {".pyc", ".pyo", ".pdb"}
 LOCAL_HELPER_PATTERNS = (
@@ -44,6 +44,9 @@ LOCAL_GITHUB_HELPERS = {"copilot-instructions.md", "instructions", "prompts", "a
 def is_local_helper(path: Path) -> bool:
     # Archives may be built from an extracted source tree without Git metadata.
     parts = path.relative_to(ROOT).parts
+    # ai/ is the published standard for users' own AI tools, not personal material.
+    if parts[:1] == ("ai",):
+        return False
     return (any(fnmatchcase(part, pattern) for part in parts for pattern in LOCAL_HELPER_PATTERNS)
             or (len(parts) >= 2 and parts[0] == ".github" and parts[1] in LOCAL_GITHUB_HELPERS))
 

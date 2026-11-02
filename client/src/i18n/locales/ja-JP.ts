@@ -47,6 +47,7 @@ export default {
   settings: {
     title: '設定',
     appearance: '外観',
+    aiAssistant: 'AI アシスタント',
     hotkeys: 'ショートカットキー',
     general: '一般',
     taskSettings: 'タスク設定',

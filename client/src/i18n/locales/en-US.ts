@@ -48,6 +48,7 @@ export default {
   settings: {
     title: 'Settings',
     appearance: 'Appearance',
+    aiAssistant: 'AI Assistant',
     hotkeys: 'Hotkeys',
     general: 'General',
     taskSettings: 'Task Settings',

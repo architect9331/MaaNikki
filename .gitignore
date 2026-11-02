@@ -49,6 +49,7 @@ AGENTS*.md
 CLAUDE*.md
 GEMINI*.md
 SKILL.md
+!/ai/skills/**/SKILL.md
 .agents/
 .codex/
 .claude/
