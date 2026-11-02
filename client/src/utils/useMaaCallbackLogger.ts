@@ -22,6 +22,7 @@ import {
   markdownToHtmlWithLocalImages,
 } from '@/services/contentResolver';
 import { hasRichTextFeatures } from '@/utils/richText';
+import { taskFailureHint } from '@/utils/taskFailureHints';
 import type { FocusTemplate, FocusDisplayChannel } from '@/types/interface';
 
 const log = loggers.app;
@@ -566,6 +567,15 @@ function handleCallback(
           name: taskName || details.entry || '',
         }),
       });
+      const state = useAppStore.getState();
+      const selectedTaskId =
+        details.task_id !== undefined ? state.maaTaskIdMapping[instanceId]?.[details.task_id] : undefined;
+      const selectedTask = state.instances
+        .find((instance) => instance.id === instanceId)
+        ?.selectedTasks.find((task) => task.id === selectedTaskId);
+      if (selectedTask) {
+        addLog(instanceId, { type: 'info', message: taskFailureHint(selectedTask.taskName) });
+      }
       break;
     }
 

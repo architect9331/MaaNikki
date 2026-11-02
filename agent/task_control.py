@@ -98,6 +98,25 @@ class ForegroundSession:
             raise TaskStopped(message) from error
         self.frame_validated = True
 
+    def window_closed(self):
+        """Stop the queue: every task after a closed game could only fail too.
+
+        The resident helper handles this itself and waits for the game to return.
+        """
+        for inputs in list(self.inputs):
+            inputs.release()
+        if not self._background_observation:
+            try:
+                self.notify("游戏窗口已关闭，后续任务已停止。重新打开游戏后再运行。")
+            except Exception:
+                traceback.print_exc()
+            finally:
+                try:
+                    self.context.tasker.post_stop()
+                except Exception:
+                    traceback.print_exc()
+        raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
+
     @contextmanager
     def coalesce_stop_queries(self, interval=.05):
         """Bound resident-helper IPC polling without caching window focus."""
@@ -150,9 +169,7 @@ class ForegroundSession:
                 self.adapter = ForegroundInput(self.controller, self.stopped)
             adapter = self.adapter
         if not adapter.user32.IsWindow(adapter.hwnd):
-            for inputs in list(self.inputs):
-                inputs.release()
-            raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
+            self.window_closed()
         if not self.started:
             if self.stopped():
                 raise TaskStopped("任务已停止。")
@@ -186,7 +203,7 @@ class ForegroundSession:
                 if self.stopped() or adapter.stopped():
                     raise TaskStopped("任务已停止。")
                 if not adapter.user32.IsWindow(adapter.hwnd):
-                    raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
+                    self.window_closed()
                 now = wall_time.monotonic()
                 if adapter.foreground():
                     stable_since = now if stable_since is None else stable_since
