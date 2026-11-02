@@ -52,6 +52,7 @@ class Ability:
         self.ui, self.inputs = self.rt.ui, actions.inputs
         self.label, self.icon, self.node = label, icon, node
         self.ability_id, self.mode, self.slot = ability_id, mode, None
+        self.plan_label = None
 
     def configure(self):
         if self.actions.ability(self.node):
@@ -68,13 +69,13 @@ class Ability:
             slot = self.find_slot()
             if slot is None:
                 slot = 8
-                if self.selected_plan() != plan:
+                if not self.plan_selected():
                     raise NavigationError("未能确认允许修改的能力方案，未更改能力轮盘。")
                 x, y = SLOTS[slot-1]
                 def permitted_plan():
                     return bool(self.ui.asset("IconAbilityFeature", threshold=.99,
                                              method=cv2.TM_CCORR_NORMED)
-                                and self.selected_plan() == plan)
+                                and self.plan_selected())
                 # Save is also visible before choosing a slot. It cannot be
                 # used as an entrance destination that skips the slot click.
                 if (not self.ui.wait_page(permitted_plan) or not self.rt.action(
@@ -127,44 +128,51 @@ class Ability:
                 return index
         return None
 
-    @staticmethod
-    def parse_plan(text):
-        match = re.fullmatch(r"自定义方案([一二三123])", re.sub(r"\s+", "", text))
-        return {"一": 1, "二": 2, "三": 3, "1": 1, "2": 2, "3": 3}.get(match.group(1)) if match else None
+    def plan_name(self, roi):
+        return re.sub(r"\s+", "", self.ui.text(roi))
 
-    def selected_plan(self):
-        return self.parse_plan(self.ui.text(self.ui.roi("AreaAbilityPlanChangeButton")))
+    def plan_selected(self):
+        return bool(self.plan_label
+                    and self.plan_name(self.ui.roi("AreaAbilityPlanChangeButton")) == self.plan_label)
 
     def change_plan(self, plan):
+        # Players can rename plans, so list position identifies the permitted
+        # plan. Its name only confirms what the header shows afterwards.
         if not self.ui.wait_page(asset="IconAbilityFeature"):
             raise NavigationError("未能确认能力配置页面，未更改能力轮盘。")
-        if self.selected_plan() != plan:
-            header = self.ui.roi("AreaAbilityPlanChangeButton")
-            entry = self.ui.roi(f"AreaAbilityPlan{plan}Button")
-            ability = self.ui.feature(asset="IconAbilityFeature", threshold=.99,
-                                      method=cv2.TM_CCORR_NORMED)
-            def plan_entry_visible():
-                raw = self.ui.text(entry)
-                parsed = self.parse_plan(raw)
-                self.rt.evidence.observe("ability_plan", requested=plan, roi=entry,
-                                         raw=raw, parsed=parsed)
-                return parsed == plan
-            def open_plan_list():
-                return self.ui.ability_page() and self.ui.enter_page(
-                    lambda: self.rt.action("Click", target=header), plan_entry_visible,
-                    source=ability, recover=self.ui.ability_page,
-                    diagnostic_context={"operation": "open_ability_plan_list", "requested": plan,
-                                        "header_roi": header, "entry_roi": entry})
-            if not open_plan_list():
-                raise NavigationError("未能确认能力方案列表，未更改能力轮盘。")
-            def selected():
-                return bool(ability() and self.selected_plan() == plan)
-            if not self.ui.enter_page(lambda: self.rt.action("Click", target=entry), selected,
-                                       source=plan_entry_visible, recover=open_plan_list,
-                                       diagnostic_context={"operation": "select_ability_plan",
-                                                           "requested": plan, "entry_roi": entry}):
-                return False
-        if self.ui.wait_page(lambda: self.selected_plan() == plan):
-            self.actions.event({"type": "ability_plan_selected", "plan": plan})
+        header = self.ui.roi("AreaAbilityPlanChangeButton")
+        entry = self.ui.roi(f"AreaAbilityPlan{plan}Button")
+        entries = [self.ui.roi(f"AreaAbilityPlan{index}Button") for index in (1, 2, 3)]
+        ability = self.ui.feature(asset="IconAbilityFeature", threshold=.99,
+                                  method=cv2.TM_CCORR_NORMED)
+        def plan_list_visible():
+            names = [self.plan_name(roi) for roi in entries]
+            self.rt.evidence.observe("ability_plan", requested=plan, roi=entry, names=names)
+            return all(names)
+        def open_plan_list():
+            return self.ui.ability_page() and self.ui.enter_page(
+                lambda: self.rt.action("Click", target=header), plan_list_visible,
+                source=ability, recover=self.ui.ability_page,
+                diagnostic_context={"operation": "open_ability_plan_list", "requested": plan,
+                                    "header_roi": header, "entry_roi": entry})
+        if not open_plan_list():
+            raise NavigationError("未能确认能力方案列表，未更改能力轮盘。")
+        names = [self.plan_name(roi) for roi in entries]
+        if not names[plan-1] or names.count(names[plan-1]) > 1:
+            # A shared name could not tell the permitted plan from another one.
+            raise NavigationError("能力方案名称重复或无法读取，未更改能力轮盘，请先改用不同的名称。")
+        self.plan_label = names[plan-1]
+        # The header toggles the list; the current entry's click is not needed.
+        target = header if self.plan_selected() else entry
+        def selected():
+            return bool(ability() and self.plan_selected() and not self.plan_name(entry))
+        if not self.ui.enter_page(lambda: self.rt.action("Click", target=target), selected,
+                                  source=plan_list_visible, recover=open_plan_list,
+                                  diagnostic_context={"operation": "select_ability_plan",
+                                                      "requested": plan, "entry_roi": entry,
+                                                      "plan_names": names}):
+            return False
+        if self.ui.wait_page(self.plan_selected):
+            self.actions.event({"type": "ability_plan_selected", "plan": plan, "name": self.plan_label})
             return True
         raise NavigationError("未能确认已切换到所选能力方案，未更改能力轮盘。")
