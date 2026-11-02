@@ -67,6 +67,7 @@ class Fishing:
                         if kind == "home" else Ability(actions, "钓鱼", "IconAbilityFishing",
                                "MaaNikki_Navigation_FishingAbility", "fishing", "fishing"))
         self.materials = {}
+        self.passive = False
         self.last_state_frame = None
         self.last_state_details = None
         self.previous_state = None
@@ -330,11 +331,31 @@ class Fishing:
                 if unknown_since is None:
                     unknown_since = time.monotonic()
                 if time.monotonic()-unknown_since >= 3:
+                    result = self.prompts_ended()
+                    if result is not None:
+                        return result
                     self.fail_state(f"{self.label}操作提示持续未识别。")
                 self.wait(.1)
         return FishingResult.SUCCESS
 
+    def prompts_ended(self):
+        """Classify a round whose prompts vanished without a skip screen."""
+        reeling = self.last_known_state == FishingState.REEL_IN
+        returned = bool(self.rt.hit("MaaNikki_MainDetected"))
+        if not returned and not self.passive:
+            return None
+        self.actions.event({"type": self.event_prefix+"_prompts_ended", "main": returned,
+                            "last_state": getattr(self.last_known_state, "name", None)})
+        if returned and reeling:
+            # Some catches only show a toast on the normal HUD.
+            self.record_material()
+            return FishingResult.SUCCESS
+        # In assist mode the player owns the game: another page or a withdrawn
+        # rod ends this round, without casting again or stopping the assistant.
+        return FishingResult.NO_FISH
+
     def run(self, *, passive=False, max_cast_count=None, use_rhythms=False, facing_heading=None):
+        self.passive = passive
         limit = cast_count(max_cast_count, None)
         if self.kind is None:
             if not passive:
