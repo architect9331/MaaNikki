@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, RefreshCw, Search, AlertCircle, Sparkles } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, RefreshCw, Search, AlertCircle, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
+import { toast } from 'sonner';
+import { collectionShareImage } from '@/utils/collectionShareImage';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { collectionSlots as slots, collectionKey as keyOf, getBlessingProgress } from '@/utils/blessingProgress';
 import type { ForecastPart } from '@/services/collectionForecast';
@@ -110,6 +112,16 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
     .map((source) => ({ source, sets: visible.filter((s) => s.source === source) }));
   const updated = snapshot?.record?.updated_at;
   const particleTotal = (resources?.particles ?? 0) + (resources?.duplicates ?? 0) * 300;
+  const copyShareImage = async () => {
+    try {
+      const blob = await collectionShareImage({ owned: progress.owned.size, target, percentage: progress.percentage ?? 0,
+        completeSets, totalSets: sets.length, rainbowOwned, rainbowTotal });
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast.success('分享图已复制，可以直接粘贴');
+    } catch {
+      toast.error('复制分享图失败');
+    }
+  };
 
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-bg-primary text-text-primary">
@@ -118,6 +130,8 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
         <h1 className="text-lg font-semibold flex-1">祝福闪光收集</h1>
         {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
         <span className="hidden md:inline text-xs text-text-muted">{updated ? `更新于 ${new Date(updated).toLocaleString('zh-CN', { hour12: false })}` : '尚无收集记录'}</span>
+        {progress.known && <button onClick={() => void copyShareImage()}
+          className="p-2 rounded-md hover:bg-bg-hover" title="复制分享图（不含 UID）" aria-label="复制分享图"><ImageIcon className="w-4 h-4" /></button>}
         <button onClick={() => void refresh().catch(() => {})} disabled={loading}
           className="p-2 rounded-md hover:bg-bg-hover disabled:opacity-50" title="刷新记录" aria-label="刷新记录"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
       </div>
