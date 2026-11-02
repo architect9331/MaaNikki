@@ -62,7 +62,7 @@ class LowRarityDecomposer:
         amount, limit = map(int, count.groups())
         used, total = map(int, capacity.groups())
         if (limit != 100 or not 0 <= amount <= min(limit, used)
-                or not 0 <= used <= total <= 10000 or total == 0):
+                or not 0 <= used <= 10000 or not 0 < total <= 10000):
             return None
         return {"count": amount, "capacity": used, "particles": particles,
                 "filter": self.text("filter", frame), "gain": self.number(self.text("gain", frame))}

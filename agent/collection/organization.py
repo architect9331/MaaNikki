@@ -271,7 +271,8 @@ class BlessingOrganizer(BlessingLocker):
             match = re.search(r"(\d+)[/／](\d+)", clean_text(item.text))
             if match and float(getattr(item, "score", 0)) >= .90:
                 used, limit = int(match.group(1)), int(match.group(2))
-                if 0 <= used <= limit <= 10000:
+                # Storage can be overfilled: the game shows values such as 1006/1000.
+                if 0 <= used <= 10000 and 0 < limit <= 10000:
                     counts.append((used, limit))
         if len(counts) != 1:
             self.image("normal_capacity_unknown.png", frame)
