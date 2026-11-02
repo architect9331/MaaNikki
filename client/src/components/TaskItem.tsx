@@ -55,7 +55,7 @@ function OptionPreviewTag({
   return (
     <span
       className={clsx(
-        'inline-flex min-w-0 max-w-full shrink-0 items-center gap-1 px-1.5 py-0.5 text-xs rounded',
+        'inline-flex min-w-0 max-w-full shrink-0 items-center gap-1 px-1.5 py-0.5 text-xs rounded-lg',
         'text-text-tertiary',
       )}
       title={`${plainLabel}: ${plainValue}`}
@@ -269,7 +269,7 @@ function OptionListRenderer({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y divide-border [&>*]:py-3 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
       {groups.map((group, index) => {
         if (group.type === 'switchGrid') {
           return (
@@ -857,7 +857,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
         style={style}
         onContextMenu={handleContextMenu}
         className={clsx(
-          'group bg-bg-secondary/50 rounded-lg border border-border/50 overflow-hidden',
+          'group bg-bg-secondary/50 rounded-xl border border-border/50 overflow-hidden',
           'transition-all duration-200',
           isDragging && 'shadow-lg opacity-50',
           completedPeriod && 'opacity-60',
@@ -894,7 +894,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
       style={style}
       onContextMenu={handleContextMenu}
       className={clsx(
-        'group bg-bg-secondary rounded-lg border border-border transition-shadow relative overflow-hidden',
+        'group bg-bg-secondary rounded-xl border border-border transition-shadow relative overflow-hidden',
         isDragging && 'shadow-lg opacity-50',
         completedPeriod && 'opacity-60',
         taskRunStatus === 'running' && 'task-item-running',
@@ -919,7 +919,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
           {...attributes}
           {...(canReorder ? listeners : {})}
           className={clsx(
-            'p-1 rounded',
+            'p-1 rounded-lg',
             canReorder
               ? 'cursor-grab active:cursor-grabbing hover:bg-bg-hover'
               : 'cursor-not-allowed opacity-30',
@@ -989,7 +989,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                   {displayName}
                 </span>
                 {periodLabel && (
-                  <span className="shrink-0 text-[11px] text-text-muted rounded bg-bg-tertiary px-1.5 py-0.5"
+                  <span className="shrink-0 text-[11px] text-text-muted rounded-lg bg-bg-tertiary px-1.5 py-0.5"
                     title={accountError ? `账号状态读取失败：${accountError}` : completedPeriod ? "保留勾选，当前周期自动跳过；下个周期自动恢复。" : "执行前会再次读取账号状态。"}>
                     {accountError ? "状态读取失败" : periodLabel}
                   </span>
@@ -1070,7 +1070,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
               setShowDeleteConfirm(true);
             }}
             className={clsx(
-              'p-1 rounded opacity-0 group-hover:opacity-100 transition-all',
+              'p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all',
               'text-text-muted hover:bg-error/10 hover:text-error',
             )}
             title={t('taskItem.remove')}
@@ -1093,7 +1093,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
           style={{ gridTemplateRows: task.expanded ? '1fr' : '0fr' }}
         >
           <div className={clsx('min-h-0', task.expanded ? 'overflow-visible' : 'overflow-hidden')}>
-            <div className="border-t border-border bg-bg-tertiary p-3 rounded-b-lg">
+            <div className="border-t border-border bg-bg-primary px-4 py-3 rounded-b-xl">
               {hasDescription && (
                 <div className={clsx((hasOptions || isIncompatible) && 'mb-3')}>
                   <DescriptionContent
@@ -1110,7 +1110,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 <Tooltip content={supportedControllerHint || undefined}>
                   <div
                     className={clsx(
-                      'flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-warning/10 text-warning text-xs',
+                      'flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-warning/10 text-warning text-xs',
                       hasOptions && 'mb-3',
                     )}
                   >
@@ -1141,7 +1141,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 />
               )}
               {task.taskName === 'realm_challenge' && (taskDef.option || []).some((key) => realmOptionBackup(key, task.optionValues)) && (
-                <details className="mt-4 rounded-lg border border-border px-3 py-2">
+                <details className="mt-3 rounded-lg border border-border bg-bg-secondary px-3 py-2">
                   <summary className="cursor-pointer text-xs text-text-secondary">朝夕心愿补分备用设置</summary>
                   <div className="mt-3">
                     <OptionListRenderer

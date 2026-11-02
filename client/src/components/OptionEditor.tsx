@@ -67,7 +67,7 @@ function OptionCollapseArrow({
       title={collapsed ? t('optionEditor.expandOptions') : t('optionEditor.collapseOptions')}
       // ml-auto：吸收行内剩余空白（label 受 max-w-[60%] 限制无法全部吸收），
       // 让箭头紧贴开关/下拉框，空隙只留在箭头左侧
-      className="p-1 rounded hover:bg-bg-hover flex-shrink-0 ml-auto disabled:cursor-not-allowed disabled:opacity-50"
+      className="p-1 rounded-lg hover:bg-bg-hover flex-shrink-0 ml-auto disabled:cursor-not-allowed disabled:opacity-50"
     >
       <ChevronRight
         className={clsx(
@@ -149,7 +149,7 @@ function OptionLabel({
           className="w-4 h-4 object-contain flex-shrink-0"
         />
       )}
-      <RichLabel text={label} className="text-sm text-text-secondary" />
+      <RichLabel text={label} className="text-sm text-text-primary" />
     </div>
   );
 }
@@ -174,11 +174,12 @@ function OptionLabelWithIncompatible({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <OptionLabel label={label} icon={icon} basePath={basePath} />
-      <OptionDescription description={description} basePath={basePath} translations={translations} label={`${stripInlineRichText(label)}说明`} />
+      <OptionDescription description={description} basePath={basePath} translations={translations} label={`${stripInlineRichText(label)}说明`}>
+        <OptionLabel label={label} icon={icon} basePath={basePath} />
+      </OptionDescription>
       {inactiveHint && (
         <Tooltip content={inactiveHint.description}>
-          <span tabIndex={0} className="cursor-help rounded bg-bg-primary px-1.5 py-0.5 text-[11px] text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
+          <span tabIndex={0} className="cursor-help rounded-lg bg-bg-primary px-1.5 py-0.5 text-[11px] text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
             {inactiveHint.label}
           </span>
         </Tooltip>
@@ -217,20 +218,22 @@ function OptionDescription({
   translations,
   label = '说明',
   inverted = false,
+  children,
 }: {
   description?: string;
   basePath: string;
   translations?: Record<string, string>;
   label?: string;
   inverted?: boolean;
+  children?: ReactNode;
 }) {
   const { t } = useTranslation();
   const resolved = useResolvedContent(description, basePath, translations);
 
-  if (!description && !resolved.loading) return null;
+  if (!description && !resolved.loading) return <>{children}</>;
 
   return (
-    <HelpTip label={label} inverted={inverted} content={
+    <HelpTip label={label} inverted={inverted} children={children} content={
     <div className="space-y-1">
       {resolved.loading && <div className="flex items-center gap-1.5 text-xs text-text-muted">
         <Loader2 className="w-3 h-3 animate-spin" /><span>{t('optionEditor.loadingDescription')}</span>
@@ -343,7 +346,7 @@ function InputField({
 
   return (
     <div className="space-y-1">
-      <div className={clsx('flex items-center gap-3 min-w-0', !labelContent && 'flex-wrap')}>
+      <div className={clsx('group/option flex items-center gap-3 min-w-0', !labelContent && 'flex-wrap')}>
         <div className={clsx('flex items-center gap-1.5 min-w-0',
           labelContent ? 'max-w-[50%] shrink-0' : 'flex-1 basis-[14rem]')}>
           {!labelContent && input.icon && (
@@ -558,7 +561,7 @@ export function OptionEditor({
       <div className={clsx('space-y-3', depth > 0 && 'ml-4 pl-3 border-l-2 border-border')}>
         <div
           className={clsx(
-            'flex items-center justify-between gap-3 rounded-md px-2 py-1.5 -mx-2 transition-colors',
+            'group/option flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 -mx-2 transition-colors',
             !effectiveDisabled && 'cursor-pointer hover:bg-bg-hover',
             effectiveDisabled && 'cursor-not-allowed',
             isOptionIncompatible && 'opacity-60',
@@ -652,7 +655,7 @@ export function OptionEditor({
     return (
       <div
         className={clsx(
-          'space-y-3',
+          'group/option space-y-2',
           depth > 0 && 'ml-4 pl-3 border-l-2 border-border',
           isOptionIncompatible && 'opacity-60',
         )}
@@ -666,7 +669,7 @@ export function OptionEditor({
           translations={translations}
           inactiveHint={inactiveHint}
         />
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-1.5">
           {optionDef.cases.map((caseItem) => {
             const caseLabel = isMxuOption
               ? t(caseItem.label || caseItem.name)
@@ -689,10 +692,10 @@ export function OptionEditor({
                 }}
                 disabled={isCaseDisabled}
                 className={clsx(
-                  'px-2 py-1.5 text-xs rounded border transition-colors min-w-0',
+                  'min-w-0 rounded-lg border px-2.5 py-2 text-left text-xs transition-colors',
                   isChecked
-                    ? 'bg-accent text-white border-accent'
-                    : 'bg-bg-primary text-text-secondary border-border hover:border-accent hover:text-accent',
+                    ? 'border-accent bg-accent/10 font-medium text-text-primary'
+                    : 'border-border bg-bg-secondary text-text-secondary hover:bg-bg-hover',
                   isCaseDisabled && 'opacity-60 cursor-not-allowed',
                 )}
                 title={
@@ -710,7 +713,8 @@ export function OptionEditor({
                       className="w-4 h-4 object-contain flex-shrink-0"
                     />
                   )}
-                  <RichLabel text={caseLabel} className="truncate" />
+                  <RichLabel text={caseLabel} className="min-w-0 flex-1 truncate" />
+                  {isChecked && <Check className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />}
                 </span>
               </button>
             );
@@ -748,7 +752,8 @@ export function OptionEditor({
       effectiveValue?.type === 'input' || effectiveValue?.type === 'hotkey'
         ? effectiveValue.values
         : {};
-    const inline = optionDef.type === 'input' && optionDef.layout === 'inline' && fields.length === 1;
+    // 只有一个字段时，选项名就是字段名，不再重复显示字段标签
+    const inline = optionDef.type === 'input' && fields.length === 1;
     const labelContent = (
       <OptionLabelWithIncompatible
         label={optionLabel}
@@ -819,7 +824,7 @@ export function OptionEditor({
         isOptionIncompatible && 'opacity-60',
       )}
     >
-      <div className="flex items-center gap-3">
+      <div className="group/option flex items-center gap-3">
         <div className="min-w-0 flex-1 max-w-[60%]">
           <OptionLabelWithIncompatible
             label={optionLabel}
@@ -840,7 +845,7 @@ export function OptionEditor({
         )}
         <SelectComponent
           // 有子选项时由箭头承担 ml-auto 贴右；无子选项时下拉框自身贴右
-          className={clsx('w-[30%] flex-shrink-0', nestedOptionKeys.length === 0 && 'ml-auto')}
+          className={clsx('w-[40%] max-w-xs flex-shrink-0', nestedOptionKeys.length === 0 && 'ml-auto')}
           value={selectedCaseName}
           disabled={effectiveDisabled}
           basePath={basePath}
@@ -1155,7 +1160,7 @@ function OptionSelectDropdown({
         ref={triggerRef}
         disabled={isDisabled}
         className={clsx(
-          'w-full px-3 py-1.5 text-sm rounded-md border flex items-center justify-between gap-2',
+          'w-full px-3 py-1.5 text-sm rounded-lg border flex items-center justify-between gap-2',
           'bg-bg-secondary text-text-primary border-border',
           'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20',
           isDisabled
@@ -1409,7 +1414,7 @@ function OptionSelectComboBox({
         ref={triggerRef}
         disabled={isDisabled}
         className={clsx(
-          'w-full px-3 py-1.5 text-sm rounded-md border flex items-center justify-between gap-2',
+          'w-full px-3 py-1.5 text-sm rounded-lg border flex items-center justify-between gap-2',
           'bg-bg-secondary text-text-primary border-border',
           'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20',
           isDisabled
@@ -1467,7 +1472,7 @@ function OptionSelectComboBox({
                 onKeyDown={handleInputKeyDown}
                 placeholder={t('optionEditor.searchPlaceholder')}
                 className={clsx(
-                  'w-full px-2.5 py-1.5 text-sm rounded-md border',
+                  'w-full px-2.5 py-1.5 text-sm rounded-lg border',
                   'bg-bg-secondary text-text-primary border-border',
                   'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20',
                   'placeholder:text-text-muted',
@@ -1569,20 +1574,20 @@ export function SwitchGrid({ instanceId, taskId, items, disabled = false }: Swit
   };
 
   return (
-    <div className="grid grid-cols-4 gap-1">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-1.5">
       {items.map((item) => {
         const itemDisabled = disabled || !!item.controllerIncompatible;
         return (
-          <div key={item.optionKey} className={clsx('flex items-center gap-1 px-2 py-1.5 text-xs rounded border transition-colors min-w-0',
-            item.isChecked ? 'bg-accent text-white border-accent' : 'bg-bg-primary text-text-secondary border-border',
+          <div key={item.optionKey} className={clsx('group/option flex items-center gap-1 px-2.5 py-2 text-xs rounded-lg border transition-colors min-w-0',
+            item.isChecked ? 'border-accent bg-accent/10 font-medium text-text-primary' : 'bg-bg-secondary text-text-secondary border-border hover:bg-bg-hover',
             itemDisabled && 'opacity-60')}>
             <Tooltip content={item.controllerIncompatible ? t('optionEditor.incompatibleController') : undefined}>
             <button
               type="button"
               onClick={() => handleToggle(item.optionKey, item.isChecked, itemDisabled)}
               disabled={itemDisabled}
-              className={clsx('min-w-0 flex-1 truncate text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
-                itemDisabled ? 'cursor-not-allowed' : !item.isChecked && 'hover:text-accent')}
+              className={clsx('min-w-0 flex-1 truncate text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                itemDisabled && 'cursor-not-allowed')}
               title={stripInlineRichText(item.label)}
               aria-pressed={item.isChecked}
             >
@@ -1591,7 +1596,8 @@ export function SwitchGrid({ instanceId, taskId, items, disabled = false }: Swit
             </Tooltip>
             <OptionDescription description={item.description} basePath={basePath}
               translations={interfaceTranslations[getInterfaceLangKey(language)]}
-              label={`${stripInlineRichText(item.label)}说明`} inverted={item.isChecked} />
+              label={`${stripInlineRichText(item.label)}说明`} />
+            {item.isChecked && <Check className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />}
           </div>
         );
       })}
