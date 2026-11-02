@@ -235,6 +235,10 @@ pub fn get_logs_dir() -> PathBuf {
 pub fn get_exe_directory() -> Result<PathBuf, String> {
     #[cfg(debug_assertions)]
     {
+        // Lets a debug build run against a separate home, such as sample data for screenshots.
+        if let Some(home) = std::env::var_os("MAANIKKI_DEV_HOME") {
+            return Ok(PathBuf::from(home));
+        }
         Ok(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."))
     }
     #[cfg(not(debug_assertions))]
