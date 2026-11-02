@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowLeft, BookOpen, Download, Loader2, RefreshCw, Search } from 'lucide-react';
+import { AlertCircle, BookOpen, Download, Loader2, RefreshCw, Search } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ import { refreshResonance, resonanceLabel, type ResonanceHistory, useResonanceSt
 import { activeBanners, collectionOutfits, historyRows, resonanceSummary } from '@/services/resonanceData';
 import { isTauri } from '@/utils/paths';
 import { ResonanceControl } from './ResonanceControl';
+import { PageHeader } from './ui/PageHeader';
 
 function timeLabel(value: number | null | undefined) {
   return value ? new Date(value * 1000).toLocaleString('zh-CN', { hour12: false }) : '尚未同步';
@@ -119,16 +120,14 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
 
   const best = [...distribution].sort((a, b) => b.count - a.count)[0];
   return <div className="flex min-h-0 flex-1 flex-col bg-bg-primary text-text-primary">
-    <div className="flex items-center gap-3 border-b border-border bg-bg-secondary px-5 py-3">
-      <button onClick={onClose} className="rounded-lg p-2 hover:bg-bg-hover" aria-label="返回任务列表"><ArrowLeft className="h-4 w-4" /></button>
-      <h1 className="flex-1 text-lg font-semibold">共鸣记录</h1>
+    <PageHeader icon={BookOpen} title="共鸣记录" onBack={onClose}>
       <select value={accountKey} onChange={(event) => setSelected(event.target.value)} aria-label="记录账号" className={clsx(selectStyle, '!py-1.5')}>
         {!status.accounts.length && <option value="">尚无账号记录</option>}
         {status.accounts.map((item) => <option key={item.key} value={item.key}>UID {item.uid}</option>)}
       </select>
       <button disabled={!current || action} onClick={() => void exportHistory()} title="导出 JSON" aria-label="导出 JSON" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><Download className="h-4 w-4" /></button>
-      <ResonanceControl showSettings={false} />
-    </div>
+      <ResonanceControl />
+    </PageHeader>
     <div className="min-h-0 flex-1 overflow-auto p-4">
       <div className="mx-auto max-w-6xl space-y-4">
         <section className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-bg-secondary px-4 py-2.5">

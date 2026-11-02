@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Image as ImageIcon, RefreshCw, Search, AlertCircle, Sparkles } from 'lucide-react';
+import { Image as ImageIcon, RefreshCw, Search, AlertCircle, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { collectionShareImage } from '@/utils/collectionShareImage';
@@ -7,6 +7,7 @@ import { useAccountStateStore } from '@/stores/accountStateStore';
 import { collectionSlots as slots, collectionKey as keyOf, getBlessingProgress } from '@/utils/blessingProgress';
 import type { ForecastPart } from '@/services/collectionForecast';
 import { BlessingForecast, type RainbowPreset } from './BlessingForecast';
+import { PageHeader } from './ui/PageHeader';
 
 const SUMMARY_URL = 'https://stats.maanikki.cn/v1/summary';
 const COLOR_FILL: Record<string, string> = {
@@ -125,16 +126,14 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-bg-primary text-text-primary">
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-border bg-bg-secondary">
-        <button onClick={onClose} className="p-2 rounded-lg hover:bg-bg-hover" title="返回任务列表" aria-label="返回任务列表"><ArrowLeft className="w-4 h-4" /></button>
-        <h1 className="text-lg font-semibold flex-1">祝福闪光收集</h1>
+      <PageHeader icon={Sparkles} title="祝福闪光收集" onBack={onClose}>
         {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
         <span className="hidden md:inline text-xs text-text-muted">{updated ? `更新于 ${new Date(updated).toLocaleString('zh-CN', { hour12: false })}` : '尚无收集记录'}</span>
         {progress.known && <button onClick={() => void copyShareImage()}
           className="p-2 rounded-lg hover:bg-bg-hover" title="复制分享图（不含 UID）" aria-label="复制分享图"><ImageIcon className="w-4 h-4" /></button>}
         <button onClick={() => void refresh().catch(() => {})} disabled={loading}
           className="p-2 rounded-lg hover:bg-bg-hover disabled:opacity-50" title="刷新记录" aria-label="刷新记录"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
-      </div>
+      </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto p-4">
         <div className="mx-auto max-w-6xl space-y-4">
           {error && <div className="rounded-lg border border-error/30 bg-error/5 p-3 text-xs text-error" role="alert">无法读取账号状态：{error}</div>}

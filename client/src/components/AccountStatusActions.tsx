@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, RefreshCw, Sparkles, Star, X, Shirt } from 'lucide-react';
+import { BookOpen, Check, Compass, RefreshCw, Shirt, Sparkles, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
+import { explorationStatusLabels, setExplorationEnabled, useExplorationStore } from '@/services/explorationService';
+import { resonanceLabel, setResonanceEnabled, useResonanceStore } from '@/services/resonanceService';
+import { useWardrobeStore, wardrobeLabels } from '@/services/wardrobeService';
 import { getBlessingProgress } from '@/utils/blessingProgress';
-import { ModalPortal, useModalFocusTrap } from './ui/Modal';
-import { Tooltip } from './ui/Tooltip';
-import { ExplorationControl } from './ExplorationControl';
-import { ResonanceControl } from './ResonanceControl';
+import { isTauri } from '@/utils/paths';
 import { useAppStore } from '@/stores/appStore';
+import { ModalPortal, useModalFocusTrap } from './ui/Modal';
+import { FeatureTile } from './FeatureTile';
 
 function MeteorIcon({ className }: { className?: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
@@ -31,7 +33,7 @@ function MeteorEmblem({ discovered = false }: { discovered?: boolean }) {
   </span>;
 }
 
-function GiantMeteorStatus() {
+function GiantMeteorStatus({ compact }: { compact?: boolean }) {
   const { data, error, loading, refresh } = useAccountStateStore();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -75,22 +77,15 @@ function GiantMeteorStatus() {
   }, [found, today, data?.account_key]);
 
   return <>
-    <Tooltip side="bottom" content={<div className="space-y-1">
-      <p className="font-medium">{label}</p>
-      <p className="text-text-secondary">{checkedAt ? `检测于 ${checkedAt}` : description}</p>
-      <p className="text-text-muted">点击查看 · 每日 04:00 刷新</p>
-    </div>}>
-      <button onClick={() => setOpen(true)} aria-label={label} aria-haspopup="dialog"
-        className={clsx('meteor-status relative flex shrink-0 items-center gap-1.5 rounded-lg p-2 transition-colors focus-visible:outline-2 focus-visible:outline-accent',
-          found ? 'meteor-status--found' : 'text-text-secondary hover:bg-bg-hover')}>
-        <MeteorIcon className="relative z-10 w-5 h-5 shrink-0" />
-        {found ? <>
-          <span className="relative z-10 whitespace-nowrap text-sm font-semibold">巨陨星降临！</span>
-          <Sparkles className="relative z-10 w-3 h-3" aria-hidden="true" />
-        </> : <span aria-hidden="true" className={clsx('absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full ring-2 ring-bg-secondary',
-          error || record?.outcome === 'unconfirmed' ? 'bg-warning' : absent ? 'bg-success' : 'bg-text-muted')} />}
-      </button>
-    </Tooltip>
+    <FeatureTile icon={MeteorIcon} title="巨陨星" compact={compact} warn={Boolean(error) || record?.outcome === 'unconfirmed'}
+      status={error ? '状态读取失败' : found ? '今日已发现' : absent ? '今日未发现' : record ? '检测未确认' : '今日尚未检测'}
+      className={clsx(found && 'meteor-status--found', !compact && 'col-span-full')}
+      tooltip={<div className="space-y-1">
+        <p className="font-medium">{label}</p>
+        <p className="text-text-secondary">{checkedAt ? `检测于 ${checkedAt}` : description}</p>
+        <p className="text-text-muted">点击查看 · 每日 04:00 刷新</p>
+      </div>}
+      onClick={() => setOpen(true)} />
     <span className="sr-only" role="status">{label}</span>
     {open && <ModalPortal>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
@@ -122,31 +117,47 @@ function GiantMeteorStatus() {
   </>;
 }
 
-export function AccountStatusActions({ onShowProgress }: { onShowProgress: () => void }) {
+/** The feature entries, as a panel of tiles or as icons while the panel is collapsed. */
+export function AccountStatusActions({ compact = false }: { compact?: boolean }) {
   const { data, error } = useAccountStateStore();
+  const exploration = useExplorationStore();
+  const resonance = useResonanceStore();
+  const wardrobeStatus = useWardrobeStore((state) => state.status);
+  const open = useAppStore((state) => state.setCurrentPage);
+
   const progress = useMemo(() => getBlessingProgress(data), [data]);
-  const percentage = progress.percentage === null ? '—' : `${progress.percentage}%`;
   const detail = error ? '账号状态读取失败' : progress.known
     ? `已收集 ${progress.owned.size} / ${progress.target} 个颜色${progress.uncertain ? ' · 上次确认记录，待复核' : ''}`
     : '尚无完整记录，运行幻境挑战的五星全收集时会先自动整理';
-  return <>
-    <GiantMeteorStatus />
-    <Tooltip side="bottom" content={<div className="space-y-1"><p className="font-medium">祝福闪光收集进度 {percentage}</p><p className="text-text-secondary">{detail}</p></div>}>
-      <button onClick={onShowProgress}
-        className="flex shrink-0 items-center gap-1.5 rounded-lg p-2 text-text-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent"
-        aria-label={`祝福闪光收集进度 ${percentage}`}>
-        <Sparkles className="h-5 w-5 shrink-0" aria-hidden="true" />
-        <span className="whitespace-nowrap text-sm">收集进度</span>
-        <span className="text-[15px] font-semibold tabular-nums text-accent-secondary">{percentage}</span>
-      </button>
-    </Tooltip>
-    <ExplorationControl />
-    <ResonanceControl />
-    <Tooltip side="bottom" content="衣柜读取与搭配计算">
-      <button onClick={() => useAppStore.getState().setCurrentPage('wardrobe')} aria-label="衣柜"
-        className="flex shrink-0 items-center rounded-lg p-2 text-text-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent">
-        <Shirt className="h-5 w-5" aria-hidden="true" />
-      </button>
-    </Tooltip>
+  const wardrobe = data?.wardrobe?.inventory ?? data?.wardrobe?.last_scan;
+  const wardrobeBusy = ['starting', 'reading', 'stopping'].includes(wardrobeStatus);
+  const resonanceError = resonance.connectionError || resonance.status.error;
+  const explorationBusy = exploration.status === 'starting' || exploration.status === 'stopping';
+
+  const tiles = <>
+    <FeatureTile icon={Sparkles} title="收集进度" compact={compact} warn={Boolean(error)}
+      status={error ? '读取失败' : progress.percentage === null ? '尚无记录' : `${progress.percentage}%`}
+      tooltip={<div className="space-y-1"><p className="font-medium">祝福闪光收集进度</p><p className="text-text-secondary">{detail}</p></div>}
+      onClick={() => open('blessing')} />
+    <FeatureTile icon={Shirt} title="衣柜" compact={compact} busy={wardrobeBusy}
+      status={wardrobeBusy || wardrobeStatus === 'error' ? wardrobeLabels[wardrobeStatus] : wardrobe ? `${wardrobe.scanned_count} 件` : '尚未读取'}
+      warn={wardrobeStatus === 'error'}
+      tooltip={<p className="font-medium">衣柜读取与搭配计算</p>}
+      onClick={() => open('wardrobe')} />
+    <FeatureTile icon={Compass} title="辅助功能" compact={compact} busy={explorationBusy}
+      status={explorationStatusLabels[exploration.status]} warn={exploration.status === 'error'}
+      tooltip={exploration.error ? <div className="space-y-1"><p className="font-medium">辅助功能</p><p className="text-text-secondary">{exploration.error}</p></div> : undefined}
+      toggle={{ checked: exploration.enabled, disabled: !isTauri(), label: '启用辅助功能', onChange: setExplorationEnabled }}
+      onClick={() => open('exploration')} />
+    <FeatureTile icon={BookOpen} title="共鸣记录" compact={compact} busy={resonance.status.busy}
+      status={resonanceLabel(resonance.status).replace('自动同步', '')} warn={Boolean(resonanceError)}
+      tooltip={<div className="space-y-1"><p className="font-medium">共鸣记录 · {resonanceLabel(resonance.status)}</p><p className="text-text-secondary">{resonanceError || '查看历史记录、同步状态与导出。'}</p></div>}
+      toggle={{ checked: resonance.status.enabled, disabled: !isTauri() || !resonance.ready || resonance.changing,
+        label: '自动同步共鸣记录', onChange: (value) => void setResonanceEnabled(value) }}
+      onClick={() => open('resonance')} />
+    <GiantMeteorStatus compact={compact} />
   </>;
+  return compact
+    ? <>{tiles}</>
+    : <div role="group" aria-label="功能" className="grid shrink-0 grid-cols-[repeat(auto-fit,minmax(8.75rem,1fr))] gap-2">{tiles}</div>;
 }

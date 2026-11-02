@@ -91,6 +91,7 @@ import {
 import { LoadingScreen } from './components/app';
 import { ConnectionLostOverlay } from './components/app/ConnectionLostOverlay';
 import { WebUIBetaBanner } from './components/app/WebUIBetaBanner';
+import { AccountStatusActions } from './components/AccountStatusActions';
 import { useRunResultNotifier } from '@/utils/useRunResultNotifier';
 
 /** Keep in step with SETUP_VERSION in FirstRunSetup, which stays lazily loaded. */
@@ -2160,8 +2161,9 @@ function App() {
           <div key="main-view-mobile" className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* 可滚动主内容区 */}
             <div className="flex-1 overflow-y-auto">
-              {/* 连接设置 */}
-              <div className="p-2">
+              {/* 功能入口与连接设置 */}
+              <div className="p-2 space-y-2">
+                <AccountStatusActions />
                 <ConnectionPanel />
               </div>
 
@@ -2252,6 +2254,11 @@ function App() {
                   flexShrink: 1,
                 }}
               >
+                {/* 功能入口 */}
+                <div className={sidePanelExpanded ? '' : 'mb-3'}>
+                  <AccountStatusActions />
+                </div>
+
                 {/* 连接设置（可折叠）- 使用 grid 动画 */}
                 <div
                   className="grid transition-[grid-template-rows] duration-150 ease-out"

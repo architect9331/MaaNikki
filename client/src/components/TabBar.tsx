@@ -26,6 +26,7 @@ import { useAppStore } from '@/stores/appStore';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 import { AccountStatusActions } from './AccountStatusActions';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { exportFileWithToast, exportWithToast } from '@/utils/tabExportImport';
 import clsx from 'clsx';
 
@@ -81,7 +82,9 @@ export function TabBar() {
     removeAnimatingTabId,
     startTabCloseAnimation,
     confirmBeforeDelete,
+    rightPanelCollapsed,
   } = useAppStore();
+  const isMobile = useIsMobile();
 
   // 使用全局状态控制更新面板显示
   const showUpdatePanel = showUpdateDialog;
@@ -506,7 +509,8 @@ export function TabBar() {
 
       {/* 工具按钮 */}
       <div className="flex shrink-0 items-center gap-1.5 px-3">
-        <AccountStatusActions onShowProgress={() => setCurrentPage('blessing')} />
+        {/* 功能入口平时在右侧面板；面板收起时显示为图标 */}
+        {rightPanelCollapsed && !isMobile && <AccountStatusActions compact />}
         {/* 更新通知图标 - 有更新、正在下载或有错误时显示 */}
         {(updateInfo?.hasUpdate || updateInfo?.errorCode || downloadStatus === 'downloading') && (
           <button
