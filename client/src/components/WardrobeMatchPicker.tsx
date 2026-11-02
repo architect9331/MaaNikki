@@ -13,6 +13,8 @@ const CATEGORIES = [['current', '当期巅峰赛'], ['past', '往期巅峰赛'],
 /** Contests change on the 1st and 16th, so a period lasts at most 16 days. */
 const PERIOD_DAYS = 16;
 
+const stageNumber = (name: string) => Number(/第(\d+)场/.exec(name)?.[1] ?? Infinity);
+
 function buildSeries(matches: Record<string, Match>): Series[] {
   const series = new Map<string, Series>();
   for (const entry of Object.entries(matches)) {
@@ -22,7 +24,22 @@ function buildSeries(matches: Record<string, Match>): Series[] {
     row.stages.push(entry);
     series.set(group, row);
   }
+  for (const row of series.values()) row.stages.sort((a, b) => stageNumber(a[1].name) - stageNumber(b[1].name));
   return [...series.values()];
+}
+
+function StageList({ series, value, onChange }: { series: Series; value: string; onChange: (id: string) => void }) {
+  return <ol className="grid grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-1.5" aria-label={`${series.label}场次`}>
+    {series.stages.map(([id, stage]) => {
+      const number = stageNumber(stage.name);
+      return <li key={id} className="min-w-0"><button type="button" onClick={() => onChange(id)} aria-pressed={id === value} title={stage.name}
+        className={clsx('flex w-full min-w-0 items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition-colors',
+          id === value ? 'border-accent bg-accent/10 font-medium text-text-primary' : 'border-border bg-bg-primary text-text-secondary hover:bg-bg-hover')}>
+        {Number.isFinite(number) && <span className="shrink-0 tabular-nums text-text-muted">{number}</span>}
+        <span className="min-w-0 truncate">{stage.name.split(' · ').pop()}</span>
+      </button></li>;
+    })}
+  </ol>;
 }
 
 const isPeak = (row: Series) => row.region === CROWN && row.label.includes(PEAK);
@@ -59,7 +76,7 @@ export function WardrobeMatchPicker({ matches, value, onChange }: {
       {category === 'current' && latest && <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
         <Trophy className="h-4 w-4 shrink-0 text-accent-secondary" /><span className="truncate">{latest.label.replace(/\s*\(.*\)/, '')}</span>
         <span className="shrink-0 text-xs font-normal tabular-nums text-text-muted">{latest.date} 开始</span></p>}
-      {category !== 'current' && <select aria-label="选择比赛" value={series?.group ?? ''} onChange={(event) => {
+      {(category === 'contest' || category === 'other') && <select aria-label="选择比赛" value={series?.group ?? ''} onChange={(event) => {
         const row = inCategory.find((item) => item.group === event.target.value);
         if (row) onChange(row.stages[0][0]);
       }} className="min-w-48 rounded-lg border border-border bg-bg-primary px-3 py-1.5 text-sm outline-none focus:border-accent">
@@ -70,12 +87,11 @@ export function WardrobeMatchPicker({ matches, value, onChange }: {
       </select>}
     </div>
     {category === 'current' && stale && <p className="mt-2 text-xs text-warning">资料还没有更新到最新一期，这里显示的是已收录的最近一期。</p>}
-    <div className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-1.5" role="group" aria-label="选择场次">
-      {series?.stages.map(([id, stage]) => <button key={id} type="button" onClick={() => onChange(id)} aria-pressed={id === value} title={stage.name}
-        className={clsx('min-w-0 truncate rounded-lg border px-2.5 py-2 text-left text-xs transition-colors',
-          id === value ? 'border-accent bg-accent/10 font-medium text-text-primary' : 'border-border bg-bg-primary text-text-secondary hover:bg-bg-hover')}>
-        {stage.name}
-      </button>)}
-    </div>
+    {category === 'past'
+      ? <div className="mt-3 max-h-72 space-y-3 overflow-auto">{inCategory.map((row) => <div key={row.group}>
+        <p className="mb-1.5 text-xs font-medium text-text-secondary">{row.label.replace(/\s*\(.*\)/, '')} <span className="font-normal tabular-nums text-text-muted">{row.date} 开始</span></p>
+        <StageList series={row} value={value} onChange={onChange} />
+      </div>)}{!inCategory.length && <p className="text-xs text-text-muted">还没有收录往期巅峰赛。</p>}</div>
+      : series && <div className="mt-3"><StageList series={series} value={value} onChange={onChange} /></div>}
   </section>;
 }
