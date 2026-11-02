@@ -31,6 +31,8 @@ struct Banner {
     kind: u8,
     #[serde(default)]
     outfits: Vec<String>,
+    #[serde(default)]
+    runs: Vec<Value>,
 }
 
 #[derive(Deserialize)]

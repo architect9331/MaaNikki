@@ -26,7 +26,7 @@ export interface ResonanceHistory {
     banners: Record<string, { pulls: ResonancePull[]; updated_at: number; possible_gap: boolean }>;
     notebook: { pulls: Record<string, Record<string, NotebookPull>>; updated_at: number | null };
   };
-  banners: { id: string; name: string; kind: number; outfits: string[] }[];
+  banners: { id: string; name: string; kind: number; outfits: string[]; runs?: { start: string; end: string }[] }[];
   items: Record<string, { name: string; rarity: number; canonical_id?: string; outfit_id?: string }>;
   outfits: Record<string, ResonanceOutfit>;
 }
