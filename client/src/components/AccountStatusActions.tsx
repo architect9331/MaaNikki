@@ -109,7 +109,7 @@ function GiantMeteorStatus({ compact }: { compact?: boolean }) {
             <span className="mr-auto text-xs text-text-muted">每日 04:00 更新日期</span>
             <button onClick={() => void refresh().catch(() => {})} disabled={loading} title="刷新本地记录" aria-label="刷新本地记录"
               className="rounded-lg p-2 text-text-secondary hover:bg-bg-hover disabled:opacity-50"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
-            <button onClick={close} className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-medium text-on-accent hover:bg-accent-hover"><Check className="w-3.5 h-3.5" />知道了</button>
+            <button onClick={close} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-bg-hover"><Check className="w-3.5 h-3.5" />知道了</button>
           </div>
         </div>
       </div>

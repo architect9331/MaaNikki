@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* A rare home discovery uses gold against the client's rose palette. */
+/* A rare home discovery always uses gold, whichever theme is active. */
 .meteor-status--found,
 .meteor-dialog--found,
 [data-sonner-toast].meteor-discovery-toast {
@@ -8,7 +8,7 @@
   --meteor-title: #87451e;
   --meteor-border: #e9bf76;
   --meteor-wash: #fff3d7;
-  --meteor-rose: #ffe5ed;
+  --meteor-rose: #fbf3e2;
 }
 
 .dark .meteor-status--found,
@@ -18,7 +18,7 @@
   --meteor-title: #ffe2ac;
   --meteor-border: #99764b;
   --meteor-wash: #3d3029;
-  --meteor-rose: #442d3b;
+  --meteor-rose: #352d24;
 }
 
 .meteor-status--found {
@@ -50,7 +50,7 @@
   place-items: center;
   width: 112px;
   height: 100px;
-  color: var(--color-accent);
+  color: var(--color-accent-secondary);
 }
 
 .meteor-emblem-orbit {
