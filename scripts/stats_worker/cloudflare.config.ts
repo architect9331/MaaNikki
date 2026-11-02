@@ -8,8 +8,7 @@ export default defineConfig({
     workersDev: true,
     domains: ['stats.maanikki.cn'],
     env: {
-      // Replace with the id printed when creating the D1 database.
-      DB: bindings.d1({ id: 'REPLACE_WITH_D1_ID', name: 'maanikki-stats' }),
+      DB: bindings.d1({ id: '4cfe6a99-593b-43f6-b97c-0fa76dd45afb', name: 'maanikki-stats' }),
     },
   },
 });
