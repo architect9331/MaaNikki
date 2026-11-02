@@ -164,7 +164,7 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
               <Stat label="满级重复" value={resources ? `约 ${number(resources.duplicates ?? 0)}` : '—'} detail="每件折合 300 粒子" />
               <Stat label="仓库" value={resources?.capacity ? `${number(resources.capacity[0])}/${number(resources.capacity[1])}` : '待读取'} detail="满了会分解一批再刷本" warn={!!resources?.capacity && resources.capacity[0] >= resources.capacity[1]} />
               <Stat label="本账号彩色" value={rolls?.total ? `${rolls.colors['彩'] ?? 0} 次` : '—'}
-                detail={rolls?.total ? `升满 ${number(rolls.total)} 次，按 ${((probability?.iridescent ?? 0.054) * 100).toFixed(1)}% 约应出 ${(rolls.total * (probability?.iridescent ?? 0.054)).toFixed(1)} 次` : '升满后开始统计'} />
+                detail={rolls?.total ? `升满 ${number(rolls.total)} 次，按 ${((probability?.iridescent ?? 0.054) * 100).toFixed(1)}% 约应出 ${(rolls.total * (probability?.iridescent ?? 0.054)).toFixed(1)} 次` : '还没有记录，全收集下次升满后开始统计'} />
             </div>
           </section>
 

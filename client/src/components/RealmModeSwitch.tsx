@@ -46,7 +46,7 @@ export function RealmModeSwitch({ instanceId, taskId, values, disabled }: {
       <p className="mt-1.5 text-text-muted">{progress.known
         ? `已收集 ${progress.owned.size} / ${progress.target} 个颜色，继续按记录处理。`
         : '尚无记录。第一次运行前请清除祝福闪光仓库的筛选，整理时会锁定每款每色的满级收藏。'}</p>
-      {decompose && <p className="mt-1.5 text-warning">已开启五星分解：仓库满时会一键分解未锁定的闪光，且不可恢复。请勿手动解锁已收藏的祝福闪光。</p>}
+      {decompose && <p className="mt-1.5 text-warning">已开启爆仓分解：仓库满时会一键分解未锁定的闪光，且不可恢复。请勿手动解锁已收藏的祝福闪光。</p>}
     </div>}
   </div>;
 }

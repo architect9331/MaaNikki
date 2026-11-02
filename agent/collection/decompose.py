@@ -228,7 +228,7 @@ class DuplicateDecomposer(LowRarityDecomposer):
         if (o.pending is not None or o.organization.get("recovery", {}).get("slots")
                 or o.organization.get("unfinished") or o.queued_rolls()):
             summary["reason"] = "仍有待升级的胚子或待核对的操作"
-            self.rt.log("仍有待升级的胚子或待核对的操作，本轮未分解五星。")
+            self.rt.log("仍有待升级的胚子或待核对的操作，本轮未分解重复闪光。")
             return False
         o.ensure_known_materials()
         o.report["phase"] = "decompose_five_star_duplicates"
@@ -272,7 +272,7 @@ class DuplicateDecomposer(LowRarityDecomposer):
         o.view.slot = None
         o.verified.clear()
         o.checkpoint()
-        self.rt.log(f"五星分解完成：分解 {summary['copies']} 件，获得 {summary['particles']} 闪光粒子。")
+        self.rt.log(f"重复闪光分解完成：分解 {summary['copies']} 件，获得 {summary['particles']} 闪光粒子。")
         if not self.rt.ui.enter_page(lambda: self.rt.key(27, 0), "MaaNikki_Blessing_InventoryReady",
                                      source=READY, attempts=1):
             raise IncompleteObservation("分解结束未能返回祝福闪光列表")

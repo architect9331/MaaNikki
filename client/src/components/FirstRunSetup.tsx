@@ -78,7 +78,7 @@ export function FirstRunSetup() {
     {groups.realm && <div className="space-y-2 rounded-lg border border-border p-3">
       <Toggle checked={collection} onChange={setCollection} title="五星全收集"
         detail="按预期新色选副本，刷取、升级并锁定新颜色。第一次运行会先整理全部祝福闪光。" />
-      {collection && <Toggle checked={decompose} onChange={setDecompose} title="仓库满时分解五星祝福闪光"
+      {collection && <Toggle checked={decompose} onChange={setDecompose} title="爆仓时分解重复祝福闪光"
         detail="一键分解未锁定的闪光，每批最多 100 件，且不可恢复。请提前锁定想保留的闪光。关闭后，仓库满时当天不刷本。" />}
     </div>}
   </div>;

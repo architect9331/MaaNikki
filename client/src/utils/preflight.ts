@@ -53,7 +53,7 @@ export async function preflightIssues(instance: Instance): Promise<PreflightIssu
         detail: '第一次运行会读取并锁定全部祝福闪光，筛选会让读取不完整。' });
     }
     if (switchOn(realm.optionValues, 'CollectionDecompose', true)) {
-      issues.push({ id: 'collection-decompose', once: true, title: '已开启「分解五星祝福闪光」',
+      issues.push({ id: 'collection-decompose', once: true, title: '已开启「爆仓时分解重复祝福闪光」',
         detail: '仓库满时会一键分解未锁定的闪光，每批最多 100 件，且不可恢复。请提前锁定想保留的闪光，并且不要手动解锁已收藏的闪光。不想分解可以在幻境挑战中关闭。' });
     }
   }

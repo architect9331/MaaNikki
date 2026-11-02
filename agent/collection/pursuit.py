@@ -42,11 +42,11 @@ class FiveStarPursuit:
                     raise
                 stock.report["duplicate_decomposition"] = {"complete": False, "reason": str(error)}
                 self.rt.diagnostic("blessing_duplicates", str(error))
-                self.rt.log(f"五星分解未完成：{error}。", ui_text=f"五星分解未完成：{error}。")
+                self.rt.log(f"重复闪光分解未完成：{error}。", ui_text=f"重复闪光分解未完成：{error}。")
         if not stock.warehouse_full():
             return True
         message = ("祝福闪光仓库已满且本次未能腾出空间，今天不刷本。" if self.decompose_duplicates else
-                   "祝福闪光仓库已满，今天不刷本。请开启「分解五星祝福闪光」或手动分解。")
+                   "祝福闪光仓库已满，今天不刷本。请开启「爆仓时分解重复祝福闪光」或手动分解。")
         stock.report["warehouse_full"] = True
         self.rt.log(message, ui_text=message)
         return False

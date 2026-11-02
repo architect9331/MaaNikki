@@ -185,7 +185,7 @@
         },
         "CollectionDecompose": {
             "type": "switch",
-            "label": "分解五星祝福闪光",
+            "label": "爆仓时分解重复祝福闪光",
             "description": "仓库满 1000 格时无法刷本。开启后，仓库满且没有待升级胚子时，用「五星及以下素材」一键分解一批（最多 100 件）。分解不可恢复：请勿手动解锁已收藏的祝福闪光，并锁定其他想保留的闪光。关闭时仓库满了会停止刷本。",
             "cases": [
                 {
@@ -231,7 +231,7 @@
                 },
                 {
                     "name": "Always",
-                    "label": "每次运行前整理（只补锁）",
+                    "label": "每次运行前整理（只补充锁定）",
                     "pipeline_override": {
                         "MaaNikki_Pursuit_OrganizeOption": {
                             "custom_action_param": {
