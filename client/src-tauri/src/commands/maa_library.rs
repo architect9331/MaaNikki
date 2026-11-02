@@ -115,6 +115,23 @@ pub fn initialized_version(state: &MaaState) -> Result<Option<String>, String> {
     }))
 }
 
+fn not_loaded_error(library: &LibraryState) -> String {
+    library
+        .last_error
+        .clone()
+        .unwrap_or_else(|| "MaaFramework library not loaded".to_string())
+}
+
+/// 绑定在动态库未加载时调用任何 FFI 都会 panic；不依赖已有 Maa 对象的入口须先经此检查。
+pub fn ensure_loaded(state: &MaaState) -> Result<(), String> {
+    let library = state.library.lock().map_err(|e| e.to_string())?;
+    if library.loaded.is_some() {
+        Ok(())
+    } else {
+        Err(not_loaded_error(&library))
+    }
+}
+
 pub fn version(state: &MaaState) -> Result<String, String> {
     let library = state.library.lock().map_err(|e| e.to_string())?;
     match &library.loaded {
@@ -122,9 +139,6 @@ pub fn version(state: &MaaState) -> Result<String, String> {
             Ok(loaded.version.clone())
         }
         Some(_) => Err("MaaFramework version unavailable".to_string()),
-        None => Err(library
-            .last_error
-            .clone()
-            .unwrap_or_else(|| "MaaFramework library not loaded".to_string())),
+        None => Err(not_loaded_error(&library)),
     }
 }

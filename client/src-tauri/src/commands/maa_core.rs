@@ -436,6 +436,7 @@ pub fn maa_check_version(state: State<Arc<MaaState>>) -> Result<VersionCheckResu
 /// 查找 ADB 设备（结果会缓存到 MaaState）
 /// 查找 ADB 设备的内部实现（可从 Tauri 命令和 HTTP 处理器共享调用）
 pub async fn find_adb_devices_impl(state: Arc<MaaState>) -> Result<Vec<AdbDevice>, String> {
+    super::maa_library::ensure_loaded(&state)?;
     tokio::task::spawn_blocking(move || {
         let devices = Toolkit::find_adb_devices().map_err(|e| e.to_string())?;
 
@@ -476,6 +477,7 @@ pub async fn find_win32_windows_impl(
     class_regex: Option<String>,
     window_regex: Option<String>,
 ) -> Result<Vec<Win32Window>, String> {
+    super::maa_library::ensure_loaded(&state)?;
     tokio::task::spawn_blocking(move || {
         #[cfg(target_os = "macos")]
         ensure_macos_requirements(false)?;
@@ -531,6 +533,7 @@ pub async fn find_win32_windows_impl(
 /// 查找 WlRoots 可用的 Wayland socket（结果会缓存到 MaaState）
 /// 内部实现（可从 Tauri 命令和 HTTP 处理器共享调用）
 pub async fn find_wlroots_sockets_impl(state: Arc<MaaState>) -> Result<Vec<String>, String> {
+    super::maa_library::ensure_loaded(&state)?;
     tokio::task::spawn_blocking(move || {
         // Linux 平台上，Toolkit::find_desktop_windows 返回项中的 window_name
         // 即为可用的 wayland socket 名称。
@@ -586,6 +589,7 @@ pub async fn maa_find_wlroots_sockets(
 pub async fn find_gamescope_instances_impl(
     state: Arc<MaaState>,
 ) -> Result<Vec<GamescopeInstance>, String> {
+    super::maa_library::ensure_loaded(&state)?;
     tokio::task::spawn_blocking(move || {
         ensure_linux_maafw_version()?;
         let instances = Toolkit::find_gamescope_instances().map_err(|e| e.to_string())?;
@@ -830,6 +834,7 @@ pub async fn connect_controller_impl(
     config: ControllerConfig,
     on_event: Arc<dyn Fn(&str, &str) + Send + Sync + 'static>,
 ) -> Result<i64, String> {
+    super::maa_library::ensure_loaded(&state_arc)?;
     tokio::task::spawn_blocking(move || {
         // ControllerPool: 检查是否有可复用的已连接控制器
         let pooled = {
@@ -1167,6 +1172,8 @@ pub fn load_resource_impl(
         "load_resource_impl called, instance: {}, paths: {:?}",
         instance_id, paths
     );
+
+    super::maa_library::ensure_loaded(state)?;
 
     let mut instances = state.instances.lock().map_err(|e| e.to_string())?;
     let instance = instances.get_mut(instance_id).ok_or("Instance not found")?;
