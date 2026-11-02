@@ -1,7 +1,7 @@
 {
   "task": [{
     "name": "crown", "label": "奇迹之冠巅峰赛", "entry": "MaaNikki_Crown",
-    "group": ["daily"], "default_check": true,
+    "group": ["periodic"], "default_check": true,
     "description": "使用游戏推荐搭配连续挑战并领取嘉奖，记录本期星数。达到目标且领完嘉奖后自动跳过，下期恢复。",
     "option": ["CrownTargetStars", "CrownRewards"]
   }],

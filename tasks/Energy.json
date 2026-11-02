@@ -5,7 +5,7 @@
             "label": "幻境挑战",
             "entry": "MaaNikki_RealmChallenge",
             "group": [
-                "energy"
+                "daily"
             ],
             "default_check": true,
             "description": "先处理所选周本，再按消耗方式使用剩余活跃能量。与朝夕心愿同轮运行时，请排在朝夕心愿之后。",

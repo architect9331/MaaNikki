@@ -3,7 +3,7 @@
     "name": "monthly_crystal_exchange",
     "label": "每月五抽兑换",
     "entry": "MaaNikki_MonthlyCrystalExchange",
-    "group": ["daily"],
+    "group": ["periodic"],
     "default_check": true,
     "description": "每月兑换启示水晶和共鸣水晶各 5 个，记录兑换进度。本月完成后自动跳过，下月恢复。"
   }]

@@ -57,18 +57,18 @@
   },
   "group": [
     {
-      "name": "energy",
-      "label": "幻境",
-      "default_expand": true
-    },
-    {
       "name": "daily",
-      "label": "其他每日任务",
+      "label": "每日任务",
       "default_expand": true
     },
     {
-      "name": "collection",
-      "label": "祝福闪光",
+      "name": "periodic",
+      "label": "每周与每期",
+      "default_expand": true
+    },
+    {
+      "name": "assist",
+      "label": "手动辅助",
       "default_expand": true
     },
     {
