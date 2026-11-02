@@ -573,7 +573,6 @@ class Runtime:
     def setting(self, mode):
         if mode == "fishing":
             return {"ability_plan": parameters(self.context, "MaaNikki_Fishing_AbilityPlan").get("value", 3),
-                    "route_cast_count": parameters(self.context, "MaaNikki_FishingRoute_CastCount").get("value"),
                     "use_rhythms": parameters(self.context, "MaaNikki_Fishing_Rhythms").get("value", False)}
         prefix = f"MaaNikki_{mode.capitalize()}_Daily"
         result = dict(parameters(self.context, prefix + "Settings"))

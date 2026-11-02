@@ -14,22 +14,6 @@
         "FishingAbilityPlan",
         "FishingRhythms"
       ]
-    },
-    {
-      "name": "fishing_route",
-      "label": "路线钓鱼",
-      "entry": "MaaNikki_FishingRoute",
-      "group": [
-        "assist"
-      ],
-      "default_check": false,
-      "description": "沿所选路线依次到点钓鱼，自动准备能力并按需传送。鱼已钓光时前往后续钓点，切出游戏时暂停。",
-      "option": [
-        "FishingRouteSelection",
-        "FishingRouteCastCount",
-        "FishingAbilityPlan",
-        "FishingRhythms"
-      ]
     }
   ],
   "option": {
@@ -125,47 +109,6 @@
           }
         }
       ]
-    },
-    "FishingRouteSelection": {
-      "type": "select",
-      "label": "钓鱼路线",
-      "default_case": "fishing_chef_hat_florawish",
-      "cases": [
-        {
-          "name": "fishing_chef_hat_florawish",
-          "label": "花愿镇 · 厨师帽鱼",
-          "pipeline_override": {
-            "MaaNikki_FishingRoute_Selection": {
-              "custom_action_param": {
-                "value": "fishing_chef_hat_florawish"
-              }
-            }
-          }
-        }
-      ]
-    },
-    "FishingRouteCastCount": {
-      "type": "input",
-      "label": "每个钓点最多抛竿次数",
-      "description": "填写每个钓点的抛竿次数；留空时沿用路线设置，路线未指定时最多 3 竿。",
-      "inputs": [
-        {
-          "name": "cast_count",
-          "label": "抛竿次数（留空沿用路线）",
-          "default": "",
-          "verify": "^(?:[1-9][0-9]*)?$",
-          "pattern_msg": "请输入正整数，或留空沿用路线。",
-          "pipeline_type": "string",
-          "input_type": "text"
-        }
-      ],
-      "pipeline_override": {
-        "MaaNikki_FishingRoute_CastCount": {
-          "custom_action_param": {
-            "value": "{cast_count}"
-          }
-        }
-      }
     }
   }
 }

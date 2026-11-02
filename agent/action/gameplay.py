@@ -57,9 +57,6 @@ class GameplayAction(CustomAction):
             if kind == "fishing":
                 from daily.fishing import current_fishing
                 return current_fishing(runtime)
-            if kind == "fishing_route":
-                from daily.fishing import route_fishing
-                return route_fishing(runtime)
             if kind == "main":
                 return runtime.main()
             if kind in ("dig", "monthly", "lookbook"):

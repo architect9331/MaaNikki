@@ -56,31 +56,5 @@
     ],
     "method": 3,
     "action": "DoNothing"
-  },
-  "MaaNikki_FishingRoute": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.gameplay",
-    "custom_action_param": {
-      "kind": "fishing_route"
-    },
-    "post_delay": 0,
-    "next": []
-  },
-  "MaaNikki_FishingRoute_Selection": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.feature_settings",
-    "custom_action_param": {
-      "value": "fishing_chef_hat_florawish"
-    }
-  },
-  "MaaNikki_FishingRoute_CastCount": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.feature_settings",
-    "custom_action_param": {
-      "value": ""
-    }
   }
 }

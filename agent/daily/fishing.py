@@ -4,64 +4,15 @@ from __future__ import annotations
 from file_io import write_json
 
 from datetime import datetime
-import math
-import re
 from types import SimpleNamespace
 
-from .runtime import RESOURCE, parameters
+from .runtime import parameters
 from .settings import ROOT, foreground_inputs
 from .startup import focus_game
 from navigation.ability import ability_matches
 from navigation.controller import ForegroundInput
 from navigation.fishing import Fishing, FishingState, cast_count
-from navigation.models import NavigationError, load_route, maps
-
-
-def selected_fishing_route(resource, name):
-    if not isinstance(name, str) or not re.fullmatch(r"fishing_[a-z0-9_]+", name):
-        raise NavigationError("请选择已登记的钓鱼路线。")
-    route = load_route(resource, name)
-    if route is None or route.document.get("schema_version") != 3 or route.id != name:
-        raise NavigationError("钓鱼路线缺失或格式无效。")
-    from navigation.daily_route import preflight
-    preflight(resource, route, "fishing")
-    spec = maps(resource).get(route.map_id)
-    checkpoint = route.document.get("teleport", {})
-    if (spec is None or route.map_id != "miraland"
-            or any(point.action not in {"", "fishing", "teleport", "wait"} for point in route.points)
-            or any(not checkpoint.get(key) for key in ("name", "province", "region"))):
-        raise NavigationError("钓鱼路线的地图、传送点或动作配置无效。")
-    locations = [(point.x, point.y) for point in route.points]
-    locations.append((checkpoint.get("x"), checkpoint.get("y")))
-    for point in route.points:
-        if point.action == "teleport":
-            target = point.params["checkpoint"]
-            if any(not target.get(key) for key in ("name", "province", "region")):
-                raise NavigationError("路线内传送点配置无效。")
-            locations.append((target.get("x"), target.get("y")))
-        if point.action == "wait":
-            seconds = (point.params or {}).get("seconds")
-            if type(seconds) not in (int, float) or not math.isfinite(seconds) or not 0 <= seconds <= 60:
-                raise NavigationError("钓鱼路线等待时间无效。")
-    if (any(type(value) not in (int, float) or not math.isfinite(value) for xy in locations for value in xy)
-            or any(not 0 <= x < spec.width or not 0 <= y < spec.height for x, y in locations)
-            or any(not math.isfinite(point.radius) or point.radius <= 0 for point in route.points)
-            or not math.isfinite(route.start_radius) or not 0 < route.start_radius <= 30
-            or not math.isfinite(route.timeout) or route.timeout <= 0):
-        raise NavigationError("钓鱼路线坐标或导航参数无效。")
-    return route
-
-
-def route_fishing(runtime):
-    name = parameters(runtime.context, "MaaNikki_FishingRoute_Selection").get("value")
-    route = selected_fishing_route(RESOURCE, name)
-    cast_count(runtime.setting("fishing").get("route_cast_count"), None)
-    runtime.log(f"开始路线钓鱼：{route.document.get('title', name)}。")
-    card = SimpleNamespace(rule=SimpleNamespace(executor="fishing"), remaining=None)
-    result = runtime.navigate(name, "fishing", card)
-    if runtime.stopped:
-        return False
-    return bool(result and runtime.main())
+from navigation.models import NavigationError
 
 
 def fishing_opportunity(runtime, inputs, frame):
