@@ -50,7 +50,7 @@ Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https:
 
 功能设置、任务范围、祝福闪光全收集和常见问题，统一收录在[用户手册](docs/manual.md)。
 
-首次追全祝福闪光，运行「**全收集初始化**」，再开启「**幻境挑战 → 五星祝福闪光全收集**」。[查看完整流程 →](docs/manual.md#祝福闪光全收集)
+追全祝福闪光时，在「**幻境挑战**」切换到「**五星全收集**」，第一次运行会先整理全部祝福闪光。[查看完整流程 →](docs/manual.md#祝福闪光全收集)
 
 ## 参与开发
 

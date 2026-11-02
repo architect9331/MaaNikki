@@ -274,14 +274,14 @@ class InventoryStore:
         candidates = [(self.read_snapshot(path), path)
                       for path in (self.path, self.last_scan_path) if self.exists(path)]
         if not candidates:
-            raise ValueError("请先完整运行一次“祝福闪光仓库读取”")
+            raise ValueError("尚未整理祝福闪光")
         data, path = max(candidates, key=lambda pair: self.updated_at(pair[0]))
         order = deepcopy(data.get("organization"))
         if (data.get("catalog_version") != self.catalog["version"] or not isinstance(order, dict)
                 or order.get("version") != 1
                 or order.get("sort") != "acquired_desc"
                 or set(order.get("slots", {})) != set(SLOTS)):
-            raise ValueError("缺少完整的获得时间整理基准，请先完整运行“祝福闪光仓库读取”（旧锁定记录不能代替）")
+            raise ValueError("缺少完整的获得时间整理基准（旧锁定记录不能代替）")
         operation = order.get("pending_operation")
         reward_recovery = self.recover_reward_submission(data, order) if pending_reward(operation) else False
         operation_recovery = self.recover_scoped_operation(data, order) if operation is not None else False
@@ -293,9 +293,9 @@ class InventoryStore:
             if not recovered and not reward_recovery and not observation_recovery and not operation_recovery:
                 raise ValueError("整理基准需重新核对："
                                  + str(order.get("reason") or "尚未完成完整整理")
-                                 + "；请运行“祝福闪光仓库读取”")
+                                 + "；需要重新整理")
         if operation is not None and not (reward_recovery or operation_recovery):
-            raise ValueError("上次操作可能影响已锁定收藏，需重新运行祝福闪光仓库读取")
+            raise ValueError("上次操作可能影响已锁定收藏，需要重新整理")
         recovery = order.get("recovery")
         if recovery is not None and (not isinstance(recovery, dict)
                 or not isinstance(recovery.get("slots"), list)

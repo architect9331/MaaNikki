@@ -100,8 +100,6 @@
     "tasks/Crown.json",
     "tasks/Exploration.json",
     "tasks/Fishing.json",
-    "tasks/BlessingLock.json",
-    "tasks/BlessingUpgrade.json",
     "tasks/RouteTest.json",
     "tasks/SubtaskTest.json",
     "tasks/Presets.json"

@@ -3,19 +3,22 @@
     "recognition": "DirectHit",
     "action": "Custom",
     "custom_action": "nikki.blessing_pursuit",
-    "custom_action_param": {"mode": "full_collection", "return_page": "calendar"},
+    "custom_action_param": {"return_page": "calendar"},
     "post_delay": 0,
     "next": ["MaaNikki_RealmReview"],
     "on_error": ["MaaNikki_RealmReviewFailed"]
   },
-  "MaaNikki_BlessingUpgradeOnly": {
+  "MaaNikki_Pursuit_OrganizeOption": {
     "recognition": "DirectHit",
     "action": "Custom",
-    "custom_action": "nikki.blessing_pursuit",
-    "custom_action_param": {"mode": "inventory_only"},
-    "post_delay": 0,
-    "next": [],
-    "on_error": []
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {"mode": "auto"}
+  },
+  "MaaNikki_Pursuit_DecomposeOption": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {"enabled": false}
   },
   "MaaNikki_Pursuit_UpgradeReady": {
     "recognition": "And",

@@ -128,7 +128,7 @@ export function AccountStatusActions({ onShowProgress }: { onShowProgress: () =>
   const percentage = progress.percentage === null ? '—' : `${progress.percentage}%`;
   const detail = error ? '账号状态读取失败' : progress.known
     ? `已收集 ${progress.owned.size} / ${progress.target} 个颜色${progress.uncertain ? ' · 上次确认记录，待复核' : ''}`
-    : '尚无完整记录，请先运行祝福闪光仓库读取';
+    : '尚无完整记录，运行幻境挑战的五星全收集时会先自动整理';
   return <>
     <GiantMeteorStatus />
     <Tooltip side="bottom" content={<div className="space-y-1"><p className="font-medium">祝福闪光收集进度 {percentage}</p><p className="text-text-secondary">{detail}</p></div>}>

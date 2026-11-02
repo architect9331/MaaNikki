@@ -1,14 +1,4 @@
 {
-  "MaaNikki_BlessingLock": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.blessing_lock",
-    "custom_action_param": {
-      "unlock_nonconforming": false
-    },
-    "post_delay": 0,
-    "next": []
-  },
   "MaaNikki_BlessingLock_Layout": {
     "recognition": "DirectHit",
     "action": "Custom",

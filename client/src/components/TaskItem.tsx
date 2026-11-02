@@ -1,5 +1,6 @@
 import { useAccountStateStore, periodCompleted, periodTaskLabel, crownTargetStars, crownProgress } from '@/stores/accountStateStore';
-import { realmOptionActive } from '@/utils/nikkiOptions';
+import { realmOptionActive, realmOptionBackup } from '@/utils/nikkiOptions';
+import { RealmModeSwitch } from './RealmModeSwitch';
 import { XinghaiScoreHint } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -1119,17 +1120,42 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 </Tooltip>
               )}
               {/* 选项列表 - 仅在有选项时显示 */}
+              {task.taskName === 'realm_challenge' && (
+                <RealmModeSwitch instanceId={instanceId} taskId={task.id} values={task.optionValues}
+                  disabled={!canEditOptions || isIncompatible} />
+              )}
               {hasOptions && (
                 <OptionListRenderer
                   instanceId={instanceId}
                   taskId={task.id}
                   taskName={task.taskName}
-                  optionKeys={taskDef.option || []}
+                  optionKeys={task.taskName === 'realm_challenge'
+                    ? (taskDef.option || []).filter((key) => key !== 'CollectionMode'
+                      && !realmOptionBackup(key, task.optionValues)
+                      && (realmOptionActive(key, task.optionValues) || key === 'WeeklyTargets'))
+                    : taskDef.option || []}
                   optionValues={task.optionValues}
                   disabled={!canEditOptions || isIncompatible}
                   currentControllerName={currentControllerName}
                   currentResourceName={currentResourceName}
                 />
+              )}
+              {task.taskName === 'realm_challenge' && (taskDef.option || []).some((key) => realmOptionBackup(key, task.optionValues)) && (
+                <details className="mt-4 rounded-lg border border-border px-3 py-2">
+                  <summary className="cursor-pointer text-xs text-text-secondary">朝夕心愿补分备用设置</summary>
+                  <div className="mt-3">
+                    <OptionListRenderer
+                      instanceId={instanceId}
+                      taskId={task.id}
+                      taskName={task.taskName}
+                      optionKeys={(taskDef.option || []).filter((key) => realmOptionBackup(key, task.optionValues))}
+                      optionValues={task.optionValues}
+                      disabled={!canEditOptions || isIncompatible}
+                      currentControllerName={currentControllerName}
+                      currentResourceName={currentResourceName}
+                    />
+                  </div>
+                </details>
               )}
               {task.taskName === "xinghai" && <div className="mt-3"><XinghaiScoreHint values={task.optionValues} /></div>}
             </div>

@@ -1,15 +1,38 @@
 """Schedule independent inventory processing and resource acquisition."""
 from collections import Counter
 
+import cv2
+
+from task_control import TaskStopped
+from .scanner import RescanSlot
 from .supply import CollectionSupply
-from .decompose import LowRarityDecomposer
+from .decompose import DuplicateDecomposer, LowRarityDecomposer
 
 
 class FiveStarPursuit:
-    def __init__(self, inventory):
+    def __init__(self, inventory, *, decompose_duplicates=False):
         self.inventory = inventory
         self.rt = inventory.rt
+        self.decompose_duplicates = decompose_duplicates
         self.supply = CollectionSupply(self.rt, inventory)
+
+    def clear_duplicates(self):
+        """Optional cleanup: unsubmitted failures never affect the finished work."""
+        if not self.decompose_duplicates:
+            return
+        stock = self.inventory
+        try:
+            DuplicateDecomposer(stock).run()
+        except TaskStopped:
+            raise
+        except (RuntimeError, ValueError, KeyError, TypeError, RescanSlot, cv2.error) as error:
+            if stock.pending is not None:
+                raise  # A submitted batch stays pending for the next recovery.
+            stock.report["duplicate_decomposition"] = {
+                **stock.report.get("duplicate_decomposition", {}), "complete": False, "reason": str(error)}
+            self.rt.diagnostic("blessing_duplicates", str(error))
+            self.rt.log(f"五星重复分解未完成：{error}。本步骤未提交的选择不会生效，刷本和升级结果不受影响。",
+                        ui_text=f"五星重复分解跳过：{error}。")
 
     def acquire(self, kind, source=None, *, alternatives=()):
         self.inventory.report["phase"] = "realm_supply"
@@ -35,6 +58,7 @@ class FiveStarPursuit:
                                 reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量",
                                 inventory={"reused": True})
             self.rt.log(stock.report["reason"])
+            self.clear_duplicates()
             stock.save()
             return True
         missing = Counter()
@@ -60,6 +84,7 @@ class FiveStarPursuit:
             LowRarityDecomposer(stock).run()
         # Even with no energy, process the saved unfinished item and inventory.
         outcome = stock.process_inventory()
+        self.clear_duplicates()
         reasons = {
             "collection_complete": "本地图鉴内五星颜色已收齐，可选择其他幻境",
             "bling_shortage": "升级噗灵不足，已保存进度；可切换普通幻境挑战刷噗灵，补充后继续",

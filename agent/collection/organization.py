@@ -70,7 +70,7 @@ class BlessingOrganizer(BlessingLocker):
     def resumed_scene(self, view):
         checkpoint = view._focus_checkpoint
         if checkpoint is None or checkpoint["slot"] != view.slot:
-            raise RuntimeError("切回后缺少当前页参照，请重新读取仓库")
+            raise RuntimeError("切回后缺少当前页参照，下次运行会重新整理")
         generation = self.rt._focus_generation
         if not self.rt.action("TouchMove", target=[900, 32]) or not self.rt.pause(.2):
             raise RuntimeError("前台恢复被中断")
@@ -83,13 +83,13 @@ class BlessingOrganizer(BlessingLocker):
                 or not self.rt.text([930, 15, 330, 52], view.slot, image=frame)
                 or not self.rt.text(self.layout["sort_label"], "获得时间", image=frame)
                 or self.sort_direction(frame, self._acquired_desc_template) != "desc"):
-            raise RuntimeError("切回后列表页面、部位或排序未能确认，请重新读取仓库")
+            raise RuntimeError("切回后列表页面、部位或排序未能确认，下次运行会重新整理")
         labels = self.ocr(self.layout["capacity"], frame)
         capacities = [re.search(r"(\d+)[/／](\d+)", clean_text(item.text)) for item in labels
                       if float(getattr(item, "score", 0)) >= .90]
         capacities = [(int(match[1]), int(match[2])) for match in capacities if match]
         if capacities != [self.initial_capacity] or self.rt._focus_generation != generation:
-            raise RuntimeError("切回后仓库容量或前台状态发生变化，请重新读取仓库")
+            raise RuntimeError("切回后仓库容量或前台状态发生变化，下次运行会重新整理")
         return checkpoint, frame, generation
 
     def accept_ordered_focus(self, view, frame, generation, phase, *, delta=0):
@@ -108,7 +108,7 @@ class BlessingOrganizer(BlessingLocker):
 
     def recover_ordered_focus(self, view, phase, args):
         if view._recovering_focus:
-            raise RuntimeError("局部核对期间再次发生前台切换，请重新读取仓库")
+            raise RuntimeError("局部核对期间再次发生前台切换，下次运行会重新整理")
         view._recovering_focus = True
         try:
             return self._recover_ordered_focus(view, phase, args)
@@ -126,13 +126,13 @@ class BlessingOrganizer(BlessingLocker):
                     "after": self.image(f"focus_{generation}_after.png", frame),
                     "cards_match": self.same_ordered_cards(checkpoint, frame),
                     "scrollbar_match": self.same_pixels(checkpoint["frame"], frame, [1256, 72, 14, 550])}
-                raise RuntimeError("切回后当前页条目或滚动位置改变，请重新读取仓库")
+                raise RuntimeError("切回后当前页条目或滚动位置改变，下次运行会重新整理")
             direction = args[0]
             delta = (self.scroll_position(checkpoint["frame"], frame) if direction > 0
                      else self.scroll_position(frame, checkpoint["frame"]))
             if (delta is None or delta <= 2
                     or not self.same_ordered_cards(checkpoint, frame, shift=direction * delta)):
-                raise RuntimeError("切回后翻页位移未能确认，请重新读取仓库")
+                raise RuntimeError("切回后翻页位移未能确认，下次运行会重新整理")
         if phase == "step":
             direction = args[0]
             view.position = max(0, checkpoint["position"] + direction * delta)
@@ -165,7 +165,7 @@ class BlessingOrganizer(BlessingLocker):
                     checkpoint, frame, resumed = self.resumed_scene(view)
                     if (not self.selected(frame, box)
                             or not self.same_ordered_view(checkpoint, frame, ignore_box=box)):
-                        raise RuntimeError("切回后锁定操作影响了列表位置，已保留操作记录，请重新读取仓库") from error
+                        raise RuntimeError("切回后锁定操作影响了列表位置，已保留操作记录，下次运行会重新整理") from error
                     self.accept_ordered_focus(view, frame, resumed, "confirm_lock")
                     self.counter += 1
                     actual, _ = self.read_details(box, resumed, self.counter)
@@ -305,7 +305,7 @@ class BlessingOrganizer(BlessingLocker):
         self.organization["complete"] = False
         snapshot["organization"] = self.organization
         if self.read_capacity() != self.initial_capacity:
-            raise RuntimeError("整理前后容量发生变化，未发布完整库存，请重新整理")
+            raise RuntimeError("整理前后容量发生变化，未发布完整库存，下次运行会重新整理")
         traversed = all(self.report["slots"].get(slot, {}).get("complete") for slot in SLOTS)
         reconcile_exclusions(snapshot, self.catalog, traversed=traversed)
         summarize_scan(snapshot, traversed, "普通仓库数量核对未完成")

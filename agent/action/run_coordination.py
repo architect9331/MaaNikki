@@ -30,12 +30,18 @@ class RunCoordinationAction(CustomAction):
                 kind = "bless" if collection or "MaaNikki_Bless" in next_names else (
                     "jihua" if "MaaNikki_Jihua" in next_names else
                     "monster" if "MaaNikki_Monster" in next_names else None)
-                if collection:
+                # Without a usable record the pursuit step organizes first. Finished
+                # collections skip it unless a requested cleanup or reread remains.
+                if (collection and parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto") == "auto"
+                        and parameters(context, "MaaNikki_Pursuit_DecomposeOption").get("enabled") is not True):
                     catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
-                    order, protected, _ = InventoryStore(ROOT, catalog, rt).load_organization()
+                    try:
+                        order, protected, _ = InventoryStore(ROOT, catalog, rt).load_organization()
+                    except (OSError, ValueError, KeyError, TypeError):
+                        order = None
                     total = sum(len(item["colors"]) * 3 for item in catalog["sets"]
                                 if item["rarity"] == 5 and item.get("collection_target", True))
-                    if (len(protected) == total and order.get("pending_operation") is None
+                    if (order is not None and len(protected) == total and order.get("pending_operation") is None
                             and not order.get("recovery", {}).get("slots")):
                         rt.log("五星祝福闪光颜色已收齐；本次不消耗活跃能量，请选择其他幻境。")
                         run_state.begin_realm(rt, task_id, kind=kind, collection=collection)
@@ -56,7 +62,7 @@ class RunCoordinationAction(CustomAction):
                     "on_error": ["MaaNikki_RealmReviewFailed"],
                     "custom_action_param": {
                         **parameters(context, "MaaNikki_BlessingPursuit"),
-                        "mode": "full_collection", "return_page": "calendar"}}
+                        "return_page": "calendar"}}
                 return context.override_pipeline(overrides)
             if options.get("stage") != "settle":
                 return False

@@ -4,8 +4,6 @@
       "task": [{"name": "start_game"}, {"name": "dig"}, {"name": "zhaoxi"}, {"name": "realm_challenge"},
                {"name": "starlight_crystals"}, {"name": "xinghai"}, {"name": "home"}, {"name": "monthly_pass"}, {"name": "mailbox"},
                {"name": "weekly_free_gifts"}, {"name": "monthly_crystal_exchange"},
-               {"name": "crown", "enabled": true}]},
-    {"name": "Initialization", "label": "全收集初始化", "description": "启动游戏，读取祝福闪光仓库并建立收藏基准。",
-      "task": [{"name": "start_game"}, {"name": "blessing_lock"}]}
+               {"name": "crown", "enabled": true}]}
   ]
 }

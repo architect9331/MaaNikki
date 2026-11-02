@@ -30,6 +30,10 @@ def operation_scope(operation):
     if (kind == "decompose" and facts is None and operation.get("rarity_max") == 4
             and evidence.get("source") == "four_star_auto_fill"):
         return []
+    # Auto-fill takes unlocked copies only; a fresh read proved keepers are locked.
+    if (kind == "decompose" and facts is None and operation.get("rarity_max") == 5
+            and evidence.get("source") == "five_star_auto_fill"):
+        return []
     if not isinstance(facts, dict) or facts.get("slot") not in SLOTS:
         return None
     if (kind == "upgrade" and facts.get("rarity") in (3, 4, 5)

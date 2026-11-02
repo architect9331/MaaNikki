@@ -410,7 +410,7 @@ class FiveStarInventory(BlessingLocker):
 
     def process_inventory(self):
         if not self.prepared:
-            raise RuntimeError("需先完成祝福闪光仓库读取基准")
+            raise RuntimeError("需先完成祝福闪光整理基准")
         if self.progress()["complete"] and not self.organization["unfinished"]:
             return self.batch_result("collection_complete")
         self.report["phase"] = "upgrade_queue"
@@ -532,15 +532,3 @@ class FiveStarInventory(BlessingLocker):
         self.rt.log("已保存收藏颜色、锁定状态和待处理队列；未锁定材料数量不统计，本轮直接结束。", detail=True)
         self.save()
         return True
-
-    def run(self):
-        """Standalone processing: shortages are normal exits, not farm requests."""
-        self.prepare("inventory_only")
-        outcome = self.process_inventory()
-        reasons = {
-            "collection_complete": "本地图鉴内五星全部部位的满级颜色已收齐并锁定",
-            "bling_shortage": "升级噗灵不足，已保存进度；补充后可继续",
-            "materials_shortage": "升级材料不足，已保存进度；补充后可继续",
-            "no_embryos": "当前库存没有可升级的缺色五星，仅升级整理模式结束",
-        }
-        return self.finish(reasons[outcome["status"]])

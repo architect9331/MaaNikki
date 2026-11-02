@@ -976,14 +976,13 @@ function App() {
 
         // Upgrade the default pages once, retaining saved task choices
         // and any additional pages the user created.
-        if (pi?.name === 'MaaNikki' && presets?.some((preset) => preset.name === 'Initialization') &&
+        if (pi?.name === 'MaaNikki' && presets?.some((preset) => preset.name === 'Daily') &&
             useAppStore.getState().nikkiPresetVersion < 1) {
           const defaultIds: string[] = [];
           for (const preset of presets) {
             const state = useAppStore.getState();
             const label = state.resolveI18nText(preset.label, getInterfaceLangKey(state.language)) || preset.name;
             const existing = state.instances.find((instance) => instance.name === label ||
-              (preset.name === 'Initialization' && instance.name === '祝福闪光全收集') ||
               (preset.name === 'Daily' && instance.name === '日常'));
             const id = existing?.id ?? state.createInstance(label, true);
             if (!existing) state.applyPreset(id, preset.name);
@@ -1021,32 +1020,18 @@ function App() {
           useAppStore.setState({ nikkiPresetVersion: 2 });
         }
 
-        // Replace the former collection preset with a one-time warehouse baseline page.
-        if (pi?.name === 'MaaNikki' && presets?.some((preset) => preset.name === 'Initialization') &&
-            useAppStore.getState().nikkiPresetVersion < 3) {
-          const state = useAppStore.getState();
-          const instance = state.instances.find((item) => item.name === '祝福闪光全收集') ??
-            state.instances.find((item) => item.name === '初始化表' || item.name === '全收集初始化');
-          if (instance) {
-            state.renameInstance(instance.id, '全收集初始化');
-            state.applyPreset(instance.id, 'Initialization');
-            useAppStore.setState((current) => ({
-              instances: current.instances.map((item) => item.id !== instance.id ? item : {
-                ...item,
-                selectedTasks: item.selectedTasks.map((task) =>
-                  instance.selectedTasks.find((old) => old.taskName === task.taskName) ?? task),
-              }),
-            }));
+        // Organization now runs inside the realm task: retire the default pages
+        // whose only job was the removed warehouse task, keeping customized ones.
+        if (pi?.name === 'MaaNikki' && useAppStore.getState().nikkiPresetVersion < 5) {
+          for (const instance of useAppStore.getState().instances) {
+            const state = useAppStore.getState();
+            if (state.instances.length > 1 && ['全收集初始化', '初始化表', '祝福闪光全收集'].includes(instance.name)
+                && instance.selectedTasks.every((task) => task.taskName === 'start_game')
+                && !instance.schedulePolicies?.length) {
+              state.removeInstance(instance.id);
+            }
           }
-          useAppStore.setState({ nikkiPresetVersion: 3 });
-        }
-
-        if (pi?.name === 'MaaNikki' && useAppStore.getState().nikkiPresetVersion < 4) {
-          const state = useAppStore.getState();
-          for (const instance of state.instances) {
-            if (instance.name === '初始化表') state.renameInstance(instance.id, '全收集初始化');
-          }
-          useAppStore.setState({ nikkiPresetVersion: 4 });
+          useAppStore.setState({ nikkiPresetVersion: 5 });
         }
       }, 0);
 

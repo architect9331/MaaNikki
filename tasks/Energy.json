@@ -13,6 +13,9 @@
                 "WeeklyEnabled",
                 "WeeklyTargets",
                 "RealmTypes",
+                "CollectionMode",
+                "CollectionDecompose",
+                "CollectionOrganize",
                 "JihuaTarget",
                 "JihuaMaterialMode",
                 "BlessTarget",
@@ -50,7 +53,7 @@
         "RealmTypes": {
             "type": "select",
             "label": "剩余活跃能量消耗方式",
-            "description": "选择剩余活跃能量的用途。五星全收集根据整理记录选择缺色副本，刷取后升级胚子；使用前请完成一次祝福闪光仓库读取。",
+            "description": "选择剩余活跃能量的用途。",
             "cases": [
                 {
                     "name": "Jihua",
@@ -84,10 +87,18 @@
                             ]
                         }
                     }
-                },
+                }
+            ],
+            "default_case": "Bless"
+        },
+        "CollectionMode": {
+            "type": "switch",
+            "label": "五星全收集模式",
+            "description": "开启后不再使用上面的消耗方式：按缺色选副本、刷取并升级，满级新颜色自动锁定。第一次运行先整理全部祝福闪光，请提前清除仓库筛选。",
+            "cases": [
                 {
-                    "name": "FiveStarCollection",
-                    "label": "五星祝福闪光全收集",
+                    "name": "Yes",
+                    "label": "开启",
                     "pipeline_override": {
                         "MaaNikki_RealmEnergy": {
                             "next": [
@@ -101,9 +112,84 @@
                             }
                         }
                     }
+                },
+                {
+                    "name": "No",
+                    "label": "关闭"
                 }
             ],
-            "default_case": "Bless"
+            "default_case": "No"
+        },
+        "CollectionDecompose": {
+            "type": "switch",
+            "label": "分解五星祝福闪光",
+            "description": "每次升级结束后，一键分解已有锁定保留件的重复五星，节省仓库空间。分解不可恢复；还有缺色胚子、未满级项或收藏未锁定时，本次跳过。请锁定想保留的闪光。",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "label": "开启",
+                    "pipeline_override": {
+                        "MaaNikki_Pursuit_DecomposeOption": {
+                            "custom_action_param": {
+                                "enabled": true
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "label": "关闭",
+                    "pipeline_override": {
+                        "MaaNikki_Pursuit_DecomposeOption": {
+                            "custom_action_param": {
+                                "enabled": false
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "No"
+        },
+        "CollectionOrganize": {
+            "type": "select",
+            "label": "仓库整理",
+            "description": "自动只在没有可用记录时整理。手动大量改动仓库后，可临时改为每次整理，运行一次后改回自动。",
+            "cases": [
+                {
+                    "name": "Auto",
+                    "label": "自动（推荐）",
+                    "pipeline_override": {
+                        "MaaNikki_Pursuit_OrganizeOption": {
+                            "custom_action_param": {
+                                "mode": "auto"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Always",
+                    "label": "每次运行前整理（只补锁）",
+                    "pipeline_override": {
+                        "MaaNikki_Pursuit_OrganizeOption": {
+                            "custom_action_param": {
+                                "mode": "always"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "AlwaysUnlock",
+                    "label": "每次运行前整理（并解锁未满级及多余重复项）",
+                    "pipeline_override": {
+                        "MaaNikki_Pursuit_OrganizeOption": {
+                            "custom_action_param": {
+                                "mode": "always_unlock"
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "Auto"
         },
         "JihuaTarget": {
             "type": "select",
@@ -223,7 +309,7 @@
         "BlessTarget": {
             "type": "select",
             "label": "祝福闪光目标",
-            "description": "选择祝福闪光副本。运行前需解锁对应困难难度和快速挑战。",
+            "description": "选择祝福闪光副本。运行前需解锁对应困难难度和快速挑战。全收集模式整理失败时，本轮改刷此副本。",
             "cases": [
                 {
                     "name": "Well",

@@ -2,6 +2,7 @@ import i18n, { getInterfaceLangKey, setLanguage as setI18nLanguage } from '@/i18
 import { saveConfig } from '@/services/configService';
 import { maaService } from '@/services/maaService';
 import { isTaskAvailable } from '@/utils/developerTasks';
+import { migrateNikkiOptionValues } from '@/utils/nikkiOptions';
 import { isTelemetryBlockedByBuild, setTelemetryEnabled } from '@/services/telemetryService';
 import {
   type AccentColor,
@@ -124,7 +125,7 @@ function cleanOptionValues(
   pi: ProjectInterface | null,
 ): Record<string, OptionValue> {
   if (!pi?.option) return {};
-  return sanitizeOptionValues(optionValues, pi.option, (message) => loggers.config.warn(message));
+  return sanitizeOptionValues(migrateNikkiOptionValues(optionValues), pi.option, (message) => loggers.config.warn(message));
 }
 
 function restoreOptionValuesFromConfig(
