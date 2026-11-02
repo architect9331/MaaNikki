@@ -19,6 +19,7 @@ export function PreflightDialog({ issues, onCancel, onContinue }: {
           {issues.map((issue) => <li key={issue.id}>
             <p className="text-sm font-medium text-text-primary">{issue.title}</p>
             <p className="mt-0.5 text-xs leading-5 text-text-secondary">{issue.detail}</p>
+            {issue.once && <p className="mt-1 text-xs text-text-muted">这项只提醒一次，点「继续运行」后不再出现。</p>}
           </li>)}
         </ul>
         <div className="flex gap-2 border-t border-border px-5 py-3.5">
