@@ -18,7 +18,7 @@
     "recognition": "DirectHit",
     "action": "Custom",
     "custom_action": "nikki.feature_settings",
-    "custom_action_param": {"enabled": false}
+    "custom_action_param": {"enabled": true}
   },
   "MaaNikki_Pursuit_BlingOption": {
     "recognition": "DirectHit",
