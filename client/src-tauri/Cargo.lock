@@ -3127,7 +3127,7 @@ dependencies = [
 
 [[package]]
 name = "mxu"
-version = "2.7.1-maanikki.34"
+version = "2.7.1-maanikki.35"
 dependencies = [
  "axum",
  "base64 0.22.1",
