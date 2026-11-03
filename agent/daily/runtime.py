@@ -966,6 +966,16 @@ class Executors(Runtime):
         if not self.ui.enter_page(lambda: self.key("chat", 0), "MaaNikki_Daily_GroupChat",
                                   source="MaaNikki_MainDetected", recover=recover_seat):
             return False
+        # An unread message opens its own conversation first while the party
+        # channel entry stays visible, so the entry must be clicked. Wait for
+        # the panel to finish sliding in so the click lands on the entry.
+        def party_ready():
+            return self.ui.wait_page("MaaNikki_Daily_GroupChat", stable=True)
+        if not (party_ready() and self.click_template("MaaNikki_Daily_GroupChat", attempts=1)
+                and party_ready()):
+            self.log("未能切换到聚会频道，本次不发言。")
+            self.main()
+            return False
         content = str(self.setting(mode).get("chat_text", "1"))[:40]
         if not content or not self.input_text(content):
             return False
