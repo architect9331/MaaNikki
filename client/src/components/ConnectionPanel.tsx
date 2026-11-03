@@ -24,7 +24,6 @@ import { LinuxInputMethod, parseLinuxInputMethod } from '@/types/maa';
 import type { AdbDevice, Win32Window, GamescopeInstance, ControllerConfig } from '@/types/maa';
 import type { ControllerItem, ResourceItem } from '@/types/interface';
 import { computeResourcePaths } from '@/utils/resourcePath';
-import { getProcessNameFromPath } from '@/utils/paths';
 import {
   buildDesktopWindowControllerConfig,
   buildLinuxControllerConfig,
@@ -35,7 +34,6 @@ import {
   isDesktopWindowControllerType,
 } from '@/utils/controller';
 import { getInterfaceLangKey } from '@/i18n';
-import { generateId } from '@/stores/helpers';
 import {
   startGlobalCallbackListener,
   waitForCtrlResult,
@@ -83,7 +81,6 @@ export function ConnectionPanel() {
     registerResIdName,
     registerResBatch,
     addLog,
-    addPreAction,
   } = useAppStore();
 
   // 获取当前活动实例
@@ -934,7 +931,7 @@ export function ConnectionPanel() {
     }
   };
 
-  // 连接成功后尝试获取窗口进程路径，自动添加前置程序
+  // 连接成功后保存窗口进程路径，供手动添加程序任务时填充默认值。
   const fetchAndStoreProcessPath = async (hwnd: number) => {
     try {
       const programPath = await maaService.getProcessPathFromHwnd(hwnd);
@@ -945,30 +942,6 @@ export function ConnectionPanel() {
         ...inst?.savedDevice,
         connectedProgramPath: programPath,
       });
-
-      const processName = getProcessNameFromPath(programPath);
-
-      // 自动添加禁用的前置程序（启动进程），dedup 在 store 内原子检查
-      const added = addPreAction(
-        instanceId,
-        {
-          id: generateId(),
-          customName: t('action.autoPreActionName', { name: processName }),
-          enabled: false,
-          program: programPath,
-          args: '',
-          waitForExit: false,
-          skipIfRunning: true,
-          useCmd: false,
-        },
-        { field: 'program', value: programPath },
-      );
-      if (added) {
-        addLog(instanceId, {
-          type: 'info',
-          message: t('action.autoPreActionAdded', { name: processName }),
-        });
-      }
     } catch {
       // best-effort, 静默忽略
     }
