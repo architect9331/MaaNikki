@@ -43,10 +43,12 @@ def stack_badge(frame, box):
         patch = crop[by:by + bh, bx:bx + bw].copy()
         patch[outline == 0] = 255
         # Bright artwork can join the tab's component and widen its outline.
-        # Its dark remainder then enters from the left or top, sides that digits
-        # do not reach (they can touch only the bottom edge, as noted above).
-        dark = (patch.max(axis=2) < 195).astype(np.uint8)
-        _, marks = cv2.connectedComponents(dark, connectivity=8)
+        # Trace all non-backing pixels: a dark fragment may reach the left/top
+        # only through pale or coloured artwork, which a dark-only mask breaks.
+        # Digits do not reach these sides (they can touch the bottom edge).
+        low, high = patch.min(axis=2), patch.max(axis=2)
+        backing = (low > 215) & (high.astype(np.int16) - low < 40)
+        _, marks = cv2.connectedComponents((~backing).astype(np.uint8), connectivity=8)
         artwork = np.setdiff1d(np.concatenate((marks[0], marks[:, 0])), [0])
         patch[np.isin(marks, artwork)] = 255
         if np.count_nonzero((patch.max(axis=2) < 195) & (outline > 0)) < 8:
