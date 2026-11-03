@@ -21,22 +21,23 @@ def stack_badge(frame, box):
     count, labels, stats, _ = cv2.connectedComponentsWithStats(light, connectivity=8)
     possible = False
     for label in range(1, count):
-        bx, by, bw, bh, area = (int(value) for value in stats[label])
+        bx, by, bw, bh, _ = (int(value) for value in stats[label])
         if bx + bw < crop.shape[1] - 2 or by + bh < crop.shape[0] - 3:
             continue
         if bw < 14 or bh < 9:
             continue
         possible = True
         mask = (labels[by:by + bh, bx:bx + bw] == label).astype(np.uint8)
-        if bw < 24 or bh < 12 or area / (bw * bh) < .60:
+        if bw < 24 or bh < 12:
             continue
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         hull = cv2.convexHull(np.vstack([contour.reshape(-1, 2) for contour in contours]))
         outline = np.zeros_like(mask)
         cv2.drawContours(outline, [hull], -1, 1, cv2.FILLED)
-        # Digits such as 18 can touch the bottom edge of a genuine tab. Check
-        # the backing's outline here, rather than treating dark digits as gaps.
-        if outline[-3:].mean() < .75:
+        # Validate the backing's silhouette, not its remaining white pixels:
+        # multi-digit ink reduces the white area without changing the tab.
+        # Digits such as 18 can also touch its bottom edge.
+        if outline.mean() < .60 or outline[-3:].mean() < .75:
             continue
         # Preserve holes and open notches alike: either can be part of a digit.
         # Only the area outside the confirmed tab outline becomes white.
@@ -119,11 +120,11 @@ def read_count(owner, frame, box, locked, labels, generation, index, *, classifi
         local_values = []
         candidates = set(page_values)
         gray = cv2.cvtColor(badge["patch"], cv2.COLOR_BGR2GRAY)
-        low = float(np.percentile(gray, 5))
-        enhanced = np.clip((gray.astype(np.float32) - low) * 255 / max(1, 255 - low), 0, 255).astype(np.uint8)
+        # The count already contrasts with its white backing. Preserve the
+        # antialiasing; stretching its histogram amplifies faint artwork too.
         for scale in (4, 6, 3, 8):
             # Recognition-only OCR avoids losing tiny digits in text detection.
-            patch = cv2.resize(enhanced, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+            patch = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
             patch = cv2.copyMakeBorder(patch, 4, 4, 4, 4, cv2.BORDER_CONSTANT, value=255)
             image = np.full_like(frame, 255)
             ph, pw = patch.shape
