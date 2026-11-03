@@ -6,6 +6,7 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore } from '@/stores/appStore';
 import { isTauri } from '@/utils/paths';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { primaryButton, secondaryButton, Segmented } from '@/components/ui/FeaturePage';
 import { SwitchTrack } from '@/components/ui/SwitchTrack';
 import {
@@ -148,6 +149,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
   const [recordMap, setRecordMap] = useState('miraland');
   const [tolerance, setTolerance] = useState(1);
   const [showBuiltin, setShowBuiltin] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<RouteSummary | null>(null);
   const [history, setHistory] = useState<{ past: RouteDocument[]; future: RouteDocument[] }>({ past: [], future: [] });
   const canvas = useRef<MapCanvasHandle>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -258,6 +260,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
+      if (pendingDelete) return;
       const target = event.target as HTMLElement;
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
@@ -278,7 +281,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
     };
     window.addEventListener('keydown', keydown);
     return () => window.removeEventListener('keydown', keydown);
-  }, [undo, redo, removePoint, selected, readOnly]);
+  }, [undo, redo, removePoint, selected, readOnly, pendingDelete]);
 
   const createRoute = (mapId = map?.id ?? recordMap) => {
     const title = maps.find((item) => item.id === mapId)?.title ?? '';
@@ -298,9 +301,10 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
     setSaved(false);
   };
   const remove = async (summary: RouteSummary) => {
-    if (!window.confirm(`删除路线「${summary.title || summary.id}」？`)) return;
-    await deleteUserRoute(summary.id).catch((error) => toast.error(String(error)));
+    setPendingDelete(null);
+    // Close it first, or a pending autosave could write the deleted route back.
     if (route?.id === summary.id) setRoute(null);
+    await deleteUserRoute(summary.id).catch((error) => toast.error(String(error)));
     void refresh();
   };
   const importFile = async (file?: File) => {
@@ -419,7 +423,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
               <span className="block text-[11px] text-text-muted">{maps.find((value) => value.id === item.map)?.title} · {item.points} 点</span>
             </button>
             <button onClick={() => void revealItemInDir(item.path)} title="打开所在文件夹" className="hidden p-1.5 text-text-muted hover:text-text-primary group-hover:block"><FolderOpen className="h-3.5 w-3.5" /></button>
-            <button onClick={() => void remove(item)} title="删除" className="hidden p-1.5 pr-2 text-text-muted hover:text-error group-hover:block"><Trash2 className="h-3.5 w-3.5" /></button>
+            <button onClick={() => setPendingDelete(item)} title="删除"className="hidden p-1.5 pr-2 text-text-muted hover:text-error group-hover:block"><Trash2 className="h-3.5 w-3.5" /></button>
           </div>)}
           <button onClick={() => setShowBuiltin(!showBuiltin)} className="mt-2 flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-text-secondary hover:bg-bg-hover">
             内置路线（参考）<span className="tabular-nums text-text-muted">{routes.builtin.length}</span>
@@ -576,5 +580,10 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
         </div>}
       </aside>
     </div>
+    <ConfirmDialog open={pendingDelete !== null} title="删除路线"
+      message={`确定删除「${pendingDelete?.title || pendingDelete?.id}」吗？删除后无法恢复。`}
+      cancelText="取消" confirmText="删除" destructive
+      onCancel={() => setPendingDelete(null)}
+      onConfirm={() => { if (pendingDelete) void remove(pendingDelete); }} />
   </div>;
 }
