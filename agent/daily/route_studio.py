@@ -16,7 +16,7 @@ from .startup import focus_game
 from navigation.controller import ForegroundInput
 from navigation.models import GameWindowClosed, NavigationError, maps
 from navigation.vision import Locator
-from task_control import active_session
+from task_control import TaskStopped, active_session
 
 
 RECORDING_FILE = ROOT / "config/route_recording.json"
@@ -128,6 +128,11 @@ class RouteRecorder(Runtime):
             self.document.update(state="finished", message="游戏已关闭，录制已结束。")
             return True
         except (NavigationError, OSError, RuntimeError, ValueError) as error:
+            # Ending the recording stops the task, which can surface as an
+            # error from whatever was waiting; what was recorded is complete.
+            if isinstance(error, TaskStopped) or self.stopped:
+                self.document.update(state="finished", message="")
+                return True
             self.document.update(state="failed", message=str(error))
             self.log("路线录制停止："+str(error))
             return False
