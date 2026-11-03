@@ -155,7 +155,7 @@ Esc 菜单的挖掘、星绘图册、奇迹之冠入口共用 `find_menu_entry`�
 
 ### 路线编辑器
 
-用户路线保存在 `config/routes/`，格式与内置路线相同。`agent/daily/route_studio.py` 提供两个动作：`nikki.route_record` 只读取画面和物理按键，把采样和按键写入 `config/route_recording.json`，不发送任何游戏输入；`nikki.route_run` 复用路线测试的校验和执行流程，动作限于 `USER_ACTIONS`（`client/src/services/routeDocument.ts` 需保持一致），不接受脚本。录制结果用 Douglas–Peucker 简化，按键位置始终保留。
+用户路线保存在 `config/routes/`，格式与内置路线相同。`agent/daily/route_studio.py` 提供两个动作：`nikki.route_record` 只读取画面和物理按键，把采样和按键写入 `config/route_recording.json`，不发送任何游戏输入；`nikki.route_run` 复用路线测试的校验和执行流程，动作限于 `USER_ACTIONS`（`client/src/services/routeDocument.ts` 需保持一致），不接受脚本。录制时还按释放记录 `RECORDED_KEYS` 中的游戏键和按住时长，生成 `key` 点；同一位置、同一按键和时长的连续按下合并为次数。录制结果用 Douglas–Peucker 简化，按键位置始终保留。
 
 ### 路线诊断文件
 

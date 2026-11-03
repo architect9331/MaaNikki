@@ -31,6 +31,13 @@ LOST_RESET_SECONDS = 1.5
 TELEPORT_DISTANCE = 15
 VK_MOUSE = {0: 0x01, 1: 0x02, 2: 0x04, 3: 0x05, 4: 0x06}
 HOTKEYS = {0x75: "point", 0x76: "collect", 0x77: "wait", 0x78: "fishing", 0x79: "fall"}
+# Game actions replayed as key points, with how long each was held. Movement,
+# jump and dive stay with the walk itself; a later name sharing a physical key
+# with an earlier one is the same input and is not watched twice.
+RECORDED_KEYS = ("attack", "ability_use", "capture", "bell", "sub_ability",
+                 *(f"ability_{index}" for index in range(1, 9)))
+# Same bounds the route key action accepts.
+MAX_HOLD = 10.0
 
 
 class KeyWatcher(threading.Thread):
@@ -47,20 +54,28 @@ class KeyWatcher(threading.Thread):
         self.events = []
 
     def run(self):
-        held = set()
+        held = {}
         while not self.finished.wait(.02):
             # Keys pressed in the editor or anywhere else are not part of the route.
             focused = self.inputs.foreground()
+            now = wall_time.monotonic()
             for code, kind in self.watched.items():
                 down = focused and bool(self.user32.GetAsyncKeyState(code) & 0x8000)
                 if down and code not in held:
-                    with self.lock:
-                        self.events.append(kind)
-                    self.confirm(kind)
-                if down:
-                    held.add(code)
-                else:
-                    held.discard(code)
+                    held[code] = now
+                    # Game keys are kept on release, once their hold time is known.
+                    if not kind.startswith("key:"):
+                        self.emit({"kind": kind})
+                        self.confirm(kind)
+                elif not down and code in held:
+                    pressed_at = held.pop(code)
+                    if kind.startswith("key:"):
+                        hold = min(MAX_HOLD, max(.1, round(now-pressed_at, 1)))
+                        self.emit({"kind": "key", "key": kind[4:], "hold": hold})
+
+    def emit(self, event):
+        with self.lock:
+            self.events.append(event)
 
     @staticmethod
     def confirm(kind):
@@ -101,6 +116,8 @@ class RouteRecorder(Runtime):
             locator = Locator(spec)
             watched = {virtual_key(self.game_keys.get("jump")): "jump",
                        virtual_key(self.game_keys.get("interact")): "interact", **HOTKEYS}
+            for name in RECORDED_KEYS:
+                watched.setdefault(virtual_key(self.game_keys.get(name)), f"key:{name}")
             watcher = KeyWatcher(inputs, watched)
             watcher.start()
             with observation:
@@ -163,9 +180,9 @@ class RouteRecorder(Runtime):
             index = len(samples)-1
             if teleported:
                 events.append({"kind": "teleport", "index": index})
-            for kind in pressed:
-                event = {"kind": kind, "index": index}
-                if kind == "fishing" and pose.heading is not None:
+            for item in pressed:
+                event = {**item, "index": index}
+                if item["kind"] == "fishing" and pose.heading is not None:
                     event["heading"] = round(pose.heading, 1) % 360
                 events.append(event)
             self.document["pose"] = {"x": position[0], "y": position[1], "heading": pose.heading}

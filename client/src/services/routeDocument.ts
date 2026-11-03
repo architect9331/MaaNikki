@@ -22,7 +22,7 @@ export interface RouteDocument {
   points: RoutePoint[];
 }
 
-export interface RecordingEvent { kind: string; index: number; heading?: number }
+export interface RecordingEvent { kind: string; index: number; heading?: number; key?: string; hold?: number }
 
 export interface Recording {
   map: string;
@@ -124,6 +124,9 @@ function keepIndices(samples: [number, number][], from: number, to: number, tole
   }
 }
 
+// Same bound the route key action accepts.
+const MAX_KEY_TIMES = 50;
+
 function eventPoint(event: RecordingEvent): Partial<RoutePoint> {
   switch (event.kind) {
     case 'jump': return { jump: true };
@@ -134,6 +137,7 @@ function eventPoint(event: RecordingEvent): Partial<RoutePoint> {
     case 'fishing': return { action: 'fishing', radius: 0.5, params: {
       cast_count: 3, ...(event.heading === undefined ? {} : { facing_heading: event.heading }) } };
     case 'teleport': return { action: 'teleport', params: {}, radius: 1 };
+    case 'key': return { action: 'key', params: { key: event.key, hold: event.hold ?? 0.1, times: 1 }, radius: 0.5 };
     default: return { radius: 0.6 };
   }
 }
@@ -162,12 +166,23 @@ export function pointsFromRecording(recording: Pick<Recording, 'samples' | 'even
     // Several marks at one sample still run in the order they were pressed.
     actions.forEach((mark, position) => points.push({ ...base, ...eventPoint(mark), jump: jump && position === 0 }));
   }
-  // Pressing interact repeatedly at one spot is one collect: that action loops itself.
-  return points.filter((point, index) => {
-    const previous = points[index-1];
-    return !(previous && point.action === 'collect' && previous.action === 'collect'
-      && Math.hypot(point.x-previous.x, point.y-previous.y) < 1);
-  });
+  // Repeats at one spot become one point: interact presses are one collect,
+  // which loops itself, and equal taps of a key (attacks, say) one key press
+  // counted several times.
+  const merged: RoutePoint[] = [];
+  for (const point of points) {
+    const previous = merged[merged.length-1];
+    const near = previous && Math.hypot(point.x-previous.x, point.y-previous.y) < 1;
+    if (near && point.action === 'collect' && previous.action === 'collect') continue;
+    if (near && point.action === 'key' && previous.action === 'key' && !point.jump
+      && point.params?.key === previous.params?.key && point.params?.hold === previous.params?.hold
+      && Number(previous.params?.times) < MAX_KEY_TIMES) {
+      previous.params = { ...previous.params, times: Number(previous.params?.times)+1 };
+      continue;
+    }
+    merged.push(point);
+  }
+  return merged;
 }
 
 export function routeLength(points: RoutePoint[]) {

@@ -22,6 +22,16 @@ import { RouteMapCanvas, type MapCanvasHandle, type MapInfo } from './RouteMapCa
 const field = 'w-full rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 text-xs outline-none focus:border-accent';
 const HISTORY_LIMIT = 100;
 
+/** Key points name their key, so a recorded run of attacks or bell presses reads at a glance. */
+function pointLabel(point: RoutePoint) {
+  const label = actionMeta(point.action).label;
+  if (point.action !== 'key') return label;
+  const key = ROUTE_KEYS.find(([id]) => id === point.params?.key)?.[1] ?? String(point.params?.key ?? '');
+  const hold = Number(point.params?.hold);
+  const times = Number(point.params?.times);
+  return `${label} · ${key}${hold >= 0.5 ? ` 长按 ${hold} 秒` : ''}${times > 1 ? ` ×${times}` : ''}`;
+}
+
 const HOTKEY_LEGEND = [['F6', '关键点'], ['F7', '采集'], ['F8', '等待'], ['F9', '钓鱼'], ['F10', '下落攻击']] as const;
 const STATE_TEXT: Record<string, string> = {
   starting: '正在准备定位…', recording: '正在录制', paused: '已暂停：菜单或加载中', lost: '小地图定位不上',
@@ -492,7 +502,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
               <button onClick={stopRouteSession} className={primaryButton}><Square className="h-3.5 w-3.5" />结束录制</button>
             </div>
             <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-2 text-xs text-text-secondary">
-              <span className="text-text-muted">跳跃和交互自动记录</span>
+              <span className="text-text-muted">跳跃、交互、攻击、摇铃和能力键自动记录</span>
               {HOTKEY_LEGEND.map(([key, label]) => <span key={key}><kbd className="rounded border border-border bg-bg-primary px-1 text-[11px]">{key}</kbd> {label}</span>)}
             </p>
           </div> : status === 'running' || status === 'starting' || status === 'stopping' ? <div className="flex items-center gap-3 rounded-2xl border border-border bg-bg-secondary/95 px-4 py-2.5 shadow-lg">
@@ -570,7 +580,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
               }} className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left">
                 <span className="w-7 shrink-0 text-right tabular-nums text-text-muted">{index+1}</span>
                 <span className="h-2 w-2 shrink-0 rounded-full border border-border" style={item.action ? { background: actionMeta(item.action).color, borderColor: 'transparent' } : undefined} />
-                <span className={clsx('truncate', !item.action && 'text-text-secondary')}>{actionMeta(item.action).label}{item.jump && <span className="ml-1 text-warning">· 跳跃</span>}</span>
+                <span className={clsx('truncate', !item.action && 'text-text-secondary')}>{pointLabel(item)}{item.jump && <span className="ml-1 text-warning">· 跳跃</span>}</span>
               </button>
               {!readOnly && <span className="hidden pr-1 group-hover:flex">
                 <button onClick={() => movePoint(index, -1)} title="上移" className="rounded p-1 text-text-muted hover:text-text-primary"><ArrowUp className="h-3 w-3" /></button>
@@ -580,7 +590,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
           </ol>
         </> : <div className="flex flex-1 flex-col justify-center gap-4 p-6 text-sm leading-6 text-text-secondary">
           <h2 className="text-base font-semibold text-text-primary">三步做一条路线</h2>
-          <p><strong className="text-text-primary">1. 录制</strong><br />选好地图，点开始录制，然后在游戏里正常走一遍。跳跃和交互会自动记下来。</p>
+          <p><strong className="text-text-primary">1. 录制</strong><br />选好地图，点开始录制，然后在游戏里正常走一遍。跳跃、交互、攻击、摇铃和能力键会自动记下来，长按也会记住时长。</p>
           <p><strong className="text-text-primary">2. 调整</strong><br />在地图上拖动点位，点选后设置要做的动作，随时撤销。</p>
           <p><strong className="text-text-primary">3. 试跑</strong><br />可以从任意一点开始试跑，满意后加入任务列表。</p>
         </div>}
