@@ -330,11 +330,19 @@ class GameUI:
         page = "MaaNikki_RewardOverlayReady"
         if not self.page_matches(page):
             return None
-        if not self.rt.key("skip", 0):
-            return False
-        # The menu title can remain readable through the popup. Verify that
-        # the popup itself disappears instead of accepting that same title.
-        return self.wait_page(lambda: not self.page_matches(page))
+        # A press during the popup's opening can be ignored. Press again only
+        # after a fresh frame confirms the popup is still there.
+        for _ in range(3):
+            if not self.rt.key("skip", 0):
+                return False
+            # The menu title can remain readable through the popup. Verify that
+            # the popup itself disappears instead of accepting that same title.
+            if self.wait_page(lambda: not self.page_matches(page), seconds=2.5):
+                return True
+            with self.rt.observe(fresh=True):
+                if self.rt.stopped or not self.rt.hit(page):
+                    return False
+        return False
 
     def find_menu_entry(self, *, node, scroll=False):
         """Open a verified Esc entrance, optionally searching its left-hand pages."""
