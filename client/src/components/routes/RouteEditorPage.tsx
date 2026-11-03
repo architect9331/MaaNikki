@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowDown, ArrowLeft, ArrowUp, Check, CirclePlay, Copy, Download, FolderOpen, Footprints, ListPlus, Loader2, Maximize, Minus, MousePointer2, Plus, Redo2, Route, Square, Trash2, Undo2, Upload, X } from 'lucide-react';
+import { AlertCircle, ArrowDown, ArrowLeft, ArrowUp, Check, CirclePlay, Copy, FileInput, FileOutput, FolderOpen, Footprints, ListPlus, Loader2, Maximize, Minus, MousePointer2, Plus, Redo2, Route, Square, Trash2, Undo2, X } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
@@ -323,6 +323,19 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
       toast.error(`导入失败：${error instanceof Error ? error.message : String(error)}`);
     }
   };
+  const exportRoute = async () => {
+    if (!route) return;
+    try {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const path = await save({ defaultPath: `${route.title || route.id}.json`, filters: [{ name: '路线文件', extensions: ['json'] }] });
+      if (!path) return;
+      const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+      await writeTextFile(path, JSON.stringify(route, null, 2));
+      toast.success('路线已导出');
+    } catch (error) {
+      toast.error(`导出失败：${String(error)}`);
+    }
+  };
   const copyRoute = async () => {
     if (!route) return;
     await navigator.clipboard.writeText(JSON.stringify(route, null, 2));
@@ -410,9 +423,10 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
 
     <div className="flex min-h-0 flex-1">
       <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-bg-secondary">
-        <div className="flex gap-1.5 p-2.5">
-          <button onClick={() => createRoute()} className={clsx(primaryButton, 'flex-1 justify-center')}><Plus className="h-3.5 w-3.5" />新建路线</button>
-          <button onClick={() => fileInput.current?.click()} title="导入路线文件" className={secondaryButton}><Upload className="h-3.5 w-3.5" /></button>
+        <div className="grid grid-cols-2 gap-1.5 p-2.5">
+          <button onClick={() => createRoute()} className={clsx(primaryButton, 'col-span-2 justify-center')}><Plus className="h-3.5 w-3.5" />新建路线</button>
+          <button onClick={() => fileInput.current?.click()} title="从路线文件导入" className={clsx(secondaryButton, 'justify-center')}><FileInput className="h-3.5 w-3.5" />导入</button>
+          <button onClick={() => void exportRoute()} disabled={!route} title={route ? '把当前路线保存为文件' : '先打开一条路线'} className={clsx(secondaryButton, 'justify-center')}><FileOutput className="h-3.5 w-3.5" />导出</button>
           <input ref={fileInput} type="file" accept=".json" className="hidden" onChange={(event) => { void importFile(event.target.files?.[0]); event.target.value = ''; }} />
         </div>
         <div className="min-h-0 flex-1 overflow-auto px-2 pb-2">
@@ -564,14 +578,6 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
               </span>}
             </li>)}
           </ol>
-          <button onClick={() => {
-            const blob = new Blob([JSON.stringify(route, null, 2)], { type: 'application/json' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `${route.title || route.id}.json`;
-            link.click();
-            URL.revokeObjectURL(link.href);
-          }} className="flex items-center justify-center gap-1.5 border-t border-border py-2 text-xs text-text-secondary hover:bg-bg-hover"><Download className="h-3.5 w-3.5" />导出路线文件</button>
         </> : <div className="flex flex-1 flex-col justify-center gap-4 p-6 text-sm leading-6 text-text-secondary">
           <h2 className="text-base font-semibold text-text-primary">三步做一条路线</h2>
           <p><strong className="text-text-primary">1. 录制</strong><br />选好地图，点开始录制，然后在游戏里正常走一遍。跳跃和交互会自动记下来。</p>
