@@ -977,7 +977,10 @@ class Executors(Runtime):
             self.main()
             return False
         content = str(self.setting(mode).get("chat_text", "1"))[:40]
-        if not content or not self.input_text(content):
+        # Selecting the channel removes editor focus. Refocus inside the text
+        # field, clear of the emoji and Send buttons, in the 1280x720 frame.
+        if (not content or not self.action("Click", target=[500, 680])
+                or not self.pause(.3) or not self.input_text(content)):
             return False
         # Chat opening is rebindable; the text editor's Send is always Enter.
         return self.key(13, .5) and self.main() and self.key("interact", .5)
