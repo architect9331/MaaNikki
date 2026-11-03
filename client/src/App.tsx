@@ -3,6 +3,7 @@ import { BlessingProgressPage } from '@/components/BlessingProgressPage';
 import { ExplorationPage } from '@/components/ExplorationPage';
 import { ResonancePage } from '@/components/ResonancePage';
 import { WardrobePage } from '@/components/WardrobePage';
+import { RouteEditorPage } from '@/components/routes/RouteEditorPage';
 import { monitorResonance } from '@/services/resonanceService';
 import { explorationOwnsWindow, initializeExploration, monitorExploration, useExplorationStore } from '@/services/explorationService';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
@@ -1956,6 +1957,17 @@ function App() {
       <div className="h-full flex flex-col bg-bg-primary relative">
         <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
         <WardrobePage onClose={() => useAppStore.getState().setCurrentPage('main')} />
+        <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
+        {toaster}
+      </div>
+    );
+  }
+
+  if (currentPage === 'routes') {
+    return (
+      <div className="h-full flex flex-col bg-bg-primary relative">
+        <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
+        <RouteEditorPage onClose={() => useAppStore.getState().setCurrentPage('main')} />
         <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
         {toaster}
       </div>

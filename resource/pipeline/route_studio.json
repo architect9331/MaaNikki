@@ -1,0 +1,18 @@
+{
+  "MaaNikki_RouteRecord": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.route_record",
+    "custom_action_param": {"map": ""},
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_RouteRun": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.route_run",
+    "custom_action_param": {"file": "", "mode": "full", "start": 0},
+    "post_delay": 0,
+    "next": []
+  }
+}

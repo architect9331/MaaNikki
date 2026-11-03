@@ -1,0 +1,20 @@
+{
+  "task": [{
+    "name": "custom_route",
+    "label": "自定义路线",
+    "entry": "MaaNikki_RouteRun",
+    "group": ["periodic"],
+    "default_check": false,
+    "description": "运行路线编辑器里做好的路线。切出游戏后暂停，切回继续。",
+    "option": ["CustomRouteFile"]
+  }],
+  "option": {
+    "CustomRouteFile": {
+      "type": "input",
+      "label": "路线文件",
+      "description": "在路线编辑器点「加入任务」会自动填好，路线保存在 config/routes/。",
+      "inputs": [{"name": "file", "label": "路线 JSON", "default": "", "input_type": "file"}],
+      "pipeline_override": {"MaaNikki_RouteRun": {"custom_action_param": {"file": "{file}"}}}
+    }
+  }
+}

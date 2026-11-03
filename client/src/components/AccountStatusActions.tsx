@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Check, Compass, RefreshCw, Shirt, Sparkles, Star, X } from 'lucide-react';
+import { BookOpen, Check, Compass, RefreshCw, Route, Shirt, Sparkles, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
@@ -79,7 +79,7 @@ function GiantMeteorStatus({ compact }: { compact?: boolean }) {
   return <>
     <FeatureTile icon={MeteorIcon} title="巨陨星" compact={compact} warn={Boolean(error) || record?.outcome === 'unconfirmed'}
       status={error ? '状态读取失败' : found ? '今日已发现' : absent ? '今日未发现' : record ? '检测未确认' : '今日尚未检测'}
-      className={clsx(found && 'meteor-status--found', !compact && 'col-span-full')}
+      className={clsx(found && 'meteor-status--found')}
       tooltip={<div className="space-y-1">
         <p className="font-medium">{label}</p>
         <p className="text-text-secondary">{checkedAt ? `检测于 ${checkedAt}` : description}</p>
@@ -155,6 +155,9 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
       toggle={{ checked: resonance.status.enabled, disabled: !isTauri() || !resonance.ready || resonance.changing,
         label: '自动同步共鸣记录', onChange: (value) => void setResonanceEnabled(value) }}
       onClick={() => open('resonance')} />
+    <FeatureTile icon={Route} title="路线编辑器" compact={compact} status="录制和编辑路线"
+      tooltip={<div className="space-y-1"><p className="font-medium">路线编辑器</p><p className="text-text-secondary">走一遍就能录下路线，再加上采集、钓鱼等动作。</p></div>}
+      onClick={() => open('routes')} />
     <GiantMeteorStatus compact={compact} />
   </>;
   return compact

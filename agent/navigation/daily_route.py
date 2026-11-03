@@ -39,6 +39,11 @@ def load_macro(resource: Path, name):
         raise NavigationError("宏资源无法读取。") from error
 
 
+# Game actions a user route can press directly; UI and movement keys stay out.
+ROUTE_KEYS = {"interact", "jump", "falling", "attack", "capture", "bell", "ability_use", "sub_ability",
+              *(f"ability_{index}" for index in range(1, 9))}
+
+
 def preflight(resource, route, executor):
     actions = {p.action for p in route.points if p.action}
     required = {"plant": "collect", "insect": "insect", "fishing": "fishing", "fight": "macro", "bubble": "macro", "photo": "photo",
@@ -68,6 +73,12 @@ def preflight(resource, route, executor):
             raise NavigationError("小游戏入场与结束页面尚未适配。")
         if point.action == "macro":
             load_macro(resource, point.params["id"])
+        if point.action == "key":
+            params = point.params or {}
+            hold, times = params.get("hold", .1), params.get("times", 1)
+            if (params.get("key") not in ROUTE_KEYS or type(hold) not in (int, float) or not 0 <= hold <= 10
+                    or type(times) is not int or not 1 <= times <= 50):
+                raise NavigationError("按键动作的按键、时长或次数无效。")
 
 
 class RouteActions:
@@ -286,6 +297,12 @@ class RouteActions:
                 self.event({"type": "resource_unconfirmed", "action": kind, "x": point.x, "y": point.y})
         elif kind == "macro":
             ok = self.macro(point.params["id"])
+        elif kind == "key":
+            for index in range(point.params.get("times", 1)):
+                if index:
+                    self.inputs.wait(.2)
+                self.inputs.hold(point.params["key"], max(.05, point.params.get("hold", .1)))
+            ok = True
         elif kind == "photo":
             ok = self.rt.photo(self.mode)
         elif kind == "place":

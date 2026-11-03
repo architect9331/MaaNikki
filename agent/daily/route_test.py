@@ -27,6 +27,9 @@ from navigation.vision import Locator
 
 
 NAVIGATION_ACTIONS = {"", "teleport", "wait"}
+# Actions a user route may run. Others need task-specific setup from their daily task.
+USER_ACTIONS = NAVIGATION_ACTIONS | {"collect", "insect", "fishing", "bottle", "macro", "key"}
+USER_MACROS = {"starsea_fall", "zhaoxi_attack"}
 
 
 def read_test_document(resource: Path, settings: dict):
@@ -47,10 +50,22 @@ def read_test_document(resource: Path, settings: dict):
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
+def from_point(document, start):
+    """Trial a route from a chosen point; the start teleport no longer applies."""
+    if not start:
+        return document
+    points = document.get("points") if isinstance(document, dict) else None
+    if type(start) is not int or not isinstance(points, list) or not 0 < start < len(points):
+        raise NavigationError("试跑的起始点无效。")
+    document = {**document, "points": points[start:]}
+    document.pop("teleport", None)
+    return document
+
+
 def test_document(resource: Path, settings: dict, *, document=None):
     """Validate one fixed snapshot before connecting or sending input."""
     mode = settings.get("mode", "movement")
-    if mode not in {"movement", "home", "bottle"}:
+    if mode not in {"movement", "home", "bottle", "full"}:
         raise NavigationError("路线测试模式无效。")
     home = mode == "home"
     bottle = mode == "bottle"
@@ -84,6 +99,9 @@ def test_document(resource: Path, settings: dict, *, document=None):
             raise NavigationError(f"第 {index+1} 点的动作或参数格式无效。")
         if action == "wait" and not number(param.get("seconds"), 0, 60):
             raise NavigationError(f"第 {index+1} 点的等待时间须为 0–60 秒。")
+        if mode == "full" and (action not in USER_ACTIONS
+                               or action == "macro" and param.get("id") not in USER_MACROS):
+            raise NavigationError(f"第 {index+1} 点的动作不能用于自定义路线。")
         if bottle and action not in NAVIGATION_ACTIONS | {"bottle"}:
             raise NavigationError(f"第 {index+1} 点不是支持的漂流瓶测试动作。")
         if home:
@@ -166,6 +184,10 @@ class TestTeleporter(Teleporter):
 
 
 class RouteTest(Runtime):
+    dev_only = True
+    label = "路线测试"
+    default_mode = "movement"
+
     def __init__(self, context):
         super().__init__(context)
         self.directory = None
@@ -219,7 +241,7 @@ class RouteTest(Runtime):
             with (self.directory / "events.jsonl").open("a", encoding="utf-8") as stream:
                 stream.write(json.dumps({"time": time.time(), **value}, ensure_ascii=False)+"\n")
         if value.get("type") == "waypoint" and self.collection_entry is None:
-            self.progress_message = f"路线测试：已到达第 {value['index']+1} 点，共 {value['total']+1} 点。"
+            self.progress_message = f"{self.label}：已到达第 {value['index']+1} 点，共 {value['total']+1} 点。"
         # UI log callbacks can block on a pipeline RPC. Defer them while
         # movement is held so logging cannot extend a pulse past its waypoint.
         inputs = self.navigation_inputs
@@ -230,18 +252,20 @@ class RouteTest(Runtime):
     def phase(self, stage, message):
         self.stage = stage
         self.event({"type": "phase", "phase": stage})
-        self.log("路线测试："+message)
+        self.log(f"{self.label}：{message}")
 
     def run_test(self, settings):
         try:
-            if os.environ.get("PI_MAANIKKI_DEV_MODE") != "1":
+            if self.dev_only and os.environ.get("PI_MAANIKKI_DEV_MODE") != "1":
                 raise NavigationError("请开启客户端设置中的开发模式后再测试路线。")
+            settings = {"mode": self.default_mode, **settings}
             source = read_test_document(RESOURCE, settings)
             if isinstance(source, dict) and source.get("kind") == "route_collection":
                 return self.run_collection(settings, source)
+            source = from_point(source, settings.get("start", 0))
             prepared = test_document(RESOURCE, settings, document=source)
         except (NavigationError, OSError, KeyError, TypeError, ValueError) as error:
-            self.log("路线测试停止："+str(error))
+            self.log(f"{self.label}停止：{error}")
             return False
         return self.run_single(settings, prepared=prepared)
 
@@ -350,13 +374,13 @@ class RouteTest(Runtime):
     def run_single(self, settings, *, prepared, directory=None, refocus=True, force_teleport=False):
         inputs = None
         previous_inputs = self.navigation_inputs
-        mode = settings.get("mode", "movement")
+        mode = settings.get("mode", self.default_mode)
         result = {"success": False, "mode": mode}
         try:
-            if os.environ.get("PI_MAANIKKI_DEV_MODE") != "1":
+            if self.dev_only and os.environ.get("PI_MAANIKKI_DEV_MODE") != "1":
                 raise NavigationError("请开启客户端设置中的开发模式后再测试路线。")
             if self.stopped:
-                raise NavigationError("路线测试已停止。")
+                raise NavigationError(f"{self.label}已停止。")
             model, spec = prepared
             source_document = model.document
             self.review_points = source_document["points"]
@@ -370,7 +394,7 @@ class RouteTest(Runtime):
                 executor = {"home": "home", "bottle": "bottle"}.get(mode, "navigation")
                 preflight(RESOURCE, model, executor)
             if not inputs_allowed():
-                raise NavigationError("路线测试需要当前连接使用前台鼠标和键盘（Seize）。")
+                raise NavigationError(f"{self.label}需要当前连接使用前台鼠标和键盘（Seize）。")
             self.directory = directory or ROOT / "logs" / "navigation" / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-route-test")
             self.directory.mkdir(parents=True)
             write_json(self.directory / "route.json", source_document)
@@ -430,7 +454,7 @@ class RouteTest(Runtime):
                           fatal=isinstance(error, (TypeError, KeyError, AttributeError)))
             if inputs:
                 result.update(inputs.focus_details())
-            self.log("路线测试停止："+str(error))
+            self.log(f"{self.label}停止：{error}")
             if self.directory and self.last_capture is not None:
                 try:
                     from diagnostics import save_image
@@ -448,18 +472,18 @@ class RouteTest(Runtime):
                     self.event({"type": "inputs_released"})
                 except (OSError, ValueError, RuntimeError) as error:
                     result.update(success=False, release_error=str(error))
-                    self.log("路线测试无法确认按键已全部释放，请检查游戏状态。")
+                    self.log(f"{self.label}无法确认按键已全部释放，请检查游戏状态。")
                     self.navigation_halted = True
             self.navigation_inputs = previous_inputs
             self.last_result = result
             if self.directory:
                 try:
                     write_json(self.directory / "result.json", result)
-                    status = "路线测试完成。" if result["success"] else "路线测试结束，请查看异常提示。"
+                    status = f"{self.label}完成。" if result["success"] else f"{self.label}结束，请查看异常提示。"
                     if mode == "bottle":
                         status += (f"已尝试 {len(self.bottle_results)} 个漂流瓶点，"
                                    f"确认拾取 {result['bottles_collected']} 次。")
                     self.log(status+"日志："+str(self.directory), ui_text=status)
                 except (OSError, ValueError):
-                    self.log("路线测试日志保存失败。")
+                    self.log(f"{self.label}日志保存失败。")
         return result["success"]

@@ -275,6 +275,15 @@ class ForegroundInput:
         self.user32.mouse_event({0: 0x0004, 1: 0x0010, 2: 0x0040, 3: 0x0100, 4: 0x0100}[button],
                                 0, 0, button-2 if button >= 3 else 0, 0)
 
+    def hold(self, key, seconds):
+        """Press any registered game action, for route-authored key steps."""
+        binding = self.bindings.get(key)
+        self._down(binding)
+        try:
+            self.wait(seconds)
+        finally:
+            self._up(binding)
+
     def key_down(self, key):
         if key not in MACRO_KEYS:
             raise NavigationError("宏按键未登记。")

@@ -212,6 +212,9 @@ pub fn run() {
             commands::resonance::resonance_history,
             commands::resonance::resonance_export,
             commands::account_state::get_account_state,
+            commands::user_routes::list_routes,
+            commands::user_routes::save_user_route,
+            commands::user_routes::delete_user_route,
             commands::wardrobe_scoring::get_wardrobe_scoring,
             commands::wardrobe_scoring::save_wardrobe_scoring,
             // Maa 核心命令
