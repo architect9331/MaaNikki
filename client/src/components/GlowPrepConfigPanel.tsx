@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Calculator, Check, Plus, RotateCcw, Sparkles, X } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
@@ -36,6 +36,8 @@ export const GLOW_MATERIAL_DEFS: GlowMaterialDef[] = [
 
 const field = 'rounded-lg border border-border bg-bg-secondary px-2 py-1 text-xs outline-none focus:border-accent';
 const num = (v: number) => v.toLocaleString('zh-CN');
+const hasPositiveTargets = (m?: MaterialsState | null) =>
+  Object.values(m?.glow_plan?.targets ?? {}).some((v) => Number(v) > 0);
 
 export function GlowPrepConfigPanel({ compact = false, externalMaterials, accountKey: propKey, onChanged }: {
   compact?: boolean;
@@ -47,19 +49,33 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
   const setCurrentPage = useAppStore((state) => state.setCurrentPage);
   const [accountKey, setAccountKey] = useState(propKey ?? '');
   const [materials, setMaterials] = useState<MaterialsState>(externalMaterials ?? {});
-  const [tab, setTab] = useState<'active' | 'vortex' | 'chroma' | 'basic'>('vortex');
+  const [tab, setTab] = useState<'active' | 'vortex' | 'chroma' | 'basic'>(() =>
+    hasPositiveTargets(externalMaterials) ? 'active' : 'vortex',
+  );
+  const initializedAccountRef = useRef<string | null>(
+    propKey && externalMaterials !== undefined ? propKey : null,
+  );
 
   useEffect(() => {
     if (propKey && externalMaterials !== undefined) {
       setAccountKey(propKey);
       setMaterials(externalMaterials ?? {});
+      if (initializedAccountRef.current !== propKey) {
+        initializedAccountRef.current = propKey;
+        setTab(hasPositiveTargets(externalMaterials) ? 'active' : 'vortex');
+      }
       return;
     }
     let cancelled = false;
     void loadScoring().then((res) => {
       if (cancelled) return;
       setAccountKey(res.account_key);
-      setMaterials(res.materials ?? {});
+      const nextMats = res.materials ?? {};
+      setMaterials(nextMats);
+      if (initializedAccountRef.current !== res.account_key) {
+        initializedAccountRef.current = res.account_key;
+        setTab(hasPositiveTargets(nextMats) ? 'active' : 'vortex');
+      }
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [activeUid, propKey, externalMaterials]);
@@ -67,10 +83,6 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
   const inventory = materials.inventory ?? {};
   const targets = materials.glow_plan?.targets ?? {};
   const activeDefs = useMemo(() => GLOW_MATERIAL_DEFS.filter((d) => (targets[d.id] ?? 0) > 0), [targets]);
-
-  useEffect(() => {
-    if (activeDefs.length > 0 && tab === 'vortex') setTab('active');
-  }, [activeDefs.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function saveTargets(nextTargets: Record<string, number>, label?: string) {
     if (!accountKey) {
@@ -114,7 +126,7 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
   }, 0), [activeDefs, targets, inventory]);
 
   const shownDefs = tab === 'active'
-    ? (activeDefs.length ? activeDefs : GLOW_MATERIAL_DEFS.filter((d) => d.group === 'vortex'))
+    ? activeDefs
     : GLOW_MATERIAL_DEFS.filter((d) => d.group === tab);
 
   return (
@@ -165,6 +177,11 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
         ))}
       </div>
 
+      {shownDefs.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-bg-primary px-4 py-5 text-center text-xs text-text-secondary">
+          当前尚未设置任何焕新材料筹备目标。请切换到右侧的分类标签页手动输入目标库存或点「+数量」追加，也可从搭配计算结果一键导入。
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {shownDefs.map((def) => {
           const cur = Number(inventory[def.id] ?? 0);
@@ -217,6 +234,7 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
           );
         })}
       </div>
+      )}
     </div>
   );
 }
