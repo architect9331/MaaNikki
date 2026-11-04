@@ -504,7 +504,8 @@ class Navigator:
                 # cones and invalidates calibration feedback for external turns.
                 after = self.stable_heading(after)
             self.require_heading(after)
-            self.event({"type": "camera_turn", "target": target_heading, "before": pose.heading,
+            self.event({"type": "camera_turn", "index": self.current_index,
+                        "target": target_heading, "before": pose.heading,
                         "after": after.heading, "pixels": pixels,
                         "rotation": angle_delta(after.heading, pose.heading), "gain": correction_gain,
                         "expected_rotation": expected_rotation,
@@ -540,7 +541,8 @@ class Navigator:
                 expected_rotation = pixels/self.turn_ratio
                 pose = self.stable_heading(pose)
                 actual = angle_delta(pose.heading, before)
-                self.event({"type": "camera_turn", "target": target_heading, "before": before,
+                self.event({"type": "camera_turn", "index": self.current_index,
+                            "target": target_heading, "before": before,
                             "after": pose.heading, "pixels": pixels, "rotation": actual,
                             "gain": correction_gain, "stationary": True,
                             "expected_rotation": expected_rotation,
@@ -834,6 +836,7 @@ class Navigator:
         heading_rechecks = 0
         rejoin = None
         map_checked = False
+        turnback_since = None
         generation = getattr(self.inputs, "generation", 0)
         try:
             self.inputs.check()
@@ -945,22 +948,42 @@ class Navigator:
                         last = None
                         if (pose.heading is None or distance(pose, target) > radius or not settled
                                 or getattr(self.inputs, "generation", 0) != generation):
+                            if getattr(self.inputs, "generation", 0) == generation and (
+                                    distance(pose, target) > radius or not settled):
+                                if turnback_since is None:
+                                    turnback_since = time.monotonic()
+                                self.event({
+                                    "type": "turnback", "index": index, "reason": "braking_overshoot",
+                                    "closest_dist": round(distance(arrival_pose, target), 3),
+                                    "remaining": round(distance(pose, target), 3),
+                                    "configured_radius": round(target.radius, 3),
+                                    "radius": round(radius, 3), "pass_radius": round(pass_radius, 3),
+                                    "precise": True,
+                                    "pose": [round(pose.x, 3), round(pose.y, 3)],
+                                })
                             continue
                     if rejoin is not None:
                         motion.close()
                         rejoin = None
                         last = None
+                        turnback_since = None
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
                         best_distance = distance(pose, route.points[index])
                         self.event({"type": "route_rejoined", "index": index, **pose.dict()})
                         continue
                     scene_retries = 0
                     self.heading_recheck_count = 0
+                    turnback_elapsed = (round(time.monotonic()-turnback_since, 3)
+                                        if turnback_since is not None else 0.0)
+                    turnback_since = None
                     self.event({"type": "waypoint", "index": index, "total": len(route.points)-1,
                                 "pose": pose.dict(), "target": [target.x, target.y],
+                                "configured_radius": target.radius,
                                 "radius": radius, "pass_radius": pass_radius,
+                                "precise": precise,
                                 "remaining": distance(pose, target),
-                                "crossed": crossed})
+                                "crossed": crossed,
+                                "turnback_seconds": turnback_elapsed})
                     if self.waypoint and self.waypoint(target) == "done":
                         break
                     if target.action:
@@ -1022,6 +1045,26 @@ class Navigator:
                 before_turn = pose
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
                 tolerance = self.travel_tolerance(remaining_distance, radius)
+                if last is not None and rejoin is None:
+                    step_dx, step_dy = pose.x-last.x, pose.y-last.y
+                    straddled = ((target.x-last.x)*step_dx+(target.y-last.y)*step_dy > 0
+                                 and (target.x-pose.x)*step_dx+(target.y-pose.y)*step_dy <= 0)
+                    closest_pass = segment_distance(target, last, pose)
+                    if straddled and closest_pass <= max(pass_radius*2.5, radius+2.0):
+                        if turnback_since is None:
+                            turnback_since = time.monotonic()
+                        self.event({
+                            "type": "turnback", "index": index, "reason": "pass_miss",
+                            "closest_dist": round(closest_pass, 3),
+                            "remaining": round(remaining_distance, 3),
+                            "configured_radius": round(target.radius, 3),
+                            "radius": round(radius, 3), "pass_radius": round(pass_radius, 3),
+                            "precise": bool(precise),
+                            "turn_angle": (round(abs(angle_delta(bearing, pose.heading)), 1)
+                                           if pose.heading is not None else None),
+                            "tolerance": round(tolerance, 2),
+                            "pose": [round(pose.x, 3), round(pose.y, 3)],
+                        })
                 try:
                     pose = self.turn(bearing, pose, tolerance=tolerance)
                 except HeadingUncertain:
@@ -1039,7 +1082,13 @@ class Navigator:
                 # Small moving corrections can fall back to a stopped turn too.
                 # Only time actually holding forward counts toward being stuck.
                 turn_forward = max(0, motion.forward_elapsed()-turn_input)
-                stuck_since += max(0, time.monotonic()-turn_begin-turn_forward)
+                turn_stop_seconds = max(0.0, time.monotonic()-turn_begin-turn_forward)
+                stuck_since += turn_stop_seconds
+                if turn_stop_seconds >= .02:
+                    self.event({"type": "turn_stop", "index": index,
+                                "stop_seconds": round(turn_stop_seconds, 3),
+                                "remaining": round(remaining_distance, 3),
+                                "tolerance": round(tolerance, 2)})
                 if self.stopped() or time.monotonic() >= deadline:
                     raise NavigationError("导航已停止或超时。")
                 if getattr(self.inputs, "generation", 0) != generation:

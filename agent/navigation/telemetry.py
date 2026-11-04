@@ -10,7 +10,7 @@ from pathlib import Path
 from threading import Lock
 
 from client_config import mxu_config
-from .geometry import project_segment
+from .geometry import project_segment, segment_distance
 from .models import Point, Route
 
 _LOCK = Lock()
@@ -102,13 +102,30 @@ def summarize_route_telemetry(
     count = len(points)
     r_hash = route_hash(route)
 
-    # Track per-waypoint accumulators.
+    profile = next(
+        (ev for ev in events if isinstance(ev, dict) and ev.get("type") == "navigation_profile"),
+        {},
+    )
+    radius_scale = float(profile.get("transit_radius_scale", 1.0))
+    pass_scale = float(profile.get("transit_pass_radius_scale", radius_scale))
+
     wp_states = []
     for idx, pt in enumerate(points):
+        precise = bool(pt.action) or idx == count - 1
+        base_rad = min(pt.radius, 1.0) if pt.action == "bottle" else pt.radius
+        eff_rad = base_rad * radius_scale if (not precise and base_rad <= 1.0) else base_rad
+        eff_pass = (
+            base_rad * max(radius_scale, pass_scale)
+            if (not precise and base_rad <= 1.0)
+            else base_rad
+        )
         wp_states.append({
             "index": idx,
             "target": [round(pt.x, 3), round(pt.y, 3)],
-            "radius": round(pt.radius, 3),
+            "configured_radius": round(pt.radius, 3),
+            "radius": round(eff_rad, 3),
+            "pass_radius": round(eff_pass, 3),
+            "precise": precise,
             "action": pt.action or "",
             "jump": bool(pt.jump),
             "reached": False,
@@ -118,6 +135,12 @@ def summarize_route_telemetry(
             "drift_dx": 0.0,
             "drift_dy": 0.0,
             "overshoot_retries": 0,
+            "turnback_count": 0,
+            "turnback_ms": 0,
+            "closest_miss_dist": None,
+            "moving_turns": 0,
+            "stationary_turns": 0,
+            "turn_stop_ms": 0,
             "unstuck_count": 0,
             "heading_rechecks": 0,
             "map_recoveries": 0,
@@ -166,6 +189,43 @@ def summarize_route_telemetry(
                     ct, _, _ = segment_metrics(last_pose[0], last_pose[1], start, points[current_idx])
                     if abs(ct) > abs(state["max_cross_track"]):
                         state["max_cross_track"] = ct
+                    # Fallback pass-miss detection for older event streams without explicit turnback events.
+                    if isinstance(before, (list, tuple)) and len(before) == 2:
+                        bx, by = float(before[0]), float(before[1])
+                        ax, ay = last_pose
+                        sdx, sdy = ax - bx, ay - by
+                        pt = points[current_idx]
+                        straddled = (
+                            (pt.x - bx) * sdx + (pt.y - by) * sdy > 0
+                            and (pt.x - ax) * sdx + (pt.y - ay) * sdy <= 0
+                        )
+                        if straddled:
+                            closest = segment_distance(pt, Point(bx, by), Point(ax, ay))
+                            if closest > state["pass_radius"] and closest <= max(state["pass_radius"] * 2.5, state["radius"] + 2.0):
+                                if state["closest_miss_dist"] is None or closest < state["closest_miss_dist"]:
+                                    state["closest_miss_dist"] = round(closest, 3)
+
+        elif kind == "camera_turn":
+            if 0 <= current_idx < count:
+                if ev.get("stationary"):
+                    wp_states[current_idx]["stationary_turns"] += 1
+                else:
+                    wp_states[current_idx]["moving_turns"] += 1
+
+        elif kind == "turn_stop":
+            if 0 <= current_idx < count:
+                secs = ev.get("stop_seconds", 0.0)
+                if isinstance(secs, (int, float)) and secs > 0:
+                    wp_states[current_idx]["turn_stop_ms"] += round(float(secs) * 1000)
+
+        elif kind == "turnback":
+            if 0 <= current_idx < count:
+                state = wp_states[current_idx]
+                state["turnback_count"] += 1
+                cd = ev.get("closest_dist")
+                if isinstance(cd, (int, float)) and ev.get("reason") == "pass_miss":
+                    if state["closest_miss_dist"] is None or float(cd) < state["closest_miss_dist"]:
+                        state["closest_miss_dist"] = round(float(cd), 3)
 
         elif kind == "arrival_check":
             if 0 <= current_idx < count:
@@ -193,6 +253,10 @@ def summarize_route_telemetry(
                 state["crossed"] = bool(ev.get("crossed", False))
                 if isinstance(ev.get("radius"), (int, float)):
                     state["radius"] = round(float(ev["radius"]), 3)
+                if isinstance(ev.get("pass_radius"), (int, float)):
+                    state["pass_radius"] = round(float(ev["pass_radius"]), 3)
+                if isinstance(ev.get("turnback_seconds"), (int, float)):
+                    state["turnback_ms"] = round(float(ev["turnback_seconds"]) * 1000)
                 pose_dict = ev.get("pose")
                 if isinstance(pose_dict, dict) and isinstance(pose_dict.get("x"), (int, float)):
                     ax, ay = float(pose_dict["x"]), float(pose_dict["y"])
@@ -246,11 +310,16 @@ def summarize_route_telemetry(
     unstuck_total = 0
     missed_actions = 0
     recovered_waypoints = 0
+    turnback_waypoints = 0
+    turnback_total = 0
+    turnback_total_ms = 0
+    stationary_turns_total = 0
+    moving_turns_total = 0
+    turn_stop_total_ms = 0
 
     for idx, state in enumerate(wp_states):
         pt = points[idx]
         if not state["reached"] and idx != failed_index:
-            # Waypoints after early quota completion or after failure were not visited.
             continue
 
         actual = state["actual"]
@@ -274,27 +343,37 @@ def summarize_route_telemetry(
             seg_t = 0.0
             direction = "UNKNOWN"
 
-        has_friction = (
-            state["unstuck_count"] > 0
-            or state["map_recoveries"] > 0
-            or state["overshoot_retries"] > 0
-        )
+        tb_count = max(state["turnback_count"], state["overshoot_retries"])
+        has_stuck_recovery = state["unstuck_count"] > 0 or state["map_recoveries"] > 0
+
         if not state["reached"]:
             outcome = "failed"
         elif pt.action and pt.action not in ("wait", "teleport") and state["action_ok"] is False:
             outcome = "action_missed"
             missed_actions += 1
-        elif has_friction:
+        elif has_stuck_recovery:
             outcome = "recovered"
             recovered_waypoints += 1
+        elif tb_count > 0:
+            outcome = "turnback"
+            turnback_waypoints += 1
         else:
             outcome = "clean"
 
         unstuck_total += state["unstuck_count"]
+        turnback_total += tb_count
+        turnback_total_ms += state["turnback_ms"]
+        stationary_turns_total += state["stationary_turns"]
+        moving_turns_total += state["moving_turns"]
+        turn_stop_total_ms += state["turn_stop_ms"]
+
         waypoints_out.append({
             "index": idx,
             "target": state["target"],
+            "configured_radius": state["configured_radius"],
             "radius": state["radius"],
+            "pass_radius": state["pass_radius"],
+            "precise": state["precise"],
             "action": state["action"],
             "jump": state["jump"],
             "reached": state["reached"],
@@ -313,6 +392,12 @@ def summarize_route_telemetry(
             "drift_dx": round(state["drift_dx"], 3),
             "drift_dy": round(state["drift_dy"], 3),
             "overshoot_retries": state["overshoot_retries"],
+            "turnback_count": tb_count,
+            "turnback_ms": state["turnback_ms"],
+            "closest_miss_dist": state["closest_miss_dist"],
+            "moving_turns": state["moving_turns"],
+            "stationary_turns": state["stationary_turns"],
+            "turn_stop_ms": state["turn_stop_ms"],
             "unstuck_count": state["unstuck_count"],
             "heading_rechecks": state["heading_rechecks"],
             "map_recoveries": state["map_recoveries"],
@@ -322,6 +407,16 @@ def summarize_route_telemetry(
             **({"stuck_poses": state["stuck_poses"]} if state["stuck_poses"] else {}),
         })
 
+    # Link each waypoint with the downstream segment (index + 1) to measure whether
+    # a loose arrival/pass at waypoint[i] causes off-course drift on waypoint[i + 1].
+    for i in range(len(waypoints_out) - 1):
+        curr_wp = waypoints_out[i]
+        next_wp = waypoints_out[i + 1]
+        if next_wp["index"] == curr_wp["index"] + 1 and next_wp["action"] != "teleport":
+            curr_wp["next_outcome"] = next_wp["outcome"]
+            curr_wp["next_max_cross_track"] = next_wp["max_cross_track"]
+            curr_wp["next_turnbacks"] = next_wp["turnback_count"]
+
     if stopped_ev is not None:
         route_outcome = "failed"
     elif not success and missed_actions > 0:
@@ -330,12 +425,14 @@ def summarize_route_telemetry(
         route_outcome = "incomplete"
     elif unstuck_total > 0 or recovered_waypoints > 0 or missed_actions > 0:
         route_outcome = "recovered"
+    elif turnback_waypoints > 0:
+        route_outcome = "turnback"
     else:
         route_outcome = "clean"
 
     now = datetime.now().astimezone()
     return {
-        "schema": 1,
+        "schema": 2,
         "timestamp": now.isoformat(timespec="milliseconds"),
         "route": route.id,
         "route_hash": r_hash,
@@ -351,6 +448,23 @@ def summarize_route_telemetry(
         "unstuck_total": unstuck_total,
         "missed_actions": missed_actions,
         "recovered_waypoints": recovered_waypoints,
+        "turnback_waypoints": turnback_waypoints,
+        "turnback_total": turnback_total,
+        "turnback_total_ms": turnback_total_ms,
+        "stationary_turns_total": stationary_turns_total,
+        "moving_turns_total": moving_turns_total,
+        "turn_stop_total_ms": turn_stop_total_ms,
+        "navigation_profile": {
+            key: profile[key]
+            for key in (
+                "transit_radius_scale",
+                "transit_pass_radius_scale",
+                "heading_tolerance_far",
+                "heading_tolerance_near",
+                "heading_position_slack",
+            )
+            if key in profile
+        },
         "error": stopped_ev.get("reason") if stopped_ev else None,
         "waypoints": waypoints_out,
     }

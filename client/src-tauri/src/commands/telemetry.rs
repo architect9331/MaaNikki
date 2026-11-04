@@ -1900,6 +1900,12 @@ fn capture_route_telemetry_logs(
             ("unstuck_total", "route.unstuck_total"),
             ("missed_actions", "route.missed_actions"),
             ("recovered_waypoints", "route.recovered_waypoints"),
+            ("turnback_waypoints", "route.turnback_waypoints"),
+            ("turnback_total", "route.turnback_total"),
+            ("turnback_total_ms", "route.turnback_total_ms"),
+            ("stationary_turns_total", "route.stationary_turns"),
+            ("moving_turns_total", "route.moving_turns"),
+            ("turn_stop_total_ms", "route.turn_stop_ms"),
             ("failed_index", "route.failed_index"),
         ] {
             if let Some(val) = record.get(field).and_then(|v| v.as_i64()) {
@@ -1957,6 +1963,10 @@ fn capture_route_telemetry_logs(
                 .get("direction")
                 .and_then(|v| v.as_str())
                 .unwrap_or("UNKNOWN");
+            let wp_next_outcome = wp
+                .get("next_outcome")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default();
             let mut wp_attrs = sentry::protocol::Map::new();
             for (key, value) in [
                 ("diagnostic.reason", "route_tuning"),
@@ -1970,6 +1980,7 @@ fn capture_route_telemetry_logs(
                 ("waypoint.action", wp_action),
                 ("waypoint.outcome", wp_outcome),
                 ("waypoint.direction", wp_direction),
+                ("waypoint.next_outcome", wp_next_outcome),
             ] {
                 if !value.is_empty() {
                     wp_attrs.insert(key.to_string(), bounded_log_attribute(value).into());
@@ -1979,17 +1990,24 @@ fn capture_route_telemetry_logs(
             for (field, attr_key) in [
                 ("index", "waypoint.index"),
                 ("overshoot_retries", "waypoint.overshoot_retries"),
+                ("turnback_count", "waypoint.turnback_count"),
+                ("turnback_ms", "waypoint.turnback_ms"),
+                ("moving_turns", "waypoint.moving_turns"),
+                ("stationary_turns", "waypoint.stationary_turns"),
+                ("turn_stop_ms", "waypoint.turn_stop_ms"),
                 ("unstuck_count", "waypoint.unstuck_count"),
                 ("heading_rechecks", "waypoint.heading_rechecks"),
                 ("map_recoveries", "waypoint.map_recoveries"),
                 ("forward_steps", "waypoint.forward_steps"),
                 ("action_gain", "waypoint.action_gain"),
+                ("next_turnbacks", "waypoint.next_turnbacks"),
             ] {
                 if let Some(val) = wp.get(field).and_then(|v| v.as_i64()) {
                     wp_attrs.insert(attr_key.to_string(), val.into());
                 }
             }
             for (field, attr_key) in [
+                ("precise", "waypoint.precise"),
                 ("reached", "waypoint.reached"),
                 ("crossed", "waypoint.crossed"),
                 ("jump", "waypoint.jump"),
@@ -2000,13 +2018,17 @@ fn capture_route_telemetry_logs(
                 }
             }
             for (field, attr_key) in [
+                ("configured_radius", "waypoint.configured_radius"),
                 ("radius", "waypoint.radius"),
+                ("pass_radius", "waypoint.pass_radius"),
+                ("closest_miss_dist", "waypoint.closest_miss_dist"),
                 ("dx", "waypoint.dx"),
                 ("dy", "waypoint.dy"),
                 ("dist", "waypoint.dist"),
                 ("cross_track", "waypoint.cross_track"),
                 ("along_track", "waypoint.along_track"),
                 ("max_cross_track", "waypoint.max_cross_track"),
+                ("next_max_cross_track", "waypoint.next_max_cross_track"),
                 ("segment_t", "waypoint.segment_t"),
                 ("stop_drift", "waypoint.stop_drift"),
                 ("drift_dx", "waypoint.drift_dx"),
