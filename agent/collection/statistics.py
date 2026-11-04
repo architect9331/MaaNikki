@@ -103,7 +103,8 @@ def upload(account, root, catalog_version):
             stats.update(batch=None, rolls={}, bling=[])
 
         try:
-            account.update(clear)
+            from account_state import AccountState
+            AccountState(account.root, account.uid).update(clear)
         except (OSError, ValueError, KeyError, TypeError):
             pass
 
