@@ -618,6 +618,7 @@ fn do_init(config: &TelemetryInitConfig) {
         .traces_sample_rate(traces_sample_rate)
         // 任务失败日志走 Sentry Logs；截图附件使用独立采样率。
         .enable_logs(true)
+        .before_send_log(preserve_diagnostic_log_trace_id)
         // 隐私：不采集用户 IP、请求头等 PII
         .send_default_pii(false)
         // 隐私：不上报电脑名；留空时 SDK 会自动填入主机名
@@ -1731,6 +1732,24 @@ fn capture_diagnostic_logs(
     }
 }
 
+/// `Scope::apply_to_log` in `sentry-core` unconditionally overwrites `log.trace_id`
+/// with the active scope's span or propagation context. Diagnostic logs are sent from
+/// the detached failure worker after the task span has closed, so restore the run's
+/// recorded `trace.id` attribute before queueing the log record.
+fn preserve_diagnostic_log_trace_id(
+    mut log: sentry::protocol::Log,
+) -> Option<sentry::protocol::Log> {
+    if let Some(trace_id) = log
+        .attributes
+        .get("trace.id")
+        .and_then(|attribute| attribute.0.as_str())
+        .and_then(|value| value.parse::<sentry::protocol::TraceId>().ok())
+    {
+        log.trace_id = Some(trace_id);
+    }
+    Some(log)
+}
+
 fn build_diagnostic_log_records(
     source: &task_diagnostics::DiagnosticLog,
     context: DiagnosticLogContext<'_>,
@@ -1764,7 +1783,9 @@ fn build_diagnostic_log_records(
         attributes.insert("trace.id".to_string(), trace_id.to_string().into());
     }
     if let Some(span_id) = context.span_id {
-        attributes.insert("span.id".to_string(), span_id.to_string().into());
+        let span_id = span_id.to_string();
+        attributes.insert("span.id".to_string(), span_id.clone().into());
+        attributes.insert("parent_span_id".to_string(), span_id.into());
     }
 
     let timestamp = SystemTime::now();
