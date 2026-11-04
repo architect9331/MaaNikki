@@ -512,10 +512,11 @@ class Gameplay:
                 if self.rt.hit(claim):
                     return "available"
                 # With no claimable rewards, Paradise can show only ongoing-task
-                # glyphs and omit the bottom claim button.
+                # or completed-task glyphs and omit the bottom claim button.
                 if attempt == 2 and (self.ui.page_matches("MaaNikki_Monthly_ParadiseReady")
                                      and (self.rt.hit("MaaNikki_Monthly_ParadiseClaimEmpty")
-                                          or self.rt.hit("MaaNikki_Monthly_ParadiseTaskOngoing"))
+                                          or self.rt.hit("MaaNikki_Monthly_ParadiseTaskOngoing")
+                                          or self.rt.hit("MaaNikki_Monthly_ParadiseTaskCompleted"))
                                      and not self.rt.hit("MaaNikki_RewardLayer")
                                      and not self.rt.hit("MaaNikki_Monthly_ParadiseReward")
                                      and not self.rt.hit("MaaNikki_Monthly_ParadiseContinue")):

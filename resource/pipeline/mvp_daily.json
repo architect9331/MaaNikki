@@ -531,6 +531,19 @@
     "action": "DoNothing",
     "next": []
   },
+  "MaaNikki_Monthly_ParadiseTaskCompleted": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1070,
+      155,
+      65,
+      425
+    ],
+    "template": "game/monthly/paradise_task_completed.png",
+    "threshold": 0.85,
+    "action": "DoNothing",
+    "next": []
+  },
   "MaaNikki_Monthly_SkipTask": {
     "recognition": "TemplateMatch",
     "roi": [
