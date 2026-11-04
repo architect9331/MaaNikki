@@ -253,6 +253,29 @@ def has_notes(body: str) -> bool:
     )
 
 
+def merge_notes(existing: str, pending: str) -> str:
+    """Append pending notes to an unpublished section, merging same ### categories."""
+    def split(body: str) -> tuple[str, dict[str, str]]:
+        parts = re.split(r"(?m)^(?=### )", body.strip("\n"))
+        preamble = "" if parts[0].startswith("### ") else parts[0].strip()
+        categories: dict[str, str] = {}
+        for part in parts:
+            if part.startswith("### "):
+                heading, _, content = part.partition("\n")
+                heading = heading.strip()
+                content = content.strip()
+                categories[heading] = "\n".join(filter(None, (categories.get(heading, ""), content)))
+        return preamble, categories
+
+    old_preamble, merged = split(existing)
+    new_preamble, additions = split(pending)
+    for heading, content in additions.items():
+        merged[heading] = "\n".join(filter(None, (merged.get(heading, ""), content)))
+    blocks = [text for text in (old_preamble, new_preamble) if text]
+    blocks += [f"{heading}\n\n{content}" if content else heading for heading, content in merged.items()]
+    return "\n\n".join(blocks) + "\n\n"
+
+
 def replace_once(path: Path, old: str, new: str):
     raw = path.read_bytes()
     newline = "\r\n" if b"\r\n" in raw else "\n"
@@ -382,17 +405,34 @@ def prepare_release():
         raise ValueError(f"Target version v{target_version} is already published")
 
     bjt_today = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d")
-    effective_date = date_part if (not is_unreleased and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_part)) else bjt_today
-    new_heading = f"## [{target_version}] - {effective_date}"
-    line_end = changelog_text.find("\n", first.start())
-    old_heading = changelog_text[first.start():line_end]
-    if old_heading != new_heading:
-        updated_changelog = (
+    # A previous run may have finalized and pushed this version, then failed
+    # before publishing. Its section was never released, so pending notes join
+    # it instead of creating a second heading for the same version.
+    duplicates = [section for section in sections[1:] if section.group(1).strip() == target_version]
+    if duplicates and not (is_unreleased and len(duplicates) == 1 and duplicates[0] is sections[1]):
+        raise ValueError(f"CHANGELOG.md already has a section for {target_version}")
+    if duplicates:
+        unpublished = sections[1]
+        merged = (
             changelog_text[:first.start()]
-            + new_heading
-            + changelog_text[line_end:]
-        ).replace("\n", changelog_newline)
-        changelog_path.write_bytes(updated_changelog.encode("utf-8"))
+            + f"## [{target_version}] - {bjt_today}\n\n"
+            + merge_notes(unpublished.group(3), body)
+            + changelog_text[unpublished.end():]
+        )
+        changelog_path.write_bytes(merged.replace("\n", changelog_newline).encode("utf-8"))
+        report(f"Merged [待发布] notes into unpublished v{target_version} section.")
+    else:
+        effective_date = date_part if (not is_unreleased and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_part)) else bjt_today
+        new_heading = f"## [{target_version}] - {effective_date}"
+        line_end = changelog_text.find("\n", first.start())
+        old_heading = changelog_text[first.start():line_end]
+        if old_heading != new_heading:
+            updated_changelog = (
+                changelog_text[:first.start()]
+                + new_heading
+                + changelog_text[line_end:]
+            ).replace("\n", changelog_newline)
+            changelog_path.write_bytes(updated_changelog.encode("utf-8"))
 
     if interface_version != target_version:
         replace_once(
