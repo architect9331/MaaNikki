@@ -4,11 +4,93 @@
     "action": "Custom",
     "custom_action": "nikki.wardrobe_read",
     "custom_action_param": {
-      "ready": "MaaNikki_WardrobeReady",
+      "ready": "MaaNikki_CompendiumSearchReady",
       "source": "MaaNikki_MainDetected"
     },
     "post_delay": 0,
     "next": []
+  },
+  "MaaNikki_Compendium_Entrance": {
+    "recognition": "OCR",
+    "roi": [70, 130, 660, 460],
+    "expected": "^博物图鉴$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_CompendiumReady",
+      "source": "MaaNikki_MenuReady"
+    },
+    "post_delay": 400
+  },
+  "MaaNikki_CompendiumReady": {
+    "recognition": "OCR",
+    "roi": [66, 15, 140, 38],
+    "expected": "^博物图鉴$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Compendium_ClothesEntrance": {
+    "recognition": "OCR",
+    "roi": [600, 400, 280, 120],
+    "expected": "服装图鉴",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Compendium_ClothesReady",
+      "source": "MaaNikki_CompendiumReady"
+    },
+    "post_delay": 400
+  },
+  "MaaNikki_Compendium_ClothesReady": {
+    "recognition": "OCR",
+    "roi": [66, 15, 140, 38],
+    "expected": "^服装图鉴$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Compendium_SearchEntrance": {
+    "recognition": "OCR",
+    "roi": [340, 480, 180, 120],
+    "expected": "^检索$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_CompendiumSearchReady",
+      "source": "MaaNikki_CompendiumReady"
+    },
+    "post_delay": 400
+  },
+  "MaaNikki_CompendiumSearchReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_CompendiumSearchTitle", "MaaNikki_CompendiumSearchClothesTab"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_CompendiumSearchTitle": {
+    "recognition": "OCR",
+    "roi": [66, 15, 110, 38],
+    "expected": "^检索$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_CompendiumSearchClothesTab": {
+    "recognition": "OCR",
+    "roi": [25, 115, 110, 65],
+    "expected": "^服装图鉴$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_CompendiumFilterReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_CompendiumFilterTitle", "MaaNikki_CompendiumFilterAcquire"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_CompendiumFilterTitle": {
+    "recognition": "OCR",
+    "roi": [540, 100, 200, 65],
+    "expected": "^筛选$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_CompendiumFilterAcquire": {
+    "recognition": "OCR",
+    "roi": [300, 200, 680, 280],
+    "expected": "已获得",
+    "action": "DoNothing"
   },
   "MaaNikki_WardrobeReady": {
     "recognition": "And",

@@ -54,6 +54,9 @@ class GameUI:
     PAGE_PARENTS = {
         "MaaNikki_MenuReady": "MaaNikki_MainDetected",
         "MaaNikki_Mailbox_PageReady": "MaaNikki_MenuReady",
+        "MaaNikki_CompendiumReady": "MaaNikki_MenuReady",
+        "MaaNikki_Compendium_ClothesReady": "MaaNikki_CompendiumReady",
+        "MaaNikki_CompendiumSearchReady": "MaaNikki_CompendiumReady",
         "MaaNikki_Zhaoxi_DailyReady": "MaaNikki_CalendarReady",
         "MaaNikki_Xinghai_DailyReady": "MaaNikki_CalendarReady",
         "MaaNikki_RealmPageReady": "MaaNikki_CalendarReady",
@@ -637,6 +640,14 @@ class GameUI:
             return self.find_menu_entry(node="MaaNikki_Xinghai_OpenLookbook")
         if page == "MaaNikki_Crown_PageReady":
             return self.find_menu_entry(node="MaaNikki_Crown_Open")
+        if page == "MaaNikki_CompendiumReady":
+            return self.find_menu_entry(node="MaaNikki_Compendium_Entrance", scroll=True)
+        if page == "MaaNikki_Compendium_ClothesReady":
+            return (self.recover_page("MaaNikki_CompendiumReady")
+                    and self.rt.click_template("MaaNikki_Compendium_ClothesEntrance"))
+        if page == "MaaNikki_CompendiumSearchReady":
+            return (self.recover_page("MaaNikki_CompendiumReady")
+                    and self.rt.click_template("MaaNikki_Compendium_SearchEntrance"))
         if page == "MaaNikki_Monthly_PageReady":
             return self.monthly_page()
         if page == "MaaNikki_Monthly_Start":
