@@ -999,7 +999,7 @@ class WardrobeScanner(InventoryScanner):
                             break
                 elif pred_y > y_max:
                     self.scroll_tabs(-360, target=[TAB_X, (y_min + y_max) // 2])
-                    probe_y = min(y_max - 12, max(y_min + 30, round((y_min + y_max) / 2 + 40)))
+                    probe_y = min(y_max - 12, max(y_min + 28, round(pred_y - pitch)))
                     frame, clicked_y = self.click_tab_y(probe_y)
                     actual, _ = self.category(frame)
                     if actual in sub_order:
@@ -1009,7 +1009,7 @@ class WardrobeScanner(InventoryScanner):
                             break
                 else:
                     self.scroll_tabs(360, target=[TAB_X, (y_min + y_max) // 2])
-                    probe_y = max(y_min + 16, min(y_max - 30, round((y_min + y_max) / 2 - 40)))
+                    probe_y = max(y_min + 16, min(y_max - 28, round(pred_y + pitch)))
                     frame, clicked_y = self.click_tab_y(probe_y)
                     actual, _ = self.category(frame)
                     if actual in sub_order:
