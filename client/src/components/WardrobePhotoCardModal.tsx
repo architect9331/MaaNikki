@@ -35,19 +35,26 @@ export function WardrobePhotoCardModal({ open, onClose, outfit, match, catalog, 
   const panelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const initializedRef = useRef(false);
 
   useModalFocusTrap({ active: open, containerRef: panelRef, onEscape: onClose });
 
   useEffect(() => {
     if (!open || !isTauri()) return;
+    let cancelled = false;
     void invoke<{ photos: GamePhotoItem[] }>('list_game_photos')
       .then((res) => {
+        if (cancelled) return;
         const list = res.photos ?? [];
         setPhotos(list);
-        if (list[0] && !selectedPath) setSelectedPath(list[0].path);
+        if (!initializedRef.current) {
+          initializedRef.current = true;
+          if (list[0]) setSelectedPath(list[0].path);
+        }
       })
       .catch(() => {});
-  }, [open, selectedPath]);
+    return () => { cancelled = true; };
+  }, [open]);
 
   useEffect(() => {
     if (!selectedPath || !isTauri()) return;
@@ -143,15 +150,17 @@ export function WardrobePhotoCardModal({ open, onClose, outfit, match, catalog, 
 
     ctx.fillStyle = '#8b7a85';
     ctx.font = `16px ${font}`;
-    ctx.fillText('MaaNikki · 搭配与相册分享卡（不含 UID）', rx, H - 28);
+    ctx.fillText('MaaNikki · 搭配与相册分享卡', rx, H - 28);
   }, [open, outfit, match, catalog, modeLabel, customHeadline, photoImg, note]);
 
   function onPickLocalFile(file?: File) {
     if (!file) return;
+    initializedRef.current = true;
+    setSelectedPath('');
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
-      img.onload = () => { setSelectedPath(''); setPhotoImg(img); };
+      img.onload = () => { setPhotoImg(img); };
       img.src = String(reader.result);
     };
     reader.readAsDataURL(file);
@@ -200,9 +209,11 @@ export function WardrobePhotoCardModal({ open, onClose, outfit, match, catalog, 
               {photos.length > 0 && (
                 <select aria-label="选择游戏本地相册照片" value={selectedPath}
                   onChange={(e) => {
+                    initializedRef.current = true;
                     const val = e.target.value;
                     setSelectedPath(val);
                     if (!val) setPhotoImg(null);
+                    if (fileRef.current) fileRef.current.value = '';
                   }}
                   className="max-w-xs rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 text-xs outline-none focus:border-accent">
                   <option value="">不附带照片（仅纯文字卡片）</option>
@@ -215,7 +226,12 @@ export function WardrobePhotoCardModal({ open, onClose, outfit, match, catalog, 
                 <FolderOpen className="h-3.5 w-3.5" />选择本地照片
               </button>
               {photoImg && (
-                <button type="button" onClick={() => { setSelectedPath(''); setPhotoImg(null); }}
+                <button type="button" onClick={() => {
+                  initializedRef.current = true;
+                  setSelectedPath('');
+                  setPhotoImg(null);
+                  if (fileRef.current) fileRef.current.value = '';
+                }}
                   className="rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:bg-bg-hover">
                   移除照片
                 </button>
