@@ -2,8 +2,8 @@ name: Build Windows x64
 
 on:
   schedule:
-    # Daily patch release check at 03:00 Beijing Time (19:00 UTC).
-    - cron: '0 19 * * *'
+    # Daily patch release check at 03:13 Beijing Time (19:13 UTC), off-peak minute.
+    - cron: '13 19 * * *'
   workflow_dispatch:
     inputs:
       version:
