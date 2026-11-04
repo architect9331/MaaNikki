@@ -294,8 +294,8 @@ class WardrobeScanner(InventoryScanner):
                     column = col
                     if 16 <= h < 92 and ay > gy + gh - 115:
                         self._partial_rows.append(ay - 1)
-                    elif 95 <= h <= 105:
-                        top = ay - 1
+                    elif 95 <= h <= 106:
+                        top = (ay + h - 101) if h > 101 else (ay - 1)
             elif 96 <= w <= 107:
                 col = round((ax - 270) / 324)
                 if 0 <= col < 3 and abs(ax - (270 + col * 324)) <= 6:
@@ -303,7 +303,7 @@ class WardrobeScanner(InventoryScanner):
                     if 16 <= h < 92 and ay > gy + gh - 115:
                         self._partial_rows.append(ay - 1)
                     elif 95 <= h <= 105:
-                        top = ay - 1
+                        top = (ay + h - 101) if h < 99 else (ay - 1)
             elif 80 <= w <= 86 and 78 <= h <= 86:
                 col = round((ax - 278) / 324)
                 if 0 <= col < 3 and abs(ax - (278 + col * 324)) <= 5:
@@ -313,10 +313,13 @@ class WardrobeScanner(InventoryScanner):
                 continue
             if not (gy <= top and top + 100 <= gy + gh):
                 continue
-            row = next((row for row in rows if abs(row["top"] - top) < 5), None)
+            row = next((row for row in rows if abs(row["top"] - top) < 10), None)
             if row is None:
-                row = {"top": top, "columns": set()}
+                row = {"top": top, "tops": [top], "columns": set()}
                 rows.append(row)
+            else:
+                row["tops"].append(top)
+                row["top"] = int(round(np.median(row["tops"])))
             row["columns"].add(column)
 
         pitch = self.layout["row_pitch_exact"]
@@ -349,9 +352,9 @@ class WardrobeScanner(InventoryScanner):
                         or expected_top < gy or expected_top + 100 > gy + gh):
                     continue
                 top = int(expected_top)
-                row = next((row for row in rows if abs(row["top"] - top) < 5), None)
+                row = next((row for row in rows if abs(row["top"] - top) < 10), None)
                 if row is None:
-                    row = {"top": top, "columns": set()}
+                    row = {"top": top, "tops": [top], "columns": set()}
                     rows.append(row)
                 if column not in row["columns"]:
                     recovered.append([column, row["top"]])
