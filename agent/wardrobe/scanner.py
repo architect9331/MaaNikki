@@ -80,7 +80,7 @@ class WardrobeScanner(InventoryScanner):
         if frame is None:
             return False
         if self._page_frame is not None and all(self.same_structure(frame, self._page_frame, roi)
-                for roi in ([415, 18, 153, 45], [55, 637, 140, 60], HEADER)):
+                for roi in ([387, 18, 193, 45], [25, 615, 270, 85], HEADER)):
             return True
         if not self.rt.hit("MaaNikki_WardrobeReady", image=frame):
             return False
@@ -129,7 +129,7 @@ class WardrobeScanner(InventoryScanner):
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
             if (abs(x - 3) <= 2 and abs(w - 6) <= 2 and h > w
-                    and cv2.contourArea(contour) / (w * h) > .8):
+                    and cv2.contourArea(contour) / ((w - 1) * (h - 1)) > .8):
                 thumbs.add((y + 116, y + h + 116))
         return next(iter(thumbs)) if len(thumbs) == 1 else None
 
@@ -182,8 +182,8 @@ class WardrobeScanner(InventoryScanner):
             column = round((x + gx - 937) / self.layout["column_pitch"])
             border_left = 937 + column * self.layout["column_pitch"]
             if (not 0 <= column < self.layout["columns"] or h > 4
-                    or abs(x + gx - border_left) > 4
-                    or abs(x + gx + w - (border_left + 98)) > 4):
+                    or abs(x + gx - border_left) > 6
+                    or abs(x + gx + w - (border_left + 98)) > 6):
                 continue
             # The outer lower edge is 105px below the training-canvas top;
             # the inner edge lies 6px above it. Retain the existing 4px
@@ -207,13 +207,16 @@ class WardrobeScanner(InventoryScanner):
             row["columns"].add(column)
         self._border_recovered = recovered
         boxes = []
-        for row in sorted(rows, key=lambda row: row["top"]):
+        valid_rows = [row for row in sorted(rows, key=lambda row: row["top"])
+                      if gy <= row["top"] and row["top"] + 107 <= gy + gh]
+        for index, row in enumerate(valid_rows):
             top = row["top"]
-            if top < gy or top + 107 > gy + gh:
-                continue
-            # A detected right-hand cell proves every cell preceding it is
-            # occupied. This also recovers the selected gold card's border.
-            for column in range(max(row["columns"]) + 1):
+            # A detected right-hand cell or any lower row in the row-major grid
+            # proves every preceding cell in this row is occupied.
+            has_lower_row = (index + 1 < len(valid_rows)
+                             or any(partial > top + 4 for partial in self._partial_rows))
+            last_column = self.layout["columns"] - 1 if has_lower_row else max(row["columns"])
+            for column in range(last_column + 1):
                 boxes.append([933 + 108*column, top, 103, 107])
         return boxes
 
@@ -310,7 +313,8 @@ class WardrobeScanner(InventoryScanner):
                 raise TaskStopped()
             restored = self.rt.capture()
             self.check_generation(generation)
-            if not self.unchanged(before, restored):
+            if not (self.unchanged(before, restored)
+                    or (self.ready(restored) and self.scroll_position(before, restored) == 0)):
                 raise RuntimeError("衣柜翻页位置未确认，已保存本次记录")
         raise RuntimeError("衣柜翻页位移未确认")
 

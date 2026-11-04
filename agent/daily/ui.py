@@ -820,8 +820,24 @@ class GameUI:
         def wardrobe():
             # Header artwork changes with the wardrobe background. The paired
             # tabs and Save Outfit label identify the same actionable page;
-            # their OCR ROIs are widened by the same half-pitch shift.
-            return wardrobe_icon() or self.rt.hit("MaaNikki_Wardrobe_TextReady")
+            # their OCR ROIs are widened by the same half-pitch shift, while
+            # the active tab's gold bottom bar rules out Ability and Momo tabs.
+            if wardrobe_icon():
+                return True
+            if not self.rt.hit("MaaNikki_Wardrobe_TextReady"):
+                return False
+            frame = self.rt.frame()
+            result = self.rt.recognize("MaaNikki_Wardrobe_DressTab", image=frame)
+            box = getattr(result.best_result, "box", None) if result and result.hit else None
+            if frame is None or box is None or len(box) != 4:
+                return False
+            center = round(box[0] + box[2] / 2)
+            patch = frame[55:68, max(0, center - 55):min(frame.shape[1], center + 55)]
+            if patch.size == 0:
+                return False
+            selected = cv2.inRange(cv2.cvtColor(patch, cv2.COLOR_BGR2HSV),
+                                   (10, 40, 150), (35, 220, 255))
+            return cv2.countNonZero(selected) / selected.size >= .45
         ability = self.feature(asset="IconAbilityFeature", threshold=.99,
                                method=cv2.TM_CCORR_NORMED)
         if self.page_matches(ability) and self.wait_page(ability):
