@@ -8,6 +8,9 @@
 *.ts text eol=lf
 *.tsx text eol=lf
 *.ps1 text eol=crlf
+resource/model/ocr/keys.txt text eol=crlf
 *.png binary
 *.ico binary
 *.onnx binary
+*.npz binary
+*.bin binary
