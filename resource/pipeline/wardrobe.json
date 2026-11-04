@@ -23,9 +23,20 @@
     "post_delay": 400
   },
   "MaaNikki_CompendiumReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_CompendiumTitle", "MaaNikki_CompendiumSearchLabel"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_CompendiumTitle": {
     "recognition": "OCR",
     "roi": [66, 15, 140, 38],
     "expected": "^博物图鉴$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_CompendiumSearchLabel": {
+    "recognition": "OCR",
+    "roi": [340, 480, 180, 120],
+    "expected": "^检索$",
     "action": "DoNothing"
   },
   "MaaNikki_Compendium_ClothesEntrance": {
@@ -82,7 +93,7 @@
   },
   "MaaNikki_CompendiumFilterTitle": {
     "recognition": "OCR",
-    "roi": [540, 100, 200, 65],
+    "roi": [540, 125, 200, 65],
     "expected": "^筛选$",
     "action": "DoNothing"
   },

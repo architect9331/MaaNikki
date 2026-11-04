@@ -19,12 +19,14 @@ from .progress import MODEL_ONLY_PARTS, ordered_prefix
 
 
 HEADER = [255, 78, 360, 42]
-SEARCH_BOX = [940, 78, 250, 42]
-SEARCH_CLEAR = [1206, 99]
+SEARCH_BOX = [850, 20, 380, 48]
+SEARCH_CLEAR = [1202, 44]
 FILTER_BUTTON = [940, 679]
 SORT_BOX = [966, 661, 288, 36]
-FILTER_RESET = [476, 608]
-FILTER_CONFIRM = [740, 608]
+FILTER_RESET_ROI = [450, 475, 185, 65]
+FILTER_CONFIRM_ROI = [645, 475, 185, 65]
+FILTER_RESET = [544, 511]
+FILTER_CONFIRM = [734, 511]
 FILTER_ACQUIRE_ROI = [300, 200, 680, 280]
 CLOTHES_TAB = [80, 148]
 TAB_X = 203
@@ -197,35 +199,48 @@ class WardrobeScanner(InventoryScanner):
             raise RuntimeError("未确认博物图鉴默认排序")
         return frame
 
+    def wait_filter_closed(self, seconds=4.0):
+        deadline = time.monotonic() + seconds
+        while not self.rt.stopped and time.monotonic() < deadline:
+            frame = self.rt.capture()
+            if (not self.rt.hit("MaaNikki_CompendiumFilterReady", image=frame)
+                    and self.rt.hit("MaaNikki_CompendiumSearchReady", image=frame)):
+                return frame
+            self.rt.pause(.15)
+        return None
+
     def apply_owned_filter(self):
-        for attempt in range(2):
+        if not self.rt.ui.enter_page(
+            lambda: self.rt.action("Click", target=FILTER_BUTTON),
+            "MaaNikki_CompendiumFilterReady",
+            source="MaaNikki_CompendiumSearchReady",
+            attempts=2,
+        ):
+            raise RuntimeError("未能打开博物图鉴筛选面板")
+        self.rt.pause(.25)
+        if not self.rt.click_text("^重置$", FILTER_RESET_ROI):
+            self.rt.action("Click", target=FILTER_RESET)
+        self.rt.pause(.35)
+        frame = self.rt.capture()
+        if not self.rt.hit("MaaNikki_CompendiumFilterReady", image=frame):
             if not self.rt.ui.enter_page(
                 lambda: self.rt.action("Click", target=FILTER_BUTTON),
                 "MaaNikki_CompendiumFilterReady",
                 source="MaaNikki_CompendiumSearchReady",
                 attempts=2,
             ):
-                raise RuntimeError("未能打开博物图鉴筛选面板")
-            self.rt.pause(.2)
-            if attempt == 0:
-                self.rt.action("Click", target=FILTER_RESET)
-                self.wait_settled( self.grid)
-                if not self.rt.ui.enter_page(
-                    lambda: self.rt.action("Click", target=FILTER_BUTTON),
-                    "MaaNikki_CompendiumFilterReady",
-                    source="MaaNikki_CompendiumSearchReady",
-                    attempts=2,
-                ):
-                    raise RuntimeError("重置筛选后未能重新打开筛选面板")
-                self.rt.pause(.2)
-            if not self.rt.click_text("^已获得$", FILTER_ACQUIRE_ROI):
-                raise RuntimeError("筛选面板未找到“已获得”选项")
-            self.rt.pause(.15)
+                raise RuntimeError("重置筛选后未能重新打开筛选面板")
+            self.rt.pause(.25)
+        if not self.rt.click_text("^已获得$", FILTER_ACQUIRE_ROI):
+            raise RuntimeError("筛选面板未找到“已获得”选项")
+        self.rt.pause(.2)
+        if not self.rt.click_text("^筛选$", FILTER_CONFIRM_ROI):
             self.rt.action("Click", target=FILTER_CONFIRM)
-            if not self.rt.ui.wait_page("MaaNikki_CompendiumSearchReady", seconds=4):
-                raise RuntimeError("确认筛选后未返回博物图鉴检索页")
-            return self.wait_settled(self.grid)
-        raise RuntimeError("未能应用已获得筛选")
+        if self.wait_filter_closed() is None:
+            self.rt.action("Click", target=FILTER_CONFIRM)
+            if self.wait_filter_closed() is None:
+                raise RuntimeError("确认筛选后未关闭博物图鉴筛选面板")
+        return self.wait_settled(self.grid)
 
     def prepare_search_view(self):
         frame = self.wait_settled()
