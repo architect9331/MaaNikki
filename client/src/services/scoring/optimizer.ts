@@ -1,5 +1,5 @@
-import { bonusCount, evaluateStars, fits, isAccessory, isFlash, outfitContext, scorePiece, suitRequirement, type ScoreContext } from './math';
-import type { CalculationRequest, CalculationResult, FieldBonus, Match, OutfitResult, OwnedItem, PieceScore, ScoreItem, StarCondition } from './types';
+import { bonusCount, evaluateStars, fits, isAccessory, isFlash, outfitContext, scorePiece, suitRequirement, upgradeCost, type ScoreContext } from './math';
+import type { BatchCalculationResult, BatchStageSummary, BatchUpgradeItem, CalculationRequest, CalculationResult, FieldBonus, Match, OutfitResult, OwnedItem, PieceScore, ScoreItem, StarCondition } from './types';
 
 interface Requirement { min: number; max: number; accepts: (item: ScoreItem, level: number) => boolean }
 interface Candidate { owned: OwnedItem; level: number; piece: PieceScore }
@@ -181,7 +181,10 @@ function optimize(request: CalculationRequest, potential: boolean): OutfitResult
   if (!match) throw new Error('请选择计分关卡。');
   const deadline = performance.now() + SEARCH_TIME_MS;
   const check = () => { if (performance.now() > deadline) throw new SearchLimit(); };
-  const owned = request.owned.filter((entry) => entry.level !== null || potential && !isFlash(request.catalog.items[entry.id]));
+  const userExcluded = new Set(request.excludedIds ?? []);
+  const owned = request.owned.filter((entry) => !userExcluded.has(entry.id)
+    && (!entry.group || !userExcluded.has(entry.group))
+    && (entry.level !== null || potential && !isFlash(request.catalog.items[entry.id])));
   const choices = request.choice === null ? match.choices.length ? match.choices.map((_, index) => index) : [null] : [request.choice];
   const bestResult: { value: OutfitResult | null } = { value: null };
   try {
@@ -228,12 +231,86 @@ function optimize(request: CalculationRequest, potential: boolean): OutfitResult
   return bestResult.value;
 }
 
+export function calculateBatch(request: CalculationRequest, matchIds: string[], progress?: (stage: string) => void): BatchCalculationResult {
+  const started = performance.now();
+  const stages: BatchStageSummary[] = [];
+  const groupTarget = new Map<string, { item: OwnedItem; from: number | null; to: number; totalGain: number; stages: string[] }>();
+  const unknownCostGroups = new Set<string>();
+
+  for (let index = 0; index < matchIds.length; index++) {
+    const id = matchIds[index];
+    const match = request.catalog.matches[id];
+    if (!match) continue;
+    const shortName = match.name.split(' · ').pop() ?? match.name;
+    progress?.(`正在规划整期场次（${index + 1}/${matchIds.length}）：${shortName}`);
+    const stageReq: CalculationRequest = { ...request, matchId: id, choice: null };
+    const current = optimize(stageReq, false);
+    const potential = optimize(stageReq, true);
+    stages.push({ matchId: id, matchName: shortName, current, potential });
+    if (!potential) continue;
+    for (const group of potential.unknownCostGroups) unknownCostGroups.add(group);
+    for (const piece of potential.pieces) {
+      const groupId = piece.item.group;
+      if (!groupId || isFlash(request.catalog.items[piece.item.id])) continue;
+      if (piece.from !== null && piece.level <= piece.from) continue;
+      const existing = groupTarget.get(groupId);
+      const gain = piece.gain ?? 0;
+      if (!existing) {
+        groupTarget.set(groupId, {
+          item: piece.item,
+          from: piece.from,
+          to: piece.level,
+          totalGain: Math.max(0, gain),
+          stages: [shortName],
+        });
+      } else {
+        existing.to = Math.max(existing.to, piece.level);
+        existing.totalGain += Math.max(0, gain);
+        if (!existing.stages.includes(shortName)) existing.stages.push(shortName);
+      }
+    }
+  }
+
+  const totalCost: Record<string, number> = {};
+  const upgrades: BatchUpgradeItem[] = [];
+  for (const [groupId, entry] of groupTarget) {
+    const scoreItem = request.catalog.items[entry.item.id];
+    const itemCost = scoreItem ? upgradeCost(request.catalog, scoreItem, entry.from, entry.to) : {};
+    for (const [matId, amount] of Object.entries(itemCost)) {
+      totalCost[matId] = (totalCost[matId] ?? 0) + amount;
+    }
+    if (entry.from !== null && entry.to > entry.from) {
+      upgrades.push({
+        groupId,
+        item: entry.item,
+        from: entry.from,
+        to: entry.to,
+        totalGain: entry.totalGain,
+        stages: entry.stages,
+        cost: itemCost,
+      });
+    }
+  }
+  upgrades.sort((a, b) => b.stages.length - a.stages.length || b.totalGain - a.totalGain);
+
+  return {
+    stages,
+    cost: totalCost,
+    upgrades,
+    unknownCostGroups: [...unknownCostGroups],
+    elapsedMs: Math.round(performance.now() - started),
+  };
+}
+
 export function calculate(request: CalculationRequest, progress?: (stage: string) => void): CalculationResult {
   const started = performance.now();
   progress?.('正在计算已知等级搭配');
   const current = optimize(request, false);
   progress?.('正在计算焕新潜力搭配');
   const potential = optimize(request, true);
-  return { current, potential, unknownGroups: new Set(request.owned.filter((item) => item.level === null).map((item) => item.group)).size,
+  const batch = request.matchIds && request.matchIds.length > 1
+    ? calculateBatch(request, request.matchIds, progress)
+    : null;
+  return { current, potential, batch, unknownGroups: new Set(request.owned.filter((item) => item.level === null).map((item) => item.group)).size,
     elapsedMs: Math.round(performance.now() - started) };
 }

@@ -158,12 +158,37 @@ export interface CalculationRequest {
   owned: OwnedItem[];
   settings: ScoringSettings;
   matchId: string;
+  matchIds?: string[];
+  excludedIds?: string[];
   choice: number | null;
   goal: 'score' | 'stars';
+}
+export interface BatchUpgradeItem {
+  groupId: string;
+  item: OwnedItem;
+  from: number | null;
+  to: number;
+  totalGain: number;
+  stages: string[];
+  cost: Record<string, number>;
+}
+export interface BatchStageSummary {
+  matchId: string;
+  matchName: string;
+  current: OutfitResult | null;
+  potential: OutfitResult | null;
+}
+export interface BatchCalculationResult {
+  stages: BatchStageSummary[];
+  cost: Record<string, number>;
+  upgrades: BatchUpgradeItem[];
+  unknownCostGroups: string[];
+  elapsedMs: number;
 }
 export interface CalculationResult {
   current: OutfitResult | null;
   potential: OutfitResult | null;
+  batch?: BatchCalculationResult | null;
   unknownGroups: number;
   elapsedMs: number;
 }

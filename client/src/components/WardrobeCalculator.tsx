@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowUpRight, Calculator, Check, ClipboardCopy, Loader2, RefreshCw, Search, Sparkles, Square, Star } from 'lucide-react';
+import { AlertCircle, ArrowUpRight, Ban, Calculator, Check, ClipboardCopy, Loader2, RefreshCw, RotateCcw, Search, Sparkles, Square, Star, X } from 'lucide-react';
 import clsx from 'clsx';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useAccountStateStore } from '@/stores/accountStateStore';
@@ -7,9 +7,12 @@ import { isTauri } from '@/utils/paths';
 import { loadScoring, saveScoring } from '@/services/scoring/api';
 import { scorePiece } from '@/services/scoring/math';
 import { buildOwnedProfile } from '@/services/scoring/profile';
-import { ATTRIBUTES, HEART_GROUPS, emptySettings } from '@/services/scoring/types';
+import { ATTRIBUTES, emptySettings } from '@/services/scoring/types';
 import type { CalculationResult, FieldBonus, Match, OutfitResult, ScoringPayload, ScoringSettings } from '@/services/scoring/types';
+import { WardrobeHeartEditor } from './WardrobeHeartEditor';
 import { WardrobeMatchPicker } from './WardrobeMatchPicker';
+import { WardrobeBatchPlanView, WardrobeMaterialList } from './WardrobeMaterialActions';
+import { ImageIcon, WardrobePhotoCardModal } from './WardrobePhotoCardModal';
 
 const field = 'w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm outline-none focus:border-accent';
 const card = 'rounded-xl border border-border bg-bg-secondary p-4';
@@ -34,15 +37,6 @@ function LevelInput({ value, onChange, inferred }: { value: number | null; onCha
       if (raw === '') onChange(null);
       else if (Number.isInteger(level) && level >= 0 && level <= 11) onChange(level);
     }} />;
-}
-
-function NumberField({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
-  return <label className="space-y-1.5 text-xs text-text-secondary"><span>{label}</span>
-    <input className={field} type="number" min="0" step="any" value={value} onChange={(event) => {
-      const next = Number(event.target.value);
-      if (Number.isFinite(next) && next >= 0) onChange(next);
-    }} />
-  </label>;
 }
 
 function Stars({ outfit, match }: { outfit: OutfitResult; match: Match }) {
@@ -71,12 +65,14 @@ function MatchBrief({ match }: { match: Match }) {
   </section>;
 }
 
-function OutfitView({ outfit, payload, settings, match, potential, setLevel }: {
+function OutfitView({ outfit, payload, settings, match, potential, setLevel, excludedIds, onToggleExclude }: {
   outfit: OutfitResult | null; payload: ScoringPayload; settings: ScoringSettings; match: Match; potential: boolean;
   setLevel: (group: string, level: number | null) => void;
+  excludedIds: string[];
+  onToggleExclude: (id: string) => void;
 }) {
   if (!outfit) return <div className={clsx(card, 'py-9 text-center text-sm text-text-secondary')}>
-    {potential ? '暂未找到可用的完整搭配，请检查衣柜对齐情况。' : '已知等级的衣服暂未组成完整搭配，可在下方补充等级或查看焕新潜力。'}
+    {potential ? '暂未找到可用的完整搭配，请检查衣柜对齐情况或恢复已排除部件。' : '已知等级的衣服暂未组成完整搭配，可在下方补充等级或查看焕新潜力。'}
   </div>;
   const { catalog } = payload;
   const top = Math.max(...outfit.pieces.map((piece) => piece.score), 1);
@@ -85,26 +81,41 @@ function OutfitView({ outfit, payload, settings, match, potential, setLevel }: {
     <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
       {!outfit.exact && <p className="border-b border-border px-4 py-2 text-xs text-text-secondary">搜索时间已到，展示当前找到的可行方案。</p>}
       {outfit.choice !== null && <p className="border-b border-border px-4 py-2 text-xs text-text-secondary">场地加成：{bonusLabel(match.choices[outfit.choice])}</p>}
-      {outfit.pieces.map((piece) => <details key={`${piece.item.id}:${piece.item.group ?? ''}`} className="group border-b border-border last:border-0">
-        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 hover:bg-bg-hover">
-          <span className="w-16 shrink-0 truncate text-xs text-text-muted">{(catalog.part_names[piece.type] ?? String(piece.type)).split(' / ').pop()}</span>
-          <div className="min-w-0 flex-1"><p className="truncate text-sm">{piece.item.name}</p>
-            <div className="mt-1 flex items-center gap-2"><div className="h-1 flex-1 overflow-hidden rounded-full bg-border"><div className="h-full rounded-full bg-accent/60" style={{ width: `${piece.score / top * 100}%` }} /></div>
-              <span className="shrink-0 text-[11px] text-text-muted">{potential && piece.from !== piece.level ? `${levelLabel(piece.from)} → ${levelLabel(piece.level)}` : levelLabel(piece.level)}</span></div></div>
-          <strong className="w-16 text-right text-sm font-semibold tabular-nums">{number(piece.score)}</strong>
-        </summary>
-        <div className="space-y-3 border-t border-border bg-bg-primary/50 px-4 py-3 text-xs">
-          {piece.item.group && <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-text-secondary">当前共享等级{piece.item.evidence && ` · ${piece.item.evidence}`}</span>
-            <LevelInput value={settings.levels[piece.item.group] ?? null} inferred={piece.item.refreshReward}
-              onChange={(level) => setLevel(piece.item.group!, level)} /></div>}
-          <div className="grid grid-cols-5 gap-2">{ATTRIBUTES.map((name, index) => <div key={name}>
-            <p className="text-text-muted">{name}</p><p className="mt-1 tabular-nums">{number(piece.attributeScores[index])}</p>
-            <p className="mt-1 text-text-muted">属性 {number(piece.grownAttributes[index])}</p>
-          </div>)}</div>
-          <p className="leading-5 text-text-secondary">标签分 {number(piece.tagScore)} · 最终倍率 ×{number(piece.multiplier)} · 单件向上取整</p>
-        </div>
-      </details>)}
+      {outfit.pieces.map((piece) => {
+        const isExcluded = excludedIds.includes(piece.item.id);
+        return <details key={`${piece.item.id}:${piece.item.group ?? ''}`} className="group border-b border-border last:border-0">
+          <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 hover:bg-bg-hover">
+            <span className="w-16 shrink-0 truncate text-xs text-text-muted">{(catalog.part_names[piece.type] ?? String(piece.type)).split(' / ').pop()}</span>
+            <div className="min-w-0 flex-1"><p className={clsx('truncate text-sm', isExcluded && 'line-through opacity-60')}>{piece.item.name}</p>
+              <div className="mt-1 flex items-center gap-2"><div className="h-1 flex-1 overflow-hidden rounded-full bg-border"><div className="h-full rounded-full bg-accent/60" style={{ width: `${piece.score / top * 100}%` }} /></div>
+                <span className="shrink-0 text-[11px] text-text-muted">{potential && piece.from !== piece.level ? `${levelLabel(piece.from)} → ${levelLabel(piece.level)}` : levelLabel(piece.level)}</span></div></div>
+            <strong className="w-16 text-right text-sm font-semibold tabular-nums">{number(piece.score)}</strong>
+          </summary>
+          <div className="space-y-3 border-t border-border bg-bg-primary/50 px-4 py-3 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {piece.item.group ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-text-secondary">当前共享等级{piece.item.evidence && ` · ${piece.item.evidence}`}</span>
+                  <LevelInput value={settings.levels[piece.item.group] ?? null} inferred={piece.item.refreshReward}
+                    onChange={(level) => setLevel(piece.item.group!, level)} />
+                </div>
+              ) : <span className="text-text-secondary">{piece.item.evidence || '祝福闪光'}</span>}
+              <button type="button" onClick={() => onToggleExclude(piece.item.id)}
+                className={clsx('inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors',
+                  isExcluded
+                    ? 'border-accent bg-accent/10 text-accent'
+                    : 'border-border bg-bg-secondary text-text-secondary hover:border-warning hover:text-warning')}>
+                <Ban className="h-3 w-3" />{isExcluded ? '已排除（点击恢复）' : '排除此件并重算'}
+              </button>
+            </div>
+            <div className="grid grid-cols-5 gap-2">{ATTRIBUTES.map((name, index) => <div key={name}>
+              <p className="text-text-muted">{name}</p><p className="mt-1 tabular-nums">{number(piece.attributeScores[index])}</p>
+              <p className="mt-1 text-text-muted">属性 {number(piece.grownAttributes[index])}</p>
+            </div>)}</div>
+            <p className="leading-5 text-text-secondary">标签分 {number(piece.tagScore)} · 最终倍率 ×{number(piece.multiplier)} · 单件向上取整</p>
+          </div>
+        </details>;
+      })}
       {outfit.globalScore !== 0 && <p className="px-4 py-3 text-xs text-text-secondary">全局固定加分 {number(outfit.globalScore)}</p>}
     </section>
     {potential && <section className={card}><h3 className="text-sm font-medium">先升哪件</h3>
@@ -114,9 +125,7 @@ function OutfitView({ outfit, payload, settings, match, potential, setLevel }: {
           <strong className="tabular-nums text-accent">+{number(piece.gain!)}</strong></li>)}</ol>
         : <p className="mt-2 text-xs text-text-secondary">已知等级的部件都已到位。</p>}
       <h3 className="mt-4 text-sm font-medium">养成材料差额</h3>
-      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs">{Object.entries(outfit.cost).map(([id, count]) =>
-        <span key={id}>{catalog.material_names[id] ?? id} <strong className="ml-1 tabular-nums">{number(count)}</strong></span>)}
-        {!Object.keys(outfit.cost).length && <span className="text-text-secondary">已知等级的部件暂无材料差额</span>}</div>
+      <WardrobeMaterialList cost={outfit.cost} catalog={catalog} />
       {!!outfit.unknownCostGroups.length && <p className="mt-3 text-xs text-text-secondary">另有 {outfit.unknownCostGroups.length} 个部件等级未知，补充后可计入提升值和材料差额。</p>}
     </section>}
   </div>;
@@ -133,6 +142,8 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
   const [matchId, setMatchId] = useState('');
   const [choice, setChoice] = useState<number | null>(null);
   const [goal, setGoal] = useState<'score' | 'stars'>('stars');
+  const [planScope, setPlanScope] = useState<'single' | 'series'>('single');
+  const [excludedIds, setExcludedIds] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState<'all' | 'unknown' | 'used'>('unknown');
   const [levelLimit, setLevelLimit] = useState(LEVEL_PAGE);
@@ -140,10 +151,11 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
   const [mode, setMode] = useState<'current' | 'potential'>('potential');
   const [stage, setStage] = useState('');
   const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const worker = useRef<Worker | null>(null);
   const draftRef = useRef({ settings, saved });
   const payloadRef = useRef(payload);
-  const contextKey = useMemo(() => ({}), [payload, settings, matchId, choice, goal]);
+  const contextKey = useMemo(() => ({}), [payload, settings, matchId, choice, goal, planScope, excludedIds]);
   const result = completed?.value ?? null;
   const stale = !!completed && completed.key !== contextKey;
   draftRef.current = { settings, saved };
@@ -173,7 +185,7 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
   useEffect(() => {
     worker.current?.terminate(); worker.current = null;
     setStage('');
-  }, [settings, payload, matchId, choice, goal]);
+  }, [settings, payload, matchId, choice, goal, planScope, excludedIds]);
   useEffect(() => () => { worker.current?.terminate(); }, []);
   useEffect(() => { setLevelLimit(LEVEL_PAGE); }, [query, levelFilter, matchId]);
 
@@ -196,8 +208,19 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
 
   const profile = useMemo(() => payload ? buildOwnedProfile(payload, settings) : null, [payload, settings]);
   const match = payload?.catalog.matches[matchId];
+  const seriesMatchIds = useMemo(() => {
+    if (!payload || !match) return [];
+    const stageNumber = (name: string) => Number(/第(\d+)场/.exec(name)?.[1] ?? Infinity);
+    return Object.entries(payload.catalog.matches)
+      .filter(([, m]) => m.group === match.group)
+      .sort((a, b) => stageNumber(a[1].name) - stageNumber(b[1].name))
+      .map(([id]) => id);
+  }, [payload, match]);
   const resultMatch = completed ? payload?.catalog.matches[completed.matchId] : undefined;
-  const used = useMemo(() => new Set(result?.[mode]?.pieces.flatMap((piece) => piece.item.group ? [piece.item.group] : []) ?? []), [result, mode]);
+  const used = useMemo(() => new Set([
+    ...(result?.[mode]?.pieces.flatMap((piece) => piece.item.group ? [piece.item.group] : []) ?? []),
+    ...(result?.batch?.upgrades.map((up) => up.groupId) ?? []),
+  ]), [result, mode]);
   // Best potential score for this match: the most useful levels come first.
   const groupValue = useMemo(() => {
     const values = new Map<string, number>();
@@ -217,8 +240,6 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
     && (levelFilter === 'all' || levelFilter === 'unknown' && group.level === null || levelFilter === 'used' && used.has(group.id)))
     .sort((a, b) => (groupValue.get(b.id) ?? 0) - (groupValue.get(a.id) ?? 0)), [profile, query, levelFilter, used, groupValue]);
   const unknownCount = profile?.groups.filter((group) => group.level === null).length ?? 0;
-  const heartFilled = settings.heart.flat.some(Boolean) || settings.heart.stat.some(Boolean)
-    || settings.heart.part.some(Boolean) || settings.heart.display > 0;
 
   function changeSettings(update: (previous: ScoringSettings) => ScoringSettings) {
     setSettings(update); setError('');
@@ -230,8 +251,9 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
       return { ...previous, levels };
     });
   }
-  function run() {
+  function run(overrideExcluded?: string[]) {
     if (!payload || !profile || !match) return;
+    const activeExcluded = overrideExcluded ?? excludedIds;
     worker.current?.terminate();
     const task = new Worker(new URL('../services/scoring/calculator.worker.ts', import.meta.url), { type: 'module' });
     worker.current = task; setError(''); setStage('正在准备搭配');
@@ -248,7 +270,23 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
       if (worker.current !== task) return;
       setError(event.message || '计算进程启动失败，请重试。'); setStage(''); task.terminate(); worker.current = null;
     };
-    task.postMessage({ catalog: payload.catalog, owned: profile.items, settings, matchId, choice, goal });
+    task.postMessage({
+      catalog: payload.catalog,
+      owned: profile.items,
+      settings,
+      matchId,
+      matchIds: planScope === 'series' && seriesMatchIds.length > 1 ? seriesMatchIds : undefined,
+      excludedIds: activeExcluded,
+      choice,
+      goal,
+    });
+  }
+  function toggleExclude(id: string) {
+    setExcludedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id];
+      setTimeout(() => run(next), 0);
+      return next;
+    });
   }
   async function copyOutfit() {
     const outfit = result?.[mode];
@@ -271,6 +309,14 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
       <section className={clsx(card, 'space-y-3')}>
         <label className="block space-y-1.5 text-xs text-text-secondary"><span>计算目标</span>
           <select className={field} value={goal} onChange={(event) => setGoal(event.target.value as typeof goal)}><option value="stars">优先满足星级条件</option><option value="score">最高评分</option></select></label>
+        {seriesMatchIds.length > 1 && (
+          <label className="block space-y-1.5 text-xs text-text-secondary"><span>规划范围</span>
+            <select className={field} value={planScope} onChange={(event) => setPlanScope(event.target.value as typeof planScope)}>
+              <option value="single">仅当前选中场次</option>
+              <option value="series">同系列整期合并规划（共 {seriesMatchIds.length} 场）</option>
+            </select>
+          </label>
+        )}
         {!!match?.choices.length && <label className="block space-y-1.5 text-xs text-text-secondary"><span>场地加成</span>
           <select className={field} value={choice ?? ''} onChange={(event) => setChoice(event.target.value === '' ? null : Number(event.target.value))}>
             <option value="">自动选择</option>
@@ -289,9 +335,9 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
               });
             }} />
           </label>)}</div></div>}
-        <button onClick={stage ? () => { worker.current?.terminate(); worker.current = null; setStage(''); } : run} disabled={!profile.items.length || !match}
+        <button onClick={stage ? () => { worker.current?.terminate(); worker.current = null; setStage(''); } : () => run()} disabled={!profile.items.length || !match}
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-on-accent hover:bg-accent-hover disabled:opacity-40">
-          {stage ? <Square className="h-4 w-4" /> : stale ? <RefreshCw className="h-4 w-4" /> : <Calculator className="h-4 w-4" />}{stage ? '停止计算' : stale ? '重新计算' : '开始计算'}</button>
+          {stage ? <Square className="h-4 w-4" /> : stale ? <RefreshCw className="h-4 w-4" /> : <Calculator className="h-4 w-4" />}{stage ? '停止计算' : stale ? '重新计算' : planScope === 'series' && seriesMatchIds.length > 1 ? `计算当前及整期 ${seriesMatchIds.length} 场` : '开始计算'}</button>
         {stage && <p className="flex items-center gap-1.5 text-xs text-text-secondary"><Loader2 className="h-3.5 w-3.5 animate-spin" />{stage}</p>}
         {error && <p className="flex items-start gap-1.5 text-xs text-warning" role="alert"><AlertCircle className="h-4 w-4 shrink-0" />{error}</p>}
       </section>
@@ -312,8 +358,37 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
 
     <div className="min-w-0 space-y-3">
       {match && <MatchBrief match={match} />}
+      {!!excludedIds.length && (
+        <section className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-warning/30 bg-warning/5 px-3.5 py-2.5 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-medium text-warning">已排除 {excludedIds.length} 件：</span>
+            {excludedIds.map((id) => {
+              const name = payload.catalog.items[id]?.name ?? id;
+              return (
+                <button key={id} type="button" onClick={() => toggleExclude(id)}
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-bg-secondary px-2 py-0.5 text-text-primary hover:border-accent"
+                  title="点击恢复此部件">
+                  {name}<X className="h-3 w-3 text-text-muted" />
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" onClick={() => { setExcludedIds([]); setTimeout(() => run([]), 0); }}
+            className="inline-flex items-center gap-1 text-text-secondary hover:text-text-primary">
+            <RotateCcw className="h-3 w-3" />恢复全部
+          </button>
+        </section>
+      )}
       {result && resultMatch ? <>
         {stale && <p className="flex items-center gap-1.5 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning"><AlertCircle className="h-3.5 w-3.5" />设置已更改，以下是上次的结果{completed!.matchId !== matchId ? `（${resultMatch.name}）` : ''}，重新计算后更新。</p>}
+        {result.batch && (
+          <WardrobeBatchPlanView
+            batch={result.batch}
+            catalog={payload.catalog}
+            activeMatchId={matchId}
+            onSelectStage={(id) => { setMatchId(id); setChoice(null); }}
+          />
+        )}
         <div className={clsx('grid grid-cols-2 gap-2', stale && 'opacity-60')} role="tablist">{(['current', 'potential'] as const).map((key) => {
           const outfit = result[key];
           return <button key={key} role="tab" aria-selected={mode === key} onClick={() => setMode(key)}
@@ -323,9 +398,23 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
             {key === 'potential' && outfit && result.current && <span className="mt-1 block text-xs text-text-muted">比已知等级高 {number(outfit.score - result.current.score)}</span>}
           </button>;
         })}</div>
-        <div className="flex items-center justify-between text-xs text-text-muted"><span>计算用时 {result.elapsedMs < 100 ? '不足 0.1' : (result.elapsedMs / 1000).toFixed(1)} 秒</span>
-          <button onClick={() => void copyOutfit()} disabled={!result[mode]} className="flex items-center gap-1 hover:text-text-primary disabled:opacity-40">{copied ? <Check className="h-3.5 w-3.5" /> : <ClipboardCopy className="h-3.5 w-3.5" />}{copied ? '已复制' : '复制搭配'}</button></div>
-        <div className={clsx(stale && 'opacity-60')}><OutfitView outfit={result[mode]} payload={payload} settings={settings} match={resultMatch} potential={mode === 'potential'} setLevel={setLevel} /></div>
+        <div className="flex items-center justify-between text-xs text-text-muted"><span>计算用时 {result.elapsedMs < 100 ? '不足 0.1' : (result.elapsedMs / 1000).toFixed(1)} 秒 · 点击部件行可展开查看属性或临时排除</span>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setShareOpen(true)} disabled={!result[mode]} className="flex items-center gap-1 hover:text-text-primary disabled:opacity-40"><ImageIcon className="h-3.5 w-3.5" />生成分享图</button>
+            <button onClick={() => void copyOutfit()} disabled={!result[mode]} className="flex items-center gap-1 hover:text-text-primary disabled:opacity-40">{copied ? <Check className="h-3.5 w-3.5" /> : <ClipboardCopy className="h-3.5 w-3.5" />}{copied ? '已复制' : '复制搭配'}</button>
+          </div>
+        </div>
+        {result[mode] && (
+          <WardrobePhotoCardModal
+            open={shareOpen}
+            onClose={() => setShareOpen(false)}
+            outfit={result[mode]!}
+            match={resultMatch}
+            catalog={payload.catalog}
+            modeLabel={mode === 'current' ? '已知等级' : '全部焕新后'}
+          />
+        )}
+        <div className={clsx(stale && 'opacity-60')}><OutfitView outfit={result[mode]} payload={payload} settings={settings} match={resultMatch} potential={mode === 'potential'} setLevel={setLevel} excludedIds={excludedIds} onToggleExclude={toggleExclude} /></div>
       </> : <div className={clsx(card, 'py-10 text-center text-sm text-text-secondary')}>{profile.items.length ? '选好场次后开始计算，这里会显示推荐搭配。' : '读取衣柜后才能计算搭配。'}</div>}
 
       <details className={card} open={unknownCount > 0 && !result}><summary className="cursor-pointer text-sm font-medium">补充衣服等级 <span className="ml-1 text-xs font-normal text-text-muted">{profile.groups.length} 组，{unknownCount} 组未知</span></summary>
@@ -344,18 +433,10 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
         {matching.length > levelLimit && <button onClick={() => setLevelLimit((previous) => previous + LEVEL_PAGE)} className="mt-2 w-full rounded-lg border border-border py-1.5 text-xs hover:bg-bg-hover">再显示 {Math.min(LEVEL_PAGE, matching.length - levelLimit)} 组（共 {matching.length} 组）</button>}
       </details>
 
-      <details className={card}><summary className="cursor-pointer text-sm font-medium">无限之心加成 <span className="ml-1 text-xs font-normal text-text-muted">{heartFilled ? '已填写' : '未填写'}</span></summary>
-        <p className="mt-3 text-xs leading-5 text-text-secondary">填入养成后的合计加成，百分比填写数值。属性与部位加成按关卡区域生效，展示加成单独计算。</p>
-        <p className="mb-2 mt-4 text-xs font-medium">固定属性</p>
-        <div className="grid grid-cols-5 gap-2">{ATTRIBUTES.map((name, index) => <NumberField key={name} label={name} value={settings.heart.flat[index]}
-          onChange={(value) => changeSettings((previous) => ({ ...previous, heart: { ...previous.heart, flat: previous.heart.flat.map((old, i) => i === index ? value : old) } }))} />)}</div>
-        {(['stat', 'part'] as const).map((kind) => <div key={kind}><p className="mb-2 mt-4 text-xs font-medium">{kind === 'stat' ? '属性加成 %（含通用节点）' : '部位加成 %'}</p>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">{HEART_GROUPS.map((name, index) => <NumberField key={name} label={name} value={settings.heart[kind][index]}
-            onChange={(value) => changeSettings((previous) => ({ ...previous, heart: { ...previous.heart, [kind]: previous.heart[kind].map((old, i) => i === index ? value : old) } }))} />)}</div>
-        </div>)}
-        <div className="mt-4 max-w-40"><NumberField label="展示加成 %" value={settings.heart.display}
-          onChange={(display) => changeSettings((previous) => ({ ...previous, heart: { ...previous.heart, display } }))} /></div>
-      </details>
+      <WardrobeHeartEditor
+        heart={settings.heart}
+        onChange={(updater) => changeSettings((previous) => ({ ...previous, heart: updater(previous.heart) }))}
+      />
     </div>
     </div>
   </div>;

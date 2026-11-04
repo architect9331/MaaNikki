@@ -47,7 +47,7 @@ class Exploration(Runtime):
         enabled = {key: parameters(self.context, "MaaNikki_Assist_" + key).get("value", True)
                    for key in ("Pickup", "Clear", "Dialogue")}
         enabled["Fishing"] = parameters(self.context, "MaaNikki_Assist_Fishing").get("value", False)
-        map_kinds = {kind for key, kind in (("MapStar", "star"), ("MapDewdrop", "dewdrop"))
+        map_kinds = {kind for key, kind in (("MapStar", "star"), ("MapDewdrop", "dewdrop"), ("MapChest", "chest"))
                      if parameters(self.context, "MaaNikki_Assist_" + key).get("value", False)}
         enabled["MapMask"] = bool(map_kinds)
         if not any(enabled.values()):

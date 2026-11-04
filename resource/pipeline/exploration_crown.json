@@ -141,5 +141,12 @@
     "custom_action_param": {
       "value": false
     }
+  },
+  "MaaNikki_Assist_MapChest": {
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": false
+    }
   }
 }

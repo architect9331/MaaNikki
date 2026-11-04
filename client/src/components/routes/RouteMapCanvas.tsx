@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import { actionMeta, type RoutePoint } from '@/services/routeDocument';
 
 export interface MapInfo { id: string; title: string; width: number; height: number; image: string }
+export interface ChestMarker { id: string; kind: string; map: string; x: number; y: number; label: string }
 export interface MapCanvasHandle { fit: () => void; zoom: (factor: number) => void; focus: (x: number, y: number) => void }
 
 const HIT_POINT = 10;
@@ -26,6 +27,7 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
   preview?: RoutePoint[] | null;
   samples?: [number, number][] | null;
   pose?: { x: number; y: number; heading: number | null } | null;
+  chests?: ChestMarker[];
   selected: number | null;
   tool: 'select' | 'add';
   readOnly: boolean;
@@ -33,12 +35,12 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
   /** Called while dragging; commit is true once on release. */
   onMove: (index: number, x: number, y: number, commit: boolean) => void;
   onInsert: (afterIndex: number, x: number, y: number) => void;
-}>(function RouteMapCanvas({ map, image, points, preview, samples, pose, selected, tool, readOnly, onSelect, onMove, onInsert }, ref) {
+}>(function RouteMapCanvas({ map, image, points, preview, samples, pose, chests, selected, tool, readOnly, onSelect, onMove, onInsert }, ref) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const view = useRef({ scale: 1, ox: 0, oy: 0 });
   const drag = useRef<{ kind: 'pan' | 'point'; index: number; x: number; y: number; moved: boolean } | null>(null);
   const frame = useRef(0);
-  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  const [cursor, setCursor] = useState<{ x: number; y: number; chest?: string } | null>(null);
   const shown = preview ?? points;
 
   const draw = useCallback(() => {
@@ -71,6 +73,24 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
       context.strokeStyle = `${accent}66`;
       context.lineWidth = 2;
       context.stroke();
+    }
+    if (chests?.length) {
+      for (const chest of chests) {
+        const cx = sx(chest.x);
+        const cy = sy(chest.y);
+        if (cx < -16 || cy < -16 || cx > width + 16 || cy > height + 16) continue;
+        context.save();
+        context.translate(cx, cy);
+        context.rotate(Math.PI / 4);
+        context.fillStyle = chest.kind === 'momo_chest' ? '#ec4899' : '#f59e0b';
+        context.strokeStyle = '#ffffff';
+        context.lineWidth = 1.5;
+        context.beginPath();
+        context.rect(-5, -5, 10, 10);
+        context.fill();
+        context.stroke();
+        context.restore();
+      }
     }
     // Line first, so points stay readable where the route crosses itself.
     for (let index = 1; index < shown.length; index++) {
@@ -163,7 +183,7 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
       context.stroke();
       context.restore();
     }
-  }, [map, image, shown, preview, samples, pose, selected]);
+  }, [map, image, shown, preview, samples, pose, chests, selected]);
 
   const schedule = useCallback(() => {
     cancelAnimationFrame(frame.current);
@@ -256,6 +276,20 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
     const { scale, ox, oy } = view.current;
     return { x: Math.round(((x-ox)/scale)*100)/100, y: Math.round(((y-oy)/scale)*100)/100 };
   };
+  const hitChest = (x: number, y: number) => {
+    if (!chests?.length) return null;
+    const { scale, ox, oy } = view.current;
+    let best: ChestMarker | null = null;
+    let bestDist = 11;
+    for (const chest of chests) {
+      const d = Math.hypot(ox + chest.x * scale - x, oy + chest.y * scale - y);
+      if (d <= bestDist) {
+        bestDist = d;
+        best = chest;
+      }
+    }
+    return best;
+  };
   const local = (event: React.PointerEvent | React.MouseEvent) => {
     const box = canvas.current!.getBoundingClientRect();
     return { x: event.clientX-box.left, y: event.clientY-box.top };
@@ -273,7 +307,8 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
       }}
       onPointerMove={(event) => {
         const { x, y } = local(event);
-        setCursor(toMap(x, y));
+        const hoveredChest = hitChest(x, y);
+        setCursor({ ...toMap(x, y), chest: hoveredChest?.label });
         const active = drag.current;
         if (!active) return;
         if (Math.hypot(x-active.x, y-active.y) < 3 && !active.moved) return;
@@ -301,8 +336,10 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
         }
         if (active.moved || active.index >= 0 || preview) return;
         if (tool === 'add' && !readOnly) {
+          const chest = hitChest(x, y);
+          const targetPos = chest ? { x: chest.x, y: chest.y } : position;
           const segment = hitSegment(x, y);
-          onInsert(segment >= 0 ? segment : selected ?? points.length-1, position.x, position.y);
+          onInsert(segment >= 0 ? segment : selected ?? points.length-1, targetPos.x, targetPos.y);
         } else {
           onSelect(null);
         }
@@ -317,6 +354,9 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
         }
       }}
       onPointerLeave={() => setCursor(null)} />
-    {cursor && <span className="pointer-events-none absolute bottom-2 right-3 rounded bg-bg-secondary/80 px-1.5 py-0.5 text-[11px] tabular-nums text-text-muted">{cursor.x.toFixed(1)}, {cursor.y.toFixed(1)}</span>}
+    {cursor && <span className="pointer-events-none absolute bottom-2 right-3 rounded bg-bg-secondary/90 px-2 py-0.5 text-[11px] tabular-nums text-text-muted">
+      {cursor.chest && <strong className="mr-2 font-medium text-accent">{cursor.chest}</strong>}
+      {cursor.x.toFixed(1)}, {cursor.y.toFixed(1)}
+    </span>}
   </div>;
 });

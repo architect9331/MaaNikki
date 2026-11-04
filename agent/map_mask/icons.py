@@ -23,6 +23,8 @@ def marker_icon(kind, size):
                 radius = 22 if i % 4 == 0 else 12 if i % 2 == 0 else 7
                 angle = i*math.pi/8
                 vertices.append((math.sin(angle)*radius, -math.cos(angle)*radius))
+        elif kind == "chest":
+            vertices = [(-17, -10), (0, -18), (17, -10), (17, 13), (0, 19), (-17, 13)]
         else:
             segments = (
                 ((0, -22), (3, -13), (16, -4), (16, 5)),
@@ -50,13 +52,14 @@ def marker_icon(kind, size):
 
     outer = shape()
     layer(cv2.GaussianBlur(shape(offset=(0, 2)), (0, 0), 2.2*unit), (28, 16, 32), .65)
-    layer(cv2.GaussianBlur(outer, (0, 0), 2.5*unit),
-          (228, 132, 255) if kind == "star" else (255, 208, 88), .45)
-    layer(outer, (182, 85, 209) if kind == "star" else (196, 119, 37))
+    glow = (228, 132, 255) if kind == "star" else (92, 210, 255) if kind == "chest" else (255, 208, 88)
+    border = (182, 85, 209) if kind == "star" else (28, 128, 214) if kind == "chest" else (196, 119, 37)
+    layer(cv2.GaussianBlur(outer, (0, 0), 2.5*unit), glow, .45)
+    layer(outer, border)
     layer(shape(.90), (255, 244, 255))
     yy = np.linspace(0, 1, extent, dtype=np.float32)[:, None, None]
-    top = np.array((247, 200, 255) if kind == "star" else (255, 235, 144))
-    bottom = np.array((168, 125, 245) if kind == "star" else (234, 157, 52))
+    top = np.array((247, 200, 255) if kind == "star" else (150, 232, 255) if kind == "chest" else (255, 235, 144))
+    bottom = np.array((168, 125, 245) if kind == "star" else (42, 152, 240) if kind == "chest" else (234, 157, 52))
     layer(shape(.75), top*(1-yy)+bottom*yy)
     if kind == "star":
         # A warm white center gives the star the game's luminous silhouette.

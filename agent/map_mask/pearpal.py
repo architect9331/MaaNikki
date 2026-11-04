@@ -26,7 +26,9 @@ API = "https://myl-api.nuanpaper.com"
 PAGE = "https://myl.nuanpaper.com/tools/map"
 STAR = {"11", "132", "145", "167", "244"}
 DEW = {"12", "133", "146", "168", "245"}
+CHEST = {"16", "259"}
 WORLDS = {"1": "miraland", "4020034": "wanxiang"}
+CACHE_SCHEMA = 2
 LIMIT = 32 * 1024 * 1024
 
 
@@ -193,7 +195,7 @@ class PearPal:
         if self.cache.is_file() and time.time() - self.cache.stat().st_mtime < 86400:
             try:
                 cached = json.loads(self.cache.read_text(encoding="utf-8"))
-                if cached.get("schema_version") == 1:
+                if cached.get("schema_version") == CACHE_SCHEMA:
                     return [Point(**v) for v in cached["points"]]
             except (OSError, ValueError, TypeError, KeyError):
                 pass
@@ -245,7 +247,9 @@ class PearPal:
                     catalog = catalog[0] if catalog else None
                 if isinstance(catalog, dict):
                     catalog = catalog.get("id")
-                kind = "star" if str(catalog) in STAR else "dewdrop" if str(catalog) in DEW else None
+                kind = ("star" if str(catalog) in STAR else
+                        "dewdrop" if str(catalog) in DEW else
+                        "chest" if str(catalog) in CHEST else None)
                 if kind is None or item.get("id") in (None, ""):
                     continue
                 item_world = str(item.get("world_id") or item.get("worldId") or world_id)
@@ -263,7 +267,7 @@ class PearPal:
             raise DataError("美鸭梨地图没有返回收集点。")
         from dataclasses import asdict
         if not self.stop.is_set():
-            write_json(self.cache, {"schema_version": 1, "points": [asdict(p) for p in points.values()]})
+            write_json(self.cache, {"schema_version": CACHE_SCHEMA, "points": [asdict(p) for p in points.values()]})
         return list(points.values())
 
     def _run(self):
@@ -286,8 +290,11 @@ class PearPal:
                                           {"client_id": 1106, **account})).get("data")
                 if not isinstance(response, dict):
                     raise DataError("美鸭梨收集进度无效，请重新登录。")
-                awarded = {kind: id_set(response.get(key)) for kind, key in
-                           (("star", "star"), ("dewdrop", "dewdrop"))}
+                awarded = {
+                    "star": id_set(response.get("star")),
+                    "dewdrop": id_set(response.get("dewdrop")),
+                    "chest": id_set(response.get("chest") or []),
+                }
                 if public is None:
                     public = self._public()
                 if self.stop.is_set() or not self.login.is_file() or self.login.read_bytes() != current:

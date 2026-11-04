@@ -165,3 +165,141 @@ pub async fn save_wardrobe_scoring(account_key: String, mut settings: Value) -> 
     .await
     .map_err(|error| error.to_string())?
 }
+
+fn find_x6game_dirs() -> Vec<std::path::PathBuf> {
+    let mut candidates = Vec::new();
+    if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
+        let ini_path =
+            std::path::PathBuf::from(local_app_data).join("InfinityNikki Launcher/config.ini");
+        if let Ok(content) = std::fs::read_to_string(&ini_path) {
+            for line in content.lines() {
+                if let Some(rest) = line.trim().strip_prefix("gameDir=") {
+                    let dir = std::path::PathBuf::from(rest.trim().trim_matches('"'));
+                    candidates.push(dir.clone());
+                    candidates.push(dir.join("X6Game"));
+                    candidates.push(dir.join("InfinityNikki/X6Game"));
+                }
+            }
+        }
+    }
+    let mut valid = Vec::new();
+    for dir in candidates {
+        if dir.join("Saved/GamePlayPhotos").is_dir() || dir.join("ScreenShot").is_dir() {
+            if !valid.contains(&dir) {
+                valid.push(dir);
+            }
+        }
+    }
+    valid
+}
+
+#[tauri::command]
+pub async fn list_game_photos() -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let mut photos = Vec::new();
+        for x6 in find_x6game_dirs() {
+            let gp = x6.join("Saved/GamePlayPhotos");
+            if let Ok(uids) = std::fs::read_dir(&gp) {
+                for uid_entry in uids.flatten() {
+                    let uid_name = uid_entry.file_name().to_string_lossy().to_string();
+                    let hq = uid_entry.path().join("NikkiPhotos_HighQuality");
+                    if let Ok(files) = std::fs::read_dir(&hq) {
+                        for file in files.flatten() {
+                            let path = file.path();
+                            let ext = path
+                                .extension()
+                                .and_then(|e| e.to_str())
+                                .unwrap_or("")
+                                .to_ascii_lowercase();
+                            if !matches!(ext.as_str(), "jpg" | "jpeg" | "png") {
+                                continue;
+                            }
+                            let modified = file
+                                .metadata()
+                                .ok()
+                                .and_then(|m| m.modified().ok())
+                                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                                .map(|d| d.as_secs())
+                                .unwrap_or(0);
+                            photos.push(json!({
+                                "path": path.to_string_lossy(),
+                                "filename": file.file_name().to_string_lossy(),
+                                "uid": uid_name,
+                                "source": "高清相册",
+                                "modified": modified,
+                            }));
+                        }
+                    }
+                }
+            }
+            let ss = x6.join("ScreenShot");
+            if let Ok(files) = std::fs::read_dir(&ss) {
+                for file in files.flatten() {
+                    let path = file.path();
+                    let ext = path
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .unwrap_or("")
+                        .to_ascii_lowercase();
+                    if !matches!(ext.as_str(), "jpg" | "jpeg" | "png") {
+                        continue;
+                    }
+                    let modified = file
+                        .metadata()
+                        .ok()
+                        .and_then(|m| m.modified().ok())
+                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map(|d| d.as_secs())
+                        .unwrap_or(0);
+                    photos.push(json!({
+                        "path": path.to_string_lossy(),
+                        "filename": file.file_name().to_string_lossy(),
+                        "uid": "",
+                        "source": "游戏截图",
+                        "modified": modified,
+                    }));
+                }
+            }
+        }
+        photos.sort_by_key(|item| std::cmp::Reverse(item["modified"].as_u64().unwrap_or(0)));
+        photos.truncate(30);
+        Ok(json!({ "photos": photos }))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn read_game_photo_base64(path: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        use base64::Engine;
+        let target = std::fs::canonicalize(&path).map_err(|_| "无法读取所选游戏照片。")?;
+        let ext = target
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        if !matches!(ext.as_str(), "jpg" | "jpeg" | "png") {
+            return Err("仅支持读取 JPG 或 PNG 格式照片。".into());
+        }
+        let allowed = find_x6game_dirs()
+            .into_iter()
+            .any(|x6| std::fs::canonicalize(&x6).is_ok_and(|root| target.starts_with(root)));
+        if !allowed {
+            return Err("该路径不在已识别的游戏相册目录中。".into());
+        }
+        let bytes = std::fs::read(&target).map_err(|_| "读取照片文件失败。")?;
+        let mime = if ext == "png" {
+            "image/png"
+        } else {
+            "image/jpeg"
+        };
+        Ok(format!(
+            "data:{};base64,{}",
+            mime,
+            base64::engine::general_purpose::STANDARD.encode(bytes)
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowDown, ArrowLeft, ArrowUp, Check, CirclePlay, Copy, FileInput, FileOutput, FolderOpen, Footprints, ListPlus, Loader2, Maximize, Minus, MousePointer2, Plus, Redo2, Route, Square, Trash2, Undo2, X } from 'lucide-react';
+import { AlertCircle, ArrowDown, ArrowLeft, ArrowUp, Check, CirclePlay, Copy, FileInput, FileOutput, FolderOpen, Footprints, Gift, ListPlus, Loader2, Maximize, Minus, MousePointer2, Plus, Redo2, Route, Square, Trash2, Undo2, X } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
@@ -9,6 +9,7 @@ import { isTauri } from '@/utils/paths';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { primaryButton, secondaryButton, Segmented } from '@/components/ui/FeaturePage';
 import { SwitchTrack } from '@/components/ui/SwitchTrack';
+import { SKETCH_CHESTS } from '@/services/scoring/wardrobeBrowserData';
 import {
   ACTIONS, MACROS, ROUTE_KEYS, actionMeta, newRoute, newRouteId, parseRouteFile, pointsFromRecording,
   routeIssues, routeLength, withAction, type Checkpoint, type RouteDocument, type RoutePoint,
@@ -159,6 +160,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
   const [recordMap, setRecordMap] = useState('miraland');
   const [tolerance, setTolerance] = useState(1);
   const [showBuiltin, setShowBuiltin] = useState(false);
+  const [showChests, setShowChests] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<RouteSummary | null>(null);
   const [history, setHistory] = useState<{ past: RouteDocument[]; future: RouteDocument[] }>({ past: [], future: [] });
   const canvas = useRef<MapCanvasHandle>(null);
@@ -459,7 +461,8 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
 
       <main className="relative min-w-0 flex-1">
         <RouteMapCanvas ref={canvas} map={map} image={image} points={route?.points ?? []} preview={preview} samples={recording?.samples ?? finished?.samples}
-          pose={recording?.pose} selected={selected} tool={tool} readOnly={readOnly || !route}
+          pose={recording?.pose} chests={showChests ? SKETCH_CHESTS.filter((c) => c.map === map?.id) : undefined}
+          selected={selected} tool={tool} readOnly={readOnly || !route}
           onSelect={setSelected}
           onMove={(index, x, y, done) => {
             if (!route) return;
@@ -487,6 +490,9 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
           <button onClick={() => canvas.current?.zoom(1.4)} title="放大" className="rounded-lg p-2 hover:bg-bg-hover"><Plus className="h-4 w-4" /></button>
           <button onClick={() => canvas.current?.zoom(1/1.4)} title="缩小" className="rounded-lg p-2 hover:bg-bg-hover"><Minus className="h-4 w-4" /></button>
           <button onClick={() => canvas.current?.fit()} title="显示整条路线" className="rounded-lg p-2 hover:bg-bg-hover"><Maximize className="h-4 w-4" /></button>
+          <span className="mx-1.5 my-0.5 h-px bg-border" />
+          <button onClick={() => setShowChests((prev) => !prev)} title="显示设计图与大喵宝箱点位（添加点模式下可点击吸附）" aria-pressed={showChests}
+            className={clsx('rounded-lg p-2', showChests ? 'bg-accent/10 text-accent' : 'hover:bg-bg-hover')}><Gift className="h-4 w-4" /></button>
         </div>
 
         {readOnly && <p className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-border bg-bg-secondary/95 px-3 py-1 text-xs text-text-secondary shadow-sm">内置路线只能查看，另存后可以修改</p>}
