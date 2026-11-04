@@ -100,7 +100,7 @@ class FiveStarPursuit:
             f"{source}（{value[source]:.2f}）" for source in sources)
             + "。按顺位选择能快速挑战的副本，用剩余活跃能量挑战一批，然后升级。",
             detail=True)
-        self.acquire("bless", sources[0], alternatives=sources[1:])
+        return self.acquire("bless", sources[0], alternatives=sources[1:])
 
     def run(self):
         stock = self.inventory
@@ -112,22 +112,31 @@ class FiveStarPursuit:
             self.rt.log(stock.report["reason"])
             stock.save()
             return True
+        if stock.organization.get("decomposition_pending") or any(
+                row["rarity"] <= 4 and row["level"] == 0 and not row["locked"] and row["mutable"]
+                for rows in stock.organization.get("slots", {}).values() for row in rows):
+            LowRarityDecomposer(stock).run()
         # One decision per day. Existing embryos go first; only what they leave decides.
         outcome = stock.process_inventory() if stock.queued_rolls() else None
         short = (outcome or {}).get("status") == "bling_shortage" and self.auto_bling
-        if short and not self.spend_on_bling():
-            self.rt.log("素材激化未消耗活跃能量（可能缺少材料），今天继续刷胚子。",
-                        ui_text="素材激化未执行，改刷胚子。")
-            short = False
+        bling_acquired = False
+        if short:
+            bling_acquired = self.spend_on_bling()
+            if not bling_acquired:
+                self.rt.log("素材激化未消耗活跃能量（可能缺少材料），今天继续刷胚子。",
+                            ui_text="素材激化未执行，改刷胚子。")
+                short = False
+        embryos_acquired = False
         if not short and "recovered_reward" not in stock.report and self.make_room():
-            self.spend_energy()
+            embryos_acquired = bool(self.spend_energy())
         if stock.organization.get("decomposition_pending"):
             # Clear low-rarity drops before reading acquisition order. The
             # decomposer updates old position hints; process_inventory then
             # discovers the surviving prefix once, before five-star auto-fill.
             LowRarityDecomposer(stock).run()
-        # Even with no energy, process the saved unfinished item and inventory.
-        outcome = stock.process_inventory()
+        # Process newly acquired drops/bling, or run once when no prior pass ran.
+        if outcome is None or bling_acquired or embryos_acquired:
+            outcome = stock.process_inventory()
         reasons = {
             "collection_complete": "本地图鉴内五星颜色已收齐，可选择其他幻境",
             "bling_shortage": "升级噗灵不足，已保存进度；可切换普通幻境挑战刷噗灵，补充后继续",

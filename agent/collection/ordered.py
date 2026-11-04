@@ -569,6 +569,11 @@ def baseline(ordered):
         for row in reversed(ordered[slot]):
             row["priority"] = priority
             priority += 1
+    decomposition_pending = any(
+        row["rarity"] <= 4 and row["level"] == 0 and not row["locked"] and row["mutable"]
+        for rows in ordered.values() for row in rows
+    )
     return {"version": 1, "anchor_policy_version": 2, "complete": True, "sort": "acquired_desc",
             "slots": ordered, "next_priority": priority, "unfinished": None,
-            "pending_operation": None, "reason": None}
+            "pending_operation": None, "decomposition_pending": decomposition_pending,
+            "reason": None}
