@@ -8,11 +8,14 @@ class GameFrameSizeError(NavigationError):
     pass
 
 
+ALLOWED_FRAME_SIZES: set[tuple[int, int]] = {(1280, 720)}
+
+
 def require_game_frame(frame):
     if frame is None or frame.size == 0:
         raise NavigationError("未获取到游戏画面。")
     height, width = frame.shape[:2]
-    if (width, height) != (1280, 720):
+    if (width, height) not in ALLOWED_FRAME_SIZES:
         raise GameFrameSizeError(
             f"当前游戏截图为 {width}×{height}，识别与点击需要 1280×720 基准画面。"
             "请在游戏设置中选择 16:9 分辨率（推荐 1920×1080），"

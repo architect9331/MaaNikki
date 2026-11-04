@@ -3,6 +3,7 @@ from collections import Counter
 from datetime import datetime
 import re
 
+from tall_window import tall_window
 from task_control import ForegroundChanged
 from .blessing import SLOTS, summarize_scan
 from .locking import BlessingLocker
@@ -78,7 +79,7 @@ class BlessingOrganizer(BlessingLocker):
         if not self.rt.pause(.12):
             raise RuntimeError("前台恢复被中断")
         frame = self.rt.capture()
-        if (frame is None or frame.shape[:2] != (720, 1280)
+        if (frame is None or frame.shape[:2] not in ((720, 1280), (5120, 1280))
                 or not self.same_structure(first, frame, self.grid, threshold=.997)
                 or not self.rt.text([930, 15, 330, 52], view.slot, image=frame)
                 or not self.rt.text(self.layout["sort_label"], "获得时间", image=frame)
@@ -185,6 +186,23 @@ class BlessingOrganizer(BlessingLocker):
                     raise RuntimeError("切回后整理对象未能重新确认") from error
                 box, facts, evidence, generation = found
 
+    def _finalize_slot(self, slot, rows, maximum, ordered):
+        final = Counter(signature(row) for row in rows if row["locked"])
+        if any(final[key] < 1 for key in maximum):
+            raise RuntimeError("整理复核发现满级款色未保护，未发布基准")
+        if self.allow_unlock and any(row["mutable"] and row["locked"] and
+                                     (not row["maximum"] or final[signature(row)] != 1) for row in rows):
+            raise RuntimeError("整理复核仍有未满级或多余锁定，未发布基准")
+        for row in rows:
+            if row["locked"] and row["mutable"]:
+                key = (row["name"], slot, row["color"], row["level"])
+                self.lock_groups[key] = self.lock_groups.get(key, 0) + 1
+        ordered[slot] = rows
+        self.report["slots"][slot] = {"complete": True, "audited": True,
+                                        "ordering": "acquired_desc", "cells": len(rows),
+                                        "copies": sum(row["count"] for row in rows)}
+        self.save()
+
     def run(self):
         if not self.open():
             raise RuntimeError("未能打开祝福闪光库存")
@@ -196,37 +214,66 @@ class BlessingOrganizer(BlessingLocker):
         ordered = {}
         view = OrderedView(self)
         try:
-            for slot in SLOTS:
-                self.check_generation(self.organization_generation)
-                rows, _ = view.scan(slot, quantities=True)
-                locked = Counter(signature(row) for row in rows if row["locked"])
-                maximum = {signature(row) for row in rows if row["maximum"] and row["mutable"]}
-                keep = set()
-                operations = []
-                # Plan from verified existing locks before adding any lock.
-                # Acquisition order does not place locked copies before stacks.
-                for row in reversed(rows):
-                    key = signature(row)
-                    target = None
-                    if row["mutable"]:
-                        if row["maximum"]:
-                            if row["locked"]:
-                                if key in keep and self.allow_unlock:
+            if not self.set_slot(SLOTS[0]):
+                raise RuntimeError("未确认" + SLOTS[0] + "列表")
+            self.acquisition_sort()
+
+            pending_lock_slots = []
+            with tall_window(self.rt) as is_tall:
+                if is_tall:
+                    self.set_tall_layout(True)
+                    self.rt.log("祝福闪光整理：已切换超长竖屏模式（单屏 42 行），扫描结束后将自动恢复游戏窗口。")
+                try:
+                    for slot in SLOTS:
+                        self.check_generation(self.organization_generation)
+                        rows, _ = view.scan(slot, quantities=True)
+                        locked = Counter(signature(row) for row in rows if row["locked"])
+                        maximum = {signature(row) for row in rows if row["maximum"] and row["mutable"]}
+                        keep = set()
+                        operations = []
+                        # Plan from verified existing locks before adding any lock.
+                        # Acquisition order does not place locked copies before stacks.
+                        for row in reversed(rows):
+                            key = signature(row)
+                            target = None
+                            if row["mutable"]:
+                                if row["maximum"]:
+                                    if row["locked"]:
+                                        if key in keep and self.allow_unlock:
+                                            target = False
+                                        keep.add(key)
+                                    elif locked[key] == 0 and key not in keep:
+                                        target = True
+                                        keep.add(key)
+                                elif row["locked"] and self.allow_unlock:
                                     target = False
-                                keep.add(key)
-                            elif locked[key] == 0 and key not in keep:
-                                target = True
-                                keep.add(key)
-                        elif row["locked"] and self.allow_unlock:
-                            target = False
-                    if target is not None:
-                        operations.append((row, target))
-                changed_keys = {signature(row) for row, _ in operations}
-                for row in rows:
-                    # Multiple identical locked copies are interchangeable for
-                    # toggling, but their inferred remaining position is not.
-                    # Only unchanged unique locks can delimit these lookups.
-                    row["anchor_eligible"] = signature(row) not in changed_keys
+                            if target is not None:
+                                operations.append((row, target))
+                        changed_keys = {signature(row) for row, _ in operations}
+                        for row in rows:
+                            row["anchor_eligible"] = signature(row) not in changed_keys
+                        if operations and is_tall:
+                            pending_lock_slots.append((slot, rows, maximum, operations))
+                        else:
+                            for row, target in operations:
+                                found = view.locate(row, rows, exact_lock=row["locked"])
+                                if found is None:
+                                    raise RuntimeError("整理对象未在完整定位范围内找到，未修改锁定状态")
+                                box, facts, evidence, generation = found
+                                self.apply_organized_lock(view, row, rows, box, facts, evidence, generation, target)
+                                row["locked"] = target
+                                self.rt.log(f"已{'锁定' if target else '解锁'}：{row['name']}·{slot}·{row['level']}级。", detail=True)
+                            if operations:
+                                self.verified.clear()
+                                rows, _ = view.scan(slot, quantities=True)
+                            self._finalize_slot(slot, rows, maximum, ordered)
+                finally:
+                    self.set_tall_layout(False)
+
+            for slot, rows, maximum, operations in pending_lock_slots:
+                self.check_generation(self.organization_generation)
+                view.slot = None
+                view.enter(slot)
                 for row, target in operations:
                     found = view.locate(row, rows, exact_lock=row["locked"])
                     if found is None:
@@ -235,26 +282,9 @@ class BlessingOrganizer(BlessingLocker):
                     self.apply_organized_lock(view, row, rows, box, facts, evidence, generation, target)
                     row["locked"] = target
                     self.rt.log(f"已{'锁定' if target else '解锁'}：{row['name']}·{slot}·{row['level']}级。", detail=True)
-                # Unlocks may merge backwards. One final ordered audit is
-                # necessary only for slots changed during organization.
-                if operations:
-                    self.verified.clear()
-                    rows, _ = view.scan(slot, quantities=True)
-                final = Counter(signature(row) for row in rows if row["locked"])
-                if any(final[key] < 1 for key in maximum):
-                    raise RuntimeError("整理复核发现满级款色未保护，未发布基准")
-                if self.allow_unlock and any(row["mutable"] and row["locked"] and
-                                             (not row["maximum"] or final[signature(row)] != 1) for row in rows):
-                    raise RuntimeError("整理复核仍有未满级或多余锁定，未发布基准")
-                for row in rows:
-                    if row["locked"] and row["mutable"]:
-                        key = (row["name"], slot, row["color"], row["level"])
-                        self.lock_groups[key] = self.lock_groups.get(key, 0) + 1
-                ordered[slot] = rows
-                self.report["slots"][slot] = {"complete": True, "audited": True,
-                                                "ordering": "acquired_desc", "cells": len(rows),
-                                                "copies": sum(row["count"] for row in rows)}
-                self.save()
+                self.verified.clear()
+                rows, _ = view.scan(slot, quantities=True)
+                self._finalize_slot(slot, rows, maximum, ordered)
         finally:
             self.inventory_read = False
         self.organization = baseline(ordered)

@@ -70,11 +70,34 @@ class InventoryScanner:
         return filename
 
     def ocr(self, roi, frame, expected=".+"):
-        result = self.rt.recognize("MaaNikki_Daily_OCR", {
-            "roi": roi, "expected": expected, "threshold": .65}, image=frame)
-        if not result or not result.hit:
-            return []
-        return getattr(result, "filtered_results", []) or [result.best_result]
+        rx, ry, rw, rh = roi
+        if rh <= 720:
+            result = self.rt.recognize("MaaNikki_Daily_OCR", {
+                "roi": roi, "expected": expected, "threshold": .65}, image=frame)
+            if not result or not result.hit:
+                return []
+            return getattr(result, "filtered_results", []) or [result.best_result]
+        merged = []
+        y = ry
+        y_end = ry + rh
+        while y < y_end:
+            band_h = min(620, y_end - y)
+            result = self.rt.recognize("MaaNikki_Daily_OCR", {
+                "roi": [rx, y, rw, band_h], "expected": expected, "threshold": .65}, image=frame)
+            if result and result.hit:
+                items = getattr(result, "filtered_results", []) or [result.best_result]
+                for item in items:
+                    bx, by, bw, bh = list(item.box)
+                    cx, cy = bx + bw / 2, by + bh / 2
+                    if not any(
+                        abs(cx - (ox + ow / 2)) < 12 and abs(cy - (oy + oh / 2)) < 10
+                        for ox, oy, ow, oh in (list(old.box) for old in merged)
+                    ):
+                        merged.append(item)
+            if y + band_h >= y_end:
+                break
+            y += 580
+        return merged
 
     def text(self, roi, frame):
         return " ".join(getattr(item, "text", "") for item in self.ocr(roi, frame))

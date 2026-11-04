@@ -89,6 +89,8 @@ Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https:
 - [MXU](https://github.com/MistEO/MXU)：桌面客户端基础。
 - [Mirror酱](https://mirrorchyan.com/zh/projects?rid=MaaNikki&source=maanikki_readme)：高速下载与更新分发。
 - [Whimbox（奇想盒）](https://github.com/nikkigallery/Whimbox)：部分基础功能实现参考。
+- [CountingMomo](https://github.com/ChanIok/CountingMomo)：图鉴与仓库扫描时的无边框超长竖屏窗口拉伸思路参考。
+- [无暖助手](https://nuan5.pro/)：搭配计算、制衣材料与图鉴资料参考。
 - [MaaCommonAssets](https://github.com/MaaXYZ/MaaCommonAssets) / [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)：OCR 模型。
 
 感谢参与开发、反馈问题和分享使用经验的朋友！

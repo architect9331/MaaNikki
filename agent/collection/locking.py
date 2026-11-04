@@ -1,6 +1,7 @@
 """Lock one model-identified maximum-level Eureka per set, slot and colour."""
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime
 import re
 
@@ -34,6 +35,9 @@ class BlessingLocker(InventoryScanner):
             raise ValueError("解锁不符合要求的闪光选项必须为布尔值")
         self.allow_unlock = allow_unlock
         self.layout = parameters(runtime.context, "MaaNikki_BlessingLock_Layout")
+        self._base_layout = deepcopy(self.layout)
+        self._tall_mode = False
+        self._sort_verified = False
         self.grid = self.layout["grid"]
         self._ordered_scroll_step = self.layout["scroll_step"]
         self.lock_templates = {}
@@ -140,10 +144,28 @@ class BlessingLocker(InventoryScanner):
             diagnostic["selected_page"] = self.image(prefix + "_selected.png", self._lock_frame)
         write_json(self.folder / (prefix + ".json"), diagnostic)
 
+    def set_tall_layout(self, enabled: bool):
+        self._tall_mode = bool(enabled)
+        self.layout = deepcopy(self._base_layout)
+        if self._tall_mode:
+            dy = 5120 - 720
+            self.layout["grid"][3] += dy
+            self.layout["capacity"][1] += dy
+            self.layout["lock_icon"][1] += dy
+            self.layout["lock_background"][1] += dy
+            self.layout["lock_button"][1] += dy
+            self.layout["sort_label"][1] += dy
+            self.layout["scroll_step"] = 14400
+            self.layout["adaptive_scroll_delta"] = True
+        self.grid = self.layout["grid"]
+        self._ordered_scroll_step = self.layout["scroll_step"]
+
     def frame(self, generation):
         frame = self.rt.capture()
         self.check_generation(generation)
-        if frame is None or frame.shape[:2] != (720, 1280) or not self.ready(frame):
+        if (frame is None
+                or frame.shape[:2] not in ((720, 1280), (5120, 1280))
+                or not self.ready(frame)):
             raise IncompleteObservation("未确认祝福闪光普通库存页（需要 16:9 窗口）")
         return frame
 
@@ -230,7 +252,8 @@ class BlessingLocker(InventoryScanner):
         # inputs together here and retain the full post-move settling window.
         # advance() still verifies translation before reading the next page.
         x, y, w, h = self.grid
-        return (self.rt.action("Scroll", target=[x + w - 8, y + h - 8], dx=0, dy=amount)
+        target_y = min(y + h - 8, 520)
+        return (self.rt.action("Scroll", target=[x + w - 8, target_y], dx=0, dy=amount)
                 and self.rt.action("TouchMove", target=[420, 32]) and self.rt.pause(.25))
 
     def scroll_amounts(self):
@@ -395,6 +418,8 @@ class BlessingLocker(InventoryScanner):
         """Reuse the page batch; only ambiguous badges need button selection."""
         result = classification if classification is not None else self.card_models.badges(frame, [box])[0]
         kind = result["badge_state"]
+        if kind is None and self._tall_mode and box[1] > 560:
+            kind = result.get("predicted")
         state = "locked" if kind == "locked" else "unlocked" if kind in ("stack", "single") else None
         source = "classifier_" + kind if kind is not None else "ambiguous"
         stats = self.report.setdefault("card_state_sources", {})
@@ -451,6 +476,8 @@ class BlessingLocker(InventoryScanner):
         x, y, w, h = box
         point = [round(x + w / 2), round(y + h * .45)]
         self._hover_read = self._hover_box = None
+        if not already_selected and self._page_frame is not None and self.selected(self._page_frame, box):
+            already_selected = True
         if not already_selected and (
                 not self.rt.action("Click", target=point, ui_click=False) or not self.rt.pause(.15)):
             raise RuntimeError("未能选中目标闪光")
@@ -478,7 +505,8 @@ class BlessingLocker(InventoryScanner):
     def sort_direction(self, frame, template):
         # Desktop screenshots and runtime captures can differ by a few pixels
         # after normalization. Search a small neighbourhood, not a fixed crop.
-        crop = cv2.cvtColor(self.region(frame, [1220, 665, 34, 38]), cv2.COLOR_BGR2GRAY)
+        dy = frame.shape[0] - 720
+        crop = cv2.cvtColor(self.region(frame, [1220, 665 + dy, 34, 38]), cv2.COLOR_BGR2GRAY)
         scores = {state: float(cv2.matchTemplate(crop, candidate, cv2.TM_CCOEFF_NORMED).max())
                   for state, candidate in (("desc", template), ("asc", cv2.rotate(template, cv2.ROTATE_180)))}
         best = max(scores, key=scores.get)
@@ -500,6 +528,8 @@ class BlessingLocker(InventoryScanner):
 
     def acquisition_sort(self):
         """Select acquisition order and confirm the user-supplied down arrow."""
+        if self._tall_mode and self._sort_verified:
+            return
         generation = self.rt._focus_generation
         frame = self.clear_hover(generation)
         if not self.rt.text(self.layout["sort_label"], "获得时间", image=frame):
@@ -525,6 +555,7 @@ class BlessingLocker(InventoryScanner):
             if direction != self.sort_direction(frame, template):
                 direction = None
             if direction == "desc":
+                self._sort_verified = True
                 return
             if attempt == 0 and direction == "asc":
                 if self.rt.action("Click", target=[1237, 684]) and self.rt.pause(.3):

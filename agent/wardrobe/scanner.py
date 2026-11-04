@@ -13,6 +13,7 @@ from account_state import AccountState
 from collection.scanner import InventoryScanner, RescanSlot
 from daily.settings import ROOT
 from file_io import write_json
+from tall_window import tall_window
 from task_control import TaskStopped, task_time as time
 from .model import WardrobeCatalog
 from .progress import MODEL_ONLY_PARTS, ordered_prefix
@@ -78,6 +79,7 @@ class WardrobeScanner(InventoryScanner):
         self._partial_rows = []
         self._border_recovered = []
         self._cards_cache = (None, (), (), ())
+        self._tall_mode = False
         self._page_frame, self.current_part = None, None
         self.ui_parts = set(self.model.parts) - MODEL_ONLY_PARTS
         self.snapshot = {
@@ -497,8 +499,13 @@ class WardrobeScanner(InventoryScanner):
         raise RuntimeError("未能确认博物图鉴列表顶部")
 
     def advance(self, before, generation):
-        last_top = max((b[1] for b in self.cards(before)), default=0)
-        steps = (1920, 1440, 960, 480) if last_top >= 472 else (1440, 960, 480)
+        if self._tall_mode:
+            steps = (14400, 9600, 4800, 1920)
+            min_step = 1920
+        else:
+            last_top = max((b[1] for b in self.cards(before)), default=0)
+            steps = (1920, 1440, 960, 480) if last_top >= 472 else (1440, 960, 480)
+            min_step = 480
         for amount in steps:
             if not self.scroll_list(-amount, before):
                 raise TaskStopped()
@@ -515,7 +522,7 @@ class WardrobeScanner(InventoryScanner):
             self.record_scroll(before, after, -amount, delta, "down")
             if delta is not None:
                 return after, delta
-            if amount == 480:
+            if amount == min_step:
                 break
             if not self.scroll_list(amount, after):
                 raise TaskStopped()
@@ -555,19 +562,36 @@ class WardrobeScanner(InventoryScanner):
     def extract_card_titles(self, frame, boxes, check_unowned=False):
         if not boxes:
             return []
-        if check_unowned:
+        gx, gy, gw, gh = self.grid
+        ocr_items = []
+        if check_unowned and not self._tall_mode:
             ocr_items = self.ocr(self.grid, frame=frame)
         else:
-            gx, gy, gw, gh = self.grid
-            min_by = max(gy, min(b[1] for b in boxes) - 6)
-            max_by = min(gy + gh, max(b[1] for b in boxes) + 42)
+            if check_unowned:
+                top_boxes = [b for b in boxes if b[1] < gy + 260] or boxes[:6]
+                max_check_y = min(gy + gh, max(b[1] for b in top_boxes) + 106)
+                ocr_items.extend(self.ocr([gx, gy, gw, max(120, max_check_y - gy)], frame=frame))
+            sorted_boxes = sorted(boxes, key=lambda b: (b[1], b[0]))
+            all_min_y = max(gy, min(b[1] for b in sorted_boxes) - 6)
+            all_max_y = min(gy + gh, max(b[1] for b in sorted_boxes) + 42)
             masked = frame.copy()
-            masked[min_by:max_by, 365:gx + gw] = (206, 218, 228)
-            for bx, by, _, _ in boxes:
+            masked[all_min_y:all_max_y, 365:gx + gw] = (206, 218, 228)
+            for bx, by, _, _ in sorted_boxes:
                 y0, y1 = max(gy, by - 4), min(gy + gh, by + 38)
                 x0, x1 = max(365, bx + 98), min(gx + gw, bx + 296)
                 masked[y0:y1, x0:x1] = frame[y0:y1, x0:x1]
-            ocr_items = self.ocr([365, min_by, gx + gw - 365, max(44, max_by - min_by)], frame=masked)
+            band_start = all_min_y
+            while band_start < all_max_y:
+                band_boxes = [b for b in sorted_boxes if band_start - 10 <= b[1] <= band_start + 500]
+                if band_boxes:
+                    b_min = max(gy, min(b[1] for b in band_boxes) - 6)
+                    b_max = min(gy + gh, max(b[1] for b in band_boxes) + 42)
+                    ocr_items.extend(
+                        self.ocr([365, b_min, gx + gw - 365, max(44, b_max - b_min)], frame=masked)
+                    )
+                    band_start = max(b[1] for b in band_boxes) + 60
+                else:
+                    band_start += 500
         results = []
         for bx, by, _, _ in boxes:
             unowned = check_unowned and any(
@@ -620,8 +644,8 @@ class WardrobeScanner(InventoryScanner):
         if actual_part != part:
             raise RuntimeError(f"当前图鉴部位未对准（期望 {self.model.parts[part]['name']}，实际 {header}）")
 
-        if owned_count is not None and total_count is not None and owned_count < total_count:
-            probe_boxes = self.cards(frame)
+        if not self._tall_mode and owned_count is not None and total_count is not None and owned_count < total_count:
+            probe_boxes = self.cards(frame)[:3]
             if probe_boxes:
                 _, any_unowned = zip(*self.extract_card_titles(frame, probe_boxes, check_unowned=True))
                 if any(any_unowned):
@@ -944,20 +968,31 @@ class WardrobeScanner(InventoryScanner):
         self.prepare_search_view()
         visited = set()
 
-        for part, major_idx in MAJOR_SEQUENCE:
-            self.select_major_tab(part, major_idx)
-            self.read_current_part_with_retry(part)
-            visited.add(part)
+        with tall_window(self.rt) as is_tall:
+            if is_tall:
+                self._tall_mode = True
+                self.layout["grid"] = [265, 130, 950, 4685]
+                self.grid = self.layout["grid"]
+                self.rt.log("衣柜读取：已切换超长竖屏模式（单屏 40 行），读取结束后将自动恢复游戏窗口。")
+            try:
+                for part, major_idx in MAJOR_SEQUENCE:
+                    self.select_major_tab(part, major_idx)
+                    self.read_current_part_with_retry(part)
+                    visited.add(part)
 
-        self.expand_subtab_group(8, ACCESSORY_PARTS)
-        self.scroll_tabs(-12000, target=[TAB_X, 110])
-        self.traverse_subtabs(ACCESSORY_PARTS, ACCESSORY_PARTS, (175, 535))
-        visited.update(ACCESSORY_PARTS)
+                self.expand_subtab_group(8, ACCESSORY_PARTS)
+                self.scroll_tabs(-12000, target=[TAB_X, 110])
+                self.traverse_subtabs(ACCESSORY_PARTS, ACCESSORY_PARTS, (175, 535))
+                visited.update(ACCESSORY_PARTS)
 
-        self.expand_subtab_group(9, MAKEUP_ALL)
-        self.scroll_tabs(-12000, target=[TAB_X, 110])
-        self.traverse_subtabs(MAKEUP_ALL, MAKEUP_PARTS, (240, 600))
-        visited.update(MAKEUP_PARTS)
+                self.expand_subtab_group(9, MAKEUP_ALL)
+                self.scroll_tabs(-12000, target=[TAB_X, 110])
+                self.traverse_subtabs(MAKEUP_ALL, MAKEUP_PARTS, (240, 600))
+                visited.update(MAKEUP_PARTS)
+            finally:
+                self._tall_mode = False
+                self.layout["grid"] = [265, 130, 950, 505]
+                self.grid = self.layout["grid"]
 
         self.apply_inferred_handhelds()
         missing = [
