@@ -161,13 +161,19 @@ class BlessingLocker(InventoryScanner):
         self._ordered_scroll_step = self.layout["scroll_step"]
 
     def frame(self, generation):
-        frame = self.rt.capture()
-        self.check_generation(generation)
-        if (frame is None
-                or frame.shape[:2] not in ((720, 1280), (5120, 1280))
-                or not self.ready(frame)):
-            raise IncompleteObservation("未确认祝福闪光普通库存页（需要 16:9 窗口）")
-        return frame
+        for attempt in range(6):
+            frame = self.rt.capture()
+            self.check_generation(generation)
+            if (frame is not None
+                    and frame.shape[:2] in ((720, 1280), (5120, 1280))
+                    and self.ready(frame)):
+                return frame
+            if attempt < 5 and frame is not None and float(frame.mean()) < 8.0:
+                if not self.rt.pause(.15):
+                    break
+                continue
+            break
+        raise IncompleteObservation("未确认祝福闪光普通库存页（需要 16:9 窗口）")
 
     def ready(self, frame):
         generation = self.rt._focus_generation

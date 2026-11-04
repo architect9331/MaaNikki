@@ -224,12 +224,17 @@ def tall_window(rt):
         rt.invalidate_frame()
 
         capture_ok = False
-        for _ in range(12):
+        for _ in range(16):
             if rt.stopped:
                 break
             time.sleep(0.12)
             frame = rt.capture()
-            if frame is not None and frame.shape[:2] == (TALL_CAPTURE_HEIGHT, TALL_CAPTURE_WIDTH):
+            if (
+                frame is not None
+                and frame.shape[:2] == (TALL_CAPTURE_HEIGHT, TALL_CAPTURE_WIDTH)
+                and float(frame.mean()) > 8.0
+                and float(frame.std()) > 5.0
+            ):
                 capture_ok = True
                 break
 
@@ -251,11 +256,21 @@ def tall_window(rt):
         if not exc_active:
             rt.invalidate_frame()
             time.sleep(0.25)
-            for _ in range(10):
-                time.sleep(0.1)
+            rendered_streak = 0
+            for _ in range(20):
+                time.sleep(0.12)
                 try:
                     frame = rt.capture()
-                    if frame is not None and frame.shape[:2] == (720, 1280):
-                        break
+                    if (
+                        frame is not None
+                        and frame.shape[:2] == (720, 1280)
+                        and float(frame.mean()) > 8.0
+                        and float(frame.std()) > 5.0
+                    ):
+                        rendered_streak += 1
+                        if rendered_streak >= 2:
+                            break
+                    else:
+                        rendered_streak = 0
                 except Exception:
                     break
