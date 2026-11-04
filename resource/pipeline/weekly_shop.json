@@ -61,10 +61,9 @@
     "action": "DoNothing"
   },
   "MaaNikki_Shop_DetailReady": {
-    "recognition": "TemplateMatch",
+    "recognition": "OCR",
     "roi": [560, 140, 160, 55],
-    "template": "game/shop/detail_title.png",
-    "threshold": 0.88,
+    "expected": "^商品详情$",
     "action": "DoNothing"
   },
   "MaaNikki_Shop_DetailFree": {
