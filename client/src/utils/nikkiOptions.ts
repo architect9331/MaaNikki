@@ -18,6 +18,8 @@ export function realmOptionLabel(key: string, values: Record<string, OptionValue
 
 // Target choices remain saved while a different consumption mode is active.
 export function realmOptionActive(key: string, values: Record<string, OptionValue>): boolean {
+  if (key === 'CollectionMode' || key === 'CraftingCollectionMode') return false;
+  if (key === 'WeeklyEnabled') return true;
   if (key === 'WeeklyTargets') {
     const weekly = values.WeeklyEnabled;
     return weekly?.type !== 'switch' || weekly.value;

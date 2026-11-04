@@ -1,5 +1,6 @@
 import { useAccountStateStore, periodCompleted, periodTaskLabel, crownTargetStars, crownProgress } from '@/stores/accountStateStore';
-import { realmOptionActive, realmOptionBackup, realmOptionLabel } from '@/utils/nikkiOptions';
+import { realmCollectionEnabled, realmCraftingEnabled, realmOptionActive, realmOptionBackup, realmOptionLabel } from '@/utils/nikkiOptions';
+import { GlowPrepConfigPanel } from './GlowPrepConfigPanel';
 import { RealmModeSwitch } from './RealmModeSwitch';
 import { XinghaiScoreHint, xinghaiSummary } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -592,6 +593,14 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
         return previews;
       }
     }
+    if (task.taskName === 'realm_challenge') {
+      const modeName = realmCollectionEnabled(task.optionValues)
+        ? '五星闪光全收集'
+        : realmCraftingEnabled(task.optionValues)
+          ? '制衣材料全收集'
+          : '日常消耗';
+      previews.push({ key: 'mode', label: '模式', value: modeName, type: 'select' });
+    }
 
     for (const optionKey of taskDef.option || []) {
       if (task.taskName === 'realm_challenge' && !realmOptionActive(optionKey, task.optionValues)) {
@@ -1148,6 +1157,9 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 </Tooltip>
               )}
               {/* 选项列表 - 仅在有选项时显示 */}
+              {task.taskName === 'glow_material_prep' && (
+                <GlowPrepConfigPanel compact />
+              )}
               {task.taskName === 'realm_challenge' && (
                 <RealmModeSwitch instanceId={instanceId} taskId={task.id} values={task.optionValues}
                   disabled={!canEditOptions || isIncompatible} />
@@ -1159,6 +1171,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                   taskName={task.taskName}
                   optionKeys={task.taskName === 'realm_challenge'
                     ? (taskDef.option || []).filter((key) => key !== 'CollectionMode'
+                      && key !== 'CraftingCollectionMode'
                       && !realmOptionBackup(key, task.optionValues)
                       && (realmOptionActive(key, task.optionValues) || key === 'WeeklyTargets'))
                     : taskDef.option || []}

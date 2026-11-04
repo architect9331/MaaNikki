@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Hammer, Loader2, RotateCcw, Sparkles } from 'lucide-react';
+import { Check, Hammer, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { loadScoring, saveMaterialPlan } from '@/services/scoring/api';
 import { buildOwnedProfile } from '@/services/scoring/profile';
 import { emptySettings, type MaterialsState, type ScoringPayload } from '@/services/scoring/types';
+import { GlowPrepConfigPanel } from './GlowPrepConfigPanel';
 import { Segmented, Stat } from './ui/FeaturePage';
 
 const field = 'rounded-lg border border-border bg-bg-primary px-2.5 py-1 text-xs outline-none focus:border-accent';
@@ -34,7 +35,6 @@ export function WardrobeCraftingPlanner({ refreshToken }: { refreshToken: number
   const ownedIds = useMemo(() => new Set(profile?.items.map((i) => i.id) ?? []), [profile]);
   const scope = materials.crafting_scope ?? 'all';
   const inventory = materials.inventory ?? {};
-  const glowPlan = materials.glow_plan;
   const craftingCatalog = payload?.crafting_catalog;
 
   function persist(next: MaterialsState) {
@@ -90,7 +90,6 @@ export function WardrobeCraftingPlanner({ refreshToken }: { refreshToken: number
   if (loading) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在加载制衣与材料规划</div>;
   if (!payload || !craftingCatalog || !summary) return <p className={clsx(card, 'text-sm text-text-secondary')}>请先在「衣柜读取」中读取当前账号的衣柜。</p>;
 
-  const glowTargets = Object.entries(glowPlan?.targets ?? {});
   const glowMats = Object.values(craftingCatalog.materials).filter((m) => m.kind === 'monster_glow' || m.kind === 'jihua');
 
   return <div className="space-y-4">
@@ -100,40 +99,11 @@ export function WardrobeCraftingPlanner({ refreshToken }: { refreshToken: number
       <Stat label="预计刷齐时间" value={summary.totalEnergy ? <>{summary.days}<span className="ml-1 text-xs font-normal text-text-muted">天（{num(summary.totalEnergy)} 能量）</span></> : '已集齐'} />
     </div>
 
-    {glowPlan && glowTargets.length > 0 && (
-      <section className={clsx(card, 'space-y-3 border-accent/40')}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
-              <Sparkles className="h-4 w-4" />独立任务「焕新材料筹备」当前目标
-            </span>
-            <p className="mt-0.5 text-xs text-text-secondary">来源：{glowPlan.source_label || '搭配计算'} · {glowPlan.completed ? '已全部达标（日常运行将自动跳过）' : '日常运行优先刷取，达标后剩余能量自动交给下方幻境挑战'}</p>
-          </div>
-          <button type="button" onClick={() => persist({ ...materials, glow_plan: null })}
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs text-text-secondary hover:bg-bg-hover">
-            <RotateCcw className="h-3 w-3" />清空目标
-          </button>
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {glowTargets.map(([mid, targetVal]) => {
-            const meta = craftingCatalog.materials[mid];
-            const cur = Number(inventory[mid] ?? 0);
-            const done = cur >= targetVal;
-            return (
-              <div key={mid} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-bg-primary px-3 py-2 text-xs">
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium">{meta?.name ?? mid}</span>
-                  <span className={clsx('ml-2 tabular-nums', done ? 'text-success' : 'text-accent')}>{num(cur)} / {num(targetVal)}</span>
-                </div>
-                <input aria-label={`${meta?.name ?? mid}库存`} type="number" min="0" value={cur}
-                  onChange={(e) => setStock(mid, Number(e.target.value))}
-                  className={clsx(field, '!w-20 text-center tabular-nums')} />
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    )}
+    <GlowPrepConfigPanel
+      externalMaterials={materials}
+      accountKey={payload.account_key}
+      onChanged={setMaterials}
+    />
 
     <section className={clsx(card, 'space-y-3')}>
       <div className="flex flex-wrap items-center justify-between gap-2">

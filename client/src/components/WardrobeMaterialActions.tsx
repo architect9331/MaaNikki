@@ -46,13 +46,15 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     toast.success(`已将当前配置的幻境挑战设为「${target.label}」`);
   }
 
-  async function applyGlowPrepPlan() {
+  async function applyGlowPrepPlan(mode: 'replace' | 'add') {
     if (!accountKey || !entries.length) return;
     const inv = materials?.inventory ?? {};
-    const targets: Record<string, number> = {};
+    const prevTargets = mode === 'add' ? { ...(materials?.glow_plan?.targets ?? {}) } : {};
+    const targets: Record<string, number> = { ...prevTargets };
     for (const [id, deficit] of entries) {
       if (MATERIAL_REALM_TARGETS[id]) {
-        targets[id] = Math.round((Number(inv[id]) || 0) + deficit);
+        const base = mode === 'add' ? Math.max(Number(inv[id]) || 0, Number(targets[id]) || 0) : (Number(inv[id]) || 0);
+        targets[id] = Math.round(base + deficit);
       }
     }
     const nextMaterials: MaterialsState = {
@@ -60,7 +62,7 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
       glow_plan: {
         enabled: true,
         completed: false,
-        source_label: sourceLabel || '搭配计算目标',
+        source_label: mode === 'add' ? `${sourceLabel || '搭配计算'}（已累加）` : (sourceLabel || '搭配计算目标'),
         targets,
         updated_at: new Date().toISOString(),
       },
@@ -82,7 +84,9 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
           toggleTaskEnabled(activeInstance.id, existing.id);
         }
       }
-      toast.success('已加入「焕新材料筹备」任务目标，刷满后将自动跳过并继续下方幻境挑战！');
+      toast.success(mode === 'add'
+        ? '已将本套材料差额累加至「焕新材料筹备」任务目标！'
+        : '已将本套材料差额设为「焕新材料筹备」任务目标！');
     } catch (err) {
       toast.error(String(err));
     }
@@ -96,11 +100,17 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     <div className="mt-2.5 space-y-2.5">
       {accountKey && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs">
-          <span className="text-text-secondary">可将本套缺口下发给独立任务「焕新材料筹备」，刷满后自动跳过并继续追闪光或追制衣：</span>
-          <button type="button" onClick={() => void applyGlowPrepPlan()}
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover">
-            <ListPlus className="h-3.5 w-3.5" />设为焕新筹备目标
-          </button>
+          <span className="text-text-secondary">下发给独立任务「焕新材料筹备」（也可在任务栏手动改数量）：</span>
+          <div className="flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => void applyGlowPrepPlan('replace')}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover">
+              <ListPlus className="h-3.5 w-3.5" />设为筹备目标
+            </button>
+            <button type="button" onClick={() => void applyGlowPrepPlan('add')}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-accent/40 bg-bg-secondary px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent/10">
+              + 累加到现有目标
+            </button>
+          </div>
         </div>
       )}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
