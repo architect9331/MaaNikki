@@ -10,6 +10,7 @@ from account_state import AccountState
 from daily.gameplay import Gameplay
 from daily.runtime import Executors
 from daily.settings import ROOT
+from .backpack import ensure_backpack_scanned
 
 
 def load_catalogs():
@@ -112,7 +113,7 @@ def run_glow_prep(rt) -> bool:
 
     crafting, _ = load_catalogs()
     mat_defs = crafting.get("materials") or {}
-    inventory = dict(mats_state.get("inventory") or {})
+    inventory = ensure_backpack_scanned(rt, account, crafting)
 
     def pending_deficits():
         items = []
@@ -185,8 +186,7 @@ def run_crafting_pursuit(rt) -> bool:
     crafting, scoring = load_catalogs()
     mat_defs = crafting.get("materials") or {}
     required = compute_crafting_requirements(role, crafting, scoring)
-    mats_state = role.get("materials") or {}
-    inventory = dict(mats_state.get("inventory") or {})
+    inventory = ensure_backpack_scanned(rt, account, crafting)
 
     def crystal_deficits():
         items = []

@@ -286,5 +286,13 @@
     "custom_action_param": {
       "value": "MouseRight"
     }
+  },
+  "MaaNikki_Key_backpack": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "B"
+    },
+    "custom_action": "nikki.daily_config"
   }
 }
