@@ -295,6 +295,11 @@
     "action": "DoNothing"
   },
   "MaaNikki_Daily_PhotoTaken": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Daily_PhotoTakenIcon", "MaaNikki_Daily_PhotoDelete"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_PhotoTakenIcon": {
     "recognition": "TemplateMatch",
     "roi": [
       1160,

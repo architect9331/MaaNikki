@@ -970,6 +970,8 @@ class Executors(Runtime):
             return False
         if self.wait_hit("MaaNikki_Daily_PhotoTaken", 10):
             return True
+        if not self.stopped:
+            self.diagnostic("photo_shutter", "未能确认照片已拍摄")
         self.log("未能确认照片已拍摄，请检查相机界面和快门键设置。")
         return False
 
