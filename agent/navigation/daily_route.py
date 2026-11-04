@@ -283,6 +283,8 @@ class RouteActions:
             if not ok:
                 # Record a failed action and continue the remaining points.
                 self.action_failed = True
+            elif kind == "fishing_star" and "陨星" in self.fishing.materials:
+                self.action_failed = False
         elif kind in {"collect", "insect"}:
             if kind == "collect":
                 ok = self.collect()

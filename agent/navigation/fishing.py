@@ -141,7 +141,7 @@ class Fishing:
             self.previous_state = found
         return found
 
-    def fail_state(self, reason):
+    def fail_state(self, reason, *, leave_home=False):
         record = {"type": self.event_prefix+"_unconfirmed", "reason": reason,
                   "recognition": self.last_state_details}
         record["evidence"] = self.rt.diagnostic("fishing_state", reason,
@@ -152,6 +152,11 @@ class Fishing:
                  FishingState.SKIP: "领取钓获"}.get(self.last_known_state, "识别操作提示")
         self.rt.log(reason+" 识别信息已记录，本轮停止。",
                     ui_text=f"{self.label}在{phase}阶段停止：{reason}")
+        if leave_home and self.rt.hit("MaaNikki_Home_StarCollectReady"):
+            exited = bool(self.ui.leave_star_collect())
+            self.actions.event({"type": "star_collect_exit", "success": exited})
+            if exited:
+                raise NavigationError(reason)
         # An unclassified fishing page must not reach ordinary Esc recovery.
         self.rt.navigation_halted = True
         raise NavigationError(reason)
@@ -278,7 +283,8 @@ class Fishing:
                         self.switch_fishing()
                         deadline = time.monotonic()+5
                         continue
-                self.fail_state(f"已触发{self.label}，但未识别到{self.label}操作提示。")
+                self.fail_state(f"已触发{self.label}，但未识别到{self.label}操作提示。",
+                                leave_home=self.kind == "home" and self.last_known_state is None)
             pending = self.state()
             if pending != FishingState.UNKNOWN:
                 break
@@ -291,6 +297,8 @@ class Fishing:
             raise NavigationError(f"{self.label}已停止。")
         if self.kind is None:
             self.detect_kind()
+        if self.kind == "home":
+            self.materials.setdefault("陨星", 0)
         idle_deadline = time.monotonic()+30
         # A fish can already be biting when the entrance is first recognized.
         # Only the waiting-for-bite phase needs the original settling delay.
@@ -391,6 +399,7 @@ class Fishing:
         for _ in range(limit if limit is not None else (5 if self.kind == "home" else 3)):
             self.inputs.check()
             if self.kind == "home" and self.home_exhausted():
+                self.materials.setdefault("陨星", 0)
                 self.actions.event({"type": "star_fishing_skipped", "reason": "meteors_exhausted"})
                 self.rt.log("可感应陨星已耗尽，停止钓星。", detail=True)
                 break
@@ -468,7 +477,6 @@ class Fishing:
             self.rt.log("未识别到钓星副能力图标，跳过当前点，继续路线。")
             self.exit_home()
             return False
-        self.materials["陨星"] = 0
         return True
 
 

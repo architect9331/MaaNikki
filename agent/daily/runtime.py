@@ -574,6 +574,9 @@ class Runtime:
         if mode == "fishing":
             return {"ability_plan": parameters(self.context, "MaaNikki_Fishing_AbilityPlan").get("value", 3),
                     "use_rhythms": parameters(self.context, "MaaNikki_Fishing_Rhythms").get("value", False)}
+        if mode == "home":
+            return {"ability_plan": parameters(self.context, "MaaNikki_Home_DailyAbilityPlan").get("value", 3),
+                    "auto_complete": True}
         prefix = f"MaaNikki_{mode.capitalize()}_Daily"
         result = dict(parameters(self.context, prefix + "Settings"))
         # Maa replaces custom_action_param rather than deep-merging it. Keep
