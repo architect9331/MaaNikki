@@ -95,6 +95,11 @@ class WardrobeCatalog:
         table = self.by_part_name.get(part) or {}
         if cname in table:
             return {**deepcopy(table[cname]), "source": "compendium_ocr"}
+        cname_no_ascii = re.sub(r"[A-Za-z]", "", cname)
+        if cname_no_ascii and cname_no_ascii != cname:
+            cname = cname_no_ascii
+            if cname in table:
+                return {**deepcopy(table[cname]), "source": "compendium_ocr"}
         # Single-character OCR substitution recovery for names >= 3 chars when
         # strictly one same-length catalog entry in this part is within 1 char
         # and no other candidate is within 2 chars.
@@ -107,6 +112,12 @@ class WardrobeCatalog:
             dist2 = [rec for _, rec, d in same_len if d == 2]
             if len(dist1) == 1 and not dist2:
                 return {**deepcopy(dist1[0]), "source": "compendium_ocr", "ocr_text": raw_name}
+            # Unambiguous 1-char truncation recovery within the same part.
+            substr_matches = [rec for key, rec in table.items() if cname in key]
+            if len(substr_matches) == 1 and any(
+                cname in key and len(key) - len(cname) == 1 for key in table
+            ):
+                return {**deepcopy(substr_matches[0]), "source": "compendium_ocr", "ocr_text": raw_name}
         return None
 
     def infer_suit_handhelds(self, parts_state: dict) -> list[dict]:

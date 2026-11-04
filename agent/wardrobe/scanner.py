@@ -400,7 +400,8 @@ class WardrobeScanner(InventoryScanner):
         target = [round(x + w / 2), round(y + h / 2)]
         return (
             self.rt.action("Scroll", target=target, dx=0, dy=amount)
-            and self.rt.pause(.18)
+            and self.rt.action("TouchMove", target=[640, 36])
+            and self.rt.pause(.22)
         )
 
     def unchanged(self, before, after):
@@ -564,34 +565,27 @@ class WardrobeScanner(InventoryScanner):
             return []
         gx, gy, gw, gh = self.grid
         ocr_items = []
-        if check_unowned and not self._tall_mode:
-            ocr_items = self.ocr(self.grid, frame=frame)
-        else:
-            if check_unowned:
-                top_boxes = [b for b in boxes if b[1] < gy + 260] or boxes[:6]
-                max_check_y = min(gy + gh, max(b[1] for b in top_boxes) + 106)
-                ocr_items.extend(self.ocr([gx, gy, gw, max(120, max_check_y - gy)], frame=frame))
-            sorted_boxes = sorted(boxes, key=lambda b: (b[1], b[0]))
-            all_min_y = max(gy, min(b[1] for b in sorted_boxes) - 6)
-            all_max_y = min(gy + gh, max(b[1] for b in sorted_boxes) + 42)
-            masked = frame.copy()
-            masked[all_min_y:all_max_y, 365:gx + gw] = (206, 218, 228)
-            for bx, by, _, _ in sorted_boxes:
-                y0, y1 = max(gy, by - 4), min(gy + gh, by + 38)
-                x0, x1 = max(365, bx + 98), min(gx + gw, bx + 296)
-                masked[y0:y1, x0:x1] = frame[y0:y1, x0:x1]
-            band_start = all_min_y
-            while band_start < all_max_y:
-                band_boxes = [b for b in sorted_boxes if band_start - 10 <= b[1] <= band_start + 500]
-                if band_boxes:
-                    b_min = max(gy, min(b[1] for b in band_boxes) - 6)
-                    b_max = min(gy + gh, max(b[1] for b in band_boxes) + 42)
-                    ocr_items.extend(
-                        self.ocr([365, b_min, gx + gw - 365, max(44, b_max - b_min)], frame=masked)
-                    )
-                    band_start = max(b[1] for b in band_boxes) + 60
-                else:
-                    band_start += 500
+        sorted_boxes = sorted(boxes, key=lambda b: (b[1], b[0]))
+        all_min_y = max(gy, min(b[1] for b in sorted_boxes) - 6)
+        all_max_y = min(gy + gh, max(b[1] for b in sorted_boxes) + 104)
+        band_start = all_min_y
+        while band_start < all_max_y:
+            band_boxes = [b for b in sorted_boxes if band_start - 10 <= b[1] <= band_start + 500]
+            if band_boxes:
+                b_min = max(gy, min(b[1] for b in band_boxes) - 6)
+                b_max = min(gy + gh, max(b[1] for b in band_boxes) + 104)
+                items = self.ocr([gx, b_min, gw, max(108, b_max - b_min)], frame=frame)
+                for item in items:
+                    ibx, iby, ibw, ibh = list(item.box)
+                    icx, icy = ibx + ibw / 2, iby + ibh / 2
+                    if not any(
+                        abs(icx - (obx + obw / 2)) < 12 and abs(icy - (oby + obh / 2)) < 10
+                        for obx, oby, obw, obh in (list(old.box) for old in ocr_items)
+                    ):
+                        ocr_items.append(item)
+                band_start = max(b[1] for b in band_boxes) + 80
+            else:
+                band_start += 500
         results = []
         for bx, by, _, _ in boxes:
             unowned = check_unowned and any(
@@ -602,13 +596,13 @@ class WardrobeScanner(InventoryScanner):
             )
             title_lines = [
                 r for r in ocr_items
-                if bx + 98 <= r.box[0] + r.box[2] / 2 <= bx + 296
-                and by - 6 <= r.box[1] + r.box[3] / 2 <= by + 40
+                if bx + 100 <= r.box[0] + r.box[2] / 2 <= bx + 248
+                and by - 4 <= r.box[1] + r.box[3] / 2 <= by + 38
             ]
             title_lines.sort(key=lambda r: r.box[0])
             title = "".join(r.text.strip() for r in title_lines)
             if not clean(title):
-                title = self.rt.text([bx + 104, by + 2, 184, 34], image=frame).strip()
+                title = self.rt.text([bx + 104, by + 2, 144, 34], image=frame).strip()
             results.append((title, unowned))
         return results
 
@@ -763,8 +757,15 @@ class WardrobeScanner(InventoryScanner):
                         frame = self.apply_owned_filter()
                         raise RescanSlot()
                     self.check_generation(generation)
-                    for (slot, _), (raw_name, _) in zip(fresh, extracted):
+                    for (slot, box), (raw_name, _) in zip(fresh, extracted):
                         matched = self.model.lookup(part, raw_name)
+                        if matched is None:
+                            bx, by, _, _ = box
+                            retry_name = self.rt.text([bx + 104, by + 2, 144, 34], image=frame).strip()
+                            if retry_name and retry_name != raw_name:
+                                matched = self.model.lookup(part, retry_name)
+                                if matched is not None:
+                                    raw_name = retry_name
                         if matched is None:
                             matched = {
                                 "class_id": -1,
@@ -971,9 +972,9 @@ class WardrobeScanner(InventoryScanner):
         with tall_window(self.rt) as is_tall:
             if is_tall:
                 self._tall_mode = True
-                self.layout["grid"] = [265, 130, 950, 4685]
+                self.layout["grid"] = [265, 130, 950, 4915]
                 self.grid = self.layout["grid"]
-                self.rt.log("衣柜读取：已切换超长竖屏模式（单屏 40 行），读取结束后将自动恢复游戏窗口。")
+                self.rt.log("衣柜读取：已切换超长竖屏模式（单屏 42 行），读取结束后将自动恢复游戏窗口。")
             try:
                 for part, major_idx in MAJOR_SEQUENCE:
                     self.select_major_tab(part, major_idx)

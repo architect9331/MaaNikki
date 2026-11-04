@@ -237,6 +237,7 @@ def tall_window(rt):
             yield False
             return
 
+        rt.action("TouchMove", target=[640, 36])
         rt.pause(0.25)
         yield True
     finally:
