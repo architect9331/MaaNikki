@@ -815,8 +815,13 @@ class GameUI:
         # The centered top tab bar shifts right by half a tab pitch (+63px) when
         # the fourth tab (大喵战斗) is not unlocked; the catalog ROIs span both
         # 3-tab and 4-tab positions while requiring the active-tab highlight.
-        wardrobe = self.feature(asset="IconWardrobeFeature", threshold=.99,
-                                method=cv2.TM_CCORR_NORMED)
+        wardrobe_icon = self.feature(asset="IconWardrobeFeature", threshold=.99,
+                                     method=cv2.TM_CCORR_NORMED)
+        def wardrobe():
+            # Header artwork changes with the wardrobe background. The paired
+            # tabs and Save Outfit label identify the same actionable page;
+            # their OCR ROIs are widened by the same half-pitch shift.
+            return wardrobe_icon() or self.rt.hit("MaaNikki_Wardrobe_TextReady")
         ability = self.feature(asset="IconAbilityFeature", threshold=.99,
                                method=cv2.TM_CCORR_NORMED)
         if self.page_matches(ability) and self.wait_page(ability):
