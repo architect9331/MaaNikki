@@ -363,14 +363,15 @@ class FiveStarInventory(BlessingLocker):
             "confirmed_at": datetime.now().isoformat(timespec="seconds")}
         self.confirm_change(operation, result={key: new[key] for key in ("name", "slot", "color", "level")})
         self.verified.clear()
-        if operation.get("bling_before") is not None and operation.get("cost") is not None:
-            self.observe_bling(operation["bling_before"])
-            self.organization["bling"] = operation["bling_before"] - operation["cost"]
-        particles = self.organization.get("particles")
-        if type(particles) is int:
-            # Ten experience per particle; the next decomposition page corrects this.
-            spent = sum(self.catalog["upgrade_costs"][str(new["rarity"])]["exp"][old["level"]:new["level"]]) // 10
-            self.organization["particles"] = max(0, particles - spent)
+        if self.organization is not None:
+            if operation.get("bling_before") is not None and operation.get("cost") is not None:
+                self.observe_bling(operation["bling_before"])
+                self.organization["bling"] = operation["bling_before"] - operation["cost"]
+            particles = self.organization.get("particles")
+            if type(particles) is int:
+                # Ten experience per particle; the next decomposition page corrects this.
+                spent = sum(self.catalog["upgrade_costs"][str(new["rarity"])]["exp"][old["level"]:new["level"]]) // 10
+                self.organization["particles"] = max(0, particles - spent)
         if self.is_maximum(new) and new["color"] is not None:
             self.record_colour(new)
         self.rt.log(f"升级完成：{new['name']}·{new['slot']}，{old['level']} → {new['level']} 级。"
@@ -451,11 +452,14 @@ class FiveStarInventory(BlessingLocker):
             return False
         if len(counts) != 1:
             return False
-        self.organization["capacity"] = list(counts[0])
+        if self.organization is not None:
+            self.organization["capacity"] = list(counts[0])
         return counts[0][0] >= counts[0][1]
 
     def observe_bling(self, balance):
         """Keep the balance the upgrade page showed; it also prices the last refill."""
+        if self.organization is None:
+            return
         refill = self.organization.pop("bling_refill", None)
         if refill and balance > refill["before"] and refill["energy"] > 0:
             gain = balance - refill["before"]
