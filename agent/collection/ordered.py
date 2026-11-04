@@ -224,7 +224,15 @@ class OrderedView:
         roi = list(self.o.grid)
         if not at_bottom:
             roi[3] -= self.o.layout.get("bottom_fade_margin", 32)
-        self.labels = self.o.ocr(roi, frame)
+        prev_win = self.o.report.get("reading_window", {})
+        if (at_bottom and getattr(self.o, "_tall_mode", False)
+                and prev_win.get("slot") == self.slot
+                and prev_win.get("position") == self.position
+                and prev_win.get("deferred_cards") == 0
+                and getattr(self, "labels", None) is not None):
+            pass
+        else:
+            self.labels = self.o.ocr(roi, frame)
         # Stack counts share the page OCR, but are not level baselines and
         # must never create extra card rows or shift their coordinates.
         levels = [item for item in self.labels

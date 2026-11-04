@@ -9,6 +9,7 @@ import atexit
 from contextlib import contextmanager
 import ctypes
 from ctypes import wintypes
+import sys
 import time
 
 from game_view import ALLOWED_FRAME_SIZES
@@ -241,17 +242,20 @@ def tall_window(rt):
         rt.pause(0.25)
         yield True
     finally:
+        exc_active = sys.exc_info()[0] is not None
         _restore_win32()
         try:
             atexit.unregister(_restore_win32)
         except Exception:
             pass
-        rt.invalidate_frame()
-        for _ in range(10):
-            time.sleep(0.1)
-            try:
-                frame = rt.capture()
-                if frame is not None and frame.shape[:2] == (720, 1280):
+        if not exc_active:
+            rt.invalidate_frame()
+            time.sleep(0.25)
+            for _ in range(10):
+                time.sleep(0.1)
+                try:
+                    frame = rt.capture()
+                    if frame is not None and frame.shape[:2] == (720, 1280):
+                        break
+                except Exception:
                     break
-            except Exception:
-                break

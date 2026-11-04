@@ -524,6 +524,17 @@ class BlessingLocker(InventoryScanner):
         if ready:
             self._model_slot = slot
             self._ordered_scroll_step = self.layout["scroll_step"]
+            if self._tall_mode:
+                generation = self.rt._focus_generation
+                prev_count = -1
+                for _ in range(6):
+                    frame = self.frame(generation)
+                    cur_count = len(self.cards(frame, []))
+                    if cur_count > 0 and cur_count == prev_count:
+                        break
+                    prev_count = cur_count
+                    if not self.rt.pause(.08):
+                        break
         return ready
 
     def acquisition_sort(self):
@@ -564,7 +575,23 @@ class BlessingLocker(InventoryScanner):
             raise RuntimeError("未确认获得时间从新到旧的排序箭头，请设为默认降序后重试")
 
     def unchanged(self, before, after):
-        return self.same_structure(before, after, self.grid, threshold=.997)
+        if not self._tall_mode:
+            return self.same_structure(before, after, self.grid, threshold=.997)
+        if self.same_structure(before, after, self._base_layout["grid"], threshold=.997):
+            return True
+        boxes = self.cards(before, [])
+        if not boxes:
+            return False
+        # Cards themselves are opaque; exclude transparent gaps, empty space
+        # below the list, the selected first card's border, and scroll target.
+        sample = [
+            b for b in (boxes[1:16] if len(boxes) > 1 else boxes[:1])
+            if not (b[0] <= 1246 <= b[0] + b[2] and b[1] <= 520 <= b[1] + b[3])
+        ] or boxes[:1]
+        return all(
+            self.same_structure(before, after, [x + 4, y + 4, w - 8, h - 8], threshold=.997)
+            for x, y, w, h in sample
+        )
 
     def top(self):
         generation = self.rt._focus_generation
