@@ -661,6 +661,23 @@ class WardrobeScanner(InventoryScanner):
             item["source"] == "compendium_ocr_unconfirmed" for item in items
         )
 
+    def wait_page_cards(self, frame, owned_count, generation):
+        max_rows = int((self.grid[3] - 100) // self.layout["row_pitch_exact"]) + 1
+        expected_min = min(owned_count, (max_rows - 1) * 3) if owned_count is not None else 0
+        prev_boxes = self.cards(frame)
+        for _ in range(12):
+            if not self.rt.pause(.14):
+                raise TaskStopped()
+            nxt = self.rt.capture()
+            self.check_generation(generation)
+            nxt_boxes = self.cards(nxt)
+            if (len(nxt_boxes) >= expected_min
+                    and len(nxt_boxes) == len(prev_boxes)
+                    and (not nxt_boxes or abs(nxt_boxes[-1][1] - prev_boxes[-1][1]) <= 1)):
+                return nxt
+            frame, prev_boxes = nxt, nxt_boxes
+        return frame
+
     def read_part(self, part):
         self.current_part = part
         generation = self.rt._focus_generation
@@ -721,6 +738,7 @@ class WardrobeScanner(InventoryScanner):
             return
 
         frame = self.top()
+        frame = self.wait_page_cards(frame, owned_count, generation)
         self._page_frame = frame
         state = {
             "name": self.model.parts[part]["name"],
@@ -821,8 +839,14 @@ class WardrobeScanner(InventoryScanner):
                     break
                 after, delta = self.advance(frame, generation)
                 if delta == 0:
+                    if len(self.cards(after)) > len(boxes):
+                        frame = after
+                        continue
                     after, delta = self.advance(after, generation)
                     if delta == 0:
+                        if len(self.cards(after)) > len(boxes):
+                            frame = after
+                            continue
                         self.cards(after)
                         if any(
                             round((top + position - self.layout["first_y"]) / self.layout["row_pitch_exact"])
