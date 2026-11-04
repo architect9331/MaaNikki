@@ -71,7 +71,9 @@ def option_overrides(task: dict, definition: dict, extra_roots=()) -> dict:
             merge(case.get("pipeline_override", {}))
             for child in case.get("option", []):
                 visit(child)
-    for name in [*definition.get("task", [{}])[0].get("option", []), *extra_roots]:
+    task_def = next((item for item in definition.get("task", []) if item.get("name") == task.get("name")),
+                    definition.get("task", [{}])[0])
+    for name in [*task_def.get("option", []), *extra_roots]:
         visit(name)
     return result
 

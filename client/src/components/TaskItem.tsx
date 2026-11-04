@@ -603,7 +603,11 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
     }
 
     for (const optionKey of taskDef.option || []) {
-      if (task.taskName === 'realm_challenge' && !realmOptionActive(optionKey, task.optionValues)) {
+      if (task.taskName === 'realm_challenge' && (
+        optionKey === 'CollectionMode'
+        || optionKey === 'CraftingCollectionMode'
+        || !realmOptionActive(optionKey, task.optionValues)
+      )) {
         continue;
       }
       if (previews.length >= maxPreviews) break;

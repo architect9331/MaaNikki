@@ -18,14 +18,15 @@ export function realmOptionLabel(key: string, values: Record<string, OptionValue
 
 // Target choices remain saved while a different consumption mode is active.
 export function realmOptionActive(key: string, values: Record<string, OptionValue>): boolean {
-  if (key === 'CollectionMode' || key === 'CraftingCollectionMode') return false;
+  const collection = realmCollectionEnabled(values);
+  const crafting = realmCraftingEnabled(values);
+  if (key === 'CollectionMode') return collection;
+  if (key === 'CraftingCollectionMode') return crafting;
   if (key === 'WeeklyEnabled') return true;
   if (key === 'WeeklyTargets') {
     const weekly = values.WeeklyEnabled;
     return weekly?.type !== 'switch' || weekly.value;
   }
-  const collection = realmCollectionEnabled(values);
-  const crafting = realmCraftingEnabled(values);
   if (COLLECTION_OPTIONS.has(key)) return collection;
   // In collection mode the blessing target is the failed-organization fallback.
   if (key === 'BlessTarget' && collection) return true;
