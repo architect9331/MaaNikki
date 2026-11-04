@@ -1093,14 +1093,21 @@ class Executors(Runtime):
             confirmations = 0
             rejected = False
             while not self.stopped and time.monotonic() < deadline:
-                with self.observe(fresh=True):
-                    rejected = self.hit("MaaNikki_Daily_CantPlace")
-                    preview = self.placement_ready()
-                    returned = self.hit("MaaNikki_MainDetected")
-                    success = bool(self.text([250, 100, 780, 420], r"放置成功|已放置"))
-                    recover_ready = bool(self.text([0, 500, 1210, 200], r"收回|回收"))
-                if rejected:
+                frame = self.capture()
+                if frame is None:
+                    return False
+                if self.hit("MaaNikki_Daily_CantPlace", image=frame):
+                    rejected = True
                     break
+                toast = self.text([250, 100, 780, 420], r"放置成功|已放置|不可放置|无法放置", image=frame)
+                if re.search(r"不可放置|无法放置", toast):
+                    rejected = True
+                    break
+                success = bool(re.search(r"放置成功|已放置", toast))
+                controls = "" if success else self.text([0, 500, 1210, 200], r"放置|摆放|收回|回收", image=frame)
+                preview = bool(re.search(r"放置|摆放", controls))
+                recover_ready = bool(re.search(r"收回|回收", controls))
+                returned = self.hit("MaaNikki_MainDetected", image=frame)
                 confirmed = success or returned and not preview or recover_ready and not recover_before
                 confirmations = confirmations+1 if confirmed else 0
                 if confirmations >= 2:
