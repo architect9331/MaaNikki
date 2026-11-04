@@ -43,6 +43,8 @@ def organize_inventory(rt, catalog, *, allow_unlock=False):
                + ("可供后续任务复用。" if published else "数量核对未通过，未覆盖原有完整库存，下次运行会重新整理。"),
                detail=True)
         return {"published": published, "folder": folder,
+                "warehouse_full": bool(getattr(locker, "initial_capacity", None)
+                                       and locker.initial_capacity[0] >= locker.initial_capacity[1]),
                 "reason": None if published else snapshot["scan"]["reason"] or "仓库数量核对未通过"}
     except TaskStopped:
         if locker is not None:
@@ -61,7 +63,9 @@ def organize_inventory(rt, catalog, *, allow_unlock=False):
                 pass  # Saving the operation history must survive capture failure.
         rt.log(f"祝福闪光整理未完成：{reason}。操作记录：{folder}。",
                ui_text=f"祝福闪光整理未完成：{reason}。")
-        return {"published": False, "folder": folder, "reason": reason}
+        return {"published": False, "folder": folder, "reason": reason,
+                "warehouse_full": bool(locker is not None and getattr(locker, "initial_capacity", None)
+                                       and locker.initial_capacity[0] >= locker.initial_capacity[1])}
     finally:
         if locker is not None:
             try:

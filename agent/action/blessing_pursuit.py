@@ -57,6 +57,14 @@ class BlessingPursuitAction(CustomAction):
                     rt.log(f"需要整理的原因：{issue}。", detail=True)
                 result = organize_inventory(rt, catalog, allow_unlock=bool(ORGANIZE_OPTIONS[organize]))
                 if not result["published"] and organization_issue(rt, catalog) is not None:
+                    if result.get("warehouse_full"):
+                        rt.log("整理未完成且祝福闪光仓库已满，本轮无法刷取祝福闪光副本，下次运行重新整理。",
+                               ui_text="整理未完成且仓库已满，本轮不刷祝福闪光副本。")
+                        if options.get("return_page") == "calendar":
+                            rt.ui.calendar()
+                        else:
+                            rt.finish(argv.node_name)
+                        return False
                     rt.log("整理未完成且没有可用记录，本轮改用「备选副本」刷取，下次运行重新整理。",
                            ui_text="整理未完成，本轮改刷备用副本。")
                     return fallback_realm(context, rt, argv.node_name)
@@ -102,10 +110,19 @@ class BlessingPursuitAction(CustomAction):
             farmed = pursuit is not None and any(
                 op.get("kind") == "realm" and op.get("input_attempted") is not False
                 for op in pursuit.report["operations"])
-            if not rt.stopped and not farmed:
+            capacity = (pursuit.organization or {}).get("capacity") if pursuit is not None else None
+            warehouse_full = bool(
+                (pursuit is not None and pursuit.report.get("warehouse_full"))
+                or (isinstance(capacity, list) and len(capacity) == 2 and capacity[0] >= capacity[1]))
+            if not rt.stopped and not farmed and not warehouse_full:
                 rt.log("本轮尚未刷取，改用「备选副本」刷取，已保存的进度下次继续。",
                        ui_text="全收集流程未完成，本轮改刷备用副本。")
                 return fallback_realm(context, rt, argv.node_name)
+            if not rt.stopped:
+                if options.get("return_page") == "calendar":
+                    rt.ui.calendar()
+                else:
+                    rt.finish(argv.node_name)
             return False
         finally:
             if pursuit is not None:

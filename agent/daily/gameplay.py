@@ -163,11 +163,12 @@ class Gameplay:
               return_page="main", fixed_count=None, *, allow_unavailable=False, before_submit=None):
         if kind == "bless":
             self.rt.account_uid()
-        if fixed_count is not None and (type(fixed_count) is not int or fixed_count != 1):
-            raise ValueError("固定挑战数量目前仅支持一次")
+        if fixed_count is not None and (type(fixed_count) is not int or not 1 <= fixed_count <= 999):
+            raise ValueError("固定挑战数量必须是 1～999 的整数")
         self.energy_exhausted = False
         self.quick_unavailable = False
         prefix = {"jihua": "Jihua", "bless": "Bless", "monster": "Monster", "weekly": "Weekly"}[kind]
+        cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
         try:
             if not entered and not self.rt.hit(f"MaaNikki_{prefix}_PageReady"):
                 if not self.ui.calendar():
@@ -207,7 +208,6 @@ class Gameplay:
             if not self.ui.enter_page(lambda: self.rt.click_template(quick, attempts=1, wait_seconds=0),
                     confirm, source=quick, recover=None if can_skip else recover_level,
                     attempts=1 if can_skip else 3):
-                cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
                 # Only a failure before opening the submission dialog can
                 # authorize another realm. An unknown page remains an error.
                 if (can_skip and not self.rt.stopped
@@ -217,7 +217,7 @@ class Gameplay:
                     return False
                 return self.confirm_unavailable(kind, allow_exhausted,
                                                 cancel if self.rt.hit(cancel) else None)
-            if fixed_count is not None and not self.rt.set_amount(kind, 0):
+            if fixed_count is not None and not self.rt.set_amount(kind, 0, desired_count=fixed_count):
                 return False
             if fixed_count is None and maximize and kind != "weekly" and not self.rt.click_template(f"MaaNikki_{prefix}_Max", wait_seconds=.2):
                 return False
@@ -228,9 +228,11 @@ class Gameplay:
             if kind == "bless":
                 self.invalidate_blessing_inventory("即将提交祝福闪光挑战，奖励数量待复核")
             if not self.rt.click_template(confirm):
-                cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
                 return self.confirm_unavailable(kind, allow_exhausted, cancel)
             result = self.ui.skip_reward()
+            if not result and not self.rt.stopped and (self.rt.hit(cancel) or self.rt.hit(confirm)):
+                return self.confirm_unavailable(kind, allow_exhausted,
+                                                cancel if self.rt.hit(cancel) else None)
             if result and kind == "bless":
                 self.invalidate_blessing_inventory("已确认祝福闪光挑战奖励，新增库存数量待复核")
             self.rt.log("挑战奖励已领取。" if result else "挑战奖励领取结果待确认，请检查游戏画面。",
@@ -238,6 +240,8 @@ class Gameplay:
             return result
         finally:
             if not entered and not self.rt.stopped:
+                if kind != "jihua" and self.rt.hit(cancel):
+                    self.rt.click_template(cancel, attempts=1)
                 returned = self.ui.calendar() if return_page == "calendar" else self.rt.main()
                 if not returned:
                     self.quick_unavailable = False
@@ -282,7 +286,7 @@ class Gameplay:
                 return False
             if not self.jihua_open_table() or not self.jihua_select_target() or not self.jihua_select_material():
                 return False
-            if fixed_count is not None and not self.rt.set_amount("jihua", 0):
+            if fixed_count is not None and not self.rt.set_amount("jihua", 0, desired_count=fixed_count):
                 return False
             if fixed_count is None and maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
                 return False
