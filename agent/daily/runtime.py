@@ -464,7 +464,7 @@ class Runtime:
         return observed
 
     def read_account_uid(self, image):
-        if image is None or not self.image_current(image):
+        if image is None or image.shape[:2] != (720, 1280) or not self.image_current(image):
             return None
         generation = self._focus_generation
         from .ui import fields
@@ -497,7 +497,7 @@ class Runtime:
             text = re.sub(r"\s+", "", str(getattr(row, "text", "")))
             # The cropped line contains digits only. Reject a mixed result
             # instead of extracting a shorter numeric suffix after a letter.
-            match = re.fullmatch(r"[0-9]{1,32}", text)
+            match = re.fullmatch(r"[0-9]{6,32}", text)
             if match:
                 candidates.add(match[0])
         return candidates

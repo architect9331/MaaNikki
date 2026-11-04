@@ -110,14 +110,12 @@ class WardrobeCatalog:
             ]
             dist1 = [rec for _, rec, d in same_len if d == 1]
             dist2 = [rec for _, rec, d in same_len if d == 2]
-            if len(dist1) == 1 and not dist2:
+            if len(dist1) == 1 and (len(cname) >= 4 or not dist2):
                 return {**deepcopy(dist1[0]), "source": "compendium_ocr", "ocr_text": raw_name}
             # Unambiguous 1-char truncation recovery within the same part.
-            substr_matches = [rec for key, rec in table.items() if cname in key]
-            if len(substr_matches) == 1 and any(
-                cname in key and len(key) - len(cname) == 1 for key in table
-            ):
-                return {**deepcopy(substr_matches[0]), "source": "compendium_ocr", "ocr_text": raw_name}
+            trunc1 = [rec for key, rec in table.items() if cname in key and len(key) - len(cname) == 1]
+            if len(trunc1) == 1:
+                return {**deepcopy(trunc1[0]), "source": "compendium_ocr", "ocr_text": raw_name}
         return None
 
     def infer_suit_handhelds(self, parts_state: dict) -> list[dict]:
