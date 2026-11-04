@@ -961,7 +961,7 @@ class WardrobeScanner(InventoryScanner):
                 return frame, actual, clicked_y
         raise RuntimeError("未能展开图鉴二级分类列表")
 
-    def traverse_subtabs(self, sub_order, target_parts, scroll_box_y_range):
+    def traverse_subtabs(self, sub_order, target_parts, scroll_box_y_range, group_index=8):
         y_min, y_max = scroll_box_y_range
         pitch = 60.7
         frame = self.rt.capture()
@@ -969,14 +969,7 @@ class WardrobeScanner(InventoryScanner):
         if actual not in sub_order:
             raise RuntimeError("当前未处于预期二级分类列表")
         anchor_idx = sub_order.index(actual)
-        if anchor_idx == 0:
-            self.scroll_tabs(12000, target=[TAB_X, (y_min + y_max) // 2])
-            frame, anchor_y = self.click_tab_y(y_min + 28)
-            actual, _ = self.category(frame)
-            if actual in sub_order:
-                anchor_idx = sub_order.index(actual)
-        else:
-            anchor_y = (y_min + y_max) / 2
+        anchor_y = (y_min + 28) if anchor_idx == 0 else ((y_min + y_max) / 2)
 
         for target_part in target_parts:
             target_idx = sub_order.index(target_part)
@@ -985,6 +978,16 @@ class WardrobeScanner(InventoryScanner):
                 actual, _ = self.category(frame)
                 if actual == target_part:
                     break
+                if actual not in sub_order:
+                    self.expand_subtab_group(group_index, sub_order)
+                    self.scroll_tabs(-12000, target=[TAB_X, 110])
+                    frame = self.rt.capture()
+                    actual, _ = self.category(frame)
+                    if actual in sub_order:
+                        anchor_idx = sub_order.index(actual)
+                        anchor_y = (y_min + 28) if anchor_idx == 0 else ((y_min + y_max) / 2)
+                        if actual == target_part:
+                            break
                 pred_y = anchor_y + (target_idx - anchor_idx) * pitch
                 if y_min <= pred_y <= y_max:
                     frame, clicked_y = self.click_tab_y(pred_y)
@@ -1038,12 +1041,12 @@ class WardrobeScanner(InventoryScanner):
 
                 self.expand_subtab_group(8, ACCESSORY_PARTS)
                 self.scroll_tabs(-12000, target=[TAB_X, 110])
-                self.traverse_subtabs(ACCESSORY_PARTS, ACCESSORY_PARTS, (175, 535))
+                self.traverse_subtabs(ACCESSORY_PARTS, ACCESSORY_PARTS, (175, 535), group_index=8)
                 visited.update(ACCESSORY_PARTS)
 
                 self.expand_subtab_group(9, MAKEUP_ALL)
                 self.scroll_tabs(-12000, target=[TAB_X, 110])
-                self.traverse_subtabs(MAKEUP_ALL, MAKEUP_PARTS, (240, 600))
+                self.traverse_subtabs(MAKEUP_ALL, MAKEUP_PARTS, (240, 600), group_index=9)
                 visited.update(MAKEUP_PARTS)
             finally:
                 self._tall_mode = False
