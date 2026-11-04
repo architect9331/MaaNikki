@@ -1,6 +1,8 @@
 """Publish verified build artifacts as a GitHub prerelease using only stdlib and gh."""
 from __future__ import annotations
 
+import argparse
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import os
@@ -11,8 +13,25 @@ import urllib.error
 import urllib.request
 
 from incremental import HISTORY_LIMIT, archive_files, build_updates, validate_snapshot
+from release import verify_source
 
 ROOT = Path(__file__).resolve().parents[1]
+BEIJING_TZ = timezone(timedelta(hours=8))
+VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
+SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+SECTION_RE = re.compile(
+    r"^## \[([^\]]+)\](?:[ \t]*-[ \t]*([^\n]*))?[ \t]*\n(.*?)(?=^## \[|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+UNRELEASED_HEADERS = {"待发布", "unreleased"}
+RELEASE_FILES = (
+    "CHANGELOG.md",
+    "interface.json",
+    "client/package.json",
+    "client/src-tauri/tauri.conf.json",
+    "client/src-tauri/Cargo.toml",
+    "client/src-tauri/Cargo.lock",
+)
 
 
 def api(path: str, method: str = "GET", data=None, *, missing_ok: bool = False):
@@ -171,22 +190,251 @@ def release_notes(version: str, tag: str, sha: str) -> str:
     return re.sub(r"(\]\()(docs/[^)]+)(\))", lambda m: m[1] + base + m[2] + m[3], body)
 
 
-def main():
+def write_outputs(**values: str):
+    if output := os.environ.get("GITHUB_OUTPUT"):
+        with open(output, "a", encoding="utf-8") as stream:
+            for key, value in values.items():
+                stream.write(f"{key}={value}\n")
+
+
+def check_actions_branch() -> str:
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise ValueError("This publisher must run in GitHub Actions")
-    if os.environ.get("GITHUB_EVENT_NAME") not in {"push", "workflow_dispatch"}:
-        raise ValueError("Only branch pushes and manual builds may publish releases")
+    if os.environ.get("GITHUB_EVENT_NAME") not in {"push", "workflow_dispatch", "schedule"}:
+        raise ValueError("Only branch pushes, scheduled runs, and manual builds may publish releases")
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
-    if os.environ["GITHUB_REF"] != f"refs/heads/{event['repository']['default_branch']}":
+    default_branch = event.get("repository", {}).get("default_branch") or "main"
+    if os.environ.get("GITHUB_REF") != f"refs/heads/{default_branch}":
         raise ValueError("Only the default branch may publish releases")
-    sha = os.environ["GITHUB_SHA"]
+    return default_branch
+
+
+def published_releases() -> dict[str, dict]:
+    published = {}
+    page = 1
+    while True:
+        releases = api(f"releases?per_page=100&page={page}")
+        for release in releases:
+            tag = release["tag_name"]
+            if not release["draft"] and tag.startswith("v"):
+                published[tag.removeprefix("v")] = release
+        if len(releases) < 100:
+            return published
+        page += 1
+
+
+def latest_published_semver(published: dict[str, dict]) -> str | None:
+    candidates = [
+        (tuple(map(int, version.split("."))), version)
+        for version in published
+        if SEMVER_RE.fullmatch(version)
+    ]
+    return max(candidates, key=lambda item: item[0])[1] if candidates else None
+
+
+def bump_semver(base: str, rule: str) -> str:
+    match = SEMVER_RE.fullmatch(base)
+    if match is None:
+        raise ValueError(f"Cannot auto-increment non-standard version: {base}")
+    major, minor, patch = map(int, match.groups())
+    if rule == "major":
+        return f"{major + 1}.0.0"
+    if rule == "minor":
+        return f"{major}.{minor + 1}.0"
+    if rule == "patch":
+        return f"{major}.{minor}.{patch + 1}"
+    raise ValueError(f"Unsupported version bump rule: {rule}")
+
+
+def has_notes(body: str) -> bool:
+    return any(
+        line.strip() and not line.lstrip().startswith("#")
+        for line in body.splitlines()
+    )
+
+
+def replace_once(path: Path, old: str, new: str):
+    raw = path.read_bytes()
+    newline = "\r\n" if b"\r\n" in raw else "\n"
+    text = raw.decode("utf-8").replace("\r\n", "\n")
+    if text.count(old) != 1:
+        raise ValueError(f"Expected exactly one occurrence of {old!r} in {path}")
+    updated = text.replace(old, new, 1).replace("\n", newline)
+    path.write_bytes(updated.encode("utf-8"))
+
+
+def maybe_bump_client_version(last_published: str | None):
+    if not last_published:
+        return
+    last_tag = f"v{last_published}"
+    verify_tag = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"refs/tags/{last_tag}"],
+        cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    if verify_tag.returncode != 0:
+        return
+    diff = subprocess.run(
+        ["git", "diff", "--quiet", f"refs/tags/{last_tag}..HEAD", "--", "client"],
+        cwd=ROOT,
+    )
+    if diff.returncode == 0:
+        return
+    tag_pkg_raw = subprocess.check_output(
+        ["git", "show", f"refs/tags/{last_tag}:client/package.json"],
+        cwd=ROOT, text=True, encoding="utf-8",
+    )
+    tag_client_version = json.loads(tag_pkg_raw)["version"]
+    current_client_version = json.loads((ROOT / "client/package.json").read_text(encoding="utf-8"))["version"]
+    if current_client_version != tag_client_version:
+        return
+    match = re.fullmatch(r"(.*?\.)(\d+)", current_client_version)
+    if match is None:
+        raise ValueError(f"Cannot auto-increment client version: {current_client_version}")
+    new_client_version = f"{match.group(1)}{int(match.group(2)) + 1}"
+    replace_once(
+        ROOT / "client/package.json",
+        f'  "version": "{current_client_version}",\n',
+        f'  "version": "{new_client_version}",\n',
+    )
+    replace_once(
+        ROOT / "client/src-tauri/tauri.conf.json",
+        f'  "version": "{current_client_version}",\n',
+        f'  "version": "{new_client_version}",\n',
+    )
+    replace_once(
+        ROOT / "client/src-tauri/Cargo.toml",
+        f'name = "mxu"\nversion = "{current_client_version}"\n',
+        f'name = "mxu"\nversion = "{new_client_version}"\n',
+    )
+    replace_once(
+        ROOT / "client/src-tauri/Cargo.lock",
+        f'[[package]]\nname = "mxu"\nversion = "{current_client_version}"\n',
+        f'[[package]]\nname = "mxu"\nversion = "{new_client_version}"\n',
+    )
+    report(f"Incremented client version: {current_client_version} -> {new_client_version}")
+
+
+def prepare_release():
+    default_branch = check_actions_branch()
+    head_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    input_version = os.environ.get("INPUT_VERSION", "").strip()
+    if input_version and input_version not in {"patch", "minor", "major"} and not VERSION_RE.fullmatch(input_version):
+        raise ValueError(f"Invalid target version or bump rule: {input_version}")
+
+    changelog_path = ROOT / "CHANGELOG.md"
+    changelog_raw = changelog_path.read_bytes()
+    changelog_newline = "\r\n" if b"\r\n" in changelog_raw else "\n"
+    changelog_text = changelog_raw.decode("utf-8-sig").replace("\r\n", "\n")
+    sections = list(SECTION_RE.finditer(changelog_text))
+    if not sections:
+        raise ValueError("CHANGELOG.md has no version sections")
+
+    published = published_releases()
+    last_published = latest_published_semver(published)
+    interface_version = json.loads((ROOT / "interface.json").read_text(encoding="utf-8-sig"))["version"]
+    if not isinstance(interface_version, str) or not VERSION_RE.fullmatch(interface_version):
+        raise ValueError("Invalid project version in interface.json")
+
+    first = sections[0]
+    header = first.group(1).strip()
+    date_part = (first.group(2) or "").strip()
+    body = first.group(3)
+    is_unreleased = header.lower() in UNRELEASED_HEADERS
+
+    if is_unreleased:
+        if not has_notes(body):
+            if input_version:
+                raise ValueError("CHANGELOG.md [待发布] section has no release notes")
+            write_outputs(should_build="false", sha=head_sha, version="")
+            report("CHANGELOG.md [待发布] section is empty; skipping build.")
+            return
+        base_version = last_published or interface_version
+        if input_version in {"patch", "minor", "major"}:
+            target_version = bump_semver(base_version, input_version)
+        elif input_version:
+            target_version = input_version
+        elif interface_version not in published:
+            target_version = interface_version
+        else:
+            target_version = bump_semver(base_version, "patch")
+    else:
+        if not VERSION_RE.fullmatch(header):
+            raise ValueError(f"Invalid top version heading in CHANGELOG.md: [{header}]")
+        if header in published:
+            if input_version:
+                raise ValueError(
+                    f"v{header} is already published; add release notes under ## [待发布] in CHANGELOG.md first"
+                )
+            write_outputs(should_build="false", sha=head_sha, version="")
+            report(f"Latest changelog version v{header} is already published and there is no [待发布] section; skipping build.")
+            return
+        if not has_notes(body):
+            raise ValueError(f"CHANGELOG.md has no release notes for {header}")
+        base_version = last_published or interface_version
+        if input_version in {"patch", "minor", "major"}:
+            target_version = bump_semver(base_version, input_version)
+        elif input_version:
+            target_version = input_version
+        else:
+            target_version = header
+
+    if target_version in published:
+        raise ValueError(f"Target version v{target_version} is already published")
+
+    bjt_today = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d")
+    effective_date = date_part if (not is_unreleased and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_part)) else bjt_today
+    new_heading = f"## [{target_version}] - {effective_date}"
+    line_end = changelog_text.find("\n", first.start())
+    old_heading = changelog_text[first.start():line_end]
+    if old_heading != new_heading:
+        updated_changelog = (
+            changelog_text[:first.start()]
+            + new_heading
+            + changelog_text[line_end:]
+        ).replace("\n", changelog_newline)
+        changelog_path.write_bytes(updated_changelog.encode("utf-8"))
+
+    if interface_version != target_version:
+        replace_once(
+            ROOT / "interface.json",
+            f'  "version": "{interface_version}",\n',
+            f'  "version": "{target_version}",\n',
+        )
+
+    maybe_bump_client_version(last_published)
+    verify_source()
+    release_notes(target_version, f"v{target_version}", head_sha)
+
+    status = subprocess.check_output(
+        ["git", "status", "--porcelain", "--", *RELEASE_FILES], cwd=ROOT, text=True,
+    ).strip()
+    if status:
+        subprocess.run(["git", "add", "--", *RELEASE_FILES], cwd=ROOT, check=True)
+        subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"],
+            cwd=ROOT, check=True,
+        )
+        subprocess.run(["git", "commit", "-m", f"chore(release): v{target_version}"], cwd=ROOT, check=True)
+        subprocess.run(["git", "push", "origin", f"HEAD:refs/heads/{default_branch}"], cwd=ROOT, check=True)
+        head_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        report(f"Finalized and pushed release commit for v{target_version} ({head_sha[:7]}).")
+    else:
+        report(f"Using existing release commit for v{target_version} ({head_sha[:7]}).")
+
+    write_outputs(should_build="true", sha=head_sha, version=target_version)
+
+
+def publish_release():
+    check_actions_branch()
+    sha = os.environ.get("RELEASE_SHA") or os.environ["GITHUB_SHA"]
     checked_out = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
     ).strip()
     if checked_out != sha:
         raise ValueError("Checkout does not match the build commit")
     version = json.loads((ROOT / "interface.json").read_text(encoding="utf-8-sig"))["version"]
-    if not isinstance(version, str) or not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", version):
+    if not isinstance(version, str) or not VERSION_RE.fullmatch(version):
         raise ValueError("Invalid project version")
     tag = f"v{version}"
     release = find_release(tag)
@@ -226,10 +474,18 @@ def main():
     published = api(f"releases/{release['id']}", "PATCH", {
         "draft": False, "prerelease": True, "make_latest": "false", "body": body,
     })
-    if output := os.environ.get("GITHUB_OUTPUT"):
-        with open(output, "a", encoding="utf-8") as stream:
-            stream.write("published=true\n")
+    write_outputs(published="true")
     report(f"Published prerelease [{tag}]({published['html_url']}) with verified attachments.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", nargs="?", choices=("prepare", "publish"), default="publish")
+    args = parser.parse_args()
+    if args.action == "prepare":
+        prepare_release()
+    else:
+        publish_release()
 
 
 if __name__ == "__main__":

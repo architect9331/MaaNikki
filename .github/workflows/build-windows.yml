@@ -1,17 +1,60 @@
 name: Build Windows x64
 
 on:
+  schedule:
+    # Daily patch release check at 00:10 Beijing Time (16:10 UTC).
+    - cron: '10 16 * * *'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Target version (e.g. 0.10.0) or bump rule (patch / minor / major). Leave blank to auto-detect.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
 
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
+
 jobs:
+  prepare:
+    if: >-
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      should_build: ${{ steps.prepare.outputs.should_build }}
+      sha: ${{ steps.prepare.outputs.sha }}
+      version: ${{ steps.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.10'
+      - name: Prepare release version and changelog
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version || '' }}
+        run: python scripts/publish_release.py prepare
+
   build:
+    needs: prepare
+    if: needs.prepare.outputs.should_build == 'true'
     runs-on: windows-2022
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
@@ -40,22 +83,20 @@ jobs:
           if-no-files-found: error
 
   publish:
-    needs: build
+    needs: [prepare, build]
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      needs.prepare.outputs.should_build == 'true' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.ref == 'refs/heads/main')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: write
       actions: write
-    concurrency:
-      group: publish-release
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.prepare.outputs.sha }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -68,7 +109,8 @@ jobs:
         id: publish
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python scripts/publish_release.py
+          RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
+        run: python scripts/publish_release.py publish
       - name: Trigger MirrorChyanUploading
         if: steps.publish.outputs.published == 'true'
         env:
@@ -79,6 +121,7 @@ jobs:
           gh workflow run --repo "$GITHUB_REPOSITORY" mirrorchyan_release_note.yml -f "tag=$tag"
 
   mirrors:
-    needs: publish
+    needs: [prepare, publish]
+    if: needs.prepare.outputs.should_build == 'true'
     uses: ./.github/workflows/sync-update-mirrors.yml
     secrets: inherit
