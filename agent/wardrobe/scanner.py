@@ -68,7 +68,7 @@ class WardrobeScanner(InventoryScanner):
             "first_y": 139,
             "row_pitch_exact": 176 * 2 / 3,
             "columns": 3,
-            "scroll_step": 480,
+            "scroll_step": 1440,
             "scroll_anchor_ocr": False,
         }
         self.grid = self.layout["grid"]
@@ -483,7 +483,7 @@ class WardrobeScanner(InventoryScanner):
         raise RuntimeError("未能确认博物图鉴列表顶部")
 
     def advance(self, before, generation):
-        for amount in (self.layout["scroll_step"], 240, 120):
+        for amount in (self.layout["scroll_step"], 960, 480):
             if not self.scroll_list(-amount, before):
                 raise TaskStopped()
             after = self.rt.capture()
@@ -499,7 +499,7 @@ class WardrobeScanner(InventoryScanner):
             self.record_scroll(before, after, -amount, delta, "down")
             if delta is not None:
                 return after, delta
-            if amount == 120:
+            if amount == 480:
                 break
             if not self.scroll_list(amount, after):
                 raise TaskStopped()
