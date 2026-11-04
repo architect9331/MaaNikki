@@ -68,7 +68,8 @@ class WardrobeScanner(InventoryScanner):
             "first_y": 139,
             "row_pitch_exact": 176 * 2 / 3,
             "columns": 3,
-            "scroll_step": 1440,
+            "scroll_step": 1920,
+            "adaptive_scroll_delta": True,
             "scroll_anchor_ocr": False,
         }
         self.grid = self.layout["grid"]
@@ -76,6 +77,7 @@ class WardrobeScanner(InventoryScanner):
         self._scroll_diagnostics = {}
         self._partial_rows = []
         self._border_recovered = []
+        self._cards_cache = (None, (), (), ())
         self._page_frame, self.current_part = None, None
         self.ui_parts = set(self.model.parts) - MODEL_ONLY_PARTS
         self.snapshot = {
@@ -277,6 +279,10 @@ class WardrobeScanner(InventoryScanner):
         return thumb is None or thumb[0] <= 144
 
     def cards(self, frame, levels=None):
+        if frame is not None and self._cards_cache[0] == id(frame):
+            self._partial_rows = list(self._cards_cache[2])
+            self._border_recovered = list(self._cards_cache[3])
+            return [list(b) for b in self._cards_cache[1]]
         gray = cv2.cvtColor(self.crop(frame), cv2.COLOR_BGR2GRAY)
         edges = cv2.morphologyEx(cv2.Canny(gray, 30, 90), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
         contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -374,6 +380,13 @@ class WardrobeScanner(InventoryScanner):
             last_column = self.layout["columns"] - 1 if has_lower_row else max(row["columns"])
             for column in range(last_column + 1):
                 boxes.append([270 + 324 * column, top, 101, 100])
+        if frame is not None:
+            self._cards_cache = (
+                id(frame),
+                tuple(tuple(b) for b in boxes),
+                tuple(self._partial_rows),
+                tuple(self._border_recovered),
+            )
         return boxes
 
     def scroll_list(self, amount, frame):
@@ -385,8 +398,7 @@ class WardrobeScanner(InventoryScanner):
         target = [round(x + w / 2), round(y + h / 2)]
         return (
             self.rt.action("Scroll", target=target, dx=0, dy=amount)
-            and self.rt.action("TouchMove", target=[640, 36])
-            and self.rt.pause(.28)
+            and self.rt.pause(.18)
         )
 
     def unchanged(self, before, after):
@@ -414,6 +426,8 @@ class WardrobeScanner(InventoryScanner):
         gx, gy, _, gh = self.grid
         _, height = self.layout["card_size"]
         maximum = gh - height - self.layout["row_pitch"]
+        if boxes:
+            maximum = max(maximum, int(max(b[1] for b in boxes) + 22 - gy))
         first, second = self.features(before), self.features(after)
         anchors = [b for b in boxes if gy + 60 <= b[1] <= gy + gh - height - 8]
         votes = []
@@ -483,7 +497,9 @@ class WardrobeScanner(InventoryScanner):
         raise RuntimeError("未能确认博物图鉴列表顶部")
 
     def advance(self, before, generation):
-        for amount in (self.layout["scroll_step"], 960, 480):
+        last_top = max((b[1] for b in self.cards(before)), default=0)
+        steps = (1920, 1440, 960, 480) if last_top >= 472 else (1440, 960, 480)
+        for amount in steps:
             if not self.scroll_list(-amount, before):
                 raise TaskStopped()
             after = self.rt.capture()
@@ -536,11 +552,25 @@ class WardrobeScanner(InventoryScanner):
         write_json(self.folder / "scan.json", self.snapshot)
         self.account.update(change)
 
-    def extract_card_titles(self, frame, boxes):
-        ocr_items = self.ocr(self.grid, frame=frame)
+    def extract_card_titles(self, frame, boxes, check_unowned=False):
+        if not boxes:
+            return []
+        if check_unowned:
+            ocr_items = self.ocr(self.grid, frame=frame)
+        else:
+            gx, gy, gw, gh = self.grid
+            min_by = max(gy, min(b[1] for b in boxes) - 6)
+            max_by = min(gy + gh, max(b[1] for b in boxes) + 42)
+            masked = frame.copy()
+            masked[min_by:max_by, 365:gx + gw] = (206, 218, 228)
+            for bx, by, _, _ in boxes:
+                y0, y1 = max(gy, by - 4), min(gy + gh, by + 38)
+                x0, x1 = max(365, bx + 98), min(gx + gw, bx + 296)
+                masked[y0:y1, x0:x1] = frame[y0:y1, x0:x1]
+            ocr_items = self.ocr([365, min_by, gx + gw - 365, max(44, max_by - min_by)], frame=masked)
         results = []
         for bx, by, _, _ in boxes:
-            unowned = any(
+            unowned = check_unowned and any(
                 "未获得" in r.text
                 and bx - 6 <= r.box[0] + r.box[2] / 2 <= bx + 106
                 and by - 4 <= r.box[1] + r.box[3] / 2 <= by + 104
@@ -593,7 +623,7 @@ class WardrobeScanner(InventoryScanner):
         if owned_count is not None and total_count is not None and owned_count < total_count:
             probe_boxes = self.cards(frame)
             if probe_boxes:
-                _, any_unowned = zip(*self.extract_card_titles(frame, probe_boxes))
+                _, any_unowned = zip(*self.extract_card_titles(frame, probe_boxes, check_unowned=True))
                 if any(any_unowned):
                     frame = self.apply_owned_filter()
                     actual_part, header, owned_count, total_count = self.category_info(frame)
@@ -673,86 +703,92 @@ class WardrobeScanner(InventoryScanner):
                 ),
             )
 
-        for page in range(4096):
-            self.check_generation(generation)
-            boxes = self.cards(frame)
-            if not boxes:
-                if not known and owned_count in (0, None):
-                    state["complete"] = True
-                    if part not in self.snapshot["verified_parts"]:
-                        self.snapshot["verified_parts"].append(part)
-                    self.save()
-                    self.rt.log(f"衣柜读取：{state['name']} 0 件。")
-                    return
-                raise RuntimeError(f"{state['name']}未发现完整卡片，请确认图鉴筛选正常")
-            slots = [
-                round((box[1] + position - self.layout["first_y"]) / self.layout["row_pitch_exact"])
-                * self.layout["columns"]
-                + round((box[0] - self.layout["first_x"]) / self.layout["column_pitch"])
-                for box in boxes
-            ]
-            if any(slot < 0 for slot in slots) or len(set(slots)) != len(slots):
-                raise RuntimeError(f"{state['name']}卡片行列位置未确认，已保存读取进度")
-            pairs = [
-                (slot, box)
-                for slot, box in zip(slots, boxes)
-                if owned_count is None or slot < owned_count
-            ]
-            fresh = [(slot, box) for slot, box in pairs if slot not in known]
-            new_boxes = [box for _, box in fresh]
-            if new_boxes:
-                extracted = self.extract_card_titles(frame, new_boxes)
-                if any(unowned for _, unowned in extracted):
-                    frame = self.apply_owned_filter()
-                    raise RescanSlot()
+        try:
+            for page in range(4096):
                 self.check_generation(generation)
-                for (slot, _), (raw_name, _) in zip(fresh, extracted):
-                    matched = self.model.lookup(part, raw_name)
-                    if matched is None:
-                        matched = {
-                            "class_id": -1,
-                            "item_ids": [],
-                            "names": [raw_name or f"未识别_{slot + 1}"],
-                            "qualities": [],
-                            "source": "compendium_ocr_unconfirmed",
-                            "ocr_text": raw_name,
-                        }
-                    known[slot] = matched
-            materialize()
-            self.snapshot["scan"]["pages"].append({
-                "part": part,
-                "page": page,
-                "new": len(new_boxes),
-                "boxes": new_boxes,
-                "offset": position,
-                "border_recovered": self._border_recovered,
-                "image": self.image(f"{part}_{page:04d}.jpg", self.crop(frame)) if new_boxes else None,
-            })
-            if new_boxes or page == 0:
-                self.save()
-            if owned_count is not None and len(known) >= owned_count:
-                break
-            after, delta = self.advance(frame, generation)
-            if delta == 0:
-                after, delta = self.advance(after, generation)
-                if delta == 0:
-                    self.cards(after)
-                    if any(
-                        round((top + position - self.layout["first_y"]) / self.layout["row_pitch_exact"])
-                        * self.layout["columns"] not in known
-                        and (
-                            owned_count is None
-                            or round((top + position - self.layout["first_y"]) / self.layout["row_pitch_exact"])
-                            * self.layout["columns"] < owned_count
-                        )
-                        for top in self._partial_rows
-                    ):
-                        raise RuntimeError(f"{state['name']}底部卡片未完整显示，已保存读取进度")
+                boxes = self.cards(frame)
+                if not boxes:
+                    if not known and owned_count in (0, None):
+                        state["complete"] = True
+                        if part not in self.snapshot["verified_parts"]:
+                            self.snapshot["verified_parts"].append(part)
+                        self.save()
+                        self.rt.log(f"衣柜读取：{state['name']} 0 件。")
+                        return
+                    raise RuntimeError(f"{state['name']}未发现完整卡片，请确认图鉴筛选正常")
+                slots = [
+                    round((box[1] + position - self.layout["first_y"]) / self.layout["row_pitch_exact"])
+                    * self.layout["columns"]
+                    + round((box[0] - self.layout["first_x"]) / self.layout["column_pitch"])
+                    for box in boxes
+                ]
+                if any(slot < 0 for slot in slots) or len(set(slots)) != len(slots):
+                    raise RuntimeError(f"{state['name']}卡片行列位置未确认，已保存读取进度")
+                pairs = [
+                    (slot, box)
+                    for slot, box in zip(slots, boxes)
+                    if owned_count is None or slot < owned_count
+                ]
+                fresh = [(slot, box) for slot, box in pairs if slot not in known]
+                new_boxes = [box for _, box in fresh]
+                if new_boxes:
+                    extracted = self.extract_card_titles(
+                        frame, new_boxes, check_unowned=(page == 0 and owned_count is not None and total_count is not None and owned_count < total_count),
+                    )
+                    if any(unowned for _, unowned in extracted):
+                        frame = self.apply_owned_filter()
+                        raise RescanSlot()
+                    self.check_generation(generation)
+                    for (slot, _), (raw_name, _) in zip(fresh, extracted):
+                        matched = self.model.lookup(part, raw_name)
+                        if matched is None:
+                            matched = {
+                                "class_id": -1,
+                                "item_ids": [],
+                                "names": [raw_name or f"未识别_{slot + 1}"],
+                                "qualities": [],
+                                "source": "compendium_ocr_unconfirmed",
+                                "ocr_text": raw_name,
+                            }
+                        known[slot] = matched
+                materialize()
+                self.snapshot["scan"]["pages"].append({
+                    "part": part,
+                    "page": page,
+                    "new": len(new_boxes),
+                    "boxes": new_boxes,
+                    "offset": position,
+                    "border_recovered": self._border_recovered,
+                    "image": None,
+                })
+                if owned_count is not None and len(known) >= owned_count:
                     break
-            position += delta
-            frame = after
-        else:
-            raise RuntimeError("衣柜读取达到页数上限")
+                after, delta = self.advance(frame, generation)
+                if delta == 0:
+                    after, delta = self.advance(after, generation)
+                    if delta == 0:
+                        self.cards(after)
+                        if any(
+                            round((top + position - self.layout["first_y"]) / self.layout["row_pitch_exact"])
+                            * self.layout["columns"] not in known
+                            and (
+                                owned_count is None
+                                or round((top + position - self.layout["first_y"]) / self.layout["row_pitch_exact"])
+                                * self.layout["columns"] < owned_count
+                            )
+                            for top in self._partial_rows
+                        ):
+                            raise RuntimeError(f"{state['name']}底部卡片未完整显示，已保存读取进度")
+                        break
+                position += delta
+                frame = after
+            else:
+                raise RuntimeError("衣柜读取达到页数上限")
+        except BaseException:
+            if known:
+                materialize()
+                self.save()
+            raise
 
         if sorted(known) != list(range(len(known))):
             raise RuntimeError(f"{state['name']}列表存在未读取的格子，已保留部分记录")

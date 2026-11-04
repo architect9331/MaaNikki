@@ -19,6 +19,10 @@ def translation(before, after, first, second, boxes, layout, *, threshold, margi
     gx, gy, gw, gh = layout["grid"]
     width, height = layout["card_size"]
     maximum = gh - height - layout.get("row_pitch", 123)
+    if layout.get("adaptive_scroll_delta"):
+        valid_ys = [b[1] for b in boxes if b[1] + height - 30 <= gy + gh - 8]
+        if valid_ys:
+            maximum = max(maximum, int(max(valid_ys) + 22 - gy))
     columns = layout["columns"]
     diagnostic = {"accepted": False, "maximum_delta": maximum, "reference_boxes": []}
     if maximum < 0:

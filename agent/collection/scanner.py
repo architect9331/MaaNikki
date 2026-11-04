@@ -180,6 +180,8 @@ class InventoryScanner:
 
         first, second = features(before), features(after)
         maximum = gh - height - self.layout.get("row_pitch", 123)
+        if self.layout.get("adaptive_scroll_delta") and boxes:
+            maximum = max(maximum, int(max(b[1] for b in boxes) + 22 - gy))
         matched = {}
 
         def match_card(box):
