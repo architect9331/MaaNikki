@@ -106,8 +106,42 @@ class OrderedView:
     def step(self, direction):
         started = time.monotonic()
         scroll_index = len(self.o.snapshot["scan"]["scrolls"])
+        checkpoint = self._focus_checkpoint
         before = self.o.clear_hover(self.generation, settle_card=True)
-        boxes = self._focus_checkpoint["boxes"] if self._focus_checkpoint else []
+        boxes = checkpoint["boxes"] if checkpoint else []
+        if (checkpoint is not None and checkpoint.get("slot") == self.slot
+                and checkpoint.get("frame") is not None
+                and not self.o.unchanged(checkpoint["frame"], before)):
+            # A delayed wheel animation from the previous step can finish after
+            # its initial capture. Wait for the grid to settle and measure that
+            # translation against the previous checkpoint before scrolling again.
+            for _ in range(4):
+                if not self.o.rt.pause(.15):
+                    break
+                settled = self.o.frame(self.generation)
+                if self.o.unchanged(before, settled):
+                    before = settled
+                    break
+                before = settled
+            self.o._scroll_diagnostics = {}
+            prior_delta = (self.o.scroll_position(checkpoint["frame"], before) if direction > 0
+                           else self.o.scroll_position(before, checkpoint["frame"]))
+            if prior_delta is None:
+                self.o.record_scroll(checkpoint["frame"], before, 0, None, "delayed_settle")
+                raise IncompleteLookup("获得时间列表延迟滚动位移未确认，保留进度")
+            if prior_delta > 0:
+                self.o.record_scroll(checkpoint["frame"], before, 0, prior_delta, "delayed_settle")
+                self.position = max(0, self.position + direction * prior_delta)
+                self.remember_view(before, [[x, y - direction * prior_delta, w, h]
+                                            for x, y, w, h in boxes
+                                            if self.o.grid[1] <= y - direction * prior_delta
+                                            and y - direction * prior_delta + h <= self.o.grid[1] + self.o.grid[3]])
+                self._page_frame, self._page_cells = None, []
+                self.o.report.setdefault("page_turns", []).append({
+                    "slot": self.slot, "direction": direction, "delta": prior_delta,
+                    "scroll_step": 0, "delayed": True,
+                    "attempts": 1, "seconds": round(time.monotonic() - started, 6)})
+                return prior_delta
         self.remember_view(before, boxes)
         if direction > 0:
             after, delta = self.o.advance(before, self.generation)
