@@ -239,9 +239,9 @@ class Gameplay:
                         detail=bool(result and before_submit is not None))
             return result
         finally:
+            if not self.rt.stopped and kind != "jihua" and self.rt.hit(cancel):
+                self.rt.click_template(cancel, attempts=1)
             if not entered and not self.rt.stopped:
-                if kind != "jihua" and self.rt.hit(cancel):
-                    self.rt.click_template(cancel, attempts=1)
                 returned = self.ui.calendar() if return_page == "calendar" else self.rt.main()
                 if not returned:
                     self.quick_unavailable = False
