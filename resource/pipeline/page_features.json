@@ -134,13 +134,13 @@
   },
   "MaaNikki_Wardrobe_DressTab": {
     "recognition": "OCR",
-    "roi": [450, 0, 193, 75],
+    "roi": [387, 0, 193, 75],
     "expected": "^换装$",
     "action": "DoNothing"
   },
   "MaaNikki_Wardrobe_AbilityTab": {
     "recognition": "OCR",
-    "roi": [580, 0, 203, 75],
+    "roi": [517, 0, 203, 75],
     "expected": "^能力配置$",
     "action": "DoNothing"
   },

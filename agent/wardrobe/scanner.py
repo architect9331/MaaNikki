@@ -80,7 +80,7 @@ class WardrobeScanner(InventoryScanner):
         if frame is None:
             return False
         if self._page_frame is not None and all(self.same_structure(frame, self._page_frame, roi)
-                for roi in ([415, 18, 90, 45], [55, 637, 140, 60], HEADER)):
+                for roi in ([415, 18, 153, 45], [55, 637, 140, 60], HEADER)):
             return True
         if not self.rt.hit("MaaNikki_WardrobeReady", image=frame):
             return False

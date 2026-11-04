@@ -17,7 +17,7 @@
   },
   "MaaNikki_WardrobeTab": {
     "recognition": "OCR",
-    "roi": [415, 18, 90, 45],
+    "roi": [415, 18, 153, 45],
     "expected": "^换装$",
     "action": "DoNothing"
   },
