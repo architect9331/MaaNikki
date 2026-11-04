@@ -52,9 +52,12 @@ def stack_badge(frame, box):
         _, marks = cv2.connectedComponents((~backing).astype(np.uint8), connectivity=8)
         artwork = np.setdiff1d(np.concatenate((marks[0], marks[:, 0])), [0])
         patch[np.isin(marks, artwork)] = 255
-        if np.count_nonzero((patch.max(axis=2) < 195) & (outline > 0)) < 8:
+        ink = (patch.max(axis=2) < 195) & (outline > 0)
+        if np.count_nonzero(ink) < 8:
             continue
-        return {"state": "stack", "roi": [left + bx, top + by, bw, bh], "patch": patch}
+        ink_x = np.where(ink)[1]
+        return {"state": "stack", "roi": [left + bx, top + by, bw, bh], "patch": patch,
+                "ink_span": [left + bx + int(ink_x.min()), left + bx + int(ink_x.max()) + 1]}
     return {"state": "uncertain" if possible else "single", "roi": [left, top, crop.shape[1], crop.shape[0]]}
 
 
@@ -108,14 +111,19 @@ def read_count(owner, frame, box, locked, labels, generation, index, *, classifi
             evidence["patch"] = owner.image(f"quantity_{index:05d}_{value}.png", badge["patch"])
             return value, evidence
 
+        ink_span = badge.get("ink_span")
         # Reuse an already detected number only after the stack shape is known.
         for item in labels:
             bx, by, bw, bh = list(item.box)
             text = getattr(item, "text", "").strip()
             if (x - 1 <= bx and bx + bw <= x + w + 1 and y - 2 <= by and by + bh <= y + h + 2
                     and float(getattr(item, "score", 0)) >= .95 and re.fullmatch(r"[1-9][0-9]{0,3}", text)):
-                values.append(int(text))
                 page_reads.append({"text": text, "score": float(item.score), "box": [bx, by, bw, bh]})
+                # Full-page text detection can box only the wider trailing digit
+                # and leave a thin leading "1" outside the box. Accept a page
+                # read only when its box spans the segmented tab's digit ink.
+                if ink_span is None or (bx <= ink_span[0] + 2 and bx + bw >= ink_span[1] - 2):
+                    values.append(int(text))
         page_values = set(values)
         local_values = []
         candidates = set(page_values)
