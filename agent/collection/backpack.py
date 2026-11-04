@@ -24,6 +24,15 @@ def current_game_day() -> str:
     return now.strftime("%Y-%m-%d")
 
 
+def wardrobe_snapshot_key(role: dict) -> str:
+    wardrobe = role.get("wardrobe") or {}
+    snapshot = wardrobe.get("inventory") if (wardrobe.get("inventory") or {}).get("complete") else (
+        wardrobe.get("last_scan") or wardrobe.get("inventory") or {})
+    if not isinstance(snapshot, dict) or not snapshot:
+        return ""
+    return f"{snapshot.get('updated_at') or ''}:{snapshot.get('scanned_count') or 0}"
+
+
 def normalize_name(text: str) -> str:
     return re.sub(r"[\s·・•.。:：\-_]", "", text or "")
 
@@ -157,11 +166,22 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> dict[str, int] | None
         return None
 
     name_to_id: dict[str, str] = {}
+    crystal_ids: set[str] = set()
+    bubble_ids: set[str] = set()
     for mid, meta in (crafting_catalog.get("materials") or {}).items():
-        if meta.get("kind") in ("monster_craft", "monster_glow", "jihua"):
+        kind = meta.get("kind")
+        if kind in ("monster_craft", "monster_glow", "jihua"):
             name_to_id[normalize_name(meta["name"])] = str(mid)
+        if kind == "monster_craft":
+            crystal_ids.add(str(mid))
+        elif kind == "monster_glow" or str(mid) == "50361309":
+            bubble_ids.add(str(mid))
 
     found: dict[str, int] = {}
+    crystal_ocr_failures = 0
+    bubble_ocr_failures = 0
+    tab1_scanned = False
+    tab2_scanned = False
     try:
         frame = rt.capture()
         if frame is None:
@@ -183,6 +203,7 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> dict[str, int] | None
             row_ys = detect_row_ys(frame)
             if not row_ys:
                 break
+            tab1_scanned = True
             stop_upward = False
             for r_idx in range(len(row_ys) - 1, -1, -1):
                 py = row_ys[r_idx]
@@ -219,6 +240,10 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> dict[str, int] | None
                         qty = read_badge_qty(rt, clicked_frame, col, py)
                         if qty is not None:
                             found[matched_id] = qty
+                        elif matched_id in crystal_ids:
+                            crystal_ocr_failures += 1
+                    elif is_blue_crystal and ("晶" in title or not title):
+                        crystal_ocr_failures += 1
                 if brown_count >= 4 and blue_count == 0 and r_idx < len(row_ys) - 1:
                     stop_upward = True
                     break
@@ -230,11 +255,16 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> dict[str, int] | None
             if frame is None:
                 break
 
+        if tab1_scanned and crystal_ocr_failures == 0:
+            for mid in crystal_ids:
+                found.setdefault(mid, 0)
+
         # 2. Tab 2 (背包 · 养成材料): scan purple 4-star bubble cards on first page
         if rt.action("Click", target=TAB_GROWTH) and rt.pause(0.45):
             frame2 = rt.capture()
             if frame2 is not None:
                 row_ys2 = detect_row_ys(frame2)
+                tab2_aborted = False
                 for py in row_ys2:
                     for col in range(8):
                         if not cell_has_pill(frame2, col, py):
@@ -245,9 +275,11 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> dict[str, int] | None
                         cx = 46 + col * 96
                         cy = max(120, py - 45)
                         if not rt.action("Click", target=[cx + 41, cy]) or not rt.pause(0.2):
+                            tab2_aborted = True
                             break
                         clicked_frame = rt.capture()
                         if clicked_frame is None:
+                            tab2_aborted = True
                             break
                         title = normalize_name(rt.text(RIGHT_TITLE_ROI, image=clicked_frame))
                         matched_id = name_to_id.get(title)
@@ -260,6 +292,16 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> dict[str, int] | None
                             qty = read_badge_qty(rt, clicked_frame, col, py)
                             if qty is not None:
                                 found[matched_id] = qty
+                            elif matched_id in bubble_ids:
+                                bubble_ocr_failures += 1
+                        elif "泡泡" in title or not title:
+                            bubble_ocr_failures += 1
+                    if tab2_aborted:
+                        break
+                tab2_scanned = bool(row_ys2) and not tab2_aborted
+        if tab2_scanned and bubble_ocr_failures == 0:
+            for mid in bubble_ids:
+                found.setdefault(mid, 0)
         return found
     finally:
         rt.main()
@@ -277,16 +319,57 @@ def ensure_backpack_scanned(rt, account: AccountState, crafting_catalog: dict) -
     if not scanned:
         return inv
     now = datetime.now(timezone.utc).isoformat()
+    mat_defs = crafting_catalog.get("materials") or {}
+    logs: list[str] = []
 
     def update(data):
         m = data.setdefault("materials", {})
         cur = m.setdefault("inventory", {})
+        wb_key = wardrobe_snapshot_key(data)
+        same_wardrobe = bool(wb_key) and m.get("wardrobe_baseline_key") == wb_key
+        if wb_key and m.get("wardrobe_baseline_key") != wb_key:
+            m["wardrobe_baseline_key"] = wb_key
+            m["crafted_consumed"] = {}
+        consumed_map = m.setdefault("crafted_consumed", {})
+
+        glow_plan = m.get("glow_plan") if isinstance(m.get("glow_plan"), dict) else None
+        glow_targets = glow_plan.get("targets") if (glow_plan and isinstance(glow_plan.get("targets"), dict)) else None
+
         for k, v in scanned.items():
-            cur[str(k)] = int(v)
+            mid = str(k)
+            new_qty = int(v)
+            prev_qty = int(cur[mid]) if mid in cur else None
+            meta = mat_defs.get(mid) or {}
+            kind = meta.get("kind")
+
+            if prev_qty is not None and new_qty < prev_qty:
+                used = prev_qty - new_qty
+                if kind == "monster_craft" and same_wardrobe:
+                    consumed_map[mid] = int(consumed_map.get(mid, 0)) + used
+                    logs.append(f"检测到 {meta.get('name', mid)} 库存减少 {used}（{prev_qty} -> {new_qty}），已自动核销对应制衣材料需求。")
+                if (kind == "monster_glow" or mid == "50361309") and glow_targets and int(glow_targets.get(mid, 0)) > 0:
+                    old_target = int(glow_targets[mid])
+                    new_target = max(0, old_target - used)
+                    if new_target > 0:
+                        glow_targets[mid] = new_target
+                    else:
+                        glow_targets.pop(mid, None)
+                    logs.append(f"检测到 {meta.get('name', mid)} 库存减少 {used}（已用于服装焕新），筹备目标已同步扣减为 {new_target}。")
+
+            cur[mid] = new_qty
+
+        if glow_plan and glow_targets is not None:
+            has_remaining = any(int(t) > int(cur.get(str(gid), 0)) for gid, t in glow_targets.items() if int(t) > 0)
+            glow_plan["completed"] = not has_remaining
+            if not has_remaining:
+                glow_plan["completed_at"] = now
+
         m["backpack_scanned_day"] = today
         m["inventory_updated_at"] = now
 
     account.mutate(update)
+    for line in logs:
+        rt.log(line)
     inv.update({str(k): int(v) for k, v in scanned.items()})
     rt.log(f"背包材料库存核对完成：已更新 {len(scanned)} 项材料数量。")
     return inv

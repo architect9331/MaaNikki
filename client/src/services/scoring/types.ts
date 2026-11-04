@@ -123,6 +123,9 @@ export interface GlowPlanState {
 export interface MaterialsState {
   inventory?: Record<string, number>;
   inventory_updated_at?: string;
+  backpack_scanned_day?: string;
+  wardrobe_baseline_key?: string;
+  crafted_consumed?: Record<string, number>;
   crafting_scope?: 'all' | 'suits';
   glow_plan?: GlowPlanState | null;
   updated_at?: string;

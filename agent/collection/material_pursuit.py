@@ -10,7 +10,7 @@ from account_state import AccountState
 from daily.gameplay import Gameplay
 from daily.runtime import Executors
 from daily.settings import ROOT
-from .backpack import ensure_backpack_scanned
+from .backpack import ensure_backpack_scanned, wardrobe_snapshot_key
 
 
 def load_catalogs():
@@ -54,6 +54,12 @@ def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> 
             continue
         for mid, cnt in (sketch.get("costs") or {}).items():
             totals[str(mid)] = totals.get(str(mid), 0) + int(cnt)
+    wb_key = wardrobe_snapshot_key(role)
+    if wb_key and materials_state.get("wardrobe_baseline_key") == wb_key:
+        consumed = materials_state.get("crafted_consumed") or {}
+        for mid, used in consumed.items():
+            if str(mid) in totals and int(used) > 0:
+                totals[str(mid)] = max(0, totals[str(mid)] - int(used))
     return totals
 
 
@@ -114,6 +120,8 @@ def run_glow_prep(rt) -> bool:
     crafting, _ = load_catalogs()
     mat_defs = crafting.get("materials") or {}
     inventory = ensure_backpack_scanned(rt, account, crafting)
+    role = account.load()
+    targets = ((role.get("materials") or {}).get("glow_plan") or {}).get("targets") or {}
 
     def pending_deficits():
         items = []
@@ -185,8 +193,9 @@ def run_crafting_pursuit(rt) -> bool:
 
     crafting, scoring = load_catalogs()
     mat_defs = crafting.get("materials") or {}
-    required = compute_crafting_requirements(role, crafting, scoring)
     inventory = ensure_backpack_scanned(rt, account, crafting)
+    role = account.load()
+    required = compute_crafting_requirements(role, crafting, scoring)
 
     def crystal_deficits():
         items = []
