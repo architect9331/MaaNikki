@@ -1456,7 +1456,12 @@ pub fn maa_get_task_status(
 pub fn stop_task_impl(state: &MaaState, instance_id: &str) -> Result<(), String> {
     let mut instances = state.instances.lock().map_err(|e| e.to_string())?;
     let instance = instances.get_mut(instance_id).ok_or("Instance not found")?;
-    let tasker = instance.tasker.as_ref().ok_or("Tasker not created")?;
+    instance.start_generation = instance.start_generation.wrapping_add(1);
+    let Some(tasker) = instance.tasker.as_ref() else {
+        instance.stop_in_progress = true;
+        instance.stop_started_at = Some(Instant::now());
+        return Ok(());
+    };
 
     if instance.stop_in_progress {
         if !tasker.running() {

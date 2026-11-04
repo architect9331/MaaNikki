@@ -218,6 +218,8 @@ pub struct InstanceRuntime {
     pub agent_children: Vec<Child>,
     /// 当前运行的任务 ID 列表（用于刷新后恢复状态）
     pub task_ids: Vec<i64>,
+    /// 启动批次代数（用于识别 Agent 启动期间穿插的 stop/重启请求）
+    pub start_generation: u64,
     /// 是否正在停止任务（用于防重复 stop）
     pub stop_in_progress: bool,
     /// stop 请求的起始时间（用于节流/重试）

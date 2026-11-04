@@ -1305,7 +1305,8 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         log.error(`实例 ${targetInstance.name}: 任务启动异常:`, err);
 
         const errMsg = err instanceof Error ? err.message : String(err);
-        const cancelled = errMsg === PRE_ACTION_CANCELLED_ERROR;
+        const cancelled =
+          errMsg === PRE_ACTION_CANCELLED_ERROR || errMsg.includes(PRE_ACTION_CANCELLED_ERROR);
         if (!cancelled) {
           const localizedErrMsg = errMsg
             .replace(
@@ -1324,18 +1325,20 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
 
         const failedAgentConfigs = normalizeAgentConfigs(projectInterface?.agent);
         if (failedAgentConfigs && failedAgentConfigs.length > 0) {
-          for (let i = 0; i < failedAgentConfigs.length; i++) {
-            const agentCfg = failedAgentConfigs[i];
-            const args = agentCfg.child_args?.join(' ') ?? '';
-            const cmd = args ? `${agentCfg.child_exec} ${args}` : agentCfg.child_exec;
-            addLog(targetId, {
-              type: 'warning',
-              message: t('taskList.autoConnect.agentStartParams', {
-                index: i + 1,
-                cmd,
-                cwd: basePath,
-              }),
-            });
+          if (!cancelled) {
+            for (let i = 0; i < failedAgentConfigs.length; i++) {
+              const agentCfg = failedAgentConfigs[i];
+              const args = agentCfg.child_args?.join(' ') ?? '';
+              const cmd = args ? `${agentCfg.child_exec} ${args}` : agentCfg.child_exec;
+              addLog(targetId, {
+                type: 'warning',
+                message: t('taskList.autoConnect.agentStartParams', {
+                  index: i + 1,
+                  cmd,
+                  cwd: basePath,
+                }),
+              });
+            }
           }
           try {
             await maaService.stopAgent(targetId);

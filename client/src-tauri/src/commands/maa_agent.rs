@@ -532,7 +532,7 @@ pub async fn start_tasks_impl(
     info!("agent_configs: {:?}", agent_configs);
     info!("cwd: {}, tcp_compat_mode: {}", cwd, tcp_compat_mode);
 
-    let (resource, controller, tasker) = {
+    let (resource, controller, tasker, start_generation, stale_clients, stale_children) = {
         debug!("[start_tasks] Acquiring instances lock...");
         let mut instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
         debug!("[start_tasks] Instances lock acquired");
@@ -554,6 +554,19 @@ pub async fn start_tasks_impl(
             .ok_or("Controller not connected")?
             .clone();
         debug!("[start_tasks] Controller acquired");
+
+        instance.stop_in_progress = false;
+        instance.stop_started_at = None;
+        instance.start_generation = instance.start_generation.wrapping_add(1);
+        let start_generation = instance.start_generation;
+        let (stale_clients, stale_children) = if reset_state {
+            (
+                std::mem::take(&mut instance.agent_clients),
+                std::mem::take(&mut instance.agent_children),
+            )
+        } else {
+            (Vec::new(), Vec::new())
+        };
 
         // 创建或获取 tasker（若已有 tasker 但未初始化则自动丢弃并重建）
         let needs_new_tasker = match instance.tasker.as_ref() {
@@ -613,9 +626,32 @@ pub async fn start_tasks_impl(
         }
 
         let t = instance.tasker.as_ref().unwrap().clone();
-        (res, ctrl, t)
+        (
+            res,
+            ctrl,
+            t,
+            start_generation,
+            stale_clients,
+            stale_children,
+        )
     };
     debug!("[start_tasks] Resource, controller and tasker acquired, proceeding...");
+
+    if !stale_clients.is_empty() || !stale_children.is_empty() {
+        info!(
+            "[start_tasks] Cleaning up {} leftover agent client(s) and {} child process(es) before start...",
+            stale_clients.len(),
+            stale_children.len()
+        );
+        for client in &stale_clients {
+            let _ = client.disconnect();
+        }
+        drop(stale_clients);
+        for mut child in stale_children {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
 
     // 检查 Tasker 初始化状态
     if !tasker.inited() {
@@ -633,10 +669,35 @@ pub async fn start_tasks_impl(
             info!("[start_tasks] Starting {} agent(s)...", configs.len());
 
             // 用于收集所有成功启动的 agent，失败时需要回滚清理
-            let mut new_clients = Vec::new();
-            let mut new_children = Vec::new();
+            let mut new_clients: Vec<AgentClient> = Vec::new();
+            let mut new_children: Vec<std::process::Child> = Vec::new();
 
             for (idx, config) in configs.iter().enumerate() {
+                let cancelled = {
+                    let instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
+                    !matches!(
+                        instances.get(&instance_id),
+                        Some(instance)
+                            if instance.start_generation == start_generation
+                                && !instance.stop_in_progress
+                    )
+                };
+                if cancelled {
+                    info!(
+                        "[start_tasks] Start cancelled before agent #{} for instance {}, cleaning up...",
+                        idx, instance_id
+                    );
+                    for client in &new_clients {
+                        let _ = client.disconnect();
+                    }
+                    drop(new_clients);
+                    for mut child in new_children {
+                        let _ = child.kill();
+                        let _ = child.wait();
+                    }
+                    return Err("MXU_PRE_ACTION_CANCELLED".to_string());
+                }
+
                 let res_clone = resource.clone();
                 let ctrl_clone = controller.clone();
                 let tasker_clone = tasker.clone();
@@ -682,11 +743,39 @@ pub async fn start_tasks_impl(
                 }
             }
 
-            // 保存所有 agent 状态到 instance
-            let mut instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
-            if let Some(instance) = instances.get_mut(&instance_id) {
-                instance.agent_clients.extend(new_clients);
-                instance.agent_children.extend(new_children);
+            // 保存所有 agent 状态到 instance（若启动期间收到 stop/新启动请求则回滚）
+            let cancelled = {
+                let mut instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
+                match instances.get_mut(&instance_id) {
+                    Some(instance)
+                        if instance.start_generation == start_generation
+                            && !instance.stop_in_progress =>
+                    {
+                        instance
+                            .agent_clients
+                            .extend(std::mem::take(&mut new_clients));
+                        instance
+                            .agent_children
+                            .extend(std::mem::take(&mut new_children));
+                        false
+                    }
+                    _ => true,
+                }
+            };
+            if cancelled {
+                info!(
+                    "[start_tasks] Start cancelled during agent startup for instance {}, cleaning up new agent(s)...",
+                    instance_id
+                );
+                for client in &new_clients {
+                    let _ = client.disconnect();
+                }
+                drop(new_clients);
+                for mut child in new_children {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                }
+                return Err("MXU_PRE_ACTION_CANCELLED".to_string());
             }
 
             info!(
@@ -699,6 +788,21 @@ pub async fn start_tasks_impl(
     } else {
         debug!("[start_tasks] No agent configs, skipping agent setup");
     };
+
+    // 提交前再次确认未被取消，避免向已停止的实例创建遥测事务或提交任务
+    {
+        let instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
+        let valid = matches!(
+            instances.get(&instance_id),
+            Some(instance)
+                if instance.start_generation == start_generation && !instance.stop_in_progress
+        );
+        if !valid {
+            drop(instances);
+            let _ = stop_agent_impl(maa_state, &instance_id);
+            return Err("MXU_PRE_ACTION_CANCELLED".to_string());
+        }
+    }
 
     // 遥测：整批运行开始（仅首批；追加批次沿用已有 Transaction）
     // 必须在 post_task 之前，否则首个任务的开始回调会早于 Transaction 创建、丢掉它的 Span
@@ -839,6 +943,7 @@ pub fn stop_agent_impl(maa_state: &Arc<MaaState>, instance_id: &str) -> Result<(
     let (clients, children) = {
         let mut instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
         let instance = instances.get_mut(instance_id).ok_or("Instance not found")?;
+        instance.start_generation = instance.start_generation.wrapping_add(1);
 
         (
             std::mem::take(&mut instance.agent_clients),
