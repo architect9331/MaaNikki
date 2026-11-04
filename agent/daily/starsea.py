@@ -207,8 +207,8 @@ class Starsea:
                     return False
             self.rt.log("正在长按摇铃键（4 秒）。", detail=True)
             ok = self.rt.hold("bell", 4)
-            if ok and not timed:
-                ok = self.rt.ui.wait_page("MaaNikki_MainDetected", seconds=10)
+            if ok:
+                ok = self.rt.ui.wait_page("MaaNikki_MainDetected", seconds=5 if timed else 10)
             self.events.append({"type": "bell", "input_completed": bool(ok), "duration": 4})
             if ok and not at_hub:
                 self.rt.log("摇铃操作已结束，稍后统一核实积分。", detail=True)
@@ -325,7 +325,7 @@ class Starsea:
         # The map animation takes about .65s before the first feature hit;
         # wait_page then needs a second fresh confirmation at least .25s later.
         # This is an upper bound, not an added delay.
-        scan["map_opened"] = self.rt.ui.open_map(self.events.append, attempts=1, seconds=1.5)
+        scan["map_opened"] = self.rt.ui.open_map(self.events.append, attempts=2, seconds=2.0)
         if not scan["map_opened"]:
             scan["reason"] = "map_unavailable"
             self.events.append({"type": "crystal_snapshot_missing", "reason": "map_unavailable",

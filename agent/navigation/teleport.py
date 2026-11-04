@@ -35,6 +35,7 @@ class Teleporter:
         self.deadline = 0
         self.hint = None
         self.last_frame = None
+        self.last_pose = None
         self.last_selection_frame = None
         self.map_diagnostics = []
         self.home_region_name = None
@@ -274,12 +275,15 @@ class Teleporter:
         pose = x*4, y*4, score, detail
         self.map_diagnostics = [{"method": "whole_map_local_peak", "x": pose[0], "y": pose[1],
                                  "score": score, "local_peak": detail}]
+        if pose[2] < .6:
+            pose = self.refine_player_pose(frame, pose)
         return pose, 1
 
     def locate_map(self):
         self.check()
         self.last_frame = self.rt.capture()
         pose, _ = self.map_pose(self.last_frame)
+        self.last_pose = pose
         self.hint = pose[:2]
         self.event({"type": "bigmap_pose", "x": pose[0], "y": pose[1],
                     "score": pose[2], "local_peak": pose[3], "windows": self.map_diagnostics})
@@ -343,8 +347,6 @@ class Teleporter:
                 self.map_diagnostics = []
                 try:
                     pose, _ = self.map_pose(self.last_frame)
-                    if pose[2] < .6:
-                        pose = self.refine_player_pose(self.last_frame, pose)
                 except NavigationError:
                     pose = None
                 self.event({"type": "map_player_match", "pose": list(pose) if pose else None,
@@ -378,8 +380,7 @@ class Teleporter:
             # fresh, reliable terrain match and keep clear of fixed controls,
             # the region switcher and the point-selection panel on the right.
             if allow_visible and not force and 240 <= target[0] <= 820 and 140 <= target[1] <= 580:
-                pose = self.map_diagnostics[0]
-                if pose["score"] >= .6 and pose["local_peak"] >= .01:
+                if self.last_pose[2] >= .6 and self.last_pose[3] >= .01:
                     self.event({"type": "checkpoint_visible", "target": target})
                     return target
             if math.hypot(dx, dy) < (20/2/self.locator.spec.bigmap_scale if force else 200*2/3):
