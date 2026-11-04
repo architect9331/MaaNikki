@@ -105,5 +105,22 @@
   "MaaNikki_Weekly_Message": {
     "recognition": "DirectHit",
     "action": "DoNothing"
+  },
+  "MaaNikki_CraftingPursuit": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.crafting_pursuit",
+    "custom_action_param": {},
+    "next": []
+  },
+  "MaaNikki_GlowMaterialPrep": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.glow_material_prep",
+    "custom_action_param": {},
+    "next": [],
+    "focus": {
+      "Node.Action.Starting": "正在检查焕新材料筹备目标。"
+    }
   }
 }

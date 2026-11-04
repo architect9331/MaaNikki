@@ -16,6 +16,7 @@ from action import game_key as _game_key
 from action import gameplay as _gameplay
 from action import wardrobe as _wardrobe
 from action import blessing_pursuit as _blessing_pursuit
+from action import material_pursuit as _material_pursuit
 from action import run_coordination as _run_coordination
 from action import exploration_crown as _exploration_crown
 from action import route_test as _route_test

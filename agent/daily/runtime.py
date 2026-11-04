@@ -1149,7 +1149,7 @@ class Executors(Runtime):
         finally:
             self.navigation_halted |= child.navigation_halted
 
-    def set_amount(self, kind, minimum_energy):
+    def set_amount(self, kind, minimum_energy, *, desired_count=None):
         count_node = "MaaNikki_Daily_JihuaCount" if kind == "jihua" else "MaaNikki_Daily_QuickCount"
         data = self.context.get_node_data(count_node) or {}
         recognition = data.get("recognition")
@@ -1164,8 +1164,8 @@ class Executors(Runtime):
         current = int(raw)
         if not 1 <= current <= 999:
             return False
-        desired = 1
-        if minimum_energy:
+        desired = int(desired_count) if desired_count is not None else 1
+        if desired_count is None and minimum_energy:
             text = self.text([400, 215, 470, 215])
             match = re.search(r"(?:消耗|投入|注入)\D{0,8}(\d+)\s*(?:点|活跃能量)", text)
             if not match or int(match.group(1)) <= 0 or int(match.group(1)) % current:

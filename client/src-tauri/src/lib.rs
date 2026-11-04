@@ -217,6 +217,7 @@ pub fn run() {
             commands::user_routes::delete_user_route,
             commands::wardrobe_scoring::get_wardrobe_scoring,
             commands::wardrobe_scoring::save_wardrobe_scoring,
+            commands::wardrobe_scoring::save_material_plan,
             commands::wardrobe_scoring::list_game_photos,
             commands::wardrobe_scoring::read_game_photo_base64,
             // Maa 核心命令

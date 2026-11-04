@@ -1,6 +1,17 @@
 {
     "task": [
         {
+            "name": "glow_material_prep",
+            "label": "焕新材料筹备",
+            "entry": "MaaNikki_GlowMaterialPrep",
+            "group": [
+                "daily"
+            ],
+            "default_check": true,
+            "description": "按搭配计算下发的焕新材料目标自动刷取泡泡、丝线与噗灵；无目标或已达标时直接跳过，剩余活跃能量交由下方幻境挑战继续使用。",
+            "option": []
+        },
+        {
             "name": "realm_challenge",
             "label": "幻境挑战",
             "entry": "MaaNikki_RealmChallenge",
@@ -14,6 +25,7 @@
                 "WeeklyTargets",
                 "RealmTypes",
                 "CollectionMode",
+                "CraftingCollectionMode",
                 "CollectionPriority",
                 "CollectionBling",
                 "CollectionDecompose",
@@ -720,6 +732,29 @@
             ],
             "min_count": 1,
             "max_count": 2
+        },
+        "CraftingCollectionMode": {
+            "type": "switch",
+            "label": "制衣材料全收集模式",
+            "description": "开启后按已读衣柜中未制作的设计图缺口，自动按次数刷取 10 种魔物试炼制衣晶石（磐岩晶石与大地晶珀），同轮剩余能量自动接力下一缺口。",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "label": "开启",
+                    "pipeline_override": {
+                        "MaaNikki_RealmEnergy": {
+                            "next": [
+                                "MaaNikki_CraftingPursuit"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "label": "关闭"
+                }
+            ],
+            "default_case": "No"
         }
     }
 }

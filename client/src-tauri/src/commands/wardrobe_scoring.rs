@@ -38,10 +38,14 @@ fn load() -> Result<Value, String> {
     if catalog["schema_version"] != 1 {
         return Err("搭配计分资料版本不支持。".into());
     }
+    let crafting_catalog =
+        read_json(&get_exe_directory()?.join("resource/data/crafting_catalog.json"))?
+            .unwrap_or(Value::Null);
     Ok(json!({
         "account_key": key, "uid": role["uid"], "snapshot": snapshot,
         "blessing": blessing,
         "settings": wardrobe.get("scoring"), "catalog": catalog,
+        "materials": role.get("materials"), "crafting_catalog": crafting_catalog,
     }))
 }
 
@@ -159,6 +163,28 @@ pub async fn save_wardrobe_scoring(account_key: String, mut settings: Value) -> 
                 return Err("请先读取当前账号的衣柜。".into());
             }
             role["wardrobe"]["scoring"] = settings;
+            Ok(())
+        })
+    })
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn save_material_plan(account_key: String, mut materials: Value) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if !valid_account_key(&account_key) {
+            return Err("账号 UID 无效。".into());
+        }
+        if !materials.is_object() {
+            return Err("材料规划数据格式无效。".into());
+        }
+        materials["updated_at"] = json!(chrono::Utc::now().to_rfc3339());
+        update_role(&account_key, |role| {
+            if active_key()? != account_key {
+                return Err("账号已切换，请刷新页面。".into());
+            }
+            role["materials"] = materials;
             Ok(())
         })
     })

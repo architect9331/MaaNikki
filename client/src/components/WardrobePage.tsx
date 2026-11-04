@@ -1,4 +1,4 @@
-import { BookOpen, Calculator, Check, Clock, RefreshCw, Play, Square, Shirt } from 'lucide-react';
+import { BookOpen, Calculator, Check, Clock, Hammer, RefreshCw, Play, Square, Shirt } from 'lucide-react';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { useAccountStateStore } from '@/stores/accountStateStore';
@@ -9,12 +9,14 @@ import { Card, FeaturePage, primaryButton, secondaryButton, Stat, StatusBar } fr
 import { WARDROBE_INSTANCE_ID } from '@/services/wardrobeService';
 import { WardrobeBrowser } from './WardrobeBrowser';
 import { WardrobeCalculator } from './WardrobeCalculator';
+import { WardrobeCraftingPlanner } from './WardrobeCraftingPlanner';
 
 export function WardrobePage({ onClose }: { onClose: () => void }) {
   const { data, error: accountError, refresh, loading } = useAccountStateStore();
   const { status, error } = useWardrobeStore();
-  const [tab, setTab] = useState<'read' | 'browse' | 'calculate'>('read');
+  const [tab, setTab] = useState<'read' | 'browse' | 'crafting' | 'calculate'>('read');
   const [browserOpened, setBrowserOpened] = useState(false);
+  const [craftingOpened, setCraftingOpened] = useState(false);
   const [calculatorOpened, setCalculatorOpened] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const busy = ['starting', 'reading', 'stopping'].includes(status);
@@ -26,15 +28,17 @@ export function WardrobePage({ onClose }: { onClose: () => void }) {
     {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
     <button onClick={() => void refresh().then(() => setRefreshToken((previous) => previous + 1)).catch(() => {})} disabled={loading} title="刷新衣柜记录" aria-label="刷新衣柜记录" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><RefreshCw className={clsx('h-4 w-4', loading && 'animate-spin')} /></button>
   </>}>
-    <div role="tablist" aria-label="衣柜功能" className="grid grid-cols-3 gap-2">
+    <div role="tablist" aria-label="衣柜功能" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {([
         ['read', Shirt, '衣柜读取', '读取并记录你拥有的衣服'],
         ['browse', BookOpen, '衣柜浏览', '按套装与散件查看收集进度'],
+        ['crafting', Hammer, '制衣与材料', '算未制作缺口并规划试炼晶石'],
         ['calculate', Calculator, '搭配计算', '算出最高分搭配和要养成什么'],
       ] as const).map(([id, Icon, label, detail]) =>
         <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => {
           setTab(id);
           if (id === 'browse') setBrowserOpened(true);
+          if (id === 'crafting') setCraftingOpened(true);
           if (id === 'calculate') setCalculatorOpened(true);
         }}
           className={clsx('rounded-xl border p-3 text-left transition-colors', tab === id ? 'border-accent bg-accent/10' : 'border-border bg-bg-secondary hover:bg-bg-hover')}>
@@ -66,6 +70,7 @@ export function WardrobePage({ onClose }: { onClose: () => void }) {
       <Card><div className="h-52"><LogsPanel instanceId={WARDROBE_INSTANCE_ID} /></div></Card>
     </div>
     {browserOpened && <div className={clsx(tab !== 'browse' && 'hidden')}><WardrobeBrowser refreshToken={refreshToken} /></div>}
+    {craftingOpened && <div className={clsx(tab !== 'crafting' && 'hidden')}><WardrobeCraftingPlanner refreshToken={refreshToken} /></div>}
     {calculatorOpened && <div className={clsx(tab !== 'calculate' && 'hidden')}><WardrobeCalculator refreshToken={refreshToken} onOpenRead={() => setTab('read')} /></div>}
   </FeaturePage>;
 }

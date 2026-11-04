@@ -62,6 +62,10 @@ class RunCoordinationAction(CustomAction):
                     "custom_action_param": {
                         **parameters(context, "MaaNikki_BlessingPursuit"),
                         "return_page": "calendar"}}
+                overrides["MaaNikki_CraftingPursuit"] = {
+                    "next": ["MaaNikki_RealmReview"],
+                    "on_error": ["MaaNikki_RealmReviewFailed"],
+                    "custom_action_param": {"return_page": "calendar"}}
                 return context.override_pipeline(overrides)
             if options.get("stage") != "settle":
                 return False

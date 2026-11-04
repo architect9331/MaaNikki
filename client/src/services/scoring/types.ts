@@ -88,6 +88,45 @@ export interface WardrobeRecord {
   names: string[];
   source: string;
 }
+export interface CraftingMaterialMeta {
+  id: string;
+  name: string;
+  kind: 'monster_craft' | 'monster_glow' | 'jihua' | 'world';
+  realm?: 'monster' | 'jihua';
+  option_case?: string;
+  level?: string;
+  energy?: number;
+  drop?: number;
+}
+export interface CraftingSketch {
+  id: string;
+  name: string;
+  category: 'suit' | 'piece';
+  suit_id?: string | null;
+  suit_name?: string | null;
+  quality: number;
+  part: string;
+  costs: Record<string, number>;
+}
+export interface CraftingCatalog {
+  schema_version: number;
+  sketches: CraftingSketch[];
+  materials: Record<string, CraftingMaterialMeta>;
+}
+export interface GlowPlanState {
+  enabled: boolean;
+  completed?: boolean;
+  source_label?: string;
+  targets: Record<string, number>;
+  updated_at?: string;
+}
+export interface MaterialsState {
+  inventory?: Record<string, number>;
+  inventory_updated_at?: string;
+  crafting_scope?: 'all' | 'suits';
+  glow_plan?: GlowPlanState | null;
+  updated_at?: string;
+}
 export interface ScoringPayload {
   account_key: string;
   uid: string;
@@ -103,6 +142,8 @@ export interface ScoringPayload {
   } | null;
   settings: ScoringSettings | null;
   catalog: ScoringCatalog;
+  materials?: MaterialsState | null;
+  crafting_catalog?: CraftingCatalog | null;
 }
 export interface OwnedItem {
   id: string;

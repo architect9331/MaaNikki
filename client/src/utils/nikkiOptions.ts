@@ -8,6 +8,9 @@ const COLLECTION_OPTIONS = new Set(['CollectionPriority', 'CollectionBling', 'Co
 export const realmCollectionEnabled = (values: Record<string, OptionValue>): boolean =>
   values.CollectionMode?.type === 'switch' && values.CollectionMode.value;
 
+export const realmCraftingEnabled = (values: Record<string, OptionValue>): boolean =>
+  !realmCollectionEnabled(values) && values.CraftingCollectionMode?.type === 'switch' && values.CraftingCollectionMode.value;
+
 /** In collection mode the blessing target is only the fallback for a failed organization. */
 export function realmOptionLabel(key: string, values: Record<string, OptionValue>): string | undefined {
   return key === 'BlessTarget' && realmCollectionEnabled(values) ? '备选副本' : undefined;
@@ -20,10 +23,12 @@ export function realmOptionActive(key: string, values: Record<string, OptionValu
     return weekly?.type !== 'switch' || weekly.value;
   }
   const collection = realmCollectionEnabled(values);
+  const crafting = realmCraftingEnabled(values);
   if (COLLECTION_OPTIONS.has(key)) return collection;
   // In collection mode the blessing target is the failed-organization fallback.
   if (key === 'BlessTarget' && collection) return true;
-  if (key === 'RealmTypes') return !collection;
+  if (key === 'RealmTypes') return !collection && !crafting;
+  if (crafting) return false;
   // Collection mode's bling runs spend the configured materials.
   if (collection && (key === 'JihuaMaterialMode' || key === 'JihuaMaterials')) {
     const bling = values.CollectionBling;

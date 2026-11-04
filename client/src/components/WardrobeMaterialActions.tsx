@@ -1,21 +1,29 @@
-import { ArrowUpRight, Check, Flame, Star } from 'lucide-react';
+import { ArrowUpRight, Check, Flame, ListPlus, Star } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { useAppStore } from '@/stores/appStore';
+import { saveMaterialPlan } from '@/services/scoring/api';
 import { MATERIAL_REALM_TARGETS } from '@/services/scoring/heartPresets';
-import type { BatchCalculationResult, ScoringCatalog } from '@/services/scoring/types';
+import type { BatchCalculationResult, MaterialsState, ScoringCatalog } from '@/services/scoring/types';
 
 const card = 'rounded-xl border border-border bg-bg-secondary p-4';
 const number = (value: number) => value.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
 const levelLabel = (level: number | null) => level === null ? '等级未知' : level === 11 ? '已焕新' : `${level} 级`;
 
-export function WardrobeMaterialList({ cost, catalog }: {
+export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sourceLabel, onMaterialsChange }: {
   cost: Record<string, number>;
   catalog: ScoringCatalog;
+  accountKey?: string;
+  materials?: MaterialsState | null;
+  sourceLabel?: string;
+  onMaterialsChange?: (next: MaterialsState) => void;
 }) {
   const instances = useAppStore((state) => state.instances);
   const activeInstanceId = useAppStore((state) => state.activeInstanceId);
   const setTaskOptionValue = useAppStore((state) => state.setTaskOptionValue);
+  const addTaskToInstance = useAppStore((state) => state.addTaskToInstance);
+  const reorderTasks = useAppStore((state) => state.reorderTasks);
+  const toggleTaskEnabled = useAppStore((state) => state.toggleTaskEnabled);
   const entries = Object.entries(cost).filter(([, count]) => count > 0);
 
   const activeInstance = instances.find((inst) => inst.id === activeInstanceId) ?? instances[0];
@@ -32,9 +40,52 @@ export function WardrobeMaterialList({ cost, catalog }: {
       return;
     }
     setTaskOptionValue(activeInstance.id, realmTask.id, 'CollectionMode', { type: 'switch', value: false });
+    setTaskOptionValue(activeInstance.id, realmTask.id, 'CraftingCollectionMode', { type: 'switch', value: false });
     setTaskOptionValue(activeInstance.id, realmTask.id, 'RealmTypes', { type: 'select', caseName: target.realmType });
     setTaskOptionValue(activeInstance.id, realmTask.id, target.optionKey, { type: 'select', caseName: target.caseName });
     toast.success(`已将当前配置的幻境挑战设为「${target.label}」`);
+  }
+
+  async function applyGlowPrepPlan() {
+    if (!accountKey || !entries.length) return;
+    const inv = materials?.inventory ?? {};
+    const targets: Record<string, number> = {};
+    for (const [id, deficit] of entries) {
+      if (MATERIAL_REALM_TARGETS[id]) {
+        targets[id] = Math.round((Number(inv[id]) || 0) + deficit);
+      }
+    }
+    const nextMaterials: MaterialsState = {
+      ...(materials ?? {}),
+      glow_plan: {
+        enabled: true,
+        completed: false,
+        source_label: sourceLabel || '搭配计算目标',
+        targets,
+        updated_at: new Date().toISOString(),
+      },
+    };
+    try {
+      await saveMaterialPlan(accountKey, nextMaterials);
+      onMaterialsChange?.(nextMaterials);
+      if (activeInstance) {
+        const existing = activeInstance.selectedTasks.find((t) => t.taskName === 'glow_material_prep');
+        if (!existing) {
+          addTaskToInstance(activeInstance.id, { name: 'glow_material_prep', option: [] });
+          const updated = useAppStore.getState().instances.find((i) => i.id === activeInstance.id);
+          const fromIdx = (updated?.selectedTasks.length ?? 1) - 1;
+          const realmIdx = updated?.selectedTasks.findIndex((t) => t.taskName === 'realm_challenge') ?? -1;
+          if (realmIdx >= 0 && fromIdx > realmIdx) {
+            reorderTasks(activeInstance.id, fromIdx, realmIdx);
+          }
+        } else if (!existing.enabled) {
+          toggleTaskEnabled(activeInstance.id, existing.id);
+        }
+      }
+      toast.success('已加入「焕新材料筹备」任务目标，刷满后将自动跳过并继续下方幻境挑战！');
+    } catch (err) {
+      toast.error(String(err));
+    }
   }
 
   if (!entries.length) {
@@ -42,7 +93,17 @@ export function WardrobeMaterialList({ cost, catalog }: {
   }
 
   return (
-    <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <div className="mt-2.5 space-y-2.5">
+      {accountKey && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs">
+          <span className="text-text-secondary">可将本套缺口下发给独立任务「焕新材料筹备」，刷满后自动跳过并继续追闪光或追制衣：</span>
+          <button type="button" onClick={() => void applyGlowPrepPlan()}
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover">
+            <ListPlus className="h-3.5 w-3.5" />设为焕新筹备目标
+          </button>
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {entries.map(([id, count]) => {
         const name = catalog.material_names[id] ?? id;
         const target = MATERIAL_REALM_TARGETS[id];
@@ -66,21 +127,26 @@ export function WardrobeMaterialList({ cost, catalog }: {
                     : 'border border-border bg-bg-secondary text-text-secondary hover:border-accent hover:text-accent')}
                 title={`将幻境挑战设为：${target.label}`}>
                 {isCurrentTarget ? <Check className="h-3 w-3" /> : <Flame className="h-3 w-3" />}
-                {isCurrentTarget ? '当前目标' : '设为幻境目标'}
+                {isCurrentTarget ? '当前目标' : '单刷此项'}
               </button>
             )}
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
 
-export function WardrobeBatchPlanView({ batch, catalog, activeMatchId, onSelectStage }: {
+export function WardrobeBatchPlanView({ batch, catalog, activeMatchId, onSelectStage, accountKey, materials, sourceLabel, onMaterialsChange }: {
   batch: BatchCalculationResult;
   catalog: ScoringCatalog;
   activeMatchId: string;
   onSelectStage: (matchId: string) => void;
+  accountKey?: string;
+  materials?: MaterialsState | null;
+  sourceLabel?: string;
+  onMaterialsChange?: (next: MaterialsState) => void;
 }) {
   return (
     <section className={clsx(card, 'space-y-4 border-accent/40')}>
@@ -139,7 +205,7 @@ export function WardrobeBatchPlanView({ batch, catalog, activeMatchId, onSelectS
 
       <div>
         <h4 className="text-xs font-semibold text-text-secondary">整期去重总材料差额</h4>
-        <WardrobeMaterialList cost={batch.cost} catalog={catalog} />
+        <WardrobeMaterialList cost={batch.cost} catalog={catalog} accountKey={accountKey} materials={materials} sourceLabel={sourceLabel} onMaterialsChange={onMaterialsChange} />
         {!!batch.unknownCostGroups.length && (
           <p className="mt-2 text-xs text-text-secondary">另有 {batch.unknownCostGroups.length} 组登场部件等级未知，在下方补充等级后即可计入整期总材料差额。</p>
         )}

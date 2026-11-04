@@ -125,7 +125,13 @@ function OutfitView({ outfit, payload, settings, match, potential, setLevel, exc
           <strong className="tabular-nums text-accent">+{number(piece.gain!)}</strong></li>)}</ol>
         : <p className="mt-2 text-xs text-text-secondary">已知等级的部件都已到位。</p>}
       <h3 className="mt-4 text-sm font-medium">养成材料差额</h3>
-      <WardrobeMaterialList cost={outfit.cost} catalog={catalog} />
+      <WardrobeMaterialList
+        cost={outfit.cost}
+        catalog={catalog}
+        accountKey={payload.account_key}
+        materials={payload.materials}
+        sourceLabel={`${match.group} · ${match.name}`}
+      />
       {!!outfit.unknownCostGroups.length && <p className="mt-3 text-xs text-text-secondary">另有 {outfit.unknownCostGroups.length} 个部件等级未知，补充后可计入提升值和材料差额。</p>}
     </section>}
   </div>;
@@ -387,6 +393,10 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
             catalog={payload.catalog}
             activeMatchId={matchId}
             onSelectStage={(id) => { setMatchId(id); setChoice(null); }}
+            accountKey={payload.account_key}
+            materials={payload.materials}
+            sourceLabel={`${resultMatch.group}（整期 ${result.batch.stages.length} 场）`}
+            onMaterialsChange={(next) => setPayload((prev) => prev ? { ...prev, materials: next } : prev)}
           />
         )}
         <div className={clsx('grid grid-cols-2 gap-2', stale && 'opacity-60')} role="tablist">{(['current', 'potential'] as const).map((key) => {
