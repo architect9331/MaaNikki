@@ -331,11 +331,13 @@ class WardrobeScanner(InventoryScanner):
             row["columns"].add(column)
 
         pitch = self.layout["row_pitch_exact"]
-        expected_tops = [
+        max_steps = int(gh // pitch) + 3
+        expected_tops = sorted({
             round(row["top"] + step * pitch)
             for row in rows
-            for step in range(-4, 5)
-        ]
+            for step in range(-max_steps, max_steps + 1)
+            if gy <= round(row["top"] + step * pitch) <= gy + gh - 100
+        })
         horizontal = cv2.morphologyEx(edges, cv2.MORPH_OPEN, np.ones((1, 140), np.uint8))
         lines, _ = cv2.findContours(horizontal, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         recovered = []
@@ -367,6 +369,35 @@ class WardrobeScanner(InventoryScanner):
                 if column not in row["columns"]:
                     recovered.append([column, row["top"]])
                 row["columns"].add(column)
+
+        if rows:
+            first_y = self.layout["first_y"]
+            base_offsets = [
+                row["top"] - round((row["top"] - first_y) / pitch) * pitch
+                for row in rows
+            ]
+            anchor_y = float(np.median(base_offsets))
+            for step in range(-2, max_steps + 2):
+                cand_top = int(round(anchor_y + step * pitch))
+                if not (gy <= cand_top and cand_top + 100 <= gy + gh):
+                    continue
+                existing = next((r for r in rows if abs(r["top"] - cand_top) < 10), None)
+                row_top = existing["top"] if existing is not None else cand_top
+                for col in range(3):
+                    if existing is not None and col in existing["columns"]:
+                        continue
+                    cx = 270 + col * 324
+                    port = gray[row_top - gy + 9:row_top - gy + 91, cx - gx + 9:cx - gx + 91]
+                    body = gray[row_top - gy + 55:row_top - gy + 92, cx - gx + 120:cx - gx + 260]
+                    if (port.size > 0 and body.size > 0
+                            and float(np.percentile(port, 15)) < 115
+                            and float(body.mean() - port.mean()) > 25):
+                        if existing is None:
+                            existing = {"top": row_top, "tops": [row_top], "columns": set()}
+                            rows.append(existing)
+                        recovered.append([col, existing["top"]])
+                        existing["columns"].add(col)
+
         self._border_recovered = recovered
         boxes = []
         valid_rows = [
