@@ -25,19 +25,6 @@
             ]
         }
     ],
-    "global_option": [
-        "CollectionStats"
-    ],
-    "setting": [
-        {
-            "name": "collection_statistics",
-            "label": "祝福闪光统计",
-            "option": [
-                "CollectionStats"
-            ],
-            "default_expand": true
-        }
-    ],
     "option": {
         "WeeklyEnabled": {
             "type": "switch",
@@ -265,36 +252,6 @@
                 }
             ],
             "default_case": "Auto"
-        },
-        "CollectionStats": {
-            "type": "switch",
-            "label": "匿名上报祝福闪光统计",
-            "description": "上报满级颜色次数和刷噗灵产出，帮助确认彩色概率、优化推荐策略。包含闪光名称、部位、颜色、数量、版本号和服务器发放的随机匿名 ID，不含 UID 或设备信息，上报失败不影响任务。",
-            "cases": [
-                {
-                    "name": "Yes",
-                    "label": "开启",
-                    "pipeline_override": {
-                        "MaaNikki_Pursuit_StatsOption": {
-                            "custom_action_param": {
-                                "enabled": true
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "No",
-                    "label": "关闭",
-                    "pipeline_override": {
-                        "MaaNikki_Pursuit_StatsOption": {
-                            "custom_action_param": {
-                                "enabled": false
-                            }
-                        }
-                    }
-                }
-            ],
-            "default_case": "Yes"
         },
         "JihuaTarget": {
             "type": "select",

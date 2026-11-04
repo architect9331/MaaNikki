@@ -254,6 +254,8 @@ export const useAppStore = create<AppState>()(
     logRetentionDays: 0,
     lastLogCleanupAt: 0,
     helpImproveSoftware: true,
+    helpImproveRouteTelemetry: true,
+    helpImproveBlessingStats: true,
     customAccents: [],
     setTheme: (theme) => {
       set({ theme });
@@ -301,8 +303,20 @@ export const useAppStore = create<AppState>()(
       // 调试 / 开发版本强制关闭，忽略开启请求
       const blocked = isTelemetryBlockedByBuild(get().projectInterface);
       const next = blocked ? false : enabled;
+      const routeNext = blocked ? false : get().helpImproveRouteTelemetry;
       set({ helpImproveSoftware: next });
-      void setTelemetryEnabled(next);
+      void setTelemetryEnabled(next, routeNext);
+    },
+    setHelpImproveRouteTelemetry: (enabled) => {
+      const blocked = isTelemetryBlockedByBuild(get().projectInterface);
+      const next = blocked ? false : enabled;
+      const diagNext = blocked ? false : get().helpImproveSoftware;
+      set({ helpImproveRouteTelemetry: next });
+      void setTelemetryEnabled(diagNext, next);
+    },
+    setHelpImproveBlessingStats: (enabled) => {
+      const blocked = isTelemetryBlockedByBuild(get().projectInterface);
+      set({ helpImproveBlessingStats: blocked ? false : enabled });
     },
     addCustomAccent: (accent) => {
       set((state) => ({
@@ -1537,6 +1551,15 @@ export const useAppStore = create<AppState>()(
         helpImproveSoftware: isTelemetryBlockedByBuild(get().projectInterface)
           ? false
           : (config.settings.helpImproveSoftware ?? true),
+        helpImproveRouteTelemetry: isTelemetryBlockedByBuild(get().projectInterface)
+          ? false
+          : (config.settings.helpImproveRouteTelemetry ?? true),
+        helpImproveBlessingStats: isTelemetryBlockedByBuild(get().projectInterface)
+          ? false
+          : (config.settings.helpImproveBlessingStats ??
+            (config.globalOptionValues?.CollectionStats?.type === 'switch'
+              ? config.globalOptionValues.CollectionStats.value
+              : true)),
         customAccents: effectiveCustomAccents,
         selectedController,
         selectedResource,
@@ -2543,6 +2566,8 @@ function generateConfig(): MxuConfig {
           logRetentionDays: state.logRetentionDays,
           lastLogCleanupAt: state.lastLogCleanupAt,
           helpImproveSoftware: state.helpImproveSoftware,
+          helpImproveRouteTelemetry: state.helpImproveRouteTelemetry,
+          helpImproveBlessingStats: state.helpImproveBlessingStats,
           windowSize: bl?.windowSize ?? state.windowSize,
           windowPosition: bl?.windowPosition ?? state.windowPosition,
           showOptionPreview: bl?.showOptionPreview ?? state.showOptionPreview,
@@ -2644,6 +2669,8 @@ useAppStore.subscribe(
     logRetentionDays: state.logRetentionDays,
     lastLogCleanupAt: state.lastLogCleanupAt,
     helpImproveSoftware: state.helpImproveSoftware,
+    helpImproveRouteTelemetry: state.helpImproveRouteTelemetry,
+    helpImproveBlessingStats: state.helpImproveBlessingStats,
     mirrorChyanSettings: state.mirrorChyanSettings,
     proxySettings: state.proxySettings,
     welcomeShownHash: state.welcomeShownHash,

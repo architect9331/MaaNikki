@@ -126,8 +126,12 @@ export interface AppState {
   autoClearLogsOnLaunch: boolean;
   logRetentionDays: number;
   lastLogCleanupAt: number;
-  /** 是否开启匿名遥测（帮助改进软件），默认 true；调试 / 开发版本强制关闭 */
+  /** 是否开启错误与运行诊断上报（帮助改进软件），默认 true；调试 / 开发版本强制关闭 */
   helpImproveSoftware: boolean;
+  /** 是否开启路线与坐标调优数据上报（帮助改进软件），默认 true；调试 / 开发版本强制关闭 */
+  helpImproveRouteTelemetry: boolean;
+  /** 是否开启祝福闪光匿名统计上报（帮助改进软件），默认 true */
+  helpImproveBlessingStats: boolean;
   customAccents: CustomAccent[];
   setTheme: (theme: Theme) => void;
   setAccentColor: (accent: AccentColor) => void;
@@ -140,6 +144,8 @@ export interface AppState {
   setLogRetentionDays: (days: number) => void;
   setLastLogCleanupAt: (timestamp: number) => void;
   setHelpImproveSoftware: (enabled: boolean) => void;
+  setHelpImproveRouteTelemetry: (enabled: boolean) => void;
+  setHelpImproveBlessingStats: (enabled: boolean) => void;
   addCustomAccent: (accent: CustomAccent) => void;
   updateCustomAccent: (id: string, accent: CustomAccent) => void;
   removeCustomAccent: (id: string) => void;

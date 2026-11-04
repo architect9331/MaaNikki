@@ -178,8 +178,12 @@ export interface AppSettings {
   autoStartRemovedInstanceName?: string; // 被删除的自动执行配置名称（用于提示用户）
   /** 前置动作轮询设备就绪后、连接前的额外延迟秒数（默认 5，仅通过编辑 mxu.json 修改） */
   preActionConnectDelaySec?: number;
-  /** 是否开启匿名遥测（帮助改进软件），默认 true；调试 / 开发版本强制关闭 */
+  /** 是否开启错误与运行诊断上报（帮助改进软件），默认 true；调试 / 开发版本强制关闭 */
   helpImproveSoftware?: boolean;
+  /** 是否开启路线与坐标调优数据上报（帮助改进软件），默认 true；调试 / 开发版本强制关闭 */
+  helpImproveRouteTelemetry?: boolean;
+  /** 是否开启祝福闪光匿名统计上报（帮助改进软件），默认 true */
+  helpImproveBlessingStats?: boolean;
 }
 
 // MXU 配置文件完整结构
@@ -259,6 +263,8 @@ export const defaultConfig: MxuConfig = {
     windowSize: defaultWindowSize,
     mirrorChyan: defaultMirrorChyanSettings,
     helpImproveSoftware: true,
+    helpImproveRouteTelemetry: true,
+    helpImproveBlessingStats: true,
   },
 };
 

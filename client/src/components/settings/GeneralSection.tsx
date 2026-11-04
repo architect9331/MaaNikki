@@ -44,9 +44,13 @@ export function GeneralSection() {
     autoClearLogsOnLaunch,
     setAutoClearLogsOnLaunch,
     helpImproveSoftware,
+    helpImproveRouteTelemetry,
+    helpImproveBlessingStats,
     runResultWebhook,
     setRunResultWebhook,
     setHelpImproveSoftware,
+    setHelpImproveRouteTelemetry,
+    setHelpImproveBlessingStats,
     projectInterface,
   } = useAppStore();
 
@@ -357,26 +361,70 @@ export function GeneralSection() {
         </div>
       </div>
 
-      {/* ⑧ 帮助改进软件（匿名遥测） */}
-      <div className="bg-bg-secondary rounded-xl p-4 border border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <HeartHandshake className="w-5 h-5 text-accent" />
-            <div>
-              <span className="font-medium text-text-primary">
-                {t('settings.helpImproveSoftware')}
-              </span>
+      {/* ⑧ 帮助改进软件（三个独立子开关） */}
+      <div className="bg-bg-secondary rounded-xl p-4 border border-border space-y-4">
+        <div className="flex items-center gap-3">
+          <HeartHandshake className="w-5 h-5 text-accent" />
+          <div>
+            <span className="font-medium text-text-primary">
+              {t('settings.helpImproveSoftware')}
+            </span>
+            {telemetryBlocked && (
               <p className="text-xs text-text-muted mt-0.5">
-                {telemetryBlocked
-                  ? t('settings.helpImproveSoftwareDisabledHint')
-                  : t('settings.helpImproveSoftwareHint')}
+                {t('settings.helpImproveSoftwareDisabledHint')}
               </p>
-            </div>
+            )}
+          </div>
+        </div>
+
+        {/* 1. 错误与运行诊断 */}
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div className="pr-4">
+            <span className="text-sm font-medium text-text-primary">
+              {t('settings.helpImproveDiagnostics')}
+            </span>
+            <p className="text-xs text-text-muted mt-0.5">
+              {t('settings.helpImproveDiagnosticsHint')}
+            </p>
           </div>
           <SwitchButton
             value={telemetryBlocked ? false : helpImproveSoftware}
             disabled={telemetryBlocked}
             onChange={(v) => setHelpImproveSoftware(v)}
+          />
+        </div>
+
+        {/* 2. 路线与坐标调优 */}
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div className="pr-4">
+            <span className="text-sm font-medium text-text-primary">
+              {t('settings.helpImproveRouteTelemetry')}
+            </span>
+            <p className="text-xs text-text-muted mt-0.5">
+              {t('settings.helpImproveRouteTelemetryHint')}
+            </p>
+          </div>
+          <SwitchButton
+            value={telemetryBlocked ? false : helpImproveRouteTelemetry}
+            disabled={telemetryBlocked}
+            onChange={(v) => setHelpImproveRouteTelemetry(v)}
+          />
+        </div>
+
+        {/* 3. 祝福闪光统计 */}
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div className="pr-4">
+            <span className="text-sm font-medium text-text-primary">
+              {t('settings.helpImproveBlessingStats')}
+            </span>
+            <p className="text-xs text-text-muted mt-0.5">
+              {t('settings.helpImproveBlessingStatsHint')}
+            </p>
+          </div>
+          <SwitchButton
+            value={telemetryBlocked ? false : helpImproveBlessingStats}
+            disabled={telemetryBlocked}
+            onChange={(v) => setHelpImproveBlessingStats(v)}
           />
         </div>
       </div>

@@ -13,7 +13,7 @@ from collection.pursuit import FiveStarPursuit
 from collection.inventory_workflow import FiveStarInventory
 from collection.organize import organize_inventory
 from collection.scanner import RescanSlot
-from collection.statistics import upload
+from collection.statistics import is_enabled as stats_enabled, upload
 from collection.storage import InventoryStore
 
 ORGANIZE_OPTIONS = {"auto": None, "always": False, "always_unlock": True}
@@ -66,7 +66,10 @@ class BlessingPursuitAction(CustomAction):
             decompose = parameters(context, "MaaNikki_Pursuit_DecomposeOption").get("enabled") is True
             auto_bling = parameters(context, "MaaNikki_Pursuit_BlingOption").get("enabled") is not False
             priority = parameters(context, "MaaNikki_Pursuit_PriorityOption").get("mode", "chance")
-            share = parameters(context, "MaaNikki_Pursuit_StatsOption").get("enabled") is not False
+            share = stats_enabled(
+                ROOT,
+                parameters(context, "MaaNikki_Pursuit_StatsOption").get("enabled") is not False,
+            )
             ok = FiveStarPursuit(pursuit, decompose_duplicates=decompose, auto_bling=auto_bling,
                                  chance_priority=priority != "oldest",
                                  share_statistics=share).run()

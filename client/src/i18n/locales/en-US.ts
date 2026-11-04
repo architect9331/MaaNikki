@@ -120,6 +120,15 @@ export default {
     helpImproveSoftware: 'Help Improve the Software',
     helpImproveSoftwareHint:
       'Send crash reports, task statistics, and relevant logs and error screenshots from failed tasks to Sentry for troubleshooting. Logs and screenshots may contain game account information. You can turn this off at any time.',
+    helpImproveDiagnostics: 'Error & Runtime Diagnostics',
+    helpImproveDiagnosticsHint:
+      'Send crash reports, task statistics, and failure logs/screenshots (with UID masked) to Sentry for troubleshooting.',
+    helpImproveRouteTelemetry: 'Route & Coordinate Tuning',
+    helpImproveRouteTelemetryHint:
+      'Report waypoint arrival offsets, unstuck events, and pickup interaction stats to analyze stuck spots and fine-tune route coordinates.',
+    helpImproveBlessingStats: 'Eureka Statistics',
+    helpImproveBlessingStatsHint:
+      'Anonymously report max-level color counts and Bling farming yields to verify iridescent rates and optimize recommendations, without UID or device info.',
     helpImproveSoftwareDisabledHint:
       'Anonymous data reporting is disabled in debug / development builds.',
     maxLogsPerInstance: 'Max logs per instance',

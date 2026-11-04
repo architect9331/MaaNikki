@@ -14,9 +14,25 @@ import threading
 from urllib import error as url_error, request
 from uuid import uuid4
 
+from client_config import mxu_config
+
 
 TIMEOUT_SECONDS = 30  # Background only; cross-border links can be slow.
 MAX_ROWS = 500
+
+
+def is_enabled(root, pipeline_enabled=True):
+    if not pipeline_enabled:
+        return False
+    env = os.environ.get("PI_MAANIKKI_BLESSING_STATS")
+    if env is not None:
+        return env == "1"
+    try:
+        config = mxu_config(Path(root)) or {}
+        value = config.get("settings", {}).get("helpImproveBlessingStats")
+        return True if value is None else bool(value)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return True
 
 
 def endpoint(root):

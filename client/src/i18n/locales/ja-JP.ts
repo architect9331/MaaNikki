@@ -120,6 +120,15 @@ export default {
     helpImproveSoftware: 'ソフトウェアの改善に協力',
     helpImproveSoftwareHint:
       'クラッシュ、タスク統計、失敗したタスクの関連ログとエラースクリーンショットを Sentry に送信し、問題の調査に役立てます。ログや画像にはゲームのアカウント情報が含まれる場合があります。いつでも無効にできます。',
+    helpImproveDiagnostics: 'エラーと実行診断',
+    helpImproveDiagnosticsHint:
+      'クラッシュ、タスク統計、失敗したタスクのログとスクリーンショット（UID マスク済み）を Sentry に送信して問題調査に役立てます。',
+    helpImproveRouteTelemetry: 'ルートと座標の最適化',
+    helpImproveRouteTelemetryHint:
+      'ルート各ポイントの到達ズレ、スタック復帰、採集統計を送信し、引っかかりやすい場所の分析と座標の微調整に役立てます。',
+    helpImproveBlessingStats: '祝福の輝き統計',
+    helpImproveBlessingStatsHint:
+      '最大レベルの色回数とプーリン獲得量を匿名で送信し、虹色確率の確認と推奨戦略の改善に役立てます（UID や端末情報は含まれません）。',
     helpImproveSoftwareDisabledHint: 'デバッグ / 開発版のため、匿名データ送信は無効になっています',
     maxLogsPerInstance: 'インスタンスあたりのログ上限',
     maxLogsPerInstanceHint: '上限を超えると古いログから自動的に破棄します（推奨 500～2000）',

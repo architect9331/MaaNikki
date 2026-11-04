@@ -223,6 +223,8 @@ class Navigator:
         self.heading_last_frame = None
         self.heading_evidence_saved = False
         self.heading_recheck_count = 0
+        self.current_index = 0
+        self.active_route = None
 
     def pause(self, seconds):
         return self.motion.wait(seconds) if self.motion else self._pause(seconds)
@@ -781,7 +783,8 @@ class Navigator:
         learned = trusted and displacement >= .3 and .5 <= measured <= 50
         if learned:
             speeds[mode] = (samples+[measured])[-5:]
-        self.event({"type": "forward", "duration": duration, "movement_mode": mode,
+        self.event({"type": "forward", "index": self.current_index,
+                    "duration": duration, "movement_mode": mode,
                     "bearing": math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360,
                     "jump": jumping,
                     "walking": walking, "jump_state": motion.jump_state,
@@ -822,6 +825,8 @@ class Navigator:
         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
         best_distance = distance(pose, origin)
         index = 0
+        self.current_index = 0
+        self.active_route = route
         prepared_index = None
         last_good = pose
         scene_interrupted, scene_retries = False, 0
@@ -835,6 +840,7 @@ class Navigator:
             if not self.inputs.controller.post_click_key(18).wait().succeeded:
                 raise NavigationError("未能解除游戏光标模式，尚未开始移动。")
             while index < len(route.points):
+                self.current_index = index
                 if self.stopped() or time.monotonic() >= deadline:
                     raise NavigationError("导航已停止或超时。")
                 motion.tick()
@@ -973,6 +979,7 @@ class Navigator:
                                 self.event({"type": "route_branch", "source": route.id,
                                             "destination": replacement.id, "index": index})
                                 route = replacement
+                                self.active_route = route
                     elif index+1 < len(route.points) and target.jump != route.points[index+1].jump and motion.until:
                         motion.stop()
                         self.pause(.5 if route.points[index+1].jump else .2)

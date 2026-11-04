@@ -22,6 +22,7 @@ from .startup import focus_game
 from navigation.controller import ForegroundInput
 from navigation.session import create_navigator
 from navigation.models import NavigationError, maps, parse_route
+from navigation.telemetry import record_route_telemetry
 from navigation.teleport import Teleporter
 from navigation.vision import Locator
 
@@ -200,6 +201,7 @@ class RouteTest(Runtime):
         self.arrival_evidence = {}
         self.last_result = None
         self.collection_entry = None
+        self.telemetry_events = []
 
     def capture(self):
         frame = super().capture()
@@ -208,6 +210,7 @@ class RouteTest(Runtime):
         return frame
 
     def event(self, value):
+        self.telemetry_events.append(value)
         if value.get("type") == "pose":
             self.last_pose = value
         if value.get("type") == "waypoint" and self.review_points:
@@ -372,8 +375,9 @@ class RouteTest(Runtime):
         return summary["success"]
 
     def run_single(self, settings, *, prepared, directory=None, refocus=True, force_teleport=False):
-        inputs = None
+        inputs = model = navigator = actions = None
         previous_inputs = self.navigation_inputs
+        self.telemetry_events = []
         mode = settings.get("mode", self.default_mode)
         result = {"success": False, "mode": mode}
         try:
@@ -449,6 +453,8 @@ class RouteTest(Runtime):
                 result["error"] = "家园路线已走完，但有任务动作未确认完成。"
                 self.log(result["error"])
         except (NavigationError, OSError, KeyError, TypeError, AttributeError, ValueError, RuntimeError, cv2.error) as error:
+            self.telemetry_events.append({"type": "stopped", "stage": self.stage,
+                                          "error_type": type(error).__name__, "reason": str(error)})
             result.update(success=False, stage=self.stage, error_type=type(error).__name__,
                           error=str(error), stopped=self.stopped,
                           fatal=isinstance(error, (TypeError, KeyError, AttributeError)))
@@ -462,6 +468,12 @@ class RouteTest(Runtime):
                 except (OSError, ValueError, cv2.error):
                     pass
         finally:
+            active_route = getattr(navigator, "active_route", None) or model
+            if active_route is not None and not self.stopped:
+                result["telemetry"] = record_route_telemetry(
+                    ROOT, active_route, self.telemetry_events,
+                    executor=actions.executor if actions else mode,
+                    mode=f"test_{mode}", success=bool(result.get("success")), stage=self.stage)
             if mode == "bottle":
                 result.update(bottle_points_attempted=len(self.bottle_results),
                               bottles_collected=sum(item["success"] for item in self.bottle_results),

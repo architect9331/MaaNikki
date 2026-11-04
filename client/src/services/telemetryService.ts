@@ -157,6 +157,8 @@ export interface TelemetryInitConfig {
   dsn: string;
   /** 是否启用（用户 opt-in 且非调试版；false 时不实际发送） */
   enabled: boolean;
+  /** 是否启用路线与坐标调优遥测（用户 opt-in 且非调试版） */
+  routeTelemetryEnabled?: boolean;
   /** release：MXU@<mxuVersion>+<appName>@<appVersion> */
   release: string;
   /** 环境标签，如 stable/beta/production */
@@ -195,11 +197,14 @@ export async function initTelemetry(config: TelemetryInitConfig): Promise<void> 
  * 运行时切换遥测开关（用户在设置里打开 / 关闭时调用）。
  * 关闭时后端会停止发送；开启时若尚未初始化则由后端按已缓存配置重新初始化。
  */
-export async function setTelemetryEnabled(enabled: boolean): Promise<void> {
+export async function setTelemetryEnabled(
+  enabled: boolean,
+  routeTelemetryEnabled?: boolean,
+): Promise<void> {
   if (!isTauri()) return;
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('telemetry_set_enabled', { enabled });
+    await invoke('telemetry_set_enabled', { enabled, routeTelemetryEnabled });
   } catch (err) {
     log.warn('telemetry_set_enabled 调用失败:', err);
   }

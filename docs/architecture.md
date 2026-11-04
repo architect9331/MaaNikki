@@ -28,6 +28,7 @@
 | `agent/navigation/teleport.py` | 大地图定位、传送和角色中心复核。图像相关计算使用共用地图匹配器。 |
 | `agent/navigation/geometry.py` | 点到路线段的投影与距离；路线匹配和恢复共用，传送点之间的间隔不视为可行走路线段。 |
 | `agent/navigation/daily_route.py` | 到点任务动作、采集数量与分支策略。每日限额和全点位调查的差异保留在任务层。 |
+| `agent/navigation/telemetry.py` | 路线与航点级坐标偏移、方向八分位、横纵向轨迹偏差、脱困与交互结果聚合，供 Sentry 遥测与 `scripts/tune_routes.py` 坐标微调共用。 |
 
 调用关系为：任务 → `session` → `engine` → `Locator` → `matching` / `camera` / `frames`。`Teleporter` 同样复用 `matching`。核心 `Navigator` 保留可注入接口，应用入口统一在 `session` 中组装依赖。
 
@@ -223,11 +224,9 @@ Esc 菜单的挖掘、星绘图册、奇迹之冠入口共用 `find_menu_entry`�
 
 逐格诊断保存 `card_<编号>.png`、`card_<编号>_badge.png`、`card_<编号>_lock.png` 和同编号 JSON，分别对应原始卡片、数量角标、锁标与识别字段。数量 OCR 另存遮罩数字图和识别结果，失败格及触底时保存完整列表截图。
 
-### 错误上报
+### 错误上报与路线遥测
 
-Sentry 配置取自 `interface.json` 的 `telemetry.sentry`。失败诊断收集本轮 `debug/` 日志片段和新现场图：日志总量最多 1 MiB，单文件最多 512 KiB，截图压缩包最多 5 MiB。运行追踪按 10% 采样，任务失败事件独立上报，设备通过哈希标识关联。
-
-调试与开发构建默认关闭上报。原生崩溃的源码行号取决于符号上传配置；导航记录通过客户端导出日志分享。
+Sentry 配置取自 `interface.json` 的 `telemetry.sentry`。「设置 → 通用 → 帮助改进软件」提供「错误与运行诊断」「路线与坐标调优」「祝福闪光统计」三个独立开关，正式版默认开启，调试与开发构建强制关闭。失败诊断收集本轮 `debug/` 日志片段和新现场图：日志总量最多 1 MiB，单文件最多 512 KiB，截图压缩包最多 5 MiB。路线遥测在每次跑图结束时记录 `debug/route_telemetry/*.jsonl`，无论任务成败均按航点上报到达偏移、横纵向偏差、脱困次数与采集交互结果，供 `scripts/tune_routes.py` 分析易卡方向并微调坐标。
 
 ## 修改共用逻辑时
 

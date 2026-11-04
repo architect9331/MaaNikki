@@ -27,7 +27,7 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 use super::task_diagnostics::{
-    self, DiagnosticLogs, ImageBundle, ImageBundleError, TaskEvidenceStart,
+    self, DiagnosticLogs, ImageBundle, ImageBundleError, RouteTelemetryStart, TaskEvidenceStart,
 };
 use super::types::ControllerInfo;
 use super::utils::get_logs_dir;
@@ -37,6 +37,10 @@ use super::AppConfigState;
 static TELEMETRY_GUARD: Mutex<Option<sentry::ClientInitGuard>> = Mutex::new(None);
 /// 最近一次初始化配置，供运行时重新开启使用。
 static TELEMETRY_CONFIG: Mutex<Option<TelemetryInitConfig>> = Mutex::new(None);
+/// 错误与运行诊断开关（崩溃、任务 Span、失败事件与截图）。
+static DIAGNOSTICS_ENABLED: AtomicBool = AtomicBool::new(true);
+/// 路线与坐标调优遥测开关（航点偏移、脱困与采集交互统计）。
+static ROUTE_TELEMETRY_ENABLED: AtomicBool = AtomicBool::new(true);
 /// 匿名机器 ID（计算一次后复用，同时作为 Sentry user.id）。
 static MACHINE_ID: OnceLock<String> = OnceLock::new();
 /// 进行中的运行遥测状态，按 instance_id 索引。
@@ -57,8 +61,11 @@ static PENDING_FAILURE_WORKERS: OnceLock<PendingFailureWorkers> = OnceLock::new(
 pub struct TelemetryInitConfig {
     /// Sentry DSN；空字符串表示不启用。
     pub dsn: String,
-    /// 是否启用（用户 opt-in 且非调试版）。
+    /// 是否启用错误与运行诊断（用户 opt-in 且非调试版）。
     pub enabled: bool,
+    /// 是否启用路线与坐标调优遥测（默认开启）。
+    #[serde(default = "default_true")]
+    pub route_telemetry_enabled: bool,
     /// release：MXU@<mxuVersion>+<appName>@<appVersion>。
     pub release: String,
     /// 环境标签，如 stable/beta/production。
@@ -143,6 +150,7 @@ struct TaskRuntime {
     started_at: Instant,
     started_wall_time: SystemTime,
     evidence_start: Option<TaskEvidenceStart>,
+    route_telemetry_start: Option<RouteTelemetryStart>,
     evidence_isolated: bool,
     evidence_epoch: u64,
 }
@@ -281,6 +289,19 @@ const fn default_sample_rate() -> f32 {
     1.0
 }
 
+const fn default_true() -> bool {
+    true
+}
+
+fn any_telemetry_enabled(config: &TelemetryInitConfig) -> bool {
+    config.enabled || config.route_telemetry_enabled
+}
+
+fn sync_feature_flags(config: &TelemetryInitConfig) {
+    DIAGNOSTICS_ENABLED.store(config.enabled, Ordering::SeqCst);
+    ROUTE_TELEMETRY_ENABLED.store(config.route_telemetry_enabled, Ordering::SeqCst);
+}
+
 fn pending_failure_workers() -> &'static PendingFailureWorkers {
     PENDING_FAILURE_WORKERS.get_or_init(PendingFailureWorkers::new)
 }
@@ -290,13 +311,23 @@ pub fn is_active() -> bool {
     TELEMETRY_GUARD.lock().map(|g| g.is_some()).unwrap_or(false)
 }
 
+/// 错误与运行诊断是否处于激活状态。
+pub fn is_diagnostics_active() -> bool {
+    is_active() && DIAGNOSTICS_ENABLED.load(Ordering::Relaxed)
+}
+
+/// 路线与坐标调优遥测是否处于激活状态。
+pub fn is_route_telemetry_active() -> bool {
+    is_active() && ROUTE_TELEMETRY_ENABLED.load(Ordering::Relaxed)
+}
+
 /// 每个进程首次加载失败时报告，绑定错误与失败后的独立诊断分开保留。
 pub fn capture_library_load_failure(
     path: Option<&std::path::Path>,
     error: &str,
     diagnostics: &serde_json::Value,
 ) -> bool {
-    if !is_active() {
+    if !is_diagnostics_active() {
         return false;
     }
     let mut event = sentry::protocol::Event {
@@ -346,9 +377,10 @@ pub fn init_at_startup(app_config: &AppConfigState) {
         return;
     }
 
+    sync_feature_flags(&config);
     cache_config(config.clone());
 
-    if !config.enabled || config.dsn.trim().is_empty() {
+    if !any_telemetry_enabled(&config) || config.dsn.trim().is_empty() {
         log::info!("[telemetry] 用户未开启，跳过初始化");
         return;
     }
@@ -382,11 +414,15 @@ fn build_startup_config(app_config: &AppConfigState) -> Option<TelemetryInitConf
         .to_string();
 
     // 用户开关缺省视为开启，与前端 `helpImproveSoftware ?? true` 一致
-    let (enabled, channel) = {
+    let (enabled, route_telemetry_enabled, channel) = {
         let config = app_config.config.lock().ok()?;
         let settings = config.get("settings");
         let enabled = settings
             .and_then(|s| s.get("helpImproveSoftware"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
+        let route_telemetry_enabled = settings
+            .and_then(|s| s.get("helpImproveRouteTelemetry"))
             .and_then(|v| v.as_bool())
             .unwrap_or(true);
         let channel = settings
@@ -395,7 +431,7 @@ fn build_startup_config(app_config: &AppConfigState) -> Option<TelemetryInitConf
             .and_then(|v| v.as_str())
             .unwrap_or("production")
             .to_string();
-        (enabled, channel)
+        (enabled, route_telemetry_enabled, channel)
     };
 
     let mxu_version = env!("CARGO_PKG_VERSION").to_string();
@@ -403,6 +439,7 @@ fn build_startup_config(app_config: &AppConfigState) -> Option<TelemetryInitConf
     Some(TelemetryInitConfig {
         dsn,
         enabled,
+        route_telemetry_enabled,
         release: format!("MXU@{mxu_version}+{app_name}@{app_version}"),
         environment: sentry_cfg
             .get("environment")
@@ -478,10 +515,11 @@ fn cache_config(config: TelemetryInitConfig) {
 pub fn telemetry_init(config: TelemetryInitConfig) {
     // 二次 sentry::init 会建出第二个 client 与第二条 Session，因此这里只做校正
     if is_active() {
-        let enabled = config.enabled;
+        sync_feature_flags(&config);
+        let should_keep = any_telemetry_enabled(&config);
         cache_config(config);
-        if !enabled {
-            telemetry_set_enabled(false);
+        if !should_keep {
+            shutdown_telemetry_client();
         }
         return;
     }
@@ -493,9 +531,10 @@ pub fn telemetry_init(config: TelemetryInitConfig) {
         return;
     }
 
+    sync_feature_flags(&config);
     cache_config(config.clone());
 
-    if !config.enabled || config.dsn.trim().is_empty() {
+    if !any_telemetry_enabled(&config) || config.dsn.trim().is_empty() {
         log::info!("[telemetry] 未启用或缺少 DSN，跳过初始化");
         return;
     }
@@ -503,24 +542,41 @@ pub fn telemetry_init(config: TelemetryInitConfig) {
     do_init(&config);
 }
 
-/// 运行时切换遥测开关。
+/// 运行时切换遥测子开关（错误与运行诊断 / 路线与坐标调优）。
 #[tauri::command]
-pub fn telemetry_set_enabled(enabled: bool) {
-    if enabled {
+pub fn telemetry_set_enabled(enabled: bool, route_telemetry_enabled: Option<bool>) {
+    let mut cached = TELEMETRY_CONFIG.lock().ok().and_then(|c| c.clone());
+    let route_enabled = route_telemetry_enabled.unwrap_or_else(|| {
+        cached
+            .as_ref()
+            .map(|c| c.route_telemetry_enabled)
+            .unwrap_or(ROUTE_TELEMETRY_ENABLED.load(Ordering::Relaxed))
+    });
+    DIAGNOSTICS_ENABLED.store(enabled, Ordering::SeqCst);
+    ROUTE_TELEMETRY_ENABLED.store(route_enabled, Ordering::SeqCst);
+    if let Some(cfg) = cached.as_mut() {
+        cfg.enabled = enabled;
+        cfg.route_telemetry_enabled = route_enabled;
+        cache_config(cfg.clone());
+    }
+
+    if enabled || route_enabled {
         // 已激活则无需重复初始化
         if is_active() {
             return;
         }
-        let cfg = TELEMETRY_CONFIG.lock().ok().and_then(|c| c.clone());
-        if let Some(mut cfg) = cfg {
-            cfg.enabled = true;
-            if !cfg.dsn.trim().is_empty() {
+        if let Some(cfg) = cached {
+            if !cfg.dsn.trim().is_empty() && !is_blocked_by_build(&cfg.app_version) {
                 do_init(&cfg);
             }
         }
         return;
     }
 
+    shutdown_telemetry_client();
+}
+
+fn shutdown_telemetry_client() {
     FAILURE_WORKERS_CLOSING.store(true, Ordering::SeqCst);
     let _send_guard = FAILURE_EVENT_SEND_LOCK
         .lock()
@@ -880,6 +936,7 @@ pub fn on_task_start(instance_id: &str, maa_task_id: i64) {
                     started_at: Instant::now(),
                     started_wall_time: SystemTime::now(),
                     evidence_start: None,
+                    route_telemetry_start: None,
                     evidence_isolated,
                     evidence_epoch,
                 },
@@ -898,13 +955,18 @@ pub fn on_task_start(instance_id: &str, maa_task_id: i64) {
     // telemetry-state lock. The log prelude covers lines written
     // between the callback and this snapshot.
     if capture_evidence {
-        let evidence_start = task_diagnostics::capture_task_start(&get_logs_dir());
+        let logs_dir = get_logs_dir();
+        let evidence_start =
+            is_diagnostics_active().then(|| task_diagnostics::capture_task_start(&logs_dir));
+        let route_telemetry_start = is_route_telemetry_active()
+            .then(|| task_diagnostics::capture_route_telemetry_start(&logs_dir));
         if let Ok(mut runs) = RUNS.lock() {
             if let Some(runtime) = runs
                 .get_mut(instance_id)
                 .and_then(|run| run.task_runtime.get_mut(&maa_task_id))
             {
-                runtime.evidence_start = Some(evidence_start);
+                runtime.evidence_start = evidence_start;
+                runtime.route_telemetry_start = route_telemetry_start;
             }
         }
     }
@@ -1071,7 +1133,7 @@ fn record_node_event(
         );
     }
 
-    if !run.trace_nodes {
+    if !run.trace_nodes || !is_diagnostics_active() {
         return;
     }
 
@@ -1130,7 +1192,7 @@ pub fn on_task_finished(instance_id: &str, maa_task_id: i64, success: bool) {
         return;
     }
 
-    let report = if let Ok(mut runs) = RUNS.lock() {
+    let (report, route_telemetry_ctx) = if let Ok(mut runs) = RUNS.lock() {
         if let Some(run) = runs.get_mut(instance_id) {
             if !success {
                 run.has_failed = true;
@@ -1150,41 +1212,59 @@ pub fn on_task_finished(instance_id: &str, maa_task_id: i64, success: bool) {
                 .get(&maa_task_id)
                 .map(|span| span.get_trace_context());
             if let Some(span) = run.children.remove(&maa_task_id) {
-                span.set_data("result", if success { "success" } else { "failure" }.into());
-                span.set_status(if success {
-                    sentry::protocol::SpanStatus::Ok
-                } else {
-                    sentry::protocol::SpanStatus::InternalError
-                });
-                span.finish();
+                if is_diagnostics_active() {
+                    span.set_data("result", if success { "success" } else { "failure" }.into());
+                    span.set_status(if success {
+                        sentry::protocol::SpanStatus::Ok
+                    } else {
+                        sentry::protocol::SpanStatus::InternalError
+                    });
+                    span.finish();
+                }
             }
 
-            if success {
+            let (
+                duration_ms,
+                started_wall_time,
+                evidence_start,
+                route_telemetry_start,
+                evidence_isolated,
+                evidence_epoch,
+            ) = runtime
+                .map(|runtime| {
+                    (
+                        Some(runtime.started_at.elapsed().as_millis() as u64),
+                        Some(runtime.started_wall_time),
+                        runtime.evidence_start,
+                        runtime.route_telemetry_start,
+                        runtime.evidence_isolated,
+                        runtime.evidence_epoch,
+                    )
+                })
+                .unwrap_or((
+                    None,
+                    None,
+                    None,
+                    None,
+                    true,
+                    EVIDENCE_EPOCH.load(Ordering::SeqCst),
+                ));
+
+            let route_ctx = route_telemetry_start
+                .filter(|_| evidence_isolated && is_route_telemetry_active())
+                .map(|start| {
+                    (
+                        start,
+                        run.run_id.clone(),
+                        task.name.clone(),
+                        trace_context.as_ref().map(|c| c.trace_id),
+                        trace_context.as_ref().map(|c| c.span_id),
+                    )
+                });
+
+            let failure_report = if success || !is_diagnostics_active() {
                 None
             } else {
-                let (
-                    duration_ms,
-                    started_wall_time,
-                    evidence_start,
-                    evidence_isolated,
-                    evidence_epoch,
-                ) = runtime
-                    .map(|runtime| {
-                        (
-                            Some(runtime.started_at.elapsed().as_millis() as u64),
-                            Some(runtime.started_wall_time),
-                            runtime.evidence_start,
-                            runtime.evidence_isolated,
-                            runtime.evidence_epoch,
-                        )
-                    })
-                    .unwrap_or((
-                        None,
-                        None,
-                        None,
-                        true,
-                        EVIDENCE_EPOCH.load(Ordering::SeqCst),
-                    ));
                 Some(TaskFailureReport {
                     run_id: run.run_id.clone(),
                     maa_task_id,
@@ -1201,13 +1281,28 @@ pub fn on_task_finished(instance_id: &str, maa_task_id: i64, success: bool) {
                     evidence_isolated,
                     evidence_epoch,
                 })
-            }
+            };
+            (failure_report, route_ctx)
         } else {
-            None
+            (None, None)
         }
     } else {
-        None
+        (None, None)
     };
+
+    if let Some((route_start, run_id, task_name, trace_id, span_id)) = route_telemetry_ctx {
+        let records = task_diagnostics::read_route_telemetry_records(&route_start);
+        if !records.is_empty() {
+            capture_route_telemetry_logs(
+                &records,
+                &run_id,
+                maa_task_id,
+                &task_name,
+                trace_id,
+                span_id,
+            );
+        }
+    }
 
     if let Some(report) = report {
         submit_failure_report(report);
@@ -1732,6 +1827,249 @@ fn capture_diagnostic_logs(
     }
 }
 
+fn capture_route_telemetry_logs(
+    records: &[serde_json::Value],
+    run_id: &str,
+    maa_task_id: i64,
+    task_name: &str,
+    trace_id: Option<sentry::protocol::TraceId>,
+    span_id: Option<sentry::protocol::SpanId>,
+) {
+    if !is_route_telemetry_active() {
+        return;
+    }
+    let timestamp = SystemTime::now();
+    let task_label = if task_name.is_empty() {
+        "unknown-task"
+    } else {
+        task_name
+    };
+
+    for record in records {
+        let route_id = record
+            .get("route")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown-route");
+        let route_hash = record
+            .get("route_hash")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+        let route_map = record
+            .get("map")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+        let executor = record
+            .get("executor")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+        let mode = record
+            .get("mode")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+        let outcome = record
+            .get("outcome")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown");
+        let route_success = record
+            .get("success")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        let mut base_attrs = sentry::protocol::Map::new();
+        for (key, value) in [
+            ("diagnostic.reason", "route_tuning"),
+            ("diagnostic.kind", "route_telemetry"),
+            ("run.id", run_id),
+            ("task.name", task_label),
+            ("route.id", route_id),
+            ("route.hash", route_hash),
+            ("route.map", route_map),
+            ("route.executor", executor),
+            ("route.mode", mode),
+            ("route.outcome", outcome),
+        ] {
+            if !value.is_empty() {
+                base_attrs.insert(key.to_string(), bounded_log_attribute(value).into());
+            }
+        }
+        base_attrs.insert("task.id".to_string(), maa_task_id.into());
+        base_attrs.insert("route.success".to_string(), route_success.into());
+        for (field, attr_key) in [
+            ("point_count", "route.point_count"),
+            ("visited_count", "route.visited_count"),
+            ("unstuck_total", "route.unstuck_total"),
+            ("missed_actions", "route.missed_actions"),
+            ("recovered_waypoints", "route.recovered_waypoints"),
+            ("failed_index", "route.failed_index"),
+        ] {
+            if let Some(val) = record.get(field).and_then(|v| v.as_i64()) {
+                base_attrs.insert(attr_key.to_string(), val.into());
+            }
+        }
+        if let Some(tid) = trace_id {
+            base_attrs.insert("trace.id".to_string(), tid.to_string().into());
+        }
+        if let Some(sid) = span_id {
+            let sid_str = sid.to_string();
+            base_attrs.insert("span.id".to_string(), sid_str.clone().into());
+            base_attrs.insert("parent_span_id".to_string(), sid_str.into());
+        }
+
+        if let Ok(serialized) = serde_json::to_string(record) {
+            let mut sizing_attrs = base_attrs.clone();
+            sizing_attrs.insert("log.chunk_index".to_string(), u64::MAX.into());
+            sizing_attrs.insert("log.chunk_count".to_string(), u64::MAX.into());
+            let chunks = serialized_log_chunks(&serialized, &sizing_attrs, trace_id, timestamp);
+            let chunk_count = chunks.len() as u64;
+            let level = if outcome == "clean" {
+                sentry::protocol::LogLevel::Info
+            } else {
+                sentry::protocol::LogLevel::Warn
+            };
+            for (idx, chunk) in chunks.into_iter().enumerate() {
+                let mut attrs = base_attrs.clone();
+                attrs.insert("log.chunk_index".to_string(), (idx as u64).into());
+                attrs.insert("log.chunk_count".to_string(), chunk_count.into());
+                sentry::Hub::current().capture_log(sentry::protocol::Log {
+                    level,
+                    body: chunk.to_string(),
+                    trace_id,
+                    timestamp,
+                    severity_number: None,
+                    attributes: attrs,
+                });
+            }
+        }
+
+        let Some(waypoints) = record.get("waypoints").and_then(|v| v.as_array()) else {
+            continue;
+        };
+        for wp in waypoints {
+            let wp_outcome = wp
+                .get("outcome")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown");
+            let wp_action = wp
+                .get("action")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default();
+            let wp_direction = wp
+                .get("direction")
+                .and_then(|v| v.as_str())
+                .unwrap_or("UNKNOWN");
+            let mut wp_attrs = sentry::protocol::Map::new();
+            for (key, value) in [
+                ("diagnostic.reason", "route_tuning"),
+                ("diagnostic.kind", "waypoint_telemetry"),
+                ("run.id", run_id),
+                ("task.name", task_label),
+                ("route.id", route_id),
+                ("route.hash", route_hash),
+                ("route.map", route_map),
+                ("route.executor", executor),
+                ("waypoint.action", wp_action),
+                ("waypoint.outcome", wp_outcome),
+                ("waypoint.direction", wp_direction),
+            ] {
+                if !value.is_empty() {
+                    wp_attrs.insert(key.to_string(), bounded_log_attribute(value).into());
+                }
+            }
+            wp_attrs.insert("task.id".to_string(), maa_task_id.into());
+            for (field, attr_key) in [
+                ("index", "waypoint.index"),
+                ("overshoot_retries", "waypoint.overshoot_retries"),
+                ("unstuck_count", "waypoint.unstuck_count"),
+                ("heading_rechecks", "waypoint.heading_rechecks"),
+                ("map_recoveries", "waypoint.map_recoveries"),
+                ("forward_steps", "waypoint.forward_steps"),
+                ("action_gain", "waypoint.action_gain"),
+            ] {
+                if let Some(val) = wp.get(field).and_then(|v| v.as_i64()) {
+                    wp_attrs.insert(attr_key.to_string(), val.into());
+                }
+            }
+            for (field, attr_key) in [
+                ("reached", "waypoint.reached"),
+                ("crossed", "waypoint.crossed"),
+                ("jump", "waypoint.jump"),
+                ("action_ok", "waypoint.action_ok"),
+            ] {
+                if let Some(val) = wp.get(field).and_then(|v| v.as_bool()) {
+                    wp_attrs.insert(attr_key.to_string(), val.into());
+                }
+            }
+            for (field, attr_key) in [
+                ("radius", "waypoint.radius"),
+                ("dx", "waypoint.dx"),
+                ("dy", "waypoint.dy"),
+                ("dist", "waypoint.dist"),
+                ("cross_track", "waypoint.cross_track"),
+                ("along_track", "waypoint.along_track"),
+                ("max_cross_track", "waypoint.max_cross_track"),
+                ("segment_t", "waypoint.segment_t"),
+                ("stop_drift", "waypoint.stop_drift"),
+                ("drift_dx", "waypoint.drift_dx"),
+                ("drift_dy", "waypoint.drift_dy"),
+            ] {
+                if let Some(val) = wp.get(field).and_then(|v| v.as_f64()) {
+                    if val.is_finite() {
+                        wp_attrs.insert(attr_key.to_string(), val.into());
+                    }
+                }
+            }
+            if let Some(target) = wp.get("target").and_then(|v| v.as_array()) {
+                if let (Some(tx), Some(ty)) = (
+                    target.first().and_then(|v| v.as_f64()),
+                    target.get(1).and_then(|v| v.as_f64()),
+                ) {
+                    if tx.is_finite() && ty.is_finite() {
+                        wp_attrs.insert("waypoint.target_x".to_string(), tx.into());
+                        wp_attrs.insert("waypoint.target_y".to_string(), ty.into());
+                    }
+                }
+            }
+            if let Some(actual) = wp.get("actual").and_then(|v| v.as_array()) {
+                if let (Some(ax), Some(ay)) = (
+                    actual.first().and_then(|v| v.as_f64()),
+                    actual.get(1).and_then(|v| v.as_f64()),
+                ) {
+                    if ax.is_finite() && ay.is_finite() {
+                        wp_attrs.insert("waypoint.actual_x".to_string(), ax.into());
+                        wp_attrs.insert("waypoint.actual_y".to_string(), ay.into());
+                    }
+                }
+            }
+            if let Some(tid) = trace_id {
+                wp_attrs.insert("trace.id".to_string(), tid.to_string().into());
+            }
+            if let Some(sid) = span_id {
+                let sid_str = sid.to_string();
+                wp_attrs.insert("span.id".to_string(), sid_str.clone().into());
+                wp_attrs.insert("parent_span_id".to_string(), sid_str.into());
+            }
+
+            if let Ok(body) = serde_json::to_string(wp) {
+                if diagnostic_log_fits(&body, &wp_attrs, trace_id, timestamp) {
+                    let level = if wp_outcome == "clean" {
+                        sentry::protocol::LogLevel::Info
+                    } else {
+                        sentry::protocol::LogLevel::Warn
+                    };
+                    sentry::Hub::current().capture_log(sentry::protocol::Log {
+                        level,
+                        body,
+                        trace_id,
+                        timestamp,
+                        severity_number: None,
+                        attributes: wp_attrs,
+                    });
+                }
+            }
+        }
+    }
+}
+
 /// `Scope::apply_to_log` in `sentry-core` unconditionally overwrites `log.trace_id`
 /// with the active scope's span or propagation context. Diagnostic logs are sent from
 /// the detached failure worker after the task span has closed, so restore the run's
@@ -1970,6 +2308,10 @@ fn finish_run(instance_id: &str, forced_status: Option<SpanStatus>) {
     let Some(mut run) = runs.remove(instance_id) else {
         return;
     };
+
+    if !is_diagnostics_active() {
+        return;
+    }
 
     // 收尾未完成的 child（如取消时仍在运行的任务）
     let pending: Vec<i64> = run.children.keys().copied().collect();

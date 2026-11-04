@@ -117,6 +117,15 @@ export default {
     helpImproveSoftware: '協助改進軟體',
     helpImproveSoftwareHint:
       '向 Sentry 傳送崩潰、任務統計及失敗任務的相關日誌與錯誤截圖，協助排查問題。日誌和截圖可能包含遊戲帳號資訊，可隨時關閉。',
+    helpImproveDiagnostics: '錯誤與執行診斷',
+    helpImproveDiagnosticsHint:
+      '向 Sentry 傳送崩潰、任務統計及失敗任務的相關日誌與錯誤截圖（自動遮罩左下角 UID），協助排查問題。',
+    helpImproveRouteTelemetry: '路線與座標調優',
+    helpImproveRouteTelemetryHint:
+      '回報跑圖路線各航點的到達偏移、脫困與採集互動統計，用於分析易卡點位並持續微調座標。',
+    helpImproveBlessingStats: '祝福閃光統計',
+    helpImproveBlessingStatsHint:
+      '匿名回報滿級顏色次數和刷噗靈產出，協助確認彩色機率與最佳化推薦策略，不含 UID 或裝置資訊。',
     helpImproveSoftwareDisabledHint: '目前為除錯 / 開發版本，已停用匿名資料回報',
     maxLogsPerInstance: '每個實例保留的日誌上限',
     maxLogsPerInstanceHint: '超出上限會自動丟棄最舊的日誌（建議 500～2000）',

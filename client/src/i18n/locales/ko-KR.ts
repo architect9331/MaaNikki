@@ -118,6 +118,15 @@ export default {
     helpImproveSoftware: '소프트웨어 개선에 참여',
     helpImproveSoftwareHint:
       '충돌, 작업 통계, 실패한 작업의 관련 로그와 오류 스크린샷을 Sentry로 전송하여 문제를 조사합니다. 로그와 스크린샷에는 게임 계정 정보가 포함될 수 있습니다. 언제든지 끌 수 있습니다.',
+    helpImproveDiagnostics: '오류 및 실행 진단',
+    helpImproveDiagnosticsHint:
+      '충돌, 작업 통계 및 실패한 작업의 로그와 스크린샷(UID 마스킹 적용)을 Sentry로 전송하여 문제 해결에 도움을 줍니다.',
+    helpImproveRouteTelemetry: '경로 및 좌표 최적화',
+    helpImproveRouteTelemetryHint:
+      '경로 웨이포인트 도달 오차, 끼임 탈출 및 채집 상호작용 통계를 전송하여 막히기 쉬운 지점을 분석하고 좌표를 미세 조정합니다.',
+    helpImproveBlessingStats: '축복의 반짝임 통계',
+    helpImproveBlessingStatsHint:
+      '최대 레벨 색상 횟수와 블링 획득량을 익명으로 전송하여 무지개 확률 확인 및 추천 전략 최적화에 활용합니다(UID나 기기 정보 미포함).',
     helpImproveSoftwareDisabledHint: '디버그 / 개발 버전에서는 익명 데이터 전송이 비활성화됩니다',
     maxLogsPerInstance: '인스턴스당 로그 최대 개수',
     maxLogsPerInstanceHint: '한도를 초과하면 가장 오래된 로그가 자동으로 삭제됩니다(권장 500~2000)',

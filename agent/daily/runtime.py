@@ -621,9 +621,11 @@ class Runtime:
         from navigation.controller import ForegroundInput
         from navigation.session import create_navigator
         from navigation.models import NavigationError, NavigationStuckError, maps, parse_route
+        from navigation.telemetry import record_route_telemetry, summarize_route_telemetry
         from navigation.vision import Locator
         from navigation.teleport import Teleporter
-        inputs = actions = locator = teleporter = None
+        inputs = actions = locator = teleporter = model = navigator = None
+        nav_succeeded = False
         stage = "map_loading"
         events = [{"type": "initializing", "stage": stage}]
         previous_inputs = self.navigation_inputs
@@ -714,20 +716,38 @@ class Runtime:
                     stage = "teleport"
                     teleporter.transport(route["teleport"])
             result = actions.complete() if actions else True
+            nav_succeeded = bool(result)
             if actions and not result:
                 self.log(f"路线动作结束，获得 {actions.count}，目标 {actions.quota}。")
             self.navigation_count = actions.count if actions else 0
             events.append({"type": "execution_result", "success": result,
                            **({"count": self.navigation_count}
                               if actions is None or actions.executor != "crystal" else {})})
+            if actions and not result and not self.stopped and model is not None:
+                active_route = getattr(navigator, "active_route", None) or model
+                summary = summarize_route_telemetry(
+                    active_route, events, executor=actions.executor,
+                    mode=mode or "daily", success=False, stage=stage)
+                self.diagnostic("navigation_action_incomplete",
+                                f"路线动作未达标（获得 {actions.count}，目标 {actions.quota}）",
+                                details={"route": name, "stage": stage, "route_telemetry": summary,
+                                         "events": events[-8:]})
             return result
         except (NavigationError, KeyError, OSError, TypeError, ValueError, RuntimeError, cv2.error) as error:
-            if not self.stopped:
-                self.diagnostic("navigation_"+stage, str(error),
-                                details={"route": name, "stage": stage, "events": events[-8:]})
             if actions:
                 self.navigation_count = actions.count
             events.append({"type": "stopped", "stage": stage, "error_type": type(error).__name__, "reason": str(error)})
+            if not self.stopped:
+                active_route = getattr(navigator, "active_route", None) or model
+                summary = (summarize_route_telemetry(
+                    active_route, events,
+                    executor=actions.executor if actions else ("meteor" if meteor_travel else "navigation"),
+                    mode=mode or "daily", success=False, stage=stage)
+                    if active_route is not None else None)
+                self.diagnostic("navigation_"+stage, str(error),
+                                details={"route": name, "stage": stage,
+                                         **({"route_telemetry": summary} if summary else {}),
+                                         "events": events[-8:]})
             # Save the actual recognition frame, before map closure or task
             # cleanup can replace it. Crops exclude account information.
             selection_view = (stage == 'teleport' and teleporter is not None
@@ -771,10 +791,18 @@ class Runtime:
                     self.log("无法确认导航按键已全部释放，本轮停止，请检查游戏状态。")
                     self.navigation_halted = True
             from datetime import datetime
+            active_route = getattr(navigator, "active_route", None) or model
+            telemetry = None
+            if active_route is not None:
+                telemetry = record_route_telemetry(
+                    ROOT, active_route, events,
+                    executor=actions.executor if actions else ("meteor" if meteor_travel else "navigation"),
+                    mode=mode or "daily", success=nav_succeeded, stage=stage)
             folder = ROOT / "logs" / "navigation"
             try:
                 folder.mkdir(parents=True, exist_ok=True)
-                write_json(folder / (datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".json"), {"route": name, "events": events})
+                write_json(folder / (datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".json"),
+                           {"route": name, **({"telemetry": telemetry} if telemetry else {}), "events": events})
             except (OSError, ValueError):
                 self.log("导航日志保存失败，请检查日志目录权限和磁盘空间。")
 

@@ -10,6 +10,7 @@ from .blessing import SLOTS
 from .inventory_workflow import FiveStarInventory
 from .policy import capabilities
 from .scanner import IncompleteObservation, RescanSlot
+from .statistics import is_enabled as stats_enabled, upload
 from .upgrade import UpgradeUI
 from .recovery import RecheckSlot
 
@@ -123,6 +124,7 @@ class DailyUpgrade(FiveStarInventory):
 
     def run(self):
         self.split_original = None
+        self.share_statistics = stats_enabled(ROOT)
         self.report.update(mode="daily_upgrade", workflow="daily_upgrade", phase="find_candidate")
         try:
             try:
@@ -172,6 +174,8 @@ class DailyUpgrade(FiveStarInventory):
             raise
         finally:
             self.inventory_read = False
+            if self.share_statistics:
+                upload(self.store.account, ROOT, catalog_version=self.catalog["version"])
             self.checkpoint()
 
     def begin_change(self, kind, facts, evidence, frame, **details):

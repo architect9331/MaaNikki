@@ -657,7 +657,7 @@ export const maaService = {
     controllerInfo?: ControllerTelemetryInfo,
     logRedactSecrets?: string[],
   ): Promise<number[]> {
-    const { devMode, projectInterface } = useAppStore.getState();
+    const { devMode, projectInterface, helpImproveRouteTelemetry, helpImproveBlessingStats } = useAppStore.getState();
     const hasDeveloperTask = tasks.some((task) => task.entry === ROUTE_TEST_ENTRY ||
       isDeveloperTask(projectInterface?.task.find((def) => def.entry === task.entry)));
     if (hasDeveloperTask && !devMode) {
@@ -673,7 +673,7 @@ export const maaService = {
       // 是否还在执行以 MaaTaskerRunning 的实时结果为准。
       if (Object.values(state.instances).some(item => item.isRunning))
         throw new Error('请先停止正在运行的任务组，再启动日常或辅助功能。');
-    piEnvs = { ...piEnvs, PI_MAANIKKI_DEV_MODE: devMode ? '1' : '0', PI_MAANIKKI_RUN_PLAN: JSON.stringify({
+    piEnvs = { ...piEnvs, PI_MAANIKKI_DEV_MODE: devMode ? '1' : '0', PI_MAANIKKI_ROUTE_TELEMETRY: helpImproveRouteTelemetry ? '1' : '0', PI_MAANIKKI_BLESSING_STATS: helpImproveBlessingStats ? '1' : '0', PI_MAANIKKI_RUN_PLAN: JSON.stringify({
       schema_version: 1, id: crypto.randomUUID(), instance: instanceId,
       entries: tasks.map(task => task.entry),
     }) };

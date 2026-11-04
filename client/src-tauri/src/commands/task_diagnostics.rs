@@ -44,6 +44,13 @@ pub struct TaskEvidenceStart {
     warnings: Vec<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct RouteTelemetryStart {
+    dir: PathBuf,
+    started_at: SystemTime,
+    lengths: BTreeMap<PathBuf, u64>,
+}
+
 #[derive(Debug)]
 pub struct TaskEvidenceSelection {
     logs: Vec<LogSlice>,
@@ -179,6 +186,102 @@ pub fn capture_task_start(root: &Path) -> TaskEvidenceStart {
         existing_images,
         warnings,
     }
+}
+
+/// Snapshot `.jsonl` file offsets inside `debug/route_telemetry/` at task start.
+pub fn capture_route_telemetry_start(root: &Path) -> RouteTelemetryStart {
+    let started_at = SystemTime::now();
+    let dir = root.join("route_telemetry");
+    let mut lengths = BTreeMap::new();
+    if let Ok(entries) = std::fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path
+                .extension()
+                .and_then(|ext| ext.to_str())
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("jsonl"))
+            {
+                if let Ok(meta) = entry.metadata() {
+                    if meta.is_file() {
+                        lengths.insert(path, meta.len());
+                    }
+                }
+            }
+        }
+    }
+    RouteTelemetryStart {
+        dir,
+        started_at,
+        lengths,
+    }
+}
+
+/// Read newly appended route telemetry JSONL records since the task started.
+pub fn read_route_telemetry_records(start: &RouteTelemetryStart) -> Vec<serde_json::Value> {
+    const MAX_ROUTE_TELEMETRY_BYTES: u64 = 512 * 1024;
+    const MAX_ROUTE_RECORDS: usize = 32;
+
+    let Ok(entries) = std::fs::read_dir(&start.dir) else {
+        return Vec::new();
+    };
+    let mut records = Vec::new();
+    let mut total_bytes = 0u64;
+    let mut paths: Vec<PathBuf> = entries.flatten().map(|e| e.path()).collect();
+    paths.sort();
+
+    for path in paths {
+        if records.len() >= MAX_ROUTE_RECORDS || total_bytes >= MAX_ROUTE_TELEMETRY_BYTES {
+            break;
+        }
+        if !path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("jsonl"))
+        {
+            continue;
+        }
+        let Ok(mut file) = File::open(&path) else {
+            continue;
+        };
+        let Ok(metadata) = file.metadata() else {
+            continue;
+        };
+        if !metadata.is_file() {
+            continue;
+        }
+        let end = metadata.len();
+        let offset = match start.lengths.get(&path).copied() {
+            Some(prev) if end > prev => prev,
+            Some(_) => continue,
+            None if modified_since(&metadata, start.started_at) && end > 0 => 0,
+            None => continue,
+        };
+        let read_len = (end - offset).min(MAX_ROUTE_TELEMETRY_BYTES - total_bytes);
+        if read_len == 0 || file.seek(SeekFrom::Start(offset)).is_err() {
+            continue;
+        }
+        let mut buf = Vec::with_capacity(read_len as usize);
+        if (&mut file).take(read_len).read_to_end(&mut buf).is_err() {
+            continue;
+        }
+        total_bytes = total_bytes.saturating_add(buf.len() as u64);
+        let text = String::from_utf8_lossy(&buf);
+        for line in text.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                if value.is_object() {
+                    records.push(value);
+                    if records.len() >= MAX_ROUTE_RECORDS {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    records
 }
 
 /// Freeze log boundaries and already-visible screenshots as soon as the outer
@@ -613,7 +716,9 @@ fn discover_files(root: &Path) -> (Vec<PathBuf>, Vec<String>) {
             let path = entry.path();
             if file_type.is_dir() {
                 let relative = path.strip_prefix(root).unwrap_or(&path);
-                if first_component_is(relative, "vision") {
+                if first_component_is(relative, "vision")
+                    || first_component_is(relative, "route_telemetry")
+                {
                     continue;
                 }
                 if depth >= MAX_DISCOVERY_DEPTH {
