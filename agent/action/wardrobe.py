@@ -35,12 +35,12 @@ class WardrobeReadAction(CustomAction):
                     rt.log(f"衣柜账号进度保存失败：{error}。", detail=True)
             raise
         except Exception as error:
+            if not rt.stopped:
+                rt.diagnostic("wardrobe_read", str(error))
             if scanner is not None:
                 try:
                     scanner.save(str(error))
                 except (OSError, ValueError) as save_error:
                     rt.log(f"衣柜账号进度保存失败：{save_error}。", detail=True)
-            if not rt.stopped:
-                rt.diagnostic("wardrobe_read", str(error))
             rt.log(f"衣柜读取暂停：{error}。")
             return False

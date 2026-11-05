@@ -470,6 +470,9 @@ class Runtime:
         rows = list(getattr(result, "filtered_results", []) or [result.best_result])
         candidates = set()
         for row in rows:
+            score = getattr(row, "score", None)
+            if isinstance(score, (int, float)) and score < .8:
+                continue
             text = re.sub(r"\s+", "", str(getattr(row, "text", "")))
             # The cropped line contains digits only. Reject a mixed result
             # instead of extracting a shorter numeric suffix after a letter.
@@ -487,6 +490,10 @@ class Runtime:
         # Stop still publishes the interrupted journal for its already-bound
         # owner, without requesting new game captures after cancellation.
         if self.stopped and generation == self._focus_generation:
+            return
+        from game_view import ALLOWED_FRAME_SIZES
+        from tall_window import TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT
+        if (TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT) in ALLOWED_FRAME_SIZES and generation == self._focus_generation:
             return
         image = self.frame()
         observed = self.read_account_uid(image)

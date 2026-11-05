@@ -430,7 +430,9 @@ class WardrobeScanner(InventoryScanner):
         ]
         target = [round(x + w / 2), round(y + h / 2)]
         return (
-            self.rt.action("Scroll", target=target, dx=0, dy=amount)
+            self.rt.action("TouchMove", target=target)
+            and self.rt.pause(.15)
+            and self.rt.action("Scroll", target=target, dx=0, dy=amount)
             and self.rt.action("TouchMove", target=[640, 36])
             and self.rt.pause(.22)
         )
@@ -886,7 +888,9 @@ class WardrobeScanner(InventoryScanner):
 
     def scroll_tabs(self, dy, target=None):
         point = target or [TAB_X, 340]
-        if (not self.rt.action("Scroll", target=point, dx=0, dy=dy)
+        if (not self.rt.action("TouchMove", target=point)
+                or not self.rt.pause(.15)
+                or not self.rt.action("Scroll", target=point, dx=0, dy=dy)
                 or not self.rt.action("TouchMove", target=[640, 36])
                 or not self.rt.pause(.25)):
             raise TaskStopped()
@@ -922,27 +926,46 @@ class WardrobeScanner(InventoryScanner):
         actual, _ = self.category(frame)
         if actual == expected_part:
             return frame
+        order_map = {
+            "299": 0, "210": 1, "290": 2, "220": 3,
+            "230": 4, "242": 5, "250": 6, "260": 7,
+        }
+        if actual in ACCESSORY_PARTS or actual in MAKEUP_ALL:
+            self.scroll_tabs(12000, target=[TAB_X, 110])
+            frame, _ = self.click_tab_y(118)
+            actual, _ = self.category(frame)
+            if actual == expected_part:
+                return frame
         if major_index <= 6:
-            self.scroll_tabs(12000)
+            self.scroll_tabs(12000, target=[TAB_X, 110])
             y = 118 + 74 * major_index
         else:
-            self.scroll_tabs(-12000)
+            self.scroll_tabs(-12000, target=[TAB_X, 110])
             y = 610 - 74 * (9 - major_index)
-        for _ in range(4):
+        for _ in range(6):
             frame, clicked_y = self.click_tab_y(y)
             actual, _ = self.category(frame)
             if actual == expected_part:
                 return frame
-            order_map = {
-                "299": 0, "210": 1, "290": 2, "220": 3,
-                "230": 4, "242": 5, "250": 6, "260": 7,
-            }
             if actual in order_map:
-                y = clicked_y + (major_index - order_map[actual]) * 74
-            elif actual in ACCESSORY_PARTS:
-                y = clicked_y - 74
-            elif actual in MAKEUP_ALL:
-                y = clicked_y - 148
+                next_y = clicked_y + (major_index - order_map[actual]) * 74
+                if next_y < 92:
+                    self.scroll_tabs(12000, target=[TAB_X, 110])
+                    y = 118 + 74 * major_index
+                elif next_y > 628:
+                    self.scroll_tabs(-12000, target=[TAB_X, 110])
+                    y = 610 - 74 * (9 - major_index)
+                else:
+                    y = next_y
+            elif actual in ACCESSORY_PARTS or actual in MAKEUP_ALL:
+                self.scroll_tabs(12000, target=[TAB_X, 110])
+                self.click_tab_y(118)
+                if major_index <= 6:
+                    self.scroll_tabs(12000, target=[TAB_X, 110])
+                    y = 118 + 74 * major_index
+                else:
+                    self.scroll_tabs(-12000, target=[TAB_X, 110])
+                    y = 610 - 74 * (9 - major_index)
             else:
                 break
         raise RuntimeError(f"未能切换到图鉴分类：{self.model.parts[expected_part]['name']}")
@@ -952,7 +975,10 @@ class WardrobeScanner(InventoryScanner):
         actual, _ = self.category(frame)
         if actual in valid_subparts:
             return frame, actual, 260
-        self.scroll_tabs(-12000)
+        if (actual in ACCESSORY_PARTS or actual in MAKEUP_ALL) and group_Order_index == 8:
+            self.scroll_tabs(12000, target=[TAB_X, 110])
+            self.click_tab_y(118)
+        self.scroll_tabs(-12000, target=[TAB_X, 110])
         y = 610 - 74 * (9 - group_Order_index)
         for offset in (0, -24, 24, -48):
             frame, clicked_y = self.click_tab_y(y + offset)
@@ -973,6 +999,7 @@ class WardrobeScanner(InventoryScanner):
 
         for target_part in target_parts:
             target_idx = sub_order.index(target_part)
+            stalled = 0
             for _ in range(12):
                 frame = self.rt.capture()
                 actual, _ = self.category(frame)
@@ -986,18 +1013,23 @@ class WardrobeScanner(InventoryScanner):
                     if actual in sub_order:
                         anchor_idx = sub_order.index(actual)
                         anchor_y = (y_min + 28) if anchor_idx == 0 else ((y_min + y_max) / 2)
+                        stalled = 0
                         if actual == target_part:
                             break
+                prev_idx = anchor_idx
                 pred_y = anchor_y + (target_idx - anchor_idx) * pitch
-                if y_min <= pred_y <= y_max:
+                if y_min <= pred_y <= y_max or (stalled % 2 == 1 and 92 <= pred_y <= 645):
                     frame, clicked_y = self.click_tab_y(pred_y)
                     actual, _ = self.category(frame)
                     if actual in sub_order:
                         anchor_idx = sub_order.index(actual)
                         anchor_y = clicked_y
+                        stalled = stalled + 1 if anchor_idx == prev_idx else 0
                         if actual == target_part:
                             break
                 elif pred_y > y_max:
+                    if stalled >= 1:
+                        self.scroll_tabs(-12000, target=[TAB_X, 110])
                     self.scroll_tabs(-360, target=[TAB_X, (y_min + y_max) // 2])
                     probe_y = min(y_max - 12, max(y_min + 28, round(pred_y - pitch)))
                     frame, clicked_y = self.click_tab_y(probe_y)
@@ -1005,16 +1037,18 @@ class WardrobeScanner(InventoryScanner):
                     if actual in sub_order:
                         anchor_idx = sub_order.index(actual)
                         anchor_y = clicked_y
+                        stalled = stalled + 1 if anchor_idx <= prev_idx else 0
                         if actual == target_part:
                             break
                 else:
                     self.scroll_tabs(360, target=[TAB_X, (y_min + y_max) // 2])
-                    probe_y = max(y_min + 16, min(y_max - 28, round(pred_y + pitch)))
+                    probe_y = max(y_min + 28, min(y_max - 12, round(pred_y + pitch)))
                     frame, clicked_y = self.click_tab_y(probe_y)
                     actual, _ = self.category(frame)
                     if actual in sub_order:
                         anchor_idx = sub_order.index(actual)
                         anchor_y = clicked_y
+                        stalled = stalled + 1 if anchor_idx >= prev_idx else 0
                         if actual == target_part:
                             break
             else:
@@ -1048,18 +1082,19 @@ class WardrobeScanner(InventoryScanner):
                 self.scroll_tabs(-12000, target=[TAB_X, 110])
                 self.traverse_subtabs(MAKEUP_ALL, MAKEUP_PARTS, (240, 600), group_index=9)
                 visited.update(MAKEUP_PARTS)
+
+                self.apply_inferred_handhelds()
+                missing = [
+                    info["name"]
+                    for p, info in self.model.parts.items()
+                    if p in self.ui_parts
+                    and (p not in visited or not self.snapshot["parts"].get(p, {}).get("complete"))
+                ]
+                self.snapshot["complete"] = not missing
+                self.save("待核对部位：" + "、".join(missing) if missing else None)
             finally:
                 self._tall_mode = False
                 self.layout["grid"] = [265, 130, 950, 505]
                 self.grid = self.layout["grid"]
 
-        self.apply_inferred_handhelds()
-        missing = [
-            info["name"]
-            for p, info in self.model.parts.items()
-            if p in self.ui_parts
-            and (p not in visited or not self.snapshot["parts"].get(p, {}).get("complete"))
-        ]
-        self.snapshot["complete"] = not missing
-        self.save("待核对部位：" + "、".join(missing) if missing else None)
         return self.snapshot["complete"]
