@@ -3,6 +3,7 @@ import { Check, Loader2, Search } from 'lucide-react';
 import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { loadScoring, saveScoring } from '@/services/scoring/api';
+import { tagLabel } from '@/services/scoring/diagnostics';
 import { buildOwnedProfile } from '@/services/scoring/profile';
 import { ATTRIBUTES, emptySettings, type Match, type OutfitResult, type ScoringPayload, type ScoringSettings } from '@/services/scoring/types';
 import { buildPieceEntries, buildSuitEntries, type SuitBrowserEntry } from '@/services/scoring/wardrobeBrowserData';
@@ -34,6 +35,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [qualityFilter, setQualityFilter] = useState('all');
   const [majorFilter, setMajorFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('all');
   const [partFilter, setPartFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -50,7 +52,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
     return () => { cancelled = true; };
   }, [activeUid, refreshToken]);
 
-  useEffect(() => { setLimit(PAGE_SIZE); }, [view, statusFilter, qualityFilter, majorFilter, partFilter, search]);
+  useEffect(() => { setLimit(PAGE_SIZE); }, [view, statusFilter, qualityFilter, majorFilter, tagFilter, partFilter, search]);
 
   const profile = useMemo(() => payload ? buildOwnedProfile(payload, settings) : null, [payload, settings]);
   const suits = useMemo(() => payload && profile ? buildSuitEntries(payload, profile) : [], [payload, profile]);
@@ -69,9 +71,11 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   if (!payload || !profile) return <p className={clsx(card, 'text-sm text-text-secondary')}>请先在「衣柜读取」中读取当前账号的衣柜。</p>;
 
   const q = search.trim();
+  const tagEntries = Object.entries(payload.catalog.tag_names ?? {}).sort((a, b) => Number(a[0]) - Number(b[0]));
   const filteredSuits = suits.filter((s) =>
     (qualityFilter === 'all' || String(s.quality) === qualityFilter)
     && (majorFilter === 'all' || String(s.major) === majorFilter)
+    && (tagFilter === 'all' || s.tags.includes(Number(tagFilter)))
     && (statusFilter === 'all'
       || statusFilter === 'complete' && s.complete
       || statusFilter === 'incomplete' && !s.complete && s.obtainedCount > 0
@@ -83,6 +87,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
     const lv = p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? null) : null;
     return (qualityFilter === 'all' || String(p.quality) === qualityFilter)
       && (majorFilter === 'all' || String(p.major) === majorFilter)
+      && (tagFilter === 'all' || p.tags.includes(Number(tagFilter)))
       && (partFilter === 'all' || String(p.partCode) === partFilter)
       && (statusFilter === 'all'
         || statusFilter === 'owned' && p.owned
@@ -120,6 +125,12 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
         <select aria-label="主属性筛选" className={field} value={majorFilter} onChange={(e) => setMajorFilter(e.target.value)}>
           <option value="all">全部主属性</option>{ATTRIBUTES.map((name, idx) => <option key={name} value={idx}>{name}</option>)}
         </select>
+        {!!tagEntries.length && (
+          <select aria-label="标签筛选" className={field} value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+            <option value="all">全部标签</option>
+            {tagEntries.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </select>
+        )}
         {view === 'pieces' && (
           <select aria-label="部位筛选" className={field} value={partFilter} onChange={(e) => setPartFilter(e.target.value)}>
             <option value="all">全部部位</option>
@@ -138,9 +149,14 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
           <details key={suit.id} className={clsx(card, 'group !p-3.5')}>
             <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{suit.quality}★ · {ATTRIBUTES[suit.major] ?? '综合'}</span>
                   <strong className="truncate text-sm">{suit.name}</strong>
+                  {suit.tags.map((t) => (
+                    <span key={t} className="rounded bg-bg-primary px-1.5 py-0.2 text-[10px] text-text-muted">
+                      {tagLabel(payload.catalog, t)}
+                    </span>
+                  ))}
                 </div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
                   <div className={clsx('h-full rounded-full', suit.complete ? 'bg-success' : 'bg-accent')} style={{ width: `${suit.obtainedCount / suit.totalCount * 100}%` }} />
@@ -184,6 +200,11 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
             <span className="w-24 shrink-0 truncate text-text-muted">{piece.partName}</span>
             <div className="min-w-0 flex-1">
               <span className={clsx('font-medium', piece.owned ? 'text-text-primary' : 'text-text-muted')}>{piece.name}</span>
+              {piece.tags.map((t) => (
+                <span key={t} className="ml-1.5 rounded bg-bg-primary px-1.5 py-0.2 text-[10px] text-text-muted">
+                  {tagLabel(payload.catalog, t)}
+                </span>
+              ))}
               {piece.suitName && <span className="ml-2 text-text-muted">[{piece.suitName}]</span>}
               {piece.source && <span className="ml-2 text-text-muted">· {piece.source}</span>}
               {piece.colorCount > 1 && <span className="ml-2 text-text-muted">· 已有 {piece.colorCount} 色</span>}

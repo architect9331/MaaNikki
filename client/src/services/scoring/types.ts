@@ -57,6 +57,8 @@ export interface Match {
   bonuses: FieldBonus[];
   choices: FieldBonus[];
   stars: { description: string; groups: StarCondition[][] }[];
+  max_score?: number;
+  thresholds?: Record<string, number>;
 }
 export interface ScoringCatalog {
   schema_version: number;
@@ -69,6 +71,7 @@ export interface ScoringCatalog {
   curves: { ratios: number[]; costs: Record<string, number>[] }[];
   material_names: Record<string, string>;
   part_names: Record<string, string>;
+  tag_names?: Record<string, string>;
 }
 export interface HeartSettings {
   flat: number[];

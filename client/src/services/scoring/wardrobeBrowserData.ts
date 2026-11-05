@@ -1,7 +1,7 @@
 import itemSourcesData from './itemSources.json';
 import type { OwnedProfile, ScoreItem, ScoringPayload } from './types';
 
-const ITEM_SOURCES: Record<string, string> = itemSourcesData.sources;
+export const ITEM_SOURCES: Record<string, string> = itemSourcesData.sources;
 export const SKETCH_CHESTS = itemSourcesData.chests;
 
 export interface SuitPartEntry {
@@ -10,6 +10,7 @@ export interface SuitPartEntry {
   partName: string;
   quality: number;
   major: number;
+  tags: number[];
   owned: boolean;
   groupId?: string;
   inferred?: string | null;
@@ -21,6 +22,7 @@ export interface SuitBrowserEntry {
   name: string;
   quality: number;
   major: number;
+  tags: number[];
   obtainedCount: number;
   totalCount: number;
   missingCount: number;
@@ -35,6 +37,7 @@ export interface PieceBrowserEntry {
   partName: string;
   quality: number;
   major: number;
+  tags: number[];
   props: number[];
   owned: boolean;
   groupId?: string;
@@ -64,6 +67,7 @@ export function buildSuitEntries(payload: ScoringPayload, profile: OwnedProfile)
         partName: (catalog.part_names[record.type] ?? String(record.type)).split(' / ').pop() ?? '',
         quality: record.quality,
         major: record.major,
+        tags: record.visibleTags ?? record.tags ?? [],
         owned: !!owned,
         groupId: owned?.group,
         inferred: owned?.refreshReward,
@@ -73,8 +77,10 @@ export function buildSuitEntries(payload: ScoringPayload, profile: OwnedProfile)
     const obtainedCount = parts.filter((p) => p.owned).length;
     const quality = parts.reduce((max, p) => Math.max(max, p.quality), 3);
     const majorCounts = [0, 0, 0, 0, 0];
+    const tagSet = new Set<number>();
     for (const p of parts) {
       if (p.major >= 0 && p.major < 5) majorCounts[p.major]++;
+      for (const t of p.tags) tagSet.add(t);
     }
     const major = majorCounts.indexOf(Math.max(...majorCounts));
     return {
@@ -82,6 +88,7 @@ export function buildSuitEntries(payload: ScoringPayload, profile: OwnedProfile)
       name: suit.name,
       quality,
       major,
+      tags: [...tagSet],
       obtainedCount,
       totalCount: parts.length,
       missingCount: parts.length - obtainedCount,
@@ -117,6 +124,7 @@ export function buildPieceEntries(payload: ScoringPayload, profile: OwnedProfile
         partName: catalog.part_names[item.type] ?? String(item.type),
         quality: item.quality,
         major: item.major,
+        tags: item.visibleTags ?? item.tags ?? [],
         props: item.props,
         owned: !!owned,
         groupId,

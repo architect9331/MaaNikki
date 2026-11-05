@@ -108,10 +108,17 @@ export function scorePiece(catalog: ScoringCatalog, owned: OwnedItem, level: num
     multiplier, cost: upgradeCost(catalog, item, owned.level, level) };
 }
 
+export function resolveRankThreshold(match: Match, thresholds: Record<string, number>, rank: number | string) {
+  return thresholds[rank] ?? match.thresholds?.[rank];
+}
+
 export function evaluateStars(catalog: ScoringCatalog, match: Match, pieces: PieceScore[], total: number, thresholds: Record<string, number>) {
   const levels = new Map(pieces.map((piece) => [piece.item.id, piece.level]));
   const condition = (rule: StarCondition): boolean | null => {
-    if (rule.kind === 'rank') return thresholds[rule.rank] === undefined ? null : total >= thresholds[rule.rank];
+    if (rule.kind === 'rank') {
+      const target = resolveRankThreshold(match, thresholds, rule.rank);
+      return target === undefined ? null : total >= target;
+    }
     if (rule.kind === 'pieces') return pieces.filter((piece) => fits(catalog.items[piece.item.id], rule)).length >= rule.count;
     return catalog.suits.some((suit) => (!rule.suit || rule.suit === suit.id) && hasSuit(catalog, suit.items, levels, rule));
   };
