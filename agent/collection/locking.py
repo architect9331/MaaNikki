@@ -470,11 +470,21 @@ class BlessingLocker(InventoryScanner):
 
     def selected(self, frame, box):
         x, y, w, h = box
-        crop = frame[y + 5:y + h - 8, x:x + w]
+        # Selected cards expand their opaque gold border 3-4 px outside the
+        # nominal unselected cell box, while the translucent interior blends
+        # with the 3D scene behind the panel. Measure the strongest 4 px
+        # border strip across each edge's inner/outer boundary.
+        x0, x1 = max(0, x - 4), min(frame.shape[1], x + w + 3)
+        crop = frame[y + 5:y + h - 8, x0:x1]
         hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
         gold = ((hsv[:, :, 0] >= 12) & (hsv[:, :, 0] <= 42)
                 & (hsv[:, :, 1] >= 25) & (hsv[:, :, 2] >= 120))
-        return bool(gold[:, :4].mean() > .45 and gold[:, -4:].mean() > .45)
+        width = gold.shape[1]
+        if width < 8:
+            return False
+        left = max(float(gold[:, i:i + 4].mean()) for i in range(min(5, width - 3)))
+        right = max(float(gold[:, width - 4 - i:width - i].mean()) for i in range(min(4, width - 3)))
+        return bool(left > .45 and right > .45)
 
     def select(self, box, facts, generation, *, verify_details=True, already_selected=False):
         self.check_generation(generation)
