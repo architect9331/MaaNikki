@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCacheDir, joinPath } from '@/utils/paths';
 import { loggers } from '@/utils/logger';
+import { formatSize, formatSpeed } from './UpdateInfoCard';
 
 const log = loggers.app;
 
@@ -53,20 +54,6 @@ export function VCRedistModal({ show, onClose }: VCRedistModalProps) {
 
   const currentSessionId = useRef<number | null>(null);
   const hasStarted = useRef(false);
-
-  // 格式化文件大小
-  const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  };
-
-  // 格式化速度
-  const formatSpeed = (bytesPerSecond: number): string => {
-    if (bytesPerSecond < 1024) return `${bytesPerSecond.toFixed(0)} B/s`;
-    if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
-    return `${(bytesPerSecond / 1024 / 1024).toFixed(1)} MB/s`;
-  };
 
   // 自动执行流程
   const runAutoProcess = useCallback(async () => {

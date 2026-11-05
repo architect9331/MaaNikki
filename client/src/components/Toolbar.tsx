@@ -61,7 +61,11 @@ import {
 } from '@/components/connection/callbackCache';
 import { scheduleService } from '@/services/scheduleService';
 import { stopInstanceTasks } from '@/services/taskStopService';
-import { taskStartService, type TaskStartOptions } from '@/services/taskStartService';
+import {
+  taskStartService,
+  type TaskStartOptions,
+  type AutoConnectPhase,
+} from '@/services/taskStartService';
 import { reserveDailyWindow } from '@/services/explorationService';
 import { wardrobeBusy } from '@/services/wardrobeService';
 import { fishingBusy } from '@/services/fishingService';
@@ -150,9 +154,6 @@ interface ToolbarProps {
   onToggleAddPanel: () => void;
   className?: string;
 }
-
-// 自动连接阶段
-type AutoConnectPhase = 'idle' | 'searching' | 'connecting' | 'loading_resource';
 
 export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarProps) {
   const { t } = useTranslation();
@@ -1597,26 +1598,28 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
       }
 
       const combo = detail?.combo || '';
+      const currentAddLog = addLogRef.current;
+      const currentT = tRef.current;
       if (isHotkey) {
-        addLog(currentInstance.id, {
+        currentAddLog(currentInstance.id, {
           type: 'info',
-          message: t('logs.messages.hotkeyDetected', {
+          message: currentT('logs.messages.hotkeyDetected', {
             combo,
-            action: t('logs.messages.hotkeyActionStart'),
+            action: currentT('logs.messages.hotkeyActionStart'),
           }),
         });
       }
 
-      // 直接使用从 store 获取的最新 instance，避免闭包捕获旧的 selectedTasks
+      // 直接使用从 store 获取的最新 instance 和最新启动闭包，避免闭包捕获旧状态
       hotkeyStartingRef.current = true;
       try {
-        const success = await startTasksForInstance(currentInstance, {
+        const success = await scheduleTriggerRef.current(currentInstance, {
           onPhaseChange: setAutoConnectPhase,
         });
         if (isHotkey && success) {
-          addLog(currentInstance.id, {
+          currentAddLog(currentInstance.id, {
             type: 'success',
-            message: t('logs.messages.hotkeyStartSuccess'),
+            message: currentT('logs.messages.hotkeyStartSuccess'),
           });
         }
         notifySettled(success);
@@ -1640,11 +1643,13 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         | { source?: string; combo?: string }
         | undefined;
       const combo = detail?.combo || '';
-      addLog(runningInstance.id, {
+      const currentAddLog = addLogRef.current;
+      const currentT = tRef.current;
+      currentAddLog(runningInstance.id, {
         type: 'info',
-        message: t('logs.messages.hotkeyDetected', {
+        message: currentT('logs.messages.hotkeyDetected', {
           combo,
-          action: t('logs.messages.hotkeyActionStop'),
+          action: currentT('logs.messages.hotkeyActionStop'),
         }),
       });
 
@@ -1652,21 +1657,21 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         const stopped = await performStop(runningInstance.id);
 
         if (stopped) {
-          addLog(runningInstance.id, {
+          currentAddLog(runningInstance.id, {
             type: 'success',
-            message: t('logs.messages.hotkeyStopSuccess'),
+            message: currentT('logs.messages.hotkeyStopSuccess'),
           });
         } else {
-          addLog(runningInstance.id, {
+          currentAddLog(runningInstance.id, {
             type: 'warning',
-            message: t('logs.messages.hotkeyStopPending'),
+            message: currentT('logs.messages.hotkeyStopPending'),
           });
         }
       } catch (err) {
         log.error('停止任务失败:', err);
-        addLog(runningInstance.id, {
+        currentAddLog(runningInstance.id, {
           type: 'error',
-          message: t('logs.messages.hotkeyStopFailed'),
+          message: currentT('logs.messages.hotkeyStopFailed'),
         });
       }
     };

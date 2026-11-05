@@ -8,8 +8,6 @@ import type {
   Win32Window,
   GamescopeInstance,
   ControllerConfig,
-  ConnectionStatus,
-  TaskStatus,
   AgentConfig,
   TaskConfig,
   ControllerTelemetryInfo,
@@ -140,17 +138,6 @@ export const maaService = {
     await syncMaaVersionToStore(version);
     log.info('MaaFramework 版本:', version);
     return version;
-  },
-
-  /**
-   * 设置资源目录
-   * @param resourceDir 资源目录路径
-   */
-  async setResourceDir(resourceDir: string): Promise<void> {
-    if (!isTauri()) return;
-    log.info('设置资源目录:', resourceDir);
-    await invoke('maa_set_resource_dir', { resourceDir });
-    log.info('设置资源目录成功');
   },
 
   /**
@@ -348,21 +335,6 @@ export const maaService = {
   },
 
   /**
-   * 获取连接状态
-   * @param instanceId 实例 ID
-   */
-  async getConnectionStatus(instanceId: string): Promise<ConnectionStatus> {
-    if (!isTauri()) {
-      const state = await this.getInstanceState(instanceId);
-      return state?.connectionStatus ?? 'Disconnected';
-    }
-    log.debug('获取连接状态, 实例:', instanceId);
-    const status = await invoke<ConnectionStatus>('maa_get_connection_status', { instanceId });
-    log.debug('连接状态:', instanceId, '->', status);
-    return status;
-  },
-
-  /**
    * 加载资源（异步，通过回调通知完成状态）
    * @param instanceId 实例 ID
    * @param paths 资源路径列表
@@ -385,34 +357,6 @@ export const maaService = {
     const resIds = await invoke<number[]>('maa_load_resource', { instanceId, paths });
     log.info('资源加载请求已发送, resIds:', resIds);
     return resIds;
-  },
-
-  /**
-   * 检查资源是否已加载
-   * @param instanceId 实例 ID
-   */
-  async isResourceLoaded(instanceId: string): Promise<boolean> {
-    if (!isTauri()) {
-      const state = await this.getInstanceState(instanceId);
-      return state?.resourceLoaded ?? false;
-    }
-    log.debug('检查资源是否已加载, 实例:', instanceId);
-    const loaded = await invoke<boolean>('maa_is_resource_loaded', { instanceId });
-    log.debug('资源加载状态:', instanceId, '->', loaded);
-    return loaded;
-  },
-
-  /**
-   * 获取已加载资源的 hash（用于完整性校验）
-   * @param instanceId 实例 ID
-   * @returns hash 字符串；资源未加载或后端获取失败时返回 null
-   */
-  async getResourceHash(instanceId: string): Promise<string | null> {
-    if (!isTauri()) return null;
-    log.debug('获取资源 hash, 实例:', instanceId);
-    const hash = await invoke<string | null>('maa_get_resource_hash', { instanceId });
-    log.debug('资源 hash:', instanceId, '->', hash);
-    return hash;
   },
 
   /**
@@ -469,19 +413,6 @@ export const maaService = {
     });
     log.info('任务已提交, taskId:', taskId);
     return taskId;
-  },
-
-  /**
-   * 获取任务状态
-   * @param instanceId 实例 ID
-   * @param taskId 任务 ID
-   */
-  async getTaskStatus(instanceId: string, taskId: number): Promise<TaskStatus> {
-    if (!isTauri()) return 'Pending';
-    log.debug('获取任务状态, 实例:', instanceId, ', taskId:', taskId);
-    const status = await invoke<TaskStatus>('maa_get_task_status', { instanceId, taskId });
-    log.debug('任务状态:', taskId, '->', status);
-    return status;
   },
 
   /**
@@ -551,38 +482,6 @@ export const maaService = {
   },
 
   /**
-   * 发起点击请求
-   * @param instanceId 实例 ID
-   * @param x X 坐标（设备原始分辨率）
-   * @param y Y 坐标（设备原始分辨率）
-   * @returns 点击请求 ID
-   */
-  async postClick(instanceId: string, x: number, y: number): Promise<number> {
-    if (!isTauri()) {
-      const result = await apiPost<{ clickId: number }>(`/maa/instances/${instanceId}/click`, {
-        x,
-        y,
-      });
-      return result.clickId;
-    }
-    return await invoke<number>('maa_post_click', { instanceId, x, y });
-  },
-
-  /**
-   * 发起截图请求（异步，通过回调通知完成状态）
-   * @param instanceId 实例 ID
-   * @returns 截图请求 ID（Tauri）或 0（浏览器，实际截图异步进行并写入缓存）
-   */
-  async postScreencap(instanceId: string): Promise<number> {
-    if (!isTauri()) {
-      // 浏览器模式：截图由后端 ScreenshotService 统一驱动，此处无需额外触发
-      return 0;
-    }
-    const screencapId = await invoke<number>('maa_post_screencap', { instanceId });
-    return screencapId;
-  },
-
-  /**
    * 获取缓存的截图
    * @param instanceId 实例 ID
    * @returns base64 编码的图像 data URL
@@ -593,47 +492,6 @@ export const maaService = {
       return fetchScreenshotDataUrl(instanceId).catch(() => '');
     }
     return await invoke<string>('maa_get_cached_image', { instanceId });
-  },
-
-  /**
-   * 订阅实例的实时截图（后端统一驱动截图循环）
-   *
-   * 多个客户端可同时订阅同一实例，后端按最快订阅者的帧率驱动唯一截图循环。
-   * 订阅后应调用 getCachedImage 获取截图，无需手动调用 postScreencap。
-   *
-   * @param instanceId 实例 ID
-   * @param subscriberId 订阅者唯一标识（同一 ID 重复调用会更新 intervalMs）
-   * @param intervalMs 期望的截图间隔（毫秒）
-   */
-  async screenshotSubscribe(
-    instanceId: string,
-    subscriberId: string,
-    intervalMs: number,
-  ): Promise<void> {
-    if (!isTauri()) {
-      await apiPost(`/maa/instances/${instanceId}/screenshot/subscribe`, {
-        subscriber_id: subscriberId,
-        interval_ms: intervalMs,
-      });
-      return;
-    }
-    await invoke('maa_screenshot_subscribe', { instanceId, subscriberId, intervalMs });
-  },
-
-  /**
-   * 取消实例的实时截图订阅
-   *
-   * @param instanceId 实例 ID
-   * @param subscriberId 订阅时使用的唯一标识
-   */
-  async screenshotUnsubscribe(instanceId: string, subscriberId: string): Promise<void> {
-    if (!isTauri()) {
-      await apiPost(`/maa/instances/${instanceId}/screenshot/unsubscribe`, {
-        subscriber_id: subscriberId,
-      });
-      return;
-    }
-    await invoke('maa_screenshot_unsubscribe', { instanceId, subscriberId });
   },
 
   /**
@@ -794,56 +652,6 @@ export const maaService = {
   },
 
   /**
-   * 等待单个操作完成的一次性回调（适用于截图等需要立即获取结果的场景）
-   * 注意：此函数会阻塞调用者直到回调到达，适合在非 UI 线程或循环中使用
-   * @param idField 要匹配的 ID 字段名（ctrl_id）
-   * @param id 要等待的 ID 值
-   * @param timeout 超时时间（毫秒），默认 10000
-   * @returns 是否成功
-   */
-  async waitForScreencap(id: number, timeout: number = 10000): Promise<boolean> {
-    if (!isTauri()) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      return true;
-    }
-
-    let resolved = false;
-    const unlisten = await this.onCallback((message, details) => {
-      if (details.ctrl_id !== id) return;
-
-      if (message === 'Controller.Action.Succeeded') {
-        if (!resolved) {
-          resolved = true;
-          settle(true);
-        }
-      } else if (message === 'Controller.Action.Failed') {
-        if (!resolved) {
-          resolved = true;
-          settle(false);
-        }
-      }
-    });
-
-    let settle!: (value: boolean) => void;
-    const promise = new Promise<boolean>((resolve) => {
-      settle = resolve;
-    });
-
-    const timeoutId = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        log.warn(`截图等待超时, ctrl_id=${id}`);
-        settle(false);
-      }
-    }, timeout);
-
-    return promise.finally(() => {
-      clearTimeout(timeoutId);
-      unlisten();
-    });
-  },
-
-  /**
    * 获取单个实例的运行时状态（通过 Maa API 实时查询）
    * @param instanceId 实例 ID
    */
@@ -980,42 +788,6 @@ export const maaService = {
     } catch (err) {
       log.error('获取所有状态失败:', err);
       return null;
-    }
-  },
-
-  /**
-   * 获取缓存的 ADB 设备列表
-   */
-  async getCachedAdbDevices(): Promise<AdbDevice[]> {
-    if (!isTauri()) return [];
-    try {
-      return await invoke<AdbDevice[]>('maa_get_cached_adb_devices');
-    } catch {
-      return [];
-    }
-  },
-
-  /**
-   * 获取缓存的 Win32 窗口列表
-   */
-  async getCachedWin32Windows(): Promise<Win32Window[]> {
-    if (!isTauri()) return [];
-    try {
-      return await invoke<Win32Window[]>('maa_get_cached_win32_windows');
-    } catch {
-      return [];
-    }
-  },
-
-  /**
-   * 获取缓存的 WlRoots socket 列表
-   */
-  async getCachedWlrootsSockets(): Promise<string[]> {
-    if (!isTauri()) return [];
-    try {
-      return await invoke<string[]>('maa_get_cached_wlroots_sockets');
-    } catch {
-      return [];
     }
   },
 

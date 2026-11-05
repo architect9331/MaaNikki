@@ -13,7 +13,6 @@ import type {
   MirrorChyanSettings,
   ProxySettings,
   RecentlyClosedInstance,
-  ScreenshotFrameRate,
   HotkeySettings,
 } from '@/types/config';
 import type {
@@ -203,8 +202,6 @@ export interface AppState {
   presetInitialized: boolean;
   nikkiPresetVersion: number;
   setPresetInitialized: (value: boolean) => void;
-  /** @deprecated 使用 addMxuSpecialTask 代替 */
-  addSleepTaskToInstance: (instanceId: string, sleepTime?: number) => string;
   /** 添加 MXU 特殊任务到实例 */
   addMxuSpecialTask: (
     instanceId: string,
@@ -268,9 +265,7 @@ export interface AppState {
 
   // 新增任务名称列表
   newTaskNames: string[];
-  setNewTaskNames: (names: string[]) => void;
   removeNewTaskName: (name: string) => void;
-  clearNewTaskNames: () => void;
 
   // 国际化文本解析
   resolveI18nText: (text: string | undefined, lang: string) => string;
@@ -351,13 +346,8 @@ export interface AppState {
     options?: { skipRunningState?: boolean },
   ) => void;
 
-  // 截图流状态
-  instanceScreenshotStreaming: Record<string, boolean>;
-  setInstanceScreenshotStreaming: (instanceId: string, streaming: boolean) => void;
-
   // 右侧面板折叠状态
   sidePanelExpanded: boolean;
-  setSidePanelExpanded: (expanded: boolean) => void;
   toggleSidePanelExpanded: () => void;
 
   // 右侧面板宽度和折叠状态
@@ -372,9 +362,7 @@ export interface AppState {
 
   // 卡片展开状态
   connectionPanelExpanded: boolean;
-  screenshotPanelExpanded: boolean;
   setConnectionPanelExpanded: (expanded: boolean) => void;
-  setScreenshotPanelExpanded: (expanded: boolean) => void;
 
   // 窗口大小
   windowSize: WindowSize;
@@ -404,10 +392,6 @@ export interface AppState {
   // 任务选项预览显示设置
   showOptionPreview: boolean;
   setShowOptionPreview: (show: boolean) => void;
-
-  // 实时截图帧率设置
-  screenshotFrameRate: ScreenshotFrameRate;
-  setScreenshotFrameRate: (rate: ScreenshotFrameRate) => void;
 
   // Welcome 弹窗显示记录
   welcomeShownHash: string;
@@ -456,7 +440,6 @@ export interface AppState {
 
   // 被删除的自动执行实例名称（用于提示用户）
   autoStartRemovedInstanceName: string | undefined;
-  setAutoStartRemovedInstanceName: (name: string | undefined) => void;
 
   // 手动启动时是否也自动执行
   autoRunOnLaunch: boolean;
@@ -523,8 +506,6 @@ export interface AppState {
   maaTaskIdMapping: Record<string, Record<number, string>>;
   instancePendingTaskIds: Record<string, number[]>;
   instanceCurrentTaskIndex: Record<string, number>;
-  /** 通过 maaTaskId 反查 selectedTaskId（用于日志模块） */
-  findSelectedTaskIdByMaaTaskId: (instanceId: string, maaTaskId: number) => string | null;
   /** 通过 selectedTaskId 反查 maaTaskId（用于 pipeline override） */
   findMaaTaskIdBySelectedTaskId: (instanceId: string, selectedTaskId: string) => number | null;
   /** 清空指定实例的本地任务运行状态缓存 */
@@ -563,6 +544,4 @@ export interface AppState {
   getCtrlType: (ctrlId: number) => 'device' | 'window' | undefined;
   getResName: (resId: number) => string | undefined;
   getResBatchInfo: (resId: number) => { isFirst: boolean; isLast: boolean } | undefined;
-  getTaskName: (taskId: number) => string | undefined;
-  getTaskNameByEntry: (entry: string) => string | undefined;
 }

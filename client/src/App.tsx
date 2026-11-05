@@ -1294,9 +1294,7 @@ function App() {
           rightPanelCollapsed: localLayout.rightPanelCollapsed,
           addTaskPanelHeight: localLayout.addTaskPanelHeight,
           connectionPanelExpanded: localLayout.connectionPanelExpanded,
-          screenshotPanelExpanded: localLayout.screenshotPanelExpanded,
           showOptionPreview: localLayout.showOptionPreview,
-          screenshotFrameRate: localLayout.screenshotFrameRate,
           ...(localLayout.windowSize && { windowSize: localLayout.windowSize }),
           ...(localLayout.windowPosition && { windowPosition: localLayout.windowPosition }),
         });

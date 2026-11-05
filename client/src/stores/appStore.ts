@@ -24,7 +24,6 @@ import {
   DEFAULT_MAX_LOGS_PER_INSTANCE,
   defaultAddTaskPanelHeight,
   defaultMirrorChyanSettings,
-  defaultScreenshotFrameRate,
   defaultWindowSize,
   normalizeAddTaskPanelHeight,
 } from '@/types/config';
@@ -53,10 +52,10 @@ import {
   encryptPasswordOptionValues,
 } from '@/utils/passwordOptionValues';
 import { loggers } from '@/utils/logger';
-import { findSwitchCase } from '@/utils/optionHelpers';
 import { create } from 'zustand';
 import { normalizeExplorationSettings } from '@/types/exploration';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
 
 import { clearLogsOnBackend, logToStdout, pushLogToBackend } from '@/utils/logStdout';
 import {
@@ -75,6 +74,7 @@ import {
   generateId,
   getCurrentControllerAndResource,
   initializeAllOptionValues,
+  initializeNestedOptionsForChange,
   isTaskCompatible,
   sanitizeOptionValues,
 } from './helpers';
@@ -696,13 +696,6 @@ export const useAppStore = create<AppState>()(
       }));
     },
 
-    // 添加延迟任务到实例（保留向后兼容，内部调用 addMxuSpecialTask）
-    addSleepTaskToInstance: (instanceId: string, sleepTime: number = 5) => {
-      return get().addMxuSpecialTask(instanceId, '__MXU_SLEEP__', {
-        sleep_time: String(sleepTime),
-      });
-    },
-
     // 通用 MXU 特殊任务添加函数
     addMxuSpecialTask: (
       instanceId: string,
@@ -908,40 +901,7 @@ export const useAppStore = create<AppState>()(
               if (t.id !== taskId) return t;
 
               const newOptionValues = { ...t.optionValues, [optionKey]: value };
-
-              // 当选项值改变时，初始化新的嵌套选项
-              if (pi?.option) {
-                const optDef = pi.option[optionKey];
-                if (
-                  optDef &&
-                  (optDef.type === 'switch' || optDef.type === 'select' || !optDef.type) &&
-                  'cases' in optDef
-                ) {
-                  let selectedCase;
-
-                  if (optDef.type === 'switch') {
-                    const isChecked = value.type === 'switch' && value.value;
-                    selectedCase = findSwitchCase(optDef.cases, isChecked);
-                  } else {
-                    const caseName =
-                      value.type === 'select' ? value.caseName : optDef.cases?.[0]?.name;
-                    selectedCase = optDef.cases?.find((c) => c.name === caseName);
-                  }
-
-                  // 初始化嵌套选项（如果尚未初始化）
-                  if (selectedCase?.option && selectedCase.option.length > 0) {
-                    for (const nestedKey of selectedCase.option) {
-                      if (!newOptionValues[nestedKey]) {
-                        const nestedDef = pi.option[nestedKey];
-                        if (nestedDef) {
-                          const nestedValues = initializeAllOptionValues([nestedKey], pi.option);
-                          Object.assign(newOptionValues, nestedValues);
-                        }
-                      }
-                    }
-                  }
-                }
-              }
+              initializeNestedOptionsForChange(optionKey, value, pi?.option, newOptionValues);
 
               return { ...t, optionValues: newOptionValues };
             }),
@@ -957,36 +917,7 @@ export const useAppStore = create<AppState>()(
 
       set((state) => {
         const newValues = { ...state.globalOptionValues, [optionKey]: value };
-
-        // 当选项值改变时，初始化新的嵌套选项（与 setTaskOptionValue 逻辑一致）
-        if (pi?.option) {
-          const optDef = pi.option[optionKey];
-          if (
-            optDef &&
-            (optDef.type === 'switch' || optDef.type === 'select' || !optDef.type) &&
-            'cases' in optDef
-          ) {
-            let selectedCase;
-            if (optDef.type === 'switch') {
-              const isChecked = value.type === 'switch' && value.value;
-              selectedCase = findSwitchCase(optDef.cases, isChecked);
-            } else {
-              const caseName = value.type === 'select' ? value.caseName : optDef.cases?.[0]?.name;
-              selectedCase = optDef.cases?.find((c) => c.name === caseName);
-            }
-
-            if (selectedCase?.option && selectedCase.option.length > 0) {
-              for (const nestedKey of selectedCase.option) {
-                if (!newValues[nestedKey]) {
-                  const nestedDef = pi.option[nestedKey];
-                  if (nestedDef) {
-                    Object.assign(newValues, initializeAllOptionValues([nestedKey], pi.option));
-                  }
-                }
-              }
-            }
-          }
-        }
+        initializeNestedOptionsForChange(optionKey, value, pi?.option, newValues);
 
         return { globalOptionValues: newValues };
       });
@@ -1263,12 +1194,10 @@ export const useAppStore = create<AppState>()(
 
     // 新增任务名称列表（会持久化到配置文件）
     newTaskNames: [],
-    setNewTaskNames: (names) => set({ newTaskNames: names }),
     removeNewTaskName: (name) =>
       set((state) => ({
         newTaskNames: state.newTaskNames.filter((n) => n !== name),
       })),
-    clearNewTaskNames: () => set({ newTaskNames: [] }),
 
     // 国际化文本解析
     resolveI18nText: (text, lang) => {
@@ -1485,7 +1414,7 @@ export const useAppStore = create<AppState>()(
       // 根据已有实例名字计算下一个编号，避免重复
       let maxNumber = 0;
       instances.forEach((inst) => {
-        const match = inst.name.match(/^配置\s*(\d+)$/);
+        const match = inst.name.match(/^(?:配置|Config|設定|설정)\s*(\d+)$/i);
         if (match) {
           maxNumber = Math.max(maxNumber, parseInt(match[1], 10));
         }
@@ -1590,12 +1519,6 @@ export const useAppStore = create<AppState>()(
         ),
         connectionPanelExpanded:
           localLayout?.connectionPanelExpanded ?? config.settings.connectionPanelExpanded ?? true,
-        screenshotPanelExpanded:
-          localLayout?.screenshotPanelExpanded ?? config.settings.screenshotPanelExpanded ?? true,
-        screenshotFrameRate:
-          localLayout?.screenshotFrameRate ??
-          config.settings.screenshotFrameRate ??
-          defaultScreenshotFrameRate,
         welcomeShownHash: config.settings.welcomeShownHash ?? '',
         devMode: config.settings.devMode ?? false,
         tcpCompatMode: config.settings.tcpCompatMode ?? false,
@@ -1728,8 +1651,7 @@ export const useAppStore = create<AppState>()(
       set((state) => {
         const pi = state.projectInterface;
         const updatedInstances = state.instances.map((instance) => {
-          if (instance.id !== instanceId)
-            return { ...instance, controllerName: instance.controllerName };
+          if (instance.id !== instanceId) return instance;
 
           const previousControllerName =
             state.selectedController[instanceId] ||
@@ -1781,8 +1703,7 @@ export const useAppStore = create<AppState>()(
         const pi = state.projectInterface;
         // 自动取消不兼容任务的勾选
         const updatedInstances = state.instances.map((instance) => {
-          if (instance.id !== instanceId)
-            return { ...instance, resourceName: instance.resourceName };
+          if (instance.id !== instanceId) return instance;
 
           const updatedTasks = instance.selectedTasks.map((task) => {
             const taskDef = pi?.task.find((t) => t.name === task.taskName);
@@ -1931,15 +1852,20 @@ export const useAppStore = create<AppState>()(
         const instancePendingTaskIds: Record<string, number[]> = {};
         const instanceCurrentTaskIndex: Record<string, number> = {};
 
-        // 更新实例的 isRunning 状态
-        const updatedInstances = currentState.instances.map((instance) => {
+        // 更新实例的 isRunning 状态（仅当有实例的 isRunning 发生变化时才构造新数组）
+        let instancesChanged = false;
+        const mappedInstances = currentState.instances.map((instance) => {
           const backendState = states.instances[instance.id];
           if (backendState) {
             const isRunning = skipRunning ? instance.isRunning : backendState.isRunning;
-            return { ...instance, isRunning };
+            if (isRunning !== instance.isRunning) {
+              instancesChanged = true;
+              return { ...instance, isRunning };
+            }
           }
           return instance;
         });
+        const updatedInstances = instancesChanged ? mappedInstances : currentState.instances;
 
         for (const [instanceId, state] of Object.entries(states.instances)) {
           connectionStatus[instanceId] = state.connected ? 'Connected' : 'Disconnected';
@@ -1997,22 +1923,8 @@ export const useAppStore = create<AppState>()(
         };
       }),
 
-    // 截图流状态
-    instanceScreenshotStreaming: {},
-    setInstanceScreenshotStreaming: (instanceId, streaming) =>
-      set((state) => ({
-        instanceScreenshotStreaming: {
-          ...state.instanceScreenshotStreaming,
-          [instanceId]: streaming,
-        },
-      })),
-
     // 右侧面板折叠状态
     sidePanelExpanded: true,
-    setSidePanelExpanded: (expanded) => {
-      set({ sidePanelExpanded: expanded });
-      if (!isTauri()) patchWebUILayout({ sidePanelExpanded: expanded });
-    },
     toggleSidePanelExpanded: () => {
       set((state) => ({ sidePanelExpanded: !state.sidePanelExpanded }));
       if (!isTauri()) patchWebUILayout({ sidePanelExpanded: get().sidePanelExpanded });
@@ -2040,14 +1952,9 @@ export const useAppStore = create<AppState>()(
 
     // 卡片展开状态
     connectionPanelExpanded: true,
-    screenshotPanelExpanded: true,
     setConnectionPanelExpanded: (expanded) => {
       set({ connectionPanelExpanded: expanded });
       if (!isTauri()) patchWebUILayout({ connectionPanelExpanded: expanded });
-    },
-    setScreenshotPanelExpanded: (expanded) => {
-      set({ screenshotPanelExpanded: expanded });
-      if (!isTauri()) patchWebUILayout({ screenshotPanelExpanded: expanded });
     },
 
     // 窗口大小
@@ -2084,13 +1991,6 @@ export const useAppStore = create<AppState>()(
     setShowOptionPreview: (show) => {
       set({ showOptionPreview: show });
       if (!isTauri()) patchWebUILayout({ showOptionPreview: show });
-    },
-
-    // 实时截图帧率设置
-    screenshotFrameRate: defaultScreenshotFrameRate,
-    setScreenshotFrameRate: (rate) => {
-      set({ screenshotFrameRate: rate });
-      if (!isTauri()) patchWebUILayout({ screenshotFrameRate: rate });
     },
 
     // Welcome 弹窗显示记录
@@ -2143,7 +2043,6 @@ export const useAppStore = create<AppState>()(
 
     // 被删除的自动执行实例名称（用于提示用户）
     autoStartRemovedInstanceName: undefined,
-    setAutoStartRemovedInstanceName: (name) => set({ autoStartRemovedInstanceName: name }),
 
     // 手动启动时是否也自动执行
     autoRunOnLaunch: false,
@@ -2307,12 +2206,6 @@ export const useAppStore = create<AppState>()(
     instancePendingTaskIds: {},
     instanceCurrentTaskIndex: {},
 
-    findSelectedTaskIdByMaaTaskId: (instanceId, maaTaskId) => {
-      const state = get();
-      const mapping = state.maaTaskIdMapping[instanceId];
-      return mapping?.[maaTaskId] ?? null;
-    },
-
     findMaaTaskIdBySelectedTaskId: (instanceId, selectedTaskId) => {
       const mapping = get().maaTaskIdMapping[instanceId];
       if (!mapping) return null;
@@ -2372,9 +2265,6 @@ export const useAppStore = create<AppState>()(
           instanceResourceLoaded: restResourceLoaded,
           instanceCurrentTaskId: restCurrentTaskId,
           instanceTaskStatus: restTaskStatus,
-          instanceScreenshotStreaming: Object.fromEntries(
-            Object.entries(state.instanceScreenshotStreaming).filter(([id]) => id !== instanceId),
-          ),
           scheduleExecutions: Object.fromEntries(
             Object.entries(state.scheduleExecutions).filter(([id]) => id !== instanceId),
           ),
@@ -2503,12 +2393,19 @@ export const useAppStore = create<AppState>()(
     getCtrlType: (ctrlId) => get().ctrlIdToType[ctrlId],
     getResName: (resId) => get().resIdToName[resId],
     getResBatchInfo: (resId) => get().resBatchInfo[resId],
-    getTaskName: (taskId) => get().taskIdToName[taskId],
-    getTaskNameByEntry: (entry) => get().entryToTaskName[entry],
   })),
 );
 
 const _isWebUI = !isTauri();
+
+function canPersistConfig(state: AppState): state is AppState & { projectInterface: ProjectInterface } {
+  return Boolean(
+    state.configPersistenceReady &&
+      state.projectInterface?.name &&
+      state.dataPath &&
+      state.dataPath !== '.',
+  );
+}
 
 // 生成配置用于保存
 function generateConfig(): MxuConfig {
@@ -2576,8 +2473,8 @@ function generateConfig(): MxuConfig {
           rightPanelCollapsed: bl?.rightPanelCollapsed ?? state.rightPanelCollapsed,
           addTaskPanelHeight: bl?.addTaskPanelHeight ?? state.addTaskPanelHeight,
           connectionPanelExpanded: bl?.connectionPanelExpanded ?? state.connectionPanelExpanded,
-          screenshotPanelExpanded: bl?.screenshotPanelExpanded ?? state.screenshotPanelExpanded,
-          screenshotFrameRate: bl?.screenshotFrameRate ?? state.screenshotFrameRate,
+          screenshotPanelExpanded: bl?.screenshotPanelExpanded,
+          screenshotFrameRate: bl?.screenshotFrameRate,
           mirrorChyan: {
             ...state.mirrorChyanSettings,
             cdk: '',
@@ -2630,13 +2527,10 @@ function debouncedSaveConfig() {
   saveTimeout = setTimeout(() => {
     const state = useAppStore.getState();
     // 仅在初始化完成后持久化，避免启动早期误覆盖用户配置
-    if (!state.configPersistenceReady) return;
-    // 保护性检查：必须已经识别到项目与数据目录
-    if (!state.projectInterface?.name || !state.dataPath || state.dataPath === '.') return;
+    if (!canPersistConfig(state)) return;
 
     const config = generateConfig();
-    const projectName = state.projectInterface?.name;
-    saveConfig(state.dataPath, config, projectName);
+    saveConfig(state.dataPath, config, state.projectInterface.name);
   }, 500);
 }
 
@@ -2651,6 +2545,8 @@ useAppStore.subscribe(
       theme: state.theme,
       accentColor: state.accentColor,
       language: state.language,
+      backgroundImage: state.backgroundImage,
+      backgroundOpacity: state.backgroundOpacity,
       customAccents: state.customAccents,
       windowSize: state.windowSize,
       windowPosition: state.windowPosition,
@@ -2660,8 +2556,6 @@ useAppStore.subscribe(
       rightPanelCollapsed: state.rightPanelCollapsed,
       addTaskPanelHeight: state.addTaskPanelHeight,
       connectionPanelExpanded: state.connectionPanelExpanded,
-      screenshotPanelExpanded: state.screenshotPanelExpanded,
-      screenshotFrameRate: state.screenshotFrameRate,
     }),
     confirmBeforeDelete: state.confirmBeforeDelete,
     maxLogsPerInstance: state.maxLogsPerInstance,
@@ -2698,7 +2592,7 @@ useAppStore.subscribe(
   () => {
     debouncedSaveConfig();
   },
-  { equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b) },
+  { equalityFn: shallow },
 );
 
 /**
@@ -2723,9 +2617,7 @@ export function flushSaveConfig(): void {
     saveTimeout = null;
   }
   const state = useAppStore.getState();
-  if (!state.configPersistenceReady) return;
-  if (!state.projectInterface?.name || !state.dataPath || state.dataPath === '.') return;
+  if (!canPersistConfig(state)) return;
   const config = generateConfig();
-  const projectName = state.projectInterface.name;
-  saveConfig(state.dataPath, config, projectName);
+  saveConfig(state.dataPath, config, state.projectInterface.name);
 }

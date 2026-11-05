@@ -4,7 +4,6 @@ import { isTauri } from '@/utils/paths';
 import { useAppStore } from '@/stores/appStore';
 
 import { maaService } from './maaService';
-import { cancelTaskQueueMonitor } from './taskMonitor';
 
 const log = loggers.task;
 
@@ -71,8 +70,6 @@ export async function stopInstanceTasks(instanceId: string): Promise<boolean> {
       log.warn(`[task-stop#${instanceId}] 等待任务停止超时，保留运行状态`);
       return false;
     }
-
-    cancelTaskQueueMonitor(instanceId);
 
     const agentConfigs = normalizeAgentConfigs(useAppStore.getState().projectInterface?.agent);
     if (agentConfigs && agentConfigs.length > 0) {

@@ -24,6 +24,7 @@ import {
 } from '@/services/contentResolver';
 import { hasRichTextFeatures } from '@/utils/richText';
 import { taskFailureHint } from '@/utils/taskFailureHints';
+import { withTimeout } from '@/utils/withTimeout';
 import type { FocusTemplate, FocusDisplayChannel } from '@/types/interface';
 
 const log = loggers.app;
@@ -110,12 +111,11 @@ async function resolveFocusContent(
   if (withPlaceholders.includes('{image}')) {
     try {
       // 添加超时保护，避免长时间阻塞
-      const timeoutPromise = new Promise<string>((_, reject) => {
-        setTimeout(() => reject(new Error('获取截图超时')), 5000);
-      });
-      const imagePromise = maaService.getCachedImage(instanceId);
-
-      const imageDataUrl = await Promise.race([imagePromise, timeoutPromise]);
+      const imageDataUrl = await withTimeout(
+        maaService.getCachedImage(instanceId),
+        5000,
+        '获取截图超时',
+      );
       if (imageDataUrl) {
         // 直接替换为 data URL，用户可自行组装到 Markdown/HTML 中
         withPlaceholders = withPlaceholders.replace(/\{image\}/g, imageDataUrl);
@@ -224,7 +224,7 @@ function inferResInfoFromInstance(instanceId: string): string | undefined {
 
 export function useMaaCallbackLogger() {
   const { t } = useTranslation();
-  const { addLog } = useAppStore();
+  const addLog = useAppStore((state) => state.addLog);
   const unlistenRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -609,7 +609,7 @@ function handleCallback(
  */
 export function useMaaAgentLogger() {
   const { t } = useTranslation();
-  const { addLog } = useAppStore();
+  const addLog = useAppStore((state) => state.addLog);
   const unlistenRef = useRef<(() => void) | null>(null);
   const agentFloodStateRef = useRef<
     Map<

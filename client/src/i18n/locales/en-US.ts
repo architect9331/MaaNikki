@@ -674,7 +674,7 @@ export default {
 
   // Instance
   instance: {
-    defaultName: 'Config 1',
+    defaultName: 'Config',
   },
 
   // Connection panel

@@ -171,6 +171,41 @@ export const initializeAllOptionValues = (
 };
 
 /**
+ * 当选项值改变时，为其激活的 case 初始化尚未存在的嵌套子选项默认值。
+ */
+export const initializeNestedOptionsForChange = (
+  optionKey: string,
+  value: OptionValue,
+  allOptions: Record<string, OptionDefinition> | undefined,
+  targetValues: Record<string, OptionValue>,
+): void => {
+  if (!allOptions) return;
+  const optDef = allOptions[optionKey];
+  if (
+    !optDef ||
+    (optDef.type !== 'switch' && optDef.type !== 'select' && optDef.type !== undefined) ||
+    !('cases' in optDef)
+  ) {
+    return;
+  }
+
+  const selectedCase =
+    optDef.type === 'switch'
+      ? findSwitchCase(optDef.cases, value.type === 'switch' && value.value)
+      : optDef.cases?.find(
+          (c) => c.name === (value.type === 'select' ? value.caseName : optDef.cases?.[0]?.name),
+        );
+
+  if (!selectedCase?.option || selectedCase.option.length === 0) return;
+
+  for (const nestedKey of selectedCase.option) {
+    if (!targetValues[nestedKey] && allOptions[nestedKey]) {
+      Object.assign(targetValues, initializeAllOptionValues([nestedKey], allOptions));
+    }
+  }
+};
+
+/**
  * v2.3.0: 将预设的选项值转换为运行时 OptionValue
  */
 export const convertPresetOptionValue = (
