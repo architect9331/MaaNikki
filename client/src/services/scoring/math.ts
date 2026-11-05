@@ -49,10 +49,11 @@ export function bonusCount(bonus: FieldBonus, context: ScoreContext) {
 
 export function upgradeCost(catalog: ScoringCatalog, item: ScoreItem, from: number | null, to: number) {
   const cost: Record<string, number> = {};
-  if (isFlash(item) || from === null || from === to) return cost;
+  const base = from ?? 0;
+  if (isFlash(item) || base >= to) return cost;
   const curve = catalog.curves[item.curve];
   for (const [id, value] of Object.entries(curve.costs[to] ?? {})) {
-    const delta = value - (curve.costs[from]?.[id] ?? 0);
+    const delta = value - (curve.costs[base]?.[id] ?? 0);
     if (delta > 0) cost[id] = delta;
   }
   return cost;

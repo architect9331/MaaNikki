@@ -6,7 +6,7 @@ import { useAccountStateStore } from '@/stores/accountStateStore';
 import { isTauri } from '@/utils/paths';
 import { loadScoring, saveScoring } from '@/services/scoring/api';
 import { scorePiece } from '@/services/scoring/math';
-import { analyzeUnmetStars, starRequiredGroupBadges, tagLabel } from '@/services/scoring/diagnostics';
+import { analyzeUnmetStars, buildMinimumStarUpgradePlan, starRequiredGroupBadges, tagLabel } from '@/services/scoring/diagnostics';
 import { buildOwnedProfile } from '@/services/scoring/profile';
 import { ATTRIBUTES, emptySettings } from '@/services/scoring/types';
 import type { CalculationResult, FieldBonus, Match, OutfitResult, OwnedProfile, ScoringCatalog, ScoringPayload, ScoringSettings } from '@/services/scoring/types';
@@ -99,6 +99,8 @@ function UnmetStarsPanel({
   match,
   potential,
   setLevel,
+  setLevelsBatch,
+  onMaterialsChange,
 }: {
   outfit: OutfitResult;
   potentialOutfit: OutfitResult | null;
@@ -109,10 +111,26 @@ function UnmetStarsPanel({
   match: Match;
   potential: boolean;
   setLevel: (group: string, level: number | null) => void;
+  setLevelsBatch: (updates: Record<string, number | null>, autoRun?: boolean) => void;
+  onMaterialsChange: (next: ScoringPayload['materials']) => void;
 }) {
   const diagnostics = useMemo(
     () => analyzeUnmetStars(payload.catalog, profile, settings, matchId, match, outfit),
     [payload.catalog, profile, settings, matchId, match, outfit],
+  );
+  const minPlan = useMemo(
+    () =>
+      !potential
+        ? buildMinimumStarUpgradePlan(
+            payload.catalog,
+            settings,
+            matchId,
+            match,
+            outfit,
+            potentialOutfit,
+          )
+        : null,
+    [payload.catalog, settings, matchId, match, outfit, potentialOutfit, potential],
   );
   if (!diagnostics.length) return null;
 
@@ -125,6 +143,180 @@ function UnmetStarsPanel({
         </h3>
         <span className="text-xs text-text-muted">共 {diagnostics.length} 颗星待达成</span>
       </div>
+
+      {minPlan && (
+        <div className="rounded-xl border border-accent/40 bg-accent/5 p-3.5 space-y-3 text-xs">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-semibold text-on-accent">
+                  <Sparkles className="h-3 w-3" />
+                  满星最少养成方案
+                </span>
+                <strong className="text-sm text-text-primary">
+                  {minPlan.upgradeItems.length > 0
+                    ? `最少需升级 ${minPlan.upgradeItems.length} 件衣服${
+                        minPlan.mandatorySuitName &&
+                        minPlan.upgradeItems.every((i) => i.mandatorySuitRefresh)
+                          ? `（将「${minPlan.mandatorySuitName}」升至已焕新）`
+                          : ''
+                      }`
+                    : '无需升级任何衣服（最少升 0 件）！'}
+                </strong>
+              </div>
+              <p className="leading-5 text-text-secondary">
+                {minPlan.mandatorySuitName &&
+                minPlan.upgradeItems.every((i) => i.mandatorySuitRefresh) ? (
+                  <>
+                    本关星级要求穿戴<strong>整套焕新套装</strong>，你已集齐{' '}
+                    <strong className="text-text-primary">「{minPlan.mandatorySuitName}」</strong>，
+                    按规则必须将以下{' '}
+                    <strong className="text-accent">{minPlan.upgradeItems.length} 件</strong>{' '}
+                    套装部件全部升至<strong>已焕新 (11级)</strong> 才能触发套装条件（少升 1 件均无法达成）；其余散件无需额外升级。
+                  </>
+                ) : minPlan.upgradeItems.length > 0 ? (
+                  <>
+                    无需将全身衣服全部升满！按单件提分性价比从高到低计算，
+                    <strong>最少只需升级以下 {minPlan.upgradeItems.length} 件衣服</strong>
+                    （其余部件保持当前或 0 级即可），即可同时满足星级条件并跨过分数线。
+                  </>
+                ) : (
+                  <>
+                    你已拥有满足星级条件的全部部件，即使保持 <strong>0 级不升级</strong> 穿戴也能直接满星，只需为以下未填等级的部件填入当前等级（如 0 级）并重新计算即可。
+                  </>
+                )}{' '}
+                达标后预计总分{' '}
+                <strong className="tabular-nums text-accent">{number(minPlan.achievedScore)}</strong> 分
+                {minPlan.targetScore !== undefined && (
+                  <>（完美线 {number(minPlan.targetScore)} 分）</>
+                )}
+                ，可直接达成 <strong>{minPlan.targetStars} 星</strong>。
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {minPlan.upgradeItems.some((i) => i.fromLevel === null) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updates: Record<string, number | null> = {};
+                    for (const item of minPlan.upgradeItems) {
+                      if (item.fromLevel === null) updates[item.groupId] = 0;
+                    }
+                    for (const item of minPlan.zeroLevelWearItems) {
+                      updates[item.groupId] = 0;
+                    }
+                    setLevelsBatch(updates, true);
+                  }}
+                  className="rounded-lg border border-border bg-bg-secondary px-2.5 py-1 text-xs font-medium text-text-primary hover:border-accent hover:text-accent"
+                >
+                  未填项设为 0 级并重算
+                </button>
+              )}
+              {(minPlan.upgradeItems.length > 0 || minPlan.zeroLevelWearItems.length > 0) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updates: Record<string, number | null> = {};
+                    for (const item of minPlan.upgradeItems) {
+                      updates[item.groupId] = item.toLevel;
+                    }
+                    for (const item of minPlan.zeroLevelWearItems) {
+                      if (settings.levels[item.groupId] === undefined) updates[item.groupId] = 0;
+                    }
+                    setLevelsBatch(updates, true);
+                  }}
+                  className="rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover"
+                >
+                  {minPlan.upgradeItems.length > 0
+                    ? `一键标记这 ${minPlan.upgradeItems.length} 件已达标并重算`
+                    : '一键设为 0 级并重算'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {!!minPlan.upgradeItems.length && (
+            <div className="rounded-lg border border-border bg-bg-secondary divide-y divide-border">
+              {minPlan.upgradeItems.map((item, idx) => (
+                <div key={item.groupId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[10px] font-semibold text-accent">
+                        {idx + 1}
+                      </span>
+                      <span className="text-text-muted">{item.partName}</span>
+                      <strong className="text-text-primary">{item.name}</strong>
+                      <span
+                        className={clsx(
+                          'rounded px-1.5 py-0.2 text-[10px] font-medium',
+                          item.mandatorySuitRefresh
+                            ? 'bg-warning/15 text-warning'
+                            : 'bg-accent/10 text-accent',
+                        )}
+                      >
+                        {item.reason}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-text-muted">
+                      当前：{item.fromLevel === null ? '等级未知（按 0 级计）' : levelLabel(item.fromLevel)}{' '}
+                      → 需升至 <strong className="text-accent">{levelLabel(item.toLevel)}</strong>
+                      {' · '}单件得分 {number(item.scoreAtFrom)} → {number(item.scoreAtTo)}{' '}
+                      <span className="font-medium text-accent">(+{number(item.gain)})</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-text-muted">当前实际等级</span>
+                    <LevelInput
+                      value={settings.levels[item.groupId] ?? null}
+                      onChange={(lvl) => setLevel(item.groupId, lvl)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!!minPlan.zeroLevelWearItems.length && (
+            <div className="rounded-lg border border-border bg-bg-secondary p-2.5 space-y-1.5">
+              <p className="font-medium text-text-primary">
+                另有 {minPlan.zeroLevelWearItems.length} 件部件无需升级（0 级穿戴即可满足条件，填入实际等级即可参战）：
+              </p>
+              <div className="divide-y divide-border/60">
+                {minPlan.zeroLevelWearItems.map((item) => (
+                  <div key={item.groupId} className="flex items-center justify-between gap-2 py-1.5">
+                    <div>
+                      <span className="text-text-muted">{item.partName} · </span>
+                      <strong className="text-text-primary">{item.name}</strong>
+                      <span className="ml-2 text-[11px] text-accent">{item.reason}</span>
+                    </div>
+                    <LevelInput
+                      value={settings.levels[item.groupId] ?? null}
+                      onChange={(lvl) => setLevel(item.groupId, lvl)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {Object.keys(minPlan.totalCost).length > 0 && (
+            <div className="rounded-lg border border-border bg-bg-secondary p-3 space-y-2">
+              <p className="font-medium text-text-primary">
+                升级以上 {minPlan.upgradeItems.length} 件衣服预计所需材料（未填等级部件按 0 级起步估算）：
+              </p>
+              <WardrobeMaterialList
+                cost={minPlan.totalCost}
+                catalog={payload.catalog}
+                accountKey={payload.account_key}
+                materials={payload.materials}
+                sourceLabel={`${match.group} · ${match.name}（满星最少升级）`}
+                onMaterialsChange={onMaterialsChange}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="space-y-3">
         {diagnostics.map((star) => (
@@ -268,72 +460,108 @@ function UnmetStarsPanel({
 
                   {rule.candidates.length ? (
                     <div className="space-y-2">
-                      {rule.candidates.map((cand) => (
-                        <div key={cand.suitId} className="rounded-lg border border-border bg-bg-primary/60 p-2.5 space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium text-text-primary">
-                              {cand.suitName} <span className="text-text-muted">({cand.quality}★)</span>
-                            </span>
-                            <span className={clsx('text-[11px] font-medium', cand.complete ? 'text-success' : 'text-warning')}>
-                              已收集 {cand.ownedCount} / {cand.totalCount} 件
-                            </span>
+                      {rule.candidates.map((cand) => {
+                        const pendingGroups = [...cand.unrefreshedGroups, ...cand.unknownGroups];
+                        return (
+                          <div key={cand.suitId} className="rounded-lg border border-border bg-bg-primary/60 p-2.5 space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-medium text-text-primary">
+                                {cand.suitName} <span className="text-text-muted">({cand.quality}★)</span>
+                              </span>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {cand.complete && (
+                                  <span className="text-[11px] text-text-secondary">
+                                    已达标 <strong className="text-text-primary">{cand.readyCount}</strong> / {cand.requiredCount} 件
+                                    {pendingGroups.length > 0 && (
+                                      <span className="ml-1 text-warning">（还需升满/填写 {pendingGroups.length} 件）</span>
+                                    )}
+                                  </span>
+                                )}
+                                <span className={clsx('text-[11px] font-medium', cand.complete ? 'text-success' : 'text-warning')}>
+                                  已收集 {cand.ownedCount} / {cand.totalCount} 件
+                                </span>
+                              </div>
+                            </div>
+
+                            {cand.complete && !!pendingGroups.length && (
+                              <div className="space-y-1.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="text-text-secondary">
+                                    {rule.refreshed ? (
+                                      <>
+                                        已集齐该套装，本关要求<strong>整套 {cand.requiredCount} 件全部焕新 (11级)</strong>，以下{' '}
+                                        <strong className="text-warning">{pendingGroups.length}</strong> 件尚未焕新或未填等级：
+                                      </>
+                                    ) : (
+                                      <>
+                                        已集齐该套装，以下 <strong className="text-accent">{pendingGroups.length}</strong> 件尚未填写等级（填入 0～11 即可参战）：
+                                      </>
+                                    )}
+                                  </p>
+                                  <div className="flex items-center gap-1.5">
+                                    {!!cand.unknownGroups.length && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updates: Record<string, number | null> = {};
+                                          for (const g of cand.unknownGroups) updates[g.id] = 0;
+                                          setLevelsBatch(updates, true);
+                                        }}
+                                        className="rounded border border-border bg-bg-secondary px-2 py-0.5 text-[11px] text-text-secondary hover:border-accent hover:text-accent"
+                                      >
+                                        未填项设为 0 级
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updates: Record<string, number | null> = {};
+                                        for (const g of pendingGroups) updates[g.id] = rule.refreshed ? 11 : 0;
+                                        setLevelsBatch(updates, true);
+                                      }}
+                                      className="rounded bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-accent/25"
+                                    >
+                                      {rule.refreshed ? '整套标记已焕新(11级)' : '整套设为 0 级'}
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="divide-y divide-border/60">
+                                  {pendingGroups.map((g) => (
+                                    <div key={g.id} className="flex items-center justify-between gap-2 py-1">
+                                      <span>
+                                        <strong className="text-text-primary">{g.name}</strong>{' '}
+                                        <span className="text-text-muted">
+                                          · {g.part}（当前：{levelLabel(g.level)}
+                                          {rule.refreshed ? ' → 需升至 已焕新' : ''}）
+                                        </span>
+                                      </span>
+                                      <LevelInput
+                                        value={settings.levels[g.id] ?? null}
+                                        inferred={g.inferred}
+                                        onChange={(lvl) => setLevel(g.id, lvl)}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {!cand.complete && !!cand.missingParts.length && (
+                              <div className="space-y-1">
+                                <p className="text-text-secondary">缺失部件（共 {cand.missingParts.length} 件）：</p>
+                                <ul className="space-y-1">
+                                  {cand.missingParts.slice(0, 5).map((mp) => (
+                                    <li key={mp.id} className="flex flex-wrap items-center justify-between gap-2 text-text-secondary">
+                                      <span><strong className="text-text-primary">{mp.name}</strong> · {mp.partName}</span>
+                                      <span className="text-[11px] text-text-muted">{mp.source ?? '套装获取'}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
-
-                          {cand.complete && !!cand.unknownGroups.length && (
-                            <div className="space-y-1.5">
-                              <p className="text-accent">
-                                已集齐该套装，但以下 {cand.unknownGroups.length} 个部件组尚未填写等级（{rule.refreshed ? '需填 11 表示已焕新' : '填入 0～11 即可生效'}）：
-                              </p>
-                              <div className="divide-y divide-border/60">
-                                {cand.unknownGroups.map((g) => (
-                                  <div key={g.id} className="flex items-center justify-between gap-2 py-1">
-                                    <span>{g.name} <span className="text-text-muted">· {g.part}</span></span>
-                                    <LevelInput
-                                      value={settings.levels[g.id] ?? null}
-                                      inferred={g.inferred}
-                                      onChange={(lvl) => setLevel(g.id, lvl)}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {cand.complete && !cand.unknownGroups.length && rule.refreshed && !!cand.unrefreshedGroups.length && (
-                            <div className="space-y-1.5">
-                              <p className="text-warning">
-                                已集齐该套装，但本关要求<strong>整套焕新 (11级)</strong>，以下 {cand.unrefreshedGroups.length} 个部件组尚未焕新：
-                              </p>
-                              <div className="divide-y divide-border/60">
-                                {cand.unrefreshedGroups.map((g) => (
-                                  <div key={g.id} className="flex items-center justify-between gap-2 py-1">
-                                    <span>{g.name} <span className="text-text-muted">· {g.part}（当前 {levelLabel(g.level)}）</span></span>
-                                    <LevelInput
-                                      value={settings.levels[g.id] ?? null}
-                                      inferred={g.inferred}
-                                      onChange={(lvl) => setLevel(g.id, lvl)}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {!cand.complete && !!cand.missingParts.length && (
-                            <div className="space-y-1">
-                              <p className="text-text-secondary">缺失部件（共 {cand.missingParts.length} 件）：</p>
-                              <ul className="space-y-1">
-                                {cand.missingParts.slice(0, 5).map((mp) => (
-                                  <li key={mp.id} className="flex flex-wrap items-center justify-between gap-2 text-text-secondary">
-                                    <span><strong className="text-text-primary">{mp.name}</strong> · {mp.partName}</span>
-                                    <span className="text-[11px] text-text-muted">{mp.source ?? '套装获取'}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-text-muted">图鉴中暂未找到匹配的套装记录。</p>
@@ -348,11 +576,13 @@ function UnmetStarsPanel({
   );
 }
 
-function OutfitView({ outfit, potentialOutfit, payload, profile, settings, matchId, match, potential, setLevel, excludedIds, onToggleExclude }: {
+function OutfitView({ outfit, potentialOutfit, payload, profile, settings, matchId, match, potential, setLevel, setLevelsBatch, excludedIds, onToggleExclude, onMaterialsChange }: {
   outfit: OutfitResult | null; potentialOutfit: OutfitResult | null; payload: ScoringPayload; profile: OwnedProfile; settings: ScoringSettings; matchId: string; match: Match; potential: boolean;
   setLevel: (group: string, level: number | null) => void;
+  setLevelsBatch: (updates: Record<string, number | null>, autoRun?: boolean) => void;
   excludedIds: string[];
   onToggleExclude: (id: string) => void;
+  onMaterialsChange: (next: ScoringPayload['materials']) => void;
 }) {
   if (!outfit) return <div className={clsx(card, 'py-9 text-center text-sm text-text-secondary')}>
     {potential ? '暂未找到可用的完整搭配，请检查衣柜对齐情况或恢复已排除部件。' : '已知等级的衣服暂未组成完整搭配，可在下方补充等级或查看焕新潜力。'}
@@ -371,6 +601,8 @@ function OutfitView({ outfit, potentialOutfit, payload, profile, settings, match
       match={match}
       potential={potential}
       setLevel={setLevel}
+      setLevelsBatch={setLevelsBatch}
+      onMaterialsChange={onMaterialsChange}
     />
     <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
       {!outfit.exact && <p className="border-b border-border px-4 py-2 text-xs text-text-secondary">搜索时间已到，展示当前找到的可行方案。</p>}
@@ -434,8 +666,9 @@ function OutfitView({ outfit, potentialOutfit, payload, profile, settings, match
         accountKey={payload.account_key}
         materials={payload.materials}
         sourceLabel={`${match.group} · ${match.name}`}
+        onMaterialsChange={onMaterialsChange}
       />
-      {!!outfit.unknownCostGroups.length && <p className="mt-3 text-xs text-text-secondary">另有 {outfit.unknownCostGroups.length} 个部件等级未知，补充后可计入提升值和材料差额。</p>}
+      {!!outfit.unknownCostGroups.length && <p className="mt-3 text-xs text-text-secondary">另有 {outfit.unknownCostGroups.length} 个部件等级未知（上方提升值与材料已按 0 级起步估算，补充实际等级后更精确）。</p>}
     </section>}
   </div>;
 }
@@ -569,6 +802,22 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
       return { ...previous, levels };
     });
   }
+  const pendingAutoRunRef = useRef(false);
+  function setLevelsBatch(updates: Record<string, number | null>, autoRun = false) {
+    if (autoRun) pendingAutoRunRef.current = true;
+    changeSettings((previous) => {
+      const levels = { ...previous.levels };
+      for (const [group, level] of Object.entries(updates)) {
+        if (level === null) delete levels[group]; else levels[group] = level;
+      }
+      return { ...previous, levels };
+    });
+  }
+  useEffect(() => {
+    if (!pendingAutoRunRef.current) return;
+    pendingAutoRunRef.current = false;
+    run();
+  }, [settings]);
   function run(overrideExcluded?: string[]) {
     if (!payload || !profile || !match) return;
     const activeExcluded = overrideExcluded ?? excludedIds;
@@ -746,7 +995,7 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
             modeLabel={mode === 'current' ? '已知等级' : '全部焕新后'}
           />
         )}
-        <div className={clsx(stale && 'opacity-60')}><OutfitView outfit={result[mode]} potentialOutfit={result.potential} payload={payload} profile={profile} settings={settings} matchId={completed?.matchId ?? matchId} match={resultMatch} potential={mode === 'potential'} setLevel={setLevel} excludedIds={excludedIds} onToggleExclude={toggleExclude} /></div>
+        <div className={clsx(stale && 'opacity-60')}><OutfitView outfit={result[mode]} potentialOutfit={result.potential} payload={payload} profile={profile} settings={settings} matchId={completed?.matchId ?? matchId} match={resultMatch} potential={mode === 'potential'} setLevel={setLevel} setLevelsBatch={setLevelsBatch} excludedIds={excludedIds} onToggleExclude={toggleExclude} onMaterialsChange={(next) => setPayload((prev) => prev ? { ...prev, materials: next } : prev)} /></div>
       </> : <div className={clsx(card, 'py-10 text-center text-sm text-text-secondary')}>{profile.items.length ? '选好场次后开始计算，这里会显示推荐搭配。' : '读取衣柜后才能计算搭配。'}</div>}
 
       <details className={card} open={unknownCount > 0 && !result}><summary className="cursor-pointer text-sm font-medium">补充衣服等级 <span className="ml-1 text-xs font-normal text-text-muted">{profile.groups.length} 组，{unknownCount} 组未知</span></summary>

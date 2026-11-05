@@ -162,8 +162,9 @@ function summarize(request: CalculationRequest, match: Match, entries: Candidate
   const pieces = entries.map((entry) => {
     const piece = scorePiece(request.catalog, entry.owned, entry.level, match, request.settings.heart, bonuses, context);
     const from = entry.owned.level;
-    piece.gain = from === null ? null : from === entry.level ? 0
-      : piece.score - scorePiece(request.catalog, entry.owned, from, match, request.settings.heart, bonuses, context).score;
+    const base = from ?? 0;
+    piece.gain = isFlash(request.catalog.items[entry.owned.id]) || base >= entry.level ? 0
+      : piece.score - scorePiece(request.catalog, entry.owned, base, match, request.settings.heart, bonuses, context).score;
     return piece;
   });
   const globalScore = bonuses.reduce((sum, bonus) => sum + (bonus.global ? bonus.add * bonusCount(bonus, context) : 0), 0);
@@ -279,7 +280,7 @@ export function calculateBatch(request: CalculationRequest, matchIds: string[], 
     for (const [matId, amount] of Object.entries(itemCost)) {
       totalCost[matId] = (totalCost[matId] ?? 0) + amount;
     }
-    if (entry.from !== null && entry.to > entry.from) {
+    if (entry.to > (entry.from ?? 0)) {
       upgrades.push({
         groupId,
         item: entry.item,

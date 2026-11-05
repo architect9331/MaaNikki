@@ -10,10 +10,32 @@ import type {
   ScoringSettings,
   StarCondition,
 } from './types';
-import { fits, isAccessory, isFlash, resolveRankThreshold, suitRequirement } from './math';
+import {
+  bonusCount,
+  evaluateStars,
+  fits,
+  hasSuit,
+  isAccessory,
+  isFlash,
+  outfitContext,
+  resolveRankThreshold,
+  scorePiece,
+  suitRequirement,
+  upgradeCost,
+} from './math';
 import { ITEM_SOURCES } from './wardrobeBrowserData';
 
 const RANK_LABELS: Record<number, string> = { 1: '及格', 2: '一般', 4: '优秀', 5: '完美' };
+
+export function buildScoreIdToGroupMap(catalog: ScoringCatalog): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const entry of Object.values(catalog.game_items)) {
+    if (entry.score_id && entry.group && !map.has(String(entry.score_id))) {
+      map.set(String(entry.score_id), entry.group);
+    }
+  }
+  return map;
+}
 
 export function tagLabel(catalog: ScoringCatalog, tagId: number | string): string {
   return catalog.tag_names?.[String(tagId)] ?? `标签${tagId}`;
@@ -69,13 +91,14 @@ function maxNonConflictingSlots(items: ScoreItem[]): { count: number; coveredTyp
  */
 export function starRequiredGroupBadges(catalog: ScoringCatalog, match: Match): Map<string, string[]> {
   const result = new Map<string, Set<string>>();
+  const scoreIdToGroup = buildScoreIdToGroupMap(catalog);
   const addBadge = (scoreId: number | string, label: string) => {
-    const gameItem = catalog.game_items[String(scoreId)];
-    if (!gameItem?.group) return;
-    let set = result.get(gameItem.group);
+    const group = scoreIdToGroup.get(String(scoreId));
+    if (!group) return;
+    let set = result.get(group);
     if (!set) {
       set = new Set<string>();
-      result.set(gameItem.group, set);
+      result.set(group, set);
     }
     set.add(label);
   };
@@ -120,10 +143,291 @@ export interface SuitDiagnosticCandidate {
   quality: number;
   ownedCount: number;
   totalCount: number;
+  requiredCount: number;
+  readyCount: number;
   complete: boolean;
   unknownGroups: GrowthGroup[];
   unrefreshedGroups: GrowthGroup[];
   missingParts: { id: string; name: string; partName: string; source?: string }[];
+}
+
+export interface MinimumUpgradeItem {
+  groupId: string;
+  itemId: string;
+  name: string;
+  partName: string;
+  suitName?: string;
+  fromLevel: number | null;
+  toLevel: number;
+  scoreAtFrom: number;
+  scoreAtTo: number;
+  gain: number;
+  mandatorySuitRefresh: boolean;
+  reason: string;
+  cost: Record<string, number>;
+}
+
+export interface MinimumStarUpgradePlan {
+  targetStars: number;
+  currentStars: number;
+  achievedScore: number;
+  targetScore?: number;
+  mandatorySuitName?: string;
+  mandatorySuitRequiredCount?: number;
+  upgradeItems: MinimumUpgradeItem[];
+  zeroLevelWearItems: {
+    groupId: string;
+    itemId: string;
+    name: string;
+    partName: string;
+    suitName?: string;
+    reason: string;
+  }[];
+  totalCost: Record<string, number>;
+}
+
+export function buildMinimumStarUpgradePlan(
+  catalog: ScoringCatalog,
+  settings: ScoringSettings,
+  matchId: string,
+  match: Match,
+  outfit: OutfitResult,
+  potentialOutfit: OutfitResult | null,
+): MinimumStarUpgradePlan | null {
+  if (!potentialOutfit) return null;
+  const currentStars = outfit.stars.filter((s) => s === true).length;
+  const targetStars = potentialOutfit.stars.filter((s) => s === true).length;
+  if (targetStars <= currentStars) return null;
+
+  const userThresholds = settings.rank_thresholds[matchId] ?? {};
+  const potentialLevels = new Map(potentialOutfit.pieces.map((p) => [String(p.item.id), p.level]));
+  const pieceSuitName = new Map<string, string>();
+  const mandatoryRefreshIds = new Set<string>();
+  const pieceRuleLabels = new Map<string, string>();
+  let mandatorySuitName: string | undefined;
+  let mandatorySuitRequiredCount: number | undefined;
+  let targetScore: number | undefined;
+
+  for (const star of match.stars) {
+    for (const group of star.groups) {
+      for (const rule of group) {
+        if (rule.kind === 'rank') {
+          const threshold = resolveRankThreshold(match, userThresholds, rule.rank);
+          if (threshold !== undefined && potentialOutfit.score >= threshold) {
+            targetScore = Math.max(targetScore ?? 0, threshold);
+          }
+        } else if (rule.kind === 'pieces') {
+          const label = formatRuleFilter(catalog, rule);
+          for (const p of potentialOutfit.pieces) {
+            const rec = catalog.items[p.item.id];
+            if (rec && fits(rec, rule)) {
+              pieceRuleLabels.set(String(p.item.id), label);
+            }
+          }
+        } else if (rule.kind === 'suit') {
+          for (const suit of catalog.suits) {
+            if (rule.suit && rule.suit !== suit.id) continue;
+            if (hasSuit(catalog, suit.items, potentialLevels, rule)) {
+              const suitSet = new Set(suit.items.map(String));
+              for (const p of potentialOutfit.pieces) {
+                const pid = String(p.item.id);
+                if (suitSet.has(pid)) {
+                  pieceSuitName.set(pid, suit.name);
+                  if (rule.refreshed) {
+                    mandatoryRefreshIds.add(pid);
+                  }
+                }
+              }
+              if (rule.refreshed) {
+                mandatorySuitName = suit.name;
+                mandatorySuitRequiredCount = suitRequirement(catalog, suit.items);
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const bonuses = [
+    ...match.bonuses,
+    ...(potentialOutfit.choice === null ? [] : [match.choices[potentialOutfit.choice]]),
+  ];
+
+  const evaluateAtLevels = (levelsMap: Map<string, number>) => {
+    const equipped = potentialOutfit.pieces.map((p) => ({
+      item: p.item,
+      level: levelsMap.get(String(p.item.id)) ?? 0,
+    }));
+    const ctx = outfitContext(catalog, equipped);
+    const pieceScores = new Map<string, number>();
+    let total = bonuses.reduce((sum, b) => sum + (b.global ? b.add * bonusCount(b, ctx) : 0), 0);
+    const evaluatedPieces: PieceScore[] = [];
+    for (const p of potentialOutfit.pieces) {
+      const lvl = levelsMap.get(String(p.item.id)) ?? 0;
+      const ps = scorePiece(catalog, p.item, lvl, match, settings.heart, bonuses, ctx);
+      pieceScores.set(String(p.item.id), ps.score);
+      total += ps.score;
+      evaluatedPieces.push(ps);
+    }
+    const stars = evaluateStars(catalog, match, evaluatedPieces, total, userThresholds);
+    return {
+      score: total,
+      pieceScores,
+      stars,
+      passedCount: stars.filter((s) => s === true).length,
+    };
+  };
+
+  const zeroBaselineLevels = new Map<string, number>();
+  const workingLevels = new Map<string, number>();
+  for (const p of potentialOutfit.pieces) {
+    const pid = String(p.item.id);
+    const rec = catalog.items[p.item.id];
+    if (isFlash(rec)) {
+      zeroBaselineLevels.set(pid, p.level);
+      workingLevels.set(pid, p.level);
+    } else {
+      const baseLvl = p.from ?? 0;
+      zeroBaselineLevels.set(pid, baseLvl);
+      workingLevels.set(pid, mandatoryRefreshIds.has(pid) ? 11 : baseLvl);
+    }
+  }
+
+  const zeroEval = evaluateAtLevels(zeroBaselineLevels);
+  let currentEval = evaluateAtLevels(workingLevels);
+
+  while (
+    currentEval.passedCount < targetStars ||
+    (targetScore !== undefined && currentEval.score < targetScore)
+  ) {
+    const candidates = potentialOutfit.pieces.filter((p) => {
+      const rec = catalog.items[p.item.id];
+      return !isFlash(rec) && (workingLevels.get(String(p.item.id)) ?? 0) < 11;
+    });
+    if (!candidates.length) break;
+
+    let bestPiece: PieceScore | null = null;
+    let bestGain = -1;
+    for (const cand of candidates) {
+      const pid = String(cand.item.id);
+      const trial = new Map(workingLevels);
+      trial.set(pid, 11);
+      const gain = evaluateAtLevels(trial).score - currentEval.score;
+      if (gain > bestGain) {
+        bestGain = gain;
+        bestPiece = cand;
+      }
+    }
+    if (!bestPiece || bestGain <= 0) break;
+
+    const bestPid = String(bestPiece.item.id);
+    const startLvl = workingLevels.get(bestPid) ?? 0;
+    const trial11 = new Map(workingLevels);
+    trial11.set(bestPid, 11);
+    const eval11 = evaluateAtLevels(trial11);
+
+    if (
+      eval11.passedCount >= targetStars &&
+      (targetScore === undefined || eval11.score >= targetScore)
+    ) {
+      let chosenLvl = 11;
+      for (let lvl = startLvl + 1; lvl <= 11; lvl++) {
+        const trial = new Map(workingLevels);
+        trial.set(bestPid, lvl);
+        const ev = evaluateAtLevels(trial);
+        if (
+          ev.passedCount >= targetStars &&
+          (targetScore === undefined || ev.score >= targetScore)
+        ) {
+          chosenLvl = lvl;
+          currentEval = ev;
+          break;
+        }
+      }
+      workingLevels.set(bestPid, chosenLvl);
+      break;
+    } else {
+      workingLevels.set(bestPid, 11);
+      currentEval = eval11;
+    }
+  }
+
+  const upgradeItems: MinimumUpgradeItem[] = [];
+  const zeroLevelWearItems: MinimumStarUpgradePlan['zeroLevelWearItems'] = [];
+  const totalCost: Record<string, number> = {};
+
+  for (const p of potentialOutfit.pieces) {
+    const rec = catalog.items[p.item.id];
+    if (isFlash(rec) || !p.item.group) continue;
+    const pid = String(p.item.id);
+    const baseLvl = p.from ?? 0;
+    const targetLvl = workingLevels.get(pid) ?? baseLvl;
+    const suitName = pieceSuitName.get(pid);
+    const mandatorySuitRefresh = mandatoryRefreshIds.has(pid);
+
+    if (targetLvl > baseLvl) {
+      const scoreAtFrom = zeroEval.pieceScores.get(pid) ?? 0;
+      const scoreAtTo = currentEval.pieceScores.get(pid) ?? p.score;
+      const itemCost = upgradeCost(catalog, rec, baseLvl, targetLvl);
+      for (const [mId, cnt] of Object.entries(itemCost)) {
+        totalCost[mId] = (totalCost[mId] ?? 0) + cnt;
+      }
+      const reason = mandatorySuitRefresh
+        ? `「${suitName}」整套焕新必升`
+        : suitName
+          ? `「${suitName}」套装提分主力`
+          : pieceRuleLabels.has(pid)
+            ? `${pieceRuleLabels.get(pid)}部件提分主力`
+            : '凑满完美线高分主力';
+      upgradeItems.push({
+        groupId: p.item.group,
+        itemId: pid,
+        name: p.item.name,
+        partName: shortPartName(catalog, p.type),
+        suitName,
+        fromLevel: p.from,
+        toLevel: targetLvl,
+        scoreAtFrom,
+        scoreAtTo,
+        gain: Math.max(0, scoreAtTo - scoreAtFrom),
+        mandatorySuitRefresh,
+        reason,
+        cost: itemCost,
+      });
+    } else if (p.from === null && targetLvl === 0 && (suitName || pieceRuleLabels.has(pid))) {
+      zeroLevelWearItems.push({
+        groupId: p.item.group,
+        itemId: pid,
+        name: p.item.name,
+        partName: shortPartName(catalog, p.type),
+        suitName,
+        reason: suitName
+          ? `「${suitName}」套装部件（0级穿戴即可）`
+          : `满足${pieceRuleLabels.get(pid)}件数（0级穿戴即可）`,
+      });
+    }
+  }
+
+  upgradeItems.sort((a, b) => {
+    if (a.mandatorySuitRefresh !== b.mandatorySuitRefresh) {
+      return a.mandatorySuitRefresh ? -1 : 1;
+    }
+    return b.gain - a.gain;
+  });
+
+  return {
+    targetStars,
+    currentStars,
+    achievedScore: currentEval.score,
+    targetScore,
+    mandatorySuitName,
+    mandatorySuitRequiredCount,
+    upgradeItems,
+    zeroLevelWearItems,
+    totalCost,
+  };
 }
 
 export type RuleDiagnostic =
@@ -177,6 +481,7 @@ export function analyzeUnmetStars(
   const groupById = new Map(profile.groups.map((g) => [g.id, g]));
   const ownedScoreIds = new Set(profile.items.map((item) => String(item.id)));
   const equippedLevels = new Map(outfit.pieces.map((p) => [String(p.item.id), p.level]));
+  const scoreIdToGroup = buildScoreIdToGroupMap(catalog);
 
   const evaluateRuleDiagnostic = (rule: StarCondition): RuleDiagnostic => {
     if (rule.kind === 'rank') {
@@ -229,7 +534,7 @@ export function analyzeUnmetStars(
         const candidates = Object.values(catalog.items)
           .filter((item) => !ownedScoreIds.has(String(item.id)) && fits(item, rule) && !/^\d+$/.test(item.name))
           .map((item) => {
-            const group = catalog.game_items[String(item.id)]?.group ?? String(item.id);
+            const group = scoreIdToGroup.get(String(item.id)) ?? String(item.id);
             const source = ITEM_SOURCES[String(item.id)];
             const slotNeeded = !coveredTypes.has(item.type);
             return { item, group, source, slotNeeded };
@@ -283,6 +588,7 @@ export function analyzeUnmetStars(
       const reqCount = suitRequirement(catalog, validIds);
       let equippedQualifying = 0;
       let ownedCount = 0;
+      let readyCount = 0;
       let maxQuality = 3;
       const unknownGroupIds = new Set<string>();
       const unrefreshedGroupIds = new Set<string>();
@@ -295,13 +601,14 @@ export function analyzeUnmetStars(
         if (eqLevel !== undefined && fits(record, rule) && (!rule.refreshed || eqLevel === 11)) {
           equippedQualifying++;
         }
-        const gameGroup = catalog.game_items[String(id)]?.group;
+        const gameGroup = scoreIdToGroup.get(String(id));
         if (ownedScoreIds.has(String(id))) {
           ownedCount++;
           const group = gameGroup ? groupById.get(gameGroup) : undefined;
           if (group) {
             if (group.level === null) unknownGroupIds.add(group.id);
             else if (rule.refreshed && group.level < 11) unrefreshedGroupIds.add(group.id);
+            else readyCount++;
           }
         } else {
           missingParts.push({
@@ -321,6 +628,8 @@ export function analyzeUnmetStars(
         quality: maxQuality,
         ownedCount,
         totalCount: validIds.length,
+        requiredCount: reqCount,
+        readyCount,
         complete: ownedCount >= reqCount,
         unknownGroups: [...unknownGroupIds].map((gid) => groupById.get(gid)!).filter(Boolean),
         unrefreshedGroups: [...unrefreshedGroupIds].map((gid) => groupById.get(gid)!).filter(Boolean),
