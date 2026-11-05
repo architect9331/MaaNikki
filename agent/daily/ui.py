@@ -303,11 +303,12 @@ class GameUI:
         # post_scroll(dx, dy) uses a default target of (0, 0) and moves
         # there even after post_touch_move. Supply the target atomically.
         target = [round(x+w/2), round(y+h/2)] if paged else [x+w-8, y+h-8]
-        # Paged menus need the pointer inside the grid before the wheel event.
-        # A single notch avoids skipping pages; allow the slide to finish.
+        # Unreal's Slate UI updates hover focus on the tick after WM_MOUSEMOVE.
+        # Move the pointer into the scroll area before the wheel event so the
+        # first scroll after unhover() is not dropped.
         if paged:
             amount = 120 if amount > 0 else -120 if amount < 0 else 0
-        if paged and not (self.rt.action("TouchMove", target=target) and self.rt.pause(.3)):
+        if not (self.rt.action("TouchMove", target=target) and self.rt.pause(.3 if paged else .15)):
             return False
         return (self.rt.action("Scroll", target=target, dx=0, dy=amount)
                 and self.rt.pause(.6 if paged else .2))
@@ -465,6 +466,8 @@ class GameUI:
 
     def page_matches(self, page):
         with self.rt.observe():
+            if page == "MaaNikki_MainDetected":
+                return self.star_collect_world_ready()
             return bool(page() if callable(page) else self.rt.hit(page))
 
     def dismiss_tutorial(self):
@@ -649,8 +652,8 @@ class GameUI:
 
     def star_collect_world_ready(self):
         with self.rt.observe():
-            return bool(not self.rt.hit("MaaNikki_Home_StarCollectReady")
-                        and self.rt.hit("MaaNikki_MainDetected"))
+            return bool(self.rt.hit("MaaNikki_MainDetected")
+                        and not self.rt.hit("MaaNikki_Home_StarCollectReady"))
 
     def leave_star_collect(self):
         with self.preserve_cursor():
@@ -697,7 +700,7 @@ class GameUI:
             star_collect = self.rt.hit("MaaNikki_Home_StarCollectReady")
         if star_collect:
             return self.leave_star_collect()
-        if self.rt.hit("MaaNikki_MainDetected"):
+        if self.page_matches("MaaNikki_MainDetected"):
             if self.wait_page("MaaNikki_MainDetected"):
                 return True
         deadline, escapes = time.monotonic()+15, 0
@@ -766,7 +769,7 @@ class GameUI:
                 if not self.rt.key("skip", .5):
                     return False
             else:
-                if self.rt.hit("MaaNikki_MainDetected"):
+                if self.page_matches("MaaNikki_MainDetected"):
                     continue
                 if escapes >= 8:
                     break

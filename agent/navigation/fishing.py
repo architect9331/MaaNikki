@@ -164,11 +164,15 @@ class Fishing:
                  FishingState.SKIP: "领取钓获"}.get(self.last_known_state, "识别操作提示")
         self.rt.log(reason+" 识别信息已记录，本轮停止。",
                     ui_text=f"{self.label}在{phase}阶段停止：{reason}")
-        if leave_home and self.rt.hit("MaaNikki_Home_StarCollectReady"):
-            exited = bool(self.ui.leave_star_collect())
-            self.actions.event({"type": "star_collect_exit", "success": exited})
-            if exited:
-                raise NavigationError(reason)
+        if leave_home:
+            if (not self.rt.hit("MaaNikki_Home_StarCollectReady")
+                    and not self.ui.page_matches("MaaNikki_MainDetected")):
+                self.rt.key("menu", 1.0)
+            if self.rt.hit("MaaNikki_Home_StarCollectReady"):
+                exited = bool(self.ui.leave_star_collect())
+                self.actions.event({"type": "star_collect_exit", "success": exited})
+                if exited:
+                    raise NavigationError(reason)
         # An unclassified fishing page must not reach ordinary Esc recovery.
         self.rt.navigation_halted = True
         raise NavigationError(reason)
