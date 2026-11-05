@@ -115,20 +115,46 @@ pub async fn get_github_releases(
     Err(format!("所有更新线路均不可用: {}", errors.join("; ")))
 }
 
+fn build_http_client(
+    proxy_url: Option<&str>,
+    connect_timeout: std::time::Duration,
+    timeout: std::time::Duration,
+    read_timeout: Option<std::time::Duration>,
+) -> Result<reqwest::Client, String> {
+    let mut builder = reqwest::Client::builder()
+        .user_agent(build_user_agent())
+        .connect_timeout(connect_timeout)
+        .timeout(timeout)
+        .no_proxy();
+    if let Some(rt) = read_timeout {
+        builder = builder.read_timeout(rt);
+    }
+    if let Some(proxy) = proxy_url.filter(|s| !s.is_empty()) {
+        let reqwest_proxy = reqwest::Proxy::all(proxy).map_err(|e| {
+            error!("代理配置失败: {} (代理地址: {})", e, proxy);
+            format!(
+                "代理配置失败: {}。请检查代理格式是否正确（支持 http:// 或 socks5://）",
+                e
+            )
+        })?;
+        builder = builder.proxy(reqwest_proxy);
+    }
+    builder
+        .build()
+        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))
+}
+
 async fn fetch_releases(
     url: &str,
     github_pat: Option<&str>,
     proxy_url: Option<&str>,
 ) -> Result<Vec<GitHubRelease>, String> {
-    let mut builder = reqwest::Client::builder()
-        .user_agent(build_user_agent())
-        .timeout(std::time::Duration::from_secs(10))
-        .connect_timeout(std::time::Duration::from_secs(3))
-        .no_proxy();
-    if let Some(proxy) = proxy_url.filter(|s| !s.is_empty()) {
-        builder = builder.proxy(reqwest::Proxy::all(proxy).map_err(|e| e.to_string())?);
-    }
-    let client = builder.build().map_err(|e| e.to_string())?;
+    let client = build_http_client(
+        proxy_url,
+        std::time::Duration::from_secs(3),
+        std::time::Duration::from_secs(10),
+        None,
+    )?;
     let mut request = client
         .get(url)
         .header(ACCEPT, "application/vnd.github+json");
@@ -353,16 +379,9 @@ async fn probe_download_speed(url: &str, proxy: Option<&str>, size: u64) -> Opti
     use tokio::time::{Duration, Instant};
 
     const SAMPLE: u64 = 512 * 1024;
-    let mut builder = reqwest::Client::builder()
-        .user_agent(build_user_agent())
-        .connect_timeout(Duration::from_secs(3))
-        // The outer deadline keeps partial samples from becoming reqwest errors.
-        .timeout(Duration::from_secs(7))
-        .no_proxy();
-    if let Some(proxy) = proxy.filter(|s| !s.is_empty()) {
-        builder = builder.proxy(reqwest::Proxy::all(proxy).ok()?);
-    }
-    let client = builder.build().ok()?;
+    // The outer deadline keeps partial samples from becoming reqwest errors.
+    let client =
+        build_http_client(proxy, Duration::from_secs(3), Duration::from_secs(7), None).ok()?;
     let start = Instant::now();
     let deadline = start + Duration::from_secs(6);
     let response = tokio::time::timeout_at(
@@ -456,35 +475,17 @@ async fn download_file_attempt(
     }
 
     // 构建 HTTP 客户端和请求
-    let mut client_builder = reqwest::Client::builder()
-        .user_agent(build_user_agent())
-        .timeout(std::time::Duration::from_secs(1800)) // 30 分钟超时，足够下载大文件但防止无限挂起
-        .connect_timeout(std::time::Duration::from_secs(5))
-        .read_timeout(std::time::Duration::from_secs(20))
-        .no_proxy();
-
-    // 配置代理（如果提供）
-    if let Some(ref proxy) = proxy_url {
-        if !proxy.is_empty() {
-            info!("[下载] 使用代理: {}", proxy);
-            let reqwest_proxy = reqwest::Proxy::all(proxy).map_err(|e| {
-                error!("代理配置失败: {} (代理地址: {})", e, proxy);
-                format!(
-                    "代理配置失败: {}。请检查代理格式是否正确（支持 http:// 或 socks5://）",
-                    e
-                )
-            })?;
-            client_builder = client_builder.proxy(reqwest_proxy);
-        } else {
-            info!("[下载] 直连（无代理）");
-        }
+    if let Some(proxy) = proxy_url.as_deref().filter(|s| !s.is_empty()) {
+        info!("[下载] 使用代理: {}", proxy);
     } else {
         info!("[下载] 直连（无代理）");
     }
-
-    let client = client_builder
-        .build()
-        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))?;
+    let client = build_http_client(
+        proxy_url.as_deref(),
+        std::time::Duration::from_secs(5),
+        std::time::Duration::from_secs(1800), // 30 分钟超时，足够下载大文件但防止无限挂起
+        Some(std::time::Duration::from_secs(20)),
+    )?;
 
     let response = tokio::select! {
         _ = download_cancelled(session_id) => return Err("下载已取消".into()),

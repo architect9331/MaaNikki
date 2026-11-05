@@ -127,17 +127,8 @@ fn folder() -> Result<PathBuf, String> {
 }
 
 fn save<T: Serialize>(path: PathBuf, value: &T) -> Result<(), String> {
-    let parent = path.parent().ok_or("共鸣记录保存路径无效。")?;
-    std::fs::create_dir_all(parent).map_err(|_| "无法创建共鸣记录目录。")?;
     let raw = serde_json::to_vec(value).map_err(|_| "共鸣记录编码失败。")?;
-    let temporary = path.with_extension("json.tmp");
-    use std::io::Write;
-    let mut file = std::fs::File::create(&temporary).map_err(|_| "无法保存共鸣记录。")?;
-    file.write_all(&raw)
-        .and_then(|_| file.sync_all())
-        .map_err(|_| "无法保存共鸣记录。")?;
-    drop(file);
-    std::fs::rename(&temporary, path).map_err(|_| "无法替换共鸣记录文件。".into())
+    super::utils::write_atomic(&path, &raw).map_err(|_| "无法保存共鸣记录。".into())
 }
 
 fn valid_key(key: &str) -> bool {

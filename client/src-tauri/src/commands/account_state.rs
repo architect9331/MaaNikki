@@ -1,10 +1,7 @@
 //! UID-scoped journals shared with Python AccountState.
-use super::utils::{get_app_data_dir, get_exe_directory};
+use super::utils::{get_app_data_dir, get_exe_directory, write_atomic};
 use serde_json::{json, Value};
-use std::{
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 pub(super) fn valid_account_key(key: &str) -> bool {
     key.strip_prefix("CN:").is_some_and(|uid| {
@@ -78,15 +75,7 @@ pub(super) fn update_role(
         return Err("账号状态 JSON 超过 64 MiB。".into());
     }
     let path = account_path(key)?;
-    std::fs::create_dir_all(path.parent().ok_or("账号路径无效。")?)
-        .map_err(|_| "无法创建账号目录。")?;
-    let temporary = path.with_extension("rust.tmp");
-    let mut file = std::fs::File::create(&temporary).map_err(|_| "无法保存账号数据。")?;
-    file.write_all(&raw)
-        .and_then(|_| file.sync_all())
-        .map_err(|_| "无法保存账号数据。")?;
-    drop(file);
-    std::fs::rename(temporary, path).map_err(|_| "无法替换账号数据。")?;
+    write_atomic(&path, &raw).map_err(|_| "无法保存账号数据。")?;
     Ok(())
 }
 

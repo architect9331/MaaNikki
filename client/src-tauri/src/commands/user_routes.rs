@@ -1,10 +1,10 @@
 //! User route files for the route editor. Routes are declarative data the agent validates again.
 use super::{
     account_state::read_json,
-    utils::{get_app_data_dir, get_exe_directory},
+    utils::{get_app_data_dir, get_exe_directory, write_atomic},
 };
 use serde_json::{json, Value};
-use std::{io::Write, path::PathBuf};
+use std::path::PathBuf;
 
 const MAX_ROUTE_BYTES: usize = 1024 * 1024;
 
@@ -64,14 +64,7 @@ pub fn save_user_route(id: String, route: Value) -> Result<String, String> {
     if raw.len() > MAX_ROUTE_BYTES {
         return Err("路线超过 1 MB，请减少点位。".into());
     }
-    std::fs::create_dir_all(routes_dir()?).map_err(|_| "无法创建路线目录。")?;
-    let temporary = path.with_extension("tmp");
-    let mut file = std::fs::File::create(&temporary).map_err(|_| "无法保存路线。")?;
-    file.write_all(&raw)
-        .and_then(|_| file.sync_all())
-        .map_err(|_| "无法保存路线。")?;
-    drop(file);
-    std::fs::rename(temporary, &path).map_err(|_| "无法替换路线文件。")?;
+    write_atomic(&path, &raw).map_err(|_| "无法保存路线。")?;
     Ok(path.to_string_lossy().into_owned())
 }
 

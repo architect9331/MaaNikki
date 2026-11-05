@@ -244,43 +244,6 @@ pub fn maa_set_save_draw(state: State<'_, Arc<MaaState>>, enabled: bool) -> Resu
         .map_err(|e| format!("设置保存调试图像失败: {}", e))
 }
 
-/// 打开文件（使用系统默认程序）
-#[tauri::command]
-pub async fn open_file(file_path: String) -> Result<(), String> {
-    info!("open_file: {}", file_path);
-
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        use std::process::Command;
-        Command::new("cmd")
-            .args(["/c", "start", "", &file_path])
-            .creation_flags(CREATE_NO_WINDOW)
-            .spawn()
-            .map_err(|e| format!("Failed to open file: {}", e))?;
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        use std::process::Command;
-        Command::new("open")
-            .arg(&file_path)
-            .spawn()
-            .map_err(|e| format!("Failed to open file: {}", e))?;
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        use std::process::Command;
-        Command::new("xdg-open")
-            .arg(&file_path)
-            .spawn()
-            .map_err(|e| format!("Failed to open file: {}", e))?;
-    }
-
-    Ok(())
-}
-
 /// 运行程序并等待其退出
 #[tauri::command]
 pub async fn run_and_wait(file_path: String) -> Result<i32, String> {

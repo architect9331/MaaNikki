@@ -404,19 +404,10 @@ pub fn take_config_recovery_notice(
 // 内部辅助函数
 // ============================================================================
 
-/// 原子写入配置文件：先写到 `.json.tmp`，再 rename 覆盖正式文件。
+/// 原子写入配置文件：先写到临时文件并落盘，再 rename 覆盖正式文件。
 /// 与前端 configService.ts 保持一致，避免进程在写入中途被杀时把配置文件截断为 0 字节。
 fn atomic_write_config(config_path: &Path, content: &str) -> Result<(), String> {
-    let tmp_path = config_path.with_extension("json.tmp");
-    std::fs::write(&tmp_path, content).map_err(|e| {
-        let _ = std::fs::remove_file(&tmp_path);
-        format!("写入临时配置文件失败: {}", e)
-    })?;
-    if let Err(e) = std::fs::rename(&tmp_path, config_path) {
-        let _ = std::fs::remove_file(&tmp_path);
-        return Err(format!("重命名配置文件失败: {}", e));
-    }
-    Ok(())
+    super::utils::write_atomic(config_path, content).map_err(|e| format!("写入配置文件失败: {}", e))
 }
 
 fn default_config() -> serde_json::Value {

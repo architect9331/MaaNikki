@@ -9,12 +9,6 @@ pub fn set_minimize_to_tray(enabled: bool) {
     log::info!("Minimize to tray: {}", enabled);
 }
 
-/// 获取关闭时是否最小化到托盘的设置
-#[tauri::command]
-pub fn get_minimize_to_tray() -> bool {
-    tray::get_minimize_to_tray()
-}
-
 /// 更新托盘图标
 #[tauri::command]
 pub fn update_tray_icon(icon_path: String) -> Result<(), String> {

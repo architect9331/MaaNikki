@@ -34,16 +34,18 @@ pub(super) fn credentials() -> Result<Value, String> {
 }
 
 #[cfg(windows)]
-fn unprotect(bytes: &[u8]) -> Result<Vec<u8>, String> {
+mod dpapi {
     use std::ffi::c_void;
+
     #[repr(C)]
-    struct Blob {
-        size: u32,
-        data: *mut u8,
+    pub(super) struct Blob {
+        pub(super) size: u32,
+        pub(super) data: *mut u8,
     }
+
     #[link(name = "Crypt32")]
     extern "system" {
-        fn CryptUnprotectData(
+        pub(super) fn CryptUnprotectData(
             input: *const Blob,
             description: *mut *mut u16,
             entropy: *const Blob,
@@ -52,11 +54,26 @@ fn unprotect(bytes: &[u8]) -> Result<Vec<u8>, String> {
             flags: u32,
             output: *mut Blob,
         ) -> i32;
+        pub(super) fn CryptProtectData(
+            input: *const Blob,
+            description: *const u16,
+            entropy: *const Blob,
+            reserved: *const c_void,
+            prompt: *const c_void,
+            flags: u32,
+            output: *mut Blob,
+        ) -> i32;
     }
+
     #[link(name = "Kernel32")]
     extern "system" {
-        fn LocalFree(pointer: *mut c_void) -> *mut c_void;
+        pub(super) fn LocalFree(pointer: *mut c_void) -> *mut c_void;
     }
+}
+
+#[cfg(windows)]
+fn unprotect(bytes: &[u8]) -> Result<Vec<u8>, String> {
+    use dpapi::{Blob, CryptUnprotectData, LocalFree};
     let source = Blob {
         size: bytes.len() as u32,
         data: bytes.as_ptr() as *mut u8,
@@ -93,28 +110,7 @@ fn unprotect(_bytes: &[u8]) -> Result<Vec<u8>, String> {
 
 #[cfg(windows)]
 fn protect(bytes: &[u8]) -> Result<Vec<u8>, String> {
-    use std::ffi::c_void;
-    #[repr(C)]
-    struct Blob {
-        size: u32,
-        data: *mut u8,
-    }
-    #[link(name = "Crypt32")]
-    extern "system" {
-        fn CryptProtectData(
-            input: *const Blob,
-            description: *const u16,
-            entropy: *const Blob,
-            reserved: *const c_void,
-            prompt: *const c_void,
-            flags: u32,
-            output: *mut Blob,
-        ) -> i32;
-    }
-    #[link(name = "Kernel32")]
-    extern "system" {
-        fn LocalFree(pointer: *mut c_void) -> *mut c_void;
-    }
+    use dpapi::{Blob, CryptProtectData, LocalFree};
     let source = Blob {
         size: bytes.len() as u32,
         data: bytes.as_ptr() as *mut u8,
@@ -292,16 +288,14 @@ pub async fn pearpal_complete_login(
         return Err("登录已取消。".into());
     }
     let folder = directory()?;
-    std::fs::create_dir_all(&folder).map_err(|_| "无法保存登录信息。")?;
-    let temporary = folder.join("login.dat.tmp");
-    std::fs::write(&temporary, encrypted).map_err(|_| "无法保存登录信息。")?;
-    std::fs::rename(temporary, folder.join("login.dat")).map_err(|_| "无法保存登录信息。")?;
+    super::utils::write_atomic(&folder.join("login.dat"), &encrypted)
+        .map_err(|_| "无法保存登录信息。")?;
     let status = json!({
         "authenticated": true, "error": "",
         "star_collected": response["data"]["star"].as_array().map(Vec::len),
         "dewdrop_collected": response["data"]["dewdrop"].as_array().map(Vec::len),
     });
-    let _ = std::fs::write(folder.join("status.json"), status.to_string());
+    let _ = super::utils::write_atomic(&folder.join("status.json"), status.to_string());
     drop(_guard);
     super::resonance::login_changed(&app);
     let _ = app.emit_to("main", "pearpal-login-changed", true);

@@ -265,10 +265,6 @@ pub fn run() {
             // 状态查询命令
             commands::state::maa_get_instance_state,
             commands::state::maa_get_all_states,
-            commands::state::maa_get_cached_adb_devices,
-            commands::state::maa_get_cached_win32_windows,
-            commands::state::maa_get_cached_wlroots_sockets,
-            commands::state::maa_get_cached_gamescope_instances,
             commands::state::log_to_stdout,
             commands::state::push_log,
             commands::state::get_all_logs,
@@ -297,7 +293,6 @@ pub fn run() {
             commands::system::has_quit_after_run_flag,
             commands::system::restart_as_admin,
             commands::system::maa_set_save_draw,
-            commands::system::open_file,
             commands::system::run_and_wait,
             commands::system::set_pre_action_stop,
             commands::system::run_action,
@@ -318,7 +313,6 @@ pub fn run() {
             commands::system::get_webview2_dir,
             // 托盘相关命令
             commands::tray::set_minimize_to_tray,
-            commands::tray::get_minimize_to_tray,
             commands::tray::update_tray_icon,
             commands::tray::update_tray_tooltip,
             // 配置同步命令（WebUI 实时同步）

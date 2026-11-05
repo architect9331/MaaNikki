@@ -621,59 +621,11 @@ async fn handle_put_config(
 /// GET /api/maa/state
 /// 返回所有 Maa 实例状态快照（与 maa_get_all_states invoke 命令返回格式相同）
 async fn handle_get_maa_state(State(state): State<WebState>) -> impl IntoResponse {
-    use std::collections::HashMap;
-
-    let instances_result = state.maa_state.instances.lock();
-    let adb_result = state.maa_state.cached_adb_devices.lock();
-    let win32_result = state.maa_state.cached_win32_windows.lock();
-    let wlroots_result = state.maa_state.cached_wlroots_sockets.lock();
-    let gamescope_instances_result = state.maa_state.cached_gamescope_instances.lock();
-
-    match (
-        instances_result,
-        adb_result,
-        win32_result,
-        wlroots_result,
-        gamescope_instances_result,
-    ) {
-        (Ok(mut instances), Ok(adb), Ok(win32), Ok(wlroots), Ok(gamescope_instances)) => {
-            let mut instance_states: HashMap<String, serde_json::Value> = HashMap::new();
-
-            for (id, runtime) in instances.iter_mut() {
-                let is_running = runtime.tasker.as_ref().is_some_and(|t| t.running());
-
-                // 与 state.rs 的 maa_get_all_states 保持一致：清理停止标志
-                if !is_running && runtime.stop_in_progress {
-                    runtime.stop_in_progress = false;
-                    runtime.stop_started_at = None;
-                }
-
-                // 字段名使用 snake_case，与 Tauri invoke 返回格式保持一致，
-                // 前端 maaService.getAllStates 会统一做 camelCase 转换
-                instance_states.insert(
-                    id.clone(),
-                    serde_json::json!({
-                        "connected": runtime.controller.as_ref().is_some_and(|c| c.connected()),
-                        "resource_loaded": runtime.resource.as_ref().is_some_and(|r| r.loaded()),
-                        "tasker_inited": runtime.tasker.as_ref().is_some_and(|t| t.inited()),
-                        "is_running": is_running,
-                        "task_run_state": serde_json::to_value(&runtime.task_run_state).unwrap_or_default(),
-                    }),
-                );
-            }
-
-            Json(serde_json::json!({
-                "instances": instance_states,
-                "cached_adb_devices": serde_json::to_value(&*adb).unwrap_or(serde_json::Value::Array(vec![])),
-                "cached_win32_windows": serde_json::to_value(&*win32).unwrap_or(serde_json::Value::Array(vec![])),
-                "cached_wlroots_sockets": serde_json::to_value(&*wlroots).unwrap_or(serde_json::Value::Array(vec![])),
-                "cached_gamescope_instances": serde_json::to_value(&*gamescope_instances).unwrap_or(serde_json::Value::Array(vec![])),
-            }))
-            .into_response()
-        }
-        _ => (
+    match crate::commands::state::get_all_states_impl(&state.maa_state) {
+        Ok(states) => Json(states).into_response(),
+        Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": "获取状态锁失败" })),
+            Json(serde_json::json!({ "error": e })),
         )
             .into_response(),
     }

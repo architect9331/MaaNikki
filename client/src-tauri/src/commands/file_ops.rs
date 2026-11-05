@@ -154,7 +154,9 @@ fn sort_newest_first(entries: &mut [ExportEntry]) {
 enum AddOutcome {
     Added,
     /// 放不下；日志会带上压缩后大小，供估算可保留的结尾长度。
-    TooLarge { compressed: u64 },
+    TooLarge {
+        compressed: u64,
+    },
     Failed,
 }
 
@@ -252,8 +254,7 @@ impl<W: Write + Seek> BudgetedZip<W> {
             }
             options = options.compression_method(zip::CompressionMethod::Stored);
         } else {
-            let measured = std::fs::File::open(path)
-                .and_then(|mut file| deflated_size(&mut file));
+            let measured = std::fs::File::open(path).and_then(|mut file| deflated_size(&mut file));
             match measured {
                 Ok(compressed) if compressed > available => {
                     return AddOutcome::TooLarge { compressed };
@@ -293,14 +294,16 @@ impl<W: Write + Seek> BudgetedZip<W> {
         match self.try_add(entry, limit) {
             AddOutcome::Added => LogFit::Whole,
             AddOutcome::Failed => LogFit::Unreadable,
-            AddOutcome::TooLarge { compressed } => match self.add_log_tail(entry, compressed, limit) {
-                Ok(true) => LogFit::Tail,
-                Ok(false) => LogFit::Omitted,
-                Err(error) => {
-                    log::warn!("写入日志结尾失败 {}: {}", entry.archive_name, error);
-                    LogFit::Omitted
+            AddOutcome::TooLarge { compressed } => {
+                match self.add_log_tail(entry, compressed, limit) {
+                    Ok(true) => LogFit::Tail,
+                    Ok(false) => LogFit::Omitted,
+                    Err(error) => {
+                        log::warn!("写入日志结尾失败 {}: {}", entry.archive_name, error);
+                        LogFit::Omitted
+                    }
                 }
-            },
+            }
         }
     }
 

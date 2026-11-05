@@ -817,8 +817,6 @@ pub async fn start_tasks_impl(
     debug!("[start_tasks] Submitting {} tasks...", tasks.len());
     // (maa_task_id, selected_task_id) 配对列表，用于后续初始化 TaskRunState
     let mut task_id_pairs: Vec<(i64, Option<String>)> = Vec::new();
-    // 持锁提交，确保任务开始回调不会早于遥测元数据登记
-    let mut telemetry_posting = super::telemetry::begin_posting(&instance_id);
     let task_ids_ret;
     {
         // 初始化/追加后端 TaskRunState（单一真相来源）并缓存 task_ids
@@ -830,6 +828,8 @@ pub async fn start_tasks_impl(
         let instance = instances
             .get_mut(&instance_id)
             .ok_or("Instance not found")?;
+        // 持锁提交，确保任务开始回调不会早于遥测元数据登记，且遵循 instances -> RUNS 锁顺序
+        let mut telemetry_posting = super::telemetry::begin_posting(&instance_id);
         if reset_state {
             // 首批：重置任务运行状态
             instance.task_ids.clear();
@@ -892,9 +892,8 @@ pub async fn start_tasks_impl(
             instance.task_ids.extend(task_ids);
         }
         debug!("[start_tasks] TaskRunState updated");
+        drop(telemetry_posting);
     }
-    // 提交完成，释放遥测状态锁（后续有 await，不能继续持有）
-    drop(telemetry_posting);
 
     // 通知所有客户端：任务已启动，需刷新运行时状态
     super::utils::emit_state_changed(&app, &instance_id, "task-started");
