@@ -83,7 +83,8 @@ class Fishing:
 
     def detect_kind(self):
         frame = self.last_state_frame
-        self.kind = ("home" if frame is not None and self.ui.asset("IconFishingHomeFeature",
+        text = (self.last_state_details or {}).get("text", "")
+        self.kind = ("home" if "陨星" in text or frame is not None and self.ui.asset("IconFishingHomeFeature",
             image=frame, roi=self.ui.roi("AreaFishingIcons"), scale=2/3, gray=(210, 255), threshold=.8)
             else "fish")
         self.actions.event({"type": "fishing_type", "kind": self.kind})
@@ -127,12 +128,23 @@ class Fishing:
                 break
         if frame is not None and found == FishingState.UNKNOWN:
             text = re.sub(r"\s+", "", self.ui.text(area, image=frame))
-            for label, state in (("提竿", FishingState.STRIKE), ("调整发力", FishingState.PULL_LINE),
-                                 ("拉扯鱼线", FishingState.PULL_LINE), ("收线", FishingState.REEL_IN),
-                                 ("收竿", FishingState.FINISH), ("跳过", FishingState.SKIP)):
+            for label, state in (("提竿", FishingState.STRIKE), ("S提", FishingState.STRIKE),
+                                 ("调整发力", FishingState.PULL_LINE), ("调整", FishingState.PULL_LINE),
+                                 ("拉扯鱼线", FishingState.PULL_LINE), ("拉扯", FishingState.PULL_LINE),
+                                 ("收线", FishingState.REEL_IN),
+                                 ("收竿", FishingState.FINISH), ("R收", FishingState.FINISH),
+                                 ("跳过", FishingState.SKIP)):
                 if label in text:
                     found, source = state, "text"
                     break
+            if found == FishingState.UNKNOWN and "取消钓" in text:
+                # Bright shore clutter behind the last character of the left prompt
+                # can clip "竿"/"线" in OCR and pull the 2-char template slightly below .8.
+                for icon, state in (("IconFishingFinish", FishingState.FINISH),
+                                    ("IconFishingReelIn", FishingState.REEL_IN)):
+                    if self.ui.asset(icon, image=frame, roi=area, threshold=.7, gray=(210, 255), scale=2/3):
+                        found, source = state, icon
+                        break
         self.last_state_details = {"state": found.name, "source": source, "text": text, "roi": area}
         if found != FishingState.UNKNOWN:
             self.last_known_state = found
