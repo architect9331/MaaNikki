@@ -39,7 +39,7 @@ class MapSpec:
     transit_radius_scale: float = 1.0
     heading_tolerance_far: float = 5.0
     heading_tolerance_near: float = 3.0
-    heading_position_slack: float = 0.0
+    heading_position_slack: float = 0.1
     transit_pass_radius_scale: float = 1.0
 
 
@@ -57,7 +57,7 @@ def maps(resource: Path) -> dict[str, MapSpec]:
                 transit_radius_scale=float(item.get("transit_radius_scale", 1.0)),
                 heading_tolerance_far=float(item.get("heading_tolerance_far", 5.0)),
                 heading_tolerance_near=float(item.get("heading_tolerance_near", 3.0)),
-                heading_position_slack=float(item.get("heading_position_slack", 0.0)),
+                heading_position_slack=float(item.get("heading_position_slack", 0.1)),
                 transit_pass_radius_scale=float(item.get("transit_pass_radius_scale",
                                                         item.get("transit_radius_scale", 1.0))),
             ) for item in items

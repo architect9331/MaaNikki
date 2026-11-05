@@ -481,11 +481,14 @@ class Navigator:
         if self.turn_ratio is not None and abs(angle_delta(target_heading, pose.heading)) <= tolerance:
             return pose
         if (not stationary and self.turn_ratio is not None
+                and self.motion and self.motion.until
                 and abs(angle_delta(target_heading, pose.heading)) < 45):
             # Small corrections keep forward held while there is sufficient
             # travel left to complete the camera update and its observation.
-            if self.motion:
-                self.motion.guard(self.read_costs.get("observe", .3)*1.25+.15)
+            self.motion.guard(self.read_costs.get("observe", .3)*1.25+.15)
+        if (not stationary and self.turn_ratio is not None
+                and self.motion and self.motion.until
+                and abs(angle_delta(target_heading, pose.heading)) < 45):
             if getattr(self.inputs, "generation", 0) != generation:
                 raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
             delta = angle_delta(target_heading, pose.heading)
@@ -1097,10 +1100,15 @@ class Navigator:
                         and crossed_waypoint(target, before_turn, pose, radius, pass_radius)):
                     last = before_turn
                     continue
-                # Coasting during a turn can change the target bearing.
+                # Coasting during a turn can change the target bearing. When
+                # forward was not held and the pose only shifted within
+                # sub-pixel minimap correlation jitter, keep the completed
+                # stationary alignment so a 0.05-unit grid step near the
+                # waypoint cannot loop without advancing.
                 bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
                 tolerance = self.travel_tolerance(distance(pose, target), radius)
-                if abs(angle_delta(bearing, pose.heading)) > tolerance:
+                coasted = turn_forward > .02 or distance(before_turn, pose) > .15
+                if coasted and abs(angle_delta(bearing, pose.heading)) > tolerance:
                     heading_rechecks = 0 if turn_forward > .02 else heading_rechecks+1
                     self.event({"type": "heading_recheck", "index": index,
                                 "attempt": heading_rechecks, "target": [target.x, target.y],
