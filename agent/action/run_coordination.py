@@ -29,7 +29,7 @@ class RunCoordinationAction(CustomAction):
                 collection = options.get("five_star_collection") is True or "MaaNikki_BlessingPursuit" in next_names
                 kind = "bless" if collection or "MaaNikki_Bless" in next_names else (
                     "jihua" if "MaaNikki_Jihua" in next_names else
-                    "monster" if "MaaNikki_Monster" in next_names else None)
+                    "monster" if ("MaaNikki_Monster" in next_names or "MaaNikki_CraftingPursuit" in next_names) else None)
                 # Without a usable record the pursuit step organizes first. Finished
                 # collections skip it unless a requested reread remains.
                 if collection and parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto") == "auto":

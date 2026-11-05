@@ -188,8 +188,8 @@ def run_crafting_pursuit(rt) -> bool:
     role = account.load()
     wardrobe = role.get("wardrobe") or {}
     if not wardrobe.get("inventory") and not wardrobe.get("last_scan"):
-        rt.log("制衣材料全收集：尚未读取过衣柜，请先在「衣柜与搭配」中读取衣柜。")
-        return False
+        rt.log("制衣材料全收集：尚未读取过衣柜，本次跳过；请先在「衣柜与搭配」中读取衣柜以建立设计图缺口清单。")
+        return True
 
     crafting, scoring = load_catalogs()
     mat_defs = crafting.get("materials") or {}
