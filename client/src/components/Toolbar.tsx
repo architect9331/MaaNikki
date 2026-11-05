@@ -11,7 +11,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
-import { isTaskCompatible } from '@/stores/helpers';
+import { useShallow } from 'zustand/react/shallow';
+import { isControllerAllowed, isResourceAllowed, isTaskCompatible } from '@/stores/helpers';
 import { maaService } from '@/services/maaService';
 import { buildTaskOptionSummary } from '@/services/telemetryService';
 import { collectPasswordPlaintextsFromRunnableTasks } from '@/utils/passwordOptionValues';
@@ -158,7 +159,7 @@ interface ToolbarProps {
 export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarProps) {
   const { t } = useTranslation();
   const {
-    getActiveInstance,
+    instance,
     selectAllTasks,
     collapseAllTasks,
     updateInstance,
@@ -194,7 +195,40 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
     devMode,
     // MaaFramework 版本
     maaVersion,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      // 直接派生当前实例（而非渲染时调用 getActiveInstance），保证实例切换或内容变化时重新渲染
+      instance: state.instances.find((i) => i.id === state.activeInstanceId) || null,
+      selectAllTasks: state.selectAllTasks,
+      collapseAllTasks: state.collapseAllTasks,
+      updateInstance: state.updateInstance,
+      projectInterface: state.projectInterface,
+      basePath: state.basePath,
+      instanceConnectionStatus: state.instanceConnectionStatus,
+      instanceResourceLoaded: state.instanceResourceLoaded,
+      setInstanceCurrentTaskId: state.setInstanceCurrentTaskId,
+      setInstanceTaskStatus: state.setInstanceTaskStatus,
+      setInstanceConnectionStatus: state.setInstanceConnectionStatus,
+      setInstanceResourceLoaded: state.setInstanceResourceLoaded,
+      selectedController: state.selectedController,
+      selectedResource: state.selectedResource,
+      scheduleExecutions: state.scheduleExecutions,
+      setScheduleExecution: state.setScheduleExecution,
+      clearScheduleExecution: state.clearScheduleExecution,
+      registerCtrlIdName: state.registerCtrlIdName,
+      registerResIdName: state.registerResIdName,
+      registerResBatch: state.registerResBatch,
+      registerTaskIdName: state.registerTaskIdName,
+      registerEntryTaskName: state.registerEntryTaskName,
+      addLog: state.addLog,
+      setShowAddTaskPanel: state.setShowAddTaskPanel,
+      interfaceTranslations: state.interfaceTranslations,
+      language: state.language,
+      tcpCompatMode: state.tcpCompatMode,
+      devMode: state.devMode,
+      maaVersion: state.maaVersion,
+    })),
+  );
 
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -216,7 +250,6 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
   const lastStartCancelledRef = useRef(false);
   const startingRef = useRef(false);
 
-  const instance = getActiveInstance();
   const tasks = (instance?.selectedTasks || []).filter((task) =>
     isTaskAvailable(projectInterface?.task.find((def) => def.name === task.taskName), devMode),
   );
@@ -393,17 +426,9 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
             : task.taskName;
 
           // 检查是控制器不兼容还是资源不兼容
-          const isControllerIncompatible =
-            taskDef?.controller &&
-            taskDef.controller.length > 0 &&
-            controllerName &&
-            !taskDef.controller.includes(controllerName);
+          const isControllerIncompatible = !isControllerAllowed(taskDef, controllerName, 'allow');
 
-          const isResourceIncompatible =
-            taskDef?.resource &&
-            taskDef.resource.length > 0 &&
-            resourceName &&
-            !taskDef.resource.includes(resourceName);
+          const isResourceIncompatible = !isResourceAllowed(taskDef, resourceName, 'allow');
 
           if (isControllerIncompatible) {
             log.warn(`  - ${t('taskList.taskSkippedController', { taskName: taskLabel })}`);

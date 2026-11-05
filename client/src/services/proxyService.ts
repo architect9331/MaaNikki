@@ -132,22 +132,6 @@ export function proxySettingsForUpdateDownload(
 }
 
 /**
- * 格式化代理 URL 用于显示（隐藏密码）
- * @param url 代理 URL
- * @returns 格式化后的 URL
- */
-export function formatProxyUrlForDisplay(url: string): string {
-  const parsed = parseProxyUrl(url);
-  if (!parsed) {
-    return url;
-  }
-
-  const { type, host, port, username } = parsed;
-  const auth = username ? `${username}:****@` : '';
-  return `${type}://${auth}${host}:${port}`;
-}
-
-/**
  * 下载结果类型（与 Rust 端 DownloadResult 对应）
  */
 export interface DownloadResult {

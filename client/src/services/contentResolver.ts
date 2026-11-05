@@ -122,21 +122,6 @@ async function loadFromUrl(url: string): Promise<string> {
 }
 
 /**
- * 读取本地文本文件（供外部使用）
- */
-export async function readLocalTextFile(filename: string): Promise<string> {
-  if (isTauri()) {
-    return await invoke<string>('read_local_file', { filename });
-  } else {
-    const response = await fetch(`${getApiBase()}/local-file?path=${encodeURIComponent(filename)}`);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    return await response.text();
-  }
-}
-
-/**
  * 读取本地二进制文件并返回 base64（供外部使用）
  */
 export async function readLocalFileBase64(filename: string): Promise<string> {
@@ -159,25 +144,6 @@ export async function readLocalFileBase64(filename: string): Promise<string> {
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
-  }
-}
-
-/**
- * 检查本地文件是否存在
- */
-export async function localFileExists(filename: string): Promise<boolean> {
-  if (isTauri()) {
-    return await invoke<boolean>('local_file_exists', { filename });
-  } else {
-    try {
-      const response = await fetch(
-        `${getApiBase()}/local-file?path=${encodeURIComponent(filename)}`,
-        { method: 'HEAD' },
-      );
-      return response.ok;
-    } catch {
-      return false;
-    }
   }
 }
 
@@ -215,22 +181,6 @@ export function resolveI18nText(
 
   const key = text.slice(1);
   return translations?.[key] || key;
-}
-
-/**
- * 解析内容（同步版本，仅处理国际化）
- * 用于不需要加载外部内容的场景
- */
-export function resolveContentSync(
-  content: string | undefined,
-  options: ResolveOptions = {},
-): string {
-  if (!content) return '';
-
-  // 先处理国际化
-  const resolved = resolveI18nText(content, options.translations);
-
-  return resolved;
 }
 
 /**
@@ -317,36 +267,6 @@ export async function resolveDescriptionContent(
     // 加载失败时返回原始文本，并附带错误信息
     return { content: resolved, type, loaded: false, error: errorMsg };
   }
-}
-
-/**
- * 解析图标路径（同步版本，仅返回路径）
- * 用于非 Tauri 环境或作为 key
- */
-export function resolveIconPath(
-  iconPath: string | undefined,
-  _basePath: string,
-  translations?: Record<string, string>,
-): string | undefined {
-  if (!iconPath) return undefined;
-
-  // 先处理国际化
-  let resolved = resolveI18nText(iconPath, translations);
-
-  if (!resolved) return undefined;
-
-  // 如果是 URL 直接返回
-  if (isUrl(resolved)) return resolved;
-
-  // 规范化路径
-  resolved = normalizeFilePath(resolved);
-
-  // 浏览器环境：通过后端本地文件代理 API 访问
-  if (!isTauri()) {
-    resolved = `${getApiBase()}/local-file?path=${encodeURIComponent(resolved)}`;
-  }
-
-  return resolved;
 }
 
 /**
@@ -845,15 +765,3 @@ export function useResolvedContent(
   return result;
 }
 
-/**
- * React Hook: 解析 description 并返回 HTML（简化版本）
- * 用于只需要 HTML 结果的场景
- */
-export function useDescriptionHtml(
-  description: string | undefined,
-  basePath: string = '',
-  translations?: Record<string, string>,
-): { html: string; loading: boolean; error?: string } {
-  const result = useResolvedContent(description, basePath, translations);
-  return { html: result.html, loading: result.loading, error: result.error };
-}

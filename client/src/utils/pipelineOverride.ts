@@ -15,31 +15,17 @@ import { isMxuSpecialTask, getMxuSpecialTask } from '@/types/specialTasks';
 import { resolveCompatTaskDef } from '@/types/pretasks';
 import { loggers } from './logger';
 import { findSwitchCase } from './optionHelpers';
-import { createDefaultOptionValue, sanitizeOptionValue } from '@/stores/helpers';
+import { createDefaultOptionValue, isScopeCompatible, sanitizeOptionValue } from '@/stores/helpers';
 
 /**
  * 检查选项是否与当前控制器/资源不兼容
- * 返回 true 表示不兼容，应跳过该选项
+ * 返回 true 表示不兼容，应跳过该选项（未设置控制器/资源时视为不兼容）
  */
 const isOptionIncompatible = (
   optionDef: OptionDefinition,
   controllerName?: string,
   resourceName?: string,
-): boolean => {
-  // 检查控制器兼容性
-  if (optionDef.controller && optionDef.controller.length > 0) {
-    if (!controllerName || !optionDef.controller.includes(controllerName)) {
-      return true;
-    }
-  }
-  // 检查资源兼容性
-  if (optionDef.resource && optionDef.resource.length > 0) {
-    if (!resourceName || !optionDef.resource.includes(resourceName)) {
-      return true;
-    }
-  }
-  return false;
-};
+): boolean => !isScopeCompatible(optionDef, controllerName, resourceName, 'deny');
 
 /**
  * 递归处理选项的 pipeline_override，收集到数组中

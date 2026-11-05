@@ -1,9 +1,66 @@
-import type { OptionValue, OptionDefinition, PresetOptionValue, TaskItem } from '@/types/interface';
+import type {
+  Instance,
+  OptionValue,
+  OptionDefinition,
+  PresetOptionValue,
+  SelectedTask,
+  TaskItem,
+} from '@/types/interface';
 import { findSwitchCase } from '@/utils/optionHelpers';
 import type { AppState } from './types';
 
 /** 生成唯一 ID */
 export const generateId = () => Math.random().toString(36).substring(2, 9);
+
+/** 只替换 id 匹配的元素，其余元素保持原引用 */
+export const mapById = <T extends { id: string }>(
+  items: T[],
+  id: string,
+  update: (item: T) => T,
+): T[] => items.map((item) => (item.id === id ? update(item) : item));
+
+/** 更新指定实例（其余实例保持原引用） */
+export const mapInstance = (
+  instances: Instance[],
+  instanceId: string,
+  update: (instance: Instance) => Instance,
+): Instance[] => mapById(instances, instanceId, update);
+
+/**
+ * 更新指定实例的任务列表。
+ * update 返回原任务列表（同一引用）时保持该实例不变，便于表达“条件不满足则不修改”。
+ */
+export const mapInstanceTasks = (
+  instances: Instance[],
+  instanceId: string,
+  update: (tasks: SelectedTask[]) => SelectedTask[],
+): Instance[] =>
+  mapInstance(instances, instanceId, (instance) => {
+    const tasks = update(instance.selectedTasks);
+    return tasks === instance.selectedTasks ? instance : { ...instance, selectedTasks: tasks };
+  });
+
+/** 更新指定实例中的指定任务 */
+export const mapTask = (
+  instances: Instance[],
+  instanceId: string,
+  taskId: string,
+  update: (task: SelectedTask) => SelectedTask,
+): Instance[] =>
+  mapInstanceTasks(instances, instanceId, (tasks) => mapById(tasks, taskId, update));
+
+/**
+ * 将数组中 from 位置的元素移动到 to 位置，返回新数组。
+ * 下标越界或位置未变化时返回原数组（同一引用）。
+ */
+export const moveItem = <T>(items: T[], from: number, to: number): T[] => {
+  const len = items.length;
+  if (from < 0 || from >= len || to < 0 || to >= len || from === to) return items;
+  const next = [...items];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+};
 
 /** 创建默认选项值 */
 export const createDefaultOptionValue = (optionDef: OptionDefinition): OptionValue => {
@@ -262,27 +319,56 @@ export const getCurrentControllerAndResource = (
   return { controllerName, resourceName };
 };
 
-/** 检查任务是否与指定控制器/资源兼容 */
+/**
+ * 当前控制器/资源名称未设置时如何判定兼容性：
+ * - 'allow'：视为兼容。用于界面展示，未选择时不把任务/选项标记为不兼容。
+ * - 'deny'：视为不兼容。用于生成运行配置等场景，无法确认兼容时不下发。
+ */
+export type UnsetScopePolicy = 'allow' | 'deny';
+
+/** 带 controller / resource 限制的定义（任务、选项、资源等） */
+interface ScopeRestricted {
+  controller?: string[];
+  resource?: string[];
+}
+
+/** 判断名称限制列表是否允许给定名称；限制列表为空或未配置时始终允许 */
+const isNameAllowed = (
+  allowed: string[] | undefined,
+  name: string | undefined,
+  unset: UnsetScopePolicy,
+): boolean => {
+  if (!allowed || allowed.length === 0) return true;
+  if (!name) return unset === 'allow';
+  return allowed.includes(name);
+};
+
+/** 检查定义是否允许当前控制器 */
+export const isControllerAllowed = (
+  def: ScopeRestricted | null | undefined,
+  controllerName: string | undefined,
+  unset: UnsetScopePolicy,
+): boolean => isNameAllowed(def?.controller, controllerName, unset);
+
+/** 检查定义是否允许当前资源 */
+export const isResourceAllowed = (
+  def: ScopeRestricted | null | undefined,
+  resourceName: string | undefined,
+  unset: UnsetScopePolicy,
+): boolean => isNameAllowed(def?.resource, resourceName, unset);
+
+/** 检查定义是否同时允许当前控制器和资源 */
+export const isScopeCompatible = (
+  def: ScopeRestricted | null | undefined,
+  controllerName: string | undefined,
+  resourceName: string | undefined,
+  unset: UnsetScopePolicy,
+): boolean =>
+  isControllerAllowed(def, controllerName, unset) && isResourceAllowed(def, resourceName, unset);
+
+/** 检查任务是否与指定控制器/资源兼容（未设置的控制器/资源视为兼容） */
 export const isTaskCompatible = (
   taskDef: TaskItem | undefined | null,
   controllerName: string | undefined,
   resourceName: string | undefined,
-): boolean => {
-  if (
-    taskDef?.controller &&
-    taskDef.controller.length > 0 &&
-    controllerName &&
-    !taskDef.controller.includes(controllerName)
-  ) {
-    return false;
-  }
-  if (
-    taskDef?.resource &&
-    taskDef.resource.length > 0 &&
-    resourceName &&
-    !taskDef.resource.includes(resourceName)
-  ) {
-    return false;
-  }
-  return true;
-};
+): boolean => isScopeCompatible(taskDef, controllerName, resourceName, 'allow');

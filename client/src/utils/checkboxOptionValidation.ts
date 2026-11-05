@@ -1,4 +1,4 @@
-import { createDefaultOptionValue, sanitizeOptionValue } from '@/stores/helpers';
+import { createDefaultOptionValue, isScopeCompatible, sanitizeOptionValue } from '@/stores/helpers';
 import type {
   CheckboxOption,
   OptionDefinition,
@@ -96,23 +96,13 @@ export function formatCheckboxCountViolation(
       });
 }
 
+/** 未设置控制器/资源时视为不兼容（与运行配置生成保持一致） */
 function isOptionIncompatible(
   optionDef: OptionDefinition,
   controllerName?: string,
   resourceName?: string,
 ): boolean {
-  if (
-    optionDef.controller &&
-    optionDef.controller.length > 0 &&
-    (!controllerName || !optionDef.controller.includes(controllerName))
-  ) {
-    return true;
-  }
-  return Boolean(
-    optionDef.resource &&
-    optionDef.resource.length > 0 &&
-    (!resourceName || !optionDef.resource.includes(resourceName)),
-  );
+  return !isScopeCompatible(optionDef, controllerName, resourceName, 'deny');
 }
 
 function validateOptionKeys(

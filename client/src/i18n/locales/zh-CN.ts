@@ -462,29 +462,6 @@ export default {
     needResource: '请先加载资源',
   },
 
-  // 截图预览
-  screenshot: {
-    title: '实时截图',
-    autoRefresh: '自动刷新',
-    noScreenshot: '暂无截图',
-    startStream: '开始实时流',
-    stopStream: '停止实时流',
-    connectFirst: '请先连接设备',
-    fullscreen: '全屏显示',
-    exitFullscreen: '退出全屏',
-    clickHint: '点击画面可向设备发送点击',
-    // 帧率设置
-    frameRate: {
-      title: '实时截图帧率',
-      hint: '仅影响画面预览流畅度与系统资源占用，不影响任务识别与执行',
-      unlimited: '不限',
-      fps5: '每秒 5 帧',
-      fps1: '每秒 1 帧',
-      every5s: '5 秒一帧',
-      every30s: '30 秒一帧',
-    },
-  },
-
   // 日志/信息流
   logs: {
     title: '运行日志',
@@ -662,20 +639,7 @@ export default {
 
   // 中控台
   dashboard: {
-    title: '中控台',
-    toggle: '中控台视图',
-    exit: '退出中控台',
-    instances: '个实例',
-    noInstances: '暂无实例',
-    running: '运行中',
-    succeeded: '已完成',
-    failed: '已失败',
     noEnabledTasks: '没有启用的任务',
-    alignLeft: '靠左排列',
-    alignCenter: '居中排列',
-    alignRight: '靠右排列',
-    zoomIn: '放大',
-    zoomOut: '缩小',
   },
 
   // 最近关闭
@@ -843,7 +807,6 @@ export default {
     moveToLast: '移到最右',
     closeTab: '关闭标签页',
     closeOtherTabs: '关闭其他标签页',
-    closeAllTabs: '关闭所有标签页',
     closeTabsToRight: '关闭右侧标签页',
     exportConfig: '导出配置',
     exportToClipboard: '导出到剪贴板',
@@ -882,22 +845,6 @@ export default {
     runSingleTask: '单独运行',
     runOnceTask: '单次运行',
     clearRunOnceTask: '取消单次运行',
-
-    // 截图面板右键菜单
-    reconnect: '重新连接',
-    forceRefresh: '强制刷新',
-    startStream: '开始实时流',
-    stopStream: '停止实时流',
-    fullscreen: '全屏显示',
-    saveScreenshot: '保存截图',
-    copyScreenshot: '复制截图',
-
-    // 连接面板右键菜单
-    refreshDevices: '刷新设备列表',
-    disconnect: '断开连接',
-
-    // 通用
-    openFolder: '打开所在文件夹',
   },
 
   // 版本警告

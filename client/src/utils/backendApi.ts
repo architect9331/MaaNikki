@@ -105,14 +105,3 @@ export async function apiDelete(path: string): Promise<void> {
   }
 }
 
-/**
- * 检测后端 HTTP API 是否可用（axum server 是否在运行）
- */
-export async function isBackendApiAvailable(): Promise<boolean> {
-  try {
-    const resp = await fetch(`${getApiBase()}/interface`, { method: 'HEAD' });
-    return resp.ok || resp.status === 405; // 405 = Method Not Allowed（只接受 GET）
-  } catch {
-    return false;
-  }
-}

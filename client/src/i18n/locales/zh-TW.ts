@@ -458,29 +458,6 @@ export default {
     needResource: '請先載入資源',
   },
 
-  // 截圖預覽
-  screenshot: {
-    title: '即時截圖',
-    autoRefresh: '自動重新整理',
-    noScreenshot: '暫無截圖',
-    startStream: '開始即時流',
-    stopStream: '停止即時流',
-    connectFirst: '請先連接裝置',
-    fullscreen: '全螢幕顯示',
-    exitFullscreen: '退出全螢幕',
-    clickHint: '點擊畫面可向裝置發送點擊',
-    // 幀率設定
-    frameRate: {
-      title: '即時截圖幀率',
-      hint: '僅影响畫面預覽流暢度與系統資源佔用，不影响任務識別與執行',
-      unlimited: '不限',
-      fps5: '每秒 5 幀',
-      fps1: '每秒 1 幀',
-      every5s: '5 秒一幀',
-      every30s: '30 秒一幀',
-    },
-  },
-
   // 日誌/資訊流
   logs: {
     title: '執行日誌',
@@ -657,20 +634,7 @@ export default {
 
   // 中控台
   dashboard: {
-    title: '中控台',
-    toggle: '中控台檢視',
-    exit: '退出中控台',
-    instances: '個執行個體',
-    noInstances: '暫無執行個體',
-    running: '執行中',
-    succeeded: '已完成',
-    failed: '已失敗',
     noEnabledTasks: '沒有啟用的任務',
-    alignLeft: '靠左排列',
-    alignCenter: '置中排列',
-    alignRight: '靠右排列',
-    zoomIn: '放大',
-    zoomOut: '縮小',
   },
 
   // 最近關閉
@@ -826,7 +790,6 @@ export default {
     moveToLast: '移到最右',
     closeTab: '關閉標籤頁',
     closeOtherTabs: '關閉其他標籤頁',
-    closeAllTabs: '關閉所有標籤頁',
     closeTabsToRight: '關閉右側標籤頁',
     exportConfig: '匯出設定',
     exportToClipboard: '匯出到剪貼簿',
@@ -865,22 +828,6 @@ export default {
     runSingleTask: '單獨執行',
     runOnceTask: '單次執行',
     clearRunOnceTask: '取消單次執行',
-
-    // 截圖面板右鍵選單
-    reconnect: '重新連接',
-    forceRefresh: '強制重新整理',
-    startStream: '開始即時流',
-    stopStream: '停止即時流',
-    fullscreen: '全螢幕顯示',
-    saveScreenshot: '儲存截圖',
-    copyScreenshot: '複製截圖',
-
-    // 連接面板右鍵選單
-    refreshDevices: '重新整理裝置列表',
-    disconnect: '中斷連接',
-
-    // 通用
-    openFolder: '開啟所在資料夾',
   },
 
   // 版本警告

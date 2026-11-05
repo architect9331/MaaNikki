@@ -40,13 +40,6 @@ async function moveToOldFolder(filePath: string): Promise<void> {
 }
 
 /**
- * 检查当前是否正在下载
- */
-export function getIsDownloading(): boolean {
-  return isDownloading;
-}
-
-/**
  * 取消当前正在进行的下载
  * @returns 是否成功取消（如果没有正在进行的下载则返回 false）
  */
@@ -741,6 +734,9 @@ interface DownloadUpdateOptions {
 // 当前下载的保存路径，用于取消时清理临时文件
 let currentDownloadPath: string | null = null;
 
+// 已见过的最大下载 session ID（跨多次下载累计），用于过滤已取消下载的迟到事件
+let highestSeenDownloadSessionId = 0;
+
 // 进度事件数据。Rust 侧 DownloadProgressEvent 走 serde 默认命名，
 // 字段是 snake_case，不能直接套用前端 camelCase 的 DownloadProgress
 interface DownloadProgressEventPayload {
@@ -801,19 +797,27 @@ export async function downloadUpdate(
   let unlisten: (() => void) | null = null;
   // 当前下载的 session ID，用于过滤旧下载的进度事件
   let currentSessionId: number | null = null;
+  // 后端 session ID 单调递增：本次下载的 session 一定大于之前见过的所有 session，
+  // 据此忽略已取消下载迟到的进度事件，避免它们抢先锁定 currentSessionId
+  const minSessionId = highestSeenDownloadSessionId + 1;
 
   try {
     // 监听 Rust 后端发送的下载进度事件
     if (onProgress) {
       const { listen } = await import('@tauri-apps/api/event');
       unlisten = await listen<DownloadProgressEventPayload>('download-progress', (event) => {
+        const sessionId = event.payload.session_id;
+        if (sessionId > highestSeenDownloadSessionId) {
+          highestSeenDownloadSessionId = sessionId;
+        }
+        if (sessionId < minSessionId) return;
         // 只处理当前 session 的进度事件，忽略旧下载的事件
-        if (currentSessionId !== null && event.payload.session_id !== currentSessionId) {
+        if (currentSessionId !== null && sessionId !== currentSessionId) {
           return;
         }
         // 记录第一个收到的 session_id
         if (currentSessionId === null) {
-          currentSessionId = event.payload.session_id;
+          currentSessionId = sessionId;
         }
         // 如果已被取消，忽略进度更新
         if (downloadCancelled || generation !== downloadGeneration) return;
@@ -836,6 +840,9 @@ export async function downloadUpdate(
     });
     if (generation !== downloadGeneration) return { success: false };
     currentSessionId = result.session_id;
+    if (result.session_id > highestSeenDownloadSessionId) {
+      highestSeenDownloadSessionId = result.session_id;
+    }
 
     log.info(`下载完成 (session ${result.session_id})`);
     log.info(`实际保存路径: ${result.actual_save_path}`);
@@ -1295,20 +1302,6 @@ export function saveUpdateCompleteInfo(info: UpdateCompleteInfo): void {
     log.info('已保存更新完成信息');
   } catch (error) {
     log.warn('保存更新完成信息失败:', error);
-  }
-}
-
-/**
- * 读取更新完成信息（不清除）
- */
-export function peekUpdateCompleteInfo(): UpdateCompleteInfo | null {
-  try {
-    const data = localStorage.getItem(UPDATE_COMPLETE_STORAGE_KEY);
-    if (!data) return null;
-    return JSON.parse(data) as UpdateCompleteInfo;
-  } catch (error) {
-    log.warn('读取更新完成信息失败:', error);
-    return null;
   }
 }
 

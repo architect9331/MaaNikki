@@ -105,6 +105,4 @@ export const setLanguage = (pref: LanguagePreference) => {
   localStorage.setItem('mxu-language', pref);
 };
 
-export const getCurrentLanguage = (): SupportedLanguage => i18n.language as SupportedLanguage;
-
 export default i18n;

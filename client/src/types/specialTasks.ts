@@ -630,12 +630,6 @@ export const MXU_SPECIAL_TASKS: Record<string, MxuSpecialTaskDefinition> = {
   },
 };
 
-// 导出兼容旧代码的常量（指向注册表中的定义）
-export const MXU_SLEEP_TASK_DEF = MXU_SPECIAL_TASKS[MXU_SLEEP_TASK_NAME].taskDef;
-export const MXU_SLEEP_OPTION_DEF = MXU_SPECIAL_TASKS[MXU_SLEEP_TASK_NAME].optionDefs[
-  '__MXU_SLEEP_OPTION__'
-] as InputOption;
-
 /**
  * 判断是否为 MXU 内置特殊任务
  * @param taskName 任务名称
@@ -652,20 +646,6 @@ export function isMxuSpecialTask(taskName: string): boolean {
  */
 export function getMxuSpecialTask(taskName: string): MxuSpecialTaskDefinition | undefined {
   return MXU_SPECIAL_TASKS[taskName];
-}
-
-/**
- * 获取 MXU 特殊任务的选项定义
- * @param taskName 任务名称
- * @param optionKey 选项键
- * @returns 选项定义，不存在则返回 undefined
- */
-export function getMxuSpecialTaskOption(
-  taskName: string,
-  optionKey: string,
-): OptionDefinition | undefined {
-  const specialTask = MXU_SPECIAL_TASKS[taskName];
-  return specialTask?.optionDefs[optionKey];
 }
 
 /**

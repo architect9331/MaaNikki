@@ -70,9 +70,8 @@ async function fetchScreenshotDataUrl(instanceId: string): Promise<string> {
   return json.dataUrl ?? '';
 }
 
-async function syncMaaVersionToStore(version: string): Promise<void> {
+function syncMaaVersionToStore(version: string): void {
   try {
-    const { useAppStore } = await import('@/stores/appStore');
     useAppStore.getState().setMaaInitialized(true, version);
   } catch (err) {
     log.debug('同步 MaaFramework 版本到 store 失败:', err);
@@ -126,7 +125,7 @@ export const maaService = {
       );
       const version = result.version ?? '';
       if (result.initialized) {
-        await syncMaaVersionToStore(version || 'unknown');
+        syncMaaVersionToStore(version || 'unknown');
         log.info('MaaFramework 已初始化 (HTTP)，版本:', version || '(未知)');
       } else {
         log.warn('MaaFramework 后端尚未初始化');
@@ -135,7 +134,7 @@ export const maaService = {
     }
 
     const version = await invoke<string>('maa_init', { libDir: libDir || null });
-    await syncMaaVersionToStore(version);
+    syncMaaVersionToStore(version);
     log.info('MaaFramework 版本:', version);
     return version;
   },
@@ -150,11 +149,11 @@ export const maaService = {
         '/maa/initialized',
       );
       const version = result.version ?? '';
-      if (version) await syncMaaVersionToStore(version);
+      if (version) syncMaaVersionToStore(version);
       return version;
     }
     const version = await invoke<string>('maa_get_version');
-    await syncMaaVersionToStore(version);
+    syncMaaVersionToStore(version);
     log.info('MaaFramework 版本:', version);
     return version;
   },

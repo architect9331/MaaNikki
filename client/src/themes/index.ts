@@ -45,7 +45,7 @@ const accentThemes: Record<AccentColor, AccentTheme> = {
 };
 
 /** 默认强调色；配置中保存的旧预设已移除时也回到这里。 */
-export const DEFAULT_ACCENT: AccentColor = 'rosegold';
+const DEFAULT_ACCENT: AccentColor = 'rosegold';
 
 /** 白字在强调色上看不清时改用深色字，自定义强调色同样适用。 */
 function onAccentColor(hex: string): string {
@@ -157,28 +157,28 @@ export function applyTheme(mode: ThemeMode, accent: AccentColor): void {
 /**
  * 获取当前主题模式
  */
-export function getCurrentMode(): ThemeMode {
+function getCurrentMode(): ThemeMode {
   return currentMode;
 }
 
 /**
  * 获取当前强调色
  */
-export function getCurrentAccent(): AccentColor {
+function getCurrentAccent(): AccentColor {
   return currentAccent;
 }
 
 /**
  * 获取所有可用的主题模式
  */
-export function getAvailableModes(): ThemeMode[] {
+function getAvailableModes(): ThemeMode[] {
   return Object.keys(modeThemes) as ThemeMode[];
 }
 
 /**
  * 获取所有可用的强调色
  */
-export function getAvailableAccents(): AccentColor[] {
+function getAvailableAccents(): AccentColor[] {
   return [
     ...(Object.keys(accentThemes) as AccentColor[]),
     ...(Object.keys(customAccentThemes) as AccentColor[]),
@@ -232,14 +232,14 @@ export function getAccentInfoList(lang: string, customAccents?: CustomAccent[]):
 /**
  * 获取指定强调色的主题配置
  */
-export function getAccentTheme(accent: AccentColor): AccentTheme | undefined {
+function getAccentTheme(accent: AccentColor): AccentTheme | undefined {
   return customAccentThemes[accent] || accentThemes[accent];
 }
 
 /**
  * 获取指定模式的主题配置
  */
-export function getModeTheme(mode: ThemeMode): ModeTheme | undefined {
+function getModeTheme(mode: ThemeMode): ModeTheme | undefined {
   return modeThemes[mode];
 }
 

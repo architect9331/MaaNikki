@@ -23,6 +23,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
+import { useShallow } from 'zustand/react/shallow';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 import { AccountStatusActions } from './AccountStatusActions';
@@ -83,7 +84,32 @@ export function TabBar() {
     startTabCloseAnimation,
     confirmBeforeDelete,
     rightPanelCollapsed,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      instances: state.instances,
+      activeInstanceId: state.activeInstanceId,
+      createInstance: state.createInstance,
+      setActiveInstance: state.setActiveInstance,
+      renameInstance: state.renameInstance,
+      reorderInstances: state.reorderInstances,
+      duplicateInstance: state.duplicateInstance,
+      theme: state.theme,
+      setTheme: state.setTheme,
+      setCurrentPage: state.setCurrentPage,
+      projectInterface: state.projectInterface,
+      updateInfo: state.updateInfo,
+      recentlyClosed: state.recentlyClosed,
+      downloadStatus: state.downloadStatus,
+      showUpdateDialog: state.showUpdateDialog,
+      setShowUpdateDialog: state.setShowUpdateDialog,
+      animatingTabIds: state.animatingTabIds,
+      closingTabIds: state.closingTabIds,
+      removeAnimatingTabId: state.removeAnimatingTabId,
+      startTabCloseAnimation: state.startTabCloseAnimation,
+      confirmBeforeDelete: state.confirmBeforeDelete,
+      rightPanelCollapsed: state.rightPanelCollapsed,
+    })),
+  );
   const isMobile = useIsMobile();
 
   // 使用全局状态控制更新面板显示

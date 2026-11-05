@@ -1,30 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
-import {
-  Plus,
-  Copy,
-  Trash2,
-  Edit3,
-  ChevronUp,
-  ChevronDown,
-  ChevronsUp,
-  ChevronsDown,
-  Check,
-  Square,
-  CheckSquare,
-  X,
-  RefreshCw,
-  Maximize2,
-  Play,
-  Pause,
-  Download,
-  ChevronRight,
-  Unplug,
-  FolderOpen,
-  SquareCheck,
-  SquareMinus,
-} from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 // 菜单项类型
@@ -59,36 +36,6 @@ export interface ContextMenuState {
   isOpen: boolean;
   position: MenuPosition;
   items: MenuItem[];
-}
-
-// 图标映射
-const iconMap: Record<string, LucideIcon> = {
-  plus: Plus,
-  copy: Copy,
-  trash: Trash2,
-  edit: Edit3,
-  up: ChevronUp,
-  down: ChevronDown,
-  toTop: ChevronsUp,
-  toBottom: ChevronsDown,
-  check: Check,
-  uncheck: Square,
-  checkSquare: CheckSquare,
-  close: X,
-  refresh: RefreshCw,
-  maximize: Maximize2,
-  play: Play,
-  pause: Pause,
-  download: Download,
-  submenu: ChevronRight,
-  disconnect: Unplug,
-  folder: FolderOpen,
-  selectAll: SquareCheck,
-  deselectAll: SquareMinus,
-};
-
-export function getIcon(name: string): LucideIcon | undefined {
-  return iconMap[name];
 }
 
 // 单个菜单项组件

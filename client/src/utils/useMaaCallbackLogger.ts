@@ -13,7 +13,6 @@ import { fishingBusy } from '@/services/fishingService';
 import { loggers } from '@/utils/logger';
 import i18n, { getInterfaceLangKey } from '@/i18n';
 import { getMxuSpecialTask } from '@/types/specialTasks';
-import { isTauri } from '@/utils/paths';
 import { isDesktopWindowControllerType, getLinuxDeviceName } from '@/utils/controller';
 import * as wsService from '@/services/wsService';
 import {
@@ -25,6 +24,7 @@ import {
 import { hasRichTextFeatures } from '@/utils/richText';
 import { taskFailureHint } from '@/utils/taskFailureHints';
 import { withTimeout } from '@/utils/withTimeout';
+import { subscribeBackendEvent } from '@/utils/backendEvent';
 import type { FocusTemplate, FocusDisplayChannel } from '@/types/interface';
 
 const log = loggers.app;
@@ -349,29 +349,19 @@ function handleCallback(
   if (focusEntry) {
     const { content: focusTemplate, displayChannels } = focusEntry;
 
-    // 如果包含 {image} 占位符，先快速显示不含图片的版本，避免阻塞
-    const hasImagePlaceholder = focusTemplate.includes('{image}');
-    if (hasImagePlaceholder && displayChannels.includes('log')) {
-      const tempMessage = replaceFocusPlaceholders(focusTemplate, details).replace(
-        /\{image\}/g,
-        '[图片加载中...]',
-      );
-      addLog(instanceId, { type: 'focus', message: tempMessage });
-    }
-
+    // 日志条目不支持原地更新，因此 {image} 占位符也等截图解析完成后再写入完整日志
+    // （截图获取有超时保护），避免只留下“加载中”的占位文本而丢失真正的内容。
     resolveFocusContent(focusTemplate, details, instanceId)
       .then((resolved) => {
         // 根据 display 渠道分发消息
         for (const channel of displayChannels) {
           switch (channel) {
             case 'log':
-              if (!hasImagePlaceholder) {
-                addLog(instanceId, {
-                  type: 'focus',
-                  message: resolved.message,
-                  html: resolved.html,
-                });
-              }
+              addLog(instanceId, {
+                type: 'focus',
+                message: resolved.message,
+                html: resolved.html,
+              });
               break;
             case 'toast':
             case 'notification':
@@ -387,8 +377,11 @@ function handleCallback(
       })
       .catch((err) => {
         log.warn('Failed to resolve focus content:', err);
-        if (!hasImagePlaceholder && displayChannels.includes('log')) {
-          addLog(instanceId, { type: 'focus', message: focusTemplate });
+        if (displayChannels.includes('log')) {
+          addLog(instanceId, {
+            type: 'focus',
+            message: replaceFocusPlaceholders(focusTemplate, details).replace(/\{image\}/g, ''),
+          });
         }
       });
 
@@ -610,7 +603,6 @@ function handleCallback(
 export function useMaaAgentLogger() {
   const { t } = useTranslation();
   const addLog = useAppStore((state) => state.addLog);
-  const unlistenRef = useRef<(() => void) | null>(null);
   const agentFloodStateRef = useRef<
     Map<
       string,
@@ -676,19 +668,37 @@ export function useMaaAgentLogger() {
     }, AGENT_LOG_FLOOD_WINDOW_MS);
   };
 
+  // 每个实例的日志写入队列：内容解析（Markdown/文件等）是异步的且耗时不一，
+  // 解析并行进行，但写入日志按到达顺序串行，避免富文本行晚于其后的普通行出现。
+  const agentLogQueueRef = useRef<Map<string, Promise<void>>>(new Map());
+
   const emitAgentLog = (instanceId: string, mergedLine: string) => {
-    resolveFocusContent(mergedLine, {} as MaaCallbackDetails & Record<string, unknown>, instanceId)
-      .then((resolved) => {
-        addLog(instanceId, {
-          type: 'agent',
-          message: resolved.message,
-          html: resolved.html,
-        });
+    const resolution = resolveFocusContent(
+      mergedLine,
+      {} as MaaCallbackDetails & Record<string, unknown>,
+      instanceId,
+    ).then(
+      (resolved) => ({ message: resolved.message, html: resolved.html }),
+      (err) => {
+        log.warn('Failed to resolve agent content:', err);
+        return { message: mergedLine, html: undefined as string | undefined };
+      },
+    );
+
+    const queue = agentLogQueueRef.current;
+    const previous = queue.get(instanceId) ?? Promise.resolve();
+    const next = previous
+      .then(() => resolution)
+      .then((entry) => {
+        addLog(instanceId, { type: 'agent', message: entry.message, html: entry.html });
       })
       .catch((err) => {
-        log.warn('Failed to resolve agent content:', err);
-        addLog(instanceId, { type: 'agent', message: mergedLine });
+        log.warn('Failed to append agent log:', err);
       });
+    queue.set(instanceId, next);
+    void next.then(() => {
+      if (queue.get(instanceId) === next) queue.delete(instanceId);
+    });
   };
 
   useEffect(() => {
@@ -727,49 +737,22 @@ export function useMaaAgentLogger() {
       }
     };
 
-    const setupListener = async () => {
-      try {
-        if (isTauri()) {
-          const { listen } = await import('@tauri-apps/api/event');
-          const unlisten = await listen<{ instance_id: string; stream: string; line: string }>(
-            'maa-agent-output',
-            (event) => {
-              const { instance_id, stream, line } = event.payload;
-              handleAgentOutput(instance_id, stream, line);
-            },
-          );
-
-          if (cancelled) {
-            unlisten();
-          } else {
-            unlistenRef.current = unlisten;
-          }
-        } else {
-          const unlisten = wsService.onAgentOutput(handleAgentOutput);
-          if (cancelled) {
-            unlisten();
-          } else {
-            unlistenRef.current = unlisten;
-          }
-        }
-      } catch (err) {
-        log.warn('Failed to setup agent output listener:', err);
-      }
-    };
-
-    setupListener();
+    const unsubscribe = subscribeBackendEvent<{ instance_id: string; stream: string; line: string }>(
+      'maa-agent-output',
+      ({ instance_id, stream, line }) => handleAgentOutput(instance_id, stream, line),
+      () => wsService.onAgentOutput(handleAgentOutput),
+      (err) => log.warn('Failed to setup agent output listener:', err),
+    );
 
     return () => {
       cancelled = true;
-      if (unlistenRef.current) {
-        unlistenRef.current();
-        unlistenRef.current = null;
-      }
+      unsubscribe();
 
       for (const batch of agentFloodStateRef.current.values()) {
         clearAgentRecoveryTimer(batch);
       }
       agentFloodStateRef.current.clear();
+      agentLogQueueRef.current.clear();
     };
   }, [addLog, t]);
 }

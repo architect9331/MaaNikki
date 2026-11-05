@@ -53,6 +53,7 @@ import {
 } from '@/utils/passwordOptionValues';
 import { loggers } from '@/utils/logger';
 import { create } from 'zustand';
+import { invoke } from '@tauri-apps/api/core';
 import { normalizeExplorationSettings } from '@/types/exploration';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
@@ -75,7 +76,13 @@ import {
   getCurrentControllerAndResource,
   initializeAllOptionValues,
   initializeNestedOptionsForChange,
+  isControllerAllowed,
+  isResourceAllowed,
   isTaskCompatible,
+  mapInstance,
+  mapInstanceTasks,
+  mapTask,
+  moveItem,
   sanitizeOptionValues,
 } from './helpers';
 import { persistRuntimeLogs } from '@/utils/runtimeLogPersistence';
@@ -85,6 +92,12 @@ import type { AppState, LogEntry, TaskRunStatus } from './types';
 
 /** 低于该速度（字节/秒）视为慢速下载 */
 const SLOW_DOWNLOAD_SPEED_BPS = 1024 * 1024;
+
+/** 将“最小化到托盘”设置同步到 Tauri 后端；非 Tauri 环境（WebUI）无托盘，直接跳过 */
+async function syncMinimizeToTray(enabled: boolean): Promise<void> {
+  if (!isTauri()) return;
+  await invoke('set_minimize_to_tray', { enabled });
+}
 
 /** 慢速需要持续这么久才认定为「确实慢」，避免下载刚开始时误报 */
 export const SLOW_DOWNLOAD_DURATION_MS = 5000;
@@ -171,12 +184,7 @@ function isTaskControllerCompatible(
   taskDef: { controller?: string[] } | undefined,
   controllerName: string | undefined,
 ): boolean {
-  return (
-    !controllerName ||
-    !taskDef?.controller ||
-    taskDef.controller.length === 0 ||
-    taskDef.controller.includes(controllerName)
-  );
+  return isControllerAllowed(taskDef, controllerName, 'allow');
 }
 
 function resolveTaskEnabledForController(
@@ -365,15 +373,7 @@ export const useAppStore = create<AppState>()(
       }
     },
     reorderCustomAccents: (oldIndex, newIndex) => {
-      set((state) => {
-        const next = [...state.customAccents];
-        if (oldIndex < 0 || newIndex < 0 || oldIndex >= next.length || newIndex >= next.length) {
-          return { customAccents: next };
-        }
-        const [moved] = next.splice(oldIndex, 1);
-        next.splice(newIndex, 0, moved);
-        return { customAccents: next };
-      });
+      set((state) => ({ customAccents: moveItem(state.customAccents, oldIndex, newIndex) }));
       if (!isTauri()) patchWebUIAppearance({ customAccents: get().customAccents });
     },
 
@@ -443,11 +443,8 @@ export const useAppStore = create<AppState>()(
         definitions.forEach((task) => {
           if (!isPretaskName(task.name) && !task.default_check) return;
 
-          // 检查任务是否支持默认控制器
-          const isControllerCompatible =
-            !task.controller ||
-            task.controller.length === 0 ||
-            !!(defaultControllerName && task.controller.includes(defaultControllerName));
+          // 检查任务是否支持默认控制器（无默认控制器时视为不支持）
+          const isControllerCompatible = isControllerAllowed(task, defaultControllerName, 'deny');
 
           const optionValues =
             task.option && pi.option ? initializeAllOptionValues(task.option, pi.option) : {};
@@ -576,7 +573,7 @@ export const useAppStore = create<AppState>()(
 
     updateInstance: (id, updates) =>
       set((state) => ({
-        instances: state.instances.map((i) => (i.id === id ? { ...i, ...updates } : i)),
+        instances: mapInstance(state.instances, id, (i) => ({ ...i, ...updates })),
         ...(Object.prototype.hasOwnProperty.call(updates, 'controllerName') && {
           selectedController: updateSelectedName(
             state.selectedController,
@@ -591,16 +588,11 @@ export const useAppStore = create<AppState>()(
 
     renameInstance: (id, newName) =>
       set((state) => ({
-        instances: state.instances.map((i) => (i.id === id ? { ...i, name: newName } : i)),
+        instances: mapInstance(state.instances, id, (i) => ({ ...i, name: newName })),
       })),
 
     reorderInstances: (oldIndex, newIndex) =>
-      set((state) => {
-        const instances = [...state.instances];
-        const [removed] = instances.splice(oldIndex, 1);
-        instances.splice(newIndex, 0, removed);
-        return { instances };
-      }),
+      set((state) => ({ instances: moveItem(state.instances, oldIndex, newIndex) })),
 
     getActiveInstance: () => {
       const state = get();
@@ -630,16 +622,9 @@ export const useAppStore = create<AppState>()(
       };
 
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                // prepend: pretask 等前置任务固定置于列表顶部
-                selectedTasks: options?.prepend
-                  ? [newTask, ...i.selectedTasks]
-                  : [...i.selectedTasks, newTask],
-              }
-            : i,
+        // prepend: pretask 等前置任务固定置于列表顶部
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) =>
+          options?.prepend ? [newTask, ...tasks] : [...tasks, newTask],
         ),
         lastAddedTaskId: newTask.id, // 记录最近添加的任务 ID
         animatingTaskIds: [...state.animatingTaskIds, newTask.id], // 加入动画列表
@@ -690,9 +675,7 @@ export const useAppStore = create<AppState>()(
       }
 
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId ? { ...i, selectedTasks: newTasks } : i,
-        ),
+        instances: mapInstanceTasks(state.instances, instanceId, () => newTasks),
       }));
     },
 
@@ -764,9 +747,7 @@ export const useAppStore = create<AppState>()(
       };
 
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId ? { ...i, selectedTasks: [...i.selectedTasks, newTask] } : i,
-        ),
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) => [...tasks, newTask]),
         lastAddedTaskId: newTask.id,
         animatingTaskIds: [...state.animatingTaskIds, newTask.id],
       }));
@@ -776,136 +757,70 @@ export const useAppStore = create<AppState>()(
 
     removeTaskFromInstance: (instanceId, taskId) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                selectedTasks: i.selectedTasks.filter((t) => t.id !== taskId),
-              }
-            : i,
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) =>
+          tasks.filter((t) => t.id !== taskId),
         ),
       })),
 
     reorderTasks: (instanceId, oldIndex, newIndex) =>
       set((state) => ({
-        instances: state.instances.map((i) => {
-          if (i.id !== instanceId) return i;
-          const len = i.selectedTasks.length;
-          if (oldIndex < 0 || oldIndex >= len || newIndex < 0 || newIndex >= len) return i;
-          if (oldIndex === newIndex) return i;
-
-          const tasks = [...i.selectedTasks];
-          const [removed] = tasks.splice(oldIndex, 1);
-          tasks.splice(newIndex, 0, removed);
-
-          return { ...i, selectedTasks: tasks };
-        }),
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) =>
+          moveItem(tasks, oldIndex, newIndex),
+        ),
       })),
 
     toggleTaskEnabled: (instanceId, taskId) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                selectedTasks: i.selectedTasks.map((t) => {
-                  if (t.id !== taskId) return t;
-                  if (t.runOnce) {
-                    return { ...t, enabled: false, runOnce: false };
-                  }
-                  return { ...t, enabled: !t.enabled, runOnce: false };
-                }),
-              }
-            : i,
-        ),
+        instances: mapTask(state.instances, instanceId, taskId, (t) => {
+          if (t.runOnce) {
+            return { ...t, enabled: false, runOnce: false };
+          }
+          return { ...t, enabled: !t.enabled, runOnce: false };
+        }),
       })),
 
     setTaskRunOnce: (instanceId, taskId, runOnce) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                selectedTasks: i.selectedTasks.map((t) =>
-                  t.id === taskId
-                    ? runOnce
-                      ? { ...t, enabled: false, runOnce: true }
-                      : { ...t, runOnce: false }
-                    : t,
-                ),
-              }
-            : i,
+        instances: mapTask(state.instances, instanceId, taskId, (t) =>
+          runOnce ? { ...t, enabled: false, runOnce: true } : { ...t, runOnce: false },
         ),
       })),
 
     clearAllTaskRunOnce: (instanceId) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                selectedTasks: i.selectedTasks.map((t) =>
-                  t.runOnce ? { ...t, runOnce: false } : t,
-                ),
-              }
-            : i,
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) =>
+          tasks.map((t) => (t.runOnce ? { ...t, runOnce: false } : t)),
         ),
       })),
 
     toggleTaskExpanded: (instanceId, taskId) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                selectedTasks: i.selectedTasks.map((t) =>
-                  t.id === taskId ? { ...t, expanded: !t.expanded } : t,
-                ),
-              }
-            : i,
-        ),
+        instances: mapTask(state.instances, instanceId, taskId, (t) => ({
+          ...t,
+          expanded: !t.expanded,
+        })),
       })),
 
     toggleOptionCollapsed: (instanceId, taskId, optionKey) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                selectedTasks: i.selectedTasks.map((t) =>
-                  t.id === taskId
-                    ? {
-                        ...t,
-                        collapsedOptions: {
-                          ...(t.collapsedOptions ?? {}),
-                          [optionKey]: !t.collapsedOptions?.[optionKey],
-                        },
-                      }
-                    : t,
-                ),
-              }
-            : i,
-        ),
+        instances: mapTask(state.instances, instanceId, taskId, (t) => ({
+          ...t,
+          collapsedOptions: {
+            ...(t.collapsedOptions ?? {}),
+            [optionKey]: !t.collapsedOptions?.[optionKey],
+          },
+        })),
       })),
 
     setTaskOptionValue: (instanceId, taskId, optionKey, value) => {
       const pi = get().projectInterface;
 
       set((state) => ({
-        instances: state.instances.map((i) => {
-          if (i.id !== instanceId) return i;
+        instances: mapTask(state.instances, instanceId, taskId, (t) => {
+          const newOptionValues = { ...t.optionValues, [optionKey]: value };
+          initializeNestedOptionsForChange(optionKey, value, pi?.option, newOptionValues);
 
-          return {
-            ...i,
-            selectedTasks: i.selectedTasks.map((t) => {
-              if (t.id !== taskId) return t;
-
-              const newOptionValues = { ...t.optionValues, [optionKey]: value };
-              initializeNestedOptionsForChange(optionKey, value, pi?.option, newOptionValues);
-
-              return { ...t, optionValues: newOptionValues };
-            }),
-          };
+          return { ...t, optionValues: newOptionValues };
         }),
       }));
     },
@@ -928,48 +843,33 @@ export const useAppStore = create<AppState>()(
         const { controllerName, resourceName } = getCurrentControllerAndResource(state, instanceId);
 
         return {
-          instances: state.instances.map((i) => {
-            if (i.id !== instanceId) return i;
-            return {
-              ...i,
-              selectedTasks: i.selectedTasks.map((t) => {
-                if (!enabled) return { ...t, enabled: false, runOnce: false };
-                // 全选时不兼容的任务显式禁用
-                const taskDef = resolveCompatTaskDef(state.projectInterface, t.taskName);
-                if (!isTaskAvailable(taskDef, state.devMode) || !isTaskCompatible(taskDef, controllerName, resourceName)) {
-                  return { ...t, enabled: false, runOnce: false };
-                }
-                return { ...t, enabled: true, runOnce: false };
-              }),
-            };
-          }),
+          instances: mapInstanceTasks(state.instances, instanceId, (tasks) =>
+            tasks.map((t) => {
+              if (!enabled) return { ...t, enabled: false, runOnce: false };
+              // 全选时不兼容的任务显式禁用
+              const taskDef = resolveCompatTaskDef(state.projectInterface, t.taskName);
+              if (!isTaskAvailable(taskDef, state.devMode) || !isTaskCompatible(taskDef, controllerName, resourceName)) {
+                return { ...t, enabled: false, runOnce: false };
+              }
+              return { ...t, enabled: true, runOnce: false };
+            }),
+          ),
         };
       }),
 
     collapseAllTasks: (instanceId, expanded) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                selectedTasks: i.selectedTasks.map((t) => ({ ...t, expanded })),
-              }
-            : i,
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) =>
+          tasks.map((t) => ({ ...t, expanded })),
         ),
       })),
 
     renameTask: (instanceId, taskId, newName) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                selectedTasks: i.selectedTasks.map((t) =>
-                  t.id === taskId ? { ...t, customName: newName || undefined } : t,
-                ),
-              }
-            : i,
-        ),
+        instances: mapTask(state.instances, instanceId, taskId, (t) => ({
+          ...t,
+          customName: newName || undefined,
+        })),
       })),
 
     // 复制任务
@@ -1012,76 +912,50 @@ export const useAppStore = create<AppState>()(
       tasks.splice(taskIndex + 1, 0, newTask);
 
       set({
-        instances: state.instances.map((i) =>
-          i.id === instanceId ? { ...i, selectedTasks: tasks } : i,
-        ),
+        instances: mapInstanceTasks(state.instances, instanceId, () => tasks),
       });
     },
 
     // 上移任务
     moveTaskUp: (instanceId, taskId) =>
       set((state) => ({
-        instances: state.instances.map((i) => {
-          if (i.id !== instanceId) return i;
-
-          const taskIndex = i.selectedTasks.findIndex((t) => t.id === taskId);
-          if (taskIndex <= 0) return i;
-
-          const tasks = [...i.selectedTasks];
-          [tasks[taskIndex - 1], tasks[taskIndex]] = [tasks[taskIndex], tasks[taskIndex - 1]];
-
-          return { ...i, selectedTasks: tasks };
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) => {
+          const taskIndex = tasks.findIndex((t) => t.id === taskId);
+          return moveItem(tasks, taskIndex, taskIndex - 1);
         }),
       })),
 
     // 下移任务
     moveTaskDown: (instanceId, taskId) =>
       set((state) => ({
-        instances: state.instances.map((i) => {
-          if (i.id !== instanceId) return i;
-
-          const taskIndex = i.selectedTasks.findIndex((t) => t.id === taskId);
-          if (taskIndex === -1 || taskIndex >= i.selectedTasks.length - 1) return i;
-
-          const tasks = [...i.selectedTasks];
-          [tasks[taskIndex], tasks[taskIndex + 1]] = [tasks[taskIndex + 1], tasks[taskIndex]];
-
-          return { ...i, selectedTasks: tasks };
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) => {
+          const taskIndex = tasks.findIndex((t) => t.id === taskId);
+          return moveItem(tasks, taskIndex, taskIndex + 1);
         }),
       })),
 
     // 置顶任务
     moveTaskToTop: (instanceId, taskId) =>
       set((state) => ({
-        instances: state.instances.map((i) => {
-          if (i.id !== instanceId) return i;
-
-          const taskIndex = i.selectedTasks.findIndex((t) => t.id === taskId);
-          if (taskIndex <= 0) return i;
-
-          const tasks = [...i.selectedTasks];
-          const [task] = tasks.splice(taskIndex, 1);
-          tasks.unshift(task);
-
-          return { ...i, selectedTasks: tasks };
-        }),
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) =>
+          moveItem(
+            tasks,
+            tasks.findIndex((t) => t.id === taskId),
+            0,
+          ),
+        ),
       })),
 
     // 置底任务
     moveTaskToBottom: (instanceId, taskId) =>
       set((state) => ({
-        instances: state.instances.map((i) => {
-          if (i.id !== instanceId) return i;
-
-          const taskIndex = i.selectedTasks.findIndex((t) => t.id === taskId);
-          if (taskIndex === -1 || taskIndex >= i.selectedTasks.length - 1) return i;
-
-          const tasks = [...i.selectedTasks];
-          const [task] = tasks.splice(taskIndex, 1);
-          tasks.push(task);
-
-          return { ...i, selectedTasks: tasks };
-        }),
+        instances: mapInstanceTasks(state.instances, instanceId, (tasks) =>
+          moveItem(
+            tasks,
+            tasks.findIndex((t) => t.id === taskId),
+            tasks.length - 1,
+          ),
+        ),
       })),
 
     // 复制实例
@@ -1579,13 +1453,8 @@ export const useAppStore = create<AppState>()(
       // 同步托盘设置到后端（仅 Tauri 环境）
       const minimizeToTray = config.settings.minimizeToTray ?? false;
       if (minimizeToTray) {
-        import('@/utils/paths').then(({ isTauri }) => {
-          if (!isTauri()) return;
-          import('@tauri-apps/api/core').then(({ invoke }) => {
-            invoke('set_minimize_to_tray', { enabled: minimizeToTray }).catch((err) => {
-              loggers.app.error('同步托盘设置失败:', err);
-            });
-          });
+        syncMinimizeToTray(minimizeToTray).catch((err) => {
+          loggers.app.error('同步托盘设置失败:', err);
         });
       }
     },
@@ -1650,9 +1519,7 @@ export const useAppStore = create<AppState>()(
     setSelectedController: (instanceId, controllerName) =>
       set((state) => {
         const pi = state.projectInterface;
-        const updatedInstances = state.instances.map((instance) => {
-          if (instance.id !== instanceId) return instance;
-
+        const updatedInstances = mapInstance(state.instances, instanceId, (instance) => {
           const previousControllerName =
             state.selectedController[instanceId] ||
             instance.controllerName ||
@@ -1702,16 +1569,12 @@ export const useAppStore = create<AppState>()(
       set((state) => {
         const pi = state.projectInterface;
         // 自动取消不兼容任务的勾选
-        const updatedInstances = state.instances.map((instance) => {
-          if (instance.id !== instanceId) return instance;
-
+        const updatedInstances = mapInstance(state.instances, instanceId, (instance) => {
           const updatedTasks = instance.selectedTasks.map((task) => {
             const taskDef = pi?.task.find((t) => t.name === task.taskName);
             // 如果任务指定了 resource 限制且不包含新资源，取消勾选
-            if (taskDef?.resource && taskDef.resource.length > 0) {
-              if (!taskDef.resource.includes(resourceName)) {
-                return { ...task, enabled: false };
-              }
+            if (!isResourceAllowed(taskDef, resourceName, 'deny')) {
+              return { ...task, enabled: false };
             }
             return task;
           });
@@ -1731,7 +1594,7 @@ export const useAppStore = create<AppState>()(
     // 保存设备信息到实例
     setInstanceSavedDevice: (instanceId, savedDevice) =>
       set((state) => ({
-        instances: state.instances.map((i) => (i.id === instanceId ? { ...i, savedDevice } : i)),
+        instances: mapInstance(state.instances, instanceId, (i) => ({ ...i, savedDevice })),
       })),
 
     addPreAction: (
@@ -1753,9 +1616,10 @@ export const useAppStore = create<AppState>()(
           }
         }
         return {
-          instances: state.instances.map((i) =>
-            i.id === instanceId ? { ...i, preActions: [...(i.preActions || []), action] } : i,
-          ),
+          instances: mapInstance(state.instances, instanceId, (i) => ({
+            ...i,
+            preActions: [...(i.preActions || []), action],
+          })),
         };
       });
       return added;
@@ -1763,22 +1627,15 @@ export const useAppStore = create<AppState>()(
 
     updatePreAction: (instanceId: string, actionId: string, updates: Partial<ActionConfig>) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                preActions: i.preActions?.map((a) =>
-                  a.id === actionId ? { ...a, ...updates } : a,
-                ),
-              }
-            : i,
-        ),
+        instances: mapInstance(state.instances, instanceId, (i) => ({
+          ...i,
+          preActions: i.preActions?.map((a) => (a.id === actionId ? { ...a, ...updates } : a)),
+        })),
       })),
 
     removePreAction: (instanceId: string, actionId: string) =>
       set((state) => ({
-        instances: state.instances.map((i) => {
-          if (i.id !== instanceId) return i;
+        instances: mapInstance(state.instances, instanceId, (i) => {
           const filtered = i.preActions?.filter((a) => a.id !== actionId);
           return { ...i, preActions: filtered?.length ? filtered : undefined };
         }),
@@ -1786,36 +1643,27 @@ export const useAppStore = create<AppState>()(
 
     reorderPreActions: (instanceId: string, oldIndex: number, newIndex: number) =>
       set((state) => ({
-        instances: state.instances.map((i) => {
-          if (i.id !== instanceId || !i.preActions) return i;
-          const len = i.preActions.length;
-          if (oldIndex < 0 || oldIndex >= len || newIndex < 0 || newIndex >= len) return i;
-          if (oldIndex === newIndex) return i;
-          const items = [...i.preActions];
-          const [removed] = items.splice(oldIndex, 1);
-          items.splice(newIndex, 0, removed);
-          return { ...i, preActions: items };
+        instances: mapInstance(state.instances, instanceId, (i) => {
+          if (!i.preActions) return i;
+          const items = moveItem(i.preActions, oldIndex, newIndex);
+          return items === i.preActions ? i : { ...i, preActions: items };
         }),
       })),
 
     renamePreAction: (instanceId: string, actionId: string, name: string) =>
       set((state) => ({
-        instances: state.instances.map((i) =>
-          i.id === instanceId
-            ? {
-                ...i,
-                preActions: i.preActions?.map((a) =>
-                  a.id === actionId ? { ...a, customName: name || undefined } : a,
-                ),
-              }
-            : i,
-        ),
+        instances: mapInstance(state.instances, instanceId, (i) => ({
+          ...i,
+          preActions: i.preActions?.map((a) =>
+            a.id === actionId ? { ...a, customName: name || undefined } : a,
+          ),
+        })),
       })),
 
     duplicatePreAction: (instanceId: string, actionId: string) =>
       set((state) => ({
-        instances: state.instances.map((i) => {
-          if (i.id !== instanceId || !i.preActions) return i;
+        instances: mapInstance(state.instances, instanceId, (i) => {
+          if (!i.preActions) return i;
           const idx = i.preActions.findIndex((a) => a.id === actionId);
           if (idx === -1) return i;
           const source = i.preActions[idx];
@@ -2052,10 +1900,8 @@ export const useAppStore = create<AppState>()(
     minimizeToTray: false,
     setMinimizeToTray: async (enabled) => {
       set({ minimizeToTray: enabled });
-      if (!isTauri()) return;
       try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        await invoke('set_minimize_to_tray', { enabled });
+        await syncMinimizeToTray(enabled);
       } catch (err) {
         loggers.app.error('设置托盘选项失败:', err);
       }

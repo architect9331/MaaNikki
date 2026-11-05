@@ -67,6 +67,7 @@ import { setBackendPort, getApiBase, apiGet } from '@/utils/backendApi';
 import { getAllLogsFromBackend, type LogEntryDto } from '@/utils/logStdout';
 import { cleanupExpiredLogs } from '@/utils/logRetention';
 import { useMaaCallbackLogger, useMaaAgentLogger } from '@/utils/useMaaCallbackLogger';
+import { subscribeBackendEvent } from '@/utils/backendEvent';
 import { getInterfaceLangKey } from '@/i18n';
 import { applyTheme, resolveThemeMode, registerCustomAccent, clearCustomAccents } from '@/themes';
 import { Toaster, toast } from 'sonner';
@@ -1073,7 +1074,7 @@ function App() {
       let isAutoRunOnLaunchMode = false;
       if (isTauri()) {
         try {
-          const isAutoStart = await invoke<boolean>('is_autostart');
+          // 复用启动早期已检测的自启动结果，避免重复调用 is_autostart
           if (isAutoStart) {
             useAppStore.getState().setIsAutoStartMode(true);
           }
@@ -1360,11 +1361,27 @@ function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
+  // 从后端拉取运行时状态快照并恢复到 store。
+  // 多个刷新请求可能重叠（state-changed 防抖、config-changed），用递增序号丢弃
+  // 先发后至的旧快照，避免旧响应覆盖新状态；被丢弃的请求若需要同步 isRunning，
+  // 该需求会保留并由最新一次应用的快照一并同步。
+  const backendStatesSeqRef = useRef(0);
+  const pendingRunningSyncRef = useRef(false);
+  const refreshBackendStates = useCallback(async (syncRunning: boolean): Promise<boolean> => {
+    if (syncRunning) pendingRunningSyncRef.current = true;
+    const seq = ++backendStatesSeqRef.current;
+    const backendStates = await maaService.getAllStates();
+    if (seq !== backendStatesSeqRef.current || !backendStates) return false;
+    useAppStore.getState().restoreBackendStates(backendStates, {
+      skipRunningState: !pendingRunningSyncRef.current,
+    });
+    pendingRunningSyncRef.current = false;
+    return true;
+  }, []);
+
   // 监听 config-changed 事件（其他客户端修改配置后重新拉取）
   // Tauri 桌面端通过 Tauri 事件接收，浏览器 WebUI 通过 WebSocket 接收
   useEffect(() => {
-    let cleanup: (() => void) | undefined;
-
     const handleConfigChanged = async () => {
       if (consumeSelfSave()) {
         log.debug('跳过本客户端自身触发的 config-changed');
@@ -1388,42 +1405,19 @@ function App() {
           }
         }
         // importConfig 会重置 isRunning，需立即从后端刷新真实状态
-        const backendStates = await maaService.getAllStates();
-        if (backendStates) {
-          useAppStore.getState().restoreBackendStates(backendStates);
-        }
+        await refreshBackendStates(true);
       } catch (err) {
         log.warn('重新拉取配置失败:', err);
       }
     };
 
-    if (isTauri()) {
-      let cancelled = false;
-      let unlisten: (() => void) | null = null;
-      void (async () => {
-        try {
-          const { listen } = await import('@tauri-apps/api/event');
-          const dispose = await listen('config-changed-external', handleConfigChanged);
-          if (cancelled) {
-            dispose();
-            return;
-          }
-          unlisten = dispose;
-        } catch (err) {
-          log.warn('注册 config-changed 监听失败:', err);
-        }
-      })();
-      cleanup = () => {
-        cancelled = true;
-        unlisten?.();
-      };
-    } else {
-      const unlisten = wsService.onConfigChanged(handleConfigChanged);
-      cleanup = unlisten;
-    }
-
-    return () => cleanup?.();
-  }, []);
+    return subscribeBackendEvent(
+      'config-changed-external',
+      () => void handleConfigChanged(),
+      () => wsService.onConfigChanged(handleConfigChanged),
+      (err) => log.warn('注册 config-changed 监听失败:', err),
+    );
+  }, [refreshBackendStates]);
 
   // 监听 state-changed 事件（后端状态变更后通知刷新，包含任务进度更新）
   // Tauri 桌面端通过 Tauri 事件接收，浏览器 WebUI 通过 WebSocket 接收
@@ -1432,7 +1426,6 @@ function App() {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     // 追踪防抖窗口内是否收到过任务相关事件（需要同步 isRunning 的事件）
     let pendingTaskKind = false;
-    let cleanup: (() => void) | undefined;
 
     const isTaskKind = (kind: string) =>
       kind === 'task-started' ||
@@ -1453,14 +1446,11 @@ function App() {
       debounceTimer = setTimeout(async () => {
         pendingTaskKind = false;
         try {
-          const backendStates = await maaService.getAllStates();
-          if (backendStates) {
-            // 任务相关事件需要同步 isRunning（跨端同步 + 任务自然完成）
-            // 其他事件（connected/resource-loading）跳过，避免竞态覆盖
-            // 前端已设置的 isRunning（start 流程中前端先于后端设置状态）
-            restoreBackendStates(backendStates, {
-              skipRunningState: !shouldSyncRunning,
-            });
+          // 任务相关事件需要同步 isRunning（跨端同步 + 任务自然完成）
+          // 其他事件（connected/resource-loading）跳过，避免竞态覆盖
+          // 前端已设置的 isRunning（start 流程中前端先于后端设置状态）
+          const applied = await refreshBackendStates(shouldSyncRunning);
+          if (applied) {
             log.debug('收到 state-changed，已刷新运行时状态, kind:', kind);
           }
         } catch (err) {
@@ -1469,39 +1459,18 @@ function App() {
       }, 300);
     };
 
-    if (isTauri()) {
-      let cancelled = false;
-      let unlisten: (() => void) | null = null;
-      void (async () => {
-        try {
-          const { listen } = await import('@tauri-apps/api/event');
-          const dispose = await listen<{ instance_id: string; kind: string }>(
-            'state-changed',
-            (event) => handleStateChanged(event.payload.instance_id, event.payload.kind),
-          );
-          if (cancelled) {
-            dispose();
-            return;
-          }
-          unlisten = dispose;
-        } catch (err) {
-          log.warn('注册 state-changed 监听失败:', err);
-        }
-      })();
-      cleanup = () => {
-        cancelled = true;
-        unlisten?.();
-      };
-    } else {
-      const unlisten = wsService.onStateChanged(handleStateChanged);
-      cleanup = unlisten;
-    }
+    const unsubscribe = subscribeBackendEvent<{ instance_id: string; kind: string }>(
+      'state-changed',
+      (payload) => handleStateChanged(payload.instance_id, payload.kind),
+      () => wsService.onStateChanged(handleStateChanged),
+      (err) => log.warn('注册 state-changed 监听失败:', err),
+    );
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
-      cleanup?.();
+      unsubscribe();
     };
-  }, [restoreBackendStates]);
+  }, [refreshBackendStates]);
 
   // 检查 VC++ 运行库缺失（在加载完成后检查）
   const checkVCRedistMissing = useCallback(async () => {

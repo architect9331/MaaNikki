@@ -30,6 +30,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
+import { useShallow } from 'zustand/react/shallow';
 import { isTaskAvailable } from '@/utils/developerTasks';
 import { TaskItem } from './TaskItem';
 import { ActionItem } from './ActionItem';
@@ -55,7 +56,14 @@ import { getAllMxuSpecialTasks, getAllMxuSpecialTasksOptions } from '@/types/spe
 
 /** 单个预设卡片 */
 function PresetCard({ preset, onApply }: { preset: PresetItem; onApply: () => void }) {
-  const { resolveI18nText, language, basePath, interfaceTranslations } = useAppStore();
+  const { resolveI18nText, language, basePath, interfaceTranslations } = useAppStore(
+    useShallow((state) => ({
+      resolveI18nText: state.resolveI18nText,
+      language: state.language,
+      basePath: state.basePath,
+      interfaceTranslations: state.interfaceTranslations,
+    })),
+  );
   const { t } = useTranslation();
   const langKey = getInterfaceLangKey(language);
   const translations = interfaceTranslations[langKey];
@@ -108,7 +116,15 @@ function useImportConfigActions(instanceId: string) {
     renameInstance,
     setSelectedController,
     setSelectedResource,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      projectInterface: state.projectInterface,
+      updateInstance: state.updateInstance,
+      renameInstance: state.renameInstance,
+      setSelectedController: state.setSelectedController,
+      setSelectedResource: state.setSelectedResource,
+    })),
+  );
   const { t } = useTranslation();
 
   const handleImport = async (source: 'clipboard' | 'file') => {
@@ -230,7 +246,16 @@ function ImportConfigButton({ instanceId }: { instanceId: string }) {
 /** 预设选择器 - 任务列表为空时显示 */
 function PresetSelector({ instanceId }: { instanceId: string }) {
   const { projectInterface, applyPreset, skipPreset, renameInstance, resolveI18nText, language } =
-    useAppStore();
+    useAppStore(
+      useShallow((state) => ({
+        projectInterface: state.projectInterface,
+        applyPreset: state.applyPreset,
+        skipPreset: state.skipPreset,
+        renameInstance: state.renameInstance,
+        resolveI18nText: state.resolveI18nText,
+        language: state.language,
+      })),
+    );
   const { t } = useTranslation();
   const langKey = getInterfaceLangKey(language);
 
@@ -274,7 +299,7 @@ function PresetSelector({ instanceId }: { instanceId: string }) {
 export function TaskList() {
   const { t } = useTranslation();
   const {
-    getActiveInstance,
+    instance,
     reorderTasks,
     reorderPreActions,
     selectAllTasks,
@@ -286,9 +311,24 @@ export function TaskList() {
     projectInterface,
     skippedPresetInstanceIds,
     devMode,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      // 直接派生当前实例，保证实例切换或实例内容变化时重新渲染
+      instance: state.instances.find((i) => i.id === state.activeInstanceId) || null,
+      reorderTasks: state.reorderTasks,
+      reorderPreActions: state.reorderPreActions,
+      selectAllTasks: state.selectAllTasks,
+      collapseAllTasks: state.collapseAllTasks,
+      setShowAddTaskPanel: state.setShowAddTaskPanel,
+      showAddTaskPanel: state.showAddTaskPanel,
+      lastAddedTaskId: state.lastAddedTaskId,
+      clearLastAddedTaskId: state.clearLastAddedTaskId,
+      projectInterface: state.projectInterface,
+      skippedPresetInstanceIds: state.skippedPresetInstanceIds,
+      devMode: state.devMode,
+    })),
+  );
 
-  const instance = getActiveInstance();
   const isInstanceRunning = instance?.isRunning || false;
   const { state: menuState, showAt: showMenuAt, hide: hideMenu } = useContextMenu();
   const { importFromClipboard, importFromFile } = useImportConfigActions(instance?.id ?? '');

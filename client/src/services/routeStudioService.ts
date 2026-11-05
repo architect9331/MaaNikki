@@ -47,10 +47,6 @@ export async function readRoute(summary: Pick<RouteSummary, 'id' | 'builtin'>): 
 let pending: Promise<void> | null = null;
 let cancellation: AbortController | null = null;
 
-export function routeStudioBusy() {
-  return pending !== null;
-}
-
 export function stopRouteSession() {
   if (!pending) return;
   useRouteStudioStore.setState({ status: 'stopping' });

@@ -33,7 +33,7 @@ import {
   MXU_WEBHOOK_TASK_NAME,
 } from '@/types/specialTasks';
 import { getPretaskItems, pretaskName, pretaskItemId, buildPretaskDef } from '@/types/pretasks';
-import { generateId } from '@/stores/helpers';
+import { generateId, isControllerAllowed, isResourceAllowed } from '@/stores/helpers';
 import { getProcessNameFromPath } from '@/utils/paths';
 import clsx from 'clsx';
 
@@ -229,17 +229,11 @@ export function AddTaskPanel() {
     });
   }, [projectInterface, devMode, searchQuery, resolveI18nText, langKey]);
 
-  // 检查任务是否与当前控制器/资源兼容
+  // 检查任务是否与当前控制器/资源兼容（未选择控制器/资源时视为不兼容）
   const getTaskCompatibility = (task: TaskItem) => {
-    const isControllerIncompatible =
-      task.controller &&
-      task.controller.length > 0 &&
-      (!selectedControllerName || !task.controller.includes(selectedControllerName));
+    const isControllerIncompatible = !isControllerAllowed(task, selectedControllerName, 'deny');
 
-    const isResourceIncompatible =
-      task.resource &&
-      task.resource.length > 0 &&
-      (!selectedResourceName || !task.resource.includes(selectedResourceName));
+    const isResourceIncompatible = !isResourceAllowed(task, selectedResourceName, 'deny');
 
     const isIncompatible = isControllerIncompatible || isResourceIncompatible;
 

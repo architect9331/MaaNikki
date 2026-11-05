@@ -4,6 +4,7 @@ import { ChevronRight, X, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useAppStore } from '@/stores/appStore';
+import { useShallow } from 'zustand/react/shallow';
 import { ContextMenu, useContextMenu } from './ContextMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 import { buildListItemMenuItems, InlineNameEditor } from './listItemShared';
@@ -64,7 +65,17 @@ export function ActionItem({
     reorderPreActions,
     confirmBeforeDelete,
     backendOS,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      updatePreAction: state.updatePreAction,
+      removePreAction: state.removePreAction,
+      renamePreAction: state.renamePreAction,
+      duplicatePreAction: state.duplicatePreAction,
+      reorderPreActions: state.reorderPreActions,
+      confirmBeforeDelete: state.confirmBeforeDelete,
+      backendOS: state.backendOS,
+    })),
+  );
 
   // useCmd 仅 Windows 后端支持（后端 utils.rs 按 cfg!(target_os = "windows") 消费）
   // 后端 OS 未知（纯前端 dev 预览）时回退到浏览器判断，保持既有行为

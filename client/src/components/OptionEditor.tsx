@@ -12,6 +12,8 @@ import {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/stores/appStore';
+import { isControllerAllowed, isResourceAllowed } from '@/stores/helpers';
+import { useShallow } from 'zustand/react/shallow';
 import { loadIconAsDataUrl, useResolvedContent } from '@/services/contentResolver';
 import type { OptionValue, CaseItem, InputItem, OptionDefinition } from '@/types/interface';
 import { findMxuOptionByKey } from '@/types/specialTasks';
@@ -195,22 +197,19 @@ function OptionLabelWithIncompatible({
   );
 }
 
+// 界面展示：未选择控制器/资源时不标记为不兼容
 function isOptionControllerIncompatible(
   optionDef: OptionDefinition | null | undefined,
   controllerName: string | undefined,
 ): boolean {
-  if (!optionDef?.controller || optionDef.controller.length === 0) return false;
-  if (!controllerName) return false;
-  return !optionDef.controller.includes(controllerName);
+  return !isControllerAllowed(optionDef, controllerName, 'allow');
 }
 
 function isOptionResourceIncompatible(
   optionDef: OptionDefinition | null | undefined,
   resourceName: string | undefined,
 ): boolean {
-  if (!optionDef?.resource || optionDef.resource.length === 0) return false;
-  if (!resourceName) return false;
-  return !optionDef.resource.includes(resourceName);
+  return !isResourceAllowed(optionDef, resourceName, 'allow');
 }
 
 /** 显示选项描述文本（支持文件/URL/直接文本，以及 Markdown/HTML 和本地图片） */
@@ -436,7 +435,19 @@ export function OptionEditor({
     basePath,
     interfaceTranslations,
     instances,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      projectInterface: state.projectInterface,
+      setTaskOptionValue: state.setTaskOptionValue,
+      globalOptionValues: state.globalOptionValues,
+      setGlobalOptionValue: state.setGlobalOptionValue,
+      resolveI18nText: state.resolveI18nText,
+      language: state.language,
+      basePath: state.basePath,
+      interfaceTranslations: state.interfaceTranslations,
+      instances: state.instances,
+    })),
+  );
 
   // 支持 MXU 内置选项定义（检查 optionKey 是否以 __MXU_ 开头）
   const isMxuOption = optionKey.startsWith('__MXU_');
@@ -1565,7 +1576,14 @@ interface SwitchGridProps {
 
 /** Switch 网格组件：用于显示多个无子选项的 switch */
 export function SwitchGrid({ instanceId, taskId, items, disabled = false }: SwitchGridProps) {
-  const { setTaskOptionValue, basePath, interfaceTranslations, language } = useAppStore();
+  const { setTaskOptionValue, basePath, interfaceTranslations, language } = useAppStore(
+    useShallow((state) => ({
+      setTaskOptionValue: state.setTaskOptionValue,
+      basePath: state.basePath,
+      interfaceTranslations: state.interfaceTranslations,
+      language: state.language,
+    })),
+  );
   const { t } = useTranslation();
 
   const handleToggle = (optionKey: string, currentValue: boolean, itemDisabled: boolean) => {

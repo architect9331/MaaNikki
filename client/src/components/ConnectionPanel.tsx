@@ -19,6 +19,8 @@ import {
 import clsx from 'clsx';
 import { maaService } from '@/services/maaService';
 import { useAppStore } from '@/stores/appStore';
+import { isControllerAllowed } from '@/stores/helpers';
+import { useShallow } from 'zustand/react/shallow';
 import { resolveI18nText } from '@/services/contentResolver';
 import { LinuxInputMethod, parseLinuxInputMethod } from '@/types/maa';
 import type { AdbDevice, Win32Window, GamescopeInstance, ControllerConfig } from '@/types/maa';
@@ -81,7 +83,39 @@ export function ConnectionPanel() {
     registerResIdName,
     registerResBatch,
     addLog,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      projectInterface: state.projectInterface,
+      basePath: state.basePath,
+      language: state.language,
+      interfaceTranslations: state.interfaceTranslations,
+      activeInstanceId: state.activeInstanceId,
+      instances: state.instances,
+      cachedAdbDevices: state.cachedAdbDevices,
+      cachedWin32Windows: state.cachedWin32Windows,
+      cachedWlrootsSockets: state.cachedWlrootsSockets,
+      cachedGamescopeInstances: state.cachedGamescopeInstances,
+      setCachedAdbDevices: state.setCachedAdbDevices,
+      setCachedWin32Windows: state.setCachedWin32Windows,
+      setCachedWlrootsSockets: state.setCachedWlrootsSockets,
+      setCachedGamescopeInstances: state.setCachedGamescopeInstances,
+      selectedController: state.selectedController,
+      selectedResource: state.selectedResource,
+      setSelectedController: state.setSelectedController,
+      setSelectedResource: state.setSelectedResource,
+      instanceConnectionStatus: state.instanceConnectionStatus,
+      instanceResourceLoaded: state.instanceResourceLoaded,
+      setInstanceConnectionStatus: state.setInstanceConnectionStatus,
+      setInstanceResourceLoaded: state.setInstanceResourceLoaded,
+      setInstanceSavedDevice: state.setInstanceSavedDevice,
+      connectionPanelExpanded: state.connectionPanelExpanded,
+      setConnectionPanelExpanded: state.setConnectionPanelExpanded,
+      registerCtrlIdName: state.registerCtrlIdName,
+      registerResIdName: state.registerResIdName,
+      registerResBatch: state.registerResBatch,
+      addLog: state.addLog,
+    })),
+  );
 
   // 获取当前活动实例
   const activeInstance = instances.find((i) => i.id === activeInstanceId);
@@ -200,6 +234,20 @@ export function ConnectionPanel() {
   // 获取当前实例 ID
   const instanceId = activeInstanceId || '';
 
+  // 连接/加载/搜索等异步操作期间用户可能切换到其他实例。本面板的本地 UI 状态
+  // 属于当前显示的实例，旧操作完成后不能再写入，否则会把旧实例的结果显示到新实例上；
+  // 写入 store 的按实例状态不受影响，仍记录到发起操作的实例。
+  const isActiveInstance = (id: string) => (useAppStore.getState().activeInstanceId || '') === id;
+
+  // 合并更新已保存设备信息：只覆盖本次变化的字段，保留其他控制器/设备的已保存信息
+  const updateSavedDevice = (
+    id: string,
+    patch: Partial<NonNullable<NonNullable<typeof activeInstance>['savedDevice']>>,
+  ) => {
+    const inst = useAppStore.getState().instances.find((i) => i.id === id);
+    setInstanceSavedDevice(id, { ...inst?.savedDevice, ...patch });
+  };
+
   // 任务运行中时禁止切换控制器
   const isRunning = activeInstance?.isRunning || false;
 
@@ -223,11 +271,11 @@ export function ConnectionPanel() {
   // 检查资源是否与当前控制器兼容
   const getResourceCompatibility = useCallback(
     (resource: ResourceItem) => {
-      const isControllerIncompatible =
-        !!resource.controller &&
-        resource.controller.length > 0 &&
-        !!currentControllerName &&
-        !resource.controller.includes(currentControllerName);
+      const isControllerIncompatible = !isControllerAllowed(
+        resource,
+        currentControllerName,
+        'allow',
+      );
 
       return {
         isIncompatible: isControllerIncompatible,
@@ -440,6 +488,8 @@ export function ConnectionPanel() {
       if (controllerType === 'Adb') {
         const devices = await maaService.findAdbDevices();
         setCachedAdbDevices(devices);
+        // 搜索期间已切换到其他实例：不再为旧实例自动选择/连接，也不改动新实例的界面
+        if (!isActiveInstance(instanceId)) return;
 
         // 自动连接策略：
         // 1. 如果有保存的设备信息且能唯一匹配 → 自动连接该设备
@@ -474,6 +524,7 @@ export function ConnectionPanel() {
           desktopWindowTitleRegex,
         );
         setCachedWin32Windows(windows);
+        if (!isActiveInstance(instanceId)) return;
 
         // 自动连接策略（与 Adb 一致）
         let autoSelected: Win32Window | null = null;
@@ -505,6 +556,7 @@ export function ConnectionPanel() {
       } else if (controllerType === 'WlRoots') {
         const sockets = await maaService.findWlrootsSockets();
         setCachedWlrootsSockets(sockets);
+        if (!isActiveInstance(instanceId)) return;
 
         let autoSelected: string | null = null;
         if (savedDevice?.wlrSocketPath) {
@@ -545,6 +597,7 @@ export function ConnectionPanel() {
           instances = await maaService.findGamescopeInstances();
           setCachedGamescopeInstances(instances);
         }
+        if (!isActiveInstance(instanceId)) return;
 
         // 按需过滤：仅保留提供所需字段的实例（截图需 node id，输入需 EIS socket）
         const eligibleInstances = instances.filter((inst) => {
@@ -586,9 +639,11 @@ export function ConnectionPanel() {
         }
       }
     } catch (err) {
-      setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
+      if (isActiveInstance(instanceId)) {
+        setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
+      }
     } finally {
-      setIsSearching(false);
+      if (isActiveInstance(instanceId)) setIsSearching(false);
     }
   };
 
@@ -606,11 +661,14 @@ export function ConnectionPanel() {
 
     // 等待连接结果（先查缓存，没有则轮询等待）
     const result = await waitForCtrlResult(ctrlId);
+    const stillActive = isActiveInstance(instanceId);
 
     if (result === 'succeeded') {
-      setIsConnected(true);
+      if (stillActive) {
+        setIsConnected(true);
+        setIsConnecting(false);
+      }
       setInstanceConnectionStatus(instanceId, 'Connected');
-      setIsConnecting(false);
       const controllerDisplayName = currentController
         ? getControllerDisplayName(currentController)
         : '';
@@ -622,11 +680,30 @@ export function ConnectionPanel() {
         : t('controller.connectedLog', { name: controllerDisplayName });
       addLog(instanceId, { type: 'info', message: logMessage });
     } else {
-      setDeviceError(t('controller.connectionFailed'));
-      setIsConnected(false);
+      if (stillActive) {
+        setDeviceError(t('controller.connectionFailed'));
+        setIsConnected(false);
+        setIsConnecting(false);
+      }
       setInstanceConnectionStatus(instanceId, 'Disconnected');
-      setIsConnecting(false);
     }
+  };
+
+  // 连接失败的统一处理：store 状态记录到发起连接的实例，本地 UI 仅在仍显示该实例时更新
+  const handleConnectError = (id: string, err: unknown) => {
+    setInstanceConnectionStatus(id, 'Disconnected');
+    if (!isActiveInstance(id)) return;
+    setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
+    setIsConnected(false);
+    setIsConnecting(false);
+  };
+
+  // 切换设备前断开旧连接
+  const disconnectBeforeReconnect = async (id: string) => {
+    if (!isConnected) return;
+    await maaService.destroyInstance(id).catch(() => {});
+    if (isActiveInstance(id)) setIsConnected(false);
+    setInstanceResourceLoaded(id, false);
   };
 
   // 连接设备
@@ -681,7 +758,7 @@ export function ConnectionPanel() {
         targetType = 'device';
       } else if (controllerType === 'PlayCover') {
         // 保存 PlayCover 地址到实例配置
-        setInstanceSavedDevice(instanceId, { playcoverAddress });
+        updateSavedDevice(instanceId, { playcoverAddress });
         config = {
           type: 'PlayCover',
           address: playcoverAddress,
@@ -698,17 +775,22 @@ export function ConnectionPanel() {
 
       await connectControllerInternal(config, deviceName, targetType);
     } catch (err) {
-      setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
-      setIsConnected(false);
-      setInstanceConnectionStatus(instanceId, 'Disconnected');
-      setIsConnecting(false);
+      handleConnectError(instanceId, err);
     }
   };
 
   // 加载资源（使用缓存机制解决竞态问题）
   const loadResourceInternal = async (resource: ResourceItem) => {
-    setIsLoadingResource(true);
-    setResourceError(null);
+    // 本地 UI 状态（含 lastLoadedResourceRef）仅在仍显示发起加载的实例时更新
+    // （切换资源时本函数在 await 之后才被调用，开头的写入同样需要判断）
+    const updateLocalUi = (apply: () => void) => {
+      if (isActiveInstance(instanceId)) apply();
+    };
+
+    updateLocalUi(() => {
+      setIsLoadingResource(true);
+      setResourceError(null);
+    });
 
     try {
       await maaService.createInstance(instanceId).catch(() => {});
@@ -727,13 +809,17 @@ export function ConnectionPanel() {
 
       // 如果没有有效的 resIds，直接标记为加载失败
       if (resIds.length === 0) {
-        setResourceError(t('resource.loadFailed'));
-        setIsLoadingResource(false);
+        updateLocalUi(() => {
+          setResourceError(t('resource.loadFailed'));
+          setIsLoadingResource(false);
+        });
         return;
       }
 
       // 记录已加载的资源名称
-      lastLoadedResourceRef.current = resource.name;
+      updateLocalUi(() => {
+        lastLoadedResourceRef.current = resource.name;
+      });
 
       // 等待所有资源加载完成（先查缓存，没有则轮询等待）
       const results = await Promise.all(resIds.map((resId) => waitForResResult(resId)));
@@ -742,22 +828,28 @@ export function ConnectionPanel() {
       const hasFailed = results.some((r) => r === 'failed');
 
       if (hasFailed) {
-        setResourceError(t('resource.loadFailed'));
-        setIsResourceLoaded(false);
         setInstanceResourceLoaded(instanceId, false);
-        setIsLoadingResource(false);
-        lastLoadedResourceRef.current = null;
+        updateLocalUi(() => {
+          setResourceError(t('resource.loadFailed'));
+          setIsResourceLoaded(false);
+          setIsLoadingResource(false);
+          lastLoadedResourceRef.current = null;
+        });
       } else {
-        setIsResourceLoaded(true);
         setInstanceResourceLoaded(instanceId, true);
-        setIsLoadingResource(false);
+        updateLocalUi(() => {
+          setIsResourceLoaded(true);
+          setIsLoadingResource(false);
+        });
       }
     } catch (err) {
-      setResourceError(err instanceof Error ? err.message : t('resource.loadFailed'));
-      setIsResourceLoaded(false);
       setInstanceResourceLoaded(instanceId, false);
-      setIsLoadingResource(false);
-      lastLoadedResourceRef.current = null;
+      updateLocalUi(() => {
+        setResourceError(err instanceof Error ? err.message : t('resource.loadFailed'));
+        setIsResourceLoaded(false);
+        setIsLoadingResource(false);
+        lastLoadedResourceRef.current = null;
+      });
     }
   };
 
@@ -775,6 +867,7 @@ export function ConnectionPanel() {
       // 加载新资源
       await loadResourceInternal(newResource);
     } catch (err) {
+      if (!isActiveInstance(instanceId)) return;
       setResourceError(err instanceof Error ? err.message : t('resource.switchFailed'));
       setIsLoadingResource(false);
       lastLoadedResourceRef.current = null;
@@ -887,8 +980,8 @@ export function ConnectionPanel() {
     setSelectedAdbDevice(device);
     setShowDeviceDropdown(false);
 
-    // 保存设备名称和地址到实例配置。
-    setInstanceSavedDevice(instanceId, {
+    // 保存设备名称和地址到实例配置（保留其他已保存字段）。
+    updateSavedDevice(instanceId, {
       adbDeviceName: device.name,
       adbDeviceAddress: device.address,
     });
@@ -899,11 +992,7 @@ export function ConnectionPanel() {
 
     try {
       // 先断开旧连接
-      if (isConnected) {
-        await maaService.destroyInstance(instanceId).catch(() => {});
-        setIsConnected(false);
-        setInstanceResourceLoaded(instanceId, false);
-      }
+      await disconnectBeforeReconnect(instanceId);
 
       const initialized = await ensureMaaInitialized();
       if (!initialized) {
@@ -924,10 +1013,7 @@ export function ConnectionPanel() {
 
       await connectControllerInternal(config, device.name || device.address, 'device');
     } catch (err) {
-      setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
-      setIsConnected(false);
-      setInstanceConnectionStatus(instanceId, 'Disconnected');
-      setIsConnecting(false);
+      handleConnectError(instanceId, err);
     }
   };
 
@@ -937,11 +1023,7 @@ export function ConnectionPanel() {
       const programPath = await maaService.getProcessPathFromHwnd(hwnd);
       if (!programPath) return;
 
-      const inst = useAppStore.getState().instances.find((i) => i.id === instanceId);
-      setInstanceSavedDevice(instanceId, {
-        ...inst?.savedDevice,
-        connectedProgramPath: programPath,
-      });
+      updateSavedDevice(instanceId, { connectedProgramPath: programPath });
     } catch {
       // best-effort, 静默忽略
     }
@@ -952,8 +1034,14 @@ export function ConnectionPanel() {
     setSelectedWindow(win);
     setShowDeviceDropdown(false);
 
-    // 保存窗口名称到实例配置
-    setInstanceSavedDevice(instanceId, { windowName: win.window_name });
+    // 保存窗口名称到实例配置（保留其他已保存字段）；
+    // 换了窗口时旧窗口的进程路径不再有效，连接成功后会重新获取
+    const prevSaved = useAppStore.getState().instances.find((i) => i.id === instanceId)
+      ?.savedDevice;
+    updateSavedDevice(instanceId, {
+      windowName: win.window_name,
+      ...(prevSaved?.windowName !== win.window_name && { connectedProgramPath: undefined }),
+    });
 
     // 自动连接
     setIsConnecting(true);
@@ -961,11 +1049,7 @@ export function ConnectionPanel() {
 
     try {
       // 先断开旧连接
-      if (isConnected) {
-        await maaService.destroyInstance(instanceId).catch(() => {});
-        setIsConnected(false);
-        setInstanceResourceLoaded(instanceId, false);
-      }
+      await disconnectBeforeReconnect(instanceId);
 
       const initialized = await ensureMaaInitialized();
       if (!initialized) {
@@ -986,10 +1070,7 @@ export function ConnectionPanel() {
         void fetchAndStoreProcessPath(win.handle);
       }
     } catch (err) {
-      setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
-      setIsConnected(false);
-      setInstanceConnectionStatus(instanceId, 'Disconnected');
-      setIsConnecting(false);
+      handleConnectError(instanceId, err);
     }
   };
 
@@ -998,8 +1079,8 @@ export function ConnectionPanel() {
     setSelectedWlrootsSocket(socketPath);
     setShowDeviceDropdown(false);
 
-    // 保存 socket path 到实例配置
-    setInstanceSavedDevice(instanceId, { wlrSocketPath: socketPath });
+    // 保存 socket path 到实例配置（保留其他已保存字段）
+    updateSavedDevice(instanceId, { wlrSocketPath: socketPath });
 
     // 自动连接
     setIsConnecting(true);
@@ -1007,11 +1088,7 @@ export function ConnectionPanel() {
 
     try {
       // 先断开旧连接
-      if (isConnected) {
-        await maaService.destroyInstance(instanceId).catch(() => {});
-        setIsConnected(false);
-        setInstanceResourceLoaded(instanceId, false);
-      }
+      await disconnectBeforeReconnect(instanceId);
 
       const initialized = await ensureMaaInitialized();
       if (!initialized) {
@@ -1028,10 +1105,7 @@ export function ConnectionPanel() {
 
       await connectControllerInternal(config, socketPath, 'device');
     } catch (err) {
-      setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
-      setIsConnected(false);
-      setInstanceConnectionStatus(instanceId, 'Disconnected');
-      setIsConnecting(false);
+      handleConnectError(instanceId, err);
     }
   };
 
@@ -1055,11 +1129,7 @@ export function ConnectionPanel() {
     setDeviceError(null);
 
     try {
-      if (isConnected) {
-        await maaService.destroyInstance(instanceId).catch(() => {});
-        setIsConnected(false);
-        setInstanceResourceLoaded(instanceId, false);
-      }
+      await disconnectBeforeReconnect(instanceId);
 
       const initialized = await ensureMaaInitialized();
       if (!initialized) {
@@ -1094,20 +1164,14 @@ export function ConnectionPanel() {
       );
       await connectControllerInternal(config, deviceName, 'device');
     } catch (err) {
-      setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
-      setIsConnected(false);
-      setInstanceConnectionStatus(instanceId, 'Disconnected');
-      setIsConnecting(false);
+      handleConnectError(instanceId, err);
     }
   };
 
   // 合并保存 Linux 设备信息（保留其它已保存字段）
   const saveLinuxDeviceInfo = (
-    patch: Partial<NonNullable<typeof activeInstance>['savedDevice']>,
-  ) => {
-    const inst = useAppStore.getState().instances.find((i) => i.id === instanceId);
-    setInstanceSavedDevice(instanceId, { ...inst?.savedDevice, ...patch });
-  };
+    patch: Partial<NonNullable<NonNullable<typeof activeInstance>['savedDevice']>>,
+  ) => updateSavedDevice(instanceId, patch);
 
   const handleSelectLinuxGamescopeInstance = (instance: GamescopeInstance) => {
     setSelectedGamescopeInstance(instance);
@@ -1153,6 +1217,7 @@ export function ConnectionPanel() {
       if (controllerType === 'Adb') {
         const devices = await maaService.findAdbDevices();
         setCachedAdbDevices(devices);
+        if (!isActiveInstance(instanceId)) return;
 
         // 尝试匹配保存的设备信息
         if (savedDevice?.adbDeviceName) {
@@ -1177,6 +1242,7 @@ export function ConnectionPanel() {
           desktopWindowTitleRegex,
         );
         setCachedWin32Windows(windows);
+        if (!isActiveInstance(instanceId)) return;
 
         // 尝试匹配保存的窗口名称
         if (savedDevice?.windowName) {
@@ -1198,6 +1264,7 @@ export function ConnectionPanel() {
       } else if (controllerType === 'WlRoots') {
         const sockets = await maaService.findWlrootsSockets();
         setCachedWlrootsSockets(sockets);
+        if (!isActiveInstance(instanceId)) return;
 
         // 尝试匹配保存的窗口名称
         if (savedDevice?.wlrSocketPath) {
@@ -1223,9 +1290,11 @@ export function ConnectionPanel() {
         return;
       }
     } catch (err) {
-      setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
+      if (isActiveInstance(instanceId)) {
+        setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
+      }
     } finally {
-      setIsSearching(false);
+      if (isActiveInstance(instanceId)) setIsSearching(false);
     }
   };
 
@@ -1556,20 +1625,21 @@ export function ConnectionPanel() {
                           await maaService.createInstance(instanceId).catch(() => {});
 
                           setSelectedController(instanceId, controller.name);
-                          setIsConnected(false);
                           setInstanceConnectionStatus(instanceId, 'Disconnected');
-                          setSelectedAdbDevice(null);
-                          setSelectedWindow(null);
-                          setSelectedWlrootsSocket(null);
-                          setSelectedGamescopeInstance(null);
+                          // 等待期间已切换到其他实例时，不改动新实例的本地界面状态
+                          const stillActive = isActiveInstance(instanceId);
+                          if (stillActive) {
+                            setIsConnected(false);
+                            setSelectedAdbDevice(null);
+                            setSelectedWindow(null);
+                            setSelectedWlrootsSocket(null);
+                            setSelectedGamescopeInstance(null);
+                          }
 
                           // 检查当前资源是否支持新控制器，如果不支持则切换到第一个可用资源
-                          const newControllerResources = allResources.filter((r) => {
-                            if (r.controller && r.controller.length > 0) {
-                              return r.controller.includes(controller.name);
-                            }
-                            return true;
-                          });
+                          const newControllerResources = allResources.filter((r) =>
+                            isControllerAllowed(r, controller.name, 'allow'),
+                          );
 
                           const currentResourceSupported = newControllerResources.some(
                             (r) => r.name === currentResourceName,
@@ -1578,14 +1648,11 @@ export function ConnectionPanel() {
                           if (!currentResourceSupported && newControllerResources.length > 0) {
                             // 当前资源不支持新控制器，切换到第一个可用资源
                             setSelectedResource(instanceId, newControllerResources[0].name);
-                            // 资源切换后需要重新加载
+                          }
+                          // 资源切换后需要重新加载；资源不变时新实例也需要重新绑定资源
+                          setInstanceResourceLoaded(instanceId, false);
+                          if (stillActive) {
                             setIsResourceLoaded(false);
-                            setInstanceResourceLoaded(instanceId, false);
-                            lastLoadedResourceRef.current = null;
-                          } else {
-                            // 资源不变，但新实例需要重新绑定资源
-                            setIsResourceLoaded(false);
-                            setInstanceResourceLoaded(instanceId, false);
                             lastLoadedResourceRef.current = null;
                           }
                         }}

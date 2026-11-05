@@ -476,29 +476,6 @@ export default {
     needResource: 'Please load resources first',
   },
 
-  // Screenshot preview
-  screenshot: {
-    title: 'Live Screenshot',
-    autoRefresh: 'Auto Refresh',
-    noScreenshot: 'No screenshot',
-    startStream: 'Start Live Stream',
-    stopStream: 'Stop Live Stream',
-    connectFirst: 'Please connect a device first',
-    fullscreen: 'Fullscreen',
-    exitFullscreen: 'Exit Fullscreen',
-    clickHint: 'Click on the image to send a tap to the device',
-    // Frame rate settings
-    frameRate: {
-      title: 'Screenshot Frame Rate',
-      hint: 'Only affects preview smoothness and system resource usage, does not impact task recognition or execution',
-      unlimited: 'Unlimited',
-      fps5: '5 FPS',
-      fps1: '1 FPS',
-      every5s: 'Every 5s',
-      every30s: 'Every 30s',
-    },
-  },
-
   // Logs
   logs: {
     title: 'Logs',
@@ -684,20 +661,7 @@ export default {
 
   // Dashboard
   dashboard: {
-    title: 'Dashboard',
-    toggle: 'Dashboard View',
-    exit: 'Exit Dashboard',
-    instances: 'instances',
-    noInstances: 'No instances',
-    running: 'Running',
-    succeeded: 'Succeeded',
-    failed: 'Failed',
     noEnabledTasks: 'No enabled tasks',
-    alignLeft: 'Align cards to left',
-    alignCenter: 'Align cards to center',
-    alignRight: 'Align cards to right',
-    zoomIn: 'Zoom in',
-    zoomOut: 'Zoom out',
   },
 
   // Recently Closed
@@ -854,7 +818,6 @@ export default {
     moveToLast: 'Move to Last',
     closeTab: 'Close Tab',
     closeOtherTabs: 'Close Other Tabs',
-    closeAllTabs: 'Close All Tabs',
     closeTabsToRight: 'Close Tabs to the Right',
     exportConfig: 'Export Config',
     exportToClipboard: 'Export to Clipboard',
@@ -893,22 +856,6 @@ export default {
     runSingleTask: 'Run This Task Only',
     runOnceTask: 'Run Once',
     clearRunOnceTask: 'Clear Run Once',
-
-    // Screenshot panel context menu
-    reconnect: 'Reconnect',
-    forceRefresh: 'Force Refresh',
-    startStream: 'Start Live Stream',
-    stopStream: 'Stop Live Stream',
-    fullscreen: 'Fullscreen',
-    saveScreenshot: 'Save Screenshot',
-    copyScreenshot: 'Copy Screenshot',
-
-    // Connection panel context menu
-    refreshDevices: 'Refresh Device List',
-    disconnect: 'Disconnect',
-
-    // Common
-    openFolder: 'Open Containing Folder',
   },
 
   // Version warning

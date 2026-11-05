@@ -475,29 +475,6 @@ export default {
     needResource: '先にリソースを読み込んでください',
   },
 
-  // スクリーンショットプレビュー
-  screenshot: {
-    title: 'リアルタイムスクリーンショット',
-    autoRefresh: '自動更新',
-    noScreenshot: 'スクリーンショットがありません',
-    startStream: 'ライブストリームを開始',
-    stopStream: 'ライブストリームを停止',
-    connectFirst: '先にデバイスを接続してください',
-    fullscreen: '全画面表示',
-    exitFullscreen: '全画面を終了',
-    clickHint: '画面をクリックするとデバイスにタップを送信します',
-    // フレームレート設定
-    frameRate: {
-      title: 'スクリーンショットのフレームレート',
-      hint: 'プレビューの滑らかさとシステムリソース使用量にのみ影響し、タスクの認識や実行には影響しません',
-      unlimited: '制限なし',
-      fps5: '5 FPS',
-      fps1: '1 FPS',
-      every5s: '5秒ごと',
-      every30s: '30秒ごと',
-    },
-  },
-
   // ログ
   logs: {
     title: '実行ログ',
@@ -683,20 +660,7 @@ export default {
 
   // ダッシュボード
   dashboard: {
-    title: 'ダッシュボード',
-    toggle: 'ダッシュボード表示',
-    exit: 'ダッシュボードを終了',
-    instances: '件のインスタンス',
-    noInstances: 'インスタンスがありません',
-    running: '実行中',
-    succeeded: '完了',
-    failed: '失敗',
     noEnabledTasks: '有効なタスクがありません',
-    alignLeft: '左寄せ',
-    alignCenter: '中央寄せ',
-    alignRight: '右寄せ',
-    zoomIn: '拡大',
-    zoomOut: '縮小',
   },
 
   // 最近閉じたタブ
@@ -854,7 +818,6 @@ export default {
     moveToLast: '最後に移動',
     closeTab: 'タブを閉じる',
     closeOtherTabs: '他のタブを閉じる',
-    closeAllTabs: 'すべてのタブを閉じる',
     closeTabsToRight: '右側のタブを閉じる',
     exportConfig: '設定をエクスポート',
     exportToClipboard: 'クリップボードへエクスポート',
@@ -893,22 +856,6 @@ export default {
     runSingleTask: 'このタスクのみ実行',
     runOnceTask: '単発実行',
     clearRunOnceTask: '単発実行を解除',
-
-    // スクリーンショットパネルのコンテキストメニュー
-    reconnect: '再接続',
-    forceRefresh: '強制更新',
-    startStream: 'ライブストリームを開始',
-    stopStream: 'ライブストリームを停止',
-    fullscreen: '全画面表示',
-    saveScreenshot: 'スクリーンショットを保存',
-    copyScreenshot: 'スクリーンショットをコピー',
-
-    // 接続パネルのコンテキストメニュー
-    refreshDevices: 'デバイス一覧を更新',
-    disconnect: '切断',
-
-    // 共通
-    openFolder: 'フォルダを開く',
   },
 
   // バージョン警告

@@ -468,29 +468,6 @@ export default {
     needResource: '먼저 리소스를 로드하세요',
   },
 
-  // 스크린샷 미리보기
-  screenshot: {
-    title: '실시간 스크린샷',
-    autoRefresh: '자동 새로고침',
-    noScreenshot: '스크린샷이 없습니다',
-    startStream: '라이브 스트림 시작',
-    stopStream: '라이브 스트림 중지',
-    connectFirst: '먼저 기기를 연결하세요',
-    fullscreen: '전체 화면',
-    exitFullscreen: '전체 화면 종료',
-    clickHint: '화면을 클릭하면 기기에 탭을 전송합니다',
-    // 프레임률 설정
-    frameRate: {
-      title: '스크린샷 프레임률',
-      hint: '미리보기 부드러움과 시스템 리소스 사용량에만 영향을 미치며, 작업 인식이나 실행에는 영향을 주지 않습니다',
-      unlimited: '제한 없음',
-      fps5: '5 FPS',
-      fps1: '1 FPS',
-      every5s: '5초마다',
-      every30s: '30초마다',
-    },
-  },
-
   // 로그
   logs: {
     title: '실행 로그',
@@ -673,20 +650,7 @@ export default {
 
   // 대시보드
   dashboard: {
-    title: '대시보드',
-    toggle: '대시보드 보기',
-    exit: '대시보드 나가기',
-    instances: '개의 인스턴스',
-    noInstances: '인스턴스가 없습니다',
-    running: '실행 중',
-    succeeded: '완료',
-    failed: '실패',
     noEnabledTasks: '활성화된 작업이 없습니다',
-    alignLeft: '왼쪽 정렬',
-    alignCenter: '가운데 정렬',
-    alignRight: '오른쪽 정렬',
-    zoomIn: '확대',
-    zoomOut: '축소',
   },
 
   // 최근 닫은 탭
@@ -842,7 +806,6 @@ export default {
     moveToLast: '맨 뒤로 이동',
     closeTab: '탭 닫기',
     closeOtherTabs: '다른 탭 닫기',
-    closeAllTabs: '모든 탭 닫기',
     closeTabsToRight: '오른쪽 탭 닫기',
     exportConfig: '설정 내보내기',
     exportToClipboard: '클립보드로 내보내기',
@@ -881,22 +844,6 @@ export default {
     runSingleTask: '이 작업만 실행',
     runOnceTask: '1회 실행',
     clearRunOnceTask: '1회 실행 취소',
-
-    // 스크린샷 패널 컨텍스트 메뉴
-    reconnect: '다시 연결',
-    forceRefresh: '강제 새로고침',
-    startStream: '라이브 스트림 시작',
-    stopStream: '라이브 스트림 중지',
-    fullscreen: '전체 화면',
-    saveScreenshot: '스크린샷 저장',
-    copyScreenshot: '스크린샷 복사',
-
-    // 연결 패널 컨텍스트 메뉴
-    refreshDevices: '기기 목록 새로고침',
-    disconnect: '연결 해제',
-
-    // 공통
-    openFolder: '폴더 열기',
   },
 
   // 버전 경고

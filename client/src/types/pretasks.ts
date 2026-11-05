@@ -16,7 +16,7 @@ import type {
 } from './interface';
 import { normalizePretaskConfigs } from './interface';
 import { findSwitchCase } from '@/utils/optionHelpers';
-import { createDefaultOptionValue, sanitizeOptionValue } from '@/stores/helpers';
+import { createDefaultOptionValue, isScopeCompatible, sanitizeOptionValue } from '@/stores/helpers';
 import { loggers } from '@/utils/logger';
 
 /** pretask 伪任务在流程中的入口节点名（pretask 不进 Tasker，仅作占位） */
@@ -113,13 +113,8 @@ function collectPretaskOptionValues(
     return;
   }
 
-  // 过滤不满足当前 controller / resource 的 option
-  if (optionDef.controller && optionDef.controller.length > 0) {
-    if (!controllerName || !optionDef.controller.includes(controllerName)) return;
-  }
-  if (optionDef.resource && optionDef.resource.length > 0) {
-    if (!resourceName || !optionDef.resource.includes(resourceName)) return;
-  }
+  // 过滤不满足当前 controller / resource 的 option（未设置时视为不满足）
+  if (!isScopeCompatible(optionDef, controllerName, resourceName, 'deny')) return;
 
   if (result[optionKey] !== undefined) return;
 

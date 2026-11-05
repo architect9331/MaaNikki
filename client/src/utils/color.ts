@@ -3,11 +3,6 @@ export function isHexLike(input: string): boolean {
   return v === '' || v === '#' || /^#?[0-9a-fA-F]{0,6}$/.test(v);
 }
 
-export function isValidHex(input: string): boolean {
-  const v = input.trim();
-  return /^#[0-9a-fA-F]{6}$/.test(v) || /^#[0-9a-fA-F]{3}$/.test(v);
-}
-
 /**
  * Normalize a hex color string.
  * - Accepts '#RGB' / '#RRGGBB' / 'RGB' / 'RRGGBB'

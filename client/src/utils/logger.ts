@@ -165,28 +165,6 @@ export function createLogger(moduleName: string, level?: LogLevel) {
   return logger;
 }
 
-/**
- * 设置全局日志级别
- */
-export function setLogLevel(level: LogLevel) {
-  log.setLevel(level);
-}
-
-/**
- * 获取当前日志级别
- */
-export function getLogLevel(): LogLevel {
-  const levels: Record<number, LogLevel> = {
-    0: 'trace',
-    1: 'debug',
-    2: 'info',
-    3: 'warn',
-    4: 'error',
-    5: 'silent',
-  };
-  return levels[log.getLevel()] || 'warn';
-}
-
 export function getCurrentLogFileName(): string | null {
   return logFileName;
 }

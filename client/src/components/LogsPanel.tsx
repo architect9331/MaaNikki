@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Eraser, Copy, ChevronUp, ChevronDown, Archive } from 'lucide-react';
 import clsx from 'clsx';
 import { useAppStore, type LogType } from '@/stores/appStore';
+import { useShallow } from 'zustand/react/shallow';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
 import { isTauri } from '@/utils/paths';
 import { useExportLogs } from '@/utils/useExportLogs';
@@ -23,6 +24,7 @@ import type { LogEntry } from '@/stores/types';
 const DEFAULT_VISIBLE_LOG_LIMIT = 500;
 const EXPANDED_LOG_LIMIT = 2000;
 const BOTTOM_FOLLOW_THRESHOLD_PX = 24;
+const EMPTY_LOGS: LogEntry[] = [];
 
 function formatLogTime(date: Date, locale?: string) {
   return date.toLocaleTimeString(locale || undefined, {
@@ -46,17 +48,27 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
   const {
     sidePanelExpanded,
     toggleSidePanelExpanded,
-    activeInstanceId: selectedInstanceId,
-    instanceLogs,
+    selectedInstanceId,
     clearLogs,
     setMaxLogsPerInstance,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      sidePanelExpanded: state.sidePanelExpanded,
+      toggleSidePanelExpanded: state.toggleSidePanelExpanded,
+      selectedInstanceId: state.activeInstanceId,
+      clearLogs: state.clearLogs,
+      setMaxLogsPerInstance: state.setMaxLogsPerInstance,
+    })),
+  );
   const activeInstanceId = instanceId ?? selectedInstanceId;
+  // 只订阅当前实例的日志，其他实例写日志时不触发本面板重渲染
+  const logs = useAppStore((state) =>
+    activeInstanceId ? state.instanceLogs[activeInstanceId] || EMPTY_LOGS : EMPTY_LOGS,
+  );
   const { state: menuState, show: showMenu, hide: hideMenu } = useContextMenu();
   const { exportModal, handleExportLogs, closeExportModal, openExportedFile } = useExportLogs();
 
   // 获取当前实例的日志
-  const logs = activeInstanceId ? instanceLogs[activeInstanceId] || [] : [];
   const visibleLogs = useMemo(() => logs.slice(-visibleLogLimit), [logs, visibleLogLimit]);
   const canShowMoreLogs =
     visibleLogLimit === DEFAULT_VISIBLE_LOG_LIMIT &&

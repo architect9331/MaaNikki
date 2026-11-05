@@ -264,7 +264,3 @@ export function onConnectionStatus(handler: ConnectionStatusHandler): () => void
   return () => connectionStatusHandlers.delete(handler);
 }
 
-/** 返回是否曾经成功建立过连接 */
-export function hasConnectedBefore(): boolean {
-  return hasEverConnected;
-}

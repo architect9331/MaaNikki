@@ -133,15 +133,6 @@ export function redactSecretsInText(text: string, secrets: string[]): string {
   return result;
 }
 
-export function redactPipelineOverrideForLog(
-  pipelineOverride: string,
-  optionValues: Record<string, OptionValue>,
-  allOptions: Record<string, OptionDefinition>,
-): string {
-  const secrets = collectPasswordPlaintexts(optionValues, allOptions);
-  return redactSecretsInText(pipelineOverride, secrets);
-}
-
 /** 从任务定义收集该任务相关的 password 明文（含 globalOptionValues）。 */
 export function collectTaskPasswordPlaintexts(
   taskDef: TaskItem | undefined,

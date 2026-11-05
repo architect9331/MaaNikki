@@ -20,6 +20,8 @@ import {
   CircleDot,
 } from 'lucide-react';
 import { useAppStore, type TaskRunStatus } from '@/stores/appStore';
+import { isControllerAllowed, isResourceAllowed } from '@/stores/helpers';
+import { useShallow } from 'zustand/react/shallow';
 import { maaService } from '@/services/maaService';
 import { useResolvedContent } from '@/services/contentResolver';
 import { generateTaskPipelineOverride } from '@/utils';
@@ -147,24 +149,20 @@ type OptionGroup =
   | { type: 'single'; optionKey: string }
   | { type: 'switchGrid'; optionKeys: string[] };
 
-/** 检查选项是否与当前控制器不兼容 */
+/** 检查选项是否与当前控制器不兼容（未选择时不标记） */
 function isOptionControllerIncompatible(
   optionDef: import('@/types/interface').OptionDefinition | null | undefined,
   currentControllerName: string | undefined,
 ): boolean {
-  if (!optionDef?.controller || optionDef.controller.length === 0) return false;
-  if (!currentControllerName) return false;
-  return !optionDef.controller.includes(currentControllerName);
+  return !isControllerAllowed(optionDef, currentControllerName, 'allow');
 }
 
-/** v2.3.0: 检查选项是否与当前资源不兼容 */
+/** v2.3.0: 检查选项是否与当前资源不兼容（未选择时不标记） */
 function isOptionResourceIncompatible(
   optionDef: import('@/types/interface').OptionDefinition | null | undefined,
   currentResourceName: string | undefined,
 ): boolean {
-  if (!optionDef?.resource || optionDef.resource.length === 0) return false;
-  if (!currentResourceName) return false;
-  return !optionDef.resource.includes(currentResourceName);
+  return !isResourceAllowed(optionDef, currentResourceName, 'allow');
 }
 
 /** 选项列表渲染器：自动将连续的无子选项 switch 分组为网格 */
@@ -187,7 +185,15 @@ function OptionListRenderer({
   currentControllerName: string | undefined;
   currentResourceName: string | undefined;
 }) {
-  const { projectInterface, resolveI18nText, language } = useAppStore();
+  // interfaceTranslations 仅用于订阅：resolveI18nText 读取它，翻译加载后需要重新渲染
+  const { projectInterface, resolveI18nText, language } = useAppStore(
+    useShallow((state) => ({
+      projectInterface: state.projectInterface,
+      resolveI18nText: state.resolveI18nText,
+      language: state.language,
+      interfaceTranslations: state.interfaceTranslations,
+    })),
+  );
   const { t } = useTranslation();
   const langKey = getInterfaceLangKey(language);
 
@@ -363,7 +369,33 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
     interfaceTranslations,
     animatingTaskIds,
     removeAnimatingTaskId,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      projectInterface: state.projectInterface,
+      toggleTaskEnabled: state.toggleTaskEnabled,
+      setTaskRunOnce: state.setTaskRunOnce,
+      toggleTaskExpanded: state.toggleTaskExpanded,
+      removeTaskFromInstance: state.removeTaskFromInstance,
+      confirmBeforeDelete: state.confirmBeforeDelete,
+      renameTask: state.renameTask,
+      duplicateTask: state.duplicateTask,
+      moveTaskUp: state.moveTaskUp,
+      moveTaskDown: state.moveTaskDown,
+      moveTaskToTop: state.moveTaskToTop,
+      moveTaskToBottom: state.moveTaskToBottom,
+      resolveI18nText: state.resolveI18nText,
+      language: state.language,
+      getActiveInstance: state.getActiveInstance,
+      showOptionPreview: state.showOptionPreview,
+      instanceTaskRunStatus: state.instanceTaskRunStatus,
+      instances: state.instances,
+      findMaaTaskIdBySelectedTaskId: state.findMaaTaskIdBySelectedTaskId,
+      basePath: state.basePath,
+      interfaceTranslations: state.interfaceTranslations,
+      animatingTaskIds: state.animatingTaskIds,
+      removeAnimatingTaskId: state.removeAnimatingTaskId,
+    })),
+  );
 
   // 获取任务运行状态
   const taskRunStatus: TaskRunStatus = instanceTaskRunStatus[instanceId]?.[task.id] || 'idle';
@@ -391,17 +423,17 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
   const currentResourceName = instance?.resourceName || projectInterface?.resource[0]?.name;
   const langKey = getInterfaceLangKey(language);
 
-  const isControllerIncompatible = useMemo(() => {
-    if (!taskDef?.controller || taskDef.controller.length === 0) return false;
-    if (!currentControllerName) return false;
-    return !taskDef.controller.includes(currentControllerName);
-  }, [taskDef?.controller, currentControllerName]);
+  const isControllerIncompatible = useMemo(
+    () => !isControllerAllowed(taskDef, currentControllerName, 'allow'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [taskDef?.controller, currentControllerName],
+  );
 
-  const isResourceIncompatible = useMemo(() => {
-    if (!taskDef?.resource || taskDef.resource.length === 0) return false;
-    if (!currentResourceName) return false;
-    return !taskDef.resource.includes(currentResourceName);
-  }, [taskDef?.resource, currentResourceName]);
+  const isResourceIncompatible = useMemo(
+    () => !isResourceAllowed(taskDef, currentResourceName, 'allow'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [taskDef?.resource, currentResourceName],
+  );
 
   const isIncompatible = isControllerIncompatible || isResourceIncompatible;
 
