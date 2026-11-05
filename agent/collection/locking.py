@@ -483,7 +483,10 @@ class BlessingLocker(InventoryScanner):
         if width < 8:
             return False
         left = max(float(gold[:, i:i + 4].mean()) for i in range(min(5, width - 3)))
-        right = max(float(gold[:, width - 4 - i:width - i].mean()) for i in range(min(4, width - 3)))
+        # Nominal cell width w=95 extends 2 px past the unhovered right edge;
+        # after clear_hover() shrinks the selected card back from its hovered
+        # outer frame, the 4 px inner gold strip sits at [x+w-6 : x+w-2] (i=5).
+        right = max(float(gold[:, width - 4 - i:width - i].mean()) for i in range(min(6, width - 3)))
         return bool(left > .45 and right > .45)
 
     def select(self, box, facts, generation, *, verify_details=True, already_selected=False):
