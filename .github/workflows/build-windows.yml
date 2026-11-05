@@ -124,4 +124,7 @@ jobs:
     needs: [prepare, publish]
     if: needs.prepare.outputs.should_build == 'true'
     uses: ./.github/workflows/sync-update-mirrors.yml
+    with:
+      ref: ${{ needs.prepare.outputs.sha }}
+      tag: v${{ needs.prepare.outputs.version }}
     secrets: inherit

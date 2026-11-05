@@ -2,7 +2,19 @@ name: Sync update mirrors
 
 on:
   workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+      tag:
+        required: false
+        type: string
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to mirror (e.g. v0.10.0). Leave blank to use interface.json.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -18,6 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -48,4 +61,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCEFORGE_USERNAME: ${{ vars.SOURCEFORGE_USERNAME }}
-        run: python scripts/sync_update_mirrors.py sourceforge
+          RELEASE_TAG: ${{ inputs.tag || '' }}
+        run: python scripts/sync_update_mirrors.py sourceforge ${RELEASE_TAG:+--tag "$RELEASE_TAG"}

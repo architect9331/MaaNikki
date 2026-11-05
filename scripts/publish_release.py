@@ -76,21 +76,14 @@ def digest(path: Path) -> str:
 def previous_baselines(version: str) -> list[dict]:
     # Bootstrap once from the last full archive. Subsequent releases carry the
     # rolling file manifests, so CI need not download ten historical runtimes.
-    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+    if not SEMVER_RE.fullmatch(version):
         return []
-    versions = []
-    page = 1
     current = tuple(map(int, version.split(".")))
-    while True:
-        releases = api(f"releases?per_page=100&page={page}")
-        for release in releases:
-            tag = release["tag_name"].removeprefix("v")
-            if not release["draft"] and re.fullmatch(r"\d+\.\d+\.\d+", tag):
-                if tuple(map(int, tag.split("."))) < current:
-                    versions.append((tuple(map(int, tag.split("."))), release))
-        if len(releases) < 100:
-            break
-        page += 1
+    versions = [
+        (tuple(map(int, tag.split("."))), release)
+        for tag, release in published_releases().items()
+        if SEMVER_RE.fullmatch(tag) and tuple(map(int, tag.split("."))) < current
+    ]
     if not versions:
         return []
     previous = max(versions, key=lambda item: item[0])[1]
@@ -481,11 +474,11 @@ def publish_release():
     if release is not None and not release["draft"]:
         report(f"{tag} is already published; leaving its tag and assets unchanged.")
         return
+    if release is not None and release["target_commitish"] != sha:
+        raise ValueError(f"Draft {tag} belongs to another commit; rerun its original build")
 
     packages = verify_packages(version)
     add_incremental_packages(version, packages)
-    if release is not None and release["target_commitish"] != sha:
-        raise ValueError(f"Draft {tag} belongs to another commit; rerun its original build")
     body = release_notes(version, tag, sha)
     ensure_tag(tag, sha)
     if release is None:

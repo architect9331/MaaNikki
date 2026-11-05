@@ -70,6 +70,26 @@ def sha256(path: Path) -> str:
 
 
 def source_files():
+    if (ROOT / ".git").exists():
+        result = subprocess.run(
+            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard",
+             "--", *SOURCE_FILES, *SOURCE_DIRS],
+            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+        if result.returncode == 0:
+            seen = set()
+            for entry in sorted(result.stdout.decode("utf-8").split("\0")):
+                if not entry:
+                    continue
+                path = ROOT / entry
+                if (path not in seen and path.is_file()
+                        and not any(part in GENERATED_DIRS for part in path.relative_to(ROOT).parts)
+                        and path.suffix not in GENERATED_SUFFIXES
+                        and not path.name.startswith((".env", ".dev.vars"))
+                        and not is_local_helper(path)):
+                    seen.add(path)
+                    yield path
+            return
     for name in SOURCE_FILES:
         path = ROOT / name
         if path.is_file() and not is_local_helper(path):
@@ -179,17 +199,19 @@ def build_output(path: Path) -> Path:
     return path
 
 
-def prepare(output: Path) -> Path:
+def prepare(output: Path, *, verify: bool = True) -> Path:
     if platform.system() != "Windows" or platform.machine().lower() not in ("amd64", "x86_64"):
         raise RuntimeError("This runtime targets Windows x64 only")
-    verify_source()
+    if verify:
+        verify_source()
     output = build_output(output)
     lock = read_json(ROOT / "build/runtime.lock.json")
+    py_tag = "".join(lock["python_version"].split(".")[:2])
     with zipfile.ZipFile(download(lock["python"])) as archive:
         for member in archive.infolist():
             extract_member(archive, member, output / "python", member.filename)
-    (output / "python/python312._pth").write_text(
-        "python312.zip\n.\nLib/site-packages\nimport site\n", encoding="utf-8")
+    (output / f"python/python{py_tag}._pth").write_text(
+        f"python{py_tag}.zip\n.\nLib/site-packages\nimport site\n", encoding="utf-8")
     with zipfile.ZipFile(download(lock["maafw"])) as archive:
         for member in archive.infolist():
             if member.filename.startswith("bin/") and member.filename.endswith(".dll"):
@@ -345,7 +367,7 @@ def package(executable: Path):
         raise FileNotFoundError(f"Build the desktop client first: {executable}")
     files = verify_source()
     version = read_json(ROOT / "interface.json")["version"]
-    stage = prepare(ROOT / ".build/staging" / uuid.uuid4().hex)
+    stage = prepare(ROOT / ".build/staging" / uuid.uuid4().hex, verify=False)
     shutil.copy2(executable, stage / "MaaNikki.exe")
     collect_dependency_licenses(stage)
     # Runtime checks produce logs; only selected release files enter the archive.
