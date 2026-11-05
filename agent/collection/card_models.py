@@ -119,7 +119,11 @@ class CardModels:
         levels = {}
         level_started = perf_counter()
         if originals:
-            outputs, = self.forward("level", [cards[i][75:96, 29:59] for i in originals], ["level_logits"])
+            # In the 1440x5760 ultra-tall borderless window (captured at 1280x5120),
+            # the "等级." prefix renders 2 px narrower than in a 16:9 window, shifting
+            # the trailing numeral 2 px left (from x=29..59 to x=27..57).
+            level_x = 27 if frame.shape[0] > 720 else 29
+            outputs, = self.forward("level", [cards[i][75:96, level_x:level_x + 30] for i in originals], ["level_logits"])
             if outputs.shape != (len(originals), 11):
                 raise ValueError("祝福闪光等级输出尺寸无效")
             for i, output in zip(originals, outputs):
