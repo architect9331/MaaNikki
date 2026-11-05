@@ -135,7 +135,6 @@ class DailyUpgrade(FiveStarInventory):
                 self.prepare("daily_upgrade")
             if not self.open():
                 raise IncompleteObservation("未能打开祝福闪光列表")
-            self.inventory_read = True
             selected = self.ordered_candidate() if self.prepared else self.live_candidate()
             if selected is None:
                 self.report.update(complete=True, phase="complete", reason="没有未满级的普通祝福闪光")
@@ -173,10 +172,12 @@ class DailyUpgrade(FiveStarInventory):
             self.record_interruption(error)
             raise
         finally:
-            self.inventory_read = False
-            if self.share_statistics:
-                upload(self.store.account, ROOT, catalog_version=self.catalog["version"])
-            self.checkpoint()
+            try:
+                if self.share_statistics:
+                    upload(self.store.account, ROOT, catalog_version=self.catalog["version"])
+                self.checkpoint()
+            except (OSError, ValueError):
+                pass
 
     def begin_change(self, kind, facts, evidence, frame, **details):
         if not self.prepared:

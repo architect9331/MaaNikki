@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-
+from client_config import parse_custom_param
 from registration import agent_action
 from maa.custom_action import CustomAction
 
@@ -13,7 +12,7 @@ class GameKeyAction(CustomAction):
     def run(self, context, argv: CustomAction.RunArg) -> bool:
         runtime = Runtime(context)
         try:
-            param = json.loads(argv.custom_action_param)
+            param = parse_custom_param(argv.custom_action_param)
             name = param["name"]
             seconds = param.get("seconds")
             return runtime.hold(name, seconds) if seconds is not None else runtime.key(name, 0)

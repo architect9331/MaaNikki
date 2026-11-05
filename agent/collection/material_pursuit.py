@@ -10,7 +10,7 @@ from account_state import AccountState
 from daily.gameplay import Gameplay
 from daily.runtime import Executors
 from daily.settings import ROOT
-from .backpack import ensure_backpack_scanned, wardrobe_snapshot_key
+from .backpack import ensure_backpack_scanned, wardrobe_snapshot, wardrobe_snapshot_key
 
 
 def load_catalogs():
@@ -20,9 +20,7 @@ def load_catalogs():
 
 
 def owned_score_ids(role: dict, scoring: dict) -> set[str]:
-    wardrobe = role.get("wardrobe") or {}
-    snapshot = wardrobe.get("inventory") if (wardrobe.get("inventory") or {}).get("complete") else (
-        wardrobe.get("last_scan") or wardrobe.get("inventory") or {})
+    snapshot = wardrobe_snapshot(role)
     parts = snapshot.get("parts") or {}
     game_items = scoring.get("game_items") or {}
     owned = set()
@@ -63,7 +61,7 @@ def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> 
     return totals
 
 
-def execute_material_run(rt, kind: str, level_name: str, runs_to_do: int, use_max: bool, energy_before: int) -> tuple[bool, int]:
+def execute_material_run(rt, kind: str, level_name: str, runs_to_do: int, use_max: bool) -> tuple[bool, int]:
     clone = rt.context.clone()
     child = Executors(clone)
     game = Gameplay(child)
@@ -92,14 +90,15 @@ def execute_material_run(rt, kind: str, level_name: str, runs_to_do: int, use_ma
     return ok, energy_after
 
 
-def record_accrual(account: AccountState, mid: str, gained: int, *, mark_glow_completed: bool = False):
+def record_accrual(account: AccountState, mid: str | None = None, gained: int = 0, *, mark_glow_completed: bool = False):
     now = datetime.now(timezone.utc).isoformat()
 
     def update(data):
         mats = data.setdefault("materials", {})
-        inv = mats.setdefault("inventory", {})
-        inv[mid] = max(0, int(inv.get(mid, 0)) + int(gained))
-        mats["inventory_updated_at"] = now
+        if mid is not None:
+            inv = mats.setdefault("inventory", {})
+            inv[mid] = max(0, int(inv.get(mid, 0)) + int(gained))
+            mats["inventory_updated_at"] = now
         if mark_glow_completed and isinstance(mats.get("glow_plan"), dict):
             mats["glow_plan"]["completed"] = True
             mats["glow_plan"]["completed_at"] = now
@@ -139,7 +138,7 @@ def run_glow_prep(rt) -> bool:
 
     deficits = pending_deficits()
     if not deficits:
-        record_accrual(account, next(iter(targets.keys())), 0, mark_glow_completed=True)
+        record_accrual(account, mark_glow_completed=True)
         rt.log("焕新材料筹备：目标材料库存均已达标，跳过。")
         return True
 
@@ -164,7 +163,7 @@ def run_glow_prep(rt) -> bool:
         runs_to_do = min(runs_needed, max_runs)
         use_max = runs_needed >= max_runs
         rt.log(f"焕新材料筹备：{meta['name']} 还差 {deficit}，计划挑战「{meta['level']}」{runs_to_do} 次。")
-        ok, energy_after = execute_material_run(rt, kind, meta["level"], runs_to_do, use_max, energy)
+        ok, energy_after = execute_material_run(rt, kind, meta["level"], runs_to_do, use_max)
         spent = max(0, energy - energy_after)
         actual_runs = spent // e_per_run
         gained = actual_runs * d_per_run
@@ -186,8 +185,7 @@ def run_glow_prep(rt) -> bool:
 def run_crafting_pursuit(rt) -> bool:
     account = AccountState.for_runtime(ROOT, rt)
     role = account.load()
-    wardrobe = role.get("wardrobe") or {}
-    if not wardrobe.get("inventory") and not wardrobe.get("last_scan"):
+    if not wardrobe_snapshot(role):
         rt.log("制衣材料全收集：尚未读取过衣柜，本次跳过；请先在「衣柜与搭配」中读取衣柜以建立设计图缺口清单。")
         return True
 
@@ -224,18 +222,21 @@ def run_crafting_pursuit(rt) -> bool:
         return False
 
     while not rt.stopped and deficits:
-        if energy < game.MIN_ENERGY["monster"]:
+        _, mid, meta, deficit, req, cur = deficits[0]
+        kind = meta.get("realm", "monster")
+        e_per_run = int(meta.get("energy", 40))
+        d_per_run = int(meta.get("drop", 5))
+        if energy < game.MIN_ENERGY[kind]:
             rt.log(f"制衣材料全收集：剩余活跃能量 {energy} 点，不足一次试炼挑战，今日结束。")
             return True
-        _, mid, meta, deficit, req, cur = deficits[0]
-        runs_needed = math.ceil(deficit / 5)
-        max_runs = energy // 40
+        runs_needed = math.ceil(deficit / d_per_run)
+        max_runs = energy // e_per_run
         runs_to_do = min(runs_needed, max_runs)
         use_max = runs_needed >= max_runs
         rt.log(f"制衣材料全收集：{meta['name']}（已有 {cur}/{req}，差 {deficit}），挑战「{meta['level']}」{runs_to_do} 次。")
-        ok, energy_after = execute_material_run(rt, "monster", meta["level"], runs_to_do, use_max, energy)
+        ok, energy_after = execute_material_run(rt, kind, meta["level"], runs_to_do, use_max)
         spent = max(0, energy - energy_after)
-        gained = (spent // 40) * 5
+        gained = (spent // e_per_run) * d_per_run
         if gained > 0:
             inventory[mid] = int(inventory.get(mid, 0)) + gained
             record_accrual(account, mid, gained)

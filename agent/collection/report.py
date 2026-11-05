@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import html
-import json
 import re
 
 from file_io import write_json
@@ -146,13 +145,6 @@ def save_report(folder, catalog, snapshot, result):
     # Portable offline report: no CDN, no remote scripts, no inventory upload.
     (folder / "report.html").write_text(report_html(markdown), encoding="utf-8")
     return folder / "report.md"
-
-
-def load_snapshot(path, catalog):
-    if not path.is_file() or path.stat().st_size > 20 * 1024 * 1024:
-        raise ValueError("库存快照不存在或超过 20 MiB")
-    data = json.loads(path.read_text(encoding="utf-8-sig"))
-    return validate_snapshot(data, catalog)
 
 
 def validate_snapshot(data, catalog):

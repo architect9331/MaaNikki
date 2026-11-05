@@ -2,19 +2,18 @@ from __future__ import annotations
 
 from file_io import write_json
 
-import json
 import math
-from pathlib import Path
 from datetime import datetime
 import re
 import time as wall_time
 import weakref
-from task_control import task_time as time
+from task_control import active_session, task_time as time
 import cv2
 from contextlib import contextmanager
 
 from .planner import Card
 from .settings import ROOT, foreground_inputs
+from client_config import node_action_params as parameters
 from game_keys import GameKeys
 from performance import count, measure
 from message_log import write_message
@@ -24,25 +23,11 @@ from game_view import require_game_frame
 RESOURCE = ROOT / "resource"
 
 
-def parameters(context, name: str) -> dict:
-    node = context.get_node_data(name) or {}
-    action = node.get("action", {})
-    value = (action.get("param", {}).get("custom_action_param", {}) if isinstance(action, dict)
-             else node.get("custom_action_param", {}))
-    value = json.loads(value) if isinstance(value, str) else value
-    if value is None:
-        return {}
-    if not isinstance(value, dict):
-        raise ValueError(f"{name} 的动作参数必须是对象。")
-    return value
-
-
 class Runtime:
     OBSERVATION_MAX_AGE = .25
 
     def __init__(self, context):
         self.context = context
-        from task_control import active_session
         session = active_session()
         self.controller = session.controller if session else context.tasker.controller
         self.navigation_inputs = None
@@ -63,12 +48,10 @@ class Runtime:
     def stopped(self):
         if self.navigation_halted:
             return True
-        from task_control import active_session
         session = active_session()
         return session.stopped() if session else self.context.tasker.stopping
 
     def check_focus(self):
-        from task_control import active_session
         session = active_session()
         if session is None or self.stopped:
             return False
@@ -145,7 +128,6 @@ class Runtime:
 
     @property
     def evidence(self):
-        from task_control import active_session
         session = active_session()
         if session:
             return session.evidence
@@ -174,7 +156,6 @@ class Runtime:
         if self.navigation_inputs:
             self.navigation_inputs.check()
         if action in {"KeyDown", "KeyUp"}:
-            from task_control import active_session
             session = active_session()
             if session is not None:
                 from game_keys import Binding
@@ -237,7 +218,6 @@ class Runtime:
             return False
         self.invalidate_frame()
         binding = self.game_keys.get(key) if isinstance(key, str) else None
-        from task_control import active_session
         if active_session() is not None or binding and (binding.kind == "mouse" or foreground_inputs()):
             if binding is None:
                 from game_keys import Binding
@@ -252,7 +232,7 @@ class Runtime:
                 finally:
                     inputs.release()
         key = binding.code if binding else key
-        if not 0 <= seconds <= 8 or not self.action("KeyDown", key=key):
+        if not self.action("KeyDown", key=key):
             return False
         try:
             return self.pause(seconds)
@@ -265,7 +245,6 @@ class Runtime:
 
     def ensure_frame(self):
         """Reuse an existing geometry check; capture only before the first input."""
-        from task_control import active_session
         session = active_session()
         validated = session.frame_validated if session else self._frame_validated
         if validated:
@@ -273,7 +252,6 @@ class Runtime:
         return self.capture() is not None
 
     def validate_frame(self, image):
-        from task_control import active_session
         session = active_session()
         if session:
             session.validate_frame(image)
@@ -367,7 +345,6 @@ class Runtime:
         return result
 
     def release_key(self, key):
-        from task_control import active_session
         session = active_session()
         if session is None:
             self.controller.post_key_up(key).wait()
@@ -437,7 +414,6 @@ class Runtime:
 
     def account_uid(self):
         """Confirm identity from the game, never from the desktop selection/login."""
-        from task_control import active_session
         from account_state import AccountState
         session = active_session()
         if self._account_mismatch or getattr(session, "account_mismatch", False):
@@ -504,7 +480,6 @@ class Runtime:
 
     def verify_account_uid(self):
         """Recheck visible identity before saving; hidden UID keeps only this task's binding."""
-        from task_control import active_session
         session = active_session()
         generation = (getattr(session, "account_generation", None) if session else self._account_generation)
         if self._account_mismatch or getattr(session, "account_mismatch", False):
@@ -756,7 +731,6 @@ class Runtime:
                      if stage == 'teleport' and teleporter else (locator.last_frame if locator else None))
             if frame is not None and frame.shape[:2] == (720, 1280):
                 try:
-                    from datetime import datetime
                     folder = ROOT / 'logs' / 'navigation'
                     folder.mkdir(parents=True, exist_ok=True)
                     map_view = stage == 'teleport' and teleporter is not None and teleporter.last_frame is not None
@@ -790,7 +764,6 @@ class Runtime:
                     events.append({"type": "release_failed", "error_type": type(error).__name__, "reason": str(error)})
                     self.log("无法确认导航按键已全部释放，本轮停止，请检查游戏状态。")
                     self.navigation_halted = True
-            from datetime import datetime
             active_route = getattr(navigator, "active_route", None) or model
             telemetry = None
             if active_route is not None:
@@ -883,8 +856,7 @@ class Executors(Runtime):
         if rule.executor == "bottle":
             from .starsea import Starsea
             return Starsea(self, RESOURCE).bottles(mode, card)
-        if rule.route and self.routes(rule.route):
-            route = self.routes(rule.route)
+        if rule.route and (route := self.routes(rule.route)):
             if route.get("schema_version") == 3:
                 return self.navigate(rule.route, mode, card)
             if not self.navigate(rule.route):
@@ -905,8 +877,6 @@ class Executors(Runtime):
             result = self.place()
         elif rule.executor == "music":
             result = self.interaction("music")
-        elif rule.executor == "bottle":
-            result = self.interaction("bottle")
         elif rule.executor == "delivery":
             result = self.interaction("delivery")
         elif rule.executor == "chat":
@@ -934,10 +904,6 @@ class Executors(Runtime):
         return Starsea(self, RESOURCE).ring()
 
     def interaction(self, kind):
-        if kind == "bottle":
-            return (self.ui.wait_pickup(2) and self.key("interact", .5)
-                    and self.ui.wait_page("MaaNikki_Daily_BottleClose")
-                    and self.click_template("MaaNikki_Daily_BottleClose"))
         if not self.ui.wait_text(PROMPTS[kind], INTERACTION_ROI, attempts=3):
             return False
         if kind == "music":
@@ -1088,7 +1054,7 @@ class Executors(Runtime):
         if not relative_camera(self.controller, 0, -133) or not self.pause(.3):
             return False
         recover_before = bool(self.text([0, 500, 1210, 200], r"收回|回收"))
-        for attempt in range(6):
+        for _ in range(6):
             if not self.key("place", .3):
                 return False
             deadline = time.monotonic()+4

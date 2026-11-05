@@ -9,6 +9,23 @@ def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
+def parse_custom_param(payload, label: str = "参数") -> dict:
+    value = json.loads(payload or "{}") if isinstance(payload, str) else payload
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError(f"{label}必须是对象。")
+    return value
+
+
+def node_action_params(context, name: str) -> dict:
+    node = context.get_node_data(name) or {}
+    action = node.get("action", {})
+    value = (action.get("param", {}).get("custom_action_param", {}) if isinstance(action, dict)
+             else node.get("custom_action_param", {}))
+    return parse_custom_param(value, f"{name} 的动作参数")
+
+
 def mxu_config(root: Path) -> dict | None:
     path = root / "config" / "mxu-MaaNikki.json"
     return read_json(path) if path.is_file() else None

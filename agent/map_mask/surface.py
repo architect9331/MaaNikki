@@ -99,7 +99,7 @@ class LayeredSurface:
             old_font = checked(self.select(dc, label_font), "选择遮罩字体")
             bind(gdi, "SetBkMode", ctypes.c_int, w.HDC, ctypes.c_int)(dc, 1)
             bind(gdi, "SetTextColor", w.DWORD, w.HDC, w.DWORD)(dc, 0xFFFFFF)
-            for x, y, kind, count in points:
+            for x, y, _kind, count in points:
                 x, y = x*sx, y*sy
                 if count > 1 and not circle:
                     label = str(count)

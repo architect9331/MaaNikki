@@ -30,20 +30,6 @@ def route_telemetry_enabled(root: Path) -> bool:
         return True
 
 
-def blessing_stats_enabled(root: Path, pipeline_enabled: bool = True) -> bool:
-    if not pipeline_enabled:
-        return False
-    env = os.environ.get("PI_MAANIKKI_BLESSING_STATS")
-    if env is not None:
-        return env == "1"
-    try:
-        config = mxu_config(root) or {}
-        value = config.get("settings", {}).get("helpImproveBlessingStats")
-        return True if value is None else bool(value)
-    except (OSError, ValueError, TypeError, AttributeError):
-        return True
-
-
 def route_hash(route: Route) -> str:
     canonical = [
         [round(p.x, 3), round(p.y, 3), round(p.radius, 3), bool(p.jump), p.action or ""]

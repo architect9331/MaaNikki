@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import json
 import cv2
+from client_config import parse_custom_param
 from registration import agent_action
 from maa.custom_action import CustomAction
 from daily.gameplay import Gameplay
@@ -15,9 +15,7 @@ class UIClickAction(CustomAction):
     def run(self, context, argv):
         runtime = Executors(context)
         try:
-            options = argv.custom_action_param
-            options = json.loads(options or "{}") if isinstance(options, str) else options
-            options = options or {}
+            options = parse_custom_param(argv.custom_action_param)
             target = options.get("target", True)
             resumed = runtime.check_focus()
             if target is True and resumed and not options.get("ready"):
@@ -38,8 +36,7 @@ class GameplayAction(CustomAction):
     def run(self, context, argv):
         runtime = Executors(context)
         try:
-            options = argv.custom_action_param
-            options = json.loads(options or "{}") if isinstance(options, str) else options
+            options = parse_custom_param(argv.custom_action_param)
             kind = options["kind"]
             game = Gameplay(runtime)
             if kind == "weekly_shop":

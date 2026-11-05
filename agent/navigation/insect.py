@@ -1,7 +1,6 @@
 """Ability setup and nearby material tracking for insect route points."""
 from __future__ import annotations
 import math
-import re
 from task_control import task_time as time
 import cv2
 import numpy as np

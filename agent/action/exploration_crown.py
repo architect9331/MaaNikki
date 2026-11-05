@@ -36,23 +36,24 @@ class ExplorationAction(CustomAction):
 class CrownAction(CustomAction):
     def run(self, context, argv):
         rt = Crown(context)
+        completed = False
         try:
             account = AccountState.for_runtime(ROOT, rt)
             target = rt.target_stars()
             progress = account.crown_progress()
             if account.complete("crown", target_stars=target):
                 rt.log(f"巅峰赛：本期 {progress[0]}/{progress[1]} 星，已达标并领完嘉奖，跳过。")
-                return True
-            completed = rt.run_crown(account, target)
-            if not completed and not rt.stopped:
-                rt.diagnostic("crown", "巅峰赛流程未完成")
-            return completed
+                completed = True
+            else:
+                completed = bool(rt.run_crown(account, target))
+                if not completed and not rt.stopped:
+                    rt.diagnostic("crown", "巅峰赛流程未完成")
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             rt.log(f"巅峰赛未完成：{error}。")
             if not rt.stopped:
                 rt.diagnostic("crown", str(error))
-            return False
         finally:
             if not rt.stopped and not rt.finish("MaaNikki_Crown")[1]:
                 rt.log("巅峰赛处理后未能恢复任务衔接页面。")
-                return False
+                completed = False
+        return completed

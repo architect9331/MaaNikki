@@ -105,7 +105,7 @@ class Gameplay:
         return False
 
     def dig(self):
-        try:
+        def steps():
             if not self.ui.find_menu_entry(node="MaaNikki_Dig_Open"):
                 self.rt.log("未找到美鸭梨挖掘入口。")
                 return False
@@ -134,12 +134,16 @@ class Gameplay:
                 return False
             self.rt.log("已收取奖励并再次挖掘。" if repeat else "已收取挖掘奖励。")
             return True
+
+        returned = False
+        try:
+            ok = steps()
         finally:
-            if self.rt.stopped:
-                return False
-            if not self.rt.main():
-                self.rt.log("挖掘处理后未能返回主界面，本项未正常结束。")
-                return False
+            if not self.rt.stopped:
+                returned = self.rt.main()
+                if not returned:
+                    self.rt.log("挖掘处理后未能返回主界面，本项未正常结束。")
+        return bool(ok and not self.rt.stopped and returned)
 
     def lookbook(self):
         if not self.ui.find_menu_entry(node="MaaNikki_Xinghai_OpenLookbook"):
@@ -169,7 +173,8 @@ class Gameplay:
         self.quick_unavailable = False
         prefix = {"jihua": "Jihua", "bless": "Bless", "monster": "Monster", "weekly": "Weekly"}[kind]
         cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
-        try:
+
+        def steps():
             if not entered and not self.rt.hit(f"MaaNikki_{prefix}_PageReady"):
                 if not self.ui.calendar():
                     return False
@@ -238,6 +243,10 @@ class Gameplay:
             self.rt.log("挑战奖励已领取。" if result else "挑战奖励领取结果待确认，请检查游戏画面。",
                         detail=bool(result and before_submit is not None))
             return result
+
+        returned = True
+        try:
+            ok = steps()
         finally:
             if not self.rt.stopped and kind != "jihua" and self.rt.hit(cancel):
                 self.rt.click_template(cancel, attempts=1)
@@ -246,7 +255,7 @@ class Gameplay:
                 if not returned:
                     self.quick_unavailable = False
                     self.rt.log("未能返回后续步骤需要的页面，本项停止。")
-                    return False
+        return bool(ok and returned)
 
     def invalidate_blessing_inventory(self, reason):
         # Applies to ordinary farming and daily supplementation too. Resource
@@ -280,7 +289,7 @@ class Gameplay:
                                                wait_seconds=0, verify=False)
             return submitted
 
-        try:
+        def steps():
             if not self.ui.enter_page(enter, "MaaNikki_MainDetected",
                     source="MaaNikki_Jihua_PageReady", attempts=1, seconds=30):
                 return False
@@ -295,11 +304,16 @@ class Gameplay:
             if not self.rt.click_template("MaaNikki_Jihua_FinalConfirm"):
                 return self.confirm_unavailable("jihua", allow_exhausted)
             return self.jihua_reward()
+
+        left = True
+        try:
+            ok = steps()
         finally:
             # This realm has a separate world map; closing its menus does not
             # make the calendar's realm entrance usable. Clean up failures too.
-            if submitted and not self.rt.stopped and not self.jihua_leave():
-                return False
+            if submitted and not self.rt.stopped:
+                left = self.jihua_leave()
+        return bool(ok and left)
 
     def jihua_leave(self):
         self.rt.log("素材激化结束，正在后退穿过传送门离开幻境。", detail=True)
@@ -664,7 +678,8 @@ class Gameplay:
         if not any(selected.values()):
             self.rt.log("未选择奇迹之旅或乐园构想奖励，跳过。")
             return True
-        try:
+        def steps():
+            nonlocal kind, label
             if not self.ui.monthly_page():
                 self.rt.log("未能确认奇迹之旅或乐园构想页面。")
                 return False
@@ -712,10 +727,14 @@ class Gameplay:
                         return False
             self.rt.log("所选奇迹之旅与乐园构想奖励检查完成。", detail=True)
             return True
+
+        returned = False
+        try:
+            ok = steps()
         finally:
-            if self.rt.stopped:
-                return False
-            if not self.rt.main():
-                self.monthly_diagnostic(kind, "exit_unconfirmed", "未能返回主界面")
-                self.rt.log(f"{label}处理后未能返回主界面，本项未正常结束。")
-                return False
+            if not self.rt.stopped:
+                returned = self.rt.main()
+                if not returned:
+                    self.monthly_diagnostic(kind, "exit_unconfirmed", "未能返回主界面")
+                    self.rt.log(f"{label}处理后未能返回主界面，本项未正常结束。")
+        return bool(ok and not self.rt.stopped and returned)

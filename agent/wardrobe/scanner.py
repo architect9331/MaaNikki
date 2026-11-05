@@ -518,7 +518,7 @@ class WardrobeScanner(InventoryScanner):
         generation = self.rt._focus_generation
         if self.at_top(before):
             return before
-        for attempt in range(25):
+        for _ in range(25):
             if not self.scroll_list(12000, before):
                 raise TaskStopped()
             after = self.rt.capture()

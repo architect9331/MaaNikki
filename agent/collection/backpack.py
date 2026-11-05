@@ -1,16 +1,15 @@
 """Daily backpack scanner for trial crystals, glow-up bubbles, threads, and bling."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import re
 
 import cv2
 import numpy as np
 
-from account_state import AccountState
+from account_state import AccountState, game_day
 
 
-CHINA_TZ = timezone(timedelta(hours=8))
 HEADER_ROI = [65, 15, 240, 48]
 BLING_ROI = [1052, 16, 105, 34]
 RIGHT_TITLE_ROI = [895, 80, 345, 52]
@@ -20,15 +19,19 @@ GRID_SCROLL_TARGET = [420, 360]
 
 
 def current_game_day() -> str:
-    now = datetime.now(CHINA_TZ) - timedelta(hours=4)
-    return now.strftime("%Y-%m-%d")
+    return game_day().isoformat()
 
 
-def wardrobe_snapshot_key(role: dict) -> str:
+def wardrobe_snapshot(role: dict) -> dict:
     wardrobe = role.get("wardrobe") or {}
     snapshot = wardrobe.get("inventory") if (wardrobe.get("inventory") or {}).get("complete") else (
         wardrobe.get("last_scan") or wardrobe.get("inventory") or {})
-    if not isinstance(snapshot, dict) or not snapshot:
+    return snapshot if isinstance(snapshot, dict) else {}
+
+
+def wardrobe_snapshot_key(role: dict) -> str:
+    snapshot = wardrobe_snapshot(role)
+    if not snapshot:
         return ""
     return f"{snapshot.get('updated_at') or ''}:{snapshot.get('scanned_count') or 0}"
 

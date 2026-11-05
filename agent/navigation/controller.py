@@ -7,7 +7,7 @@ import re
 from task_control import task_time as time
 
 from .models import GameWindowClosed, NavigationError
-from game_keys import Binding, GameKeys, MACRO_KEYS, MOVEMENT
+from game_keys import Binding, GameKeys, MACRO_KEYS
 
 
 MAX_CAMERA_PIXELS = 8192
@@ -145,36 +145,6 @@ class ForegroundInput:
         from task_control import active_session
         session = active_session()
         return session.generation if session else 0
-
-    def pulse(self, keys, seconds, jump=False):
-        if not keys or any(k not in MOVEMENT for k in keys) or not 0.04 <= seconds <= 0.35:
-            raise NavigationError("移动参数超出安全范围。")
-        try:
-            self.bindings.movement()
-            resolved = [self.bindings.get(k) for k in keys]
-            jumping = self.bindings.get("jump") if jump else None
-            if jumping and jumping.kind == "key" and jumping.code in self.bindings.movement():
-                raise ValueError("跳跃按键不能与移动方向相同。")
-        except ValueError as error:
-            raise NavigationError(str(error)) from error
-        self.check()
-        if not self.ready():
-            raise NavigationError("当前不是可移动的主界面，导航已停止。")
-        try:
-            for binding in resolved:
-                self.check()
-                # Track before submission so a failed/interrupted down still gets an up.
-                self._down(binding)
-            if jump:
-                self._down(jumping)
-            deadline = time.monotonic()+seconds
-            while time.monotonic() < deadline:
-                self.check()
-                for binding in resolved:
-                    self._down(binding)
-                time.sleep(min(0.02, max(0, deadline-time.monotonic())))
-        finally:
-            self.release()
 
     def release(self):
         # Maa Seize's key_up can refocus the game. Direct ups on focus loss avoid

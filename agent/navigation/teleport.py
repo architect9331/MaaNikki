@@ -9,11 +9,6 @@ from .models import NavigationError
 from .vision import Locator
 from .matching import luma, match_map
 
-REGION_NAME = [1030, 48, 200, 45]
-REGION_LIST = [885, 64, 310, 600]
-PANEL = [843, 320, 175, 176]
-BUTTON = [1005, 655, 160, 35]
-TERRAIN = [0, 0, 1280, 720]
 POINT_DETAIL_DELAY = .5
 
 

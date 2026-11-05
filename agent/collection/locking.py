@@ -89,10 +89,8 @@ class BlessingLocker(InventoryScanner):
                        "configured_scroll_step": self._ordered_scroll_step,
                        "complete": False, "slots": {}, "operations": [], "reason": "尚未完成"}
         self.pending = None
-        self.inventory_read = False
         self.inventory_snapshot = None
         self.lock_groups = {}
-        self._hover_read = None
         self._hover_box = None
         self._hover_panel = None
         self.stack_count_cache = {}
@@ -204,7 +202,6 @@ class BlessingLocker(InventoryScanner):
         panel = self._hover_panel
         if panel is not None and (panel[0] != old_box or panel[1] != generation):
             panel = None
-        self._hover_read = None
         self._hover_box = None
         if not self.rt.action("TouchMove", target=[900, 32]) or not self.rt.pause(.06):
             self.check_generation(generation)
@@ -317,7 +314,7 @@ class BlessingLocker(InventoryScanner):
             raise IncompleteObservation("当前格子缺少批量模型识别结果，保留已有进度")
         return dict(facts), dict(match["model_evidence"])
 
-    def read_details(self, box, generation, index, *, retry_hover=True):
+    def read_details(self, box, generation, index):
         """Recheck a selected card directly; no pointer move or tooltip wait."""
         frame = self.frame(generation)
         result, = self.recognize_cards(frame, [box], self._model_slot, purpose="selected_recheck")
@@ -494,7 +491,7 @@ class BlessingLocker(InventoryScanner):
         # One direct click selects the card; no preparatory tooltip hover.
         x, y, w, h = box
         point = [round(x + w / 2), round(y + h * .45)]
-        self._hover_read = self._hover_box = None
+        self._hover_box = None
         if not already_selected and self._page_frame is not None and self.selected(self._page_frame, box):
             already_selected = True
         if not already_selected and (
@@ -653,7 +650,6 @@ class BlessingLocker(InventoryScanner):
             raise RuntimeError(f"{verb}前目标选中状态丢失")
         if self.lock_state(generation, frame=current) != source:
             raise RuntimeError(f"{verb}前状态改变，未再次点击")
-        self._hover_read = None
         self._hover_box = None
         self.check_generation(generation)
         operation = {"key": list(self.key(facts)), "level": facts["level"],

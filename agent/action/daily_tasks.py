@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime
-import json
 import re
 from task_control import task_time as time
 
 import cv2
 
+from file_io import write_json
+from client_config import parse_custom_param
 from registration import agent_action
 from maa.custom_action import CustomAction
 
-from daily.planner import Card, bell_notice, classify, select_energy, select_free
+from daily.planner import bell_notice, classify, select_energy, select_free
 from daily.runtime import Executors, parameters
 from daily.settings import ROOT, realm_settings
 from daily import run_state
@@ -198,11 +199,10 @@ class DailyRun(Executors):
 
     def save_report(self, score):
         directory = ROOT / "logs" / "daily"
-        directory.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now()
         operation_failed = score is None or self.rewards_ok is False or self.handoff_ok is False
-        report = json.dumps({
-            "time": datetime.now().isoformat(timespec="seconds"), "mode": self.mode,
+        report = {
+            "time": stamp.isoformat(timespec="seconds"), "mode": self.mode,
             "actual_score": score, "score_complete": score == 500,
             "complete": score == 500 and not self.stopped and not operation_failed,
             "rewards_ok": self.rewards_ok, "returned_main": self.return_main_ok,
@@ -212,13 +212,15 @@ class DailyRun(Executors):
             "status": "stopped" if self.stopped else "failed" if operation_failed else "complete" if score == 500 else
                       "awaiting_energy_review" if self.deferred else "incomplete",
             "events": self.events, "scans": self.scans, "score_reads": self.score_reads,
-        }, ensure_ascii=False, indent=2)
-        (directory / f"{self.mode}-latest.json").write_text(report, encoding="utf-8")
-        (directory / f"{self.mode}-{stamp.strftime('%Y%m%d-%H%M%S-%f')}.json").write_text(report, encoding="utf-8")
+        }
+        write_json(directory / f"{self.mode}-latest.json", report)
+        write_json(directory / f"{self.mode}-{stamp.strftime('%Y%m%d-%H%M%S-%f')}.json", report)
 
     def run_daily(self):
         score = None
-        try:
+
+        def steps():
+            nonlocal score
             self.account_uid()
             if self.mode == "zhaoxi":
                 run_state.clear(self)
@@ -323,11 +325,14 @@ class DailyRun(Executors):
                     return claimed
             self.log(f"{self.title}当前实际 {score}/500；剩余任务需要手动完成，本轮未达标。")
             return False
+
+        try:
+            completed = steps()
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             self.log(f"{self.title}停止：{error}。")
             if not self.stopped:
                 self.diagnostic("daily_tasks", str(error), details={"mode": self.mode})
-            return False
+            completed = False
         finally:
             self.handoff_page, self.handoff_ok = self.finish(f"MaaNikki_{self.prefix}") if not self.stopped else (None, False)
             self.return_main_ok = self.handoff_ok and self.handoff_page == "main"
@@ -336,17 +341,18 @@ class DailyRun(Executors):
                 self.deferred = False
             try:
                 self.save_report(score)
-            except OSError:
+            except (OSError, ValueError):
                 pass
-            if not self.handoff_ok:
-                return False
+        return bool(completed and self.handoff_ok)
 
     def review_after_energy(self, pending, *, realm_ok=True):
         """Settle the score, optionally completing the one explicitly deferred wish."""
         self.phase = "after_energy"
         self.events, self.scans = pending.events, pending.scans
         score = None
-        try:
+
+        def steps():
+            nonlocal score
             self.log("本轮幻境已处理，复核待补的朝夕心愿积分和奖励。")
             if not self.open_score_page():
                 return False
@@ -385,62 +391,51 @@ class DailyRun(Executors):
                 return claimed
             self.log(f"清活跃能量后朝夕心愿实际 {score}/500；不再追加挑战，剩余任务需要手动完成。")
             return False
+
+        try:
+            completed = steps()
         finally:
             self.handoff_page, self.handoff_ok = self.finish("MaaNikki_RealmChallenge") if not self.stopped else (None, False)
             self.return_main_ok = self.handoff_ok and self.handoff_page == "main"
             try:
                 self.save_report(score)
-            except OSError:
+            except (OSError, ValueError):
                 pass
-            if not self.handoff_ok:
-                return False
+        return bool(completed and self.handoff_ok)
 
 
 @agent_action("nikki.collect_starlight_crystals")
 class CollectStarlightCrystalsAction(CustomAction):
     def run(self, context, argv) -> bool:
         runtime = Executors(context)
+        completed = False
         try:
             runtime.log("开始每日跑图收集星光结晶，不受星海拾光积分和子任务开关影响。", detail=True)
             card = classify("xinghai", "收集10个星光结晶", -1)
             # Call the same collector directly; daily-task selection applies
             # only to the score planner's execute() entry point.
-            completed = runtime.crystals("xinghai", card)
-            if completed and not runtime.stopped:
+            completed = bool(runtime.crystals("xinghai", card) and not runtime.stopped)
+            if completed:
                 runtime.log("跑图收集星光结晶已完成。", detail=True)
-            return bool(completed and not runtime.stopped)
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             runtime.log(f"跑图收集星光结晶未完成：{error}。")
-            return False
         finally:
             if not runtime.stopped and not runtime.finish("MaaNikki_CollectStarlightCrystals")[1]:
                 runtime.log("星光结晶收集后未能恢复任务衔接页面。")
-                return False
+                completed = False
+        return completed
 
 
 @agent_action("nikki.daily_tasks")
 class DailyTasksAction(CustomAction):
     def run(self, context, argv) -> bool:
-        payload = argv.custom_action_param
-        options = json.loads(payload or "{}") if isinstance(payload, str) else payload
+        options = parse_custom_param(argv.custom_action_param)
         mode = options.get("mode")
         if mode not in ("zhaoxi", "xinghai"):
             return False
         run = DailyRun(context, mode, argv.task_detail.task_id)
         result = run.run_daily()
         return bool(result and not run.stopped)
-
-
-@agent_action("nikki.daily_set_amount")
-class DailySetAmountAction(CustomAction):
-    def run(self, context, argv) -> bool:
-        payload = argv.custom_action_param
-        options = json.loads(payload or "{}") if isinstance(payload, str) else payload
-        kind = options.get("kind")
-        minimum = options.get("minimum_energy", 0)
-        if kind not in ("jihua", "bless", "monster") or type(minimum) is not int or not 0 <= minimum <= 1000:
-            return False
-        return Executors(context).set_amount(kind, minimum)
 
 
 @agent_action("nikki.daily_fail")

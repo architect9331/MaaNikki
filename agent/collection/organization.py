@@ -99,7 +99,7 @@ class BlessingOrganizer(BlessingLocker):
     def accept_ordered_focus(self, view, frame, generation, phase, *, delta=0):
         self.check_generation(generation)
         view.generation = self.organization_generation = generation
-        self._hover_read = self._hover_box = None
+        self._hover_box = None
         self._hover_panel = None
         self._page_frame = self._ready_frame = frame
         self._ready_generation = generation
@@ -221,83 +221,79 @@ class BlessingOrganizer(BlessingLocker):
         self.initial_capacity = self.read_capacity()
         self.snapshot["scan"].update(view="normal_inventory", workflow="blessing_lock",
                                      reported_capacity=self.initial_capacity[0])
-        self.inventory_read = True
         ordered = {}
         view = OrderedView(self)
-        try:
-            if not self.set_slot(SLOTS[0]):
-                raise RuntimeError("未确认" + SLOTS[0] + "列表")
-            self.acquisition_sort()
+        if not self.set_slot(SLOTS[0]):
+            raise RuntimeError("未确认" + SLOTS[0] + "列表")
+        self.acquisition_sort()
 
-            pending_lock_slots = []
-            with tall_window(self.rt) as is_tall:
-                if is_tall:
-                    self.set_tall_layout(True)
-                    self.rt.log("祝福闪光整理：已切换超长竖屏模式（单屏 42 行），扫描结束后将自动恢复游戏窗口。")
-                try:
-                    for slot in SLOTS:
-                        self.check_generation(self.organization_generation)
-                        rows, _ = view.scan(slot, quantities=True)
-                        locked = Counter(signature(row) for row in rows if row["locked"])
-                        maximum = {signature(row) for row in rows if row["maximum"] and row["mutable"]}
-                        keep = set()
-                        operations = []
-                        # Plan from verified existing locks before adding any lock.
-                        # Acquisition order does not place locked copies before stacks.
-                        for row in reversed(rows):
-                            key = signature(row)
-                            target = None
-                            if row["mutable"]:
-                                if row["maximum"]:
-                                    if row["locked"]:
-                                        if key in keep and self.allow_unlock:
-                                            target = False
-                                        keep.add(key)
-                                    elif locked[key] == 0 and key not in keep:
-                                        target = True
-                                        keep.add(key)
-                                elif row["locked"] and self.allow_unlock:
-                                    target = False
-                            if target is not None:
-                                operations.append((row, target))
-                        changed_keys = {signature(row) for row, _ in operations}
-                        for row in rows:
-                            row["anchor_eligible"] = signature(row) not in changed_keys
-                        if operations and is_tall:
-                            pending_lock_slots.append((slot, rows, maximum, operations))
-                        else:
-                            for row, target in operations:
-                                found = view.locate(row, rows, exact_lock=row["locked"])
-                                if found is None:
-                                    raise RuntimeError("整理对象未在完整定位范围内找到，未修改锁定状态")
-                                box, facts, evidence, generation = found
-                                self.apply_organized_lock(view, row, rows, box, facts, evidence, generation, target)
-                                row["locked"] = target
-                                self.rt.log(f"已{'锁定' if target else '解锁'}：{row['name']}·{slot}·{row['level']}级。", detail=True)
-                            if operations:
-                                self.verified.clear()
-                                rows, _ = view.scan(slot, quantities=True)
-                            self._finalize_slot(slot, rows, maximum, ordered)
-                finally:
-                    self.set_tall_layout(False)
+        pending_lock_slots = []
+        with tall_window(self.rt) as is_tall:
+            if is_tall:
+                self.set_tall_layout(True)
+                self.rt.log("祝福闪光整理：已切换超长竖屏模式（单屏 42 行），扫描结束后将自动恢复游戏窗口。")
+            try:
+                for slot in SLOTS:
+                    self.check_generation(self.organization_generation)
+                    rows, _ = view.scan(slot, quantities=True)
+                    locked = Counter(signature(row) for row in rows if row["locked"])
+                    maximum = {signature(row) for row in rows if row["maximum"] and row["mutable"]}
+                    keep = set()
+                    operations = []
+                    # Plan from verified existing locks before adding any lock.
+                    # Acquisition order does not place locked copies before stacks.
+                    for row in reversed(rows):
+                        key = signature(row)
+                        target = None
+                        if row["mutable"]:
+                            if row["maximum"]:
+                                if row["locked"]:
+                                    if key in keep and self.allow_unlock:
+                                        target = False
+                                    keep.add(key)
+                                elif locked[key] == 0 and key not in keep:
+                                    target = True
+                                    keep.add(key)
+                            elif row["locked"] and self.allow_unlock:
+                                target = False
+                        if target is not None:
+                            operations.append((row, target))
+                    changed_keys = {signature(row) for row, _ in operations}
+                    for row in rows:
+                        row["anchor_eligible"] = signature(row) not in changed_keys
+                    if operations and is_tall:
+                        pending_lock_slots.append((slot, rows, maximum, operations))
+                    else:
+                        for row, target in operations:
+                            found = view.locate(row, rows, exact_lock=row["locked"])
+                            if found is None:
+                                raise RuntimeError("整理对象未在完整定位范围内找到，未修改锁定状态")
+                            box, facts, evidence, generation = found
+                            self.apply_organized_lock(view, row, rows, box, facts, evidence, generation, target)
+                            row["locked"] = target
+                            self.rt.log(f"已{'锁定' if target else '解锁'}：{row['name']}·{slot}·{row['level']}级。", detail=True)
+                        if operations:
+                            self.verified.clear()
+                            rows, _ = view.scan(slot, quantities=True)
+                        self._finalize_slot(slot, rows, maximum, ordered)
+            finally:
+                self.set_tall_layout(False)
 
-            for slot, rows, maximum, operations in pending_lock_slots:
-                self.check_generation(self.organization_generation)
-                view.slot = None
-                view.enter(slot)
-                for row, target in operations:
-                    found = view.locate(row, rows, exact_lock=row["locked"])
-                    if found is None:
-                        raise RuntimeError("整理对象未在完整定位范围内找到，未修改锁定状态")
-                    box, facts, evidence, generation = found
-                    self.apply_organized_lock(view, row, rows, box, facts, evidence, generation, target)
-                    row["locked"] = target
-                    self.rt.log(f"已{'锁定' if target else '解锁'}：{row['name']}·{slot}·{row['level']}级。", detail=True)
-                self.verified.clear()
-                rows, _ = view.scan(slot, quantities=True)
-                self._finalize_slot(slot, rows, maximum, ordered)
-        finally:
-            self.inventory_read = False
+        for slot, rows, maximum, operations in pending_lock_slots:
+            self.check_generation(self.organization_generation)
+            view.slot = None
+            view.enter(slot)
+            for row, target in operations:
+                found = view.locate(row, rows, exact_lock=row["locked"])
+                if found is None:
+                    raise RuntimeError("整理对象未在完整定位范围内找到，未修改锁定状态")
+                box, facts, evidence, generation = found
+                self.apply_organized_lock(view, row, rows, box, facts, evidence, generation, target)
+                row["locked"] = target
+                self.rt.log(f"已{'锁定' if target else '解锁'}：{row['name']}·{slot}·{row['level']}级。", detail=True)
+            self.verified.clear()
+            rows, _ = view.scan(slot, quantities=True)
+            self._finalize_slot(slot, rows, maximum, ordered)
         self.organization = baseline(ordered)
         self.report.update(complete=False, locking_complete=True, phase="organized",
                            reason="三个部位已整理，等待普通仓库数量与容量核对")

@@ -90,10 +90,6 @@ def classify(mode: str, text: str, slot: int) -> Card:
     return Card(slot, text, rule, remaining)
 
 
-def group_score(cards: list[Card]) -> int:
-    return sum(card.rule.score for card in cards if card.rule)
-
-
 def select_free(cards: list[Card], score: int) -> list[Card]:
     free = [c for c in cards if c.rule and not c.rule.energy]
     ordered = sorted(free, key=lambda c: (c.rule.priority, c.rule.score), reverse=True)

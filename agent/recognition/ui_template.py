@@ -1,9 +1,9 @@
 """MAA recognition for UI glyphs with brightness or color filtering."""
 from __future__ import annotations
 
-import json
 import cv2
 import numpy as np
+from client_config import parse_custom_param
 from registration import agent_recognition
 from maa.custom_recognition import CustomRecognition
 
@@ -16,8 +16,7 @@ class UITemplateRecognition(CustomRecognition):
     def analyze(self, context, argv):
         del context
         try:
-            param = argv.custom_recognition_param
-            param = json.loads(param or "{}") if isinstance(param, str) else param
+            param = parse_custom_param(argv.custom_recognition_param)
             image = argv.image
             if image is None or image.size == 0:
                 raise ValueError("游戏截图为空。")

@@ -8,7 +8,6 @@ import re
 from task_control import task_time as time
 
 import cv2
-import numpy as np
 
 from .models import NavigationError, load_route
 

@@ -33,7 +33,9 @@ class WeeklyChallengeAction(CustomAction):
         recovered = False
         targets = [(node, label) for node, label in TARGETS
                    if (context.get_node_data(node) or {}).get("enabled", False)]
-        try:
+
+        def steps():
+            nonlocal recovered
             # Do not reuse a previous run's conditional continuation if the
             # initial weekly-count read is unsafe this time.
             if combined and not context.override_pipeline({argv.node_name: {"on_error": []}}):
@@ -83,14 +85,18 @@ class WeeklyChallengeAction(CustomAction):
                             "stage": "settle", "realm_success": False}}}):
                     rt.log("未能恢复后续幻境流程，本次停止。")
             return all(results)
+
+        returned = True
+        try:
+            ok = steps()
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             if not rt.stopped:
                 rt.diagnostic("weekly_challenge", str(error))
             rt.log(f"每周幻境停止：{error}")
-            return False
+            ok = False
         finally:
             if not rt.stopped and not recovered:
                 returned = rt.ui.calendar() if combined else rt.main()
                 if not returned:
                     rt.log("每周幻境未能返回后续步骤需要的页面，本项停止。")
-                    return False
+        return bool(ok and returned)

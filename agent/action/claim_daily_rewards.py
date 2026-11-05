@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import json
 from task_control import task_time as time
 import cv2
 import numpy as np
+from client_config import parse_custom_param
 from registration import agent_action
 from maa.custom_action import CustomAction
 from daily.runtime import Executors
@@ -16,8 +16,7 @@ class ClaimDailyRewardsAction(CustomAction):
     def run(self, context, argv):
         rt = Executors(context)
         try:
-            param = argv.custom_action_param
-            param = json.loads(param or "{}") if isinstance(param, str) else param
+            param = parse_custom_param(argv.custom_action_param)
             roi = param.get("roi", [1168, 150, 60, 345])
             maximum = param.get("max_claims", 5)
             if (not isinstance(roi, list) or len(roi) != 4 or any(type(v) is not int for v in roi)

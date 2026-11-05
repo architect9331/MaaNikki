@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import cv2
+from client_config import parse_custom_param
 from registration import agent_action
 from maa.custom_action import CustomAction
 
@@ -18,8 +19,7 @@ class RunCoordinationAction(CustomAction):
     def run(self, context, argv):
         rt = Executors(context)
         try:
-            options = argv.custom_action_param
-            options = json.loads(options or "{}") if isinstance(options, str) else options
+            options = parse_custom_param(argv.custom_action_param)
             task_id = argv.task_detail.task_id
             if options.get("stage") == "begin_realm":
                 rt.account_uid()

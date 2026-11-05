@@ -261,7 +261,7 @@ class Starsea:
             if not ready or not ready.hit:
                 break
             reading = {}
-            for key, label, total, roi in COLLECTION_STATISTICS:
+            for key, _label, total, roi in COLLECTION_STATISTICS:
                 text = self.rt.text(roi, image=frame)
                 match = re.fullmatch(r"\s*(\d{1,3})\s*[/／]\s*"+str(total)+r"\s*", text)
                 value = int(match[1]) if match and int(match[1]) <= total else None
@@ -289,7 +289,7 @@ class Starsea:
                 return self.rt.main()
             result = self.read_collection_statistics("after")
         totals, changes = [], []
-        for key, label, total, roi in COLLECTION_STATISTICS:
+        for key, label, total, _roi in COLLECTION_STATISTICS:
             value = result.get(key)
             totals.append(f"{label} {value['collected']}/{total}" if value else f"{label} 待确认")
             before = (self.collection_start or {}).get(key)

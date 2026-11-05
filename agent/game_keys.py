@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import json
+
+from client_config import node_action_params
 import re
 
 
@@ -83,13 +84,7 @@ class GameKeys:
         if name not in self.cache:
             value = self.values.get(name, DEFAULTS[name][0])
             if self.context is not None:
-                node = self.context.get_node_data(node_name(name)) or {}
-                action = node.get("action", {})
-                param = (action.get("param", {}).get("custom_action_param", {}) if isinstance(action, dict)
-                         else node.get("custom_action_param", {}))
-                if isinstance(param, str):
-                    param = json.loads(param)
-                value = param.get("value", value)
+                value = node_action_params(self.context, node_name(name)).get("value", value)
             try:
                 self.cache[name] = parse_key(value)
             except ValueError as error:

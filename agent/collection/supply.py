@@ -45,7 +45,7 @@ class CollectionSupply:
                 self.rt.log(f"五星追全检查 {candidate} 的快速挑战入口。", detail=True)
                 operation = None
 
-                def before_submit():
+                def before_submit(candidate=candidate, energy=energy):
                     nonlocal operation
                     # List/quick-entry failures cannot modify inventory. Only
                     # create a pending reward immediately before submission.

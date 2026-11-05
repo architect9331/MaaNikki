@@ -184,29 +184,25 @@ class FiveStarInventory(BlessingLocker):
             return
         if not self.open_recovery():
             raise IncompleteObservation("恢复仓库进度时未能打开祝福闪光列表")
-        self.inventory_read = True
-        try:
-            # Reward submissions only add a prefix. Four-star decomposition
-            # is restarted from an empty selection of the remaining materials.
-            if self.pending is not None and operation_scope(self.pending) == []:
-                operation = self.pending
-                if pending_reward(operation) and operation.get("input_attempted") is not False:
-                    self.report["recovered_reward"] = deepcopy(operation)
-                if (operation.get("input_attempted") is not False
-                        and operation.get("kind") in ("realm", "decompose")):
-                    self.organization["decomposition_pending"] = True
-                self.reconcile_change("not_submitted" if operation.get("input_attempted") is False else
-                                      "remaining_inventory")
-                if operation.get("kind") == "decompose" and operation.get("input_attempted") is not False:
-                    from .decompose import LowRarityDecomposer
-                    LowRarityDecomposer(self).run()
-            for slot in list(recovery.get("slots", [])):
-                self.rebuild_slot(slot)
-            self.organization.pop("recovery", None)
-            self.organization["reason"] = None
-            self.checkpoint()
-        finally:
-            self.inventory_read = False
+        # Reward submissions only add a prefix. Four-star decomposition
+        # is restarted from an empty selection of the remaining materials.
+        if self.pending is not None and operation_scope(self.pending) == []:
+            operation = self.pending
+            if pending_reward(operation) and operation.get("input_attempted") is not False:
+                self.report["recovered_reward"] = deepcopy(operation)
+            if (operation.get("input_attempted") is not False
+                    and operation.get("kind") in ("realm", "decompose")):
+                self.organization["decomposition_pending"] = True
+            self.reconcile_change("not_submitted" if operation.get("input_attempted") is False else
+                                  "remaining_inventory")
+            if operation.get("kind") == "decompose" and operation.get("input_attempted") is not False:
+                from .decompose import LowRarityDecomposer
+                LowRarityDecomposer(self).run()
+        for slot in list(recovery.get("slots", [])):
+            self.rebuild_slot(slot)
+        self.organization.pop("recovery", None)
+        self.organization["reason"] = None
+        self.checkpoint()
 
     def open_recovery(self):
         """Leave recognised operation pages without submitting more materials."""
@@ -393,7 +389,6 @@ class FiveStarInventory(BlessingLocker):
             operation = self.begin_change("lock", facts, {"source": "verified_current_selection"}, self._lock_frame)
             # Match the proven inventory locking path: stage the hover, then
             # issue one raw Runtime click without its extra hover/unhover cycle.
-            self._hover_read = None
             self._hover_box = None
             if not self.rt.action("TouchMove", target=self.layout["lock_button"]) or not self.rt.pause(.3):
                 raise RuntimeError("未能准备新颜色锁定")
@@ -534,72 +529,68 @@ class FiveStarInventory(BlessingLocker):
         self.report["phase"] = "upgrade_queue"
         if not self.open():
             raise IncompleteObservation("未能返回祝福闪光列表")
-        self.inventory_read = True
-        try:
-            self.discover_prefixes()
-            self.ensure_known_materials()
-            self.rt.log("开始处理五星胚子。")
-            for _ in range(1000):
-                target = self.next_target()
-                if target is None:
-                    return self.batch_result("collection_complete" if self.progress()["complete"] else "no_embryos")
-                rows = self.organization["slots"][target["slot"]]
-                if target["locked"] and target["maximum"]:
-                    self.organization["unfinished"] = None
-                    self.checkpoint()
-                    continue
-                try:
-                    found = self.view.locate(target, rows, quantities=True)
-                except RecheckSlot:
-                    if target["slot"] in self.report.get("recovered_slots", []):
-                        raise
-                    self.rebuild_slot(target["slot"])
-                    continue
-                if found is None:
-                    if target["id"] == self.organization["unfinished"]:
-                        if target["slot"] in self.report.get("recovered_slots", []):
-                            raise RecheckSlot(target["slot"], "未完成对象仍待核对，保留进度")
-                        self.rebuild_slot(target["slot"])
-                        continue
-                    # Both immutable boundaries were seen: a fed/merged old
-                    # candidate is absent. No warehouse-wide lookup is needed.
-                    rows.remove(target)
-                    self.checkpoint()
-                    continue
-                if (target["id"] != self.organization["unfinished"]
-                        and found[2]["copies_before"] > 1):
-                    # Preserve a remainder only for a freshly observed stack.
-                    # A single copy becomes the active item itself.
-                    self.active = deepcopy(target)
-                    self.active["id"] = uuid4().hex
-                    rows.insert(rows.index(target), self.active)
-                else:
-                    self.active = target
-                # Upgrade/lock can split or merge at another acquisition
-                # position. A later ordered scan establishes its true order.
-                self.active["anchor_eligible"] = False
-                self.organization["unfinished"] = self.active["id"]
-                self.checkpoint()
-                if self.active["maximum"]:
-                    self.protect_selected(found[1], found[3])
-                    result = {"status": "upgraded", "facts": found[1]}
-                else:
-                    result = UpgradeUI(self).run(*found)
-                if result["status"] != "upgraded":
-                    if result["status"] == "bling_shortage":
-                        self.observe_bling(result["bling"])
-                    self.report["shortage"] = result
-                    return self.batch_result(result["status"], **{k: v for k, v in result.items() if k != "status"})
-                if not self.active["locked"]:
-                    # A duplicate may have merged elsewhere. It is material,
-                    # never a stable position or a protected anchor.
-                    rows.remove(self.active)
-                self.active = None
+        self.discover_prefixes()
+        self.ensure_known_materials()
+        self.rt.log("开始处理五星胚子。")
+        for _ in range(1000):
+            target = self.next_target()
+            if target is None:
+                return self.batch_result("collection_complete" if self.progress()["complete"] else "no_embryos")
+            rows = self.organization["slots"][target["slot"]]
+            if target["locked"] and target["maximum"]:
                 self.organization["unfinished"] = None
                 self.checkpoint()
-            raise RuntimeError("达到本轮升级数量上限")
-        finally:
-            self.inventory_read = False
+                continue
+            try:
+                found = self.view.locate(target, rows, quantities=True)
+            except RecheckSlot:
+                if target["slot"] in self.report.get("recovered_slots", []):
+                    raise
+                self.rebuild_slot(target["slot"])
+                continue
+            if found is None:
+                if target["id"] == self.organization["unfinished"]:
+                    if target["slot"] in self.report.get("recovered_slots", []):
+                        raise RecheckSlot(target["slot"], "未完成对象仍待核对，保留进度")
+                    self.rebuild_slot(target["slot"])
+                    continue
+                # Both immutable boundaries were seen: a fed/merged old
+                # candidate is absent. No warehouse-wide lookup is needed.
+                rows.remove(target)
+                self.checkpoint()
+                continue
+            if (target["id"] != self.organization["unfinished"]
+                    and found[2]["copies_before"] > 1):
+                # Preserve a remainder only for a freshly observed stack.
+                # A single copy becomes the active item itself.
+                self.active = deepcopy(target)
+                self.active["id"] = uuid4().hex
+                rows.insert(rows.index(target), self.active)
+            else:
+                self.active = target
+            # Upgrade/lock can split or merge at another acquisition
+            # position. A later ordered scan establishes its true order.
+            self.active["anchor_eligible"] = False
+            self.organization["unfinished"] = self.active["id"]
+            self.checkpoint()
+            if self.active["maximum"]:
+                self.protect_selected(found[1], found[3])
+                result = {"status": "upgraded", "facts": found[1]}
+            else:
+                result = UpgradeUI(self).run(*found)
+            if result["status"] != "upgraded":
+                if result["status"] == "bling_shortage":
+                    self.observe_bling(result["bling"])
+                self.report["shortage"] = result
+                return self.batch_result(result["status"], **{k: v for k, v in result.items() if k != "status"})
+            if not self.active["locked"]:
+                # A duplicate may have merged elsewhere. It is material,
+                # never a stable position or a protected anchor.
+                rows.remove(self.active)
+            self.active = None
+            self.organization["unfinished"] = None
+            self.checkpoint()
+        raise RuntimeError("达到本轮升级数量上限")
 
     def batch_result(self, status, **details):
         result = {"status": status, **details}

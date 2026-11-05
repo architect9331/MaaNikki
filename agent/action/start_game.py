@@ -3,9 +3,9 @@ from __future__ import annotations
 from file_io import write_json
 
 from datetime import datetime
-import json
 
 from maa.custom_action import CustomAction
+from client_config import parse_custom_param
 from registration import agent_action
 from task_control import task_time as time
 from daily.runtime import Executors, ROOT
@@ -16,8 +16,7 @@ from game_view import GameFrameSizeError, require_game_frame
 class StartGameAction(CustomAction):
     def run(self, context, argv):
         runtime = Executors(context)
-        options = argv.custom_action_param
-        options = json.loads(options or "{}") if isinstance(options, str) else options or {}
+        options = parse_custom_param(argv.custom_action_param)
         timeout = int(options.get("timeout", 900))
         bootstrap = options.get("bootstrap") is True
         self.restart_requested = False

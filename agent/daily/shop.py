@@ -34,17 +34,20 @@ class ShopWorkflow:
         return self.ui.wait_page("MaaNikki_Shop_PageReady")
 
     def run(self):
+        completed = False
         try:
             if self.account.complete(self.TASK):
                 self.rt.log(f"{self.LABEL}：当前周期已完成，跳过。")
-                return True
-            return self.scan() if self.open() else self.fail("未能进入目标商城页面")
+                completed = True
+            else:
+                completed = self.scan() if self.open() else self.fail("未能进入目标商城页面")
         finally:
             if not self.rt.stopped:
                 _, ok = self.rt.finish(self.ENTRY)
                 if not ok:
                     self.fail("未能返回后续任务需要的页面")
-                    return False
+                    completed = False
+        return completed
 
 
 class WeeklyShop(ShopWorkflow):

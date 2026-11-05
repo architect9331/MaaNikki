@@ -4,11 +4,11 @@ from __future__ import annotations
 from collections import OrderedDict
 from contextlib import contextmanager
 from contextvars import ContextVar
-import json
 import time as wall_time
 import traceback
 from weakref import WeakSet
 
+from client_config import node_action_params
 from navigation.models import GameWindowClosed, NavigationError
 from game_view import GameFrameSizeError, require_game_frame
 from message_log import write_message
@@ -102,12 +102,7 @@ class ForegroundSession:
 
     def _returns_to_game(self):
         try:
-            node = self.context.get_node_data("MaaNikki_FocusLost") or {}
-            action = node.get("action", {})
-            options = (action.get("param", {}).get("custom_action_param", {}) if isinstance(action, dict)
-                       else node.get("custom_action_param", {}))
-            options = json.loads(options) if isinstance(options, str) else options
-            return options.get("mode") == "return"
+            return node_action_params(self.context, "MaaNikki_FocusLost").get("mode") == "return"
         except Exception:
             traceback.print_exc()
             return False
