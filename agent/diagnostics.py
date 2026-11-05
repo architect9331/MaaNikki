@@ -34,14 +34,17 @@ def diagnostic_image(frame, *, roi=None, full_frame=True):
     masked = None
     if full_frame:
         policy = image_policy()
-        _, rh = policy["reference_size"]
+        rw, rh = policy["reference_size"]
         x, y, w, h = policy["uid_roi"]
-        # Scale with height, matching Maa's uniform short-side scaling.
-        scale = height/rh
-        left, top = round(x*scale), round(y*scale)
-        right, bottom = min(width, round((x+w)*scale)), min(height, round((y+h)*scale))
+        # Scale with the shorter reference axis so tall-window captures (1280x5120)
+        # mask only the bottom-left UID instead of a 142 px full-width bottom band.
+        scale = min(width / rw, height / rh)
+        left = round(x * scale)
+        top = max(0, height - round((rh - y) * scale))
+        right = min(width, round((x + w) * scale))
+        bottom = min(height, height - round((rh - (y + h)) * scale))
         image[top:bottom, left:right] = 0
-        masked = [left, top, right-left, bottom-top]
+        masked = [left, top, right - left, bottom - top]
     if roi is not None:
         x, y, w, h = roi
         if min(x, y) < 0 or min(w, h) <= 0 or x+w > width or y+h > height:

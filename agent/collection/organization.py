@@ -68,9 +68,10 @@ class BlessingOrganizer(BlessingLocker):
             frame = self.clear_hover(view.generation, settle_card=True)
             view.remember_view(frame, checkpoint["boxes"])
 
-    def resumed_scene(self, view):
+    def resumed_scene(self, view, *, slot=None, require_checkpoint=True):
         checkpoint = view._focus_checkpoint
-        if checkpoint is None or checkpoint["slot"] != view.slot:
+        target_slot = view.slot if slot is None else slot
+        if require_checkpoint and (checkpoint is None or checkpoint["slot"] != target_slot):
             raise RuntimeError("切回后缺少当前页参照，下次运行会重新整理")
         generation = self.rt._focus_generation
         if not self.rt.action("TouchMove", target=[900, 32]) or not self.rt.pause(.2):
@@ -80,10 +81,12 @@ class BlessingOrganizer(BlessingLocker):
             raise RuntimeError("前台恢复被中断")
         frame = self.rt.capture()
         if (frame is None or frame.shape[:2] not in ((720, 1280), (5120, 1280))
-                or not self.same_structure(first, frame, self.grid, threshold=.997)
-                or not self.rt.text([930, 15, 330, 52], view.slot, image=frame)
-                or not self.rt.text(self.layout["sort_label"], "获得时间", image=frame)
-                or self.sort_direction(frame, self._acquired_desc_template) != "desc"):
+                or not self.unchanged(first, frame)
+                or not (self.rt.text([930, 15, 330, 52], target_slot, image=frame)
+                        if require_checkpoint else self.ready(frame))
+                or (require_checkpoint and (
+                    not self.rt.text(self.layout["sort_label"], "获得时间", image=frame)
+                    or self.sort_direction(frame, self._acquired_desc_template) != "desc"))):
             raise RuntimeError("切回后列表页面、部位或排序未能确认，下次运行会重新整理")
         labels = self.ocr(self.layout["capacity"], frame)
         capacities = [re.search(r"(\d+)[/／](\d+)", clean_text(item.text)) for item in labels
@@ -117,6 +120,14 @@ class BlessingOrganizer(BlessingLocker):
             view._recovering_focus = False
 
     def _recover_ordered_focus(self, view, phase, args):
+        if phase == "enter":
+            target_slot = args[0] if args else view.slot
+            _, frame, generation = self.resumed_scene(view, slot=target_slot, require_checkpoint=False)
+            view.slot, view.position = None, 0
+            view._focus_checkpoint = None
+            view._slot_header = None
+            self.accept_ordered_focus(view, frame, generation, phase, delta=0)
+            return 0
         checkpoint, frame, generation = self.resumed_scene(view)
         delta = 0
         if not self.same_ordered_view(checkpoint, frame):
@@ -144,7 +155,7 @@ class BlessingOrganizer(BlessingLocker):
             boxes = checkpoint["boxes"]
         self.accept_ordered_focus(view, frame, generation, phase, delta=delta)
         view.remember_view(frame, boxes)
-        if phase != "step":
+        if phase not in ("step", "cells"):
             view.cells()
             if phase == "select_target":
                 args[3]["selected_for_observation"] = False

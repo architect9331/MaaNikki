@@ -605,7 +605,7 @@ class BlessingLocker(InventoryScanner):
             if not (b[0] <= 1246 <= b[0] + b[2] and b[1] <= 520 <= b[1] + b[3])
         ] or boxes[:1]
         return all(
-            self.same_structure(before, after, [x + 4, y + 4, w - 8, h - 8], threshold=.997)
+            self.same_structure(before, after, [x + 4, y + 4, w - 8, h - 8], threshold=.99)
             for x, y, w, h in sample
         )
 

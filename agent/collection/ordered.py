@@ -96,10 +96,11 @@ class OrderedView:
             raise RuntimeError("未确认" + slot + "列表")
         self.o.acquisition_sort()
         self.generation = self.o.rt._focus_generation
-        if self.o.top() is None:
+        top_frame = self.o.top()
+        if top_frame is None:
             raise RuntimeError("未确认获得时间列表顶部")
         self.slot, self.position = slot, 0
-        self._focus_checkpoint = None
+        self.remember_view(top_frame, self.o.cards(top_frame, []))
         self._slot_header = None
 
     @resumable_observation
