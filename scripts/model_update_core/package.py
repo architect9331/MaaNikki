@@ -14,7 +14,7 @@ from .common import LOCK, MODEL_PATHS, REPOSITORY, WARDROBE, link_or_copy, log, 
 SOURCES = {"resource/model/blessing_identity": "MaaNikki blessing identity model and label metadata",
            "resource/model/blessing_badge": "MaaNikki blessing badge model and label metadata",
            "resource/model/blessing_level": "MaaNikki blessing level model and label metadata",
-           WARDROBE: "MaaNikki wardrobe ConvNeXt-Tiny identity model"}
+           WARDROBE: "MaaNikki wardrobe catalog metadata"}
 
 
 def changed_files(run):
@@ -80,9 +80,9 @@ def assemble(run):
     badge = root / "resource/model/blessing_badge.npz"
     if badge.is_file():
         link_or_copy(badge, assembled / "resource/model/blessing_badge.npz")
-    for path in (root / "resource/image/wardrobe").iterdir():
-        if path.is_file():
-            link_or_copy(path, assembled / "resource/image/wardrobe" / path.name)
+    scoring = root / "resource/data/wardrobe_scoring.json"
+    if scoring.is_file():
+        link_or_copy(scoring, assembled / "resource/data/wardrobe_scoring.json")
 
 
 def probe(run):

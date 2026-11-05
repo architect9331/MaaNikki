@@ -62,23 +62,23 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Action Local -Python
 
 ## 识别模型更新
 
-`scripts/model_update.py` 负责游戏更新后的祝福闪光种类、等级、角标和衣柜种类模型，OCR 模型不在其中。工具只离线工作，不启动游戏。素材路径放在 `.local/model-update/config.json`，产物放在 `.build/model-update/<run>/`，两者都不进入仓库。
+`scripts/model_update.py` 负责游戏更新后的祝福闪光种类、等级、角标模型与衣柜服装目录，OCR 模型不在其中。工具只离线工作，不启动游戏。素材路径放在 `.local/model-update/config.json`，产物放在 `.build/model-update/<run>/`，两者都不进入仓库。
 
 按顺序运行，`<run>` 取一个版本名：
 
 | 步骤 | 命令（`python scripts/model_update.py ...`） | 约需 | 人工确认 |
 | --- | --- | --- | --- |
-| 0. 解包新版本物品表、图标和衣柜卡片 | 本机私有流程 | 约 20 分钟 | 卡片抽查 |
+| 0. 解包新版本物品表和图标 | 本机私有流程 | 约 20 分钟 | 卡片抽查 |
 | 1. 记录基线 | `init --run <run>` | 秒级 | |
 | 2. 对比差异 | `discover --run <run>` | 秒级 | 查看 `diff.json` 的新增、移除、改名 |
 | 3. 列出缺口 | `assets --run <run>` | 秒级 | 祝福名称和颜色自动取自游戏配置表，配置表缺的项才要手填 `blessing-labels.json`；确实缺图时用 `--accept-gaps "<原因>"` |
 | 4. 训练祝福 | `train --run <run> --model identity` | 约 2 分钟 | |
-| 5. 更新衣柜 | `train --run <run> --model wardrobe` | 10–40 分钟 | 被门禁拦下时换 `--mode full`（约 40 分钟） |
+| 5. 更新衣柜目录 | `train --run <run> --model wardrobe` | 秒级 | |
 | 6. 对比评估 | `evaluate --run <run> --model blessing`，`--model wardrobe` | 各数分钟 | 不通过时查看 `evaluation/*-gate.json` |
 | 7. 打包校验 | `package --run <run>` | 约 1 分钟 | 查看 `package.json` |
 | 8. 替换模型 | `promote --run <run> --confirm` | 约 1 分钟 | 由人决定是否替换 |
 
-衣柜默认只微调受影响部位的分类头，骨干权重文件保持不变，原有类别编号也不变。`prototypes` 模式只追加新类原型，更快，但新类余弦值明显高于学习得到的头，会抢走旧类样本，门禁通常不会放行。
+衣柜读取直接使用图鉴文字识别与目录查表，更新时只扩展部位与服装标签映射，原有类别编号保持稳定。
 
 等级和角标的类别不随新祝福变化，第 6 步会检查它们在新图标上的表现。只有检查不通过或卡片界面变了才需要 `train --model level` 或 `badge`；界面变了还要先取得新的界面捕获。
 

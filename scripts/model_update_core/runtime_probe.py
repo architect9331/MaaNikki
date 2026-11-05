@@ -30,17 +30,19 @@ def main():
     agent, root, evaluation = map(Path, sys.argv[1:4])
     report = {"opencv": cv2.__version__}
     wardrobe = load(agent / "wardrobe/model.py", "probe_wardrobe_model")
-    model = wardrobe.WardrobeModel(root / "resource/model/wardrobe")
-    report["wardrobe"] = {"version": model.version, "fingerprint": model.fingerprint, "cases": 0, "correct": 0, "wrong": []}
-    path = evaluation / "wardrobe-probe-cases.json"
-    for case in json.loads(path.read_text(encoding="utf-8")) if path.is_file() else ():
-        image = read(case["image"])
-        prediction = model.predict(image, [[0, 0, image.shape[1], image.shape[0]]], case["part"])[0]
-        report["wardrobe"]["cases"] += 1
-        if prediction["class_id"] == case["class_id"]:
-            report["wardrobe"]["correct"] += 1
-        else:
-            report["wardrobe"]["wrong"].append({**case, "predicted": prediction["class_id"]})
+    catalog_model = wardrobe.WardrobeCatalog(root / "resource/model/wardrobe",
+                                             root / "resource/data/wardrobe_scoring.json")
+    report["wardrobe"] = {"version": catalog_model.version, "fingerprint": catalog_model.fingerprint,
+                          "cases": 0, "correct": 0, "wrong": []}
+    for part, entries in catalog_model.labels.items():
+        for entry in entries:
+            for name in entry.get("names", ()):
+                report["wardrobe"]["cases"] += 1
+                matched = catalog_model.lookup(part, name)
+                if matched and set(entry["item_ids"]) <= set(matched["item_ids"]):
+                    report["wardrobe"]["correct"] += 1
+                else:
+                    report["wardrobe"]["wrong"].append({"part": part, "name": name, "class_id": entry["class_id"]})
     catalog = json.loads((root / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
     cards = load(agent / "collection/card_models.py", "probe_card_models")
     models = cards.CardModels(root / "resource/model", catalog)
