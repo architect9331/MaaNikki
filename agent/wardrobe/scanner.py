@@ -898,12 +898,6 @@ class WardrobeScanner(InventoryScanner):
             raise TaskStopped()
         return self.rt.capture()
 
-    def reset_subtab_scroll(self, y_min, y_max):
-        mid_y = (y_min + y_max) // 2
-        self.scroll_tabs(-12000, target=[TAB_X, 110])
-        self.scroll_tabs(12000, target=[TAB_X, mid_y])
-        return self.scroll_tabs(-12000, target=[TAB_X, 110])
-
     def click_tab_y(self, y):
         target_y = max(92, min(628, round(y)))
         if (not self.rt.action("Click", target=[TAB_X, target_y])
@@ -999,28 +993,35 @@ class WardrobeScanner(InventoryScanner):
         y_min, y_max = scroll_box_y_range
         pitch = 60.7
         first_slot_y = y_min + 16
-        frame = self.reset_subtab_scroll(y_min, y_max)
+        mid_y = (y_min + y_max) // 2
+        frame, clicked_y = self.click_tab_y(first_slot_y)
         actual, _ = self.category(frame)
+        if actual not in sub_order:
+            self.expand_subtab_group(group_index, sub_order)
+            self.scroll_tabs(-12000, target=[TAB_X, 110])
+            frame, clicked_y = self.click_tab_y(first_slot_y)
+            actual, _ = self.category(frame)
         if actual not in sub_order:
             raise RuntimeError("当前未处于预期二级分类列表")
         anchor_idx = sub_order.index(actual)
-        anchor_y = first_slot_y + anchor_idx * pitch
+        anchor_y = clicked_y
 
         for target_part in target_parts:
             target_idx = sub_order.index(target_part)
             stalled = 0
-            for _ in range(12):
+            for _ in range(18):
                 frame = self.rt.capture()
                 actual, _ = self.category(frame)
                 if actual == target_part:
                     break
                 if actual not in sub_order:
                     self.expand_subtab_group(group_index, sub_order)
-                    frame = self.reset_subtab_scroll(y_min, y_max)
+                    self.scroll_tabs(-12000, target=[TAB_X, 110])
+                    frame, clicked_y = self.click_tab_y(first_slot_y)
                     actual, _ = self.category(frame)
                     if actual in sub_order:
                         anchor_idx = sub_order.index(actual)
-                        anchor_y = first_slot_y + anchor_idx * pitch
+                        anchor_y = clicked_y
                         stalled = 0
                         if actual == target_part:
                             break
@@ -1038,11 +1039,11 @@ class WardrobeScanner(InventoryScanner):
                         if actual == target_part:
                             break
                 elif pred_y > y_max:
-                    if stalled >= 1:
+                    if stalled >= 2:
                         self.scroll_tabs(-12000, target=[TAB_X, 110])
-                    self.scroll_tabs(-360, target=[TAB_X, (y_min + y_max) // 2])
-                    if stalled >= 1:
-                        probe_y = min(y_max - 6, max(first_slot_y, round(anchor_y + stalled * 42)))
+                    self.scroll_tabs(-360, target=[TAB_X, mid_y])
+                    if stalled >= 2:
+                        probe_y = min(y_max - 6, max(first_slot_y, round(anchor_y + (stalled - 1) * 42)))
                     else:
                         probe_y = min(y_max - 12, max(first_slot_y, round(pred_y - pitch)))
                     frame, clicked_y = self.click_tab_y(probe_y)
@@ -1054,12 +1055,10 @@ class WardrobeScanner(InventoryScanner):
                         if actual == target_part:
                             break
                 else:
-                    if target_idx <= 4:
-                        self.reset_subtab_scroll(y_min, y_max)
-                        probe_y = min(y_max - 12, max(first_slot_y, round(first_slot_y + target_idx * pitch)))
-                    else:
-                        self.scroll_tabs(360, target=[TAB_X, (y_min + y_max) // 2])
-                        probe_y = max(first_slot_y, min(y_max - 12, round(pred_y + pitch)))
+                    if stalled >= 2:
+                        self.scroll_tabs(-12000, target=[TAB_X, 110])
+                    self.scroll_tabs(360, target=[TAB_X, mid_y])
+                    probe_y = max(first_slot_y, min(y_max - 12, round(pred_y + pitch)))
                     frame, clicked_y = self.click_tab_y(probe_y)
                     actual, _ = self.category(frame)
                     if actual in sub_order:
@@ -1091,10 +1090,12 @@ class WardrobeScanner(InventoryScanner):
                     visited.add(part)
 
                 self.expand_subtab_group(8, ACCESSORY_PARTS)
+                self.scroll_tabs(-12000, target=[TAB_X, 110])
                 self.traverse_subtabs(ACCESSORY_PARTS, ACCESSORY_PARTS, (248, 535), group_index=8)
                 visited.update(ACCESSORY_PARTS)
 
                 self.expand_subtab_group(9, MAKEUP_ALL)
+                self.scroll_tabs(-12000, target=[TAB_X, 110])
                 self.traverse_subtabs(MAKEUP_ALL, MAKEUP_PARTS, (322, 625), group_index=9)
                 visited.update(MAKEUP_PARTS)
 
