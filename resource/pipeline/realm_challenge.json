@@ -66,31 +66,6 @@
       "Node.Action.Starting": "每周幻境部分挑战未完成；已安全返回主界面，继续处理所选普通幻境。"
     }
   },
-  "MaaNikki_Weekly_Calendar": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 1300,
-    "next": [
-      "MaaNikki_Weekly_CalendarReady"
-    ],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "calendar"
-    }
-  },
-  "MaaNikki_Weekly_CalendarReady": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      662,
-      90,
-      198,
-      156
-    ],
-    "template": "game/common/huanjing_go.png",
-    "threshold": 0.68,
-    "action": "DoNothing",
-    "timeout": 5000
-  },
   "MaaNikki_Weekly_CountOCR": {
     "recognition": "OCR",
     "roi": [
@@ -100,10 +75,6 @@
       85
     ],
     "expected": "[0-9]+\\s*[/／]\\s*[0-9]+",
-    "action": "DoNothing"
-  },
-  "MaaNikki_Weekly_Message": {
-    "recognition": "DirectHit",
     "action": "DoNothing"
   },
   "MaaNikki_CraftingPursuit": {

@@ -109,41 +109,6 @@
       "ready_timeout": 30
     }
   },
-  "MaaNikki_Jihua_Inside": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      0,
-      620,
-      110,
-      100
-    ],
-    "template": "nikki/common/main_feature.png",
-    "threshold": 0.68,
-    "action": "Custom",
-    "post_delay": 0,
-    "next": [],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "forward",
-      "seconds": 0.85
-    }
-  },
-  "MaaNikki_Jihua_StopMove": {
-    "recognition": "DirectHit",
-    "action": "DoNothing",
-    "post_delay": 250,
-    "next": []
-  },
-  "MaaNikki_Jihua_Interact": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 900,
-    "next": [],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "interact"
-    }
-  },
   "MaaNikki_Jihua_Target": {
     "recognition": "OCR",
     "roi": [
@@ -158,33 +123,6 @@
     "timeout": 4000,
     "next": [],
     "custom_action": "nikki.ui_click"
-  },
-  "MaaNikki_Jihua_MoveRetry": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 0,
-    "next": [],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "forward",
-      "seconds": 0.85
-    }
-  },
-  "MaaNikki_Jihua_MoveRetryStop": {
-    "recognition": "DirectHit",
-    "action": "DoNothing",
-    "post_delay": 250,
-    "next": []
-  },
-  "MaaNikki_Jihua_InteractRetry": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 900,
-    "next": [],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "interact"
-    }
   },
   "MaaNikki_Jihua_TargetRetry": {
     "recognition": "OCR",
@@ -211,46 +149,6 @@
       "target": [
         93,
         675
-      ]
-    }
-  },
-  "MaaNikki_Jihua_MaterialMostQuantity": {
-    "recognition": "OCR",
-    "roi": [
-      60,
-      585,
-      60,
-      75
-    ],
-    "expected": "数量",
-    "action": "Custom",
-    "post_delay": 250,
-    "next": [],
-    "custom_action": "nikki.ui_click"
-  },
-  "MaaNikki_Jihua_MaterialMostSort": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 600,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "target": [
-        224,
-        675
-      ]
-    }
-  },
-  "MaaNikki_Jihua_MaterialMostFirst": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 500,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "target": [
-        103,
-        128
       ]
     }
   },
@@ -327,25 +225,6 @@
     "custom_action": "nikki.gameplay",
     "custom_action_param": {
       "kind": "bless"
-    }
-  },
-  "MaaNikki_Bless_Huanjing": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      662,
-      90,
-      198,
-      156
-    ],
-    "template": "game/common/huanjing_go.png",
-    "threshold": 0.68,
-    "action": "Custom",
-    "post_delay": 1200,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "ready": "MaaNikki_RealmPageReady",
-      "source": "MaaNikki_CalendarReady"
     }
   },
   "MaaNikki_Bless_Entrance": {
@@ -468,25 +347,6 @@
       "kind": "monster"
     }
   },
-  "MaaNikki_Monster_Huanjing": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      662,
-      90,
-      198,
-      156
-    ],
-    "template": "game/common/huanjing_go.png",
-    "threshold": 0.68,
-    "action": "Custom",
-    "post_delay": 1200,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "ready": "MaaNikki_RealmPageReady",
-      "source": "MaaNikki_CalendarReady"
-    }
-  },
   "MaaNikki_Monster_Entrance": {
     "recognition": "OCR",
     "roi": [
@@ -579,33 +439,6 @@
     "next": [],
     "custom_action": "nikki.ui_click"
   },
-  "MaaNikki_WeeklyRealm": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 0,
-    "next": [],
-    "custom_action": "nikki.weekly_challenge",
-    "custom_action_param": {}
-  },
-  "MaaNikki_Weekly_Huanjing": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      662,
-      90,
-      198,
-      156
-    ],
-    "template": "game/common/huanjing_go.png",
-    "threshold": 0.68,
-    "action": "Custom",
-    "post_delay": 1200,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "ready": "MaaNikki_RealmPageReady",
-      "source": "MaaNikki_CalendarReady"
-    }
-  },
   "MaaNikki_Weekly_Entrance": {
     "recognition": "OCR",
     "roi": [
@@ -654,21 +487,6 @@
     "next": [],
     "custom_action": "nikki.ui_click"
   },
-  "MaaNikki_Weekly_Max_Qiggeda": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      690,
-      295,
-      100,
-      100
-    ],
-    "template": "game/energy/max.png",
-    "threshold": 0.65,
-    "action": "Custom",
-    "post_delay": 300,
-    "next": [],
-    "custom_action": "nikki.ui_click"
-  },
   "MaaNikki_Weekly_Confirm_Qiggeda": {
     "recognition": "TemplateMatch",
     "roi": [
@@ -684,31 +502,6 @@
     "next": [],
     "custom_action": "nikki.ui_click"
   },
-  "MaaNikki_Weekly_Skip_Qiggeda": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      1060,
-      640,
-      220,
-      80
-    ],
-    "template": [
-      "game/common/skip_click.png",
-      "game/common/skip.png"
-    ],
-    "threshold": [
-      0.68,
-      0.68
-    ],
-    "action": "Custom",
-    "post_delay": 1000,
-    "timeout": 10000,
-    "next": [],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "skip"
-    }
-  },
   "MaaNikki_Weekly_Level_Juan": {
     "enabled": false,
     "recognition": "OCR",
@@ -721,51 +514,6 @@
     "expected": "卷卷",
     "action": "Custom",
     "post_delay": 500,
-    "next": [],
-    "custom_action": "nikki.ui_click"
-  },
-  "MaaNikki_Weekly_Quick_Juan": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      690,
-      610,
-      230,
-      100
-    ],
-    "template": "game/energy/quick.png",
-    "threshold": 0.65,
-    "action": "Custom",
-    "post_delay": 700,
-    "next": [],
-    "custom_action": "nikki.ui_click"
-  },
-  "MaaNikki_Weekly_Max_Juan": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      690,
-      295,
-      100,
-      100
-    ],
-    "template": "game/energy/max.png",
-    "threshold": 0.65,
-    "action": "Custom",
-    "post_delay": 300,
-    "next": [],
-    "custom_action": "nikki.ui_click"
-  },
-  "MaaNikki_Weekly_Confirm_Juan": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      620,
-      410,
-      220,
-      100
-    ],
-    "template": "game/energy/confirm.png",
-    "threshold": 0.65,
-    "action": "Custom",
-    "post_delay": 1500,
     "next": [],
     "custom_action": "nikki.ui_click"
   },

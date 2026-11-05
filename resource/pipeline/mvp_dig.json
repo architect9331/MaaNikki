@@ -99,17 +99,5 @@
     "post_delay": 800,
     "next": [],
     "custom_action": "nikki.ui_click"
-  },
-  "MaaNikki_Dig_NoReward": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "next": [],
-    "custom_action": "nikki.daily_fail"
-  },
-  "MaaNikki_Dig_Finish": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "next": [],
-    "custom_action": "nikki.daily_fail"
   }
 }

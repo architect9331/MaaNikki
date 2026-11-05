@@ -5,14 +5,6 @@
     "pre_delay": 0,
     "post_delay": 0
   },
-  "MaaNikki_Xinghai_DailyBubble": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.daily_config",
-    "custom_action_param": {
-      "value": false
-    }
-  },
   "MaaNikki_Daily_Message": {
     "recognition": "DirectHit",
     "action": "DoNothing",
@@ -25,21 +17,6 @@
     "threshold": 0.65,
     "order_by": "Horizontal",
     "action": "DoNothing"
-  },
-  "MaaNikki_Daily_Template": {
-    "recognition": "TemplateMatch",
-    "template": "nikki/common/main_feature.png",
-    "threshold": 0.8,
-    "action": "DoNothing"
-  },
-  "MaaNikki_Daily_SetAmount": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.daily_set_amount",
-    "custom_action_param": {
-      "kind": "bless",
-      "minimum_energy": 0
-    }
   },
   "MaaNikki_Daily_QuickCount": {
     "recognition": "OCR",
@@ -82,18 +59,8 @@
     "action": "Custom",
     "custom_action": "nikki.daily_config",
     "custom_action_param": {
-      "auto_complete": true,
-      "allow_chat": false,
       "delete_photo": false,
       "chat_text": "1"
-    }
-  },
-  "MaaNikki_Zhaoxi_DailyAuto": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.daily_config",
-    "custom_action_param": {
-      "value": true
     }
   },
   "MaaNikki_Zhaoxi_DailyEnergy": {
@@ -112,14 +79,6 @@
       "value": false
     }
   },
-  "MaaNikki_Xinghai_DailyAuto": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.daily_config",
-    "custom_action_param": {
-      "value": true
-    }
-  },
   "MaaNikki_Xinghai_DailyForceCrystal": {
     "recognition": "DirectHit",
     "action": "Custom",
@@ -129,14 +88,6 @@
     }
   },
   "MaaNikki_Xinghai_DailyPhoto": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.daily_config",
-    "custom_action_param": {
-      "value": false
-    }
-  },
-  "MaaNikki_Xinghai_DailyChat": {
     "recognition": "DirectHit",
     "action": "Custom",
     "custom_action": "nikki.daily_config",

@@ -29,23 +29,16 @@ def fields(context, node):
 
 @lru_cache(maxsize=4)
 def catalog(resource):
-    root = Path(resource)
-    value = {"assets": {}, "materials": {}}
-    available = False
-    # Owned assets take precedence and can run without the optional local set.
-    for path in (root / "image/game/catalog.json",
-                 root / "image/nikki/alignment/catalog.json"):
-        if not path.is_file():
-            continue
-        available = True
-        replacement = json.loads(path.read_text(encoding="utf-8"))
-        for name in ("assets", "materials"):
-            entries = replacement.get(name, {})
-            if not isinstance(entries, dict):
-                raise ValueError("图像资源索引格式无效，请重新保存截图资源。")
-            value[name].update(entries)
-    if not available:
+    path = Path(resource) / "image/game/catalog.json"
+    if not path.is_file():
         raise ValueError("图像资源索引缺失，请先补全并保存所需截图资源。")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    value = {}
+    for name in ("assets", "materials"):
+        entries = data.get(name, {})
+        if not isinstance(entries, dict):
+            raise ValueError("图像资源索引格式无效，请重新保存截图资源。")
+        value[name] = entries
     return value
 
 

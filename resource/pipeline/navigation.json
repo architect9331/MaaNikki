@@ -1,13 +1,23 @@
 {
   "MaaNikki_Navigation_ReviveButton": {
     "recognition": "OCR",
-    "roi": [550, 620, 180, 60],
+    "roi": [
+      550,
+      620,
+      180,
+      60
+    ],
     "expected": "^复活$",
     "action": "DoNothing"
   },
   "MaaNikki_Navigation_RegionMenuReady": {
     "recognition": "OCR",
-    "roi": [875, 15, 250, 60],
+    "roi": [
+      875,
+      15,
+      250,
+      60
+    ],
     "expected": "^地图切换$",
     "action": "DoNothing"
   },
@@ -15,9 +25,17 @@
     "recognition": "Custom",
     "custom_recognition": "nikki.ui_template",
     "custom_recognition_param": {
-      "roi": [1190, 5, 66, 65],
+      "roi": [
+        1190,
+        5,
+        66,
+        65
+      ],
       "template": "game/daily/meteor_close.png",
-      "gray_limit": [190, 255],
+      "gray_limit": [
+        190,
+        255
+      ],
       "threshold": 0.8
     },
     "action": "DoNothing"
@@ -46,8 +64,16 @@
       ],
       "template": "game/navigation/map_max_scale.png",
       "color": [
-        [10, 80, 160],
-        [30, 255, 255]
+        [
+          10,
+          80,
+          160
+        ],
+        [
+          30,
+          255,
+          255
+        ]
       ],
       "threshold": 0.9
     },
@@ -86,18 +112,6 @@
       61
     ],
     "template": "game/navigation/ability_insect.png",
-    "threshold": 0.7,
-    "action": "DoNothing"
-  },
-  "MaaNikki_Navigation_FloatAbility": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      1150,
-      590,
-      110,
-      110
-    ],
-    "template": "game/navigation/ability_float.png",
     "threshold": 0.7,
     "action": "DoNothing"
   }

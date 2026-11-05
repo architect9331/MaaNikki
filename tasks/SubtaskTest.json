@@ -142,10 +142,8 @@
       ],
       "developer_only": true,
       "default_check": false,
-      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。 需明确开启发送聚会频道消息选项。",
-      "option": [
-        "XinghaiChat"
-      ]
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
     },
     {
       "name": "dev_xinghai_like",
@@ -157,9 +155,7 @@
       "developer_only": true,
       "default_check": false,
       "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
-      "option": [
-        "XinghaiLookbook"
-      ]
+      "option": []
     },
     {
       "name": "dev_xinghai_bottle",
@@ -258,10 +254,8 @@
       ],
       "developer_only": true,
       "default_check": false,
-      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。 需先装备泡泡漂浮套装并在选项中确认。",
-      "option": [
-        "XinghaiBubble"
-      ]
+      "description": "单独测试此任务流程，不受当天积分和总任务排序限制。启动时自动聚焦已连接的游戏窗口，使用停止按钮中断。按正式执行逻辑运行，不额外领取朝夕或星海积分奖励。",
+      "option": []
     },
     {
       "name": "dev_xinghai_animal_three",

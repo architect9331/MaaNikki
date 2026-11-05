@@ -102,33 +102,5 @@
     "roi": [300, 200, 680, 280],
     "expected": "已获得",
     "action": "DoNothing"
-  },
-  "MaaNikki_WardrobeReady": {
-    "recognition": "And",
-    "all_of": ["MaaNikki_WardrobeFeature", "MaaNikki_WardrobeTab", "MaaNikki_WardrobeSave"],
-    "action": "DoNothing"
-  },
-  "MaaNikki_WardrobeFeature": {
-    "recognition": "Custom",
-    "custom_recognition": "nikki.ui_template",
-    "custom_recognition_param": {
-      "roi": [387, 0, 193, 75],
-      "template": "game/ui/IconWardrobeFeature.png",
-      "method": 3,
-      "threshold": 0.99
-    },
-    "action": "DoNothing"
-  },
-  "MaaNikki_WardrobeTab": {
-    "recognition": "OCR",
-    "roi": [387, 18, 193, 45],
-    "expected": "^换装$",
-    "action": "DoNothing"
-  },
-  "MaaNikki_WardrobeSave": {
-    "recognition": "OCR",
-    "roi": [25, 615, 270, 85],
-    "expected": "保存搭配",
-    "action": "DoNothing"
   }
 }

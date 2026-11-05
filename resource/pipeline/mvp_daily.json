@@ -51,12 +51,6 @@
       "Node.Recognition.Succeeded": "已读取朝夕心愿积分。"
     }
   },
-  "MaaNikki_Zhaoxi_AfterClaim": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "next": [],
-    "custom_action": "nikki.daily_fail"
-  },
   "MaaNikki_CollectStarlightCrystals": {
     "recognition": "DirectHit",
     "action": "Custom",
@@ -102,172 +96,6 @@
     "action": "DoNothing",
     "timeout": 3000,
     "next": []
-  },
-  "MaaNikki_Xinghai_Card1": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 350,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "target": [
-        457,
-        319
-      ]
-    }
-  },
-  "MaaNikki_Xinghai_TaskFinished1": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      1040,
-      640,
-      70,
-      70
-    ],
-    "template": "game/daily/xinghai_finished.png",
-    "threshold": 0.66,
-    "action": "DoNothing",
-    "next": []
-  },
-  "MaaNikki_Xinghai_Card2": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 350,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "target": [
-        610,
-        256
-      ]
-    }
-  },
-  "MaaNikki_Xinghai_TaskFinished2": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      1040,
-      640,
-      70,
-      70
-    ],
-    "template": "game/daily/xinghai_finished.png",
-    "threshold": 0.66,
-    "action": "DoNothing",
-    "next": []
-  },
-  "MaaNikki_Xinghai_Card3": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 350,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "target": [
-        759,
-        268
-      ]
-    }
-  },
-  "MaaNikki_Xinghai_TaskFinished3": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      1040,
-      640,
-      70,
-      70
-    ],
-    "template": "game/daily/xinghai_finished.png",
-    "threshold": 0.66,
-    "action": "DoNothing",
-    "next": []
-  },
-  "MaaNikki_Xinghai_Card4": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 350,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "target": [
-        899,
-        340
-      ]
-    }
-  },
-  "MaaNikki_Xinghai_TaskFinished4": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      1040,
-      640,
-      70,
-      70
-    ],
-    "template": "game/daily/xinghai_finished.png",
-    "threshold": 0.66,
-    "action": "DoNothing",
-    "next": []
-  },
-  "MaaNikki_Xinghai_Card5": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 350,
-    "next": [],
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "target": [
-        1048,
-        272
-      ]
-    }
-  },
-  "MaaNikki_Xinghai_TaskFinished5": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      1040,
-      640,
-      70,
-      70
-    ],
-    "template": "game/daily/xinghai_finished.png",
-    "threshold": 0.66,
-    "action": "DoNothing",
-    "next": []
-  },
-  "MaaNikki_Xinghai_LookbookDetected": {
-    "enabled": true,
-    "recognition": "OCR",
-    "roi": [
-      390,
-      580,
-      740,
-      85
-    ],
-    "expected": "星绘图册.*点赞|点赞.*星绘图册",
-    "action": "DoNothing",
-    "next": [],
-    "focus": {
-      "Node.Recognition.Succeeded": "发现星绘图册点赞任务，正在前往图册完成点赞。"
-    }
-  },
-  "MaaNikki_Xinghai_LeaveForLookbook1": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 700,
-    "next": [],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "menu"
-    }
-  },
-  "MaaNikki_Xinghai_LeaveForLookbook2": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "post_delay": 700,
-    "next": [],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "menu"
-    }
   },
   "MaaNikki_Xinghai_OpenEscMenu": {
     "recognition": "DirectHit",
@@ -544,37 +372,6 @@
     "action": "DoNothing",
     "next": []
   },
-  "MaaNikki_Monthly_SkipTask": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      1060,
-      640,
-      220,
-      80
-    ],
-    "template": [
-      "game/common/skip_click.png",
-      "game/common/skip.png"
-    ],
-    "threshold": [
-      0.68,
-      0.68
-    ],
-    "action": "Custom",
-    "post_delay": 800,
-    "timeout": 5000,
-    "next": [],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "skip"
-    }
-  },
-  "MaaNikki_Monthly_AfterTask": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "next": [],
-    "custom_action": "nikki.daily_fail"
-  },
   "MaaNikki_Monthly_TreasureTab": {
     "enabled": false,
     "recognition": "OCR",
@@ -604,31 +401,6 @@
     "post_delay": 900,
     "next": [],
     "custom_action": "nikki.ui_click"
-  },
-  "MaaNikki_Monthly_SkipTreasure": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      1060,
-      640,
-      220,
-      80
-    ],
-    "template": [
-      "game/common/skip_click.png",
-      "game/common/skip.png"
-    ],
-    "threshold": [
-      0.68,
-      0.68
-    ],
-    "action": "Custom",
-    "post_delay": 800,
-    "timeout": 5000,
-    "next": [],
-    "custom_action": "nikki.game_key",
-    "custom_action_param": {
-      "name": "skip"
-    }
   },
   "MaaNikki_Monthly_ParadiseEnabled": {
     "recognition": "DirectHit",

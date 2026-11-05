@@ -2505,14 +2505,12 @@
       "jihua": true
     },
     "纯真丝线": {
-      "game_img": "T_UI_icon_004",
       "type": "other",
       "dig": true,
       "track": false,
       "jihua": false
     },
     "闪光粒子": {
-      "game_img": "T_UI_icon_006",
       "type": "other",
       "dig": true,
       "track": false,
