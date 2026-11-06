@@ -153,7 +153,13 @@ def camera_heading(reference, map_image, spec, x, y, *, terrain=None):
     for boundary in peaks:
         left_bins = (boundary+np.arange(-6, 7)) % width
         right_bins = (boundary+width//4+np.arange(-9, 10)) % width
-        support = [int(left_edge[left_bins].max()), int(right_edge[right_bins].max())]
+        # Polar columns are 2x upsampled (0.88 deg/bin) around the minimap
+        # center, so a straight cone ray steps across 2-4 adjacent bins from
+        # inner to outer radius. Sum net-polarity peaks over a 3-bin (~2.6 deg)
+        # local ray band; 1D peak spacing prevents any radial row from counting
+        # twice across three adjacent bins.
+        support = [int(np.convolve(left_edge[left_bins], (1, 1, 1), mode="valid").max()),
+                   int(np.convolve(right_edge[right_bins], (1, 1, 1), mode="valid").max())]
         rows = [rising_rows[:, left_bins].any(axis=1), falling_rows[:, right_bins].any(axis=1)]
         radial_coverage = [float(value.mean()) for value in rows]
         halves = [float(part.mean()) for value in rows for part in np.array_split(value, 2)]
