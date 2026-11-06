@@ -184,7 +184,7 @@
       "type": "switch",
       "label": "设计图宝箱地图标记",
       "default_case": "No",
-      "description": "在辅助功能设置中登录美鸭梨后，标记地图中的散件设计图宝箱与大喵斗篷宝箱。支持奇迹大陆、万相境及 16:9 窗口。",
+      "description": "在辅助功能设置中登录美鸭梨后，标记尚未开启的服装散件设计图宝箱与大喵斗篷宝箱。支持奇迹大陆、万相境及 16:9 窗口。",
       "cases": [
         {
           "name": "Yes",
@@ -202,6 +202,36 @@
           "label": "关闭",
           "pipeline_override": {
             "MaaNikki_Assist_MapChest": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AssistMapBox": {
+      "type": "switch",
+      "label": "其他宝箱地图标记",
+      "default_case": "No",
+      "description": "在辅助功能设置中登录美鸭梨后，标记尚未开启的初级、中级、高级、洞窟与虹染道具宝箱。支持奇迹大陆、万相境及 16:9 窗口。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_Assist_MapBox": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "pipeline_override": {
+            "MaaNikki_Assist_MapBox": {
               "custom_action_param": {
                 "value": false
               }

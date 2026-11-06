@@ -8,6 +8,7 @@ type Status = {
   authenticated?: boolean;
   star_collected?: number;
   dewdrop_collected?: number;
+  box_collected?: number;
   error?: string;
 };
 
@@ -61,10 +62,10 @@ export function MapMaskSection() {
       ? status.authenticated ? '已登录' : '已保存登录信息' : '尚未登录'}</span>}>
       <div className="space-y-3 px-4 py-3">
         <p className="text-xs leading-5 text-text-secondary">
-          登录正在游玩的国服账号后可使用地图标记：打开大地图自动校准，返回场景后跟随小地图。支持奇迹大陆、万相境和 16:9 游戏窗口，粉色星形是奇想星，蓝色水滴是灵感露珠。
+          登录正在游玩的国服账号后可使用地图标记：打开大地图自动校准并点击标点查看教程，返回场景后跟随小地图。支持奇迹大陆、万相境和 16:9 游戏窗口。
         </p>
         {status.has_login && status.authenticated && (
-          <p className="text-xs tabular-nums text-text-secondary">已收集奇想星 {status.star_collected ?? '—'}，灵感露珠 {status.dewdrop_collected ?? '—'}</p>
+          <p className="text-xs tabular-nums text-text-secondary">已收集奇想星 {status.star_collected ?? '—'}，灵感露珠 {status.dewdrop_collected ?? '—'}，宝箱 {status.box_collected ?? '—'}</p>
         )}
         {(error || (status.has_login && status.error)) && (
           <p role="status" className="text-xs text-error">{error || status.error}</p>

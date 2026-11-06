@@ -294,6 +294,7 @@ pub async fn pearpal_complete_login(
         "authenticated": true, "error": "",
         "star_collected": response["data"]["star"].as_array().map(Vec::len),
         "dewdrop_collected": response["data"]["dewdrop"].as_array().map(Vec::len),
+        "box_collected": response["data"]["box"].as_array().map(Vec::len),
     });
     let _ = super::utils::write_atomic(&folder.join("status.json"), status.to_string());
     drop(_guard);

@@ -127,29 +127,36 @@ def marker_icon(kind: str, size: int, *, active: bool = False, badge: bool = Tru
         sp2 = _poly_mask(extent, unit, _spark_vertices(4.2, 4.2, 1.0),
                          scale=scale, center=(center[0] + 12.5 * scale, center[1] + 8.5 * scale))
         _blend(canvas, np.maximum(sp1, sp2), (255, 252, 255), 0.92)
-    elif kind == "chest":
+    elif kind in {"chest", "box_high", "box_mid", "box_low"}:
+        palettes = {
+            "chest": ((226, 246, 255), (62, 156, 236), (86, 128, 218), (56, 86, 168), (118, 218, 255), (255, 224, 96)),
+            "box_high": ((248, 236, 255), (168, 92, 198), (188, 108, 168), (128, 68, 118), (132, 218, 255), (186, 118, 255)),
+            "box_mid": ((255, 246, 234), (196, 146, 78), (208, 152, 92), (156, 106, 58), (192, 228, 248), (168, 238, 118)),
+            "box_low": ((236, 244, 252), (92, 128, 168), (98, 126, 158), (68, 88, 116), (168, 198, 224), (132, 206, 248)),
+        }
+        rim_c, frame_c, lid_c, base_c, band_c, gem_c = palettes[kind]
         box_pts = [(-18, -5), (-15, -16), (0, -20), (15, -16), (18, -5), (16, 17), (-16, 17)]
         outer = _poly_mask(extent, unit, box_pts, scale=1.08 * scale, center=center)
-        _blend(canvas, outer, (226, 246, 255))
+        _blend(canvas, outer, rim_c)
         frame = _poly_mask(extent, unit, box_pts, scale=0.94 * scale, center=center)
-        _blend(canvas, frame, (62, 156, 236))
+        _blend(canvas, frame, frame_c)
         lid = _poly_mask(extent, unit, [(-15, -5), (-12, -14), (0, -17), (12, -14), (15, -5)],
                          scale=0.90 * scale, center=center)
         base = _poly_mask(extent, unit, [(-15, -2), (15, -2), (13, 14), (-13, 14)],
                           scale=0.90 * scale, center=center)
-        _blend(canvas, lid, (86, 128, 218))
-        _blend(canvas, base, (56, 86, 168))
+        _blend(canvas, lid, lid_c)
+        _blend(canvas, base, base_c)
         band_h = _poly_mask(extent, unit, [(-16, -6), (16, -6), (16, -1), (-16, -1)],
                             scale=0.94 * scale, center=center)
         band_l = _poly_mask(extent, unit, [(-10, -15), (-6, -15), (-6, 14), (-10, 14)],
                             scale=0.90 * scale, center=center)
         band_r = _poly_mask(extent, unit, [(6, -15), (10, -15), (10, 14), (6, 14)],
                             scale=0.90 * scale, center=center)
-        _blend(canvas, np.maximum(band_h, np.maximum(band_l, band_r)), (118, 218, 255))
+        _blend(canvas, np.maximum(band_h, np.maximum(band_l, band_r)), band_c)
         clasp = _poly_mask(extent, unit, [(0, -9), (6, -3), (0, 5), (-6, -3)], scale=scale, center=center)
         _blend(canvas, clasp, (240, 252, 255))
         gem = _poly_mask(extent, unit, [(0, -6.5), (3.6, -3), (0, 2.2), (-3.6, -3)], scale=scale, center=center)
-        _blend(canvas, gem, (255, 224, 96))
+        _blend(canvas, gem, gem_c)
     else:
         drop_segs = (
             ((0, -23), (5, -13), (17, -3), (17, 7)),

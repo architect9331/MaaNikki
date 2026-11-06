@@ -37,10 +37,26 @@ IMAGE_HOSTS = {
 STAR = {"11", "132", "145", "167", "244"}
 DEW = {"12", "133", "146", "168", "245"}
 CHEST = {"16", "259"}
+BOX_HIGH = {"15", "17", "147"}
+BOX_MID = {"14", "151"}
+BOX_LOW = {"13", "152"}
 WORLDS = {"1": "miraland", "4020034": "wanxiang"}
-KIND_NAMES = {"star": "奇想星", "dewdrop": "灵感露珠", "chest": "设计图宝箱"}
+CATALOG_NAMES = {
+    "11": "奇想星", "12": "灵感露珠",
+    "13": "初级宝箱", "14": "中级宝箱", "15": "高级宝箱",
+    "16": "散件宝箱", "17": "洞窟宝箱",
+    "132": "奇想气球", "133": "焰光结晶",
+    "145": "奇想气泡", "146": "无忧凝珠",
+    "147": "虹染高级宝箱", "151": "虹染中级宝箱", "152": "虹染初级宝箱",
+    "167": "奇想玉琚", "168": "丹青玉魄",
+    "244": "奇想华灯", "245": "万相金铃", "259": "大喵宝箱",
+}
+KIND_NAMES = {
+    "star": "奇想星", "dewdrop": "灵感露珠", "chest": "设计图宝箱",
+    "box_high": "高级宝箱", "box_mid": "中级宝箱", "box_low": "初级宝箱",
+}
 DIFFICULTY_NAMES = {1: "低", 2: "中", 3: "高"}
-CACHE_SCHEMA = 3
+CACHE_SCHEMA = 4
 LIMIT = 32 * 1024 * 1024
 
 
@@ -200,6 +216,7 @@ class Point:
     title: str = ""
     parent_id: str = ""
     parent_title: str = ""
+    catalog_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -252,15 +269,18 @@ class PearPal:
             return (), message
         points, xs = data
         left, top, right, bottom = bounds
+        active_kinds = set(kinds)
+        if "box" in active_kinds:
+            active_kinds.update(("box_high", "box_mid", "box_low"))
         return tuple(p for p in points[bisect_left(xs, left):bisect_right(xs, right)]
-                     if top <= p.y <= bottom and p.kind in kinds), message
+                     if top <= p.y <= bottom and p.kind in active_kinds), message
 
     def tutorial(self, point: Point) -> Tutorial:
         with self.lock:
             cached = self.tutorials.get(point.id)
             if cached is not None and (not cached.error or cached.loading):
                 return cached
-            kind_name = KIND_NAMES.get(point.kind, "收集点")
+            kind_name = point.catalog_name or KIND_NAMES.get(point.kind, "收集点")
             title = point.title or point.parent_title or f"点位 #{point.id}"
             placeholder = Tutorial(point.id, point.kind, kind_name, title, loading=True)
             self.tutorials[point.id] = placeholder
@@ -283,7 +303,7 @@ class PearPal:
                     self.tutorials[point.id] = result
 
     def _fetch_tutorial(self, point: Point) -> Tutorial:
-        kind_name = KIND_NAMES.get(point.kind, "收集点")
+        kind_name = point.catalog_name or KIND_NAMES.get(point.kind, "收集点")
         base_title = point.title or point.parent_title or f"点位 #{point.id}"
         if point.entrance and point.parent_title and point.title and point.parent_title != point.title:
             base_title = f"{point.parent_title} · {point.title}"
@@ -418,9 +438,13 @@ class PearPal:
                     catalog = catalog[0] if catalog else None
                 if isinstance(catalog, dict):
                     catalog = catalog.get("id")
-                kind = ("star" if str(catalog) in STAR else
-                        "dewdrop" if str(catalog) in DEW else
-                        "chest" if str(catalog) in CHEST else None)
+                cat_str = str(catalog)
+                kind = ("star" if cat_str in STAR else
+                        "dewdrop" if cat_str in DEW else
+                        "chest" if cat_str in CHEST else
+                        "box_high" if cat_str in BOX_HIGH else
+                        "box_mid" if cat_str in BOX_MID else
+                        "box_low" if cat_str in BOX_LOW else None)
                 if kind is None or item.get("id") in (None, ""):
                     continue
                 item_world = str(item.get("world_id") or item.get("worldId") or world_id)
@@ -436,7 +460,8 @@ class PearPal:
                     point = Point(str(item["id"]), kind, map_id, x, y,
                                   bool(item.get("entrance")), title=title,
                                   parent_id=str(item.get("parent_id") or ""),
-                                  parent_title=str(item.get("parent_title") or ""))
+                                  parent_title=str(item.get("parent_title") or ""),
+                                  catalog_name=CATALOG_NAMES.get(cat_str, KIND_NAMES.get(kind, "")))
                     points[(world_id, point.id)] = point
         if not points:
             raise DataError("美鸭梨地图没有返回收集点。")
@@ -464,10 +489,14 @@ class PearPal:
                                           {"client_id": self.client_id, **account})).get("data")
                 if not isinstance(response, dict):
                     raise DataError("美鸭梨收集进度无效，请重新登录。")
+                box_awarded = id_set(response.get("box") or response.get("chest") or [])
                 awarded = {
                     "star": id_set(response.get("star")),
                     "dewdrop": id_set(response.get("dewdrop")),
-                    "chest": id_set(response.get("chest") or []),
+                    "chest": box_awarded,
+                    "box_high": box_awarded,
+                    "box_mid": box_awarded,
+                    "box_low": box_awarded,
                 }
                 if public is None:
                     public = self._public()
@@ -484,6 +513,7 @@ class PearPal:
                 write_json(self.directory / "status.json", {
                     "updated_at": now, "authenticated": True,
                     "star_collected": len(awarded["star"]), "dewdrop_collected": len(awarded["dewdrop"]),
+                    "box_collected": len(box_awarded),
                     "remaining": len(remaining), "error": "",
                 })
                 failures = 0

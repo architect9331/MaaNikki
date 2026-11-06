@@ -7,7 +7,8 @@ export const explorationFeatures = [
   { key: 'AssistFishing', label: '自动钓鱼', description: '手动抛竿后自动提竿、拉线和收线。普通钓鱼最多 3 竿，家园钓星最多 5 竿。', defaultValue: false },
   { key: 'AssistMapStar', label: '奇想星地图标记', description: '显示美鸭梨账号中尚未收集的奇想星。', defaultValue: false },
   { key: 'AssistMapDewdrop', label: '灵感露珠地图标记', description: '显示美鸭梨账号中尚未收集的灵感露珠。', defaultValue: false },
-  { key: 'AssistMapChest', label: '设计图宝箱地图标记', description: '显示大世界中的服装散件设计图宝箱与大喵斗篷宝箱。', defaultValue: false },
+  { key: 'AssistMapChest', label: '设计图宝箱地图标记', description: '显示美鸭梨账号中尚未开启的服装散件设计图宝箱与大喵斗篷宝箱。', defaultValue: false },
+  { key: 'AssistMapBox', label: '其他宝箱地图标记', description: '显示美鸭梨账号中尚未开启的初级、中级、高级、洞窟与虹染道具宝箱。', defaultValue: false },
 ] as const;
 
 export type ExplorationFeature = typeof explorationFeatures[number]['key'];
