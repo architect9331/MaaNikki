@@ -209,7 +209,7 @@ class FiveStarInventory(BlessingLocker):
         upgrade = UpgradeUI(self)
         if self.rt.hit(RESULT):
             if not self.rt.ui.enter_page(lambda: self.rt.key("skip", 0), upgrade.upgrade_ready,
-                                         source=RESULT, attempts=1):
+                                         source=RESULT, attempts=3):
                 return False
         if upgrade.upgrade_ready():
             return self.rt.ui.enter_page(lambda: self.rt.key(27, 0), READY,

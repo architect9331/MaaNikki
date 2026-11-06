@@ -20,8 +20,11 @@ class UpgradeUI:
 
     def upgrade_ready(self):
         # The fixed right-hand panel is present at every upgrade level. The
-        # result overlay can leave it visible, so require that overlay to close.
-        return self.rt.hit(UPGRADE) and not self.rt.hit(RESULT)
+        # result overlay dims it and shows the stat summary until dismissed.
+        with self.rt.observe():
+            frame = self.rt.frame()
+            return (frame is not None and int(frame[180:215, 948:1028].max()) >= 180
+                    and self.rt.hit(UPGRADE) and not self.rt.hit(RESULT))
 
     def frame(self, generation, page=UPGRADE):
         frame = self.rt.capture()
@@ -33,7 +36,7 @@ class UpgradeUI:
         if not result or not result.hit:
             raise IncompleteObservation("升级页面特征未确认")
         overlay = self.rt.recognize(RESULT, image=frame) if page == UPGRADE else None
-        if overlay and overlay.hit:
+        if (overlay and overlay.hit) or (page == UPGRADE and int(frame[180:215, 948:1028].max()) < 180):
             raise IncompleteObservation("升级结果弹层尚未关闭，未读取底下升级页")
         return frame
 
@@ -160,7 +163,7 @@ class UpgradeUI:
                 raise RuntimeError("未确认升级完成界面，已停止且不重试")
             self.owner.check_generation(generation)
             if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), self.upgrade_ready,
-                                         source=RESULT, attempts=1):
+                                         source=RESULT, attempts=3):
                 raise RuntimeError("未能关闭升级完成界面")
             fields, frame = self.read(generation)
             level, xp = self.integer(fields["level"]), self.experience(fields["xp"])

@@ -56,9 +56,20 @@
     "action": "DoNothing"
   },
   "MaaNikki_Pursuit_UpgradeResult": {
+    "recognition": "Or",
+    "any_of": ["MaaNikki_Pursuit_UpgradeResultPrompt", "MaaNikki_Pursuit_UpgradeResultStats"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Pursuit_UpgradeResultPrompt": {
     "recognition": "OCR",
     "roi": [1060, 670, 220, 45],
     "expected": "空白区域继续",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Pursuit_UpgradeResultStats": {
+    "recognition": "OCR",
+    "roi": [400, 210, 260, 140],
+    "expected": "评分属性提升",
     "action": "DoNothing"
   },
   "MaaNikki_Pursuit_DecomposeLayout": {
