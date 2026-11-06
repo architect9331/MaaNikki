@@ -54,9 +54,9 @@ def _fit_scale_residual(tiles, scale):
 class BigMapMatcher:
     """Track calibrated scale across the full zoom range and reacquire on zoom jumps."""
 
-    def __init__(self, locator):
+    def __init__(self, locator, initial_scale=None):
         self.locator = locator
-        self.scale = None
+        self.scale = initial_scale
         self.next_acquire = 0.0
         self.detector = cv2.SIFT_create(nfeatures=32000, contrastThreshold=0.015, edgeThreshold=15)
         self.ref_step = 2 if max(locator.spec.width, locator.spec.height) <= 4096 else 4
@@ -77,6 +77,11 @@ class BigMapMatcher:
             if center is not None:
                 self.scale = diagnostic.get("scale", candidate_scale)
                 return center, diagnostic
+            if hint is not None and abs(candidate_scale - self.locator.spec.bigmap_scale) <= 0.01:
+                center, diagnostic = bigmap_pose(self.locator, frame, None, scale=candidate_scale)
+                if center is not None:
+                    self.scale = diagnostic.get("scale", candidate_scale)
+                    return center, diagnostic
         now = time.monotonic()
         if self.scale is None and now < self.next_acquire:
             diagnostic.update(search="zoom_wait", accepted=False)
@@ -105,6 +110,7 @@ class BigMapMatcher:
         self.index.add([descriptors])
         self.index.train()
         return True
+
     def _acquire(self, frame, hint=None):
         if not self._ensure_index():
             return None, {"search": "zoom_features", "accepted": False, "reason": "reference_features"}
@@ -306,18 +312,146 @@ def _terrain_pose(locator, gray, hint, *, scale=None, radius=16, allow_scale_fit
     return center, diagnostic
 
 
-def minimap_hint(locator, frame):
-    """A global coarse candidate is only a hint for full-resolution confirmation."""
-    sample = minimap_sample(frame, locator.spec)
-    small = cv2.resize(sample, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
-    yy, xx = np.indices(small.shape, dtype=np.float32)
-    radius = np.hypot(xx - (small.shape[1] - 1) / 2, yy - (small.shape[0] - 1) / 2)
-    mask = ((radius <= min(small.shape) / 2 - 1) & (radius >= 3)).astype(np.uint8)
-    try:
-        x, y, score, peak = match_map(locator.coarse, small, mask,
-                                      peak_mask=locator.bigmap_mask, minimum_score=0.55)
-    except (NavigationError, cv2.error):
+
+class MinimapMatcher:
+    """Fast local and global minimap localization directly against the minimap reference."""
+
+    def __init__(self, locator):
+        self.locator = locator
+        self.spec = locator.spec
+        self.patch_size = round(self.spec.radius * 2 * self.spec.scale)
+        yy, xx = np.indices((self.patch_size, self.patch_size), dtype=np.float32)
+        center = (self.patch_size - 1) / 2.0
+        dist = np.hypot(xx - center, yy - center)
+        self.mask = ((dist <= self.patch_size / 2.0 - 2.0) & (dist >= 14.0)).astype(np.uint8)
+        self.edge_mask = ((dist <= self.patch_size / 2.0 - 3.0) & (dist >= 14.0)).astype(np.uint8)
+        self._ready = False
+        self._x0 = self._y0 = 0
+        self._crop_size = self._crop_offset = 0
+        self._roi_centered = self._small_mask = self._s_std = self._usable = None
+        self._ring_size = 0.0
+
+    def sample(self, frame):
+        return minimap_sample(frame, self.spec)
+
+    def _ensure_coarse(self):
+        if self._ready:
+            return
+        ys, xs = np.nonzero(self.locator.map)
+        self._x0 = int(xs.min() // 4) * 4
+        self._y0 = int(ys.min() // 4) * 4
+        x1 = min(self.locator.map.shape[1], int(xs.max() // 4 + 2) * 4)
+        y1 = min(self.locator.map.shape[0], int(ys.max() // 4 + 2) * 4)
+        crop = self.locator.map[self._y0:y1, self._x0:x1]
+        roi = cv2.resize(crop, (crop.shape[1] // 4, crop.shape[0] // 4),
+                         interpolation=cv2.INTER_AREA).astype(np.float32)
+        known = (roi > 0).astype(np.float32)
+        smooth_num = cv2.boxFilter(roi * known, cv2.CV_32F, (15, 15),
+                                   normalize=False, borderType=cv2.BORDER_REPLICATE)
+        smooth_den = np.maximum(cv2.boxFilter(known, cv2.CV_32F, (15, 15),
+                                              normalize=False, borderType=cv2.BORDER_REPLICATE), 1e-5)
+        filled = np.where(known > 0, roi, smooth_num / smooth_den)
+        self._roi_centered = filled - 128.0
+
+        self._crop_size = (self.patch_size // 4) * 4
+        self._crop_offset = (self.patch_size - self._crop_size) // 2
+        tsize = self._crop_size // 4
+        yy, xx = np.indices((tsize, tsize), dtype=np.float32)
+        tc = (tsize - 1) / 2.0
+        tr = np.hypot(xx - tc, yy - tc)
+        self._small_mask = ((tr <= tsize / 2.0 - 1.0) & (tr >= 3.2)).astype(np.float32)
+        self._ring_size = float(self._small_mask.sum())
+        cov = cv2.matchTemplate(known, self._small_mask, cv2.TM_CCORR)
+        s_sum = cv2.matchTemplate(self._roi_centered, self._small_mask, cv2.TM_CCORR)
+        s_sq = cv2.matchTemplate(self._roi_centered * self._roi_centered,
+                                 self._small_mask, cv2.TM_CCORR)
+        s_var = np.maximum(s_sq - (s_sum * s_sum) / self._ring_size, 0.0)
+        self._s_std = np.sqrt(s_var)
+        self._usable = (cov >= self._ring_size * 0.65) & (self._s_std > 4.0 * math.sqrt(self._ring_size))
+        self._ready = True
+
+    def locate_local(self, patch, hint, *, radius=80, floor=0.52):
+        hx, hy = hint
+        half = self.patch_size / 2.0
+        x0 = max(0, int(hx - half - radius))
+        y0 = max(0, int(hy - half - radius))
+        x1 = min(self.locator.map.shape[1], int(hx + half + radius))
+        y1 = min(self.locator.map.shape[0], int(hy + half + radius))
+        roi = self.locator.map[y0:y1, x0:x1]
+        if roi.shape[0] <= patch.shape[0] + 2 or roi.shape[1] <= patch.shape[1] + 2:
+            return None
+        best = None
+        try:
+            mx, my, score, peak = match_map(roi, patch, self.mask, minimum_score=0.40)
+            if all(math.isfinite(v) for v in (mx, my, score, peak)):
+                best = (x0 + mx, y0 + my, float(score), float(peak), "luma")
+        except (NavigationError, cv2.error):
+            pass
+        if best is None or best[2] < max(floor, 0.58) or best[3] < 0.015:
+            roi_edges = self.locator.map_edges[y0:y1, x0:x1]
+            patch_edges = cv2.Canny(cv2.GaussianBlur(patch, (3, 3), 0), 40, 120)
+            try:
+                ex, ey, escore, epeak = match_map(roi_edges, patch_edges, self.edge_mask,
+                                                  minimum_score=0.20)
+                if all(math.isfinite(v) for v in (ex, ey, escore, epeak)):
+                    edge_cand = (x0 + ex, y0 + ey, float(escore), float(epeak), "edge")
+                    if best is None or (escore >= 0.28 and epeak >= 0.015 and best[2] < floor):
+                        best = edge_cand
+            except (NavigationError, cv2.error):
+                pass
+        if best is None:
+            return None
+        x, y, score, peak, mode = best
+        if mode == "luma" and (score >= floor and peak >= 0.01):
+            return x, y, score, peak, mode
+        if mode == "edge" and (score >= 0.28 and peak >= 0.015):
+            return x, y, score, peak, mode
         return None
-    if all(math.isfinite(v) for v in (x, y, score, peak)) and score >= 0.55 and peak >= 0.01:
-        return x * 4, y * 4
-    return None
+
+    def locate_global(self, patch, *, floor=0.56, min_peak=0.018):
+        self._ensure_coarse()
+        off = self._crop_offset
+        end = off + self._crop_size
+        small = cv2.resize(patch[off:end, off:end],
+                           (self._crop_size // 4, self._crop_size // 4),
+                           interpolation=cv2.INTER_AREA).astype(np.float32)
+        t_vals = small[self._small_mask > 0]
+        t_std = float(np.std(t_vals))
+        if t_std < 3.5:
+            return None
+        t_centered = (small - float(np.mean(t_vals))) * self._small_mask
+        t_norm = float(np.sqrt(np.sum(t_centered * t_centered)))
+        if t_norm < 1e-4:
+            return None
+        ccorr = cv2.matchTemplate(self._roi_centered, t_centered, cv2.TM_CCORR)
+        denom = np.maximum(self._s_std * t_norm, 1e-5)
+        rates = np.where(self._usable, np.clip(ccorr / denom, -1.0, 1.0), -1.0)
+        dilated = cv2.dilate(rates, np.ones((9, 9), np.uint8))
+        peaks = (rates == dilated) & (rates >= 0.42)
+        py, px = np.nonzero(peaks)
+        if len(px) == 0:
+            return None
+        scores = rates[py, px]
+        order = np.argsort(scores)[::-1][:16]
+        best = None
+        half = self.patch_size / 2.0
+        for idx in order:
+            gx = self._x0 + int(px[idx]) * 4 + half
+            gy = self._y0 + int(py[idx]) * 4 + half
+            local = self.locate_local(patch, (gx, gy), radius=16, floor=floor)
+            if local is not None and local[4] == "luma" and local[3] >= min_peak:
+                if best is None or local[2] > best[2]:
+                    best = (*local[:4], "global_luma")
+                    if best[2] >= 0.72 and best[3] >= 0.04:
+                        break
+        return best
+
+
+def minimap_hint(locator, frame):
+    """Find a full-resolution verified global minimap candidate."""
+    matcher = getattr(locator, "_minimap_matcher", None)
+    if matcher is None:
+        matcher = MinimapMatcher(locator)
+        locator._minimap_matcher = matcher
+    found = matcher.locate_global(matcher.sample(frame))
+    return (found[0], found[1]) if found is not None else None

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import json
 import math
 import threading
 import time
@@ -14,11 +15,12 @@ from daily.runtime import RESOURCE
 from daily.settings import ROOT
 from daily.ui import fields
 from diagnostics import FailureEvidence
+from file_io import write_json
 from message_log import write_message
 from navigation.models import maps
 from navigation.vision import Locator
 from vision import prepared_template
-from .matching import BigMapMatcher, minimap_hint
+from .matching import BigMapMatcher, MinimapMatcher, minimap_hint
 from .pearpal import PearPal
 from .window import OverlayWindow
 
@@ -43,6 +45,43 @@ REGIONS = {
 # animation passes through the navigation scale (.47775) before enlarging a
 # further 1.0827x; that transient scale cannot track the final map viewport.
 BIGMAP_SCALES = {"miraland": .44125}
+STATE_FILE = ROOT / "cache/map-mask/state.json"
+
+
+def _load_state():
+    try:
+        raw = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return None, {}, {}, {}
+    if not isinstance(raw, dict):
+        return None, {}, {}, {}
+    map_id = raw.get("map_id") if raw.get("map_id") in REGIONS else None
+    player_seeds, bigmap_seeds, bigmap_scales = {}, {}, {}
+    for target, source in ((player_seeds, raw.get("player")), (bigmap_seeds, raw.get("bigmap"))):
+        if isinstance(source, dict):
+            for key, val in source.items():
+                if (key in REGIONS and isinstance(val, list) and len(val) == 2
+                        and all(isinstance(v, (int, float)) and math.isfinite(v) for v in val)):
+                    target[key] = (float(val[0]), float(val[1]))
+    scales = raw.get("scales")
+    if isinstance(scales, dict):
+        for key, val in scales.items():
+            if key in REGIONS and isinstance(val, (int, float)) and math.isfinite(val) and 0.1 < val < 20.0:
+                bigmap_scales[key] = float(val)
+    return map_id, player_seeds, bigmap_seeds, bigmap_scales
+
+
+def _save_state(map_id, player_seeds, bigmap_seeds, bigmap_scales):
+    try:
+        write_json(STATE_FILE, {
+            "map_id": map_id if map_id in REGIONS else None,
+            "player": {k: [round(v[0], 2), round(v[1], 2)] for k, v in player_seeds.items()},
+            "bigmap": {k: [round(v[0], 2), round(v[1], 2)] for k, v in bigmap_seeds.items()},
+            "scales": {k: round(v, 5) for k, v in bigmap_scales.items()},
+        })
+    except Exception:
+        pass
+
 
 
 class Gate:
@@ -88,13 +127,17 @@ class MapMask:
         self.last_region_reading = None
         self.region_has_text = False
         self.region_seen_at = 0.0
+        self.region_misses = 0
+        self.minimap_seen_at = 0.0
         self.lock = threading.Lock()
         self.wake = threading.Event()
         self.stop = threading.Event()
         self.latest = None
         self.mode = "hidden"
-        self.map_id = None
-        self.submitted_map = None
+        initial_map, player_seeds, bigmap_seeds, bigmap_scales = _load_state()
+        self._initial_state = (initial_map, player_seeds, bigmap_seeds, bigmap_scales)
+        self.map_id = initial_map
+        self.submitted_map = initial_map
         self.generation = 0
         self.next_submit = self.next_region = 0.0
         self.last_observed_at = 0.0
@@ -145,22 +188,30 @@ class MapMask:
         self.next_submit = now + .05
         mode = ("bigmap" if self.gates["map"].hit(frame) else
                 "minimap" if self.gates["world"].hit(frame) else "hidden")
+        if mode == "minimap":
+            self.minimap_seen_at = now
+        elif mode == "hidden" and self.mode == "minimap" and now - self.minimap_seen_at < .45:
+            return
         if mode == "bigmap":
             if self.mode != "bigmap":
-                self.map_id = None
                 self.next_region = 0
+                self.region_misses = 0
             if now >= self.next_region:
                 detected = self._read_region(frame)
                 if detected:
-                    self.map_id, self.region_seen_at = detected, now
-                elif self.region_has_text or (self.map_id is None and now-self.region_seen_at > 3):
+                    self.map_id, self.region_seen_at, self.region_misses = detected, now, 0
+                elif self.region_has_text:
+                    self.region_misses += 1
+                    if self.region_misses >= 2:
+                        self.map_id = None
+                elif self.map_id is None and now-self.region_seen_at > 3:
                     self.map_id = None
                 self.next_region = now + (2 if self.map_id else .8)
         maximum = mode == "bigmap" and self.gates["max"].hit(frame)
         with self.lock:
             # Measure continuity where screenshots arrive, not where the worker
             # consumes them: a global search can itself take over a second.
-            interrupted = self.last_observed_at and now-self.last_observed_at > 1
+            interrupted = self.last_observed_at and now-self.last_observed_at > 1.2
             if interrupted or mode != self.mode or self.submitted_map != self.map_id:
                 self.generation += 1
                 self.window.hide()
@@ -200,10 +251,10 @@ class MapMask:
         return selected
 
     def _run(self):
-        locator = None
-        bigmap_matcher = None
+        last_known_map, player_seeds, bigmap_seeds, bigmap_scales = self._initial_state
+        contexts = {}
         previous_mode = "hidden"
-        seed = pending = None
+        pending = None
         hidden_since = None
         failures = 0
         active_generation = None
@@ -212,7 +263,6 @@ class MapMask:
         pending_scale = None
         last_bigmap_at = 0.0
         next_recovery = 0.0
-        recovery_hint = None
         pending_at = 0.0
         next_diagnostic = 0.0
         last_hint = None
@@ -220,72 +270,70 @@ class MapMask:
         reference = None
         matching_failures = 0
         next_evidence = 0.0
-        while not self.stop.is_set():
-            self.wake.wait(.2)
-            self.wake.clear()
-            if self.stop.is_set():
-                break
-            with self.lock:
-                item, self.latest = self.latest, None
-            if item is None:
-                continue
-            frame, mode, map_id, maximum, captured, generation = item
-            if time.monotonic()-captured > .8:
-                continue
-            if active_generation != generation:
-                pending = recovery_hint = bigmap_hint = None
-                bigmap_confirmed = False
-                pending_scale = None
-                reference = None
-                matching_failures = 0
-                if locator:
-                    if locator.previous:
-                        seed = locator.previous.x, locator.previous.y
-                    locator.reset()
-                active_generation = generation
-            points, hint, circle = (), "", None
-            diagnostic = {}
-            match_started = time.monotonic()
-            try:
-                if mode == "hidden":
-                    if hidden_since is None:
-                        hidden_since = time.monotonic()
-                    if time.monotonic()-hidden_since > .8:
-                        pending = recovery_hint = None
-                        if locator:
-                            if locator.previous:
-                                seed = locator.previous.x, locator.previous.y
-                            locator.reset()
+        track_pos = None
+        track_map = None
+        track_at = 0.0
+        last_minimap_render = None
+        last_saved_at = 0.0
+        state_dirty = False
+
+        def get_context(mid):
+            ctx = contexts.get(mid)
+            if ctx is None:
+                spec = self.specs[mid]
+                loc = Locator(replace(spec, position_score_floor=.55,
+                                      bigmap_scale=BIGMAP_SCALES.get(mid, spec.bigmap_scale)))
+                bm = BigMapMatcher(loc, initial_scale=bigmap_scales.get(mid))
+                mm = MinimapMatcher(loc)
+                ctx = (loc, bm, mm)
+                contexts[mid] = ctx
+            return ctx
+
+        try:
+            while not self.stop.is_set():
+                self.wake.wait(.2)
+                self.wake.clear()
+                if self.stop.is_set():
+                    break
+                with self.lock:
+                    item, self.latest = self.latest, None
+                if item is None:
                     continue
-                if hidden_since is not None and time.monotonic()-hidden_since > .8:
-                    pending = recovery_hint = None
-                    if locator:
-                        if locator.previous:
-                            seed = locator.previous.x, locator.previous.y
-                        locator.reset()
-                hidden_since = None
-                if not self.data.login.is_file():
-                    hint = "请在设置的通用页面登录美鸭梨"
-                elif map_id not in REGIONS:
-                    hint = ("地图标记：正在识别地图区域…" if mode == "bigmap" else
-                            "请打开奇迹大陆或万相境大地图校准")
-                else:
-                    if locator is None or locator.spec.id != map_id:
-                        spec = self.specs[map_id]
-                        locator = Locator(replace(spec, position_score_floor=.55,
-                            bigmap_scale=BIGMAP_SCALES.get(map_id, spec.bigmap_scale)))
-                        bigmap_matcher = BigMapMatcher(locator)
-                        seed = pending = recovery_hint = None
-                        bigmap_hint = None
-                        bigmap_confirmed = False
-                        pending_scale = None
-                        failures, next_recovery = 0, 0.0
-                    if mode == "bigmap":
-                        if previous_mode != "bigmap":
-                            pending = None
-                            bigmap_hint = None
-                            bigmap_confirmed = False
-                        if bigmap_matcher is not None:
+                frame, mode, map_id, maximum, captured, generation = item
+                if time.monotonic()-captured > .8:
+                    continue
+                if active_generation != generation:
+                    pending = bigmap_hint = None
+                    bigmap_confirmed = False
+                    pending_scale = None
+                    reference = None
+                    matching_failures = 0
+                    active_generation = generation
+                points, hint, circle = (), "", None
+                diagnostic = {}
+                match_started = time.monotonic()
+                try:
+                    if mode == "hidden":
+                        if hidden_since is None:
+                            hidden_since = time.monotonic()
+                        if time.monotonic()-hidden_since > 1.8:
+                            pending = track_pos = last_minimap_render = None
+                        continue
+                    if hidden_since is not None and time.monotonic()-hidden_since > 1.8:
+                        pending = track_pos = last_minimap_render = None
+                    hidden_since = None
+                    if not self.data.login.is_file():
+                        hint = "请在设置的通用页面登录美鸭梨"
+                    elif mode == "bigmap":
+                        if map_id not in REGIONS:
+                            hint = "地图标记：正在识别地图区域…"
+                        else:
+                            last_known_map = map_id
+                            locator, bigmap_matcher, _ = get_context(map_id)
+                            if previous_mode != "bigmap":
+                                pending = None
+                                bigmap_hint = bigmap_seeds.get(map_id) or player_seeds.get(map_id)
+                                bigmap_confirmed = False
                             center, diagnostic = bigmap_matcher.locate(frame, bigmap_hint,
                                                                        maximum=maximum)
                             scale = diagnostic.get("scale")
@@ -296,6 +344,7 @@ class MapMask:
                             if center is None:
                                 hint = "地图标记：正在识别缩放与位置…"
                                 pending = None
+                                bigmap_hint = None
                                 matching_failures += 1
                                 if (matching_failures >= 3 and evidence.saved < 5
                                         and time.monotonic() >= next_evidence):
@@ -307,101 +356,150 @@ class MapMask:
                                         image=frame, details={"map": map_id, "pose": diagnostic})
                                     next_evidence = time.monotonic()+20
                                 if captured-last_bigmap_at > .8:
-                                    bigmap_hint = None
                                     bigmap_confirmed = False
-                            elif not bigmap_confirmed and (pending is None or
-                                                           math.dist(center, pending) > 4):
+                            elif (not bigmap_confirmed and diagnostic.get("agreed", 0) < 3
+                                  and (pending is None or math.dist(center, pending) > 4)):
                                 matching_failures = 0
                                 reference = frame, dict(diagnostic)
                                 pending = bigmap_hint = center
                                 pending_scale = scale
-                                # A terrain-confirmed candidate already suffices
-                                # as a hint. Minimap matching still independently
-                                # verifies the player if the map closes now.
-                                seed = center
+                                bigmap_seeds[map_id] = center
+                                state_dirty = True
                                 last_bigmap_at = captured
                                 hint = "地图标记：正在确认地图位置…"
                             else:
-                                # Each pose already passed independent terrain
-                                # checks. Only initial calibration needs another
-                                # frame; dragging must not restart that wait.
                                 bigmap_confirmed = True
                                 matching_failures = 0
                                 reference = frame, dict(diagnostic)
                                 pending = bigmap_hint = center
                                 pending_scale = scale
                                 last_bigmap_at = captured
-                                # Used only as a search hint. A minimap match must confirm the player.
-                                seed = center
+                                bigmap_seeds[map_id] = center
+                                if scale is not None:
+                                    bigmap_scales[map_id] = float(scale)
+                                if map_id not in player_seeds:
+                                    player_seeds[map_id] = center
+                                state_dirty = True
                                 points, hint = self._project(locator, *center, scale, (640, 360),
                                                              (0, 65, 1280, 650), None)
-                    elif seed is None:
-                        hint = "地图标记：请打开大地图，完成定位校准"
                     else:
+                        primary_map = (map_id if map_id in REGIONS else
+                                       (last_known_map if last_known_map in REGIONS else "miraland"))
                         if previous_mode != "minimap":
-                            locator.reset()
-                            pending = recovery_hint = None
-                            failures, next_recovery = 0, 0.0
-                        search_hint = ((locator.previous.x, locator.previous.y) if locator.previous
-                                       else recovery_hint or seed)
-                        pose = locator.locate(frame, hint=search_hint,
-                                              search_radius=75 if locator.previous else 500, commit=False)
-                        diagnostic = {"x": round(pose.x, 2), "y": round(pose.y, 2),
-                                      "score": round(pose.score, 3), "peak": round(pose.margin, 3),
-                                      "reliable": pose.position_reliable}
-                        if not pose.position_reliable or pose.score < .55 or pose.margin < .01:
-                            failures += 1
-                            hint = "地图标记：定位中，请稍候或重新打开大地图"
                             pending = None
-                            if failures >= 6 and locator.previous:
-                                seed = locator.previous.x, locator.previous.y
-                                locator.reset()
-                            # Panning the big map does not locate the player. A
-                            # throttled global hint recovers even far from its center.
-                            if failures >= 3 and time.monotonic() >= next_recovery:
-                                recovery_hint = minimap_hint(locator, frame)
-                                next_recovery = time.monotonic()+3
-                                diagnostic["recovery_hint"] = recovery_hint
-                        elif pending is None or (locator.previous is None and
-                                                 math.dist((pose.x, pose.y), pending) >
-                                                 max(2, 50*(captured-pending_at))):
-                            pending = pose.x, pose.y
-                            pending_at = captured
-                            hint = "地图标记：正在确认角色位置…"
+                            failures, next_recovery = 0, 0.0
+                        locator, _, minimap_matcher = get_context(primary_map)
+                        patch = minimap_matcher.sample(frame)
+                        matched = None
+                        active_track = (track_pos if (track_map == primary_map and
+                                                      captured - track_at <= 2.5) else None)
+                        local_seed = active_track or player_seeds.get(primary_map)
+                        if local_seed is not None:
+                            cand = minimap_matcher.locate_local(
+                                patch, local_seed,
+                                radius=85 if active_track else 200,
+                                floor=0.48 if active_track else 0.54)
+                            if cand is not None:
+                                if active_track is not None:
+                                    step = math.dist((cand[0], cand[1]), active_track)
+                                    step_limit = max(20.0, 68.0 * max(0.0, captured - track_at))
+                                    if step <= step_limit or (cand[2] >= 0.65 and cand[3] >= 0.02):
+                                        matched = (primary_map, *cand, True)
+                                else:
+                                    matched = (primary_map, *cand, True)
+                        if matched is None and bigmap_seeds.get(primary_map) is not None:
+                            bseed = bigmap_seeds[primary_map]
+                            if local_seed is None or math.dist(bseed, local_seed) > 60:
+                                cand = minimap_matcher.locate_local(patch, bseed, radius=260, floor=0.54)
+                                if cand is not None:
+                                    matched = (primary_map, *cand, True)
+                        if matched is None and time.monotonic() >= next_recovery:
+                            cand = minimap_matcher.locate_global(patch, floor=0.56, min_peak=0.018)
+                            if cand is not None:
+                                matched = (primary_map, *cand, cand[2] >= 0.66 and cand[3] >= 0.022)
+                            elif map_id not in REGIONS or failures >= 4:
+                                other_map = "wanxiang" if primary_map == "miraland" else "miraland"
+                                _, _, other_matcher = get_context(other_map)
+                                other_cand = other_matcher.locate_global(
+                                    other_matcher.sample(frame), floor=0.58, min_peak=0.020)
+                                if other_cand is not None:
+                                    matched = (other_map, *other_cand,
+                                               other_cand[2] >= 0.66 and other_cand[3] >= 0.022)
+                            next_recovery = time.monotonic() + (1.2 if map_id in REGIONS else 1.8)
+                        if matched is None:
+                            failures += 1
+                            pending = None
+                            diagnostic = {"search": "minimap_miss", "failures": failures, "reliable": False}
+                            if (last_minimap_render is not None and
+                                    last_minimap_render[0] == primary_map and
+                                    captured - last_minimap_render[3] <= 1.8):
+                                points, circle = last_minimap_render[1], last_minimap_render[2]
+                                diagnostic["held_ms"] = round((captured - last_minimap_render[3]) * 1000)
+                            else:
+                                track_pos = None
+                                hint = "地图标记：定位中，请稍候或重新打开大地图"
                         else:
-                            failures = 0
-                            locator.accept(pose)
-                            pending = pose.x, pose.y
-                            pending_at = captured
-                            seed = pending
-                            circle = (*locator.spec.center, locator.spec.radius)
-                            cx, cy, radius = circle
-                            points, hint = self._project(locator, pose.x, pose.y, locator.spec.scale,
-                                                         (cx, cy), (cx-radius, cy-radius, cx+radius, cy+radius),
-                                                         circle)
-            except Exception as error:
-                hint = "地图标记：定位暂不可用，请重新打开大地图"
-                if failures == 0:
-                    write_message(f"地图遮罩定位失败（{type(error).__name__}）：{error}", None)
-                failures += 1
-                pending = None
-            finally:
-                previous_mode = mode
-            diagnostic["elapsed_ms"] = round((time.monotonic()-match_started)*1000)
-            age = time.monotonic()-captured
-            diagnostic["frame_age_ms"] = round(age*1000)
-            # Slow global results initialize the next local search. Only a
-            # fresh confirming frame may put their markers on screen.
-            if age > .8:
-                diagnostic["display_deferred"] = True
-                points, hint, circle = (), "地图标记：正在用最新画面确认位置…", None
-            if hint != last_hint or time.monotonic() >= next_diagnostic:
-                write_message(f"地图标记：mode={mode}, map={map_id}, projected={len(points)}, "
-                              f"hint={hint}, pose={diagnostic}, window={self.window.diagnostic()}", None)
-                last_hint, next_diagnostic = hint, time.monotonic()+10
-            with self.lock:
-                if generation == self.generation and not self.stop.is_set():
-                    self.window.publish(points, hint, circle)
+                            found_map, mx, my, score, peak, mkind, immediate = matched
+                            diagnostic = {"x": round(mx, 2), "y": round(my, 2),
+                                          "score": round(score, 3), "peak": round(peak, 3),
+                                          "search": mkind, "reliable": True}
+                            if (not immediate and (pending is None or
+                                    math.dist((mx, my), pending) > max(6.0, 65.0 * max(0.0, captured - pending_at)))):
+                                pending = (mx, my)
+                                pending_at = captured
+                                hint = "地图标记：正在确认角色位置…"
+                            else:
+                                failures = 0
+                                pending = (mx, my)
+                                pending_at = captured
+                                track_pos = (mx, my)
+                                track_map = found_map
+                                track_at = captured
+                                player_seeds[found_map] = (mx, my)
+                                last_known_map = found_map
+                                state_dirty = True
+                                if map_id != found_map:
+                                    map_id = found_map
+                                    with self.lock:
+                                        self.map_id = self.submitted_map = found_map
+                                locator, _, _ = get_context(found_map)
+                                circle = (*locator.spec.center, locator.spec.radius)
+                                cx, cy, radius = circle
+                                points, hint = self._project(
+                                    locator, mx, my, locator.spec.scale,
+                                    (cx, cy), (cx-radius, cy-radius, cx+radius, cy+radius),
+                                    circle)
+                                last_minimap_render = (found_map, points, circle, captured)
+                except Exception as error:
+                    hint = "地图标记：定位暂不可用，请重新打开大地图"
+                    if failures == 0:
+                        write_message(f"地图遮罩定位失败（{type(error).__name__}）：{error}", None)
+                    failures += 1
+                    pending = None
+                finally:
+                    previous_mode = mode
+                now_mono = time.monotonic()
+                if state_dirty and now_mono - last_saved_at >= 3.0:
+                    _save_state(last_known_map, player_seeds, bigmap_seeds, bigmap_scales)
+                    last_saved_at = now_mono
+                    state_dirty = False
+                diagnostic["elapsed_ms"] = round((now_mono - match_started) * 1000)
+                age = now_mono - captured
+                diagnostic["frame_age_ms"] = round(age * 1000)
+                if age > (1.2 if mode == "bigmap" else .8):
+                    diagnostic["display_deferred"] = True
+                    points, hint, circle = (), "地图标记：正在用最新画面确认位置…", None
+                if hint != last_hint or now_mono >= next_diagnostic:
+                    write_message(f"地图标记：mode={mode}, map={map_id}, projected={len(points)}, "
+                                  f"hint={hint}, pose={diagnostic}, window={self.window.diagnostic()}", None)
+                    last_hint, next_diagnostic = hint, now_mono + 10
+                window_hint = "" if (mode == "minimap" and self.data.login.is_file()) else hint
+                with self.lock:
+                    if generation == self.generation and not self.stop.is_set():
+                        self.window.publish(points, window_hint, circle)
+        finally:
+            if state_dirty:
+                _save_state(last_known_map, player_seeds, bigmap_seeds, bigmap_scales)
 
     def _project(self, locator, x, y, scale, center, bounds, circle):
         cx, cy = center
