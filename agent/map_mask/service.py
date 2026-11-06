@@ -24,9 +24,19 @@ from .window import OverlayWindow
 
 
 REGIONS = {
-    "miraland": ("奇迹大陆", "纪念山地", "花愿镇", "微风绿野", "小石树田村", "石树田无人区",
-                 "祈愿树林", "巨木之森", "伊地峡谷", "埋骨地", "磐城"),
-    "wanxiang": ("万相境",),
+    "miraland": (
+        "奇迹大陆", "心愿原野", "伊赞之土", "纪念山地", "花愿镇", "微风绿野",
+        "小石树田村", "石树田无人区", "祈愿树林", "巨木之森", "伊地峡谷",
+        "埋骨地", "磐城", "蜗牛城", "蜗牛城壳顶", "菇菇聚落", "母菇林地",
+        "壳壳岛", "巨藤林地", "巨兽堡垒", "遗忘旧街", "叶子河", "陶罐村",
+        "巨人墓园", "安眠之林", "古木荫地", "巨森码头", "帕克亚湖心岛",
+        "巨兽观测点", "岩村遗址", "巨人哨所遗址", "蜗牛农场", "蜗牛城瀑布",
+    ),
+    "wanxiang": (
+        "万相境", "彩靥城", "彩靥城集市", "九华监", "彩靥城近郊", "迷花甸",
+        "悲木空鸣地", "深谷幽泉", "万乐之飨", "彩乐轩", "忘忧楼", "连廊水榭",
+        "九华阙",
+    ),
 }
 
 # Settled maximum zoom measured from captured map terrain. Miraland's opening
@@ -94,16 +104,19 @@ class MapMask:
                           and not capture_method & ~background)
         # An independent overlay is outside a FramePool/PrintWindow capture of
         # the game. Keep it visible to desktop streaming/capture in this case.
-        self.window = OverlayWindow(hwnd, exclude_from_capture=not window_capture)
         self.data = None
+        self.window = None
         self.thread = threading.Thread(target=self._run, name="map-mask-matching", daemon=True)
         try:
             self.data = PearPal(ROOT)
+            self.window = OverlayWindow(hwnd, exclude_from_capture=not window_capture,
+                                        tutorial_provider=self.data.tutorial)
             self.thread.start()
         except Exception:
             if self.data:
                 self.data.close()
-            self.window.close()
+            if self.window:
+                self.window.close()
             raise
 
     def close(self):
@@ -140,7 +153,7 @@ class MapMask:
                 detected = self._read_region(frame)
                 if detected:
                     self.map_id, self.region_seen_at = detected, now
-                elif self.region_has_text or now-self.region_seen_at > 3:
+                elif self.region_has_text or (self.map_id is None and now-self.region_seen_at > 3):
                     self.map_id = None
                 self.next_region = now + (2 if self.map_id else .8)
         maximum = mode == "bigmap" and self.gates["max"].hit(frame)
@@ -276,9 +289,9 @@ class MapMask:
                             center, diagnostic = bigmap_matcher.locate(frame, bigmap_hint,
                                                                        maximum=maximum)
                             scale = diagnostic.get("scale")
-                            if (center is not None and pending_scale is not None and
+                            if (center is not None and not bigmap_confirmed and
+                                    pending_scale is not None and
                                     abs(scale/pending_scale-1) > .005):
-                                bigmap_confirmed = False
                                 pending = None
                             if center is None:
                                 hint = "地图标记：正在识别缩放与位置…"
@@ -397,10 +410,16 @@ class MapMask:
             (x+(left-cx)*scale, y+(top-cy)*scale, x+(right-cx)*scale, y+(bottom-cy)*scale),
             self.kinds)
         grouped = {}
+        merge_r = 0.0 if circle else 8.0
         for point in candidates:
             sx, sy = cx+(point.x-x)/scale, cy+(point.y-y)/scale
             if circle and math.hypot(sx-cx, sy-cy) > circle[2]-6:
                 continue
             key = (round(sx), round(sy), point.kind)
-            grouped[key] = grouped.get(key, 0) + 1
-        return tuple((*key, count) for key, count in grouped.items()), hint
+            if merge_r and key not in grouped:
+                near = next((k for k in grouped
+                             if k[2] == point.kind and math.hypot(sx-k[0], sy-k[1]) <= merge_r), None)
+                if near is not None:
+                    key = near
+            grouped.setdefault(key, []).append(point)
+        return tuple((*key, len(items), tuple(items)) for key, items in grouped.items()), hint

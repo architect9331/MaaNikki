@@ -1,4 +1,4 @@
-"""Read-only official map data and account collection state.
+"""Read-only official map data, account collection state, and point tutorials.
 
 Endpoint/coordinate conventions and raw Snappy decoding adapted from Whimbox
 2a75df8 (GPL-3.0); see THIRD_PARTY_NOTICES.md.
@@ -8,7 +8,8 @@ from __future__ import annotations
 from bisect import bisect_left, bisect_right
 import ctypes
 from ctypes import wintypes
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -18,17 +19,28 @@ import time
 import urllib.parse
 import urllib.request
 
+import cv2
+import numpy as np
+
 from file_io import write_json
 from message_log import write_message
 
 
 API = "https://myl-api.nuanpaper.com"
 PAGE = "https://myl.nuanpaper.com/tools/map"
+IMAGE_HOSTS = {
+    "material.papegames.com",
+    "webstatic.papegames.com",
+    "assets.papegames.com",
+    "myl.nuanpaper.com",
+}
 STAR = {"11", "132", "145", "167", "244"}
 DEW = {"12", "133", "146", "168", "245"}
 CHEST = {"16", "259"}
 WORLDS = {"1": "miraland", "4020034": "wanxiang"}
-CACHE_SCHEMA = 2
+KIND_NAMES = {"star": "奇想星", "dewdrop": "灵感露珠", "chest": "设计图宝箱"}
+DIFFICULTY_NAMES = {1: "低", 2: "中", 3: "高"}
+CACHE_SCHEMA = 3
 LIMIT = 32 * 1024 * 1024
 
 
@@ -68,12 +80,12 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise DataError("美鸭梨接口地址发生变化，请稍后重试。")
 
 
-def request(url, payload=None):
+def request(url, payload=None, *, accept="application/json"):
     body = None if payload is None else json.dumps(payload, separators=(",", ":")).encode()
-    req = urllib.request.Request(url, data=body, headers={
-        "Content-Type": "application/json", "User-Agent": "MaaNikki-Map/1.0",
-        "Accept": "application/json",
-    })
+    headers = {"User-Agent": "MaaNikki-Map/1.0", "Accept": accept}
+    if body is not None:
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=body, headers=headers)
     try:
         with urllib.request.build_opener(NoRedirect).open(req, timeout=15) as response:
             raw = response.read(LIMIT + 1)
@@ -152,6 +164,31 @@ def id_set(value):
     return frozenset(str(v) for v in value)
 
 
+def localized_text(value):
+    for _ in range(2):
+        if isinstance(value, str) and value.strip().startswith(("\"", "[", "{")):
+            try:
+                value = json.loads(value)
+            except ValueError:
+                break
+    if isinstance(value, list):
+        for entry in value:
+            if isinstance(entry, dict) and str(entry.get("lang", "")).lower() == "zh-cn":
+                return str(entry.get("text") or "").strip()
+        for entry in value:
+            if isinstance(entry, dict) and entry.get("text"):
+                return str(entry["text"]).strip()
+        return ""
+    return str(value).strip() if isinstance(value, str) else ""
+
+
+def format_timestamp(value):
+    match = re.match(r"^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}:\d{2}:\d{2})", str(value or "").strip())
+    if not match:
+        return ""
+    return f"{match[1]}年{match[2]}月{match[3]}日 {match[4]}"
+
+
 @dataclass(frozen=True)
 class Point:
     id: str
@@ -160,24 +197,51 @@ class Point:
     x: float
     y: float
     entrance: bool = False
+    title: str = ""
+    parent_id: str = ""
+    parent_title: str = ""
+
+
+@dataclass(frozen=True)
+class Tutorial:
+    point_id: str
+    kind: str
+    kind_name: str
+    title: str
+    difficulty: str = ""
+    content: str = ""
+    contributor: str = ""
+    updated_at: str = ""
+    image: object = None
+    loading: bool = False
+    error: str = ""
 
 
 class PearPal:
-    """One network worker, immutable spatial index, no network work on capture."""
+    """Background network workers, immutable spatial index, non-blocking tutorial cache."""
     def __init__(self, root: Path):
         self.directory = root / "config/map-mask"
         self.login = self.directory / "login.dat"
         self.cache = root / "cache/map-mask/public.json"
+        self.tutorial_dir = root / "cache/map-mask/tutorials"
         self.lock = threading.Lock()
         self.stop = threading.Event()
+        self.tutorial_wake = threading.Event()
         self.points = {}
+        self.tutorials = {}
+        self.tutorial_queue = []
+        self.client_id = 1106
         self.ready = False
         self.message = "正在读取美鸭梨收集进度…"
         self.thread = threading.Thread(target=self._run, name="pearpal-map-data", daemon=True)
+        self.tutorial_thread = threading.Thread(
+            target=self._tutorial_worker, name="pearpal-tutorials", daemon=True)
         self.thread.start()
+        self.tutorial_thread.start()
 
     def close(self):
         self.stop.set()
+        self.tutorial_wake.set()
 
     def visible(self, map_id, bounds, kinds):
         with self.lock:
@@ -190,6 +254,109 @@ class PearPal:
         left, top, right, bottom = bounds
         return tuple(p for p in points[bisect_left(xs, left):bisect_right(xs, right)]
                      if top <= p.y <= bottom and p.kind in kinds), message
+
+    def tutorial(self, point: Point) -> Tutorial:
+        with self.lock:
+            cached = self.tutorials.get(point.id)
+            if cached is not None and (not cached.error or cached.loading):
+                return cached
+            kind_name = KIND_NAMES.get(point.kind, "收集点")
+            title = point.title or point.parent_title or f"点位 #{point.id}"
+            placeholder = Tutorial(point.id, point.kind, kind_name, title, loading=True)
+            self.tutorials[point.id] = placeholder
+            if all(p.id != point.id for p in self.tutorial_queue):
+                self.tutorial_queue.append(point)
+        self.tutorial_wake.set()
+        return placeholder
+
+    def _tutorial_worker(self):
+        while not self.stop.is_set():
+            self.tutorial_wake.wait(0.25)
+            self.tutorial_wake.clear()
+            while not self.stop.is_set():
+                with self.lock:
+                    point = self.tutorial_queue.pop(0) if self.tutorial_queue else None
+                if point is None:
+                    break
+                result = self._fetch_tutorial(point)
+                with self.lock:
+                    self.tutorials[point.id] = result
+
+    def _fetch_tutorial(self, point: Point) -> Tutorial:
+        kind_name = KIND_NAMES.get(point.kind, "收集点")
+        base_title = point.title or point.parent_title or f"点位 #{point.id}"
+        if point.entrance and point.parent_title and point.title and point.parent_title != point.title:
+            base_title = f"{point.parent_title} · {point.title}"
+        try:
+            query_id = int(point.id) if point.id.isdigit() else point.id
+            raw = decode(request(API + "/v1/strategy/map/spawner/info",
+                                 {"client_id": self.client_id, "id": query_id}))
+            info = raw.get("data") if isinstance(raw.get("data"), dict) else raw
+            post = info.get("creator_post") if isinstance(info.get("creator_post"), dict) else None
+            if not post and point.parent_id and point.parent_id != point.id:
+                parent_q = int(point.parent_id) if point.parent_id.isdigit() else point.parent_id
+                p_raw = decode(request(API + "/v1/strategy/map/spawner/info",
+                                       {"client_id": self.client_id, "id": parent_q}))
+                p_info = p_raw.get("data") if isinstance(p_raw.get("data"), dict) else p_raw
+                if isinstance(p_info.get("creator_post"), dict) or p_info.get("icon"):
+                    info = p_info
+                    post = p_info.get("creator_post") if isinstance(p_info.get("creator_post"), dict) else None
+            desc_text = localized_text(info.get("description"))
+            title = point.title or desc_text or point.parent_title or f"点位 #{point.id}"
+            if point.entrance and point.parent_title and point.parent_title not in title:
+                title = f"{point.parent_title} · {title}"
+            difficulty = DIFFICULTY_NAMES.get((post or {}).get("difficulty"), "")
+            content = str((post or {}).get("content") or "").strip()
+            if not content and desc_text and desc_text != point.title:
+                content = desc_text
+            if not content:
+                content = "洞窟/副本内部收集点位" if point.entrance else "暂无点位文字说明"
+            contributor = str((post or {}).get("role_name") or "").strip()
+            updated_at = format_timestamp((post or {}).get("submitted_at") or info.get("updated_at") or "")
+            image_url = ""
+            images = (post or {}).get("images")
+            if isinstance(images, list) and images and isinstance(images[0], dict):
+                image_url = str(images[0].get("origin") or "").strip()
+            if not image_url:
+                icon_url = localized_text(info.get("icon"))
+                if icon_url.startswith("https://"):
+                    image_url = icon_url
+            image = self._load_image(image_url) if image_url else None
+            return Tutorial(point.id, point.kind, kind_name, title, difficulty=difficulty,
+                            content=content, contributor=contributor, updated_at=updated_at,
+                            image=image, loading=False)
+        except Exception as error:
+            msg = str(error) if isinstance(error, DataError) else "教程加载失败，请稍后重试"
+            return Tutorial(point.id, point.kind, kind_name, base_title,
+                            content=msg, loading=False, error=msg)
+    def _load_image(self, url: str):
+        parsed = urllib.parse.urlsplit(url)
+        if parsed.scheme != "https" or parsed.hostname not in IMAGE_HOSTS:
+            return None
+        digest = hashlib.sha1(url.encode("utf-8")).hexdigest()
+        cache_path = self.tutorial_dir / f"{digest}.img"
+        raw = None
+        if cache_path.is_file():
+            try:
+                raw = cache_path.read_bytes()
+            except OSError:
+                raw = None
+        if not raw:
+            try:
+                raw = request(url, accept="image/*,*/*;q=0.8")
+                self.tutorial_dir.mkdir(parents=True, exist_ok=True)
+                cache_path.write_bytes(raw)
+            except Exception:
+                return None
+        array = np.frombuffer(raw, dtype=np.uint8)
+        decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
+        if decoded is None or decoded.size == 0:
+            return None
+        h, w = decoded.shape[:2]
+        if w > 560:
+            scale = 560.0 / w
+            decoded = cv2.resize(decoded, (560, max(1, round(h * scale))), interpolation=cv2.INTER_AREA)
+        return decoded
 
     def _public(self):
         if self.cache.is_file() and time.time() - self.cache.stat().st_mtime < 86400:
@@ -216,6 +383,7 @@ class PearPal:
                 break
         if client_id is None:
             raise DataError("美鸭梨地图接口配置读取失败。")
+        self.client_id = client_id
 
         def post(path, **values):
             if self.stop.is_set():
@@ -236,8 +404,11 @@ class PearPal:
             for stage, children in stages.items():
                 parent = parents.get(str(stage))
                 if parent and isinstance(children, list):
+                    p_id = str(parent.get("id") or "")
+                    p_title = localized_text(parent.get("description"))
                     expanded.extend({**parent, **child, "x": parent.get("x"), "y": parent.get("y"),
-                                     "entrance": True} for child in children if isinstance(child, dict))
+                                     "entrance": True, "parent_id": p_id, "parent_title": p_title}
+                                    for child in children if isinstance(child, dict))
             for item in expanded:
                 catalog = (item.get("catalog_id") or item.get("catalogId") or item.get("catalog")
                            or item.get("category"))
@@ -261,15 +432,18 @@ class PearPal:
                 except (KeyError, ValueError, TypeError):
                     continue
                 if math.isfinite(x) and math.isfinite(y):
-                    point = Point(str(item["id"]), kind, map_id, x, y, bool(item.get("entrance")))
+                    title = localized_text(item.get("description"))
+                    point = Point(str(item["id"]), kind, map_id, x, y,
+                                  bool(item.get("entrance")), title=title,
+                                  parent_id=str(item.get("parent_id") or ""),
+                                  parent_title=str(item.get("parent_title") or ""))
                     points[(world_id, point.id)] = point
         if not points:
             raise DataError("美鸭梨地图没有返回收集点。")
-        from dataclasses import asdict
         if not self.stop.is_set():
-            write_json(self.cache, {"schema_version": CACHE_SCHEMA, "points": [asdict(p) for p in points.values()]})
+            write_json(self.cache, {"schema_version": CACHE_SCHEMA,
+                                    "points": [asdict(p) for p in points.values()]})
         return list(points.values())
-
     def _run(self):
         public, revision, failures = None, None, 0
         while not self.stop.is_set():
@@ -287,7 +461,7 @@ class PearPal:
                     revision = current
                 account = credentials(self.login)
                 response = decode(request(API + "/v1/strategy/map/user/info",
-                                          {"client_id": 1106, **account})).get("data")
+                                          {"client_id": self.client_id, **account})).get("data")
                 if not isinstance(response, dict):
                     raise DataError("美鸭梨收集进度无效，请重新登录。")
                 awarded = {
