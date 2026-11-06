@@ -28,8 +28,8 @@
     "custom_recognition_param": {
       "roi": [1165, 15, 80, 55],
       "template": "nikki/home/star_collect_ready.png",
-      "gray_limit": [210, 255],
-      "threshold": 0.88
+      "gray_limit": [180, 255],
+      "threshold": 0.82
     },
     "action": "DoNothing"
   },
