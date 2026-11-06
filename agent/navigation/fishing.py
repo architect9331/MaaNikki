@@ -236,11 +236,15 @@ class Fishing:
         while not self.rt.stopped and time.monotonic() < deadline:
             self.wait(.5)
             with self.rt.observe(fresh=True):
-                skip = (self.ui.asset("IconSkip", threshold=.8, gray=(210, 255))
-                        or self.rt.hit("MaaNikki_Energy_SkipReward"))
+                frame = self.rt.frame()
+                skip = (self.ui.asset("IconSkip", image=frame, threshold=.8, gray=(210, 255))
+                        or self.rt.hit("MaaNikki_Energy_SkipReward")
+                        or self.state(image=frame) == FishingState.SKIP)
+                returned = not skip and self.rt.hit("MaaNikki_MainDetected")
             if skip:
                 self.press("interact")
-            if self.rt.hit("MaaNikki_MainDetected"):
+                continue
+            if returned:
                 self.record_material()
                 return
         if not self.rt.stopped:
@@ -299,12 +303,26 @@ class Fishing:
                         self.switch_fishing()
                         deadline = time.monotonic()+5
                         continue
+                if self.passive and self.last_known_state is None:
+                    self.actions.event({"type": self.event_prefix+"_prompts_ended",
+                                        "main": bool(self.rt.hit("MaaNikki_MainDetected")),
+                                        "last_state": None})
+                    return FishingResult.NO_FISH
                 self.fail_state(f"已触发{self.label}，但未识别到{self.label}操作提示。",
                                 leave_home=self.kind == "home" and self.last_known_state is None)
             pending = self.state()
             if pending != FishingState.UNKNOWN:
                 break
             if not started:
+                if self.passive and (
+                    not self.rt.hit("MaaNikki_Home_StarCollectReady")
+                    if self.kind == "home"
+                    else not self.ui.page_matches("MaaNikki_MainDetected")
+                ):
+                    self.actions.event({"type": self.event_prefix+"_prompts_ended",
+                                        "main": bool(self.rt.hit("MaaNikki_MainDetected")),
+                                        "last_state": None})
+                    return FishingResult.NO_FISH
                 started = True
                 self.switch_fishing()
             else:
@@ -424,9 +442,10 @@ class Fishing:
             if result in {FishingResult.NO_FISH, FishingResult.WRONG_POSITION}:
                 break
         if self.kind == "home":
-            self.wait(2)
-            self.rt.log("结束采星能力。", detail=True)
-            self.exit_home()
+            if not self.passive:
+                self.wait(2)
+                self.rt.log("结束采星能力。", detail=True)
+                self.exit_home()
             self.rt.log(f"钓星完成：本次钓获 {self.materials.get('陨星', 0)-caught_before} 次。")
         return True
 
