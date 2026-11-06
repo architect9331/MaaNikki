@@ -492,7 +492,10 @@ class GameUI:
             raise ValueError("页面稳定检查必须指定局部区域。")
         deadline = time.monotonic()+seconds
         confirmations = 0
-        while not self.rt.stopped and time.monotonic() < deadline:
+        # If the first confirmation check started before deadline and matched,
+        # allow one immediate follow-up capture even when that OCR call plus the
+        # inter-frame pause crossed a tight deadline (such as 1.2s world prompts).
+        while not self.rt.stopped and (time.monotonic() < deadline or confirmations == 1):
             # Two confirmations must come from separate captures, even inside
             # a caller's observation scope.
             with self.rt.observe(fresh=True):
@@ -514,13 +517,15 @@ class GameUI:
                 confirmations += 1
                 if confirmations >= 2:
                     if stable:
-                        remaining = deadline-time.monotonic()
-                        if remaining <= 0 or not self.stable(.98, seconds=remaining, roi=roi):
+                        remaining = max(.6, deadline-time.monotonic())
+                        if not self.stable(.98, seconds=remaining, roi=roi):
                             return False
                         return not self.rt.stopped and self.page_matches(page)
                     return True
             else:
                 confirmations = 0
+            if time.monotonic() >= deadline and confirmations == 0:
+                break
             if not self.rt.pause(.25):
                 return False
         return False
