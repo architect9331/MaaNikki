@@ -405,9 +405,15 @@ class Teleporter:
             return text in ("传送", "追踪")
         def find_entry(click=False):
             self.check()
-            return self.rt.ui.find(roi=panel, text=checkpoint["name"], exact=True,
-                                   color=([0, 0, 220], [180, 15, 255]),
-                                   scroll=False, click=click)
+            # Strict white filtering isolates list rows from bright map art, but
+            # semi-transparent row backgrounds can erode thin leading strokes
+            # (e.g. "星实之树" -> "4实之树"). Fall back to raw exact OCR, matching
+            # selection_visible() on the same candidate panel.
+            return (self.rt.ui.find(roi=panel, text=checkpoint["name"], exact=True,
+                                    color=([0, 0, 220], [180, 15, 255]),
+                                    scroll=False, click=click)
+                    or self.rt.ui.find(roi=panel, text=checkpoint["name"], exact=True,
+                                       scroll=False, click=click))
         def select_entry():
             clicked = bool(find_entry(click=True))
             self.event({"type": "teleport_list_selected", "name": checkpoint["name"], "clicked": clicked})
