@@ -226,6 +226,7 @@
       19
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_buttonabilityconfig": {
@@ -238,6 +239,7 @@
       32
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_buttonabilitysave": {
@@ -250,6 +252,7 @@
       40
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_buttondungeonquitok": {
@@ -262,6 +265,7 @@
       27
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_buttonjihuasort": {
@@ -274,6 +278,7 @@
       27
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_iconabilityfeature": {
@@ -286,6 +291,7 @@
       35
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_iconabilityinsect": {
@@ -298,6 +304,7 @@
       720
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_iconclickskip": {
@@ -310,6 +317,7 @@
       23
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_icondungeonfeature": {
@@ -322,6 +330,7 @@
       17
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_iconmaterialtypeinsect": {
@@ -334,6 +343,7 @@
       720
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_iconmovementwalk": {
@@ -346,6 +356,7 @@
       40
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_iconsetdownfeature": {
@@ -358,6 +369,7 @@
       720
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_iconskip": {
@@ -370,6 +382,7 @@
       20
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_iconuiloading": {
@@ -382,6 +395,7 @@
       67
     ],
     "threshold": 0.75,
+    "method": 3,
     "action": "DoNothing"
   },
   "MaaNikki_Asset_t_icon_int_nature_flower_05": {

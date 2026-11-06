@@ -11,6 +11,9 @@ from .models import NavigationError
 WHITE = ([0, 0, 230], [180, 60, 255])
 # List thumbnails are smaller than wheel icons, in both list layouts.
 LIST_ICON_SCALE = 5/8
+# Keep wheel scrolling and end-of-list comparison inside the curved list body
+# rather than the bottom-right corner above the outfit-switch button.
+LIST_SCROLL_ROI = [980, 150, 160, 320]
 SLOTS = ((1063, 257), (1205, 433), (1199, 640), (1048, 829),
          (641, 829), (498, 640), (485, 433), (610, 257))
 
@@ -76,19 +79,27 @@ class Ability:
                     return bool(self.ui.asset("IconAbilityFeature", threshold=.99,
                                              method=cv2.TM_CCORR_NORMED)
                                 and self.plan_selected())
-                # Save is also visible before choosing a slot. It cannot be
-                # used as an entrance destination that skips the slot click.
-                if (not self.ui.wait_page(permitted_plan) or not self.rt.action(
-                        "Click", target=[round(x*2/3), round(y*2/3)])
-                        or not self.ui.wait_page(permitted_plan)):
+                def ability_list_open():
+                    return bool(permitted_plan()
+                                and self.ui.asset("ButtonAbilityChangeList",
+                                                  method=cv2.TM_CCORR_NORMED))
+                list_roi = self.ui.roi("AreaAbilityChange")
+                # Save and the plan header are already visible before choosing a
+                # slot. Require the right-hand ability list toggle and a settled
+                # panel before searching or scrolling the list.
+                if (not self.ui.enter_page(
+                        lambda: self.rt.action("Click", target=[round(x*2/3), round(y*2/3)]),
+                        ability_list_open, source=permitted_plan)
+                        or not self.ui.wait_page(ability_list_open, roi=list_roi, stable=True)):
                     return False
                 self.actions.event({"type": "ability_slot_requested", "ability": self.ability_id,
                                     "plan": plan, "slot": slot})
                 # The text is a category heading in the grouped list. Choose
                 # the actual icon at the list thumbnail size in either layout.
                 # Do not infer the layout from OCR word counts or a swap button.
-                if not self.ui.find(roi=self.ui.roi("AreaAbilityChange"), asset=self.icon,
-                                    scale=LIST_ICON_SCALE, color=WHITE, threshold=.8):
+                if not self.ui.find(roi=list_roi, scroll_roi=LIST_SCROLL_ROI, asset=self.icon,
+                                    scale=LIST_ICON_SCALE, color=WHITE, threshold=.8,
+                                    method=cv2.TM_CCORR_NORMED):
                     raise NavigationError(f"能力列表中未能识别{self.label}图标，本项停止。")
                 def configured():
                     return permitted_plan() and self.find_slot() == slot
