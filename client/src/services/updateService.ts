@@ -1342,12 +1342,29 @@ export function savePendingUpdateInfo(info: PendingUpdateInfo): void {
  * 读取待安装更新信息（不自动清除，需要手动调用 clearPendingUpdateInfo）
  * 如果更新包文件已被删除，会自动清除待安装信息并返回 null
  */
-export async function getPendingUpdateInfo(): Promise<PendingUpdateInfo | null> {
+export async function getPendingUpdateInfo(
+  currentVersion?: string,
+): Promise<PendingUpdateInfo | null> {
   try {
     const data = localStorage.getItem(PENDING_UPDATE_STORAGE_KEY);
     if (!data) return null;
 
     const info = JSON.parse(data) as PendingUpdateInfo;
+
+    if (
+      currentVersion &&
+      info.versionName &&
+      compareVersions(info.versionName, currentVersion) <= 0
+    ) {
+      log.info(
+        `当前版本 (${currentVersion}) 已不低于待安装版本 (${info.versionName})，清除待安装更新信息`,
+      );
+      localStorage.removeItem(PENDING_UPDATE_STORAGE_KEY);
+      if (info.downloadSavePath && (await exists(info.downloadSavePath))) {
+        await moveToOldFolder(info.downloadSavePath);
+      }
+      return null;
+    }
 
     // 检查更新包文件是否仍然存在
     if (info.downloadSavePath && !(await exists(info.downloadSavePath))) {
