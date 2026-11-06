@@ -266,6 +266,9 @@ class LauncherRuntime:
         self.windows, self.hwnd = windows, hwnd
         self.image = None
         self.resource = Resource()
+        # DirectML OCR can initialize in a corrupted state during launcher startup and
+        # emit "_ _" for every detected box; CPU inference is fast and deterministic.
+        self.resource.use_cpu()
         if not self.resource.post_bundle(ROOT / "resource").wait().succeeded:
             raise RuntimeError("无法加载启动器识别所需的项目资源。")
         self.controller = Win32Controller(
@@ -414,6 +417,7 @@ def prepare_game(timeout, record):
                 raise RuntimeError("未能自动将无限暖暖切到前台，请检查窗口状态和权限后重试。")
         with startup_step(record, "load_game_resource"):
             resource = Resource()
+            resource.use_cpu()
             if not resource.post_bundle(ROOT / "resource").wait().succeeded:
                 raise RuntimeError("无法加载进入游戏所需的资源。")
             with local_registration(resource) as handlers:
