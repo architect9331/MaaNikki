@@ -268,7 +268,7 @@ class Gameplay:
         if self.ui.find(roi=self.REALM_LEVEL_ROI, node=node, scroll_roi=self.REALM_SCROLL_ROI):
             return True
         if not self.rt.stopped:
-            self.rt.log("未找到所选幻境关卡。")
+            self.rt.log("未找到所选幻境关卡，请确认已在游戏中解锁该试炼。")
             self.realm_level_diagnostic(kind, node)
         return False
 

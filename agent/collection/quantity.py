@@ -46,18 +46,22 @@ def stack_badge(frame, box):
         # Bright artwork can join the tab's component and widen its outline.
         # Trace all non-backing pixels: a dark fragment may reach the left/top
         # only through pale or coloured artwork, which a dark-only mask breaks.
-        # Digits do not reach these sides (they can touch the bottom edge).
+        # Digits do not reach these sides or the right card border (they can
+        # touch the bottom edge).
         low, high = patch.min(axis=2), patch.max(axis=2)
         backing = (low > 215) & (high.astype(np.int16) - low < 40)
         _, marks = cv2.connectedComponents((~backing).astype(np.uint8), connectivity=8)
-        artwork = np.setdiff1d(np.concatenate((marks[0], marks[:, 0])), [0])
+        artwork = np.setdiff1d(np.concatenate((marks[0], marks[:, 0], marks[:, -1])), [0])
         patch[np.isin(marks, artwork)] = 255
         ink = (patch.max(axis=2) < 195) & (outline > 0)
         if np.count_nonzero(ink) < 8:
             continue
         ink_x = np.where(ink)[1]
+        cols = np.where(np.count_nonzero(ink, axis=0) >= 2)[0]
+        groups = 1 + int(np.count_nonzero(np.diff(cols) > 2)) if len(cols) else 1
         return {"state": "stack", "roi": [left + bx, top + by, bw, bh], "patch": patch,
-                "ink_span": [left + bx + int(ink_x.min()), left + bx + int(ink_x.max()) + 1]}
+                "ink_span": [left + bx + int(ink_x.min()), left + bx + int(ink_x.max()) + 1],
+                "ink_groups": groups}
     return {"state": "uncertain" if possible else "single", "roi": [left, top, crop.shape[1], crop.shape[0]]}
 
 
@@ -112,6 +116,7 @@ def read_count(owner, frame, box, locked, labels, generation, index, *, classifi
             return value, evidence
 
         ink_span = badge.get("ink_span")
+        ink_groups = badge.get("ink_groups", 1)
         # Reuse an already detected number only after the stack shape is known.
         for item in labels:
             bx, by, bw, bh = list(item.box)
@@ -121,8 +126,9 @@ def read_count(owner, frame, box, locked, labels, generation, index, *, classifi
                 page_reads.append({"text": text, "score": float(item.score), "box": [bx, by, bw, bh]})
                 # Full-page text detection can box only the wider trailing digit
                 # and leave a thin leading "1" outside the box. Accept a page
-                # read only when its box spans the segmented tab's digit ink.
-                if ink_span is None or (bx <= ink_span[0] + 2 and bx + bw >= ink_span[1] - 2):
+                # read only when its box and digit count cover the segmented ink.
+                if (len(text) >= ink_groups
+                        and (ink_span is None or (bx <= ink_span[0] and bx + bw >= ink_span[1]))):
                     values.append(int(text))
         page_values = set(values)
         local_values = []
@@ -147,7 +153,7 @@ def read_count(owner, frame, box, locked, labels, generation, index, *, classifi
             text = getattr(item, "text", "").strip()
             score = float(getattr(item, "score", 0))
             reads.append({"text": text, "score": score, "scale": scale})
-            if score >= .90 and re.fullmatch(r"[1-9][0-9]{0,3}", text):
+            if score >= .90 and len(text) >= ink_groups and re.fullmatch(r"[1-9][0-9]{0,3}", text):
                 value = int(text)
                 local_values.append(value)
                 candidates.add(value)
