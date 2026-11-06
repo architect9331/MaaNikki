@@ -337,10 +337,17 @@ class Gameplay:
     def jihua_reward(self):
         # Animation skip and reward skip are separate layers.
         if not self.rt.wait_hit("MaaNikki_Energy_SkipReward", 10):
+            if not self.rt.stopped:
+                self.rt.diagnostic("jihua_reward", "未识别到素材激化动画跳过提示")
+                self.rt.log("未识别到素材激化动画跳过提示，请检查游戏画面。")
             return False
         if not self.rt.pause(.5) or not self.rt.key("skip", .5):
             return False
-        return self.ui.skip_reward()
+        result = self.ui.skip_reward()
+        if not result and not self.rt.stopped:
+            self.rt.diagnostic("jihua_reward", "素材激化奖励领取结果待确认")
+        self.rt.log("挑战奖励已领取。" if result else "挑战奖励领取结果待确认，请检查游戏画面。")
+        return result
 
     def jihua_open_table(self):
         from .runtime import INTERACTION_ROI
@@ -390,9 +397,16 @@ class Gameplay:
         return False
 
     def jihua_select_target(self):
-        if not self.ui.find(roi=self.ui.roi("AreaJihuaTargetSelect"), node="MaaNikki_Jihua_Target"):
-            return False
-        return self.ui.wait_page(self.ui.feature(text=".+", roi=self.ui.roi("AreaJihuaCostSelect")))
+        cost_ready = self.ui.feature(text=".+", roi=self.ui.roi("AreaJihuaCostSelect"))
+        target_roi = self.ui.roi("AreaJihuaTargetSelect")
+        if self.ui.enter_page(
+                lambda: self.ui.find(roi=target_roi, node="MaaNikki_Jihua_Target"),
+                cost_ready, source="MaaNikki_Jihua_Target"):
+            return True
+        if not self.rt.stopped:
+            self.rt.diagnostic("jihua_target", "未能确认选择素材激化目标产物")
+            self.rt.log("未能确认选择素材激化目标产物，本项停止。")
+        return False
 
     def jihua_select_material(self):
         most = (self.rt.context.get_node_data("MaaNikki_Jihua_MaterialMostOpen") or {}).get("enabled", False)
@@ -523,6 +537,14 @@ class Gameplay:
         self.rt.log("奇迹之旅奖励领取状态待确认，本项停止。")
         return False
 
+    def paradise_task_tab_ready(self):
+        with self.rt.observe():
+            return (self.ui.page_matches("MaaNikki_Monthly_ParadiseReady")
+                    and (self.rt.hit("MaaNikki_Monthly_ParadiseClaim")
+                         or self.rt.hit("MaaNikki_Monthly_ParadiseClaimEmpty")
+                         or self.rt.hit("MaaNikki_Monthly_ParadiseTaskOngoing")
+                         or self.rt.hit("MaaNikki_Monthly_ParadiseTaskCompleted")))
+
     def paradise_claim_state(self, claim):
         """Read the claim button; progress and the button can update after a reward closes."""
         for attempt in range(3):
@@ -592,9 +614,11 @@ class Gameplay:
                 if not self.monthly_travel_tab(page):
                     return False
             else:
-                if not self.rt.click_template(node):
-                    return False
-                if not self.ui.wait_page("MaaNikki_Monthly_PageReady"):
+                if not self.ui.enter_page(
+                        lambda: self.rt.click_template(node, attempts=1, wait_seconds=0),
+                        self.paradise_task_tab_ready,
+                        source="MaaNikki_Monthly_ParadiseReady"):
+                    self.monthly_diagnostic("paradise", "tab_unconfirmed", "乐园纪事页签切换待确认")
                     return False
             claim = ("MaaNikki_Monthly_ParadiseClaim" if kind == "paradise"
                      else f"MaaNikki_Monthly_Claim{page}")

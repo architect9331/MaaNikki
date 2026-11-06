@@ -442,11 +442,19 @@ class GameUI:
         deadline = time.monotonic()+10
         while not self.rt.stopped and time.monotonic() < deadline:
             if self.rt.hit(node):
-                if not self.rt.pause(1) or not self.rt.key("skip", 0):
+                if not self.rt.pause(1):
                     return False
-                # Input submission alone does not establish that the popup
-                # closed. Its page underneath may remain visible throughout.
-                return self.wait_page(lambda: not self.rt.hit(node))
+                # A press during the reward item reveal can only fast-forward
+                # the animation; verify closure and retry if the popup remains.
+                for _ in range(3):
+                    if not self.rt.key("skip", 0):
+                        return False
+                    if self.wait_page(lambda: not self.rt.hit(node), seconds=2.5):
+                        return True
+                    with self.rt.observe(fresh=True):
+                        if self.rt.stopped or not self.rt.hit(node):
+                            return False
+                return False
             if not self.rt.pause(.3):
                 break
         return False
