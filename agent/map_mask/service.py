@@ -311,6 +311,7 @@ class MapMask:
                     active_generation = generation
                 points, hint, circle = (), "", None
                 diagnostic = {}
+                index_sec = 0.0
                 match_started = time.monotonic()
                 try:
                     if mode == "hidden":
@@ -334,8 +335,10 @@ class MapMask:
                                 pending = None
                                 bigmap_hint = bigmap_seeds.get(map_id) or player_seeds.get(map_id)
                                 bigmap_confirmed = False
-                            center, diagnostic = bigmap_matcher.locate(frame, bigmap_hint,
+                            search_hint = bigmap_hint or bigmap_seeds.get(map_id) or player_seeds.get(map_id)
+                            center, diagnostic = bigmap_matcher.locate(frame, search_hint,
                                                                        maximum=maximum)
+                            index_sec = bigmap_matcher.consume_index_time()
                             scale = diagnostic.get("scale")
                             if (center is not None and not bigmap_confirmed and
                                     pending_scale is not None and
@@ -484,7 +487,7 @@ class MapMask:
                     last_saved_at = now_mono
                     state_dirty = False
                 diagnostic["elapsed_ms"] = round((now_mono - match_started) * 1000)
-                age = now_mono - captured
+                age = max(0.0, now_mono - captured - index_sec)
                 diagnostic["frame_age_ms"] = round(age * 1000)
                 if age > (1.2 if mode == "bigmap" else .8):
                     diagnostic["display_deferred"] = True

@@ -8,9 +8,13 @@ from itertools import combinations
 import cv2
 import numpy as np
 
+from daily.settings import ROOT
 from navigation.frames import minimap_sample
 from navigation.matching import luma, match_map
 from navigation.models import NavigationError
+
+
+SIFT_CACHE_DIR = ROOT / "cache/map-mask"
 
 
 def _fit_scale_residual(tiles, scale):
@@ -58,30 +62,29 @@ class BigMapMatcher:
         self.locator = locator
         self.scale = initial_scale
         self.next_acquire = 0.0
-        self.detector = cv2.SIFT_create(nfeatures=32000, contrastThreshold=0.015, edgeThreshold=15)
+        self.detector = cv2.SIFT_create(nfeatures=28000, contrastThreshold=0.014, edgeThreshold=15)
         self.ref_step = 2 if max(locator.spec.width, locator.spec.height) <= 4096 else 4
-        self.keypoints = self.index = None
+        self.layers = None
+        self._index_sec = 0.0
+
+    def consume_index_time(self):
+        sec, self._index_sec = self._index_sec, 0.0
+        return sec
 
     def locate(self, frame, hint=None, *, maximum=False):
-        candidates = []
-        if self.scale is not None:
-            candidates.append(self.scale)
-        if maximum and (self.scale is None or abs(self.scale - self.locator.spec.bigmap_scale) > 0.01):
-            if maximum and self.scale is not None:
-                candidates.insert(0, self.locator.spec.bigmap_scale)
-            else:
-                candidates.append(self.locator.spec.bigmap_scale)
         diagnostic = {}
-        for candidate_scale in candidates:
-            center, diagnostic = bigmap_pose(self.locator, frame, hint, scale=candidate_scale)
+        if self.scale is not None and hint is not None:
+            gray = luma(frame)
+            center, diagnostic = _terrain_pose(self.locator, gray, hint, scale=self.scale)
+            diagnostic["search"] = "terrain_local"
             if center is not None:
-                self.scale = diagnostic.get("scale", candidate_scale)
+                self.scale = diagnostic.get("scale", self.scale)
                 return center, diagnostic
-            if hint is not None and abs(candidate_scale - self.locator.spec.bigmap_scale) <= 0.01:
-                center, diagnostic = bigmap_pose(self.locator, frame, None, scale=candidate_scale)
-                if center is not None:
-                    self.scale = diagnostic.get("scale", candidate_scale)
-                    return center, diagnostic
+            center, diagnostic = _terrain_pose(self.locator, gray, hint, scale=self.scale, radius=160)
+            diagnostic["search"] = "terrain_recovery"
+            if center is not None:
+                self.scale = diagnostic.get("scale", self.scale)
+                return center, diagnostic
         now = time.monotonic()
         if self.scale is None and now < self.next_acquire:
             diagnostic.update(search="zoom_wait", accepted=False)
@@ -91,25 +94,58 @@ class BigMapMatcher:
             self.scale = candidate["scale"]
             self.next_acquire = 0.0
         else:
-            self.next_acquire = now + 0.35
+            self.next_acquire = now + 0.25
         return center, {**candidate, "previous_scale": self.scale}
 
     def _ensure_index(self):
-        if self.index is not None:
-            return True
-        if self.ref_step == 2:
-            ref = cv2.resize(self.locator.map, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
-        else:
-            ref = self.locator.coarse
-        known = cv2.erode((ref > 0).astype(np.uint8) * 255, np.ones((9, 9), np.uint8))
-        keypoints, descriptors = self.detector.detectAndCompute(ref, known)
-        if descriptors is None or len(keypoints) < 12:
-            return False
-        self.keypoints = keypoints
-        self.index = cv2.FlannBasedMatcher(dict(algorithm=1, trees=4), dict(checks=64))
-        self.index.add([descriptors])
-        self.index.train()
-        return True
+        if self.layers is not None:
+            return bool(self.layers)
+        t0 = time.monotonic()
+        step = self.ref_step
+        cache_path = SIFT_CACHE_DIR / f"sift_{self.locator.spec.id}_s{step}_v2.npz"
+        raw_layers = []
+        try:
+            if cache_path.is_file() and cache_path.stat().st_mtime >= self.locator.spec.image.stat().st_mtime:
+                data = np.load(cache_path)
+                for lname in ("detail", "coarse"):
+                    if f"{lname}_pts" in data and f"{lname}_desc" in data:
+                        raw_layers.append((lname, data[f"{lname}_pts"], data[f"{lname}_desc"]))
+        except Exception:
+            raw_layers = []
+        if not raw_layers:
+            ys, xs = np.nonzero(self.locator.map)
+            x0, y0 = int(xs.min() // step), int(ys.min() // step)
+            x1 = min(self.locator.map.shape[1] // step, int(xs.max() // step) + 2)
+            y1 = min(self.locator.map.shape[0] // step, int(ys.max() // step) + 2)
+            detail_crop = self.locator.map[y0 * step:y1 * step, x0 * step:x1 * step]
+            detail_ref = cv2.resize(detail_crop, (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA)
+            sources = [("detail", detail_ref, x0, y0)]
+            if step == 4 and self.locator.coarse is not None:
+                sources.append(("coarse", self.locator.coarse[y0:y1, x0:x1], x0, y0))
+            save_dict = {}
+            for lname, ref, ox, oy in sources:
+                known = cv2.erode((ref > 0).astype(np.uint8) * 255, np.ones((9, 9), np.uint8))
+                kp, desc = self.detector.detectAndCompute(ref, known)
+                if desc is not None and len(kp) >= 12:
+                    pts = np.float32([(k.pt[0] + ox, k.pt[1] + oy) for k in kp])
+                    raw_layers.append((lname, pts, desc))
+                    save_dict[f"{lname}_pts"] = pts
+                    save_dict[f"{lname}_desc"] = desc
+            if save_dict:
+                try:
+                    SIFT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                    np.savez(cache_path, **save_dict)
+                except Exception:
+                    pass
+        built = []
+        for lname, pts, desc in raw_layers:
+            idx = cv2.FlannBasedMatcher(dict(algorithm=1, trees=4), dict(checks=64))
+            idx.add([desc])
+            idx.train()
+            built.append((lname, pts, idx))
+        self.layers = built
+        self._index_sec = max(0.0, time.monotonic() - t0)
+        return bool(self.layers)
 
     def _acquire(self, frame, hint=None):
         if not self._ensure_index():
@@ -117,48 +153,53 @@ class BigMapMatcher:
         gray = luma(frame)
         baseline = self.locator.spec.bigmap_scale
         best_diag = {"search": "zoom_features", "accepted": False}
-        for fx in (0.5, 0.25):
+        ordered_layers = (list(reversed(self.layers))
+                          if (self.scale is not None and self.scale >= 1.25) else self.layers)
+        for fx in (0.25, 0.5):
             sample = cv2.resize(gray[80:660, 160:1120], None, fx=fx, fy=fx,
                                 interpolation=cv2.INTER_AREA)
             keypoints, descriptors = self.detector.detectAndCompute(sample, None)
             if descriptors is None or len(keypoints) < 8:
                 continue
-            neighbors = self.index.knnMatch(descriptors, k=2)
-            pairs = [pair[0] for pair in neighbors if len(pair) == 2
-                     and pair[0].distance < 0.74 * pair[1].distance]
-            if len(pairs) > best_diag.get("feature_matches", 0):
-                best_diag["feature_matches"] = len(pairs)
-            if len(pairs) < 8:
-                continue
-            source = np.float32([(keypoints[p.queryIdx].pt[0] / fx + 160,
-                                  keypoints[p.queryIdx].pt[1] / fx + 80) for p in pairs])
-            target = np.float32([self.keypoints[p.trainIdx].pt for p in pairs])
-            matrix, inliers = cv2.estimateAffinePartial2D(
-                source, target, method=cv2.RANSAC,
-                ransacReprojThreshold=3.0, maxIters=2000, confidence=0.995)
-            if matrix is None or inliers is None:
-                continue
-            selected = inliers.ravel().astype(bool)
-            count = int(selected.sum())
-            scale = float(math.hypot(matrix[0, 0], matrix[1, 0]) * self.ref_step)
-            angle = math.degrees(math.atan2(matrix[1, 0], matrix[0, 0]))
-            diagnostic = {"search": "zoom_features", "accepted": False,
-                          "feature_matches": len(pairs), "feature_inliers": count,
-                          "scale": scale, "rotation": round(angle, 3)}
-            best_diag = diagnostic
-            if (count < 8 or count < len(pairs) * 0.35 or abs(angle) > 1.2
-                    or not baseline * 0.82 <= scale <= baseline * 12.0):
-                continue
-            span = np.ptp(source[selected], axis=0)
-            if span[0] < 160 or span[1] < 110:
-                continue
-            center = tuple((matrix @ np.array([640, 360, 1])) * self.ref_step)
-            center, terrain = _terrain_pose(self.locator, gray, center, scale=scale, radius=32)
-            if center is not None:
-                scale = terrain.get("scale", scale)
-                diagnostic.update(terrain)
-                diagnostic["scale"] = scale
-                return center, diagnostic
+            q_pts = np.float32([(k.pt[0] / fx + 160, k.pt[1] / fx + 80) for k in keypoints])
+            for lname, r_pts, idx in ordered_layers:
+                neighbors = idx.knnMatch(descriptors, k=2)
+                pairs = [pair[0] for pair in neighbors if len(pair) == 2
+                         and pair[0].distance < 0.75 * pair[1].distance]
+                if len(pairs) > best_diag.get("feature_matches", 0):
+                    best_diag["feature_matches"] = len(pairs)
+                if len(pairs) < 8:
+                    continue
+                source = q_pts[[p.queryIdx for p in pairs]]
+                target = r_pts[[p.trainIdx for p in pairs]]
+                matrix, inliers = cv2.estimateAffinePartial2D(
+                    source, target, method=cv2.RANSAC,
+                    ransacReprojThreshold=3.2, maxIters=2000, confidence=0.995)
+                if matrix is None or inliers is None:
+                    continue
+                selected = inliers.ravel().astype(bool)
+                count = int(selected.sum())
+                scale = float(math.hypot(matrix[0, 0], matrix[1, 0]) * self.ref_step)
+                angle = math.degrees(math.atan2(matrix[1, 0], matrix[0, 0]))
+                diagnostic = {"search": f"zoom_{lname}", "accepted": False,
+                              "feature_matches": len(pairs), "feature_inliers": count,
+                              "scale": scale, "rotation": round(angle, 3)}
+                best_diag = diagnostic
+                if (count < 8 or count < len(pairs) * 0.32 or abs(angle) > 1.5
+                        or not baseline * 0.80 <= scale <= baseline * 12.0):
+                    continue
+                span = np.ptp(source[selected], axis=0)
+                if span[0] < 140 or span[1] < 100:
+                    continue
+                center = tuple((matrix @ np.array([640, 360, 1])) * self.ref_step)
+                for mult in (1.0, 0.97, 1.03):
+                    verified, terrain = _terrain_pose(self.locator, gray, center,
+                                                      scale=scale * mult, radius=40)
+                    if verified is not None:
+                        final_scale = terrain.get("scale", scale * mult)
+                        diagnostic.update(terrain)
+                        diagnostic["scale"] = final_scale
+                        return verified, diagnostic
         if hint is not None:
             center, hint_diag = self._acquire_around_hint(gray, hint)
             if center is not None:
@@ -167,38 +208,58 @@ class BigMapMatcher:
 
     def _acquire_around_hint(self, gray, hint):
         baseline = self.locator.spec.bigmap_scale
-        crop = gray[120:600, 240:1040]
-        bx, by = hint[0] * 0.25, hint[1] * 0.25
+        crop = gray[140:580, 260:1020]
+        hx, hy = hint
+        r_map = 700
+        mx0, my0 = max(0, int(hx - r_map)), max(0, int(hy - r_map))
+        mx1 = min(self.locator.map.shape[1], int(hx + r_map))
+        my1 = min(self.locator.map.shape[0], int(hy + r_map))
+        local_detail = cv2.resize(self.locator.map[my0:my1, mx0:mx1], None,
+                                  fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
+        bx, by = hx * 0.25, hy * 0.25
         source = self.locator.coarse
         best = None
-        for i in range(15):
-            scale = baseline * (1.18 ** i)
+        for i in range(24):
+            scale = baseline * (1.095 ** i)
             patch = cv2.resize(crop, None, fx=scale * 0.25, fy=scale * 0.25,
                                interpolation=cv2.INTER_AREA)
             if patch.shape[0] < 24 or patch.shape[1] < 32:
                 continue
-            pad_x = max(120, patch.shape[1] // 2 + 64)
-            pad_y = max(100, patch.shape[0] // 2 + 64)
-            x0, y0 = max(0, round(bx - pad_x)), max(0, round(by - pad_y))
-            x1 = min(source.shape[1], round(bx + pad_x))
-            y1 = min(source.shape[0], round(by + pad_y))
-            if y1 - y0 <= patch.shape[0] + 8 or x1 - x0 <= patch.shape[1] + 8:
-                continue
-            try:
-                mx, my, score, peak = match_map(source[y0:y1, x0:x1], patch,
-                                                kernel=7, minimum_score=0.45)
-            except (NavigationError, cv2.error):
-                continue
-            if all(math.isfinite(v) for v in (mx, my, score, peak)) and score >= 0.48:
-                if best is None or score > best[0]:
-                    best = (score, scale, ((mx + x0) * 4.0, (my + y0) * 4.0))
+            if (scale <= 1.5 and patch.shape[0] + 10 < local_detail.shape[0]
+                    and patch.shape[1] + 10 < local_detail.shape[1]):
+                try:
+                    mx, my, score, peak = match_map(local_detail, patch,
+                                                    kernel=7, minimum_score=0.42)
+                    if all(math.isfinite(v) for v in (mx, my, score, peak)) and score >= 0.45:
+                        if best is None or score > best[0]:
+                            best = (score, scale, (mx0 + mx * 4.0, my0 + my * 4.0))
+                except (NavigationError, cv2.error):
+                    pass
+            if scale >= 1.1:
+                pad_x = max(120, patch.shape[1] // 2 + 64)
+                pad_y = max(100, patch.shape[0] // 2 + 64)
+                x0, y0 = max(0, round(bx - pad_x)), max(0, round(by - pad_y))
+                x1 = min(source.shape[1], round(bx + pad_x))
+                y1 = min(source.shape[0], round(by + pad_y))
+                if y1 - y0 > patch.shape[0] + 8 and x1 - x0 > patch.shape[1] + 8:
+                    try:
+                        mx, my, score, peak = match_map(source[y0:y1, x0:x1], patch,
+                                                        kernel=7, minimum_score=0.45)
+                        if all(math.isfinite(v) for v in (mx, my, score, peak)) and score >= 0.48:
+                            if best is None or score > best[0]:
+                                best = (score, scale, ((mx + x0) * 4.0, (my + y0) * 4.0))
+                    except (NavigationError, cv2.error):
+                        pass
         if best is not None:
             _, scale, candidate = best
-            center, terrain = _terrain_pose(self.locator, gray, candidate, scale=scale, radius=32)
-            if center is not None:
-                terrain["search"] = "zoom_hint_pyramid"
-                return center, terrain
+            for mult in (1.0, 0.96, 1.04):
+                center, terrain = _terrain_pose(self.locator, gray, candidate,
+                                                scale=scale * mult, radius=48)
+                if center is not None:
+                    terrain["search"] = "zoom_hint_pyramid"
+                    return center, terrain
         return None, {"search": "zoom_hint_pyramid", "accepted": False}
+
 
 
 def bigmap_pose(locator, frame, hint=None, *, scale=None):
@@ -257,6 +318,7 @@ def _terrain_pose(locator, gray, hint, *, scale=None, radius=16, allow_scale_fit
     eff_scale = scale / ref_step
     eff_radius = max(radius, round(16 * max(1.0, scale)))
     r_ref = max(12, round(eff_radius / ref_step))
+    min_score = 0.55 if scale >= 1.4 else 0.60
 
     candidates = []
     tiles = []
@@ -276,12 +338,12 @@ def _terrain_pose(locator, gray, hint, *, scale=None, radius=16, allow_scale_fit
             y1 = min(ref_h, math.ceil(cy + sample.shape[0] + r_ref))
             try:
                 mx, my, rate, detail = match_map(ref_image[y0:y1, x0:x1], sample,
-                                                 minimum_score=0.62, anchor=anchor)
+                                                 minimum_score=min_score, anchor=anchor)
             except (NavigationError, cv2.error):
                 continue
             center = (mx + x0) * ref_step, (my + y0) * ref_step
             accepted = (all(math.isfinite(v) for v in (*center, rate, detail))
-                        and rate >= 0.62 and detail >= 0.01
+                        and rate >= min_score and detail >= 0.01
                         and math.hypot(center[0] - x, center[1] - y) <= eff_radius - 3 * ref_step)
             tiles.append({"roi": [left, top, width, height],
                           "x": round(center[0], 2), "y": round(center[1], 2),
@@ -319,7 +381,8 @@ class MinimapMatcher:
     def __init__(self, locator):
         self.locator = locator
         self.spec = locator.spec
-        self.patch_size = round(self.spec.radius * 2 * self.spec.scale)
+        half = round(self.spec.radius * self.spec.scale)
+        self.patch_size = half * 2 + 1
         yy, xx = np.indices((self.patch_size, self.patch_size), dtype=np.float32)
         center = (self.patch_size - 1) / 2.0
         dist = np.hypot(xx - center, yy - center)
@@ -388,14 +451,12 @@ class MinimapMatcher:
         except (NavigationError, cv2.error):
             pass
         if best is None or best[2] < max(floor, 0.58) or best[3] < 0.015:
-            roi_edges = self.locator.map_edges[y0:y1, x0:x1]
-            patch_edges = cv2.Canny(cv2.GaussianBlur(patch, (3, 3), 0), 40, 120)
             try:
-                ex, ey, escore, epeak = match_map(roi_edges, patch_edges, self.edge_mask,
-                                                  minimum_score=0.20)
+                ex, ey, escore, epeak = match_map(roi, patch, self.edge_mask,
+                                                  minimum_score=0.25, edges=True)
                 if all(math.isfinite(v) for v in (ex, ey, escore, epeak)):
                     edge_cand = (x0 + ex, y0 + ey, float(escore), float(epeak), "edge")
-                    if best is None or (escore >= 0.28 and epeak >= 0.015 and best[2] < floor):
+                    if best is None or (escore >= 0.32 and epeak >= 0.015 and best[2] < floor):
                         best = edge_cand
             except (NavigationError, cv2.error):
                 pass
@@ -404,7 +465,7 @@ class MinimapMatcher:
         x, y, score, peak, mode = best
         if mode == "luma" and (score >= floor and peak >= 0.01):
             return x, y, score, peak, mode
-        if mode == "edge" and (score >= 0.28 and peak >= 0.015):
+        if mode == "edge" and (score >= 0.32 and peak >= 0.015):
             return x, y, score, peak, mode
         return None
 
