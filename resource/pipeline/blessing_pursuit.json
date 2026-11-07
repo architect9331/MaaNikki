@@ -79,7 +79,7 @@
     "custom_action_param": {
       "count": [830, 455, 280, 35],
       "capacity": [650, 645, 150, 40],
-      "particles": [1140, 18, 125, 38],
+      "particles": [1166, 18, 99, 38],
       "gain": [982, 307, 125, 36],
       "filter": [836, 490, 215, 38],
       "filter_choices": [830, 300, 230, 190],

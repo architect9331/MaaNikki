@@ -52,7 +52,8 @@ class LowRarityDecomposer:
     @staticmethod
     def number(text):
         text = re.sub(r"[,，]", "", text)
-        return int(text) if re.fullmatch(r"\d+", text) else None
+        match = re.fullmatch(r"[A-Za-z]?(\d+)", text)
+        return int(match.group(1)) if match else None
 
     def values(self, frame):
         count = re.fullmatch(r"消耗材料[（(](\d+)[/／](\d+)[）)]", self.text("count", frame))
