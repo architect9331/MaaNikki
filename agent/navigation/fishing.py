@@ -138,13 +138,16 @@ class Fishing:
                     found, source = state, "text"
                     break
             if found == FishingState.UNKNOWN and "取消钓" in text:
-                # Bright shore clutter behind the last character of the left prompt
-                # can clip "竿"/"线" in OCR and pull the 2-char template slightly below .8.
-                for icon, state in (("IconFishingFinish", FishingState.FINISH),
-                                    ("IconFishingReelIn", FishingState.REEL_IN)):
-                    if self.ui.asset(icon, image=frame, roi=area, threshold=.7, gray=(210, 255), scale=2/3):
-                        found, source = state, icon
-                        break
+                if re.search(r"R.*取消钓", text):
+                    found, source = FishingState.FINISH, "text"
+                else:
+                    # Bright shore clutter behind the last character of the left prompt
+                    # can clip "竿"/"线" in OCR and pull the 2-char template slightly below .8.
+                    for icon, state in (("IconFishingFinish", FishingState.FINISH),
+                                        ("IconFishingReelIn", FishingState.REEL_IN)):
+                        if self.ui.asset(icon, image=frame, roi=area, threshold=.64, gray=(210, 255), scale=2/3):
+                            found, source = state, icon
+                            break
         self.last_state_details = {"state": found.name, "source": source, "text": text, "roi": area}
         if found != FishingState.UNKNOWN:
             self.last_known_state = found
