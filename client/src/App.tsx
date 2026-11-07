@@ -3,6 +3,7 @@ import { BlessingProgressPage } from '@/components/BlessingProgressPage';
 import { ExplorationPage } from '@/components/ExplorationPage';
 import { ResonancePage } from '@/components/ResonancePage';
 import { WardrobePage } from '@/components/WardrobePage';
+import { TaskStatsPage } from '@/components/TaskStatsPage';
 import { RouteEditorPage } from '@/components/routes/RouteEditorPage';
 import { monitorResonance } from '@/services/resonanceService';
 import { explorationOwnsWindow, initializeExploration, monitorExploration, useExplorationStore } from '@/services/explorationService';
@@ -1972,6 +1973,17 @@ function App() {
       <div className="h-full flex flex-col bg-bg-primary relative">
         <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
         <BlessingProgressPage onClose={() => useAppStore.getState().setCurrentPage("main")} />
+        <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
+        {toaster}
+      </div>
+    );
+  }
+
+  if (currentPage === 'statistics') {
+    return (
+      <div className="h-full flex flex-col bg-bg-primary relative">
+        <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
+        <TaskStatsPage onClose={() => useAppStore.getState().setCurrentPage('main')} />
         <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
         {toaster}
       </div>

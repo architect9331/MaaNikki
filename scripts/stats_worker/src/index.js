@@ -7,8 +7,13 @@ const count = (value, limit) => Number.isInteger(value) && value > 0 && value <=
 function validate(body) {
   if (body?.schema !== 1 || !/^[0-9a-f]{32}$/.test(body.batch ?? '') || !text(body.catalog, 32) || !text(body.app, 32)) return false;
   if (!Array.isArray(body.rolls) || !Array.isArray(body.bling) || body.rolls.length > MAX_ROWS || body.bling.length > MAX_ROWS) return false;
+  const dig = body.dig ?? [];
+  const prefs = body.prefs ?? [];
+  if (!Array.isArray(dig) || !Array.isArray(prefs) || dig.length > MAX_ROWS || prefs.length > MAX_ROWS) return false;
   return body.rolls.every((row) => Array.isArray(row) && row.length === 4 && text(row[0], 32) && text(row[1], 8) && text(row[2], 8) && count(row[3], 10000))
-    && body.bling.every((row) => Array.isArray(row) && row.length === 2 && count(row[0], 10000) && count(row[1], 100000000));
+    && body.bling.every((row) => Array.isArray(row) && row.length === 2 && count(row[0], 10000) && count(row[1], 100000000))
+    && dig.every((row) => Array.isArray(row) && row.length === 2 && text(row[0], 32) && count(row[1], 10000))
+    && prefs.every((row) => Array.isArray(row) && row.length === 2 && text(row[0], 48) && text(row[1], 64));
 }
 
 async function report(request, env) {
@@ -26,6 +31,8 @@ async function report(request, env) {
   if (!known) await env.DB.prepare('INSERT INTO reporters (id, day) VALUES (?, ?)').bind(reporter, day).run();
   const first = await env.DB.prepare('INSERT OR IGNORE INTO batches (id, day) VALUES (?, ?)').bind(body.batch, day).run();
   if (!first.meta.changes) return new Response(null, { status: 204, headers });
+  const dig = body.dig ?? [];
+  const prefs = body.prefs ?? [];
   const statements = [
     ...body.rolls.map(([name, slot, color, value]) => env.DB.prepare(
       `INSERT INTO rolls (reporter, catalog, name, slot, color, count) VALUES (?, ?, ?, ?, ?, ?)
@@ -33,6 +40,18 @@ async function report(request, env) {
       .bind(reporter, body.catalog, name, slot, color, value)),
     ...body.bling.map(([energy, gain]) => env.DB.prepare(
       'INSERT INTO bling_runs (reporter, day, app, energy, gain) VALUES (?, ?, ?, ?, ?)').bind(reporter, day, body.app, energy, gain)),
+    ...dig.map(([item, value]) => env.DB.prepare(
+      `INSERT INTO dig_targets (reporter, item, count) VALUES (?, ?, ?)
+       ON CONFLICT (reporter, item) DO UPDATE SET count = count + excluded.count`)
+      .bind(reporter, item, value)),
+    ...(prefs.length
+      ? [
+          env.DB.prepare('DELETE FROM reporter_preferences WHERE reporter = ?').bind(reporter),
+          ...prefs.map(([category, value]) => env.DB.prepare(
+            'INSERT OR IGNORE INTO reporter_preferences (reporter, day, app, category, value) VALUES (?, ?, ?, ?, ?)')
+            .bind(reporter, day, body.app, category, value)),
+        ]
+      : []),
   ];
   if (statements.length) await env.DB.batch(statements);
   return new Response(null, { status: 204, headers });
@@ -45,11 +64,26 @@ async function summary(env) {
   const bling = await env.DB.prepare(
     `SELECT COUNT(*) AS runs, SUM(energy) AS energy, SUM(gain) AS gain FROM bling_runs
      WHERE reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)`).first();
+  const digTargets = await env.DB.prepare(
+    `SELECT item, SUM(count) AS count, COUNT(DISTINCT reporter) AS reporters FROM dig_targets
+     WHERE reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)
+     GROUP BY item ORDER BY count DESC`).all().catch(() => ({ results: [] }));
+  const preferences = await env.DB.prepare(
+    `SELECT category, value, COUNT(DISTINCT reporter) AS reporters FROM reporter_preferences
+     WHERE reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)
+     GROUP BY category, value ORDER BY category ASC, reporters DESC`).all().catch(() => ({ results: [] }));
   // A lost response can orphan an issued ID, so count only IDs that hold data.
   const reporters = await env.DB.prepare(
     `SELECT COUNT(*) AS count FROM reporters WHERE excluded = 0
-     AND (id IN (SELECT reporter FROM rolls) OR id IN (SELECT reporter FROM bling_runs))`).first();
-  return Response.json({ reporters: reporters.count, colors: colors.results, bling }, { headers: { 'Access-Control-Allow-Origin': '*' } });
+     AND (id IN (SELECT reporter FROM rolls) OR id IN (SELECT reporter FROM bling_runs)
+          OR id IN (SELECT reporter FROM dig_targets) OR id IN (SELECT reporter FROM reporter_preferences))`).first()
+    .catch(() => env.DB.prepare(
+      `SELECT COUNT(*) AS count FROM reporters WHERE excluded = 0
+       AND (id IN (SELECT reporter FROM rolls) OR id IN (SELECT reporter FROM bling_runs))`).first());
+  return Response.json(
+    { reporters: reporters.count, colors: colors.results, bling, digTargets: digTargets.results, preferences: preferences.results },
+    { headers: { 'Access-Control-Allow-Origin': '*' } },
+  );
 }
 
 export default {

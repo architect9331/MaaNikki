@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next';
 import {
   AlertCircle,
   AppWindowMac,
+  BarChart3,
   Bell,
   BrushCleaning,
   Check,
   ChevronDown,
+  ChevronRight,
   HeartHandshake,
   ListChecks,
   Maximize2,
@@ -46,11 +48,14 @@ export function GeneralSection() {
     helpImproveSoftware,
     helpImproveRouteTelemetry,
     helpImproveBlessingStats,
+    helpImproveTaskStats,
     runResultWebhook,
     setRunResultWebhook,
     setHelpImproveSoftware,
     setHelpImproveRouteTelemetry,
     setHelpImproveBlessingStats,
+    setHelpImproveTaskStats,
+    setCurrentPage,
     projectInterface,
   } = useAppStore();
 
@@ -427,7 +432,49 @@ export function GeneralSection() {
             onChange={(v) => setHelpImproveBlessingStats(v)}
           />
         </div>
+
+        {/* 4. 任务偏好与美鸭梨挖掘统计 */}
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div className="pr-4">
+            <span className="text-sm font-medium text-text-primary">
+              任务偏好与挖掘统计
+            </span>
+            <p className="text-xs text-text-muted mt-0.5">
+              匿名上报日常任务启用分布、幻境挑战选择与美鸭梨挖掘目标等偏好统计，用于优化默认任务选择与任务推荐（不含账号信息）
+            </p>
+          </div>
+          <SwitchButton
+            value={telemetryBlocked ? false : helpImproveTaskStats}
+            disabled={telemetryBlocked}
+            onChange={(v) => setHelpImproveTaskStats(v)}
+          />
+        </div>
       </div>
+
+      {/* MAA 运行任务统计与纪念二级入口 */}
+      {isTauri() && (
+        <div className="bg-bg-secondary rounded-xl p-4 border border-border">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <BarChart3 className="w-5 h-5 text-accent" />
+              <div>
+                <span className="font-medium text-text-primary">MAA 运行任务统计与纪念</span>
+                <p className="text-xs text-text-muted mt-0.5">
+                  查看累计为你节省的时间、各任务执行次数排行以及闪光收集与奇迹大陆探索里程碑
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('statistics')}
+              className="inline-flex shrink-0 items-center gap-1 px-3 py-2 text-sm font-medium bg-bg-tertiary hover:bg-bg-hover rounded-lg transition-colors text-text-primary"
+            >
+              <span>查看统计</span>
+              <ChevronRight className="w-4 h-4 text-text-muted" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 运行结果推送 */}
       {isTauri() && (

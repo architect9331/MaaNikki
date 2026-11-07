@@ -264,6 +264,7 @@ export const useAppStore = create<AppState>()(
     helpImproveSoftware: true,
     helpImproveRouteTelemetry: true,
     helpImproveBlessingStats: true,
+    helpImproveTaskStats: true,
     customAccents: [],
     setTheme: (theme) => {
       set({ theme });
@@ -325,6 +326,10 @@ export const useAppStore = create<AppState>()(
     setHelpImproveBlessingStats: (enabled) => {
       const blocked = isTelemetryBlockedByBuild(get().projectInterface);
       set({ helpImproveBlessingStats: blocked ? false : enabled });
+    },
+    setHelpImproveTaskStats: (enabled) => {
+      const blocked = isTelemetryBlockedByBuild(get().projectInterface);
+      set({ helpImproveTaskStats: blocked ? false : enabled });
     },
     addCustomAccent: (accent) => {
       set((state) => ({
@@ -1363,6 +1368,9 @@ export const useAppStore = create<AppState>()(
             (config.globalOptionValues?.CollectionStats?.type === 'switch'
               ? config.globalOptionValues.CollectionStats.value
               : true)),
+        helpImproveTaskStats: isTelemetryBlockedByBuild(get().projectInterface)
+          ? false
+          : (config.settings.helpImproveTaskStats ?? true),
         customAccents: effectiveCustomAccents,
         selectedController,
         selectedResource,
@@ -2311,6 +2319,7 @@ function generateConfig(): MxuConfig {
           helpImproveSoftware: state.helpImproveSoftware,
           helpImproveRouteTelemetry: state.helpImproveRouteTelemetry,
           helpImproveBlessingStats: state.helpImproveBlessingStats,
+          helpImproveTaskStats: state.helpImproveTaskStats,
           windowSize: bl?.windowSize ?? state.windowSize,
           windowPosition: bl?.windowPosition ?? state.windowPosition,
           showOptionPreview: bl?.showOptionPreview ?? state.showOptionPreview,
@@ -2411,6 +2420,7 @@ useAppStore.subscribe(
     helpImproveSoftware: state.helpImproveSoftware,
     helpImproveRouteTelemetry: state.helpImproveRouteTelemetry,
     helpImproveBlessingStats: state.helpImproveBlessingStats,
+    helpImproveTaskStats: state.helpImproveTaskStats,
     mirrorChyanSettings: state.mirrorChyanSettings,
     proxySettings: state.proxySettings,
     welcomeShownHash: state.welcomeShownHash,

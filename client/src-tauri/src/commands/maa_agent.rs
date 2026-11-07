@@ -858,6 +858,13 @@ pub async fn start_tasks_impl(
                         state.mappings.insert(job.id, sel_id.clone());
                         state.statuses.insert(sel_id.clone(), "pending".to_string());
                     }
+                    let task_name_for_stats =
+                        task.task_name.clone().unwrap_or_else(|| task.entry.clone());
+                    super::task_stats::register_posted_task(
+                        &instance_id,
+                        job.id,
+                        &task_name_for_stats,
+                    );
                     if let Some(posting) = telemetry_posting.as_mut() {
                         posting.register(
                             job.id,

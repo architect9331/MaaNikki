@@ -213,6 +213,7 @@ pub fn run() {
             commands::resonance::resonance_history,
             commands::resonance::resonance_export,
             commands::account_state::get_account_state,
+            commands::task_stats::get_task_statistics,
             commands::user_routes::list_routes,
             commands::user_routes::save_user_route,
             commands::user_routes::delete_user_route,

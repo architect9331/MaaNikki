@@ -122,6 +122,7 @@ class Gameplay:
             if not self.ui.wait_page(choice):
                 self.rt.log(f"未确认挖掘收取界面的“{label}”按钮，本项停止。")
                 return False
+            self.observe_dig_targets()
             self.rt.log(f"挖掘收取方式：{label}。", detail=True)
             # Submit exactly one choice. Again returns directly to the dig page.
             if not self.rt.click_template(choice, attempts=1):
@@ -144,6 +145,31 @@ class Gameplay:
                 if not returned:
                     self.rt.log("挖掘处理后未能返回主界面，本项未正常结束。")
         return bool(ok and not self.rt.stopped and returned)
+
+    def observe_dig_targets(self):
+        try:
+            from account_state import AccountState
+            from collection import statistics
+            if not statistics.is_task_stats_enabled(ROOT):
+                return
+            raw_text = self.rt.text([180, 110, 920, 460]) or ""
+            materials = catalog(self.ui.resource).get("materials", {})
+            dig_names = sorted(
+                (name for name, meta in materials.items() if isinstance(meta, dict) and meta.get("dig")),
+                key=len,
+                reverse=True,
+            )
+            found = []
+            remaining = raw_text
+            for name in dig_names:
+                if name in remaining:
+                    found.append(name)
+                    remaining = remaining.replace(name, " ")
+            account = AccountState(ROOT)
+            statistics.sync_task_stats(account, ROOT, extra_dig_targets=found)
+            statistics.upload(account, ROOT)
+        except Exception:
+            pass
 
     def lookbook(self):
         if not self.ui.find_menu_entry(node="MaaNikki_Xinghai_OpenLookbook"):

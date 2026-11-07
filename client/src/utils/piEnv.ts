@@ -8,6 +8,8 @@ export interface PiEnvContext {
   translations: Record<string, string> | undefined;
   language: string;
   maaVersion: string | null;
+  helpImproveBlessingStats?: boolean;
+  helpImproveTaskStats?: boolean;
 }
 
 /**
@@ -71,6 +73,13 @@ export function buildPiEnvVars(context: PiEnvContext): Record<string, string> {
 
   if (projectInterface?.version) {
     envs.PI_VERSION = projectInterface.version;
+  }
+
+  if (typeof context.helpImproveBlessingStats === 'boolean') {
+    envs.PI_MAANIKKI_BLESSING_STATS = context.helpImproveBlessingStats ? '1' : '0';
+  }
+  if (typeof context.helpImproveTaskStats === 'boolean') {
+    envs.PI_MAANIKKI_TASK_STATS = context.helpImproveTaskStats ? '1' : '0';
   }
 
   const controller = projectInterface?.controller.find((c) => c.name === controllerName);

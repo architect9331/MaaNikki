@@ -22,7 +22,13 @@ class RunCoordinationAction(CustomAction):
             options = parse_custom_param(argv.custom_action_param)
             task_id = argv.task_detail.task_id
             if options.get("stage") == "begin_realm":
-                rt.account_uid()
+                uid = rt.account_uid()
+                try:
+                    from account_state import AccountState
+                    from collection import statistics
+                    statistics.upload(AccountState(ROOT, uid), ROOT)
+                except Exception:
+                    pass
                 energy = context.get_node_data("MaaNikki_RealmEnergy") or {}
                 next_names = {item if isinstance(item, str) else item.get("name")
                               for item in energy.get("next", []) if isinstance(item, (str, dict))}

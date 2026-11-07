@@ -42,7 +42,7 @@ export interface LogEntry {
 
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'system' | 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP' | 'ko-KR';
-export type PageView = 'main' | 'settings' | 'blessing' | 'exploration' | 'resonance' | 'wardrobe' | 'routes';
+export type PageView = 'main' | 'settings' | 'blessing' | 'exploration' | 'resonance' | 'wardrobe' | 'routes' | 'statistics';
 
 // 定时执行状态信息
 export interface ScheduleExecutionInfo {
@@ -131,6 +131,8 @@ export interface AppState {
   helpImproveRouteTelemetry: boolean;
   /** 是否开启祝福闪光匿名统计上报（帮助改进软件），默认 true */
   helpImproveBlessingStats: boolean;
+  /** 是否开启任务偏好与美鸭梨挖掘统计上报（帮助改进软件），默认 true */
+  helpImproveTaskStats: boolean;
   customAccents: CustomAccent[];
   setTheme: (theme: Theme) => void;
   setAccentColor: (accent: AccentColor) => void;
@@ -145,6 +147,7 @@ export interface AppState {
   setHelpImproveSoftware: (enabled: boolean) => void;
   setHelpImproveRouteTelemetry: (enabled: boolean) => void;
   setHelpImproveBlessingStats: (enabled: boolean) => void;
+  setHelpImproveTaskStats: (enabled: boolean) => void;
   addCustomAccent: (accent: CustomAccent) => void;
   updateCustomAccent: (id: string, accent: CustomAccent) => void;
   removeCustomAccent: (id: string) => void;

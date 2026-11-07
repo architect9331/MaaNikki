@@ -32,6 +32,7 @@ pub mod resonance;
 pub mod state;
 pub mod system;
 mod task_diagnostics;
+pub mod task_stats;
 pub mod telemetry;
 pub mod tray;
 pub mod update;

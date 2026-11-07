@@ -184,6 +184,8 @@ export interface AppSettings {
   helpImproveRouteTelemetry?: boolean;
   /** 是否开启祝福闪光匿名统计上报（帮助改进软件），默认 true */
   helpImproveBlessingStats?: boolean;
+  /** 是否开启任务偏好与美鸭梨挖掘统计上报（帮助改进软件），默认 true */
+  helpImproveTaskStats?: boolean;
 }
 
 // MXU 配置文件完整结构
@@ -265,6 +267,7 @@ export const defaultConfig: MxuConfig = {
     helpImproveSoftware: true,
     helpImproveRouteTelemetry: true,
     helpImproveBlessingStats: true,
+    helpImproveTaskStats: true,
   },
 };
 

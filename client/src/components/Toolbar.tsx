@@ -1262,6 +1262,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         const agentConfigs = normalizeAgentConfigs(projectInterface?.agent);
 
         // PI v2.5.0: 构建 Agent 子进程环境变量
+        const storeState = useAppStore.getState();
         const piEnvs = agentConfigs?.length
           ? buildPiEnvVars({
               projectInterface,
@@ -1270,6 +1271,8 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
               translations,
               language,
               maaVersion,
+              helpImproveBlessingStats: storeState.helpImproveBlessingStats,
+              helpImproveTaskStats: storeState.helpImproveTaskStats,
             })
           : undefined;
 

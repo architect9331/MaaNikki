@@ -12,3 +12,12 @@ CREATE TABLE IF NOT EXISTS bling_runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT, reporter TEXT NOT NULL, day TEXT NOT NULL, app TEXT NOT NULL,
   energy INTEGER NOT NULL, gain INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS dig_targets (
+  reporter TEXT NOT NULL, item TEXT NOT NULL, count INTEGER NOT NULL,
+  PRIMARY KEY (reporter, item)
+);
+CREATE TABLE IF NOT EXISTS reporter_preferences (
+  reporter TEXT NOT NULL, day TEXT NOT NULL, app TEXT NOT NULL,
+  category TEXT NOT NULL, value TEXT NOT NULL,
+  PRIMARY KEY (reporter, category, value)
+);
