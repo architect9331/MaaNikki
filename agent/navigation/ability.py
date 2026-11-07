@@ -14,6 +14,7 @@ LIST_ICON_SCALE = 5/8
 # Keep wheel scrolling and end-of-list comparison inside the curved list body
 # rather than the bottom-right corner above the outfit-switch button.
 LIST_SCROLL_ROI = [980, 150, 160, 320]
+WHEEL_ROI = [290, 130, 560, 480]
 SLOTS = ((1063, 257), (1205, 433), (1199, 640), (1048, 829),
          (641, 829), (498, 640), (485, 433), (610, 257))
 
@@ -62,23 +63,25 @@ class Ability:
             return True
         if not self.ui.ability_page():
             raise NavigationError(f"未能进入能力配置，尚未开始{self.label}。")
-        slot = self.find_slot()
+        ability = self.ui.feature(asset="IconAbilityFeature", threshold=.99,
+                                  method=cv2.TM_CCORR_NORMED)
+        if not self.ui.wait_page(ability, roi=WHEEL_ROI, stable=True):
+            raise NavigationError("未能确认能力配置页面，未更改能力轮盘。")
+        slot = self.find_slot(fresh=True)
         if slot is None:
             plan = self.rt.setting(self.mode).get("ability_plan", 3)
             if type(plan) is not int or plan not in (1, 2, 3):
                 raise NavigationError(f"{self.label}能力方案设置无效，请选择方案一、二或三。")
             if not self.change_plan(plan):
                 return False
-            slot = self.find_slot()
+            if not self.plan_selected():
+                raise NavigationError("未能确认允许修改的能力方案，未更改能力轮盘。")
+            def permitted_plan():
+                return bool(ability() and self.plan_selected())
+            slot = self.find_slot(fresh=True)
             if slot is None:
                 slot = 8
-                if not self.plan_selected():
-                    raise NavigationError("未能确认允许修改的能力方案，未更改能力轮盘。")
                 x, y = SLOTS[slot-1]
-                def permitted_plan():
-                    return bool(self.ui.asset("IconAbilityFeature", threshold=.99,
-                                             method=cv2.TM_CCORR_NORMED)
-                                and self.plan_selected())
                 def ability_list_open():
                     return bool(permitted_plan()
                                 and self.ui.asset("ButtonAbilityChangeList",
@@ -101,15 +104,24 @@ class Ability:
                                     scale=LIST_ICON_SCALE, color=WHITE, threshold=.8,
                                     method=cv2.TM_CCORR_NORMED):
                     raise NavigationError(f"能力列表中未能识别{self.label}图标，本项停止。")
+                configured_slot = None
                 def configured():
-                    return permitted_plan() and self.find_slot() == slot
-                if not self.ui.wait_page(configured):
-                    raise NavigationError(f"未能确认{self.label}已配置到快捷键{slot}，尚未保存搭配。")
-                if not self.ui.click_asset("ButtonAbilitySave"):
+                    nonlocal configured_slot
+                    if not permitted_plan():
+                        return False
+                    found = self.find_slot()
+                    if found is not None:
+                        configured_slot = found
+                        return True
                     return False
                 if not self.ui.wait_page(configured):
-                    raise NavigationError(f"未能确认所选方案已装备{self.label}，本项停止。")
-                self.actions.event({"type": "ability_configured", "ability": self.ability_id, "plan": plan, "slot": slot})
+                    raise NavigationError(f"未能确认{self.label}已配置到快捷键{slot}，尚未保存搭配。")
+                slot = configured_slot
+            if not self.ui.click_asset("ButtonAbilitySave"):
+                return False
+            if not self.ui.wait_page(lambda: permitted_plan() and self.find_slot() == slot):
+                raise NavigationError(f"未能确认所选方案已装备{self.label}，本项停止。")
+            self.actions.event({"type": "ability_configured", "ability": self.ability_id, "plan": plan, "slot": slot})
         self.slot = slot
         return True
 
@@ -128,8 +140,8 @@ class Ability:
                 return True
         raise NavigationError(f"已切换{self.label}快捷键，但未能确认当前能力图标。")
 
-    def find_slot(self):
-        frame = self.rt.frame()
+    def find_slot(self, *, fresh=False):
+        frame = self.rt.capture() if fresh else self.rt.frame()
         if frame is None:
             raise NavigationError("无法读取能力轮盘，未更改能力配置。")
         for index, (x, y) in enumerate(SLOTS, 1):
@@ -183,7 +195,7 @@ class Ability:
                                                       "requested": plan, "entry_roi": entry,
                                                       "plan_names": names}):
             return False
-        if self.ui.wait_page(self.plan_selected):
+        if self.ui.wait_page(self.plan_selected, roi=WHEEL_ROI, stable=True):
             self.actions.event({"type": "ability_plan_selected", "plan": plan, "name": self.plan_label})
             return True
         raise NavigationError("未能确认已切换到所选能力方案，未更改能力轮盘。")
