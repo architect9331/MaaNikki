@@ -56,9 +56,22 @@ def stack_badge(frame, box):
         ink = (patch.max(axis=2) < 195) & (outline > 0)
         if np.count_nonzero(ink) < 8:
             continue
+        col_counts = np.count_nonzero(ink, axis=0)
+        cols = np.where(col_counts >= 1)[0]
+        splits = np.split(cols, np.where(np.diff(cols) > 2)[0] + 1) if len(cols) else []
+        digit_groups = []
+        for g in splits:
+            if not len(g):
+                continue
+            if int(col_counts[g].max()) >= 7:
+                digit_groups.append(g)
+            else:
+                patch[:, g] = 255
+                ink[:, g] = False
+        if np.count_nonzero(ink) < 8:
+            continue
         ink_x = np.where(ink)[1]
-        cols = np.where(np.count_nonzero(ink, axis=0) >= 2)[0]
-        groups = 1 + int(np.count_nonzero(np.diff(cols) > 2)) if len(cols) else 1
+        groups = len(digit_groups) if digit_groups else 1
         return {"state": "stack", "roi": [left + bx, top + by, bw, bh], "patch": patch,
                 "ink_span": [left + bx + int(ink_x.min()), left + bx + int(ink_x.max()) + 1],
                 "ink_groups": groups}
