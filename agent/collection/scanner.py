@@ -163,14 +163,16 @@ class InventoryScanner:
         for row in rows:
             top = round(float(np.median(row["bottoms"]))) + self.layout["level_bottom_padding"] - card_height
             columns = set(row["columns"])
-            columns.update(round((box[0] - first_x) / pitch) for box in contours_found if abs(box[1] - top) < 10)
+            columns.update(round((box[0] - first_x) / pitch) for box in contours_found
+                           if abs(box[1] + box[3] - card_height - top) < 10)
             boxes.extend([round(first_x + column * pitch), top, card_width, card_height] for column in columns)
         # Preserve a cell with unreadable level as unresolved rather than
         # dropping it, while still normalising the source artwork geometry.
         for box in contours_found:
-            if not any(abs(box[0] - old[0]) < 12 and abs(box[1] - old[1]) < 12 for old in boxes):
+            contour_top = box[1] + box[3] - card_height
+            if not any(abs(box[0] - old[0]) < 12 and abs(contour_top - old[1]) < 12 for old in boxes):
                 column = round((box[0] - first_x) / pitch)
-                boxes.append([round(first_x + column * pitch), box[1], card_width, card_height])
+                boxes.append([round(first_x + column * pitch), contour_top, card_width, card_height])
         boxes = [box for box in boxes if x <= box[0] and box[0] + box[2] <= x + width
                  and y <= box[1] and box[1] + box[3] <= y + height]
         return sorted(boxes, key=lambda box: (round(box[1] / 12), box[0]))

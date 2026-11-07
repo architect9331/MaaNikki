@@ -286,6 +286,10 @@ class BlessingOrganizer(BlessingLocker):
             for row, target in operations:
                 found = view.locate(row, rows, exact_lock=row["locked"])
                 if found is None:
+                    already = view.locate(row, rows, exact_lock=target)
+                    if already is not None:
+                        row["locked"] = target
+                        continue
                     raise RuntimeError("整理对象未在完整定位范围内找到，未修改锁定状态")
                 box, facts, evidence, generation = found
                 self.apply_organized_lock(view, row, rows, box, facts, evidence, generation, target)

@@ -76,20 +76,34 @@ class CardModels:
         if not boxes:
             return []
         cards = self.cards(frame, boxes) if cards is None else cards
-        logits, embeddings = self.forward("badge", [card[63:96, 60:94] for card in cards], ["logits", "embedding"])
-        if logits.shape != (len(boxes), 3) or embeddings.shape != (len(boxes), 32):
+        shifts = (0, 2, 4)
+        patches = [card[63 + shift:96 + shift, 60:94] for shift in shifts for card in cards]
+        logits, embeddings = self.forward("badge", patches, ["logits", "embedding"])
+        count = len(boxes)
+        if logits.shape != (count * len(shifts), 3) or embeddings.shape != (count * len(shifts), 32):
             raise ValueError("祝福闪光角标输出尺寸无效")
         results = []
-        for box, scores, vector in zip(boxes, logits, embeddings):
-            index = int(scores.argmax())
-            distance = float(np.linalg.norm(vector - self.centres[index]))
-            reason = None if distance <= float(self.radii[index]) else "outside_training_envelope"
-            name = self.metadata["badge"]["classes"][index]
-            results.append({"classifier": "cropped_rgb_cnn", "box": list(box), "roi": badge_roi(box),
-                            "model_version": self.metadata["badge"]["model_version"],
-                            "predicted": name, "badge_state": name if reason is None else None,
-                            "scores": {label: float(score) for label, score in zip(self.metadata["badge"]["classes"], scores)},
-                            "feature_distance": distance, "feature_radius": float(self.radii[index]), "reason": reason})
+        for item_index, box in enumerate(boxes):
+            best = None
+            for shift_index in range(len(shifts)):
+                row_index = shift_index * count + item_index
+                scores = logits[row_index]
+                vector = embeddings[row_index]
+                index = int(scores.argmax())
+                radius = float(self.radii[index])
+                distance = float(np.linalg.norm(vector - self.centres[index]))
+                reason = None if distance <= radius else "outside_training_envelope"
+                name = self.metadata["badge"]["classes"][index]
+                candidate = {"classifier": "cropped_rgb_cnn", "box": list(box), "roi": badge_roi(box),
+                             "model_version": self.metadata["badge"]["model_version"],
+                             "predicted": name, "badge_state": name if reason is None else None,
+                             "scores": {label: float(score) for label, score in zip(self.metadata["badge"]["classes"], scores)},
+                             "feature_distance": distance, "feature_radius": radius, "reason": reason}
+                if best is None or (candidate["reason"] is None and (
+                        best["reason"] is not None
+                        or distance / max(radius, 1e-6) < best["feature_distance"] / max(best["feature_radius"], 1e-6))):
+                    best = candidate
+            results.append(best)
         return results
 
     def match_batch(self, frame, boxes, slot):

@@ -421,8 +421,6 @@ class BlessingLocker(InventoryScanner):
         """Reuse the page batch; only ambiguous badges need button selection."""
         result = classification if classification is not None else self.card_models.badges(frame, [box])[0]
         kind = result["badge_state"]
-        if kind is None and self._tall_mode and box[1] > 560:
-            kind = result.get("predicted")
         state = "locked" if kind == "locked" else "unlocked" if kind in ("stack", "single") else None
         source = "classifier_" + kind if kind is not None else "ambiguous"
         stats = self.report.setdefault("card_state_sources", {})
