@@ -370,7 +370,7 @@ def ensure_backpack_scanned(rt, account: AccountState, crafting_catalog: dict) -
         m["backpack_scanned_day"] = today
         m["inventory_updated_at"] = now
 
-    account.mutate(update)
+    account.update(update)
     for line in logs:
         rt.log(line)
     inv.update({str(k): int(v) for k, v in scanned.items()})

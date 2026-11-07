@@ -103,7 +103,7 @@ def record_accrual(account: AccountState, mid: str | None = None, gained: int = 
             mats["glow_plan"]["completed"] = True
             mats["glow_plan"]["completed_at"] = now
 
-    account.mutate(update)
+    account.update(update)
 
 
 def run_glow_prep(rt) -> bool:
