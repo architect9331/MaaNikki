@@ -314,9 +314,9 @@
     "recognition": "TemplateMatch",
     "roi": [
       1210,
-      470,
+      420,
       70,
-      85
+      140
     ],
     "template": "game/daily/item_category.png",
     "threshold": 0.7,

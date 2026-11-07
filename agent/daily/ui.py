@@ -678,10 +678,17 @@ class GameUI:
             return self.monthly_start()
         return False
 
+    def item_panel_open(self):
+        with self.rt.observe():
+            return bool(self.rt.hit("MaaNikki_Daily_ItemCategory")
+                        or self.rt.hit("MaaNikki_Daily_ItemFinish")
+                        or self.rt.hit("MaaNikki_Daily_ItemSetting"))
+
     def star_collect_world_ready(self):
         with self.rt.observe():
             return bool(self.rt.hit("MaaNikki_MainDetected")
-                        and not self.rt.hit("MaaNikki_Home_StarCollectReady"))
+                        and not self.rt.hit("MaaNikki_Home_StarCollectReady")
+                        and not self.item_panel_open())
 
     def leave_star_collect(self):
         with self.preserve_cursor():
@@ -754,7 +761,7 @@ class GameUI:
                     page = "reward_overlay"
                 elif self.rt.hit("MaaNikki_Bless_Cancel"):
                     page = "realm_confirm"
-                elif self.rt.hit("MaaNikki_MainDetected"):
+                elif self.star_collect_world_ready():
                     page = "main"
                 elif self.rt.hit("MaaNikki_Navigation_ReviveButton"):
                     page = "death"
