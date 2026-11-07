@@ -48,6 +48,9 @@ class WeeklyChallengeAction(CustomAction):
                 return False
             count = read_count(rt)
             if count is None:
+                if rt.text([470, 415, 220, 45], "尚未解锁|未解锁"):
+                    rt.log("心之突破幻境尚未解锁，本次跳过。")
+                    return True
                 rt.diagnostic("weekly_count", "无法读取本周挑战次数")
                 rt.log("无法读取本周挑战次数，本次停止，未继续消耗活跃能量。")
                 return False

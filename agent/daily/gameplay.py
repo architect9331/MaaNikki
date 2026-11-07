@@ -675,11 +675,19 @@ class Gameplay:
                         or (submitted and (self.ui.page_matches("MaaNikki_MainDetected")
                                            or self.ui.page_matches("MaaNikki_MenuReady"))))
 
-        # An expired Paradise switch can return to the world or its menu.
-        # Treat that confirmed outcome as unavailable; retrying the entrance
-        # would reopen Travel and repeat the same closed-season transition.
+        # An expired Paradise switch or locked Home feature can return to the
+        # world/menu or keep the player on Travel after clicking the switch.
         if not self.ui.enter_page(click, arrived, source=source, attempts=1, seconds=8,
                                   diagnostic_context={"page": "paradise", "optional": True}):
+            if (submitted and not self.rt.stopped
+                    and self.ui.wait_page(source, seconds=1.5)):
+                if (self.rt.click_template(node, attempts=1, wait_seconds=0, verify=False)
+                        and self.ui.wait_page(arrived, seconds=3)):
+                    if self.ui.page_matches(destination):
+                        return "ready"
+                if not self.rt.stopped and self.ui.wait_page(source, seconds=1.5):
+                    self.ui.monthly_paradise_unavailable = True
+                    return "unavailable"
             return "failed"
         if self.ui.page_matches(destination):
             return "ready"

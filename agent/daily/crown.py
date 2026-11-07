@@ -393,12 +393,16 @@ class Crown(Runtime):
             frame = self.capture()
             raw = self.text(roi, image=frame) if frame is not None else ""
             value = parse_progress(raw)
+            if value is None and source == "calendar" and re.search(r"尚未解锁|未解锁", raw):
+                value = "locked"
             if value is not None and value == previous:
                 progress = value
                 break
             previous = value
             if not self.pause(.4):
                 break
+        if progress == "locked":
+            return None
         self.require(progress is not None, "未能读取巅峰赛进度")
         # Persist only an observed star count, including zero. Successful
         # inputs or a completed challenge flow do not establish its star score.
@@ -409,7 +413,11 @@ class Crown(Runtime):
         self.log("正在检查巅峰赛进度；切出游戏会暂停，切回后自动继续。")
         # The calendar exposes the same star count inside and outside home.
         # World preparation is needed only when entering the challenge/lobby.
-        current, total = self.read_progress(account)
+        progress = self.read_progress(account)
+        if progress is None:
+            self.log("奇迹之冠巅峰赛尚未解锁，本次跳过。")
+            return True
+        current, total = progress
         self.log(f"奇迹之冠巅峰赛进度：{current}/{total} 星，完成目标 {target} 星。")
         if account.complete("crown", target_stars=target):
             self.log("本期巅峰赛已达标并领完嘉奖，跳过。")
