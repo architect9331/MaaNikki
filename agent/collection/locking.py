@@ -29,11 +29,12 @@ class BlessingLocker(InventoryScanner):
     use the same verified lock button without re-finding a split selected item.
     """
 
-    def __init__(self, runtime, catalog, folder, *, allow_unlock=False):
+    def __init__(self, runtime, catalog, folder, *, allow_unlock=False, read_only=False):
         super().__init__(runtime, catalog, folder)
         if type(allow_unlock) is not bool:
             raise ValueError("解锁不符合要求的闪光选项必须为布尔值")
         self.allow_unlock = allow_unlock
+        self.read_only = bool(read_only)
         self.layout = parameters(runtime.context, "MaaNikki_BlessingLock_Layout")
         self._base_layout = deepcopy(self.layout)
         self._tall_mode = False

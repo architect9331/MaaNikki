@@ -26,7 +26,8 @@
                 "RealmTypes",
                 "CollectionMode",
                 "CraftingCollectionMode",
-                "CollectionPriority",
+                "CollectionWorkflow",
+                "CollectionReserveBling",
                 "CollectionBling",
                 "CollectionDecompose",
                 "CollectionOrganize",
@@ -108,7 +109,7 @@
         "CollectionMode": {
             "type": "switch",
             "label": "五星全收集模式",
-            "description": "开启后不再使用上面的消耗方式：按预期新色选副本、刷取并升级，满级新颜色自动锁定。第一次运行先整理全部祝福闪光，请提前清除仓库筛选。",
+            "description": "开启后按仓库缺色情况自动选本刷取：支持「全流程托管」（整理、刷本、分解、升级并锁定新满级色）与「只刷胚子」（按仓库已有满级色及未升级胚子计算期望选本，升级和仓库管理由玩家自行安排）。首次运行请提前清除仓库筛选。",
             "cases": [
                 {
                     "name": "Yes",
@@ -134,35 +135,57 @@
             ],
             "default_case": "No"
         },
-        "CollectionPriority": {
+        "CollectionWorkflow": {
             "type": "select",
-            "label": "升级和选本顺序",
-            "description": "推荐按出新色概率：每次升级花费相同，优先升更可能出新色的部位，选本也看预期新色数。不改变全收齐所需总量，但同样的噗灵能更早收到更多颜色。",
+            "label": "全收集执行模式",
+            "description": "「全流程托管」自动整理、刷本、分解、升级并锁定满级新颜色；「只刷胚子」仅根据当前仓库满级颜色与待升级胚子计算期望自动选本刷取，不改动锁定、不分解、不升级。",
             "cases": [
                 {
-                    "name": "Chance",
-                    "label": "按出新色概率（推荐）",
+                    "name": "Managed",
+                    "label": "全流程托管（刷本 + 升级 + 锁定）",
                     "pipeline_override": {
-                        "MaaNikki_Pursuit_PriorityOption": {
+                        "MaaNikki_Pursuit_WorkflowOption": {
                             "custom_action_param": {
-                                "mode": "chance"
+                                "mode": "managed"
                             }
                         }
                     }
                 },
                 {
-                    "name": "Oldest",
-                    "label": "先升最早获得的胚子",
+                    "name": "FarmOnly",
+                    "label": "只刷胚子（仅按仓库自动选本）",
                     "pipeline_override": {
-                        "MaaNikki_Pursuit_PriorityOption": {
+                        "MaaNikki_Pursuit_WorkflowOption": {
                             "custom_action_param": {
-                                "mode": "oldest"
+                                "mode": "farm_only"
                             }
                         }
                     }
                 }
             ],
-            "default_case": "Chance"
+            "default_case": "Managed"
+        },
+        "CollectionReserveBling": {
+            "type": "input",
+            "label": "保留噗灵数",
+            "description": "升级祝福闪光时保证剩余噗灵不低于此数值（设为 0 表示不保留）。当扣除当次升级费用后噗灵会低于保留数时，停止升级并按下方设置决定是否改刷噗灵。",
+            "inputs": [
+                {
+                    "name": "amount",
+                    "label": "保留噗灵数",
+                    "default": "0",
+                    "pipeline_type": "int",
+                    "verify": "^\\d+$",
+                    "pattern_msg": "请输入非负整数（如 0 或 500000）"
+                }
+            ],
+            "pipeline_override": {
+                "MaaNikki_Pursuit_ReserveBlingOption": {
+                    "custom_action_param": {
+                        "amount": "{amount}"
+                    }
+                }
+            }
         },
         "CollectionBling": {
             "type": "switch",

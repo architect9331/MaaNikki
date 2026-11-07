@@ -3,7 +3,7 @@ import { useAccountStateStore } from '@/stores/accountStateStore';
 import { useAppStore } from '@/stores/appStore';
 import type { Instance, OptionValue } from '@/types/interface';
 import { getBlessingProgress } from '@/utils/blessingProgress';
-import { realmCollectionEnabled } from '@/utils/nikkiOptions';
+import { realmCollectionEnabled, realmFarmOnlyEnabled } from '@/utils/nikkiOptions';
 import { isTauri } from '@/utils/paths';
 
 export interface PreflightIssue {
@@ -48,11 +48,14 @@ export async function preflightIssues(instance: Instance): Promise<PreflightIssu
 
   const realm = enabledTask(instance, 'realm_challenge');
   if (realm && realmCollectionEnabled(realm.optionValues)) {
-    if (!getBlessingProgress(useAccountStateStore.getState().data).known) {
+    const farmOnly = realmFarmOnlyEnabled(realm.optionValues);
+    if (!getBlessingProgress(useAccountStateStore.getState().data).localKnown) {
       issues.push({ id: 'collection-filter', title: '第一次全收集前，请清除祝福闪光仓库的筛选',
-        detail: '第一次运行会读取并锁定全部祝福闪光，筛选会让读取不完整。' });
+        detail: farmOnly
+          ? '第一次运行会只读扫描全部祝福闪光与胚子数量，筛选会让读取不完整。'
+          : '第一次运行会读取并锁定全部祝福闪光，筛选会让读取不完整。' });
     }
-    if (switchOn(realm.optionValues, 'CollectionDecompose', true)) {
+    if (!farmOnly && switchOn(realm.optionValues, 'CollectionDecompose', true)) {
       issues.push({ id: 'collection-decompose', once: true, title: '已开启「爆仓时分解重复祝福闪光」',
         detail: '仓库满时会一键分解未锁定的闪光，每批最多 100 件，且不可恢复。请提前锁定想保留的闪光，并且不要手动解锁已收藏的闪光。不想分解可以在幻境挑战中关闭。' });
     }

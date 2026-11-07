@@ -46,16 +46,32 @@ class BlessingPursuitAction(CustomAction):
         try:
             options = parameters(context, argv.node_name)
             catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+            workflow = parameters(context, "MaaNikki_Pursuit_WorkflowOption").get("mode", "managed")
+            farm_only = workflow == "farm_only"
+            raw_reserve = parameters(context, "MaaNikki_Pursuit_ReserveBlingOption").get("amount", 0)
+            try:
+                reserve_bling = max(0, int(str(raw_reserve or 0).strip().replace(",", "")))
+            except (ValueError, TypeError):
+                reserve_bling = 0
             organize = parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto")
             if organize not in ORGANIZE_OPTIONS:
                 raise ValueError("未知祝福闪光整理选项")
             issue = None if organize != "auto" else organization_issue(rt, catalog)
             if organize != "auto" or issue is not None:
-                rt.log("正在整理全部祝福闪光：读取头部、手部、脚部并锁定每款每色的满级收藏。",
-                       ui_text="正在整理全部祝福闪光。")
+                if farm_only:
+                    rt.log("正在读取全部祝福闪光：扫描头部、手部、脚部建立仓库记录（只刷胚子模式不修改锁定）。",
+                           ui_text="正在读取全部祝福闪光。")
+                else:
+                    rt.log("正在整理全部祝福闪光：读取头部、手部、脚部并锁定每款每色的满级收藏。",
+                           ui_text="正在整理全部祝福闪光。")
                 if issue is not None:
                     rt.log(f"需要整理的原因：{issue}。", detail=True)
-                result = organize_inventory(rt, catalog, allow_unlock=bool(ORGANIZE_OPTIONS[organize]))
+                result = organize_inventory(
+                    rt,
+                    catalog,
+                    allow_unlock=False if farm_only else bool(ORGANIZE_OPTIONS[organize]),
+                    read_only=farm_only,
+                )
                 if not result["published"] and organization_issue(rt, catalog) is not None:
                     if result.get("warehouse_full"):
                         rt.log("整理未完成且祝福闪光仓库已满，本轮无法刷取祝福闪光副本，下次运行重新整理。",
@@ -73,14 +89,13 @@ class BlessingPursuitAction(CustomAction):
             pursuit = FiveStarInventory(rt, catalog, folder)
             decompose = parameters(context, "MaaNikki_Pursuit_DecomposeOption").get("enabled") is True
             auto_bling = parameters(context, "MaaNikki_Pursuit_BlingOption").get("enabled") is not False
-            priority = parameters(context, "MaaNikki_Pursuit_PriorityOption").get("mode", "chance")
             share = stats_enabled(
                 ROOT,
                 parameters(context, "MaaNikki_Pursuit_StatsOption").get("enabled") is not False,
             )
             ok = FiveStarPursuit(pursuit, decompose_duplicates=decompose, auto_bling=auto_bling,
-                                 chance_priority=priority != "oldest",
-                                 share_statistics=share).run()
+                                 chance_priority=True, share_statistics=share,
+                                 farm_only=farm_only, reserve_bling=reserve_bling).run()
             if not ok and not rt.stopped:
                 rt.diagnostic("blessing_pursuit", "祝福闪光处理未完成")
             progress_path = pursuit.report.get("inventory", {}).get("path") or pursuit.report.get("startup", {}).get("path")

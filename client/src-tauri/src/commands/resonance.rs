@@ -492,6 +492,76 @@ pub fn resonance_history(
 }
 
 #[tauri::command]
+pub async fn pearpal_sync_notebook(
+    app: tauri::AppHandle,
+    window: WebviewWindow,
+    state: tauri::State<'_, Arc<ResonanceState>>,
+) -> Result<Value, String> {
+    desktop(&window)?;
+    let credentials = super::pearpal::credentials()?;
+    let token = credentials["token"]
+        .as_str()
+        .ok_or_else(|| "美鸭梨登录已过期，请重新登录。".to_string())?;
+    let openid = credentials["openid"]
+        .as_str()
+        .ok_or_else(|| "美鸭梨登录已过期，请重新登录。".to_string())?;
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .timeout(Duration::from_secs(20))
+        .build()
+        .map_err(|_| "无法创建美鸭梨连接。".to_string())?;
+    let info = response_json(
+        client
+            .post("https://myl-api.nuanpaper.com/v1/strategy/user/info/get")
+            .json(&json!({"client_id": 1106, "token": token, "openid": openid})),
+    )
+    .await
+    .map_err(|e| e.message)?;
+    require_success(&info, "美鸭梨账号获取").map_err(|e| e.message)?;
+    let uid = match &info["data"]["role"]["uid"] {
+        Value::String(uid) => uid.clone(),
+        Value::Number(uid) => uid.to_string(),
+        _ => return Err("美鸭梨尚未绑定游戏角色，请在美鸭梨完成绑定。".into()),
+    };
+    if uid.is_empty()
+        || !uid.bytes().all(|c| c.is_ascii_digit())
+        || info["data"]["role"]["zone_id"].as_u64() != Some(1)
+    {
+        return Err("请登录美鸭梨国服角色。".into());
+    }
+    let account_key = format!("CN:{uid}");
+    let role = super::account_state::read_role(&account_key)?;
+    let mut history = if role["resonance"].is_object() {
+        load_history(&account_key)?
+    } else {
+        History {
+            schema_version: 2,
+            account_key: account_key.clone(),
+            uid,
+            region: "CN".into(),
+            last_success: None,
+            banners: BTreeMap::new(),
+            notebook: Notebook::default(),
+        }
+    };
+    let rows = fetch_notebook(&client, token, openid, Some(&account_key), Some(&app))
+        .await
+        .map_err(|e| e.message)?;
+    let _ = merge_notebook(&mut history.notebook, rows).map_err(|e| e.message)?;
+    let _ = save_history(&history);
+    {
+        let mut inner = state.inner.lock().unwrap();
+        inner
+            .accounts
+            .retain(|account| account.key != history.account_key);
+        inner.accounts.push(summary(&history));
+    }
+    state.publish(&app);
+    let updated_role = super::account_state::read_role(&account_key)?;
+    Ok(updated_role["observations"]["pearpal_notebook"].clone())
+}
+
+#[tauri::command]
 pub fn resonance_export(window: WebviewWindow, account_key: String) -> Result<String, String> {
     desktop(&window)?;
     let history = load_history(&account_key)?;
@@ -615,10 +685,198 @@ async fn response_value(
     serde_json::from_slice(&raw).map_err(|_| failure("共鸣记录接口格式发生变化。"))
 }
 
+fn normalize_color_name(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.contains('彩') {
+        "彩".into()
+    } else {
+        trimmed.trim_end_matches('色').to_string()
+    }
+}
+
+async fn save_pearpal_notebook_observations(
+    client: &reqwest::Client,
+    account_key: &str,
+    notebook_response: &Value,
+    app: Option<&tauri::AppHandle>,
+) -> Option<Value> {
+    let suit_res = response_json(
+        client
+            .post("https://myl-api.nuanpaper.com/v1/strategy/main/suit/list")
+            .json(&json!({"client_id": 1106})),
+    )
+    .await
+    .ok();
+
+    let mut suits = BTreeMap::<String, (String, u64)>::new();
+    let mut items = BTreeMap::<String, (String, String, u64)>::new();
+    let mut colors = BTreeMap::<String, String>::new();
+
+    if let Some(data) = suit_res.as_ref().and_then(|v| v.get("data")) {
+        if let Some(list) = data["magic_ball_suit_list"].as_array() {
+            for entry in list {
+                let flag = entry["flag"]
+                    .as_str()
+                    .map(str::to_owned)
+                    .or_else(|| entry["flag"].as_u64().map(|n| n.to_string()));
+                let name = entry["name"]
+                    .as_array()
+                    .and_then(|arr| {
+                        arr.iter()
+                            .find(|n| n["lang"].as_str() == Some("zh-cn"))
+                            .or_else(|| arr.first())
+                    })
+                    .and_then(|n| n["text"].as_str())
+                    .map(str::to_owned);
+                let suit_level = entry["suit_level"].as_u64().unwrap_or(1);
+                if let (Some(flag), Some(name)) = (flag, name) {
+                    suits.insert(flag, (name, suit_level));
+                }
+            }
+        }
+        if let Some(list) = data["magic_ball_item_list"].as_array() {
+            for entry in list {
+                let flag = entry["flag"]
+                    .as_str()
+                    .map(str::to_owned)
+                    .or_else(|| entry["flag"].as_u64().map(|n| n.to_string()));
+                let suit_flag = entry["suit_flag"]
+                    .as_str()
+                    .map(str::to_owned)
+                    .or_else(|| entry["suit_flag"].as_u64().map(|n| n.to_string()));
+                let pos = entry["position_type"].as_u64().unwrap_or(0);
+                let slot = match pos {
+                    1 => Some("头部"),
+                    2 => Some("手部"),
+                    3 => Some("脚部"),
+                    _ => None,
+                };
+                if let (Some(flag), Some(suit_flag), Some(slot)) = (flag, suit_flag, slot) {
+                    if let Some((suit_name, suit_level)) = suits.get(&suit_flag) {
+                        items.insert(flag, (suit_name.clone(), slot.to_owned(), *suit_level));
+                    }
+                }
+            }
+        }
+        if let Some(list) = data["magic_ball_color_list"].as_array() {
+            for entry in list {
+                let flag = entry["flag"]
+                    .as_str()
+                    .map(str::to_owned)
+                    .or_else(|| entry["flag"].as_u64().map(|n| n.to_string()));
+                let color_text = entry["color_type"]
+                    .as_str()
+                    .or_else(|| {
+                        entry["name"]
+                            .as_array()
+                            .and_then(|arr| arr.first())
+                            .and_then(|n| n["text"].as_str())
+                    })
+                    .map(normalize_color_name);
+                if let (Some(flag), Some(color)) = (flag, color_text) {
+                    if !color.is_empty() {
+                        colors.insert(flag, color);
+                    }
+                }
+            }
+        }
+    }
+
+    let mut five_star_colors = Vec::new();
+    let mut four_star_colors = Vec::new();
+    if let Some(ball_list) = notebook_response["info_from_self"]["magic_ball_list"].as_array() {
+        for row in ball_list {
+            let item_id = row["magic_ball_id"]
+                .as_str()
+                .map(str::to_owned)
+                .or_else(|| row["magic_ball_id"].as_u64().map(|n| n.to_string()));
+            let color_id = row["magic_ball_color"]
+                .as_str()
+                .map(str::to_owned)
+                .or_else(|| row["magic_ball_color"].as_u64().map(|n| n.to_string()));
+            if let (Some(item_id), Some(color_id)) = (item_id, color_id) {
+                if let (Some((suit_name, slot, suit_level)), Some(color)) =
+                    (items.get(&item_id), colors.get(&color_id))
+                {
+                    let item = json!({
+                        "name": suit_name,
+                        "slot": slot,
+                        "color": color,
+                    });
+                    if *suit_level == 1 {
+                        five_star_colors.push(item);
+                    } else if *suit_level == 2 {
+                        four_star_colors.push(item);
+                    }
+                }
+            }
+        }
+    }
+
+    let gm = &notebook_response["info_from_gm"];
+    let self_info = &notebook_response["info_from_self"];
+    let dispatch = gm["dispatch"]
+        .as_array()
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|d| {
+                    let text = d["text"].as_str()?.trim();
+                    if text.is_empty() {
+                        return None;
+                    }
+                    Some(json!({
+                        "reward_id": d["reward_id"],
+                        "text": text,
+                        "spend_time": d["spend_time"],
+                        "start_time": d["start_time"],
+                    }))
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    let payload = json!({
+        "updated_at": Utc::now().to_rfc3339(),
+        "five_star_colors": five_star_colors,
+        "four_star_colors": four_star_colors,
+        "dispatch": dispatch,
+        "summary": {
+            "login_days": self_info["login_days"],
+            "total_play_time": self_info["total_play_time"],
+            "cloth_num": gm["cloth_num"],
+            "achievement_num": gm["achievement_num"],
+            "box_num": gm["box_num"],
+            "designdrawing_num": gm["designdrawing_num"],
+            "permanent_tower": gm["permanent_tower"],
+            "periodic_tower": gm["periodic_tower"],
+            "energy": gm["energy"],
+            "daily_task": gm["daily_task"],
+        }
+    });
+
+    if super::account_state::update_role(account_key, |role| {
+        if let Some(obs) = role["observations"].as_object_mut() {
+            obs.insert("pearpal_notebook".into(), payload.clone());
+        }
+        Ok(())
+    })
+    .is_ok()
+    {
+        if let Some(app) = app {
+            let _ = app.emit("account-state-changed", ());
+        }
+        Some(payload)
+    } else {
+        None
+    }
+}
+
 async fn fetch_notebook(
     client: &reqwest::Client,
     token: &str,
     openid: &str,
+    account_key: Option<&str>,
+    app: Option<&tauri::AppHandle>,
 ) -> Result<Vec<NotebookPull>, SyncError> {
     // This endpoint returns one compressed snapshot. Observed records are
     // grouped by pool with increasing pool_cnt; the sequence is an identity,
@@ -632,6 +890,9 @@ async fn fetch_notebook(
     .await?;
     if response.get("code").is_some() {
         require_success(&response, "美鸭梨手账获取")?;
+    }
+    if let Some(account_key) = account_key {
+        let _ = save_pearpal_notebook_observations(client, account_key, &response, app).await;
     }
     let rows = response["info_from_self"]["gacha_list"]
         .as_array()
@@ -947,7 +1208,7 @@ async fn synchronize(
         inner.page = 0;
     }
     state.publish(app);
-    match fetch_notebook(&client, token, openid)
+    match fetch_notebook(&client, token, openid, Some(&account_key), Some(app))
         .await
         .and_then(|rows| merge_notebook(&mut history.notebook, rows))
     {

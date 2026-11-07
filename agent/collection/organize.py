@@ -11,7 +11,7 @@ from .scanner import RescanSlot
 from .storage import InventoryStore
 
 
-def organize_inventory(rt, catalog, *, allow_unlock=False):
+def organize_inventory(rt, catalog, *, allow_unlock=False, read_only=False):
     """Return whether a complete baseline was published; only a stop raises."""
     folder = ROOT / "logs/blessing-lock" / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     folder.mkdir(parents=True, exist_ok=True)
@@ -20,7 +20,7 @@ def organize_inventory(rt, catalog, *, allow_unlock=False):
     inventory_saved = False
     try:
         store = InventoryStore(ROOT, catalog, rt)
-        locker = BlessingOrganizer(rt, catalog, folder, allow_unlock=allow_unlock)
+        locker = BlessingOrganizer(rt, catalog, folder, allow_unlock=allow_unlock, read_only=read_only)
         locker.baseline_store = store
         locker.run()
         snapshot = locker.capture_inventory()

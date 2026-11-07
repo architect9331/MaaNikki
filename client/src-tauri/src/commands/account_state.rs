@@ -76,6 +76,19 @@ pub(super) fn update_role(
     }
     let path = account_path(key)?;
     write_atomic(&path, &raw).map_err(|_| "无法保存账号数据。")?;
+    let index_path = directory.join("index.json");
+    let mut index = read_json(&index_path)?.unwrap_or_else(|| json!({"schema_version": 1}));
+    if index["active_game_account"]
+        .as_str()
+        .filter(|k| valid_account_key(k))
+        .is_none()
+    {
+        index["active_game_account"] = json!(key);
+        index["updated_at"] = json!(chrono::Utc::now().to_rfc3339());
+        if let Ok(index_raw) = serde_json::to_vec_pretty(&index) {
+            let _ = write_atomic(&index_path, &index_raw);
+        }
+    }
     Ok(())
 }
 
@@ -137,7 +150,47 @@ fn read_account_state() -> Result<Value, String> {
         .max_by_key(|v| v["record"]["updated_at"].as_str().unwrap_or(""));
     let summary = latest.map(|value| {
         let mut record = value.clone();
+        let mut part_embryos = serde_json::Map::new();
+        let mut unlocked_max = Vec::new();
+        if let Some(slots) = record
+            .get("organization")
+            .and_then(|o| o.get("slots"))
+            .and_then(Value::as_object)
+        {
+            for (slot, rows) in slots {
+                if let Some(rows) = rows.as_array() {
+                    for row in rows {
+                        if row["rarity"].as_u64() != Some(5)
+                            || row["collectible"].as_bool() != Some(true)
+                        {
+                            continue;
+                        }
+                        let Some(name) = row["name"].as_str() else {
+                            continue;
+                        };
+                        let maximum = row["maximum"].as_bool() == Some(true);
+                        let locked = row["locked"].as_bool() == Some(true);
+                        if !maximum && !locked {
+                            let count = row["count"].as_u64().unwrap_or(1).max(1);
+                            let key = format!("{name}/{slot}");
+                            let prev = part_embryos.get(&key).and_then(Value::as_u64).unwrap_or(0);
+                            part_embryos.insert(key, json!(prev + count));
+                        } else if maximum && !locked {
+                            if let Some(color) = row["color"].as_str() {
+                                unlocked_max.push(json!({
+                                    "name": name,
+                                    "slot": slot,
+                                    "color": color,
+                                }));
+                            }
+                        }
+                    }
+                }
+            }
+        }
         if let Some(object) = record.as_object_mut() {
+            object.insert("part_embryos".into(), Value::Object(part_embryos));
+            object.insert("unlocked_max_colors".into(), Value::Array(unlocked_max));
             for key in ["organization", "excluded_items", "unresolved", "items"] {
                 object.remove(key);
             }

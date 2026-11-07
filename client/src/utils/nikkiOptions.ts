@@ -3,10 +3,18 @@ import type { OptionValue } from '@/types/interface';
 const REALM_MODE_TARGETS: Record<string, string> = {
   JihuaTarget: 'Jihua', JihuaMaterialMode: 'Jihua', JihuaMaterials: 'Jihua', MonsterTarget: 'Monster',
 };
-const COLLECTION_OPTIONS = new Set(['CollectionPriority', 'CollectionBling', 'CollectionDecompose', 'CollectionOrganize']);
+const COLLECTION_MANAGED_OPTIONS = new Set(['CollectionReserveBling', 'CollectionBling', 'CollectionDecompose']);
 
 export const realmCollectionEnabled = (values: Record<string, OptionValue>): boolean =>
   values.CollectionMode?.type === 'switch' && values.CollectionMode.value;
+
+export const realmCollectionWorkflow = (values: Record<string, OptionValue>): 'Managed' | 'FarmOnly' =>
+  values.CollectionWorkflow?.type === 'select' && values.CollectionWorkflow.caseName === 'FarmOnly'
+    ? 'FarmOnly'
+    : 'Managed';
+
+export const realmFarmOnlyEnabled = (values: Record<string, OptionValue>): boolean =>
+  realmCollectionEnabled(values) && realmCollectionWorkflow(values) === 'FarmOnly';
 
 export const realmCraftingEnabled = (values: Record<string, OptionValue>): boolean =>
   !realmCollectionEnabled(values) && values.CraftingCollectionMode?.type === 'switch' && values.CraftingCollectionMode.value;
@@ -19,6 +27,7 @@ export function realmOptionLabel(key: string, values: Record<string, OptionValue
 // Target choices remain saved while a different consumption mode is active.
 export function realmOptionActive(key: string, values: Record<string, OptionValue>): boolean {
   const collection = realmCollectionEnabled(values);
+  const farmOnly = realmFarmOnlyEnabled(values);
   const crafting = realmCraftingEnabled(values);
   if (key === 'CollectionMode') return collection;
   if (key === 'CraftingCollectionMode') return crafting;
@@ -27,13 +36,15 @@ export function realmOptionActive(key: string, values: Record<string, OptionValu
     const weekly = values.WeeklyEnabled;
     return weekly?.type !== 'switch' || weekly.value;
   }
-  if (COLLECTION_OPTIONS.has(key)) return collection;
+  if (key === 'CollectionWorkflow' || key === 'CollectionOrganize') return collection;
+  if (COLLECTION_MANAGED_OPTIONS.has(key)) return collection && !farmOnly;
   // In collection mode the blessing target is the failed-organization fallback.
   if (key === 'BlessTarget' && collection) return true;
   if (key === 'RealmTypes') return !collection && !crafting;
   if (crafting) return false;
   // Collection mode's bling runs spend the configured materials.
   if (collection && (key === 'JihuaMaterialMode' || key === 'JihuaMaterials')) {
+    if (farmOnly) return false;
     const bling = values.CollectionBling;
     return bling?.type !== 'switch' || bling.value;
   }
@@ -51,7 +62,13 @@ export function realmOptionBackup(key: string, values: Record<string, OptionValu
 /** The former realm "five-star collection" case is now its own mode switch. */
 export function migrateNikkiOptionValues(values: Record<string, OptionValue>): Record<string, OptionValue> {
   const realm = values.RealmTypes;
-  if (realm?.type !== 'select' || realm.caseName !== 'FiveStarCollection') return values;
-  return { ...values, RealmTypes: { type: 'select', caseName: 'Bless' },
-    CollectionMode: { type: 'switch', value: true } };
+  const legacyCollection = realm?.type === 'select' && realm.caseName === 'FiveStarCollection';
+  if (!legacyCollection && !('CollectionPriority' in values)) return values;
+  const next = { ...values };
+  delete next.CollectionPriority;
+  if (legacyCollection) {
+    next.RealmTypes = { type: 'select', caseName: 'Bless' };
+    next.CollectionMode = { type: 'switch', value: true };
+  }
+  return next;
 }

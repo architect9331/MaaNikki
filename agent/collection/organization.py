@@ -198,12 +198,13 @@ class BlessingOrganizer(BlessingLocker):
                 box, facts, evidence, generation = found
 
     def _finalize_slot(self, slot, rows, maximum, ordered):
-        final = Counter(signature(row) for row in rows if row["locked"])
-        if any(final[key] < 1 for key in maximum):
-            raise RuntimeError("整理复核发现满级款色未保护，未发布基准")
-        if self.allow_unlock and any(row["mutable"] and row["locked"] and
-                                     (not row["maximum"] or final[signature(row)] != 1) for row in rows):
-            raise RuntimeError("整理复核仍有未满级或多余锁定，未发布基准")
+        if not self.read_only:
+            final = Counter(signature(row) for row in rows if row["locked"])
+            if any(final[key] < 1 for key in maximum):
+                raise RuntimeError("整理复核发现满级款色未保护，未发布基准")
+            if self.allow_unlock and any(row["mutable"] and row["locked"] and
+                                         (not row["maximum"] or final[signature(row)] != 1) for row in rows):
+                raise RuntimeError("整理复核仍有未满级或多余锁定，未发布基准")
         for row in rows:
             if row["locked"] and row["mutable"]:
                 key = (row["name"], slot, row["color"], row["level"])
@@ -242,22 +243,23 @@ class BlessingOrganizer(BlessingLocker):
                     operations = []
                     # Plan from verified existing locks before adding any lock.
                     # Acquisition order does not place locked copies before stacks.
-                    for row in reversed(rows):
-                        key = signature(row)
-                        target = None
-                        if row["mutable"]:
-                            if row["maximum"]:
-                                if row["locked"]:
-                                    if key in keep and self.allow_unlock:
-                                        target = False
-                                    keep.add(key)
-                                elif locked[key] == 0 and key not in keep:
-                                    target = True
-                                    keep.add(key)
-                            elif row["locked"] and self.allow_unlock:
-                                target = False
-                        if target is not None:
-                            operations.append((row, target))
+                    if not self.read_only:
+                        for row in reversed(rows):
+                            key = signature(row)
+                            target = None
+                            if row["mutable"]:
+                                if row["maximum"]:
+                                    if row["locked"]:
+                                        if key in keep and self.allow_unlock:
+                                            target = False
+                                        keep.add(key)
+                                    elif locked[key] == 0 and key not in keep:
+                                        target = True
+                                        keep.add(key)
+                                elif row["locked"] and self.allow_unlock:
+                                    target = False
+                            if target is not None:
+                                operations.append((row, target))
                     changed_keys = {signature(row) for row, _ in operations}
                     for row in rows:
                         row["anchor_eligible"] = signature(row) not in changed_keys

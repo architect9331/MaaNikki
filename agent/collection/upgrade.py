@@ -145,10 +145,12 @@ class UpgradeUI:
             bling, cost = self.integer(fields["bling"]), self.integer(fields["cost"])
             if bling is None or cost is None or cost <= 0:
                 raise RuntimeError("升级噗灵持有量或费用无法读取")
-            if bling < cost:
+            reserve = 0 if once else max(0, int(getattr(self.owner, "reserve_bling", 0) or 0))
+            if bling < cost + reserve:
                 self.clear(generation)
                 self.return_list(generation)
-                return {"status": "bling_shortage", "bling": bling, "cost": cost, "facts": current}
+                return {"status": "bling_shortage", "bling": bling, "cost": cost,
+                        "reserve_bling": reserve, "facts": current}
             if not re.fullmatch(FILTER, fields["material_filter"]):
                 raise RuntimeError("提交前升级素材选项发生变化")
             self.owner.check_generation(generation)

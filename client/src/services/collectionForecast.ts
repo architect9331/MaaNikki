@@ -4,7 +4,7 @@
  * otherwise farm the source with the most expected new colours and upgrade again.
  * An estimate for planning: colour rates are unofficial and game events are ignored.
  */
-export interface ForecastPart { source: string; normalMissing: number; normalTotal: number; rainbowMissing: boolean }
+export interface ForecastPart { source: string; normalMissing: number; normalTotal: number; rainbowMissing: boolean; embryos?: number }
 export interface ForecastInput {
   parts: ForecastPart[];
   rainbow: number;

@@ -1,5 +1,5 @@
 import { useAccountStateStore, periodCompleted, periodTaskLabel, crownTargetStars, crownProgress } from '@/stores/accountStateStore';
-import { realmCollectionEnabled, realmCraftingEnabled, realmOptionActive, realmOptionBackup, realmOptionLabel } from '@/utils/nikkiOptions';
+import { realmCollectionEnabled, realmCraftingEnabled, realmFarmOnlyEnabled, realmOptionActive, realmOptionBackup, realmOptionLabel } from '@/utils/nikkiOptions';
 import { GlowPrepConfigPanel } from './GlowPrepConfigPanel';
 import { RealmModeSwitch } from './RealmModeSwitch';
 import { XinghaiScoreHint, xinghaiSummary } from './XinghaiScoreHint';
@@ -627,7 +627,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
     }
     if (task.taskName === 'realm_challenge') {
       const modeName = realmCollectionEnabled(task.optionValues)
-        ? '五星闪光全收集'
+        ? (realmFarmOnlyEnabled(task.optionValues) ? '五星闪光（只刷胚子）' : '五星闪光全收集')
         : realmCraftingEnabled(task.optionValues)
           ? '制衣材料全收集'
           : '日常消耗';
@@ -637,6 +637,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
     for (const optionKey of taskDef.option || []) {
       if (task.taskName === 'realm_challenge' && (
         optionKey === 'CollectionMode'
+        || optionKey === 'CollectionWorkflow'
         || optionKey === 'CraftingCollectionMode'
         || !realmOptionActive(optionKey, task.optionValues)
       )) {
@@ -1207,6 +1208,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                   taskName={task.taskName}
                   optionKeys={task.taskName === 'realm_challenge'
                     ? (taskDef.option || []).filter((key) => key !== 'CollectionMode'
+                      && key !== 'CollectionWorkflow'
                       && key !== 'CraftingCollectionMode'
                       && !realmOptionBackup(key, task.optionValues)
                       && (realmOptionActive(key, task.optionValues) || key === 'WeeklyTargets'))

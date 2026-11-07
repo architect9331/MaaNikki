@@ -41,6 +41,53 @@ class FiveStarInventory(BlessingLocker):
         self.view = OrderedView(self)
         self.chance_priority = True
         self.share_statistics = False
+        self.reserve_bling = 0
+
+    def pearpal_five_star_colors(self, slot=None):
+        """Return valid 5-star (name, slot, color) tuples from Pear-Pal notebook."""
+        try:
+            notebook = self.store.account.load().get("observations", {}).get("pearpal_notebook")
+        except (OSError, ValueError, KeyError, TypeError):
+            return set()
+        if not isinstance(notebook, dict) or not isinstance(notebook.get("five_star_colors"), list):
+            return set()
+        result = set()
+        for entry in notebook["five_star_colors"]:
+            if not isinstance(entry, dict):
+                continue
+            name, part_slot, color = entry.get("name"), entry.get("slot"), entry.get("color")
+            definition = self.definitions.get(name)
+            if (definition and definition.get("rarity") == 5
+                    and definition.get("collection_target", True)
+                    and part_slot in SLOTS
+                    and (slot is None or part_slot == slot)
+                    and color in definition.get("colors", [])):
+                result.add((name, part_slot, color))
+        return result
+
+    def owned_colors(self):
+        """Colors treated as collected for realm selection and progress."""
+        if not self.read_only:
+            return self.protected
+        observed = set(self.protected)
+        if self.organization:
+            for rows in self.organization.get("slots", {}).values():
+                for row in rows:
+                    if (row.get("rarity") == 5 and row.get("maximum") and row.get("collectible")
+                            and row.get("color") in self.definitions.get(row.get("name"), {}).get("colors", [])):
+                        observed.add(self.key(row))
+        observed.update(self.pearpal_five_star_colors())
+        return observed
+
+    def part_embryo_count(self, name, slot):
+        """Un-upgraded 5-star embryos currently in the warehouse for (name, slot)."""
+        if not self.organization or self.part_complete(name, slot):
+            return 0
+        return sum(max(1, int(row.get("count", 1) or 1))
+                   for row in self.organization.get("slots", {}).get(slot, [])
+                   if row.get("name") == name and row.get("rarity") == 5
+                   and not row.get("maximum") and not row.get("locked")
+                   and row.get("collectible"))
 
     def new_colour_chance(self, name, slot):
         """Chance that one level-10 result is a colour this part still lacks.
@@ -52,8 +99,25 @@ class FiveStarInventory(BlessingLocker):
         colors = self.definitions[name]["colors"]
         rainbow = self.catalog["probability"]["iridescent"]
         ordinary = (1 - rainbow) / (len(colors) - 1)
+        owned = self.owned_colors()
         return sum(rainbow if color == "彩" else ordinary for color in colors
-                   if (name, slot, color) not in self.protected)
+                   if (name, slot, color) not in owned)
+
+    def marginal_new_colour_chance(self, name, slot, *, embryos=None):
+        """Expected new colours from one additional embryo given existing embryos."""
+        if embryos is None:
+            embryos = self.part_embryo_count(name, slot)
+        embryos = max(0, int(embryos))
+        colors = self.definitions[name]["colors"]
+        rainbow = self.catalog["probability"]["iridescent"]
+        ordinary = (1 - rainbow) / (len(colors) - 1)
+        owned = self.owned_colors()
+        return sum(
+            (rainbow * ((1 - rainbow) ** embryos)) if color == "彩"
+            else (ordinary * ((1 - ordinary) ** embryos))
+            for color in colors
+            if (name, slot, color) not in owned
+        )
 
     def queued_rolls(self):
         """Copies known to await an upgrade; new drops join after the prefix read."""
@@ -62,14 +126,16 @@ class FiveStarInventory(BlessingLocker):
                    and row["collectible"] and not self.part_complete(row["name"], row["slot"]))
 
     def progress(self):
+        owned_set = self.owned_colors()
         parts = []
         for definition in self.targets:
             for slot in SLOTS:
                 owned = [color for color in definition["colors"]
-                         if (definition["name"], slot, color) in self.protected]
+                         if (definition["name"], slot, color) in owned_set]
                 parts.append({"name": definition["name"], "slot": slot,
                               "source": definition["source"], "locked_colors": owned,
-                              "missing_colors": [c for c in definition["colors"] if c not in owned]})
+                              "missing_colors": [c for c in definition["colors"] if c not in owned],
+                              "embryos": self.part_embryo_count(definition["name"], slot)})
         return {"rarity": 5, "material_rarity": 5, "phase": self.report["phase"],
                 "mode": self.report.get("mode"), "existing_colors_checked": self.prepared,
                 "protection_valid": self.prepared,
@@ -80,7 +146,7 @@ class FiveStarInventory(BlessingLocker):
                 "latest_upgrade": self.report.get("latest_upgrade"),
                 "pending_operation": self.pending,
                 "recovery": deepcopy(self.organization.get("recovery")) if self.organization else None,
-                "confirmed_locked_colors": len(self.protected),
+                "confirmed_locked_colors": len(owned_set),
                 "resources": self.resources(),
                 "target_colors": sum(len(item["colors"]) * len(SLOTS) for item in self.targets),
                 "changes": self.collection_changes(),
@@ -242,7 +308,7 @@ class FiveStarInventory(BlessingLocker):
         self.rt.log(f"正在恢复{slot}进度。")
         old = self.organization["slots"][slot]
         unfinished = next((row for row in old if row["id"] == self.organization["unfinished"]), None)
-        observed, _ = self.view.scan(slot)
+        observed, _ = self.view.scan(slot, quantities=self.read_only)
         # scan() reaches the physical end and checks every intervening cell.
         # No keeper is removed on an incomplete observation.
         rows, priority = merge_prefix(old, observed, len(old), self.organization["next_priority"])
@@ -275,20 +341,24 @@ class FiveStarInventory(BlessingLocker):
         self.checkpoint()
         # Full-level results can merge with a more recent stack. Protect every
         # newly observed colour before auto-fill is allowed to consume it.
-        for row in rows:
-            if (row["rarity"] != 5 or not row["maximum"] or not row["collectible"]
-                    or self.key(row) in self.protected):
-                continue
-            found = self.view.locate(row, rows, exact_lock=row["locked"])
-            if found is None:
-                raise RecheckSlot(slot, "恢复中的满级颜色尚未重新定位")
-            self.active = row
-            row["anchor_eligible"] = False
-            self.protect_selected(found[1], found[3])
-            self.active = None
-            self.checkpoint()
+        if not self.read_only:
+            for row in rows:
+                if (row["rarity"] != 5 or not row["maximum"] or not row["collectible"]
+                        or self.key(row) in self.protected):
+                    continue
+                found = self.view.locate(row, rows, exact_lock=row["locked"])
+                if found is None:
+                    raise RecheckSlot(slot, "恢复中的满级颜色尚未重新定位")
+                self.active = row
+                row["anchor_eligible"] = False
+                self.protect_selected(found[1], found[3])
+                self.active = None
+                self.checkpoint()
         if self.organization["unfinished"] in {row["id"] for row in rows if row["locked"] and row["maximum"]}:
             self.organization["unfinished"] = None
+        pearpal_slot = sorted(f"{n}|{c}" for n, s, c in self.pearpal_five_star_colors(slot))
+        if pearpal_slot:
+            self.organization.setdefault("pearpal_verified_slots", {})[slot] = pearpal_slot
         recovery = self.organization["recovery"]
         recovery["slots"].remove(slot)
         recovery["reasons"].pop(slot, None)
@@ -463,14 +533,15 @@ class FiveStarInventory(BlessingLocker):
         self.organization["bling"] = balance
 
     def part_complete(self, name, slot):
-        return all((name, slot, color) in self.protected for color in self.definitions[name]["colors"])
+        owned = self.owned_colors()
+        return all((name, slot, color) in owned for color in self.definitions[name]["colors"])
 
     def discover_prefixes(self):
         """Connect only the new prefix to the last complete order, once per slot."""
         for slot in SLOTS:
             old = self.organization["slots"][slot]
             try:
-                prefix, cut = self.view.scan(slot, old=old)
+                prefix, cut = self.view.scan(slot, old=old, quantities=self.read_only)
             except RecheckSlot:
                 self.rebuild_slot(slot)
                 continue
@@ -489,6 +560,32 @@ class FiveStarInventory(BlessingLocker):
             self.organization["slots"][slot] = rows
             self.organization["next_priority"] = next_priority
             self.checkpoint()
+
+    def reconcile_pearpal_drift(self):
+        """Flag slots where Pear-Pal compendium has unlocked 5-star colors missing locally."""
+        if not self.organization:
+            return
+        pearpal_all = self.pearpal_five_star_colors()
+        if not pearpal_all:
+            return
+        verified = self.organization.setdefault("pearpal_verified_slots", {})
+        for slot in SLOTS:
+            pearpal_keys = {f"{n}|{c}" for n, s, c in pearpal_all if s == slot}
+            local_keys = ({f"{n}|{c}" for n, s, c in self.protected if s == slot}
+                          | {f"{row['name']}|{row['color']}"
+                             for row in self.organization["slots"].get(slot, [])
+                             if row.get("rarity") == 5 and row.get("maximum")
+                             and row.get("collectible") and row.get("color")})
+            prev_verified = set(verified.get(slot, [])) if isinstance(verified.get(slot), list) else set()
+            unverified_new = pearpal_keys - local_keys - prev_verified
+            if unverified_new:
+                self.request_recheck(
+                    slot,
+                    f"美鸭梨图鉴发现 {len(unverified_new)} 个未记录满级颜色，核对该部位",
+                )
+                self.rt.log(
+                    f"美鸭梨数据核对：{slot}有 {len(unverified_new)} 个图鉴已解锁但本地未记录的满级颜色，本轮自动核对该部位。"
+                )
 
     def next_target(self):
         rows = [row for slot in SLOTS for row in self.organization["slots"][slot]]
@@ -621,9 +718,20 @@ class FiveStarInventory(BlessingLocker):
         elif origin.get("recovery") == "pending_operation":
             self.rt.log(f"保留 {len(protected)} 个已收藏颜色，正在核对上次操作。")
         self.rt.log(f"已读取完整获得时间基准及 {len(protected)} 个五星收藏；仅核对新增区域和待处理位置附近。", detail=True)
+        if self.read_only and isinstance(self.organization.get("recovery"), dict):
+            recovery = self.organization["recovery"]
+            reasons = recovery.get("reasons", {})
+            for slot in list(recovery.get("slots", [])):
+                if reasons.get(slot) == "满级颜色待保护":
+                    recovery["slots"].remove(slot)
+                    reasons.pop(slot, None)
+            if not recovery.get("slots"):
+                self.organization.pop("recovery", None)
+        self.reconcile_pearpal_drift()
         self.log_progress("开始处理")
         self.save()
-        self.ensure_known_materials()
+        if not self.read_only:
+            self.ensure_known_materials()
         self.recover_inventory()
 
     def finish(self, reason):

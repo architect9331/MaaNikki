@@ -26,6 +26,18 @@
     "custom_action": "nikki.feature_settings",
     "custom_action_param": {"enabled": true}
   },
+  "MaaNikki_Pursuit_WorkflowOption": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {"mode": "managed"}
+  },
+  "MaaNikki_Pursuit_ReserveBlingOption": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {"amount": 0}
+  },
   "MaaNikki_Pursuit_PriorityOption": {
     "recognition": "DirectHit",
     "action": "Custom",

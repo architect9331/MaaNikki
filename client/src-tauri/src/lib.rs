@@ -209,6 +209,7 @@ pub fn run() {
             commands::resonance::resonance_status,
             commands::resonance::resonance_set_enabled,
             commands::resonance::resonance_sync,
+            commands::resonance::pearpal_sync_notebook,
             commands::resonance::resonance_history,
             commands::resonance::resonance_export,
             commands::account_state::get_account_state,

@@ -23,16 +23,37 @@ export interface BlessingSnapshot {
   items?: (CollectionKey & { level: number; rarity: number; count: number })[];
   locks?: { complete?: boolean; groups?: (CollectionKey & { level: number; locked_count: number })[] };
   pursuit?: {
+    mode?: string;
     existing_colors_checked?: boolean;
     protection_valid?: boolean;
     pending_operation?: unknown;
-    parts?: { name: string; slot: string; locked_colors: string[]; missing_colors: string[] }[];
+    parts?: { name: string; slot: string; locked_colors: string[]; missing_colors: string[]; embryos?: number }[];
     resources?: {
       bling?: number | null; particles?: number | null; capacity?: [number, number] | null;
       duplicates?: number; embryos?: number; spare_embryos?: number; bling_per_run?: number | null;
     } | null;
   };
+  part_embryos?: Record<string, number>;
+  unlocked_max_colors?: CollectionKey[];
   protection?: { complete?: boolean; keepers?: CollectionKey[] };
+}
+export interface PearpalNotebookObservation {
+  updated_at?: string;
+  five_star_colors?: CollectionKey[];
+  four_star_colors?: CollectionKey[];
+  dispatch?: { reward_id?: number; text?: string; spend_time?: number; start_time?: number }[];
+  summary?: {
+    login_days?: number;
+    total_play_time?: number;
+    cloth_num?: number;
+    achievement_num?: number;
+    box_num?: number;
+    designdrawing_num?: number;
+    permanent_tower?: number;
+    periodic_tower?: number;
+    energy?: number;
+    daily_task?: number;
+  };
 }
 export interface AccountView {
   wardrobe?: { inventory?: WardrobeSnapshot; last_scan?: WardrobeSnapshot };
@@ -42,6 +63,7 @@ export interface AccountView {
     eureka_rolls?: { total: number; colors: Record<string, number> };
     anonymous_statistics?: { reporter?: string };
     collection_history?: Record<string, { owned: number }>;
+    pearpal_notebook?: PearpalNotebookObservation;
     giant_meteor?: {
       game_day: string;
       outcome: 'found' | 'not_found' | 'unconfirmed';

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image as ImageIcon, RefreshCw, Search, AlertCircle, Sparkles } from 'lucide-react';
+import { Image as ImageIcon, RefreshCw, Search, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { collectionShareImage } from '@/utils/collectionShareImage';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { collectionSlots as slots, collectionKey as keyOf, getBlessingProgress } from '@/utils/blessingProgress';
+import { isTauri } from '@/utils/paths';
 import type { ForecastPart } from '@/services/collectionForecast';
 import { BlessingForecast, type RainbowPreset } from './BlessingForecast';
 import { Card, FeaturePage, Segmented, Stat, StatusBar } from './ui/FeaturePage';
@@ -28,12 +30,28 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('missing');
   const [community, setCommunity] = useState<{ rate: number; samples: number } | null>(null);
+  const [syncingPearpal, setSyncingPearpal] = useState(false);
   const snapshot = data?.blessing;
   const progress = useMemo(() => getBlessingProgress(data), [data]);
-  const { sets, target, uncertain, rewardPending } = progress;
+  const { sets, target, uncertain, rewardPending, partEmbryos, pearpalCheck } = progress;
   const resources = snapshot?.pursuit?.resources;
   const probability = data?.catalog?.probability;
   const rolls = data?.observations?.eureka_rolls;
+  const isFarmOnly = snapshot?.pursuit?.mode === 'farm_only';
+
+  const syncPearpal = async () => {
+    if (!isTauri() || syncingPearpal) return;
+    setSyncingPearpal(true);
+    try {
+      await invoke('pearpal_sync_notebook');
+      await refresh();
+      toast.success('已同步美鸭梨手账祝福闪光图鉴并完成核对');
+    } catch (reason) {
+      toast.error(String(reason));
+    } finally {
+      setSyncingPearpal(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -55,10 +73,14 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
 
   const parts = useMemo<ForecastPart[]>(() => sets.flatMap((s) => slots.map((slot) => {
     const normal = s.colors.filter((color) => color !== '彩');
-    return { source: s.source ?? s.name, normalTotal: normal.length,
+    return {
+      source: s.source ?? s.name,
+      normalTotal: normal.length,
       normalMissing: normal.filter((color) => !progress.owned.has(keyOf({ name: s.name, slot, color }))).length,
-      rainbowMissing: s.colors.includes('彩') && !progress.owned.has(keyOf({ name: s.name, slot, color: '彩' })) };
-  })), [sets, progress.owned]);
+      rainbowMissing: s.colors.includes('彩') && !progress.owned.has(keyOf({ name: s.name, slot, color: '彩' })),
+      embryos: partEmbryos[`${s.name}/${slot}`] ?? 0,
+    };
+  })), [sets, progress.owned, partEmbryos]);
 
   const presets = useMemo<RainbowPreset[]>(() => {
     const list: RainbowPreset[] = [];
@@ -85,13 +107,16 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
     const values = new Map<string, number>();
     const rainbow = probability?.iridescent ?? 0.054;
     for (const part of parts) {
-      values.set(part.source, (values.get(part.source) ?? 0)
-        + part.normalMissing * (1 - rainbow) / part.normalTotal + (part.rainbowMissing ? rainbow : 0));
+      const k = Math.max(0, part.embryos ?? 0);
+      const q = part.normalTotal > 0 ? (1 - rainbow) / part.normalTotal : 0;
+      const marginal = part.normalMissing * q * Math.pow(1 - q, k)
+        + (part.rainbowMissing ? rainbow * Math.pow(1 - rainbow, k) : 0);
+      values.set(part.source, (values.get(part.source) ?? 0) + marginal);
     }
     return values;
   }, [parts, probability]);
   const nextSource = [...missingBySource].sort((a, b) => b[1] - a[1])[0];
-  const needBling = !!resources?.embryos && resources.bling != null && resources.bling < 72000;
+  const needBling = !isFarmOnly && !!resources?.embryos && resources.bling != null && resources.bling < 72000;
 
   const visible = sets.filter((s) => {
     const owned = count(s.name, s.colors);
@@ -119,19 +144,53 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
   return (
     <FeaturePage icon={Sparkles} title="祝福闪光收集" onBack={onClose} actions={<>
         {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
-        <span className="hidden md:inline text-xs text-text-muted">{updated ? `更新于 ${new Date(updated).toLocaleString('zh-CN', { hour12: false })}` : '尚无收集记录'}</span>
+        <span className="hidden md:inline text-xs text-text-muted">{updated ? `更新于 ${new Date(updated).toLocaleString('zh-CN', { hour12: false })}` : pearpalCheck.updatedAt ? `美鸭梨手账 ${new Date(pearpalCheck.updatedAt).toLocaleString('zh-CN', { hour12: false })}` : '尚无收集记录'}</span>
+        {isTauri() && (
+          <button
+            onClick={() => void syncPearpal()}
+            disabled={syncingPearpal || loading}
+            className="flex items-center gap-1 rounded-lg border border-border bg-bg-secondary px-2.5 py-1 text-xs text-text-secondary hover:bg-bg-hover disabled:opacity-50"
+            title="从美鸭梨奇想手账获取图鉴已解锁颜色，用于核对本地仓库防漂移"
+          >
+            <RefreshCw className={clsx('w-3.5 h-3.5', syncingPearpal && 'animate-spin')} />
+            <span>美鸭梨核对</span>
+          </button>
+        )}
         {progress.known && <button onClick={() => void copyShareImage()}
           className="p-2 rounded-lg hover:bg-bg-hover" title="复制分享图（不含 UID）" aria-label="复制分享图"><ImageIcon className="w-4 h-4" /></button>}
         <button onClick={() => void refresh().catch(() => {})} disabled={loading}
           className="p-2 rounded-lg hover:bg-bg-hover disabled:opacity-50" title="刷新记录" aria-label="刷新记录"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
       </>}>
           {error && <div className="rounded-lg border border-error/30 bg-error/5 p-3 text-xs text-error" role="alert">无法读取账号状态：{error}</div>}
-          {!error && !progress.known && <div className="rounded-lg border border-border bg-bg-secondary p-3 text-sm text-text-secondary">{loading ? '正在读取本地记录…' : '尚无完整的五星收藏记录。开启幻境挑战的五星全收集并运行一次，会先自动整理。'}</div>}
+          {!error && !progress.known && <div className="rounded-lg border border-border bg-bg-secondary p-3 text-sm text-text-secondary">{loading ? '正在读取本地记录…' : '尚无完整的五星收藏记录。开启幻境挑战的五星全收集并运行一次，会先自动整理；也可点击右上角「美鸭梨核对」预览图鉴已解锁颜色。'}</div>}
+          {!error && progress.known && !progress.localKnown && pearpalCheck.synced && (
+            <p className="flex items-center gap-1.5 text-xs text-text-secondary">
+              <AlertCircle className="w-3.5 h-3.5 text-accent" />
+              当前展示美鸭梨手账图鉴已解锁颜色（不含胚子数量、噗灵与粒子存量）；首次运行全收集时仍需扫描游戏内仓库。
+            </p>
+          )}
+          {progress.localKnown && pearpalCheck.synced && (
+            <p className={clsx('flex items-center gap-1.5 text-xs', pearpalCheck.pearpalOnlyCount > 0 ? 'text-warning' : 'text-text-secondary')}>
+              {pearpalCheck.pearpalOnlyCount > 0 ? (
+                <>
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    美鸭梨图鉴核对发现 {pearpalCheck.pearpalOnlyCount} 个图鉴已解锁但本地仓库记录未包含的颜色（可能为手动升级或曾分解旧收藏），下次运行全收集将自动核对相关部位。
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-success" />
+                  <span>美鸭梨图鉴核对一致（图鉴已解锁 {pearpalCheck.pearpalCount} 色，未发现漂移遗漏）。</span>
+                </>
+              )}
+            </p>
+          )}
           {uncertain && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />存在未确认操作或收藏保护待复核，以下展示上次已确认的记录，下次全收集会自动核对。</p>}
           {rewardPending && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />上次刷取结果待核对，已收藏颜色保留，下次全收集将先处理仓库。</p>}
 
           {progress.known && <StatusBar tone={needBling ? 'warn' : 'ok'} title={needBling ? '今天建议刷噗灵' : nextSource?.[1] ? `今天建议刷「${nextSource[0]}」` : '颜色已收齐'}
-            detail={needBling ? '噗灵不够升级已有胚子，全部体力刷噗灵。' : nextSource?.[1] ? '这里的胚子最可能出新色。' : '可以把体力用在其他幻境了。'} />}
+            detail={needBling ? '噗灵不够升级已有胚子，全部体力刷噗灵。' : nextSource?.[1] ? (isFarmOnly ? '已结合当前仓库已有满级色与未升级胚子数量折算，刷此副本期望新色最高。' : '这里的胚子最可能出新色。') : '可以把体力用在其他幻境了。'} />}
 
           <section className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
