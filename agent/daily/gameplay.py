@@ -88,7 +88,7 @@ class Gameplay:
         if not shortage and not quota_used:
             self.rt.diagnostic("realm_confirmation", "未能确认挑战提交", image=frame,
                                 details={"kind": kind, "cancel": cancel})
-        if cancel and not self.rt.click_template(cancel, attempts=1):
+        if cancel and self.ui.dismiss_realm_confirm(cancel) is False:
             self.rt.log("未能关闭挑战确认窗口，本项停止。")
             return False
         if quota_used:
@@ -235,6 +235,11 @@ class Gameplay:
             if not self.rt.click_template(confirm):
                 return self.confirm_unavailable(kind, allow_exhausted, cancel)
             result = self.ui.skip_reward()
+            if (not result and not self.rt.stopped and self.rt.hit(confirm)
+                    and not self.rt.text([380, 200, 520, 340], r"(?:活跃)?能量(?:不足|不够)|体力(?:不足|不够)")
+                    and (kind != "weekly" or self.weekly_state()[0] != 0)):
+                if self.rt.click_template(confirm):
+                    result = self.ui.skip_reward()
             if not result and not self.rt.stopped and (self.rt.hit(cancel) or self.rt.hit(confirm)):
                 return self.confirm_unavailable(kind, allow_exhausted,
                                                 cancel if self.rt.hit(cancel) else None)
@@ -248,8 +253,8 @@ class Gameplay:
         try:
             ok = steps()
         finally:
-            if not self.rt.stopped and kind != "jihua" and self.rt.hit(cancel):
-                self.rt.click_template(cancel, attempts=1)
+            if not self.rt.stopped and kind != "jihua":
+                self.ui.dismiss_realm_confirm(cancel)
             if not entered and not self.rt.stopped:
                 returned = self.ui.calendar() if return_page == "calendar" else self.rt.main()
                 if not returned:

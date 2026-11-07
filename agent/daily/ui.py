@@ -341,6 +341,20 @@ class GameUI:
                     return False
         return False
 
+    def dismiss_realm_confirm(self, cancel="MaaNikki_Bless_Cancel"):
+        """Close a realm challenge confirmation dialog before leaving the page."""
+        if not self.page_matches(cancel):
+            return None
+        for _ in range(3):
+            if not self.rt.click_template(cancel, attempts=1, wait_seconds=.2):
+                return False
+            if self.wait_page(lambda: not self.page_matches(cancel), seconds=2.5):
+                return True
+            with self.rt.observe(fresh=True):
+                if self.rt.stopped or not self.rt.hit(cancel):
+                    return False
+        return False
+
     def find_menu_entry(self, *, node, scroll=False):
         """Open a verified Esc entrance, optionally searching its left-hand pages."""
         from .runtime import parameters
@@ -708,6 +722,8 @@ class GameUI:
         # confirmed overlay before accepting the world or sending Esc.
         if self.dismiss_reward() is False:
             return False
+        if self.dismiss_realm_confirm() is False:
+            return False
         # The chat icon remains visible in star sensing and is insufficient
         # to establish that ordinary world controls are available.
         with self.rt.observe():
@@ -736,6 +752,8 @@ class GameUI:
                     page = "star_collect"
                 elif self.rt.hit("MaaNikki_RewardOverlayReady"):
                     page = "reward_overlay"
+                elif self.rt.hit("MaaNikki_Bless_Cancel"):
+                    page = "realm_confirm"
                 elif self.rt.hit("MaaNikki_MainDetected"):
                     page = "main"
                 elif self.rt.hit("MaaNikki_Navigation_ReviveButton"):
@@ -779,6 +797,9 @@ class GameUI:
             elif page == "reward_overlay":
                 if self.dismiss_reward() is not True:
                     return False
+            elif page == "realm_confirm":
+                if self.dismiss_realm_confirm() is not True:
+                    return False
             elif page == "reward":
                 if not self.rt.key("skip", .5):
                     return False
@@ -815,6 +836,9 @@ class GameUI:
             result = self.rt.recognize(node, image=frame)
             if not result or not result.hit:
                 continue
+            if (node in ("MaaNikki_Bless_PageReady", "MaaNikki_Monster_PageReady", "MaaNikki_Weekly_PageReady")
+                    and self.dismiss_realm_confirm() is False):
+                return False
             for parent in route:
                 if not self.enter_page(lambda: self.rt.key("menu", 0), parent,
                                        source=node, attempts=1):
