@@ -35,13 +35,23 @@
     {
       "x": 3571.75,
       "y": 8224.5,
-      "radius": 1.0,
+      "radius": 1.5,
       "jump": false
     },
     {
       "x": 3577.95,
       "y": 8224.55,
-      "radius": 1.25,
+      "radius": 2.2,
+      "jump": false,
+      "action": "macro",
+      "params": {
+        "id": "zhaoxi_attack"
+      }
+    },
+    {
+      "x": 3571.5,
+      "y": 8224.75,
+      "radius": 2.2,
       "jump": false,
       "action": "macro",
       "params": {
@@ -51,7 +61,7 @@
     {
       "x": 3565.35,
       "y": 8225.0,
-      "radius": 1.35,
+      "radius": 2.5,
       "jump": false,
       "action": "macro",
       "params": {
