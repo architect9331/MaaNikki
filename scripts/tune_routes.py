@@ -17,6 +17,58 @@ ROUTES_DIR = ROOT / "resource/routes/daily"
 MAX_STEP_UNITS = 0.6
 
 
+def _iter_sentry_result_records(results: list[dict]):
+    chunks_by_group: dict[tuple[str, str], list[str]] = defaultdict(list)
+    waypoint_by_group: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for row in results:
+        if not isinstance(row, dict):
+            continue
+        vals = row.get("values") if isinstance(row.get("values"), dict) else row
+        msg = vals.get("message")
+        if not isinstance(msg, str) or not msg.strip():
+            continue
+        trace = str(vals.get("trace") or "")
+        ts = str(vals.get("timestamp") or "")[:19]
+        try:
+            parsed = json.loads(msg)
+            if isinstance(parsed, dict):
+                if parsed.get("waypoints") and parsed.get("route"):
+                    yield parsed
+                    continue
+                if isinstance(parsed.get("route"), str) and isinstance(parsed.get("index"), int):
+                    waypoint_by_group[(trace or ts, parsed["route"])].append(parsed)
+                    continue
+        except (ValueError, TypeError):
+            pass
+        chunks_by_group[(trace, ts)].append(msg)
+
+    for (trace, ts), chunks in chunks_by_group.items():
+        starts = [c for c in chunks if c.startswith('{"schema_version":')]
+        others = [c for c in chunks if not c.startswith('{"schema_version":')]
+        if len(starts) == 1 and others:
+            joined = starts[0] + "".join(others)
+            try:
+                parsed = json.loads(joined)
+                if isinstance(parsed, dict) and parsed.get("waypoints") and parsed.get("route"):
+                    yield parsed
+                    continue
+            except (ValueError, TypeError):
+                pass
+            if len(others) <= 5:
+                import itertools
+                for perm in itertools.permutations(others):
+                    try:
+                        parsed = json.loads(starts[0] + "".join(perm))
+                        if isinstance(parsed, dict) and parsed.get("waypoints") and parsed.get("route"):
+                            yield parsed
+                            break
+                    except (ValueError, TypeError):
+                        continue
+
+    for (_, route_id), wps in waypoint_by_group.items():
+        yield {"route": route_id, "waypoints": sorted(wps, key=lambda w: int(w.get("index", 0)))}
+
+
 def iter_telemetry_records(paths: list[Path]):
     for base in paths:
         if not base.exists():
@@ -42,7 +94,7 @@ def iter_telemetry_records(paths: list[Path]):
                                     yield body
                 except (OSError, ValueError, TypeError):
                     continue
-            elif suffix == ".json":
+            elif suffix in (".json", ".txt"):
                 try:
                     obj = json.loads(path.read_text(encoding="utf-8", errors="replace"))
                 except (OSError, ValueError, TypeError):
@@ -52,6 +104,8 @@ def iter_telemetry_records(paths: list[Path]):
                         yield obj
                     elif isinstance(obj.get("telemetry"), dict) and obj["telemetry"].get("waypoints"):
                         yield obj["telemetry"]
+                    elif isinstance(obj.get("results"), list):
+                        yield from _iter_sentry_result_records(obj["results"])
                 elif isinstance(obj, list):
                     for item in obj:
                         if isinstance(item, dict) and item.get("waypoints") and item.get("route"):
@@ -97,23 +151,36 @@ def compute_waypoint_adjustment(samples: list[dict], target: list[float], config
             sum(y for _, y in valid) / len(valid),
         )
 
-    clean_dx, clean_dy = mean_pair(clean, "dx", "dy")
-    prob_dx, prob_dy = mean_pair(problem, "dx", "dy")
+    def has_local_arrival(s: dict) -> bool:
+        actual = s.get("actual")
+        if not isinstance(actual, list) or len(actual) != 2:
+            return False
+        if bool(s.get("reached")):
+            return True
+        dist = s.get("dist")
+        return isinstance(dist, (int, float)) and float(dist) <= max(configured_radius * 2.5, 2.5)
+
+    local_clean = [s for s in clean if has_local_arrival(s)]
+    local_turnbacks = [s for s in turnbacks if has_local_arrival(s)]
+    local_problem = [s for s in problem if has_local_arrival(s)]
+
+    clean_dx, clean_dy = mean_pair(local_clean, "dx", "dy")
+    prob_dx, prob_dy = mean_pair(local_problem, "dx", "dy")
     drift_dx, drift_dy = mean_pair(samples, "drift_dx", "drift_dy")
 
     nudge_x, nudge_y = 0.0, 0.0
     reason = "stable"
-    if problem and clean:
+    if local_problem and local_clean:
         vec_x = clean_dx - prob_dx
         vec_y = clean_dy - prob_dy
         mag = math.hypot(vec_x, vec_y)
-        problem_rate = len(problem) / total
+        problem_rate = len(local_problem) / total
         if mag >= 0.08 and problem_rate >= 0.15:
             scale = min(MAX_STEP_UNITS, mag * 0.5 * min(1.0, problem_rate * 2))
             nudge_x = vec_x / mag * scale
             nudge_y = vec_y / mag * scale
             reason = "shift_away_from_failure_direction"
-    elif problem and not clean:
+    elif local_problem and not local_clean:
         mag = math.hypot(prob_dx, prob_dy)
         if mag >= 0.1:
             scale = min(MAX_STEP_UNITS, mag * 0.35)
@@ -157,14 +224,24 @@ def compute_waypoint_adjustment(samples: list[dict], target: list[float], config
             candidate = configured_radius * min(1.35, max(1.1, ratio))
         else:
             candidate = configured_radius * 1.2
-        suggested_radius = round(min(max(configured_radius + 0.35, candidate), 3.0, configured_radius * 1.35), 2)
+        max_radius_cap = max(3.0, configured_radius + 0.2)
+        suggested_radius = round(
+            min(max(configured_radius + 0.35, candidate), max_radius_cap, configured_radius * 1.35), 2
+        )
         if suggested_radius > configured_radius + 0.03:
             radius_reason = "widen_to_reduce_turnbacks"
-        # If braking overshoot on a precise point caused the turn-back, also pull target back against drift.
+        # If braking overshoot or consistent landing cluster on a precise/high-turnback point caused the turn-back,
+        # align the target with the stopping cluster or precompensate braking drift.
         if precise and reason == "stable" and math.hypot(drift_dx, drift_dy) >= 0.12:
             nudge_x = -drift_dx * 0.5
             nudge_y = -drift_dy * 0.5
             reason = "precompensate_braking_overshoot"
+        elif reason == "stable" and turnback_rate >= 0.30 and (local_clean or local_turnbacks):
+            arr_dx, arr_dy = mean_pair(local_clean + local_turnbacks, "dx", "dy")
+            if math.hypot(arr_dx, arr_dy) >= 0.25:
+                nudge_x = arr_dx * 0.5
+                nudge_y = arr_dy * 0.5
+                reason = "align_with_arrival_cluster"
     elif not precise and turnback_rate < 0.08 and len(downstream_samples) >= 4:
         # Check if passing far from this transit waypoint causes the next segment to drift off-course.
         edge_passes = [
@@ -239,12 +316,22 @@ def main() -> None:
 
     grouped: dict[str, dict[int, list[dict]]] = defaultdict(lambda: defaultdict(list))
     latest_targets: dict[tuple[str, int], tuple[list[float], float]] = {}
+    seen_runs: set[tuple[str, str, str, int]] = set()
 
     for record in iter_telemetry_records([Path(p) for p in args.inputs]):
         route_id = record.get("route")
         if not isinstance(route_id, str) or (args.route and route_id != args.route):
             continue
-        for wp in record.get("waypoints", []):
+        wps = record.get("waypoints", [])
+        if not isinstance(wps, list) or not wps:
+            continue
+        started_at = str(record.get("started_at") or "")
+        if started_at:
+            dedup_key = (route_id, started_at, str(record.get("outcome") or ""), len(wps))
+            if dedup_key in seen_runs:
+                continue
+            seen_runs.add(dedup_key)
+        for wp in wps:
             if not isinstance(wp, dict):
                 continue
             idx = wp.get("index")

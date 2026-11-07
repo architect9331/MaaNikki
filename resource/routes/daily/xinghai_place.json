@@ -27,9 +27,9 @@
       "jump": false
     },
     {
-      "x": 832.929,
-      "y": 1056.254,
-      "radius": 1.0,
+      "x": 833.15,
+      "y": 1056.05,
+      "radius": 1.25,
       "jump": false,
       "action": "place"
     }

@@ -22,7 +22,7 @@
     {
       "x": 1046.8,
       "y": 719.8,
-      "radius": 1,
+      "radius": 1.35,
       "jump": false,
       "action": "teleport",
       "params": {
@@ -38,13 +38,13 @@
     {
       "x": 1051.7,
       "y": 716.35,
-      "radius": 1,
+      "radius": 0.8,
       "jump": false
     },
     {
-      "x": 1050.8,
-      "y": 720.15,
-      "radius": 0.35,
+      "x": 1050.84,
+      "y": 720.18,
+      "radius": 0.45,
       "jump": false,
       "action": "fishing_star",
       "params": {
@@ -54,7 +54,7 @@
     {
       "x": 1054.28,
       "y": 716.54,
-      "radius": 1,
+      "radius": 0.8,
       "jump": false
     },
     {
@@ -72,13 +72,13 @@
     {
       "x": 1057.7,
       "y": 747.55,
-      "radius": 1,
+      "radius": 0.8,
       "jump": false
     },
     {
-      "x": 1047.85,
-      "y": 744.7,
-      "radius": 0.35,
+      "x": 1047.92,
+      "y": 744.72,
+      "radius": 0.45,
       "jump": false,
       "action": "fishing_star",
       "params": {
@@ -88,7 +88,7 @@
     {
       "x": 1061.2,
       "y": 745.1,
-      "radius": 1,
+      "radius": 0.8,
       "jump": false
     },
     {
@@ -99,8 +99,8 @@
     },
     {
       "x": 1072.18,
-      "y": 714.78,
-      "radius": 1,
+      "y": 714.45,
+      "radius": 1.35,
       "jump": true,
       "action": "macro",
       "params": {
@@ -108,9 +108,9 @@
       }
     },
     {
-      "x": 1008.45,
-      "y": 666.65,
-      "radius": 1,
+      "x": 1008.75,
+      "y": 667.0,
+      "radius": 1.35,
       "jump": false,
       "action": "teleport",
       "params": {
@@ -124,9 +124,9 @@
       }
     },
     {
-      "x": 1008.45,
-      "y": 666.65,
-      "radius": 1,
+      "x": 1008.75,
+      "y": 667.0,
+      "radius": 1.35,
       "jump": false,
       "action": "macro",
       "params": {
@@ -134,9 +134,9 @@
       }
     },
     {
-      "x": 1008.45,
-      "y": 666.65,
-      "radius": 1,
+      "x": 1008.75,
+      "y": 667.0,
+      "radius": 1.35,
       "jump": false,
       "action": "wait",
       "params": {

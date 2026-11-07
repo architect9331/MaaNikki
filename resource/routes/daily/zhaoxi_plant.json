@@ -24,13 +24,13 @@
     {
       "x": 11338.003,
       "y": 9570.647,
-      "radius": 1.0,
+      "radius": 0.8,
       "jump": false
     },
     {
-      "x": 11340.477,
-      "y": 9572.983,
-      "radius": 1.0,
+      "x": 11340.35,
+      "y": 9572.75,
+      "radius": 1.15,
       "jump": false,
       "action": "collect"
     },
@@ -41,37 +41,37 @@
       "jump": false
     },
     {
-      "x": 11345.503,
-      "y": 9565.097,
-      "radius": 1.0,
+      "x": 11345.15,
+      "y": 9565.2,
+      "radius": 1.15,
       "jump": false,
       "action": "collect"
     },
     {
-      "x": 11348.703,
-      "y": 9567.397,
-      "radius": 1.0,
+      "x": 11348.85,
+      "y": 9567.75,
+      "radius": 1.15,
       "jump": false,
       "action": "collect"
     },
     {
-      "x": 11351.353,
-      "y": 9573.297,
-      "radius": 1.0,
+      "x": 11351.5,
+      "y": 9573.65,
+      "radius": 1.25,
       "jump": false,
       "action": "collect"
     },
     {
-      "x": 11362.153,
-      "y": 9565.197,
-      "radius": 1.0,
+      "x": 11362.45,
+      "y": 9565.0,
+      "radius": 1.25,
       "jump": false,
       "action": "collect"
     },
     {
-      "x": 11366.203,
-      "y": 9556.997,
-      "radius": 1.0,
+      "x": 11366.35,
+      "y": 9556.75,
+      "radius": 1.2,
       "jump": false,
       "action": "collect"
     },
