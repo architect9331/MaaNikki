@@ -1006,9 +1006,14 @@ class Navigator:
                                             "destination": replacement.id, "index": index})
                                 route = replacement
                                 self.active_route = route
-                    elif index+1 < len(route.points) and target.jump != route.points[index+1].jump and motion.until:
-                        motion.stop()
-                        self.pause(.5 if route.points[index+1].jump else .2)
+                    elif index+1 < len(route.points) and motion.until:
+                        next_point = route.points[index+1]
+                        next_bearing = math.degrees(math.atan2(next_point.x-pose.x, pose.y-next_point.y)) % 360
+                        if target.jump != next_point.jump:
+                            motion.stop()
+                            self.pause(.5 if next_point.jump else .2)
+                        elif pose.heading is not None and abs(angle_delta(next_bearing, pose.heading)) >= 45:
+                            motion.stop()
                     index += 1
                     if index < len(route.points):
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False

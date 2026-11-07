@@ -85,7 +85,15 @@ def match_map(image, patch, mask=None, peak_mask=None, kernel=5, minimum_score=N
         eligible = np.isfinite(local)
         strongest = float(np.max(rates[eligible])) if np.any(eligible) else -1
         credible = eligible & (rates >= max(minimum_score, strongest-.12))
-        if np.any(credible):
+        peaks = credible & (rates >= cv2.dilate(
+            np.where(eligible, rates, -np.inf), np.ones((3, 3), np.uint8)))
+        interior = np.zeros_like(peaks)
+        interior[1:-1, 1:-1] = True
+        if np.any(peaks & interior):
+            local = np.where(peaks & interior, local, -np.inf)
+        elif np.any(peaks):
+            local = np.where(peaks, local, -np.inf)
+        elif np.any(credible):
             local = np.where(credible, local, -np.inf)
     _, detail, _, (px, py) = cv2.minMaxLoc(local)
     left, top = max(0, px-4), max(0, py-4)
