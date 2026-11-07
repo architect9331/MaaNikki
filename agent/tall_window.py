@@ -9,7 +9,6 @@ import atexit
 from contextlib import contextmanager
 import ctypes
 from ctypes import wintypes
-import sys
 import time
 
 from game_view import ALLOWED_FRAME_SIZES
@@ -145,6 +144,7 @@ def tall_window(rt):
     u32.GetWindowRect(hwnd, ctypes.byref(saved_rect))
 
     restored = False
+    tall_entered = False
 
     def _restore_win32():
         nonlocal restored
@@ -220,6 +220,7 @@ def tall_window(rt):
             return
 
         ALLOWED_FRAME_SIZES.add((TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT))
+        tall_entered = True
         rt.controller.set_screenshot_target_short_side(TALL_CAPTURE_WIDTH)
         rt.invalidate_frame()
 
@@ -247,17 +248,18 @@ def tall_window(rt):
         rt.pause(0.25)
         yield True
     finally:
-        exc_active = sys.exc_info()[0] is not None
         _restore_win32()
         try:
             atexit.unregister(_restore_win32)
         except Exception:
             pass
-        if not exc_active:
-            rt.invalidate_frame()
+        rt.invalidate_frame()
+        if tall_entered and not rt.stopped:
             time.sleep(0.25)
             rendered_streak = 0
             for _ in range(20):
+                if rt.stopped:
+                    break
                 time.sleep(0.12)
                 try:
                     frame = rt.capture()
