@@ -117,7 +117,7 @@ class InventoryScanner:
     def open(self):
         if self.rt.ui.page_matches("MaaNikki_Blessing_DecomposeReady"):
             return self.rt.ui.wait_page("MaaNikki_Blessing_DecomposeReady")
-        if not self.rt.ui.find_menu_entry(node="MaaNikki_Blessing_Entrance"):
+        if not self.rt.ui.find_menu_entry(node="MaaNikki_Blessing_Entrance", scroll=True):
             return False
         return self.rt.click_template("MaaNikki_Blessing_DecomposeEntrance")
 

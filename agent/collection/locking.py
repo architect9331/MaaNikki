@@ -192,7 +192,7 @@ class BlessingLocker(InventoryScanner):
         super().check_generation(generation)
 
     def open(self):
-        return self.rt.ui.find_menu_entry(node="MaaNikki_Blessing_Entrance")
+        return self.rt.ui.find_menu_entry(node="MaaNikki_Blessing_Entrance", scroll=True)
 
     def detail_frame(self, generation):
         return self.frame(generation)

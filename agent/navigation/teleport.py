@@ -128,12 +128,18 @@ class Teleporter:
             entries = {normalized(getattr(item, "text", "")) for item in
                        (getattr(result, "filtered_results", None) or [])}
             first = {"心愿原野": "纪念山地", "伊赞之土": "巨木之森"}.get(province)
-            if province not in entries or first and first not in entries:
+            expanded = province in entries and (not first or first in entries)
+            if not expanded:
                 if not self.rt.ui.find(roi=list_roi, text=province, exact=True, scroll=True):
                     return False
                 if not self.rt.ui.wait_page(menu_visible, seconds=3):
                     return False
-            return self.rt.ui.find(roi=list_roi, text=wanted, exact=True, scroll=True)
+                expanded = not first or bool(self.rt.text(list_roi, re.escape(first)))
+            if self.rt.ui.find(roi=list_roi, text=wanted, exact=True, scroll=True):
+                return True
+            if expanded and menu_visible():
+                raise NavigationError(f"地图区域「{wanted}」尚未解锁。")
+            return False
 
         try:
             if read_region() == normalized(wanted):

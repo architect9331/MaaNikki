@@ -892,8 +892,16 @@ class Executors(Runtime):
             result = self.animal(card)
         elif rule.executor == "upgrade":
             from collection.daily_upgrade import upgrade_once
-            self.daily_upgrade_result = upgrade_once(self)
-            result = self.daily_upgrade_result["status"] == "upgraded"
+            try:
+                self.daily_upgrade_result = upgrade_once(self)
+            except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
+                if self.stopped or self._account_mismatch:
+                    raise
+                self.daily_upgrade_result = {"status": "failed", "reason": str(error)}
+                self.log(f"朝夕心愿：升级祝福闪光未完成（{error}）。")
+                result = False
+            else:
+                result = self.daily_upgrade_result["status"] == "upgraded"
         else:
             return False
         return self.main() and result

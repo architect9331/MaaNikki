@@ -191,7 +191,7 @@ class DailyRun(Executors):
             if ok:
                 predicted += rule.score
                 self.successful.add(rule.key)
-            elif rule.key != "upgrade":
+            elif rule.key != "upgrade" or getattr(self, "daily_upgrade_result", {}).get("status") == "failed":
                 self.log(f"{rule.label}未完成，尝试其他可执行任务。")
             if not self.main():
                 break
