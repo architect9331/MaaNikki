@@ -253,7 +253,18 @@ class RouteActions:
         self.attempts += 1
         ok = False
         if kind == "wait":
-            self.inputs.wait(point.params["seconds"])
+            wait_sec = float(point.params["seconds"])
+            if self.count_materials and wait_sec > 0:
+                deadline = time.monotonic() + wait_sec
+                baseline = self.notification()
+                while not self.rt.stopped and time.monotonic() < deadline:
+                    rem = max(0.05, min(0.4, deadline - time.monotonic()))
+                    if self.obtained(baseline, seconds=rem):
+                        baseline = self.last_notice
+                        if self.quota is not None and self.count >= self.quota:
+                            break
+            else:
+                self.inputs.wait(wait_sec)
             if point.params.get("compare_map_positions") is True:
                 from .position_review import compare_map_positions
                 compare_map_positions(self.rt, self.teleporter, point, self.event)
