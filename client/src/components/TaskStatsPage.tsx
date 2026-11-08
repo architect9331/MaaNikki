@@ -33,8 +33,12 @@ interface TaskStatisticsData {
   completed_runs: number;
   total_duration_secs: number;
   total_saved_secs: number;
+  assistive_runs?: number;
+  assistive_duration_secs?: number;
   active_days: string[];
   tasks: Record<string, TaskStatRecord>;
+  assistive_tasks?: Record<string, TaskStatRecord>;
+  assist_counters?: Record<string, number>;
 }
 
 const TASK_FALLBACK_LABELS: Record<string, string> = {
@@ -51,11 +55,28 @@ const TASK_FALLBACK_LABELS: Record<string, string> = {
   weekly_free_gifts: '商城免费礼包',
   monthly_crystal_exchange: '每月之约兑换',
   crown: '奇迹之冠巅峰赛',
-  glow_material_prep: '焕新材料刷取',
-  exploration: '大世界采集',
-  fishing: '自动钓鱼',
+  glow_material_prep: '焕新材料筹备',
+  wardrobe: '衣柜读取',
   custom_route: '自定义路线',
 };
+
+const ASSISTIVE_TASK_LABELS: Record<string, { label: string; desc: string }> = {
+  exploration: {
+    label: '常驻辅助功能',
+    desc: '自动拾取、自动对话、清洁动画跳过、自动钓鱼与大世界地图标记',
+  },
+  current_fishing: {
+    label: '当前位置钓鱼',
+    desc: '站在钓点面向水面手动发起的单轮自动抛竿与提竿收线',
+  },
+};
+
+const ASSIST_COUNTER_ITEMS: { key: string; label: string; unit: string }[] = [
+  { key: 'Pickup', label: '自动拾取触发', unit: '次' },
+  { key: 'Dialogue', label: '自动对话推进', unit: '次' },
+  { key: 'Clear', label: '清洁／动画跳过', unit: '次' },
+  { key: 'Fishing', label: '常驻自动提竿', unit: '竿' },
+];
 
 function formatDuration(seconds: number): string {
   const safe = Math.max(0, Math.round(seconds));
@@ -153,12 +174,29 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
   const totalDurationSecs = stats?.total_duration_secs ?? 0;
   const totalRuns = stats?.total_runs ?? 0;
   const completedRuns = stats?.completed_runs ?? 0;
+  const assistiveRuns = stats?.assistive_runs ?? 0;
+  const assistiveDurationSecs = stats?.assistive_duration_secs ?? 0;
   const activeDaysCount = stats?.active_days?.length ?? 0;
   const daysWithUser = companionDays(stats?.first_recorded_at, activeDaysCount);
   const totalEmbryos = useMemo(
     () => Object.values(blessing.partEmbryos ?? {}).reduce((sum, count) => sum + count, 0),
     [blessing.partEmbryos],
   );
+  const assistiveRows = useMemo(() => {
+    const map = stats?.assistive_tasks ?? {};
+    return (['exploration', 'current_fishing'] as const).map((key) => ({
+      key,
+      label: ASSISTIVE_TASK_LABELS[key].label,
+      desc: ASSISTIVE_TASK_LABELS[key].desc,
+      record: map[key] ?? {
+        runs: 0,
+        completed: 0,
+        total_duration_secs: 0,
+        estimated_saved_secs: 0,
+        last_run_at: null,
+      },
+    }));
+  }, [stats?.assistive_tasks]);
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-bg-secondary px-4">
@@ -197,7 +235,7 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
                 {formatDuration(totalSavedSecs)}
               </div>
               <div className="mt-1 text-xs text-text-muted">
-                后台自动运行 {formatDuration(totalDurationSecs)} · 免去重复机械跑图与菜单操作
+                自动任务运行 {formatDuration(totalDurationSecs)}（不含辅助功能）· 免去重复跑图与菜单操作
               </div>
             </div>
 
@@ -207,10 +245,10 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
                 <span>相伴与执行里程碑</span>
               </div>
               <div className="mt-2 text-2xl font-bold tabular-nums text-text-primary">
-                {totalRuns} <span className="text-sm font-normal text-text-secondary">次任务</span>
+                {totalRuns} <span className="text-sm font-normal text-text-secondary">次自动任务</span>
               </div>
               <div className="mt-1 text-xs text-text-muted">
-                已相伴 {daysWithUser} 天（活跃执行 {activeDaysCount} 天）· 成功完成 {completedRuns} 次
+                已相伴 {daysWithUser} 天（活跃 {activeDaysCount} 天）· 成功完成 {completedRuns} 次
               </div>
             </div>
 
@@ -266,13 +304,13 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* 各任务执行次数与节省时间明细 */}
+          {/* 自动化任务执行次数与节省时间明细 */}
           <div className="rounded-xl border border-border bg-bg-secondary p-5">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <h2 className="text-sm font-semibold text-text-primary">各任务执行统计明细</h2>
+                <h2 className="text-sm font-semibold text-text-primary">自动化任务执行统计明细</h2>
                 <p className="mt-0.5 text-xs text-text-muted">
-                  按为你节省的手动操作时间排序，记录每次自动化任务的执行次数与最近执行时刻。
+                  按为你节省的手动操作时间排序，记录每次日常、幻境、巅峰赛等自动化任务的执行次数与最近执行时刻。
                 </p>
               </div>
               {stats?.first_recorded_at && (
@@ -287,7 +325,7 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
             ) : taskRows.length === 0 ? (
               <div className="mt-4 rounded-lg border border-border bg-bg-primary p-6 text-center text-sm text-text-muted">
                 <Shirt className="mx-auto mb-2 h-6 w-6 text-text-muted/60" />
-                <p>还没有任务运行记录。开始运行日常任务、幻境挑战或巅峰赛后，这里会自动累计执行次数与节省时间。</p>
+                <p>还没有自动化任务运行记录。开始运行日常任务、幻境挑战或巅峰赛后，这里会自动累计执行次数与节省时间。</p>
               </div>
             ) : (
               <div className="mt-4 divide-y divide-border">
@@ -329,6 +367,60 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
                 })}
               </div>
             )}
+          </div>
+
+          {/* 辅助功能独立统计（不计入节省时间） */}
+          <div className="rounded-xl border border-border bg-bg-secondary p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">辅助功能统计（独立统计 · 不计入节省时间）</h2>
+                <p className="mt-0.5 text-xs text-text-muted">
+                  辅助功能在手动游玩期间常驻陪伴，仅统计开启次数、陪伴时长与交互触发次数，不计入上方节省时间。
+                </p>
+              </div>
+              <span className="rounded-md bg-bg-tertiary px-2.5 py-1 text-xs tabular-nums text-text-secondary">
+                累计开启 {assistiveRuns} 次 · 陪伴 {formatDuration(assistiveDurationSecs)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {ASSIST_COUNTER_ITEMS.map((item) => {
+                const count = stats?.assist_counters?.[item.key] ?? 0;
+                return (
+                  <div key={item.key} className="rounded-lg border border-border bg-bg-primary p-3">
+                    <div className="text-xs text-text-muted">{item.label}</div>
+                    <div className="mt-1 text-lg font-bold tabular-nums text-text-primary">
+                      {count}{' '}
+                      <span className="text-xs font-normal text-text-secondary">{item.unit}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 divide-y divide-border rounded-lg border border-border bg-bg-primary px-4">
+              {assistiveRows.map((row) => (
+                <div key={row.key} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-text-primary">{row.label}</span>
+                      <span className="rounded-md bg-bg-tertiary px-2 py-0.5 text-xs tabular-nums text-text-secondary">
+                        开启 {row.record.runs} 次
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-text-muted">{row.desc}</p>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs tabular-nums text-text-secondary">
+                    <span>
+                      陪伴时长 <strong className="font-semibold text-text-primary">{formatDuration(row.record.total_duration_secs)}</strong>
+                    </span>
+                    <span className="text-text-muted">
+                      最近：{formatDateTime(row.record.last_run_at)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
