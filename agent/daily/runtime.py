@@ -409,8 +409,8 @@ class Runtime:
         """Compatibility entry point for the shared feature confirmation."""
         return self.ui.wait_page(node, seconds=seconds)
 
-    def main(self):
-        return self.ui.main()
+    def main(self, event=lambda value: None):
+        return self.ui.main(event)
 
     def account_uid(self):
         """Confirm identity from the game, never from the desktop selection/login."""

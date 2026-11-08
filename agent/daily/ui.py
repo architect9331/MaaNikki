@@ -62,6 +62,7 @@ class GameUI:
         self._asset_definitions = self._asset_paths = None
         self._tutorial = None
         self.monthly_paradise_unavailable = False
+        self.revived = False
 
     @contextmanager
     def cache_assets(self):
@@ -713,18 +714,70 @@ class GameUI:
         self.rt.log("角色倒下，正在复活。")
         # Recheck after releasing inputs and reporting the interruption, so a
         # focus transition cannot leave a stale death-screen click behind.
-        box = self.revive_button()
-        if box is None:
+        if self.revive_button() is None:
             return None
-        clicked = bool(self.click_box(box))
-        event({"type": "revive", "clicked": clicked})
-        restored = bool(clicked and self.wait_page("MaaNikki_MainDetected", seconds=60))
-        event({"type": "revive_recovered", "success": restored})
+        self.revived = True
+        deadline = time.monotonic()+60
+        clicks, last_click_at, need_click = 0, 0.0, True
+        restored = False
+        while not self.rt.stopped and time.monotonic() < deadline:
+            with self.rt.observe(fresh=True):
+                tutorial_started = time.monotonic()
+                tutorial = self.dismiss_tutorial()
+                if tutorial is False:
+                    break
+                if tutorial:
+                    deadline += time.monotonic()-tutorial_started
+                    need_click = True
+                    continue
+                reward_overlay = self.page_matches("MaaNikki_RewardOverlayReady")
+                skip_prompt = not reward_overlay and self.rt.hit("MaaNikki_Energy_SkipReward")
+                main_ready = not reward_overlay and not skip_prompt and self.page_matches("MaaNikki_MainDetected")
+                button = (None if reward_overlay or skip_prompt or main_ready
+                          else self.rt.recognize("MaaNikki_Navigation_ReviveButton"))
+                box = getattr(getattr(button, "best_result", None), "box", None) if button and button.hit else None
+            if reward_overlay:
+                if self.dismiss_reward() is not True:
+                    break
+                event({"type": "revive_reward_dismissed"})
+                need_click = True
+                continue
+            if skip_prompt:
+                if not self.rt.key("skip", .5):
+                    break
+                event({"type": "revive_reward_dismissed"})
+                need_click = True
+                continue
+            if main_ready:
+                remaining = min(2.0, max(.5, deadline-time.monotonic()))
+                if self.wait_page("MaaNikki_MainDetected", seconds=remaining):
+                    if self.dismiss_reward() is False:
+                        break
+                    if self.page_matches("MaaNikki_MainDetected"):
+                        restored = True
+                        break
+                continue
+            if box is not None and clicks < 5 and (need_click or time.monotonic()-last_click_at >= 1.5):
+                # Combat drops can open a reward overlay on top of the death
+                # screen during or after the first click; re-click Revive once
+                # any covering popup is dismissed or if fade-in ignored the click.
+                clicked = bool(self.click_box(box))
+                clicks += 1
+                last_click_at = time.monotonic()
+                need_click = False
+                event({"type": "revive", "clicked": clicked, "attempt": clicks})
+                if not clicked:
+                    break
+                continue
+            if not self.rt.pause(.25):
+                break
+        event({"type": "revive_recovered", "success": restored, "attempts": clicks})
         if not restored and not self.rt.stopped:
             self.rt.diagnostic("revive", "未能完成复活并返回主界面。")
         return restored
 
-    def main(self):
+    def main(self, event=lambda value: None):
+        self.revived = False
         # Reward layers can leave underlying page features visible. Close the
         # confirmed overlay before accepting the world or sending Esc.
         if self.dismiss_reward() is False:
@@ -795,7 +848,7 @@ class GameUI:
             elif time.monotonic() >= deadline:
                 break
             elif page == "death":
-                return bool(self.revive())
+                return bool(self.revive(event))
             elif page == "dungeon":
                 if not (self.rt.key("exit", 0)
                         and self.wait_page(asset="ButtonDungeonQuitOK", threshold=.75)
