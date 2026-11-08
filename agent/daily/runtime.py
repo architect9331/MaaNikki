@@ -319,6 +319,15 @@ class Runtime:
             if image is None or image.size == 0:
                 count("capture.failed")
                 return None
+            if (
+                image.shape[:2] != (720, 1280)
+                and abs(image.shape[1] - 1280) <= 2
+                and abs(image.shape[0] - 720) <= 2
+            ):
+                from tall_window import heal_16_9_window
+                healed = heal_16_9_window(self.controller)
+                if healed is not None:
+                    image = healed
             self.evidence.remember_frame(image, self._focus_generation)
             self.validate_frame(image)
             return image

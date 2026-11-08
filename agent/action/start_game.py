@@ -135,6 +135,14 @@ class StartGameAction(CustomAction):
                 require_game_frame(image)
                 break
             except GameFrameSizeError:
+                if (
+                    image.shape[:2] != (720, 1280)
+                    and abs(image.shape[1] - 1280) <= 2
+                    and abs(image.shape[0] - 720) <= 2
+                ):
+                    from tall_window import heal_16_9_window
+                    if heal_16_9_window(runtime.controller) is not None:
+                        break
                 if time.monotonic() >= frame_deadline:
                     runtime.validate_frame(image)
                 if not frame_wait_logged:

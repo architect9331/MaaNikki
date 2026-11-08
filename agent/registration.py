@@ -137,6 +137,16 @@ def agent_recognition(name):
                             argv.image = captured.get()
                         generation = session.generation if session else 0
                         if session and argv.image is not None and argv.image.size:
+                            if (
+                                argv.image.shape[:2] != (720, 1280)
+                                and abs(argv.image.shape[1] - 1280) <= 2
+                                and abs(argv.image.shape[0] - 720) <= 2
+                            ):
+                                from tall_window import heal_16_9_window
+                                healed = heal_16_9_window(session.controller)
+                                if healed is not None:
+                                    argv = copy(argv)
+                                    argv.image = healed
                             session.evidence.remember_frame(argv.image, generation)
                             session.validate_frame(argv.image)
                         try:
