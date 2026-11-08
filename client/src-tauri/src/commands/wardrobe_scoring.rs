@@ -195,15 +195,18 @@ pub async fn save_material_plan(account_key: String, mut materials: Value) -> Re
 fn find_x6game_dirs() -> Vec<std::path::PathBuf> {
     let mut candidates = Vec::new();
     if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-        let ini_path =
-            std::path::PathBuf::from(local_app_data).join("InfinityNikki Launcher/config.ini");
-        if let Ok(content) = std::fs::read_to_string(&ini_path) {
-            for line in content.lines() {
-                if let Some(rest) = line.trim().strip_prefix("gameDir=") {
-                    let dir = std::path::PathBuf::from(rest.trim().trim_matches('"'));
-                    candidates.push(dir.clone());
-                    candidates.push(dir.join("X6Game"));
-                    candidates.push(dir.join("InfinityNikki/X6Game"));
+        let base = std::path::PathBuf::from(local_app_data);
+        for launcher_dir in ["InfinityNikki Launcher", "InfinityNikkiGlobal Launcher"] {
+            let ini_path = base.join(launcher_dir).join("config.ini");
+            if let Ok(content) = std::fs::read_to_string(&ini_path) {
+                for line in content.lines() {
+                    if let Some(rest) = line.trim().strip_prefix("gameDir=") {
+                        let dir = std::path::PathBuf::from(rest.trim().trim_matches('"'));
+                        candidates.push(dir.clone());
+                        candidates.push(dir.join("X6Game"));
+                        candidates.push(dir.join("InfinityNikki/X6Game"));
+                        candidates.push(dir.join("InfinityNikkiGlobal/X6Game"));
+                    }
                 }
             }
         }

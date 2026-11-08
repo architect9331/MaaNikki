@@ -137,7 +137,7 @@ def game_window():
                 and user32.GetClassNameW(hwnd, class_name, len(class_name))
                 and class_name.value == "UnrealWindow"
                 and user32.GetWindowTextW(hwnd, title, len(title))
-                and re.fullmatch(r"\s*(Infinity Nikki|无限暖暖)\s*", title.value)):
+                and re.fullmatch(r"\s*(Infinity\s*Nikki|无限暖暖|無限暖暖)\s*", title.value)):
             rect = wintypes.RECT()
             if user32.IsIconic(hwnd):
                 # Minimized Unreal windows may report an empty client area.
@@ -167,25 +167,28 @@ def resolve_program(value):
                         return candidate
         raise ValueError("请选择官方启动器 launcher.exe；不能直接运行游戏客户端。")
     import winreg
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\InfinityNikki Launcher") as key:
-            folder = Path(winreg.QueryValueEx(key, "")[0])
-            candidate = folder / "launcher.exe"
-            if candidate.is_file():
-                return candidate.resolve()
-    except OSError:
-        pass
-    config_path = Path(os.environ.get("LOCALAPPDATA", "")) / "InfinityNikki Launcher/config.ini"
-    config = configparser.ConfigParser(interpolation=None)
-    if config_path.is_file():
-        config.read(config_path, encoding="utf-8-sig")
-        directory = config.get("Download", "gameDir", fallback="").strip().strip('"')
-        if directory:
-            folder = Path(directory)
-            for base in (folder, folder.parent):
-                candidate = base / "launcher.exe"
+    for reg_key in (r"Software\InfinityNikki Launcher", r"Software\InfinityNikkiGlobal Launcher"):
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, reg_key) as key:
+                folder = Path(winreg.QueryValueEx(key, "")[0])
+                candidate = folder / "launcher.exe"
                 if candidate.is_file():
                     return candidate.resolve()
+        except OSError:
+            pass
+    local_app_data = Path(os.environ.get("LOCALAPPDATA", ""))
+    for launcher_dir in ("InfinityNikki Launcher", "InfinityNikkiGlobal Launcher"):
+        config_path = local_app_data / launcher_dir / "config.ini"
+        config = configparser.ConfigParser(interpolation=None)
+        if config_path.is_file():
+            config.read(config_path, encoding="utf-8-sig")
+            directory = config.get("Download", "gameDir", fallback="").strip().strip('"')
+            if directory:
+                folder = Path(directory)
+                for base in (folder, folder.parent):
+                    candidate = base / "launcher.exe"
+                    if candidate.is_file():
+                        return candidate.resolve()
     raise ValueError("未找到官方启动器，请在启动游戏任务中选择 launcher.exe。")
 
 

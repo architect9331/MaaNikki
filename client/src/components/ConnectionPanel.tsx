@@ -330,10 +330,10 @@ export function ConnectionPanel() {
     }
 
     if (savedDevice?.windowName && cachedWin32Windows.length > 0) {
-      // 从缓存中找到匹配的窗口
-      const matchedWindow = cachedWin32Windows.find(
-        (w) => w.window_name === savedDevice.windowName,
-      );
+      // 从缓存中找到匹配的窗口（若仅有一个匹配的暖暖窗口则兼容国服/国际服标题切换）
+      const matchedWindow =
+        cachedWin32Windows.find((w) => w.window_name === savedDevice.windowName) ||
+        (cachedWin32Windows.length === 1 ? cachedWin32Windows[0] : undefined);
       setSelectedWindow(matchedWindow || null);
     } else {
       setSelectedWindow(null);
@@ -532,6 +532,8 @@ export function ConnectionPanel() {
           const matched = windows.filter((w) => w.window_name === savedDevice.windowName);
           if (matched.length === 1) {
             autoSelected = matched[0];
+          } else if (matched.length === 0 && windows.length === 1) {
+            autoSelected = windows[0];
           }
         } else if (windows.length > 0) {
           // 没有保存窗口时自动选择第一个
@@ -1244,9 +1246,11 @@ export function ConnectionPanel() {
         setCachedWin32Windows(windows);
         if (!isActiveInstance(instanceId)) return;
 
-        // 尝试匹配保存的窗口名称
+        // 尝试匹配保存的窗口名称（若仅有一个匹配的暖暖窗口则自动兼容国服/国际服标题切换）
         if (savedDevice?.windowName) {
-          const matched = windows.find((w) => w.window_name === savedDevice.windowName);
+          const matched =
+            windows.find((w) => w.window_name === savedDevice.windowName) ||
+            (windows.length === 1 ? windows[0] : undefined);
           if (matched) {
             // 找到匹配的，自动连接
             setIsSearching(false);

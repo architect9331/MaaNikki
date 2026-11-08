@@ -680,7 +680,9 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
                     const { classRegex, titleRegex } = getDesktopWindowFilters(controller);
                     const windows = await maaService.findWin32Windows(classRegex, titleRegex);
                     if (savedDevice?.windowName) {
-                      deviceFound = windows.some((w) => w.window_name === savedDevice.windowName);
+                      deviceFound =
+                        windows.some((w) => w.window_name === savedDevice.windowName) ||
+                        windows.length === 1;
                     } else {
                       deviceFound = windows.length > 0;
                     }
@@ -852,7 +854,9 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
             } else if (isDesktopWindowControllerType(controllerType) && savedDevice.windowName) {
               const { classRegex, titleRegex } = getDesktopWindowFilters(controller);
               const windows = await maaService.findWin32Windows(classRegex, titleRegex);
-              const matchedWindow = windows.find((w) => w.window_name === savedDevice.windowName);
+              const matchedWindow =
+                windows.find((w) => w.window_name === savedDevice.windowName) ||
+                (windows.length === 1 ? windows[0] : undefined);
               if (!matchedWindow) {
                 return failStart(
                   t('taskList.autoConnect.windowNotFound', { name: savedDevice.windowName }),

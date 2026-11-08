@@ -92,7 +92,7 @@ class ForegroundInput:
             raise NavigationError("无法确认连接窗口的标题，导航已停止。")
         title = ctypes.create_unicode_buffer(length+1)
         if (not self.user32.GetWindowTextW(self.hwnd, title, len(title))
-                or not re.fullmatch(r"\s*(Infinity Nikki|无限暖暖)\s*", title.value)):
+                or not re.fullmatch(r"\s*(Infinity\s*Nikki|无限暖暖|無限暖暖)\s*", title.value)):
             raise NavigationError("当前连接的窗口不是无限暖暖，导航已停止，请检查连接对象。")
         from task_control import active_session
         session = active_session()
