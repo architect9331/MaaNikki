@@ -40,6 +40,13 @@ class Teleporter:
             self.inputs.check()
         if self.rt.stopped or time.monotonic() >= self.deadline:
             raise NavigationError("地图传送已停止或超时。")
+        reward_started = time.monotonic()
+        reward = self.rt.ui.dismiss_reward()
+        if reward is False:
+            raise NavigationError("未能跳过获取提示。")
+        if reward:
+            self.deadline += time.monotonic()-reward_started
+            self.event({"type": "map_reward_dismissed"})
         # Map browsing and selected-point details have different page features.
         if browse and not self.rt.hit("MaaNikki_Navigation_MapFeature"):
             raise NavigationError("未能确认地图浏览页面。")
@@ -278,6 +285,19 @@ class Teleporter:
                                  "score": score, "local_peak": detail}]
         if pose[2] < .6:
             pose = self.refine_player_pose(frame, pose)
+        if pose[2] < .6 and self.locator.bigmap_mask is not None:
+            # A drag near the edge of bigmap_mask (such as Unbound Hub near the
+            # western boundary of Star Sea) can push the viewport center just
+            # outside the mask; accept an unmasked coarse peak only when at
+            # least two disjoint terrain tiles confirm it on the full-scale map.
+            ux, uy, uscore, udetail = match_map(self.locator.coarse, patch, kernel=9)
+            if all(math.isfinite(v) for v in (ux, uy, uscore, udetail)) and uscore >= .45 and udetail >= .01:
+                unmasked = ux*4, uy*4, uscore, udetail
+                self.map_diagnostics.append({"method": "whole_map_unmasked_peak", "x": unmasked[0], "y": unmasked[1],
+                                             "score": uscore, "local_peak": udetail})
+                refined = self.refine_player_pose(frame, unmasked)
+                if refined is not unmasked and refined[2] >= .6 and refined[3] >= .01:
+                    pose = refined
         return pose, 1
 
     def locate_map(self):
@@ -285,9 +305,11 @@ class Teleporter:
         self.last_frame = self.rt.capture()
         pose, _ = self.map_pose(self.last_frame)
         self.last_pose = pose
-        self.hint = pose[:2]
         self.event({"type": "bigmap_pose", "x": pose[0], "y": pose[1],
                     "score": pose[2], "local_peak": pose[3], "windows": self.map_diagnostics})
+        if pose[2] < .6 or pose[3] < .01:
+            raise NavigationError("地图画面没有可用的定位特征，未继续拖动或选择点位。")
+        self.hint = pose[:2]
         return self.hint
 
     def refine_player_pose(self, frame, pose):
@@ -372,15 +394,16 @@ class Teleporter:
                 raise NavigationError("复核角色位置后未能返回主界面。")
 
     def center(self, x, y, force=False, *, allow_visible=False):
-        while True:
+        panned = False
+        for _ in range(8):
             self.check()
             px, py = self.locate_map()
             dx, dy = (x-px)/self.locator.spec.bigmap_scale, (y-py)/self.locator.spec.bigmap_scale
             target = [round(640+dx), round(360+dy)]
-            # A crystal-map handoff can already show the checkpoint. Use a
-            # fresh, reliable terrain match and keep clear of fixed controls,
-            # the region switcher and the point-selection panel on the right.
-            if allow_visible and not force and 240 <= target[0] <= 820 and 140 <= target[1] <= 580:
+            # A crystal-map handoff or a prior pan can already place the
+            # checkpoint inside the safe central area, avoiding an extra short
+            # drag whose inertia may overshoot near map boundaries.
+            if (allow_visible or panned) and not force and 240 <= target[0] <= 820 and 140 <= target[1] <= 580:
                 if self.last_pose[2] >= .6 and self.last_pose[3] >= .01:
                     self.event({"type": "checkpoint_visible", "target": target})
                     return target
@@ -390,10 +413,12 @@ class Teleporter:
             self.event({"type": "map_pan", "begin": begin, "end": end})
             if not self.rt.action("Swipe", begin=begin, end=end, duration=300):
                 raise NavigationError("地图拖动失败。")
+            panned = True
             if not self.rt.pause(.15):
                 raise NavigationError("地图传送已停止。")
             # Animated HUD decorations should not delay every terrain drag.
             self.rt.ui.stable(threshold=.995, seconds=1.5, roi=[300, 120, 650, 480])
+        raise NavigationError("多次拖动地图后仍未能将目标传送点移入视野。")
 
     def confirm_transport(self, checkpoint):
         button = self.rt.ui.roi("AreaBigMapTeleportButton")
@@ -469,15 +494,26 @@ class Teleporter:
             return (normalized(self.rt.ui.text(self.rt.ui.roi("AreaBigMapTeleportButton")))
                     in ("传送", "追踪") or bool(self.rt.text(
                         self.rt.ui.roi("AreaBigMapTeleporterSelect"), re.escape(checkpoint["name"]))))
+        need_restore = False
         def restore_map():
-            if not self.rt.ui.open_map(self.event):
+            nonlocal need_restore
+            need_restore = False
+            if not self.rt.main() or not self.rt.ui.open_map(self.event):
                 return False
             self.region(checkpoint)
             self.zoom()
             return True
         def select_checkpoint():
+            nonlocal need_restore
+            if need_restore and not restore_map():
+                return False
             self.check(browse=True)
-            target = self.center(checkpoint["x"], checkpoint["y"], allow_visible=map_reused)
+            try:
+                target = self.center(checkpoint["x"], checkpoint["y"], allow_visible=map_reused)
+            except NavigationError as error:
+                self.event({"type": "checkpoint_center_failed", "name": checkpoint["name"], "reason": str(error)})
+                need_restore = True
+                return False
             self.event({"type": "checkpoint_click", "name": checkpoint["name"], "target": target})
             return self.rt.action("Click", target=target)
         if not self.rt.ui.enter_page(select_checkpoint, selection_visible,

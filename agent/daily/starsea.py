@@ -254,6 +254,13 @@ class Starsea:
         readings = []
         deadline = time.monotonic()+2.5
         while not self.rt.stopped and time.monotonic() < deadline:
+            reward_started = time.monotonic()
+            reward = self.rt.ui.dismiss_reward()
+            if reward is False:
+                break
+            if reward:
+                deadline += time.monotonic()-reward_started
+                self.events.append({"type": "map_reward_dismissed", "stage": f"statistics_{stage}"})
             frame = self.rt.capture()
             if frame is None:
                 break
@@ -332,6 +339,15 @@ class Starsea:
                                 "elapsed": round(time.monotonic()-start, 3)})
             return None
         while not self.rt.stopped and time.monotonic()-start < CRYSTAL_SCAN_LIMIT:
+            reward_started = time.monotonic()
+            reward = self.rt.ui.dismiss_reward()
+            if reward is False:
+                scan["reason"] = "reward_overlay"
+                return None
+            if reward:
+                start += time.monotonic()-reward_started
+                previous, stable_since = None, time.monotonic()
+                self.events.append({"type": "map_reward_dismissed", "stage": "crystal_scan"})
             frame = self.rt.capture()
             if frame is None:
                 scan["capture_failed"] = True

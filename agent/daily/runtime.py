@@ -1032,12 +1032,23 @@ class Executors(Runtime):
                 and self.pause(.5) and self.action("Click", target=self.ui.roi("AreaItemFirstItem"))
                 and self.pause(.5)):
             return False
-        with self.observe(fresh=True):
-            # Selecting an already deployed ornament recalls it and leaves the
-            # browser open. Select it once more to enter placement, as upstream
-            # does, but never repeat a lantern confirmation or placement input.
-            recalled = (item_browser_ready() and not self.hit("MaaNikki_Daily_LanternConfirm")
-                        and not self.placement_ready())
+        # Large 3D ornaments can take over a second to load their preview and
+        # close the item browser. Because MouseLeft is also the default Place
+        # binding in placement mode, wait for that transition before concluding
+        # that the first click merely recalled an already deployed ornament.
+        deadline = time.monotonic()+2.5
+        recalled = False
+        while not self.stopped and time.monotonic() < deadline:
+            with self.observe(fresh=True):
+                if (self.placement_ready()
+                        or self.hit("MaaNikki_Daily_LanternConfirm")
+                        or not item_browser_ready()
+                        or not self.hit("MaaNikki_Daily_ItemSetting")):
+                    recalled = False
+                    break
+                recalled = True
+            if not self.pause(.25):
+                return False
         if recalled:
             self.log("摆饰选择面板仍打开，可能已收回原有摆饰，再选择一次进入放置。")
             return self.action("Click", target=self.ui.roi("AreaItemFirstItem")) and self.pause(.5)

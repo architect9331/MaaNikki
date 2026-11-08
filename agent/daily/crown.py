@@ -83,7 +83,7 @@ class Crown(Runtime):
             with self.observe():
                 return bool(self.hit("MaaNikki_RewardOverlayReady") or self.asset("IconClickSkip"))
 
-        if not self.ui.wait_page(visible, seconds=3):
+        if not self.ui.wait_page(visible, seconds=3, allow_reward=True):
             return False
         if self.hit("MaaNikki_RewardOverlayReady"):
             # A challenge reward returns to arena dialogue, while an entry
@@ -92,7 +92,7 @@ class Crown(Runtime):
                                             attempts=1, wait_seconds=0, verify=False)
                         and self.ui.wait_page(lambda: not self.hit("MaaNikki_RewardOverlayReady")))
         return bool(self.pause(1) and self.key("skip", 0)
-                    and self.ui.wait_page(lambda: not visible()))
+                    and self.ui.wait_page(lambda: not visible(), allow_reward=True))
 
     def challenge_transition(self, *, result_dismissed=False):
         """Follow arena rewards and dialogue until a positive next-state signal."""

@@ -481,14 +481,14 @@ class Gameplay:
                         and not self.rt.hit("MaaNikki_Monthly_ParadiseContinue")
                         and not self.rt.hit("MaaNikki_RewardLayer"))
 
-        deadline, dismissed = time.monotonic()+10, 0
+        deadline, dismissed = time.monotonic()+15, 0
         while not self.rt.stopped and time.monotonic() < deadline:
             with self.rt.observe(fresh=True):
                 reward = self.rt.hit("MaaNikki_RewardLayer")
                 continuation = self.rt.hit("MaaNikki_Monthly_ParadiseContinue")
                 returned = not (reward or continuation) and page_returned()
             if reward or continuation:
-                if dismissed >= 3:
+                if dismissed >= 15:
                     break
                 dismissed += 1
                 self.rt.log("乐园构想：已识别奖励继续提示，尝试关闭奖励页面。", detail=True)
@@ -547,7 +547,7 @@ class Gameplay:
 
     def monthly_travel_claim_return(self, page):
         """Finish on the actual receipt or settled task-button update."""
-        deadline, dismissed = time.monotonic()+10, 0
+        deadline, dismissed = time.monotonic()+15, 0
         claim = f"MaaNikki_Monthly_Claim{page}"
         while not self.rt.stopped and time.monotonic() < deadline:
             with self.rt.observe(fresh=True):
@@ -555,7 +555,7 @@ class Gameplay:
                 returned = (not reward and self.monthly_tab_selected(page)
                             and (dismissed > 0 or page == "Task" and not self.rt.hit(claim)))
             if reward:
-                if dismissed >= 3:
+                if dismissed >= 15:
                     break
                 if not self.rt.key("skip", .25):
                     return False

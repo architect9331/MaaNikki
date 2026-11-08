@@ -56,9 +56,24 @@ class GameUI:
         **{f"MaaNikki_{kind}_PageReady": "MaaNikki_RealmPageReady"
            for kind in ("Jihua", "Bless", "Monster", "Weekly")},
     }
+    REWARD_TARGET_PAGES = frozenset({
+        "MaaNikki_RewardLayer",
+        "MaaNikki_RewardLayerPrompt",
+        "MaaNikki_RewardOverlayReady",
+        "MaaNikki_RewardOverlayContinue",
+        "MaaNikki_Dig_SkipReward",
+        "MaaNikki_Energy_SkipReward",
+        "MaaNikki_Monthly_ParadiseReward",
+        "MaaNikki_Monthly_ParadiseContinue",
+        "MaaNikki_Crown_SummitArrivalReady",
+        "MaaNikki_Crown_EntryRewardReady",
+        "MaaNikki_Crown_EntryRewardTitle",
+        "MaaNikki_Pursuit_UpgradeResult",
+    })
     def __init__(self, runtime, resource):
         self.rt, self.resource = runtime, resource
         self._preserve_cursor = False
+        self._dismissing_reward = False
         self._asset_definitions = self._asset_paths = None
         self._tutorial = None
         self.monthly_paradise_unavailable = False
@@ -323,24 +338,44 @@ class GameUI:
                                  source="MaaNikki_MainDetected", recover=self.main)
         return opened and self.dismiss_reward() is not False
 
-    def dismiss_reward(self):
-        """Close a confirmed reward popup before using the menu underneath."""
-        page = "MaaNikki_RewardOverlayReady"
-        if not self.page_matches(page):
-            return None
-        # A press during the popup's opening can be ignored. Press again only
-        # after a fresh frame confirms the popup is still there.
-        for _ in range(3):
-            if not self.rt.key("skip", 0):
+    def reward_overlay_visible(self, *, include_title=False):
+        with self.rt.observe():
+            # Overworld HUD never coexists with the modal reward overlay.
+            if self.rt.hit("MaaNikki_MainDetected"):
                 return False
-            # The menu title can remain readable through the popup. Verify that
-            # the popup itself disappears instead of accepting that same title.
-            if self.wait_page(lambda: not self.page_matches(page), seconds=2.5):
-                return True
-            with self.rt.observe(fresh=True):
-                if self.rt.stopped or not self.rt.hit(page):
+            matched = (self.page_matches("MaaNikki_RewardOverlayReady")
+                       or bool(include_title and self.rt.hit("MaaNikki_Monthly_ParadiseReward")))
+            return bool(matched and not self.rt.hit("MaaNikki_Pursuit_UpgradeResultStats"))
+
+    def dismiss_reward(self, *, include_title=False):
+        """Close one or more queued reward popups covering the active UI page."""
+        if self._dismissing_reward or not self.reward_overlay_visible(include_title=include_title):
+            return None
+        self._dismissing_reward = True
+        deadline = time.monotonic()+15
+        try:
+            # Overworld rewards queue up and pop up back-to-back once any UI
+            # page opens; a press during fade-in only fast-forwards the reveal.
+            for _ in range(20):
+                if self.rt.stopped or time.monotonic() >= deadline:
                     return False
-        return False
+                if not self.rt.key("skip", .25):
+                    return False
+                clear = 0
+                check_deadline = min(deadline, time.monotonic()+2.5)
+                while not self.rt.stopped and time.monotonic() < check_deadline:
+                    with self.rt.observe(fresh=True):
+                        visible = self.reward_overlay_visible(include_title=True)
+                    if visible:
+                        break
+                    clear += 1
+                    if clear >= 2:
+                        return True
+                    if not self.rt.pause(.25):
+                        return False
+            return False
+        finally:
+            self._dismissing_reward = False
 
     def dismiss_realm_confirm(self, cancel="MaaNikki_Bless_Cancel"):
         """Close a realm challenge confirmation dialog before leaving the page."""
@@ -388,6 +423,9 @@ class GameUI:
         for _ in range(80 if scroll else 1):
             if self.rt.stopped:
                 return False
+            if next_image is None and node not in self.REWARD_TARGET_PAGES:
+                if self.dismiss_reward() is False:
+                    return False
             image = self.rt.capture() if next_image is None else next_image
             next_image = None
             if image is None:
@@ -459,12 +497,14 @@ class GameUI:
             if self.rt.hit(node):
                 if not self.rt.pause(1):
                     return False
+                if node == "MaaNikki_RewardLayer":
+                    return self.dismiss_reward(include_title=True) is True
                 # A press during the reward item reveal can only fast-forward
                 # the animation; verify closure and retry if the popup remains.
-                for _ in range(3):
+                for _ in range(6):
                     if not self.rt.key("skip", 0):
                         return False
-                    if self.wait_page(lambda: not self.rt.hit(node), seconds=2.5):
+                    if self.wait_page(lambda: not self.rt.hit(node), seconds=2.5, allow_reward=True):
                         return True
                     with self.rt.observe(fresh=True):
                         if self.rt.stopped or not self.rt.hit(node):
@@ -502,7 +542,7 @@ class GameUI:
 
     @measure("wait.page")
     def wait_page(self, node=None, *, asset=None, text=None, threshold=.99, seconds=5,
-                  roi=None, stable=False):
+                  roi=None, stable=False, allow_reward=False):
         """Confirm a page twice; image stability is an optional local requirement."""
         page = node
         if asset or text:
@@ -514,6 +554,7 @@ class GameUI:
             roi = self.roi(asset) if asset else fields(self.rt.context, node).get("roi")
         if stable and roi is None:
             raise ValueError("页面稳定检查必须指定局部区域。")
+        dismiss_rewards = not allow_reward and self.page_name(page) not in self.REWARD_TARGET_PAGES
         deadline = time.monotonic()+seconds
         confirmations = 0
         # If the first confirmation check started before deadline and matched,
@@ -533,6 +574,15 @@ class GameUI:
                     deadline += time.monotonic()-tutorial_started
                     confirmations = 0
                     continue
+                if dismiss_rewards:
+                    reward_started = time.monotonic()
+                    reward = self.dismiss_reward()
+                    if reward is False:
+                        return False
+                    if reward:
+                        deadline += time.monotonic()-reward_started
+                        confirmations = 0
+                        continue
                 matched = self.page_matches(page)
                 if (matched and confirmations == 0 and page != "MaaNikki_MainDetected"
                         and not self.unhover()):
@@ -558,6 +608,8 @@ class GameUI:
                    diagnostic_context=None):
         """Recheck the source or recover it before every bounded entrance retry."""
         events, failed = [], False
+        dismiss_rewards = (self.page_name(destination) not in self.REWARD_TARGET_PAGES
+                           and self.page_name(source) not in self.REWARD_TARGET_PAGES)
         def failure_frame(attempt, stage):
             return self.rt.diagnostic("page_entry", stage, details={
                 "attempt": attempt, "source": self.page_name(source),
@@ -572,7 +624,7 @@ class GameUI:
                 with self.rt.observe():
                     if self.dismiss_tutorial() is False:
                         return False
-                    if source == "MaaNikki_MenuReady" and self.dismiss_reward() is False:
+                    if dismiss_rewards and self.dismiss_reward() is False:
                         return False
                     destination_visible = self.page_matches(destination)
                     source_visible = bool(source and not destination_visible and self.page_matches(source))
