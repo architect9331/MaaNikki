@@ -15,9 +15,9 @@
   },
   "points": [
     {
-      "x": 1543.05,
-      "y": 1132.1,
-      "radius": 1.0,
+      "x": 1542.977,
+      "y": 1132.259,
+      "radius": 1.5,
       "jump": false
     },
     {
@@ -65,7 +65,7 @@
     {
       "x": 1528.75,
       "y": 1007.1,
-      "radius": 1.0,
+      "radius": 1.25,
       "jump": false
     },
     {
@@ -77,7 +77,7 @@
     {
       "x": 1518.6,
       "y": 987.8,
-      "radius": 1.0,
+      "radius": 1.25,
       "jump": false,
       "action": "wait",
       "params": {
@@ -85,9 +85,9 @@
       }
     },
     {
-      "x": 1527.7,
-      "y": 979.8,
-      "radius": 1.0,
+      "x": 1527.95,
+      "y": 979.55,
+      "radius": 1.5,
       "jump": true,
       "action": "wait",
       "params": {
@@ -95,9 +95,9 @@
       }
     },
     {
-      "x": 1541.8,
-      "y": 971.65,
-      "radius": 1.0,
+      "x": 1542.1,
+      "y": 971.5,
+      "radius": 1.5,
       "jump": true,
       "action": "wait",
       "params": {
@@ -207,9 +207,9 @@
       "jump": false
     },
     {
-      "x": 1586.616,
-      "y": 902.32,
-      "radius": 1.0,
+      "x": 1586.95,
+      "y": 902.3,
+      "radius": 1.5,
       "jump": false,
       "action": "wait",
       "params": {
@@ -217,9 +217,9 @@
       }
     },
     {
-      "x": 1573.9,
+      "x": 1573.55,
       "y": 901.6,
-      "radius": 1.0,
+      "radius": 1.5,
       "jump": true,
       "action": "wait",
       "params": {
@@ -323,9 +323,9 @@
       "jump": false
     },
     {
-      "x": 1602.928,
-      "y": 962.381,
-      "radius": 1.0,
+      "x": 1602.756,
+      "y": 962.686,
+      "radius": 1.15,
       "jump": false
     },
     {
@@ -335,9 +335,9 @@
       "jump": false
     },
     {
-      "x": 1587.7,
-      "y": 961.6,
-      "radius": 1.0,
+      "x": 1587.45,
+      "y": 961.4,
+      "radius": 1.5,
       "jump": true,
       "action": "wait",
       "params": {
@@ -369,9 +369,9 @@
       "jump": false
     },
     {
-      "x": 1596.993,
-      "y": 986.759,
-      "radius": 1.0,
+      "x": 1597.15,
+      "y": 986.85,
+      "radius": 1.5,
       "jump": true,
       "action": "wait",
       "params": {
@@ -391,9 +391,9 @@
       "jump": false
     },
     {
-      "x": 1596.8,
-      "y": 1012.7,
-      "radius": 1.0,
+      "x": 1596.647,
+      "y": 1012.442,
+      "radius": 1.2,
       "jump": false
     },
     {
@@ -421,9 +421,9 @@
       "jump": false
     },
     {
-      "x": 1571.8,
-      "y": 1012.55,
-      "radius": 1.0,
+      "x": 1571.73,
+      "y": 1012.893,
+      "radius": 1.15,
       "jump": false
     },
     {
@@ -446,8 +446,8 @@
     },
     {
       "x": 1571.1,
-      "y": 995.65,
-      "radius": 1.0,
+      "y": 995.25,
+      "radius": 1.5,
       "jump": true
     },
     {
