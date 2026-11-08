@@ -34,8 +34,8 @@
   },
   "points": [
     {
-      "x": 1046.8,
-      "y": 719.8,
+      "x": 1046.928,
+      "y": 720.026,
       "radius": 1.35,
       "jump": false,
       "action": "teleport",
@@ -72,8 +72,8 @@
       "jump": false
     },
     {
-      "x": 1070.76,
-      "y": 713.39,
+      "x": 1070.561,
+      "y": 713.546,
       "radius": 1.35,
       "jump": true,
       "action": "macro",

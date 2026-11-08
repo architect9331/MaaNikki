@@ -18,8 +18,13 @@ MAX_STEP_UNITS = 0.6
 
 
 def _iter_sentry_result_records(results: list[dict]):
+    import re
+
     chunks_by_group: dict[tuple[str, str], list[str]] = defaultdict(list)
-    waypoint_by_group: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    waypoint_by_group: dict[tuple[str, str], dict[int, dict]] = defaultdict(dict)
+    route_by_group: dict[tuple[str, str], str] = {}
+    meta_by_group: dict[tuple[str, str], dict] = defaultdict(dict)
+
     for row in results:
         if not isinstance(row, dict):
             continue
@@ -29,35 +34,50 @@ def _iter_sentry_result_records(results: list[dict]):
             continue
         trace = str(vals.get("trace") or "")
         ts = str(vals.get("timestamp") or "")[:19]
+        group_key = (trace, ts)
+
+        rm = re.search(r'"route"\s*:\s*"([^"]+)"', msg)
+        if rm:
+            route_by_group[group_key] = rm.group(1)
+        tm = re.search(r'"timestamp"\s*:\s*"([^"]+)"', msg)
+        if tm:
+            meta_by_group[group_key]["started_at"] = tm.group(1)
+        om = re.search(r'"outcome"\s*:\s*"([^"]+)"', msg)
+        if om and '"waypoints":[' in msg:
+            meta_by_group[group_key]["outcome"] = om.group(1)
+
         try:
             parsed = json.loads(msg)
             if isinstance(parsed, dict):
-                if parsed.get("waypoints") and parsed.get("route"):
+                if isinstance(parsed.get("waypoints"), list) and parsed.get("route"):
                     yield parsed
                     continue
-                if isinstance(parsed.get("route"), str) and isinstance(parsed.get("index"), int):
-                    waypoint_by_group[(trace or ts, parsed["route"])].append(parsed)
+                if isinstance(parsed.get("index"), int) and isinstance(parsed.get("target"), list):
+                    waypoint_by_group[group_key][parsed["index"]] = parsed
+                    if isinstance(parsed.get("route"), str):
+                        route_by_group[group_key] = parsed["route"]
                     continue
         except (ValueError, TypeError):
             pass
-        chunks_by_group[(trace, ts)].append(msg)
-
-    import re
+        chunks_by_group[group_key].append(msg)
 
     def _chunk_sort_key(c: str) -> tuple[int, int]:
-        is_not_start = 0 if c.startswith('{"') else 1
+        is_not_start = 0 if (c.startswith('{"') and '"waypoints":[' in c) else 1
         m = re.search(r'"index":(\d+)', c)
         return (is_not_start, int(m.group(1)) if m else 9999)
 
-    for (trace, ts), chunks in chunks_by_group.items():
-        starts = [c for c in chunks if c.startswith('{"')]
-        others = [c for c in chunks if not c.startswith('{"')]
+    for group_key, chunks in chunks_by_group.items():
+        starts = [c for c in chunks if c.startswith('{"') and '"waypoints":[' in c]
+        others = [c for c in chunks if not (c.startswith('{"') and '"waypoints":[' in c)]
+        joined_ok = False
         if len(starts) == 1 and others:
             joined = "".join(sorted(chunks, key=_chunk_sort_key))
             try:
                 parsed = json.loads(joined)
                 if isinstance(parsed, dict) and parsed.get("waypoints") and parsed.get("route"):
                     yield parsed
+                    joined_ok = True
+                    waypoint_by_group.pop(group_key, None)
                     continue
             except (ValueError, TypeError):
                 pass
@@ -68,12 +88,41 @@ def _iter_sentry_result_records(results: list[dict]):
                         parsed = json.loads(starts[0] + "".join(perm))
                         if isinstance(parsed, dict) and parsed.get("waypoints") and parsed.get("route"):
                             yield parsed
+                            joined_ok = True
+                            waypoint_by_group.pop(group_key, None)
                             break
                     except (ValueError, TypeError):
                         continue
+        if not joined_ok:
+            for c in chunks:
+                for match in re.finditer(r'\{[^{}]*"index"\s*:\s*\d+[^{}]*"target"\s*:\s*\[[^\]]+\][^{}]*\}', c):
+                    try:
+                        w = json.loads(match.group(0))
+                        if isinstance(w, dict) and isinstance(w.get("index"), int):
+                            waypoint_by_group[group_key].setdefault(w["index"], w)
+                    except (ValueError, TypeError):
+                        continue
 
-    for (_, route_id), wps in waypoint_by_group.items():
-        yield {"route": route_id, "waypoints": sorted(wps, key=lambda w: int(w.get("index", 0)))}
+    for group_key, wps_dict in waypoint_by_group.items():
+        route_id = route_by_group.get(group_key)
+        if route_id and wps_dict:
+            for idx, w in wps_dict.items():
+                if idx + 1 in wps_dict:
+                    nw = wps_dict[idx + 1]
+                    if w.get("next_outcome") is None:
+                        w["next_outcome"] = nw.get("outcome")
+                    if w.get("next_turnbacks") is None:
+                        w["next_turnbacks"] = int(nw.get("turnback_count") or nw.get("overshoot_retries") or 0)
+                    if w.get("next_max_cross_track") is None:
+                        w["next_max_cross_track"] = float(nw.get("max_cross_track") or 0.0)
+            meta = meta_by_group.get(group_key, {})
+            yield {
+                "route": route_id,
+                "started_at": meta.get("started_at") or f"{group_key[0]}:{group_key[1]}",
+                "outcome": meta.get("outcome") or "",
+                "waypoints": [wps_dict[i] for i in sorted(wps_dict)],
+            }
+
 
 
 def iter_telemetry_records(paths: list[Path]):
@@ -223,32 +272,34 @@ def compute_waypoint_adjustment(samples: list[dict], target: list[float], config
     suggested_radius = configured_radius
     radius_reason = "keep_current_radius"
 
-    if turnback_rate >= 0.15 and downstream_problem_rate <= 0.10 and not missed:
-        # Excessive turn-backs without downstream off-course penalties.
-        if miss_dists:
-            p85 = miss_dists[min(len(miss_dists) - 1, int(len(miss_dists) * 0.85))]
-            ratio = (p85 + 0.08) / max(effective_radius, 0.1)
-            candidate = configured_radius * min(1.35, max(1.1, ratio))
-        else:
-            candidate = configured_radius * 1.2
-        max_radius_cap = max(3.0, configured_radius + 0.2)
-        suggested_radius = round(
-            min(max(configured_radius + 0.35, candidate), max_radius_cap, configured_radius * 1.35), 2
-        )
-        if suggested_radius > configured_radius + 0.03:
-            radius_reason = "widen_to_reduce_turnbacks"
+    if turnback_rate >= 0.15 and not missed:
+        if downstream_problem_rate <= 0.10:
+            # Excessive turn-backs without downstream off-course penalties.
+            if miss_dists:
+                p85 = miss_dists[min(len(miss_dists) - 1, int(len(miss_dists) * 0.85))]
+                ratio = (p85 + 0.08) / max(effective_radius, 0.1)
+                candidate = configured_radius * min(1.35, max(1.1, ratio))
+            else:
+                candidate = configured_radius * 1.2
+            max_radius_cap = max(3.0, configured_radius + 0.2)
+            suggested_radius = round(
+                min(max(configured_radius + 0.35, candidate), max_radius_cap, configured_radius * 1.35), 2
+            )
+            if suggested_radius > configured_radius + 0.03:
+                radius_reason = "widen_to_reduce_turnbacks"
         # If braking overshoot or consistent landing cluster on a precise/high-turnback point caused the turn-back,
         # align the target with the stopping cluster or precompensate braking drift.
-        if precise and reason == "stable" and math.hypot(drift_dx, drift_dy) >= 0.12:
-            nudge_x = -drift_dx * 0.5
-            nudge_y = -drift_dy * 0.5
-            reason = "precompensate_braking_overshoot"
-        elif reason == "stable" and turnback_rate >= 0.30 and (local_clean or local_turnbacks):
-            arr_dx, arr_dy = mean_pair(local_clean + local_turnbacks, "dx", "dy")
-            if math.hypot(arr_dx, arr_dy) >= 0.25:
-                nudge_x = arr_dx * 0.5
-                nudge_y = arr_dy * 0.5
-                reason = "align_with_arrival_cluster"
+        if precise or downstream_problem_rate <= 0.10:
+            if precise and reason == "stable" and math.hypot(drift_dx, drift_dy) >= 0.12:
+                nudge_x = -drift_dx * 0.5
+                nudge_y = -drift_dy * 0.5
+                reason = "precompensate_braking_overshoot"
+            elif reason == "stable" and turnback_rate >= 0.30 and (local_clean or local_turnbacks):
+                arr_dx, arr_dy = mean_pair(local_clean + local_turnbacks, "dx", "dy")
+                if math.hypot(arr_dx, arr_dy) >= 0.25:
+                    nudge_x = arr_dx * 0.5
+                    nudge_y = arr_dy * 0.5
+                    reason = "align_with_arrival_cluster"
     elif not precise and turnback_rate < 0.08 and len(downstream_samples) >= 4:
         # Check if passing far from this transit waypoint causes the next segment to drift off-course.
         edge_passes = [
@@ -322,8 +373,7 @@ def main() -> None:
     args = parser.parse_args()
 
     grouped: dict[str, dict[int, list[dict]]] = defaultdict(lambda: defaultdict(list))
-    latest_targets: dict[tuple[str, int], tuple[list[float], float]] = {}
-    seen_runs: set[tuple[str, str, str, int]] = set()
+    by_sig: dict[tuple, dict] = {}
 
     for record in iter_telemetry_records([Path(p) for p in args.inputs]):
         route_id = record.get("route")
@@ -332,51 +382,107 @@ def main() -> None:
         wps = record.get("waypoints", [])
         if not isinstance(wps, list) or not wps:
             continue
-        started_at = str(record.get("started_at") or "")
-        if started_at:
-            dedup_key = (route_id, started_at, str(record.get("outcome") or ""), len(wps))
-            if dedup_key in seen_runs:
-                continue
-            seen_runs.add(dedup_key)
-        for wp in wps:
-            if not isinstance(wp, dict):
-                continue
-            idx = wp.get("index")
-            target = wp.get("target")
-            conf_radius = wp.get("configured_radius", wp.get("radius", 3.0))
-            if isinstance(idx, int) and isinstance(target, list) and len(target) == 2:
-                grouped[route_id][idx].append(wp)
-                latest_targets[(route_id, idx)] = ([float(target[0]), float(target[1])], float(conf_radius))
+        started_at = str(record.get("timestamp") or record.get("started_at") or "")
+        a0 = tuple(wps[0].get("actual") or []) if isinstance(wps[0], dict) else ()
+        a1 = tuple(wps[1].get("actual") or []) if len(wps) > 1 and isinstance(wps[1], dict) else ()
+        sig = (route_id, a0, a1) if len(wps) >= 2 else (route_id, a0, started_at[:19])
+        if sig not in by_sig or len(wps) > len(by_sig[sig].get("waypoints", [])):
+            by_sig[sig] = record
+
+    deduped = sorted(
+        by_sig.values(),
+        key=lambda r: str(r.get("timestamp") or r.get("started_at") or ""),
+    )
+    for record in deduped:
+        route_id = record["route"]
+        wps = record.get("waypoints", [])
+        by_i = {
+            wp["index"]: wp
+            for wp in wps
+            if isinstance(wp, dict)
+            and isinstance(wp.get("index"), int)
+            and isinstance(wp.get("target"), list)
+            and len(wp["target"]) == 2
+        }
+        for idx, wp in sorted(by_i.items()):
+            if idx + 1 in by_i:
+                nw = by_i[idx + 1]
+                if wp.get("next_outcome") is None:
+                    wp["next_outcome"] = nw.get("outcome")
+                if wp.get("next_turnbacks") is None:
+                    wp["next_turnbacks"] = int(nw.get("turnback_count") or nw.get("overshoot_retries") or 0)
+                if wp.get("next_max_cross_track") is None:
+                    wp["next_max_cross_track"] = float(nw.get("max_cross_track") or 0.0)
+            grouped[route_id][idx].append(wp)
 
     report = {}
     for route_id, by_index in sorted(grouped.items()):
+        route_file = ROUTES_DIR / f"{route_id}.json"
+        doc = json.loads(route_file.read_text(encoding="utf-8")) if route_file.is_file() else None
+        pts = doc.get("points", []) if isinstance(doc, dict) else []
         route_report = {}
         for idx, samples in sorted(by_index.items()):
-            target, conf_radius = latest_targets[(route_id, idx)]
-            analysis = compute_waypoint_adjustment(samples, target, conf_radius)
-            analysis["target"] = target
+            base_t = [float(samples[0]["target"][0]), float(samples[0]["target"][1])]
+            base_r = float(samples[0].get("configured_radius", samples[0].get("radius", 3.0)))
+            norm_samples = []
+            for s in samples:
+                sc = dict(s)
+                act = sc.get("actual")
+                if isinstance(act, list) and len(act) == 2:
+                    sc["dx"] = float(act[0]) - base_t[0]
+                    sc["dy"] = float(act[1]) - base_t[1]
+                norm_samples.append(sc)
+            analysis = compute_waypoint_adjustment(norm_samples, base_t, base_r)
+            analysis["target"] = base_t
             route_report[idx] = analysis
         report[route_id] = route_report
 
-        if args.apply:
-            route_file = ROUTES_DIR / f"{route_id}.json"
-            if route_file.is_file():
-                doc = json.loads(route_file.read_text(encoding="utf-8"))
-                changed = False
-                for idx, analysis in route_report.items():
-                    if analysis["total"] < args.min_samples or not (0 <= idx < len(doc.get("points", []))):
-                        continue
-                    pt = doc["points"][idx]
-                    if (abs(float(pt["x"]) - analysis["target"][0]) < 0.01
-                            and abs(float(pt["y"]) - analysis["target"][1]) < 0.01):
-                        if analysis["nudge_distance"] >= 0.05:
+        if args.apply and isinstance(doc, dict) and pts:
+            changed = False
+            for idx, analysis in route_report.items():
+                if analysis["total"] < args.min_samples or not (0 <= idx < len(pts)):
+                    continue
+                pt = pts[idx]
+                cur_t = [float(pt["x"]), float(pt["y"])]
+                cur_r = float(pt.get("radius", 3.0))
+                base_t = analysis["target"]
+                base_r = analysis["configured_radius"]
+                already_dist = math.hypot(cur_t[0] - base_t[0], cur_t[1] - base_t[1])
+                if analysis["nudge_distance"] >= 0.05:
+                    if already_dist < 0.01:
+                        pt["x"], pt["y"] = analysis["suggested_target"]
+                        changed = True
+                    else:
+                        ux = analysis["nudge"][0] / analysis["nudge_distance"]
+                        uy = analysis["nudge"][1] / analysis["nudge_distance"]
+                        already_along = (cur_t[0] - base_t[0]) * ux + (cur_t[1] - base_t[1]) * uy
+                        if (
+                            already_along > 0.01
+                            and (analysis["nudge_distance"] - already_along) >= 0.05
+                            and math.hypot(analysis["suggested_target"][0] - cur_t[0], analysis["suggested_target"][1] - cur_t[1]) >= 0.05
+                        ):
                             pt["x"], pt["y"] = analysis["suggested_target"]
                             changed = True
-                        if abs(analysis["suggested_radius"] - analysis["configured_radius"]) >= 0.05:
-                            pt["radius"] = analysis["suggested_radius"]
-                            changed = True
-                if changed:
-                    route_file.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                cur_r_samples = [
+                    s for s in by_index[idx]
+                    if abs(float(s.get("configured_radius", s.get("radius", 3.0))) - cur_r) < 0.03
+                ]
+                if abs(analysis["suggested_radius"] - base_r) >= 0.05:
+                    if abs(cur_r - base_r) < 0.02 and abs(analysis["suggested_radius"] - cur_r) >= 0.05:
+                        pt["radius"] = analysis["suggested_radius"]
+                        changed = True
+                    elif analysis["radius_reason"] == "widen_to_reduce_turnbacks" and analysis["suggested_radius"] > cur_r + 0.04:
+                        pt["radius"] = analysis["suggested_radius"]
+                        changed = True
+                    elif (
+                        analysis["radius_reason"] == "tighten_to_prevent_next_segment_drift"
+                        and len(cur_r_samples) >= args.min_samples
+                        and abs(analysis["suggested_radius"] - cur_r) >= 0.05
+                    ):
+                        pt["radius"] = analysis["suggested_radius"]
+                        changed = True
+            if changed:
+                route_file.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
