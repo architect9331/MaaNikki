@@ -9,7 +9,7 @@ from task_control import task_time as time
 
 import cv2
 
-from .models import NavigationError, load_route
+from .models import NavigationError, NavigationStuckError, load_route
 
 
 def material_amount(text, material, interaction=False):
@@ -60,11 +60,11 @@ def preflight(resource, route, executor):
     for point in route.points:
         if point.action == "teleport" and not point.params.get("checkpoint"):
             raise NavigationError("路线内的传送动作未指定传送点。")
-        if point.action in {"fishing_star", "fishing"}:
+        if point.action in {"fishing_star", "fishing", "macro"}:
             heading = (point.params or {}).get("facing_heading")
             if heading is not None and (type(heading) not in (int, float)
                     or not math.isfinite(heading) or not 0 <= heading < 360):
-                raise NavigationError("钓鱼点朝向须为 0–360 度范围内的有效角度（不含 360）。")
+                raise NavigationError("动作朝向须为 0–360 度范围内的有效角度（不含 360）。")
         if point.action == "fishing":
             from .fishing import cast_count
             cast_count((point.params or {}).get("cast_count"), 3)
@@ -297,6 +297,11 @@ class RouteActions:
             if not ok:
                 self.event({"type": "resource_unconfirmed", "action": kind, "x": point.x, "y": point.y})
         elif kind == "macro":
+            heading = (point.params or {}).get("facing_heading")
+            if heading is not None:
+                if self.navigator is None:
+                    raise NavigationError("指定宏动作朝向需要路线导航器。")
+                self.navigator.face_heading(heading, tolerance=10)
             ok = self.macro(point.params["id"])
         elif kind == "key":
             for index in range(point.params.get("times", 1)):
@@ -352,14 +357,22 @@ class RouteActions:
             ok = self.rt.animal(self.card, times=point.params.get("times", 1))
         else:
             raise NavigationError("路线动作尚未适配。")
+        self.inputs.check()
+        main_ok = self.rt.main(self.event)
+        if self.rt.ui.revived:
+            self.event({"type": "action_result", "action": kind, "success": False,
+                        "interrupted": "revived",
+                        **({"count": self.count} if self.executor != "crystal" else {})})
+            if main_ok:
+                raise NavigationStuckError("角色倒下后已复活，需要从起点重新运行路线。")
+            raise NavigationError("角色倒下后未能完成复活，本条路线停止。")
         self.event({"type": "action_result", "action": kind, "success": bool(ok),
                     **({"count": self.count} if self.executor != "crystal" else {})})
         if ok and kind != "wait":
             self.successes += 1
         if kind not in {"wait", "collect", "insect", "bottle", "fishing_star", "fishing"} and not ok:
             raise NavigationError("点位动作未确认成功，已停止本项。")
-        self.inputs.check()
-        if not self.rt.main():
+        if not main_ok:
             raise NavigationError("动作后未能回到可移动主界面。")
         if self.executor != "crystal" and self.quota is not None and self.count >= self.quota:
             return "done"

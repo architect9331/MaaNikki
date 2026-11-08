@@ -42,11 +42,18 @@ def _iter_sentry_result_records(results: list[dict]):
             pass
         chunks_by_group[(trace, ts)].append(msg)
 
+    import re
+
+    def _chunk_sort_key(c: str) -> tuple[int, int]:
+        is_not_start = 0 if c.startswith('{"') else 1
+        m = re.search(r'"index":(\d+)', c)
+        return (is_not_start, int(m.group(1)) if m else 9999)
+
     for (trace, ts), chunks in chunks_by_group.items():
-        starts = [c for c in chunks if c.startswith('{"schema_version":')]
-        others = [c for c in chunks if not c.startswith('{"schema_version":')]
+        starts = [c for c in chunks if c.startswith('{"')]
+        others = [c for c in chunks if not c.startswith('{"')]
         if len(starts) == 1 and others:
-            joined = starts[0] + "".join(others)
+            joined = "".join(sorted(chunks, key=_chunk_sort_key))
             try:
                 parsed = json.loads(joined)
                 if isinstance(parsed, dict) and parsed.get("waypoints") and parsed.get("route"):
