@@ -1,0 +1,135 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_281_miraland_01",
+  "title": "【晴雨伞】埋骨地·荧湖西岸（69个/116秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 300,
+  "teleport": {
+    "name": "荧湖西岸",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 5720.788,
+    "y": 5415.967
+  },
+  "material": "晴雨伞",
+  "count_materials": [
+    "晴雨伞",
+    "耳坠萤",
+    "风舞花",
+    "蜉幽幽",
+    "大叶鹿绒",
+    "茸芽鹿绒"
+  ],
+  "capacity": 113,
+  "points": [
+    {
+      "x": 5720.79,
+      "y": 5415.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5747.39,
+      "y": 5382.5,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.2
+      }
+    },
+    {
+      "x": 5763.86,
+      "y": 5407.54,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.2
+      }
+    },
+    {
+      "x": 5793.79,
+      "y": 5401.84,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.1
+      }
+    },
+    {
+      "x": 5802.79,
+      "y": 5380.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5811.79,
+      "y": 5365.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5829.79,
+      "y": 5353.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5850.79,
+      "y": 5350.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5868.79,
+      "y": 5335.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5870.89,
+      "y": 5335.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.9
+      }
+    },
+    {
+      "x": 5848.4,
+      "y": 5355.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 5873.61,
+      "y": 5291.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    }
+  ]
+}

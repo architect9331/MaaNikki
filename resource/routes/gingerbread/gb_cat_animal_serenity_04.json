@@ -1,0 +1,88 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_serenity_04",
+  "title": "【全动物清洁】无忧岛·布露村村口（15个/51秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 156,
+  "teleport": {
+    "name": "布露村村口",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 889.635,
+    "y": 406.18
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "纽扣松果",
+    "小绵菊",
+    "布布果",
+    "蓝珀鸟羽",
+    "抱抱绒团"
+  ],
+  "capacity": 15,
+  "points": [
+    {
+      "x": 889.63,
+      "y": 406.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 866.79,
+      "y": 406.18,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 854.79,
+      "y": 409.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 842.79,
+      "y": 421.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 836.79,
+      "y": 420.76,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    },
+    {
+      "x": 813.69,
+      "y": 420.76,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 807.69,
+      "y": 428.12,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 11.0
+      }
+    }
+  ]
+}

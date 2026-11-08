@@ -1,0 +1,41 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_276_miraland_01",
+  "title": "【涅拉羽】埋骨地·蓝池北侧疗愈地渡口（3个/55秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 167,
+  "teleport": {
+    "name": "蓝池北侧疗愈地渡口",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7605.469,
+    "y": 4714.484
+  },
+  "material": "涅拉羽",
+  "count_materials": [
+    "骨焰花",
+    "涅拉羽"
+  ],
+  "capacity": 6,
+  "points": [
+    {
+      "x": 7605.47,
+      "y": 4714.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7666.01,
+      "y": 4575.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 22.3
+      }
+    }
+  ]
+}

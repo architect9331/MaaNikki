@@ -1,0 +1,118 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_137_firework_01",
+  "title": "【噼啪花粉】花焰群岛·滋啦啦服务社（18个/77秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 215,
+  "teleport": {
+    "name": "滋啦啦服务社",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 1003.822,
+    "y": 608.643
+  },
+  "material": "噼啪花粉",
+  "count_materials": [
+    "噼啪花粉",
+    "珠链蝶",
+    "耳坠萤",
+    "小绵菊",
+    "纽扣松果",
+    "芭蕾豆娘",
+    "刺绣蛾",
+    "风铃子",
+    "满满果",
+    "衬衫毛团",
+    "布布果",
+    "发卡蚱蜢",
+    "晴日蝶兰/雨滴蝶兰"
+  ],
+  "capacity": 47,
+  "points": [
+    {
+      "x": 1003.82,
+      "y": 608.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1019.8,
+      "y": 639.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 970.15,
+      "y": 648.38,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 991.43,
+      "y": 667.06,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1011.05,
+      "y": 685.88,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1068.68,
+      "y": 654.57,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 1101.15,
+      "y": 646.78,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 1111.56,
+      "y": 598.85,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 1137.86,
+      "y": 673.3,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    }
+  ]
+}

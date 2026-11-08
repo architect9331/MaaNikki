@@ -1,0 +1,91 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_072_miraland_02",
+  "title": "【刺绣蛾】巨木之森·蜗牛诊所（7个/74秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 207,
+  "teleport": {
+    "name": "蜗牛诊所",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4489.828,
+    "y": 8147.981
+  },
+  "material": "刺绣蛾",
+  "count_materials": [
+    "探险家蜜蜂",
+    "刺绣蛾",
+    "裁衣甲",
+    "行鹭羽",
+    "木夹跳甲",
+    "路灯花",
+    "钓鱼点",
+    "草裙毛团",
+    "小野菊",
+    "结结蕨",
+    "扣扣毛球",
+    "咕咕之羽"
+  ],
+  "capacity": 29,
+  "points": [
+    {
+      "x": 4489.83,
+      "y": 8147.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4494.64,
+      "y": 8145.3,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 4479.78,
+      "y": 8109.57,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 4451.4,
+      "y": 8091.59,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 4458.57,
+      "y": 8020.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.4
+      }
+    },
+    {
+      "x": 4436.7,
+      "y": 7998.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    }
+  ]
+}

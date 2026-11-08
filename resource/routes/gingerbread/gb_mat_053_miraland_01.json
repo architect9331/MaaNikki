@@ -1,0 +1,107 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_053_miraland_01",
+  "title": "【兜帽绒羽】祈愿树林·巨树居民区（4个/69秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 196,
+  "teleport": {
+    "name": "巨树居民区",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11959.301,
+    "y": 9084.286
+  },
+  "material": "兜帽绒羽",
+  "count_materials": [
+    "星荧草",
+    "蓝珀鸟羽",
+    "兜帽绒羽",
+    "满满果",
+    "路灯花",
+    "发卡蚱蜢",
+    "明珠翎羽",
+    "刺绣蛾"
+  ],
+  "capacity": 24,
+  "points": [
+    {
+      "x": 11959.3,
+      "y": 9084.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11963.61,
+      "y": 9087.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.3
+      }
+    },
+    {
+      "x": 11963.61,
+      "y": 9064.73,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11972.39,
+      "y": 9043.73,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.1
+      }
+    },
+    {
+      "x": 11972.39,
+      "y": 9067.73,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11972.39,
+      "y": 9091.73,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11981.39,
+      "y": 9112.73,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11996.39,
+      "y": 9130.73,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12004.43,
+      "y": 9151.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.3
+      }
+    }
+  ]
+}

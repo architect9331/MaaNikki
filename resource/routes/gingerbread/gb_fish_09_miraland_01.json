@@ -1,0 +1,115 @@
+{
+  "schema_version": 3,
+  "id": "gb_fish_09_miraland_01",
+  "title": "【插梳鱼】祈愿树林·种植园入口（6个/103秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 272,
+  "teleport": {
+    "name": "种植园入口",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11716.18,
+    "y": 8833.256
+  },
+  "material": "插梳鱼",
+  "count_materials": [
+    "插梳鱼",
+    "钓鱼点",
+    "瓜子珠",
+    "珠花贝壳",
+    "纽扣松果",
+    "小绵菊"
+  ],
+  "capacity": 15,
+  "points": [
+    {
+      "x": 11716.18,
+      "y": 8833.26,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11659.24,
+      "y": 8880.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 20.5
+      }
+    },
+    {
+      "x": 11674.24,
+      "y": 8895.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11674.24,
+      "y": 8901.7,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11674.24,
+      "y": 8925.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11677.24,
+      "y": 8940.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 11683.24,
+      "y": 8946.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11683.24,
+      "y": 8970.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11681.58,
+      "y": 8980.53,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 11728.99,
+      "y": 8985.44,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    }
+  ]
+}

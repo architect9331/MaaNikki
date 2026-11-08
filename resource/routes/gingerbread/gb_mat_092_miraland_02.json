@@ -1,0 +1,65 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_092_miraland_02",
+  "title": "【星荧草】祈愿树林·巨树居民区（7个/26秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "巨树居民区",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11959.301,
+    "y": 9084.286
+  },
+  "material": "星荧草",
+  "count_materials": [
+    "星荧草",
+    "珠链蝶",
+    "路灯花",
+    "兜帽绒羽",
+    "刺绣蛾",
+    "纽扣松果",
+    "蓝珀鸟羽",
+    "明珠翎羽"
+  ],
+  "capacity": 25,
+  "points": [
+    {
+      "x": 11959.3,
+      "y": 9084.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11971.65,
+      "y": 9084.95,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 11971.39,
+      "y": 9061.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11971.39,
+      "y": 9046.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

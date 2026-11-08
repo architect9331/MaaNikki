@@ -1,0 +1,119 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_283_miraland_02",
+  "title": "【风舞花】磐城·圆心街区（31个/97秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 258,
+  "teleport": {
+    "name": "圆心街区",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3893.526,
+    "y": 4125.887
+  },
+  "material": "风舞花",
+  "count_materials": [
+    "风舞花",
+    "珠链蝶",
+    "蓝玉甲虫",
+    "探险家蜜蜂",
+    "小野菊",
+    "蓝珀鸟羽",
+    "金轴蜻蜓",
+    "珠坠甲虫",
+    "晶球绵蚧",
+    "扣扣毛球",
+    "满满果",
+    "刺绣蛾"
+  ],
+  "capacity": 85,
+  "points": [
+    {
+      "x": 3893.53,
+      "y": 4125.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3893.38,
+      "y": 4135.51,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 3826.75,
+      "y": 4014.23,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 3800.0,
+      "y": 4049.24,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 3775.32,
+      "y": 4072.9,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 3738.72,
+      "y": 4080.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 3733.68,
+      "y": 4117.77,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3779.22,
+      "y": 4190.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 3740.48,
+      "y": 4235.98,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    }
+  ]
+}

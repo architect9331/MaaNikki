@@ -1,0 +1,44 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_077_miraland_01",
+  "title": "【面膜草蛉】祈愿树林·浅滩山坡（3个/43秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 139,
+  "teleport": {
+    "name": "浅滩山坡",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11692.841,
+    "y": 9091.498
+  },
+  "material": "面膜草蛉",
+  "count_materials": [
+    "小绵菊",
+    "面膜草蛉",
+    "日光果/星光果"
+  ],
+  "capacity": 9,
+  "points": [
+    {
+      "x": 11692.84,
+      "y": 9091.5,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 11619.8,
+      "y": 9079.06,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
+      }
+    }
+  ]
+}

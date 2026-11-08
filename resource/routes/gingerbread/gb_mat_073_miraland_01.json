@@ -1,0 +1,62 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_073_miraland_01",
+  "title": "【围巾蚯蚓】石树田无人区·咚咚窝瓜工坊（5个/53秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 161,
+  "teleport": {
+    "name": "咚咚窝瓜工坊",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 8235.424,
+    "y": 8891.812
+  },
+  "material": "围巾蚯蚓",
+  "count_materials": [
+    "围巾蚯蚓",
+    "花香羊毛",
+    "纽扣松果"
+  ],
+  "capacity": 10,
+  "points": [
+    {
+      "x": 8235.42,
+      "y": 8891.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8254.15,
+      "y": 8865.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    },
+    {
+      "x": 8223.62,
+      "y": 8861.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 8211.92,
+      "y": 8819.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    }
+  ]
+}

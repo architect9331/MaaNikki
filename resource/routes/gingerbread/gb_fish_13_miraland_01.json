@@ -1,0 +1,128 @@
+{
+  "schema_version": 3,
+  "id": "gb_fish_13_miraland_01",
+  "title": "【缎带鱼】微风绿野·悠悠垂钓协会花愿镇分部（9个/128秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 326,
+  "teleport": {
+    "name": "悠悠垂钓协会花愿镇分部",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10278.224,
+    "y": 10210.305
+  },
+  "material": "缎带鱼",
+  "count_materials": [
+    "缎带鱼",
+    "香薰睡莲",
+    "小绵菊",
+    "泳镜蝽",
+    "小星扇贝"
+  ],
+  "capacity": 17,
+  "points": [
+    {
+      "x": 10278.22,
+      "y": 10210.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10293.22,
+      "y": 10225.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10305.22,
+      "y": 10231.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10326.91,
+      "y": 10222.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    },
+    {
+      "x": 10326.91,
+      "y": 10231.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10335.91,
+      "y": 10252.82,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10336.27,
+      "y": 10276.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    },
+    {
+      "x": 10342.27,
+      "y": 10282.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10351.27,
+      "y": 10303.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10366.27,
+      "y": 10318.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10372.27,
+      "y": 10321.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10376.53,
+      "y": 10321.15,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 32.8
+      }
+    }
+  ]
+}

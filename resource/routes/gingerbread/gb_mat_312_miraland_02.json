@@ -1,0 +1,74 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_312_miraland_02",
+  "title": "【蓝玉甲虫】磐城·广场前停泊处（16个/117秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 302,
+  "teleport": {
+    "name": "广场前停泊处",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4017.792,
+    "y": 3108.51
+  },
+  "material": "蓝玉甲虫",
+  "count_materials": [
+    "蓝玉甲虫",
+    "金轴蜻蜓",
+    "珠坠甲虫",
+    "钓鱼点",
+    "王子鹰羽"
+  ],
+  "capacity": 31,
+  "points": [
+    {
+      "x": 4017.79,
+      "y": 3108.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4034.05,
+      "y": 3107.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 4066.16,
+      "y": 3109.3,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 4043.62,
+      "y": 3072.73,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 4031.04,
+      "y": 3037.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    }
+  ]
+}

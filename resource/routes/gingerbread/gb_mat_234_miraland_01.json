@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_234_miraland_01",
+  "title": "【风旋果】巨木之森·安眠之林（5个/48秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 150,
+  "teleport": {
+    "name": "安眠之林",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4069.368,
+    "y": 9156.471
+  },
+  "material": "风旋果",
+  "count_materials": [
+    "风旋果",
+    "结结蕨",
+    "小野菊"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 4069.37,
+      "y": 9156.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4084.37,
+      "y": 9171.47,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4099.37,
+      "y": 9186.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4111.37,
+      "y": 9204.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4112.96,
+      "y": 9223.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 4113.34,
+      "y": 9199.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4113.34,
+      "y": 9175.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4107.34,
+      "y": 9154.65,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4092.34,
+      "y": 9139.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4086.34,
+      "y": 9118.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4077.34,
+      "y": 9100.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4068.34,
+      "y": 9091.65,
+      "radius": 2.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

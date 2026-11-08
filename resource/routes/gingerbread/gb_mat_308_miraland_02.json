@@ -1,0 +1,71 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_308_miraland_02",
+  "title": "【斗篷绒毛】磐城·晨曦集市（7个/86秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 234,
+  "teleport": {
+    "name": "晨曦集市",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4026.351,
+    "y": 3950.481
+  },
+  "material": "斗篷绒毛",
+  "count_materials": [
+    "斗篷绒毛",
+    "珠链蝶"
+  ],
+  "capacity": 10,
+  "points": [
+    {
+      "x": 4026.35,
+      "y": 3950.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4048.58,
+      "y": 3967.35,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    },
+    {
+      "x": 4000.8,
+      "y": 3914.22,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    },
+    {
+      "x": 4099.42,
+      "y": 3897.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 4141.78,
+      "y": 3880.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.7
+      }
+    }
+  ]
+}

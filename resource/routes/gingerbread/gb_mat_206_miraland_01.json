@@ -1,0 +1,160 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_206_miraland_01",
+  "title": "【裁衣甲】巨木之森·蜗牛诊所（12个/117秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 302,
+  "teleport": {
+    "name": "蜗牛诊所",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4489.828,
+    "y": 8147.981
+  },
+  "material": "裁衣甲",
+  "count_materials": [
+    "小野菊",
+    "裁衣甲",
+    "探险家蜜蜂",
+    "木夹跳甲",
+    "朝朝蝶",
+    "暮暮蝶",
+    "结结蕨",
+    "行鹭羽",
+    "草裙毛团",
+    "咕咕之羽",
+    "扣扣毛球"
+  ],
+  "capacity": 38,
+  "points": [
+    {
+      "x": 4489.83,
+      "y": 8147.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4486.54,
+      "y": 8154.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 4504.54,
+      "y": 8144.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4525.54,
+      "y": 8135.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4527.9,
+      "y": 8132.08,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 14.2
+      }
+    },
+    {
+      "x": 4547.49,
+      "y": 8123.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.2
+      }
+    },
+    {
+      "x": 4554.06,
+      "y": 8099.46,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.3
+      }
+    },
+    {
+      "x": 4554.59,
+      "y": 8094.3,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 4538.31,
+      "y": 8086.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 4520.18,
+      "y": 8077.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4505.18,
+      "y": 8068.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4484.18,
+      "y": 8077.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4478.18,
+      "y": 8091.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    },
+    {
+      "x": 4464.03,
+      "y": 8060.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_078_miraland_02",
+  "title": "【丝巾蛾】石树田无人区·呜呜车站石树顶（3个/42秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 136,
+  "teleport": {
+    "name": "呜呜车站石树顶",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 8767.663,
+    "y": 9483.217
+  },
+  "material": "丝巾蛾",
+  "count_materials": [
+    "丝巾蛾",
+    "花伞藤萝",
+    "领结毛团",
+    "刺绣蛾"
+  ],
+  "capacity": 6,
+  "points": [
+    {
+      "x": 8767.66,
+      "y": 9483.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8761.46,
+      "y": 9483.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8758.46,
+      "y": 9483.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8755.46,
+      "y": 9486.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8752.46,
+      "y": 9489.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8746.46,
+      "y": 9489.43,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 8732.56,
+      "y": 9474.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8726.56,
+      "y": 9465.47,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 8738.56,
+      "y": 9471.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8747.56,
+      "y": 9468.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8768.56,
+      "y": 9465.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8789.41,
+      "y": 9466.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

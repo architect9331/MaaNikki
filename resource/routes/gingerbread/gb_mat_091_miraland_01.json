@@ -1,0 +1,145 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_091_miraland_01",
+  "title": "【满满果】祈愿树林·怪味愿望山坡（19个/60秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 176,
+  "teleport": {
+    "name": "怪味愿望山坡",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11944.733,
+    "y": 8834.722
+  },
+  "material": "满满果",
+  "count_materials": [
+    "满满果",
+    "织衣蛛",
+    "瓜子珠",
+    "名流鸦羽"
+  ],
+  "capacity": 27,
+  "points": [
+    {
+      "x": 11944.73,
+      "y": 8834.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11944.67,
+      "y": 8841.76,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11951.65,
+      "y": 8788.87,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 11976.34,
+      "y": 8792.31,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11951.98,
+      "y": 8763.85,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11932.63,
+      "y": 8749.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 11953.63,
+      "y": 8751.15,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11974.63,
+      "y": 8745.15,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11992.63,
+      "y": 8739.15,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11995.63,
+      "y": 8736.15,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11997.12,
+      "y": 8733.15,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 11977.33,
+      "y": 8721.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11953.33,
+      "y": 8721.65,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11955.89,
+      "y": 8696.5,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    }
+  ]
+}

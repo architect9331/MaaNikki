@@ -1,0 +1,77 @@
+{
+  "schema_version": 3,
+  "id": "gb_fish_05_miraland_02",
+  "title": "【手绢鱼】石树田无人区·星空钓场旁（小道）（8个/119秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 308,
+  "teleport": {
+    "name": "星空钓场旁（小道）",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 7828.444,
+    "y": 9367.482
+  },
+  "material": "手绢鱼",
+  "count_materials": [
+    "蓝珀鸟羽",
+    "手绢鱼",
+    "小绵菊",
+    "钓鱼点",
+    "小星扇贝",
+    "珠花贝壳",
+    "路灯花",
+    "芭蕾豆娘"
+  ],
+  "capacity": 37,
+  "points": [
+    {
+      "x": 7828.44,
+      "y": 9367.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7836.47,
+      "y": 9369.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 25.9
+      }
+    },
+    {
+      "x": 7845.86,
+      "y": 9345.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 22.3
+      }
+    },
+    {
+      "x": 7786.56,
+      "y": 9327.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 20.5
+      }
+    },
+    {
+      "x": 7762.15,
+      "y": 9311.43,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.4
+      }
+    }
+  ]
+}

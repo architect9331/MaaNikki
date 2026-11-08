@@ -1,0 +1,41 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_057_miraland_01",
+  "title": "【曦光毛团】祈愿树林·绝望球仓库（1个/41秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 135,
+  "teleport": {
+    "name": "绝望球仓库",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 12131.286,
+    "y": 8895.233
+  },
+  "material": "曦光毛团",
+  "count_materials": [
+    "满满果",
+    "曦光毛团"
+  ],
+  "capacity": 2,
+  "points": [
+    {
+      "x": 12131.29,
+      "y": 8895.23,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12262.37,
+      "y": 9011.21,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

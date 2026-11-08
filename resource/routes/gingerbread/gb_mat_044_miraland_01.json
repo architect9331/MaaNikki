@@ -1,0 +1,74 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_044_miraland_01",
+  "title": "【蓝珀鸟羽】巨木之森·巨兽堡垒东侧（13个/112秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 291,
+  "teleport": {
+    "name": "巨兽堡垒东侧",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3869.066,
+    "y": 8412.612
+  },
+  "material": "蓝珀鸟羽",
+  "count_materials": [
+    "蓝珀鸟羽",
+    "珠链蝶",
+    "蜜妆粉",
+    "蜜妆兔绒",
+    "小野菊"
+  ],
+  "capacity": 27,
+  "points": [
+    {
+      "x": 3869.07,
+      "y": 8412.61,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3880.19,
+      "y": 8410.42,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 34.5
+      }
+    },
+    {
+      "x": 3898.15,
+      "y": 8434.47,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.7
+      }
+    },
+    {
+      "x": 3932.33,
+      "y": 8455.67,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 32.7
+      }
+    },
+    {
+      "x": 3952.72,
+      "y": 8465.79,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.5
+      }
+    }
+  ]
+}

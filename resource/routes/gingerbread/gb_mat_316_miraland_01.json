@@ -1,0 +1,94 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_316_miraland_01",
+  "title": "【浮冠果】磐城·磐城门前（10个/73秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 206,
+  "teleport": {
+    "name": "磐城门前",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4282.294,
+    "y": 3501.475
+  },
+  "material": "浮冠果",
+  "count_materials": [
+    "钓鱼点",
+    "浮冠果",
+    "珠链蝶",
+    "探险家蜜蜂",
+    "金轴蜻蜓",
+    "刺绣蛾",
+    "晶球绵蚧"
+  ],
+  "capacity": 42,
+  "points": [
+    {
+      "x": 4282.29,
+      "y": 3501.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4260.68,
+      "y": 3560.37,
+      "radius": 2.2,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4229.17,
+      "y": 3553.85,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4182.81,
+      "y": 3501.45,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4185.59,
+      "y": 3525.9,
+      "radius": 2.2,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4153.13,
+      "y": 3599.06,
+      "radius": 2.2,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4132.53,
+      "y": 3505.4,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4173.27,
+      "y": 3462.36,
+      "radius": 2.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

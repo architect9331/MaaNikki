@@ -1,0 +1,65 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_209_miraland_01",
+  "title": "【蜜妆兔绒】巨木之森·巨藤林地北侧探险家营地（10个/120秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 310,
+  "teleport": {
+    "name": "巨藤林地北侧探险家营地",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4176.294,
+    "y": 8476.89
+  },
+  "material": "蜜妆兔绒",
+  "count_materials": [
+    "蜜妆兔绒",
+    "蜜妆粉",
+    "小野菊",
+    "垂穗魔果",
+    "裁衣甲",
+    "刺绣蛾"
+  ],
+  "capacity": 22,
+  "points": [
+    {
+      "x": 4176.29,
+      "y": 8476.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4204.16,
+      "y": 8501.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.3
+      }
+    },
+    {
+      "x": 4054.82,
+      "y": 8485.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 4032.25,
+      "y": 8434.66,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.4
+      }
+    }
+  ]
+}

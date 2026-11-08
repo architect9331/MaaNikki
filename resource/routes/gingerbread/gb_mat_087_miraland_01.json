@@ -1,0 +1,184 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_087_miraland_01",
+  "title": "【纽扣松果】小石树田村·小石树田村入口（56个/110秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 288,
+  "teleport": {
+    "name": "小石树田村入口",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 9675.936,
+    "y": 10849.739
+  },
+  "material": "纽扣松果",
+  "count_materials": [
+    "纽扣松果",
+    "路灯花",
+    "小绵菊",
+    "满满果",
+    "滋滋花粉",
+    "布布果",
+    "发卡蚱蜢"
+  ],
+  "capacity": 83,
+  "points": [
+    {
+      "x": 9675.94,
+      "y": 10849.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9704.48,
+      "y": 10821.13,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 9704.48,
+      "y": 10799.2,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9708.73,
+      "y": 10787.2,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 9686.55,
+      "y": 10782.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9680.55,
+      "y": 10776.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9674.55,
+      "y": 10758.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 9663.32,
+      "y": 10771.6,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 9654.19,
+      "y": 10753.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9636.19,
+      "y": 10741.74,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 9615.19,
+      "y": 10732.74,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 9594.19,
+      "y": 10726.74,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9585.19,
+      "y": 10726.74,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 8.5
+      }
+    },
+    {
+      "x": 9588.12,
+      "y": 10743.34,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 9565.52,
+      "y": 10738.67,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9553.52,
+      "y": 10738.67,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 9519.67,
+      "y": 10733.54,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    }
+  ]
+}

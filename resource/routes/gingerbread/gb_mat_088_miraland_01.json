@@ -1,0 +1,63 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_088_miraland_01",
+  "title": "【香薰睡莲】小石树田村·村居岔路（8个/50秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 156,
+  "teleport": {
+    "name": "村居岔路",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 9389.052,
+    "y": 10562.456
+  },
+  "material": "香薰睡莲",
+  "count_materials": [
+    "香薰睡莲",
+    "珠链蝶",
+    "泳镜蝽",
+    "珠花贝壳"
+  ],
+  "capacity": 19,
+  "points": [
+    {
+      "x": 9389.05,
+      "y": 10562.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9419.56,
+      "y": 10655.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 9380.35,
+      "y": 10671.2,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 9446.86,
+      "y": 10739.36,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    }
+  ]
+}

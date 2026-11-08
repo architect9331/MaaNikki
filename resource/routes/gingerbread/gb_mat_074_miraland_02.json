@@ -1,0 +1,51 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_074_miraland_02",
+  "title": "【珠链蝶】巨木之森·无名花野（16个/109秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 285,
+  "teleport": {
+    "name": "无名花野",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4390.32,
+    "y": 8613.902
+  },
+  "material": "珠链蝶",
+  "count_materials": [
+    "珠链蝶",
+    "草棘果"
+  ],
+  "capacity": 17,
+  "points": [
+    {
+      "x": 4390.32,
+      "y": 8613.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4365.67,
+      "y": 8612.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 60.0
+      }
+    },
+    {
+      "x": 4365.67,
+      "y": 8612.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 33.7
+      }
+    }
+  ]
+}

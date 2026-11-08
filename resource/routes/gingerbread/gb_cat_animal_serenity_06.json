@@ -1,0 +1,121 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_serenity_06",
+  "title": "【全动物清洁】无忧岛·泡泡花田（19个/84秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 231,
+  "teleport": {
+    "name": "泡泡花田",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 1062.068,
+    "y": 537.513
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "纽扣松果",
+    "抱抱绒团",
+    "风絮草",
+    "蓝珀鸟羽"
+  ],
+  "capacity": 19,
+  "points": [
+    {
+      "x": 1062.07,
+      "y": 537.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1065.5,
+      "y": 540.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1062.5,
+      "y": 543.51,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1050.5,
+      "y": 544.48,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.7
+      }
+    },
+    {
+      "x": 1071.5,
+      "y": 540.38,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1095.5,
+      "y": 540.38,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1116.5,
+      "y": 540.38,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1125.06,
+      "y": 537.38,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 22.3
+      }
+    },
+    {
+      "x": 1125.06,
+      "y": 515.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1128.06,
+      "y": 509.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1125.9,
+      "y": 497.89,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 18.0
+      }
+    }
+  ]
+}

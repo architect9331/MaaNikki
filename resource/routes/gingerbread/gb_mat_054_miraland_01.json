@@ -1,0 +1,76 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_054_miraland_01",
+  "title": "【明珠翎羽】祈愿树林·愿望质检中心前（5个/57秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 170,
+  "teleport": {
+    "name": "愿望质检中心前",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11461.917,
+    "y": 9344.459
+  },
+  "material": "明珠翎羽",
+  "count_materials": [
+    "珠链蝶",
+    "明珠翎羽",
+    "美食家蜜蜂",
+    "纽扣松果",
+    "刺绣蛾",
+    "小绵菊",
+    "星荧草"
+  ],
+  "capacity": 20,
+  "points": [
+    {
+      "x": 11461.92,
+      "y": 9344.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11485.95,
+      "y": 9321.73,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    },
+    {
+      "x": 11473.84,
+      "y": 9300.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.4
+      }
+    },
+    {
+      "x": 11505.42,
+      "y": 9295.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.5
+      }
+    },
+    {
+      "x": 11507.4,
+      "y": 9297.15,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

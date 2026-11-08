@@ -1,0 +1,90 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_287_miraland_01",
+  "title": "【汐荧蟹】埋骨地·孤石滩（14个/54秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 164,
+  "teleport": {
+    "name": "孤石滩",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 8242.27,
+    "y": 5309.374
+  },
+  "material": "汐荧蟹",
+  "count_materials": [
+    "汐荧蟹",
+    "蓝鳞晶",
+    "小星扇贝",
+    "名流鸦羽",
+    "羽巾绒"
+  ],
+  "capacity": 26,
+  "points": [
+    {
+      "x": 8242.27,
+      "y": 5309.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8227.94,
+      "y": 5327.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8221.94,
+      "y": 5338.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 8224.49,
+      "y": 5400.68,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 8208.62,
+      "y": 5441.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 8219.93,
+      "y": 5436.51,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8187.77,
+      "y": 5435.77,
+      "radius": 2.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

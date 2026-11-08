@@ -1,0 +1,73 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_049_miraland_01",
+  "title": "【名流鸦羽】石树田无人区·遗忘者村居（8个/79秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 219,
+  "teleport": {
+    "name": "遗忘者村居",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 9171.655,
+    "y": 8889.882
+  },
+  "material": "名流鸦羽",
+  "count_materials": [
+    "名流鸦羽",
+    "耳坠萤"
+  ],
+  "capacity": 13,
+  "points": [
+    {
+      "x": 9171.66,
+      "y": 8889.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9174.66,
+      "y": 8910.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9177.66,
+      "y": 8931.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9180.66,
+      "y": 8952.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9186.66,
+      "y": 8973.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9195.98,
+      "y": 8978.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 53.7
+      }
+    }
+  ]
+}

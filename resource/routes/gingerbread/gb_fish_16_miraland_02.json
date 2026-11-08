@@ -1,0 +1,86 @@
+{
+  "schema_version": 3,
+  "id": "gb_fish_16_miraland_02",
+  "title": "【蝴蝶结鱼】微风绿野·悠悠垂钓协会花愿镇分部（7个/98秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 261,
+  "teleport": {
+    "name": "悠悠垂钓协会花愿镇分部",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10278.224,
+    "y": 10210.305
+  },
+  "material": "蝴蝶结鱼",
+  "count_materials": [
+    "蝴蝶结鱼",
+    "小绵菊",
+    "钓鱼点"
+  ],
+  "capacity": 13,
+  "points": [
+    {
+      "x": 10278.22,
+      "y": 10210.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10290.22,
+      "y": 10193.85,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10311.54,
+      "y": 10184.85,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 10326.91,
+      "y": 10222.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 10326.91,
+      "y": 10231.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10335.91,
+      "y": 10252.82,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10336.27,
+      "y": 10276.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    }
+  ]
+}

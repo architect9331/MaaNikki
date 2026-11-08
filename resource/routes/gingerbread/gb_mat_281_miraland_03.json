@@ -1,0 +1,89 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_281_miraland_03",
+  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（39个/77秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 215,
+  "teleport": {
+    "name": "龙巢山飞瀑崖顶",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 8063.15,
+    "y": 5243.188
+  },
+  "material": "晴雨伞",
+  "count_materials": [
+    "晴雨伞",
+    "耳坠萤",
+    "钓鱼点",
+    "大叶鹿绒",
+    "茸芽鹿绒",
+    "风舞花",
+    "蜜妆兔绒",
+    "蓝鳞晶",
+    "蜜妆粉",
+    "羽巾绒"
+  ],
+  "capacity": 60,
+  "points": [
+    {
+      "x": 8063.15,
+      "y": 5243.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8082.81,
+      "y": 5186.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    },
+    {
+      "x": 8126.5,
+      "y": 5171.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    },
+    {
+      "x": 8147.37,
+      "y": 5151.06,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 8093.39,
+      "y": 5141.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 8036.78,
+      "y": 5172.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

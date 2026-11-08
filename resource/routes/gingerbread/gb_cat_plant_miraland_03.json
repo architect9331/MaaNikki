@@ -1,0 +1,138 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_plant_miraland_03",
+  "title": "【全植物速刷】小石树田村·紫穗草花田（76个/125秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 321,
+  "teleport": {
+    "name": "紫穗草花田",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 9342.041,
+    "y": 10401.192
+  },
+  "material": "全植物速刷",
+  "count_materials": [
+    "纽扣松果",
+    "布布果",
+    "瓜子珠",
+    "小绵菊",
+    "路灯花",
+    "壁灯红椒",
+    "滋滋花粉",
+    "满满果",
+    "兔兔妆粉"
+  ],
+  "capacity": 76,
+  "points": [
+    {
+      "x": 9342.04,
+      "y": 10401.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9305.21,
+      "y": 10386.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 9291.96,
+      "y": 10407.65,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 9249.89,
+      "y": 10390.21,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 9256.0,
+      "y": 10351.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    },
+    {
+      "x": 9223.64,
+      "y": 10339.28,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 9189.74,
+      "y": 10333.58,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 9220.28,
+      "y": 10281.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 9316.98,
+      "y": 10236.76,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 9338.29,
+      "y": 10248.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 9358.94,
+      "y": 10227.02,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_038_miraland_02",
+  "title": "【兔尾绒团】花愿镇·心愿花街（10个/122秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 313,
+  "teleport": {
+    "name": "心愿花街",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10260.861,
+    "y": 10085.844
+  },
+  "material": "兔尾绒团",
+  "count_materials": [
+    "兔尾绒团",
+    "小绵菊",
+    "兔兔妆粉",
+    "发卡蚱蜢",
+    "路灯花",
+    "珠链蝶"
+  ],
+  "capacity": 26,
+  "points": [
+    {
+      "x": 10260.86,
+      "y": 10085.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10236.02,
+      "y": 10130.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    },
+    {
+      "x": 10217.95,
+      "y": 10194.35,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 23.2
+      }
+    },
+    {
+      "x": 10193.15,
+      "y": 10272.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 22.3
+      }
+    },
+    {
+      "x": 10162.47,
+      "y": 10209.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    }
+  ]
+}

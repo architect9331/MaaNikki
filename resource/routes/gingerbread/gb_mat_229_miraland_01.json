@@ -1,0 +1,41 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_229_miraland_01",
+  "title": "【咕咕之羽】巨木之森·火山湖洞窟外（3个/31秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "火山湖洞窟外",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 5903.737,
+    "y": 7720.742
+  },
+  "material": "咕咕之羽",
+  "count_materials": [
+    "耳坠萤",
+    "咕咕之羽"
+  ],
+  "capacity": 28,
+  "points": [
+    {
+      "x": 5903.74,
+      "y": 7720.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5902.78,
+      "y": 7716.51,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    }
+  ]
+}

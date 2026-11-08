@@ -1,0 +1,40 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_055_miraland_01",
+  "title": "【领结毛团】石树田无人区·水龙卷观测站（1个/19秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "水龙卷观测站",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 8697.597,
+    "y": 9008.739
+  },
+  "material": "领结毛团",
+  "count_materials": [
+    "领结毛团"
+  ],
+  "capacity": 1,
+  "points": [
+    {
+      "x": 8697.6,
+      "y": 9008.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8707.76,
+      "y": 8998.28,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

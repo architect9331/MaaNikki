@@ -1,0 +1,95 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_064_miraland_01",
+  "title": "【风铃子】花愿镇·镇长宅邸前（7个/88秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 239,
+  "teleport": {
+    "name": "镇长宅邸前",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10544.632,
+    "y": 9974.37
+  },
+  "material": "风铃子",
+  "count_materials": [
+    "风铃子",
+    "蓝珀鸟羽",
+    "耳坠萤",
+    "发卡蚱蜢",
+    "滋滋花粉",
+    "小绵菊",
+    "珠链蝶",
+    "纽扣松果",
+    "满满果",
+    "布布袜虫"
+  ],
+  "capacity": 33,
+  "points": [
+    {
+      "x": 10544.63,
+      "y": 9974.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10616.7,
+      "y": 9916.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 10614.58,
+      "y": 9902.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 10623.58,
+      "y": 9920.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10638.58,
+      "y": 9935.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10642.61,
+      "y": 9937.63,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 10704.92,
+      "y": 10016.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.2
+      }
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_danqing_danqing_04",
+  "title": "【全材料·丹青屿】丹青屿·逢花林（21个/64秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 185,
+  "teleport": {
+    "name": "逢花林",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1749.147,
+    "y": 1183.285
+  },
+  "material": "全材料·丹青屿",
+  "count_materials": [
+    "壁灯红椒",
+    "荷包草"
+  ],
+  "capacity": 21,
+  "points": [
+    {
+      "x": 1749.15,
+      "y": 1183.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1775.8,
+      "y": 1290.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 1775.8,
+      "y": 1311.75,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1775.8,
+      "y": 1314.75,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1778.8,
+      "y": 1335.75,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1784.8,
+      "y": 1347.75,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1784.8,
+      "y": 1350.75,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1787.8,
+      "y": 1356.75,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1787.8,
+      "y": 1359.75,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1802.8,
+      "y": 1374.75,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1814.33,
+      "y": 1380.65,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 1792.89,
+      "y": 1380.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1768.89,
+      "y": 1380.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1756.89,
+      "y": 1384.24,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    }
+  ]
+}

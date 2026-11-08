@@ -1,0 +1,61 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_273_miraland_01",
+  "title": "【大叶鹿绒】埋骨地·居落外绿坡（8个/74秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 208,
+  "teleport": {
+    "name": "居落外绿坡",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7029.142,
+    "y": 4398.112
+  },
+  "material": "大叶鹿绒",
+  "count_materials": [
+    "茸芽鹿绒",
+    "大叶鹿绒",
+    "羽巾绒",
+    "金灵毛球",
+    "珠链蝶",
+    "小野菊"
+  ],
+  "capacity": 38,
+  "points": [
+    {
+      "x": 7029.14,
+      "y": 4398.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7026.27,
+      "y": 4401.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7026.27,
+      "y": 4425.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7023.27,
+      "y": 4444.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 55.5
+      }
+    }
+  ]
+}

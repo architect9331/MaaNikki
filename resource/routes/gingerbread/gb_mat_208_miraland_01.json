@@ -1,0 +1,119 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_208_miraland_01",
+  "title": "【朝朝蝶】巨木之森·帕克亚火山口探险家营地（11个/132秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 335,
+  "teleport": {
+    "name": "帕克亚火山口探险家营地",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 5405.991,
+    "y": 8261.83
+  },
+  "material": "朝朝蝶",
+  "count_materials": [
+    "朝朝蝶",
+    "暮暮蝶",
+    "耳坠萤",
+    "流金蜜",
+    "小野菊",
+    "裁衣甲",
+    "发卡蚱蜢",
+    "草裙毛团",
+    "木夹跳甲",
+    "结结蕨"
+  ],
+  "capacity": 49,
+  "points": [
+    {
+      "x": 5405.99,
+      "y": 8261.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5408.8,
+      "y": 8266.15,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.5
+      }
+    },
+    {
+      "x": 5392.01,
+      "y": 8229.9,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 5366.04,
+      "y": 8207.87,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 5487.87,
+      "y": 8245.66,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 5493.14,
+      "y": 8291.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 5411.75,
+      "y": 8315.36,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.3
+      }
+    },
+    {
+      "x": 5391.85,
+      "y": 8289.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.0
+      }
+    },
+    {
+      "x": 5393.18,
+      "y": 8342.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

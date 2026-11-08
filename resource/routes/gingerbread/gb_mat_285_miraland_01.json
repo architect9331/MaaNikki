@@ -1,0 +1,138 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_285_miraland_01",
+  "title": "【龙棘瑚】埋骨地·白汐滩归望湾（42个/101秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 267,
+  "teleport": {
+    "name": "白汐滩归望湾",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7691.911,
+    "y": 5296.073
+  },
+  "material": "龙棘瑚",
+  "count_materials": [
+    "龙棘瑚",
+    "晴雨伞",
+    "蓝鳞晶",
+    "羽巾绒",
+    "汐荧蟹",
+    "珠花贝壳",
+    "小星扇贝"
+  ],
+  "capacity": 58,
+  "points": [
+    {
+      "x": 7691.91,
+      "y": 5296.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7707.16,
+      "y": 5241.84,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 7751.93,
+      "y": 5211.5,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 7743.74,
+      "y": 5208.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 7764.74,
+      "y": 5211.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7788.74,
+      "y": 5211.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7797.81,
+      "y": 5214.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    },
+    {
+      "x": 7858.24,
+      "y": 5257.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.8
+      }
+    },
+    {
+      "x": 7832.07,
+      "y": 5237.51,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    },
+    {
+      "x": 7850.07,
+      "y": 5252.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7871.07,
+      "y": 5258.51,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7892.46,
+      "y": 5264.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    }
+  ]
+}

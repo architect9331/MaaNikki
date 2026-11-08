@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "route_collection",
+  "id": "gb_col_05_legendary_daily",
+  "title": "【姜饼人合集】每日传奇动物与稀有材料必刷清单（14条）",
+  "continue_on_failure": true,
+  "routes": [
+    {
+      "route": "gb_mat_057_miraland_01",
+      "title": "【曦光毛团】祈愿树林·绝望球仓库（1个/41秒）"
+    },
+    {
+      "route": "gb_mat_050_miraland_01",
+      "title": "【天星之羽】石树田无人区·星空钓场顶端（1个/22秒）"
+    },
+    {
+      "route": "gb_mat_041_miraland_01",
+      "title": "【盛宴毛毡】微风绿野·废弃疯愿之子营地前哨站（1个/61秒）"
+    },
+    {
+      "route": "gb_mat_036_miraland_01",
+      "title": "【围兜毛球】花愿镇·搭配师协会前（1个/36秒）"
+    },
+    {
+      "route": "gb_mat_058_miraland_01",
+      "title": "【玫色天鹅绒】微风绿野·捕虫小屋（1个/54秒）"
+    },
+    {
+      "route": "gb_mat_059_miraland_01",
+      "title": "【夜色天鹅绒】微风绿野·捕虫小屋（1个/54秒）"
+    },
+    {
+      "route": "gb_mat_085_miraland_01",
+      "title": "【晴日蝶兰/雨滴蝶兰】花愿镇·镇长宅邸前（14个/112秒）"
+    },
+    {
+      "route": "gb_mat_284_miraland_01",
+      "title": "【烛融花/烛荧花】埋骨地·龙埙遗所（28个/72秒）"
+    },
+    {
+      "route": "gb_mat_080_miraland_01",
+      "title": "【日光果/星光果】祈愿树林·愿望质检中心前（3个/24秒）"
+    },
+    {
+      "route": "gb_fish_12_miraland_01",
+      "title": "【纱裙鱼】石树田无人区·星空钓场旁（小道）（7个/130秒）"
+    },
+    {
+      "route": "gb_fish_06_miraland_01",
+      "title": "【拉夫领鱼】小石树田村·斯切尔托老宅（6个/93秒）"
+    },
+    {
+      "route": "gb_mat_040_miraland_01",
+      "title": "【贵族卷毛】微风绿野·捕虫小屋（2个/50秒）"
+    },
+    {
+      "route": "gb_mat_048_miraland_01",
+      "title": "【鹿冠毛团】祈愿树林·金蔷薇花谷（1个/26秒）"
+    },
+    {
+      "route": "gb_mat_276_miraland_01",
+      "title": "【涅拉羽】埋骨地·蓝池北侧疗愈地渡口（3个/55秒）"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_092_miraland_01",
+  "title": "【星荧草】祈愿树林·古木河畔（30个/60秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 177,
+  "teleport": {
+    "name": "古木河畔",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11336.613,
+    "y": 9573.273
+  },
+  "material": "星荧草",
+  "count_materials": [
+    "星荧草",
+    "耳坠萤",
+    "路灯花",
+    "珠链蝶",
+    "蓝珀鸟羽",
+    "小星扇贝"
+  ],
+  "capacity": 65,
+  "points": [
+    {
+      "x": 11336.61,
+      "y": 9573.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11334.57,
+      "y": 9568.02,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 11357.95,
+      "y": 9562.23,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 11391.82,
+      "y": 9551.1,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 11417.37,
+      "y": 9549.76,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11440.42,
+      "y": 9558.81,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 11447.18,
+      "y": 9541.28,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 11456.39,
+      "y": 9512.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 11463.71,
+      "y": 9485.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

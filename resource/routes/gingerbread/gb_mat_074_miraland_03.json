@@ -1,0 +1,75 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_074_miraland_03",
+  "title": "【珠链蝶】磐城·晨曦集市（18个/125秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 320,
+  "teleport": {
+    "name": "晨曦集市",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4026.351,
+    "y": 3950.481
+  },
+  "material": "珠链蝶",
+  "count_materials": [
+    "珠链蝶",
+    "蓝玉甲虫",
+    "沙沙毛团",
+    "珠坠甲虫",
+    "风舞花",
+    "金轴蜻蜓"
+  ],
+  "capacity": 33,
+  "points": [
+    {
+      "x": 4026.35,
+      "y": 3950.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4043.45,
+      "y": 3947.52,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 60.0
+      }
+    },
+    {
+      "x": 4043.45,
+      "y": 3947.52,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 4033.45,
+      "y": 3923.23,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
+      }
+    },
+    {
+      "x": 4053.67,
+      "y": 3913.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    }
+  ]
+}

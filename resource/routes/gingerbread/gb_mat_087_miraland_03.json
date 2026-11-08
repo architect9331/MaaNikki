@@ -1,0 +1,123 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_087_miraland_03",
+  "title": "【纽扣松果】微风绿野·遗迹山坡（35个/79秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 219,
+  "teleport": {
+    "name": "遗迹山坡",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10093.044,
+    "y": 11104.113
+  },
+  "material": "纽扣松果",
+  "count_materials": [
+    "纽扣松果",
+    "瓜子珠",
+    "珠链蝶",
+    "蓝珀鸟羽",
+    "发卡蚱蜢",
+    "满满果"
+  ],
+  "capacity": 55,
+  "points": [
+    {
+      "x": 10093.04,
+      "y": 11104.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10084.87,
+      "y": 11093.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 10080.3,
+      "y": 11080.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10083.3,
+      "y": 11074.22,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 10062.89,
+      "y": 11058.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 10094.34,
+      "y": 11013.54,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10128.71,
+      "y": 10973.57,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 10153.14,
+      "y": 11013.63,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 10158.08,
+      "y": 11052.67,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 10173.74,
+      "y": 11064.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    }
+  ]
+}

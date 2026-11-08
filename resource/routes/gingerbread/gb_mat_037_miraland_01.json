@@ -1,0 +1,52 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_037_miraland_01",
+  "title": "【汪汪毛线】微风绿野·西西亚艺术学院采风基地（5个/60秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 177,
+  "teleport": {
+    "name": "西西亚艺术学院采风基地",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 9971.519,
+    "y": 10280.058
+  },
+  "material": "汪汪毛线",
+  "count_materials": [
+    "汪汪毛线",
+    "珠链蝶",
+    "小绵菊"
+  ],
+  "capacity": 9,
+  "points": [
+    {
+      "x": 9971.52,
+      "y": 10280.06,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9938.76,
+      "y": 10259.97,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 9869.71,
+      "y": 10269.33,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 14.4
+      }
+    }
+  ]
+}

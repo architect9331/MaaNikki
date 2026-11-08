@@ -1,0 +1,40 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_043_miraland_02",
+  "title": "【衬衫毛团】微风绿野·菲洛米亚女王行宫遗迹高塔（1个/18秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "菲洛米亚女王行宫遗迹高塔",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 11003.118,
+    "y": 11648.469
+  },
+  "material": "衬衫毛团",
+  "count_materials": [
+    "衬衫毛团"
+  ],
+  "capacity": 1,
+  "points": [
+    {
+      "x": 11003.12,
+      "y": 11648.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11013.88,
+      "y": 11642.53,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

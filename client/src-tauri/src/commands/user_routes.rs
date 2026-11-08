@@ -53,14 +53,26 @@ fn summaries(directory: PathBuf, builtin: bool) -> Vec<Value> {
             }))
         })
         .collect();
-    routes.sort_by_key(|route| std::cmp::Reverse(route["modified"].as_u64().unwrap_or(0)));
+    if builtin {
+        routes.sort_by(|a, b| {
+            let a_col = a["kind"].as_str() == Some("route_collection");
+            let b_col = b["kind"].as_str() == Some("route_collection");
+            b_col
+                .cmp(&a_col)
+                .then_with(|| a["id"].as_str().unwrap_or("").cmp(b["id"].as_str().unwrap_or("")))
+        });
+    } else {
+        routes.sort_by_key(|route| std::cmp::Reverse(route["modified"].as_u64().unwrap_or(0)));
+    }
     routes
 }
 
 #[tauri::command]
 pub fn list_routes() -> Result<Value, String> {
-    let builtin = get_exe_directory()?.join("resource/routes/daily");
-    Ok(json!({ "user": summaries(routes_dir()?, false), "builtin": summaries(builtin, true) }))
+    let exe_dir = get_exe_directory()?;
+    let mut builtin = summaries(exe_dir.join("resource/routes/gingerbread"), true);
+    builtin.extend(summaries(exe_dir.join("resource/routes/daily"), true));
+    Ok(json!({ "user": summaries(routes_dir()?, false), "builtin": builtin }))
 }
 
 #[tauri::command]

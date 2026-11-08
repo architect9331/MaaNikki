@@ -1,0 +1,53 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_042_miraland_01",
+  "title": "【骑士马鬃】巨木之森·巨藤林地南侧废墟（6个/70秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 199,
+  "teleport": {
+    "name": "巨藤林地南侧废墟",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4226.458,
+    "y": 8872.653
+  },
+  "material": "骑士马鬃",
+  "count_materials": [
+    "耳坠萤",
+    "骑士马鬃",
+    "垂穗魔果",
+    "刺绣蛾"
+  ],
+  "capacity": 19,
+  "points": [
+    {
+      "x": 4226.46,
+      "y": 8872.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4336.68,
+      "y": 8860.97,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 20.5
+      }
+    },
+    {
+      "x": 4353.95,
+      "y": 8877.24,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    }
+  ]
+}

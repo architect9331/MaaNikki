@@ -1,0 +1,133 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_087_miraland_02",
+  "title": "【纽扣松果】微风绿野·西西亚艺术学院采风基地（51个/107秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 281,
+  "teleport": {
+    "name": "西西亚艺术学院采风基地",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 9971.519,
+    "y": 10280.058
+  },
+  "material": "纽扣松果",
+  "count_materials": [
+    "纽扣松果",
+    "耳坠萤",
+    "滋滋花粉",
+    "瓜子珠",
+    "路灯花",
+    "风铃子",
+    "小绵菊",
+    "发卡蚱蜢"
+  ],
+  "capacity": 77,
+  "points": [
+    {
+      "x": 9971.52,
+      "y": 10280.06,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9866.4,
+      "y": 10212.81,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 9830.51,
+      "y": 10223.94,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 9821.93,
+      "y": 10264.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 9836.56,
+      "y": 10287.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 9863.52,
+      "y": 10307.52,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 9848.19,
+      "y": 10335.71,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 9839.57,
+      "y": 10332.71,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9818.57,
+      "y": 10341.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9809.57,
+      "y": 10344.78,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    },
+    {
+      "x": 9790.86,
+      "y": 10302.57,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    }
+  ]
+}

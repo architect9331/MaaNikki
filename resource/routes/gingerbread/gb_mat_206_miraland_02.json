@@ -1,0 +1,107 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_206_miraland_02",
+  "title": "【裁衣甲】巨木之森·母菇林地南侧边界（7个/77秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 215,
+  "teleport": {
+    "name": "母菇林地南侧边界",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 5181.051,
+    "y": 9357.756
+  },
+  "material": "裁衣甲",
+  "count_materials": [
+    "裁衣甲",
+    "木夹跳甲"
+  ],
+  "capacity": 8,
+  "points": [
+    {
+      "x": 5181.05,
+      "y": 9357.76,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5108.4,
+      "y": 9336.38,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 5096.42,
+      "y": 9312.42,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 5064.37,
+      "y": 9344.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 5039.9,
+      "y": 9375.57,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 5047.14,
+      "y": 9405.15,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 5065.14,
+      "y": 9417.15,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5083.14,
+      "y": 9426.15,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5089.72,
+      "y": 9428.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

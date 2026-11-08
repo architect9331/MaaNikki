@@ -1,0 +1,111 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_233_miraland_02",
+  "title": "【扣扣毛球】巨木之森·探险大营地（8个/101秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 268,
+  "teleport": {
+    "name": "探险大营地",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3510.035,
+    "y": 9419.993
+  },
+  "material": "扣扣毛球",
+  "count_materials": [
+    "扣扣毛球",
+    "满满果",
+    "小野菊",
+    "垂穗魔果"
+  ],
+  "capacity": 14,
+  "points": [
+    {
+      "x": 3510.03,
+      "y": 9419.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3425.25,
+      "y": 9467.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 3425.5,
+      "y": 9444.16,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3425.5,
+      "y": 9420.16,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3431.5,
+      "y": 9402.16,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3431.5,
+      "y": 9393.16,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3425.5,
+      "y": 9372.16,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3425.5,
+      "y": 9348.16,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3419.5,
+      "y": 9339.16,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.4
+      }
+    },
+    {
+      "x": 3395.99,
+      "y": 9355.69,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    }
+  ]
+}

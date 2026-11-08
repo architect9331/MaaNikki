@@ -1,0 +1,50 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_310_miraland_01",
+  "title": "【桂冠翎羽】磐城·圆心市场（6个/66秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 189,
+  "teleport": {
+    "name": "圆心市场",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3780.747,
+    "y": 3896.514
+  },
+  "material": "桂冠翎羽",
+  "count_materials": [
+    "桂冠翎羽"
+  ],
+  "capacity": 6,
+  "points": [
+    {
+      "x": 3780.75,
+      "y": 3896.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3862.53,
+      "y": 3873.94,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 3885.73,
+      "y": 3853.13,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    }
+  ]
+}

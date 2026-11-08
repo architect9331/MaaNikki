@@ -1,0 +1,136 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_062_miraland_01",
+  "title": "【织衣蛛】微风绿野·菲洛米亚女王行宫遗迹前庭（16个/120秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 309,
+  "teleport": {
+    "name": "菲洛米亚女王行宫遗迹前庭",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 11048.056,
+    "y": 11562.074
+  },
+  "material": "织衣蛛",
+  "count_materials": [
+    "织衣蛛",
+    "满满果",
+    "名流鸦羽"
+  ],
+  "capacity": 19,
+  "points": [
+    {
+      "x": 11048.06,
+      "y": 11562.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11044.35,
+      "y": 11557.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11041.35,
+      "y": 11554.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11038.35,
+      "y": 11551.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 11035.09,
+      "y": 11552.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 11036.37,
+      "y": 11553.76,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 11025.0,
+      "y": 11572.84,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 11016.94,
+      "y": 11559.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 10969.27,
+      "y": 11521.98,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 27.7
+      }
+    },
+    {
+      "x": 10936.08,
+      "y": 11558.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.5
+      }
+    },
+    {
+      "x": 10924.76,
+      "y": 11576.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10921.76,
+      "y": 11582.06,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    }
+  ]
+}

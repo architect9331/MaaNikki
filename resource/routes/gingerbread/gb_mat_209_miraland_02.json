@@ -1,0 +1,51 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_209_miraland_02",
+  "title": "【蜜妆兔绒】巨木之森·巨人工坊废墟（6个/75秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 210,
+  "teleport": {
+    "name": "巨人工坊废墟",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3446.847,
+    "y": 9182.349
+  },
+  "material": "蜜妆兔绒",
+  "count_materials": [
+    "蜜妆兔绒",
+    "蜜妆粉"
+  ],
+  "capacity": 9,
+  "points": [
+    {
+      "x": 3446.85,
+      "y": 9182.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3379.28,
+      "y": 9056.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 36.3
+      }
+    },
+    {
+      "x": 3375.28,
+      "y": 9040.95,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_196_miraland_01",
+  "title": "【袋袋果】巨木之森·深林小径（8个/39秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 131,
+  "teleport": {
+    "name": "深林小径",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3996.951,
+    "y": 8847.273
+  },
+  "material": "袋袋果",
+  "count_materials": [
+    "袋袋果",
+    "荧夜鬃",
+    "耳坠萤",
+    "小野菊",
+    "木夹跳甲",
+    "刺绣蛾"
+  ],
+  "capacity": 21,
+  "points": [
+    {
+      "x": 3996.95,
+      "y": 8847.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4124.38,
+      "y": 8805.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 4138.76,
+      "y": 8824.43,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    }
+  ]
+}

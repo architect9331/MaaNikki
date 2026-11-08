@@ -1,0 +1,99 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_069_miraland_02",
+  "title": "【美食家蜜蜂】微风绿野·悠悠垂钓协会花愿镇分部（14个/114秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 296,
+  "teleport": {
+    "name": "悠悠垂钓协会花愿镇分部",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10278.224,
+    "y": 10210.305
+  },
+  "material": "美食家蜜蜂",
+  "count_materials": [
+    "美食家蜜蜂",
+    "小绵菊",
+    "汪汪毛线",
+    "满满果"
+  ],
+  "capacity": 26,
+  "points": [
+    {
+      "x": 10278.22,
+      "y": 10210.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10277.98,
+      "y": 10204.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 33.1
+      }
+    },
+    {
+      "x": 10291.66,
+      "y": 10213.52,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 10296.43,
+      "y": 10252.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 32.2
+      }
+    },
+    {
+      "x": 10286.59,
+      "y": 10265.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 10292.59,
+      "y": 10286.75,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10301.59,
+      "y": 10304.75,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10308.94,
+      "y": 10310.49,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_plant_miraland_02",
+  "title": "【全植物速刷】祈愿树林·守卫遗址（74个/118秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 304,
+  "teleport": {
+    "name": "守卫遗址",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11849.143,
+    "y": 9617.169
+  },
+  "material": "全植物速刷",
+  "count_materials": [
+    "纽扣松果",
+    "壁灯红椒",
+    "小绵菊",
+    "路灯花",
+    "布布果",
+    "日光果/星光果",
+    "星荧草",
+    "满满果"
+  ],
+  "capacity": 74,
+  "points": [
+    {
+      "x": 11849.14,
+      "y": 9617.17,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11830.64,
+      "y": 9612.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    },
+    {
+      "x": 11841.84,
+      "y": 9626.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 11847.56,
+      "y": 9658.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 11902.37,
+      "y": 9685.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.9
+      }
+    },
+    {
+      "x": 11877.1,
+      "y": 9678.37,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 11825.19,
+      "y": 9663.52,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 11825.19,
+      "y": 9663.52,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11843.19,
+      "y": 9647.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11858.19,
+      "y": 9629.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11873.19,
+      "y": 9611.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11873.19,
+      "y": 9587.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11883.0,
+      "y": 9569.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 11914.01,
+      "y": 9520.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 11938.94,
+      "y": 9543.34,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_180_danqing_01",
+  "title": "【荷包草】丹青屿·逢花林（22个/74秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 208,
+  "teleport": {
+    "name": "逢花林",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1749.147,
+    "y": 1183.285
+  },
+  "material": "荷包草",
+  "count_materials": [
+    "耳坠萤",
+    "荷包草",
+    "玉簪蚱蜢",
+    "珠链蝶",
+    "小绵菊",
+    "满满果"
+  ],
+  "capacity": 75,
+  "points": [
+    {
+      "x": 1749.15,
+      "y": 1183.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1715.84,
+      "y": 1197.36,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1675.97,
+      "y": 1187.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 1641.05,
+      "y": 1195.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 1604.86,
+      "y": 1191.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 1568.02,
+      "y": 1173.74,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 1574.78,
+      "y": 1189.23,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1611.37,
+      "y": 1254.63,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1602.75,
+      "y": 1320.5,
+      "radius": 2.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

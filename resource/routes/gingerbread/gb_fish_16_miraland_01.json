@@ -1,0 +1,61 @@
+{
+  "schema_version": 3,
+  "id": "gb_fish_16_miraland_01",
+  "title": "【蝴蝶结鱼】小石树田村·村居岔路（8个/110秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 286,
+  "teleport": {
+    "name": "村居岔路",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 9389.052,
+    "y": 10562.456
+  },
+  "material": "蝴蝶结鱼",
+  "count_materials": [
+    "蝴蝶结鱼",
+    "钓鱼点"
+  ],
+  "capacity": 9,
+  "points": [
+    {
+      "x": 9389.05,
+      "y": 10562.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9347.4,
+      "y": 10544.24,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    },
+    {
+      "x": 9356.09,
+      "y": 10592.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    },
+    {
+      "x": 9379.32,
+      "y": 10640.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    }
+  ]
+}

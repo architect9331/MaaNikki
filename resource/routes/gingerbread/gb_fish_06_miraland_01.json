@@ -1,0 +1,69 @@
+{
+  "schema_version": 3,
+  "id": "gb_fish_06_miraland_01",
+  "title": "【拉夫领鱼】小石树田村·斯切尔托老宅（6个/93秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 249,
+  "teleport": {
+    "name": "斯切尔托老宅",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 9071.793,
+    "y": 10403.813
+  },
+  "material": "拉夫领鱼",
+  "count_materials": [
+    "拉夫领鱼",
+    "小星扇贝",
+    "布布果",
+    "路灯花"
+  ],
+  "capacity": 10,
+  "points": [
+    {
+      "x": 9071.79,
+      "y": 10403.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9157.06,
+      "y": 10395.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.0
+      }
+    },
+    {
+      "x": 9157.06,
+      "y": 10419.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9160.06,
+      "y": 10440.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9163.22,
+      "y": 10445.69,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.0
+      }
+    }
+  ]
+}

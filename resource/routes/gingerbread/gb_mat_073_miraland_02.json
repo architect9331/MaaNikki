@@ -1,0 +1,43 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_073_miraland_02",
+  "title": "【围巾蚯蚓】石树田无人区·乘风磨坊中层（3个/32秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "乘风磨坊中层",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 7707.579,
+    "y": 9885.833
+  },
+  "material": "围巾蚯蚓",
+  "count_materials": [
+    "珠链蝶",
+    "发卡蚱蜢",
+    "围巾蚯蚓",
+    "瓜子珠"
+  ],
+  "capacity": 19,
+  "points": [
+    {
+      "x": 7707.58,
+      "y": 9885.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7701.16,
+      "y": 9888.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 19.3
+      }
+    }
+  ]
+}

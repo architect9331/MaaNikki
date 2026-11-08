@@ -1,0 +1,129 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_wanxiang_05",
+  "title": "【全昆虫速刷】万相境·忘忧楼（24个/112秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 291,
+  "teleport": {
+    "name": "忘忧楼",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 2339.983,
+    "y": 1551.648
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "耳坠萤",
+    "胭脂芙蕖",
+    "珠链蝶",
+    "小绵菊",
+    "荷包草",
+    "云绒玉絮"
+  ],
+  "capacity": 24,
+  "points": [
+    {
+      "x": 2339.98,
+      "y": 1551.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2360.98,
+      "y": 1545.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2381.98,
+      "y": 1542.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2402.98,
+      "y": 1533.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2423.98,
+      "y": 1533.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2426.98,
+      "y": 1530.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2432.0,
+      "y": 1518.11,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 60.0
+      }
+    },
+    {
+      "x": 2432.0,
+      "y": 1518.11,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 2429.0,
+      "y": 1505.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2429.0,
+      "y": 1487.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2432.0,
+      "y": 1484.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2437.98,
+      "y": 1484.92,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 17.5
+      }
+    }
+  ]
+}

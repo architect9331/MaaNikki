@@ -1,0 +1,87 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_052_miraland_01",
+  "title": "【背带毛团】石树田无人区·乘风磨坊入口（6个/68秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 194,
+  "teleport": {
+    "name": "乘风磨坊入口",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 7767.721,
+    "y": 9965.897
+  },
+  "material": "背带毛团",
+  "count_materials": [
+    "蓝珀鸟羽",
+    "背带毛团",
+    "发卡蚱蜢",
+    "香薰睡莲",
+    "珠花贝壳",
+    "小星扇贝"
+  ],
+  "capacity": 21,
+  "points": [
+    {
+      "x": 7767.72,
+      "y": 9965.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7754.45,
+      "y": 9950.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7748.45,
+      "y": 9941.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 25.7
+      }
+    },
+    {
+      "x": 7769.45,
+      "y": 9932.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7790.45,
+      "y": 9938.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7811.45,
+      "y": 9941.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7827.26,
+      "y": 9944.78,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 14.4
+      }
+    }
+  ]
+}

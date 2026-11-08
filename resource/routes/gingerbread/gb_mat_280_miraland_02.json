@@ -1,0 +1,115 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_280_miraland_02",
+  "title": "【蜉幽幽】埋骨地·荧湖西岸（18个/163秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 404,
+  "teleport": {
+    "name": "荧湖西岸",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 5720.788,
+    "y": 5415.967
+  },
+  "material": "蜉幽幽",
+  "count_materials": [
+    "蜉幽幽",
+    "晴雨伞",
+    "烛融花/烛荧花",
+    "耳坠萤",
+    "埙音甲",
+    "风舞花"
+  ],
+  "capacity": 56,
+  "points": [
+    {
+      "x": 5720.79,
+      "y": 5415.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5748.74,
+      "y": 5379.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 60.0
+      }
+    },
+    {
+      "x": 5748.74,
+      "y": 5379.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.4
+      }
+    },
+    {
+      "x": 5732.49,
+      "y": 5365.09,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5723.49,
+      "y": 5347.09,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5708.49,
+      "y": 5332.09,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5693.49,
+      "y": 5314.09,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5690.49,
+      "y": 5293.09,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5687.49,
+      "y": 5272.09,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.5
+      }
+    },
+    {
+      "x": 5687.49,
+      "y": 5248.09,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 42.7
+      }
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_286_miraland_01",
+  "title": "【蓝鳞晶】埋骨地·孤石滩（41个/88秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 238,
+  "teleport": {
+    "name": "孤石滩",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 8242.27,
+    "y": 5309.374
+  },
+  "material": "蓝鳞晶",
+  "count_materials": [
+    "蓝鳞晶",
+    "汐荧蟹",
+    "小星扇贝",
+    "珍蛛",
+    "革袋甲",
+    "名流鸦羽",
+    "羽巾绒"
+  ],
+  "capacity": 57,
+  "points": [
+    {
+      "x": 8242.27,
+      "y": 5309.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8260.27,
+      "y": 5321.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8264.6,
+      "y": 5322.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 22.9
+      }
+    },
+    {
+      "x": 8253.36,
+      "y": 5340.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8250.36,
+      "y": 5348.1,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8235.48,
+      "y": 5332.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8220.48,
+      "y": 5317.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8202.48,
+      "y": 5302.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8196.48,
+      "y": 5302.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 8192.77,
+      "y": 5315.07,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8182.16,
+      "y": 5333.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8176.16,
+      "y": 5345.16,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8223.85,
+      "y": 5402.22,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 8215.33,
+      "y": 5436.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 8219.76,
+      "y": 5439.39,
+      "radius": 2.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

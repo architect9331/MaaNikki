@@ -1,0 +1,77 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_038_miraland_01",
+  "title": "【兔尾绒团】石树田无人区·星空钓场顶端（6个/68秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 195,
+  "teleport": {
+    "name": "星空钓场顶端",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 7822.938,
+    "y": 9184.401
+  },
+  "material": "兔尾绒团",
+  "count_materials": [
+    "兔尾绒团",
+    "珠链蝶",
+    "兔兔妆粉",
+    "发卡蚱蜢"
+  ],
+  "capacity": 16,
+  "points": [
+    {
+      "x": 7822.94,
+      "y": 9184.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7840.94,
+      "y": 9172.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7856.96,
+      "y": 9163.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 28.4
+      }
+    },
+    {
+      "x": 7833.41,
+      "y": 9162.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7809.41,
+      "y": 9162.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7794.41,
+      "y": 9159.07,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    }
+  ]
+}

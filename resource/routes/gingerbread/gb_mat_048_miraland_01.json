@@ -1,0 +1,59 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_048_miraland_01",
+  "title": "【鹿冠毛团】祈愿树林·金蔷薇花谷（1个/26秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "金蔷薇花谷",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 12311.612,
+    "y": 9450.761
+  },
+  "material": "鹿冠毛团",
+  "count_materials": [
+    "花环毛团",
+    "小绵菊",
+    "鹿冠毛团",
+    "发卡蚱蜢"
+  ],
+  "capacity": 8,
+  "points": [
+    {
+      "x": 12311.61,
+      "y": 9450.76,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12326.61,
+      "y": 9435.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12344.61,
+      "y": 9420.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12347.59,
+      "y": 9417.72,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.4
+      }
+    }
+  ]
+}

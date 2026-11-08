@@ -1,0 +1,73 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_313_miraland_01",
+  "title": "【晶球绵蚧】磐城·咏叹剧院（12个/111秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 289,
+  "teleport": {
+    "name": "咏叹剧院",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3937.799,
+    "y": 3509.925
+  },
+  "material": "晶球绵蚧",
+  "count_materials": [
+    "晶球绵蚧",
+    "探险家蜜蜂",
+    "珠链蝶",
+    "金轴蜻蜓"
+  ],
+  "capacity": 28,
+  "points": [
+    {
+      "x": 3937.8,
+      "y": 3509.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3845.74,
+      "y": 3616.04,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 27.7
+      }
+    },
+    {
+      "x": 3905.53,
+      "y": 3632.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 3941.2,
+      "y": 3615.47,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 3954.04,
+      "y": 3599.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

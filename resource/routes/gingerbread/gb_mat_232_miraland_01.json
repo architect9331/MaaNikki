@@ -1,0 +1,84 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_232_miraland_01",
+  "title": "【盗面毛团】巨木之森·叶子河上游（3个/45秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 144,
+  "teleport": {
+    "name": "叶子河上游",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3559.549,
+    "y": 7913.234
+  },
+  "material": "盗面毛团",
+  "count_materials": [
+    "盗面毛团",
+    "发卡蚱蜢",
+    "小野菊"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 3559.55,
+      "y": 7913.23,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3548.83,
+      "y": 7894.44,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3545.83,
+      "y": 7873.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3545.83,
+      "y": 7849.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3548.83,
+      "y": 7831.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.7
+      }
+    },
+    {
+      "x": 3531.53,
+      "y": 7846.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3519.53,
+      "y": 7850.07,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

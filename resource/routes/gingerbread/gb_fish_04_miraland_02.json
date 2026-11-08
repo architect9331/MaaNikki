@@ -1,0 +1,104 @@
+{
+  "schema_version": 3,
+  "id": "gb_fish_04_miraland_02",
+  "title": "【头巾鱼】石树田无人区·乘风磨坊入口（9个/126秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 323,
+  "teleport": {
+    "name": "乘风磨坊入口",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 7767.721,
+    "y": 9965.897
+  },
+  "material": "头巾鱼",
+  "count_materials": [
+    "头巾鱼",
+    "珠花贝壳",
+    "小星扇贝",
+    "发卡蚱蜢",
+    "兔兔妆粉"
+  ],
+  "capacity": 16,
+  "points": [
+    {
+      "x": 7767.72,
+      "y": 9965.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7757.77,
+      "y": 9986.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7757.77,
+      "y": 9991.09,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.0
+      }
+    },
+    {
+      "x": 7707.95,
+      "y": 9968.68,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    },
+    {
+      "x": 7719.95,
+      "y": 9949.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7719.95,
+      "y": 9925.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7719.95,
+      "y": 9901.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7719.95,
+      "y": 9877.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7716.06,
+      "y": 9874.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    }
+  ]
+}

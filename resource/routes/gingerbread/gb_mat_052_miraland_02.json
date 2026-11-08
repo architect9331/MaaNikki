@@ -1,0 +1,74 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_052_miraland_02",
+  "title": "【背带毛团】石树田无人区·石碑地（5个/61秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 180,
+  "teleport": {
+    "name": "石碑地",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 9267.482,
+    "y": 8947.913
+  },
+  "material": "背带毛团",
+  "count_materials": [
+    "背带毛团",
+    "路灯花",
+    "花伞藤萝"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 9267.48,
+      "y": 8947.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9282.48,
+      "y": 8962.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9297.48,
+      "y": 8977.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9312.48,
+      "y": 8992.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9315.48,
+      "y": 9013.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9317.55,
+      "y": 9036.94,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 34.5
+      }
+    }
+  ]
+}

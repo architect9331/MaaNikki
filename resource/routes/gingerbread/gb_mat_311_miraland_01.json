@@ -1,0 +1,116 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_311_miraland_01",
+  "title": "【珠坠甲虫】磐城·晨曦集市（9个/108秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 282,
+  "teleport": {
+    "name": "晨曦集市",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4026.351,
+    "y": 3950.481
+  },
+  "material": "珠坠甲虫",
+  "count_materials": [
+    "蓝玉甲虫",
+    "珠链蝶",
+    "珠坠甲虫",
+    "沙沙毛团",
+    "风舞花",
+    "探险家蜜蜂",
+    "桂冠翎羽"
+  ],
+  "capacity": 73,
+  "points": [
+    {
+      "x": 4026.35,
+      "y": 3950.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4035.77,
+      "y": 3935.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    },
+    {
+      "x": 4059.84,
+      "y": 3961.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 4088.79,
+      "y": 3951.15,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 4078.46,
+      "y": 3871.36,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 4100.49,
+      "y": 3862.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 4075.62,
+      "y": 3831.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 4002.04,
+      "y": 3795.21,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 3928.9,
+      "y": 3868.45,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

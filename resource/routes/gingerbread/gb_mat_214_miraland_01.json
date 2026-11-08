@@ -1,0 +1,50 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_214_miraland_01",
+  "title": "【王子鹰羽】磐城·演乐花庭（2个/30秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "演乐花庭",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4257.17,
+    "y": 3928.688
+  },
+  "material": "王子鹰羽",
+  "count_materials": [
+    "王子鹰羽"
+  ],
+  "capacity": 2,
+  "points": [
+    {
+      "x": 4257.17,
+      "y": 3928.69,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4286.26,
+      "y": 3937.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    },
+    {
+      "x": 4296.35,
+      "y": 3903.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

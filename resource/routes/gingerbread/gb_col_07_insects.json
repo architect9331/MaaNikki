@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "route_collection",
+  "id": "gb_col_07_insects",
+  "title": "【姜饼人合集】全昆虫高密捕捉合集（8条）",
+  "continue_on_failure": true,
+  "routes": [
+    {
+      "route": "gb_cat_insect_serenity_01",
+      "title": "【全昆虫速刷】无忧岛·布蜜蜜花园（32个/87秒）"
+    },
+    {
+      "route": "gb_cat_insect_danqing_02",
+      "title": "【全昆虫速刷】丹青屿·栖龙峰山腰（8个/23秒）"
+    },
+    {
+      "route": "gb_cat_insect_wanxiang_03",
+      "title": "【全昆虫速刷】万相境·九华阙（33个/134秒）"
+    },
+    {
+      "route": "gb_cat_insect_danqing_04",
+      "title": "【全昆虫速刷】丹青屿·栖龙峰侧峰（17个/73秒）"
+    },
+    {
+      "route": "gb_cat_insect_wanxiang_05",
+      "title": "【全昆虫速刷】万相境·忘忧楼（24个/112秒）"
+    },
+    {
+      "route": "gb_cat_insect_serenity_06",
+      "title": "【全昆虫速刷】无忧岛·布露村村口（23个/108秒）"
+    },
+    {
+      "route": "gb_cat_insect_wanxiang_07",
+      "title": "【全昆虫速刷】万相境·彩靥城集市（29个/141秒）"
+    },
+    {
+      "route": "gb_cat_insect_firework_08",
+      "title": "【全昆虫速刷】花焰群岛·聆风高地山麓（30个/147秒）"
+    }
+  ]
+}

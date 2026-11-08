@@ -1,0 +1,73 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_082_miraland_01",
+  "title": "【飞球果】石树田无人区·木桶荫地（12个/30秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "木桶荫地",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 8230.084,
+    "y": 10320.126
+  },
+  "material": "飞球果",
+  "count_materials": [
+    "飞球果",
+    "滋滋花粉"
+  ],
+  "capacity": 13,
+  "points": [
+    {
+      "x": 8230.08,
+      "y": 10320.13,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8217.64,
+      "y": 10303.04,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8205.64,
+      "y": 10285.04,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8199.64,
+      "y": 10279.04,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8202.64,
+      "y": 10276.04,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8202.64,
+      "y": 10273.04,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    }
+  ]
+}

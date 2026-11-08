@@ -1,0 +1,51 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_089_miraland_03",
+  "title": "【瓜子珠】石树田无人区·咚咚窝瓜工坊（12个/37秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 126,
+  "teleport": {
+    "name": "咚咚窝瓜工坊",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 8235.424,
+    "y": 8891.812
+  },
+  "material": "瓜子珠",
+  "count_materials": [
+    "瓜子珠",
+    "纽扣松果"
+  ],
+  "capacity": 13,
+  "points": [
+    {
+      "x": 8235.42,
+      "y": 8891.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8268.48,
+      "y": 8841.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 8215.39,
+      "y": 8837.2,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

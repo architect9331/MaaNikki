@@ -1,0 +1,73 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_firework_firework_04",
+  "title": "【全材料·花焰群岛】花焰群岛·幽暗洞窟前（20个/67秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 193,
+  "teleport": {
+    "name": "幽暗洞窟前",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 945.342,
+    "y": 225.634
+  },
+  "material": "全材料·花焰群岛",
+  "count_materials": [
+    "壁灯红椒",
+    "兔兔妆粉",
+    "布布果",
+    "发卡蚱蜢",
+    "兔尾绒团",
+    "噼啪花粉"
+  ],
+  "capacity": 20,
+  "points": [
+    {
+      "x": 945.34,
+      "y": 225.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1007.52,
+      "y": 162.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.8
+      }
+    },
+    {
+      "x": 949.27,
+      "y": 143.2,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.2
+      }
+    },
+    {
+      "x": 929.73,
+      "y": 129.68,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 923.73,
+      "y": 132.68,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "schema_version": 3,
+  "id": "gb_fish_06_miraland_02",
+  "title": "【拉夫领鱼】祈愿树林·苦修派营地（6个/95秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 254,
+  "teleport": {
+    "name": "苦修派营地",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 12035.69,
+    "y": 9396.429
+  },
+  "material": "拉夫领鱼",
+  "count_materials": [
+    "拉夫领鱼",
+    "纽扣松果",
+    "路灯花",
+    "星荧草",
+    "珠花贝壳"
+  ],
+  "capacity": 14,
+  "points": [
+    {
+      "x": 12035.69,
+      "y": 9396.43,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 12017.41,
+      "y": 9384.02,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11993.41,
+      "y": 9384.02,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11975.41,
+      "y": 9369.02,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11966.41,
+      "y": 9360.02,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.0
+      }
+    },
+    {
+      "x": 11973.8,
+      "y": 9347.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11973.8,
+      "y": 9341.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11973.8,
+      "y": 9338.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11973.8,
+      "y": 9335.83,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11955.8,
+      "y": 9323.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11946.8,
+      "y": 9317.83,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    }
+  ]
+}

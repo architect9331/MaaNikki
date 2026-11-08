@@ -1,0 +1,156 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_068_miraland_01",
+  "title": "【裙撑萤】微风绿野·废弃疯愿之子营地前哨站（12个/132秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 336,
+  "teleport": {
+    "name": "废弃疯愿之子营地前哨站",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10097.693,
+    "y": 11432.88
+  },
+  "material": "裙撑萤",
+  "count_materials": [
+    "纽扣松果",
+    "裙撑萤",
+    "瓜子珠",
+    "小绵菊",
+    "盛宴毛毡"
+  ],
+  "capacity": 34,
+  "points": [
+    {
+      "x": 10097.69,
+      "y": 11432.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10108.69,
+      "y": 11414.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10128.69,
+      "y": 11402.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10152.69,
+      "y": 11402.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10172.69,
+      "y": 11398.4,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10192.69,
+      "y": 11394.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10216.69,
+      "y": 11394.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10240.69,
+      "y": 11394.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10264.69,
+      "y": 11394.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10288.69,
+      "y": 11394.4,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10312.69,
+      "y": 11394.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10336.69,
+      "y": 11394.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10356.85,
+      "y": 11387.4,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 33.7
+      }
+    },
+    {
+      "x": 10367.46,
+      "y": 11354.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 10345.6,
+      "y": 11343.41,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    }
+  ]
+}

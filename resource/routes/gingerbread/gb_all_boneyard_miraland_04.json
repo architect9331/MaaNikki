@@ -1,0 +1,120 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_boneyard_miraland_04",
+  "title": "【全材料·埋骨地】埋骨地·白汐滩归望湾（21个/47秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 149,
+  "teleport": {
+    "name": "白汐滩归望湾",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7691.911,
+    "y": 5296.073
+  },
+  "material": "全材料·埋骨地",
+  "count_materials": [
+    "晴雨伞",
+    "骨焰花",
+    "小野菊",
+    "龙棘瑚",
+    "汐荧蟹",
+    "珠花贝壳",
+    "风舞花"
+  ],
+  "capacity": 21,
+  "points": [
+    {
+      "x": 7691.91,
+      "y": 5296.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7671.52,
+      "y": 5299.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7668.52,
+      "y": 5302.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7647.52,
+      "y": 5308.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7626.52,
+      "y": 5314.07,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7623.52,
+      "y": 5313.22,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.5
+      }
+    },
+    {
+      "x": 7610.34,
+      "y": 5331.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7610.34,
+      "y": 5355.22,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7610.34,
+      "y": 5376.22,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7607.34,
+      "y": 5379.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7604.34,
+      "y": 5379.47,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    }
+  ]
+}

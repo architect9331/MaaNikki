@@ -1,0 +1,42 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_danqing_02",
+  "title": "【全动物清洁】丹青屿·栖龙峰山腰（7个/17秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "栖龙峰山腰",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1115.313,
+    "y": 388.774
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "满满果",
+    "荷包草",
+    "云绒玉絮"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 1115.31,
+      "y": 388.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1119.26,
+      "y": 382.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

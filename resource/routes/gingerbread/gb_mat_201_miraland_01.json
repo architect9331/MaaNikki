@@ -1,0 +1,119 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_201_miraland_01",
+  "title": "【结结蕨】巨木之森·巨藤林地北侧探险家营地（16个/70秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 198,
+  "teleport": {
+    "name": "巨藤林地北侧探险家营地",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4176.294,
+    "y": 8476.89
+  },
+  "material": "结结蕨",
+  "count_materials": [
+    "耳坠萤",
+    "结结蕨",
+    "木夹跳甲",
+    "裁衣甲",
+    "垂穗魔果",
+    "绒领毛团"
+  ],
+  "capacity": 55,
+  "points": [
+    {
+      "x": 4176.29,
+      "y": 8476.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4201.47,
+      "y": 8458.07,
+      "radius": 2.2,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4101.33,
+      "y": 8452.57,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 4055.9,
+      "y": 8440.24,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4001.82,
+      "y": 8454.4,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4001.82,
+      "y": 8475.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4016.82,
+      "y": 8490.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4025.14,
+      "y": 8502.17,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4034.84,
+      "y": 8531.22,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4016.37,
+      "y": 8569.05,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4030.15,
+      "y": 8581.11,
+      "radius": 2.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

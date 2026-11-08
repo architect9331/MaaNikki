@@ -1,0 +1,90 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_272_miraland_02",
+  "title": "【茸芽鹿绒】埋骨地·古息坡道（8个/83秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 228,
+  "teleport": {
+    "name": "古息坡道",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 6883.245,
+    "y": 4762.082
+  },
+  "material": "茸芽鹿绒",
+  "count_materials": [
+    "羽巾绒",
+    "金灵毛球",
+    "大叶鹿绒",
+    "茸芽鹿绒",
+    "晴雨伞",
+    "耳坠萤",
+    "珠链蝶"
+  ],
+  "capacity": 44,
+  "points": [
+    {
+      "x": 6883.24,
+      "y": 4762.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6860.52,
+      "y": 4762.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 6854.52,
+      "y": 4762.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6839.52,
+      "y": 4780.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 6821.52,
+      "y": 4792.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6803.52,
+      "y": 4804.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6797.52,
+      "y": 4809.76,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 53.7
+      }
+    }
+  ]
+}

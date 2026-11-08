@@ -1,0 +1,116 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_197_miraland_01",
+  "title": "【流金蜜】巨木之森·帕克亚火山口探险家营地（60个/112秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 292,
+  "teleport": {
+    "name": "帕克亚火山口探险家营地",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 5405.991,
+    "y": 8261.83
+  },
+  "material": "流金蜜",
+  "count_materials": [
+    "流金蜜",
+    "小野菊",
+    "结结蕨",
+    "朝朝蝶",
+    "暮暮蝶",
+    "木夹跳甲",
+    "发卡蚱蜢"
+  ],
+  "capacity": 86,
+  "points": [
+    {
+      "x": 5405.99,
+      "y": 8261.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5392.48,
+      "y": 8298.95,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    },
+    {
+      "x": 5410.05,
+      "y": 8343.24,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    },
+    {
+      "x": 5446.72,
+      "y": 8343.76,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    },
+    {
+      "x": 5475.92,
+      "y": 8350.16,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 10.3
+      }
+    },
+    {
+      "x": 5462.45,
+      "y": 8379.21,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    },
+    {
+      "x": 5431.35,
+      "y": 8378.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 5443.62,
+      "y": 8407.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 5390.84,
+      "y": 8388.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    }
+  ]
+}

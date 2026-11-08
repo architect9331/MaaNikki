@@ -1,0 +1,54 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_191_miraland_01",
+  "title": "【花纹围巾蚯蚓】巨木之森·巨兽堡垒断桥旁（6个/77秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 214,
+  "teleport": {
+    "name": "巨兽堡垒断桥旁",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3631.213,
+    "y": 9021.011
+  },
+  "material": "花纹围巾蚯蚓",
+  "count_materials": [
+    "花纹围巾蚯蚓",
+    "壁灯红椒",
+    "芭蕾豆娘",
+    "满满果",
+    "小野菊"
+  ],
+  "capacity": 16,
+  "points": [
+    {
+      "x": 3631.21,
+      "y": 9021.01,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3606.07,
+      "y": 9093.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 3543.43,
+      "y": 8991.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 22.0
+      }
+    }
+  ]
+}

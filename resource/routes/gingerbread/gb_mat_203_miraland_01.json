@@ -1,0 +1,60 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_203_miraland_01",
+  "title": "【木夹跳甲】巨木之森·巨兽堡垒北侧（10个/91秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 245,
+  "teleport": {
+    "name": "巨兽堡垒北侧",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3568.402,
+    "y": 8184.955
+  },
+  "material": "木夹跳甲",
+  "count_materials": [
+    "木夹跳甲"
+  ],
+  "capacity": 10,
+  "points": [
+    {
+      "x": 3568.4,
+      "y": 8184.95,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3618.15,
+      "y": 8261.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 3657.85,
+      "y": 8273.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 3694.96,
+      "y": 8311.84,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    }
+  ]
+}

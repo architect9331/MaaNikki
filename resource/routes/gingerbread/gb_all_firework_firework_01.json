@@ -1,0 +1,179 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_firework_firework_01",
+  "title": "【全材料·花焰群岛】花焰群岛·聆风高地山麓（46个/103秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 271,
+  "teleport": {
+    "name": "聆风高地山麓",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 748.755,
+    "y": 548.546
+  },
+  "material": "全材料·花焰群岛",
+  "count_materials": [
+    "壁灯红椒",
+    "小绵菊",
+    "草绒球",
+    "晴日蝶兰/雨滴蝶兰",
+    "噼啪花粉",
+    "纽扣松果",
+    "珠花贝壳",
+    "小星扇贝"
+  ],
+  "capacity": 46,
+  "points": [
+    {
+      "x": 748.75,
+      "y": 548.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 748.29,
+      "y": 535.06,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 732.12,
+      "y": 547.06,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 714.12,
+      "y": 559.06,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 711.12,
+      "y": 558.73,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 716.08,
+      "y": 605.48,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 834.95,
+      "y": 632.55,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    },
+    {
+      "x": 800.45,
+      "y": 578.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 785.99,
+      "y": 590.82,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 779.99,
+      "y": 590.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 773.99,
+      "y": 583.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 785.99,
+      "y": 593.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 803.99,
+      "y": 581.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 821.99,
+      "y": 566.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 836.99,
+      "y": 548.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 851.99,
+      "y": 530.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 853.0,
+      "y": 515.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    }
+  ]
+}

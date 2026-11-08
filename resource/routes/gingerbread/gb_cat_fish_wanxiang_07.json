@@ -1,0 +1,73 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_fish_wanxiang_07",
+  "title": "【全鱼类垂钓】万相境·火锅坊（6个/22秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "火锅坊",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 1399.524,
+    "y": 1108.824
+  },
+  "material": "全鱼类垂钓",
+  "count_materials": [
+    "满满果",
+    "小绵菊"
+  ],
+  "capacity": 6,
+  "points": [
+    {
+      "x": 1399.52,
+      "y": 1108.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1402.52,
+      "y": 1098.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1399.52,
+      "y": 1095.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1384.52,
+      "y": 1092.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1378.52,
+      "y": 1092.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1372.52,
+      "y": 1095.63,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

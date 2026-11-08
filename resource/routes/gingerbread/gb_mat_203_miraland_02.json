@@ -1,0 +1,63 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_203_miraland_02",
+  "title": "【木夹跳甲】磐城·巧工园废墟（6个/58秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 172,
+  "teleport": {
+    "name": "巧工园废墟",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3937.839,
+    "y": 4270.455
+  },
+  "material": "木夹跳甲",
+  "count_materials": [
+    "珠链蝶",
+    "木夹跳甲",
+    "满满果",
+    "织衣蛛"
+  ],
+  "capacity": 18,
+  "points": [
+    {
+      "x": 3937.84,
+      "y": 4270.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3959.97,
+      "y": 4216.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 3965.55,
+      "y": 4200.47,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 3978.74,
+      "y": 4244.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    }
+  ]
+}

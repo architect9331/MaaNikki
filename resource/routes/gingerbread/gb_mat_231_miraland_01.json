@@ -1,0 +1,59 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_231_miraland_01",
+  "title": "【行鹭羽】巨木之森·叶子河上游（11个/93秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 250,
+  "teleport": {
+    "name": "叶子河上游",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3559.549,
+    "y": 7913.234
+  },
+  "material": "行鹭羽",
+  "count_materials": [
+    "行鹭羽",
+    "小野菊"
+  ],
+  "capacity": 12,
+  "points": [
+    {
+      "x": 3559.55,
+      "y": 7913.23,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3574.55,
+      "y": 7897.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3577.26,
+      "y": 7897.5,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 20.5
+      }
+    },
+    {
+      "x": 3595.36,
+      "y": 7878.51,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 53.7
+      }
+    }
+  ]
+}

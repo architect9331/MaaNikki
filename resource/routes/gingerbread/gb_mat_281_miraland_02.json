@@ -1,0 +1,107 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_281_miraland_02",
+  "title": "【晴雨伞】埋骨地·湖岸营地（36个/70秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 200,
+  "teleport": {
+    "name": "湖岸营地",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 6139.401,
+    "y": 5241.84
+  },
+  "material": "晴雨伞",
+  "count_materials": [
+    "晴雨伞",
+    "钓鱼点",
+    "珠链蝶",
+    "风舞花"
+  ],
+  "capacity": 48,
+  "points": [
+    {
+      "x": 6139.4,
+      "y": 5241.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6133.9,
+      "y": 5205.58,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    },
+    {
+      "x": 6084.74,
+      "y": 5172.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    },
+    {
+      "x": 6102.55,
+      "y": 5198.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 6123.55,
+      "y": 5198.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6144.55,
+      "y": 5201.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6168.55,
+      "y": 5201.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6180.36,
+      "y": 5195.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 6197.15,
+      "y": 5190.69,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    }
+  ]
+}

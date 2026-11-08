@@ -1,0 +1,126 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_breezy_miraland_03",
+  "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（78个/148秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 370,
+  "teleport": {
+    "name": "河畔山地林间道",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10608.939,
+    "y": 11286.416
+  },
+  "material": "全材料·微风绿野",
+  "count_materials": [
+    "纽扣松果",
+    "瓜子珠",
+    "小绵菊",
+    "滋滋花粉",
+    "珠链蝶"
+  ],
+  "capacity": 78,
+  "points": [
+    {
+      "x": 10608.94,
+      "y": 11286.42,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10671.56,
+      "y": 11268.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.5
+      }
+    },
+    {
+      "x": 10664.93,
+      "y": 11317.43,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 10702.8,
+      "y": 11327.34,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 10769.41,
+      "y": 11278.07,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    },
+    {
+      "x": 10720.2,
+      "y": 11264.48,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.0
+      }
+    },
+    {
+      "x": 10676.62,
+      "y": 11213.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 10643.52,
+      "y": 11215.03,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 10589.72,
+      "y": 11219.21,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    },
+    {
+      "x": 10526.39,
+      "y": 11287.84,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    }
+  ]
+}

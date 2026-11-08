@@ -1,0 +1,119 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_280_miraland_01",
+  "title": "【蜉幽幽】埋骨地·灵魂观察所廊柱厅（14个/104秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 274,
+  "teleport": {
+    "name": "灵魂观察所廊柱厅",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7083.331,
+    "y": 5246.124
+  },
+  "material": "蜉幽幽",
+  "count_materials": [
+    "蜉幽幽",
+    "耳坠萤",
+    "羽巾绒",
+    "蓝鳞晶"
+  ],
+  "capacity": 27,
+  "points": [
+    {
+      "x": 7083.33,
+      "y": 5246.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7074.33,
+      "y": 5261.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7077.33,
+      "y": 5264.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7080.33,
+      "y": 5267.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7083.33,
+      "y": 5270.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7096.93,
+      "y": 5269.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 7108.93,
+      "y": 5284.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7117.67,
+      "y": 5293.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 39.7
+      }
+    },
+    {
+      "x": 7117.67,
+      "y": 5270.8,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7117.67,
+      "y": 5267.8,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7120.06,
+      "y": 5261.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    }
+  ]
+}

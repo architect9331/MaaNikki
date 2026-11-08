@@ -1,0 +1,60 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_233_miraland_01",
+  "title": "【扣扣毛球】磐城·咏叹剧院（3个/35秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 121,
+  "teleport": {
+    "name": "咏叹剧院",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3937.799,
+    "y": 3509.925
+  },
+  "material": "扣扣毛球",
+  "count_materials": [
+    "扣扣毛球"
+  ],
+  "capacity": 3,
+  "points": [
+    {
+      "x": 3937.8,
+      "y": 3509.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3929.64,
+      "y": 3518.04,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    },
+    {
+      "x": 3904.23,
+      "y": 3519.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    },
+    {
+      "x": 3899.23,
+      "y": 3495.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

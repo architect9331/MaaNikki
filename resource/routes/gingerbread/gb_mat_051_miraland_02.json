@@ -1,0 +1,65 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_051_miraland_02",
+  "title": "【画帽羽毛】小石树田村·火冠石树（2个/28秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "火冠石树",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 9450.094,
+    "y": 10470.951
+  },
+  "material": "画帽羽毛",
+  "count_materials": [
+    "画帽羽毛",
+    "瓜子珠"
+  ],
+  "capacity": 3,
+  "points": [
+    {
+      "x": 9450.09,
+      "y": 10470.95,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9429.93,
+      "y": 10461.85,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9426.93,
+      "y": 10458.85,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9426.93,
+      "y": 10455.85,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9423.93,
+      "y": 10452.85,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.7
+      }
+    }
+  ]
+}

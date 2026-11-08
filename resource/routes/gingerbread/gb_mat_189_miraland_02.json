@@ -1,0 +1,112 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_189_miraland_02",
+  "title": "【小野菊】巨木之森·巨人墓园（52个/104秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 273,
+  "teleport": {
+    "name": "巨人墓园",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 2891.806,
+    "y": 8601.681
+  },
+  "material": "小野菊",
+  "count_materials": [
+    "小野菊",
+    "耳坠萤",
+    "木夹跳甲"
+  ],
+  "capacity": 66,
+  "points": [
+    {
+      "x": 2891.81,
+      "y": 8601.68,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2874.57,
+      "y": 8662.09,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 2841.92,
+      "y": 8670.98,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 2797.76,
+      "y": 8668.43,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 2775.56,
+      "y": 8647.72,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 2755.03,
+      "y": 8660.9,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 2733.99,
+      "y": 8643.45,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 2725.42,
+      "y": 8580.43,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 2820.97,
+      "y": 8648.26,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    }
+  ]
+}

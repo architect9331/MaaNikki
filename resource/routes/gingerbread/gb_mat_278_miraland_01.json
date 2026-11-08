@@ -1,0 +1,60 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_278_miraland_01",
+  "title": "【珍蛛】埋骨地·修习所水岸（6个/59秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 175,
+  "teleport": {
+    "name": "修习所水岸",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7935.058,
+    "y": 5300.96
+  },
+  "material": "珍蛛",
+  "count_materials": [
+    "珍蛛"
+  ],
+  "capacity": 6,
+  "points": [
+    {
+      "x": 7935.06,
+      "y": 5300.96,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8000.35,
+      "y": 5315.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 8004.27,
+      "y": 5286.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 8001.19,
+      "y": 5254.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

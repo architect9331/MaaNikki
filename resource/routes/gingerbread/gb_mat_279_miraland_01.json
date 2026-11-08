@@ -1,0 +1,84 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_279_miraland_01",
+  "title": "【埙音甲】埋骨地·龙埙遗所（15个/132秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 334,
+  "teleport": {
+    "name": "龙埙遗所",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 8586.154,
+    "y": 5376.194
+  },
+  "material": "埙音甲",
+  "count_materials": [
+    "埙音甲",
+    "烛融花/烛荧花",
+    "耳坠萤",
+    "满满果",
+    "风舞花"
+  ],
+  "capacity": 31,
+  "points": [
+    {
+      "x": 8586.15,
+      "y": 5376.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8602.26,
+      "y": 5405.06,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.2
+      }
+    },
+    {
+      "x": 8604.27,
+      "y": 5441.58,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    },
+    {
+      "x": 8612.73,
+      "y": 5467.34,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 8648.66,
+      "y": 5515.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 36.4
+      }
+    },
+    {
+      "x": 8647.94,
+      "y": 5556.93,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 19.3
+      }
+    }
+  ]
+}

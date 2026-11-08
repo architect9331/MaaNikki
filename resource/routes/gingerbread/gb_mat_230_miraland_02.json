@@ -1,0 +1,150 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_230_miraland_02",
+  "title": "【绒领毛团】巨木之森·巨森码头（9个/134秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 340,
+  "teleport": {
+    "name": "巨森码头",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3659.669,
+    "y": 9690.566
+  },
+  "material": "绒领毛团",
+  "count_materials": [
+    "珠链蝶",
+    "结结蕨",
+    "绒领毛团",
+    "满满果",
+    "木夹跳甲",
+    "花纹围巾蚯蚓",
+    "小野菊",
+    "蓝珀鸟羽",
+    "发卡蚱蜢",
+    "朝朝蝶",
+    "暮暮蝶"
+  ],
+  "capacity": 55,
+  "points": [
+    {
+      "x": 3659.67,
+      "y": 9690.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3671.67,
+      "y": 9673.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3686.67,
+      "y": 9655.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3704.67,
+      "y": 9643.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3725.67,
+      "y": 9637.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 3746.67,
+      "y": 9631.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3767.67,
+      "y": 9622.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3786.22,
+      "y": 9613.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.3
+      }
+    },
+    {
+      "x": 3775.4,
+      "y": 9644.37,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 15.3
+      }
+    },
+    {
+      "x": 3758.47,
+      "y": 9592.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.4
+      }
+    },
+    {
+      "x": 3746.91,
+      "y": 9543.95,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    },
+    {
+      "x": 3757.86,
+      "y": 9566.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.5
+      }
+    },
+    {
+      "x": 3690.96,
+      "y": 9604.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.4
+      }
+    }
+  ]
+}

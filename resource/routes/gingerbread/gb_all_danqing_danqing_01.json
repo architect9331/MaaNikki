@@ -1,0 +1,132 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_danqing_danqing_01",
+  "title": "【全材料·丹青屿】丹青屿·栖龙峰山腰（27个/59秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 175,
+  "teleport": {
+    "name": "栖龙峰山腰",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1115.313,
+    "y": 388.774
+  },
+  "material": "全材料·丹青屿",
+  "count_materials": [
+    "壁灯红椒",
+    "满满果",
+    "荷包草",
+    "玉簪蚱蜢",
+    "云绒玉絮"
+  ],
+  "capacity": 27,
+  "points": [
+    {
+      "x": 1115.31,
+      "y": 388.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1119.26,
+      "y": 382.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 1135.44,
+      "y": 385.94,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 1135.0,
+      "y": 388.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.9
+      }
+    },
+    {
+      "x": 1126.47,
+      "y": 368.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1126.47,
+      "y": 365.56,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1120.32,
+      "y": 386.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1114.32,
+      "y": 407.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1111.32,
+      "y": 422.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1114.32,
+      "y": 424.38,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.0
+      }
+    },
+    {
+      "x": 1113.28,
+      "y": 422.61,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1110.28,
+      "y": 404.61,
+      "radius": 2.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

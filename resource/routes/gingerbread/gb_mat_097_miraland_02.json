@@ -1,0 +1,64 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_097_miraland_02",
+  "title": "【滋滋花粉】祈愿树林·古铸剑遗址入口（4个/28秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "古铸剑遗址入口",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11846.959,
+    "y": 9216.097
+  },
+  "material": "滋滋花粉",
+  "count_materials": [
+    "滋滋花粉",
+    "珠链蝶",
+    "纽扣松果",
+    "路灯花",
+    "蓝珀鸟羽",
+    "满满果",
+    "发卡蚱蜢"
+  ],
+  "capacity": 20,
+  "points": [
+    {
+      "x": 11846.96,
+      "y": 9216.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11829.35,
+      "y": 9205.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11820.35,
+      "y": 9199.48,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 11839.9,
+      "y": 9233.67,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

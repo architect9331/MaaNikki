@@ -1,0 +1,81 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_208_miraland_02",
+  "title": "【朝朝蝶】巨木之森·帕克亚湖心岛（7个/102秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 269,
+  "teleport": {
+    "name": "帕克亚湖心岛",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 5463.191,
+    "y": 7941.88
+  },
+  "material": "朝朝蝶",
+  "count_materials": [
+    "朝朝蝶",
+    "暮暮蝶"
+  ],
+  "capacity": 14,
+  "points": [
+    {
+      "x": 5463.19,
+      "y": 7941.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5509.57,
+      "y": 7981.55,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 5473.04,
+      "y": 8011.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 5628.59,
+      "y": 7876.15,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 5575.17,
+      "y": 7833.66,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 5543.16,
+      "y": 7863.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

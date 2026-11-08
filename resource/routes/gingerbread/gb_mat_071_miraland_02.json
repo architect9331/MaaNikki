@@ -1,0 +1,167 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_071_miraland_02",
+  "title": "【尖帽仙】微风绿野·菲洛米亚女王行宫遗迹前庭（12个/108秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 282,
+  "teleport": {
+    "name": "菲洛米亚女王行宫遗迹前庭",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 11048.056,
+    "y": 11562.074
+  },
+  "material": "尖帽仙",
+  "count_materials": [
+    "尖帽仙",
+    "织衣蛛",
+    "名流鸦羽",
+    "满满果"
+  ],
+  "capacity": 18,
+  "points": [
+    {
+      "x": 11048.06,
+      "y": 11562.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11045.76,
+      "y": 11562.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11042.76,
+      "y": 11562.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11024.76,
+      "y": 11568.07,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11006.76,
+      "y": 11583.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10982.76,
+      "y": 11583.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10979.76,
+      "y": 11583.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10976.76,
+      "y": 11583.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10973.76,
+      "y": 11586.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10964.76,
+      "y": 11607.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10961.76,
+      "y": 11610.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 33.7
+      }
+    },
+    {
+      "x": 10962.24,
+      "y": 11631.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10962.24,
+      "y": 11655.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10959.24,
+      "y": 11676.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10953.24,
+      "y": 11695.47,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 10974.24,
+      "y": 11698.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10977.25,
+      "y": 11699.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    }
+  ]
+}

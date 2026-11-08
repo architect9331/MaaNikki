@@ -1,0 +1,87 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_095_miraland_02",
+  "title": "【壁灯红椒】巨木之森·壳壳岛洞察学派据点前（15个/30秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "壳壳岛洞察学派据点前",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4858.254,
+    "y": 8854.546
+  },
+  "material": "壁灯红椒",
+  "count_materials": [
+    "壁灯红椒",
+    "纽扣松果",
+    "蓝珀鸟羽",
+    "小野菊"
+  ],
+  "capacity": 20,
+  "points": [
+    {
+      "x": 4858.25,
+      "y": 8854.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 4850.07,
+      "y": 8847.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4850.07,
+      "y": 8844.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4856.07,
+      "y": 8841.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4856.07,
+      "y": 8838.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4850.07,
+      "y": 8823.97,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 4849.13,
+      "y": 8824.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    }
+  ]
+}

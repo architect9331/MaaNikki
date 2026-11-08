@@ -1,0 +1,61 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_076_danqing_03",
+  "title": "【耳坠萤】丹青屿·逢花林（29个/197秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 479,
+  "teleport": {
+    "name": "逢花林",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1749.147,
+    "y": 1183.285
+  },
+  "material": "耳坠萤",
+  "count_materials": [
+    "耳坠萤",
+    "荷包草"
+  ],
+  "capacity": 30,
+  "points": [
+    {
+      "x": 1749.15,
+      "y": 1183.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1663.02,
+      "y": 1226.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 60.0
+      }
+    },
+    {
+      "x": 1663.02,
+      "y": 1226.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 60.0
+      }
+    },
+    {
+      "x": 1663.02,
+      "y": 1226.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 51.7
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_066_miraland_01",
+  "title": "【泳镜蝽】花愿镇·织裙街（3个/44秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 142,
+  "teleport": {
+    "name": "织裙街",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10728.751,
+    "y": 10052.912
+  },
+  "material": "泳镜蝽",
+  "count_materials": [
+    "瓜子珠",
+    "泳镜蝽",
+    "香薰睡莲",
+    "小星扇贝",
+    "纽扣松果",
+    "小绵菊",
+    "珠花贝壳",
+    "衬衫毛团"
+  ],
+  "capacity": 15,
+  "points": [
+    {
+      "x": 10728.75,
+      "y": 10052.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10699.65,
+      "y": 10067.94,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    },
+    {
+      "x": 10700.97,
+      "y": 10051.88,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10694.97,
+      "y": 10042.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.2
+      }
+    }
+  ]
+}

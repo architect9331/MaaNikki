@@ -1,0 +1,83 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_277_miraland_01",
+  "title": "【革袋甲】埋骨地·龙眠花冢（9个/106秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 279,
+  "teleport": {
+    "name": "龙眠花冢",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 6524.864,
+    "y": 5029.647
+  },
+  "material": "革袋甲",
+  "count_materials": [
+    "革袋甲",
+    "骨焰花",
+    "珠链蝶",
+    "风舞花"
+  ],
+  "capacity": 21,
+  "points": [
+    {
+      "x": 6524.86,
+      "y": 5029.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6640.99,
+      "y": 5028.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.3
+      }
+    },
+    {
+      "x": 6622.94,
+      "y": 5041.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.4
+      }
+    },
+    {
+      "x": 6611.53,
+      "y": 5032.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.1
+      }
+    },
+    {
+      "x": 6688.41,
+      "y": 4977.4,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 6715.74,
+      "y": 4942.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

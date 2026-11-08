@@ -1,0 +1,130 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_044_miraland_02",
+  "title": "【蓝珀鸟羽】巨木之森·伊赞之土临时搭配师协会（14个/124秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 317,
+  "teleport": {
+    "name": "伊赞之土临时搭配师协会",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4840.105,
+    "y": 8932.157
+  },
+  "material": "蓝珀鸟羽",
+  "count_materials": [
+    "蓝珀鸟羽",
+    "路灯花",
+    "刺绣蛾",
+    "朝朝蝶",
+    "暮暮蝶"
+  ],
+  "capacity": 25,
+  "points": [
+    {
+      "x": 4840.1,
+      "y": 8932.16,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4839.45,
+      "y": 8930.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4827.45,
+      "y": 8930.65,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 46.7
+      }
+    },
+    {
+      "x": 4845.45,
+      "y": 8918.2,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4857.45,
+      "y": 8918.2,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4877.49,
+      "y": 8930.2,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 25.0
+      }
+    },
+    {
+      "x": 4866.94,
+      "y": 8912.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4863.94,
+      "y": 8909.31,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4863.94,
+      "y": 8906.31,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4863.94,
+      "y": 8903.31,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4854.94,
+      "y": 8897.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.7
+      }
+    },
+    {
+      "x": 4859.51,
+      "y": 8891.97,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.7
+      }
+    }
+  ]
+}

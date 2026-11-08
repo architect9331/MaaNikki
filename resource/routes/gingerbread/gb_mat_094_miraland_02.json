@@ -1,0 +1,122 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_094_miraland_02",
+  "title": "【风絮草】石树田无人区·乘风磨坊入口（20个/50秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 156,
+  "teleport": {
+    "name": "乘风磨坊入口",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 7767.721,
+    "y": 9965.897
+  },
+  "material": "风絮草",
+  "count_materials": [
+    "风絮草",
+    "珠链蝶",
+    "花伞藤萝",
+    "珠花贝壳",
+    "发卡蚱蜢",
+    "香薰睡莲",
+    "小星扇贝"
+  ],
+  "capacity": 34,
+  "points": [
+    {
+      "x": 7767.72,
+      "y": 9965.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7776.35,
+      "y": 9958.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7779.35,
+      "y": 9937.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7782.35,
+      "y": 9916.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7782.35,
+      "y": 9892.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7779.35,
+      "y": 9889.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7764.35,
+      "y": 9892.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.4
+      }
+    },
+    {
+      "x": 7768.29,
+      "y": 9877.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 7762.59,
+      "y": 9858.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7756.59,
+      "y": 9837.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7753.59,
+      "y": 9834.22,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_wanxiang_wanxiang_04",
+  "title": "【全材料·万相境】万相境·忘忧楼（36个/141秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 355,
+  "teleport": {
+    "name": "忘忧楼",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 2339.983,
+    "y": 1551.648
+  },
+  "material": "全材料·万相境",
+  "count_materials": [
+    "壁灯红椒",
+    "荷包草",
+    "耳坠萤",
+    "珠链蝶",
+    "小绵菊",
+    "云绒玉絮",
+    "玉簪蚱蜢",
+    "满满果",
+    "刺绣蛾"
+  ],
+  "capacity": 36,
+  "points": [
+    {
+      "x": 2339.98,
+      "y": 1551.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2351.98,
+      "y": 1551.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2354.98,
+      "y": 1551.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2363.98,
+      "y": 1569.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2369.98,
+      "y": 1590.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2369.98,
+      "y": 1602.65,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2369.98,
+      "y": 1605.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2366.98,
+      "y": 1620.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2378.98,
+      "y": 1638.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2380.89,
+      "y": 1640.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 2383.89,
+      "y": 1642.21,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2407.89,
+      "y": 1642.21,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2419.89,
+      "y": 1648.21,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2428.89,
+      "y": 1645.21,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2429.61,
+      "y": 1636.21,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 2430.0,
+      "y": 1630.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2427.0,
+      "y": 1627.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2421.0,
+      "y": 1627.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 35.5
+      }
+    },
+    {
+      "x": 2416.02,
+      "y": 1628.36,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 2390.94,
+      "y": 1618.83,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 30.4
+      }
+    },
+    {
+      "x": 2381.39,
+      "y": 1623.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2357.39,
+      "y": 1623.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2336.39,
+      "y": 1620.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2315.39,
+      "y": 1614.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2294.39,
+      "y": 1608.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2279.39,
+      "y": 1602.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    }
+  ]
+}

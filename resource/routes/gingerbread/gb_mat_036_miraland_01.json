@@ -1,0 +1,79 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_036_miraland_01",
+  "title": "【围兜毛球】花愿镇·搭配师协会前（1个/36秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 124,
+  "teleport": {
+    "name": "搭配师协会前",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10263.141,
+    "y": 9946.46
+  },
+  "material": "围兜毛球",
+  "count_materials": [
+    "小绵菊",
+    "满满果",
+    "刺绣蛾",
+    "围兜毛球"
+  ],
+  "capacity": 11,
+  "points": [
+    {
+      "x": 10263.14,
+      "y": 9946.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10284.14,
+      "y": 9955.46,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 10308.14,
+      "y": 9955.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10332.14,
+      "y": 9955.46,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 10353.14,
+      "y": 9961.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10368.45,
+      "y": 9961.5,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

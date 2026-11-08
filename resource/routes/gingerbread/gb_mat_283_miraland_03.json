@@ -1,0 +1,144 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_283_miraland_03",
+  "title": "【风舞花】埋骨地·古息坡道（24个/77秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 215,
+  "teleport": {
+    "name": "古息坡道",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 6883.245,
+    "y": 4762.082
+  },
+  "material": "风舞花",
+  "count_materials": [
+    "珠链蝶",
+    "风舞花",
+    "耳坠萤",
+    "小野菊",
+    "木夹跳甲",
+    "蓝珀鸟羽",
+    "刺绣蛾",
+    "满满果",
+    "蓝鳞晶",
+    "埙音甲",
+    "革袋甲"
+  ],
+  "capacity": 123,
+  "points": [
+    {
+      "x": 6883.24,
+      "y": 4762.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6883.47,
+      "y": 4697.02,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 6875.77,
+      "y": 4669.6,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 6876.56,
+      "y": 4643.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 6857.31,
+      "y": 4644.9,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 6846.14,
+      "y": 4602.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 6882.2,
+      "y": 4597.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 6900.2,
+      "y": 4606.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6921.2,
+      "y": 4615.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6939.2,
+      "y": 4630.11,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6940.85,
+      "y": 4633.42,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 6973.17,
+      "y": 4637.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    }
+  ]
+}

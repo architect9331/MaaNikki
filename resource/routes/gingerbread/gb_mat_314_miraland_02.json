@@ -1,0 +1,105 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_314_miraland_02",
+  "title": "【金轴蜻蜓】磐城·广场前停泊处（15个/123秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 316,
+  "teleport": {
+    "name": "广场前停泊处",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4017.792,
+    "y": 3108.51
+  },
+  "material": "金轴蜻蜓",
+  "count_materials": [
+    "蓝玉甲虫",
+    "金轴蜻蜓",
+    "珠坠甲虫",
+    "钓鱼点",
+    "蓝珀鸟羽",
+    "机雀羽"
+  ],
+  "capacity": 56,
+  "points": [
+    {
+      "x": 4017.79,
+      "y": 3108.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4014.55,
+      "y": 3117.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 4022.14,
+      "y": 3146.65,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 4034.05,
+      "y": 3107.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 4043.3,
+      "y": 3074.04,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 4031.04,
+      "y": 3037.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 3985.03,
+      "y": 3064.67,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 3977.02,
+      "y": 3126.42,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    }
+  ]
+}

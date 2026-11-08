@@ -1,0 +1,98 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_067_miraland_01",
+  "title": "【发卡蚱蜢】石树田无人区·乘风磨坊顶端（16个/122秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 314,
+  "teleport": {
+    "name": "乘风磨坊顶端",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 7692.271,
+    "y": 9936.448
+  },
+  "material": "发卡蚱蜢",
+  "count_materials": [
+    "珠链蝶",
+    "发卡蚱蜢",
+    "瓜子珠",
+    "蓝珀鸟羽",
+    "围巾蚯蚓"
+  ],
+  "capacity": 51,
+  "points": [
+    {
+      "x": 7692.27,
+      "y": 9936.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7680.79,
+      "y": 9922.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7677.79,
+      "y": 9922.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 46.0
+      }
+    },
+    {
+      "x": 7675.11,
+      "y": 9905.53,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 7675.11,
+      "y": 9896.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7678.11,
+      "y": 9887.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7696.96,
+      "y": 9881.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 33.7
+      }
+    },
+    {
+      "x": 7708.64,
+      "y": 9897.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.3
+      }
+    }
+  ]
+}

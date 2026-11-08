@@ -1,0 +1,75 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_202_miraland_02",
+  "title": "【草棘果】巨木之森·母菇林地洞窟（6个/30秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "母菇林地洞窟",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 5667.62,
+    "y": 8939.48
+  },
+  "material": "草棘果",
+  "count_materials": [
+    "草棘果",
+    "垂穗魔果"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 5667.62,
+      "y": 8939.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5659.83,
+      "y": 8917.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5644.83,
+      "y": 8899.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5638.83,
+      "y": 8878.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5629.83,
+      "y": 8866.9,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 5629.21,
+      "y": 8865.88,
+      "radius": 2.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

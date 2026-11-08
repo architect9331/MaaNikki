@@ -1,0 +1,94 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_230_miraland_01",
+  "title": "【绒领毛团】巨木之森·古木荫地附近遗迹（11个/137秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 347,
+  "teleport": {
+    "name": "古木荫地附近遗迹",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3704.478,
+    "y": 9230.438
+  },
+  "material": "绒领毛团",
+  "count_materials": [
+    "绒领毛团",
+    "结结蕨",
+    "小野菊",
+    "咕咕之羽",
+    "满满果"
+  ],
+  "capacity": 28,
+  "points": [
+    {
+      "x": 3704.48,
+      "y": 9230.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3726.24,
+      "y": 9187.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.3
+      }
+    },
+    {
+      "x": 3719.8,
+      "y": 9159.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.3
+      }
+    },
+    {
+      "x": 3700.14,
+      "y": 9113.97,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 20.5
+      }
+    },
+    {
+      "x": 3715.46,
+      "y": 9056.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.4
+      }
+    },
+    {
+      "x": 3732.19,
+      "y": 9088.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.3
+      }
+    },
+    {
+      "x": 3643.13,
+      "y": 9092.47,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.3
+      }
+    }
+  ]
+}

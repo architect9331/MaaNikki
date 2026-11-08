@@ -1,0 +1,52 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_210_miraland_02",
+  "title": "【草裙毛团】巨木之森·咻咻快道入口（2个/27秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "咻咻快道入口",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4654.987,
+    "y": 7946.512
+  },
+  "material": "草裙毛团",
+  "count_materials": [
+    "草裙毛团",
+    "木夹跳甲",
+    "行鹭羽"
+  ],
+  "capacity": 5,
+  "points": [
+    {
+      "x": 4654.99,
+      "y": 7946.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4647.07,
+      "y": 7958.27,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    },
+    {
+      "x": 4666.15,
+      "y": 7978.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

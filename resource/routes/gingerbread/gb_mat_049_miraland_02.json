@@ -1,0 +1,67 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_049_miraland_02",
+  "title": "【名流鸦羽】磐城·启明学庭（12个/121秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 311,
+  "teleport": {
+    "name": "启明学庭",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3886.897,
+    "y": 2816.416
+  },
+  "material": "名流鸦羽",
+  "count_materials": [
+    "名流鸦羽",
+    "满满果",
+    "珠链蝶",
+    "纽扣松果",
+    "路灯花",
+    "风舞花",
+    "小野菊",
+    "织衣蛛"
+  ],
+  "capacity": 26,
+  "points": [
+    {
+      "x": 3886.9,
+      "y": 2816.42,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3853.39,
+      "y": 2810.73,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 44.2
+      }
+    },
+    {
+      "x": 3939.36,
+      "y": 2807.83,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 22.3
+      }
+    },
+    {
+      "x": 3966.92,
+      "y": 2820.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.4
+      }
+    }
+  ]
+}

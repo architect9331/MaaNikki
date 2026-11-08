@@ -1,0 +1,106 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_201_miraland_02",
+  "title": "【结结蕨】巨木之森·巨兽堡垒断桥旁（14个/71秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 202,
+  "teleport": {
+    "name": "巨兽堡垒断桥旁",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3631.213,
+    "y": 9021.011
+  },
+  "material": "结结蕨",
+  "count_materials": [
+    "结结蕨",
+    "耳坠萤",
+    "探险家蜜蜂",
+    "绒领毛团",
+    "小野菊",
+    "满满果",
+    "盗面毛团"
+  ],
+  "capacity": 32,
+  "points": [
+    {
+      "x": 3631.21,
+      "y": 9021.01,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3650.47,
+      "y": 9088.86,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 3681.91,
+      "y": 9119.76,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3706.44,
+      "y": 9080.26,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3714.96,
+      "y": 9048.39,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 3677.33,
+      "y": 9035.51,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3667.72,
+      "y": 9081.7,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3628.26,
+      "y": 9091.14,
+      "radius": 2.2,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3573.49,
+      "y": 9100.97,
+      "radius": 2.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

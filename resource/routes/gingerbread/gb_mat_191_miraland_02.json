@@ -1,0 +1,51 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_191_miraland_02",
+  "title": "【花纹围巾蚯蚓】巨木之森·古木荫地附近遗迹（6个/95秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 253,
+  "teleport": {
+    "name": "古木荫地附近遗迹",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3704.478,
+    "y": 9230.438
+  },
+  "material": "花纹围巾蚯蚓",
+  "count_materials": [
+    "花纹围巾蚯蚓",
+    "小野菊"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 3704.48,
+      "y": 9230.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3543.68,
+      "y": 9284.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 3606.07,
+      "y": 9093.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    }
+  ]
+}

@@ -263,7 +263,8 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
   const [recordMap, setRecordMap] = useState('miraland');
   const [recordTeleport, setRecordTeleport] = useState<Checkpoint | undefined>(undefined);
   const [tolerance, setTolerance] = useState(1);
-  const [showBuiltin, setShowBuiltin] = useState(false);
+  const [showBuiltin, setShowBuiltin] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showTeleports, setShowTeleports] = useState(true);
   const [showRouteConfig, setShowRouteConfig] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<RouteSummary | null>(null);
@@ -477,6 +478,12 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
     setSaved(false);
   };
   const saveAsCopy = () => {
+    if (collection) {
+      setCollection({ ...collection, id: `playlist_${Date.now().toString(36)}`, title: `${collection.title} 副本` });
+      setReadOnly(false);
+      setSaved(false);
+      return;
+    }
     if (!route) return;
     setRoute({ ...route, id: newRouteId(), title: `${route.title} 副本` });
     setReadOnly(false);
@@ -618,7 +625,8 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
         return;
       }
       try {
-        const path = await saveUserRoute(collection);
+        const path = readOnly ? routes.builtin.find((item) => item.id === collection.id)?.path : await saveUserRoute(collection);
+        if (!path) throw new Error('找不到路线文件。');
         setSaved(true);
         await runRoute(path, mode, 0);
       } catch (error) {
@@ -655,8 +663,12 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
 
   const addToTasks = async () => {
     const activeDoc = collection ?? route;
-    if (!activeDoc || readOnly) return;
-    const path = await saveUserRoute(activeDoc);
+    if (!activeDoc) return;
+    const path = readOnly ? routes.builtin.find((item) => item.id === activeDoc.id)?.path : await saveUserRoute(activeDoc);
+    if (!path) {
+      toast.error('找不到路线文件。');
+      return;
+    }
     const state = useAppStore.getState();
     const instanceId = state.activeInstanceId;
     if (!instanceId) return;
@@ -683,6 +695,13 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
   }, [activeTrialForRoute]);
 
   const activeDoc = collection ?? route;
+  const q = searchQuery.trim().toLowerCase();
+  const filteredUser = q
+    ? routes.user.filter((r) => `${r.title ?? ''} ${r.id}`.toLowerCase().includes(q))
+    : routes.user;
+  const filteredBuiltin = q
+    ? routes.builtin.filter((r) => `${r.title ?? ''} ${r.id}`.toLowerCase().includes(q))
+    : routes.builtin;
 
   return <div className="flex min-h-0 flex-1 flex-col bg-bg-primary text-text-primary">
     <header className="flex items-center gap-2 border-b border-border bg-bg-secondary px-4 py-2">
@@ -703,8 +722,8 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
         </>}
         {activeDoc && <>
           <button onClick={() => void copyRoute()} title="复制内容，用来分享" className="rounded-lg p-2 hover:bg-bg-hover"><Copy className="h-4 w-4" /></button>
-          {readOnly ? <button onClick={saveAsCopy} className={primaryButton}><Plus className="h-3.5 w-3.5" />另存为我的路线</button>
-            : <button onClick={() => void addToTasks()} disabled={Boolean(route && errors.length)} className={secondaryButton}><ListPlus className="h-3.5 w-3.5" />加入任务</button>}
+          {readOnly && <button onClick={saveAsCopy} className={secondaryButton}><Plus className="h-3.5 w-3.5" />另存为我的路线</button>}
+          <button onClick={() => void addToTasks()} disabled={Boolean(route && errors.length)} className={secondaryButton}><ListPlus className="h-3.5 w-3.5" />加入任务</button>
           <button onClick={() => void trialRun('movement')} disabled={busy} title="只走路，不执行动作" className={secondaryButton}><Footprints className="h-3.5 w-3.5" />试走</button>
           <button onClick={() => void trialRun('full')} disabled={busy} className={primaryButton}><CirclePlay className="h-3.5 w-3.5" />试跑</button>
         </>}
@@ -712,7 +731,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
     </header>
 
     <div className="flex min-h-0 flex-1">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-bg-secondary">
+      <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-bg-secondary">
         <div className="grid grid-cols-2 gap-1.5 p-2.5">
           <button onClick={() => createRoute()} className={clsx(primaryButton, 'justify-center')}><Plus className="h-3.5 w-3.5" />新建路线</button>
           <button onClick={() => createCollection()} title="把多条路线打包按顺序运行" className={clsx(secondaryButton, 'justify-center')}><Layers className="h-3.5 w-3.5" />新建清单</button>
@@ -720,10 +739,11 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
           <button onClick={() => void pasteRoute()} title="从剪贴板直接粘贴路线 JSON" className={clsx(secondaryButton, 'justify-center')}><ClipboardPaste className="h-3.5 w-3.5" />粘贴</button>
           <button onClick={() => void exportRoute()} disabled={!activeDoc} title={activeDoc ? '把当前路线或清单保存为文件' : '先打开一条路线'} className={clsx(secondaryButton, 'col-span-2 justify-center')}><FileOutput className="h-3.5 w-3.5" />导出为文件</button>
           <input ref={fileInput} type="file" accept=".json" className="hidden" onChange={(event) => { void importFile(event.target.files?.[0]); event.target.value = ''; }} />
+          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="搜索材料 / 区域 / 路线…" className={clsx(field, 'col-span-2')} />
         </div>
         <div className="min-h-0 flex-1 overflow-auto px-2 pb-2">
-          {!routes.user.length && <p className="px-2 py-6 text-center text-xs leading-5 text-text-muted">还没有路线。<br />录制一段，或新建后在地图上点出来。</p>}
-          {routes.user.map((item) => <div key={item.id} className={clsx('group mb-1 flex items-center rounded-lg', activeDoc?.id === item.id ? 'bg-accent/10 text-accent' : 'hover:bg-bg-hover')}>
+          {!routes.user.length && !q && <p className="px-2 py-3 text-center text-xs leading-5 text-text-muted">还没有自建路线。<br />可直接选用下方内置路线或录制新路线。</p>}
+          {filteredUser.map((item) => <div key={item.id} className={clsx('group mb-1 flex items-center rounded-lg', activeDoc?.id === item.id ? 'bg-accent/10 text-accent' : 'hover:bg-bg-hover')}>
             <button onClick={() => void open(item)} className="min-w-0 flex-1 px-2.5 py-2 text-left">
               <span className="flex items-center gap-1 truncate text-xs font-medium">
                 {item.kind === 'route_collection' && <Layers className="h-3 w-3 shrink-0 text-accent-secondary" />}
@@ -737,10 +757,14 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
             <button onClick={() => setPendingDelete(item)} title="删除" className="hidden p-1.5 pr-2 text-text-muted hover:text-error group-hover:block"><Trash2 className="h-3.5 w-3.5" /></button>
           </div>)}
           <button onClick={() => setShowBuiltin(!showBuiltin)} className="mt-2 flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-text-secondary hover:bg-bg-hover">
-            内置路线（参考）<span className="tabular-nums text-text-muted">{routes.builtin.length}</span>
+            内置路线库<span className="tabular-nums text-text-muted">{filteredBuiltin.length}</span>
           </button>
-          {showBuiltin && routes.builtin.map((item) => <button key={item.id} onClick={() => void open(item)}
-            className={clsx('mb-0.5 block w-full truncate rounded-lg px-2.5 py-1.5 text-left text-xs', activeDoc?.id === item.id ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:bg-bg-hover')}>{item.title || item.id}</button>)}
+          {(showBuiltin || Boolean(q)) && filteredBuiltin.map((item) => <button key={item.id} onClick={() => void open(item)}
+            title={item.title || item.id}
+            className={clsx('mb-0.5 flex w-full items-center gap-1.5 truncate rounded-lg px-2.5 py-1.5 text-left text-xs', activeDoc?.id === item.id ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:bg-bg-hover')}>
+            {item.kind === 'route_collection' && <Layers className="h-3 w-3 shrink-0 text-accent-secondary" />}
+            <span className="truncate">{item.title || item.id}</span>
+          </button>)}
         </div>
       </aside>
 

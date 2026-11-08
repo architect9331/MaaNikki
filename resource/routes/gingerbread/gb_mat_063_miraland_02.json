@@ -1,0 +1,90 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_063_miraland_02",
+  "title": "【芭蕾豆娘】祈愿树林·巨树浅滩（15个/133秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 337,
+  "teleport": {
+    "name": "巨树浅滩",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11850.974,
+    "y": 9024.453
+  },
+  "material": "芭蕾豆娘",
+  "count_materials": [
+    "芭蕾豆娘",
+    "珠链蝶",
+    "小星扇贝",
+    "耳坠萤",
+    "发卡蚱蜢",
+    "花环毛团",
+    "小绵菊",
+    "珠花贝壳",
+    "满满果",
+    "美甲金龟",
+    "鹿冠毛团"
+  ],
+  "capacity": 45,
+  "points": [
+    {
+      "x": 11850.97,
+      "y": 9024.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11854.07,
+      "y": 9003.54,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
+      }
+    },
+    {
+      "x": 11815.67,
+      "y": 9001.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.5
+      }
+    },
+    {
+      "x": 11784.06,
+      "y": 9042.48,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
+      }
+    },
+    {
+      "x": 11785.11,
+      "y": 9089.65,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
+      }
+    },
+    {
+      "x": 11831.13,
+      "y": 9131.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.5
+      }
+    }
+  ]
+}

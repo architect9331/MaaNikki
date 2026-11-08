@@ -1,0 +1,62 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_309_miraland_02",
+  "title": "【机雀羽】磐城·城门前停泊处（13个/118秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 304,
+  "teleport": {
+    "name": "城门前停泊处",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4332.617,
+    "y": 3378.806
+  },
+  "material": "机雀羽",
+  "count_materials": [
+    "机雀羽",
+    "满满果",
+    "金轴蜻蜓"
+  ],
+  "capacity": 19,
+  "points": [
+    {
+      "x": 4332.62,
+      "y": 3378.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4366.26,
+      "y": 3385.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 46.7
+      }
+    },
+    {
+      "x": 4368.96,
+      "y": 3373.07,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    },
+    {
+      "x": 4288.71,
+      "y": 3395.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 27.5
+      }
+    }
+  ]
+}

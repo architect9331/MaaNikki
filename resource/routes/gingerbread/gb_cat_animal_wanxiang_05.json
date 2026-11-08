@@ -1,0 +1,248 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_wanxiang_05",
+  "title": "【全动物清洁】万相境·九华阙（39个/152秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 379,
+  "teleport": {
+    "name": "九华阙",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 2317.924,
+    "y": 1323.515
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "荷包草",
+    "蓝珀鸟羽",
+    "胭脂翎羽",
+    "小绵菊",
+    "满满果",
+    "胭脂芙蕖",
+    "画眉毛团"
+  ],
+  "capacity": 39,
+  "points": [
+    {
+      "x": 2317.92,
+      "y": 1323.52,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2316.56,
+      "y": 1324.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    },
+    {
+      "x": 2325.56,
+      "y": 1330.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2334.56,
+      "y": 1348.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2343.56,
+      "y": 1369.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 2349.56,
+      "y": 1381.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2370.56,
+      "y": 1387.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 2391.56,
+      "y": 1390.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 2400.56,
+      "y": 1396.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2412.78,
+      "y": 1399.24,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 32.7
+      }
+    },
+    {
+      "x": 2433.78,
+      "y": 1405.24,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2436.78,
+      "y": 1408.24,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2437.03,
+      "y": 1413.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    },
+    {
+      "x": 2437.03,
+      "y": 1409.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2446.4,
+      "y": 1397.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.1
+      }
+    },
+    {
+      "x": 2458.4,
+      "y": 1409.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2455.4,
+      "y": 1430.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2455.4,
+      "y": 1454.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2446.4,
+      "y": 1475.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2447.22,
+      "y": 1483.64,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 2427.71,
+      "y": 1455.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.2
+      }
+    },
+    {
+      "x": 2405.29,
+      "y": 1456.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2399.29,
+      "y": 1456.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2396.29,
+      "y": 1453.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2396.29,
+      "y": 1447.84,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

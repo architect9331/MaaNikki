@@ -1,0 +1,41 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_089_miraland_01",
+  "title": "【瓜子珠】石树田无人区·志愿兵团监狱（9个/26秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "志愿兵团监狱",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 8442.013,
+    "y": 8892.207
+  },
+  "material": "瓜子珠",
+  "count_materials": [
+    "瓜子珠",
+    "风絮草"
+  ],
+  "capacity": 13,
+  "points": [
+    {
+      "x": 8442.01,
+      "y": 8892.21,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8463.49,
+      "y": 8900.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.3
+      }
+    }
+  ]
+}

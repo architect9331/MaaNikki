@@ -1,0 +1,184 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_189_miraland_03",
+  "title": "【小野菊】巨木之森·陶罐村（45个/90秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 243,
+  "teleport": {
+    "name": "陶罐村",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 2945.049,
+    "y": 8792.631
+  },
+  "material": "小野菊",
+  "count_materials": [
+    "小野菊",
+    "刺绣蛾",
+    "耳坠萤"
+  ],
+  "capacity": 47,
+  "points": [
+    {
+      "x": 2945.05,
+      "y": 8792.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2957.49,
+      "y": 8795.57,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 2985.27,
+      "y": 8763.1,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 3014.9,
+      "y": 8797.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 3093.93,
+      "y": 8796.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 3105.01,
+      "y": 8760.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 3093.65,
+      "y": 8730.69,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 3076.03,
+      "y": 8742.69,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3073.03,
+      "y": 8745.69,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3070.03,
+      "y": 8748.69,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3049.03,
+      "y": 8754.69,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3031.03,
+      "y": 8752.9,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 3020.85,
+      "y": 8751.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3017.85,
+      "y": 8748.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3011.85,
+      "y": 8742.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2999.85,
+      "y": 8724.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2993.85,
+      "y": 8703.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2990.85,
+      "y": 8700.98,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    }
+  ]
+}

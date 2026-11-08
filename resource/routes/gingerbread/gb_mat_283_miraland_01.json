@@ -1,0 +1,119 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_283_miraland_01",
+  "title": "【风舞花】磐城·金庭前广场（37个/103秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 271,
+  "teleport": {
+    "name": "金庭前广场",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3810.532,
+    "y": 3094.595
+  },
+  "material": "风舞花",
+  "count_materials": [
+    "风舞花",
+    "探险家蜜蜂",
+    "珠链蝶",
+    "金轴蜻蜓",
+    "桂冠翎羽",
+    "蓝玉甲虫",
+    "钓鱼点",
+    "刺绣蛾",
+    "晶球绵蚧",
+    "珠坠甲虫"
+  ],
+  "capacity": 98,
+  "points": [
+    {
+      "x": 3810.53,
+      "y": 3094.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3776.07,
+      "y": 3079.95,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 3785.35,
+      "y": 3027.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 3896.71,
+      "y": 3033.34,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 3941.29,
+      "y": 3040.07,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 3951.53,
+      "y": 3006.09,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 3921.86,
+      "y": 3122.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 3916.12,
+      "y": 3168.02,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 3871.69,
+      "y": 3160.97,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_miraland_07",
+  "title": "【全动物清洁】巨木之森·巨矛前驿站（31个/143秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 359,
+  "teleport": {
+    "name": "巨矛前驿站",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4387.351,
+    "y": 7929.628
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "行鹭羽",
+    "小野菊",
+    "满满果",
+    "壁灯红椒",
+    "草裙毛团",
+    "板刷狸绒",
+    "扣扣毛球",
+    "小星扇贝"
+  ],
+  "capacity": 31,
+  "points": [
+    {
+      "x": 4387.35,
+      "y": 7929.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4438.39,
+      "y": 7922.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 46.9
+      }
+    },
+    {
+      "x": 4466.91,
+      "y": 7920.02,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.4
+      }
+    },
+    {
+      "x": 4472.91,
+      "y": 7926.02,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4481.91,
+      "y": 7947.02,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4488.24,
+      "y": 7954.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 4485.24,
+      "y": 7958.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4485.24,
+      "y": 7961.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4488.24,
+      "y": 7973.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4500.24,
+      "y": 7970.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4512.24,
+      "y": 7952.92,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4512.47,
+      "y": 7949.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    }
+  ]
+}

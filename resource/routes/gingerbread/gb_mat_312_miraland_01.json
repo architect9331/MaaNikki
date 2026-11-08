@@ -1,0 +1,65 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_312_miraland_01",
+  "title": "【蓝玉甲虫】磐城·晨曦集市（16个/115秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 297,
+  "teleport": {
+    "name": "晨曦集市",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4026.351,
+    "y": 3950.481
+  },
+  "material": "蓝玉甲虫",
+  "count_materials": [
+    "蓝玉甲虫",
+    "珠链蝶",
+    "珠坠甲虫",
+    "沙沙毛团",
+    "探险家蜜蜂",
+    "风舞花"
+  ],
+  "capacity": 39,
+  "points": [
+    {
+      "x": 4026.35,
+      "y": 3950.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4037.54,
+      "y": 3936.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 47.5
+      }
+    },
+    {
+      "x": 4060.98,
+      "y": 3964.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 4088.79,
+      "y": 3951.15,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    }
+  ]
+}

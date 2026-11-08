@@ -1,0 +1,110 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_096_miraland_03",
+  "title": "【小绵菊】微风绿野·绿野货运码头（29个/90秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 242,
+  "teleport": {
+    "name": "绿野货运码头",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10430.453,
+    "y": 10861.881
+  },
+  "material": "小绵菊",
+  "count_materials": [
+    "小绵菊",
+    "布布果",
+    "美食家蜜蜂"
+  ],
+  "capacity": 37,
+  "points": [
+    {
+      "x": 10430.45,
+      "y": 10861.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10447.97,
+      "y": 10897.14,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 10474.39,
+      "y": 10955.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 10476.23,
+      "y": 11003.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.7
+      }
+    },
+    {
+      "x": 10489.75,
+      "y": 10991.68,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10449.56,
+      "y": 11028.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 10384.78,
+      "y": 10983.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10327.87,
+      "y": 10999.23,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 10292.03,
+      "y": 10991.6,
+      "radius": 2.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

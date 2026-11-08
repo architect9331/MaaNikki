@@ -1,0 +1,115 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_095_miraland_01",
+  "title": "【壁灯红椒】微风绿野·筑心王国边境哨所（35个/68秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 194,
+  "teleport": {
+    "name": "筑心王国边境哨所",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10782.912,
+    "y": 11960.809
+  },
+  "material": "壁灯红椒",
+  "count_materials": [
+    "壁灯红椒",
+    "纽扣松果",
+    "满满果",
+    "小绵菊"
+  ],
+  "capacity": 46,
+  "points": [
+    {
+      "x": 10782.91,
+      "y": 11960.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10783.1,
+      "y": 11898.95,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 10786.1,
+      "y": 11876.36,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10783.19,
+      "y": 11858.36,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 10804.19,
+      "y": 11857.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10828.19,
+      "y": 11857.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10838.55,
+      "y": 11857.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 10825.45,
+      "y": 11875.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10825.45,
+      "y": 11896.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 10828.45,
+      "y": 11900.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    }
+  ]
+}

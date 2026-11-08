@@ -1,0 +1,52 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_075_miraland_01",
+  "title": "【美甲金龟】祈愿树林·工坊水车（4个/47秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 149,
+  "teleport": {
+    "name": "工坊水车",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11592.661,
+    "y": 8793.661
+  },
+  "material": "美甲金龟",
+  "count_materials": [
+    "美甲金龟",
+    "美食家蜜蜂",
+    "纽扣松果"
+  ],
+  "capacity": 9,
+  "points": [
+    {
+      "x": 11592.66,
+      "y": 8793.66,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11538.85,
+      "y": 8847.86,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.5
+      }
+    },
+    {
+      "x": 11513.03,
+      "y": 8851.65,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

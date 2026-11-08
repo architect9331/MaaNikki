@@ -1,0 +1,48 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_088_miraland_02",
+  "title": "【香薰睡莲】花愿镇·织裙街（2个/22秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "织裙街",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10728.751,
+    "y": 10052.912
+  },
+  "material": "香薰睡莲",
+  "count_materials": [
+    "瓜子珠",
+    "香薰睡莲",
+    "小星扇贝",
+    "纽扣松果",
+    "小绵菊",
+    "泳镜蝽",
+    "衬衫毛团"
+  ],
+  "capacity": 11,
+  "points": [
+    {
+      "x": 10728.75,
+      "y": 10052.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10693.29,
+      "y": 10039.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    }
+  ]
+}

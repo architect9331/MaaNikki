@@ -1,0 +1,117 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_179_danqing_02",
+  "title": "【玉簪蚱蜢】丹青屿·奉龙塔（10个/106秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 277,
+  "teleport": {
+    "name": "奉龙塔",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1796.922,
+    "y": 998.178
+  },
+  "material": "玉簪蚱蜢",
+  "count_materials": [
+    "珠链蝶",
+    "玉簪蚱蜢",
+    "小绵菊",
+    "耳坠萤",
+    "荷包草",
+    "刺绣蛾",
+    "蓝珀鸟羽",
+    "满满果"
+  ],
+  "capacity": 40,
+  "points": [
+    {
+      "x": 1796.92,
+      "y": 998.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1796.72,
+      "y": 1007.03,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.4
+      }
+    },
+    {
+      "x": 1806.29,
+      "y": 1050.8,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    },
+    {
+      "x": 1778.52,
+      "y": 1035.69,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 1762.89,
+      "y": 1059.34,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 1763.88,
+      "y": 1095.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.4
+      }
+    },
+    {
+      "x": 1797.18,
+      "y": 1090.1,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.4
+      }
+    },
+    {
+      "x": 1836.61,
+      "y": 1135.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.5
+      }
+    },
+    {
+      "x": 1857.43,
+      "y": 1118.25,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

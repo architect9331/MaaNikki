@@ -1,0 +1,83 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_314_miraland_01",
+  "title": "【金轴蜻蜓】磐城·王迹长廊（15个/113秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 294,
+  "teleport": {
+    "name": "王迹长廊",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4198.233,
+    "y": 3737.442
+  },
+  "material": "金轴蜻蜓",
+  "count_materials": [
+    "金轴蜻蜓",
+    "珠链蝶",
+    "探险家蜜蜂",
+    "机雀羽"
+  ],
+  "capacity": 29,
+  "points": [
+    {
+      "x": 4198.23,
+      "y": 3737.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4196.19,
+      "y": 3742.74,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 4152.7,
+      "y": 3748.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 4141.31,
+      "y": 3717.38,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 4112.0,
+      "y": 3728.23,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 4061.74,
+      "y": 3723.28,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_278_miraland_02",
+  "title": "【珍蛛】埋骨地·白汐滩归望湾（5个/63秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 183,
+  "teleport": {
+    "name": "白汐滩归望湾",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7691.911,
+    "y": 5296.073
+  },
+  "material": "珍蛛",
+  "count_materials": [
+    "珍蛛",
+    "金灵毛球",
+    "汐荧蟹",
+    "珠花贝壳",
+    "羽巾绒"
+  ],
+  "capacity": 10,
+  "points": [
+    {
+      "x": 7691.91,
+      "y": 5296.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7637.75,
+      "y": 5413.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
+      }
+    },
+    {
+      "x": 7663.13,
+      "y": 5388.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    }
+  ]
+}

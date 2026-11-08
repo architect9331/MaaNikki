@@ -1,0 +1,235 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_serenity_serenity_03",
+  "title": "【全材料·无忧岛】无忧岛·守望之地（34个/89秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 242,
+  "teleport": {
+    "name": "守望之地",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 795.589,
+    "y": 511.792
+  },
+  "material": "全材料·无忧岛",
+  "count_materials": [
+    "风絮草",
+    "小绵菊",
+    "蓝珀鸟羽",
+    "花伞藤萝",
+    "纽扣松果",
+    "丝巾蛾"
+  ],
+  "capacity": 34,
+  "points": [
+    {
+      "x": 795.59,
+      "y": 511.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 794.27,
+      "y": 496.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 791.27,
+      "y": 487.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 779.27,
+      "y": 487.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 776.27,
+      "y": 484.1,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 774.64,
+      "y": 490.67,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 770.32,
+      "y": 467.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 767.32,
+      "y": 464.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 761.32,
+      "y": 461.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 761.32,
+      "y": 485.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 761.32,
+      "y": 497.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 764.32,
+      "y": 518.56,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 758.32,
+      "y": 536.56,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 758.32,
+      "y": 554.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 761.32,
+      "y": 557.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 764.32,
+      "y": 560.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 767.32,
+      "y": 563.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 770.32,
+      "y": 563.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 773.32,
+      "y": 560.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 788.32,
+      "y": 545.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 796.15,
+      "y": 536.98,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 22.5
+      }
+    },
+    {
+      "x": 808.15,
+      "y": 546.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 814.15,
+      "y": 546.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 817.15,
+      "y": 540.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 816.67,
+      "y": 525.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.4
+      }
+    }
+  ]
+}

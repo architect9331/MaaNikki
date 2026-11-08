@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "route_collection",
+  "id": "gb_col_03_izhan",
+  "title": "【姜饼人合集】伊赞之土·巨木之森与埋骨地大丰收（9条）",
+  "continue_on_failure": true,
+  "routes": [
+    {
+      "route": "gb_all_gianttree_miraland_01",
+      "title": "【全材料·巨木之森】巨木之森·古木荫地附近遗迹（85个/158秒）"
+    },
+    {
+      "route": "gb_all_gianttree_miraland_02",
+      "title": "【全材料·巨木之森】巨木之森·陶罐村（56个/130秒）"
+    },
+    {
+      "route": "gb_all_gianttree_miraland_03",
+      "title": "【全材料·巨木之森】巨木之森·巨藤林地北侧探险家营地（55个/131秒）"
+    },
+    {
+      "route": "gb_all_gianttree_miraland_04",
+      "title": "【全材料·巨木之森】巨木之森·安眠之林（56个/135秒）"
+    },
+    {
+      "route": "gb_all_gianttree_miraland_05",
+      "title": "【全材料·巨木之森】巨木之森·壳壳岛洞察学派据点前（58个/148秒）"
+    },
+    {
+      "route": "gb_all_boneyard_miraland_01",
+      "title": "【全材料·埋骨地】埋骨地·修习所水岸（79个/148秒）"
+    },
+    {
+      "route": "gb_all_boneyard_miraland_02",
+      "title": "【全材料·埋骨地】埋骨地·荧湖西岸（73个/157秒）"
+    },
+    {
+      "route": "gb_all_boneyard_miraland_03",
+      "title": "【全材料·埋骨地】埋骨地·蓝池东侧修习所渡口（69个/155秒）"
+    },
+    {
+      "route": "gb_all_boneyard_miraland_04",
+      "title": "【全材料·埋骨地】埋骨地·白汐滩归望湾（21个/47秒）"
+    }
+  ]
+}

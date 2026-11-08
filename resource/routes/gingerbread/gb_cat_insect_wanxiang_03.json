@@ -1,0 +1,126 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_wanxiang_03",
+  "title": "【全昆虫速刷】万相境·九华阙（33个/134秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 340,
+  "teleport": {
+    "name": "九华阙",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 2317.924,
+    "y": 1323.515
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "耳坠萤",
+    "荷包草",
+    "小绵菊",
+    "胭脂芙蕖",
+    "玉簪蚱蜢",
+    "刺绣蛾",
+    "满满果",
+    "泳镜蝽",
+    "珠链蝶"
+  ],
+  "capacity": 33,
+  "points": [
+    {
+      "x": 2317.92,
+      "y": 1323.52,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2326.92,
+      "y": 1332.52,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2338.92,
+      "y": 1350.52,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2342.11,
+      "y": 1367.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 58.0
+      }
+    },
+    {
+      "x": 2348.11,
+      "y": 1379.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2360.11,
+      "y": 1391.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 2372.63,
+      "y": 1398.58,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 33.1
+      }
+    },
+    {
+      "x": 2378.63,
+      "y": 1398.58,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2381.63,
+      "y": 1401.58,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2390.63,
+      "y": 1422.58,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2391.05,
+      "y": 1424.49,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.5
+      }
+    }
+  ]
+}

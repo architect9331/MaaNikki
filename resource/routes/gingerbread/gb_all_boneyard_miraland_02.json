@@ -1,0 +1,129 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_boneyard_miraland_02",
+  "title": "【全材料·埋骨地】埋骨地·荧湖西岸（73个/157秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 390,
+  "teleport": {
+    "name": "荧湖西岸",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 5720.788,
+    "y": 5415.967
+  },
+  "material": "全材料·埋骨地",
+  "count_materials": [
+    "晴雨伞",
+    "耳坠萤",
+    "风舞花",
+    "茸芽鹿绒"
+  ],
+  "capacity": 73,
+  "points": [
+    {
+      "x": 5720.79,
+      "y": 5415.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5724.05,
+      "y": 5378.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.2
+      }
+    },
+    {
+      "x": 5745.05,
+      "y": 5378.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 5766.05,
+      "y": 5381.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 5790.05,
+      "y": 5381.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 5808.05,
+      "y": 5366.78,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5826.05,
+      "y": 5351.78,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5847.05,
+      "y": 5348.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 5859.48,
+      "y": 5345.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.9
+      }
+    },
+    {
+      "x": 5877.14,
+      "y": 5330.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 34.9
+      }
+    },
+    {
+      "x": 5874.43,
+      "y": 5290.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 34.9
+      }
+    }
+  ]
+}

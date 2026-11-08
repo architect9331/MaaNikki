@@ -1,0 +1,109 @@
+{
+  "schema_version": 3,
+  "id": "gb_fish_10_miraland_02",
+  "title": "【眼影鱼】祈愿树林·金蔷薇花谷（4个/74秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 207,
+  "teleport": {
+    "name": "金蔷薇花谷",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 12311.612,
+    "y": 9450.761
+  },
+  "material": "眼影鱼",
+  "count_materials": [
+    "眼影鱼",
+    "小星扇贝",
+    "珠花贝壳",
+    "钓鱼点"
+  ],
+  "capacity": 11,
+  "points": [
+    {
+      "x": 12311.61,
+      "y": 9450.76,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12291.49,
+      "y": 9440.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12270.49,
+      "y": 9434.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12249.49,
+      "y": 9428.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12231.49,
+      "y": 9419.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12213.49,
+      "y": 9410.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12192.49,
+      "y": 9401.08,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    },
+    {
+      "x": 12176.2,
+      "y": 9391.73,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12173.2,
+      "y": 9388.73,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12170.2,
+      "y": 9379.73,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.0
+      }
+    }
+  ]
+}

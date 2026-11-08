@@ -1,0 +1,116 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_062_miraland_02",
+  "title": "【织衣蛛】磐城·巧工园废墟（10个/86秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 235,
+  "teleport": {
+    "name": "巧工园废墟",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3937.839,
+    "y": 4270.455
+  },
+  "material": "织衣蛛",
+  "count_materials": [
+    "耳坠萤",
+    "织衣蛛",
+    "珠链蝶",
+    "满满果",
+    "木夹跳甲",
+    "晶球绵蚧",
+    "纽扣松果"
+  ],
+  "capacity": 45,
+  "points": [
+    {
+      "x": 3937.84,
+      "y": 4270.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3951.88,
+      "y": 4276.57,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.4
+      }
+    },
+    {
+      "x": 3970.09,
+      "y": 4271.43,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 3985.11,
+      "y": 4232.39,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 3957.24,
+      "y": 4219.09,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 3949.57,
+      "y": 4217.28,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 3941.06,
+      "y": 4193.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.5
+      }
+    },
+    {
+      "x": 3924.01,
+      "y": 4242.34,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 3923.71,
+      "y": 4253.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

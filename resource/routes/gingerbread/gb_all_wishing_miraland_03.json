@@ -1,0 +1,121 @@
+{
+  "schema_version": 3,
+  "id": "gb_all_wishing_miraland_03",
+  "title": "【全材料·祈愿树林】祈愿树林·心愿庆典管理处（24个/54秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 163,
+  "teleport": {
+    "name": "心愿庆典管理处",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 12311.192,
+    "y": 9200.472
+  },
+  "material": "全材料·祈愿树林",
+  "count_materials": [
+    "壁灯红椒",
+    "布布果",
+    "滋滋花粉",
+    "小绵菊",
+    "发卡蚱蜢",
+    "路灯花"
+  ],
+  "capacity": 24,
+  "points": [
+    {
+      "x": 12311.19,
+      "y": 9200.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12306.65,
+      "y": 9221.98,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 12296.25,
+      "y": 9218.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12278.25,
+      "y": 9227.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12257.25,
+      "y": 9233.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12233.25,
+      "y": 9233.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12215.25,
+      "y": 9232.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.1
+      }
+    },
+    {
+      "x": 12199.17,
+      "y": 9217.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12196.17,
+      "y": 9214.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12193.17,
+      "y": 9214.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12190.17,
+      "y": 9211.4,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_063_miraland_01",
+  "title": "【芭蕾豆娘】微风绿野·捕虫小屋（8个/70秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 200,
+  "teleport": {
+    "name": "捕虫小屋",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10143.896,
+    "y": 10474.933
+  },
+  "material": "芭蕾豆娘",
+  "count_materials": [
+    "芭蕾豆娘",
+    "珠链蝶",
+    "发卡蚱蜢"
+  ],
+  "capacity": 15,
+  "points": [
+    {
+      "x": 10143.9,
+      "y": 10474.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10208.07,
+      "y": 10429.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 27.7
+      }
+    },
+    {
+      "x": 10226.15,
+      "y": 10454.2,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    }
+  ]
+}

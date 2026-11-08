@@ -1,0 +1,118 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_firework_08",
+  "title": "【全昆虫速刷】花焰群岛·聆风高地山麓（30个/147秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 369,
+  "teleport": {
+    "name": "聆风高地山麓",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 748.755,
+    "y": 548.546
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "耳坠萤",
+    "小绵菊",
+    "草绒球",
+    "纽扣松果",
+    "满满果",
+    "发卡蚱蜢",
+    "织衣蛛",
+    "噼啪花粉",
+    "风铃子"
+  ],
+  "capacity": 30,
+  "points": [
+    {
+      "x": 748.75,
+      "y": 548.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 801.83,
+      "y": 563.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 38.2
+      }
+    },
+    {
+      "x": 779.68,
+      "y": 563.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 761.68,
+      "y": 563.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 749.68,
+      "y": 578.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 749.68,
+      "y": 599.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 734.68,
+      "y": 617.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 731.68,
+      "y": 638.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 728.68,
+      "y": 647.26,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 47.5
+      }
+    },
+    {
+      "x": 788.92,
+      "y": 689.86,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.5
+      }
+    }
+  ]
+}

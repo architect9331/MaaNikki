@@ -1,0 +1,163 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_252_wanxiang_01",
+  "title": "【胭脂翎羽】万相境·彩靥城集市（10个/108秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 282,
+  "teleport": {
+    "name": "彩靥城集市",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 1447.756,
+    "y": 983.204
+  },
+  "material": "胭脂翎羽",
+  "count_materials": [
+    "胭脂翎羽",
+    "荷包草",
+    "小绵菊",
+    "画眉毛团"
+  ],
+  "capacity": 18,
+  "points": [
+    {
+      "x": 1447.76,
+      "y": 983.2,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1437.9,
+      "y": 998.2,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1434.9,
+      "y": 997.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    },
+    {
+      "x": 1440.9,
+      "y": 1015.7,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1445.22,
+      "y": 1018.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 1422.94,
+      "y": 1024.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1419.94,
+      "y": 1024.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1398.94,
+      "y": 1027.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1386.94,
+      "y": 1030.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.7
+      }
+    },
+    {
+      "x": 1389.94,
+      "y": 1051.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1389.94,
+      "y": 1075.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 1389.94,
+      "y": 1099.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1395.94,
+      "y": 1105.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1398.94,
+      "y": 1126.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1398.94,
+      "y": 1132.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1406.49,
+      "y": 1142.74,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 20.5
+      }
+    }
+  ]
+}

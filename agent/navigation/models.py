@@ -103,8 +103,11 @@ def parse_route(value: dict, name: str | None = None) -> Route:
 
 
 def load_route(resource: Path, name: str) -> Route | None:
-    path = resource / "routes" / "daily" / f"{name}.json"
-    try:
-        return parse_route(json.loads(path.read_text(encoding="utf-8")), name)
-    except (OSError, KeyError, TypeError, ValueError):
-        return None
+    for folder in ("daily", "gingerbread"):
+        path = resource / "routes" / folder / f"{name}.json"
+        if path.is_file():
+            try:
+                return parse_route(json.loads(path.read_text(encoding="utf-8")), name)
+            except (OSError, KeyError, TypeError, ValueError):
+                return None
+    return None

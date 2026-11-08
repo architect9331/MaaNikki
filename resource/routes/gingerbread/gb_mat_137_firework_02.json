@@ -1,0 +1,129 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_137_firework_02",
+  "title": "【噼啪花粉】花焰群岛·月角浅滩（11个/70秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 199,
+  "teleport": {
+    "name": "月角浅滩",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 1142.641,
+    "y": 358.56
+  },
+  "material": "噼啪花粉",
+  "count_materials": [
+    "噼啪花粉",
+    "小绵菊",
+    "耳坠萤",
+    "瓜子珠",
+    "发卡蚱蜢",
+    "草绒球",
+    "小星扇贝",
+    "芭蕾豆娘",
+    "路灯花",
+    "珠花贝壳"
+  ],
+  "capacity": 29,
+  "points": [
+    {
+      "x": 1142.64,
+      "y": 358.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1164.28,
+      "y": 364.95,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1178.71,
+      "y": 351.71,
+      "radius": 2.2,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1098.97,
+      "y": 348.25,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1118.29,
+      "y": 326.85,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1131.79,
+      "y": 294.97,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 1081.91,
+      "y": 247.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "x": 1112.2,
+      "y": 260.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 1127.2,
+      "y": 244.96,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1148.2,
+      "y": 238.96,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1157.89,
+      "y": 238.96,
+      "radius": 2.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.5
+      }
+    }
+  ]
+}

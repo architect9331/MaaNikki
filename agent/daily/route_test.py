@@ -107,6 +107,8 @@ def read_test_document(resource: Path, settings: dict):
         if not isinstance(name, str) or not re.fullmatch(r"[a-zA-Z0-9_-]+", name):
             raise NavigationError("请先选择路线 JSON 文件。")
         path = resource / "routes" / "daily" / (name+".json")
+        if not path.is_file():
+            path = resource / "routes" / "gingerbread" / (name+".json")
     if path.suffix.lower() != ".json" or not path.is_file() or path.stat().st_size > 1024*1024:
         raise NavigationError("路线文件不存在、不是 JSON 或超过 1 MB。")
     return json.loads(path.read_text(encoding="utf-8-sig"))

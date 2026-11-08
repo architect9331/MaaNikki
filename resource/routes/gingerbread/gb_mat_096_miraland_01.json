@@ -1,0 +1,151 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_096_miraland_01",
+  "title": "【小绵菊】花愿镇·镇长宅邸前（34个/84秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 230,
+  "teleport": {
+    "name": "镇长宅邸前",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10544.632,
+    "y": 9974.37
+  },
+  "material": "小绵菊",
+  "count_materials": [
+    "小绵菊",
+    "美食家蜜蜂",
+    "路灯花",
+    "珠链蝶",
+    "纽扣松果",
+    "滋滋花粉",
+    "蓝珀鸟羽",
+    "满满果",
+    "汪汪毛线",
+    "衬衫毛团"
+  ],
+  "capacity": 66,
+  "points": [
+    {
+      "x": 10544.63,
+      "y": 9974.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10529.71,
+      "y": 9971.27,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10534.28,
+      "y": 9956.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10534.65,
+      "y": 9932.58,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10531.65,
+      "y": 9911.58,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.2
+      }
+    },
+    {
+      "x": 10525.65,
+      "y": 9890.58,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10510.65,
+      "y": 9872.58,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10507.65,
+      "y": 9869.58,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 10479.44,
+      "y": 9883.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.9
+      }
+    },
+    {
+      "x": 10457.62,
+      "y": 9868.14,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10493.14,
+      "y": 9835.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10522.36,
+      "y": 9850.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.1
+      }
+    },
+    {
+      "x": 10527.97,
+      "y": 9900.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}

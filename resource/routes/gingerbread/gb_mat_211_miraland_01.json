@@ -1,0 +1,59 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_211_miraland_01",
+  "title": "【板刷狸绒】巨木之森·叶子河上游（3个/39秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 131,
+  "teleport": {
+    "name": "叶子河上游",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3559.549,
+    "y": 7913.234
+  },
+  "material": "板刷狸绒",
+  "count_materials": [
+    "小野菊",
+    "板刷狸绒"
+  ],
+  "capacity": 6,
+  "points": [
+    {
+      "x": 3559.55,
+      "y": 7913.23,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3580.55,
+      "y": 7922.23,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3588.82,
+      "y": 7925.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.4
+      }
+    },
+    {
+      "x": 3599.05,
+      "y": 7949.26,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

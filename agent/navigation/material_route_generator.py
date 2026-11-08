@@ -311,10 +311,35 @@ class PearPalMaterialCatalog:
             self.spires_by_map[map_id] = spires
 
     def resolve_catalog_ids(self, queries: Iterable[str]) -> set[str]:
+        cids, _ = self.resolve_target_filter(queries)
+        return cids
+
+    @staticmethod
+    def parse_fish_species(condition: str) -> tuple[str, ...]:
+        if not condition:
+            return ()
+        txt = condition.replace("可能在该钓鱼点出现的鱼类：", "").replace("可能在该钓鱼点出现的鱼类:", "")
+        return tuple(
+            p.strip()
+            for p in txt.replace("、", "/").replace("，", "/").replace(",", "/").split("/")
+            if p.strip()
+        )
+
+    def resolve_target_filter(self, queries: Iterable[str]) -> tuple[set[str], set[str]]:
         matched: set[str] = set()
+        fish_species: set[str] = set()
+        known_fish: set[str] = set()
+        for pts in self.points_by_map.values():
+            for p in pts:
+                if p.kind == "fish" and p.condition:
+                    known_fish.update(self.parse_fish_species(p.condition))
         for q in queries:
             q = q.strip()
             if not q:
+                continue
+            if q in known_fish:
+                matched.add("99")
+                fish_species.add(q)
                 continue
             if q in self.catalogs:
                 matched.add(q)
@@ -330,11 +355,15 @@ class PearPalMaterialCatalog:
             for name, cids in self.name_to_ids.items():
                 if q in name:
                     matched.update(cids)
-        return matched
+            for fsp in known_fish:
+                if q in fsp:
+                    matched.add("99")
+                    fish_species.add(fsp)
+        return matched, fish_species
 
 
 MAP_SEA_Z = {
-    "miraland": -1.0,
+    "miraland": -246.5,
     "serenity": -17.2,
     "danqing": -248.0,
     "wanxiang": -180.0,
@@ -495,6 +524,7 @@ class TerrainWalkabilityGrid:
         start: tuple[float, float, float],
         goal: tuple[float, float, float],
         step_px: float = 3.0,
+        relaxed: bool = False,
     ) -> list[tuple[float, float, float, bool]] | None:
         """Find a smooth walkable path from start to goal using 3D terrain A*."""
         sx, sy, sz = start
@@ -503,8 +533,10 @@ class TerrainWalkabilityGrid:
         if dist <= step_px * 1.5:
             jmp = (gz - sz) >= 0.85
             return [(round(gx, 2), round(gy, 2), round(gz, 2), jmp)]
-        if dist > 260.0:
+        if dist > 315.0:
             return None
+        if dist > 170.0 and step_px < 4.0:
+            step_px = 4.0
 
         # Check if straight line is completely clear and gentle
         n_samples = max(2, int(math.ceil(dist / 2.0)))
@@ -553,9 +585,11 @@ class TerrainWalkabilityGrid:
             (-1, -1, 1.414), (1, -1, 1.414), (-1, 1, 1.414), (1, 1, 1.414),
         ]
 
+        max_slp = 56.0 if relaxed else 46.0
+        max_step_dz = 5.0 if relaxed else 3.2
         visited = 0
         reached = False
-        while open_heap and visited < 3500:
+        while open_heap and visited < 5000:
             _, cost, c, r = heapq.heappop(open_heap)
             if (c, r) == (gc, gr):
                 reached = True
@@ -570,11 +604,11 @@ class TerrainWalkabilityGrid:
                 if not (0 <= nc < cols and 0 <= nr < rows):
                     continue
                 nx, ny = to_xy(nc, nr)
-                if (nc, nr) != (gc, gr) and not self.is_walkable(nx, ny, max_slope=46.0):
+                if (nc, nr) != (gc, gr) and not self.is_walkable(nx, ny, max_slope=max_slp):
                     continue
                 nz = self.elevation(nx, ny, default=cz)
                 dz = nz - cz if not (math.isnan(nz) or math.isnan(cz)) else 0.0
-                if abs(dz) > 3.2:
+                if abs(dz) > max_step_dz:
                     continue
                 slp = self.slope(nx, ny)
                 step_cost = d_mult * step_px * (1.0 + max(0.0, slp - 15.0) * 0.04 + max(0.0, dz) * 0.35)
@@ -816,9 +850,11 @@ class MaterialRouteGenerator:
         route_id_prefix: str = "gingerbread",
         route_index: int = 1,
         primary_material_name: str = "",
+        max_spire_dist_px: float = 210.0,
+        relaxed_astar: bool = False,
     ) -> GeneratedRoutePlan | None:
         anchors, local_points = self._build_anchors_around_spire(
-            spire, map_points, target_cids, kind_weights
+            spire, map_points, target_cids, kind_weights, max_spire_dist_px=max_spire_dist_px
         )
         if not anchors:
             return None
@@ -830,6 +866,8 @@ class MaterialRouteGenerator:
         path_segments: list[list[tuple[float, float, float, bool]]] = []
         total_walk_m = 0.0
         total_time_s = self.spec.teleport_overhead_s
+        max_step_px = max(145.0, max_spire_dist_px + 10.0)
+        max_step_dz = 48.0 if relaxed_astar else 25.0
 
         while remaining and len(selected_anchors) < max_anchors:
             best_idx = -1
@@ -840,7 +878,7 @@ class MaterialRouteGenerator:
 
             for idx, anc in enumerate(remaining):
                 dist_px = math.hypot(anc.x - cur_pos[0], anc.y - cur_pos[1])
-                if dist_px > 140.0 or abs(anc.z - cur_pos[2]) > 22.0:
+                if dist_px > max_step_px or abs(anc.z - cur_pos[2]) > max_step_dz:
                     continue
                 est_walk_m = dist_px * M_PER_MAP_PX
                 est_dt = est_walk_m / self.spec.run_speed_mps + anc.wait_seconds + 0.5
@@ -849,7 +887,9 @@ class MaterialRouteGenerator:
                 ratio = anc.score / max(2.5, est_dt)
                 if ratio <= best_ratio:
                     continue
-                seg = tgrid.find_path_astar(cur_pos, (anc.x, anc.y, anc.z))
+                seg = tgrid.find_path_astar(cur_pos, (anc.x, anc.y, anc.z), relaxed=relaxed_astar)
+                if not seg and not selected_anchors and target_cids is not None:
+                    seg = tgrid.find_path_astar(cur_pos, (anc.x, anc.y, anc.z), relaxed=True)
                 if not seg:
                     continue
                 # Compute true segment walk length
@@ -1074,7 +1114,7 @@ class MaterialRouteGenerator:
         route_id_prefix: str = "gb_target",
     ) -> list[GeneratedRoutePlan]:
         queries = [m.strip() for m in materials if m.strip()]
-        target_cids = self.catalog.resolve_catalog_ids(queries)
+        target_cids, fish_species = self.catalog.resolve_target_filter(queries)
         if not target_cids:
             raise ValueError(f"未在美鸭梨目录中找到匹配的材料：{', '.join(queries)}")
 
@@ -1082,32 +1122,77 @@ class MaterialRouteGenerator:
         active_maps = list(map_ids) if map_ids else list(WORLDS.values())
         kind_weights = {"plant": 1.0, "insect": 1.5, "animal": 1.8, "fish": 2.0}
 
+        def prepare_map_points(raw_pts: list[MaterialPoint]) -> list[MaterialPoint]:
+            if not fish_species:
+                return raw_pts
+            out = []
+            for p in raw_pts:
+                if p.catalog_id == "99":
+                    sp_tuple = self.catalog.parse_fish_species(p.condition)
+                    if any(sp in sp_tuple for sp in fish_species):
+                        out.append(
+                            MaterialPoint(
+                                id=p.id,
+                                catalog_id="99",
+                                name=primary_name,
+                                kind=p.kind,
+                                map_id=p.map_id,
+                                x=p.x,
+                                y=p.y,
+                                z=p.z,
+                                tag=p.tag,
+                                condition=p.condition,
+                            )
+                        )
+                    else:
+                        out.append(
+                            MaterialPoint(
+                                id=p.id,
+                                catalog_id="99_other",
+                                name=p.name,
+                                kind=p.kind,
+                                map_id=p.map_id,
+                                x=p.x,
+                                y=p.y,
+                                z=p.z,
+                                tag=p.tag,
+                                condition=p.condition,
+                            )
+                        )
+                else:
+                    out.append(p)
+            return out
+
         candidates: list[GeneratedRoutePlan] = []
-        for map_id in active_maps:
-            pts = self.catalog.points_by_map.get(map_id, [])
-            if not any(p.catalog_id in target_cids for p in pts):
-                continue
-            for spire in self.catalog.spires_by_map.get(map_id, []):
-                # Quick spatial precheck before running A*
-                near_target = sum(
-                    1 for p in pts
-                    if p.catalog_id in target_cids and math.hypot(p.x - spire.x, p.y - spire.y) <= 210.0
-                )
-                if near_target == 0:
+        for search_r, relax in ((210.0, False), (295.0, True)):
+            for map_id in active_maps:
+                pts = prepare_map_points(self.catalog.points_by_map.get(map_id, []))
+                if not any(p.catalog_id in target_cids for p in pts):
                     continue
-                plan = self._plan_spire_route(
-                    spire=spire,
-                    map_points=pts,
-                    target_cids=target_cids,
-                    kind_weights=kind_weights,
-                    max_anchors=max_anchors,
-                    max_route_seconds=max_route_seconds,
-                    route_id_prefix=route_id_prefix,
-                    route_index=1,
-                    primary_material_name=primary_name,
-                )
-                if plan and plan.target_count > 0:
-                    candidates.append(plan)
+                for spire in self.catalog.spires_by_map.get(map_id, []):
+                    near_target = sum(
+                        1 for p in pts
+                        if p.catalog_id in target_cids and math.hypot(p.x - spire.x, p.y - spire.y) <= search_r
+                    )
+                    if near_target == 0:
+                        continue
+                    plan = self._plan_spire_route(
+                        spire=spire,
+                        map_points=pts,
+                        target_cids=target_cids,
+                        kind_weights=kind_weights,
+                        max_anchors=max_anchors,
+                        max_route_seconds=max_route_seconds,
+                        route_id_prefix=route_id_prefix,
+                        route_index=1,
+                        primary_material_name=primary_name,
+                        max_spire_dist_px=search_r,
+                        relaxed_astar=relax,
+                    )
+                    if plan and plan.target_count > 0:
+                        candidates.append(plan)
+            if candidates:
+                break
 
         # Deduplicate overlapping routes (avoid two adjacent spires farming the exact same points)
         candidates.sort(key=lambda r: (r.efficiency_per_min, r.target_count, r.total_count), reverse=True)
@@ -1134,14 +1219,17 @@ class MaterialRouteGenerator:
         self,
         *,
         map_ids: Iterable[str] | None = None,
+        regions: Iterable[str] | None = None,
         top_k: int = 5,
         kind_weights: dict[str, float] | None = None,
         max_anchors: int = 10,
         max_route_seconds: float = 150.0,
         route_id_prefix: str = "gb_sweep",
+        title_label: str = "",
     ) -> list[GeneratedRoutePlan]:
         weights = kind_weights or {"plant": 1.0, "insect": 1.8, "animal": 2.2, "fish": 2.4}
         active_maps = list(map_ids) if map_ids else list(WORLDS.values())
+        region_set = {r.strip() for r in regions if r.strip()} if regions else None
         candidates: list[GeneratedRoutePlan] = []
 
         for map_id in active_maps:
@@ -1149,6 +1237,10 @@ class MaterialRouteGenerator:
             if not pts:
                 continue
             spires = self.catalog.spires_by_map.get(map_id, [])
+            if region_set:
+                spires = [s for s in spires if s.region in region_set or s.province in region_set]
+            if not spires:
+                continue
             # Rank spires by local weighted density within 160 px first to only run A* on top hotspots
             scored_spires = []
             for sp in spires:
@@ -1157,7 +1249,7 @@ class MaterialRouteGenerator:
                     for p in pts
                     if abs(p.x - sp.x) <= 165.0 and abs(p.y - sp.y) <= 165.0 and abs(p.z - sp.z) <= 35.0
                 )
-                if local_w >= 8.0:
+                if local_w >= 4.0:
                     scored_spires.append((local_w, sp))
             scored_spires.sort(key=lambda x: x[0], reverse=True)
 
@@ -1171,9 +1263,9 @@ class MaterialRouteGenerator:
                     max_route_seconds=max_route_seconds,
                     route_id_prefix=route_id_prefix,
                     route_index=1,
-                    primary_material_name="",
+                    primary_material_name=title_label,
                 )
-                if plan and plan.total_count >= 5:
+                if plan and plan.total_count >= 4:
                     candidates.append(plan)
 
         candidates.sort(key=lambda r: (r.efficiency_per_min, r.total_count), reverse=True)

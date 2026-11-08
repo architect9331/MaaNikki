@@ -1,0 +1,97 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_314_miraland_03",
+  "title": "【金轴蜻蜓】磐城·咏叹剧院（15个/124秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 319,
+  "teleport": {
+    "name": "咏叹剧院",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3937.799,
+    "y": 3509.925
+  },
+  "material": "金轴蜻蜓",
+  "count_materials": [
+    "金轴蜻蜓",
+    "珠链蝶",
+    "探险家蜜蜂",
+    "蓝玉甲虫",
+    "蓝珀鸟羽",
+    "珠坠甲虫",
+    "桂冠翎羽",
+    "晶球绵蚧"
+  ],
+  "capacity": 35,
+  "points": [
+    {
+      "x": 3937.8,
+      "y": 3509.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3880.46,
+      "y": 3489.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 3850.74,
+      "y": 3457.23,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.7
+      }
+    },
+    {
+      "x": 3812.17,
+      "y": 3471.81,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    },
+    {
+      "x": 3791.84,
+      "y": 3509.67,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.7
+      }
+    },
+    {
+      "x": 3795.95,
+      "y": 3504.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    },
+    {
+      "x": 3757.51,
+      "y": 3557.3,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.7
+      }
+    }
+  ]
+}

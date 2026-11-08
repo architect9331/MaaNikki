@@ -1,0 +1,133 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_059_miraland_01",
+  "title": "【夜色天鹅绒】微风绿野·捕虫小屋（1个/54秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 163,
+  "teleport": {
+    "name": "捕虫小屋",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10143.896,
+    "y": 10474.933
+  },
+  "material": "夜色天鹅绒",
+  "count_materials": [
+    "蓝珀鸟羽",
+    "小绵菊",
+    "美食家蜜蜂",
+    "珠链蝶",
+    "玫色天鹅绒",
+    "夜色天鹅绒"
+  ],
+  "capacity": 11,
+  "points": [
+    {
+      "x": 10143.9,
+      "y": 10474.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10166.9,
+      "y": 10470.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10186.9,
+      "y": 10466.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10202.9,
+      "y": 10450.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10226.9,
+      "y": 10450.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10250.9,
+      "y": 10450.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10274.9,
+      "y": 10450.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10298.9,
+      "y": 10450.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10318.9,
+      "y": 10446.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10342.9,
+      "y": 10446.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10366.9,
+      "y": 10446.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10386.9,
+      "y": 10442.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10402.85,
+      "y": 10443.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.7
+      }
+    }
+  ]
+}

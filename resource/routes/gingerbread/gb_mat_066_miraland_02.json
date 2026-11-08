@@ -1,0 +1,64 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_066_miraland_02",
+  "title": "【泳镜蝽】小石树田村·村居岔路（5个/77秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 214,
+  "teleport": {
+    "name": "村居岔路",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 9389.052,
+    "y": 10562.456
+  },
+  "material": "泳镜蝽",
+  "count_materials": [
+    "香薰睡莲",
+    "泳镜蝽",
+    "钓鱼点",
+    "珠花贝壳",
+    "小星扇贝"
+  ],
+  "capacity": 18,
+  "points": [
+    {
+      "x": 9389.05,
+      "y": 10562.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9384.28,
+      "y": 10667.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    },
+    {
+      "x": 9422.67,
+      "y": 10671.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.2
+      }
+    },
+    {
+      "x": 9446.86,
+      "y": 10739.36,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.2
+      }
+    }
+  ]
+}

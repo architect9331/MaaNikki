@@ -1,0 +1,65 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_200_miraland_01",
+  "title": "【垂穗魔果】巨木之森·林地小屋（7个/54秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 164,
+  "teleport": {
+    "name": "林地小屋",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 5673.737,
+    "y": 8683.871
+  },
+  "material": "垂穗魔果",
+  "count_materials": [
+    "垂穗魔果",
+    "草棘果"
+  ],
+  "capacity": 12,
+  "points": [
+    {
+      "x": 5673.74,
+      "y": 8683.87,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5650.76,
+      "y": 8771.98,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5617.91,
+      "y": 8799.9,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5686.31,
+      "y": 8827.16,
+      "radius": 2.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5629.93,
+      "y": 8867.07,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    }
+  ]
+}
