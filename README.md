@@ -95,6 +95,16 @@ Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https:
 
 感谢参与开发、反馈问题和分享使用经验的朋友！
 
+## Star History
+
+<a href="https://www.star-history.com/#architect9331/MaaNikki&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=architect9331/MaaNikki&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=architect9331/MaaNikki&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=architect9331/MaaNikki&type=Date" />
+ </picture>
+</a>
+
 ## 开源许可
 
 本项目代码采用 **[AGPL-3.0-only](LICENSE)**。第三方组件及素材的许可与来源见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [licenses/](licenses/)。
