@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 from .engine import Navigator
+from .overlay import RouteMinimapOverlay
 
 
 def create_navigator(runtime, teleporter, *, actions=None, event=lambda value: None):
     """Bind page checks, walking state and independent recovery in one place."""
+    hwnd = getattr(teleporter.inputs, "hwnd", 0) or runtime.controller.info.get("hwnd", 0)
+    overlay = RouteMinimapOverlay(hwnd, teleporter.locator.spec) if hwnd else None
     return Navigator(teleporter.locator, teleporter.inputs, runtime.capture,
         lambda: runtime.stopped, runtime.pause, event,
         point_action=actions,
@@ -14,4 +17,5 @@ def create_navigator(runtime, teleporter, *, actions=None, event=lambda value: N
         walking=runtime.ui.walking, relocalize=teleporter.player_location,
         scene_recovery=lambda: runtime.ui.revive(event),
         page_detector=lambda frame: bool(
-            (result := runtime.recognize("MaaNikki_MainDetected", image=frame)) and result.hit))
+            (result := runtime.recognize("MaaNikki_MainDetected", image=frame)) and result.hit),
+        overlay=overlay)

@@ -15,6 +15,7 @@ from .settings import ROOT
 from .startup import focus_game
 from navigation.controller import ForegroundInput
 from navigation.models import GameWindowClosed, NavigationError, maps
+from navigation.overlay import RouteMinimapOverlay
 from navigation.vision import Locator
 from task_control import TaskStopped, active_session
 
@@ -109,11 +110,12 @@ class RouteRecorder(Runtime):
         self.publish(force=True)
         session = active_session()
         observation = session.background_observation() if session else nullcontext()
-        watcher = None
+        watcher = overlay = None
         try:
             inputs = ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
             focus_game(self, inputs)
             locator = Locator(spec)
+            overlay = RouteMinimapOverlay(inputs.hwnd, spec) if getattr(inputs, "hwnd", 0) else None
             watched = {virtual_key(self.game_keys.get("jump")): "jump",
                        virtual_key(self.game_keys.get("interact")): "interact", **HOTKEYS}
             for name in RECORDED_KEYS:
@@ -121,7 +123,7 @@ class RouteRecorder(Runtime):
             watcher = KeyWatcher(inputs, watched)
             watcher.start()
             with observation:
-                self.loop(inputs, locator, watcher)
+                self.loop(inputs, locator, watcher, overlay)
             self.document["state"] = "finished"
             return True
         except GameWindowClosed:
@@ -137,11 +139,13 @@ class RouteRecorder(Runtime):
             self.log("路线录制停止："+str(error))
             return False
         finally:
+            if overlay:
+                overlay.close()
             if watcher:
                 watcher.finished.set()
             self.publish(force=True)
 
-    def loop(self, inputs, locator, watcher):
+    def loop(self, inputs, locator, watcher, overlay=None):
         samples, events = self.document["samples"], self.document["events"]
         last, lost_since, gap = None, None, True
         self.log(f"开始录制 {locator.spec.title} 路线，直接在游戏里走一遍即可。", detail=True)
@@ -149,6 +153,8 @@ class RouteRecorder(Runtime):
             started = wall_time.monotonic()
             pressed = watcher.drain()
             if not inputs.foreground():
+                if overlay:
+                    overlay.hide()
                 self.status("waiting_focus", "切回游戏后继续录制。")
                 self.pause(.2)
                 continue
@@ -158,6 +164,8 @@ class RouteRecorder(Runtime):
                 # Maps, menus and loading screens are not part of the walk. A
                 # teleport passes through them, so search the map afresh afterwards.
                 gap = True
+                if overlay:
+                    overlay.hide()
                 self.status("paused", "打开菜单或加载时暂停录制。")
                 self.pause(.2)
                 continue
@@ -169,6 +177,8 @@ class RouteRecorder(Runtime):
                 lost_since = lost_since or now
                 if now-lost_since >= LOST_RESET_SECONDS:
                     gap = True
+                if overlay:
+                    overlay.hide()
                 self.status("lost", f"小地图定位不上，请确认当前确实在「{locator.spec.title}」。")
                 self.pause(.1)
                 continue
@@ -187,10 +197,13 @@ class RouteRecorder(Runtime):
                 events.append({"kind": "teleport", "index": index})
             for item in pressed:
                 event = {**item, "index": index}
-                if item["kind"] == "fishing" and pose.heading is not None:
+                if (item["kind"] == "fishing"
+                        or (item["kind"] == "key" and item.get("key") == "attack")) and pose.heading is not None:
                     event["heading"] = round(pose.heading, 1) % 360
                 events.append(event)
             self.document["pose"] = {"x": position[0], "y": position[1], "heading": pose.heading}
+            if overlay:
+                overlay.publish_recording(samples, events, pose)
             self.status("recording", "")
             self.pause(max(0, SAMPLE_INTERVAL-(wall_time.monotonic()-started)))
 

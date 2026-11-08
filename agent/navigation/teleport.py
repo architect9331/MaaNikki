@@ -129,7 +129,7 @@ class Teleporter:
 
         def select_region():
             self.check()
-            if province == "星海":
+            if province == wanted:
                 return self.rt.ui.find(roi=list_roi, text=province, exact=True, scroll=True)
             result = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": list_roi, "expected": ".+"})
             entries = {normalized(getattr(item, "text", "")) for item in

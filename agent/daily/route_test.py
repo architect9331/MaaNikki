@@ -31,6 +31,67 @@ NAVIGATION_ACTIONS = {"", "teleport", "wait"}
 # Actions a user route may run. Others need task-specific setup from their daily task.
 USER_ACTIONS = NAVIGATION_ACTIONS | {"collect", "insect", "fishing", "bottle", "macro", "key"}
 USER_MACROS = {"starsea_fall", "zhaoxi_attack"}
+TRIAL_FILE = ROOT / "config/route_trial.json"
+TRIAL_PUBLISH_INTERVAL = 0.35
+
+
+def build_trial_suggestions(waypoints: list[dict], start_offset: int = 0) -> list[dict]:
+    """Build bounded coordinate & radius tuning suggestions from a trial telemetry summary."""
+    suggestions = []
+    for wp in waypoints:
+        local_idx = int(wp.get("index", 0))
+        route_idx = local_idx + start_offset
+        outcome = wp.get("outcome") or "clean"
+        if outcome == "clean":
+            continue
+        target = wp.get("target") or [0.0, 0.0]
+        actual = wp.get("actual")
+        cfg_rad = float(wp.get("configured_radius") or 1.0)
+        precise = bool(wp.get("precise"))
+        dx, dy = float(wp.get("dx") or 0.0), float(wp.get("dy") or 0.0)
+        drift_dx, drift_dy = float(wp.get("drift_dx") or 0.0), float(wp.get("drift_dy") or 0.0)
+        miss_dist = wp.get("closest_miss_dist")
+        nudge_x = nudge_y = 0.0
+        next_rad = cfg_rad
+        reason = ""
+        if outcome == "turnback":
+            if precise and math.hypot(drift_dx, drift_dy) >= 0.12:
+                nudge_x = round(max(-0.6, min(0.6, -drift_dx * 0.5)), 2)
+                nudge_y = round(max(-0.6, min(0.6, -drift_dy * 0.5)), 2)
+                reason = "刹车滑行折返，建议向进入方向微调点位"
+            else:
+                cand = max(cfg_rad + 0.35, float(miss_dist) * 1.15 if isinstance(miss_dist, (int, float)) else cfg_rad * 1.25)
+                next_rad = round(min(max(3.0, cfg_rad + 0.2), cand, cfg_rad * 1.4), 2)
+                if math.hypot(dx, dy) >= 0.2 and actual is not None:
+                    nudge_x = round(max(-0.6, min(0.6, dx * 0.4)), 2)
+                    nudge_y = round(max(-0.6, min(0.6, dy * 0.4)), 2)
+                reason = "途经擦边折返，建议放宽到达范围或靠拢实测轨迹"
+        elif outcome in ("recovered", "failed"):
+            if actual is not None and math.hypot(dx, dy) >= 0.15 and math.hypot(dx, dy) <= max(cfg_rad * 2.5, 4.0):
+                mag = math.hypot(dx, dy)
+                scale = min(0.6, mag * 0.35)
+                nudge_x = round(-dx / mag * scale, 2)
+                nudge_y = round(-dy / mag * scale, 2)
+            if not precise:
+                next_rad = round(min(3.5, cfg_rad + 0.35), 2)
+            reason = "此处发生卡地形或脱困，建议微调避开受阻侧"
+        elif outcome == "action_missed":
+            if actual is not None and math.hypot(dx, dy) >= 0.15 and math.hypot(dx, dy) <= 2.5:
+                nudge_x = round(max(-0.5, min(0.5, -dx * 0.4)), 2)
+                nudge_y = round(max(-0.5, min(0.5, -dy * 0.4)), 2)
+            next_rad = round(max(0.3, min(cfg_rad, 0.5)), 2)
+            reason = "交互或采集未确认，建议收紧范围或调整站位"
+        if abs(nudge_x) >= 0.02 or abs(nudge_y) >= 0.02 or abs(next_rad - cfg_rad) >= 0.05:
+            suggestions.append({
+                "index": route_idx,
+                "outcome": outcome,
+                "reason": reason,
+                "x": round(float(target[0]) + nudge_x, 2),
+                "y": round(float(target[1]) + nudge_y, 2),
+                "radius": next_rad,
+                "actual": actual,
+            })
+    return suggestions
 
 
 def read_test_document(resource: Path, settings: dict):
@@ -202,6 +263,22 @@ class RouteTest(Runtime):
         self.last_result = None
         self.collection_entry = None
         self.telemetry_events = []
+        self.start_offset = 0
+        self.current_local_index = 0
+        self.trial_document = None
+        self.trial_published_at = 0.0
+
+    def publish_trial(self, *, force=False):
+        if self.trial_document is None:
+            return
+        now = time.monotonic()
+        if not force and now - self.trial_published_at < TRIAL_PUBLISH_INTERVAL:
+            return
+        self.trial_published_at = now
+        try:
+            write_json(TRIAL_FILE, self.trial_document)
+        except OSError:
+            pass
 
     def capture(self):
         frame = super().capture()
@@ -213,6 +290,20 @@ class RouteTest(Runtime):
         self.telemetry_events.append(value)
         if value.get("type") == "pose":
             self.last_pose = value
+            if self.trial_document is not None and value.get("position_reliable", True):
+                self.trial_document["pose"] = {
+                    "x": round(float(value["x"]), 2),
+                    "y": round(float(value["y"]), 2),
+                    "heading": value.get("heading"),
+                }
+                self.trial_document["current_index"] = self.start_offset + self.current_local_index
+                self.publish_trial()
+        if value.get("type") == "waypoint":
+            self.current_local_index = int(value["index"]) + 1
+            if self.trial_document is not None:
+                self.trial_document["current_index"] = self.start_offset + self.current_local_index
+                self.trial_document["message"] = f"已到达第 {self.start_offset + int(value['index']) + 1} 点"
+                self.publish_trial(force=True)
         if value.get("type") == "waypoint" and self.review_points:
             index = value["index"]
             point = self.review_points[index]
@@ -255,6 +346,10 @@ class RouteTest(Runtime):
     def phase(self, stage, message):
         self.stage = stage
         self.event({"type": "phase", "phase": stage})
+        if self.trial_document is not None:
+            self.trial_document["state"] = "running"
+            self.trial_document["message"] = message
+            self.publish_trial(force=True)
         self.log(f"{self.label}：{message}")
 
     def run_test(self, settings):
@@ -262,10 +357,11 @@ class RouteTest(Runtime):
             if self.dev_only and os.environ.get("PI_MAANIKKI_DEV_MODE") != "1":
                 raise NavigationError("请开启客户端设置中的开发模式后再测试路线。")
             settings = {"mode": self.default_mode, **settings}
+            self.start_offset = int(settings.get("start", 0) or 0)
             source = read_test_document(RESOURCE, settings)
             if isinstance(source, dict) and source.get("kind") == "route_collection":
                 return self.run_collection(settings, source)
-            source = from_point(source, settings.get("start", 0))
+            source = from_point(source, self.start_offset)
             prepared = test_document(RESOURCE, settings, document=source)
         except (NavigationError, OSError, KeyError, TypeError, ValueError) as error:
             self.log(f"{self.label}停止：{error}")
@@ -274,29 +370,39 @@ class RouteTest(Runtime):
 
     def run_collection(self, settings, source):
         """Freeze every route before input; record each run independently."""
-        if settings.get("mode", "movement") != "movement":
+        mode = settings.get("mode", self.default_mode)
+        if self.dev_only and mode != "movement":
             raise NavigationError("路线合集请使用“路线导航”模式。")
+        if mode not in {"movement", "full"}:
+            raise NavigationError("路线合集模式无效。")
         entries = source.get("routes")
-        if (source.get("schema_version") != 1 or source.get("map") != "starsea"
+        if (source.get("schema_version") != 1
+                or (self.dev_only and source.get("map") != "starsea")
                 or not isinstance(source.get("id"), str) or not source["id"].strip()
                 or not isinstance(entries, list) or not 1 <= len(entries) <= 64
                 or type(source.get("continue_on_failure", True)) is not bool):
-            raise NavigationError("星海路线合集格式无效。")
+            raise NavigationError("路线合集格式无效。")
         prepared = []
         names = set()
         for index, entry in enumerate(entries, 1):
             if not isinstance(entry, dict) or not isinstance(entry.get("route"), str):
-                raise NavigationError(f"合集第 {index} 条需要指定内置路线名。")
+                raise NavigationError(f"合集第 {index} 条需要指定路线名。")
             name = entry["route"]
             if name in names:
                 raise NavigationError("路线合集中存在重复路线："+name)
-            model, spec = test_document(RESOURCE, {"route": name, "mode": "movement"})
-            if model.map_id != "starsea" or not model.document.get("teleport"):
+            entry_file = entry.get("file", "")
+            if not entry_file and not self.dev_only:
+                user_candidate = ROOT / "config/routes" / f"{name}.json"
+                if user_candidate.is_file():
+                    entry_file = str(user_candidate)
+            child_settings = {"file": entry_file, "mode": mode} if entry_file else {"route": name, "mode": mode}
+            model, spec = test_document(RESOURCE, child_settings)
+            if self.dev_only and (model.map_id != "starsea" or not model.document.get("teleport")):
                 raise NavigationError("合集路线需要星海地图和起始传送点："+name)
-            execution, _ = navigation_route(model)
+            execution = navigation_route(model)[0] if mode == "movement" else model
             from navigation.daily_route import preflight
             preflight(RESOURCE, execution, "navigation")
-            title = entry.get("title", name)
+            title = entry.get("title") or model.document.get("title") or name
             if not isinstance(title, str) or not title.strip():
                 raise NavigationError(f"合集第 {index} 条名称无效。")
             prepared.append((model, spec, title))
@@ -308,27 +414,29 @@ class RouteTest(Runtime):
         summary = {"collection": source["id"], "success": False, "planned": len(prepared),
                    "started_at": datetime.now().astimezone().isoformat(), "routes": []}
         write_json(directory / "result.json", summary)
-        self.log(f"星海跑图合集：共 {len(prepared)} 条路线，开始逐条运行。")
+        collection_title = str(source.get("title") or "路线清单").strip()
+        self.log(f"{collection_title}：共 {len(prepared)} 条路线，开始逐条运行。")
         try:
             for index, (model, spec, title) in enumerate(prepared, 1):
                 if self.stopped:
                     summary["stopped"] = True
                     break
-                self.log(f"星海跑图 {index}/{len(prepared)}：{title}。")
-                runner = RouteTest(self.context)
+                self.log(f"{collection_title} {index}/{len(prepared)}：{title}。")
+                runner = type(self)(self.context)
                 runner.collection_entry = {"collection": source["id"], "index": index,
                                            "total": len(prepared), "title": title}
                 child = directory / f"route-{index:02d}"
                 started = time.monotonic()
-                ok = runner.run_single({"mode": "movement"}, prepared=(model, spec),
-                                       directory=child, refocus=index == 1, force_teleport=True)
+                ok = runner.run_single({"mode": mode}, prepared=(model, spec),
+                                       directory=child, refocus=index == 1,
+                                       force_teleport=bool(model.document.get("teleport")))
                 details = runner.last_result or {"success": False, "error": "执行结果未保存"}
                 summary["routes"].append({"index": index, "route": model.id, "title": title,
                                           "directory": child.name,
                                           "active_seconds": round(time.monotonic()-started, 3),
                                           **details})
                 write_json(directory / "result.json", summary)
-                self.log(f"星海跑图 {index}/{len(prepared)}：{title}，"+("完成。" if ok else "中断，已记录现场。"))
+                self.log(f"{collection_title} {index}/{len(prepared)}：{title}，"+("完成。" if ok else "中断，已记录现场。"))
                 if runner.navigation_halted:
                     self.navigation_halted = True
                 if self.stopped or details.get("stopped") or runner.navigation_halted:
@@ -378,6 +486,7 @@ class RouteTest(Runtime):
         inputs = model = navigator = actions = None
         previous_inputs = self.navigation_inputs
         self.telemetry_events = []
+        self.current_local_index = 0
         mode = settings.get("mode", self.default_mode)
         result = {"success": False, "mode": mode}
         try:
@@ -388,6 +497,21 @@ class RouteTest(Runtime):
             model, spec = prepared
             source_document = model.document
             self.review_points = source_document["points"]
+            self.trial_document = {
+                "schema_version": 1,
+                "started_at": datetime.now().astimezone().isoformat(),
+                "state": "starting",
+                "mode": mode,
+                "map": model.map_id,
+                "route": model.id,
+                "start_index": self.start_offset,
+                "current_index": self.start_offset,
+                "pose": None,
+                "message": "正在准备…",
+                "telemetry": None,
+                "suggestions": [],
+            }
+            self.publish_trial(force=True)
             skipped = []
             if mode == "movement":
                 model, skipped = navigation_route(model)
@@ -470,10 +594,33 @@ class RouteTest(Runtime):
         finally:
             active_route = getattr(navigator, "active_route", None) or model
             if active_route is not None and not self.stopped:
-                result["telemetry"] = record_route_telemetry(
+                telemetry = record_route_telemetry(
                     ROOT, active_route, self.telemetry_events,
                     executor=actions.executor if actions else mode,
                     mode=f"test_{mode}", success=bool(result.get("success")), stage=self.stage)
+                result["telemetry"] = telemetry
+                if self.trial_document is not None:
+                    shifted_wps = [
+                        {**wp, "index": int(wp.get("index", 0)) + self.start_offset}
+                        for wp in telemetry.get("waypoints", [])
+                    ]
+                    self.trial_document["telemetry"] = {
+                        **telemetry,
+                        "failed_index": (
+                            int(telemetry["failed_index"]) + self.start_offset
+                            if telemetry.get("failed_index") is not None else None
+                        ),
+                        "waypoints": shifted_wps,
+                    }
+                    self.trial_document["suggestions"] = build_trial_suggestions(
+                        telemetry.get("waypoints", []), self.start_offset)
+            if self.trial_document is not None:
+                self.trial_document["state"] = "finished" if result.get("success") else "failed"
+                if result.get("error"):
+                    self.trial_document["message"] = str(result["error"])
+                elif result.get("success"):
+                    self.trial_document["message"] = "试跑完成"
+                self.publish_trial(force=True)
             if mode == "bottle":
                 result.update(bottle_points_attempted=len(self.bottle_results),
                               bottles_collected=sum(item["success"] for item in self.bottle_results),

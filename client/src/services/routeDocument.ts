@@ -19,7 +19,68 @@ export interface RouteDocument {
   start_radius: number;
   timeout: number;
   teleport?: Checkpoint;
+  material?: string;
+  count_materials?: string[];
+  capacity?: number;
   points: RoutePoint[];
+}
+
+export interface RouteCollectionEntry { route: string; title: string; file?: string }
+
+export interface RouteCollectionDocument {
+  schema_version: 1;
+  kind: 'route_collection';
+  id: string;
+  title: string;
+  map?: string;
+  continue_on_failure: boolean;
+  routes: RouteCollectionEntry[];
+}
+
+export interface TrialWaypointReport {
+  index: number;
+  outcome: 'clean' | 'turnback' | 'recovered' | 'action_missed' | 'failed';
+  target: [number, number];
+  actual: [number, number] | null;
+  configured_radius: number;
+  radius: number;
+  turnback_count: number;
+  unstuck_count: number;
+  action_ok: boolean | null;
+}
+
+export interface TrialSuggestion {
+  index: number;
+  outcome: string;
+  reason: string;
+  x: number;
+  y: number;
+  radius: number;
+  actual: [number, number] | null;
+}
+
+export interface TrialState {
+  started_at: string;
+  state: 'starting' | 'running' | 'finished' | 'failed';
+  mode: 'full' | 'movement';
+  map: string;
+  route: string;
+  start_index: number;
+  current_index: number;
+  pose: { x: number; y: number; heading: number | null } | null;
+  message: string;
+  telemetry: {
+    outcome: string;
+    visited_count: number;
+    point_count: number;
+    turnback_waypoints: number;
+    recovered_waypoints: number;
+    missed_actions: number;
+    failed_index: number | null;
+    error: string | null;
+    waypoints: TrialWaypointReport[];
+  } | null;
+  suggestions: TrialSuggestion[];
 }
 
 export interface RecordingEvent { kind: string; index: number; heading?: number; key?: string; hold?: number }
@@ -76,15 +137,39 @@ const DEFAULT_PARAMS: Record<string, Record<string, unknown>> = {
   key: { key: 'interact', hold: 0.1, times: 1 },
 };
 
+export function usesFacingHeading(point: RoutePoint): boolean {
+  if (point.action === 'fishing') return true;
+  if (point.action === 'macro') return point.params?.id === 'zhaoxi_attack';
+  if (point.action === 'key') return point.params?.key === 'attack';
+  return false;
+}
+
 /** Switch a point's action, keeping nothing from the old one that no longer applies. */
 export function withAction(point: RoutePoint, action: string): RoutePoint {
   const next: RoutePoint = { x: point.x, y: point.y, radius: point.radius, jump: point.jump };
   if (!action) return next;
   next.action = action;
-  next.params = { ...DEFAULT_PARAMS[action] };
+  const previousHeading = typeof point.params?.facing_heading === 'number' ? point.params.facing_heading : undefined;
+  next.params = {
+    ...DEFAULT_PARAMS[action],
+    ...(action === 'fishing' && previousHeading !== undefined ? { facing_heading: previousHeading } : {}),
+  };
   // Stopping to act needs a tighter arrival than passing through.
   next.radius = Math.min(point.radius, 0.5);
   return next;
+}
+
+export function nearestCheckpoint(x: number, y: number, checkpoints: Checkpoint[] = [], maxDistance = 28): Checkpoint | undefined {
+  let best: Checkpoint | undefined;
+  let bestDist = maxDistance;
+  for (const cp of checkpoints) {
+    const d = Math.hypot(cp.x - x, cp.y - y);
+    if (d <= bestDist) {
+      bestDist = d;
+      best = cp;
+    }
+  }
+  return best;
 }
 
 export function newRouteId() {
@@ -127,7 +212,7 @@ function keepIndices(samples: [number, number][], from: number, to: number, tole
 // Same bound the route key action accepts.
 const MAX_KEY_TIMES = 50;
 
-function eventPoint(event: RecordingEvent): Partial<RoutePoint> {
+function eventPoint(event: RecordingEvent, sample: [number, number], knownCheckpoints?: Checkpoint[]): Partial<RoutePoint> {
   switch (event.kind) {
     case 'jump': return { jump: true };
     case 'interact':
@@ -136,14 +221,30 @@ function eventPoint(event: RecordingEvent): Partial<RoutePoint> {
     case 'fall': return { action: 'macro', params: { id: 'starsea_fall' }, radius: 0.5 };
     case 'fishing': return { action: 'fishing', radius: 0.5, params: {
       cast_count: 3, ...(event.heading === undefined ? {} : { facing_heading: event.heading }) } };
-    case 'teleport': return { action: 'teleport', params: {}, radius: 1 };
-    case 'key': return { action: 'key', params: { key: event.key, hold: event.hold ?? 0.1, times: 1 }, radius: 0.5 };
+    case 'teleport': {
+      const cp = nearestCheckpoint(sample[0], sample[1], knownCheckpoints, 28);
+      return { action: 'teleport', params: cp ? { checkpoint: cp } : {}, radius: 1 };
+    }
+    case 'key': return {
+      action: 'key',
+      params: {
+        key: event.key,
+        hold: event.hold ?? 0.1,
+        times: 1,
+        ...(event.key === 'attack' && event.heading !== undefined ? { facing_heading: event.heading } : {}),
+      },
+      radius: 0.5,
+    };
     default: return { radius: 0.6 };
   }
 }
 
 /** Turn a raw recording into editable points. Pressed keys always keep their position. */
-export function pointsFromRecording(recording: Pick<Recording, 'samples' | 'events'>, tolerance: number): RoutePoint[] {
+export function pointsFromRecording(
+  recording: Pick<Recording, 'samples' | 'events'>,
+  tolerance: number,
+  knownCheckpoints?: Checkpoint[],
+): RoutePoint[] {
   const { samples, events } = recording;
   if (!samples.length) return [];
   const anchors = [...new Set([0, samples.length-1, ...events.map((event) => event.index)])]
@@ -164,7 +265,11 @@ export function pointsFromRecording(recording: Pick<Recording, 'samples' | 'even
       continue;
     }
     // Several marks at one sample still run in the order they were pressed.
-    actions.forEach((mark, position) => points.push({ ...base, ...eventPoint(mark), jump: jump && position === 0 }));
+    actions.forEach((mark, position) => points.push({
+      ...base,
+      ...eventPoint(mark, [x, y], knownCheckpoints),
+      jump: jump && position === 0,
+    }));
   }
   // Repeats at one spot become one point: interact presses are one collect,
   // which loops itself, and equal taps of a key (attacks, say) one key press
@@ -177,7 +282,12 @@ export function pointsFromRecording(recording: Pick<Recording, 'samples' | 'even
     if (near && point.action === 'key' && previous.action === 'key' && !point.jump
       && point.params?.key === previous.params?.key && point.params?.hold === previous.params?.hold
       && Number(previous.params?.times) < MAX_KEY_TIMES) {
-      previous.params = { ...previous.params, times: Number(previous.params?.times)+1 };
+      previous.params = {
+        ...previous.params,
+        times: Number(previous.params?.times)+1,
+        ...(previous.params?.facing_heading === undefined && point.params?.facing_heading !== undefined
+          ? { facing_heading: point.params.facing_heading } : {}),
+      };
       continue;
     }
     merged.push(point);

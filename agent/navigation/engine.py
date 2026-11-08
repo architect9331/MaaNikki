@@ -199,13 +199,14 @@ class Navigator:
 
     def __init__(self, locator: Locator, inputs, capture, stopped, pause, event=lambda value: None,
                  point_action=None, waypoint=None, walking=None, page_detector=None, point_prepare=None,
-                 route_branch=None, relocalize=None, scene_recovery=None):
+                 route_branch=None, relocalize=None, scene_recovery=None, overlay=None):
         self.locator, self.inputs, self.capture, self.stopped, self._pause, self.event = locator, inputs, capture, stopped, pause, event
         self.point_action, self.waypoint = point_action, waypoint
         self.point_prepare = point_prepare
         self.route_branch = route_branch
         self.walking_detector = walking
         self.page_detector = page_detector
+        self.overlay = overlay
         self.turn_ratio = None
         self.camera_probe_pixels = self.CAMERA_PROBE_PIXELS
         self.motion = None
@@ -324,6 +325,11 @@ class Navigator:
                     self.save_heading_evidence(frame)
         if self.motion:
             self.motion.tick()
+        if self.overlay:
+            if page_ready and pose.position_reliable and self.active_route is not None:
+                self.overlay.publish_route(self.active_route, self.current_index, pose)
+            else:
+                self.overlay.hide()
         self.event({"type": "pose", **pose.dict(), "heading_diagnostics": dict(self.locator.heading_diagnostics),
                     "capture_age_seconds": time.monotonic()-self.pose_at,
                     "input_since_capture": max(0, self.motion.forward_elapsed()-self.pose_input) if self.motion else 0})
@@ -834,6 +840,8 @@ class Navigator:
         index = 0
         self.current_index = 0
         self.active_route = route
+        if self.overlay and pose.position_reliable:
+            self.overlay.publish_route(route, index, pose)
         prepared_index = None
         last_good = pose
         scene_interrupted, scene_retries = False, 0
@@ -1144,6 +1152,8 @@ class Navigator:
             self.event({"type": "arrived", **pose.dict()})
             return pose
         finally:
+            if self.overlay:
+                self.overlay.close()
             try:
                 motion.close()
             finally:

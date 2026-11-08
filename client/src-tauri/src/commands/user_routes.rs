@@ -37,10 +37,16 @@ fn summaries(directory: PathBuf, builtin: bool) -> Vec<Value> {
         .filter_map(|entry| {
             let path = entry.path();
             let value = read_json(&path).ok()??;
-            let points = value["points"].as_array()?.len();
+            let is_collection = value["kind"].as_str() == Some("route_collection");
+            let count = if is_collection {
+                value["routes"].as_array()?.len()
+            } else {
+                value["points"].as_array()?.len()
+            };
             Some(json!({
                 "id": path.file_stem()?.to_str()?, "title": value["title"], "map": value["map"],
-                "points": points, "teleport": value["teleport"], "builtin": builtin,
+                "kind": if is_collection { "route_collection" } else { "route" },
+                "points": count, "teleport": value["teleport"], "builtin": builtin,
                 "path": path.to_string_lossy(),
                 "modified": entry.metadata().ok()?.modified().ok()?
                     .duration_since(std::time::UNIX_EPOCH).ok()?.as_secs(),

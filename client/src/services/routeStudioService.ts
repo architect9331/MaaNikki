@@ -16,10 +16,11 @@ import { dailyWindowReserved, reserveDailyWindow } from './explorationService';
 import { fishingBusy } from './fishingService';
 import { stopInstanceTasks } from './taskStopService';
 import { wardrobeBusy } from './wardrobeService';
-import type { Recording, RouteDocument } from './routeDocument';
+import type { Recording, RouteCollectionDocument, RouteDocument, TrialState } from './routeDocument';
 
 const INSTANCE_ID = 'maanikki-route';
 const RECORDING_FILE = 'config/route_recording.json';
+const TRIAL_FILE = 'config/route_trial.json';
 
 type Status = 'idle' | 'starting' | 'recording' | 'running' | 'stopping';
 export const useRouteStudioStore = create<{
@@ -27,19 +28,22 @@ export const useRouteStudioStore = create<{
   recording: Recording | null;
   /** A finished recording waiting for the user to keep or discard it. */
   finished: Recording | null;
-}>(() => ({ status: 'idle', recording: null, finished: null }));
+  trial: TrialState | null;
+}>(() => ({ status: 'idle', recording: null, finished: null, trial: null }));
 
 export interface RouteSummary {
   id: string; title: string; map: string; points: number; builtin: boolean; path: string;
+  kind?: 'route' | 'route_collection';
   teleport?: RouteDocument['teleport'];
 }
 
 export const listRoutes = () => invoke<{ user: RouteSummary[]; builtin: RouteSummary[] }>('list_routes');
-export const saveUserRoute = (route: RouteDocument) => invoke<string>('save_user_route', { id: route.id, route });
+export const saveUserRoute = (route: RouteDocument | RouteCollectionDocument) =>
+  invoke<string>('save_user_route', { id: route.id, route });
 export const deleteUserRoute = (id: string) => invoke<void>('delete_user_route', { id });
 export const readLocalFile = (filename: string) => invoke<string>('read_local_file', { filename });
 
-export async function readRoute(summary: Pick<RouteSummary, 'id' | 'builtin'>): Promise<RouteDocument> {
+export async function readRoute(summary: Pick<RouteSummary, 'id' | 'builtin'>): Promise<RouteDocument | RouteCollectionDocument> {
   const folder = summary.builtin ? 'resource/routes/daily' : 'config/routes';
   return JSON.parse((await readLocalFile(`${folder}/${summary.id}.json`)).replace(/^﻿/, ''));
 }
@@ -57,6 +61,15 @@ async function readRecording(since: number) {
   try {
     const value = JSON.parse(await readLocalFile(RECORDING_FILE)) as Recording;
     // A file left by an earlier recording must not appear as this one.
+    return Date.parse(value.started_at) >= since ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readTrial(since: number) {
+  try {
+    const value = JSON.parse(await readLocalFile(TRIAL_FILE)) as TrialState;
     return Date.parse(value.started_at) >= since ? value : null;
   } catch {
     return null;
@@ -138,7 +151,7 @@ async function run(status: Status, label: string, entry: string, params: Record<
     const outcome = await waitForTaskResult(ids[0], { signal });
     check();
     if (outcome !== 'succeeded') throw new Error(`${label}未完成，请查看日志。`);
-    if (!poll) toast.success(`${label}完成`);
+    if (status === 'running' || !poll) toast.success(`${label}完成`);
   } catch (error) {
     if (!signal.aborted) toast.error(String(error instanceof Error ? error.message : error));
   } finally {
@@ -170,9 +183,18 @@ export function startRecording(map: string) {
 }
 
 export function runRoute(path: string, mode: 'full' | 'movement', start: number) {
-  return session('running', mode === 'full' ? '试跑路线' : '试走路线', 'MaaNikki_RouteRun', { file: path, mode, start });
+  const since = Date.now()-5000;
+  useRouteStudioStore.setState({ trial: null });
+  return session('running', mode === 'full' ? '试跑路线' : '试走路线', 'MaaNikki_RouteRun', { file: path, mode, start }, async () => {
+    const trial = await readTrial(since);
+    if (trial) useRouteStudioStore.setState({ trial });
+  });
 }
 
 export function discardRecording() {
   useRouteStudioStore.setState({ finished: null });
+}
+
+export function clearTrial() {
+  useRouteStudioStore.setState({ trial: null });
 }

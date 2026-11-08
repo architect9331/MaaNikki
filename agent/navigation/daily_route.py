@@ -60,7 +60,7 @@ def preflight(resource, route, executor):
     for point in route.points:
         if point.action == "teleport" and not point.params.get("checkpoint"):
             raise NavigationError("路线内的传送动作未指定传送点。")
-        if point.action in {"fishing_star", "fishing", "macro"}:
+        if point.action in {"fishing_star", "fishing", "macro", "key"}:
             heading = (point.params or {}).get("facing_heading")
             if heading is not None and (type(heading) not in (int, float)
                     or not math.isfinite(heading) or not 0 <= heading < 360):
@@ -87,7 +87,11 @@ class RouteActions:
         self.count, self.successes, self.attempts = 0, 0, 0
         self.executor = card.rule.executor
         self.quota = card.remaining if card.remaining is not None else {"plant": 5, "insect": 3, "bottle": 1, "crystal": 10}.get(self.executor)
-        if self.quota is not None and (type(self.quota) is not int or not 1 <= self.quota <= 100):
+        if self.quota is None and self.executor == "navigation" and route.document.get("material"):
+            cap = route.document.get("capacity")
+            if type(cap) is int and 1 <= cap <= 500:
+                self.quota = cap
+        if self.quota is not None and (type(self.quota) is not int or not 1 <= self.quota <= 500):
             raise NavigationError("任务剩余数量无法可靠读取。")
         self.material = route.document.get("material", "")
         self.count_materials = tuple(dict.fromkeys(
@@ -298,12 +302,17 @@ class RouteActions:
                 self.event({"type": "resource_unconfirmed", "action": kind, "x": point.x, "y": point.y})
         elif kind == "macro":
             heading = (point.params or {}).get("facing_heading")
-            if heading is not None:
+            if heading is not None and point.params.get("id") != "starsea_fall":
                 if self.navigator is None:
                     raise NavigationError("指定宏动作朝向需要路线导航器。")
                 self.navigator.face_heading(heading, tolerance=10)
             ok = self.macro(point.params["id"])
         elif kind == "key":
+            heading = (point.params or {}).get("facing_heading")
+            if heading is not None and point.params.get("key") == "attack":
+                if self.navigator is None:
+                    raise NavigationError("指定攻击朝向需要路线导航器。")
+                self.navigator.face_heading(heading, tolerance=10)
             for index in range(point.params.get("times", 1)):
                 if index:
                     self.inputs.wait(.2)
