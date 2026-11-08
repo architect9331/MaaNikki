@@ -40,7 +40,13 @@ CHEST = {"16", "259"}
 BOX_HIGH = {"15", "17", "147"}
 BOX_MID = {"14", "151"}
 BOX_LOW = {"13", "152"}
-WORLDS = {"1": "miraland", "4020034": "wanxiang"}
+WORLDS = {
+    "1": "miraland",
+    "4020034": "wanxiang",
+    "10000001": "firework",
+    "10000002": "serenity",
+    "10000010": "danqing",
+}
 CATALOG_NAMES = {
     "11": "奇想星", "12": "灵感露珠",
     "13": "初级宝箱", "14": "中级宝箱", "15": "高级宝箱",
@@ -56,7 +62,7 @@ KIND_NAMES = {
     "box_high": "高级宝箱", "box_mid": "中级宝箱", "box_low": "初级宝箱",
 }
 DIFFICULTY_NAMES = {1: "低", 2: "中", 3: "高"}
-CACHE_SCHEMA = 4
+CACHE_SCHEMA = 5
 LIMIT = 32 * 1024 * 1024
 
 

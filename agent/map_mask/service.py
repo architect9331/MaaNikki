@@ -39,6 +39,15 @@ REGIONS = {
         "悲木空鸣地", "深谷幽泉", "万乐之飨", "彩乐轩", "忘忧楼", "连廊水榭",
         "九华阙",
     ),
+    "firework": (
+        "花焰群岛",
+    ),
+    "serenity": (
+        "无忧岛",
+    ),
+    "danqing": (
+        "丹青屿",
+    ),
 }
 
 # Settled maximum zoom measured from captured map terrain. Miraland's opening

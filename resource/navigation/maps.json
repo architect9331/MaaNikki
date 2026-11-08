@@ -26,6 +26,33 @@
       "height": 14336
     },
     {
+      "id": "firework",
+      "title": "花焰群岛",
+      "image": "maps/firework.png",
+      "scale_720": 0.6,
+      "bigmap_scale_720": 0.465,
+      "width": 2048,
+      "height": 1536
+    },
+    {
+      "id": "serenity",
+      "title": "无忧岛",
+      "image": "maps/serenity.png",
+      "scale_720": 0.6,
+      "bigmap_scale_720": 0.465,
+      "width": 2048,
+      "height": 1536
+    },
+    {
+      "id": "danqing",
+      "title": "丹青屿",
+      "image": "maps/danqing.png",
+      "scale_720": 0.6,
+      "bigmap_scale_720": 0.465,
+      "width": 3072,
+      "height": 2560
+    },
+    {
       "id": "home",
       "title": "家园",
       "image": "maps/home.png",
