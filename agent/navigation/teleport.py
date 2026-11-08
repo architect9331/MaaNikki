@@ -246,7 +246,13 @@ class Teleporter:
                               threshold=.9, color=([10, 0, 190], [30, 80, 255]),
                               scroll=True, click=False)
         if not box:
-            raise NavigationError("未找到家园地图图标，无法确认当前地图。")
+            if not self.region_menu_visible():
+                raise NavigationError("未找到家园地图图标，无法确认当前地图。")
+            self.event({"type": "map_player_home", "actual": current, "entry": None,
+                        "in_home": False})
+            if not self.close_region_menu():
+                raise NavigationError("确认家园后未能关闭地图区域列表。")
+            return False
         x, y, w, h = box
         text_x = x+w+4
         name_roi = [text_x, max(0, y-8), max(1, list_roi[0]+list_roi[2]-text_x), h+16]
