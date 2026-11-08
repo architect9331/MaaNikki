@@ -87,7 +87,7 @@ export interface RecordingEvent { kind: string; index: number; heading?: number;
 
 export interface Recording {
   map: string;
-  state: 'starting' | 'recording' | 'paused' | 'lost' | 'waiting_focus' | 'finished' | 'failed';
+  state: 'starting' | 'calibrating' | 'calibrated' | 'recording' | 'paused' | 'lost' | 'waiting_focus' | 'finished' | 'failed';
   message: string;
   started_at: string;
   pose: { x: number; y: number; heading: number | null } | null;

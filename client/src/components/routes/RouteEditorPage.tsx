@@ -51,8 +51,15 @@ function pointLabel(point: RoutePoint) {
 
 const HOTKEY_LEGEND = [['F6', '关键点'], ['F7', '采集'], ['F8', '等待'], ['F9', '钓鱼'], ['F10', '下落攻击']] as const;
 const STATE_TEXT: Record<string, string> = {
-  starting: '正在准备定位…', recording: '正在录制', paused: '已暂停：菜单或加载中', lost: '小地图定位不上',
-  waiting_focus: '已暂停：切回游戏继续', finished: '录制结束', failed: '录制失败',
+  starting: '正在准备定位…',
+  calibrating: '请按 M 打开大地图定位起点',
+  calibrated: '大地图已定位，请按 M 返回游戏',
+  recording: '正在录制',
+  paused: '已暂停：菜单或加载中',
+  lost: '小地图定位不上',
+  waiting_focus: '已暂停：切回游戏继续',
+  finished: '录制结束',
+  failed: '录制失败',
 };
 const OUTCOME_BADGE: Record<string, { label: string; cls: string }> = {
   turnback: { label: '折返', cls: 'bg-warning/15 text-warning' },
@@ -254,6 +261,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
   const [filter, setFilter] = useState<'all' | 'actions'>('all');
   const [saved, setSaved] = useState(true);
   const [recordMap, setRecordMap] = useState('miraland');
+  const [recordTeleport, setRecordTeleport] = useState<Checkpoint | undefined>(undefined);
   const [tolerance, setTolerance] = useState(1);
   const [showBuiltin, setShowBuiltin] = useState(false);
   const [showTeleports, setShowTeleports] = useState(true);
@@ -436,7 +444,10 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
 
   const createRoute = (mapId = map?.id ?? recordMap) => {
     const title = maps.find((item) => item.id === mapId)?.title ?? '';
-    const next = newRoute(mapId, `${title}路线 ${routes.user.filter((r) => r.kind !== 'route_collection').length+1}`);
+    const next = {
+      ...newRoute(mapId, `${title}路线 ${routes.user.filter((r) => r.kind !== 'route_collection').length+1}`),
+      ...(recordTeleport ? { teleport: recordTeleport } : {}),
+    };
     clearTrial();
     setCollection(null);
     setRoute(next);
@@ -571,9 +582,11 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
       setCollection(null);
     }
     const mapCps = catalogCheckpoints[finished.map] ?? knownCheckpoints;
-    const autoStartTp = (!target.teleport && !target.points.length && finished.samples.length)
-      ? nearestCheckpoint(finished.samples[0][0], finished.samples[0][1], mapCps, 28)
+    const presetTp = !base ? recordTeleport : undefined;
+    const autoStartTp = (!target.teleport && !presetTp && !target.points.length && finished.samples.length)
+      ? nearestCheckpoint(finished.samples[0][0], finished.samples[0][1], mapCps, 20)
       : undefined;
+    const chosenTp = target.teleport ?? presetTp ?? autoStartTp;
     let nextPoints: RoutePoint[];
     if (base && mode === 'replace' && selectedSet.size > 0) {
       const sorted = [...selectedSet].sort((a, b) => a - b);
@@ -588,10 +601,10 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
     }
     commit({
       ...target,
-      ...(autoStartTp ? { teleport: autoStartTp } : {}),
+      ...(chosenTp ? { teleport: chosenTp } : {}),
       points: nextPoints,
     }, base ?? undefined);
-    if (autoStartTp) toast.success(`已自动匹配起始传送点：${autoStartTp.name}`);
+    if (!target.teleport && chosenTp) toast.success(`已设起始传送点：${chosenTp.name}`);
     setSelected(null);
     setSelectedSet(new Set());
     discardRecording();
@@ -802,7 +815,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
             samples={recording?.samples ?? finished?.samples}
             pose={recording?.pose ?? (status === 'running' ? trial?.pose : null)}
             teleports={showTeleports ? knownCheckpoints : undefined}
-            startTeleport={route?.teleport}
+            startTeleport={route ? route.teleport : recordTeleport}
             selected={selected}
             selectedSet={selectedSet}
             activeTrialIndex={status === 'running' ? trial?.current_index ?? null : null}
@@ -877,7 +890,12 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
               setSelected(after+1);
             }}
             onPickTeleport={(cp) => {
-              if (!route || readOnly) return;
+              if (readOnly) return;
+              if (!route) {
+                setRecordTeleport(cp);
+                toast.success(`已设录制起始传送点：${cp.name}`);
+                return;
+              }
               if (selected !== null && route.points[selected]?.action === 'teleport') {
                 const points = route.points.map((pt, i) =>
                   i === selected ? { ...pt, x: cp.x, y: cp.y, params: { ...(pt.params ?? {}), checkpoint: cp } } : pt);
@@ -914,8 +932,11 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
           <div className="absolute bottom-4 left-1/2 w-max max-w-[calc(100%-2rem)] -translate-x-1/2">
             {status === 'recording' || status === 'starting' && recording ? <div className="rounded-2xl border border-border bg-bg-secondary/95 px-4 py-3 shadow-lg">
               <div className="flex items-center gap-3">
-                <span className={clsx('h-2.5 w-2.5 rounded-full', recording?.state === 'recording' ? 'animate-pulse bg-error' : 'bg-warning')} />
-                <div className="min-w-40">
+                <span className={clsx('h-2.5 w-2.5 rounded-full',
+                  recording?.state === 'recording' ? 'animate-pulse bg-error'
+                    : recording?.state === 'calibrated' ? 'animate-pulse bg-[#3f9d6a]'
+                      : 'animate-pulse bg-warning')} />
+                <div className="min-w-48">
                   <p className="text-sm font-medium" role="status">{STATE_TEXT[recording?.state ?? 'starting']}</p>
                   <p className="text-xs tabular-nums text-text-muted">{recording?.message || `${recording?.samples.length ?? 0} 个采样 · ${recording?.events.length ?? 0} 个标记`}</p>
                 </div>
@@ -947,14 +968,45 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
               {route && !readOnly && route.map === finished.map && selectedSet.size > 1 && <button onClick={() => keepRecording('replace')} className={secondaryButton}>替换所选 {selectedSet.size} 点</button>}
               {route && !readOnly && route.map === finished.map && selected !== null && <button onClick={() => keepRecording('insert')} className={secondaryButton}>插入第 {selected+1} 点后</button>}
               <button onClick={() => keepRecording('append')} className={primaryButton}><Check className="h-3.5 w-3.5" />{route && !readOnly && route.map === finished.map && route.points.length ? '接到路线末尾' : '保存为路线'}</button>
-            </div> : <div className="flex items-center gap-2 rounded-2xl border border-border bg-bg-secondary/95 px-3 py-2 shadow-lg">
+            </div> : <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-bg-secondary/95 px-3 py-2 shadow-lg">
               <select aria-label="录制地图" value={route?.map ?? recordMap} disabled={Boolean(route?.points.length)} onChange={(event) => {
                 setRecordMap(event.target.value);
-                if (route && !route.points.length) setRoute({ ...route, map: event.target.value });
+                setRecordTeleport(undefined);
+                if (route && !route.points.length) {
+                  const next = { ...route, map: event.target.value };
+                  delete next.teleport;
+                  setRoute(next);
+                }
               }} className="rounded-lg border border-border bg-bg-primary px-2 py-1.5 text-xs outline-none">
                 {maps.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
               </select>
-              <button onClick={() => void startRecording(route?.map ?? recordMap)} className="inline-flex items-center gap-2 rounded-lg bg-error px-3.5 py-1.5 text-xs font-medium text-white hover:opacity-90">
+              {route && !readOnly && route.points.length > 0 ? (
+                <span className="px-1 text-xs text-text-secondary">续录片段（开始后请按 M 打开大地图定位起点）</span>
+              ) : (
+                <select aria-label="录制起点传送点"
+                  value={(route ? route.teleport?.name : recordTeleport?.name) ?? ''}
+                  disabled={readOnly}
+                  onChange={(event) => {
+                    const cp = knownCheckpoints.find((item) => item.name === event.target.value);
+                    if (route) {
+                      const next = { ...route };
+                      if (cp) next.teleport = cp; else delete next.teleport;
+                      commit(next);
+                    } else {
+                      setRecordTeleport(cp);
+                    }
+                  }}
+                  className="max-w-56 rounded-lg border border-border bg-bg-primary px-2 py-1.5 text-xs outline-none">
+                  <option value="">起点：非传送点（需开大地图定位）</option>
+                  {knownCheckpoints.map((cp) => <option key={cp.name} value={cp.name}>起点传送：{cp.name}</option>)}
+                </select>
+              )}
+              <button onClick={() => {
+                const targetMap = route?.map ?? recordMap;
+                const isSegment = Boolean(route && !readOnly && route.points.length > 0);
+                const startTp = isSegment ? undefined : (route ? route.teleport : recordTeleport);
+                void startRecording(targetMap, { teleport: startTp, require_bigmap: isSegment || !startTp });
+              }} className="inline-flex items-center gap-2 rounded-lg bg-error px-3.5 py-1.5 text-xs font-medium text-white hover:opacity-90">
                 <span className="h-2 w-2 rounded-full bg-white" />开始录制
               </button>
             </div>}
@@ -1091,7 +1143,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
           </ol>
         </> : <div className="flex flex-1 flex-col justify-center gap-4 p-6 text-sm leading-6 text-text-secondary">
           <h2 className="text-base font-semibold text-text-primary">三步做一条重复路线</h2>
-          <p><strong className="text-text-primary">1. 录制</strong><br />选好地图，点开始录制，在游戏里走一遍。跳跃、交互、净化攻击（含朝向）、摇铃和能力键会自动记下，中途传送也会自动匹配流转之柱。</p>
+          <p><strong className="text-text-primary">1. 录制</strong><br />选好地图与起点（若起点非传送点，开始录制后按 M 打开大地图定位起点），在游戏里走一遍。跳跃、交互、净化攻击（含朝向）、摇铃和能力键会自动记下，中途传送也会自动匹配流转之柱。</p>
           <p><strong className="text-text-primary">2. 调整</strong><br />在地图上点击流转之柱可设起点传送，拖动点位或朝向箭头，支持框选批量修改与片段重录。</p>
           <p><strong className="text-text-primary">3. 试跑与串联</strong><br />从任意点开始试走或试跑（小地图实时叠加路线遮罩），根据试跑诊断一键微调，或建路线清单多条串联执行。</p>
         </div>}

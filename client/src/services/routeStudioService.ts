@@ -16,7 +16,7 @@ import { dailyWindowReserved, reserveDailyWindow } from './explorationService';
 import { fishingBusy } from './fishingService';
 import { stopInstanceTasks } from './taskStopService';
 import { wardrobeBusy } from './wardrobeService';
-import type { Recording, RouteCollectionDocument, RouteDocument, TrialState } from './routeDocument';
+import type { Checkpoint, Recording, RouteCollectionDocument, RouteDocument, TrialState } from './routeDocument';
 
 const INSTANCE_ID = 'maanikki-route';
 const RECORDING_FILE = 'config/route_recording.json';
@@ -169,10 +169,14 @@ async function run(status: Status, label: string, entry: string, params: Record<
 }
 
 /** Record the player's own run. The agent only observes and sends no game input. */
-export function startRecording(map: string) {
+export function startRecording(map: string, options?: { teleport?: Checkpoint; require_bigmap?: boolean }) {
   const since = Date.now()-5000;
   useRouteStudioStore.setState({ finished: null });
-  return session('recording', '录制路线', 'MaaNikki_RouteRecord', { map }, async () => {
+  return session('recording', '录制路线', 'MaaNikki_RouteRecord', {
+    map,
+    ...(options?.teleport ? { teleport: options.teleport } : {}),
+    ...(options?.require_bigmap ? { require_bigmap: true } : {}),
+  }, async () => {
     const recording = await readRecording(since);
     if (!recording) return;
     useRouteStudioStore.setState({ recording });

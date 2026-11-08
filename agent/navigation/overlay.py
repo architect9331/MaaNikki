@@ -66,7 +66,7 @@ class Paint(ctypes.Structure):
 class MinimapHudSurface:
     """Compact BGRA surface covering the top-left minimap and status pill region."""
 
-    REF_W = 360
+    REF_W = 420
     REF_H = 230
 
     def __init__(self, client_w: int, client_h: int):
@@ -132,99 +132,103 @@ class MinimapHudSurface:
         cx_ref, cy_ref = snapshot["center"]
         r_ref = max(12.0, float(snapshot["radius"]) - 3.0)
         map_scale = max(0.05, float(snapshot["scale"]))
-        px_world, py_world = snapshot["pose"]
+        pose = snapshot.get("pose")
         points = snapshot.get("points") or ()
         current_index = int(snapshot.get("current_index", 0))
         title_line = str(snapshot.get("title") or "").strip()
         sub_line = str(snapshot.get("subtitle") or "").strip()
+        border_bgr = snapshot.get("border_bgr") or (120, 152, 180)
+        title_color = int(snapshot.get("title_color", 0xFFF6EA))
 
-        cx, cy = cx_ref * sx, cy_ref * sy
-        rx, ry = r_ref * sx, r_ref * sy
-        r_px = min(rx, ry)
+        if pose is not None and len(pose) == 2:
+            px_world, py_world = pose
+            cx, cy = cx_ref * sx, cy_ref * sy
+            rx, ry = r_ref * sx, r_ref * sy
+            r_px = min(rx, ry)
 
-        canvas_bgr = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-        canvas_alpha = np.zeros((self.height, self.width), dtype=np.uint8)
+            canvas_bgr = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+            canvas_alpha = np.zeros((self.height, self.width), dtype=np.uint8)
 
-        def to_px(wx: float, wy: float) -> tuple[int, int]:
-            mx = cx_ref + (wx - px_world) / map_scale
-            my = cy_ref + (wy - py_world) / map_scale
-            return round(mx * sx), round(my * sy)
+            def to_px(wx: float, wy: float) -> tuple[int, int]:
+                mx = cx_ref + (wx - px_world) / map_scale
+                my = cy_ref + (wy - py_world) / map_scale
+                return round(mx * sx), round(my * sy)
 
-        # Draw completed, current, and upcoming route segments.
-        coords = [to_px(pt[0], pt[1]) for pt in points]
-        line_w = max(2, round(2.4 * s))
-        active_w = max(2, round(3.0 * s))
-        for idx in range(1, len(points)):
-            p0, p1 = coords[idx - 1], coords[idx]
-            is_teleport = len(points[idx]) >= 5 and points[idx][4] == "teleport"
-            if is_teleport:
-                continue
-            if idx < current_index:
-                cv2.line(canvas_bgr, p0, p1, (190, 185, 175), line_w, cv2.LINE_AA)
-                cv2.line(canvas_alpha, p0, p1, 115, line_w, cv2.LINE_AA)
-            elif idx == current_index:
-                cv2.line(canvas_bgr, p0, p1, (90, 215, 255), active_w, cv2.LINE_AA)
-                cv2.line(canvas_alpha, p0, p1, 235, active_w, cv2.LINE_AA)
-            else:
-                cv2.line(canvas_bgr, p0, p1, (130, 145, 235), line_w, cv2.LINE_AA)
-                cv2.line(canvas_alpha, p0, p1, 185, line_w, cv2.LINE_AA)
+            # Draw completed, current, and upcoming route segments.
+            coords = [to_px(pt[0], pt[1]) for pt in points]
+            line_w = max(2, round(2.4 * s))
+            active_w = max(2, round(3.0 * s))
+            for idx in range(1, len(points)):
+                p0, p1 = coords[idx - 1], coords[idx]
+                is_teleport = len(points[idx]) >= 5 and points[idx][4] == "teleport"
+                if is_teleport:
+                    continue
+                if idx < current_index:
+                    cv2.line(canvas_bgr, p0, p1, (190, 185, 175), line_w, cv2.LINE_AA)
+                    cv2.line(canvas_alpha, p0, p1, 115, line_w, cv2.LINE_AA)
+                elif idx == current_index:
+                    cv2.line(canvas_bgr, p0, p1, (90, 215, 255), active_w, cv2.LINE_AA)
+                    cv2.line(canvas_alpha, p0, p1, 235, active_w, cv2.LINE_AA)
+                else:
+                    cv2.line(canvas_bgr, p0, p1, (130, 145, 235), line_w, cv2.LINE_AA)
+                    cv2.line(canvas_alpha, p0, p1, 185, line_w, cv2.LINE_AA)
 
-        # Draw line from player center to current target waypoint.
-        if 0 <= current_index < len(coords):
-            p_cur = coords[current_index]
-            c_pt = (round(cx), round(cy))
-            cv2.line(canvas_bgr, c_pt, p_cur, (80, 230, 255), max(1, round(1.8 * s)), cv2.LINE_AA)
-            cv2.line(canvas_alpha, c_pt, p_cur, 210, max(1, round(1.8 * s)), cv2.LINE_AA)
+            # Draw line from player center to current target waypoint.
+            if 0 <= current_index < len(coords):
+                p_cur = coords[current_index]
+                c_pt = (round(cx), round(cy))
+                cv2.line(canvas_bgr, c_pt, p_cur, (80, 230, 255), max(1, round(1.8 * s)), cv2.LINE_AA)
+                cv2.line(canvas_alpha, c_pt, p_cur, 210, max(1, round(1.8 * s)), cv2.LINE_AA)
 
-        # Draw waypoints from ends toward current_index so current target stays on top.
-        dot_r = max(3, round(3.8 * s))
-        act_r = max(4, round(5.2 * s))
-        for idx, pt in enumerate(points):
-            if idx == current_index:
-                continue
-            x_px, y_px = coords[idx]
-            if idx < current_index:
-                cv2.circle(canvas_bgr, (x_px, y_px), max(2, dot_r - 1), (185, 185, 185), -1, cv2.LINE_AA)
-                cv2.circle(canvas_alpha, (x_px, y_px), max(2, dot_r - 1), 120, -1, cv2.LINE_AA)
-            else:
-                action = pt[4] if len(pt) >= 5 else ""
-                jump = bool(pt[3]) if len(pt) >= 4 else False
-                col = ACTION_BGR.get(action, (235, 235, 235)) if action else ((61, 163, 232) if jump else (245, 245, 245))
-                r_use = act_r if action else dot_r
-                cv2.circle(canvas_bgr, (x_px, y_px), r_use + 1, (30, 26, 24), -1, cv2.LINE_AA)
-                cv2.circle(canvas_bgr, (x_px, y_px), r_use, col, -1, cv2.LINE_AA)
-                cv2.circle(canvas_alpha, (x_px, y_px), r_use + 1, 225, -1, cv2.LINE_AA)
+            # Draw waypoints from ends toward current_index so current target stays on top.
+            dot_r = max(3, round(3.8 * s))
+            act_r = max(4, round(5.2 * s))
+            for idx, pt in enumerate(points):
+                if idx == current_index:
+                    continue
+                x_px, y_px = coords[idx]
+                if idx < current_index:
+                    cv2.circle(canvas_bgr, (x_px, y_px), max(2, dot_r - 1), (185, 185, 185), -1, cv2.LINE_AA)
+                    cv2.circle(canvas_alpha, (x_px, y_px), max(2, dot_r - 1), 120, -1, cv2.LINE_AA)
+                else:
+                    action = pt[4] if len(pt) >= 5 else ""
+                    jump = bool(pt[3]) if len(pt) >= 4 else False
+                    col = ACTION_BGR.get(action, (235, 235, 235)) if action else ((61, 163, 232) if jump else (245, 245, 245))
+                    r_use = act_r if action else dot_r
+                    cv2.circle(canvas_bgr, (x_px, y_px), r_use + 1, (30, 26, 24), -1, cv2.LINE_AA)
+                    cv2.circle(canvas_bgr, (x_px, y_px), r_use, col, -1, cv2.LINE_AA)
+                    cv2.circle(canvas_alpha, (x_px, y_px), r_use + 1, 225, -1, cv2.LINE_AA)
 
-        # Highlight current target waypoint (or draw rim indicator if outside minimap circle).
-        if 0 <= current_index < len(points):
-            tx, ty = coords[current_index]
-            pt = points[current_index]
-            rad_world = float(pt[2]) if len(pt) >= 3 else 1.0
-            rad_px = max(act_r + 3, round((rad_world / map_scale) * s))
-            dx, dy = (tx - cx) / max(1.0, sx), (ty - cy) / max(1.0, sy)
-            dist_ref = math.hypot(dx, dy)
-            if dist_ref <= r_ref - 2.0:
-                if rad_px <= r_px * 0.75:
-                    cv2.circle(canvas_bgr, (tx, ty), rad_px, (80, 225, 255), max(1, round(1.5 * s)), cv2.LINE_AA)
-                    cv2.circle(canvas_alpha, (tx, ty), rad_px, 165, max(1, round(1.5 * s)), cv2.LINE_AA)
-                cv2.circle(canvas_bgr, (tx, ty), act_r + 2, (255, 255, 255), -1, cv2.LINE_AA)
-                cv2.circle(canvas_bgr, (tx, ty), act_r, (55, 195, 255), -1, cv2.LINE_AA)
-                cv2.circle(canvas_alpha, (tx, ty), act_r + 2, 250, -1, cv2.LINE_AA)
-            else:
-                ang = math.atan2(dy, dx)
-                rim_x = round((cx_ref + math.cos(ang) * (r_ref - 5.0)) * sx)
-                rim_y = round((cy_ref + math.sin(ang) * (r_ref - 5.0)) * sy)
-                cv2.circle(canvas_bgr, (rim_x, rim_y), act_r + 2, (255, 255, 255), -1, cv2.LINE_AA)
-                cv2.circle(canvas_bgr, (rim_x, rim_y), act_r, (55, 195, 255), -1, cv2.LINE_AA)
-                cv2.circle(canvas_alpha, (rim_x, rim_y), act_r + 2, 250, -1, cv2.LINE_AA)
+            # Highlight current target waypoint (or draw rim indicator if outside minimap circle).
+            if 0 <= current_index < len(points):
+                tx, ty = coords[current_index]
+                pt = points[current_index]
+                rad_world = float(pt[2]) if len(pt) >= 3 else 1.0
+                rad_px = max(act_r + 3, round((rad_world / map_scale) * s))
+                dx, dy = (tx - cx) / max(1.0, sx), (ty - cy) / max(1.0, sy)
+                dist_ref = math.hypot(dx, dy)
+                if dist_ref <= r_ref - 2.0:
+                    if rad_px <= r_px * 0.75:
+                        cv2.circle(canvas_bgr, (tx, ty), rad_px, (80, 225, 255), max(1, round(1.5 * s)), cv2.LINE_AA)
+                        cv2.circle(canvas_alpha, (tx, ty), rad_px, 165, max(1, round(1.5 * s)), cv2.LINE_AA)
+                    cv2.circle(canvas_bgr, (tx, ty), act_r + 2, (255, 255, 255), -1, cv2.LINE_AA)
+                    cv2.circle(canvas_bgr, (tx, ty), act_r, (55, 195, 255), -1, cv2.LINE_AA)
+                    cv2.circle(canvas_alpha, (tx, ty), act_r + 2, 250, -1, cv2.LINE_AA)
+                else:
+                    ang = math.atan2(dy, dx)
+                    rim_x = round((cx_ref + math.cos(ang) * (r_ref - 5.0)) * sx)
+                    rim_y = round((cy_ref + math.sin(ang) * (r_ref - 5.0)) * sy)
+                    cv2.circle(canvas_bgr, (rim_x, rim_y), act_r + 2, (255, 255, 255), -1, cv2.LINE_AA)
+                    cv2.circle(canvas_bgr, (rim_x, rim_y), act_r, (55, 195, 255), -1, cv2.LINE_AA)
+                    cv2.circle(canvas_alpha, (rim_x, rim_y), act_r + 2, 250, -1, cv2.LINE_AA)
 
-        # Clip minimap drawing to the minimap circle and composite into premultiplied BGRA.
-        yy, xx = np.ogrid[:self.height, :self.width]
-        dist_circle = np.hypot(xx / sx - cx_ref, yy / sy - cy_ref)
-        clip = np.clip(r_ref + 0.5 - dist_circle, 0.0, 1.0).astype(np.float32)
-        alpha_f = (canvas_alpha.astype(np.float32) / 255.0) * clip
-        pixels[..., :3] = np.clip(np.rint(canvas_bgr.astype(np.float32) * alpha_f[..., None]), 0, 255).astype(np.uint8)
-        pixels[..., 3] = np.clip(np.rint(alpha_f * 255.0), 0, 255).astype(np.uint8)
+            # Clip minimap drawing to the minimap circle and composite into premultiplied BGRA.
+            yy, xx = np.ogrid[:self.height, :self.width]
+            dist_circle = np.hypot(xx / sx - cx_ref, yy / sy - cy_ref)
+            clip = np.clip(r_ref + 0.5 - dist_circle, 0.0, 1.0).astype(np.float32)
+            alpha_f = (canvas_alpha.astype(np.float32) / 255.0) * clip
+            pixels[..., :3] = np.clip(np.rint(canvas_bgr.astype(np.float32) * alpha_f[..., None]), 0, 255).astype(np.uint8)
+            pixels[..., 3] = np.clip(np.rint(alpha_f * 255.0), 0, 255).astype(np.uint8)
 
         # Draw status pill below the minimap.
         if title_line or sub_line:
@@ -234,8 +238,8 @@ class MinimapHudSurface:
             text_len = max(len(title_line), len(sub_line))
             pill_w = min(self.width - pill_x0 - round(6 * sx), max(round(176 * sx), round((28 + text_len * 12.2) * sx)))
             _blend_rect(pixels, pill_x0, pill_y0, pill_x0 + pill_w, pill_y0 + pill_h,
-                        (38, 30, 26), radius=round(9 * s), opacity=0.86,
-                        border_bgr=(120, 152, 180), border_px=max(1.0, 1.2 * s))
+                        (38, 30, 26), radius=round(9 * s), opacity=0.88,
+                        border_bgr=border_bgr, border_px=max(1.0, 1.4 * s))
             dc, gdi = self.dc, self.gdi
             text_out = bind(gdi, "TextOutW", w.BOOL, w.HDC, ctypes.c_int, ctypes.c_int, w.LPCWSTR, ctypes.c_int)
             font_fn = bind(gdi, "CreateFontW", w.HFONT, *([ctypes.c_int] * 5), *([w.DWORD] * 8), w.LPCWSTR)
@@ -250,7 +254,7 @@ class MinimapHudSurface:
                 tx = pill_x0 + round(10 * sx)
                 if title_line:
                     old_font = checked(self.select(dc, f_bold), "选择小地图遮罩字体")
-                    set_color(dc, 0xFFF6EA)
+                    set_color(dc, title_color)
                     checked(text_out(dc, tx, pill_y0 + round(5 * sy), title_line, len(title_line)), "绘制小地图标题")
                 if sub_line:
                     handle = self.select(dc, f_sub)
@@ -344,6 +348,32 @@ class RouteMinimapOverlay:
             }
             self.updated_at = time.monotonic()
 
+    def publish_status(
+        self,
+        title: str,
+        subtitle: str = "",
+        *,
+        border_bgr: tuple[int, int, int] = (120, 152, 180),
+        title_color: int = 0xFFF6EA,
+    ):
+        if self.thread is None or (not title and not subtitle):
+            self.hide()
+            return
+        with self.lock:
+            self.snapshot = {
+                "center": self.spec.center,
+                "radius": self.spec.radius,
+                "scale": self.spec.scale,
+                "pose": None,
+                "points": (),
+                "current_index": 0,
+                "title": title,
+                "subtitle": subtitle,
+                "border_bgr": border_bgr,
+                "title_color": title_color,
+            }
+            self.updated_at = time.monotonic()
+
     def hide(self):
         with self.lock:
             self.snapshot = None
@@ -426,7 +456,7 @@ class RouteMinimapOverlay:
                 fg = foreground()
                 visible = (
                     snap is not None
-                    and now - updated < 2.2
+                    and now - updated < 3.5
                     and bool(valid(self.game))
                     and not bool(iconic(self.game))
                     and fg in (self.game, hwnd)
@@ -440,7 +470,14 @@ class RouteMinimapOverlay:
                                 surface.close()
                             surface = MinimapHudSurface(rect.right, rect.bottom)
                             rendered = None
-                        sig = (snap["pose"], snap["current_index"], snap["title"], snap["subtitle"], len(snap["points"]))
+                        sig = (
+                            snap.get("pose"),
+                            snap.get("current_index"),
+                            snap.get("title"),
+                            snap.get("subtitle"),
+                            len(snap.get("points") or ()),
+                            snap.get("border_bgr"),
+                        )
                         if sig != rendered:
                             surface.draw(snap)
                         if sig != rendered or next_geom != geometry or not shown(hwnd):
