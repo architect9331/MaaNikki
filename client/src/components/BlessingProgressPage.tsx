@@ -84,16 +84,15 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
 
   const presets = useMemo<RainbowPreset[]>(() => {
     const list: RainbowPreset[] = [];
-    const catalogRate = probability?.iridescent ?? 0.054;
+    const catalogRate = probability?.iridescent ?? 0.05;
+    list.push({ id: 'catalog', label: '基准', rate: catalogRate, note: '综合 MaaNikki 用户上报与社区统计的 5% 基准估算值。' });
     if (community) list.push({ id: 'community', label: '用户统计', rate: community.rate, note: `MaaNikki 用户匿名上报，共 ${number(community.samples)} 次升满。` });
-    list.push({ id: 'catalog', label: '网传', rate: catalogRate, note: `社区转述的 ${probability?.successes ?? 52}/${probability?.samples ?? 962}，未公开逐条记录。` });
-    list.push({ id: 'low', label: '偏低', rate: probability?.scenarios?.[0] ?? 0.0412, note: '网传数据置信区间的下沿。' });
-    list.push({ id: 'high', label: '偏高', rate: probability?.scenarios?.[2] ?? 0.0697, note: '网传数据置信区间的上沿。' });
+    list.push({ id: 'low', label: '偏低', rate: probability?.scenarios?.[0] ?? 0.0367, note: '统计数据置信区间的下沿。' });
+    list.push({ id: 'high', label: '偏高', rate: probability?.scenarios?.[2] ?? 0.0623, note: '统计数据置信区间的上沿。' });
     if (rolls?.total) list.push({ id: 'own', label: '本账号', rate: Math.max((rolls.colors['彩'] ?? 0) / rolls.total, 0.005), note: `本账号 ${rolls.total} 次升满，彩色 ${rolls.colors['彩'] ?? 0} 次。样本少时波动很大。` });
     return list;
   }, [community, probability, rolls]);
-  // User statistics replace the second-hand figure once they hold more samples than it.
-  const defaultPreset = community && community.samples > (probability?.samples ?? 962) ? 'community' : 'catalog';
+  const defaultPreset = 'catalog';
 
   const history = useMemo(() => Object.entries(data?.observations?.collection_history ?? {})
     .map(([day, row]) => ({ day, owned: row.owned })).sort((a, b) => a.day.localeCompare(b.day)), [data]);
@@ -105,7 +104,7 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
 
   const missingBySource = useMemo(() => {
     const values = new Map<string, number>();
-    const rainbow = probability?.iridescent ?? 0.054;
+    const rainbow = probability?.iridescent ?? 0.05;
     for (const part of parts) {
       const k = Math.max(0, part.embryos ?? 0);
       const q = part.normalTotal > 0 ? (1 - rainbow) / part.normalTotal : 0;
@@ -212,7 +211,7 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
               <Stat label="满级重复" value={resources ? `约 ${number(resources.duplicates ?? 0)}` : '—'} detail="每件折合 300 粒子" />
               <Stat label="仓库" value={resources?.capacity ? `${number(resources.capacity[0])}/${number(resources.capacity[1])}` : '待读取'} detail="满了会分解一批再刷本" warn={!!resources?.capacity && resources.capacity[0] >= resources.capacity[1]} />
               <Stat label="本账号彩色" value={rolls?.total ? `${rolls.colors['彩'] ?? 0} 次` : '—'}
-                detail={rolls?.total ? `升满 ${number(rolls.total)} 次，按 ${((probability?.iridescent ?? 0.054) * 100).toFixed(1)}% 约应出 ${(rolls.total * (probability?.iridescent ?? 0.054)).toFixed(1)} 次` : '还没有记录，全收集下次升满后开始统计'} />
+                detail={rolls?.total ? `升满 ${number(rolls.total)} 次，按 ${((probability?.iridescent ?? 0.05) * 100).toFixed(1)}% 约应出 ${(rolls.total * (probability?.iridescent ?? 0.05)).toFixed(1)} 次` : '还没有记录，全收集下次升满后开始统计'} />
             </div>
           </section>
 

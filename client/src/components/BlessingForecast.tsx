@@ -120,7 +120,7 @@ export function BlessingForecast({ input, presets, defaultPreset, history }: {
   const [busy, setBusy] = useState(true);
   const [metric, setMetric] = useState<Metric>('colors');
   const chosen = presets.find((item) => item.id === preset) ?? presets.find((item) => item.id === defaultPreset) ?? presets[0];
-  const rainbow = chosen?.rate ?? 0.054;
+  const rainbow = chosen?.rate ?? 0.05;
   const key = JSON.stringify({ input, rainbow, energy, income, extraBling, extraParticles });
 
   useEffect(() => {
