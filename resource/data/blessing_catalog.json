@@ -564,6 +564,10 @@
     },
     {
       "name": "泪之华",
+      "collection_target": false,
+      "lock_mutable": false,
+      "decomposable": false,
+      "maximum_owned": 3,
       "colors": [
         "蓝"
       ],

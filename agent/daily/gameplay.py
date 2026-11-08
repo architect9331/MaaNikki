@@ -27,15 +27,19 @@ class Gameplay:
         """Read only on the confirmed calendar; an OCR miss is not zero."""
         if not self.rt.hit("MaaNikki_CalendarReady"):
             return None
-        for _ in range(2):
+        # Returning from a realm challenge plays a ~2s Mira Level EXP gain
+        # banner ("经验 +...") across the top-center Vital Energy counter.
+        for attempt in range(16):
+            if attempt > 0 and not self.rt.hit("MaaNikki_CalendarReady"):
+                return None
             result = self.rt.recognize("MaaNikki_Energy_Remaining")
             raw = getattr(result.best_result, "text", "") if result and result.hit else ""
             match = re.fullmatch(r"\s*(\d+)\s*[/／]\s*(\d+)\s*", raw)
             if match:
                 current, total = map(int, match.groups())
-                if 0 <= current <= 9999 and 0 < total <= 9999:
+                if 0 <= current <= 1000 and 0 < total <= 1000:
                     return current
-            if not self.rt.pause(.2):
+            if not self.rt.pause(.25):
                 break
         return None
 

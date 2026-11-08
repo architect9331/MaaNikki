@@ -314,6 +314,11 @@ class InventoryStore:
                 definition = definition_for(self.catalog, row.get("name"), observed=row)
                 flags = capabilities(self.catalog, row.get("name"), observed=row)
                 maximum = self.catalog["upgrade_costs"][str(definition["rarity"])]["max_level"]
+                if (row.get("rarity") != 5
+                        and type(row.get("collectible")) is bool
+                        and type(row.get("mutable")) is bool):
+                    row["collectible"] = flags["collection_target"]
+                    row["mutable"] = flags["lock_mutable"]
                 if (row.get("slot") != slot or row.get("rarity") != definition["rarity"]
                         or type(row.get("level")) is not int or not 0 <= row["level"] <= maximum
                         or row.get("color") is not None and row["color"] not in definition["colors"]
