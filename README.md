@@ -7,8 +7,10 @@
 ✨ 一款《无限暖暖》游戏小助手 ✨
 
 [![版本](https://img.shields.io/github/v/release/architect9331/MaaNikki?include_prereleases&label=release&color=f28fa8)](https://github.com/architect9331/MaaNikki/releases)
+[![Stars](https://img.shields.io/github/stars/architect9331/MaaNikki?color=f6c177)](https://github.com/architect9331/MaaNikki/stargazers)
 [![下载量](https://img.shields.io/github/downloads/architect9331/MaaNikki/total?color=f4b85e)](https://github.com/architect9331/MaaNikki/releases)
 [![平台](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-8b9dcc)](https://github.com/architect9331/MaaNikki/releases)
+[![QQ群](https://img.shields.io/badge/QQ群-654174255-74a8d8)](#交流与反馈)
 [![许可](https://img.shields.io/badge/license-AGPL--3.0--only-a7bca0)](LICENSE)
 
 基于图像识别，一键完成日常，自动追全祝福闪光颜色。
@@ -102,6 +104,10 @@ Powered by [MaaFramework](https://github.com/MaaXYZ/MaaFramework) & [MXU](https:
 - [MaaCommonAssets](https://github.com/MaaXYZ/MaaCommonAssets) / [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)：OCR 模型。
 
 感谢参与开发、反馈问题和分享使用经验的朋友！
+
+<a href="https://github.com/architect9331/MaaNikki/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=architect9331/MaaNikki" alt="Contributors" />
+</a>
 
 ## Star History
 
