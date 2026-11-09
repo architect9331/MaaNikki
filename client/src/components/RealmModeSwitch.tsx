@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { useAppStore } from '@/stores/appStore';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { getBlessingProgress } from '@/utils/blessingProgress';
-import { realmCollectionEnabled, realmCollectionWorkflow, realmCraftingEnabled } from '@/utils/nikkiOptions';
+import { realmCollectionEnabled, realmCollectionWorkflow, realmCraftingEnabled, realmReserveBling } from '@/utils/nikkiOptions';
 import type { OptionValue } from '@/types/interface';
 
 const MODES = [
@@ -41,10 +41,7 @@ export function RealmModeSwitch({ instanceId, taskId, values, disabled }: {
   const activeMode = collection ? 'blessing' : crafting ? 'crafting' : 'daily';
   const decompose = values.CollectionDecompose?.type === 'switch' && values.CollectionDecompose.value;
   const autoBling = values.CollectionBling?.type !== 'switch' || values.CollectionBling.value;
-  const reserveBlingRaw = values.CollectionReserveBling?.type === 'input'
-    ? Number.parseInt(values.CollectionReserveBling.values.amount ?? '0', 10)
-    : 0;
-  const reserveBling = Number.isFinite(reserveBlingRaw) && reserveBlingRaw > 0 ? reserveBlingRaw : 0;
+  const reserveBling = realmReserveBling(values);
   const steps = farmOnly
     ? [...progress.localKnown ? [] : ['首次扫描已收集颜色与胚子'], '按已有颜色与仓库胚子算期望选本', '刷取胚子（升级与锁定交由手动管理）']
     : [

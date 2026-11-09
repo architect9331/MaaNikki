@@ -12,6 +12,7 @@ export interface ForecastInput {
   blingPerRun: number;
   blingPerDay: number;
   bling: number;
+  reserveBling?: number;
   particles: number;
   duplicates: number;
   embryos: number;
@@ -68,6 +69,7 @@ function trial(input: ForecastInput, seed: number) {
   const openParts = parts.map((_, index) => index).filter(open);
   let queue = Array.from({ length: firstOpen < 0 ? 0 : input.embryos }, () => openParts[Math.floor(rand() * openParts.length)]);
   let { bling, particles, duplicates, capacity } = input;
+  const reserveBling = Math.max(0, input.reserveBling ?? 0);
   let done = 0;
   let normalDone = 0;
   let carry = 0;
@@ -82,7 +84,7 @@ function trial(input: ForecastInput, seed: number) {
     for (;;) {
       queue = queue.filter(open);
       if (!queue.length) return 'done';
-      if (bling < COST_BLING) return 'bling';
+      if (bling < COST_BLING + reserveBling) return 'bling';
       let best = 0;
       for (let index = 1; index < queue.length; index++) if (chance(queue[index]) > chance(queue[best])) best = index;
       const target = queue[best];
@@ -207,7 +209,7 @@ export function forecast(input: ForecastInput): ForecastResult {
     return { key, label, low: percentile(known, 0.1), day: percentile(known, 0.5), high: percentile(known, 0.9) };
   };
   return { owned, total: owned + total, days, low, median, high, resources, milestones: [
-    milestone('bling', '噗灵开始不够，要穿插刷噗灵', (run) => run.firstBling),
+    milestone('bling', (input.reserveBling ?? 0) > 0 ? '噗灵触及保留线，要穿插刷噗灵' : '噗灵开始不够，要穿插刷噗灵', (run) => run.firstBling),
     milestone('half', '缺的颜色收齐一半', (run) => run.reached[1]),
     milestone('full', '仓库第一次满', (run) => run.firstFull),
     milestone('normal', '普通色全部收齐', (run) => run.normalDay),

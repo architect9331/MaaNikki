@@ -5,7 +5,9 @@ import clsx from 'clsx';
 import { toast } from 'sonner';
 import { collectionShareImage } from '@/utils/collectionShareImage';
 import { useAccountStateStore } from '@/stores/accountStateStore';
+import { useAppStore } from '@/stores/appStore';
 import { collectionSlots as slots, collectionKey as keyOf, getBlessingProgress } from '@/utils/blessingProgress';
+import { realmCollectionWorkflow, realmReserveBling } from '@/utils/nikkiOptions';
 import { isTauri } from '@/utils/paths';
 import type { ForecastPart } from '@/services/collectionForecast';
 import { BlessingForecast, type RainbowPreset } from './BlessingForecast';
@@ -27,6 +29,10 @@ function ColorDot({ color, collected, label }: { color: string; collected: boole
 
 export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
   const { data, error, loading, refresh } = useAccountStateStore();
+  const realmValues = useAppStore((state) => {
+    const inst = state.instances.find((i) => i.id === state.activeInstanceId) ?? state.instances[0];
+    return inst?.selectedTasks.find((t) => t.taskName === 'realm_challenge')?.optionValues;
+  });
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('missing');
   const [community, setCommunity] = useState<{ rate: number; samples: number } | null>(null);
@@ -37,7 +43,14 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
   const resources = snapshot?.pursuit?.resources;
   const probability = data?.catalog?.probability;
   const rolls = data?.observations?.eureka_rolls;
-  const isFarmOnly = snapshot?.pursuit?.mode === 'farm_only';
+  const isFarmOnly = realmValues?.CollectionWorkflow
+    ? realmCollectionWorkflow(realmValues) === 'FarmOnly'
+    : snapshot?.pursuit?.mode === 'farm_only';
+  const configuredReserveBling = realmValues?.CollectionReserveBling
+    ? realmReserveBling(realmValues)
+    : Math.max(0, Number(resources?.reserve_bling ?? 0) || 0);
+  const effectiveReserveBling = isFarmOnly ? 0 : configuredReserveBling;
+  const decomposeEnabled = !isFarmOnly && (realmValues?.CollectionDecompose?.type === 'switch' ? realmValues.CollectionDecompose.value : true);
 
   const syncPearpal = async () => {
     if (!isTauri() || syncingPearpal) return;
@@ -97,10 +110,11 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
   const history = useMemo(() => Object.entries(data?.observations?.collection_history ?? {})
     .map(([day, row]) => ({ day, owned: row.owned })).sort((a, b) => a.day.localeCompare(b.day)), [data]);
   const forecastInput = useMemo(() => ({
-    parts, bling: resources?.bling ?? 0, particles: resources?.particles ?? 0, duplicates: resources?.duplicates ?? 0,
+    parts, bling: resources?.bling ?? 0, reserveBling: effectiveReserveBling,
+    particles: resources?.particles ?? 0, duplicates: resources?.duplicates ?? 0,
     embryos: resources?.embryos ?? 0, capacity: resources?.capacity?.[0] ?? progress.owned.size,
-    capacityLimit: resources?.capacity?.[1] ?? 1000, decompose: true, blingPerRun: resources?.bling_per_run ?? 80000,
-  }), [parts, resources, progress.owned.size]);
+    capacityLimit: resources?.capacity?.[1] ?? 1000, decompose: decomposeEnabled, blingPerRun: resources?.bling_per_run ?? 80000,
+  }), [parts, resources, progress.owned.size, effectiveReserveBling, decomposeEnabled]);
 
   const missingBySource = useMemo(() => {
     const values = new Map<string, number>();
@@ -115,7 +129,14 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
     return values;
   }, [parts, probability]);
   const nextSource = [...missingBySource].sort((a, b) => b[1] - a[1])[0];
-  const needBling = !isFarmOnly && !!resources?.embryos && resources.bling != null && resources.bling < 72000;
+  const particleTotal = (resources?.particles ?? 0) + (resources?.duplicates ?? 0) * 300;
+  const spendableBling = resources?.bling == null ? null : Math.max(0, resources.bling - effectiveReserveBling);
+  const affordableUpgrades = spendableBling == null ? 0 : Math.floor(spendableBling / 72000);
+  const embryosToUpgrade = Math.min(
+    resources?.embryos ?? 0,
+    resources?.particles == null ? (resources?.embryos ?? 0) : Math.max(1, Math.floor(particleTotal / 360)),
+  );
+  const needBling = !isFarmOnly && !!resources?.embryos && spendableBling != null && affordableUpgrades < embryosToUpgrade;
 
   const visible = sets.filter((s) => {
     const owned = count(s.name, s.colors);
@@ -128,7 +149,6 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
     .sort((a, b) => (missingBySource.get(b ?? '') ?? 0) - (missingBySource.get(a ?? '') ?? 0))
     .map((source) => ({ source, sets: visible.filter((s) => s.source === source) }));
   const updated = snapshot?.record?.updated_at;
-  const particleTotal = (resources?.particles ?? 0) + (resources?.duplicates ?? 0) * 300;
   const copyShareImage = async () => {
     try {
       const blob = await collectionShareImage({ owned: progress.owned.size, target, percentage: progress.percentage ?? 0,
@@ -189,7 +209,17 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
           {rewardPending && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />上次刷取结果待核对，已收藏颜色保留，下次全收集将先处理仓库。</p>}
 
           {progress.known && <StatusBar tone={needBling ? 'warn' : 'ok'} title={needBling ? '今天建议刷噗灵' : nextSource?.[1] ? `今天建议刷「${nextSource[0]}」` : '颜色已收齐'}
-            detail={needBling ? '噗灵不够升级已有胚子，全部体力刷噗灵。' : nextSource?.[1] ? (isFarmOnly ? '已结合当前仓库已有满级色与未升级胚子数量折算，刷此副本期望新色最高。' : '这里的胚子最可能出新色。') : '可以把体力用在其他幻境了。'} />}
+            detail={needBling
+              ? (effectiveReserveBling > 0
+                ? `扣除保留噗灵（${wan(effectiveReserveBling)}）后不够升级已有胚子，全部体力刷噗灵。`
+                : '噗灵不够升级已有胚子，全部体力刷噗灵。')
+              : nextSource?.[1]
+                ? (isFarmOnly
+                  ? '已结合当前仓库已有满级色与未升级胚子数量折算，刷此副本期望新色最高。'
+                  : effectiveReserveBling > 0 && spendableBling != null && spendableBling < 72000
+                    ? `这里的胚子最可能出新色；当前噗灵扣除保留（${wan(effectiveReserveBling)}）后不足升级，刷出胚子后将暂存待后续补足噗灵。`
+                    : '这里的胚子最可能出新色。')
+                : '可以把体力用在其他幻境了。'} />}
 
           <section className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
@@ -205,7 +235,9 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
               </dl>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <Stat label="噗灵" value={resources?.bling == null ? '待读取' : wan(resources.bling)} detail={resources?.bling == null ? '下次升级时读取' : `够升级 ${Math.floor(resources.bling / 72000)} 次`} warn={needBling} />
+              <Stat label="噗灵" value={resources?.bling == null ? '待读取' : wan(resources.bling)}
+                detail={resources?.bling == null ? '下次升级时读取' : effectiveReserveBling > 0 ? `够升级 ${affordableUpgrades} 次（保留 ${wan(effectiveReserveBling)}）` : `够升级 ${affordableUpgrades} 次`}
+                warn={needBling || (!isFarmOnly && spendableBling != null && spendableBling < 72000)} />
               <Stat label="可用粒子（含重复折算）" value={resources?.particles == null ? '待读取' : wan(particleTotal)} detail={resources?.particles == null ? '下次分解时读取' : `够升满 ${Math.floor(particleTotal / 360)} 次`} />
               <Stat label="待升级胚子" value={resources ? number(resources.embryos ?? 0) : '—'} detail="有胚子时优先升级" />
               <Stat label="满级重复" value={resources ? `约 ${number(resources.duplicates ?? 0)}` : '—'} detail="每件折合 300 粒子" />

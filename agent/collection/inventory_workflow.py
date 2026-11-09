@@ -167,7 +167,7 @@ class FiveStarInventory(BlessingLocker):
                       if capacity else listed)
         return {"bling": order.get("bling"), "particles": order.get("particles"), "capacity": capacity,
                 "duplicates": duplicates, "embryos": waiting, "spare_embryos": spare,
-                "bling_per_run": order.get("bling_per_run")}
+                "bling_per_run": order.get("bling_per_run"), "reserve_bling": self.reserve_bling}
 
     def record_history(self):
         """One progress point per game day, for the forecast's actual line."""

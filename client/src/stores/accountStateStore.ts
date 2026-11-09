@@ -31,6 +31,7 @@ export interface BlessingSnapshot {
     resources?: {
       bling?: number | null; particles?: number | null; capacity?: [number, number] | null;
       duplicates?: number; embryos?: number; spare_embryos?: number; bling_per_run?: number | null;
+      reserve_bling?: number | null;
     } | null;
   };
   part_embryos?: Record<string, number>;

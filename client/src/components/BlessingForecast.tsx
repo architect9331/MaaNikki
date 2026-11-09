@@ -184,7 +184,7 @@ export function BlessingForecast({ input, presets, defaultPreset, history }: {
           <label className="space-y-1 text-xs text-text-secondary"><span>如果额外获得噗灵</span><input className={CONTROL} type="number" min={0} step={1000000} value={extraBling} onChange={(event) => setExtraBling(Math.max(0, Number(event.target.value) || 0))} /></label>
           <label className="space-y-1 text-xs text-text-secondary"><span>如果额外获得粒子</span><input className={CONTROL} type="number" min={0} step={1000} value={extraParticles} onChange={(event) => setExtraParticles(Math.max(0, Number(event.target.value) || 0))} /></label>
         </div>
-        <p className="text-xs leading-5 text-text-muted">模拟 150 次“每天先升级，升不起就刷噗灵，否则刷本”的流程。未计入活动加成、礼包和版本新增套组，结果只作参考。</p>
+        <p className="text-xs leading-5 text-text-muted">模拟 150 次“每天先升级，升不起就刷噗灵，否则刷本”的流程{input.reserveBling ? `（已按保留 ${compact(input.reserveBling)} 噗灵计算）` : ''}。未计入活动加成、礼包和版本新增套组，结果只作参考。</p>
       </div>
     </details>
   </section>;

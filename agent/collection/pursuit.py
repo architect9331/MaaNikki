@@ -74,7 +74,13 @@ class FiveStarPursuit:
     def spend_on_bling(self):
         """A bling shortage leaves embryos waiting: more embryos cannot help today."""
         stock = self.inventory
-        self.rt.log("噗灵不够升级已有胚子，今天的活跃能量改刷噗灵。", ui_text="噗灵不足，今天改刷噗灵。")
+        if self.reserve_bling > 0:
+            self.rt.log(
+                f"当前噗灵扣除保留数（{self.reserve_bling}）后不够升级已有胚子，今天的活跃能量改刷噗灵。",
+                ui_text="可用噗灵不足（已扣除保留数），今天改刷噗灵。",
+            )
+        else:
+            self.rt.log("噗灵不够升级已有胚子，今天的活跃能量改刷噗灵。", ui_text="噗灵不足，今天改刷噗灵。")
         stock.report["phase"] = "realm_bling"
         outcome = self.supply.bling()
         stock.report["bling_supply"] = outcome

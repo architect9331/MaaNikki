@@ -16,6 +16,14 @@ export const realmCollectionWorkflow = (values: Record<string, OptionValue>): 'M
 export const realmFarmOnlyEnabled = (values: Record<string, OptionValue>): boolean =>
   realmCollectionEnabled(values) && realmCollectionWorkflow(values) === 'FarmOnly';
 
+export function realmReserveBling(values?: Record<string, OptionValue>): number {
+  const raw = values?.CollectionReserveBling?.type === 'input'
+    ? values.CollectionReserveBling.values.amount ?? '0'
+    : '0';
+  const parsed = Number.parseInt(String(raw).trim().replace(/[,，\s]/g, ''), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
 export const realmCraftingEnabled = (values: Record<string, OptionValue>): boolean =>
   !realmCollectionEnabled(values) && values.CraftingCollectionMode?.type === 'switch' && values.CraftingCollectionMode.value;
 
