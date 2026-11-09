@@ -55,14 +55,17 @@ ACTION_BGR = {
 
 
 class _TerrainSampler:
-    """Lazy O(1) terrain elevation reader backed by resource/navigation/terrain/<map_id>.png."""
+    """Lazy sub-pixel bilinear terrain elevation reader backed by resource/navigation/terrain/<map_id>.png."""
 
     _cache: dict[str, "_TerrainSampler"] = {}
     _lock = threading.Lock()
 
     def __init__(self, map_id: str):
         self.px_scale = 0.5
-        self.bgr: np.ndarray | None = None
+        self.z_offset = -300.0
+        self.z_scale = 64.0
+        self.z_grid: np.ndarray | None = None
+        self.valid_grid: np.ndarray | None = None
         self.h = 0
         self.w = 0
         try:
@@ -72,12 +75,25 @@ class _TerrainSampler:
                 info = manifest.get(map_id)
                 if info and info.get("image"):
                     self.px_scale = float(info.get("px_scale", 0.5))
+                    self.z_offset = float(info.get("z_offset", -500.0))
+                    self.z_scale = float(info.get("z_scale", 10.0))
                     img = read_image(NAV_ROOT / info["image"], cv2.IMREAD_COLOR)
                     if img is not None and img.ndim == 3:
-                        self.bgr = img
                         self.h, self.w = img.shape[:2]
+                        b = img[:, :, 0].astype(np.uint16)
+                        g = img[:, :, 1].astype(np.uint16)
+                        r = img[:, :, 2].astype(np.uint16)
+                        hu16 = (r << 8) | g
+                        valid = ((b & 1) != 0) & (hu16 > 0)
+                        self.valid_grid = valid
+                        self.z_grid = np.where(
+                            valid,
+                            hu16.astype(np.float32) / self.z_scale + self.z_offset,
+                            np.nan,
+                        )
         except Exception:
-            self.bgr = None
+            self.z_grid = None
+            self.valid_grid = None
 
     @classmethod
     def get(cls, map_id: str) -> "_TerrainSampler":
@@ -89,15 +105,32 @@ class _TerrainSampler:
             return sampler
 
     def sample_z(self, wx: float, wy: float, fallback: float = 0.0) -> float:
-        if self.bgr is None:
+        if self.z_grid is None:
             return fallback
-        gx = int(round(wx * self.px_scale))
-        gy = int(round(wy * self.px_scale))
-        if 0 <= gx < self.w and 0 <= gy < self.h:
-            b, g, r = self.bgr[gy, gx]
-            if (int(b) & 1) and (r or g):
-                return ((int(r) << 8) | int(g)) * 0.1 - 500.0
-        return fallback
+        gx = wx * self.px_scale
+        gy = wy * self.px_scale
+        x0 = int(math.floor(gx))
+        y0 = int(math.floor(gy))
+        if x0 < 0 or x0 >= self.w - 1 or y0 < 0 or y0 >= self.h - 1:
+            ix = min(self.w - 1, max(0, int(round(gx))))
+            iy = min(self.h - 1, max(0, int(round(gy))))
+            v = float(self.z_grid[iy, ix])
+            return fallback if math.isnan(v) else v
+        fx = gx - x0
+        fy = gy - y0
+        z00 = float(self.z_grid[y0, x0])
+        z10 = float(self.z_grid[y0, x0 + 1])
+        z01 = float(self.z_grid[y0 + 1, x0])
+        z11 = float(self.z_grid[y0 + 1, x0 + 1])
+        if not (math.isnan(z00) or math.isnan(z10) or math.isnan(z01) or math.isnan(z11)):
+            return (
+                z00 * (1.0 - fx) * (1.0 - fy)
+                + z10 * fx * (1.0 - fy)
+                + z01 * (1.0 - fx) * fy
+                + z11 * fx * fy
+            )
+        vals = [v for v in (z00, z10, z01, z11) if not math.isnan(v)]
+        return sum(vals) / len(vals) if vals else fallback
 
     def sample_smooth(self, wx: float, wy: float, fallback: float = 0.0) -> float:
         z0 = self.sample_z(wx, wy, math.nan)
@@ -105,12 +138,24 @@ class _TerrainSampler:
             return fallback
         acc = z0 * 2.0
         w_sum = 2.0
-        for dx, dy in ((-2.2, 0.0), (2.2, 0.0), (0.0, -2.2), (0.0, 2.2)):
+        for dx, dy in ((-1.6, 0.0), (1.6, 0.0), (0.0, -1.6), (0.0, 1.6)):
             zn = self.sample_z(wx + dx, wy + dy, math.nan)
-            if not math.isnan(zn) and abs(zn - z0) <= 6.0:
+            if not math.isnan(zn) and abs(zn - z0) <= 4.5:
                 acc += zn
                 w_sum += 1.0
         return acc / w_sum
+
+    def sample_local_slope(self, wx: float, wy: float, ground_z: float) -> tuple[float, float]:
+        """Return local terrain gradient (dz/dx_m, dz/dy_m) around (wx, wy) over a 4.5m baseline."""
+        step_px = 5.0  # 4.5 meters in map space
+        zx1 = self.sample_smooth(wx + step_px, wy, ground_z)
+        zx0 = self.sample_smooth(wx - step_px, wy, ground_z)
+        zy1 = self.sample_smooth(wx, wy + step_px, ground_z)
+        zy0 = self.sample_smooth(wx, wy - step_px, ground_z)
+        span_m = step_px * 2.0 * 0.90
+        dz_dx = max(-0.35, min(0.35, (zx1 - zx0) / span_m))
+        dz_dy = max(-0.35, min(0.35, (zy1 - zy0) / span_m))
+        return dz_dx, dz_dy
 
 
 def _premul(bgr: tuple[int, int, int], alpha: float) -> tuple[int, int, int, int]:
@@ -152,6 +197,7 @@ class MinimapHudSurface:
         self.mm_w = max(64, min(self.client_w, round(self.MM_REF_W * self.sx)))
         self.mm_h = max(64, min(self.client_h, round(self.MM_REF_H * self.sy)))
         self.dirty_boxes: list[tuple[int, int, int, int]] = []
+        self._smooth_pose: tuple[float, float, float] | None = None
         self.user = ctypes.WinDLL("user32", use_last_error=True)
         self.gdi = ctypes.WinDLL("gdi32", use_last_error=True)
         self.dc = self.bitmap = self.old_bitmap = None
@@ -278,28 +324,31 @@ class MinimapHudSurface:
             return
         sampler = _TerrainSampler.get(map_id) if map_id else None
         ground_z = sampler.sample_smooth(cur_x, cur_y, 0.0) if sampler else 0.0
+        dz_dx_m, dz_dy_m = sampler.sample_local_slope(cur_x, cur_y, ground_z) if sampler else (0.0, 0.0)
 
         rad = math.radians(heading_deg)
         fwd_x, fwd_y = math.sin(rad), -math.cos(rad)
         right_x, right_y = math.cos(rad), math.sin(rad)
 
-        # Third-person game camera parameters (4.2m behind character, 2.35m height, 14.5 deg downward pitch)
-        cam_back_m = 4.2
-        cam_h_m = 2.35 + jump_z_m
-        pitch_rad = math.radians(14.5)
+        # Calibrated Unreal Engine third-person follow camera (90 deg horizontal FOV, 3.85m arm, 2.15m height, 10.4 deg pitch)
+        cam_back_m = 3.85
+        cam_h_m = 2.15 + jump_z_m
+        pitch_rad = math.radians(10.4)
         cos_p, sin_p = math.cos(pitch_rad), math.sin(pitch_rad)
-        focal = self.height * 1.07
-        cx_scr, cy_scr = self.width * 0.5, self.height * 0.5
+        focal = self.width * 0.50
+        cx_scr, cy_scr = self.width * 0.50, self.height * 0.512
 
         def project_3d(wx: float, wy: float, wz: float, offset_x_m: float = 0.0, offset_y_m: float = 0.0):
             dx_m = (wx - cur_x) * 0.90 + offset_x_m
             dy_m = (wy - cur_y) * 0.90 + offset_y_m
-            dz_m = wz - ground_z
+            # Compensate for third-person SpringArm auto-pitching parallel to the local ground slope
+            local_slope_z = dz_dx_m * dx_m + dz_dy_m * dy_m
+            dz_m = (wz - ground_z - local_slope_z * 0.65) * 0.52
             cam_r = dx_m * right_x + dy_m * right_y
             horiz_f = dx_m * fwd_x + dy_m * fwd_y + cam_back_m
             vz = dz_m - cam_h_m
             cz = horiz_f * cos_p - vz * sin_p
-            if cz <= 2.1:
+            if cz <= 2.2:
                 return None
             cam_u = horiz_f * sin_p + vz * cos_p
             scale = focal / cz
@@ -307,44 +356,73 @@ class MinimapHudSurface:
             sy_px = int(round(cy_scr - cam_u * scale))
             return sx_px, sy_px, cz, scale
 
-        # Build subdivided 3D path from character feet through upcoming waypoints (up to 44 meters)
-        chain = [(cur_x, cur_y, False, "")]
+        # Build corner-rounded 3D path from character feet through upcoming waypoints (up to 44 meters)
+        raw_chain = [(cur_x, cur_y, False, "")]
         for idx in range(current_index, min(len(points), current_index + 6)):
             pt = points[idx]
             act = pt[4] if len(pt) >= 5 else ""
             if idx > current_index and act == "teleport":
                 break
-            chain.append((float(pt[0]), float(pt[1]), bool(pt[3]) if len(pt) >= 4 else False, act))
+            wx_pt, wy_pt = float(pt[0]), float(pt[1])
+            if math.hypot(wx_pt - raw_chain[-1][0], wy_pt - raw_chain[-1][1]) * 0.90 < 0.35 and idx == current_index and idx + 1 < len(points):
+                continue
+            raw_chain.append((wx_pt, wy_pt, bool(pt[3]) if len(pt) >= 4 else False, act))
+
+        # Subdivide with quadratic Bezier corner rounding at interior waypoints
+        dense_2d: list[tuple[float, float, bool, str]] = []
+        step_m = 0.75
+        for i in range(len(raw_chain) - 1):
+            x0, y0, _, _ = raw_chain[i]
+            x1, y1, jmp1, act1 = raw_chain[i + 1]
+            seg_len_m = math.hypot(x1 - x0, y1 - y0) * 0.90
+            if seg_len_m < 0.15:
+                continue
+            n_sub = max(2, int(math.ceil(seg_len_m / step_m)))
+            for s_i in range(n_sub + (1 if i == len(raw_chain) - 2 else 0)):
+                t = s_i / n_sub
+                dense_2d.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, jmp1, act1))
+
+        # Apply 2 passes of Chaikin-style corner smoothing on (x, y) while keeping endpoints fixed
+        if len(dense_2d) >= 5:
+            for _ in range(2):
+                smoothed = [dense_2d[0]]
+                for i in range(1, len(dense_2d) - 1):
+                    px = 0.25 * dense_2d[i - 1][0] + 0.50 * dense_2d[i][0] + 0.25 * dense_2d[i + 1][0]
+                    py = 0.25 * dense_2d[i - 1][1] + 0.50 * dense_2d[i][1] + 0.25 * dense_2d[i + 1][1]
+                    smoothed.append((px, py, dense_2d[i][2], dense_2d[i][3]))
+                smoothed.append(dense_2d[-1])
+                dense_2d = smoothed
 
         samples_3d = []  # (wx, wy, wz, tx, ty, cum_m, is_jump, act)
         cum_m = 0.0
         max_dist_m = 44.0
-        step_m = 1.15
-        for seg_i in range(len(chain) - 1):
-            x0, y0, _, _ = chain[seg_i]
-            x1, y1, seg_jump, seg_act = chain[seg_i + 1]
-            seg_dx, seg_dy = x1 - x0, y1 - y0
-            seg_len_px = math.hypot(seg_dx, seg_dy)
-            seg_len_m = seg_len_px * 0.90
-            if seg_len_m < 0.25:
-                continue
-            tx, ty = seg_dx / seg_len_px, seg_dy / seg_len_px
-            n_steps = max(1, int(math.ceil(seg_len_m / step_m)))
-            for s_idx in range(n_steps + (1 if seg_i == len(chain) - 2 else 0)):
-                t = min(1.0, s_idx / n_steps)
-                d_m = cum_m + t * seg_len_m
-                if d_m > max_dist_m:
-                    break
-                wx = x0 + seg_dx * t
-                wy = y0 + seg_dy * t
-                raw_z = sampler.sample_smooth(wx, wy, ground_z) if sampler else ground_z
-                # Smoothly anchor the first 3.2m right under character feet
-                blend_feet = min(1.0, d_m / 3.2)
-                wz = ground_z * (1.0 - blend_feet) + raw_z * blend_feet
-                samples_3d.append((wx, wy, wz, tx, ty, d_m, seg_jump, seg_act))
-            cum_m += seg_len_m
-            if cum_m >= max_dist_m:
+        raw_zs = []
+        for wx, wy, _, _ in dense_2d:
+            rz = sampler.sample_smooth(wx, wy, ground_z) if sampler else ground_z
+            raw_zs.append(rz)
+        # Smooth Z along curve to eliminate any residual micro-ripples
+        smooth_zs = list(raw_zs)
+        if len(raw_zs) >= 3:
+            for i in range(1, len(raw_zs) - 1):
+                smooth_zs[i] = 0.25 * raw_zs[i - 1] + 0.50 * raw_zs[i] + 0.25 * raw_zs[i + 1]
+
+        for i in range(len(dense_2d)):
+            wx, wy, seg_jump, seg_act = dense_2d[i]
+            if i > 0:
+                cum_m += math.hypot(wx - dense_2d[i - 1][0], wy - dense_2d[i - 1][1]) * 0.90
+            if cum_m > max_dist_m:
                 break
+            if i + 1 < len(dense_2d):
+                dx_t, dy_t = dense_2d[i + 1][0] - wx, dense_2d[i + 1][1] - wy
+            elif i > 0:
+                dx_t, dy_t = wx - dense_2d[i - 1][0], wy - dense_2d[i - 1][1]
+            else:
+                dx_t, dy_t = fwd_x, fwd_y
+            t_len = max(1e-5, math.hypot(dx_t, dy_t))
+            tx, ty = dx_t / t_len, dy_t / t_len
+            blend_feet = min(1.0, cum_m / 4.0)
+            wz = ground_z * (1.0 - blend_feet) + smooth_zs[i] * blend_feet
+            samples_3d.append((wx, wy, wz, tx, ty, cum_m, seg_jump, seg_act))
 
         min_bx, min_by = self.width, self.height
         max_bx, max_by = 0, 0
@@ -372,7 +450,9 @@ class MinimapHudSurface:
         # Draw from far to near so closer translucent segments layer cleanly
         for i in range(len(proj_ribbon) - 2, -1, -1):
             l0, c0, r0, d0, jmp0, act0, *_ = proj_ribbon[i]
-            l1, c1, r1, *_ = proj_ribbon[i + 1]
+            l1, c1, r1, d1, *_ = proj_ribbon[i + 1]
+            if d1 < 0.55:
+                continue
             if (
                 max(l0[0], r0[0], l1[0], r1[0]) < 0
                 or min(l0[0], r0[0], l1[0], r1[0]) >= self.width
@@ -499,14 +579,16 @@ class MinimapHudSurface:
             self.dirty_boxes.append((min_bx, min_by, max_bx, max_by))
 
         # Render floating text pills above pillar tops
+        mm_excl_w = round(218 * self.sx)
+        mm_excl_h = round(186 * self.sy)
         for tx_p, ty_p, tag, b_bgr, is_cur in badge_queue:
             f_scale = 0.92 if is_cur else 0.80
             pw = round((22 + len(tag) * 9.6) * self.sx * f_scale)
             ph = round(25 * self.sy * f_scale)
             px0 = tx_p - pw // 2
             py0 = ty_p - ph - round(10 * self.sy)
-            # Keep outside top-left minimap area
-            if px0 < self.mm_w and py0 < self.mm_h:
+            # Keep outside top-left circular minimap area
+            if px0 < mm_excl_w and py0 < mm_excl_h:
                 continue
             self._draw_text_pill(
                 pixels, px0, py0, px0 + pw, py0 + ph, tag,
@@ -516,7 +598,10 @@ class MinimapHudSurface:
             )
 
         # 4. Off-Screen AR Turn Indicator when current target is outside camera horizontal FOV
-        tgt = points[current_index]
+        tgt_idx = current_index
+        if math.hypot(float(points[tgt_idx][0]) - cur_x, float(points[tgt_idx][1]) - cur_y) * 0.90 < 0.85 and tgt_idx + 1 < len(points):
+            tgt_idx += 1
+        tgt = points[tgt_idx]
         tx_w, ty_w = float(tgt[0]), float(tgt[1])
         dist_tgt_m = math.hypot(tx_w - cur_x, ty_w - cur_y) * 0.90
         if dist_tgt_m >= 0.8:
@@ -578,11 +663,21 @@ class MinimapHudSurface:
                 if 0.0 < now - jump_start < 1.25:
                     jump_z_m = 2.2 * math.sin(math.pi * ((now - jump_start) / 1.25))
 
+                h_val = float(heading)
+                if self._smooth_pose is not None:
+                    sx_prev, sy_prev, sh_prev = self._smooth_pose
+                    dh = (h_val - sh_prev + 180.0) % 360.0 - 180.0
+                    if math.hypot(px_world - sx_prev, py_world - sy_prev) <= 6.5 and abs(dh) <= 65.0:
+                        px_world = sx_prev + (px_world - sx_prev) * 0.42
+                        py_world = sy_prev + (py_world - sy_prev) * 0.42
+                        h_val = (sh_prev + dh * 0.42) % 360.0
+                self._smooth_pose = (px_world, py_world, h_val)
+
                 self._draw_3d_ar_route(
                     pixels,
                     px_world,
                     py_world,
-                    float(heading),
+                    h_val,
                     jump_z_m,
                     points,
                     current_index,

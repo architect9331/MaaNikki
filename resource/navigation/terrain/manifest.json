@@ -6,28 +6,34 @@
     "width": 3456,
     "height": 3584,
     "px_scale": 0.25,
+    "z_offset": -300.0,
+    "z_scale": 64.0,
     "z_min": -255.5,
-    "z_max": 208.6
+    "z_max": 108.4
   },
   "starsea": {
     "image": "terrain/starsea.png",
     "color_image": "terrain/starsea_color.webp",
     "structures": "terrain/starsea_structures.json",
-    "width": 1280,
-    "height": 1024,
-    "px_scale": 0.5,
+    "width": 2560,
+    "height": 2048,
+    "px_scale": 1.0,
+    "z_offset": -300.0,
+    "z_scale": 64.0,
     "z_min": -29.0,
-    "z_max": 118.8
+    "z_max": 118.7
   },
   "serenity": {
     "image": "terrain/serenity.png",
     "color_image": "terrain/serenity_color.webp",
     "structures": "terrain/serenity_structures.json",
-    "width": 1024,
-    "height": 768,
-    "px_scale": 0.5,
+    "width": 2048,
+    "height": 1536,
+    "px_scale": 1.0,
+    "z_offset": -300.0,
+    "z_scale": 64.0,
     "z_min": -18.2,
-    "z_max": 42.9
+    "z_max": 25.7
   },
   "danqing": {
     "image": "terrain/danqing.png",
@@ -36,8 +42,10 @@
     "width": 1536,
     "height": 1280,
     "px_scale": 0.5,
+    "z_offset": -300.0,
+    "z_scale": 64.0,
     "z_min": -256.0,
-    "z_max": -38.8
+    "z_max": -44.7
   },
   "wanxiang": {
     "image": "terrain/wanxiang.png",
@@ -46,18 +54,22 @@
     "width": 2048,
     "height": 1536,
     "px_scale": 0.5,
-    "z_min": -390.5,
-    "z_max": 537.5
+    "z_offset": -300.0,
+    "z_scale": 64.0,
+    "z_min": -373.3,
+    "z_max": 536.2
   },
   "firework": {
     "image": "terrain/firework.png",
     "color_image": "terrain/firework_color.webp",
     "structures": "terrain/firework_structures.json",
-    "width": 1024,
-    "height": 768,
-    "px_scale": 0.5,
-    "z_min": -18.6,
-    "z_max": 105.2
+    "width": 2048,
+    "height": 1536,
+    "px_scale": 1.0,
+    "z_offset": -300.0,
+    "z_scale": 64.0,
+    "z_min": -18.3,
+    "z_max": 102.8
   },
   "home": {
     "image": "terrain/home.png",
@@ -66,7 +78,9 @@
     "width": 1280,
     "height": 768,
     "px_scale": 0.5,
-    "z_min": -16.7,
+    "z_offset": -300.0,
+    "z_scale": 64.0,
+    "z_min": -7.9,
     "z_max": 109.8
   }
 }

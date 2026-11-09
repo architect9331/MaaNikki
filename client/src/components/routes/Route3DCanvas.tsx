@@ -150,6 +150,8 @@ function loadTerrainGrid(mapId: string): Promise<TerrainGridData> {
     const slopeDeg = new Uint8Array(total);
     const obsMask = new Uint8Array(total);
     const validMask = new Uint8Array(total);
+    const zOffset = Number(info.z_offset ?? -500.0);
+    const zScaleEnc = Number(info.z_scale ?? 10.0);
     for (let i = 0; i < total; i++) {
       const r = rgba[i * 4];
       const g = rgba[i * 4 + 1];
@@ -159,7 +161,7 @@ function loadTerrainGrid(mapId: string): Promise<TerrainGridData> {
       validMask[i] = valid;
       obsMask[i] = (b >> 1) & 1;
       slopeDeg[i] = (b >> 2) & 0x3f;
-      zMap[i] = valid && hu16 > 0 ? hu16 / 10.0 - 500.0 : NaN;
+      zMap[i] = valid && hu16 > 0 ? hu16 / zScaleEnc + zOffset : NaN;
     }
     return {
       mapId,
@@ -183,20 +185,58 @@ function loadTerrainGrid(mapId: string): Promise<TerrainGridData> {
 function sampleTerrain(grid: TerrainGridData | null, x: number, y: number, fallbackZ = 0) {
   const safeFallback = Number.isFinite(fallbackZ) ? fallbackZ : 0;
   if (!grid) return { z: safeFallback, slope: 0, obs: false, valid: false };
-  const gx = Math.round(x * grid.pxScale);
-  const gy = Math.round(y * grid.pxScale);
-  if (gx < 0 || gx >= grid.width || gy < 0 || gy >= grid.height) {
+  const gx = x * grid.pxScale;
+  const gy = y * grid.pxScale;
+  const x0 = Math.floor(gx);
+  const y0 = Math.floor(gy);
+  if (x0 < 0 || x0 >= grid.width || y0 < 0 || y0 >= grid.height) {
     return { z: safeFallback, slope: 0, obs: false, valid: false };
   }
-  const idx = gy * grid.width + gx;
-  const val = grid.zMap[idx];
-  if (!grid.validMask[idx] || !Number.isFinite(val)) {
+  const x1 = Math.min(grid.width - 1, x0 + 1);
+  const y1 = Math.min(grid.height - 1, y0 + 1);
+  const fx = gx - x0;
+  const fy = gy - y0;
+
+  const i00 = y0 * grid.width + x0;
+  const i10 = y0 * grid.width + x1;
+  const i01 = y1 * grid.width + x0;
+  const i11 = y1 * grid.width + x1;
+
+  const v00 = grid.validMask[i00] ? grid.zMap[i00] : NaN;
+  const v10 = grid.validMask[i10] ? grid.zMap[i10] : NaN;
+  const v01 = grid.validMask[i01] ? grid.zMap[i01] : NaN;
+  const v11 = grid.validMask[i11] ? grid.zMap[i11] : NaN;
+
+  const nearIdx = Math.round(gy) * grid.width + Math.round(gx);
+  const nearSafe = Math.max(0, Math.min(grid.width * grid.height - 1, nearIdx));
+
+  if (Number.isFinite(v00) && Number.isFinite(v10) && Number.isFinite(v01) && Number.isFinite(v11)) {
+    const zInterp =
+      v00 * (1 - fx) * (1 - fy) +
+      v10 * fx * (1 - fy) +
+      v01 * (1 - fx) * fy +
+      v11 * fx * fy;
+    const sInterp =
+      grid.slopeDeg[i00] * (1 - fx) * (1 - fy) +
+      grid.slopeDeg[i10] * fx * (1 - fy) +
+      grid.slopeDeg[i01] * (1 - fx) * fy +
+      grid.slopeDeg[i11] * fx * fy;
+    return {
+      z: zInterp,
+      slope: sInterp,
+      obs: grid.obsMask[nearSafe] === 1,
+      valid: true,
+    };
+  }
+
+  const val = grid.zMap[nearSafe];
+  if (!grid.validMask[nearSafe] || !Number.isFinite(val)) {
     return { z: safeFallback, slope: 0, obs: false, valid: false };
   }
   return {
     z: val,
-    slope: grid.slopeDeg[idx],
-    obs: grid.obsMask[idx] === 1,
+    slope: grid.slopeDeg[nearSafe],
+    obs: grid.obsMask[nearSafe] === 1,
     valid: true,
   };
 }
@@ -253,8 +293,8 @@ function structureColors(
   }
 }
 
-const MESH_N = 192;
-const MAX_STRUCTS = 1400;
+const MESH_N = 240;
+const MAX_STRUCTS = 1600;
 
 interface GLTerrainState {
   gl: WebGLRenderingContext;
@@ -507,7 +547,7 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
   const [grid, setGrid] = useState<TerrainGridData | null>(null);
   const [spawners, setSpawners] = useState<SpawnerPoint3D[]>([]);
   const [surfaceMode, setSurfaceMode] = useState<'map' | 'elevation' | 'walkability'>('map');
-  const [zScale, setZScale] = useState<number>(1.8);
+  const [zScale, setZScale] = useState<number>(1.0);
   const [showBuildings, setShowBuildings] = useState(true);
   const [showAura, setShowAura] = useState(true);
   const [showSpawners, setShowSpawners] = useState(true);
@@ -519,6 +559,7 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
   const camRef = useRef({
     camX: 8960,
     camY: 8140,
+    camBaseZ: null as number | null,
     heightPx: 175,
     yaw: 0.0,
     pitch: 0.72,
@@ -676,9 +717,11 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
       c.camY = ty - fwdY * horizBack;
       c.heightPx = Math.max(45, Math.min(1400, d * Math.sin(pitch)));
       c.pitch = pitch;
+      const sTarget = sampleTerrain(grid, tx, ty, NaN);
+      c.camBaseZ = sTarget.valid && Number.isFinite(sTarget.z) ? sTarget.z : null;
       scheduleDraw();
     },
-    [scheduleDraw],
+    [grid, scheduleDraw],
   );
 
   const fit = useCallback(() => {
@@ -800,18 +843,28 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
       const cosPitch = Math.cos(cam.pitch);
       const sinPitch = Math.sin(cam.pitch);
 
-      const lookAhead = Math.max(55, Math.min(680, cam.heightPx / Math.tan(Math.max(0.28, cam.pitch))));
+      const lookAhead = Math.max(55, Math.min(620, cam.heightPx * 1.15));
       const patchCenterX = cam.camX + fwdX * lookAhead;
       const patchCenterY = cam.camY + fwdY * lookAhead;
 
-      const groundSample = sampleTerrain(
-        grid,
-        patchCenterX,
-        patchCenterY,
-        points3D[0]?.z ?? (grid ? (grid.zMin + grid.zMax) * 0.35 : -190),
-      );
-      const groundZ = groundSample.z;
+      const defaultZ = points3D[0]?.z ?? (grid ? (grid.zMin + grid.zMax) * 0.35 : -190);
+      if (cam.camBaseZ === null || !Number.isFinite(cam.camBaseZ)) {
+        const sInit = sampleTerrain(grid, patchCenterX, patchCenterY, defaultZ);
+        if (sInit.valid) {
+          cam.camBaseZ = sInit.z;
+        }
+      }
       const mPerPx = 0.9;
+      // Keep camera reference altitude steady during mouse rotation; only glide up if ground directly under camera rises too close
+      const underCam = sampleTerrain(grid, cam.camX, cam.camY, NaN);
+      if (underCam.valid && Number.isFinite(underCam.z) && cam.camBaseZ !== null) {
+        const camWorldZ = cam.camBaseZ + (cam.heightPx * mPerPx) / zScale;
+        if (underCam.z + 10.0 > camWorldZ) {
+          const reqBase = underCam.z + 10.0 - (cam.heightPx * mPerPx) / zScale;
+          cam.camBaseZ += (reqBase - cam.camBaseZ) * 0.16;
+        }
+      }
+      const groundZ = cam.camBaseZ ?? defaultZ;
       const fovScale = Math.min(size.width, size.height) * 0.92;
 
       const project = (wx: number, wy: number, wz: number) => {
@@ -831,10 +884,10 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
         };
       };
 
-      const patchRadius = Math.max(150, Math.min(1150, cam.heightPx * 1.95));
+      const patchRadius = Math.max(115, Math.min(980, cam.heightPx * 1.68));
       const step = (patchRadius * 2) / MESH_N;
-      const startX = patchCenterX - patchRadius;
-      const startY = patchCenterY - patchRadius;
+      const startX = Math.floor((patchCenterX - patchRadius) / step) * step;
+      const startY = Math.floor((patchCenterY - patchRadius) / step) * step;
       const zSpan = Math.max(20, (grid?.zMax ?? 100) - (grid?.zMin ?? -250));
       const zMin = grid?.zMin ?? -250;
       const mapW = map?.width ?? 4096;
