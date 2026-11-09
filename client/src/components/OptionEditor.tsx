@@ -33,6 +33,8 @@ import { getCheckboxMaxCount, getCheckboxMinCount } from '@/utils/checkboxOption
 import { stripInlineRichText } from '@/utils/richText';
 import { SwitchButton, TextInput, FileInput, TimeInput, HotkeyInput } from './FormControls';
 import { GameKeyInput } from './GameKeyInput';
+import { RouteSelectInput } from './RouteSelectInput';
+import { formatRouteValueLabel, useRouteCatalogStore } from '@/services/routeStudioService';
 import { RichLabel } from './RichLabel';
 import { Tooltip } from './ui/Tooltip';
 import { HelpTip } from './ui/HelpTip';
@@ -371,6 +373,14 @@ function InputField({
         ) : input.input_type === 'key' ? (
           <GameKeyInput value={value} onChange={onChange} placeholder={inputPlaceholder}
             disabled={disabled} className={controlClassName} />
+        ) : input.input_type === 'route' ? (
+          <RouteSelectInput
+            value={value}
+            onChange={onChange}
+            placeholder={inputPlaceholder || '请选择路线…'}
+            disabled={disabled}
+            className={controlClassName}
+          />
         ) : input.input_type === 'file' ? (
           <FileInput
             value={value}
@@ -802,6 +812,17 @@ export function OptionEditor({
               isHotkey={isHotkey}
               onChange={(newVal) => {
                 if (effectiveDisabled) return;
+                if (input.input_type === 'route' && !globalScope && instanceId && taskId) {
+                  const task = instance?.selectedTasks.find((item) => item.id === taskId);
+                  if (task?.taskName === 'custom_route' && task.customName) {
+                    const { user, builtin } = useRouteCatalogStore.getState();
+                    const prevLabel = formatRouteValueLabel(inputValue, user, builtin);
+                    const nextLabel = formatRouteValueLabel(newVal, user, builtin);
+                    if (nextLabel && (!inputValue || task.customName === prevLabel)) {
+                      useAppStore.getState().renameTask(instanceId, taskId, nextLabel);
+                    }
+                  }
+                }
                 commitOptionValue({
                   type: isHotkey ? 'hotkey' : 'input',
                   values: { ...inputValues, [input.name]: newVal },

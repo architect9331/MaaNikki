@@ -27,6 +27,18 @@ fn route_path(id: &str) -> Result<PathBuf, String> {
     Ok(routes_dir()?.join(format!("{id}.json")))
 }
 
+fn is_user_runnable_point(point: &Value) -> bool {
+    let action = point["action"].as_str().unwrap_or("");
+    match action {
+        "" | "teleport" | "wait" | "collect" | "insect" | "fishing" | "bottle" | "key" => true,
+        "macro" => matches!(
+            point["params"]["id"].as_str(),
+            Some("starsea_fall" | "zhaoxi_attack")
+        ),
+        _ => false,
+    }
+}
+
 fn summaries(directory: PathBuf, builtin: bool) -> Vec<Value> {
     let Ok(entries) = std::fs::read_dir(directory) else {
         return Vec::new();
@@ -38,15 +50,17 @@ fn summaries(directory: PathBuf, builtin: bool) -> Vec<Value> {
             let path = entry.path();
             let value = read_json(&path).ok()??;
             let is_collection = value["kind"].as_str() == Some("route_collection");
-            let count = if is_collection {
-                value["routes"].as_array()?.len()
+            let (count, runnable) = if is_collection {
+                (value["routes"].as_array()?.len(), true)
             } else {
-                value["points"].as_array()?.len()
+                let pts = value["points"].as_array()?;
+                (pts.len(), pts.iter().all(is_user_runnable_point))
             };
             Some(json!({
                 "id": path.file_stem()?.to_str()?, "title": value["title"], "map": value["map"],
                 "kind": if is_collection { "route_collection" } else { "route" },
                 "points": count, "teleport": value["teleport"], "builtin": builtin,
+                "runnable": runnable,
                 "path": path.to_string_lossy(),
                 "modified": entry.metadata().ok()?.modified().ok()?
                     .duration_since(std::time::UNIX_EPOCH).ok()?.as_secs(),

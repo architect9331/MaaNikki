@@ -34,8 +34,25 @@ export const useRouteStudioStore = create<{
 export interface RouteSummary {
   id: string; title: string; map: string; points: number; builtin: boolean; path: string;
   kind?: 'route' | 'route_collection';
+  runnable?: boolean;
   teleport?: RouteDocument['teleport'];
 }
+
+export const MAP_TITLES: Record<string, string> = {
+  miraland: '奇迹大陆',
+  starsea: '星海',
+  firework: '花焰群岛',
+  serenity: '无忧岛',
+  danqing: '丹青屿',
+  home: '家园',
+  wanxiang: '万相境',
+};
+
+export const useRouteCatalogStore = create<{
+  user: RouteSummary[];
+  builtin: RouteSummary[];
+  loaded: boolean;
+}>(() => ({ user: [], builtin: [], loaded: false }));
 
 export interface GeneratedRouteSummary {
   id: string;
@@ -59,13 +76,56 @@ export interface GenerateGingerbreadResponse {
   summaries: GeneratedRouteSummary[];
 }
 
-export const listRoutes = () => invoke<{ user: RouteSummary[]; builtin: RouteSummary[] }>('list_routes');
-export const saveUserRoute = (route: RouteDocument | RouteCollectionDocument) =>
-  invoke<string>('save_user_route', { id: route.id, route });
-export const deleteUserRoute = (id: string) => invoke<void>('delete_user_route', { id });
+export const listRoutes = async () => {
+  const res = await invoke<{ user: RouteSummary[]; builtin: RouteSummary[] }>('list_routes');
+  useRouteCatalogStore.setState({ user: res.user, builtin: res.builtin, loaded: true });
+  return res;
+};
+export const saveUserRoute = async (route: RouteDocument | RouteCollectionDocument) => {
+  const path = await invoke<string>('save_user_route', { id: route.id, route });
+  void listRoutes().catch(() => {});
+  return path;
+};
+export const deleteUserRoute = async (id: string) => {
+  await invoke<void>('delete_user_route', { id });
+  void listRoutes().catch(() => {});
+};
 export const readLocalFile = (filename: string) => invoke<string>('read_local_file', { filename });
 export const generateGingerbreadRoutes = (params: Record<string, unknown>) =>
   invoke<GenerateGingerbreadResponse>('generate_gingerbread_routes', { params });
+
+function routeStemFromPath(value: string): string {
+  const normalized = value.replace(/\\/g, '/').trim();
+  const base = normalized.split('/').pop() ?? '';
+  return base.replace(/\.json$/i, '');
+}
+
+export function findRouteSummaryByValue(
+  value: string,
+  user: RouteSummary[],
+  builtin: RouteSummary[],
+): RouteSummary | undefined {
+  if (!value) return undefined;
+  const all = [...user, ...builtin];
+  const exact = all.find((item) => item.path === value || item.id === value);
+  if (exact) return exact;
+  const norm = value.replace(/\\/g, '/').toLowerCase();
+  const byNorm = all.find((item) => item.path.replace(/\\/g, '/').toLowerCase() === norm);
+  if (byNorm) return byNorm;
+  const stem = routeStemFromPath(value);
+  return stem ? all.find((item) => item.id === stem) : undefined;
+}
+
+export function formatRouteValueLabel(
+  value: string,
+  user: RouteSummary[],
+  builtin: RouteSummary[],
+): string {
+  if (!value) return '';
+  const matched = findRouteSummaryByValue(value, user, builtin);
+  if (matched) return matched.title || matched.id;
+  return routeStemFromPath(value) || value;
+}
 
 export async function readRoute(summary: Pick<RouteSummary, 'id' | 'builtin'>): Promise<RouteDocument | RouteCollectionDocument> {
   if (!summary.builtin) {

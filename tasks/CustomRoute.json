@@ -11,9 +11,9 @@
   "option": {
     "CustomRouteFile": {
       "type": "input",
-      "label": "路线文件",
-      "description": "在路线编辑器点「加入任务」会自动填好，路线保存在 config/routes/。",
-      "inputs": [{"name": "file", "label": "路线 JSON", "default": "", "input_type": "file"}],
+      "label": "选择路线",
+      "description": "直接选择路线编辑器中保存的路线、路线清单或内置路线。",
+      "inputs": [{"name": "file", "label": "路线", "default": "", "input_type": "route"}],
       "pipeline_override": {"MaaNikki_RouteRun": {"custom_action_param": {"file": "{file}"}}}
     }
   }

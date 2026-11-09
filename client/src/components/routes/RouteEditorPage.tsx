@@ -872,7 +872,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
                   }}>
                   <option value="">+ 添加一条路线到清单…</option>
                   {routes.user.filter((r) => r.kind !== 'route_collection').map((r) => <option key={r.id} value={r.id}>{r.title || r.id}</option>)}
-                  {routes.builtin.map((r) => <option key={r.id} value={r.id}>[内置] {r.title || r.id}</option>)}
+                  {routes.builtin.filter((r) => r.runnable !== false).map((r) => <option key={r.id} value={r.id}>[内置] {r.title || r.id}</option>)}
                 </select>
               </div>
               {!collection.routes.length ? <p className="py-6 text-center text-xs text-text-muted">还没有添加路线，从右上角下拉框选择要串联执行的路线。</p>

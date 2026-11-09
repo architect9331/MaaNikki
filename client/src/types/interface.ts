@@ -269,9 +269,9 @@ export interface InputItem {
   verify?: string;
   pattern_msg?: string;
   /**
-   * MXU 扩展：输入控件类型，'file' 会渲染文件选择器，'time' 会渲染时间选择器
+   * MXU 扩展：输入控件类型，'file' 会渲染文件选择器，'time' 会渲染时间选择器，'route' 会渲染路线选择器
    */
-  input_type?: 'text' | 'file' | 'time' | 'key';
+  input_type?: 'text' | 'file' | 'time' | 'key' | 'route';
   /** MXU 扩展：输入框占位提示文本（i18n key） */
   placeholder?: string;
   /** MXU 扩展：密码字段；启用后 UI 掩码显示，配置加密存储，日志/遥测脱敏 */

@@ -39,7 +39,7 @@ const MAX_OPTION_VALUE_LENGTH = 512;
 const summarizeInputValue = (
   value: string,
   pipelineType?: 'string' | 'int' | 'bool',
-  inputType?: 'text' | 'file' | 'time' | 'key',
+  inputType?: 'text' | 'file' | 'time' | 'key' | 'route',
   password?: boolean,
 ): string => {
   if (password) return value ? 'filled' : 'empty';

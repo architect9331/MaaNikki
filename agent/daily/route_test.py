@@ -102,13 +102,24 @@ def read_test_document(resource: Path, settings: dict):
             raise NavigationError("路线文件路径无效。")
         path = Path(filename).expanduser()
         if not path.is_absolute():
-            raise NavigationError("请选择本地路线 JSON 的完整路径。")
+            path = ROOT / path
+        if not path.is_file() and path.suffix.lower() == ".json":
+            for candidate in (
+                ROOT / "config/routes" / path.name,
+                resource / "routes/gingerbread" / path.name,
+                resource / "routes/daily" / path.name,
+            ):
+                if candidate.is_file():
+                    path = candidate
+                    break
     else:
         if not isinstance(name, str) or not re.fullmatch(r"[a-zA-Z0-9_-]+", name):
-            raise NavigationError("请先选择路线 JSON 文件。")
+            raise NavigationError("请先选择要运行的路线。")
         path = resource / "routes" / "daily" / (name+".json")
         if not path.is_file():
             path = resource / "routes" / "gingerbread" / (name+".json")
+        if not path.is_file():
+            path = ROOT / "config/routes" / (name+".json")
     if path.suffix.lower() != ".json" or not path.is_file() or path.stat().st_size > 1024*1024:
         raise NavigationError("路线文件不存在、不是 JSON 或超过 1 MB。")
     return json.loads(path.read_text(encoding="utf-8-sig"))

@@ -41,6 +41,8 @@ import { stripInlineRichText } from '@/utils/richText';
 import clsx from 'clsx';
 import { loggers } from '@/utils/logger';
 import { isPasswordInput } from '@/utils/passwordOptionValues';
+import { formatRouteValueLabel, listRoutes, useRouteCatalogStore } from '@/services/routeStudioService';
+import { isTauri } from '@/utils/paths';
 
 /** 选项预览标签组件 */
 function OptionPreviewTag({
@@ -331,6 +333,12 @@ function OptionListRenderer({
 export function TaskItem({ instanceId, task }: TaskItemProps) {
   const account = useAccountStateStore((s) => s.data);
   const accountError = useAccountStateStore((s) => s.error);
+  const routeCatalog = useRouteCatalogStore();
+  useEffect(() => {
+    if (task.taskName === 'custom_route' && !routeCatalog.loaded && isTauri()) {
+      void listRoutes().catch(() => {});
+    }
+  }, [task.taskName, routeCatalog.loaded]);
   const crownTarget = crownTargetStars(task.optionValues);
   const completedPeriod = periodCompleted(account, task.taskName, crownTarget);
   const progress = task.taskName === 'crown' ? crownProgress(account) : null;
@@ -674,10 +682,15 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
         if (firstInput) {
           const inputValue = inputValues[firstInput.name] || firstInput.default || '';
           if (inputValue) {
+            const displayVal = isPasswordInput(firstInput)
+              ? '••••'
+              : firstInput.input_type === 'route'
+                ? formatRouteValueLabel(inputValue, routeCatalog.user, routeCatalog.builtin)
+                : inputValue;
             previews.push({
               key: optionKey,
               label: optionLabel,
-              value: isPasswordInput(firstInput) ? '••••' : inputValue,
+              value: displayVal,
               type: 'input',
             });
           }
@@ -726,6 +739,8 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
     resolveI18nText,
     isMxuTask,
     t,
+    routeCatalog.user,
+    routeCatalog.builtin,
   ]);
 
   const checkboxState = getTaskCheckboxState(task.enabled, Boolean(task.runOnce));
