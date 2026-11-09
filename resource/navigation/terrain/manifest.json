@@ -1,58 +1,72 @@
 {
-  "danqing": {
-    "image": "terrain/danqing.png",
-    "width": 1536,
+  "miraland": {
+    "image": "terrain/miraland.png",
+    "color_image": "terrain/miraland_color.webp",
+    "structures": "terrain/miraland_structures.json",
+    "width": 3456,
+    "height": 3584,
+    "px_scale": 0.25,
+    "z_min": -255.5,
+    "z_max": 208.6
+  },
+  "starsea": {
+    "image": "terrain/starsea.png",
+    "color_image": "terrain/starsea_color.webp",
+    "structures": "terrain/starsea_structures.json",
+    "width": 1280,
     "height": 1024,
     "px_scale": 0.5,
+    "z_min": -29.0,
+    "z_max": 118.8
+  },
+  "serenity": {
+    "image": "terrain/serenity.png",
+    "color_image": "terrain/serenity_color.webp",
+    "structures": "terrain/serenity_structures.json",
+    "width": 1024,
+    "height": 768,
+    "px_scale": 0.5,
+    "z_min": -18.2,
+    "z_max": 42.9
+  },
+  "danqing": {
+    "image": "terrain/danqing.png",
+    "color_image": "terrain/danqing_color.webp",
+    "structures": "terrain/danqing_structures.json",
+    "width": 1536,
+    "height": 1280,
+    "px_scale": 0.5,
     "z_min": -256.0,
-    "z_max": -44.2
+    "z_max": -38.8
+  },
+  "wanxiang": {
+    "image": "terrain/wanxiang.png",
+    "color_image": "terrain/wanxiang_color.webp",
+    "structures": "terrain/wanxiang_structures.json",
+    "width": 2048,
+    "height": 1536,
+    "px_scale": 0.5,
+    "z_min": -390.5,
+    "z_max": 537.5
   },
   "firework": {
     "image": "terrain/firework.png",
+    "color_image": "terrain/firework_color.webp",
+    "structures": "terrain/firework_structures.json",
     "width": 1024,
-    "height": 512,
+    "height": 768,
     "px_scale": 0.5,
-    "z_min": -17.9,
+    "z_min": -18.6,
     "z_max": 105.2
   },
   "home": {
     "image": "terrain/home.png",
+    "color_image": "terrain/home_color.webp",
+    "structures": "terrain/home_structures.json",
     "width": 1280,
     "height": 768,
     "px_scale": 0.5,
-    "z_min": -14.4,
+    "z_min": -16.7,
     "z_max": 109.8
-  },
-  "miraland": {
-    "image": "terrain/miraland.png",
-    "width": 3456,
-    "height": 3584,
-    "px_scale": 0.25,
-    "z_min": -255.2,
-    "z_max": 108.5
-  },
-  "serenity": {
-    "image": "terrain/serenity.png",
-    "width": 1024,
-    "height": 768,
-    "px_scale": 0.5,
-    "z_min": -18.1,
-    "z_max": 25.8
-  },
-  "starsea": {
-    "image": "terrain/starsea.png",
-    "width": 1280,
-    "height": 1024,
-    "px_scale": 0.5,
-    "z_min": -24.4,
-    "z_max": 118.8
-  },
-  "wanxiang": {
-    "image": "terrain/wanxiang.png",
-    "width": 2048,
-    "height": 1536,
-    "px_scale": 0.5,
-    "z_min": -184.4,
-    "z_max": 536.0
   }
 }

@@ -307,17 +307,37 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
   }, [refresh]);
 
   const imagePath = map?.image;
+  const mapId = map?.id;
   useEffect(() => {
-    if (!imagePath) return;
+    if (!imagePath || !mapId) return;
     let cancelled = false;
     setImage(null);
-    invoke<string>('read_local_file_base64', { filename: imagePath }).then((data) => {
-      const next = new Image();
-      next.onload = () => { if (!cancelled) setImage(withoutVoid(next)); };
-      next.src = `data:image/png;base64,${data}`;
-    }).catch((error) => toast.error(String(error)));
-    return () => { cancelled = true; };
-  }, [imagePath]);
+    invoke<string>('read_local_file_base64', { filename: `resource/navigation/terrain/${mapId}_color.webp` })
+      .then((data) => {
+        const next = new Image();
+        next.onload = () => {
+          if (cancelled) return;
+          const cvs = withoutVoid(next);
+          (cvs as HTMLCanvasElement & { __isColorMap?: boolean }).__isColorMap = true;
+          setImage(cvs);
+        };
+        next.src = `data:image/webp;base64,${data}`;
+      })
+      .catch(() => {
+        invoke<string>('read_local_file_base64', { filename: imagePath })
+          .then((data) => {
+            const next = new Image();
+            next.onload = () => {
+              if (!cancelled) setImage(withoutVoid(next));
+            };
+            next.src = `data:image/png;base64,${data}`;
+          })
+          .catch((error) => toast.error(String(error)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [imagePath, mapId]);
 
   const commit = useCallback((next: RouteDocument, previous?: RouteDocument) => {
     setRoute((current) => {

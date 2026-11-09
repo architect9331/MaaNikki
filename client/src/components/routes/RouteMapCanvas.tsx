@@ -91,7 +91,10 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
     const sy = (y: number) => oy+y*scale;
     const dark = document.documentElement.classList.contains('dark');
     if (map && image) {
-      context.filter = dark ? 'invert(0.86) hue-rotate(180deg) brightness(0.9)' : 'sepia(0.28) brightness(1.04)';
+      const isColor = Boolean((image as HTMLCanvasElement & { __isColorMap?: boolean }).__isColorMap);
+      if (!isColor) {
+        context.filter = dark ? 'invert(0.86) hue-rotate(180deg) brightness(0.9)' : 'sepia(0.28) brightness(1.04)';
+      }
       context.drawImage(image, ox, oy, map.width*scale, map.height*scale);
       context.filter = 'none';
     }

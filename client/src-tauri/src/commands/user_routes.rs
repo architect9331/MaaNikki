@@ -144,3 +144,44 @@ pub async fn generate_gingerbread_routes(params: Value) -> Result<Value, String>
     .await
     .map_err(|e| format!("路线生成任务异常：{e}"))?
 }
+
+#[cfg(target_os = "windows")]
+static CURSOR_LOCK_ACTIVE: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+#[cfg(target_os = "windows")]
+static CURSOR_LOCK_X: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
+#[cfg(target_os = "windows")]
+static CURSOR_LOCK_Y: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
+
+#[tauri::command]
+pub fn poll_cursor_lock_delta(active: bool) -> [i32; 2] {
+    #[cfg(target_os = "windows")]
+    {
+        use std::sync::atomic::Ordering;
+        if !active {
+            CURSOR_LOCK_ACTIVE.store(false, Ordering::SeqCst);
+            return [0, 0];
+        }
+        let Ok(pt) = winsafe::GetCursorPos() else {
+            return [0, 0];
+        };
+        if !CURSOR_LOCK_ACTIVE.swap(true, Ordering::SeqCst) {
+            CURSOR_LOCK_X.store(pt.x, Ordering::SeqCst);
+            CURSOR_LOCK_Y.store(pt.y, Ordering::SeqCst);
+            return [0, 0];
+        }
+        let ax = CURSOR_LOCK_X.load(Ordering::SeqCst);
+        let ay = CURSOR_LOCK_Y.load(Ordering::SeqCst);
+        let dx = pt.x - ax;
+        let dy = pt.y - ay;
+        if dx != 0 || dy != 0 {
+            let _ = winsafe::SetCursorPos(ax, ay);
+        }
+        [dx, dy]
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = active;
+        [0, 0]
+    }
+}
