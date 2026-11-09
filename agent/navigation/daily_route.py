@@ -110,6 +110,7 @@ class RouteActions:
         self.gb_analyzer = None
         self.gb_toast_reader = None
         self.gb_config = {}
+        self.gb_pending_approach_pickups = []
         if self.executor == "navigation":
             from .gingerbread_pickup import GingerbreadRouteAnalyzer, LeftMaterialToastReader
             root_dir = self.resource.parent
@@ -253,7 +254,47 @@ class RouteActions:
             self.inputs.release()
         return True
 
+    def poll_gingerbread_transit(self, frame, pose):
+        """Read left-side material toasts while walking between waypoints."""
+        if self.gb_analyzer is None or self.gb_toast_reader is None or frame is None:
+            return
+        new_obs, _ = self.gb_toast_reader.poll(image=frame)
+        if not new_obs:
+            return
+        now = time.monotonic()
+        wp_index = int(getattr(self.navigator, "current_index", 0) or 0)
+        px = float(getattr(pose, "x", 0.0) or 0.0)
+        py = float(getattr(pose, "y", 0.0) or 0.0)
+        for obs in new_obs:
+            self.count += obs.amount
+            ev_item = {
+                "material": obs.name,
+                "amount": obs.amount,
+                "x": round(px, 2),
+                "y": round(py, 2),
+                "wp_index": wp_index,
+                "ts": now,
+                "t_s": 0.0,
+                "phase": "approach",
+                "raw_text": obs.raw_text,
+            }
+            self.gb_analyzer.in_stride_pickups.append(ev_item)
+            self.gb_pending_approach_pickups.append(ev_item)
+            self.event({
+                "type": "obtained",
+                "material": obs.name,
+                "amount": obs.amount,
+                "total": self.count,
+                "phase": "transit",
+                "text": obs.raw_text,
+            })
+            self.rt.log(
+                f"左侧提示（途中自动拾取）：+{obs.amount} {obs.name}（前往第 {wp_index + 1} 点途中，累计 {self.count}）",
+                detail=True,
+            )
+
     def wait_gingerbread(self, point, wait_sec: float):
+        from .gingerbread_pickup import M_PER_MAP_PX
         wp_index = int(getattr(self.navigator, "current_index", 0) or 0)
         pose = getattr(self.rt, "last_pose", None) or {}
         actual_x = float(pose.get("x", point.x)) if isinstance(pose, dict) else float(point.x)
@@ -275,10 +316,26 @@ class RouteActions:
         max_wait_s = max(wait_sec, ceiling_s) if adaptive_exit else wait_sec
 
         arrived_at = time.monotonic()
+        recent_toast = self.gb_toast_reader.last_toast_activity_at
         last_activity_at = arrived_at
         first_pickup_s = None
         last_pickup_s = None
         picked_events = []
+        remaining_pending = []
+        for ev in self.gb_pending_approach_pickups:
+            dist_m = math.hypot(float(ev.get("x", actual_x)) - actual_x, float(ev.get("y", actual_y)) - actual_y) * M_PER_MAP_PX
+            if dist_m <= 24.0 or (arrived_at - float(ev.get("ts", 0.0))) <= 8.0:
+                picked_events.append(ev)
+                if ev in self.gb_analyzer.in_stride_pickups:
+                    self.gb_analyzer.in_stride_pickups.remove(ev)
+                if first_pickup_s is None:
+                    first_pickup_s = 0.0
+                last_pickup_s = 0.0
+            else:
+                remaining_pending.append(ev)
+        self.gb_pending_approach_pickups = remaining_pending
+        if recent_toast > 0 and (arrived_at - recent_toast) <= 2.5:
+            last_activity_at = arrived_at
         exit_reason = "configured_timeout"
 
         while not self.rt.stopped:

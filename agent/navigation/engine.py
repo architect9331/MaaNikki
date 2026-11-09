@@ -211,6 +211,7 @@ class Navigator:
         self.camera_probe_pixels = self.CAMERA_PROBE_PIXELS
         self.motion = None
         self.next_skip_check = 0
+        self.next_toast_check = 0
         self.relocalize = relocalize
         self.scene_recovery = scene_recovery
         self.map_recoveries = 0
@@ -325,6 +326,13 @@ class Navigator:
                     self.save_heading_evidence(frame)
         if self.motion:
             self.motion.tick()
+        if (page_ready and frame is not None and self.point_action is not None
+                and hasattr(self.point_action, "poll_gingerbread_transit")
+                and time.monotonic() >= self.next_toast_check):
+            self.next_toast_check = time.monotonic() + 0.45
+            self.point_action.poll_gingerbread_transit(frame, pose)
+            if self.motion:
+                self.motion.tick()
         if self.overlay:
             if page_ready and pose.position_reliable and self.active_route is not None:
                 self.overlay.publish_route(self.active_route, self.current_index, pose)
