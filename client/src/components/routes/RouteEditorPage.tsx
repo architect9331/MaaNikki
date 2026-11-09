@@ -9,7 +9,7 @@ import clsx from 'clsx';
 import { toast } from 'sonner';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { invoke } from '@tauri-apps/api/core';
-import { useAppStore } from '@/stores/appStore';
+import { flushSaveConfig, useAppStore } from '@/stores/appStore';
 import { isTauri } from '@/utils/paths';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { primaryButton, secondaryButton, Segmented } from '@/components/ui/FeaturePage';
@@ -269,8 +269,20 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
   const [showBuiltin, setShowBuiltin] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showTeleports, setShowTeleports] = useState(true);
+  const [showPathMask, setShowPathMask] = useState(false);
   const [showRouteConfig, setShowRouteConfig] = useState(false);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const overlayCase = useAppStore((s) => {
+    const opt = s.globalOptionValues?.RouteOverlayMode;
+    if (opt?.type === 'select' && (opt.caseName === 'Full' || opt.caseName === 'MinimapOnly' || opt.caseName === 'Off')) {
+      return opt.caseName;
+    }
+    return 'Full';
+  });
+  const setOverlayCase = useCallback((nextCase: 'Full' | 'MinimapOnly' | 'Off') => {
+    useAppStore.getState().setGlobalOptionValue('RouteOverlayMode', { type: 'select', caseName: nextCase });
+    void flushSaveConfig();
+  }, []);
   const [showGenerator, setShowGenerator] = useState(false);
   const [generatedBatch, setGeneratedBatch] = useState<GenerateGingerbreadResponse | null>(null);
   const [generatedIdx, setGeneratedIdx] = useState(0);
@@ -783,6 +795,12 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
         : <h1 className="text-lg font-semibold">路线编辑器</h1>}
       {activeDoc && !readOnly && <span className="flex items-center gap-1 text-xs text-text-muted">{saved ? <><Check className="h-3 w-3" />已保存</> : <><Loader2 className="h-3 w-3 animate-spin" />保存中</>}</span>}
       <span className="ml-auto flex items-center gap-1.5">
+        <Segmented
+          label="游戏内路径遮罩"
+          value={overlayCase}
+          onChange={setOverlayCase}
+          options={[['Full', '遮罩:3D+小地图'], ['MinimapOnly', '仅小地图'], ['Off', '关遮罩']]}
+        />
         {!collection && <Segmented label="视图模式" value={viewMode} onChange={(v) => { setViewMode(v); setTimeout(() => canvas.current?.fit(), 60); }} options={[['2d', '2D 平面'], ['3d', '3D 地形']]} />}
         {route && <>
           <button onClick={undo} disabled={!history.past.length} title="撤销（Ctrl+Z）" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-30"><Undo2 className="h-4 w-4" /></button>
@@ -947,6 +965,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
               pose={recording?.pose ?? (status === 'running' ? trial?.pose : null)}
               teleports={showTeleports ? knownCheckpoints : undefined}
               startTeleport={route ? route.teleport : recordTeleport}
+              showPathMask={showPathMask}
               selected={selected}
               selectedSet={selectedSet}
               activeTrialIndex={status === 'running' ? trial?.current_index ?? null : null}
@@ -1093,6 +1112,8 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
             <span className="mx-1.5 my-0.5 h-px bg-border" />
             <button onClick={() => setShowTeleports((prev) => !prev)} title="显示流转之柱传送点（点击可设为起点传送或插入传送点）" aria-pressed={showTeleports}
               className={clsx('rounded-lg p-2', showTeleports ? 'bg-[#7c6cf0]/15 text-[#7c6cf0]' : 'hover:bg-bg-hover')}><MapPin className="h-4 w-4" /></button>
+            <button onClick={() => setShowPathMask((prev) => !prev)} title="显示 15m 姜饼人拾取范围路径遮罩" aria-pressed={showPathMask}
+              className={clsx('rounded-lg p-2', showPathMask ? 'bg-warning/15 text-warning' : 'hover:bg-bg-hover')}><Sparkles className="h-4 w-4" /></button>
           </div>
 
           {readOnly && <p className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-border bg-bg-secondary/95 px-3 py-1 text-xs text-text-secondary shadow-sm">内置路线只能查看，另存后可以修改</p>}
@@ -1121,7 +1142,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
                   {status === 'stopping' ? '正在停止…' : trial?.message || (status === 'running' ? '路线运行中，切出游戏会暂停' : '正在准备…')}
                 </p>
                 {status === 'running' && trial && <p className="text-xs tabular-nums text-text-muted">
-                  当前目标：第 {(trial.current_index ?? 0) + 1} 点（游戏内小地图同步显示路线遮罩）
+                  当前目标：第 {(trial.current_index ?? 0) + 1} 点（{overlayCase === 'Off' ? '游戏内路径遮罩已关闭' : overlayCase === 'MinimapOnly' ? '游戏内仅显示左上角小地图遮罩' : '游戏内实时显示 3D 地面 + 小地图路径遮罩'}）
                 </p>}
               </div>
               <button onClick={stopRouteSession} disabled={status === 'stopping'} className={secondaryButton}><Square className="h-3.5 w-3.5" />停止</button>

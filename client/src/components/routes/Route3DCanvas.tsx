@@ -549,6 +549,7 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
   const [surfaceMode, setSurfaceMode] = useState<'map' | 'elevation' | 'walkability'>('map');
   const [zScale, setZScale] = useState<number>(1.0);
   const [showBuildings, setShowBuildings] = useState(true);
+  const [showRoute, setShowRoute] = useState(true);
   const [showAura, setShowAura] = useState(true);
   const [showSpawners, setShowSpawners] = useState(true);
   const [pointerLocked, setPointerLocked] = useState(false);
@@ -1195,7 +1196,7 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
 
       // 5. Draw 3D Route Trajectory + Waypoint Pillars
       const nextScreenWps: Array<{ index: number; sx: number; sy: number; depth: number; z: number; slope: number }> = [];
-      if (points3D.length > 0) {
+      if (showRoute && points3D.length > 0) {
         for (let i = 0; i < points3D.length - 1; i++) {
           const a = points3D[i];
           const b = points3D[i + 1];
@@ -1349,6 +1350,7 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
     surfaceMode,
     zScale,
     showBuildings,
+    showRoute,
     showAura,
     showSpawners,
     scheduleDraw,
@@ -1668,6 +1670,10 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
           <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
             <input type="checkbox" checked={showBuildings} onChange={(e) => setShowBuildings(e.target.checked)} />
             <span>3D 建筑风貌</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+            <input type="checkbox" checked={showRoute} onChange={(e) => setShowRoute(e.target.checked)} />
+            <span>路线路径</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
             <input type="checkbox" checked={showAura} onChange={(e) => setShowAura(e.target.checked)} />

@@ -39,6 +39,7 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
   pose?: { x: number; y: number; heading: number | null } | null;
   teleports?: Checkpoint[];
   startTeleport?: Checkpoint;
+  showPathMask?: boolean;
   selected: number | null;
   selectedSet?: ReadonlySet<number>;
   activeTrialIndex?: number | null;
@@ -53,7 +54,7 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
   onInsert: (afterIndex: number, x: number, y: number) => void;
   onPickTeleport?: (checkpoint: Checkpoint) => void;
 }>(function RouteMapCanvas({
-  map, image, points, preview, samples, pose, teleports, startTeleport,
+  map, image, points, preview, samples, pose, teleports, startTeleport, showPathMask = true,
   selected, selectedSet, activeTrialIndex, trialWaypoints,
   tool, readOnly, onSelect, onBoxSelect, onMove, onHeadingChange, onInsert, onPickTeleport,
 }, ref) {
@@ -135,6 +136,27 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
         context.stroke();
         context.restore();
       }
+    }
+    // 15m Gingerbread pickup coverage mask along route when showPathMask is enabled.
+    if (showPathMask && shown.length > 0) {
+      const auraPx = Math.max(4, (15.0 / 0.9) * scale);
+      context.save();
+      context.fillStyle = 'rgba(251, 191, 36, 0.10)';
+      context.strokeStyle = 'rgba(251, 191, 36, 0.35)';
+      context.lineWidth = 1.2;
+      for (let i = 0; i < shown.length; i++) {
+        const pt = shown[i];
+        const cx = sx(pt.x);
+        const cy = sy(pt.y);
+        if (cx < -auraPx || cy < -auraPx || cx > width + auraPx || cy > height + auraPx) continue;
+        context.beginPath();
+        context.arc(cx, cy, auraPx, 0, Math.PI * 2);
+        context.fill();
+        if (pt.action === 'wait' || i === 0 || i === shown.length - 1) {
+          context.stroke();
+        }
+      }
+      context.restore();
     }
     // Line first, so points stay readable where the route crosses itself.
     for (let index = 1; index < shown.length; index++) {
@@ -303,7 +325,7 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
       context.strokeRect(rx, ry, rw, rh);
       context.setLineDash([]);
     }
-  }, [map, image, shown, preview, samples, pose, teleports, startTeleport, selected, selectedSet, activeTrialIndex, trialWaypoints, readOnly]);
+  }, [map, image, shown, preview, samples, pose, teleports, startTeleport, showPathMask, selected, selectedSet, activeTrialIndex, trialWaypoints, readOnly]);
 
   const schedule = useCallback(() => {
     cancelAnimationFrame(frame.current);

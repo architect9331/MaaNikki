@@ -6,5 +6,13 @@
     "custom_action_param": {
       "mode": "pause"
     }
+  },
+  "MaaNikki_RouteOverlay": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "mode": "full"
+    }
   }
 }

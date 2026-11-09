@@ -6,7 +6,7 @@
     "group": ["periodic"],
     "default_check": false,
     "description": "运行路线编辑器里做好的路线。切出游戏后暂停，切回继续。",
-    "option": ["CustomRouteFile"]
+    "option": ["CustomRouteFile", "TaskRouteOverlay"]
   }],
   "option": {
     "CustomRouteFile": {

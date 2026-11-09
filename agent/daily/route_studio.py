@@ -21,7 +21,7 @@ from map_mask.service import BIGMAP_SCALES
 from navigation.controller import ForegroundInput
 from navigation.matching import luma, match_map
 from navigation.models import GameWindowClosed, NavigationError, maps
-from navigation.overlay import RouteMinimapOverlay
+from navigation.overlay import RouteMinimapOverlay, resolve_route_overlay_mode
 from navigation.vision import Locator, Pose
 from task_control import TaskStopped, active_session
 
@@ -144,7 +144,8 @@ class RouteRecorder(Runtime):
             inputs = ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
             focus_game(self, inputs)
             locator = Locator(spec)
-            overlay = RouteMinimapOverlay(inputs.hwnd, spec) if getattr(inputs, "hwnd", 0) else None
+            overlay_mode = resolve_route_overlay_mode(getattr(self, "context", None))
+            overlay = RouteMinimapOverlay(inputs.hwnd, spec, initial_mode=overlay_mode) if getattr(inputs, "hwnd", 0) else None
             watched = {virtual_key(self.game_keys.get("jump")): "jump",
                        virtual_key(self.game_keys.get("interact")): "interact", **HOTKEYS}
             for name in RECORDED_KEYS:

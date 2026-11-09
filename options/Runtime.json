@@ -1,13 +1,15 @@
 {
   "global_option": [
-    "FocusLostBehavior"
+    "FocusLostBehavior",
+    "RouteOverlayMode"
   ],
   "setting": [
     {
       "name": "runtime_behavior",
       "label": "运行行为",
       "option": [
-        "FocusLostBehavior"
+        "FocusLostBehavior",
+        "RouteOverlayMode"
       ],
       "default_expand": true
     }
@@ -37,6 +39,47 @@
             "MaaNikki_FocusLost": {
               "custom_action_param": {
                 "mode": "return"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RouteOverlayMode": {
+      "type": "select",
+      "label": "跑图路径遮罩",
+      "description": "日常跑图、大世界材料采集、自定义路线与路线编辑器试跑／录制期间，游戏画面实时叠加的路径导航遮罩显示方式（防截图且不阻挡鼠标点击）。",
+      "default_case": "Full",
+      "cases": [
+        {
+          "name": "Full",
+          "label": "开启（3D 地面 AR 引导 + 小地图遮罩）",
+          "pipeline_override": {
+            "MaaNikki_RouteOverlay": {
+              "custom_action_param": {
+                "mode": "full"
+              }
+            }
+          }
+        },
+        {
+          "name": "MinimapOnly",
+          "label": "仅左上角小地图遮罩（关闭 3D 地面引导）",
+          "pipeline_override": {
+            "MaaNikki_RouteOverlay": {
+              "custom_action_param": {
+                "mode": "minimap"
+              }
+            }
+          }
+        },
+        {
+          "name": "Off",
+          "label": "关闭路径遮罩",
+          "pipeline_override": {
+            "MaaNikki_RouteOverlay": {
+              "custom_action_param": {
+                "mode": "off"
               }
             }
           }

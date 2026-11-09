@@ -796,14 +796,79 @@ class MinimapHudSurface:
         return len(self.dirty_boxes)
 
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+MXU_CONFIG_FILE = ROOT_DIR / "config/mxu-MaaNikki.json"
+_CASE_TO_MODE = {
+    "Full": "full",
+    "MinimapOnly": "minimap",
+    "Off": "off",
+    "full": "full",
+    "minimap": "minimap",
+    "off": "off",
+}
+
+
+def _mxu_mtime_ns() -> int:
+    try:
+        return MXU_CONFIG_FILE.stat().st_mtime_ns
+    except OSError:
+        return 0
+
+
+def _read_live_overlay_mode(fallback: str = "full", *, prefer_global: bool = False) -> str:
+    try:
+        if not MXU_CONFIG_FILE.is_file():
+            return fallback
+        cfg = json.loads(MXU_CONFIG_FILE.read_text(encoding="utf-8-sig"))
+        if not isinstance(cfg, dict):
+            return fallback
+        if not prefer_global:
+            active_id = cfg.get("lastActiveInstanceId")
+            inst = next((it for it in cfg.get("instances", []) if isinstance(it, dict) and it.get("id") == active_id), None)
+            if isinstance(inst, dict):
+                for task in inst.get("tasks", []):
+                    if not isinstance(task, dict) or not task.get("enabled", True):
+                        continue
+                    if task.get("taskName") in ("open_world_collect", "custom_route"):
+                        t_opt = (task.get("optionValues") or {}).get("TaskRouteOverlay")
+                        if isinstance(t_opt, dict):
+                            t_case = t_opt.get("caseName")
+                            if t_case in ("Full", "MinimapOnly", "Off"):
+                                return _CASE_TO_MODE[t_case]
+        g_opt = (cfg.get("globalOptionValues") or {}).get("RouteOverlayMode")
+        if isinstance(g_opt, dict):
+            if g_opt.get("type") == "switch":
+                return "full" if g_opt.get("value", True) else "off"
+            g_case = g_opt.get("caseName")
+            if g_case in _CASE_TO_MODE:
+                return _CASE_TO_MODE[g_case]
+    except Exception:
+        pass
+    return fallback
+
+
+def resolve_route_overlay_mode(context=None) -> str:
+    if context is not None:
+        try:
+            from client_config import node_action_params
+            params = node_action_params(context, "MaaNikki_RouteOverlay")
+            raw = str(params.get("mode") or "").strip()
+            if raw in _CASE_TO_MODE:
+                return _CASE_TO_MODE[raw]
+        except Exception:
+            pass
+    return _read_live_overlay_mode("full")
+
 
 class RouteMinimapOverlay:
     """Capture-excluded Win32 overlay showing active 3D AR route guidance and minimap trajectory."""
 
-    def __init__(self, game_hwnd: int, spec, *, exclude_from_capture: bool = True):
+    def __init__(self, game_hwnd: int, spec, *, exclude_from_capture: bool = True, initial_mode: str | None = None):
         self.game = int(game_hwnd or 0)
         self.spec = spec
         self.exclude_from_capture = exclude_from_capture
+        self.mode = _CASE_TO_MODE.get(initial_mode or "", "") or _read_live_overlay_mode("full")
+        self._cfg_mtime_ns = _mxu_mtime_ns()
         self.lock = threading.Lock()
         self.snapshot: dict | None = None
         self.updated_at = 0.0
@@ -1015,14 +1080,23 @@ class RouteMinimapOverlay:
             self.ready.set()
             geometry = rendered = None
             next_topmost = 0.0
+            next_cfg_poll = 0.0
 
             while not self.stop.is_set():
                 with self.lock:
                     snap, updated = self.snapshot, self.updated_at
                 now = time.monotonic()
+                if now >= next_cfg_poll:
+                    next_cfg_poll = now + 0.35
+                    cur_mtime = _mxu_mtime_ns()
+                    if cur_mtime != self._cfg_mtime_ns:
+                        self._cfg_mtime_ns = cur_mtime
+                        self.mode = _read_live_overlay_mode(self.mode, prefer_global=True)
+                mode = self.mode
                 fg = foreground()
                 visible = (
-                    snap is not None
+                    mode != "off"
+                    and snap is not None
                     and now - updated < 3.5
                     and bool(valid(self.game))
                     and not bool(iconic(self.game))
@@ -1037,8 +1111,10 @@ class RouteMinimapOverlay:
                                 surface.close()
                             surface = MinimapHudSurface(rect.right, rect.bottom)
                             rendered = None
-                        ar_active = bool(snap.get("ar_active"))
+                        ar_active = bool(snap.get("ar_active")) and (mode == "full")
+                        draw_snap = snap if bool(snap.get("ar_active")) == ar_active else {**snap, "ar_active": ar_active}
                         sig = (
+                            mode,
                             int(now * 28) if ar_active else None,
                             snap.get("pose"),
                             snap.get("heading"),
@@ -1049,7 +1125,7 @@ class RouteMinimapOverlay:
                             snap.get("border_bgr"),
                         )
                         if sig != rendered:
-                            surface.draw(snap, now)
+                            surface.draw(draw_snap, now)
                         if sig != rendered or next_geom != geometry or not shown(hwnd):
                             surface.present(hwnd, origin)
                             rendered, geometry = sig, next_geom

@@ -7,7 +7,7 @@
       "group": ["daily", "periodic"],
       "default_check": false,
       "description": "使用姜饼人范围拾取能力，按顺序逐条跑完所选的大世界采集路线。驻留等待时实时读取左侧材料提示，长时间无新材料弹出后自动前往下一处，并在运行结束后输出各点位实测耗时与范围推断报告。",
-      "option": ["OpenWorldRoutes", "OpenWorldQuietWindow"]
+      "option": ["OpenWorldRoutes", "OpenWorldQuietWindow", "TaskRouteOverlay"]
     }
   ],
   "option": {
@@ -111,6 +111,55 @@
                 "adaptive_exit": false,
                 "quiet_seconds": 20.0,
                 "initial_wait_seconds": 20.0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "TaskRouteOverlay": {
+      "type": "select",
+      "label": "路径遮罩显示",
+      "default_case": "Default",
+      "description": "控制跑图期间游戏画面叠加的 3D 地面引导带与左上角小地图路线遮罩。也可在「设置 → 运行行为」或路线编辑器顶部随时一键切换。",
+      "cases": [
+        {
+          "name": "Default",
+          "label": "跟随全局设置（默认开启 3D 地面 + 小地图遮罩）",
+          "pipeline_override": {}
+        },
+        {
+          "name": "Full",
+          "label": "开启（3D 地面 AR 引导 + 小地图遮罩）",
+          "pipeline_override": {
+            "MaaNikki_RouteOverlay": {
+              "custom_action_param": {
+                "mode": "full",
+                "task_override": true
+              }
+            }
+          }
+        },
+        {
+          "name": "MinimapOnly",
+          "label": "仅左上角小地图遮罩（关闭 3D 地面引导）",
+          "pipeline_override": {
+            "MaaNikki_RouteOverlay": {
+              "custom_action_param": {
+                "mode": "minimap",
+                "task_override": true
+              }
+            }
+          }
+        },
+        {
+          "name": "Off",
+          "label": "关闭路径遮罩",
+          "pipeline_override": {
+            "MaaNikki_RouteOverlay": {
+              "custom_action_param": {
+                "mode": "off",
+                "task_override": true
               }
             }
           }
