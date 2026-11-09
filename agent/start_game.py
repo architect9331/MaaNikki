@@ -80,24 +80,27 @@ def focus_window(hwnd):
         return True
 
     current_thread = kernel32.GetCurrentThreadId()
-    foreground_thread = user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), None)
-    target_thread = user32.GetWindowThreadProcessId(hwnd, None)
-    attached = []
-    try:
-        # The helper is launched in the background. Share the foreground input
-        # queue during activation so Windows can grant it foreground access.
-        for thread in dict.fromkeys((foreground_thread, target_thread)):
-            if thread and thread != current_thread and user32.AttachThreadInput(current_thread, thread, True):
-                attached.append(thread)
-        if user32.IsIconic(hwnd):
-            user32.ShowWindow(hwnd, 9)  # SW_RESTORE; preserve maximized windows.
-        user32.BringWindowToTop(hwnd)
-        user32.SetForegroundWindow(hwnd)
-    finally:
-        for thread in reversed(attached):
-            user32.AttachThreadInput(current_thread, thread, False)
 
-    deadline, stable_since = time.monotonic()+3, None
+    def activate():
+        foreground_thread = user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), None)
+        target_thread = user32.GetWindowThreadProcessId(hwnd, None)
+        attached = []
+        try:
+            # The helper is launched in the background. Share the foreground input
+            # queue during activation so Windows can grant it foreground access.
+            for thread in dict.fromkeys((foreground_thread, target_thread)):
+                if thread and thread != current_thread and user32.AttachThreadInput(current_thread, thread, True):
+                    attached.append(thread)
+            if user32.IsIconic(hwnd):
+                user32.ShowWindow(hwnd, 9)  # SW_RESTORE; preserve maximized windows.
+            user32.BringWindowToTop(hwnd)
+            user32.SetForegroundWindow(hwnd)
+        finally:
+            for thread in reversed(attached):
+                user32.AttachThreadInput(current_thread, thread, False)
+
+    activate()
+    deadline, stable_since, last_attempt = time.monotonic()+3, None, time.monotonic()
     while time.monotonic() < deadline:
         if not user32.IsWindow(hwnd):
             return False
@@ -108,6 +111,9 @@ def focus_window(hwnd):
                 return True
         else:
             stable_since = None
+            if now-last_attempt >= .5:
+                activate()
+                last_attempt = now
         time.sleep(.05)
     return False
 
@@ -167,7 +173,13 @@ def resolve_program(value):
                         return candidate
         raise ValueError("请选择官方启动器 launcher.exe；不能直接运行游戏客户端。")
     import winreg
-    for reg_key in (r"Software\InfinityNikki Launcher", r"Software\InfinityNikkiGlobal Launcher"):
+    launcher_names = (
+        "InfinityNikki Launcher",
+        "InfinityNikkiBili Launcher",
+        "InfinityNikkiGlobal Launcher",
+    )
+    for launcher_name in launcher_names:
+        reg_key = rf"Software\{launcher_name}"
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, reg_key) as key:
                 folder = Path(winreg.QueryValueEx(key, "")[0])
@@ -177,7 +189,7 @@ def resolve_program(value):
         except OSError:
             pass
     local_app_data = Path(os.environ.get("LOCALAPPDATA", ""))
-    for launcher_dir in ("InfinityNikki Launcher", "InfinityNikkiGlobal Launcher"):
+    for launcher_dir in launcher_names:
         config_path = local_app_data / launcher_dir / "config.ini"
         config = configparser.ConfigParser(interpolation=None)
         if config_path.is_file():
@@ -361,9 +373,21 @@ def launch_game(program, timeout, record):
             return
         hwnd = windows.find()
         if hwnd and (runtime is None or runtime.hwnd != hwnd):
-            windows.focus(hwnd)
-            with startup_step(record, "connect_launcher"):
-                runtime = LauncherRuntime(windows, hwnd)
+            if not focus_window(hwnd):
+                if not windows.user32.IsWindow(hwnd):
+                    runtime = None
+                    time.sleep(.5)
+                    continue
+                raise RuntimeError("未能自动将官方启动器切到前台，请检查窗口状态和权限后重试。")
+            try:
+                with startup_step(record, "connect_launcher"):
+                    runtime = LauncherRuntime(windows, hwnd)
+            except RuntimeError:
+                if not windows.user32.IsWindow(hwnd):
+                    runtime = None
+                    time.sleep(.5)
+                    continue
+                raise
             record["stage"] = "launcher_button"
             save_record(record)
         now = time.monotonic()
@@ -525,6 +549,11 @@ def main():
     except (OSError, ValueError, TypeError, AttributeError, RuntimeError, ImportError, configparser.Error) as error:
         record["success"] = False
         record["reason"] = str(error)
+        try:
+            from message_log import write_message
+            write_message(record["reason"], record["reason"])
+        except Exception:
+            pass
     finally:
         save_record(record)
         if fault_log is not None:

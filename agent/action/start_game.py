@@ -44,7 +44,8 @@ class StartGameAction(CustomAction):
                     "enter_attempts": entered, "login_attempts": logged_in,
                     "update_attempts": update_attempts,
                 }
-                image = runtime.capture()
+                captured = runtime.controller.post_screencap().wait()
+                image = captured.get() if captured.succeeded else None
                 record["evidence"] = runtime.diagnostic("startup", reason, image=image, details=record)
                 write_json(folder / (name+".json"), record)
                 runtime.log(f"{reason}，本轮停止；记录：logs/startup/{name}.json。")
@@ -118,38 +119,58 @@ class StartGameAction(CustomAction):
             return runtime.click_template(
                 "MaaNikki_StartGame_UpdateConfirm", attempts=1, wait_seconds=0, verify=False)
 
-        # The health warning can open at the launcher's aspect ratio before
-        # Unreal applies the saved game resolution. Observe only during this
-        # short transition; ordinary recognition/input keeps its geometry guard.
+        # The splash or health warning can open at 16:9 or the launcher's aspect
+        # ratio and transiently resize while Unreal applies saved display settings.
+        # Guard captures across this initial window; ordinary input keeps geometry checks.
         frame_deadline = min(deadline, started_at+30)
         frame_wait_logged = False
-        while not runtime.stopped:
-            runtime.check_focus()
-            captured = runtime.controller.post_screencap().wait()
-            image = captured.get() if captured.succeeded else None
-            if runtime.check_focus():
-                continue
-            if image is None or image.size == 0:
-                return incomplete("未获取到游戏启动画面")
-            try:
-                require_game_frame(image)
-                break
-            except GameFrameSizeError:
+
+        def capture_startup_frame():
+            nonlocal frame_wait_logged, unknown_since
+            while not runtime.stopped:
+                runtime.invalidate_frame()
+                runtime.check_focus()
+                captured = runtime.controller.post_screencap().wait()
+                image = captured.get() if captured.succeeded else None
+                if runtime.check_focus():
+                    continue
+                if image is None or image.size == 0:
+                    return None
                 if (
                     image.shape[:2] != (720, 1280)
                     and abs(image.shape[1] - 1280) <= 2
                     and abs(image.shape[0] - 720) <= 2
                 ):
                     from tall_window import heal_16_9_window
-                    if heal_16_9_window(runtime.controller) is not None:
-                        break
-                if time.monotonic() >= frame_deadline:
-                    runtime.validate_frame(image)
-                if not frame_wait_logged:
-                    runtime.log("正在等待游戏启动画面切换至 16:9 分辨率。")
-                    frame_wait_logged = True
-            if not runtime.pause(.25):
-                return False
+                    healed = heal_16_9_window(runtime.controller)
+                    if healed is not None:
+                        image = healed
+                try:
+                    require_game_frame(image)
+                except GameFrameSizeError:
+                    if (
+                        time.monotonic() >= frame_deadline
+                        or entered > 0
+                        or logged_in > 0
+                        or update_attempts > 0
+                    ):
+                        runtime.evidence.remember_frame(image, runtime._focus_generation)
+                        runtime.validate_frame(image)
+                    unknown_since = None
+                    if not frame_wait_logged:
+                        runtime.log("正在等待游戏启动画面切换至 16:9 分辨率。")
+                        frame_wait_logged = True
+                    if not runtime.pause(.25):
+                        return None
+                    continue
+                runtime.evidence.remember_frame(image, runtime._focus_generation)
+                runtime.validate_frame(image)
+                return image
+            return None
+
+        runtime.capture = capture_startup_frame
+        if runtime.capture() is None:
+            return False if runtime.stopped else incomplete("未获取到游戏启动画面")
 
         while not runtime.stopped and time.monotonic() < deadline:
             with runtime.observe(fresh=True):
@@ -237,7 +258,7 @@ class StartGameAction(CustomAction):
                     return complete()
                 return incomplete()
             elif not enter and not login:
-                if runtime.ui.asset("IconUILoading", threshold=.99):
+                if (intro_logged and not entered) or runtime.ui.asset("IconUILoading", threshold=.99):
                     unknown_since = None
                 else:
                     # Allow a short unrecognized transition before invoking
