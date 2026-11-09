@@ -369,6 +369,8 @@ class Navigator:
             self.heading_state.command(part, self.turn_ratio)
             self.heading_turn_at = time.monotonic()
             self.heading_turn_input = self.motion.forward_elapsed() if self.motion else 0
+            if self.overlay and self.turn_ratio:
+                self.overlay.notify_camera_turn(part / self.turn_ratio)
         return part
 
     def stable_heading(self, pose, *, deadline=None):
@@ -773,6 +775,8 @@ class Navigator:
             motion.close()
             return pose, False
         motion.jump(jumping, walking, reason="unstuck" if recovery else "segment")
+        if self.overlay:
+            self.overlay.notify_motion(velocity, duration, jumping)
         if recovery:
             self.pause(1.5)
             motion.stop()
@@ -1025,6 +1029,9 @@ class Navigator:
                         elif pose.heading is not None and abs(angle_delta(next_bearing, pose.heading)) >= 45:
                             motion.stop()
                     index += 1
+                    self.current_index = index
+                    if self.overlay and pose.position_reliable:
+                        self.overlay.publish_route(route, index, pose)
                     if index < len(route.points):
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
                         best_distance = distance(pose, route.points[index])

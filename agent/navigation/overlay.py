@@ -1,10 +1,12 @@
-"""Lightweight capture-excluded Win32 minimap route overlay for navigation and recording."""
+"""Capture-excluded Win32 route overlay with minimap trajectory and 3D AR ground guidance."""
 from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes as w
+import json
 import math
 import os
+from pathlib import Path
 import threading
 import time
 
@@ -13,9 +15,11 @@ import numpy as np
 
 from map_mask.surface import BitmapInfo, Blend, _blend_rect, bind, checked
 from message_log import write_message
+from vision import read_image
 
 
 PROC = ctypes.WINFUNCTYPE(ctypes.c_ssize_t, w.HWND, w.UINT, w.WPARAM, w.LPARAM)
+NAV_ROOT = Path(__file__).resolve().parents[2] / "resource/navigation"
 
 ACTION_LABELS = {
     "": "途经",
@@ -36,7 +40,6 @@ ACTION_LABELS = {
     "animal": "动物",
 }
 
-# BGR colors for minimap waypoint dots.
 ACTION_BGR = {
     "": (245, 245, 245),
     "teleport": (240, 108, 124),
@@ -49,6 +52,75 @@ ACTION_BGR = {
     "macro": (122, 86, 208),
     "key": (115, 127, 138),
 }
+
+
+class _TerrainSampler:
+    """Lazy O(1) terrain elevation reader backed by resource/navigation/terrain/<map_id>.png."""
+
+    _cache: dict[str, "_TerrainSampler"] = {}
+    _lock = threading.Lock()
+
+    def __init__(self, map_id: str):
+        self.px_scale = 0.5
+        self.bgr: np.ndarray | None = None
+        self.h = 0
+        self.w = 0
+        try:
+            manifest_path = NAV_ROOT / "terrain/manifest.json"
+            if manifest_path.is_file():
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                info = manifest.get(map_id)
+                if info and info.get("image"):
+                    self.px_scale = float(info.get("px_scale", 0.5))
+                    img = read_image(NAV_ROOT / info["image"], cv2.IMREAD_COLOR)
+                    if img is not None and img.ndim == 3:
+                        self.bgr = img
+                        self.h, self.w = img.shape[:2]
+        except Exception:
+            self.bgr = None
+
+    @classmethod
+    def get(cls, map_id: str) -> "_TerrainSampler":
+        with cls._lock:
+            sampler = cls._cache.get(map_id)
+            if sampler is None:
+                sampler = cls(map_id)
+                cls._cache[map_id] = sampler
+            return sampler
+
+    def sample_z(self, wx: float, wy: float, fallback: float = 0.0) -> float:
+        if self.bgr is None:
+            return fallback
+        gx = int(round(wx * self.px_scale))
+        gy = int(round(wy * self.px_scale))
+        if 0 <= gx < self.w and 0 <= gy < self.h:
+            b, g, r = self.bgr[gy, gx]
+            if (int(b) & 1) and (r or g):
+                return ((int(r) << 8) | int(g)) * 0.1 - 500.0
+        return fallback
+
+    def sample_smooth(self, wx: float, wy: float, fallback: float = 0.0) -> float:
+        z0 = self.sample_z(wx, wy, math.nan)
+        if math.isnan(z0):
+            return fallback
+        acc = z0 * 2.0
+        w_sum = 2.0
+        for dx, dy in ((-2.2, 0.0), (2.2, 0.0), (0.0, -2.2), (0.0, 2.2)):
+            zn = self.sample_z(wx + dx, wy + dy, math.nan)
+            if not math.isnan(zn) and abs(zn - z0) <= 6.0:
+                acc += zn
+                w_sum += 1.0
+        return acc / w_sum
+
+
+def _premul(bgr: tuple[int, int, int], alpha: float) -> tuple[int, int, int, int]:
+    a = max(0.0, min(1.0, float(alpha)))
+    return (
+        int(round(bgr[0] * a)),
+        int(round(bgr[1] * a)),
+        int(round(bgr[2] * a)),
+        int(round(255.0 * a)),
+    )
 
 
 class WindowClass(ctypes.Structure):
@@ -64,10 +136,10 @@ class Paint(ctypes.Structure):
 
 
 class MinimapHudSurface:
-    """Compact BGRA surface covering the top-left minimap and status pill region."""
+    """Full-client BGRA surface rendering both the 3D AR ground route and top-left minimap."""
 
-    REF_W = 420
-    REF_H = 230
+    MM_REF_W = 420
+    MM_REF_H = 230
 
     def __init__(self, client_w: int, client_h: int):
         self.client_w = max(1, client_w)
@@ -75,8 +147,11 @@ class MinimapHudSurface:
         self.sx = self.client_w / 1280.0
         self.sy = self.client_h / 720.0
         self.s = min(self.sx, self.sy)
-        self.width = max(64, min(self.client_w, round(self.REF_W * self.sx)))
-        self.height = max(64, min(self.client_h, round(self.REF_H * self.sy)))
+        self.width = self.client_w
+        self.height = self.client_h
+        self.mm_w = max(64, min(self.client_w, round(self.MM_REF_W * self.sx)))
+        self.mm_h = max(64, min(self.client_h, round(self.MM_REF_H * self.sy)))
+        self.dirty_boxes: list[tuple[int, int, int, int]] = []
         self.user = ctypes.WinDLL("user32", use_last_error=True)
         self.gdi = ctypes.WinDLL("gdi32", use_last_error=True)
         self.dc = self.bitmap = self.old_bitmap = None
@@ -124,8 +199,353 @@ class MinimapHudSurface:
         checked(self.update(hwnd, None, ctypes.byref(origin), ctypes.byref(size), self.dc,
                             ctypes.byref(source), 0, ctypes.byref(blend), 2), "显示小地图路线图层")
 
-    def draw(self, snapshot: dict) -> int:
-        self.pixels.fill(0)
+    def _draw_text_pill(
+        self,
+        pixels: np.ndarray,
+        x0: int,
+        y0: int,
+        x1: int,
+        y1: int,
+        title_line: str,
+        sub_line: str = "",
+        *,
+        bg_bgr: tuple[int, int, int] = (38, 30, 26),
+        border_bgr: tuple[int, int, int] = (120, 152, 180),
+        title_color: int = 0xFFF6EA,
+        font_scale: float = 1.0,
+    ):
+        sx, sy, s = self.sx, self.sy, self.s * font_scale
+        x0 = max(2, min(self.width - 20, x0))
+        y0 = max(2, min(self.height - 20, y0))
+        x1 = max(x0 + 16, min(self.width - 2, x1))
+        y1 = max(y0 + 14, min(self.height - 2, y1))
+        _blend_rect(
+            pixels, x0, y0, x1, y1, bg_bgr,
+            radius=round(8 * s), opacity=0.86,
+            border_bgr=border_bgr, border_px=max(1.0, 1.35 * s),
+        )
+        dc, gdi = self.dc, self.gdi
+        text_out = bind(gdi, "TextOutW", w.BOOL, w.HDC, ctypes.c_int, ctypes.c_int, w.LPCWSTR, ctypes.c_int)
+        font_fn = bind(gdi, "CreateFontW", w.HFONT, *([ctypes.c_int] * 5), *([w.DWORD] * 8), w.LPCWSTR)
+        f_bold = f_sub = old_font = None
+        try:
+            sub_px = pixels[y0:y1, x0:x1]
+            alpha_before = sub_px[..., 3].copy()
+            rgb_slice = self.pixels[y0:y1, x0:x1]
+            rgb_before = (rgb_slice & 0x00FFFFFF).copy()
+            f_bold = checked(font_fn(-max(10, round(13 * s)), 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建遮罩标题字体")
+            if sub_line:
+                f_sub = checked(font_fn(-max(9, round(12 * s)), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建遮罩正文字体")
+            bind(gdi, "SetBkMode", ctypes.c_int, w.HDC, ctypes.c_int)(dc, 1)
+            set_color = bind(gdi, "SetTextColor", w.DWORD, w.HDC, w.DWORD)
+            tx = x0 + round(9 * sx * font_scale)
+            if title_line:
+                old_font = checked(self.select(dc, f_bold), "选择遮罩字体")
+                set_color(dc, title_color)
+                checked(text_out(dc, tx, y0 + round(4 * sy * font_scale), title_line, len(title_line)), "绘制遮罩标题")
+            if sub_line and f_sub:
+                handle = self.select(dc, f_sub)
+                if old_font is None:
+                    old_font = checked(handle, "选择遮罩副字体")
+                set_color(dc, 0xD2E8F8)
+                ty = y0 + round((23 if title_line else 5) * sy * font_scale)
+                checked(text_out(dc, tx, ty, sub_line, len(sub_line)), "绘制遮罩副标题")
+            checked(bind(gdi, "GdiFlush", w.BOOL)(), "提交遮罩文字")
+            changed = (rgb_slice & 0x00FFFFFF) != rgb_before
+            sub_px[..., 3] = np.where(changed, 255, alpha_before)
+        finally:
+            if old_font:
+                self.select(dc, old_font)
+            if f_bold:
+                self.delete(f_bold)
+            if f_sub:
+                self.delete(f_sub)
+        self.dirty_boxes.append((x0, y0, x1, y1))
+
+    def _draw_3d_ar_route(
+        self,
+        pixels: np.ndarray,
+        cur_x: float,
+        cur_y: float,
+        heading_deg: float,
+        jump_z_m: float,
+        points: tuple,
+        current_index: int,
+        map_id: str,
+        now: float,
+    ):
+        if current_index < 0 or current_index >= len(points):
+            return
+        sampler = _TerrainSampler.get(map_id) if map_id else None
+        ground_z = sampler.sample_smooth(cur_x, cur_y, 0.0) if sampler else 0.0
+
+        rad = math.radians(heading_deg)
+        fwd_x, fwd_y = math.sin(rad), -math.cos(rad)
+        right_x, right_y = math.cos(rad), math.sin(rad)
+
+        # Third-person game camera parameters (4.2m behind character, 2.35m height, 14.5 deg downward pitch)
+        cam_back_m = 4.2
+        cam_h_m = 2.35 + jump_z_m
+        pitch_rad = math.radians(14.5)
+        cos_p, sin_p = math.cos(pitch_rad), math.sin(pitch_rad)
+        focal = self.height * 1.07
+        cx_scr, cy_scr = self.width * 0.5, self.height * 0.5
+
+        def project_3d(wx: float, wy: float, wz: float, offset_x_m: float = 0.0, offset_y_m: float = 0.0):
+            dx_m = (wx - cur_x) * 0.90 + offset_x_m
+            dy_m = (wy - cur_y) * 0.90 + offset_y_m
+            dz_m = wz - ground_z
+            cam_r = dx_m * right_x + dy_m * right_y
+            horiz_f = dx_m * fwd_x + dy_m * fwd_y + cam_back_m
+            vz = dz_m - cam_h_m
+            cz = horiz_f * cos_p - vz * sin_p
+            if cz <= 2.1:
+                return None
+            cam_u = horiz_f * sin_p + vz * cos_p
+            scale = focal / cz
+            sx_px = int(round(cx_scr + cam_r * scale))
+            sy_px = int(round(cy_scr - cam_u * scale))
+            return sx_px, sy_px, cz, scale
+
+        # Build subdivided 3D path from character feet through upcoming waypoints (up to 44 meters)
+        chain = [(cur_x, cur_y, False, "")]
+        for idx in range(current_index, min(len(points), current_index + 6)):
+            pt = points[idx]
+            act = pt[4] if len(pt) >= 5 else ""
+            if idx > current_index and act == "teleport":
+                break
+            chain.append((float(pt[0]), float(pt[1]), bool(pt[3]) if len(pt) >= 4 else False, act))
+
+        samples_3d = []  # (wx, wy, wz, tx, ty, cum_m, is_jump, act)
+        cum_m = 0.0
+        max_dist_m = 44.0
+        step_m = 1.15
+        for seg_i in range(len(chain) - 1):
+            x0, y0, _, _ = chain[seg_i]
+            x1, y1, seg_jump, seg_act = chain[seg_i + 1]
+            seg_dx, seg_dy = x1 - x0, y1 - y0
+            seg_len_px = math.hypot(seg_dx, seg_dy)
+            seg_len_m = seg_len_px * 0.90
+            if seg_len_m < 0.25:
+                continue
+            tx, ty = seg_dx / seg_len_px, seg_dy / seg_len_px
+            n_steps = max(1, int(math.ceil(seg_len_m / step_m)))
+            for s_idx in range(n_steps + (1 if seg_i == len(chain) - 2 else 0)):
+                t = min(1.0, s_idx / n_steps)
+                d_m = cum_m + t * seg_len_m
+                if d_m > max_dist_m:
+                    break
+                wx = x0 + seg_dx * t
+                wy = y0 + seg_dy * t
+                raw_z = sampler.sample_smooth(wx, wy, ground_z) if sampler else ground_z
+                # Smoothly anchor the first 3.2m right under character feet
+                blend_feet = min(1.0, d_m / 3.2)
+                wz = ground_z * (1.0 - blend_feet) + raw_z * blend_feet
+                samples_3d.append((wx, wy, wz, tx, ty, d_m, seg_jump, seg_act))
+            cum_m += seg_len_m
+            if cum_m >= max_dist_m:
+                break
+
+        min_bx, min_by = self.width, self.height
+        max_bx, max_by = 0, 0
+
+        def mark_dirty(x0: int, y0: int, x1: int, y1: int, pad: int = 8):
+            nonlocal min_bx, min_by, max_bx, max_by
+            min_bx = min(min_bx, max(0, x0 - pad))
+            min_by = min(min_by, max(0, y0 - pad))
+            max_bx = max(max_bx, min(self.width, x1 + pad))
+            max_by = max(max_by, min(self.height, y1 + pad))
+
+        # 1. Project & draw 3D perspective ground ribbon + glowing edge rails
+        half_w_m = 0.42
+        proj_ribbon = []
+        for wx, wy, wz, tx, ty, d_m, seg_jump, seg_act in samples_3d:
+            # Perpendicular normal in map space: (-ty, tx)
+            nx_m, ny_m = -ty * half_w_m, tx * half_w_m
+            p_left = project_3d(wx, wy, wz + 0.08, -nx_m, -ny_m)
+            p_ctr = project_3d(wx, wy, wz + 0.08, 0.0, 0.0)
+            p_right = project_3d(wx, wy, wz + 0.08, nx_m, ny_m)
+            if p_left and p_ctr and p_right:
+                proj_ribbon.append((p_left, p_ctr, p_right, d_m, seg_jump, seg_act, wx, wy, wz, tx, ty))
+
+        rail_w = max(2, round(2.2 * self.s))
+        # Draw from far to near so closer translucent segments layer cleanly
+        for i in range(len(proj_ribbon) - 2, -1, -1):
+            l0, c0, r0, d0, jmp0, act0, *_ = proj_ribbon[i]
+            l1, c1, r1, *_ = proj_ribbon[i + 1]
+            if (
+                max(l0[0], r0[0], l1[0], r1[0]) < 0
+                or min(l0[0], r0[0], l1[0], r1[0]) >= self.width
+                or max(l0[1], r0[1], l1[1], r1[1]) < 0
+                or min(l0[1], r0[1], l1[1], r1[1]) >= self.height
+            ):
+                continue
+            fade = max(0.16, min(0.92, 1.0 - d0 / 45.0))
+            if jmp0:
+                base_bgr = (45, 215, 255)  # Electric gold-amber for jump segments
+            elif act0:
+                base_bgr = (165, 255, 75)  # Neon mint-emerald for action segments
+            else:
+                base_bgr = (255, 215, 45)  # Cyber cyan-blue for standard path
+
+            quad = np.array([[l0[0], l0[1]], [r0[0], r0[1]], [r1[0], r1[1]], [l1[0], l1[1]]], dtype=np.int32)
+            cv2.fillConvexPoly(pixels, quad, _premul(base_bgr, fade * 0.24), cv2.LINE_AA)
+            cv2.line(pixels, (l0[0], l0[1]), (l1[0], l1[1]), _premul(base_bgr, fade * 0.82), rail_w, cv2.LINE_AA)
+            cv2.line(pixels, (r0[0], r0[1]), (r1[0], r1[1]), _premul(base_bgr, fade * 0.82), rail_w, cv2.LINE_AA)
+            mark_dirty(
+                min(l0[0], r0[0], l1[0], r1[0]),
+                min(l0[1], r0[1], l1[1], r1[1]),
+                max(l0[0], r0[0], l1[0], r1[0]),
+                max(l0[1], r0[1], l1[1], r1[1]),
+                pad=rail_w + 4,
+            )
+
+        # 2. Draw animated flowing AR chevrons (>>>) along the 3D ground ribbon
+        if len(samples_3d) >= 2:
+            chev_spacing_m = 3.0
+            phase_m = (now * 4.2) % chev_spacing_m
+            chev_w = max(2, round(2.6 * self.s))
+            for idx in range(len(samples_3d) - 1):
+                wx0, wy0, wz0, tx, ty, d0, jmp0, _ = samples_3d[idx]
+                wx1, wy1, wz1, _, _, d1, _, _ = samples_3d[idx + 1]
+                if d1 <= d0:
+                    continue
+                # Check if a chevron tip falls within [d0, d1]
+                k = math.ceil((max(1.2, d0) - phase_m) / chev_spacing_m)
+                d_tip = phase_m + k * chev_spacing_m
+                if d0 <= d_tip <= d1 and d_tip <= 38.0:
+                    u = (d_tip - d0) / (d1 - d0)
+                    cx_w = wx0 + (wx1 - wx0) * u
+                    cy_w = wy0 + (wy1 - wy0) * u
+                    cz_w = wz0 + (wz1 - wz0) * u + 0.10
+                    nx_m, ny_m = -ty * 0.30, tx * 0.30
+                    back_x_m, back_y_m = -tx * 0.68, -ty * 0.68
+                    p_tip = project_3d(cx_w, cy_w, cz_w, 0.0, 0.0)
+                    p_lw = project_3d(cx_w, cy_w, cz_w, back_x_m - nx_m, back_y_m - ny_m)
+                    p_rw = project_3d(cx_w, cy_w, cz_w, back_x_m + nx_m, back_y_m + ny_m)
+                    if p_tip and p_lw and p_rw:
+                        fade = max(0.22, min(0.96, 1.0 - d_tip / 40.0))
+                        c_bgr = (140, 245, 255) if jmp0 else (255, 250, 200)
+                        col = _premul(c_bgr, fade * 0.92)
+                        cv2.line(pixels, (p_lw[0], p_lw[1]), (p_tip[0], p_tip[1]), col, chev_w, cv2.LINE_AA)
+                        cv2.line(pixels, (p_rw[0], p_rw[1]), (p_tip[0], p_tip[1]), col, chev_w, cv2.LINE_AA)
+                        mark_dirty(
+                            min(p_lw[0], p_rw[0], p_tip[0]),
+                            min(p_lw[1], p_rw[1], p_tip[1]),
+                            max(p_lw[0], p_rw[0], p_tip[0]),
+                            max(p_lw[1], p_rw[1], p_tip[1]),
+                            pad=chev_w + 4,
+                        )
+
+        # 3. Draw 3D Holographic Waypoint Pillars, Ground Rings & Floating Distance Badges
+        badge_queue = []
+        for wp_idx in range(min(len(points) - 1, current_index + 2), current_index - 1, -1):
+            pt = points[wp_idx]
+            act = pt[4] if len(pt) >= 5 else ""
+            if wp_idx > current_index and act == "teleport":
+                continue
+            wx, wy = float(pt[0]), float(pt[1])
+            dist_m = math.hypot(wx - cur_x, wy - cur_y) * 0.90
+            if wp_idx > current_index and dist_m > 45.0:
+                continue
+            wz = sampler.sample_smooth(wx, wy, ground_z) if sampler else ground_z
+            if dist_m < 3.2:
+                wz = ground_z * (1.0 - dist_m / 3.2) + wz * (dist_m / 3.2)
+
+            is_cur = wp_idx == current_index
+            jmp = bool(pt[3]) if len(pt) >= 4 else False
+            if act:
+                b_bgr = ACTION_BGR.get(act, (165, 255, 75))
+            elif jmp:
+                b_bgr = (45, 215, 255)
+            else:
+                b_bgr = (255, 215, 55) if is_cur else (225, 190, 95)
+
+            # Ground 3D arrival ring
+            ring_r_m = min(2.2, max(0.65, float(pt[2] if len(pt) >= 3 else 1.0) * 0.85)) if is_cur else 0.55
+            ring_pts = []
+            for a_i in range(16):
+                ang = (a_i / 16.0) * math.pi * 2.0
+                pr = project_3d(wx, wy, wz + 0.08, math.cos(ang) * ring_r_m, math.sin(ang) * ring_r_m)
+                if pr:
+                    ring_pts.append([pr[0], pr[1]])
+            if len(ring_pts) >= 6:
+                arr = np.array(ring_pts, dtype=np.int32)
+                ring_w = max(2, round((2.4 if is_cur else 1.6) * self.s))
+                cv2.polylines(pixels, [arr], True, _premul(b_bgr, 0.82 if is_cur else 0.50), ring_w, cv2.LINE_AA)
+                mark_dirty(int(arr[:, 0].min()), int(arr[:, 1].min()), int(arr[:, 0].max()), int(arr[:, 1].max()), pad=6)
+
+            # Vertical holographic beacon pillar
+            pillar_h_m = 2.45 if is_cur else 1.55
+            p_base = project_3d(wx, wy, wz + 0.08)
+            p_top = project_3d(wx, wy, wz + pillar_h_m)
+            if p_base and p_top and 0 <= p_base[0] < self.width and 0 <= p_base[1] < self.height:
+                bx, by = p_base[0], p_base[1]
+                tx_p, ty_p = p_top[0], p_top[1]
+                glow_w = max(4, round((6.0 if is_cur else 3.5) * self.s))
+                core_w = max(2, round((2.5 if is_cur else 1.6) * self.s))
+                cv2.line(pixels, (bx, by), (tx_p, ty_p), _premul(b_bgr, 0.32 if is_cur else 0.20), glow_w, cv2.LINE_AA)
+                cv2.line(pixels, (bx, by), (tx_p, ty_p), _premul((255, 255, 255), 0.90 if is_cur else 0.62), core_w, cv2.LINE_AA)
+                orb_r = max(4, round((5.5 if is_cur else 3.8) * self.s))
+                cv2.circle(pixels, (tx_p, ty_p), orb_r + 2, _premul(b_bgr, 0.85), -1, cv2.LINE_AA)
+                cv2.circle(pixels, (tx_p, ty_p), max(2, orb_r - 1), _premul((255, 255, 255), 0.95), -1, cv2.LINE_AA)
+                mark_dirty(min(bx, tx_p), min(by, ty_p), max(bx, tx_p), max(by, ty_p), pad=orb_r + 8)
+                if wp_idx <= current_index + 1:
+                    act_label = ACTION_LABELS.get(act, act or ("跳跃" if jmp else "途经"))
+                    tag = f"#{wp_idx + 1} {act_label} · {dist_m:.1f}m" if is_cur else f"#{wp_idx + 1} {act_label} · {dist_m:.0f}m"
+                    badge_queue.append((tx_p, ty_p, tag, b_bgr, is_cur))
+
+        if max_bx > min_bx and max_by > min_by:
+            self.dirty_boxes.append((min_bx, min_by, max_bx, max_by))
+
+        # Render floating text pills above pillar tops
+        for tx_p, ty_p, tag, b_bgr, is_cur in badge_queue:
+            f_scale = 0.92 if is_cur else 0.80
+            pw = round((22 + len(tag) * 9.6) * self.sx * f_scale)
+            ph = round(25 * self.sy * f_scale)
+            px0 = tx_p - pw // 2
+            py0 = ty_p - ph - round(10 * self.sy)
+            # Keep outside top-left minimap area
+            if px0 < self.mm_w and py0 < self.mm_h:
+                continue
+            self._draw_text_pill(
+                pixels, px0, py0, px0 + pw, py0 + ph, tag,
+                bg_bgr=(34, 24, 18), border_bgr=b_bgr,
+                title_color=0xFFF8E8 if is_cur else 0xD8E6F2,
+                font_scale=f_scale,
+            )
+
+        # 4. Off-Screen AR Turn Indicator when current target is outside camera horizontal FOV
+        tgt = points[current_index]
+        tx_w, ty_w = float(tgt[0]), float(tgt[1])
+        dist_tgt_m = math.hypot(tx_w - cur_x, ty_w - cur_y) * 0.90
+        if dist_tgt_m >= 0.8:
+            tgt_bearing = math.degrees(math.atan2(tx_w - cur_x, cur_y - ty_w)) % 360.0
+            ang_err = (tgt_bearing - heading_deg + 180.0) % 360.0 - 180.0
+            if abs(ang_err) > 27.0:
+                is_right = ang_err > 0
+                turn_txt = f"右转 {abs(ang_err):.0f}° · {dist_tgt_m:.1f}m >>>" if is_right else f"<<< 左转 {abs(ang_err):.0f}° · {dist_tgt_m:.1f}m"
+                tw = round((24 + len(turn_txt) * 9.5) * self.sx * 0.92)
+                th = round(28 * self.sy)
+                ix0 = (self.width - tw - round(28 * self.sx)) if is_right else round(28 * self.sx)
+                iy0 = round(self.height * 0.52)
+                self._draw_text_pill(
+                    pixels, ix0, iy0, ix0 + tw, iy0 + th, turn_txt,
+                    bg_bgr=(36, 26, 20), border_bgr=(55, 205, 255),
+                    title_color=0x90EEFF, font_scale=0.92,
+                )
+
+    def draw(self, snapshot: dict, now: float | None = None) -> int:
+        if now is None:
+            now = time.monotonic()
+        # Clear only dirty regions from previous frame for <0.05ms full-screen turnaround
+        if self.dirty_boxes:
+            for x0, y0, x1, y1 in self.dirty_boxes:
+                self.pixels[y0:y1, x0:x1] = 0
+            self.dirty_boxes.clear()
+        else:
+            self.pixels.fill(0)
+
         sx, sy, s = self.sx, self.sy, self.s
         pixels = self.pixels.view(np.uint8).reshape(self.height, self.width, 4)
 
@@ -141,20 +561,49 @@ class MinimapHudSurface:
         title_color = int(snapshot.get("title_color", 0xFFF6EA))
 
         if pose is not None and len(pose) == 2:
-            px_world, py_world = pose
+            px_world, py_world = float(pose[0]), float(pose[1])
+            heading = snapshot.get("heading")
+            # Dead-reckon forward movement and jump arc at 30 FPS between observations
+            jump_z_m = 0.0
+            if snapshot.get("ar_active") and heading is not None:
+                pose_time = float(snapshot.get("pose_time") or now)
+                move_until = float(snapshot.get("move_until") or 0.0)
+                vel = float(snapshot.get("velocity") or 0.0)
+                if move_until > pose_time and now > pose_time and vel > 0.1:
+                    dt_move = min(now - pose_time, move_until - pose_time, 0.85)
+                    rad_h = math.radians(float(heading))
+                    px_world += math.sin(rad_h) * vel * dt_move
+                    py_world -= math.cos(rad_h) * vel * dt_move
+                jump_start = float(snapshot.get("jump_start") or 0.0)
+                if 0.0 < now - jump_start < 1.25:
+                    jump_z_m = 2.2 * math.sin(math.pi * ((now - jump_start) / 1.25))
+
+                self._draw_3d_ar_route(
+                    pixels,
+                    px_world,
+                    py_world,
+                    float(heading),
+                    jump_z_m,
+                    points,
+                    current_index,
+                    str(snapshot.get("map_id") or ""),
+                    now,
+                )
+
+            # Top-Left Minimap Overlay (drawn in mm_h x mm_w sub-region)
+            mm_h, mm_w = self.mm_h, self.mm_w
             cx, cy = cx_ref * sx, cy_ref * sy
             rx, ry = r_ref * sx, r_ref * sy
             r_px = min(rx, ry)
 
-            canvas_bgr = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-            canvas_alpha = np.zeros((self.height, self.width), dtype=np.uint8)
+            canvas_bgr = np.zeros((mm_h, mm_w, 3), dtype=np.uint8)
+            canvas_alpha = np.zeros((mm_h, mm_w), dtype=np.uint8)
 
             def to_px(wx: float, wy: float) -> tuple[int, int]:
                 mx = cx_ref + (wx - px_world) / map_scale
                 my = cy_ref + (wy - py_world) / map_scale
                 return round(mx * sx), round(my * sy)
 
-            # Draw completed, current, and upcoming route segments.
             coords = [to_px(pt[0], pt[1]) for pt in points]
             line_w = max(2, round(2.4 * s))
             active_w = max(2, round(3.0 * s))
@@ -173,14 +622,12 @@ class MinimapHudSurface:
                     cv2.line(canvas_bgr, p0, p1, (130, 145, 235), line_w, cv2.LINE_AA)
                     cv2.line(canvas_alpha, p0, p1, 185, line_w, cv2.LINE_AA)
 
-            # Draw line from player center to current target waypoint.
             if 0 <= current_index < len(coords):
                 p_cur = coords[current_index]
                 c_pt = (round(cx), round(cy))
                 cv2.line(canvas_bgr, c_pt, p_cur, (80, 230, 255), max(1, round(1.8 * s)), cv2.LINE_AA)
                 cv2.line(canvas_alpha, c_pt, p_cur, 210, max(1, round(1.8 * s)), cv2.LINE_AA)
 
-            # Draw waypoints from ends toward current_index so current target stays on top.
             dot_r = max(3, round(3.8 * s))
             act_r = max(4, round(5.2 * s))
             for idx, pt in enumerate(points):
@@ -199,7 +646,6 @@ class MinimapHudSurface:
                     cv2.circle(canvas_bgr, (x_px, y_px), r_use, col, -1, cv2.LINE_AA)
                     cv2.circle(canvas_alpha, (x_px, y_px), r_use + 1, 225, -1, cv2.LINE_AA)
 
-            # Highlight current target waypoint (or draw rim indicator if outside minimap circle).
             if 0 <= current_index < len(points):
                 tx, ty = coords[current_index]
                 pt = points[current_index]
@@ -222,64 +668,42 @@ class MinimapHudSurface:
                     cv2.circle(canvas_bgr, (rim_x, rim_y), act_r, (55, 195, 255), -1, cv2.LINE_AA)
                     cv2.circle(canvas_alpha, (rim_x, rim_y), act_r + 2, 250, -1, cv2.LINE_AA)
 
-            # Clip minimap drawing to the minimap circle and composite into premultiplied BGRA.
-            yy, xx = np.ogrid[:self.height, :self.width]
+            yy, xx = np.ogrid[:mm_h, :mm_w]
             dist_circle = np.hypot(xx / sx - cx_ref, yy / sy - cy_ref)
             clip = np.clip(r_ref + 0.5 - dist_circle, 0.0, 1.0).astype(np.float32)
             alpha_f = (canvas_alpha.astype(np.float32) / 255.0) * clip
-            pixels[..., :3] = np.clip(np.rint(canvas_bgr.astype(np.float32) * alpha_f[..., None]), 0, 255).astype(np.uint8)
-            pixels[..., 3] = np.clip(np.rint(alpha_f * 255.0), 0, 255).astype(np.uint8)
+            mm_slice = pixels[:mm_h, :mm_w]
+            mask_nz = alpha_f > 0.01
+            mm_slice[mask_nz, :3] = np.clip(
+                np.rint(canvas_bgr[mask_nz].astype(np.float32) * alpha_f[mask_nz, None]), 0, 255
+            ).astype(np.uint8)
+            mm_slice[mask_nz, 3] = np.clip(np.rint(alpha_f[mask_nz] * 255.0), 0, 255).astype(np.uint8)
+            self.dirty_boxes.append((0, 0, mm_w, mm_h))
 
-        # Draw status pill below the minimap.
         if title_line or sub_line:
             pill_x0 = round(22 * sx)
             pill_y0 = round(154 * sy)
             pill_h = round((48 if (title_line and sub_line) else 30) * sy)
             text_len = max(len(title_line), len(sub_line))
-            pill_w = min(self.width - pill_x0 - round(6 * sx), max(round(176 * sx), round((28 + text_len * 12.2) * sx)))
-            _blend_rect(pixels, pill_x0, pill_y0, pill_x0 + pill_w, pill_y0 + pill_h,
-                        (38, 30, 26), radius=round(9 * s), opacity=0.88,
-                        border_bgr=border_bgr, border_px=max(1.0, 1.4 * s))
-            dc, gdi = self.dc, self.gdi
-            text_out = bind(gdi, "TextOutW", w.BOOL, w.HDC, ctypes.c_int, ctypes.c_int, w.LPCWSTR, ctypes.c_int)
-            font_fn = bind(gdi, "CreateFontW", w.HFONT, *([ctypes.c_int] * 5), *([w.DWORD] * 8), w.LPCWSTR)
-            f_bold = f_sub = old_font = None
-            try:
-                alpha_before = pixels[..., 3].copy()
-                rgb_before = (self.pixels & 0x00FFFFFF).copy()
-                f_bold = checked(font_fn(-max(11, round(13 * s)), 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建小地图遮罩标题字体")
-                f_sub = checked(font_fn(-max(10, round(12 * s)), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建小地图遮罩正文字体")
-                bind(gdi, "SetBkMode", ctypes.c_int, w.HDC, ctypes.c_int)(dc, 1)
-                set_color = bind(gdi, "SetTextColor", w.DWORD, w.HDC, w.DWORD)
-                tx = pill_x0 + round(10 * sx)
-                if title_line:
-                    old_font = checked(self.select(dc, f_bold), "选择小地图遮罩字体")
-                    set_color(dc, title_color)
-                    checked(text_out(dc, tx, pill_y0 + round(5 * sy), title_line, len(title_line)), "绘制小地图标题")
-                if sub_line:
-                    handle = self.select(dc, f_sub)
-                    if old_font is None:
-                        old_font = checked(handle, "选择小地图遮罩副字体")
-                    set_color(dc, 0xD2E8F8)
-                    ty = pill_y0 + round((24 if title_line else 6) * sy)
-                    checked(text_out(dc, tx, ty, sub_line, len(sub_line)), "绘制小地图副标题")
-                checked(bind(gdi, "GdiFlush", w.BOOL)(), "提交小地图遮罩文字")
-                changed = (self.pixels & 0x00FFFFFF) != rgb_before
-                pixels[..., 3] = np.where(changed, 255, alpha_before)
-            finally:
-                if old_font:
-                    self.select(dc, old_font)
-                if f_bold:
-                    self.delete(f_bold)
-                if f_sub:
-                    self.delete(f_sub)
+            pill_w = min(self.mm_w - pill_x0 - round(6 * sx), max(round(176 * sx), round((28 + text_len * 12.2) * sx)))
+            self._draw_text_pill(
+                pixels,
+                pill_x0,
+                pill_y0,
+                pill_x0 + pill_w,
+                pill_y0 + pill_h,
+                title_line,
+                sub_line,
+                border_bgr=border_bgr,
+                title_color=title_color,
+            )
 
-        return int(np.count_nonzero(pixels[..., 3]))
+        return len(self.dirty_boxes)
 
 
 
 class RouteMinimapOverlay:
-    """Capture-excluded Win32 overlay showing active route or recording on the in-game minimap."""
+    """Capture-excluded Win32 overlay showing active 3D AR route guidance and minimap trajectory."""
 
     def __init__(self, game_hwnd: int, spec, *, exclude_from_capture: bool = True):
         self.game = int(game_hwnd or 0)
@@ -288,6 +712,10 @@ class RouteMinimapOverlay:
         self.lock = threading.Lock()
         self.snapshot: dict | None = None
         self.updated_at = 0.0
+        self.last_heading: float | None = None
+        self.move_until: float = 0.0
+        self.velocity: float = 0.0
+        self.jump_start: float = 0.0
         self.stop = threading.Event()
         self.ready = threading.Event()
         self.thread: threading.Thread | None = None
@@ -295,6 +723,35 @@ class RouteMinimapOverlay:
             self.thread = threading.Thread(target=self._thread_main, name="route-minimap-overlay", daemon=True)
             self.thread.start()
             self.ready.wait(1.5)
+
+    def notify_camera_turn(self, delta_deg: float):
+        if not math.isfinite(delta_deg):
+            return
+        with self.lock:
+            if self.last_heading is not None:
+                self.last_heading = (self.last_heading + float(delta_deg)) % 360.0
+            if self.snapshot is not None and self.snapshot.get("heading") is not None:
+                self.snapshot = {
+                    **self.snapshot,
+                    "heading": (float(self.snapshot["heading"]) + float(delta_deg)) % 360.0,
+                }
+                self.updated_at = time.monotonic()
+
+    def notify_motion(self, velocity: float, duration: float, jumping: bool):
+        now = time.monotonic()
+        with self.lock:
+            self.velocity = max(0.0, float(velocity))
+            self.move_until = now + max(0.0, float(duration))
+            if jumping and now - self.jump_start > 0.35:
+                self.jump_start = now
+            if self.snapshot is not None:
+                self.snapshot = {
+                    **self.snapshot,
+                    "velocity": self.velocity,
+                    "move_until": self.move_until,
+                    "jump_start": self.jump_start,
+                }
+                self.updated_at = now
 
     def publish_route(self, route, current_index: int, pose):
         if self.thread is None or route is None or pose is None or not getattr(pose, "position_reliable", False):
@@ -316,18 +773,30 @@ class RouteMinimapOverlay:
             (round(p.x, 2), round(p.y, 2), round(p.radius, 2), bool(p.jump), p.action or "")
             for p in pts
         )
+        now = time.monotonic()
+        raw_h = getattr(pose, "heading", None)
         with self.lock:
+            if raw_h is not None and math.isfinite(float(raw_h)):
+                self.last_heading = float(raw_h) % 360.0
+            eff_heading = self.last_heading
             self.snapshot = {
                 "center": self.spec.center,
                 "radius": self.spec.radius,
                 "scale": self.spec.scale,
+                "map_id": getattr(self.spec, "id", ""),
                 "pose": (round(float(pose.x), 2), round(float(pose.y), 2)),
+                "pose_time": now,
+                "heading": eff_heading,
+                "ar_active": eff_heading is not None,
+                "velocity": self.velocity,
+                "move_until": self.move_until,
+                "jump_start": self.jump_start,
                 "points": point_tuples,
                 "current_index": idx,
                 "title": header,
                 "subtitle": subtitle,
             }
-            self.updated_at = time.monotonic()
+            self.updated_at = now
 
     def publish_recording(self, samples: list, events: list, pose, state_text: str = "正在录制"):
         if self.thread is None or pose is None or not getattr(pose, "position_reliable", False):
@@ -340,7 +809,9 @@ class RouteMinimapOverlay:
                 "center": self.spec.center,
                 "radius": self.spec.radius,
                 "scale": self.spec.scale,
+                "map_id": getattr(self.spec, "id", ""),
                 "pose": (round(float(pose.x), 2), round(float(pose.y), 2)),
+                "ar_active": False,
                 "points": point_tuples,
                 "current_index": max(0, len(point_tuples) - 1),
                 "title": f"{state_text} · {len(samples)} 采样 · {len(events)} 标记",
@@ -365,6 +836,7 @@ class RouteMinimapOverlay:
                 "radius": self.spec.radius,
                 "scale": self.spec.scale,
                 "pose": None,
+                "ar_active": False,
                 "points": (),
                 "current_index": 0,
                 "title": title,
@@ -417,9 +889,9 @@ class RouteMinimapOverlay:
             if message == 0x0014:
                 return 1
             if message == 0x0084:
-                return -1  # HTTRANSPARENT
+                return -1
             if message == 0x0021:
-                return 3  # MA_NOACTIVATE
+                return 3
             return default(window, message, wp, lp)
 
         try:
@@ -470,8 +942,11 @@ class RouteMinimapOverlay:
                                 surface.close()
                             surface = MinimapHudSurface(rect.right, rect.bottom)
                             rendered = None
+                        ar_active = bool(snap.get("ar_active"))
                         sig = (
+                            int(now * 28) if ar_active else None,
                             snap.get("pose"),
+                            snap.get("heading"),
                             snap.get("current_index"),
                             snap.get("title"),
                             snap.get("subtitle"),
@@ -479,7 +954,7 @@ class RouteMinimapOverlay:
                             snap.get("border_bgr"),
                         )
                         if sig != rendered:
-                            surface.draw(snap)
+                            surface.draw(snap, now)
                         if sig != rendered or next_geom != geometry or not shown(hwnd):
                             surface.present(hwnd, origin)
                             rendered, geometry = sig, next_geom
@@ -499,7 +974,7 @@ class RouteMinimapOverlay:
                         break
                     translate(ctypes.byref(msg))
                     dispatch(ctypes.byref(msg))
-                self.stop.wait(1 / 45)
+                self.stop.wait(1 / 30)
         finally:
             if hwnd:
                 bind(user, "DestroyWindow", w.BOOL, w.HWND)(hwnd)
