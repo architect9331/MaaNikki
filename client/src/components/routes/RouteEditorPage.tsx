@@ -440,15 +440,15 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
         setSelected(null);
         setSelectedSet(new Set());
         setTool('select');
-      } else if (event.key.toLowerCase() === 'a' && !event.ctrlKey) {
+      } else if (viewMode === '2d' && event.key.toLowerCase() === 'a' && !event.ctrlKey) {
         setTool((value) => value === 'add' ? 'select' : 'add');
-      } else if (event.key.toLowerCase() === 'b' && !event.ctrlKey) {
+      } else if (viewMode === '2d' && event.key.toLowerCase() === 'b' && !event.ctrlKey) {
         setTool((value) => value === 'box' ? 'select' : 'box');
       }
     };
     window.addEventListener('keydown', keydown);
     return () => window.removeEventListener('keydown', keydown);
-  }, [undo, redo, removePoint, removeBatch, selected, selectedSet, readOnly, pendingDelete]);
+  }, [undo, redo, removePoint, removeBatch, selected, selectedSet, readOnly, pendingDelete, viewMode]);
 
   const createRoute = (mapId = map?.id ?? recordMap) => {
     const title = maps.find((item) => item.id === mapId)?.title ?? '';
