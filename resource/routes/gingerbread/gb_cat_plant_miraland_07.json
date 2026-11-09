@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_cat_plant_miraland_07",
-  "title": "【全植物速刷】小石树田村·斯切尔托老宅（86个/145秒）",
+  "title": "【全植物速刷】小石树田村·斯切尔托老宅（77个/280秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 364,
+  "timeout": 661,
   "teleport": {
     "name": "斯切尔托老宅",
     "province": "心愿原野",
@@ -18,19 +18,21 @@
     "纽扣松果",
     "路灯花",
     "小绵菊",
-    "瓜子珠",
     "滋滋花粉",
+    "瓜子珠",
     "兔兔妆粉"
   ],
-  "capacity": 86,
+  "capacity": 77,
   "points": [
     {
       "x": 9071.79,
       "y": 10403.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 9086.79,
@@ -39,24 +41,28 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
       "x": 9101.79,
       "y": 10433.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 9116.79,
       "y": 10439.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 9127.22,
@@ -65,7 +71,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
+        "seconds": 41.6
       }
     },
     {
@@ -75,7 +81,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.6
+        "seconds": 26.0
       }
     },
     {
@@ -85,7 +91,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
@@ -95,7 +101,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.5
+        "seconds": 28.6
       }
     },
     {
@@ -105,7 +111,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
@@ -115,7 +121,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.6
+        "seconds": 26.0
       }
     },
     {
@@ -125,17 +131,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
-      }
-    },
-    {
-      "x": 9256.0,
-      "y": 10351.32,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 6.7
+        "seconds": 15.6
       }
     }
   ]

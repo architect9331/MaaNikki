@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_049_miraland_02",
-  "title": "【名流鸦羽】磐城·启明学庭（12个/121秒）",
+  "title": "【名流鸦羽】磐城·启明学庭（14个/207秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 311,
+  "timeout": 501,
   "teleport": {
     "name": "启明学庭",
     "province": "伊赞之土",
@@ -23,15 +23,17 @@
     "小野菊",
     "织衣蛛"
   ],
-  "capacity": 26,
+  "capacity": 30,
   "points": [
     {
       "x": 3886.9,
       "y": 2816.42,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 3853.39,
@@ -40,7 +42,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 44.2
+        "seconds": 67.4
       }
     },
     {
@@ -50,7 +52,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 22.3
+        "seconds": 36.3
       }
     },
     {
@@ -60,7 +62,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.4
+        "seconds": 33.7
+      }
+    },
+    {
+      "x": 3931.19,
+      "y": 2760.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 24.2
       }
     }
   ]

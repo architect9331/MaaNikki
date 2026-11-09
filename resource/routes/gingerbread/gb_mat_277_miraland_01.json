@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_277_miraland_01",
-  "title": "【革袋甲】埋骨地·龙眠花冢（9个/106秒）",
+  "title": "【革袋甲】埋骨地·龙眠花冢（9个/149秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 279,
+  "timeout": 373,
   "teleport": {
     "name": "龙眠花冢",
     "province": "伊赞之土",
@@ -36,27 +36,27 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.3
-      }
-    },
-    {
-      "x": 6622.94,
-      "y": 5041.62,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 6.4
+        "seconds": 47.8
       }
     },
     {
       "x": 6611.53,
       "y": 5032.41,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 9.1
+        "seconds": 21.0
+      }
+    },
+    {
+      "x": 6622.94,
+      "y": 5041.62,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 13.2
       }
     },
     {
@@ -66,7 +66,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -76,7 +76,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     }
   ]

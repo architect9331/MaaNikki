@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_285_miraland_01",
-  "title": "【龙棘瑚】埋骨地·白汐滩归望湾（42个/101秒）",
+  "title": "【龙棘瑚】埋骨地·白汐滩归望湾（42个/206秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 267,
+  "timeout": 498,
   "teleport": {
     "name": "白汐滩归望湾",
     "province": "伊赞之土",
@@ -39,7 +39,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -49,7 +49,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -59,7 +59,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -85,7 +85,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.7
+        "seconds": 23.4
       }
     },
     {
@@ -95,7 +95,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.8
+        "seconds": 46.8
       }
     },
     {
@@ -105,7 +105,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.7
+        "seconds": 23.4
       }
     },
     {
@@ -131,7 +131,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     }
   ]

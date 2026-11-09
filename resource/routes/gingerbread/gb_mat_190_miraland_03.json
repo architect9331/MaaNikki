@@ -1,60 +1,60 @@
 {
   "schema_version": 3,
   "id": "gb_mat_190_miraland_03",
-  "title": "【探险家蜜蜂】磐城·金庭大桥前（15个/115秒）",
+  "title": "【探险家蜜蜂】磐城·演乐花庭（22个/222秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 298,
+  "timeout": 534,
   "teleport": {
-    "name": "金庭大桥前",
+    "name": "演乐花庭",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3675.783,
-    "y": 3589.825
+    "x": 4257.17,
+    "y": 3928.688
   },
   "material": "探险家蜜蜂",
   "count_materials": [
-    "珠链蝶",
-    "探险家蜜蜂"
+    "探险家蜜蜂",
+    "珠链蝶"
   ],
-  "capacity": 32,
+  "capacity": 27,
   "points": [
     {
-      "x": 3675.78,
-      "y": 3589.82,
+      "x": 4257.17,
+      "y": 3928.69,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3684.48,
-      "y": 3572.24,
+      "x": 4202.91,
+      "y": 3930.77,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.7
+        "seconds": 71.1
       }
     },
     {
-      "x": 3762.09,
-      "y": 3623.77,
+      "x": 4160.79,
+      "y": 3961.38,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 45.7
+        "seconds": 47.1
       }
     },
     {
-      "x": 3737.17,
-      "y": 3643.78,
+      "x": 4256.18,
+      "y": 3833.26,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 55.1
       }
     }
   ]

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_038_miraland_02",
-  "title": "【兔尾绒团】花愿镇·心愿花街（10个/122秒）",
+  "title": "【兔尾绒团】花愿镇·心愿花街（10个/173秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 313,
+  "timeout": 425,
   "teleport": {
     "name": "心愿花街",
     "province": "心愿原野",
@@ -26,10 +26,12 @@
     {
       "x": 10260.86,
       "y": 10085.84,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 10236.02,
@@ -38,7 +40,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.5
+        "seconds": 21.6
       }
     },
     {
@@ -48,7 +50,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.2
+        "seconds": 38.9
       }
     },
     {
@@ -58,7 +60,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 22.3
+        "seconds": 36.3
       }
     },
     {
@@ -68,7 +70,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.5
+        "seconds": 21.6
       }
     }
   ]

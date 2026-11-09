@@ -1,64 +1,80 @@
 {
   "schema_version": 3,
   "id": "gb_mat_092_miraland_02",
-  "title": "【星荧草】祈愿树林·巨树居民区（7个/26秒）",
+  "title": "【星荧草】祈愿树林·星没之地（12个/82秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 225,
   "teleport": {
-    "name": "巨树居民区",
+    "name": "星没之地",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 11959.301,
-    "y": 9084.286
+    "x": 12415.738,
+    "y": 9585.43
   },
   "material": "星荧草",
   "count_materials": [
     "星荧草",
-    "珠链蝶",
-    "路灯花",
-    "兜帽绒羽",
-    "刺绣蛾",
-    "纽扣松果",
-    "蓝珀鸟羽",
-    "明珠翎羽"
+    "耳坠萤"
   ],
-  "capacity": 25,
+  "capacity": 22,
   "points": [
     {
-      "x": 11959.3,
-      "y": 9084.29,
+      "x": 12415.74,
+      "y": 9585.43,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11971.65,
-      "y": 9084.95,
+      "x": 12428.97,
+      "y": 9691.87,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 10.4
       }
     },
     {
-      "x": 11971.39,
-      "y": 9061.55,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11971.39,
-      "y": 9046.55,
+      "x": 12406.21,
+      "y": 9735.14,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 12429.99,
+      "y": 9727.9,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 12369.75,
+      "y": 9693.35,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 12395.95,
+      "y": 9695.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
       }
     }
   ]

@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_cat_fish_danqing_03",
-  "title": "【全鱼类垂钓】丹青屿·栖龙峰山腰（7个/17秒）",
+  "title": "【全鱼类垂钓】丹青屿·栖龙峰山腰（7个/32秒）",
   "map": "danqing",
   "start_radius": 6,
   "timeout": 120,
@@ -23,10 +23,12 @@
     {
       "x": 1115.31,
       "y": 388.77,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1119.26,
@@ -35,7 +37,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     }
   ]

@@ -1,119 +1,66 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_04",
-  "title": "【全材料·埋骨地】埋骨地·白汐滩归望湾（21个/47秒）",
+  "title": "【全材料·埋骨地】埋骨地·修习所水岸（61个/232秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 149,
+  "timeout": 555,
   "teleport": {
-    "name": "白汐滩归望湾",
+    "name": "修习所水岸",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 7691.911,
-    "y": 5296.073
+    "x": 7935.058,
+    "y": 5300.96
   },
   "material": "全材料·埋骨地",
   "count_materials": [
-    "晴雨伞",
-    "骨焰花",
-    "小野菊",
-    "龙棘瑚",
-    "汐荧蟹",
+    "钓鱼点",
+    "羽巾绒",
+    "金灵毛球",
+    "大叶鹿绒",
+    "茸芽鹿绒",
+    "小星扇贝",
     "珠花贝壳",
-    "风舞花"
+    "烛融花/烛荧花"
   ],
-  "capacity": 21,
+  "capacity": 61,
   "points": [
     {
-      "x": 7691.91,
-      "y": 5296.07,
+      "x": 7935.06,
+      "y": 5300.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7671.52,
-      "y": 5299.07,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7668.52,
-      "y": 5302.07,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7647.52,
-      "y": 5308.07,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7626.52,
-      "y": 5314.07,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7623.52,
-      "y": 5313.22,
+      "x": 7872.56,
+      "y": 5423.58,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.5
+        "seconds": 150.0
       }
     },
     {
-      "x": 7610.34,
-      "y": 5331.22,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7610.34,
-      "y": 5355.22,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7610.34,
-      "y": 5376.22,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7607.34,
-      "y": 5379.22,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7604.34,
-      "y": 5379.47,
+      "x": 7875.04,
+      "y": 5451.62,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.7
+        "seconds": 27.7
+      }
+    },
+    {
+      "x": 7849.98,
+      "y": 5462.38,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
       }
     }
   ]

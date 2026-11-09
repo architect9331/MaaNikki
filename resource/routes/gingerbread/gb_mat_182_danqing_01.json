@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
-  "id": "gb_mat_182_danqing_02",
-  "title": "【胭脂芙蕖】丹青屿·奉龙塔（13个/105秒）",
+  "id": "gb_mat_182_danqing_01",
+  "title": "【胭脂芙蕖】丹青屿·奉龙塔（13个/147秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 276,
+  "timeout": 368,
   "teleport": {
     "name": "奉龙塔",
     "province": "心愿原野",
@@ -24,34 +24,42 @@
     {
       "x": 1796.92,
       "y": 998.18,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1733.21,
       "y": 1103.01,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 1701.19,
       "y": 1097.09,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1666.5,
       "y": 1077.81,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1648.49,
@@ -88,18 +96,22 @@
     {
       "x": 1648.49,
       "y": 987.68,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 1645.49,
       "y": 1008.68,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": true,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1645.49,
@@ -168,10 +180,12 @@
     {
       "x": 1744.3,
       "y": 1032.78,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1742.77,
@@ -208,46 +222,32 @@
     {
       "x": 1703.77,
       "y": 938.36,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 1721.77,
-      "y": 934.7,
+      "y": 936.32,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1724.77,
-      "y": 931.7,
+      "x": 1730.77,
+      "y": 927.32,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1727.77,
-      "y": 928.7,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1729.08,
-      "y": 922.7,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1738.08,
-      "y": 903.32,
+      "x": 1733.77,
+      "y": 906.32,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -256,11 +256,29 @@
     {
       "x": 1740.34,
       "y": 888.32,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.5
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1732.08,
+      "y": 909.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1729.08,
+      "y": 922.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
       }
     }
   ]

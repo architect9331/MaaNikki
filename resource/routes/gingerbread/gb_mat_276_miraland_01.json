@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_276_miraland_01",
-  "title": "【涅拉羽】埋骨地·蓝池北侧疗愈地渡口（3个/55秒）",
+  "title": "【涅拉羽】埋骨地·蓝池北侧疗愈地渡口（3个/69秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 167,
+  "timeout": 197,
   "teleport": {
     "name": "蓝池北侧疗愈地渡口",
     "province": "伊赞之土",
@@ -34,7 +34,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 22.3
+        "seconds": 36.3
       }
     }
   ]

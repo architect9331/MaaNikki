@@ -1,50 +1,81 @@
 {
   "schema_version": 3,
   "id": "gb_mat_309_miraland_01",
-  "title": "【机雀羽】磐城·磐城门前（11个/95秒）",
+  "title": "【机雀羽】磐城·金时醇酿馆（18个/211秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 254,
+  "timeout": 510,
   "teleport": {
-    "name": "磐城门前",
+    "name": "金时醇酿馆",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4282.294,
-    "y": 3501.475
+    "x": 4119.105,
+    "y": 3800.743
   },
   "material": "机雀羽",
   "count_materials": [
     "机雀羽",
-    "王子鹰羽"
+    "晶球绵蚧",
+    "金轴蜻蜓"
   ],
-  "capacity": 12,
+  "capacity": 21,
   "points": [
     {
-      "x": 4282.29,
-      "y": 3501.47,
+      "x": 4119.1,
+      "y": 3800.74,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4310.06,
-      "y": 3485.17,
+      "x": 4145.1,
+      "y": 3810.18,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 39.7
+        "seconds": 27.6
       }
     },
     {
-      "x": 4284.53,
-      "y": 3448.37,
+      "x": 4105.91,
+      "y": 3769.53,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 32.7
+        "seconds": 27.6
+      }
+    },
+    {
+      "x": 4072.17,
+      "y": 3800.6,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 27.6
+      }
+    },
+    {
+      "x": 4010.42,
+      "y": 3796.98,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 56.1
+      }
+    },
+    {
+      "x": 4042.78,
+      "y": 3766.95,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 27.6
       }
     }
   ]

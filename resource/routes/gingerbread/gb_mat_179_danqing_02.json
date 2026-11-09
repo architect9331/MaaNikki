@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_179_danqing_02",
-  "title": "【玉簪蚱蜢】丹青屿·奉龙塔（10个/106秒）",
+  "title": "【玉簪蚱蜢】丹青屿·奉龙塔（10个/156秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 277,
+  "timeout": 388,
   "teleport": {
     "name": "奉龙塔",
     "province": "心愿原野",
@@ -15,15 +15,15 @@
   "material": "玉簪蚱蜢",
   "count_materials": [
     "珠链蝶",
-    "玉簪蚱蜢",
-    "小绵菊",
     "耳坠萤",
+    "玉簪蚱蜢",
     "荷包草",
+    "小绵菊",
     "刺绣蛾",
     "蓝珀鸟羽",
     "满满果"
   ],
-  "capacity": 40,
+  "capacity": 56,
   "points": [
     {
       "x": 1796.92,
@@ -40,17 +40,47 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.4
+        "seconds": 13.2
+      }
+    },
+    {
+      "x": 1840.38,
+      "y": 976.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
+      }
+    },
+    {
+      "x": 1851.36,
+      "y": 1017.93,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 1865.86,
+      "y": 1045.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.8
       }
     },
     {
       "x": 1806.29,
       "y": 1050.8,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.4
+        "seconds": 21.2
       }
     },
     {
@@ -60,7 +90,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -70,7 +100,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.5
+        "seconds": 10.6
       }
     },
     {
@@ -80,37 +110,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.4
-      }
-    },
-    {
-      "x": 1797.18,
-      "y": 1090.1,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 6.4
-      }
-    },
-    {
-      "x": 1836.61,
-      "y": 1135.93,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 11.5
-      }
-    },
-    {
-      "x": 1857.43,
-      "y": 1118.25,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.7
+        "seconds": 13.2
       }
     }
   ]

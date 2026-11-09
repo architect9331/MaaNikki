@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_308_miraland_01",
-  "title": "【斗篷绒毛】磐城·幼蘑休憩处（11个/120秒）",
+  "title": "【斗篷绒毛】磐城·幼蘑休憩处（13个/197秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 310,
+  "timeout": 478,
   "teleport": {
     "name": "幼蘑休憩处",
     "province": "伊赞之土",
@@ -19,15 +19,17 @@
     "刺绣蛾",
     "名流鸦羽"
   ],
-  "capacity": 17,
+  "capacity": 19,
   "points": [
     {
       "x": 3752.36,
       "y": 4232.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 3753.73,
@@ -36,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.7
+        "seconds": 8.6
       }
     },
     {
@@ -46,7 +48,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.7
+        "seconds": 18.1
       }
     },
     {
@@ -56,7 +58,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.7
+        "seconds": 18.1
       }
     },
     {
@@ -66,7 +68,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.7
+        "seconds": 18.1
       }
     },
     {
@@ -76,7 +78,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.7
+        "seconds": 27.6
       }
     },
     {
@@ -86,7 +88,27 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.7
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 3889.74,
+      "y": 4161.83,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 3784.13,
+      "y": 4134.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
       }
     }
   ]

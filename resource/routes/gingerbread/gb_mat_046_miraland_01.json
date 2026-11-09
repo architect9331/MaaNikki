@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_046_miraland_01",
-  "title": "【绣球羊毛】小石树田村·紫穗草花田（5个/75秒）",
+  "title": "【绣球羊毛】小石树田村·紫穗草花田（5个/118秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 210,
+  "timeout": 305,
   "teleport": {
     "name": "紫穗草花田",
     "province": "心愿原野",
@@ -29,10 +29,12 @@
     {
       "x": 9342.04,
       "y": 10401.19,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 9332.6,
@@ -41,7 +43,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.3
+        "seconds": 17.3
       }
     },
     {
@@ -51,7 +53,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.4
+        "seconds": 14.7
       }
     },
     {
@@ -61,7 +63,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.5
+        "seconds": 12.1
       }
     },
     {
@@ -71,7 +73,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.3
+        "seconds": 17.3
       }
     },
     {
@@ -81,7 +83,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.4
+        "seconds": 14.7
       }
     }
   ]

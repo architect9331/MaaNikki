@@ -1,62 +1,63 @@
 {
   "schema_version": 3,
   "id": "gb_mat_313_miraland_02",
-  "title": "【晶球绵蚧】磐城·金庭大桥前（11个/104秒）",
+  "title": "【晶球绵蚧】磐城·金时醇酿馆（6个/82秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 275,
+  "timeout": 226,
   "teleport": {
-    "name": "金庭大桥前",
+    "name": "金时醇酿馆",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3675.783,
-    "y": 3589.825
+    "x": 4119.105,
+    "y": 3800.743
   },
   "material": "晶球绵蚧",
   "count_materials": [
-    "珠链蝶",
     "晶球绵蚧",
     "机雀羽",
-    "金轴蜻蜓"
+    "金轴蜻蜓",
+    "珠链蝶",
+    "斗篷绒毛"
   ],
-  "capacity": 27,
+  "capacity": 15,
   "points": [
     {
-      "x": 3675.78,
-      "y": 3589.82,
+      "x": 4119.1,
+      "y": 3800.74,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3801.34,
-      "y": 3574.9,
+      "x": 4139.49,
+      "y": 3815.7,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 23.1
       }
     },
     {
-      "x": 3845.74,
-      "y": 3616.04,
+      "x": 4175.68,
+      "y": 3798.83,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 27.7
+        "seconds": 15.1
       }
     },
     {
-      "x": 3860.58,
-      "y": 3667.23,
+      "x": 4256.6,
+      "y": 3881.86,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.7
+        "seconds": 7.1
       }
     }
   ]

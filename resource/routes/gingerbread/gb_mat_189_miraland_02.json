@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_189_miraland_02",
-  "title": "【小野菊】巨木之森·巨人墓园（52个/104秒）",
+  "title": "【小野菊】巨木之森·巨人墓园（52个/203秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 273,
+  "timeout": 492,
   "teleport": {
     "name": "巨人墓园",
     "province": "伊赞之土",
@@ -35,7 +35,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
@@ -45,7 +45,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 20.8
       }
     },
     {
@@ -55,7 +55,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 20.8
       }
     },
     {
@@ -65,7 +65,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -75,7 +75,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
@@ -85,7 +85,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -95,7 +95,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 20.8
       }
     },
     {
@@ -105,7 +105,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     }
   ]

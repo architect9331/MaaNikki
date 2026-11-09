@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_097_miraland_01",
-  "title": "【滋滋花粉】石树田无人区·大许愿池（6个/26秒）",
+  "title": "【滋滋花粉】石树田无人区·大许愿池（6个/51秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 158,
   "teleport": {
     "name": "大许愿池",
     "province": "心愿原野",
@@ -24,10 +24,12 @@
     {
       "x": 8516.43,
       "y": 9027.95,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 8512.9,
@@ -60,7 +62,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.4
+        "seconds": 31.2
       }
     }
   ]

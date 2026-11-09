@@ -141,7 +141,7 @@ def build_full_library(gen: MaterialRouteGenerator, out_dir: Path) -> int:
     ]
     leg_plans = [by_cid_first[nm] for nm in legendary_names if nm in by_cid_first]
     save_collection(leg_plans, "gb_col_05_legendary_daily", f"【姜饼人合集】每日传奇动物与稀有材料必刷清单（{len(leg_plans)}条）")
-    save_collection(by_cat["plant"], "gb_col_06_fast_plants", f"【姜饼人合集】全植物零停顿极速跑图合集（{len(by_cat['plant'])}条）")
+    save_collection(by_cat["plant"], "gb_col_06_fast_plants", f"【姜饼人合集】全植物高密采集跑图合集（{len(by_cat['plant'])}条）")
     save_collection(by_cat["insect"], "gb_col_07_insects", f"【姜饼人合集】全昆虫高密捕捉合集（{len(by_cat['insect'])}条）")
     save_collection(by_cat["animal"], "gb_col_08_animals", f"【姜饼人合集】全动物清洁撸毛合集（{len(by_cat['animal'])}条）")
     save_collection(by_cat["fish"], "gb_col_09_fishing", f"【姜饼人合集】全鱼类高密垂钓合集（{len(by_cat['fish'])}条）")

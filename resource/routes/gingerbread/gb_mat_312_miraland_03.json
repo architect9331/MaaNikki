@@ -1,74 +1,83 @@
 {
   "schema_version": 3,
   "id": "gb_mat_312_miraland_03",
-  "title": "【蓝玉甲虫】磐城·演乐花庭（16个/120秒）",
+  "title": "【蓝玉甲虫】磐城·金庭角门（20个/201秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 308,
+  "timeout": 486,
   "teleport": {
-    "name": "演乐花庭",
+    "name": "金庭角门",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4257.17,
-    "y": 3928.688
+    "x": 3691.557,
+    "y": 3288.31
   },
   "material": "蓝玉甲虫",
   "count_materials": [
-    "珠链蝶",
     "蓝玉甲虫",
-    "探险家蜜蜂",
     "珠坠甲虫",
-    "金轴蜻蜓",
-    "机雀羽"
+    "满满果"
   ],
-  "capacity": 57,
+  "capacity": 26,
   "points": [
     {
-      "x": 4257.17,
-      "y": 3928.69,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4239.86,
-      "y": 3906.66,
+      "x": 3691.56,
+      "y": 3288.31,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 3.0
       }
     },
     {
-      "x": 4242.19,
-      "y": 3901.77,
+      "x": 3700.24,
+      "y": 3285.81,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 31.1
       }
     },
     {
-      "x": 4295.45,
-      "y": 3910.98,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 21.7
-      }
-    },
-    {
-      "x": 4257.81,
-      "y": 3861.59,
+      "x": 3775.89,
+      "y": 3299.69,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 3819.11,
+      "y": 3298.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 3823.18,
+      "y": 3263.54,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 3845.19,
+      "y": 3214.9,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
       }
     }
   ]

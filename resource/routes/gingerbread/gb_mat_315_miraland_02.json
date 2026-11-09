@@ -1,33 +1,30 @@
 {
   "schema_version": 3,
   "id": "gb_mat_315_miraland_02",
-  "title": "【机芯果】磐城·糖坊上层（9个/40秒）",
+  "title": "【机芯果】磐城·金庭大桥前（9个/59秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 133,
+  "timeout": 175,
   "teleport": {
-    "name": "糖坊上层",
+    "name": "金庭大桥前",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3595.861,
-    "y": 3649.48
+    "x": 3675.783,
+    "y": 3589.825
   },
   "material": "机芯果",
   "count_materials": [
-    "机芯果",
-    "小野菊"
+    "机芯果"
   ],
-  "capacity": 12,
+  "capacity": 9,
   "points": [
     {
-      "x": 3595.86,
-      "y": 3649.48,
-      "radius": 2.0,
+      "x": 3675.78,
+      "y": 3589.82,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 1.5
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 3657.94,
@@ -36,7 +33,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -46,7 +43,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -56,7 +53,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     }
   ]

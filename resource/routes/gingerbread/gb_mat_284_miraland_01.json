@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_284_miraland_01",
-  "title": "【烛融花/烛荧花】埋骨地·龙埙遗所（28个/72秒）",
+  "title": "【烛融花/烛荧花】埋骨地·龙埙遗所（24个/129秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 204,
+  "timeout": 329,
   "teleport": {
     "name": "龙埙遗所",
     "province": "伊赞之土",
@@ -20,7 +20,7 @@
     "小野菊",
     "满满果"
   ],
-  "capacity": 40,
+  "capacity": 36,
   "points": [
     {
       "x": 8586.15,
@@ -37,7 +37,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -47,7 +47,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -57,7 +57,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -71,46 +71,16 @@
     {
       "x": 8647.9,
       "y": 5504.65,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
-      "x": 8662.75,
-      "y": 5486.61,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8665.08,
-      "y": 5504.61,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8662.08,
-      "y": 5507.61,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8662.08,
-      "y": 5531.61,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8650.08,
-      "y": 5549.61,
+      "x": 8638.08,
+      "y": 5522.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -118,9 +88,25 @@
     },
     {
       "x": 8635.08,
-      "y": 5564.61,
+      "y": 5543.65,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8635.08,
+      "y": 5558.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8635.08,
+      "y": 5561.65,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -128,10 +114,10 @@
       "x": 8635.08,
       "y": 5568.86,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -141,7 +127,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -151,7 +137,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 8613.31,
+      "y": 5527.63,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
       }
     }
   ]

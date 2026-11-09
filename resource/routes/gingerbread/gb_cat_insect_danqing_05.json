@@ -1,40 +1,35 @@
 {
   "schema_version": 3,
-  "id": "gb_mat_076_danqing_03",
-  "title": "【耳坠萤】丹青屿·逢花林（29个/197秒）",
+  "id": "gb_cat_insect_danqing_05",
+  "title": "【全昆虫速刷】丹青屿·村边畦田（39个/241秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 479,
+  "timeout": 575,
   "teleport": {
-    "name": "逢花林",
+    "name": "村边畦田",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1749.147,
-    "y": 1183.285
+    "x": 1598.127,
+    "y": 1286.992
   },
-  "material": "耳坠萤",
+  "material": "全昆虫速刷",
   "count_materials": [
     "耳坠萤",
-    "荷包草"
+    "小绵菊",
+    "荷包草",
+    "玉簪蚱蜢",
+    "满满果"
   ],
-  "capacity": 30,
+  "capacity": 39,
   "points": [
     {
-      "x": 1749.15,
-      "y": 1183.29,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1663.02,
-      "y": 1226.82,
+      "x": 1598.13,
+      "y": 1286.99,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 60.0
+        "seconds": 5.2
       }
     },
     {
@@ -44,17 +39,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 60.0
+        "seconds": 150.0
       }
     },
     {
-      "x": 1663.02,
-      "y": 1226.82,
+      "x": 1681.15,
+      "y": 1283.3,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 51.7
+        "seconds": 53.2
       }
     }
   ]

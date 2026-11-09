@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
-  "id": "gb_mat_084_miraland_03",
-  "title": "【珠花贝壳】巨木之森·岩村海岸（14个/76秒）",
+  "id": "gb_mat_084_miraland_02",
+  "title": "【珠花贝壳】巨木之森·岩村海岸（14个/114秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 212,
+  "timeout": 296,
   "teleport": {
     "name": "岩村海岸",
     "province": "伊赞之土",
@@ -38,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -48,7 +48,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 20.8
       }
     },
     {
@@ -58,16 +58,18 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
       "x": 4690.11,
       "y": 10147.33,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 4708.11,
@@ -96,19 +98,21 @@
     {
       "x": 4745.01,
       "y": 10092.67,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 4783.59,
       "y": 10132.33,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 2.5
+        "seconds": 3.0
       }
     }
   ]

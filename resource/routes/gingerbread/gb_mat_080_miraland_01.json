@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_080_miraland_01",
-  "title": "【日光果/星光果】祈愿树林·愿望质检中心前（3个/24秒）",
+  "title": "【日光果/星光果】祈愿树林·愿望质检中心前（3个/32秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -37,7 +37,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     }
   ]

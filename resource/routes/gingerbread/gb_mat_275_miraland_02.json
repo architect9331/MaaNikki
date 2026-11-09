@@ -1,98 +1,47 @@
 {
   "schema_version": 3,
   "id": "gb_mat_275_miraland_02",
-  "title": "【金灵毛球】埋骨地·龙埙遗所（9个/91秒）",
+  "title": "【金灵毛球】埋骨地·龙巢山飞瀑崖顶（8个/113秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 245,
+  "timeout": 293,
   "teleport": {
-    "name": "龙埙遗所",
+    "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 8586.154,
-    "y": 5376.194
+    "x": 8063.15,
+    "y": 5243.188
   },
   "material": "金灵毛球",
   "count_materials": [
-    "金灵毛球",
+    "钓鱼点",
     "羽巾绒",
+    "金灵毛球",
     "大叶鹿绒",
     "茸芽鹿绒",
-    "小野菊",
-    "风舞花",
-    "满满果",
-    "探险家蜜蜂"
+    "晴雨伞",
+    "风舞花"
   ],
-  "capacity": 42,
+  "capacity": 51,
   "points": [
     {
-      "x": 8586.15,
-      "y": 5376.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8607.15,
-      "y": 5385.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8625.15,
-      "y": 5397.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8646.15,
-      "y": 5403.19,
+      "x": 8063.15,
+      "y": 5243.19,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 5.2
       }
     },
     {
-      "x": 8670.15,
-      "y": 5403.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8673.15,
-      "y": 5403.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8677.04,
-      "y": 5404.97,
+      "x": 8046.31,
+      "y": 5158.75,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 60.0
-      }
-    },
-    {
-      "x": 8677.04,
-      "y": 5404.97,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.4
+        "seconds": 83.8
       }
     }
   ]

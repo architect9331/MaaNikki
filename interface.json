@@ -100,6 +100,7 @@
     "tasks/Crown.json",
     "tasks/Exploration.json",
     "tasks/Fishing.json",
+    "tasks/OpenWorldCollect.json",
     "tasks/CustomRoute.json",
     "tasks/RouteTest.json",
     "tasks/SubtaskTest.json",

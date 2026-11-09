@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_055_miraland_01",
-  "title": "【领结毛团】石树田无人区·水龙卷观测站（1个/19秒）",
+  "title": "【领结毛团】石树田无人区·水龙卷观测站（1个/23秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -33,7 +33,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 4.7
+        "seconds": 8.6
       }
     }
   ]

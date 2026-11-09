@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_311_miraland_01",
-  "title": "【珠坠甲虫】磐城·晨曦集市（9个/108秒）",
+  "title": "【珠坠甲虫】磐城·晨曦集市（9个/140秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 282,
+  "timeout": 353,
   "teleport": {
     "name": "晨曦集市",
     "province": "伊赞之土",
@@ -39,7 +39,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.4
+        "seconds": 21.2
       }
     },
     {
@@ -49,7 +49,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -59,7 +59,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -69,7 +69,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -79,7 +79,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -89,7 +89,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -99,7 +99,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -109,7 +109,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     }
   ]

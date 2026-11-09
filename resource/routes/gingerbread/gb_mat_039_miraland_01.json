@@ -1,42 +1,47 @@
 {
   "schema_version": 3,
   "id": "gb_mat_039_miraland_01",
-  "title": "【长袜羊毛】祈愿树林·浅滩山坡（3个/41秒）",
+  "title": "【长袜羊毛】微风绿野·西西亚艺术学院采风基地（2个/36秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 135,
+  "timeout": 124,
   "teleport": {
-    "name": "浅滩山坡",
+    "name": "西西亚艺术学院采风基地",
     "province": "心愿原野",
-    "region": "祈愿树林",
-    "x": 11692.841,
-    "y": 9091.498
+    "region": "微风绿野",
+    "x": 9971.519,
+    "y": 10280.058
   },
   "material": "长袜羊毛",
   "count_materials": [
-    "小绵菊",
     "长袜羊毛"
   ],
-  "capacity": 9,
+  "capacity": 2,
   "points": [
     {
-      "x": 11692.84,
-      "y": 9091.5,
-      "radius": 2.0,
+      "x": 9971.52,
+      "y": 10280.06,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.2
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 11688.94,
-      "y": 9053.96,
+      "x": 9983.52,
+      "y": 10298.06,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9997.22,
+      "y": 10315.22,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.4
+        "seconds": 18.1
       }
     }
   ]

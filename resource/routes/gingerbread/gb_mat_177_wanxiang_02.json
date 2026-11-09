@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_177_wanxiang_02",
-  "title": "【画眉毛团】万相境·彩靥城近郊（5个/102秒）",
+  "title": "【画眉毛团】万相境·彩靥城近郊（5个/146秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 269,
+  "timeout": 367,
   "teleport": {
     "name": "彩靥城近郊",
     "province": "伊赞之土",
@@ -47,32 +47,38 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.4
+        "seconds": 14.7
       }
     },
     {
       "x": 1609.5,
       "y": 986.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1603.5,
       "y": 968.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1582.5,
       "y": 962.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1564.5,
@@ -81,7 +87,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 7.4
+        "seconds": 14.7
       }
     },
     {
@@ -135,10 +141,12 @@
     {
       "x": 1534.92,
       "y": 983.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1516.92,
@@ -147,16 +155,18 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.4
+        "seconds": 14.7
       }
     },
     {
       "x": 1523.67,
       "y": 1005.49,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1520.67,
@@ -189,7 +199,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.7
+        "seconds": 8.6
       }
     },
     {
@@ -231,7 +241,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.7
+        "seconds": 8.6
       }
     }
   ]

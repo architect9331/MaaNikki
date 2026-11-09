@@ -1,7 +1,7 @@
 """Route editor actions: recording a run and executing a user route."""
 from maa.custom_action import CustomAction
 from registration import agent_action
-from daily.route_studio import RouteRecorder, UserRouteRun
+from daily.route_studio import OpenWorldCollectRun, RouteRecorder, UserRouteRun
 from daily.runtime import parameters
 
 
@@ -15,3 +15,9 @@ class RouteRecordAction(CustomAction):
 class RouteRunAction(CustomAction):
     def run(self, context, argv):
         return UserRouteRun(context).run_test(parameters(context, argv.node_name))
+
+
+@agent_action("nikki.open_world_collect")
+class OpenWorldCollectAction(CustomAction):
+    def run(self, context, argv):
+        return OpenWorldCollectRun(context).run_test(parameters(context, argv.node_name))

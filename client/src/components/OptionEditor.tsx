@@ -33,7 +33,7 @@ import { getCheckboxMaxCount, getCheckboxMinCount } from '@/utils/checkboxOption
 import { stripInlineRichText } from '@/utils/richText';
 import { SwitchButton, TextInput, FileInput, TimeInput, HotkeyInput } from './FormControls';
 import { GameKeyInput } from './GameKeyInput';
-import { RouteSelectInput } from './RouteSelectInput';
+import { RouteSelectInput, RouteMultiSelectInput } from './RouteSelectInput';
 import { formatRouteValueLabel, useRouteCatalogStore } from '@/services/routeStudioService';
 import { RichLabel } from './RichLabel';
 import { Tooltip } from './ui/Tooltip';
@@ -343,15 +343,28 @@ function InputField({
     return null;
   }, [input.verify, value, patternMsg]);
 
-  const controlClassName = labelContent
-    ? 'min-w-0 flex-1 basis-0'
-    : 'min-w-[min(12rem,100%)] flex-1 basis-[30%]';
+  const isMultiRoute = input.input_type === 'route_multi';
+  const controlClassName = isMultiRoute
+    ? 'w-full min-w-0'
+    : labelContent
+      ? 'min-w-0 flex-1 basis-0'
+      : 'min-w-[min(12rem,100%)] flex-1 basis-[30%]';
 
   return (
     <div className="space-y-1">
-      <div className={clsx('group/option flex items-center gap-3 min-w-0', !labelContent && 'flex-wrap')}>
-        <div className={clsx('flex items-center gap-1.5 min-w-0',
-          labelContent ? 'max-w-[50%] shrink-0' : 'flex-1 basis-[14rem]')}>
+      <div
+        className={clsx(
+          'group/option flex min-w-0',
+          isMultiRoute ? 'flex-col items-stretch gap-2' : 'items-center gap-3',
+          !isMultiRoute && !labelContent && 'flex-wrap',
+        )}
+      >
+        <div
+          className={clsx(
+            'flex items-center gap-1.5 min-w-0',
+            isMultiRoute ? 'w-full' : labelContent ? 'max-w-[50%] shrink-0' : 'flex-1 basis-[14rem]',
+          )}
+        >
           {!labelContent && input.icon && (
             <AsyncIcon
               icon={input.icon}
@@ -378,6 +391,14 @@ function InputField({
             value={value}
             onChange={onChange}
             placeholder={inputPlaceholder || '请选择路线…'}
+            disabled={disabled}
+            className={controlClassName}
+          />
+        ) : input.input_type === 'route_multi' ? (
+          <RouteMultiSelectInput
+            value={value}
+            onChange={onChange}
+            placeholder={inputPlaceholder || '勾选或添加采集路线…'}
             disabled={disabled}
             className={controlClassName}
           />

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_072_danqing_01",
-  "title": "【刺绣蛾】丹青屿·墨缘坊市（11个/101秒）",
+  "title": "【刺绣蛾】丹青屿·墨缘坊市（11个/144秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 268,
+  "timeout": 361,
   "teleport": {
     "name": "墨缘坊市",
     "province": "心愿原野",
@@ -39,7 +39,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 9.7
+        "seconds": 15.1
       }
     },
     {
@@ -57,7 +57,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 17.5
+        "seconds": 26.6
       }
     },
     {
@@ -75,7 +75,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -101,16 +101,18 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
       "x": 1443.53,
       "y": 1103.14,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1455.53,
@@ -135,7 +137,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.5
+        "seconds": 10.6
       }
     },
     {
@@ -173,10 +175,12 @@
     {
       "x": 1510.72,
       "y": 1063.92,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1513.72,
@@ -193,7 +197,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -203,7 +207,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     },
     {
@@ -213,7 +217,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     }
   ]

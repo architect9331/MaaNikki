@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_048_miraland_01",
-  "title": "【鹿冠毛团】祈愿树林·金蔷薇花谷（1个/26秒）",
+  "title": "【鹿冠毛团】祈愿树林·金蔷薇花谷（1个/34秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -52,7 +52,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 7.4
+        "seconds": 14.7
       }
     }
   ]

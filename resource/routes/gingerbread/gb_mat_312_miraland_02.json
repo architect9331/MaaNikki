@@ -1,73 +1,74 @@
 {
   "schema_version": 3,
   "id": "gb_mat_312_miraland_02",
-  "title": "【蓝玉甲虫】磐城·广场前停泊处（16个/117秒）",
+  "title": "【蓝玉甲虫】磐城·晨曦集市（20个/195秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 302,
+  "timeout": 474,
   "teleport": {
-    "name": "广场前停泊处",
+    "name": "晨曦集市",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4017.792,
-    "y": 3108.51
+    "x": 4026.351,
+    "y": 3950.481
   },
   "material": "蓝玉甲虫",
   "count_materials": [
     "蓝玉甲虫",
-    "金轴蜻蜓",
+    "珠链蝶",
     "珠坠甲虫",
-    "钓鱼点",
-    "王子鹰羽"
+    "沙沙毛团",
+    "探险家蜜蜂",
+    "风舞花"
   ],
-  "capacity": 31,
+  "capacity": 44,
   "points": [
     {
-      "x": 4017.79,
-      "y": 3108.51,
+      "x": 4026.35,
+      "y": 3950.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4034.05,
-      "y": 3107.99,
+      "x": 4037.54,
+      "y": 3936.99,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 66.6
       }
     },
     {
-      "x": 4066.16,
-      "y": 3109.3,
+      "x": 4060.98,
+      "y": 3964.88,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 31.1
       }
     },
     {
-      "x": 4043.62,
-      "y": 3072.73,
+      "x": 4088.79,
+      "y": 3951.15,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 31.1
       }
     },
     {
-      "x": 4031.04,
-      "y": 3037.75,
+      "x": 4078.46,
+      "y": 3871.36,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 31.1
       }
     }
   ]

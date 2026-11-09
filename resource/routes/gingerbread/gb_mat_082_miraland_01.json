@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_082_miraland_01",
-  "title": "【飞球果】石树田无人区·木桶荫地（12个/30秒）",
+  "title": "【飞球果】石树田无人区·木桶荫地（12个/54秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 164,
   "teleport": {
     "name": "木桶荫地",
     "province": "心愿原野",
@@ -22,10 +22,12 @@
     {
       "x": 8230.08,
       "y": 10320.13,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 8217.64,
@@ -66,7 +68,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.4
+        "seconds": 31.2
       }
     }
   ]

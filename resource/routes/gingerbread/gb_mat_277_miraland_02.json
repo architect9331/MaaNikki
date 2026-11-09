@@ -1,155 +1,234 @@
 {
   "schema_version": 3,
   "id": "gb_mat_277_miraland_02",
-  "title": "【革袋甲】埋骨地·孤石滩（8个/105秒）",
+  "title": "【革袋甲】埋骨地·蓝池北侧疗愈地渡口（9个/180秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 276,
+  "timeout": 442,
   "teleport": {
-    "name": "孤石滩",
+    "name": "蓝池北侧疗愈地渡口",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 8242.27,
-    "y": 5309.374
+    "x": 7605.469,
+    "y": 4714.484
   },
   "material": "革袋甲",
   "count_materials": [
-    "蓝鳞晶",
+    "晴雨伞",
     "革袋甲",
-    "小星扇贝"
+    "龙棘瑚",
+    "耳坠萤",
+    "骨焰花",
+    "蓝珀鸟羽"
   ],
-  "capacity": 38,
+  "capacity": 34,
   "points": [
     {
-      "x": 8242.27,
-      "y": 5309.37,
+      "x": 7605.47,
+      "y": 4714.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8263.27,
-      "y": 5318.37,
+      "x": 7597.11,
+      "y": 4735.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7597.11,
+      "y": 4741.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7594.11,
+      "y": 4744.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7591.11,
+      "y": 4747.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7588.11,
+      "y": 4748.56,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 15.1
       }
     },
     {
-      "x": 8266.27,
-      "y": 5321.37,
+      "x": 7600.11,
+      "y": 4766.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7603.11,
+      "y": 4775.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7615.11,
+      "y": 4781.56,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.8
+        "seconds": 7.8
       }
     },
     {
-      "x": 8267.92,
-      "y": 5325.19,
+      "x": 7639.11,
+      "y": 4781.56,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.7
+        "seconds": 26.0
       }
     },
     {
-      "x": 8261.92,
-      "y": 5328.19,
+      "x": 7657.11,
+      "y": 4778.56,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7681.11,
+      "y": 4778.56,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 7.8
       }
     },
     {
-      "x": 8258.92,
-      "y": 5331.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8258.92,
-      "y": 5355.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8273.92,
-      "y": 5370.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8282.78,
-      "y": 5380.85,
+      "x": 7700.15,
+      "y": 4780.71,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 15.7
+        "seconds": 31.1
       }
     },
     {
-      "x": 8267.33,
-      "y": 5366.99,
+      "x": 7692.22,
+      "y": 4801.71,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8252.33,
-      "y": 5348.99,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8237.33,
-      "y": 5333.99,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8222.33,
-      "y": 5318.99,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8207.33,
-      "y": 5300.99,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8204.33,
-      "y": 5297.99,
+      "x": 7692.22,
+      "y": 4822.71,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.5
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7683.22,
+      "y": 4840.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7677.22,
+      "y": 4861.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7674.22,
+      "y": 4882.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7674.22,
+      "y": 4903.71,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7659.22,
+      "y": 4918.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7650.22,
+      "y": 4913.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
+      }
+    },
+    {
+      "x": 7659.22,
+      "y": 4919.07,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7677.22,
+      "y": 4907.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7680.27,
+      "y": 4907.07,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
       }
     }
   ]

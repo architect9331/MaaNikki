@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_065_miraland_01",
-  "title": "【花球娘】微风绿野·绿野活动支援中心（5个/86秒）",
+  "title": "【花球娘】微风绿野·绿野活动支援中心（5个/129秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 233,
+  "timeout": 330,
   "teleport": {
     "name": "绿野活动支援中心",
     "province": "心愿原野",
@@ -29,10 +29,12 @@
     {
       "x": 9971.07,
       "y": 10637.35,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 9997.38,
@@ -41,7 +43,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.5
+        "seconds": 10.6
       }
     },
     {
@@ -51,7 +53,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.9
+        "seconds": 26.2
       }
     },
     {
@@ -61,7 +63,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.5
+        "seconds": 10.6
       }
     },
     {
@@ -71,7 +73,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.3
+        "seconds": 15.8
       }
     },
     {
@@ -81,7 +83,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.4
+        "seconds": 13.2
       }
     }
   ]

@@ -1,32 +1,43 @@
 {
   "schema_version": 3,
   "id": "gb_fish_10_miraland_01",
-  "title": "【眼影鱼】祈愿树林·浅滩山坡（6个/95秒）",
+  "title": "【眼影鱼】祈愿树林·巨树浅滩（6个/124秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 253,
+  "timeout": 317,
   "teleport": {
-    "name": "浅滩山坡",
+    "name": "巨树浅滩",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 11692.841,
-    "y": 9091.498
+    "x": 11850.974,
+    "y": 9024.453
   },
   "material": "眼影鱼",
   "count_materials": [
     "眼影鱼",
-    "小绵菊"
+    "小星扇贝",
+    "珠花贝壳"
   ],
-  "capacity": 10,
+  "capacity": 8,
   "points": [
     {
-      "x": 11692.84,
-      "y": 9091.5,
+      "x": 11850.97,
+      "y": 9024.45,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 11728.99,
+      "y": 8985.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 41.1
       }
     },
     {
@@ -36,17 +47,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 29.2
-      }
-    },
-    {
-      "x": 11728.99,
-      "y": 8985.44,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 29.2
+        "seconds": 41.1
       }
     }
   ]

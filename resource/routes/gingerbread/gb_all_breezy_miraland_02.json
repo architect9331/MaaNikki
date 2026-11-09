@@ -1,197 +1,74 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_02",
-  "title": "【全材料·微风绿野】微风绿野·废弃疯愿之子营地前哨站（72个/122秒）",
+  "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（37个/131秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 314,
+  "timeout": 334,
   "teleport": {
-    "name": "废弃疯愿之子营地前哨站",
+    "name": "河畔山地林间道",
     "province": "心愿原野",
     "region": "微风绿野",
-    "x": 10097.693,
-    "y": 11432.88
+    "x": 10608.939,
+    "y": 11286.416
   },
   "material": "全材料·微风绿野",
   "count_materials": [
-    "纽扣松果",
     "瓜子珠",
-    "壁灯红椒",
+    "纽扣松果",
     "小绵菊",
-    "小星扇贝"
+    "滋滋花粉"
   ],
-  "capacity": 72,
+  "capacity": 37,
   "points": [
     {
-      "x": 10097.69,
-      "y": 11432.88,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10106.13,
-      "y": 11414.31,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10121.13,
-      "y": 11396.31,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10103.13,
-      "y": 11381.31,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10103.13,
-      "y": 11375.31,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10082.13,
-      "y": 11384.31,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10070.13,
-      "y": 11393.31,
+      "x": 10608.94,
+      "y": 11286.42,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.1
+        "seconds": 13.0
       }
     },
     {
-      "x": 10088.13,
-      "y": 11377.58,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10098.35,
-      "y": 11371.58,
+      "x": 10671.56,
+      "y": 11268.0,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 28.6
       }
     },
     {
-      "x": 10087.01,
-      "y": 11340.28,
+      "x": 10687.2,
+      "y": 11279.7,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 13.0
       }
     },
     {
-      "x": 10082.65,
-      "y": 11300.55,
+      "x": 10664.93,
+      "y": 11317.43,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 20.8
       }
     },
     {
-      "x": 10116.89,
-      "y": 11258.04,
+      "x": 10702.8,
+      "y": 11327.34,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
-      }
-    },
-    {
-      "x": 10156.38,
-      "y": 11303.59,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 10168.38,
-      "y": 11321.59,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10192.38,
-      "y": 11321.59,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10196.43,
-      "y": 11321.12,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 10223.86,
-      "y": 11335.83,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.6
-      }
-    },
-    {
-      "x": 10259.26,
-      "y": 11347.81,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.0
-      }
-    },
-    {
-      "x": 10284.9,
-      "y": 11357.89,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.2
+        "seconds": 20.8
       }
     }
   ]

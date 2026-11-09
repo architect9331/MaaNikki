@@ -1,73 +1,51 @@
 {
   "schema_version": 3,
   "id": "gb_mat_044_miraland_01",
-  "title": "【蓝珀鸟羽】巨木之森·巨兽堡垒东侧（13个/112秒）",
+  "title": "【蓝珀鸟羽】磐城·集市旁停泊处（10个/120秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 291,
+  "timeout": 309,
   "teleport": {
-    "name": "巨兽堡垒东侧",
+    "name": "集市旁停泊处",
     "province": "伊赞之土",
-    "region": "巨木之森",
-    "x": 3869.066,
-    "y": 8412.612
+    "region": "磐城",
+    "x": 4129.301,
+    "y": 4158.628
   },
   "material": "蓝珀鸟羽",
   "count_materials": [
+    "探险家蜜蜂",
     "蓝珀鸟羽",
-    "珠链蝶",
-    "蜜妆粉",
-    "蜜妆兔绒",
     "小野菊"
   ],
-  "capacity": 27,
+  "capacity": 22,
   "points": [
     {
-      "x": 3869.07,
-      "y": 8412.61,
+      "x": 4129.3,
+      "y": 4158.63,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3880.19,
-      "y": 8410.42,
+      "x": 4129.4,
+      "y": 4152.08,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 34.5
+        "seconds": 40.6
       }
     },
     {
-      "x": 3898.15,
-      "y": 8434.47,
+      "x": 4088.62,
+      "y": 4089.76,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.7
-      }
-    },
-    {
-      "x": 3932.33,
-      "y": 8455.67,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 32.7
-      }
-    },
-    {
-      "x": 3952.72,
-      "y": 8465.79,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 6.5
+        "seconds": 56.1
       }
     }
   ]

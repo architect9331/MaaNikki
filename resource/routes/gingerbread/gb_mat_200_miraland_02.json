@@ -1,96 +1,69 @@
 {
   "schema_version": 3,
   "id": "gb_mat_200_miraland_02",
-  "title": "【垂穗魔果】巨木之森·卢米菈的小屋（12个/99秒）",
+  "title": "【垂穗魔果】巨木之森·母菇林地（8个/92秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 262,
+  "timeout": 247,
   "teleport": {
-    "name": "卢米菈的小屋",
+    "name": "母菇林地",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 5199.301,
-    "y": 9097.884
+    "x": 5153.24,
+    "y": 8668.327
   },
   "material": "垂穗魔果",
   "count_materials": [
-    "垂穗魔果",
-    "结结蕨"
+    "垂穗魔果"
   ],
-  "capacity": 13,
+  "capacity": 8,
   "points": [
     {
-      "x": 5199.3,
-      "y": 9097.88,
+      "x": 5153.24,
+      "y": 8668.33,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 5175.55,
-      "y": 9133.66,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5184.8,
-      "y": 9035.29,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5271.77,
-      "y": 9064.81,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5346.05,
-      "y": 9087.17,
-      "radius": 2.2,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5382.57,
-      "y": 9135.23,
-      "radius": 2.2,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5295.66,
-      "y": 9166.79,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5264.82,
-      "y": 9151.82,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5183.03,
-      "y": 9079.69,
-      "radius": 2.2,
+      "x": 5232.46,
+      "y": 8665.92,
+      "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.5
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 5213.27,
+      "y": 8732.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 5358.28,
+      "y": 8686.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 5302.99,
+      "y": 8796.42,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
       }
     }
   ]

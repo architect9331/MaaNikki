@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_063_miraland_02",
-  "title": "【芭蕾豆娘】祈愿树林·巨树浅滩（15个/133秒）",
+  "title": "【芭蕾豆娘】祈愿树林·巨树浅滩（19个/252秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 337,
+  "timeout": 598,
   "teleport": {
     "name": "巨树浅滩",
     "province": "心愿原野",
@@ -19,22 +19,24 @@
     "小星扇贝",
     "耳坠萤",
     "发卡蚱蜢",
+    "珠花贝壳",
     "花环毛团",
     "小绵菊",
-    "珠花贝壳",
     "满满果",
     "美甲金龟",
     "鹿冠毛团"
   ],
-  "capacity": 45,
+  "capacity": 51,
   "points": [
     {
       "x": 11850.97,
       "y": 9024.45,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 11854.07,
@@ -43,7 +45,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.4
+        "seconds": 29.2
       }
     },
     {
@@ -53,7 +55,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 17.5
+        "seconds": 26.6
       }
     },
     {
@@ -63,7 +65,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.4
+        "seconds": 29.2
       }
     },
     {
@@ -73,7 +75,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.4
+        "seconds": 29.2
       }
     },
     {
@@ -83,7 +85,27 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 17.5
+        "seconds": 26.6
+      }
+    },
+    {
+      "x": 11894.79,
+      "y": 9104.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.2
+      }
+    },
+    {
+      "x": 12031.26,
+      "y": 9129.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
       }
     }
   ]

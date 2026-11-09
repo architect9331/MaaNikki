@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_229_miraland_02",
-  "title": "【咕咕之羽】巨木之森·菇菇聚落（6个/103秒）",
+  "title": "【咕咕之羽】巨木之森·菇菇聚落（6个/135秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 271,
+  "timeout": 341,
   "teleport": {
     "name": "菇菇聚落",
     "province": "伊赞之土",
@@ -39,7 +39,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 4.7
+        "seconds": 8.6
       }
     },
     {
@@ -49,7 +49,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.7
+        "seconds": 8.6
       }
     },
     {
@@ -59,7 +59,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.4
+        "seconds": 14.7
       }
     },
     {
@@ -69,7 +69,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.5
+        "seconds": 12.1
       }
     },
     {
@@ -79,7 +79,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.5
+        "seconds": 12.1
       }
     },
     {
@@ -89,7 +89,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.5
+        "seconds": 12.1
       }
     }
   ]

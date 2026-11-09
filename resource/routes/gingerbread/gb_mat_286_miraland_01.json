@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_286_miraland_01",
-  "title": "【蓝鳞晶】埋骨地·孤石滩（41个/88秒）",
+  "title": "【蓝鳞晶】埋骨地·孤石滩（41个/188秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 238,
+  "timeout": 458,
   "teleport": {
     "name": "孤石滩",
     "province": "伊赞之土",
@@ -47,7 +47,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 22.9
+        "seconds": 70.2
       }
     },
     {
@@ -61,18 +61,22 @@
     {
       "x": 8250.36,
       "y": 5348.1,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 8235.48,
       "y": 5332.82,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 8220.48,
@@ -97,16 +101,18 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
       "x": 8192.77,
       "y": 5315.07,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 8182.16,
@@ -119,10 +125,12 @@
     {
       "x": 8176.16,
       "y": 5345.16,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 8223.85,
@@ -131,7 +139,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 20.8
       }
     },
     {
@@ -141,17 +149,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
       "x": 8219.76,
       "y": 5439.39,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.5
+        "seconds": 3.0
       }
     }
   ]

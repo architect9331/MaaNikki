@@ -1,141 +1,146 @@
 {
   "schema_version": 3,
   "id": "gb_mat_091_miraland_02",
-  "title": "【满满果】微风绿野·菲洛米亚女王行宫遗迹前（29个/95秒）",
+  "title": "【满满果】祈愿树林·怪味愿望山坡（20个/114秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 253,
+  "timeout": 296,
   "teleport": {
-    "name": "菲洛米亚女王行宫遗迹前",
+    "name": "怪味愿望山坡",
     "province": "心愿原野",
-    "region": "微风绿野",
-    "x": 10860.06,
-    "y": 11296.949
+    "region": "祈愿树林",
+    "x": 11944.733,
+    "y": 8834.722
   },
   "material": "满满果",
   "count_materials": [
     "满满果",
+    "织衣蛛",
     "瓜子珠",
-    "发卡蚱蜢"
+    "名流鸦羽"
   ],
-  "capacity": 49,
+  "capacity": 28,
   "points": [
     {
-      "x": 10860.06,
-      "y": 11296.95,
+      "x": 11944.73,
+      "y": 8834.72,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10863.41,
-      "y": 11310.01,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10894.54,
-      "y": 11352.91,
+      "x": 11944.67,
+      "y": 8841.76,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 5.2
       }
     },
     {
-      "x": 10848.53,
-      "y": 11375.01,
+      "x": 11951.65,
+      "y": 8788.87,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 7.8
       }
     },
     {
-      "x": 10833.88,
-      "y": 11352.56,
+      "x": 11976.34,
+      "y": 8792.31,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 5.2
       }
     },
     {
-      "x": 10856.91,
-      "y": 11439.43,
+      "x": 11932.63,
+      "y": 8749.77,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 7.8
       }
     },
     {
-      "x": 10877.91,
-      "y": 11435.27,
+      "x": 11951.98,
+      "y": 8763.85,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 11969.98,
+      "y": 8751.15,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 10898.91,
-      "y": 11432.27,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10916.91,
-      "y": 11420.27,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10934.91,
-      "y": 11405.27,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10940.94,
-      "y": 11402.27,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.9
-      }
-    },
-    {
-      "x": 10987.12,
-      "y": 11403.07,
+      "x": 11990.98,
+      "y": 8748.15,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 3.0
       }
     },
     {
-      "x": 11006.47,
-      "y": 11435.86,
+      "x": 11996.98,
+      "y": 8736.15,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11997.12,
+      "y": 8733.15,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 11977.33,
+      "y": 8721.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11953.33,
+      "y": 8721.65,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 11955.89,
+      "y": 8696.5,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
       }
     }
   ]

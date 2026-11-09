@@ -1,97 +1,181 @@
 {
   "schema_version": 3,
   "id": "gb_mat_067_miraland_01",
-  "title": "【发卡蚱蜢】石树田无人区·乘风磨坊顶端（16个/122秒）",
+  "title": "【发卡蚱蜢】石树田无人区·乘风磨坊入口（22个/232秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 314,
+  "timeout": 555,
   "teleport": {
-    "name": "乘风磨坊顶端",
+    "name": "乘风磨坊入口",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 7692.271,
-    "y": 9936.448
+    "x": 7767.721,
+    "y": 9965.897
   },
   "material": "发卡蚱蜢",
   "count_materials": [
-    "珠链蝶",
     "发卡蚱蜢",
-    "瓜子珠",
+    "珠链蝶",
+    "背带毛团",
     "蓝珀鸟羽",
-    "围巾蚯蚓"
+    "围巾蚯蚓",
+    "瓜子珠",
+    "珠花贝壳",
+    "美食家蜜蜂",
+    "花伞藤萝"
   ],
-  "capacity": 51,
+  "capacity": 52,
   "points": [
     {
-      "x": 7692.27,
-      "y": 9936.45,
+      "x": 7767.72,
+      "y": 9965.9,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7680.79,
-      "y": 9922.45,
+      "x": 7773.72,
+      "y": 9960.42,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7677.79,
-      "y": 9922.45,
+      "x": 7773.72,
+      "y": 9957.42,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7773.47,
+      "y": 9954.42,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 46.0
+        "seconds": 23.1
       }
     },
     {
-      "x": 7675.11,
-      "y": 9905.53,
+      "x": 7754.15,
+      "y": 9944.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7748.15,
+      "y": 9938.55,
       "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 39.1
+      }
+    },
+    {
+      "x": 7732.97,
+      "y": 9925.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 7717.97,
+      "y": 9907.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 7702.97,
+      "y": 9892.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7696.97,
+      "y": 9880.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 47.1
+      }
+    },
+    {
+      "x": 7708.81,
+      "y": 9896.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 23.8
+      }
+    },
+    {
+      "x": 7720.81,
+      "y": 9879.42,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7735.81,
+      "y": 9861.42,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7738.81,
+      "y": 9861.42,
+      "radius": 2.5,
       "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.7
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 7675.11,
-      "y": 9896.19,
+      "x": 7747.81,
+      "y": 9864.42,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7678.11,
-      "y": 9887.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7696.96,
-      "y": 9881.19,
+      "x": 7753.81,
+      "y": 9873.42,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 33.7
+        "seconds": 3.0
       }
     },
     {
-      "x": 7708.64,
-      "y": 9897.0,
+      "x": 7755.25,
+      "y": 9882.42,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.3
+        "seconds": 47.1
       }
     }
   ]

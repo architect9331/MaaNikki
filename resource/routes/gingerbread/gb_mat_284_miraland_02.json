@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_284_miraland_02",
-  "title": "【烛融花/烛荧花】埋骨地·湖岸营地（14个/46秒）",
+  "title": "【烛融花/烛荧花】埋骨地·湖岸营地（14个/77秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 146,
+  "timeout": 214,
   "teleport": {
     "name": "湖岸营地",
     "province": "伊赞之土",
@@ -37,7 +37,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -47,7 +47,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -61,10 +61,12 @@
     {
       "x": 6152.03,
       "y": 5270.53,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 6155.03,
@@ -81,7 +83,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     }
   ]

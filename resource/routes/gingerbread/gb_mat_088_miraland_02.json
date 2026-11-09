@@ -1,38 +1,126 @@
 {
   "schema_version": 3,
   "id": "gb_mat_088_miraland_02",
-  "title": "【香薰睡莲】花愿镇·织裙街（2个/22秒）",
+  "title": "【香薰睡莲】花愿镇·镇长宅邸前（5个/95秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 253,
   "teleport": {
-    "name": "织裙街",
+    "name": "镇长宅邸前",
     "province": "心愿原野",
     "region": "花愿镇",
-    "x": 10728.751,
-    "y": 10052.912
+    "x": 10544.632,
+    "y": 9974.37
   },
   "material": "香薰睡莲",
   "count_materials": [
-    "瓜子珠",
     "香薰睡莲",
-    "小星扇贝",
-    "纽扣松果",
-    "小绵菊",
     "泳镜蝽",
+    "小星扇贝",
+    "珠花贝壳",
+    "满满果",
+    "小绵菊",
     "衬衫毛团"
   ],
-  "capacity": 11,
+  "capacity": 18,
   "points": [
     {
-      "x": 10728.75,
-      "y": 10052.91,
+      "x": 10544.63,
+      "y": 9974.37,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 5.2
       }
+    },
+    {
+      "x": 10503.0,
+      "y": 10095.23,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 10522.0,
+      "y": 10090.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10546.0,
+      "y": 10090.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10566.0,
+      "y": 10082.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10582.0,
+      "y": 10066.8,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10598.0,
+      "y": 10050.8,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10614.0,
+      "y": 10034.8,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10634.0,
+      "y": 10026.8,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10658.0,
+      "y": 10026.8,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10682.0,
+      "y": 10026.8,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
       "x": 10693.29,
@@ -41,7 +129,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     }
   ]

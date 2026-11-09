@@ -1,142 +1,100 @@
 {
   "schema_version": 3,
   "id": "gb_mat_062_miraland_03",
-  "title": "【织衣蛛】花愿镇·秘密基地（13个/115秒）",
+  "title": "【织衣蛛】磐城·剧院二层（13个/164秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 297,
+  "timeout": 405,
   "teleport": {
-    "name": "秘密基地",
-    "province": "心愿原野",
-    "region": "花愿镇",
-    "x": 10441.002,
-    "y": 9711.539
+    "name": "剧院二层",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4048.517,
+    "y": 3398.77
   },
   "material": "织衣蛛",
   "count_materials": [
     "织衣蛛",
-    "尖帽仙",
-    "纽扣松果",
-    "路灯花",
-    "满满果",
-    "滋滋花粉"
+    "机雀羽"
   ],
-  "capacity": 33,
+  "capacity": 15,
   "points": [
     {
-      "x": 10441.0,
-      "y": 9711.54,
+      "x": 4048.52,
+      "y": 3398.77,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10437.64,
-      "y": 9714.54,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10437.64,
-      "y": 9738.54,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10437.64,
-      "y": 9744.62,
+      "x": 4037.72,
+      "y": 3423.58,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 19.3
+        "seconds": 23.1
       }
     },
     {
-      "x": 10420.93,
-      "y": 9728.08,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10414.93,
-      "y": 9725.08,
+      "x": 4023.85,
+      "y": 3398.82,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.7
+        "seconds": 7.1
       }
     },
     {
-      "x": 10398.08,
-      "y": 9721.82,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10395.08,
-      "y": 9718.82,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10389.08,
-      "y": 9697.82,
+      "x": 3963.69,
+      "y": 3389.0,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 15.1
       }
     },
     {
-      "x": 10383.08,
-      "y": 9676.82,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10386.08,
-      "y": 9655.82,
+      "x": 3917.15,
+      "y": 3413.07,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 15.1
       }
     },
     {
-      "x": 10389.08,
-      "y": 9649.82,
+      "x": 4020.36,
+      "y": 3521.13,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 35.5
+        "seconds": 15.1
       }
     },
     {
-      "x": 10364.11,
-      "y": 9645.26,
+      "x": 4042.7,
+      "y": 3495.51,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 15.1
+      }
+    },
+    {
+      "x": 4046.22,
+      "y": 3459.28,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
       }
     }
   ]

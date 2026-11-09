@@ -1,70 +1,50 @@
 {
   "schema_version": 3,
   "id": "gb_mat_061_miraland_01",
-  "title": "【布布袜虫】花愿镇·搭配师协会前（2个/61秒）",
+  "title": "【布布袜虫】花愿镇·镇长宅邸前（2个/85秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 180,
+  "timeout": 232,
   "teleport": {
-    "name": "搭配师协会前",
+    "name": "镇长宅邸前",
     "province": "心愿原野",
     "region": "花愿镇",
-    "x": 10263.141,
-    "y": 9946.46
+    "x": 10544.632,
+    "y": 9974.37
   },
   "material": "布布袜虫",
   "count_materials": [
+    "发卡蚱蜢",
+    "珠链蝶",
     "小绵菊",
     "布布果",
-    "珠链蝶",
+    "布布袜虫",
+    "耳坠萤",
+    "风铃子",
     "满满果",
-    "发卡蚱蜢",
-    "布布袜虫"
+    "蓝珀鸟羽",
+    "纽扣松果"
   ],
   "capacity": 23,
   "points": [
     {
-      "x": 10263.14,
-      "y": 9946.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10281.14,
-      "y": 9961.46,
+      "x": 10544.63,
+      "y": 9974.37,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 5.2
       }
     },
     {
-      "x": 10299.14,
-      "y": 9976.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10317.14,
-      "y": 9988.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10336.29,
-      "y": 10002.09,
+      "x": 10609.82,
+      "y": 9911.54,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.0
+        "seconds": 13.2
       }
     },
     {
@@ -74,7 +54,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.2
+        "seconds": 18.4
       }
     }
   ]

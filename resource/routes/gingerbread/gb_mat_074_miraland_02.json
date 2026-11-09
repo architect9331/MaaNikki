@@ -1,50 +1,104 @@
 {
   "schema_version": 3,
   "id": "gb_mat_074_miraland_02",
-  "title": "【珠链蝶】巨木之森·无名花野（16个/109秒）",
+  "title": "【珠链蝶】埋骨地·古息坡道（100个/714秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 285,
+  "timeout": 900,
   "teleport": {
-    "name": "无名花野",
+    "name": "古息坡道",
     "province": "伊赞之土",
-    "region": "巨木之森",
-    "x": 4390.32,
-    "y": 8613.902
+    "region": "埋骨地",
+    "x": 6883.245,
+    "y": 4762.082
   },
   "material": "珠链蝶",
   "count_materials": [
     "珠链蝶",
-    "草棘果"
+    "小野菊",
+    "风舞花",
+    "耳坠萤"
   ],
-  "capacity": 17,
+  "capacity": 117,
   "points": [
     {
-      "x": 4390.32,
-      "y": 8613.9,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4365.67,
-      "y": 8612.33,
+      "x": 6883.24,
+      "y": 4762.08,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 60.0
+        "seconds": 23.1
       }
     },
     {
-      "x": 4365.67,
-      "y": 8612.33,
+      "x": 6883.2,
+      "y": 4641.48,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 33.7
+        "seconds": 150.0
+      }
+    },
+    {
+      "x": 6880.2,
+      "y": 4619.44,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 21.2
+      }
+    },
+    {
+      "x": 6883.2,
+      "y": 4598.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 82.4
+      }
+    },
+    {
+      "x": 6898.2,
+      "y": 4583.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 69.2
+      }
+    },
+    {
+      "x": 6919.2,
+      "y": 4574.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 125.2
+      }
+    },
+    {
+      "x": 6940.2,
+      "y": 4568.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 130.6
+      }
+    },
+    {
+      "x": 6950.8,
+      "y": 4568.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 66.6
       }
     }
   ]

@@ -1,131 +1,40 @@
 {
   "schema_version": 3,
   "id": "gb_all_florawish_miraland_02",
-  "title": "【全材料·花愿镇】花愿镇·洞察圣堂前（61个/144秒）",
+  "title": "【全材料·花愿镇】花愿镇·搭配师协会纪念旧址旁（9个/37秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 362,
+  "timeout": 126,
   "teleport": {
-    "name": "洞察圣堂前",
+    "name": "搭配师协会纪念旧址旁",
     "province": "心愿原野",
     "region": "花愿镇",
-    "x": 10935.767,
-    "y": 10136.324
+    "x": 9839.854,
+    "y": 9851.62
   },
   "material": "全材料·花愿镇",
   "count_materials": [
-    "壁灯红椒",
-    "纽扣松果",
-    "路灯花",
     "小绵菊",
-    "瓜子珠",
-    "耳坠萤",
-    "布布果",
-    "兔尾绒团",
-    "发卡蚱蜢"
+    "纽扣松果"
   ],
-  "capacity": 61,
+  "capacity": 9,
   "points": [
     {
-      "x": 10935.77,
-      "y": 10136.32,
+      "x": 9839.85,
+      "y": 9851.62,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10942.07,
-      "y": 10145.89,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 10908.96,
-      "y": 10200.39,
+      "x": 9843.56,
+      "y": 9842.86,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.8
-      }
-    },
-    {
-      "x": 10818.8,
-      "y": 10101.59,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.4
-      }
-    },
-    {
-      "x": 10832.69,
-      "y": 10088.58,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.8
-      }
-    },
-    {
-      "x": 10826.2,
-      "y": 10077.41,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10826.2,
-      "y": 10074.41,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 10804.02,
-      "y": 10074.41,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10783.02,
-      "y": 10077.41,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10771.02,
-      "y": 10087.34,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.8
-      }
-    },
-    {
-      "x": 10747.28,
-      "y": 10089.79,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 40.9
+        "seconds": 23.4
       }
     }
   ]

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_315_miraland_01",
-  "title": "【机芯果】磐城·集市旁停泊处（18个/69秒）",
+  "title": "【机芯果】磐城·集市旁停泊处（18个/109秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 197,
+  "timeout": 285,
   "teleport": {
     "name": "集市旁停泊处",
     "province": "伊赞之土",
@@ -23,10 +23,12 @@
     {
       "x": 4129.3,
       "y": 4158.63,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 4128.49,
@@ -35,7 +37,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -45,7 +47,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -55,7 +57,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -65,7 +67,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -75,7 +77,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     }
   ]

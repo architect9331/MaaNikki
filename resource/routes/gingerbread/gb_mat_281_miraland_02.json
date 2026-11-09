@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_281_miraland_02",
-  "title": "【晴雨伞】埋骨地·湖岸营地（36个/70秒）",
+  "title": "【晴雨伞】埋骨地·湖岸营地（36个/142秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 200,
+  "timeout": 357,
   "teleport": {
     "name": "湖岸营地",
     "province": "伊赞之土",
@@ -36,7 +36,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.4
+        "seconds": 31.2
       }
     },
     {
@@ -46,7 +46,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.4
+        "seconds": 31.2
       }
     },
     {
@@ -56,7 +56,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -90,7 +90,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -100,7 +100,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     }
   ]

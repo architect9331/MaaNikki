@@ -1,64 +1,119 @@
 {
   "schema_version": 3,
   "id": "gb_fish_04_miraland_01",
-  "title": "【头巾鱼】石树田无人区·星空钓场旁（小道）（9个/125秒）",
+  "title": "【头巾鱼】石树田无人区·乘风磨坊入口（12个/233秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 321,
+  "timeout": 558,
   "teleport": {
-    "name": "星空钓场旁（小道）",
+    "name": "乘风磨坊入口",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 7828.444,
-    "y": 9367.482
+    "x": 7767.721,
+    "y": 9965.897
   },
   "material": "头巾鱼",
   "count_materials": [
     "头巾鱼",
-    "蓝珀鸟羽",
-    "小绵菊",
     "小星扇贝",
     "珠花贝壳",
-    "路灯花"
+    "发卡蚱蜢",
+    "兔兔妆粉"
   ],
-  "capacity": 30,
+  "capacity": 20,
   "points": [
     {
-      "x": 7828.44,
-      "y": 9367.48,
+      "x": 7767.72,
+      "y": 9965.9,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7836.47,
-      "y": 9369.37,
+      "x": 7757.77,
+      "y": 9986.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7757.77,
+      "y": 9991.09,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 36.4
+        "seconds": 44.6
       }
     },
     {
-      "x": 7845.86,
-      "y": 9345.82,
+      "x": 7707.95,
+      "y": 9968.68,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 32.8
+        "seconds": 41.1
       }
     },
     {
-      "x": 7787.44,
-      "y": 9328.93,
+      "x": 7719.95,
+      "y": 9949.77,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.0
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 7719.95,
+      "y": 9925.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 7719.95,
+      "y": 9901.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 7719.95,
+      "y": 9877.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7716.06,
+      "y": 9874.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 41.1
+      }
+    },
+    {
+      "x": 7758.86,
+      "y": 9806.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 44.6
       }
     }
   ]

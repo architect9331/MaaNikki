@@ -1,0 +1,64 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_serenity_07",
+  "title": "【全昆虫速刷】无忧岛·布露村村口（10个/70秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 199,
+  "teleport": {
+    "name": "布露村村口",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 889.635,
+    "y": 406.18
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "珠链蝶",
+    "小绵菊",
+    "布布果"
+  ],
+  "capacity": 10,
+  "points": [
+    {
+      "x": 889.63,
+      "y": 406.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 881.87,
+      "y": 406.18,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 863.87,
+      "y": 418.18,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 854.87,
+      "y": 417.14,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 39.1
+      }
+    }
+  ]
+}

@@ -1,65 +1,40 @@
 {
   "schema_version": 3,
   "id": "gb_mat_045_miraland_02",
-  "title": "【花香羊毛】石树田无人区·麦田旁（5个/58秒）",
+  "title": "【花香羊毛】石树田无人区·咚咚窝瓜工坊（3个/44秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 173,
+  "timeout": 142,
   "teleport": {
-    "name": "麦田旁",
+    "name": "咚咚窝瓜工坊",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 8758.97,
-    "y": 10201.562
+    "x": 8235.424,
+    "y": 8891.812
   },
   "material": "花香羊毛",
   "count_materials": [
-    "耳坠萤",
     "花香羊毛",
-    "蓝珀鸟羽",
-    "发卡蚱蜢",
-    "刺绣蛾",
-    "小绵菊",
-    "绣球羊毛"
+    "围巾蚯蚓"
   ],
-  "capacity": 23,
+  "capacity": 4,
   "points": [
     {
-      "x": 8758.97,
-      "y": 10201.56,
+      "x": 8235.42,
+      "y": 8891.81,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8736.93,
-      "y": 10195.12,
+      "x": 8223.62,
+      "y": 8861.8,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.7
-      }
-    },
-    {
-      "x": 8706.59,
-      "y": 10231.49,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 13.5
-      }
-    },
-    {
-      "x": 8665.74,
-      "y": 10211.12,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.7
+        "seconds": 27.6
       }
     }
   ]

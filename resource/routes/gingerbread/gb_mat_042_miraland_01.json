@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_042_miraland_01",
-  "title": "【骑士马鬃】巨木之森·巨藤林地南侧废墟（6个/70秒）",
+  "title": "【骑士马鬃】巨木之森·巨藤林地南侧废墟（6个/92秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 199,
+  "timeout": 248,
   "teleport": {
     "name": "巨藤林地南侧废墟",
     "province": "伊赞之土",
@@ -24,10 +24,12 @@
     {
       "x": 4226.46,
       "y": 8872.65,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 4336.68,
@@ -36,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 20.5
+        "seconds": 31.1
       }
     },
     {
@@ -46,7 +48,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 18.7
+        "seconds": 27.6
       }
     }
   ]

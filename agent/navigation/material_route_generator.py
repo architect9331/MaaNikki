@@ -38,18 +38,18 @@ M_PER_MAP_PX = 0.90
 
 @dataclass(frozen=True)
 class GingerbreadSpec:
-    """Physical range and per-category service time of the Gingerbread-Man aura."""
+    """Physical range and per-category conservative service time of the Gingerbread-Man aura."""
     aura_radius_m: float = 15.0
     safe_radius_m: float = 13.5
     pass_radius_m: float = 14.2
     max_dz_m: float = 5.5
     run_speed_mps: float = 6.5
     teleport_overhead_s: float = 12.0
-    plant_first_s: float = 1.8
-    plant_extra_s: float = 0.9
-    insect_s: float = 6.0
-    animal_s: float = 7.0
-    fish_s: float = 10.5
+    plant_first_s: float = 3.5
+    plant_extra_s: float = 2.6
+    insect_s: float = 8.0
+    animal_s: float = 9.5
+    fish_s: float = 14.0
     fish_casts_per_spot: int = 1
 
     @property
@@ -81,19 +81,20 @@ class GingerbreadSpec:
             + animals * self.animal_s
             + fish * self.fish_s * max(1, self.fish_casts_per_spot)
         )
-        # Gingerbread helpers process items sequentially; plants overlap partially with movement
         return t_plant + t_other
 
-    def net_wait_seconds(self, points: list["MaterialPoint"], chord_m: float = 20.0) -> float:
+    def net_wait_seconds(self, points: list["MaterialPoint"], chord_m: float = 16.0) -> float:
+        if not points:
+            return 0.0
         total_service = self.service_seconds(points)
         pass_time = max(0.0, chord_m / max(1.0, self.run_speed_mps))
         has_slow = any(p.kind in ("insect", "animal", "fish") for p in points)
-        if not has_slow and total_service <= pass_time:
-            return 0.0
-        net = total_service - 0.75 * pass_time
-        if net < 1.2 and not has_slow:
-            return 0.0
-        return round(max(2.0 if has_slow else 1.5, net), 1)
+        # Only a single isolated plant along a transit segment can be swept with a brief pause;
+        # any cluster >= 2 items or any slow item gets a conservative stationary wait budget.
+        if not has_slow and len(points) == 1:
+            return 3.0
+        net = total_service - 0.35 * pass_time
+        return round(min(150.0, max(6.0 if has_slow else 4.5, net)), 1)
 
 
 @dataclass(frozen=True)
@@ -1077,22 +1078,18 @@ class MaterialRouteGenerator:
                 final_waypoints.append(wp)
                 continue
             total_wait_s += wait_s
-            rem = wait_s
-            while rem > 0.0:
-                chunk = round(min(60.0, rem), 1)
-                rem = round(rem - chunk, 1)
-                wp_copy = dict(wp)
-                wp_copy["action"] = "wait"
-                wp_copy["params"] = {"seconds": chunk}
-                wp_copy["radius"] = 2.0
-                final_waypoints.append(wp_copy)
+            wp_copy = dict(wp)
+            wp_copy["action"] = "wait"
+            wp_copy["params"] = {"seconds": round(min(150.0, wait_s), 1)}
+            wp_copy["radius"] = 2.0
+            final_waypoints.append(wp_copy)
         waypoints = final_waypoints
 
-        # Ensure final waypoint has a brief wait if it didn't already so trailing Gingerbread catches finish
+        # Ensure final waypoint has a conservative wait if it didn't already so trailing Gingerbread catches finish
         if waypoints[-1]["action"] == "" and wp_items.get(len(waypoints) - 1):
             waypoints[-1]["action"] = "wait"
-            waypoints[-1]["params"] = {"seconds": 2.5}
-            total_wait_s += 2.5
+            waypoints[-1]["params"] = {"seconds": 5.0}
+            total_wait_s += 5.0
 
         counts_by_name: dict[str, int] = {}
         counts_by_kind: dict[str, int] = {}
@@ -1156,7 +1153,7 @@ class MaterialRouteGenerator:
         top_k: int = 5,
         quota: int | None = None,
         max_anchors: int = 8,
-        max_route_seconds: float = 125.0,
+        max_route_seconds: float = 220.0,
         route_id_prefix: str = "gb_target",
     ) -> list[GeneratedRoutePlan]:
         queries = [m.strip() for m in materials if m.strip()]
@@ -1272,7 +1269,7 @@ class MaterialRouteGenerator:
         top_k: int = 5,
         kind_weights: dict[str, float] | None = None,
         max_anchors: int = 10,
-        max_route_seconds: float = 150.0,
+        max_route_seconds: float = 260.0,
         route_id_prefix: str = "gb_sweep",
         title_label: str = "",
     ) -> list[GeneratedRoutePlan]:

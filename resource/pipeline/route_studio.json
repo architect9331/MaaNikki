@@ -14,5 +14,19 @@
     "custom_action_param": {"file": "", "mode": "full", "start": 0},
     "post_delay": 0,
     "next": []
+  },
+  "MaaNikki_OpenWorldCollect": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.open_world_collect",
+    "custom_action_param": {
+      "files": "",
+      "mode": "full",
+      "adaptive_exit": true,
+      "quiet_seconds": 6.0,
+      "initial_wait_seconds": 9.0
+    },
+    "post_delay": 0,
+    "next": []
   }
 }

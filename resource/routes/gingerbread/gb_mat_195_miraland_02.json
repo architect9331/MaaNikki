@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_195_miraland_02",
-  "title": "【蜜妆粉】巨木之森·古木荫地附近遗迹（8个/61秒）",
+  "title": "【蜜妆粉】巨木之森·古木荫地附近遗迹（8个/85秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 179,
+  "timeout": 232,
   "teleport": {
     "name": "古木荫地附近遗迹",
     "province": "伊赞之土",
@@ -25,18 +25,22 @@
     {
       "x": 3704.48,
       "y": 9230.44,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 3792.38,
       "y": 9211.99,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 3801.38,
@@ -49,10 +53,12 @@
     {
       "x": 3810.38,
       "y": 9253.99,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": true,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 3825.38,
@@ -77,33 +83,37 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
       "x": 3837.31,
       "y": 9297.48,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 3839.34,
       "y": 9293.04,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 3903.69,
       "y": 9195.29,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.5
+        "seconds": 3.0
       }
     }
   ]

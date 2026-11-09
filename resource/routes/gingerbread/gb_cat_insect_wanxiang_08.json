@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
-  "id": "gb_cat_insect_wanxiang_07",
-  "title": "【全昆虫速刷】万相境·彩靥城集市（29个/141秒）",
+  "id": "gb_cat_insect_wanxiang_08",
+  "title": "【全昆虫速刷】万相境·彩靥城集市（38个/269秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 356,
+  "timeout": 637,
   "teleport": {
     "name": "彩靥城集市",
     "province": "伊赞之土",
@@ -15,14 +15,14 @@
   "material": "全昆虫速刷",
   "count_materials": [
     "耳坠萤",
-    "满满果",
     "荷包草",
-    "小绵菊",
+    "满满果",
     "玉簪蚱蜢",
     "刺绣蛾",
+    "小绵菊",
     "云绒玉絮"
   ],
-  "capacity": 29,
+  "capacity": 38,
   "points": [
     {
       "x": 1447.76,
@@ -71,36 +71,66 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 42.4
+        "seconds": 61.2
       }
     },
     {
-      "x": 1385.6,
-      "y": 1079.98,
+      "x": 1402.49,
+      "y": 1066.78,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.3
+        "seconds": 5.2
       }
     },
     {
-      "x": 1375.44,
-      "y": 1097.98,
+      "x": 1387.49,
+      "y": 1081.78,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 3.0
       }
     },
     {
-      "x": 1369.44,
-      "y": 1118.98,
-      "radius": 2.5,
+      "x": 1375.49,
+      "y": 1093.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
+      }
+    },
+    {
+      "x": 1372.49,
+      "y": 1114.78,
+      "radius": 2.0,
       "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1369.49,
+      "y": 1135.78,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
+    },
+    {
+      "x": 1366.49,
+      "y": 1159.4,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 93.2
+      }
     },
     {
       "x": 1366.44,
@@ -109,7 +139,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 29.5
+        "seconds": 42.6
       }
     }
   ]

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_052_miraland_02",
-  "title": "【背带毛团】石树田无人区·石碑地（5个/61秒）",
+  "title": "【背带毛团】石树田无人区·石碑地（5个/80秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 180,
+  "timeout": 221,
   "teleport": {
     "name": "石碑地",
     "province": "心愿原野",
@@ -23,10 +23,12 @@
     {
       "x": 9267.48,
       "y": 8947.91,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 9282.48,
@@ -67,7 +69,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 34.5
+        "seconds": 50.1
       }
     }
   ]

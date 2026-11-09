@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_181_danqing_01",
-  "title": "【云绒玉絮】丹青屿·栖龙峰山腰（2个/21秒）",
+  "title": "【云绒玉絮】丹青屿·栖龙峰山腰（2个/40秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 133,
   "teleport": {
     "name": "栖龙峰山腰",
     "province": "心愿原野",
@@ -24,10 +24,12 @@
     {
       "x": 1115.31,
       "y": 388.77,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1122.31,
@@ -36,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -46,7 +48,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     }
   ]

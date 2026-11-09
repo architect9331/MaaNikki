@@ -1,82 +1,46 @@
 {
   "schema_version": 3,
   "id": "gb_fish_10_miraland_02",
-  "title": "【眼影鱼】祈愿树林·金蔷薇花谷（4个/74秒）",
+  "title": "【眼影鱼】祈愿树林·苦修派营地（7个/172秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 207,
+  "timeout": 423,
   "teleport": {
-    "name": "金蔷薇花谷",
+    "name": "苦修派营地",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 12311.612,
-    "y": 9450.761
+    "x": 12035.69,
+    "y": 9396.429
   },
   "material": "眼影鱼",
   "count_materials": [
     "眼影鱼",
-    "小星扇贝",
-    "珠花贝壳",
-    "钓鱼点"
+    "纽扣松果",
+    "路灯花",
+    "星荧草",
+    "钓鱼点",
+    "珠花贝壳"
   ],
-  "capacity": 11,
+  "capacity": 16,
   "points": [
     {
-      "x": 12311.61,
-      "y": 9450.76,
-      "radius": 2.5,
+      "x": 12035.69,
+      "y": 9396.43,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12291.49,
-      "y": 9440.08,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12270.49,
-      "y": 9434.08,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12249.49,
-      "y": 9428.08,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12231.49,
-      "y": 9419.08,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12213.49,
-      "y": 9410.08,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
+      }
     },
     {
       "x": 12192.49,
       "y": 9401.08,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 29.2
+        "seconds": 41.1
       }
     },
     {
@@ -102,7 +66,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.0
+        "seconds": 16.6
+      }
+    },
+    {
+      "x": 12163.62,
+      "y": 9239.74,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 41.1
       }
     }
   ]

@@ -1,171 +1,73 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_02",
-  "title": "【全材料·万相境】万相境·九华监（46个/144秒）",
+  "title": "【全材料·万相境】万相境·火锅坊（7个/42秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 362,
+  "timeout": 136,
   "teleport": {
-    "name": "九华监",
+    "name": "火锅坊",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1592.363,
-    "y": 835.825
+    "x": 1399.524,
+    "y": 1108.824
   },
   "material": "全材料·万相境",
   "count_materials": [
-    "壁灯红椒",
-    "荷包草",
-    "耳坠萤",
-    "胭脂芙蕖",
-    "珠链蝶",
-    "小星扇贝",
-    "小绵菊"
+    "满满果",
+    "小绵菊",
+    "刺绣蛾"
   ],
-  "capacity": 46,
+  "capacity": 7,
   "points": [
     {
-      "x": 1592.36,
-      "y": 835.83,
+      "x": 1399.52,
+      "y": 1108.82,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1570.81,
-      "y": 863.29,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.2
-      }
-    },
-    {
-      "x": 1585.81,
-      "y": 854.51,
+      "x": 1401.39,
+      "y": 1098.51,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1588.81,
-      "y": 851.51,
+      "x": 1398.39,
+      "y": 1095.51,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1609.81,
-      "y": 845.51,
+      "x": 1386.39,
+      "y": 1092.51,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1617.12,
-      "y": 845.51,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 53.5
-      }
-    },
-    {
-      "x": 1686.75,
-      "y": 803.17,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 1720.14,
-      "y": 737.03,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 1736.0,
-      "y": 721.5,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 1742.0,
-      "y": 742.5,
+      "x": 1377.39,
+      "y": 1092.51,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1742.0,
-      "y": 766.5,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1745.0,
-      "y": 772.5,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1745.0,
-      "y": 775.5,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1760.0,
-      "y": 790.5,
+      "x": 1371.39,
+      "y": 1095.51,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
-      }
-    },
-    {
-      "x": 1771.11,
-      "y": 805.07,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 1792.79,
-      "y": 872.06,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
+        "seconds": 23.6
       }
     }
   ]

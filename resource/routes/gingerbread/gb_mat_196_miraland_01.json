@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_196_miraland_01",
-  "title": "【袋袋果】巨木之森·深林小径（8个/39秒）",
+  "title": "【袋袋果】巨木之森·深林小径（8个/57秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 131,
+  "timeout": 171,
   "teleport": {
     "name": "深林小径",
     "province": "伊赞之土",
@@ -38,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -48,7 +48,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     }
   ]

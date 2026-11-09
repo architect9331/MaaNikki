@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_cat_fish_serenity_04",
-  "title": "【全鱼类垂钓】无忧岛·泡泡花田（5个/16秒）",
+  "title": "【全鱼类垂钓】无忧岛·泡泡花田（5个/26秒）",
   "map": "serenity",
   "start_radius": 6,
   "timeout": 120,
@@ -33,7 +33,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     }
   ]

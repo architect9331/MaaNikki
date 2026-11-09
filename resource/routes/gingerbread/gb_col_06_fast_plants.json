@@ -2,40 +2,40 @@
   "schema_version": 1,
   "kind": "route_collection",
   "id": "gb_col_06_fast_plants",
-  "title": "【姜饼人合集】全植物零停顿极速跑图合集（8条）",
+  "title": "【姜饼人合集】全植物高密采集跑图合集（8条）",
   "continue_on_failure": true,
   "routes": [
     {
       "route": "gb_cat_plant_miraland_01",
-      "title": "【全植物速刷】祈愿树林·苦修派营地（89个/139秒）"
+      "title": "【全植物速刷】祈愿树林·苦修派营地（77个/257秒）"
     },
     {
       "route": "gb_cat_plant_miraland_02",
-      "title": "【全植物速刷】祈愿树林·守卫遗址（74个/118秒）"
+      "title": "【全植物速刷】微风绿野·菲洛米亚女王行宫遗迹西侧树林（90个/315秒）"
     },
     {
       "route": "gb_cat_plant_miraland_03",
-      "title": "【全植物速刷】小石树田村·紫穗草花田（76个/125秒）"
+      "title": "【全植物速刷】埋骨地·古息坡道（83个/297秒）"
     },
     {
       "route": "gb_cat_plant_miraland_04",
-      "title": "【全植物速刷】微风绿野·菲洛米亚女王行宫遗迹前（67个/111秒）"
+      "title": "【全植物速刷】微风绿野·河畔山地林间道（72个/258秒）"
     },
     {
       "route": "gb_cat_plant_miraland_05",
-      "title": "【全植物速刷】埋骨地·古息坡道（87个/146秒）"
+      "title": "【全植物速刷】小石树田村·紫穗草花田（69个/248秒）"
     },
     {
       "route": "gb_cat_plant_miraland_06",
-      "title": "【全植物速刷】花愿镇·心愿花街（63个/106秒）"
+      "title": "【全植物速刷】祈愿树林·守卫遗址（66个/237秒）"
     },
     {
       "route": "gb_cat_plant_miraland_07",
-      "title": "【全植物速刷】小石树田村·斯切尔托老宅（86个/145秒）"
+      "title": "【全植物速刷】小石树田村·斯切尔托老宅（77个/280秒）"
     },
     {
       "route": "gb_cat_plant_miraland_08",
-      "title": "【全植物速刷】微风绿野·废弃疯愿之子营地前哨站（72个/122秒）"
+      "title": "【全植物速刷】花愿镇·心愿花街（63个/230秒）"
     }
   ]
 }

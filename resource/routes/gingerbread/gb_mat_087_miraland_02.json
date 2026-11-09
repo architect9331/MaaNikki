@@ -1,132 +1,121 @@
 {
   "schema_version": 3,
   "id": "gb_mat_087_miraland_02",
-  "title": "【纽扣松果】微风绿野·西西亚艺术学院采风基地（51个/107秒）",
+  "title": "【纽扣松果】微风绿野·菲洛米亚女王行宫遗迹西侧树林（33个/152秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 281,
+  "timeout": 379,
   "teleport": {
-    "name": "西西亚艺术学院采风基地",
+    "name": "菲洛米亚女王行宫遗迹西侧树林",
     "province": "心愿原野",
     "region": "微风绿野",
-    "x": 9971.519,
-    "y": 10280.058
+    "x": 10677.691,
+    "y": 11478.383
   },
   "material": "纽扣松果",
   "count_materials": [
     "纽扣松果",
-    "耳坠萤",
-    "滋滋花粉",
+    "珠链蝶",
     "瓜子珠",
     "路灯花",
-    "风铃子",
-    "小绵菊",
-    "发卡蚱蜢"
+    "小绵菊"
   ],
-  "capacity": 77,
+  "capacity": 46,
   "points": [
     {
-      "x": 9971.52,
-      "y": 10280.06,
+      "x": 10677.69,
+      "y": 11478.38,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9866.4,
-      "y": 10212.81,
+      "x": 10680.03,
+      "y": 11482.88,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.6
+        "seconds": 10.4
       }
     },
     {
-      "x": 9830.51,
-      "y": 10223.94,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 7.6
-      }
-    },
-    {
-      "x": 9821.93,
-      "y": 10264.99,
+      "x": 10701.04,
+      "y": 11433.64,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 13.0
       }
     },
     {
-      "x": 9836.56,
-      "y": 10287.18,
+      "x": 10729.97,
+      "y": 11397.14,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 13.0
       }
     },
     {
-      "x": 9863.52,
-      "y": 10307.52,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 9848.19,
-      "y": 10335.71,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.9
-      }
-    },
-    {
-      "x": 9839.57,
-      "y": 10332.71,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9818.57,
-      "y": 10341.71,
+      "x": 10747.97,
+      "y": 11385.87,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9809.57,
-      "y": 10344.78,
+      "x": 10754.12,
+      "y": 11382.87,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.7
+        "seconds": 7.8
       }
     },
     {
-      "x": 9790.86,
-      "y": 10302.57,
+      "x": 10739.58,
+      "y": 11342.21,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 18.2
+      }
+    },
+    {
+      "x": 10709.9,
+      "y": 11318.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.2
+      }
+    },
+    {
+      "x": 10710.43,
+      "y": 11335.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 10711.18,
+      "y": 11288.87,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
       }
     }
   ]

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_06_miraland_01",
-  "title": "【拉夫领鱼】小石树田村·斯切尔托老宅（6个/93秒）",
+  "title": "【拉夫领鱼】小石树田村·斯切尔托老宅（9个/178秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 249,
+  "timeout": 437,
   "teleport": {
     "name": "斯切尔托老宅",
     "province": "心愿原野",
@@ -19,15 +19,17 @@
     "布布果",
     "路灯花"
   ],
-  "capacity": 10,
+  "capacity": 13,
   "points": [
     {
       "x": 9071.79,
       "y": 10403.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 9157.06,
@@ -36,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.0
+        "seconds": 44.6
       }
     },
     {
@@ -62,7 +64,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.0
+        "seconds": 44.6
+      }
+    },
+    {
+      "x": 9224.7,
+      "y": 10501.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 41.1
       }
     }
   ]

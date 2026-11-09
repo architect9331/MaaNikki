@@ -1,128 +1,39 @@
 {
   "schema_version": 3,
   "id": "gb_all_firework_firework_03",
-  "title": "【全材料·花焰群岛】花焰群岛·滋啦啦服务社（37个/111秒）",
+  "title": "【全材料·花焰群岛】花焰群岛·聆风高地山麓（5个/27秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 289,
+  "timeout": 120,
   "teleport": {
-    "name": "滋啦啦服务社",
+    "name": "聆风高地山麓",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 1003.822,
-    "y": 608.643
+    "x": 748.755,
+    "y": 548.546
   },
   "material": "全材料·花焰群岛",
   "count_materials": [
-    "壁灯红椒",
-    "纽扣松果",
-    "噼啪花粉",
-    "耳坠萤",
-    "小绵菊",
-    "布布果",
-    "珠链蝶",
-    "抱抱绒团",
-    "晴日蝶兰/雨滴蝶兰",
-    "路灯花",
-    "满满果",
-    "小星扇贝"
+    "壁灯红椒"
   ],
-  "capacity": 37,
+  "capacity": 5,
   "points": [
     {
-      "x": 1003.82,
-      "y": 608.64,
+      "x": 748.75,
+      "y": 548.55,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 960.19,
-      "y": 544.84,
+      "x": 748.29,
+      "y": 535.06,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 16.9
-      }
-    },
-    {
-      "x": 975.0,
-      "y": 517.43,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 18.0
-      }
-    },
-    {
-      "x": 981.0,
-      "y": 496.62,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 981.0,
-      "y": 478.62,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 978.06,
-      "y": 475.62,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.0
-      }
-    },
-    {
-      "x": 981.06,
-      "y": 478.62,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 981.06,
-      "y": 484.62,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 996.06,
-      "y": 502.62,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1005.06,
-      "y": 523.62,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1009.0,
-      "y": 537.94,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 28.9
+        "seconds": 13.0
       }
     }
   ]

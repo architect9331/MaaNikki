@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_096_miraland_02",
-  "title": "【小绵菊】微风绿野·悠悠垂钓协会花愿镇分部（29个/80秒）",
+  "title": "【小绵菊】微风绿野·悠悠垂钓协会花愿镇分部（31个/171秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 222,
+  "timeout": 422,
   "teleport": {
     "name": "悠悠垂钓协会花愿镇分部",
     "province": "心愿原野",
@@ -18,13 +18,13 @@
     "瓜子珠",
     "发卡蚱蜢",
     "美食家蜜蜂",
+    "珠链蝶",
     "布布果",
     "路灯花",
     "织衣蛛",
-    "汪汪毛线",
-    "珠链蝶"
+    "汪汪毛线"
   ],
-  "capacity": 53,
+  "capacity": 57,
   "points": [
     {
       "x": 10278.22,
@@ -41,25 +41,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
-    },
-    {
-      "x": 10250.67,
-      "y": 10200.2,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
     },
     {
       "x": 10222.03,
       "y": 10151.32,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -69,7 +61,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -95,7 +87,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 20.8
       }
     },
     {
@@ -105,7 +97,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -115,7 +107,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -125,7 +117,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
+      }
+    },
+    {
+      "x": 10083.25,
+      "y": 10255.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
       }
     }
   ]

@@ -464,3 +464,10 @@ class UserRouteRun(RouteTest):
     dev_only = False
     label = "自定义路线"
     default_mode = "full"
+
+
+class OpenWorldCollectRun(UserRouteRun):
+    """Sequential open-world material farming with Gingerbread left-side toast telemetry."""
+    dev_only = False
+    label = "大世界材料采集"
+    default_mode = "full"

@@ -1,58 +1,47 @@
 {
   "schema_version": 3,
   "id": "gb_mat_093_miraland_01",
-  "title": "【花伞藤萝】石树田无人区·木桶荫地（4个/24秒）",
+  "title": "【花伞藤萝】石树田无人区·志愿兵团监狱（3个/24秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
   "teleport": {
-    "name": "木桶荫地",
+    "name": "志愿兵团监狱",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 8230.084,
-    "y": 10320.126
+    "x": 8442.013,
+    "y": 8892.207
   },
   "material": "花伞藤萝",
   "count_materials": [
-    "花伞藤萝",
-    "滋滋花粉"
+    "花伞藤萝"
   ],
-  "capacity": 5,
+  "capacity": 3,
   "points": [
     {
-      "x": 8230.08,
-      "y": 10320.13,
+      "x": 8442.01,
+      "y": 8892.21,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8214.88,
-      "y": 10303.17,
+      "x": 8441.49,
+      "y": 8913.21,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8193.88,
-      "y": 10294.17,
+      "x": 8435.49,
+      "y": 8923.23,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
-      }
-    },
-    {
-      "x": 8187.44,
-      "y": 10300.11,
-      "radius": 2.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.5
+        "seconds": 7.8
       }
     }
   ]

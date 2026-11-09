@@ -1,58 +1,71 @@
 {
   "schema_version": 3,
   "id": "gb_mat_231_miraland_01",
-  "title": "【行鹭羽】巨木之森·叶子河上游（11个/93秒）",
+  "title": "【行鹭羽】巨木之森·壳壳岛东南侧对岸码头（17个/199秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 250,
+  "timeout": 482,
   "teleport": {
-    "name": "叶子河上游",
+    "name": "壳壳岛东南侧对岸码头",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 3559.549,
-    "y": 7913.234
+    "x": 5027.659,
+    "y": 9080.291
   },
   "material": "行鹭羽",
   "count_materials": [
     "行鹭羽",
-    "小野菊"
+    "钓鱼点",
+    "刺绣蛾"
   ],
-  "capacity": 12,
+  "capacity": 30,
   "points": [
     {
-      "x": 3559.55,
-      "y": 7913.23,
+      "x": 5027.66,
+      "y": 9080.29,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3574.55,
-      "y": 7897.5,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3577.26,
-      "y": 7897.5,
+      "x": 5003.09,
+      "y": 9065.6,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 20.5
+        "seconds": 37.1
       }
     },
     {
-      "x": 3595.36,
-      "y": 7878.51,
+      "x": 4908.67,
+      "y": 8989.09,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 53.7
+        "seconds": 75.1
+      }
+    },
+    {
+      "x": 4878.32,
+      "y": 9012.98,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 37.1
+      }
+    },
+    {
+      "x": 4895.96,
+      "y": 9008.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
       }
     }
   ]

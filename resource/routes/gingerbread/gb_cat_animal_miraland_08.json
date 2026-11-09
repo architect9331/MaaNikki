@@ -1,0 +1,168 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_miraland_08",
+  "title": "【全动物清洁】埋骨地·居落外绿坡（35个/220秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 529,
+  "teleport": {
+    "name": "居落外绿坡",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7029.142,
+    "y": 4398.112
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "茸芽鹿绒",
+    "大叶鹿绒",
+    "羽巾绒",
+    "金灵毛球",
+    "蓝珀鸟羽",
+    "名流鸦羽",
+    "小野菊"
+  ],
+  "capacity": 35,
+  "points": [
+    {
+      "x": 7029.14,
+      "y": 4398.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7041.14,
+      "y": 4416.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7059.14,
+      "y": 4431.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7077.14,
+      "y": 4446.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7095.14,
+      "y": 4455.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7110.14,
+      "y": 4470.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7125.14,
+      "y": 4479.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7143.14,
+      "y": 4476.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7143.9,
+      "y": 4481.95,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.1
+      }
+    },
+    {
+      "x": 7135.82,
+      "y": 4475.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7129.82,
+      "y": 4478.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7111.82,
+      "y": 4475.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7096.82,
+      "y": 4460.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7078.82,
+      "y": 4448.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7057.82,
+      "y": 4448.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7036.82,
+      "y": 4442.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7021.82,
+      "y": 4442.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 150.0
+      }
+    }
+  ]
+}

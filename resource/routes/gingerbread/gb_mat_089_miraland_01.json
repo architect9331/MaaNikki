@@ -1,40 +1,69 @@
 {
   "schema_version": 3,
   "id": "gb_mat_089_miraland_01",
-  "title": "【瓜子珠】石树田无人区·志愿兵团监狱（9个/26秒）",
+  "title": "【瓜子珠】石树田无人区·乘风磨坊中层（9个/44秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 142,
   "teleport": {
-    "name": "志愿兵团监狱",
+    "name": "乘风磨坊中层",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 8442.013,
-    "y": 8892.207
+    "x": 7707.579,
+    "y": 9885.833
   },
   "material": "瓜子珠",
   "count_materials": [
+    "珠链蝶",
     "瓜子珠",
-    "风絮草"
+    "发卡蚱蜢",
+    "围巾蚯蚓",
+    "蓝珀鸟羽"
   ],
-  "capacity": 13,
+  "capacity": 37,
   "points": [
     {
-      "x": 8442.01,
-      "y": 8892.21,
+      "x": 7707.58,
+      "y": 9885.83,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8463.49,
-      "y": 8900.32,
+      "x": 7707.28,
+      "y": 9895.86,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7703.64,
+      "y": 9916.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7682.64,
+      "y": 9922.86,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7673.64,
+      "y": 9924.53,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.3
+        "seconds": 15.6
       }
     }
   ]

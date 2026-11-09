@@ -1,93 +1,39 @@
 {
   "schema_version": 3,
   "id": "gb_fish_13_miraland_02",
-  "title": "【缎带鱼】微风绿野·菲洛米亚女王行宫遗迹前（6个/111秒）",
+  "title": "【缎带鱼】微风绿野·绿野货运码头（2个/50秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 288,
+  "timeout": 154,
   "teleport": {
-    "name": "菲洛米亚女王行宫遗迹前",
+    "name": "绿野货运码头",
     "province": "心愿原野",
     "region": "微风绿野",
-    "x": 10860.06,
-    "y": 11296.949
+    "x": 10430.453,
+    "y": 10861.881
   },
   "material": "缎带鱼",
   "count_materials": [
-    "缎带鱼",
-    "瓜子珠",
-    "满满果"
+    "缎带鱼"
   ],
-  "capacity": 15,
+  "capacity": 2,
   "points": [
     {
-      "x": 10860.06,
-      "y": 11296.95,
+      "x": 10430.45,
+      "y": 10861.88,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10875.06,
-      "y": 11282.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10890.06,
-      "y": 11267.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10908.06,
-      "y": 11255.2,
+      "x": 10500.53,
+      "y": 10833.59,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
-      }
-    },
-    {
-      "x": 10926.06,
-      "y": 11243.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10947.06,
-      "y": 11240.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10966.33,
-      "y": 11237.2,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 29.2
-      }
-    },
-    {
-      "x": 10897.5,
-      "y": 11100.22,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 29.2
+        "seconds": 27.1
       }
     }
   ]

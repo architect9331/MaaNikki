@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_075_miraland_01",
-  "title": "【美甲金龟】祈愿树林·工坊水车（4个/47秒）",
+  "title": "【美甲金龟】祈愿树林·工坊水车（4个/60秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 149,
+  "timeout": 177,
   "teleport": {
     "name": "工坊水车",
     "province": "心愿原野",
@@ -35,7 +35,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 17.5
+        "seconds": 26.6
       }
     },
     {
@@ -45,7 +45,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 7.1
       }
     }
   ]

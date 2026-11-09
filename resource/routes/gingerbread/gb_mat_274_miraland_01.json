@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_274_miraland_01",
-  "title": "【羽巾绒】埋骨地·修习所（14个/119秒）",
+  "title": "【羽巾绒】埋骨地·修习所（19个/213秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 307,
+  "timeout": 514,
   "teleport": {
     "name": "修习所",
     "province": "伊赞之土",
@@ -18,7 +18,7 @@
     "金灵毛球",
     "珠链蝶"
   ],
-  "capacity": 23,
+  "capacity": 28,
   "points": [
     {
       "x": 7817.79,
@@ -35,17 +35,69 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 60.0
+        "seconds": 132.1
       }
     },
     {
-      "x": 7859.66,
-      "y": 5222.19,
+      "x": 7857.7,
+      "y": 5213.95,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 35.7
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 7878.46,
+      "y": 5236.71,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 27.6
+      }
+    },
+    {
+      "x": 7890.25,
+      "y": 5228.68,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7887.25,
+      "y": 5225.68,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7869.25,
+      "y": 5213.68,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7860.25,
+      "y": 5204.68,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7857.25,
+      "y": 5204.68,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
       }
     }
   ]

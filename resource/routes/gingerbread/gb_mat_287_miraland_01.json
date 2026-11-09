@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_287_miraland_01",
-  "title": "【汐荧蟹】埋骨地·孤石滩（14个/54秒）",
+  "title": "【汐荧蟹】埋骨地·孤石滩（14个/98秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 164,
+  "timeout": 261,
   "teleport": {
     "name": "孤石滩",
     "province": "伊赞之土",
@@ -45,7 +45,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -55,7 +55,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 20.8
       }
     },
     {
@@ -65,25 +65,27 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
       "x": 8219.93,
       "y": 5436.51,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 8187.77,
       "y": 5435.77,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 2.5
+        "seconds": 3.0
       }
     }
   ]

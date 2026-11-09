@@ -1,74 +1,143 @@
 {
   "schema_version": 3,
   "id": "gb_mat_074_miraland_03",
-  "title": "【珠链蝶】磐城·晨曦集市（18个/125秒）",
+  "title": "【珠链蝶】埋骨地·蓝池北侧疗愈地渡口（37个/266秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 320,
+  "timeout": 631,
   "teleport": {
-    "name": "晨曦集市",
+    "name": "蓝池北侧疗愈地渡口",
     "province": "伊赞之土",
-    "region": "磐城",
-    "x": 4026.351,
-    "y": 3950.481
+    "region": "埋骨地",
+    "x": 7605.469,
+    "y": 4714.484
   },
   "material": "珠链蝶",
   "count_materials": [
     "珠链蝶",
-    "蓝玉甲虫",
-    "沙沙毛团",
-    "珠坠甲虫",
-    "风舞花",
-    "金轴蜻蜓"
+    "小野菊",
+    "风舞花"
   ],
-  "capacity": 33,
+  "capacity": 45,
   "points": [
     {
-      "x": 4026.35,
-      "y": 3950.48,
+      "x": 7605.47,
+      "y": 4714.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4043.45,
-      "y": 3947.52,
-      "radius": 2.0,
+      "x": 7589.43,
+      "y": 4726.48,
+      "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7574.43,
+      "y": 4732.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7553.43,
+      "y": 4735.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7535.43,
+      "y": 4747.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7520.43,
+      "y": 4753.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7517.43,
+      "y": 4753.48,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7514.43,
+      "y": 4753.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7490.43,
+      "y": 4753.48,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 60.0
+        "seconds": 31.1
       }
     },
     {
-      "x": 4043.45,
-      "y": 3947.52,
+      "x": 7487.43,
+      "y": 4747.48,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 9.7
+        "seconds": 3.0
       }
     },
     {
-      "x": 4033.45,
-      "y": 3923.23,
+      "x": 7484.43,
+      "y": 4744.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7469.43,
+      "y": 4729.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7463.43,
+      "y": 4726.35,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.4
+        "seconds": 150.0
       }
     },
     {
-      "x": 4053.67,
-      "y": 3913.55,
+      "x": 7472.14,
+      "y": 4711.22,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 15.7
+        "seconds": 45.0
       }
     }
   ]

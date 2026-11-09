@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_281_miraland_03",
-  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（39个/77秒）",
+  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（39个/159秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 215,
+  "timeout": 395,
   "teleport": {
     "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
@@ -30,10 +30,12 @@
     {
       "x": 8063.15,
       "y": 5243.19,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 8082.81,
@@ -42,7 +44,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.7
+        "seconds": 23.4
       }
     },
     {
@@ -52,7 +54,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.4
+        "seconds": 31.2
       }
     },
     {
@@ -62,7 +64,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
@@ -72,7 +74,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
@@ -82,7 +84,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     }
   ]

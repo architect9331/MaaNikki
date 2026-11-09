@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_178_danqing_01",
-  "title": "【远黛扇羽】丹青屿·望水渡（6个/117秒）",
+  "title": "【远黛扇羽】丹青屿·望水渡（7个/205秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 303,
+  "timeout": 496,
   "teleport": {
     "name": "望水渡",
     "province": "心愿原野",
@@ -14,32 +14,36 @@
   },
   "material": "远黛扇羽",
   "count_materials": [
+    "小绵菊",
     "远黛扇羽",
     "荷包草",
     "耳坠萤",
-    "小绵菊",
     "玉簪蚱蜢",
-    "珠链蝶",
     "满满果",
+    "珠链蝶",
     "小星扇贝"
   ],
-  "capacity": 24,
+  "capacity": 31,
   "points": [
     {
       "x": 1328.8,
       "y": 1218.71,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1340.8,
       "y": 1202.35,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": true,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1343.8,
@@ -64,7 +68,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.4
+        "seconds": 24.2
       }
     },
     {
@@ -98,7 +102,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.4
+        "seconds": 14.7
       }
     },
     {
@@ -128,10 +132,12 @@
     {
       "x": 1369.3,
       "y": 1174.76,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 1393.3,
@@ -156,7 +162,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.5
+        "seconds": 12.1
       }
     },
     {
@@ -166,7 +172,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.7
+        "seconds": 8.6
       }
     },
     {
@@ -176,7 +182,71 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.7
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 1394.48,
+      "y": 1281.59,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1406.48,
+      "y": 1299.59,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1409.48,
+      "y": 1320.59,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1412.48,
+      "y": 1341.59,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1415.48,
+      "y": 1362.59,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1418.48,
+      "y": 1383.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1426.85,
+      "y": 1400.14,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.1
       }
     }
   ]

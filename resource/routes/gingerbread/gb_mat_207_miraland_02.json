@@ -1,80 +1,117 @@
 {
   "schema_version": 3,
   "id": "gb_mat_207_miraland_02",
-  "title": "【暮暮蝶】巨木之森·帕克亚湖心岛（7个/102秒）",
+  "title": "【暮暮蝶】巨木之森·帕克亚火山口探险家营地（11个/195秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 269,
+  "timeout": 474,
   "teleport": {
-    "name": "帕克亚湖心岛",
+    "name": "帕克亚火山口探险家营地",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 5463.191,
-    "y": 7941.88
+    "x": 5405.991,
+    "y": 8261.83
   },
   "material": "暮暮蝶",
   "count_materials": [
     "朝朝蝶",
-    "暮暮蝶"
+    "暮暮蝶",
+    "流金蜜",
+    "耳坠萤",
+    "小野菊",
+    "裁衣甲",
+    "发卡蚱蜢",
+    "草裙毛团",
+    "结结蕨"
   ],
-  "capacity": 14,
+  "capacity": 52,
   "points": [
     {
-      "x": 5463.19,
-      "y": 7941.88,
+      "x": 5405.99,
+      "y": 8261.83,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 5509.57,
-      "y": 7981.55,
+      "x": 5408.8,
+      "y": 8266.15,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.6
+      }
+    },
+    {
+      "x": 5392.01,
+      "y": 8229.9,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 9.7
+        "seconds": 15.1
       }
     },
     {
-      "x": 5473.04,
-      "y": 8011.77,
+      "x": 5366.04,
+      "y": 8207.87,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 10.6
       }
     },
     {
-      "x": 5628.59,
-      "y": 7876.15,
+      "x": 5487.87,
+      "y": 8245.66,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
+      }
+    },
+    {
+      "x": 5493.14,
+      "y": 8291.29,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.7
+        "seconds": 7.1
       }
     },
     {
-      "x": 5575.17,
-      "y": 7833.66,
+      "x": 5412.02,
+      "y": 8312.2,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 15.8
       }
     },
     {
-      "x": 5543.16,
-      "y": 7863.41,
+      "x": 5391.85,
+      "y": 8289.55,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 23.6
+      }
+    },
+    {
+      "x": 5392.49,
+      "y": 8347.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
       }
     }
   ]

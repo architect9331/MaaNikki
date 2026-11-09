@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_cat_animal_serenity_01",
-  "title": "【全动物清洁】无忧岛·布蜜蜜花园（31个/58秒）",
+  "title": "【全动物清洁】无忧岛·布蜜蜜花园（31个/125秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 174,
+  "timeout": 319,
   "teleport": {
     "name": "布蜜蜜花园",
     "province": "心愿原野",
@@ -46,24 +46,28 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
       "x": 844.63,
       "y": 810.74,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 844.63,
       "y": 786.74,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 844.63,
@@ -80,7 +84,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 20.8
       }
     },
     {
@@ -98,16 +102,18 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
       "x": 832.63,
       "y": 702.74,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 824.63,
@@ -116,16 +122,18 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
       "x": 804.63,
       "y": 686.74,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": true,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 784.63,
@@ -142,7 +150,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     }
   ]

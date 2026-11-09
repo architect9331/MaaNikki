@@ -1,53 +1,39 @@
 {
   "schema_version": 3,
   "id": "gb_mat_056_miraland_01",
-  "title": "【抱抱绒团】磐城·丰饶环圃（3个/44秒）",
+  "title": "【抱抱绒团】祈愿树林·星没之地（2个/41秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 143,
+  "timeout": 135,
   "teleport": {
-    "name": "丰饶环圃",
-    "province": "伊赞之土",
-    "region": "磐城",
-    "x": 3679.349,
-    "y": 4116.242
+    "name": "星没之地",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 12415.738,
+    "y": 9585.43
   },
   "material": "抱抱绒团",
   "count_materials": [
-    "珠链蝶",
-    "小野菊",
-    "探险家蜜蜂",
-    "抱抱绒团",
-    "风舞花"
+    "抱抱绒团"
   ],
-  "capacity": 27,
+  "capacity": 2,
   "points": [
     {
-      "x": 3679.35,
-      "y": 4116.24,
+      "x": 12415.74,
+      "y": 9585.43,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3707.87,
-      "y": 4141.23,
+      "x": 12413.34,
+      "y": 9509.22,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.3
-      }
-    },
-    {
-      "x": 3696.7,
-      "y": 4163.91,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 8.3
+        "seconds": 18.1
       }
     }
   ]

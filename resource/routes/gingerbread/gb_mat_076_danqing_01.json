@@ -1,0 +1,44 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_076_danqing_01",
+  "title": "【耳坠萤】丹青屿·村边畦田（29个/180秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 440,
+  "teleport": {
+    "name": "村边畦田",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1598.127,
+    "y": 1286.992
+  },
+  "material": "耳坠萤",
+  "count_materials": [
+    "耳坠萤",
+    "小绵菊",
+    "荷包草"
+  ],
+  "capacity": 31,
+  "points": [
+    {
+      "x": 1598.13,
+      "y": 1286.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1663.02,
+      "y": 1226.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 150.0
+      }
+    }
+  ]
+}

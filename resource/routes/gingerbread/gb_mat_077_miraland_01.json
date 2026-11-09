@@ -1,43 +1,40 @@
 {
   "schema_version": 3,
   "id": "gb_mat_077_miraland_01",
-  "title": "【面膜草蛉】祈愿树林·浅滩山坡（3个/43秒）",
+  "title": "【面膜草蛉】祈愿树林·花谷瀑布（3个/56秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 139,
+  "timeout": 169,
   "teleport": {
-    "name": "浅滩山坡",
+    "name": "花谷瀑布",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 11692.841,
-    "y": 9091.498
+    "x": 12166.382,
+    "y": 9190.78
   },
   "material": "面膜草蛉",
   "count_materials": [
-    "小绵菊",
     "面膜草蛉",
     "日光果/星光果"
   ],
-  "capacity": 9,
+  "capacity": 5,
   "points": [
     {
-      "x": 11692.84,
-      "y": 9091.5,
-      "radius": 2.0,
+      "x": 12166.38,
+      "y": 9190.78,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.2
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 11619.8,
-      "y": 9079.06,
+      "x": 12198.37,
+      "y": 9087.47,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.4
+        "seconds": 29.2
       }
     }
   ]

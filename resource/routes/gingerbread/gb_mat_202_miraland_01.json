@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_202_miraland_01",
-  "title": "【草棘果】巨木之森·无名花野（10个/39秒）",
+  "title": "【草棘果】巨木之森·无名花野（10个/59秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 131,
+  "timeout": 174,
   "teleport": {
     "name": "无名花野",
     "province": "伊赞之土",
@@ -33,7 +33,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -43,7 +43,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     }
   ]

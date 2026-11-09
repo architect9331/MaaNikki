@@ -1,0 +1,95 @@
+{
+  "task": [
+    {
+      "name": "open_world_collect",
+      "label": "大世界材料采集",
+      "entry": "MaaNikki_OpenWorldCollect",
+      "group": ["daily", "periodic"],
+      "default_check": false,
+      "description": "使用姜饼人范围拾取能力，按顺序逐条跑完所选的大世界采集路线。驻留等待时实时读取左侧材料提示，长时间无新材料弹出后自动前往下一处，并在运行结束后输出各点位实测耗时与范围推断报告。",
+      "option": ["OpenWorldRoutes", "OpenWorldQuietWindow"]
+    }
+  ],
+  "option": {
+    "OpenWorldRoutes": {
+      "type": "input",
+      "label": "选择采集路线（可多选）",
+      "description": "可勾选多条区域全收集、单材料专项路线、分类速刷、推荐合集或自建路线，按列表顺序依次跑完。",
+      "inputs": [
+        {
+          "name": "files",
+          "label": "路线队列",
+          "default": "gb_all_florawish_miraland_01,gb_all_florawish_miraland_02,gb_all_florawish_miraland_03",
+          "input_type": "route_multi"
+        }
+      ],
+      "pipeline_override": {
+        "MaaNikki_OpenWorldCollect": {
+          "custom_action_param": {
+            "files": "{files}"
+          }
+        }
+      }
+    },
+    "OpenWorldQuietWindow": {
+      "type": "select",
+      "label": "驻留结束与测时策略",
+      "default_case": "Conservative",
+      "description": "在采集点停下等待姜饼人拾取时，实时读取屏幕左侧弹出的材料提示。若连续一段时间没有新材料弹出，则判定该点位已拾取完毕并记录耗时，继续前往下一点位。",
+      "cases": [
+        {
+          "name": "Conservative",
+          "label": "保守判定（6秒无新提示后离开，防漏捡）",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "adaptive_exit": true,
+                "quiet_seconds": 6.0,
+                "initial_wait_seconds": 9.5
+              }
+            }
+          }
+        },
+        {
+          "name": "Strict",
+          "label": "极保守判定（8秒无新提示后离开，适合高低差）",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "adaptive_exit": true,
+                "quiet_seconds": 8.0,
+                "initial_wait_seconds": 12.0
+              }
+            }
+          }
+        },
+        {
+          "name": "Balanced",
+          "label": "标准判定（4.5秒无新提示后离开）",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "adaptive_exit": true,
+                "quiet_seconds": 4.5,
+                "initial_wait_seconds": 7.5
+              }
+            }
+          }
+        },
+        {
+          "name": "FixedRoute",
+          "label": "固定按路线保守时长等待（仅统计不提前离开）",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "adaptive_exit": false,
+                "quiet_seconds": 6.0,
+                "initial_wait_seconds": 9.5
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

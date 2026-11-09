@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_15_miraland_02",
-  "title": "【胡子鲶鱼】微风绿野·绿野活动支援中心（3个/61秒）",
+  "title": "【胡子鲶鱼】微风绿野·绿野活动支援中心（3个/80秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 180,
+  "timeout": 220,
   "teleport": {
     "name": "绿野活动支援中心",
     "province": "心愿原野",
@@ -24,10 +24,12 @@
     {
       "x": 9971.07,
       "y": 10637.35,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 10039.8,
@@ -36,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.9
+        "seconds": 47.2
       }
     }
   ]

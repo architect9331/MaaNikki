@@ -1,63 +1,120 @@
 {
   "schema_version": 3,
   "id": "gb_mat_097_miraland_02",
-  "title": "【滋滋花粉】祈愿树林·古铸剑遗址入口（4个/28秒）",
+  "title": "【滋滋花粉】石树田无人区·志愿兵团哨塔（4个/41秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 135,
   "teleport": {
-    "name": "古铸剑遗址入口",
+    "name": "志愿兵团哨塔",
     "province": "心愿原野",
-    "region": "祈愿树林",
-    "x": 11846.959,
-    "y": 9216.097
+    "region": "石树田无人区",
+    "x": 8420.194,
+    "y": 9016.353
   },
   "material": "滋滋花粉",
   "count_materials": [
     "滋滋花粉",
-    "珠链蝶",
-    "纽扣松果",
-    "路灯花",
-    "蓝珀鸟羽",
-    "满满果",
-    "发卡蚱蜢"
+    "领结毛团"
   ],
-  "capacity": 20,
+  "capacity": 5,
   "points": [
     {
-      "x": 11846.96,
-      "y": 9216.1,
+      "x": 8420.19,
+      "y": 9016.35,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11829.35,
-      "y": 9205.48,
+      "x": 8421.1,
+      "y": 9037.35,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11820.35,
-      "y": 9199.48,
-      "radius": 2.0,
+      "x": 8421.1,
+      "y": 9058.35,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.2
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 11839.9,
-      "y": 9233.67,
+      "x": 8421.1,
+      "y": 9061.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8418.1,
+      "y": 9064.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8415.1,
+      "y": 9064.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8412.1,
+      "y": 9064.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8409.1,
+      "y": 9064.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8388.1,
+      "y": 9064.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8373.1,
+      "y": 9049.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8358.1,
+      "y": 9034.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8352.1,
+      "y": 9025.46,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 10.4
       }
     }
   ]

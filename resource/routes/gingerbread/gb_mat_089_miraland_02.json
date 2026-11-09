@@ -1,69 +1,50 @@
 {
   "schema_version": 3,
   "id": "gb_mat_089_miraland_02",
-  "title": "【瓜子珠】石树田无人区·乘风磨坊中层（9个/26秒）",
+  "title": "【瓜子珠】石树田无人区·咚咚窝瓜工坊（12个/62秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 181,
   "teleport": {
-    "name": "乘风磨坊中层",
+    "name": "咚咚窝瓜工坊",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 7707.579,
-    "y": 9885.833
+    "x": 8235.424,
+    "y": 8891.812
   },
   "material": "瓜子珠",
   "count_materials": [
-    "珠链蝶",
     "瓜子珠",
-    "发卡蚱蜢",
-    "围巾蚯蚓",
-    "蓝珀鸟羽"
+    "纽扣松果"
   ],
-  "capacity": 37,
+  "capacity": 13,
   "points": [
     {
-      "x": 7707.58,
-      "y": 9885.83,
+      "x": 8235.42,
+      "y": 8891.81,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7707.28,
-      "y": 9895.86,
+      "x": 8268.48,
+      "y": 8841.11,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 18.2
       }
     },
     {
-      "x": 7703.64,
-      "y": 9916.86,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7682.64,
-      "y": 9922.86,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7673.64,
-      "y": 9924.53,
+      "x": 8215.39,
+      "y": 8837.2,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     }
   ]

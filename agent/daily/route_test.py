@@ -97,6 +97,9 @@ def build_trial_suggestions(waypoints: list[dict], start_offset: int = 0) -> lis
 def read_test_document(resource: Path, settings: dict):
     """Read a single file snapshot, including optional collection manifests."""
     filename, name = settings.get("file", ""), settings.get("route", "")
+    if isinstance(filename, str) and not name and re.fullmatch(r"[a-zA-Z0-9_-]+", filename.strip()):
+        name = filename.strip()
+        filename = ""
     if filename:
         if not isinstance(filename, str):
             raise NavigationError("路线文件路径无效。")
@@ -123,6 +126,55 @@ def read_test_document(resource: Path, settings: dict):
     if path.suffix.lower() != ".json" or not path.is_file() or path.stat().st_size > 1024*1024:
         raise NavigationError("路线文件不存在、不是 JSON 或超过 1 MB。")
     return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
+def resolve_multi_route_document(resource: Path, settings: dict):
+    """Resolve single or multi-selected routes into a route document or route_collection."""
+    raw_files = settings.get("files")
+    items: list[str] = []
+    if isinstance(raw_files, list):
+        items = [str(x).strip() for x in raw_files if str(x).strip()]
+    elif isinstance(raw_files, str) and raw_files.strip():
+        items = [p.strip() for p in re.split(r"[,;\n]+", raw_files) if p.strip()]
+    else:
+        f_val = settings.get("file", "")
+        if isinstance(f_val, str) and any(sep in f_val for sep in (",", ";", "\n")):
+            items = [p.strip() for p in re.split(r"[,;\n]+", f_val) if p.strip()]
+
+    if not items:
+        return read_test_document(resource, settings)
+    if len(items) == 1:
+        return read_test_document(resource, {**settings, "file": items[0], "route": ""})
+
+    routes_list: list[dict] = []
+    seen_ids: set[str] = set()
+    for token in items:
+        doc = read_test_document(resource, {"file": token})
+        if isinstance(doc, dict) and doc.get("kind") == "route_collection":
+            for entry in doc.get("routes") or []:
+                if isinstance(entry, dict) and isinstance(entry.get("route"), str):
+                    rid = entry["route"].strip()
+                    if rid and rid not in seen_ids:
+                        seen_ids.add(rid)
+                        routes_list.append(dict(entry))
+        elif isinstance(doc, dict) and isinstance(doc.get("id"), str):
+            rid = doc["id"].strip()
+            if rid and rid not in seen_ids:
+                seen_ids.add(rid)
+                entry_obj = {"route": rid, "title": str(doc.get("title") or rid)}
+                if not re.fullmatch(r"[a-zA-Z0-9_-]+", token):
+                    entry_obj["file"] = token
+                routes_list.append(entry_obj)
+    if not routes_list:
+        raise NavigationError("请先选择至少一条要执行的采集路线。")
+    return {
+        "schema_version": 1,
+        "kind": "route_collection",
+        "id": "multi_selected_routes",
+        "title": f"多选采集队列（共 {len(routes_list)} 条）",
+        "continue_on_failure": True,
+        "routes": routes_list,
+    }
 
 
 def from_point(document, start):
@@ -172,8 +224,8 @@ def test_document(resource: Path, settings: dict, *, document=None):
         action, param = point.get("action", ""), point.get("params", {})
         if not isinstance(action, str) or not isinstance(param, dict):
             raise NavigationError(f"第 {index+1} 点的动作或参数格式无效。")
-        if action == "wait" and not number(param.get("seconds"), 0, 60):
-            raise NavigationError(f"第 {index+1} 点的等待时间须为 0–60 秒。")
+        if action == "wait" and not number(param.get("seconds"), 0, 180):
+            raise NavigationError(f"第 {index+1} 点的等待时间须为 0–180 秒。")
         if mode == "full" and (action not in USER_ACTIONS
                                or action == "macro" and param.get("id") not in USER_MACROS):
             raise NavigationError(f"第 {index+1} 点的动作不能用于自定义路线。")
@@ -371,7 +423,7 @@ class RouteTest(Runtime):
                 raise NavigationError("请开启客户端设置中的开发模式后再测试路线。")
             settings = {"mode": self.default_mode, **settings}
             self.start_offset = int(settings.get("start", 0) or 0)
-            source = read_test_document(RESOURCE, settings)
+            source = resolve_multi_route_document(RESOURCE, settings)
             if isinstance(source, dict) and source.get("kind") == "route_collection":
                 return self.run_collection(settings, source)
             source = from_point(source, self.start_offset)
@@ -392,7 +444,7 @@ class RouteTest(Runtime):
         if (source.get("schema_version") != 1
                 or (self.dev_only and source.get("map") != "starsea")
                 or not isinstance(source.get("id"), str) or not source["id"].strip()
-                or not isinstance(entries, list) or not 1 <= len(entries) <= 64
+                or not isinstance(entries, list) or not 1 <= len(entries) <= 128
                 or type(source.get("continue_on_failure", True)) is not bool):
             raise NavigationError("路线合集格式无效。")
         prepared = []
@@ -440,7 +492,11 @@ class RouteTest(Runtime):
                                            "total": len(prepared), "title": title}
                 child = directory / f"route-{index:02d}"
                 started = time.monotonic()
-                ok = runner.run_single({"mode": mode}, prepared=(model, spec),
+                child_run_settings = {
+                    "mode": mode,
+                    **({k: settings[k] for k in ("adaptive_exit", "quiet_seconds", "initial_wait_seconds") if k in settings}),
+                }
+                ok = runner.run_single(child_run_settings, prepared=(model, spec),
                                        directory=child, refocus=index == 1,
                                        force_teleport=bool(model.document.get("teleport")))
                 details = runner.last_result or {"success": False, "error": "执行结果未保存"}
@@ -489,10 +545,42 @@ class RouteTest(Runtime):
             summary["success"] = (summary["completed"] == summary["planned"]
                                   and summary["passed"] == summary["planned"])
             summary["finished_at"] = datetime.now().astimezone().isoformat()
+            gb_list = [item["gingerbread"] for item in summary["routes"] if isinstance(item.get("gingerbread"), dict)]
+            if gb_list:
+                tot_picked = sum(int(g.get("total_picked", 0)) for g in gb_list)
+                tot_exp15 = sum(int(g.get("expected_0_15m", 0)) for g in gb_list)
+                tot_cfg_w = round(sum(float(g.get("configured_wait_total_s", 0.0)) for g in gb_list), 1)
+                tot_eff_w = round(sum(float(g.get("effective_pickup_finish_total_s", 0.0)) for g in gb_list), 1)
+                tot_act_w = round(sum(float(g.get("actual_waited_total_s", 0.0)) for g in gb_list), 1)
+                short_wps = sum(int(g.get("too_short_waypoints", 0)) for g in gb_list)
+                long_wps = sum(int(g.get("too_long_waypoints", 0)) for g in gb_list)
+                merged_items: dict[str, int] = {}
+                for g in gb_list:
+                    for nm, cnt in (g.get("picked_by_name") or {}).items():
+                        merged_items[nm] = merged_items.get(nm, 0) + int(cnt)
+                summary["gingerbread_collection_summary"] = {
+                    "routes_count": len(gb_list),
+                    "total_picked": tot_picked,
+                    "expected_0_15m": tot_exp15,
+                    "configured_wait_total_s": tot_cfg_w,
+                    "effective_pickup_finish_total_s": tot_eff_w,
+                    "actual_waited_total_s": tot_act_w,
+                    "too_short_waypoints": short_wps,
+                    "too_long_waypoints": long_wps,
+                    "picked_by_name": merged_items,
+                }
+                top_items_str = "、".join(
+                    f"{k}×{v}" for k, v in sorted(merged_items.items(), key=lambda kv: -kv[1])[:10]
+                ) or "无"
+                self.log(
+                    f"【姜饼人采集汇总】共 {len(gb_list)} 条路线：实测拾取 {tot_picked} 个（地图15m预计 {tot_exp15} 个），"
+                    f"有效拾取耗时 {tot_eff_w}s / 实际驻留 {tot_act_w}s / 路线原设 {tot_cfg_w}s "
+                    f"（原设偏短 {short_wps} 处，保守富余 {long_wps} 处）。明细：{top_items_str}"
+                )
             write_json(directory / "result.json", summary)
-            self.log(f"星海跑图合集结束：完成 {summary['passed']}/{summary['planned']} 条。"
+            self.log(f"{collection_title}结束：完成 {summary['passed']}/{summary['planned']} 条。"
                      +"日志："+str(directory),
-                     ui_text=f"星海跑图合集结束：完成 {summary['passed']}/{summary['planned']} 条。")
+                     ui_text=f"{collection_title}结束：完成 {summary['passed']}/{summary['planned']} 条。")
         return summary["success"]
 
     def run_single(self, settings, *, prepared, directory=None, refocus=True, force_teleport=False):
@@ -568,6 +656,11 @@ class RouteTest(Runtime):
                 card = SimpleNamespace(rule=SimpleNamespace(executor=executor), remaining=None)
                 actions = RouteActions(self, RESOURCE, model, executor, card, inputs, self.event)
                 actions.teleporter = teleporter
+                actions.gb_config = {
+                    k: settings[k]
+                    for k in ("adaptive_exit", "quiet_seconds", "initial_wait_seconds")
+                    if k in settings
+                }
             if mode == "home":
                 self.phase("ability_selection", "正在准备采星能力。")
                 if not self.main() or not actions.fishing.configure():
@@ -606,6 +699,13 @@ class RouteTest(Runtime):
                     pass
         finally:
             active_route = getattr(navigator, "active_route", None) or model
+            if actions is not None and hasattr(actions, "gingerbread_summary"):
+                gb_summary = actions.gingerbread_summary()
+                if gb_summary and gb_summary.get("waypoints_analyzed", 0) > 0:
+                    from navigation.gingerbread_pickup import save_gingerbread_telemetry
+                    save_gingerbread_telemetry(ROOT, gb_summary, self.directory)
+                    result["gingerbread"] = gb_summary
+                    self.log(f"【姜饼人实测推断】{gb_summary['overall_diagnosis']}")
             if active_route is not None and not self.stopped:
                 telemetry = record_route_telemetry(
                     ROOT, active_route, self.telemetry_events,

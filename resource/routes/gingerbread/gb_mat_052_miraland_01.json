@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_052_miraland_01",
-  "title": "【背带毛团】石树田无人区·乘风磨坊入口（6个/68秒）",
+  "title": "【背带毛团】石树田无人区·乘风磨坊入口（6个/92秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 194,
+  "timeout": 247,
   "teleport": {
     "name": "乘风磨坊入口",
     "province": "心愿原野",
@@ -46,7 +46,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 25.7
+        "seconds": 37.1
       }
     },
     {
@@ -60,10 +60,12 @@
     {
       "x": 7790.45,
       "y": 9938.29,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 7811.45,
@@ -80,7 +82,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 14.4
+        "seconds": 24.2
       }
     }
   ]

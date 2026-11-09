@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_201_miraland_01",
-  "title": "【结结蕨】巨木之森·巨藤林地北侧探险家营地（16个/70秒）",
+  "title": "【结结蕨】巨木之森·巨藤林地北侧探险家营地（16个/112秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 198,
+  "timeout": 291,
   "teleport": {
     "name": "巨藤林地北侧探险家营地",
     "province": "伊赞之土",
@@ -34,10 +34,12 @@
     {
       "x": 4201.47,
       "y": 8458.07,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": true,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 4101.33,
@@ -46,24 +48,28 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
       "x": 4055.9,
       "y": 8440.24,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 4001.82,
       "y": 8454.4,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 4001.82,
@@ -84,35 +90,41 @@
     {
       "x": 4025.14,
       "y": 8502.17,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 4034.84,
       "y": 8531.22,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 4016.37,
       "y": 8569.05,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 4030.15,
       "y": 8581.11,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.5
+        "seconds": 5.2
       }
     }
   ]

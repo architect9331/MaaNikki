@@ -1,42 +1,50 @@
 {
   "schema_version": 3,
   "id": "gb_mat_214_miraland_02",
-  "title": "【王子鹰羽】磐城·城门前停泊处（2个/31秒）",
+  "title": "【王子鹰羽】磐城·磐城门前（2个/42秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 137,
   "teleport": {
-    "name": "城门前停泊处",
+    "name": "磐城门前",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4332.617,
-    "y": 3378.806
+    "x": 4282.294,
+    "y": 3501.475
   },
   "material": "王子鹰羽",
   "count_materials": [
-    "耳坠萤",
-    "满满果",
-    "风舞花",
+    "机雀羽",
     "王子鹰羽"
   ],
-  "capacity": 16,
+  "capacity": 8,
   "points": [
     {
-      "x": 4332.62,
-      "y": 3378.81,
+      "x": 4282.29,
+      "y": 3501.47,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4309.54,
-      "y": 3355.29,
+      "x": 4312.49,
+      "y": 3484.08,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.4
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 4292.99,
+      "y": 3429.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
       }
     }
   ]

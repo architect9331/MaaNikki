@@ -1,144 +1,75 @@
 {
   "schema_version": 3,
   "id": "gb_all_firework_firework_02",
-  "title": "【全材料·花焰群岛】花焰群岛·月角浅滩（52个/127秒）",
+  "title": "【全材料·花焰群岛】花焰群岛·滋啦啦服务社（10个/50秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 325,
+  "timeout": 155,
   "teleport": {
-    "name": "月角浅滩",
+    "name": "滋啦啦服务社",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 1142.641,
-    "y": 358.56
+    "x": 1003.822,
+    "y": 608.643
   },
   "material": "全材料·花焰群岛",
   "count_materials": [
-    "纽扣松果",
     "壁灯红椒",
-    "满满果",
-    "布布果",
-    "小绵菊",
-    "发卡蚱蜢",
-    "瓜子珠",
-    "晴日蝶兰/雨滴蝶兰",
-    "噼啪花粉",
     "路灯花",
-    "抱抱绒团",
-    "风铃子"
+    "小绵菊"
   ],
-  "capacity": 52,
+  "capacity": 10,
   "points": [
     {
-      "x": 1142.64,
-      "y": 358.56,
+      "x": 1003.82,
+      "y": 608.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1110.37,
-      "y": 364.86,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 11.8
-      }
-    },
-    {
-      "x": 1047.5,
-      "y": 341.23,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 1058.87,
-      "y": 315.48,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 1047.49,
-      "y": 336.48,
+      "x": 993.27,
+      "y": 589.91,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1026.49,
-      "y": 342.48,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1011.49,
-      "y": 340.81,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 10.9
-      }
-    },
-    {
-      "x": 1024.4,
-      "y": 371.9,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.1
-      }
-    },
-    {
-      "x": 1015.4,
-      "y": 389.9,
+      "x": 978.27,
+      "y": 574.91,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1029.53,
-      "y": 398.66,
+      "x": 963.27,
+      "y": 559.91,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 5.2
       }
     },
     {
-      "x": 1028.94,
-      "y": 422.11,
-      "radius": 2.0,
+      "x": 951.27,
+      "y": 544.91,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 8.2
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 962.77,
-      "y": 403.9,
+      "x": 951.27,
+      "y": 541.91,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 24.0
+        "seconds": 20.8
       }
     }
   ]

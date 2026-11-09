@@ -1,113 +1,42 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_01",
-  "title": "【全材料·万相境】万相境·迷花甸（21个/63秒）",
+  "title": "【全材料·万相境】万相境·九华监（6个/32秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 183,
+  "timeout": 120,
   "teleport": {
-    "name": "迷花甸",
+    "name": "九华监",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1437.138,
-    "y": 1501.957
+    "x": 1592.363,
+    "y": 835.825
   },
   "material": "全材料·万相境",
   "count_materials": [
-    "小绵菊",
     "荷包草",
-    "玉簪蚱蜢"
+    "小绵菊"
   ],
-  "capacity": 21,
+  "capacity": 6,
   "points": [
     {
-      "x": 1437.14,
-      "y": 1501.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1436.35,
-      "y": 1496.37,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1433.35,
-      "y": 1493.37,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1415.35,
-      "y": 1484.37,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1403.35,
-      "y": 1472.37,
+      "x": 1592.36,
+      "y": 835.83,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 5.2
       }
     },
     {
-      "x": 1414.98,
-      "y": 1442.71,
+      "x": 1570.81,
+      "y": 863.29,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
-      }
-    },
-    {
-      "x": 1382.17,
-      "y": 1437.56,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 1.5
-      }
-    },
-    {
-      "x": 1417.54,
-      "y": 1400.59,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 1.5
-      }
-    },
-    {
-      "x": 1443.05,
-      "y": 1418.47,
-      "radius": 2.2,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1475.66,
-      "y": 1397.62,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 12.4
+        "seconds": 10.4
       }
     }
   ]

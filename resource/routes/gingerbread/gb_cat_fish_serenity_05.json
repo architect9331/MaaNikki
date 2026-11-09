@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_cat_fish_serenity_05",
-  "title": "【全鱼类垂钓】无忧岛·酿露工坊（6个/20秒）",
+  "title": "【全鱼类垂钓】无忧岛·酿露工坊（6个/33秒）",
   "map": "serenity",
   "start_radius": 6,
   "timeout": 120,
@@ -22,10 +22,12 @@
     {
       "x": 1062.65,
       "y": 439.81,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1046.4,
@@ -42,7 +44,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     }
   ]

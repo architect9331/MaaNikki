@@ -1,41 +1,66 @@
 {
   "schema_version": 3,
   "id": "gb_mat_192_miraland_02",
-  "title": "【沙沙毛团】埋骨地·修习所（2个/32秒）",
+  "title": "【沙沙毛团】巨木之森·探险大营地（3个/60秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 177,
   "teleport": {
-    "name": "修习所",
+    "name": "探险大营地",
     "province": "伊赞之土",
-    "region": "埋骨地",
-    "x": 7817.786,
-    "y": 5151.568
+    "region": "巨木之森",
+    "x": 3510.035,
+    "y": 9419.993
   },
   "material": "沙沙毛团",
   "count_materials": [
-    "龙棘瑚",
     "沙沙毛团",
-    "金灵毛球"
+    "行鹭羽",
+    "小野菊",
+    "刺绣蛾",
+    "朝朝蝶",
+    "暮暮蝶"
   ],
-  "capacity": 6,
+  "capacity": 10,
   "points": [
     {
-      "x": 7817.79,
-      "y": 5151.57,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7852.0,
-      "y": 5151.99,
+      "x": 3510.03,
+      "y": 9419.99,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.3
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 3501.05,
+      "y": 9446.22,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 3514.77,
+      "y": 9513.39,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 3534.63,
+      "y": 9551.78,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
       }
     }
   ]

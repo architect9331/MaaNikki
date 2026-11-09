@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_281_miraland_01",
-  "title": "【晴雨伞】埋骨地·荧湖西岸（69个/116秒）",
+  "title": "【晴雨伞】埋骨地·荧湖西岸（63个/233秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 300,
+  "timeout": 557,
   "teleport": {
     "name": "荧湖西岸",
     "province": "伊赞之土",
@@ -21,15 +21,17 @@
     "大叶鹿绒",
     "茸芽鹿绒"
   ],
-  "capacity": 113,
+  "capacity": 101,
   "points": [
     {
       "x": 5720.79,
       "y": 5415.97,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 5747.39,
@@ -38,7 +40,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.2
+        "seconds": 36.4
       }
     },
     {
@@ -48,7 +50,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.2
+        "seconds": 36.4
       }
     },
     {
@@ -58,7 +60,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.1
+        "seconds": 39.0
       }
     },
     {
@@ -108,7 +110,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.9
+        "seconds": 44.2
       }
     },
     {
@@ -118,17 +120,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.6
-      }
-    },
-    {
-      "x": 5873.61,
-      "y": 5291.92,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.9
+        "seconds": 26.0
       }
     }
   ]

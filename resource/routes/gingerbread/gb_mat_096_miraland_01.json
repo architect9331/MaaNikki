@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_096_miraland_01",
-  "title": "【小绵菊】花愿镇·镇长宅邸前（34个/84秒）",
+  "title": "【小绵菊】花愿镇·镇长宅邸前（34个/178秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 230,
+  "timeout": 437,
   "teleport": {
     "name": "镇长宅邸前",
     "province": "心愿原野",
@@ -38,10 +38,12 @@
     {
       "x": 10529.71,
       "y": 9971.27,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 10534.28,
@@ -50,16 +52,18 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
       "x": 10534.65,
       "y": 9932.58,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": true,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 10531.65,
@@ -68,7 +72,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -94,7 +98,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
@@ -104,7 +108,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
@@ -114,7 +118,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -124,7 +128,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -134,7 +138,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -144,7 +148,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     }
   ]

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_213_miraland_01",
-  "title": "【荧夜鬃】巨木之森·巨藤林地南侧废墟（10个/101秒）",
+  "title": "【荧夜鬃】巨木之森·巨藤林地南侧废墟（10个/142秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 267,
+  "timeout": 357,
   "teleport": {
     "name": "巨藤林地南侧废墟",
     "province": "伊赞之土",
@@ -27,10 +27,12 @@
     {
       "x": 4226.46,
       "y": 8872.65,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 4187.17,
@@ -39,7 +41,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 35.4
+        "seconds": 52.7
       }
     },
     {
@@ -49,7 +51,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 37.2
+        "seconds": 57.9
       }
     }
   ]

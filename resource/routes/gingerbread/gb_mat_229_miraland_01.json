@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_229_miraland_01",
-  "title": "【咕咕之羽】巨木之森·火山湖洞窟外（3个/31秒）",
+  "title": "【咕咕之羽】巨木之森·火山湖洞窟外（3个/40秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 133,
   "teleport": {
     "name": "火山湖洞窟外",
     "province": "伊赞之土",
@@ -34,7 +34,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.7
+        "seconds": 27.6
       }
     }
   ]

@@ -1,86 +1,119 @@
 {
   "schema_version": 3,
   "id": "gb_mat_095_miraland_02",
-  "title": "【壁灯红椒】巨木之森·壳壳岛洞察学派据点前（15个/30秒）",
+  "title": "【壁灯红椒】巨木之森·壳壳岛西侧对岸码头（20个/89秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 241,
   "teleport": {
-    "name": "壳壳岛洞察学派据点前",
+    "name": "壳壳岛西侧对岸码头",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4858.254,
-    "y": 8854.546
+    "x": 4595.558,
+    "y": 8814.467
   },
   "material": "壁灯红椒",
   "count_materials": [
     "壁灯红椒",
-    "纽扣松果",
-    "蓝珀鸟羽",
-    "小野菊"
+    "裁衣甲",
+    "木夹跳甲"
   ],
-  "capacity": 20,
+  "capacity": 23,
   "points": [
     {
-      "x": 4858.25,
-      "y": 8854.55,
+      "x": 4595.56,
+      "y": 8814.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4528.74,
+      "y": 8837.07,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 13.0
       }
     },
     {
-      "x": 4850.07,
-      "y": 8847.97,
+      "x": 4521.41,
+      "y": 8815.97,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4850.07,
-      "y": 8844.97,
+      "x": 4509.41,
+      "y": 8806.97,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4856.07,
-      "y": 8841.97,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4856.07,
-      "y": 8838.97,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4850.07,
-      "y": 8823.97,
+      "x": 4503.41,
+      "y": 8806.97,
       "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 4501.88,
+      "y": 8804.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4498.88,
+      "y": 8804.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 4485.68,
+      "y": 8804.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4470.68,
+      "y": 8819.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4452.68,
+      "y": 8834.82,
+      "radius": 2.5,
       "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 7.6
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 4849.13,
-      "y": 8824.75,
+      "x": 4449.68,
+      "y": 8838.73,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     }
   ]

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_137_firework_01",
-  "title": "【噼啪花粉】花焰群岛·滋啦啦服务社（18个/77秒）",
+  "title": "【噼啪花粉】花焰群岛·滋啦啦服务社（18个/136秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 215,
+  "timeout": 344,
   "teleport": {
     "name": "滋啦啦服务社",
     "province": "心愿原野",
@@ -45,7 +45,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -55,24 +55,28 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
       "x": 991.43,
       "y": 667.06,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 1011.05,
       "y": 685.88,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1068.68,
@@ -81,7 +85,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -91,7 +95,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -101,7 +105,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -111,7 +115,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     }
   ]

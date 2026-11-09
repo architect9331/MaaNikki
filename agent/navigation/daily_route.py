@@ -87,10 +87,6 @@ class RouteActions:
         self.count, self.successes, self.attempts = 0, 0, 0
         self.executor = card.rule.executor
         self.quota = card.remaining if card.remaining is not None else {"plant": 5, "insect": 3, "bottle": 1, "crystal": 10}.get(self.executor)
-        if self.quota is None and self.executor == "navigation" and route.document.get("material"):
-            cap = route.document.get("capacity")
-            if type(cap) is int and 1 <= cap <= 500:
-                self.quota = cap
         if self.quota is not None and (type(self.quota) is not int or not 1 <= self.quota <= 500):
             raise NavigationError("任务剩余数量无法可靠读取。")
         self.material = route.document.get("material", "")
@@ -111,6 +107,16 @@ class RouteActions:
         self.insect = Insect(self)
         self.home_shortcut = None
         self.home_branch_index = None
+        self.gb_analyzer = None
+        self.gb_toast_reader = None
+        self.gb_config = {}
+        if self.executor == "navigation":
+            from .gingerbread_pickup import GingerbreadRouteAnalyzer, LeftMaterialToastReader
+            root_dir = self.resource.parent
+            self.gb_analyzer = GingerbreadRouteAnalyzer(root_dir, route.map_id)
+            self.gb_toast_reader = LeftMaterialToastReader(
+                self.rt, self.gb_analyzer.resolver, list(self.count_materials)
+            )
         if self.executor == "home":
             self.configure_home_shortcut()
 
@@ -247,6 +253,123 @@ class RouteActions:
             self.inputs.release()
         return True
 
+    def wait_gingerbread(self, point, wait_sec: float):
+        wp_index = int(getattr(self.navigator, "current_index", 0) or 0)
+        pose = getattr(self.rt, "last_pose", None) or {}
+        actual_x = float(pose.get("x", point.x)) if isinstance(pose, dict) else float(point.x)
+        actual_y = float(pose.get("y", point.y)) if isinstance(pose, dict) else float(point.y)
+        nearby = self.gb_analyzer.query_nearby_spawners(actual_x, actual_y)
+        expected_names = list(dict.fromkeys(list(self.count_materials) + [s.name for s in nearby]))
+        self.gb_toast_reader.set_expected_names(expected_names)
+
+        adaptive_exit = bool(self.gb_config.get("adaptive_exit", True))
+        min_dwell_s, default_quiet_s, ceiling_s = self.gb_analyzer.conservative_budget_seconds(nearby, wait_sec)
+        user_quiet = self.gb_config.get("quiet_seconds")
+        quiet_s = float(user_quiet) if isinstance(user_quiet, (int, float)) and user_quiet > 0 else default_quiet_s
+        user_init = self.gb_config.get("initial_wait_seconds")
+        initial_no_toast_s = (
+            float(user_init)
+            if isinstance(user_init, (int, float)) and user_init > 0
+            else max(min_dwell_s + quiet_s, 9.0)
+        )
+        max_wait_s = max(wait_sec, ceiling_s) if adaptive_exit else wait_sec
+
+        arrived_at = time.monotonic()
+        last_activity_at = arrived_at
+        first_pickup_s = None
+        last_pickup_s = None
+        picked_events = []
+        exit_reason = "configured_timeout"
+
+        while not self.rt.stopped:
+            now = time.monotonic()
+            elapsed = now - arrived_at
+            if elapsed >= max_wait_s:
+                exit_reason = "ceiling_reached" if adaptive_exit else "fixed_wait_complete"
+                break
+            self.inputs.check()
+            if self.motion:
+                self.motion.tick()
+            new_obs, any_act = self.gb_toast_reader.poll()
+            now = time.monotonic()
+            elapsed = now - arrived_at
+            if any_act:
+                last_activity_at = now
+            if new_obs:
+                t_rel = round(elapsed, 2)
+                if first_pickup_s is None:
+                    first_pickup_s = t_rel
+                last_pickup_s = t_rel
+                for obs in new_obs:
+                    self.count += obs.amount
+                    ev_item = {
+                        "material": obs.name,
+                        "amount": obs.amount,
+                        "t_s": t_rel,
+                        "raw_text": obs.raw_text,
+                    }
+                    picked_events.append(ev_item)
+                    self.event({
+                        "type": "obtained",
+                        "material": obs.name,
+                        "amount": obs.amount,
+                        "total": self.count,
+                        "elapsed_s": t_rel,
+                        "text": obs.raw_text,
+                    })
+                    self.rt.log(
+                        f"左侧提示：+{obs.amount} {obs.name}（第 {wp_index + 1} 点驻留 {t_rel:.1f}s，累计 {self.count}）",
+                        detail=True,
+                    )
+                if self.quota is not None and self.count >= self.quota:
+                    exit_reason = "quota_reached"
+                    break
+
+            if adaptive_exit:
+                quiet_elapsed = now - last_activity_at
+                if picked_events:
+                    if elapsed >= min_dwell_s and quiet_elapsed >= quiet_s:
+                        exit_reason = "toast_quiet_after_pickup"
+                        break
+                else:
+                    if elapsed >= min(max_wait_s, initial_no_toast_s) and quiet_elapsed >= quiet_s:
+                        exit_reason = "no_toast_timeout"
+                        break
+
+            step_sleep = min(0.28, max(0.05, max_wait_s - (time.monotonic() - arrived_at)))
+            if self.motion:
+                self.motion.wait(step_sleep)
+            else:
+                self.inputs.wait(step_sleep)
+
+        waited_s = time.monotonic() - arrived_at
+        report = self.gb_analyzer.evaluate_waypoint(
+            wp_index=wp_index,
+            x=actual_x,
+            y=actual_y,
+            configured_wait_s=wait_sec,
+            waited_s=waited_s,
+            first_pickup_s=first_pickup_s,
+            last_pickup_s=last_pickup_s,
+            exit_reason=exit_reason,
+            picked_events=picked_events,
+            nearby=nearby,
+        )
+        self.event({"type": "gingerbread_waypoint_report", **report})
+        items_str = "、".join(f"{k}×{v}" for k, v in report["picked_by_name"].items()) or "无"
+        finish_str = f"{report['last_pickup_s']:.1f}s" if report["last_pickup_s"] is not None else "0.0s"
+        self.rt.log(
+            f"第 {wp_index + 1} 点驻留统计：拾取完毕耗时 {finish_str}（总驻留 {waited_s:.1f}s / 设定 {wait_sec:.1f}s），"
+            f"实测拾取 {report['picked_total']} 个（{items_str}），地图15m内预计 {report['expected_0_15m']} 个 → "
+            f"{report['time_verdict']}；{report['range_verdict']}"
+        )
+
+    def gingerbread_summary(self) -> dict | None:
+        if self.gb_analyzer is None:
+            return None
+        title = str(self.route.document.get("title") or self.route.id)
+        return self.gb_analyzer.build_route_summary(self.route.id, title)
+
     def __call__(self, point):
         self.inputs.check()
         kind = point.action
@@ -254,7 +377,13 @@ class RouteActions:
         ok = False
         if kind == "wait":
             wait_sec = float(point.params["seconds"])
-            if self.count_materials and wait_sec > 0:
+            if point.params.get("compare_map_positions") is True:
+                self.inputs.wait(wait_sec)
+                from .position_review import compare_map_positions
+                compare_map_positions(self.rt, self.teleporter, point, self.event)
+            elif self.gb_analyzer is not None and self.gb_toast_reader is not None and wait_sec > 0:
+                self.wait_gingerbread(point, wait_sec)
+            elif self.count_materials and wait_sec > 0:
                 deadline = time.monotonic() + wait_sec
                 baseline = self.notification()
                 while not self.rt.stopped and time.monotonic() < deadline:
@@ -265,9 +394,6 @@ class RouteActions:
                             break
             else:
                 self.inputs.wait(wait_sec)
-            if point.params.get("compare_map_positions") is True:
-                from .position_review import compare_map_positions
-                compare_map_positions(self.rt, self.teleporter, point, self.event)
             ok = True
         elif kind == "teleport":
             # Navigation's preparation hook already handled this point.

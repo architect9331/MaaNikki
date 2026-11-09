@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_094_miraland_01",
-  "title": "【风絮草】石树田无人区·木桶荫地（14个/34秒）",
+  "title": "【风絮草】石树田无人区·木桶荫地（14个/69秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 197,
   "teleport": {
     "name": "木桶荫地",
     "province": "心愿原野",
@@ -25,10 +25,12 @@
     {
       "x": 8230.08,
       "y": 10320.13,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 8220.9,
@@ -61,7 +63,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.8
+        "seconds": 46.8
       }
     }
   ]

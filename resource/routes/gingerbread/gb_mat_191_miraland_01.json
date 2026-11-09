@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_191_miraland_01",
-  "title": "【花纹围巾蚯蚓】巨木之森·巨兽堡垒断桥旁（6个/77秒）",
+  "title": "【花纹围巾蚯蚓】巨木之森·巨兽堡垒断桥旁（6个/105秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 214,
+  "timeout": 276,
   "teleport": {
     "name": "巨兽堡垒断桥旁",
     "province": "伊赞之土",
@@ -25,10 +25,12 @@
     {
       "x": 3631.21,
       "y": 9021.01,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 3606.07,
@@ -37,7 +39,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.7
+        "seconds": 23.1
       }
     },
     {
@@ -47,7 +49,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 22.0
+        "seconds": 39.6
       }
     }
   ]

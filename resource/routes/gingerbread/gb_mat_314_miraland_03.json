@@ -1,96 +1,116 @@
 {
   "schema_version": 3,
   "id": "gb_mat_314_miraland_03",
-  "title": "【金轴蜻蜓】磐城·咏叹剧院（15个/124秒）",
+  "title": "【金轴蜻蜓】磐城·行与思广场（17个/193秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 319,
+  "timeout": 470,
   "teleport": {
-    "name": "咏叹剧院",
+    "name": "行与思广场",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3937.799,
-    "y": 3509.925
+    "x": 4180.56,
+    "y": 3588.066
   },
   "material": "金轴蜻蜓",
   "count_materials": [
+    "钓鱼点",
     "金轴蜻蜓",
-    "珠链蝶",
+    "晶球绵蚧",
     "探险家蜜蜂",
-    "蓝玉甲虫",
-    "蓝珀鸟羽",
-    "珠坠甲虫",
-    "桂冠翎羽",
-    "晶球绵蚧"
+    "珠链蝶",
+    "刺绣蛾",
+    "机雀羽",
+    "浮冠果"
   ],
-  "capacity": 35,
+  "capacity": 63,
   "points": [
     {
-      "x": 3937.8,
-      "y": 3509.93,
+      "x": 4180.56,
+      "y": 3588.07,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3880.46,
-      "y": 3489.62,
+      "x": 4168.74,
+      "y": 3582.43,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 18.6
       }
     },
     {
-      "x": 3850.74,
-      "y": 3457.23,
+      "x": 4173.25,
+      "y": 3530.49,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.7
+        "seconds": 15.1
       }
     },
     {
-      "x": 3812.17,
-      "y": 3471.81,
+      "x": 4203.77,
+      "y": 3536.87,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 15.7
+        "seconds": 7.1
       }
     },
     {
-      "x": 3791.84,
-      "y": 3509.67,
+      "x": 4221.32,
+      "y": 3519.41,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 7.1
       }
     },
     {
-      "x": 3795.95,
-      "y": 3504.17,
+      "x": 4222.83,
+      "y": 3547.3,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 10.6
       }
     },
     {
-      "x": 3757.51,
-      "y": 3557.3,
+      "x": 4264.0,
+      "y": 3630.67,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.7
+        "seconds": 23.1
+      }
+    },
+    {
+      "x": 4296.45,
+      "y": 3658.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 4264.73,
+      "y": 3686.11,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 23.1
       }
     }
   ]

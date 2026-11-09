@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
-  "id": "gb_mat_182_wanxiang_01",
-  "title": "【胭脂芙蕖】万相境·忘忧楼（15个/101秒）",
+  "id": "gb_mat_182_wanxiang_02",
+  "title": "【胭脂芙蕖】万相境·忘忧楼（15个/186秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 267,
+  "timeout": 454,
   "teleport": {
     "name": "忘忧楼",
     "province": "伊赞之土",
@@ -51,7 +51,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -65,26 +65,32 @@
     {
       "x": 2406.14,
       "y": 1525.98,
-      "radius": 2.2,
+      "radius": 2.0,
       "jump": true,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 2406.14,
       "y": 1502.15,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 2406.14,
       "y": 1496.15,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 2421.14,
@@ -101,7 +107,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -115,18 +121,22 @@
     {
       "x": 2413.09,
       "y": 1446.23,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 2413.09,
       "y": 1440.23,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 2398.09,
@@ -147,10 +157,12 @@
     {
       "x": 2383.09,
       "y": 1413.23,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 2383.09,
@@ -159,16 +171,18 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
       "x": 2362.09,
       "y": 1392.23,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
       "x": 2353.09,
@@ -177,7 +191,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     },
     {
@@ -231,10 +245,12 @@
     {
       "x": 2301.99,
       "y": 1503.23,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": true,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 2301.99,
@@ -263,10 +279,12 @@
     {
       "x": 2253.99,
       "y": 1531.23,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 2249.99,
@@ -291,7 +309,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -301,7 +319,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -319,7 +337,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.5
+        "seconds": 7.8
       }
     }
   ]

@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_cat_fish_wanxiang_07",
-  "title": "【全鱼类垂钓】万相境·火锅坊（6个/22秒）",
+  "title": "【全鱼类垂钓】万相境·火锅坊（6个/34秒）",
   "map": "wanxiang",
   "start_radius": 6,
   "timeout": 120,
@@ -66,7 +66,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     }
   ]

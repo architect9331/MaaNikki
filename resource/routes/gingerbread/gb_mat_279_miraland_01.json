@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_279_miraland_01",
-  "title": "【埙音甲】埋骨地·龙埙遗所（15个/132秒）",
+  "title": "【埙音甲】埋骨地·龙埙遗所（19个/285秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 334,
+  "timeout": 671,
   "teleport": {
     "name": "龙埙遗所",
     "province": "伊赞之土",
@@ -16,11 +16,12 @@
   "count_materials": [
     "埙音甲",
     "烛融花/烛荧花",
+    "风舞花",
     "耳坠萤",
     "满满果",
-    "风舞花"
+    "小野菊"
   ],
-  "capacity": 31,
+  "capacity": 50,
   "points": [
     {
       "x": 8586.15,
@@ -37,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.2
+        "seconds": 26.4
       }
     },
     {
@@ -47,7 +48,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.4
+        "seconds": 21.2
       }
     },
     {
@@ -57,7 +58,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.7
+        "seconds": 15.1
       }
     },
     {
@@ -67,7 +68,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 36.4
+        "seconds": 53.2
       }
     },
     {
@@ -77,7 +78,91 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 19.3
+        "seconds": 31.8
+      }
+    },
+    {
+      "x": 8658.94,
+      "y": 5535.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 8662.94,
+      "y": 5515.61,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8666.94,
+      "y": 5499.61,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8666.94,
+      "y": 5475.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 8666.94,
+      "y": 5451.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 8666.94,
+      "y": 5427.61,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 8666.94,
+      "y": 5403.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 8670.94,
+      "y": 5383.61,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8679.26,
+      "y": 5372.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 34.6
       }
     }
   ]

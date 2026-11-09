@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_189_miraland_01",
-  "title": "【小野菊】巨木之森·巨人密殿遗迹（42个/82秒）",
+  "title": "【小野菊】巨木之森·巨人密殿遗迹（44个/169秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 226,
+  "timeout": 417,
   "teleport": {
     "name": "巨人密殿遗迹",
     "province": "伊赞之土",
@@ -19,15 +19,17 @@
     "纽扣松果",
     "木夹跳甲"
   ],
-  "capacity": 62,
+  "capacity": 63,
   "points": [
     {
       "x": 2847.02,
       "y": 8318.31,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 2864.55,
@@ -36,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.9
+        "seconds": 18.2
       }
     },
     {
@@ -46,7 +48,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
       }
     },
     {
@@ -56,7 +58,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -66,7 +68,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     },
     {
@@ -76,17 +78,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 4.0
-      }
-    },
-    {
-      "x": 2767.05,
-      "y": 8306.72,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.2
+        "seconds": 15.6
       }
     },
     {
@@ -96,7 +88,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.1
+        "seconds": 13.0
       }
     },
     {
@@ -106,7 +98,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.0
+        "seconds": 15.6
+      }
+    },
+    {
+      "x": 2692.31,
+      "y": 8436.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
       }
     }
   ]

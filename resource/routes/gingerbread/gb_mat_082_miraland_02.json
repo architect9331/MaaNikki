@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_082_miraland_02",
-  "title": "【飞球果】石树田无人区·麦田旁（9个/44秒）",
+  "title": "【飞球果】石树田无人区·麦田旁（9个/69秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 142,
+  "timeout": 197,
   "teleport": {
     "name": "麦田旁",
     "province": "心愿原野",
@@ -36,7 +36,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 6.7
+        "seconds": 23.4
       }
     },
     {
@@ -46,7 +46,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 2.2
+        "seconds": 10.4
       }
     }
   ]

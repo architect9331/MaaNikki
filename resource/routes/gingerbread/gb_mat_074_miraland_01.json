@@ -1,0 +1,112 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_074_miraland_01",
+  "title": "【珠链蝶】埋骨地·居落广场升降台（35个/228秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 547,
+  "teleport": {
+    "name": "居落广场升降台",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7130.375,
+    "y": 4439.642
+  },
+  "material": "珠链蝶",
+  "count_materials": [
+    "珠链蝶",
+    "探险家蜜蜂",
+    "小野菊",
+    "蓝珀鸟羽",
+    "刺绣蛾"
+  ],
+  "capacity": 59,
+  "points": [
+    {
+      "x": 7130.38,
+      "y": 4439.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
+      }
+    },
+    {
+      "x": 7124.38,
+      "y": 4460.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7127.38,
+      "y": 4475.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7130.38,
+      "y": 4478.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7151.38,
+      "y": 4475.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7175.38,
+      "y": 4475.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7196.38,
+      "y": 4472.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7220.38,
+      "y": 4472.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7238.03,
+      "y": 4463.48,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 150.0
+      }
+    },
+    {
+      "x": 7193.22,
+      "y": 4393.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.6
+      }
+    }
+  ]
+}

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_190_miraland_01",
-  "title": "【探险家蜜蜂】磐城·集市旁停泊处（18个/123秒）",
+  "title": "【探险家蜜蜂】磐城·集市旁停泊处（24个/233秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 316,
+  "timeout": 558,
   "teleport": {
     "name": "集市旁停泊处",
     "province": "伊赞之土",
@@ -15,10 +15,12 @@
   "material": "探险家蜜蜂",
   "count_materials": [
     "探险家蜜蜂",
+    "小野菊",
     "珠链蝶",
-    "小野菊"
+    "蓝珀鸟羽",
+    "满满果"
   ],
-  "capacity": 25,
+  "capacity": 37,
   "points": [
     {
       "x": 4129.3,
@@ -35,17 +37,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 60.0
-      }
-    },
-    {
-      "x": 4124.67,
-      "y": 4163.64,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 24.4
+        "seconds": 117.2
       }
     },
     {
@@ -55,7 +47,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.7
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 4089.34,
+      "y": 4078.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 58.4
       }
     }
   ]
