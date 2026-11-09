@@ -1,0 +1,122 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_091_miraland_01",
+  "title": "【满满果】磐城·永续识馆（17个/127秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 324,
+  "teleport": {
+    "name": "永续识馆",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4133.939,
+    "y": 2774.733
+  },
+  "material": "满满果",
+  "count_materials": [
+    "珠链蝶",
+    "满满果",
+    "蓝玉甲虫",
+    "晶球绵蚧",
+    "小野菊",
+    "金轴蜻蜓",
+    "织衣蛛",
+    "珠坠甲虫",
+    "风舞花",
+    "咕咕之羽",
+    "路灯花"
+  ],
+  "capacity": 66,
+  "points": [
+    {
+      "x": 4133.94,
+      "y": 2774.73,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 4094.85,
+      "y": 2783.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 4071.4,
+      "y": 2728.69,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 3951.12,
+      "y": 2778.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 3973.37,
+      "y": 2762.04,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 3991.57,
+      "y": 2781.3,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 3979.98,
+      "y": 2836.76,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 3982.19,
+      "y": 2873.49,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 4015.98,
+      "y": 2877.2,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    }
+  ]
+}

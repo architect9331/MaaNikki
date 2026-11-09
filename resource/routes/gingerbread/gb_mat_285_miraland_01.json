@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_285_miraland_01",
-  "title": "【龙棘瑚】埋骨地·蓝池东侧修习所渡口（39个/191秒）",
+  "title": "【龙棘瑚】埋骨地·蓝池东侧修习所渡口（42个/200秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 465,
+  "timeout": 484,
   "teleport": {
     "name": "蓝池东侧修习所渡口",
     "province": "伊赞之土",
@@ -21,7 +21,7 @@
     "珍蛛",
     "革袋甲"
   ],
-  "capacity": 53,
+  "capacity": 56,
   "points": [
     {
       "x": 7649.96,
@@ -32,10 +32,36 @@
       "params": {}
     },
     {
+      "x": 7651.96,
+      "y": 4982.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7657.96,
+      "y": 4976.12,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7657.96,
+      "y": 4955.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 7657.55,
       "y": 4941.12,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 23.4
@@ -52,8 +78,8 @@
       }
     },
     {
-      "x": 7599.36,
-      "y": 4955.49,
+      "x": 7596.36,
+      "y": 4949.49,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -61,15 +87,15 @@
     },
     {
       "x": 7584.36,
-      "y": 4970.49,
+      "y": 4964.49,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7572.36,
-      "y": 4985.49,
+      "x": 7575.36,
+      "y": 4982.49,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -77,7 +103,7 @@
     },
     {
       "x": 7569.36,
-      "y": 5006.49,
+      "y": 5003.49,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -130,10 +156,34 @@
       }
     },
     {
+      "x": 7610.48,
+      "y": 5054.08,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7622.48,
+      "y": 5060.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7643.48,
+      "y": 5063.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 7645.87,
       "y": 5063.54,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 7.8

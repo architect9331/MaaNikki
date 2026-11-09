@@ -1,36 +1,37 @@
 {
   "schema_version": 3,
   "id": "gb_mat_091_miraland_02",
-  "title": "【满满果】磐城·永续识馆（17个/127秒）",
+  "title": "【满满果】磐城·环圃一层种植区（23个/176秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 324,
+  "timeout": 432,
   "teleport": {
-    "name": "永续识馆",
+    "name": "环圃一层种植区",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4133.939,
-    "y": 2774.733
+    "x": 3514.092,
+    "y": 4165.524
   },
   "material": "满满果",
   "count_materials": [
-    "珠链蝶",
     "满满果",
-    "蓝玉甲虫",
-    "晶球绵蚧",
+    "探险家蜜蜂",
     "小野菊",
+    "珠链蝶",
     "金轴蜻蜓",
+    "壁灯红椒",
+    "耳坠萤",
+    "刺绣蛾",
+    "钓鱼点",
     "织衣蛛",
-    "珠坠甲虫",
-    "风舞花",
-    "咕咕之羽",
-    "路灯花"
+    "纽扣松果",
+    "蓝珀鸟羽"
   ],
-  "capacity": 66,
+  "capacity": 93,
   "points": [
     {
-      "x": 4133.94,
-      "y": 2774.73,
+      "x": 3514.09,
+      "y": 4165.52,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -39,8 +40,18 @@
       }
     },
     {
-      "x": 4094.85,
-      "y": 2783.56,
+      "x": 3481.67,
+      "y": 4146.42,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 23.4
+      }
+    },
+    {
+      "x": 3467.96,
+      "y": 4179.47,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -49,8 +60,8 @@
       }
     },
     {
-      "x": 4071.4,
-      "y": 2728.69,
+      "x": 3482.59,
+      "y": 4230.7,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -59,38 +70,8 @@
       }
     },
     {
-      "x": 3951.12,
-      "y": 2778.93,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.0
-      }
-    },
-    {
-      "x": 3973.37,
-      "y": 2762.04,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 3991.57,
-      "y": 2781.3,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 3979.98,
-      "y": 2836.76,
+      "x": 3562.24,
+      "y": 4227.36,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -99,23 +80,43 @@
       }
     },
     {
-      "x": 3982.19,
-      "y": 2873.49,
+      "x": 3540.81,
+      "y": 4197.57,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 18.2
       }
     },
     {
-      "x": 4015.98,
-      "y": 2877.2,
+      "x": 3550.76,
+      "y": 4151.7,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 3642.32,
+      "y": 4110.83,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 20.8
+      }
+    },
+    {
+      "x": 3641.06,
+      "y": 4088.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
       }
     }
   ]

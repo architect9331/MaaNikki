@@ -4,7 +4,7 @@
   "title": "【尖帽仙】花愿镇·愿望梦境仓库旋廊（9个/103秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 272,
+  "timeout": 271,
   "teleport": {
     "name": "愿望梦境仓库旋廊",
     "province": "心愿原野",
@@ -41,8 +41,8 @@
       }
     },
     {
-      "x": 10269.93,
-      "y": 9760.72,
+      "x": 10269.43,
+      "y": 9758.37,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -51,16 +51,8 @@
       }
     },
     {
-      "x": 10268.93,
-      "y": 9741.05,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10280.93,
-      "y": 9723.05,
+      "x": 10271.43,
+      "y": 9738.05,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

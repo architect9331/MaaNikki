@@ -1,0 +1,183 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_083_miraland_02",
+  "title": "【兔兔妆粉】石树田无人区·星空钓场顶端（5个/59秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 176,
+  "teleport": {
+    "name": "星空钓场顶端",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 7822.938,
+    "y": 9184.401
+  },
+  "material": "兔兔妆粉",
+  "count_materials": [
+    "兔尾绒团",
+    "发卡蚱蜢",
+    "兔兔妆粉",
+    "珠链蝶"
+  ],
+  "capacity": 23,
+  "points": [
+    {
+      "x": 7822.94,
+      "y": 9184.4,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7824.94,
+      "y": 9163.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7845.94,
+      "y": 9163.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7848.85,
+      "y": 9167.46,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 7830.12,
+      "y": 9160.04,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7809.12,
+      "y": 9154.04,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7801.12,
+      "y": 9161.04,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 7814.81,
+      "y": 9150.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7835.81,
+      "y": 9144.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7841.81,
+      "y": 9138.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7841.81,
+      "y": 9135.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7829.81,
+      "y": 9126.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7823.81,
+      "y": 9126.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7820.81,
+      "y": 9126.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7799.81,
+      "y": 9123.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7778.81,
+      "y": 9123.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7757.81,
+      "y": 9126.86,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7754.81,
+      "y": 9129.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7755.81,
+      "y": 9133.86,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    }
+  ]
+}

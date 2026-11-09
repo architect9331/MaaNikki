@@ -6,24 +6,24 @@
   "continue_on_failure": true,
   "routes": [
     {
-      "route": "gb_cat_fish_firework_01",
-      "title": "【全鱼类垂钓】花焰群岛·月角浅滩（10个/43秒）"
+      "route": "gb_cat_fish_miraland_01",
+      "title": "【全鱼类垂钓】埋骨地·白汐滩归望湾（42个/149秒）"
     },
     {
       "route": "gb_cat_fish_miraland_02",
-      "title": "【全鱼类垂钓】埋骨地·蓝池东侧修习所渡口（50个/255秒）"
+      "title": "【全鱼类垂钓】埋骨地·古息坡道（42个/177秒）"
     },
     {
-      "route": "gb_cat_fish_serenity_03",
+      "route": "gb_cat_fish_firework_03",
+      "title": "【全鱼类垂钓】花焰群岛·月角浅滩（10个/43秒）"
+    },
+    {
+      "route": "gb_cat_fish_serenity_04",
       "title": "【全鱼类垂钓】无忧岛·泡泡花田（5个/26秒）"
     },
     {
-      "route": "gb_cat_fish_miraland_04",
-      "title": "【全鱼类垂钓】花愿镇·镇长宅邸前（19个/100秒）"
-    },
-    {
       "route": "gb_cat_fish_miraland_05",
-      "title": "【全鱼类垂钓】埋骨地·古息坡道（22个/119秒）"
+      "title": "【全鱼类垂钓】巨木之森·壳壳岛西侧对岸码头（14个/75秒）"
     },
     {
       "route": "gb_cat_fish_miraland_06",
@@ -35,7 +35,7 @@
     },
     {
       "route": "gb_cat_fish_miraland_08",
-      "title": "【全鱼类垂钓】埋骨地·龙巢山飞瀑崖顶（21个/127秒）"
+      "title": "【全鱼类垂钓】花愿镇·镇长宅邸前（21个/126秒）"
     }
   ]
 }

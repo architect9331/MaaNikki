@@ -1,73 +1,80 @@
 {
   "schema_version": 3,
   "id": "gb_mat_049_miraland_02",
-  "title": "【名流鸦羽】石树田无人区·志愿兵团哨塔（3个/48秒）",
+  "title": "【名流鸦羽】磐城·集贤回廊（15个/248秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 151,
+  "timeout": 591,
   "teleport": {
-    "name": "志愿兵团哨塔",
-    "province": "心愿原野",
-    "region": "石树田无人区",
-    "x": 8420.194,
-    "y": 9016.353
+    "name": "集贤回廊",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3964.247,
+    "y": 2674.387
   },
   "material": "名流鸦羽",
   "count_materials": [
-    "名流鸦羽"
+    "名流鸦羽",
+    "满满果",
+    "耳坠萤",
+    "蓝玉甲虫",
+    "小野菊",
+    "珠链蝶",
+    "纽扣松果",
+    "金轴蜻蜓",
+    "珠坠甲虫",
+    "风舞花",
+    "织衣蛛",
+    "路灯花"
   ],
-  "capacity": 3,
+  "capacity": 44,
   "points": [
     {
-      "x": 8420.19,
-      "y": 9016.35,
+      "x": 3964.25,
+      "y": 2674.39,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8429.09,
-      "y": 9025.69,
+      "x": 3970.77,
+      "y": 2607.05,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.6
+        "seconds": 41.5
       }
     },
     {
-      "x": 8410.57,
-      "y": 9014.94,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8395.57,
-      "y": 9008.94,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8389.57,
-      "y": 9017.94,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8387.57,
-      "y": 9024.94,
+      "x": 3939.36,
+      "y": 2807.83,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.1
+        "seconds": 36.3
+      }
+    },
+    {
+      "x": 3966.92,
+      "y": 2820.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 33.7
+      }
+    },
+    {
+      "x": 3853.39,
+      "y": 2810.73,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 67.4
       }
     }
   ]

@@ -1,0 +1,247 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_078_serenity_01",
+  "title": "【丝巾蛾】无忧岛·泡泡花田（5个/145秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 364,
+  "teleport": {
+    "name": "泡泡花田",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 1062.068,
+    "y": 537.513
+  },
+  "material": "丝巾蛾",
+  "count_materials": [
+    "风絮草",
+    "丝巾蛾",
+    "纽扣松果",
+    "花伞藤萝"
+  ],
+  "capacity": 22,
+  "points": [
+    {
+      "x": 1062.07,
+      "y": 537.51,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 1076.07,
+      "y": 551.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1091.07,
+      "y": 557.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1097.36,
+      "y": 558.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 26.2
+      }
+    },
+    {
+      "x": 1093.91,
+      "y": 556.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1090.91,
+      "y": 556.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1069.91,
+      "y": 559.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1051.91,
+      "y": 562.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1039.91,
+      "y": 562.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1036.91,
+      "y": 559.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1024.91,
+      "y": 541.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1019.91,
+      "y": 524.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 1036.91,
+      "y": 512.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1045.91,
+      "y": 506.9,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1066.91,
+      "y": 506.9,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1087.91,
+      "y": 503.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1108.91,
+      "y": 500.9,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1126.91,
+      "y": 503.9,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 1137.96,
+      "y": 510.9,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
+      }
+    },
+    {
+      "x": 1139.96,
+      "y": 514.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1148.96,
+      "y": 514.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1166.96,
+      "y": 505.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1175.96,
+      "y": 487.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1178.96,
+      "y": 466.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1193.96,
+      "y": 454.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1196.85,
+      "y": 455.83,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    }
+  ]
+}

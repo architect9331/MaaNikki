@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_232_miraland_01",
-  "title": "【盗面毛团】巨木之森·岩村遗址（1个/35秒）",
+  "title": "【盗面毛团】巨木之森·岩村遗址（1个/37秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 121,
+  "timeout": 126,
   "teleport": {
     "name": "岩村遗址",
     "province": "伊赞之土",
@@ -29,7 +29,7 @@
       "params": {}
     },
     {
-      "x": 4862.09,
+      "x": 4862.53,
       "y": 9853.47,
       "radius": 2.5,
       "jump": false,
@@ -37,24 +37,32 @@
       "params": {}
     },
     {
-      "x": 4862.09,
-      "y": 9865.47,
+      "x": 4868.53,
+      "y": 9874.47,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4847.09,
-      "y": 9880.47,
+      "x": 4862.53,
+      "y": 9883.47,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4845.09,
-      "y": 9880.15,
+      "x": 4847.53,
+      "y": 9886.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4845.53,
+      "y": 9885.79,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

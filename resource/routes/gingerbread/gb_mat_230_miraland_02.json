@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_230_miraland_02",
-  "title": "【绒领毛团】巨木之森·岩村遗址（1个/25秒）",
+  "title": "【绒领毛团】巨木之森·岩村遗址（1个/23秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -28,32 +28,24 @@
       "params": {}
     },
     {
-      "x": 4861.85,
-      "y": 9853.47,
+      "x": 4860.67,
+      "y": 9850.47,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4861.85,
-      "y": 9865.47,
+      "x": 4863.67,
+      "y": 9859.47,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4846.85,
-      "y": 9865.47,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4844.85,
-      "y": 9864.28,
+      "x": 4859.41,
+      "y": 9863.68,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

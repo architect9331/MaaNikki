@@ -4,7 +4,7 @@
   "title": "【咕咕之羽】巨木之森·火山湖洞窟外（3个/40秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 134,
+  "timeout": 133,
   "teleport": {
     "name": "火山湖洞窟外",
     "province": "伊赞之土",
@@ -28,16 +28,8 @@
       "params": {}
     },
     {
-      "x": 5901.96,
-      "y": 7719.53,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5899.96,
-      "y": 7717.53,
+      "x": 5902.78,
+      "y": 7716.51,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

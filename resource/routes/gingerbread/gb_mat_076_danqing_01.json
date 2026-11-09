@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_076_danqing_01",
-  "title": "【耳坠萤】丹青屿·村边畦田（30个/228秒）",
+  "title": "【耳坠萤】丹青屿·村边畦田（46个/329秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 546,
+  "timeout": 769,
   "teleport": {
     "name": "村边畦田",
     "province": "心愿原野",
@@ -15,11 +15,10 @@
   "material": "耳坠萤",
   "count_materials": [
     "耳坠萤",
-    "荷包草",
     "小绵菊",
-    "满满果"
+    "荷包草"
   ],
-  "capacity": 36,
+  "capacity": 52,
   "points": [
     {
       "x": 1598.13,
@@ -28,27 +27,55 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 1613.91,
-      "y": 1253.97,
+      "x": 1603.13,
+      "y": 1267.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.2
+      }
+    },
+    {
+      "x": 1606.13,
+      "y": 1246.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 125.2
+      }
+    },
+    {
+      "x": 1621.13,
+      "y": 1231.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1642.13,
+      "y": 1225.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1663.02,
+      "y": 1226.82,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 150.0
-      }
-    },
-    {
-      "x": 1679.52,
-      "y": 1284.63,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 45.2
       }
     }
   ]

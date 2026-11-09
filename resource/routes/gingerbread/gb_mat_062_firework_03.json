@@ -1,52 +1,64 @@
 {
   "schema_version": 3,
   "id": "gb_mat_062_firework_03",
-  "title": "【织衣蛛】花焰群岛·聆风高地山麓（4个/76秒）",
+  "title": "【织衣蛛】花焰群岛·幽暗洞窟前（2个/35秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 213,
+  "timeout": 123,
   "teleport": {
-    "name": "聆风高地山麓",
+    "name": "幽暗洞窟前",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 748.755,
-    "y": 548.546
+    "x": 945.342,
+    "y": 225.634
   },
   "material": "织衣蛛",
   "count_materials": [
-    "织衣蛛",
-    "路灯花",
-    "小绵菊",
-    "纽扣松果"
+    "耳坠萤",
+    "织衣蛛"
   ],
   "capacity": 7,
   "points": [
     {
-      "x": 748.75,
-      "y": 548.55,
+      "x": 945.34,
+      "y": 225.63,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 751.82,
-      "y": 689.79,
-      "radius": 2.0,
+      "x": 946.83,
+      "y": 204.88,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 21.2
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 788.92,
-      "y": 689.86,
+      "x": 946.83,
+      "y": 183.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 946.83,
+      "y": 174.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 938.83,
+      "y": 169.88,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.6
+        "seconds": 15.1
       }
     }
   ]

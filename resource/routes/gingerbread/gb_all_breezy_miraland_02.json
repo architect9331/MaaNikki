@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_02",
-  "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（40个/141秒）",
+  "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（37个/131秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 356,
+  "timeout": 334,
   "teleport": {
     "name": "河畔山地林间道",
     "province": "心愿原野",
@@ -19,7 +19,7 @@
     "小绵菊",
     "滋滋花粉"
   ],
-  "capacity": 40,
+  "capacity": 37,
   "points": [
     {
       "x": 10608.94,
@@ -28,47 +28,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 10607.94,
-      "y": 11282.0,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 10613.94,
-      "y": 11276.0,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 10634.94,
-      "y": 11276.0,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 10655.94,
-      "y": 11270.0,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
+        "seconds": 13.0
       }
     },
     {

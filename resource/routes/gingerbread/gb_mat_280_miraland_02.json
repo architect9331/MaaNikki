@@ -1,230 +1,50 @@
 {
   "schema_version": 3,
   "id": "gb_mat_280_miraland_02",
-  "title": "【蜉幽幽】埋骨地·荧湖西岸（34个/403秒）",
+  "title": "【蜉幽幽】埋骨地·灵魂观察所廊柱厅（2个/32秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 900,
+  "timeout": 120,
   "teleport": {
-    "name": "荧湖西岸",
+    "name": "灵魂观察所廊柱厅",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 5720.788,
-    "y": 5415.967
+    "x": 7083.331,
+    "y": 5246.124
   },
   "material": "蜉幽幽",
   "count_materials": [
+    "耳坠萤",
     "蜉幽幽",
-    "晴雨伞",
-    "烛融花/烛荧花",
-    "风舞花"
+    "金灵毛球",
+    "蓝鳞晶"
   ],
-  "capacity": 61,
+  "capacity": 9,
   "points": [
     {
-      "x": 5720.79,
-      "y": 5415.97,
+      "x": 7083.33,
+      "y": 5246.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7080.93,
+      "y": 5248.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7078.93,
+      "y": 5250.6,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 5716.79,
-      "y": 5414.05,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 5710.79,
-      "y": 5405.05,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5713.79,
-      "y": 5393.05,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 5731.79,
-      "y": 5381.05,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.0
-      }
-    },
-    {
-      "x": 5748.74,
-      "y": 5379.05,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 103.2
-      }
-    },
-    {
-      "x": 5734.46,
-      "y": 5363.66,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5722.46,
-      "y": 5348.66,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5707.46,
-      "y": 5333.66,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5695.46,
-      "y": 5318.66,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5686.46,
-      "y": 5300.66,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5683.46,
-      "y": 5279.66,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5681.46,
-      "y": 5271.66,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 47.8
-      }
-    },
-    {
-      "x": 5677.17,
-      "y": 5275.14,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5668.17,
-      "y": 5266.14,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5669.17,
-      "y": 5258.14,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 10.6
-      }
-    },
-    {
-      "x": 5677.17,
-      "y": 5241.95,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 31.8
-      }
-    },
-    {
-      "x": 5695.17,
-      "y": 5232.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5716.17,
-      "y": 5238.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5737.17,
-      "y": 5241.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5756.74,
-      "y": 5248.95,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 39.1
-      }
-    },
-    {
-      "x": 5761.74,
-      "y": 5228.33,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 71.1
-      }
-    },
-    {
-      "x": 5770.9,
-      "y": 5214.33,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.1
+        "seconds": 18.6
       }
     }
   ]

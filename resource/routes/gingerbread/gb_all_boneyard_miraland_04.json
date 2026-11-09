@@ -1,75 +1,71 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_04",
-  "title": "【全材料·埋骨地】埋骨地·古息坡道（13个/52秒）",
+  "title": "【全材料·埋骨地】埋骨地·龙埙遗所（19个/75秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 160,
+  "timeout": 210,
   "teleport": {
-    "name": "古息坡道",
+    "name": "龙埙遗所",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 6883.245,
-    "y": 4762.082
+    "x": 8586.154,
+    "y": 5376.194
   },
   "material": "全材料·埋骨地",
   "count_materials": [
-    "晴雨伞",
-    "蓝鳞晶",
-    "小星扇贝"
+    "骨焰花",
+    "风舞花",
+    "路灯花",
+    "小野菊",
+    "满满果"
   ],
-  "capacity": 13,
+  "capacity": 19,
   "points": [
     {
-      "x": 6883.24,
-      "y": 4762.08,
+      "x": 8586.15,
+      "y": 5376.19,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 6885.24,
-      "y": 4761.84,
+      "x": 8585.15,
+      "y": 5355.1,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 6888.24,
-      "y": 4761.84,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6891.24,
-      "y": 4758.84,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6909.24,
-      "y": 4758.84,
+      "x": 8595.61,
+      "y": 5350.1,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 13.0
       }
     },
     {
-      "x": 6927.47,
-      "y": 4756.84,
+      "x": 8636.31,
+      "y": 5320.14,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 26.0
+      }
+    },
+    {
+      "x": 8650.78,
+      "y": 5317.55,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
       }
     }
   ]

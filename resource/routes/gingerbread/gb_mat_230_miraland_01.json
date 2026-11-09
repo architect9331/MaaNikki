@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_230_miraland_01",
-  "title": "【绒领毛团】巨木之森·巨兽堡垒断桥旁（13个/258秒）",
+  "title": "【绒领毛团】巨木之森·巨兽堡垒断桥旁（13个/268秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 613,
+  "timeout": 634,
   "teleport": {
     "name": "巨兽堡垒断桥旁",
     "province": "伊赞之土",
@@ -14,16 +14,17 @@
   },
   "material": "绒领毛团",
   "count_materials": [
-    "绒领毛团",
     "结结蕨",
+    "绒领毛团",
     "小野菊",
     "满满果",
+    "发卡蚱蜢",
+    "探险家蜜蜂",
     "咕咕之羽",
     "朝朝蝶",
-    "暮暮蝶",
-    "发卡蚱蜢"
+    "暮暮蝶"
   ],
-  "capacity": 40,
+  "capacity": 46,
   "points": [
     {
       "x": 3631.21,
@@ -120,30 +121,108 @@
       }
     },
     {
-      "x": 3753.9,
-      "y": 9163.56,
+      "x": 3734.19,
+      "y": 9108.44,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 3740.19,
+      "y": 9126.44,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3755.19,
+      "y": 9141.44,
       "radius": 2.0,
       "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 3761.19,
+      "y": 9156.44,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3758.52,
+      "y": 9161.65,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 19.9
       }
     },
     {
-      "x": 3719.8,
-      "y": 9159.64,
+      "x": 3766.52,
+      "y": 9152.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3776.29,
+      "y": 9159.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.1
+      }
+    },
+    {
+      "x": 3773.24,
+      "y": 9170.31,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3770.24,
+      "y": 9173.31,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3752.24,
+      "y": 9179.31,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 17.3
+        "seconds": 3.0
       }
+    },
+    {
+      "x": 3731.24,
+      "y": 9185.31,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
     },
     {
       "x": 3726.24,
       "y": 9187.61,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 17.3

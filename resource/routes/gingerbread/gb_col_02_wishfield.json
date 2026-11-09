@@ -7,7 +7,7 @@
   "routes": [
     {
       "route": "gb_all_florawish_miraland_01",
-      "title": "【全材料·花愿镇】花愿镇·织裙街（40个/142秒）"
+      "title": "【全材料·花愿镇】花愿镇·织裙街（42个/147秒）"
     },
     {
       "route": "gb_all_florawish_miraland_02",
@@ -15,7 +15,7 @@
     },
     {
       "route": "gb_all_florawish_miraland_03",
-      "title": "【全材料·花愿镇】花愿镇·搭配师协会前（23个/94秒）"
+      "title": "【全材料·花愿镇】花愿镇·搭配师协会前（18个/78秒）"
     },
     {
       "route": "gb_all_breezy_miraland_01",
@@ -23,59 +23,59 @@
     },
     {
       "route": "gb_all_breezy_miraland_02",
-      "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（40个/141秒）"
+      "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（37个/131秒）"
     },
     {
       "route": "gb_all_breezy_miraland_03",
-      "title": "【全材料·微风绿野】微风绿野·菲洛米亚女王行宫遗迹西侧树林（28个/100秒）"
-    },
-    {
-      "route": "gb_all_breezy_miraland_04",
       "title": "【全材料·微风绿野】微风绿野·遗迹山坡（22个/81秒）"
     },
     {
+      "route": "gb_all_breezy_miraland_04",
+      "title": "【全材料·微风绿野】微风绿野·废弃疯愿之子营地前哨站（25个/93秒）"
+    },
+    {
       "route": "gb_all_stonewoods_miraland_01",
-      "title": "【全材料·小石树田村】小石树田村·紫穗草花田（34个/121秒）"
+      "title": "【全材料·小石树田村】小石树田村·落石谷（33个/107秒）"
     },
     {
       "route": "gb_all_stonewoods_miraland_02",
-      "title": "【全材料·小石树田村】小石树田村·斯切尔托老宅（37个/145秒）"
+      "title": "【全材料·小石树田村】小石树田村·紫穗草花田（20个/75秒）"
     },
     {
       "route": "gb_all_stonewoods_miraland_03",
-      "title": "【全材料·小石树田村】小石树田村·火冠石树（38个/162秒）"
+      "title": "【全材料·小石树田村】小石树田村·斯切尔托老宅（42个/162秒）"
     },
     {
       "route": "gb_all_abandoned_miraland_01",
-      "title": "【全材料·石树田无人区】石树田无人区·星空钓场旁（小道）（94个/342秒）"
+      "title": "【全材料·石树田无人区】石树田无人区·星空钓场旁（小道）（50个/192秒）"
     },
     {
       "route": "gb_all_abandoned_miraland_02",
-      "title": "【全材料·石树田无人区】石树田无人区·石碑地（23个/86秒）"
+      "title": "【全材料·石树田无人区】石树田无人区·欢乐市集登顶道（10个/45秒）"
     },
     {
       "route": "gb_all_abandoned_miraland_03",
-      "title": "【全材料·石树田无人区】石树田无人区·木桶荫地（34个/129秒）"
+      "title": "【全材料·石树田无人区】石树田无人区·大许愿池（18个/84秒）"
     },
     {
       "route": "gb_all_abandoned_miraland_04",
-      "title": "【全材料·石树田无人区】石树田无人区·大许愿池（15个/57秒）"
+      "title": "【全材料·石树田无人区】石树田无人区·欢乐市集入口（8个/47秒）"
     },
     {
       "route": "gb_all_wishing_miraland_01",
-      "title": "【全材料·祈愿树林】祈愿树林·守卫遗址（42个/147秒）"
+      "title": "【全材料·祈愿树林】祈愿树林·守卫遗址（41个/146秒）"
     },
     {
       "route": "gb_all_wishing_miraland_02",
-      "title": "【全材料·祈愿树林】祈愿树林·古铸剑遗址入口（18个/86秒）"
+      "title": "【全材料·祈愿树林】祈愿树林·愿望质检中心前（15个/72秒）"
     },
     {
       "route": "gb_all_wishing_miraland_03",
-      "title": "【全材料·祈愿树林】祈愿树林·愿望质检中心前（14个/67秒）"
+      "title": "【全材料·祈愿树林】祈愿树林·心愿通行许可处（29个/145秒）"
     },
     {
       "route": "gb_all_wishing_miraland_04",
-      "title": "【全材料·祈愿树林】祈愿树林·古木河畔（13个/73秒）"
+      "title": "【全材料·祈愿树林】祈愿树林·心愿庆典管理处（11个/56秒）"
     }
   ]
 }

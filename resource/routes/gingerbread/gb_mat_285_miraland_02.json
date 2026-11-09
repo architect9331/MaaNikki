@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_285_miraland_02",
-  "title": "【龙棘瑚】埋骨地·修习所（51个/260秒）",
+  "title": "【龙棘瑚】埋骨地·修习所（51个/283秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 618,
+  "timeout": 668,
   "teleport": {
     "name": "修习所",
     "province": "伊赞之土",
@@ -16,14 +16,14 @@
   "count_materials": [
     "龙棘瑚",
     "晴雨伞",
-    "蜉幽幽",
-    "小星扇贝",
     "珠花贝壳",
+    "小星扇贝",
     "汐荧蟹",
+    "蜉幽幽",
     "蓝鳞晶",
     "羽巾绒"
   ],
-  "capacity": 72,
+  "capacity": 80,
   "points": [
     {
       "x": 7817.79,
@@ -42,7 +42,7 @@
       "params": {}
     },
     {
-      "x": 7811.81,
+      "x": 7820.81,
       "y": 5192.57,
       "radius": 2.5,
       "jump": false,
@@ -51,7 +51,7 @@
     },
     {
       "x": 7808.81,
-      "y": 5204.57,
+      "y": 5207.57,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -76,8 +76,26 @@
       "params": {}
     },
     {
-      "x": 7820.81,
+      "x": 7823.81,
+      "y": 5243.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
+      }
+    },
+    {
+      "x": 7823.81,
       "y": 5246.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7829.81,
+      "y": 5252.29,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -86,17 +104,7 @@
       }
     },
     {
-      "x": 7832.81,
-      "y": 5252.29,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 7853.81,
+      "x": 7850.81,
       "y": 5252.29,
       "radius": 2.5,
       "jump": true,
@@ -107,17 +115,53 @@
       "x": 7858.76,
       "y": 5254.31,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 46.8
       }
     },
     {
+      "x": 7854.76,
+      "y": 5259.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7854.76,
+      "y": 5265.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7860.76,
+      "y": 5271.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 7881.76,
+      "y": 5271.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 7903.13,
       "y": 5267.73,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 31.2
@@ -168,15 +212,15 @@
       "params": {}
     },
     {
-      "x": 7895.94,
-      "y": 5209.35,
+      "x": 7904.94,
+      "y": 5203.35,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 7877.94,
+      "x": 7886.94,
       "y": 5197.35,
       "radius": 2.5,
       "jump": false,
@@ -184,8 +228,8 @@
       "params": {}
     },
     {
-      "x": 7862.94,
-      "y": 5182.35,
+      "x": 7877.94,
+      "y": 5179.35,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -202,7 +246,7 @@
       }
     },
     {
-      "x": 7849.93,
+      "x": 7852.93,
       "y": 5173.35,
       "radius": 2.5,
       "jump": false,
@@ -210,15 +254,15 @@
       "params": {}
     },
     {
-      "x": 7831.93,
-      "y": 5185.35,
+      "x": 7837.93,
+      "y": 5188.35,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7816.93,
+      "x": 7819.93,
       "y": 5197.35,
       "radius": 2.5,
       "jump": false,
@@ -226,15 +270,7 @@
       "params": {}
     },
     {
-      "x": 7798.93,
-      "y": 5209.35,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7777.93,
+      "x": 7804.93,
       "y": 5212.35,
       "radius": 2.5,
       "jump": false,
@@ -242,10 +278,18 @@
       "params": {}
     },
     {
-      "x": 7756.93,
+      "x": 7783.93,
       "y": 5212.35,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7762.93,
+      "y": 5212.35,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
     },

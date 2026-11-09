@@ -1,75 +1,40 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_04",
-  "title": "【全材料·巨木之森】巨木之森·壳壳岛洞察学派据点前（8个/42秒）",
+  "title": "【全材料·巨木之森】巨木之森·巨人墓园（7个/38秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 137,
+  "timeout": 128,
   "teleport": {
-    "name": "壳壳岛洞察学派据点前",
+    "name": "巨人墓园",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4858.254,
-    "y": 8854.546
+    "x": 2891.806,
+    "y": 8601.681
   },
   "material": "全材料·巨木之森",
   "count_materials": [
     "小野菊",
-    "路灯花",
-    "纽扣松果"
+    "结结蕨"
   ],
-  "capacity": 8,
+  "capacity": 7,
   "points": [
     {
-      "x": 4858.25,
-      "y": 8854.55,
+      "x": 2891.81,
+      "y": 8601.68,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4862.31,
-      "y": 8851.86,
+      "x": 2875.68,
+      "y": 8652.79,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
-      }
-    },
-    {
-      "x": 4868.31,
-      "y": 8842.86,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4847.31,
-      "y": 8842.86,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4826.31,
-      "y": 8842.86,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4821.31,
-      "y": 8846.86,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
+        "seconds": 18.2
       }
     }
   ]

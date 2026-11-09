@@ -1,28 +1,40 @@
 {
   "schema_version": 3,
   "id": "gb_cat_fish_miraland_08",
-  "title": "【全鱼类垂钓】埋骨地·龙巢山飞瀑崖顶（21个/127秒）",
+  "title": "【全鱼类垂钓】花愿镇·镇长宅邸前（21个/126秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 325,
+  "timeout": 321,
   "teleport": {
-    "name": "龙巢山飞瀑崖顶",
-    "province": "伊赞之土",
-    "region": "埋骨地",
-    "x": 8063.15,
-    "y": 5243.188
+    "name": "镇长宅邸前",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10544.632,
+    "y": 9974.37
   },
   "material": "全鱼类垂钓",
   "count_materials": [
-    "晴雨伞",
-    "风舞花",
-    "钓鱼点"
+    "小绵菊",
+    "瓜子珠",
+    "钓鱼点",
+    "滋滋花粉",
+    "晴日蝶兰/雨滴蝶兰",
+    "满满果",
+    "珠花贝壳"
   ],
   "capacity": 21,
   "points": [
     {
-      "x": 8063.15,
-      "y": 5243.19,
+      "x": 10544.63,
+      "y": 9974.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10541.26,
+      "y": 9970.37,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -31,40 +43,18 @@
       }
     },
     {
-      "x": 8083.15,
-      "y": 5239.21,
-      "radius": 2.5,
+      "x": 10526.26,
+      "y": 9961.37,
+      "radius": 2.0,
       "jump": true,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
     },
     {
-      "x": 8104.15,
-      "y": 5245.21,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8119.15,
-      "y": 5242.21,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8128.15,
-      "y": 5242.21,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8134.15,
-      "y": 5221.21,
+      "x": 10520.26,
+      "y": 9982.37,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -73,49 +63,71 @@
       }
     },
     {
-      "x": 8140.15,
-      "y": 5200.21,
+      "x": 10529.26,
+      "y": 9997.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10523.26,
+      "y": 10015.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10511.26,
+      "y": 10033.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10499.26,
+      "y": 10051.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 10493.26,
+      "y": 10072.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10475.26,
+      "y": 10075.37,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8134.15,
-      "y": 5179.21,
+      "x": 10473.26,
+      "y": 10073.89,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.2
-      }
-    },
-    {
-      "x": 8134.15,
-      "y": 5158.21,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 8137.15,
-      "y": 5137.21,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8146.1,
-      "y": 5120.21,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 41.1
+        "seconds": 44.6
       }
     }
   ]

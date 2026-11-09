@@ -1,96 +1,64 @@
 {
   "schema_version": 3,
   "id": "gb_mat_097_miraland_02",
-  "title": "【滋滋花粉】石树田无人区·志愿兵团哨塔（4个/38秒）",
+  "title": "【滋滋花粉】石树田无人区·石之冠入口（3个/42秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 129,
+  "timeout": 137,
   "teleport": {
-    "name": "志愿兵团哨塔",
+    "name": "石之冠入口",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 8420.194,
-    "y": 9016.353
+    "x": 8532.448,
+    "y": 9050.893
   },
   "material": "滋滋花粉",
   "count_materials": [
-    "滋滋花粉",
-    "领结毛团"
+    "小绵菊",
+    "滋滋花粉"
   ],
-  "capacity": 5,
+  "capacity": 8,
   "points": [
     {
-      "x": 8420.19,
-      "y": 9016.35,
+      "x": 8532.45,
+      "y": 9050.89,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8411.1,
-      "y": 9036.35,
+      "x": 8515.66,
+      "y": 9062.43,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8411.1,
-      "y": 9042.35,
+      "x": 8494.66,
+      "y": 9056.43,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8411.1,
-      "y": 9045.35,
+      "x": 8485.66,
+      "y": 9038.43,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8411.1,
-      "y": 9048.35,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8396.1,
-      "y": 9057.35,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8375.1,
-      "y": 9057.35,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8360.1,
-      "y": 9042.35,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8352.1,
-      "y": 9025.46,
+      "x": 8483.66,
+      "y": 9036.43,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.4
+        "seconds": 20.8
       }
     }
   ]

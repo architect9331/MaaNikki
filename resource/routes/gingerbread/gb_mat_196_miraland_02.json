@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_196_miraland_02",
-  "title": "【袋袋果】巨木之森·巨藤林地北侧探险家营地（3个/43秒）",
+  "title": "【袋袋果】巨木之森·巨藤林地北侧探险家营地（3个/46秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 139,
+  "timeout": 146,
   "teleport": {
     "name": "巨藤林地北侧探险家营地",
     "province": "伊赞之土",
@@ -17,9 +17,10 @@
     "袋袋果",
     "壁灯红椒",
     "结结蕨",
-    "耳坠萤"
+    "耳坠萤",
+    "小野菊"
   ],
-  "capacity": 7,
+  "capacity": 8,
   "points": [
     {
       "x": 4176.29,
@@ -30,7 +31,7 @@
       "params": {}
     },
     {
-      "x": 4162.01,
+      "x": 4162.1,
       "y": 8490.89,
       "radius": 2.5,
       "jump": false,
@@ -38,15 +39,15 @@
       "params": {}
     },
     {
-      "x": 4153.01,
-      "y": 8508.89,
+      "x": 4147.1,
+      "y": 8505.89,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4144.01,
+      "x": 4141.1,
       "y": 8526.89,
       "radius": 2.0,
       "jump": false,
@@ -56,16 +57,16 @@
       }
     },
     {
-      "x": 4141.01,
-      "y": 8541.89,
+      "x": 4126.1,
+      "y": 8538.89,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4127.01,
-      "y": 8545.63,
+      "x": 4124.1,
+      "y": 8539.26,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -74,10 +75,20 @@
       }
     },
     {
+      "x": 4129.1,
+      "y": 8559.26,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
       "x": 4128.11,
       "y": 8561.69,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 7.8

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_080_miraland_01",
-  "title": "【日光果/星光果】祈愿树林·花谷瀑布（3个/60秒）",
+  "title": "【日光果/星光果】祈愿树林·花谷瀑布（3个/35秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 178,
+  "timeout": 122,
   "teleport": {
     "name": "花谷瀑布",
     "province": "心愿原野",
@@ -15,11 +15,9 @@
   "material": "日光果/星光果",
   "count_materials": [
     "日光果/星光果",
-    "面膜草蛉",
-    "小绵菊",
-    "纽扣松果"
+    "面膜草蛉"
   ],
-  "capacity": 9,
+  "capacity": 6,
   "points": [
     {
       "x": 12166.38,
@@ -30,117 +28,13 @@
       "params": {}
     },
     {
-      "x": 12159.38,
-      "y": 9185.63,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12141.38,
-      "y": 9173.63,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12126.38,
-      "y": 9161.63,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12120.38,
-      "y": 9140.63,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12123.38,
-      "y": 9119.63,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12132.38,
-      "y": 9104.63,
+      "x": 12207.15,
+      "y": 9089.48,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 12153.38,
-      "y": 9104.63,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12174.38,
-      "y": 9104.63,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 12195.38,
-      "y": 9101.63,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 12205.39,
-      "y": 9099.63,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 12212.93,
-      "y": 9087.75,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12206.93,
-      "y": 9072.75,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12195.93,
-      "y": 9076.75,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
+        "seconds": 7.8
       }
     }
   ]

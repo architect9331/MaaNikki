@@ -1,0 +1,100 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_076_miraland_03",
+  "title": "【耳坠萤】巨木之森·探险大营地（35个/317秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 742,
+  "teleport": {
+    "name": "探险大营地",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3510.035,
+    "y": 9419.993
+  },
+  "material": "耳坠萤",
+  "count_materials": [
+    "耳坠萤",
+    "小野菊",
+    "刺绣蛾",
+    "垂穗魔果",
+    "结结蕨"
+  ],
+  "capacity": 40,
+  "points": [
+    {
+      "x": 3510.03,
+      "y": 9419.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 3491.91,
+      "y": 9387.42,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 111.1
+      }
+    },
+    {
+      "x": 3486.17,
+      "y": 9384.25,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 53.2
+      }
+    },
+    {
+      "x": 3500.17,
+      "y": 9395.6,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3515.17,
+      "y": 9392.6,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3533.17,
+      "y": 9383.6,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3548.17,
+      "y": 9383.6,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 58.6
+      }
+    },
+    {
+      "x": 3550.48,
+      "y": 9381.6,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 63.1
+      }
+    }
+  ]
+}

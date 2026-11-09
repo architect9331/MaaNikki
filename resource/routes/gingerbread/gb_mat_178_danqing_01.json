@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_178_danqing_01",
-  "title": "【远黛扇羽】丹青屿·望水渡（6个/159秒）",
+  "title": "【远黛扇羽】丹青屿·望水渡（6个/157秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 395,
+  "timeout": 390,
   "teleport": {
     "name": "望水渡",
     "province": "心愿原野",
@@ -24,15 +24,17 @@
     "珠链蝶",
     "胭脂芙蕖"
   ],
-  "capacity": 23,
+  "capacity": 22,
   "points": [
     {
       "x": 1328.8,
       "y": 1218.71,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 1336.8,
@@ -89,26 +91,32 @@
       }
     },
     {
-      "x": 1314.48,
-      "y": 1203.13,
+      "x": 1317.48,
+      "y": 1194.13,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1326.48,
-      "y": 1221.13,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "x": 1335.48,
+      "y": 1206.13,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
       "x": 1341.48,
-      "y": 1236.13,
+      "y": 1227.13,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1356.48,
+      "y": 1242.13,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -117,16 +125,8 @@
       }
     },
     {
-      "x": 1359.48,
-      "y": 1248.13,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1374.48,
-      "y": 1263.13,
+      "x": 1371.48,
+      "y": 1257.13,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -143,8 +143,8 @@
       }
     },
     {
-      "x": 1381.48,
-      "y": 1245.76,
+      "x": 1387.48,
+      "y": 1248.76,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -153,21 +153,21 @@
       }
     },
     {
-      "x": 1387.48,
-      "y": 1227.76,
+      "x": 1399.48,
+      "y": 1230.76,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 1402.48,
+      "x": 1405.48,
       "y": 1212.76,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {

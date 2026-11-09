@@ -1,43 +1,60 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_04",
-  "title": "【全材料·万相境】万相境·彩靥城近郊（6个/52秒）",
+  "title": "【全材料·万相境】万相境·九华监（12个/96秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 159,
+  "timeout": 256,
   "teleport": {
-    "name": "彩靥城近郊",
+    "name": "九华监",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1598.932,
-    "y": 983.366
+    "x": 1592.363,
+    "y": 835.825
   },
   "material": "全材料·万相境",
   "count_materials": [
+    "耳坠萤",
+    "珠链蝶",
     "荷包草",
-    "蓝珀鸟羽",
-    "画眉毛团"
+    "小绵菊"
   ],
-  "capacity": 6,
+  "capacity": 12,
   "points": [
     {
-      "x": 1598.93,
-      "y": 983.37,
+      "x": 1592.36,
+      "y": 835.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1591.36,
+      "y": 837.83,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {
-      "x": 1604.37,
-      "y": 1003.79,
+      "x": 1597.36,
+      "y": 843.83,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1617.12,
+      "y": 845.51,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 33.7
+        "seconds": 74.6
       }
     }
   ]

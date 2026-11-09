@@ -4,7 +4,7 @@
   "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（38个/134秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 339,
+  "timeout": 341,
   "teleport": {
     "name": "筑心王国边境哨所",
     "province": "心愿原野",
@@ -27,6 +27,30 @@
       "y": 11960.81,
       "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10787.91,
+      "y": 11939.95,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10793.91,
+      "y": 11918.95,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10787.91,
+      "y": 11903.95,
+      "radius": 2.5,
+      "jump": true,
       "action": "",
       "params": {}
     },

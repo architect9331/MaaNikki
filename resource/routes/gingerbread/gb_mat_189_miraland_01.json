@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_189_miraland_01",
-  "title": "【小野菊】巨木之森·巨人密殿遗迹（44个/169秒）",
+  "title": "【小野菊】巨木之森·巨人密殿遗迹（46个/191秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 417,
+  "timeout": 465,
   "teleport": {
     "name": "巨人密殿遗迹",
     "province": "伊赞之土",
@@ -19,11 +19,19 @@
     "纽扣松果",
     "木夹跳甲"
   ],
-  "capacity": 63,
+  "capacity": 61,
   "points": [
     {
       "x": 2847.02,
       "y": 8318.31,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2849.02,
+      "y": 8317.31,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -42,7 +50,7 @@
       }
     },
     {
-      "x": 2832.6,
+      "x": 2835.6,
       "y": 8345.6,
       "radius": 2.0,
       "jump": false,
@@ -50,6 +58,22 @@
       "params": {
         "seconds": 15.6
       }
+    },
+    {
+      "x": 2832.94,
+      "y": 8330.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2820.94,
+      "y": 8324.12,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
     },
     {
       "x": 2818.94,
@@ -82,8 +106,78 @@
       }
     },
     {
-      "x": 2720.42,
-      "y": 8362.99,
+      "x": 2767.05,
+      "y": 8306.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 2787.05,
+      "y": 8314.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2805.05,
+      "y": 8326.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2826.05,
+      "y": 8326.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2832.05,
+      "y": 8329.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2832.05,
+      "y": 8332.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2850.05,
+      "y": 8341.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 2865.05,
+      "y": 8356.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 2872.72,
+      "y": 8363.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -92,23 +186,13 @@
       }
     },
     {
-      "x": 2680.33,
-      "y": 8412.67,
+      "x": 2948.37,
+      "y": 8377.85,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
-      }
-    },
-    {
-      "x": 2692.31,
-      "y": 8436.32,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.0
+        "seconds": 20.8
       }
     }
   ]

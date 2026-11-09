@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_075_miraland_01",
-  "title": "【美甲金龟】祈愿树林·幽林山洞（4个/75秒）",
+  "title": "【美甲金龟】祈愿树林·幽林山洞（4个/80秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 210,
+  "timeout": 221,
   "teleport": {
     "name": "幽林山洞",
     "province": "心愿原野",
@@ -16,9 +16,11 @@
   "count_materials": [
     "纽扣松果",
     "美甲金龟",
-    "路灯花"
+    "星荧草",
+    "路灯花",
+    "发卡蚱蜢"
   ],
-  "capacity": 11,
+  "capacity": 14,
   "points": [
     {
       "x": 11964.59,
@@ -29,34 +31,18 @@
       "params": {}
     },
     {
-      "x": 11972.59,
-      "y": 9794.67,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11972.27,
+      "x": 11973.68,
       "y": 9800.95,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 37.0
+        "seconds": 42.2
       }
     },
     {
       "x": 11969.28,
-      "y": 9784.77,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11963.28,
-      "y": 9769.77,
+      "y": 9781.77,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -64,7 +50,7 @@
     },
     {
       "x": 11963.28,
-      "y": 9751.77,
+      "y": 9760.77,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -74,7 +60,7 @@
       "x": 11957.28,
       "y": 9742.77,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },

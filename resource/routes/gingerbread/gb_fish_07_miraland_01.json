@@ -4,7 +4,7 @@
   "title": "【提包鱼】花愿镇·织裙街（6个/130秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 331,
+  "timeout": 330,
   "teleport": {
     "name": "织裙街",
     "province": "心愿原野",
@@ -100,42 +100,10 @@
       "params": {}
     },
     {
-      "x": 10776.78,
-      "y": 10136.48,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10779.78,
-      "y": 10139.48,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10782.78,
-      "y": 10139.48,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10785.78,
-      "y": 10136.48,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 10788.04,
       "y": 10133.47,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 41.1

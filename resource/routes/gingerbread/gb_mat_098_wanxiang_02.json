@@ -1,0 +1,54 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_098_wanxiang_02",
+  "title": "【小星扇贝】万相境·迷花甸（5个/50秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 155,
+  "teleport": {
+    "name": "迷花甸",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 1437.138,
+    "y": 1501.957
+  },
+  "material": "小星扇贝",
+  "count_materials": [
+    "小星扇贝",
+    "芭蕾豆娘",
+    "荷包草"
+  ],
+  "capacity": 11,
+  "points": [
+    {
+      "x": 1437.14,
+      "y": 1501.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1537.79,
+      "y": 1492.86,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 1573.77,
+      "y": 1510.85,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    }
+  ]
+}

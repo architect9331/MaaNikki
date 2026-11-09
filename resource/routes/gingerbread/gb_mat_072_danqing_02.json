@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_072_danqing_02",
-  "title": "【刺绣蛾】丹青屿·墨缘坊市（11个/168秒）",
+  "title": "【刺绣蛾】丹青屿·墨缘坊市（11个/167秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 414,
+  "timeout": 413,
   "teleport": {
     "name": "墨缘坊市",
     "province": "心愿原野",
@@ -14,21 +14,28 @@
   },
   "material": "刺绣蛾",
   "count_materials": [
-    "耳坠萤",
     "珠链蝶",
+    "耳坠萤",
     "刺绣蛾",
-    "小绵菊",
-    "画眉毛团",
     "荷包草",
+    "画眉毛团",
+    "小绵菊",
     "蓝珀鸟羽",
-    "玉簪蚱蜢",
     "满满果"
   ],
-  "capacity": 59,
+  "capacity": 54,
   "points": [
     {
       "x": 1495.7,
       "y": 1089.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1497.7,
+      "y": 1088.11,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -45,15 +52,25 @@
       }
     },
     {
-      "x": 1487.44,
-      "y": 1103.11,
+      "x": 1499.44,
+      "y": 1097.11,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1481.44,
+      "x": 1499.44,
+      "y": 1106.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1478.44,
       "y": 1109.11,
       "radius": 2.5,
       "jump": false,
@@ -71,32 +88,52 @@
       }
     },
     {
-      "x": 1484.44,
-      "y": 1108.11,
+      "x": 1472.11,
+      "y": 1109.7,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1487.44,
-      "y": 1093.11,
+      "x": 1472.11,
+      "y": 1112.7,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1487.44,
-      "y": 1081.11,
+      "x": 1472.11,
+      "y": 1115.7,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1484.21,
-      "y": 1079.11,
+      "x": 1463.11,
+      "y": 1130.7,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1455.11,
+      "y": 1129.23,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 1441.07,
+      "y": 1129.08,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -105,8 +142,122 @@
       }
     },
     {
-      "x": 1517.14,
-      "y": 1084.56,
+      "x": 1431.07,
+      "y": 1127.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1428.07,
+      "y": 1109.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1443.07,
+      "y": 1094.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1461.07,
+      "y": 1088.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1466.66,
+      "y": 1083.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.6
+      }
+    },
+    {
+      "x": 1465.66,
+      "y": 1063.26,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1486.66,
+      "y": 1060.26,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1507.66,
+      "y": 1060.26,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1528.66,
+      "y": 1066.26,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1537.88,
+      "y": 1073.26,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 1536.88,
+      "y": 1093.26,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1530.88,
+      "y": 1099.26,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1530.88,
+      "y": 1102.26,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1531.88,
+      "y": 1105.84,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -115,34 +266,16 @@
       }
     },
     {
-      "x": 1537.14,
-      "y": 1089.56,
+      "x": 1533.88,
+      "y": 1108.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1546.14,
-      "y": 1095.56,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1536.5,
-      "y": 1107.75,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
-      }
-    },
-    {
-      "x": 1553.5,
-      "y": 1096.64,
+      "x": 1551.88,
+      "y": 1099.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -153,82 +286,6 @@
       "y": 1097.64,
       "radius": 2.0,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
-      }
-    },
-    {
-      "x": 1559.97,
-      "y": 1101.78,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1580.97,
-      "y": 1101.78,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 1601.97,
-      "y": 1101.78,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1611.78,
-      "y": 1096.78,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.8
-      }
-    },
-    {
-      "x": 1594.78,
-      "y": 1088.15,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 1573.78,
-      "y": 1082.15,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 1561.78,
-      "y": 1064.15,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 1541.78,
-      "y": 1065.15,
-      "radius": 2.0,
-      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 7.1

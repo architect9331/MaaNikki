@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_serenity_serenity_01",
-  "title": "【全材料·无忧岛】无忧岛·布蜜蜜花园（24个/95秒）",
+  "title": "【全材料·无忧岛】无忧岛·布蜜蜜花园（27个/103秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 254,
+  "timeout": 272,
   "teleport": {
     "name": "布蜜蜜花园",
     "province": "心愿原野",
@@ -19,9 +19,11 @@
     "飞球果",
     "小绵菊",
     "纽扣松果",
+    "布布果",
+    "路灯花",
     "丝巾蛾"
   ],
-  "capacity": 24,
+  "capacity": 27,
   "points": [
     {
       "x": 840.84,
@@ -78,8 +80,8 @@
       }
     },
     {
-      "x": 779.37,
-      "y": 833.6,
+      "x": 785.37,
+      "y": 830.6,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -88,12 +90,30 @@
       }
     },
     {
-      "x": 776.37,
-      "y": 845.6,
+      "x": 788.37,
+      "y": 833.6,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
+    },
+    {
+      "x": 785.37,
+      "y": 839.6,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 770.37,
+      "y": 851.6,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
     },
     {
       "x": 768.37,

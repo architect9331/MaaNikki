@@ -1,68 +1,160 @@
 {
   "schema_version": 3,
   "id": "gb_mat_097_miraland_01",
-  "title": "【滋滋花粉】石树田无人区·大许愿池（6个/52秒）",
+  "title": "【滋滋花粉】石树田无人区·志愿兵团哨塔（4个/55秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 160,
+  "timeout": 166,
   "teleport": {
-    "name": "大许愿池",
+    "name": "志愿兵团哨塔",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 8516.432,
-    "y": 9027.955
+    "x": 8420.194,
+    "y": 9016.353
   },
   "material": "滋滋花粉",
   "count_materials": [
     "滋滋花粉",
-    "瓜子珠",
-    "飞球果",
-    "纽扣松果"
+    "领结毛团"
   ],
-  "capacity": 13,
+  "capacity": 5,
   "points": [
     {
-      "x": 8516.43,
-      "y": 9027.95,
+      "x": 8420.19,
+      "y": 9016.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8420.1,
+      "y": 9027.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8441.1,
+      "y": 9033.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8459.1,
+      "y": 9045.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8465.1,
+      "y": 9048.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8468.1,
+      "y": 9051.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8471.1,
+      "y": 9054.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8465.1,
+      "y": 9075.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8465.1,
+      "y": 9078.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8462.1,
+      "y": 9081.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8441.1,
+      "y": 9081.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8420.1,
+      "y": 9081.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8399.1,
+      "y": 9078.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8384.1,
+      "y": 9066.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8369.1,
+      "y": 9051.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8354.1,
+      "y": 9036.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8352.1,
+      "y": 9025.46,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 8520.9,
-      "y": 9029.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8505.9,
-      "y": 9044.95,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8502.9,
-      "y": 9047.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8488.9,
-      "y": 9050.39,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 31.2
+        "seconds": 10.4
       }
     }
   ]

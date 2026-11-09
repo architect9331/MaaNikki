@@ -1,28 +1,91 @@
 {
   "schema_version": 3,
   "id": "gb_mat_234_miraland_01",
-  "title": "【风旋果】巨木之森·安眠之林（5个/64秒）",
+  "title": "【风旋果】巨木之森·深林小径（2个/68秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 186,
+  "timeout": 195,
   "teleport": {
-    "name": "安眠之林",
+    "name": "深林小径",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4069.368,
-    "y": 9156.471
+    "x": 3996.951,
+    "y": 8847.273
   },
   "material": "风旋果",
   "count_materials": [
     "风旋果",
-    "结结蕨",
     "小野菊"
   ],
-  "capacity": 7,
+  "capacity": 3,
   "points": [
     {
-      "x": 4069.37,
-      "y": 9156.47,
+      "x": 3996.95,
+      "y": 8847.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4001.95,
+      "y": 8832.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4021.95,
+      "y": 8828.27,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4041.95,
+      "y": 8832.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4061.95,
+      "y": 8836.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4069.95,
+      "y": 8836.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4073.95,
+      "y": 8856.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4069.95,
+      "y": 8876.27,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4061.95,
+      "y": 8892.27,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -31,100 +94,72 @@
       }
     },
     {
-      "x": 4083.37,
-      "y": 9170.47,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 4104.37,
-      "y": 9176.47,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4113.37,
-      "y": 9194.47,
+      "x": 4057.95,
+      "y": 8912.27,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 4113.37,
-      "y": 9215.47,
+      "x": 4057.95,
+      "y": 8932.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4112.96,
-      "y": 9223.64,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 4112.34,
-      "y": 9201.65,
+      "x": 4057.95,
+      "y": 8952.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4115.34,
-      "y": 9180.65,
+      "x": 4053.95,
+      "y": 8972.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4115.34,
-      "y": 9159.65,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4100.34,
-      "y": 9144.65,
+      "x": 4053.95,
+      "y": 8992.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4091.34,
-      "y": 9126.65,
+      "x": 4057.95,
+      "y": 9012.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4085.34,
-      "y": 9108.65,
+      "x": 4057.95,
+      "y": 9032.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4070.34,
-      "y": 9093.65,
+      "x": 4061.95,
+      "y": 9052.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4065.95,
+      "y": 9072.27,
       "radius": 2.5,
       "jump": false,
       "action": "",

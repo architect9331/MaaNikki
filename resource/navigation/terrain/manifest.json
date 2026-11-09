@@ -9,7 +9,7 @@
     "z_offset": -300.0,
     "z_scale": 64.0,
     "z_min": -255.5,
-    "z_max": 109.8
+    "z_max": 110.0
   },
   "starsea": {
     "image": "terrain/starsea.png",

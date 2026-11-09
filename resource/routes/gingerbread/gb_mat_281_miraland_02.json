@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_281_miraland_02",
-  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（33个/149秒）",
+  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（39个/161秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 373,
+  "timeout": 399,
   "teleport": {
     "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
@@ -15,13 +15,17 @@
   "material": "晴雨伞",
   "count_materials": [
     "晴雨伞",
-    "风舞花",
+    "耳坠萤",
+    "大叶鹿绒",
     "钓鱼点",
+    "羽巾绒",
+    "茸芽鹿绒",
+    "风舞花",
     "蜜妆兔绒",
-    "蜜妆粉",
-    "蓝鳞晶"
+    "蓝鳞晶",
+    "蜜妆粉"
   ],
-  "capacity": 43,
+  "capacity": 64,
   "points": [
     {
       "x": 8063.15,
@@ -34,76 +38,32 @@
       }
     },
     {
-      "x": 8080.15,
-      "y": 5237.19,
+      "x": 8062.15,
+      "y": 5221.88,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 8101.15,
-      "y": 5243.19,
+      "x": 8068.15,
+      "y": 5203.88,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8116.15,
-      "y": 5243.19,
+      "x": 8080.15,
+      "y": 5188.88,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8131.15,
-      "y": 5240.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8137.15,
-      "y": 5219.19,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 8140.15,
-      "y": 5198.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8134.15,
-      "y": 5180.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8129.31,
-      "y": 5172.19,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 31.2
-      }
-    },
-    {
-      "x": 8085.72,
-      "y": 5180.51,
+      "x": 8082.81,
+      "y": 5186.88,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -112,23 +72,91 @@
       }
     },
     {
-      "x": 8100.11,
-      "y": 5143.93,
+      "x": 8129.31,
+      "y": 5172.19,
       "radius": 2.0,
       "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 31.2
+      }
+    },
+    {
+      "x": 8150.19,
+      "y": 5152.09,
+      "radius": 2.0,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 18.2
       }
     },
     {
-      "x": 8149.7,
-      "y": 5141.1,
+      "x": 8100.11,
+      "y": 5143.93,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 18.2
+      }
+    },
+    {
+      "x": 8088.28,
+      "y": 5160.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8067.28,
+      "y": 5166.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8046.28,
+      "y": 5169.93,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8043.28,
+      "y": 5169.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8040.28,
+      "y": 5169.93,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8037.28,
+      "y": 5169.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8035.28,
+      "y": 5170.36,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
       }
     }
   ]

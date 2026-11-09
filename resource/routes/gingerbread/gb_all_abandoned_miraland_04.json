@@ -1,30 +1,31 @@
 {
   "schema_version": 3,
   "id": "gb_all_abandoned_miraland_04",
-  "title": "【全材料·石树田无人区】石树田无人区·大许愿池（15个/57秒）",
+  "title": "【全材料·石树田无人区】石树田无人区·欢乐市集入口（8个/47秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 170,
+  "timeout": 149,
   "teleport": {
-    "name": "大许愿池",
+    "name": "欢乐市集入口",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 8516.432,
-    "y": 9027.955
+    "x": 8375.994,
+    "y": 9845.598
   },
   "material": "全材料·石树田无人区",
   "count_materials": [
-    "滋滋花粉",
-    "瓜子珠",
-    "飞球果",
-    "风絮草",
-    "纽扣松果"
+    "满满果",
+    "路灯花",
+    "刺绣蛾",
+    "珠链蝶",
+    "纽扣松果",
+    "小绵菊"
   ],
-  "capacity": 15,
+  "capacity": 8,
   "points": [
     {
-      "x": 8516.43,
-      "y": 9027.95,
+      "x": 8375.99,
+      "y": 9845.6,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -33,37 +34,39 @@
       }
     },
     {
-      "x": 8512.93,
-      "y": 9026.95,
+      "x": 8375.97,
+      "y": 9842.24,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8503.93,
-      "y": 9026.95,
+      "x": 8372.97,
+      "y": 9836.24,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 8488.93,
-      "y": 9041.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
+      "x": 8366.97,
+      "y": 9836.24,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
-      "x": 8489.93,
-      "y": 9048.47,
+      "x": 8364.97,
+      "y": 9840.24,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 36.4
+        "seconds": 26.4
       }
     }
   ]

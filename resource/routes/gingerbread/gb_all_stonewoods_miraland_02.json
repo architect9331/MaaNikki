@@ -1,61 +1,30 @@
 {
   "schema_version": 3,
   "id": "gb_all_stonewoods_miraland_02",
-  "title": "【全材料·小石树田村】小石树田村·斯切尔托老宅（37个/145秒）",
+  "title": "【全材料·小石树田村】小石树田村·紫穗草花田（20个/75秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 364,
+  "timeout": 210,
   "teleport": {
-    "name": "斯切尔托老宅",
+    "name": "紫穗草花田",
     "province": "心愿原野",
     "region": "小石树田村",
-    "x": 9071.793,
-    "y": 10403.813
+    "x": 9342.041,
+    "y": 10401.192
   },
   "material": "全材料·小石树田村",
   "count_materials": [
     "布布果",
     "纽扣松果",
-    "路灯花",
     "小绵菊",
-    "抱抱绒团",
-    "发卡蚱蜢"
+    "滋滋花粉",
+    "路灯花"
   ],
-  "capacity": 37,
+  "capacity": 20,
   "points": [
     {
-      "x": 9071.79,
-      "y": 10403.81,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 9073.79,
-      "y": 10399.81,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 9094.79,
-      "y": 10393.81,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.0
-      }
-    },
-    {
-      "x": 9112.79,
-      "y": 10390.81,
+      "x": 9342.04,
+      "y": 10401.19,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -64,39 +33,41 @@
       }
     },
     {
-      "x": 9121.79,
-      "y": 10408.81,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9127.79,
-      "y": 10429.81,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9127.22,
-      "y": 10440.07,
+      "x": 9322.39,
+      "y": 10404.36,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 51.1
+        "seconds": 3.0
       }
     },
     {
-      "x": 9130.78,
-      "y": 10417.47,
+      "x": 9304.39,
+      "y": 10401.36,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9302.39,
+      "y": 10387.36,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 40.9
+        "seconds": 31.2
+      }
+    },
+    {
+      "x": 9291.96,
+      "y": 10407.65,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
       }
     }
   ]

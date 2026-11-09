@@ -1,54 +1,52 @@
 {
   "schema_version": 3,
   "id": "gb_mat_055_miraland_01",
-  "title": "【领结毛团】小石树田村·村居岔路（1个/29秒）",
+  "title": "【领结毛团】石树田无人区·呜呜车站旧月台（1个/24秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
   "teleport": {
-    "name": "村居岔路",
+    "name": "呜呜车站旧月台",
     "province": "心愿原野",
-    "region": "小石树田村",
-    "x": 9389.052,
-    "y": 10562.456
+    "region": "石树田无人区",
+    "x": 8668.996,
+    "y": 9561.114
   },
   "material": "领结毛团",
   "count_materials": [
-    "刺绣蛾",
-    "领结毛团",
-    "汪汪毛线"
+    "领结毛团"
   ],
-  "capacity": 3,
+  "capacity": 1,
   "points": [
     {
-      "x": 9389.05,
-      "y": 10562.46,
+      "x": 8669.0,
+      "y": 9561.11,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9409.05,
-      "y": 10553.76,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9427.05,
-      "y": 10544.76,
+      "x": 8677.0,
+      "y": 9569.11,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9429.52,
-      "y": 10527.76,
+      "x": 8680.0,
+      "y": 9572.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8686.65,
+      "y": 9576.62,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 8.6

@@ -94,8 +94,24 @@
       }
     },
     {
+      "x": 11707.58,
+      "y": 8988.53,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11686.58,
+      "y": 8982.53,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 11681.58,
-      "y": 8985.53,
+      "y": 8980.53,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

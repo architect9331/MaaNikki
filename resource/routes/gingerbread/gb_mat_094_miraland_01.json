@@ -1,60 +1,39 @@
 {
   "schema_version": 3,
   "id": "gb_mat_094_miraland_01",
-  "title": "【风絮草】小石树田村·村居岔路（9个/45秒）",
+  "title": "【风絮草】石树田无人区·志愿兵团哨塔（5个/27秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 145,
+  "timeout": 120,
   "teleport": {
-    "name": "村居岔路",
+    "name": "志愿兵团哨塔",
     "province": "心愿原野",
-    "region": "小石树田村",
-    "x": 9389.052,
-    "y": 10562.456
+    "region": "石树田无人区",
+    "x": 8420.194,
+    "y": 9016.353
   },
   "material": "风絮草",
   "count_materials": [
-    "风絮草",
-    "芭蕾豆娘",
-    "发卡蚱蜢",
-    "小绵菊"
+    "风絮草"
   ],
-  "capacity": 14,
+  "capacity": 5,
   "points": [
     {
-      "x": 9389.05,
-      "y": 10562.46,
+      "x": 8420.19,
+      "y": 9016.35,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9378.63,
-      "y": 10579.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9379.63,
-      "y": 10585.73,
+      "x": 8415.85,
+      "y": 9000.33,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
-      }
-    },
-    {
-      "x": 9364.81,
-      "y": 10564.26,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 10.4
+        "seconds": 13.0
       }
     }
   ]

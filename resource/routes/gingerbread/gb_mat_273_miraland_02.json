@@ -1,164 +1,66 @@
 {
   "schema_version": 3,
   "id": "gb_mat_273_miraland_02",
-  "title": "【大叶鹿绒】埋骨地·龙埙遗所（11个/233秒）",
+  "title": "【大叶鹿绒】埋骨地·龙巢山飞瀑崖顶（8个/145秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 558,
+  "timeout": 363,
   "teleport": {
-    "name": "龙埙遗所",
+    "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 8586.154,
-    "y": 5376.194
+    "x": 8063.15,
+    "y": 5243.188
   },
   "material": "大叶鹿绒",
   "count_materials": [
+    "晴雨伞",
     "大叶鹿绒",
-    "茸芽鹿绒",
-    "小野菊",
+    "耳坠萤",
     "风舞花",
-    "金灵毛球",
-    "羽巾绒",
-    "满满果",
-    "探险家蜜蜂",
-    "烛融花/烛荧花"
+    "茸芽鹿绒"
   ],
-  "capacity": 70,
+  "capacity": 25,
   "points": [
     {
-      "x": 8586.15,
-      "y": 5376.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8606.15,
-      "y": 5381.19,
+      "x": 8063.15,
+      "y": 5243.19,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 3.0
       }
     },
     {
-      "x": 8621.15,
-      "y": 5393.19,
+      "x": 8057.26,
+      "y": 5242.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 8051.26,
+      "y": 5260.19,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8639.15,
-      "y": 5405.19,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 8660.15,
-      "y": 5408.19,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 8676.31,
-      "y": 5407.48,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 81.2
-      }
-    },
-    {
-      "x": 8676.44,
-      "y": 5409.48,
+      "x": 8048.26,
+      "y": 5281.19,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8661.44,
-      "y": 5424.48,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 8646.44,
-      "y": 5436.48,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 8631.44,
-      "y": 5451.48,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.6
-      }
-    },
-    {
-      "x": 8613.44,
-      "y": 5463.48,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 8595.44,
-      "y": 5469.48,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8577.44,
-      "y": 5478.48,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8569.44,
-      "y": 5480.3,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 22.5
-      }
-    },
-    {
-      "x": 8525.05,
-      "y": 5513.01,
+      "x": 8046.26,
+      "y": 5300.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -167,13 +69,145 @@
       }
     },
     {
-      "x": 8543.32,
-      "y": 5561.62,
-      "radius": 2.0,
+      "x": 8045.96,
+      "y": 5280.27,
+      "radius": 2.5,
       "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8051.96,
+      "y": 5259.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8057.96,
+      "y": 5241.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8060.96,
+      "y": 5220.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8060.96,
+      "y": 5199.27,
+      "radius": 2.0,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.7
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 8051.96,
+      "y": 5181.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8048.96,
+      "y": 5169.27,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8045.96,
+      "y": 5169.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8042.96,
+      "y": 5169.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 8039.96,
+      "y": 5169.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 8036.96,
+      "y": 5169.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.3
+      }
+    },
+    {
+      "x": 8033.96,
+      "y": 5166.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8033.96,
+      "y": 5163.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8033.96,
+      "y": 5160.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 8033.96,
+      "y": 5157.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 8031.96,
+      "y": 5155.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 27.6
       }
     }
   ]

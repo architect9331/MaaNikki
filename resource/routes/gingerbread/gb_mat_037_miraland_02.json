@@ -1,52 +1,43 @@
 {
   "schema_version": 3,
   "id": "gb_mat_037_miraland_02",
-  "title": "【汪汪毛线】花愿镇·镇长宅邸前（2个/37秒）",
+  "title": "【汪汪毛线】微风绿野·悠悠垂钓协会花愿镇分部（2个/43秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 127,
+  "timeout": 139,
   "teleport": {
-    "name": "镇长宅邸前",
+    "name": "悠悠垂钓协会花愿镇分部",
     "province": "心愿原野",
-    "region": "花愿镇",
-    "x": 10544.632,
-    "y": 9974.37
+    "region": "微风绿野",
+    "x": 10278.224,
+    "y": 10210.305
   },
   "material": "汪汪毛线",
   "count_materials": [
+    "小绵菊",
     "美食家蜜蜂",
-    "汪汪毛线",
-    "满满果",
-    "小绵菊"
+    "汪汪毛线"
   ],
-  "capacity": 7,
+  "capacity": 10,
   "points": [
     {
-      "x": 10544.63,
-      "y": 9974.37,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10543.63,
-      "y": 9971.37,
+      "x": 10278.22,
+      "y": 10210.31,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 10552.48,
-      "y": 9963.37,
+      "x": 10285.3,
+      "y": 10211.55,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 18.1
+        "seconds": 26.8
       }
     }
   ]

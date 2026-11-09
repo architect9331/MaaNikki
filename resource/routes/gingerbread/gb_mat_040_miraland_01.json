@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_040_miraland_01",
-  "title": "【贵族卷毛】微风绿野·捕虫小屋（2个/79秒）",
+  "title": "【贵族卷毛】微风绿野·捕虫小屋（2个/84秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 219,
+  "timeout": 230,
   "teleport": {
     "name": "捕虫小屋",
     "province": "心愿原野",
@@ -18,7 +18,7 @@
     "骑士马鬃",
     "贵族卷毛"
   ],
-  "capacity": 13,
+  "capacity": 15,
   "points": [
     {
       "x": 10143.9,
@@ -65,8 +65,8 @@
       }
     },
     {
-      "x": 10208.9,
-      "y": 10519.93,
+      "x": 10204.9,
+      "y": 10523.93,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -85,24 +85,28 @@
       }
     },
     {
-      "x": 10216.9,
-      "y": 10559.93,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10224.9,
-      "y": 10575.93,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
+      "x": 10228.9,
+      "y": 10555.93,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 10236.9,
-      "y": 10591.93,
+      "y": 10567.93,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10240.9,
+      "y": 10587.93,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -111,7 +115,7 @@
       }
     },
     {
-      "x": 10248.9,
+      "x": 10252.9,
       "y": 10603.93,
       "radius": 2.5,
       "jump": false,

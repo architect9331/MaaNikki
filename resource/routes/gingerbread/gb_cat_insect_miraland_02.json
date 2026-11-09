@@ -1,0 +1,56 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_miraland_02",
+  "title": "【全昆虫速刷】磐城·丰饶环圃（38个/254秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 603,
+  "teleport": {
+    "name": "丰饶环圃",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3679.349,
+    "y": 4116.242
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "珠链蝶",
+    "探险家蜜蜂",
+    "小野菊",
+    "蓝玉甲虫",
+    "金轴蜻蜓",
+    "满满果",
+    "珠坠甲虫"
+  ],
+  "capacity": 38,
+  "points": [
+    {
+      "x": 3679.35,
+      "y": 4116.24,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3662.07,
+      "y": 4122.02,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 150.0
+      }
+    },
+    {
+      "x": 3614.14,
+      "y": 4135.57,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 82.4
+      }
+    }
+  ]
+}

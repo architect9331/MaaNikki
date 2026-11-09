@@ -1,127 +1,67 @@
 {
   "schema_version": 3,
   "id": "gb_mat_231_miraland_01",
-  "title": "【行鹭羽】巨木之森·壳壳岛东南侧对岸码头（17个/197秒）",
+  "title": "【行鹭羽】巨木之森·古木荫地附近遗迹（6个/78秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 479,
+  "timeout": 216,
   "teleport": {
-    "name": "壳壳岛东南侧对岸码头",
+    "name": "古木荫地附近遗迹",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 5027.659,
-    "y": 9080.291
+    "x": 3704.478,
+    "y": 9230.438
   },
   "material": "行鹭羽",
   "count_materials": [
     "行鹭羽",
-    "钓鱼点",
-    "刺绣蛾"
+    "小野菊",
+    "织衣蛛"
   ],
-  "capacity": 30,
+  "capacity": 8,
   "points": [
     {
-      "x": 5027.66,
-      "y": 9080.29,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5002.38,
-      "y": 9064.9,
+      "x": 3704.48,
+      "y": 9230.44,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.1
+        "seconds": 3.0
       }
     },
     {
-      "x": 5001.27,
-      "y": 9067.05,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 18.1
-      }
-    },
-    {
-      "x": 5003.67,
-      "y": 9057.09,
+      "x": 3697.48,
+      "y": 9250.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 5003.67,
-      "y": 9054.09,
+      "x": 3700.48,
+      "y": 9262.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4988.67,
-      "y": 9042.09,
+      "x": 3700.48,
+      "y": 9265.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4973.67,
-      "y": 9027.09,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4958.67,
-      "y": 9012.09,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4940.67,
-      "y": 9003.09,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4919.67,
-      "y": 9000.09,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4908.67,
-      "y": 8989.09,
+      "x": 3704.92,
+      "y": 9275.08,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 75.1
-      }
-    },
-    {
-      "x": 4883.32,
-      "y": 9012.98,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 46.6
+        "seconds": 56.1
       }
     }
   ]

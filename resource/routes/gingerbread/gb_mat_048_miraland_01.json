@@ -4,7 +4,7 @@
   "title": "【鹿冠毛团】祈愿树林·巨树浅滩（1个/48秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 150,
+  "timeout": 152,
   "teleport": {
     "name": "巨树浅滩",
     "province": "心愿原野",
@@ -55,7 +55,7 @@
       }
     },
     {
-      "x": 11797.46,
+      "x": 11788.46,
       "y": 9020.45,
       "radius": 2.5,
       "jump": false,
@@ -63,8 +63,16 @@
       "params": {}
     },
     {
+      "x": 11785.46,
+      "y": 9026.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 11786.46,
-      "y": 9028.69,
+      "y": 9030.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
