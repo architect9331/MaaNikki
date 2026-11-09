@@ -1,55 +1,119 @@
 {
   "schema_version": 3,
   "id": "gb_mat_055_miraland_01",
-  "title": "【领结毛团】石树田无人区·呜呜车站旧月台（1个/24秒）",
+  "title": "【领结毛团】花愿镇·镇长宅邸前（1个/43秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 139,
   "teleport": {
-    "name": "呜呜车站旧月台",
+    "name": "镇长宅邸前",
     "province": "心愿原野",
-    "region": "石树田无人区",
-    "x": 8668.996,
-    "y": 9561.114
+    "region": "花愿镇",
+    "x": 10544.632,
+    "y": 9974.37
   },
   "material": "领结毛团",
   "count_materials": [
+    "小绵菊",
+    "满满果",
+    "发卡蚱蜢",
+    "刺绣蛾",
     "领结毛团"
   ],
-  "capacity": 1,
+  "capacity": 8,
   "points": [
     {
-      "x": 8669.0,
-      "y": 9561.11,
+      "x": 10544.63,
+      "y": 9974.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10546.63,
+      "y": 9970.37,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8677.0,
-      "y": 9569.11,
+      "x": 10549.63,
+      "y": 9973.37,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8680.0,
-      "y": 9572.11,
+      "x": 10549.63,
+      "y": 9976.37,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8686.65,
-      "y": 9576.62,
+      "x": 10549.63,
+      "y": 9979.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10540.63,
+      "y": 9994.37,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 8.6
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10540.63,
+      "y": 9997.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10549.63,
+      "y": 10003.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10552.63,
+      "y": 10003.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10555.63,
+      "y": 10003.37,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10559.24,
+      "y": 10005.38,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.7
       }
     }
   ]

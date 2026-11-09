@@ -1,0 +1,54 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_182_danqing_02",
+  "title": "【胭脂芙蕖】丹青屿·望水渡（2个/50秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 155,
+  "teleport": {
+    "name": "望水渡",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1328.798,
+    "y": 1218.711
+  },
+  "material": "胭脂芙蕖",
+  "count_materials": [
+    "小绵菊",
+    "胭脂芙蕖",
+    "耳坠萤"
+  ],
+  "capacity": 5,
+  "points": [
+    {
+      "x": 1328.8,
+      "y": 1218.71,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1383.28,
+      "y": 1243.01,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1489.37,
+      "y": 1160.13,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    }
+  ]
+}

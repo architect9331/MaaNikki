@@ -1,0 +1,108 @@
+{
+  "task": [
+    {
+      "name": "minigame_bling",
+      "label": "小游戏刷噗灵",
+      "entry": "MaaNikki_MinigameBling",
+      "group": ["daily", "periodic"],
+      "default_check": false,
+      "description": "前往花愿镇心愿花街左上方「穿梭大冒险」小游戏，自动对话与操控自行车完成挑战并连续再次挑战，稳定拿满每日 16 万大世界噗灵上限。",
+      "option": ["MinigameBlingTarget", "MinigameBlingStartMode"]
+    }
+  ],
+  "option": {
+    "MinigameBlingTarget": {
+      "type": "select",
+      "label": "目标噗灵与局数",
+      "default_case": "Full160k",
+      "description": "每局耗时约 31 秒，净收益 600～1600 噗灵。大世界每日噗灵获取上限为 16 万，检测到游戏上限提示时会自动提前结束。",
+      "cases": [
+        {
+          "name": "Full160k",
+          "label": "拿满 16 万每日上限（最多 267 局，检测到上限自动停）",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "rounds": 267
+              }
+            }
+          }
+        },
+        {
+          "name": "Half80k",
+          "label": "刷取约 8 万噗灵（134 局，约 70 分钟）",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "rounds": 134
+              }
+            }
+          }
+        },
+        {
+          "name": "Quarter40k",
+          "label": "刷取约 4 万噗灵（67 局，约 35 分钟）",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "rounds": 67
+              }
+            }
+          }
+        },
+        {
+          "name": "Quick20",
+          "label": "速刷 20 局（约 10 分钟）",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "rounds": 20
+              }
+            }
+          }
+        },
+        {
+          "name": "Trial3",
+          "label": "试跑 3 局（验证路线与按键）",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "rounds": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MinigameBlingStartMode": {
+      "type": "select",
+      "label": "起点方式",
+      "default_case": "AutoNavigate",
+      "description": "默认自动传送到「心愿花街」并沿道路前往「穿梭大冒险」NPC 处；若已手动站在 NPC 旁可选择直接开始。",
+      "cases": [
+        {
+          "name": "AutoNavigate",
+          "label": "自动传送并前往 NPC（已在 NPC 旁时自动跳过跑图）",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "navigate": true
+              }
+            }
+          }
+        },
+        {
+          "name": "AtNpc",
+          "label": "已在 NPC 旁直接开始（不传送不跑图）",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "navigate": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

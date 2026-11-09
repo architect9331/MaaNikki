@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_077_miraland_01",
-  "title": "【面膜草蛉】祈愿树林·花谷瀑布（3个/59秒）",
+  "title": "【面膜草蛉】祈愿树林·花谷瀑布（3个/72秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 175,
+  "timeout": 203,
   "teleport": {
     "name": "花谷瀑布",
     "province": "心愿原野",
@@ -15,9 +15,11 @@
   "material": "面膜草蛉",
   "count_materials": [
     "日光果/星光果",
-    "面膜草蛉"
+    "面膜草蛉",
+    "纽扣松果",
+    "小绵菊"
   ],
-  "capacity": 6,
+  "capacity": 9,
   "points": [
     {
       "x": 12166.38,
@@ -28,8 +30,86 @@
       "params": {}
     },
     {
-      "x": 12207.15,
-      "y": 9089.48,
+      "x": 12162.38,
+      "y": 9187.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12168.38,
+      "y": 9166.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12159.38,
+      "y": 9148.45,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 12156.38,
+      "y": 9127.45,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12165.38,
+      "y": 9112.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 12180.38,
+      "y": 9100.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12201.38,
+      "y": 9097.45,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 12204.38,
+      "y": 9094.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12207.38,
+      "y": 9091.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12205.09,
+      "y": 9089.45,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

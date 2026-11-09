@@ -1,124 +1,88 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_02",
-  "title": "【全材料·万相境】万相境·抽签大楼（9个/67秒）",
+  "title": "【全材料·万相境】万相境·彩靥城集市（7个/38秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 192,
+  "timeout": 129,
   "teleport": {
-    "name": "抽签大楼",
+    "name": "彩靥城集市",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1461.008,
-    "y": 1112.867
+    "x": 1447.756,
+    "y": 983.204
   },
   "material": "全材料·万相境",
   "count_materials": [
-    "珠链蝶",
     "荷包草",
-    "小绵菊",
-    "云绒玉絮"
+    "小绵菊"
   ],
-  "capacity": 9,
+  "capacity": 7,
   "points": [
     {
-      "x": 1461.01,
-      "y": 1112.87,
+      "x": 1447.76,
+      "y": 983.2,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1463.01,
-      "y": 1120.87,
+      "x": 1449.76,
+      "y": 985.2,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1460.01,
-      "y": 1126.87,
+      "x": 1464.76,
+      "y": 991.2,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1460.01,
-      "y": 1129.87,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1460.01,
-      "y": 1132.87,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1460.01,
-      "y": 1135.87,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1460.01,
-      "y": 1138.87,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1463.01,
-      "y": 1141.87,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1460.01,
-      "y": 1153.87,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1463.01,
-      "y": 1156.87,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 1463.01,
-      "y": 1159.87,
+      "x": 1467.76,
+      "y": 994.2,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 1470.09,
-      "y": 1176.83,
+      "x": 1470.76,
+      "y": 994.2,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1473.76,
+      "y": 994.2,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1488.76,
+      "y": 1003.2,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1498.85,
+      "y": 1003.82,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 42.4
+        "seconds": 18.2
       }
     }
   ]

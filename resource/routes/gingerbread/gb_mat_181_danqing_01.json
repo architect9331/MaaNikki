@@ -1,60 +1,92 @@
 {
   "schema_version": 3,
   "id": "gb_mat_181_danqing_01",
-  "title": "【云绒玉絮】丹青屿·后山（1个/20秒）",
+  "title": "【云绒玉絮】丹青屿·栖龙峰山腰（2个/39秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 130,
   "teleport": {
-    "name": "后山",
+    "name": "栖龙峰山腰",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1435.992,
-    "y": 896.783
+    "x": 1115.313,
+    "y": 388.774
   },
   "material": "云绒玉絮",
   "count_materials": [
-    "珠链蝶",
-    "蓝珀鸟羽",
-    "小绵菊",
-    "云绒玉絮"
+    "满满果",
+    "云绒玉絮",
+    "荷包草",
+    "玉簪蚱蜢"
   ],
   "capacity": 10,
   "points": [
     {
-      "x": 1435.99,
-      "y": 896.78,
+      "x": 1115.31,
+      "y": 388.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1115.31,
+      "y": 389.79,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 13.0
       }
     },
     {
-      "x": 1433.87,
-      "y": 907.78,
+      "x": 1117.31,
+      "y": 383.3,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1430.87,
-      "y": 910.78,
+      "x": 1120.31,
+      "y": 380.3,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1428.87,
-      "y": 912.03,
+      "x": 1120.31,
+      "y": 377.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1123.31,
+      "y": 374.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1123.31,
+      "y": 371.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1122.13,
+      "y": 369.3,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 10.4
       }
     }
   ]

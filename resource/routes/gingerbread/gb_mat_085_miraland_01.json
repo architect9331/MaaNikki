@@ -1,0 +1,177 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_085_miraland_01",
+  "title": "【晴日蝶兰/雨滴蝶兰】花愿镇·镇长宅邸前（8个/122秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 313,
+  "teleport": {
+    "name": "镇长宅邸前",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10544.632,
+    "y": 9974.37
+  },
+  "material": "晴日蝶兰/雨滴蝶兰",
+  "count_materials": [
+    "晴日蝶兰/雨滴蝶兰",
+    "芭蕾豆娘",
+    "小绵菊",
+    "瓜子珠",
+    "满满果",
+    "纽扣松果",
+    "钓鱼点",
+    "刺绣蛾"
+  ],
+  "capacity": 37,
+  "points": [
+    {
+      "x": 10544.63,
+      "y": 9974.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10547.66,
+      "y": 9976.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10547.66,
+      "y": 9979.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10544.66,
+      "y": 9988.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10529.66,
+      "y": 10003.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10520.66,
+      "y": 10021.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10514.66,
+      "y": 10030.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10511.66,
+      "y": 10051.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10503.66,
+      "y": 10071.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 10419.94,
+      "y": 10091.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10424.51,
+      "y": 10071.67,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 10430.51,
+      "y": 10053.67,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10436.51,
+      "y": 10038.67,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10421.51,
+      "y": 10023.67,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10403.51,
+      "y": 10014.67,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10401.51,
+      "y": 10012.67,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.2
+      }
+    }
+  ]
+}

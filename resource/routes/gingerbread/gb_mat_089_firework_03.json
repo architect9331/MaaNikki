@@ -1,0 +1,78 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_089_firework_03",
+  "title": "【瓜子珠】花焰群岛·月角浅滩（12个/91秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 245,
+  "teleport": {
+    "name": "月角浅滩",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 1142.641,
+    "y": 358.56
+  },
+  "material": "瓜子珠",
+  "count_materials": [
+    "瓜子珠",
+    "小绵菊",
+    "噼啪花粉",
+    "发卡蚱蜢",
+    "耳坠萤",
+    "满满果",
+    "蓝珀鸟羽"
+  ],
+  "capacity": 29,
+  "points": [
+    {
+      "x": 1142.64,
+      "y": 358.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1110.37,
+      "y": 364.86,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 20.8
+      }
+    },
+    {
+      "x": 1109.51,
+      "y": 311.46,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 1128.66,
+      "y": 287.78,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 1072.24,
+      "y": 271.01,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    }
+  ]
+}

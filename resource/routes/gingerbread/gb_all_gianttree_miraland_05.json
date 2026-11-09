@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_05",
-  "title": "【全材料·巨木之森】巨木之森·蜗牛诊所（8个/43秒）",
+  "title": "【全材料·巨木之森】巨木之森·蜗牛诊所（8个/47秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 140,
+  "timeout": 148,
   "teleport": {
     "name": "蜗牛诊所",
     "province": "伊赞之土",
@@ -15,7 +15,6 @@
   "material": "全材料·巨木之森",
   "count_materials": [
     "壁灯红椒",
-    "小野菊",
     "刺绣蛾"
   ],
   "capacity": 8,
@@ -29,23 +28,21 @@
       "params": {}
     },
     {
-      "x": 4492.58,
-      "y": 8133.99,
+      "x": 4494.4,
+      "y": 8138.95,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4486.4,
+      "y": 8127.95,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 4475.58,
-      "y": 8125.99,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 23.6
+        "seconds": 31.6
       }
     }
   ]

@@ -1,112 +1,44 @@
 {
   "schema_version": 3,
   "id": "gb_mat_075_miraland_02",
-  "title": "【美甲金龟】祈愿树林·种植园入口（3个/88秒）",
+  "title": "【美甲金龟】祈愿树林·古铸剑遗址入口（3个/84秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 238,
+  "timeout": 229,
   "teleport": {
-    "name": "种植园入口",
+    "name": "古铸剑遗址入口",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 11716.18,
-    "y": 8833.256
+    "x": 11846.959,
+    "y": 9216.097
   },
   "material": "美甲金龟",
   "count_materials": [
-    "瓜子珠",
-    "美甲金龟",
-    "纽扣松果",
-    "小绵菊",
-    "满满果",
+    "珠链蝶",
     "小星扇贝",
-    "路灯花"
+    "满满果",
+    "长袜羊毛",
+    "美甲金龟",
+    "路灯花",
+    "珠花贝壳",
+    "发卡蚱蜢",
+    "美食家蜜蜂"
   ],
-  "capacity": 12,
+  "capacity": 24,
   "points": [
     {
-      "x": 11716.18,
-      "y": 8833.26,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11715.85,
-      "y": 8838.26,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11703.85,
-      "y": 8850.26,
+      "x": 11846.96,
+      "y": 9216.1,
       "radius": 2.0,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 11683.85,
-      "y": 8854.26,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11663.85,
-      "y": 8846.26,
-      "radius": 2.0,
-      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 5.2
       }
     },
     {
-      "x": 11651.85,
-      "y": 8838.26,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11631.85,
-      "y": 8838.26,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11611.85,
-      "y": 8834.26,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 11591.85,
-      "y": 8842.26,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 11575.85,
-      "y": 8850.26,
+      "x": 11860.96,
+      "y": 9206.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -115,21 +47,77 @@
       }
     },
     {
-      "x": 11555.85,
-      "y": 8850.26,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11538.85,
-      "y": 8847.86,
+      "x": 11875.96,
+      "y": 9209.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 26.6
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11890.96,
+      "y": 9224.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11908.96,
+      "y": 9236.1,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 11920.96,
+      "y": 9251.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11926.41,
+      "y": 9257.16,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.6
+      }
+    },
+    {
+      "x": 11943.41,
+      "y": 9268.16,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11964.41,
+      "y": 9271.16,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11967.36,
+      "y": 9269.22,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.2
       }
     }
   ]

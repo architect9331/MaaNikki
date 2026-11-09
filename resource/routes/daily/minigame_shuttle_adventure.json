@@ -1,0 +1,81 @@
+{
+  "schema_version": 3,
+  "id": "minigame_shuttle_adventure",
+  "title": "【每日噗灵】花愿镇·心愿花街 → 穿梭大冒险",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 150,
+  "teleport": {
+    "name": "心愿花街",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10260.861,
+    "y": 10085.844
+  },
+  "points": [
+    {
+      "x": 10260.86,
+      "y": 10085.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10248.75,
+      "y": 10073.3,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10221.75,
+      "y": 10070.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10200.75,
+      "y": 10067.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10185.75,
+      "y": 10058.3,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10170.75,
+      "y": 10058.3,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10158.75,
+      "y": 10061.3,
+      "radius": 2.2,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10153.75,
+      "y": 10053.3,
+      "radius": 1.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    }
+  ]
+}

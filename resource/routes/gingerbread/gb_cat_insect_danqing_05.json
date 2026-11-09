@@ -1,0 +1,218 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_danqing_05",
+  "title": "【全昆虫速刷】丹青屿·逢花林（44个/261秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 619,
+  "teleport": {
+    "name": "逢花林",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1749.147,
+    "y": 1183.285
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "耳坠萤",
+    "荷包草",
+    "满满果",
+    "小绵菊",
+    "玉簪蚱蜢"
+  ],
+  "capacity": 44,
+  "points": [
+    {
+      "x": 1749.15,
+      "y": 1183.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1749.02,
+      "y": 1185.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1749.02,
+      "y": 1194.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1734.02,
+      "y": 1206.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1713.02,
+      "y": 1203.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1704.02,
+      "y": 1200.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1689.02,
+      "y": 1212.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1680.02,
+      "y": 1218.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1677.02,
+      "y": 1218.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1674.02,
+      "y": 1221.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1663.02,
+      "y": 1226.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 150.0
+      }
+    },
+    {
+      "x": 1665.02,
+      "y": 1234.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1665.02,
+      "y": 1237.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1665.02,
+      "y": 1240.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1662.02,
+      "y": 1243.82,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1662.02,
+      "y": 1246.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1665.02,
+      "y": 1249.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1668.02,
+      "y": 1246.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1671.02,
+      "y": 1246.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1680.02,
+      "y": 1258.82,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1680.02,
+      "y": 1279.82,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1681.15,
+      "y": 1283.3,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 53.2
+      }
+    }
+  ]
+}

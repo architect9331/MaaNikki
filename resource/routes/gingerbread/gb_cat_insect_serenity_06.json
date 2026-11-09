@@ -1,0 +1,146 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_serenity_06",
+  "title": "【全昆虫速刷】无忧岛·布蜜蜜花园（18个/111秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 290,
+  "teleport": {
+    "name": "布蜜蜜花园",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 840.84,
+    "y": 864.333
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "小绵菊",
+    "纽扣松果",
+    "珠链蝶",
+    "满满果",
+    "美食家蜜蜂"
+  ],
+  "capacity": 18,
+  "points": [
+    {
+      "x": 840.84,
+      "y": 864.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 839.84,
+      "y": 860.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 836.84,
+      "y": 845.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 842.84,
+      "y": 836.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 836.84,
+      "y": 818.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 848.84,
+      "y": 809.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 863.84,
+      "y": 812.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 866.84,
+      "y": 815.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 869.84,
+      "y": 821.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 872.84,
+      "y": 842.25,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 875.84,
+      "y": 848.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 869.84,
+      "y": 854.25,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 857.53,
+      "y": 864.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 47.1
+      }
+    }
+  ]
+}

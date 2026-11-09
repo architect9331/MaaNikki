@@ -1,0 +1,121 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_074_miraland_02",
+  "title": "【珠链蝶】埋骨地·大拉姆居落迎厅入口（32个/221秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 532,
+  "teleport": {
+    "name": "大拉姆居落迎厅入口",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 6985.204,
+    "y": 4526.323
+  },
+  "material": "珠链蝶",
+  "count_materials": [
+    "珠链蝶",
+    "小野菊",
+    "木夹跳甲",
+    "蓝珀鸟羽"
+  ],
+  "capacity": 39,
+  "points": [
+    {
+      "x": 6985.2,
+      "y": 4526.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
+      }
+    },
+    {
+      "x": 6988.69,
+      "y": 4510.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6985.69,
+      "y": 4516.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6979.69,
+      "y": 4531.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6976.69,
+      "y": 4534.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6973.69,
+      "y": 4537.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6962.69,
+      "y": 4537.39,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 150.0
+      }
+    },
+    {
+      "x": 6967.69,
+      "y": 4539.39,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6970.69,
+      "y": 4542.39,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6973.69,
+      "y": 4545.39,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 6973.59,
+      "y": 4548.87,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 26.6
+      }
+    }
+  ]
+}

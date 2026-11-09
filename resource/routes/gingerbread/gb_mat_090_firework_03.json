@@ -1,38 +1,74 @@
 {
   "schema_version": 3,
   "id": "gb_mat_090_firework_03",
-  "title": "【路灯花】花焰群岛·聆风高地山麓（4个/54秒）",
+  "title": "【路灯花】花焰群岛·花焰瞭望角（2个/27秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 163,
+  "timeout": 120,
   "teleport": {
-    "name": "聆风高地山麓",
+    "name": "花焰瞭望角",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 748.755,
-    "y": 548.546
+    "x": 772.109,
+    "y": 360.992
   },
   "material": "路灯花",
   "count_materials": [
-    "路灯花",
-    "纽扣松果",
-    "风铃子",
-    "刺绣蛾",
-    "发卡蚱蜢"
+    "路灯花"
   ],
-  "capacity": 10,
+  "capacity": 2,
   "points": [
     {
-      "x": 748.75,
-      "y": 548.55,
+      "x": 772.11,
+      "y": 360.99,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 783.97,
-      "y": 526.71,
+      "x": 768.82,
+      "y": 377.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 765.82,
+      "y": 380.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 762.82,
+      "y": 380.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 759.82,
+      "y": 380.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 756.82,
+      "y": 380.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 760.82,
+      "y": 369.48,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -41,67 +77,29 @@
       }
     },
     {
-      "x": 795.11,
-      "y": 510.91,
+      "x": 753.34,
+      "y": 362.34,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 756.34,
+      "y": 353.34,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 751.34,
+      "y": 351.34,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 3.0
-      }
-    },
-    {
-      "x": 787.54,
-      "y": 492.38,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 772.54,
-      "y": 477.38,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 769.54,
-      "y": 477.38,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 757.54,
-      "y": 492.38,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 746.54,
-      "y": 499.38,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 722.82,
-      "y": 500.32,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
       }
     }
   ]

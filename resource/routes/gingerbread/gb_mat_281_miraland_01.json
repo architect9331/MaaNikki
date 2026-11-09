@@ -1,32 +1,35 @@
 {
   "schema_version": 3,
   "id": "gb_mat_281_miraland_01",
-  "title": "【晴雨伞】埋骨地·荧湖西岸（63个/251秒）",
+  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（39个/169秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 597,
+  "timeout": 418,
   "teleport": {
-    "name": "荧湖西岸",
+    "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 5720.788,
-    "y": 5415.967
+    "x": 8063.15,
+    "y": 5243.188
   },
   "material": "晴雨伞",
   "count_materials": [
     "晴雨伞",
     "耳坠萤",
-    "风舞花",
-    "蜉幽幽",
-    "烛融花/烛荧花",
+    "钓鱼点",
     "大叶鹿绒",
-    "茸芽鹿绒"
+    "茸芽鹿绒",
+    "风舞花",
+    "蜜妆兔绒",
+    "蜜妆粉",
+    "蓝鳞晶",
+    "羽巾绒"
   ],
-  "capacity": 108,
+  "capacity": 60,
   "points": [
     {
-      "x": 5720.79,
-      "y": 5415.97,
+      "x": 8063.15,
+      "y": 5243.19,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -35,99 +38,109 @@
       }
     },
     {
-      "x": 5747.39,
-      "y": 5382.5,
+      "x": 8082.81,
+      "y": 5186.88,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 36.4
+        "seconds": 23.4
       }
     },
     {
-      "x": 5763.86,
-      "y": 5407.54,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 36.4
-      }
-    },
-    {
-      "x": 5793.79,
-      "y": 5401.84,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 39.0
-      }
-    },
-    {
-      "x": 5813.79,
-      "y": 5400.45,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 5828.79,
-      "y": 5394.45,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 5843.79,
-      "y": 5379.45,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 5855.79,
-      "y": 5364.45,
+      "x": 8096.81,
+      "y": 5175.22,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 5867.79,
-      "y": 5346.45,
+      "x": 8117.81,
+      "y": 5172.22,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8126.5,
+      "y": 5173.22,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 31.2
+      }
+    },
+    {
+      "x": 8093.39,
+      "y": 5141.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.2
+      }
+    },
+    {
+      "x": 8148.7,
+      "y": 5139.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.2
+      }
+    },
+    {
+      "x": 8134.78,
+      "y": 5141.17,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 5870.89,
-      "y": 5335.45,
-      "radius": 2.0,
+      "x": 8116.78,
+      "y": 5153.17,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 44.2
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 5848.4,
-      "y": 5355.7,
-      "radius": 2.0,
+      "x": 8098.78,
+      "y": 5165.17,
+      "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8077.78,
+      "y": 5165.17,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8056.78,
+      "y": 5165.17,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8036.78,
+      "y": 5172.96,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 26.0
+        "seconds": 15.6
       }
     }
   ]

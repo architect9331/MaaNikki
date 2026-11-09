@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_060_miraland_01",
-  "title": "【礅礅毛团】小石树田村·紫穗草花田（2个/79秒）",
+  "title": "【礅礅毛团】小石树田村·紫穗草花田（1个/50秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 219,
+  "timeout": 155,
   "teleport": {
     "name": "紫穗草花田",
     "province": "心愿原野",
@@ -15,12 +15,12 @@
   "material": "礅礅毛团",
   "count_materials": [
     "小绵菊",
-    "珠链蝶",
     "美食家蜜蜂",
-    "礅礅毛团",
-    "滋滋花粉"
+    "珠链蝶",
+    "滋滋花粉",
+    "礅礅毛团"
   ],
-  "capacity": 24,
+  "capacity": 16,
   "points": [
     {
       "x": 9342.04,
@@ -33,8 +33,8 @@
       }
     },
     {
-      "x": 9335.5,
-      "y": 10421.19,
+      "x": 9344.5,
+      "y": 10403.19,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -43,8 +43,28 @@
       }
     },
     {
-      "x": 9335.5,
+      "x": 9338.5,
+      "y": 10424.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 9329.5,
       "y": 10442.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 9332.5,
+      "y": 10457.19,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -58,64 +78,6 @@
       "action": "wait",
       "params": {
         "seconds": 12.1
-      }
-    },
-    {
-      "x": 9337.49,
-      "y": 10442.37,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 9337.49,
-      "y": 10421.37,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 9337.49,
-      "y": 10400.37,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 9334.49,
-      "y": 10379.37,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 9322.49,
-      "y": 10364.37,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9320.49,
-      "y": 10353.37,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 8.6
       }
     }
   ]

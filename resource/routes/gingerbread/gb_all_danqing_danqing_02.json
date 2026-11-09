@@ -1,27 +1,29 @@
 {
   "schema_version": 3,
   "id": "gb_all_danqing_danqing_02",
-  "title": "【全材料·丹青屿】丹青屿·后山（7个/40秒）",
+  "title": "【全材料·丹青屿】丹青屿·栖龙峰山腰（8个/39秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 133,
+  "timeout": 132,
   "teleport": {
-    "name": "后山",
+    "name": "栖龙峰山腰",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1435.992,
-    "y": 896.783
+    "x": 1115.313,
+    "y": 388.774
   },
   "material": "全材料·丹青屿",
   "count_materials": [
-    "壁灯红椒",
-    "小绵菊"
+    "满满果",
+    "荷包草",
+    "玉簪蚱蜢",
+    "云绒玉絮"
   ],
-  "capacity": 7,
+  "capacity": 8,
   "points": [
     {
-      "x": 1435.99,
-      "y": 896.78,
+      "x": 1115.31,
+      "y": 388.77,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -30,101 +32,13 @@
       }
     },
     {
-      "x": 1443.99,
-      "y": 909.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1461.99,
-      "y": 900.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1464.99,
-      "y": 897.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1467.99,
-      "y": 894.44,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1470.99,
-      "y": 894.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1473.99,
-      "y": 894.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1476.99,
-      "y": 894.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1479.99,
-      "y": 894.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1482.99,
-      "y": 894.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1485.99,
-      "y": 894.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1488.99,
-      "y": 894.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1491.0,
-      "y": 892.44,
+      "x": 1118.18,
+      "y": 383.83,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
+        "seconds": 23.6
       }
     }
   ]

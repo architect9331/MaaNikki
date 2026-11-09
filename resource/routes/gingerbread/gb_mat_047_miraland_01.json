@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_047_miraland_01",
-  "title": "【花环毛团】祈愿树林·巨树浅滩（3个/67秒）",
+  "title": "【花环毛团】祈愿树林·巨树浅滩（3个/71秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 192,
+  "timeout": 200,
   "teleport": {
     "name": "巨树浅滩",
     "province": "心愿原野",
@@ -16,13 +16,13 @@
   "count_materials": [
     "珠链蝶",
     "小星扇贝",
-    "花环毛团",
     "小绵菊",
+    "花环毛团",
     "发卡蚱蜢",
     "珠花贝壳",
     "鹿冠毛团"
   ],
-  "capacity": 16,
+  "capacity": 17,
   "points": [
     {
       "x": 11850.97,
@@ -35,27 +35,17 @@
       }
     },
     {
-      "x": 11830.58,
-      "y": 9020.45,
+      "x": 11848.06,
+      "y": 9026.45,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {
-      "x": 11809.58,
-      "y": 9017.45,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 11788.58,
+      "x": 11833.06,
       "y": 9020.45,
       "radius": 2.5,
       "jump": false,
@@ -63,10 +53,28 @@
       "params": {}
     },
     {
-      "x": 11786.58,
-      "y": 9026.18,
+      "x": 11815.06,
+      "y": 9008.45,
       "radius": 2.0,
       "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11794.06,
+      "y": 9014.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11786.06,
+      "y": 9029.13,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 36.3

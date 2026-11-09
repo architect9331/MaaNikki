@@ -1,44 +1,62 @@
 {
   "schema_version": 3,
   "id": "gb_all_serenity_serenity_03",
-  "title": "【全材料·无忧岛】无忧岛·补丁医务室（9个/44秒）",
+  "title": "【全材料·无忧岛】无忧岛·布露村村口（8个/39秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 141,
+  "timeout": 130,
   "teleport": {
-    "name": "补丁医务室",
+    "name": "布露村村口",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 798.256,
-    "y": 738.111
+    "x": 889.635,
+    "y": 406.18
   },
   "material": "全材料·无忧岛",
   "count_materials": [
-    "壁灯红椒",
-    "路灯花",
     "小绵菊",
-    "刺绣蛾"
+    "小星扇贝",
+    "飞球果",
+    "珠花贝壳"
   ],
-  "capacity": 9,
+  "capacity": 8,
   "points": [
     {
-      "x": 798.26,
-      "y": 738.11,
+      "x": 889.63,
+      "y": 406.18,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 3.0
       }
     },
     {
-      "x": 786.73,
-      "y": 755.37,
+      "x": 881.71,
+      "y": 394.99,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.0
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 863.71,
+      "y": 382.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 858.71,
+      "y": 383.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
       }
     }
   ]

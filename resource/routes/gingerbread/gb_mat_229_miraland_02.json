@@ -1,40 +1,53 @@
 {
   "schema_version": 3,
   "id": "gb_mat_229_miraland_02",
-  "title": "【咕咕之羽】巨木之森·菇菇聚落（4个/91秒）",
+  "title": "【咕咕之羽】巨木之森·巨矛前驿站（2个/56秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 245,
+  "timeout": 167,
   "teleport": {
-    "name": "菇菇聚落",
+    "name": "巨矛前驿站",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4901.473,
-    "y": 8493.722
+    "x": 4387.351,
+    "y": 7929.628
   },
   "material": "咕咕之羽",
   "count_materials": [
-    "小野菊",
     "咕咕之羽",
-    "草裙毛团",
-    "荧夜鬃",
-    "木夹跳甲",
-    "朝朝蝶",
-    "暮暮蝶"
+    "路灯花",
+    "蜜妆粉",
+    "刺绣蛾"
   ],
-  "capacity": 15,
+  "capacity": 6,
   "points": [
     {
-      "x": 4901.47,
-      "y": 8493.72,
+      "x": 4387.35,
+      "y": 7929.63,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4892.04,
-      "y": 8540.67,
+      "x": 4385.21,
+      "y": 7925.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4385.21,
+      "y": 7922.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4383.21,
+      "y": 7917.59,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -43,121 +56,97 @@
       }
     },
     {
-      "x": 4912.04,
-      "y": 8540.23,
+      "x": 4385.21,
+      "y": 7922.59,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4930.04,
-      "y": 8534.23,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4945.04,
-      "y": 8522.23,
+      "x": 4385.21,
+      "y": 7925.59,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4951.42,
-      "y": 8517.23,
+      "x": 4388.21,
+      "y": 7934.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4394.21,
+      "y": 7943.59,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.7
+        "seconds": 5.2
       }
     },
     {
-      "x": 4938.42,
-      "y": 8531.23,
+      "x": 4394.21,
+      "y": 7964.59,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4938.42,
-      "y": 8534.23,
+      "x": 4397.21,
+      "y": 7973.59,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4959.42,
-      "y": 8540.23,
+      "x": 4412.21,
+      "y": 7979.59,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4974.96,
-      "y": 8541.01,
+      "x": 4418.21,
+      "y": 7997.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4421.21,
+      "y": 8000.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4427.21,
+      "y": 8012.59,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.1
+        "seconds": 3.0
       }
     },
     {
-      "x": 4976.96,
-      "y": 8555.01,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4976.96,
-      "y": 8558.01,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4976.96,
-      "y": 8561.01,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4976.96,
-      "y": 8564.01,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4979.96,
-      "y": 8567.01,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4984.37,
-      "y": 8569.76,
+      "x": 4432.84,
+      "y": 8011.14,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.7
+        "seconds": 8.6
       }
     }
   ]

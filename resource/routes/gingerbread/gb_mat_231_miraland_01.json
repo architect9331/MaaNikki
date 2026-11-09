@@ -1,67 +1,106 @@
 {
   "schema_version": 3,
   "id": "gb_mat_231_miraland_01",
-  "title": "【行鹭羽】巨木之森·古木荫地附近遗迹（6个/78秒）",
+  "title": "【行鹭羽】巨木之森·咻咻快道入口（8个/102秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 216,
+  "timeout": 270,
   "teleport": {
-    "name": "古木荫地附近遗迹",
+    "name": "咻咻快道入口",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 3704.478,
-    "y": 9230.438
+    "x": 4654.987,
+    "y": 7946.512
   },
   "material": "行鹭羽",
   "count_materials": [
     "行鹭羽",
-    "小野菊",
-    "织衣蛛"
+    "木夹跳甲"
   ],
-  "capacity": 8,
+  "capacity": 9,
   "points": [
     {
-      "x": 3704.48,
-      "y": 9230.44,
+      "x": 4654.99,
+      "y": 7946.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4662.99,
+      "y": 7942.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4665.99,
+      "y": 7945.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4671.99,
+      "y": 7948.51,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4674.43,
+      "y": 7952.0,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 37.1
       }
     },
     {
-      "x": 3697.48,
-      "y": 9250.44,
+      "x": 4661.25,
+      "y": 7943.79,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3700.48,
-      "y": 9262.44,
+      "x": 4655.25,
+      "y": 7925.79,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3700.48,
-      "y": 9265.44,
+      "x": 4658.25,
+      "y": 7904.79,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3704.92,
-      "y": 9275.08,
+      "x": 4643.25,
+      "y": 7892.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4635.25,
+      "y": 7878.79,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 56.1
+        "seconds": 37.1
       }
     }
   ]

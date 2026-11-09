@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_10_miraland_01",
-  "title": "【眼影鱼】祈愿树林·巨树浅滩（6个/130秒）",
+  "title": "【眼影鱼】祈愿树林·巨树浅滩（6个/134秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 332,
+  "timeout": 339,
   "teleport": {
     "name": "巨树浅滩",
     "province": "心愿原野",
@@ -16,10 +16,10 @@
   "count_materials": [
     "眼影鱼",
     "小星扇贝",
-    "珠花贝壳",
-    "小绵菊"
+    "小绵菊",
+    "珠花贝壳"
   ],
-  "capacity": 10,
+  "capacity": 11,
   "points": [
     {
       "x": 11850.97,
@@ -28,11 +28,21 @@
       "jump": false,
       "action": "wait",
       "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11847.99,
+      "y": 9026.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
         "seconds": 5.2
       }
     },
     {
-      "x": 11829.99,
+      "x": 11826.99,
       "y": 9020.44,
       "radius": 2.5,
       "jump": false,
@@ -40,8 +50,8 @@
       "params": {}
     },
     {
-      "x": 11811.99,
-      "y": 9011.44,
+      "x": 11808.99,
+      "y": 9008.44,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -50,7 +60,7 @@
       }
     },
     {
-      "x": 11790.99,
+      "x": 11787.99,
       "y": 9008.44,
       "radius": 2.5,
       "jump": false,
@@ -58,7 +68,7 @@
       "params": {}
     },
     {
-      "x": 11769.99,
+      "x": 11766.99,
       "y": 9008.44,
       "radius": 2.5,
       "jump": false,

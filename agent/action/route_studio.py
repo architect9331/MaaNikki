@@ -1,6 +1,7 @@
 """Route editor actions: recording a run and executing a user route."""
 from maa.custom_action import CustomAction
 from registration import agent_action
+from daily.minigame_bling import MinigameBlingRun
 from daily.route_studio import OpenWorldCollectRun, RouteRecorder, UserRouteRun
 from daily.runtime import parameters
 
@@ -21,3 +22,9 @@ class RouteRunAction(CustomAction):
 class OpenWorldCollectAction(CustomAction):
     def run(self, context, argv):
         return OpenWorldCollectRun(context).run_test(parameters(context, argv.node_name))
+
+
+@agent_action("nikki.minigame_bling")
+class MinigameBlingAction(CustomAction):
+    def run(self, context, argv):
+        return MinigameBlingRun(context).run(parameters(context, argv.node_name))

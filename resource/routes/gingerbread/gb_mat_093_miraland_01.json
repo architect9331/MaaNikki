@@ -1,0 +1,120 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_093_miraland_01",
+  "title": "【花伞藤萝】石树田无人区·遗忘者村居（3个/43秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 139,
+  "teleport": {
+    "name": "遗忘者村居",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 9171.655,
+    "y": 8889.882
+  },
+  "material": "花伞藤萝",
+  "count_materials": [
+    "花伞藤萝"
+  ],
+  "capacity": 3,
+  "points": [
+    {
+      "x": 9171.66,
+      "y": 8889.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9170.66,
+      "y": 8893.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9170.66,
+      "y": 8896.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9161.66,
+      "y": 8899.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9149.66,
+      "y": 8884.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9137.66,
+      "y": 8869.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9134.66,
+      "y": 8848.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9137.66,
+      "y": 8827.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9152.66,
+      "y": 8812.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9167.66,
+      "y": 8797.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9185.66,
+      "y": 8785.32,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9188.97,
+      "y": 8786.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    }
+  ]
+}

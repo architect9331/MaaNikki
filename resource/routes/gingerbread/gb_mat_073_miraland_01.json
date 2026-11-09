@@ -1,57 +1,33 @@
 {
   "schema_version": 3,
   "id": "gb_mat_073_miraland_01",
-  "title": "【围巾蚯蚓】小石树田村·村居岔路（6个/94秒）",
+  "title": "【围巾蚯蚓】小石树田村·紫穗草花田（6个/95秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 252,
+  "timeout": 254,
   "teleport": {
-    "name": "村居岔路",
+    "name": "紫穗草花田",
     "province": "心愿原野",
     "region": "小石树田村",
-    "x": 9389.052,
-    "y": 10562.456
+    "x": 9342.041,
+    "y": 10401.192
   },
   "material": "围巾蚯蚓",
   "count_materials": [
+    "小绵菊",
     "花香羊毛",
     "围巾蚯蚓",
-    "小绵菊",
     "美食家蜜蜂",
-    "绣球羊毛",
     "珠链蝶",
+    "绣球羊毛",
     "发卡蚱蜢",
     "滋滋花粉"
   ],
-  "capacity": 31,
+  "capacity": 33,
   "points": [
     {
-      "x": 9389.05,
-      "y": 10562.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9389.86,
-      "y": 10547.11,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9371.86,
-      "y": 10541.11,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9365.86,
-      "y": 10520.11,
+      "x": 9342.04,
+      "y": 10401.19,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -60,49 +36,61 @@
       }
     },
     {
-      "x": 9353.86,
-      "y": 10502.11,
+      "x": 9344.04,
+      "y": 10403.19,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 9350.04,
+      "y": 10421.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 9356.04,
+      "y": 10439.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 9362.04,
+      "y": 10460.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9373.2,
+      "y": 10473.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 26.6
       }
     },
     {
       "x": 9345.86,
       "y": 10488.11,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 29.2
-      }
-    },
-    {
-      "x": 9359.86,
-      "y": 10472.84,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9365.86,
-      "y": 10466.84,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9375.03,
-      "y": 10467.84,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 26.6
       }
     }
   ]

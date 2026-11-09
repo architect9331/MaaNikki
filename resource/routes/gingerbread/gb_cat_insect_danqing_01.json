@@ -1,30 +1,29 @@
 {
   "schema_version": 3,
   "id": "gb_cat_insect_danqing_01",
-  "title": "【全昆虫速刷】丹青屿·村边畦田（46个/263秒）",
+  "title": "【全昆虫速刷】丹青屿·栖龙峰山腰（8个/39秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 624,
+  "timeout": 132,
   "teleport": {
-    "name": "村边畦田",
+    "name": "栖龙峰山腰",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1598.127,
-    "y": 1286.992
+    "x": 1115.313,
+    "y": 388.774
   },
   "material": "全昆虫速刷",
   "count_materials": [
-    "耳坠萤",
-    "小绵菊",
+    "满满果",
     "荷包草",
     "玉簪蚱蜢",
-    "满满果"
+    "云绒玉絮"
   ],
-  "capacity": 46,
+  "capacity": 8,
   "points": [
     {
-      "x": 1598.13,
-      "y": 1286.99,
+      "x": 1115.31,
+      "y": 388.77,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -33,89 +32,13 @@
       }
     },
     {
-      "x": 1603.13,
-      "y": 1267.82,
+      "x": 1118.18,
+      "y": 383.83,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 1606.13,
-      "y": 1246.82,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 1621.13,
-      "y": 1231.82,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 1642.13,
-      "y": 1225.82,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1663.02,
-      "y": 1226.82,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 150.0
-      }
-    },
-    {
-      "x": 1668.02,
-      "y": 1225.82,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1674.02,
-      "y": 1246.82,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 1680.02,
-      "y": 1267.82,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 1681.15,
-      "y": 1283.3,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 53.2
+        "seconds": 23.6
       }
     }
   ]

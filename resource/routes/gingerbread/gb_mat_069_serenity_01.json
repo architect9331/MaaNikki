@@ -1,50 +1,85 @@
 {
   "schema_version": 3,
   "id": "gb_mat_069_serenity_01",
-  "title": "【美食家蜜蜂】无忧岛·布蜜蜜花园（6个/59秒）",
+  "title": "【美食家蜜蜂】无忧岛·酿露工坊（8个/83秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 175,
+  "timeout": 227,
   "teleport": {
-    "name": "布蜜蜜花园",
+    "name": "酿露工坊",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 840.84,
-    "y": 864.333
+    "x": 1062.648,
+    "y": 439.809
   },
   "material": "美食家蜜蜂",
   "count_materials": [
     "美食家蜜蜂",
-    "珠链蝶"
+    "纽扣松果",
+    "刺绣蛾"
   ],
   "capacity": 10,
   "points": [
     {
-      "x": 840.84,
-      "y": 864.33,
+      "x": 1062.65,
+      "y": 439.81,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.1
+        "seconds": 3.0
       }
     },
     {
-      "x": 839.62,
-      "y": 861.74,
+      "x": 1064.65,
+      "y": 444.81,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 840.62,
-      "y": 859.74,
+      "x": 1064.65,
+      "y": 447.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1067.65,
+      "y": 450.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1069.44,
+      "y": 455.38,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.1
+        "seconds": 55.1
+      }
+    },
+    {
+      "x": 1074.44,
+      "y": 440.06,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1070.67,
+      "y": 435.06,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
       }
     }
   ]

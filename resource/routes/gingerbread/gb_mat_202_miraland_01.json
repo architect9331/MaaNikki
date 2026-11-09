@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_202_miraland_01",
-  "title": "【草棘果】巨木之森·无名花野（5个/32秒）",
+  "title": "【草棘果】巨木之森·无名花野（5个/29秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -27,58 +27,42 @@
       "params": {}
     },
     {
-      "x": 4377.32,
-      "y": 8608.53,
+      "x": 4385.93,
+      "y": 8615.09,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4377.32,
-      "y": 8605.53,
+      "x": 4382.93,
+      "y": 8615.09,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4377.32,
-      "y": 8602.53,
+      "x": 4379.93,
+      "y": 8612.09,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4377.32,
-      "y": 8599.53,
+      "x": 4382.93,
+      "y": 8600.09,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4374.32,
-      "y": 8590.53,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4386.32,
-      "y": 8584.53,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4390.82,
-      "y": 8585.53,
+      "x": 4386.93,
+      "y": 8598.09,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 13.0

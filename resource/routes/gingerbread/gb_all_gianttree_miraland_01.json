@@ -1,58 +1,94 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_01",
-  "title": "【全材料·巨木之森】巨木之森·巨藤林地北侧探险家营地（21个/76秒）",
+  "title": "【全材料·巨木之森】巨木之森·壳壳岛洞察学派据点前（22个/90秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 212,
+  "timeout": 243,
   "teleport": {
-    "name": "巨藤林地北侧探险家营地",
+    "name": "壳壳岛洞察学派据点前",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4176.294,
-    "y": 8476.89
+    "x": 4858.254,
+    "y": 8854.546
   },
   "material": "全材料·巨木之森",
   "count_materials": [
     "壁灯红椒",
-    "小野菊"
+    "小野菊",
+    "纽扣松果",
+    "蓝珀鸟羽"
   ],
-  "capacity": 21,
+  "capacity": 22,
   "points": [
     {
-      "x": 4176.29,
-      "y": 8476.89,
+      "x": 4858.25,
+      "y": 8854.55,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4147.24,
-      "y": 8490.08,
+      "x": 4860.25,
+      "y": 8853.11,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 26.0
+        "seconds": 5.2
       }
     },
     {
-      "x": 4128.32,
-      "y": 8492.08,
+      "x": 4863.25,
+      "y": 8850.11,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4117.32,
-      "y": 8502.38,
+      "x": 4865.69,
+      "y": 8848.11,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 28.6
+        "seconds": 26.8
+      }
+    },
+    {
+      "x": 4867.85,
+      "y": 8831.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4864.85,
+      "y": 8828.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4852.85,
+      "y": 8819.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4847.85,
+      "y": 8820.97,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 39.0
       }
     }
   ]

@@ -101,6 +101,7 @@
     "tasks/Exploration.json",
     "tasks/Fishing.json",
     "tasks/OpenWorldCollect.json",
+    "tasks/MinigameBling.json",
     "tasks/CustomRoute.json",
     "tasks/RouteTest.json",
     "tasks/SubtaskTest.json",

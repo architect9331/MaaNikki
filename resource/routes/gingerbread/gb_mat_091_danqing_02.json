@@ -1,0 +1,109 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_091_danqing_02",
+  "title": "【满满果】丹青屿·栖龙峰山腰（7个/43秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 140,
+  "teleport": {
+    "name": "栖龙峰山腰",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1115.313,
+    "y": 388.774
+  },
+  "material": "满满果",
+  "count_materials": [
+    "满满果",
+    "云绒玉絮",
+    "荷包草",
+    "玉簪蚱蜢"
+  ],
+  "capacity": 11,
+  "points": [
+    {
+      "x": 1115.31,
+      "y": 388.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1114.31,
+      "y": 390.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1116.5,
+      "y": 394.63,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
+      }
+    },
+    {
+      "x": 1118.5,
+      "y": 386.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1118.5,
+      "y": 383.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1121.5,
+      "y": 380.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1121.5,
+      "y": 377.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1124.5,
+      "y": 374.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1124.5,
+      "y": 371.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1122.13,
+      "y": 369.3,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    }
+  ]
+}

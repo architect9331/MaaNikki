@@ -14,6 +14,7 @@ export interface StructureBox3D {
   zBase: number;
   zTop: number;
   kind: number; // 1=roof/house, 2=bridge/dock, 3=platform/stair, 4=bldg/wall/ruin, 5=rock_mesa, 6=giant_tree
+  yawDeg: number;
 }
 
 interface TerrainGridData {
@@ -125,6 +126,7 @@ function loadTerrainGrid(mapId: string): Promise<TerrainGridData> {
                 zBase: Number(r[4]),
                 zTop: Number(r[5]),
                 kind: Number(r[6] ?? 4),
+                yawDeg: Number(r[7] ?? 0),
               }));
             })
             .catch(() => [] as StructureBox3D[])
@@ -1039,48 +1041,62 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
             const [wr, wg, wb] = wall;
             const [rr, rg, rb] = roof;
             const taper = st.kind === 6 ? 0.14 : st.kind === 5 ? 0.1 : st.kind === 1 ? 0.04 : 0.0;
-            const dx = (st.x1 - st.x0) * taper;
-            const dy = (st.y1 - st.y0) * taper;
-            const tx0 = st.x0 + dx;
-            const tx1 = st.x1 - dx;
-            const ty0 = st.y0 + dy;
-            const ty1 = st.y1 - dy;
+            const hx = (st.x1 - st.x0) * 0.5;
+            const hy = (st.y1 - st.y0) * 0.5;
+            const thx = hx * (1 - 2 * taper);
+            const thy = hy * (1 - 2 * taper);
+            const yawRad = ((st.yawDeg || 0) * Math.PI) / 180;
+            const cosY = Math.cos(yawRad);
+            const sinY = Math.sin(yawRad);
+            const rotX = (lx: number, ly: number) => st.cx + lx * cosY - ly * sinY;
+            const rotY = (lx: number, ly: number) => st.cy + lx * sinY + ly * cosY;
+
+            const bx00 = rotX(-hx, -hy), by00 = rotY(-hx, -hy);
+            const bx10 = rotX(hx, -hy), by10 = rotY(hx, -hy);
+            const bx11 = rotX(hx, hy), by11 = rotY(hx, hy);
+            const bx01 = rotX(-hx, hy), by01 = rotY(-hx, hy);
+
+            const tx00 = rotX(-thx, -thy), ty00 = rotY(-thx, -thy);
+            const tx10 = rotX(thx, -thy), ty10 = rotY(thx, -thy);
+            const tx11 = rotX(thx, thy), ty11 = rotY(thx, thy);
+            const tx01 = rotX(-thx, thy), ty01 = rotY(-thx, thy);
+
             const zb = st.zBase;
             const zt = st.zTop + 0.25;
 
             // Face 0: North wall (-Y), shade = 0.68
-            pushVert(st.x0, st.y0, zb, -1, -1, wr, wg, wb, 0.68);
-            pushVert(st.x1, st.y0, zb, -1, -1, wr, wg, wb, 0.68);
-            pushVert(tx1, ty0, zt, -1, -1, wr, wg, wb, 0.74);
-            pushVert(tx0, ty0, zt, -1, -1, wr, wg, wb, 0.74);
+            pushVert(bx00, by00, zb, -1, -1, wr, wg, wb, 0.68);
+            pushVert(bx10, by10, zb, -1, -1, wr, wg, wb, 0.68);
+            pushVert(tx10, ty10, zt, -1, -1, wr, wg, wb, 0.74);
+            pushVert(tx00, ty00, zt, -1, -1, wr, wg, wb, 0.74);
 
             // Face 1: South wall (+Y), shade = 0.92
-            pushVert(st.x1, st.y1, zb, -1, -1, wr, wg, wb, 0.92);
-            pushVert(st.x0, st.y1, zb, -1, -1, wr, wg, wb, 0.92);
-            pushVert(tx0, ty1, zt, -1, -1, wr, wg, wb, 0.98);
-            pushVert(tx1, ty1, zt, -1, -1, wr, wg, wb, 0.98);
+            pushVert(bx11, by11, zb, -1, -1, wr, wg, wb, 0.92);
+            pushVert(bx01, by01, zb, -1, -1, wr, wg, wb, 0.92);
+            pushVert(tx01, ty01, zt, -1, -1, wr, wg, wb, 0.98);
+            pushVert(tx11, ty11, zt, -1, -1, wr, wg, wb, 0.98);
 
             // Face 2: West wall (-X), shade = 0.74
-            pushVert(st.x0, st.y1, zb, -1, -1, wr, wg, wb, 0.74);
-            pushVert(st.x0, st.y0, zb, -1, -1, wr, wg, wb, 0.74);
-            pushVert(tx0, ty0, zt, -1, -1, wr, wg, wb, 0.80);
-            pushVert(tx0, ty1, zt, -1, -1, wr, wg, wb, 0.80);
+            pushVert(bx01, by01, zb, -1, -1, wr, wg, wb, 0.74);
+            pushVert(bx00, by00, zb, -1, -1, wr, wg, wb, 0.74);
+            pushVert(tx00, ty00, zt, -1, -1, wr, wg, wb, 0.80);
+            pushVert(tx01, ty01, zt, -1, -1, wr, wg, wb, 0.80);
 
             // Face 3: East wall (+X), shade = 0.86
-            pushVert(st.x1, st.y0, zb, -1, -1, wr, wg, wb, 0.86);
-            pushVert(st.x1, st.y1, zb, -1, -1, wr, wg, wb, 0.86);
-            pushVert(tx1, ty1, zt, -1, -1, wr, wg, wb, 0.92);
-            pushVert(tx1, ty0, zt, -1, -1, wr, wg, wb, 0.92);
+            pushVert(bx10, by10, zb, -1, -1, wr, wg, wb, 0.86);
+            pushVert(bx11, by11, zb, -1, -1, wr, wg, wb, 0.86);
+            pushVert(tx11, ty11, zt, -1, -1, wr, wg, wb, 0.92);
+            pushVert(tx10, ty10, zt, -1, -1, wr, wg, wb, 0.92);
 
             // Face 4: Roof / Bridge Deck / Mesa Top cap (v + 2.0 signals roof UV in shader)
-            const u0 = Math.max(0, Math.min(1, tx0 / mapW));
-            const u1 = Math.max(0, Math.min(1, tx1 / mapW));
-            const v0 = Math.max(0, Math.min(1, ty0 / mapH)) + 2.0;
-            const v1 = Math.max(0, Math.min(1, ty1 / mapH)) + 2.0;
-            pushVert(tx0, ty0, zt, u0, v0, rr, rg, rb, 1.06);
-            pushVert(tx1, ty0, zt, u1, v0, rr, rg, rb, 1.06);
-            pushVert(tx1, ty1, zt, u1, v1, rr, rg, rb, 1.06);
-            pushVert(tx0, ty1, zt, u0, v1, rr, rg, rb, 1.06);
+            const u00 = Math.max(0, Math.min(1, tx00 / mapW)), v00 = Math.max(0, Math.min(1, ty00 / mapH)) + 2.0;
+            const u10 = Math.max(0, Math.min(1, tx10 / mapW)), v10 = Math.max(0, Math.min(1, ty10 / mapH)) + 2.0;
+            const u11 = Math.max(0, Math.min(1, tx11 / mapW)), v11 = Math.max(0, Math.min(1, ty11 / mapH)) + 2.0;
+            const u01 = Math.max(0, Math.min(1, tx01 / mapW)), v01 = Math.max(0, Math.min(1, ty01 / mapH)) + 2.0;
+            pushVert(tx00, ty00, zt, u00, v00, rr, rg, rb, 1.06);
+            pushVert(tx10, ty10, zt, u10, v10, rr, rg, rb, 1.06);
+            pushVert(tx11, ty11, zt, u11, v11, rr, rg, rb, 1.06);
+            pushVert(tx01, ty01, zt, u01, v01, rr, rg, rb, 1.06);
 
             sCount++;
           }

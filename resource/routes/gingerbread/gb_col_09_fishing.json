@@ -6,36 +6,36 @@
   "continue_on_failure": true,
   "routes": [
     {
-      "route": "gb_cat_fish_miraland_01",
-      "title": "【全鱼类垂钓】埋骨地·白汐滩归望湾（42个/149秒）"
+      "route": "gb_cat_fish_serenity_01",
+      "title": "【全鱼类垂钓】无忧岛·守望之地（14个/54秒）"
     },
     {
-      "route": "gb_cat_fish_miraland_02",
-      "title": "【全鱼类垂钓】埋骨地·古息坡道（42个/177秒）"
-    },
-    {
-      "route": "gb_cat_fish_firework_03",
+      "route": "gb_cat_fish_firework_02",
       "title": "【全鱼类垂钓】花焰群岛·月角浅滩（10个/43秒）"
+    },
+    {
+      "route": "gb_cat_fish_danqing_03",
+      "title": "【全鱼类垂钓】丹青屿·栖龙峰山腰（7个/31秒）"
     },
     {
       "route": "gb_cat_fish_serenity_04",
       "title": "【全鱼类垂钓】无忧岛·泡泡花田（5个/26秒）"
     },
     {
-      "route": "gb_cat_fish_miraland_05",
-      "title": "【全鱼类垂钓】巨木之森·壳壳岛西侧对岸码头（14个/75秒）"
+      "route": "gb_cat_fish_serenity_05",
+      "title": "【全鱼类垂钓】无忧岛·咚咚小屋聚落（7个/37秒）"
     },
     {
-      "route": "gb_cat_fish_miraland_06",
-      "title": "【全鱼类垂钓】磐城·环圃二层（6个/33秒）"
+      "route": "gb_cat_fish_wanxiang_06",
+      "title": "【全鱼类垂钓】万相境·火锅坊（6个/32秒）"
     },
     {
-      "route": "gb_cat_fish_firework_07",
-      "title": "【全鱼类垂钓】花焰群岛·幽暗洞窟前（8个/45秒）"
+      "route": "gb_cat_fish_serenity_07",
+      "title": "【全鱼类垂钓】无忧岛·酿露工坊（7个/38秒）"
     },
     {
       "route": "gb_cat_fish_miraland_08",
-      "title": "【全鱼类垂钓】花愿镇·镇长宅邸前（21个/126秒）"
+      "title": "【全鱼类垂钓】磐城·环圃二层（6个/33秒）"
     }
   ]
 }

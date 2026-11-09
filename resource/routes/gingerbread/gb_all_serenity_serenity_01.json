@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_serenity_serenity_01",
-  "title": "【全材料·无忧岛】无忧岛·布蜜蜜花园（27个/103秒）",
+  "title": "【全材料·无忧岛】无忧岛·布蜜蜜花园（24个/89秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 272,
+  "timeout": 241,
   "teleport": {
     "name": "布蜜蜜花园",
     "province": "心愿原野",
@@ -18,12 +18,11 @@
     "壁灯红椒",
     "飞球果",
     "小绵菊",
-    "纽扣松果",
-    "布布果",
     "路灯花",
-    "丝巾蛾"
+    "布布果",
+    "兔兔妆粉"
   ],
-  "capacity": 27,
+  "capacity": 24,
   "points": [
     {
       "x": 840.84,
@@ -34,54 +33,44 @@
       "params": {}
     },
     {
-      "x": 836.6,
-      "y": 860.36,
+      "x": 838.51,
+      "y": 861.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 821.6,
-      "y": 845.36,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 810.6,
-      "y": 834.36,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 15.6
-      }
-    },
-    {
-      "x": 794.09,
-      "y": 827.6,
+      "x": 838.51,
+      "y": 858.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 792.09,
-      "y": 822.6,
+      "x": 823.51,
+      "y": 843.98,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 812.51,
+      "y": 838.98,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.4
+        "seconds": 13.0
       }
     },
     {
-      "x": 785.37,
-      "y": 830.6,
+      "x": 799.83,
+      "y": 852.98,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -90,24 +79,8 @@
       }
     },
     {
-      "x": 788.37,
-      "y": 833.6,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 785.37,
-      "y": 839.6,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 770.37,
-      "y": 851.6,
+      "x": 781.83,
+      "y": 861.98,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -116,13 +89,33 @@
       }
     },
     {
-      "x": 768.37,
-      "y": 854.34,
+      "x": 772.83,
+      "y": 861.98,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 769.83,
+      "y": 861.98,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 34.0
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 764.83,
+      "y": 857.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 26.0
       }
     }
   ]

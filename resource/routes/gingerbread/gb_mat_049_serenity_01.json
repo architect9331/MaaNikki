@@ -1,0 +1,83 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_049_serenity_01",
+  "title": "【名流鸦羽】无忧岛·雾之顶（4个/65秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 188,
+  "teleport": {
+    "name": "雾之顶",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 699.944,
+    "y": 745.0
+  },
+  "material": "名流鸦羽",
+  "count_materials": [
+    "名流鸦羽",
+    "满满果"
+  ],
+  "capacity": 5,
+  "points": [
+    {
+      "x": 699.94,
+      "y": 745.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 711.16,
+      "y": 740.52,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.6
+      }
+    },
+    {
+      "x": 725.16,
+      "y": 754.52,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 743.16,
+      "y": 766.52,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 758.16,
+      "y": 781.52,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 776.16,
+      "y": 787.52,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 778.53,
+      "y": 785.86,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.1
+      }
+    }
+  ]
+}

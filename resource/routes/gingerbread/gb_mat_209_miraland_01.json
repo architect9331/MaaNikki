@@ -1,152 +1,59 @@
 {
   "schema_version": 3,
   "id": "gb_mat_209_miraland_01",
-  "title": "【蜜妆兔绒】巨木之森·巨藤林地北侧探险家营地（10个/186秒）",
+  "title": "【蜜妆兔绒】巨木之森·巨兽堡垒东侧（6个/87秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 455,
+  "timeout": 237,
   "teleport": {
-    "name": "巨藤林地北侧探险家营地",
+    "name": "巨兽堡垒东侧",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4176.294,
-    "y": 8476.89
+    "x": 3869.066,
+    "y": 8412.612
   },
   "material": "蜜妆兔绒",
   "count_materials": [
     "蜜妆兔绒",
     "蜜妆粉",
-    "壁灯红椒",
-    "小野菊",
-    "垂穗魔果",
-    "结结蕨",
-    "裁衣甲",
-    "刺绣蛾"
+    "蓝珀鸟羽"
   ],
-  "capacity": 29,
+  "capacity": 13,
   "points": [
     {
-      "x": 4176.29,
-      "y": 8476.89,
+      "x": 3869.07,
+      "y": 8412.61,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4204.16,
-      "y": 8501.45,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 45.8
-      }
-    },
-    {
-      "x": 4185.82,
-      "y": 8493.77,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4170.82,
-      "y": 8478.77,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4149.82,
-      "y": 8475.77,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4128.82,
-      "y": 8475.77,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4107.82,
-      "y": 8475.77,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 4086.82,
-      "y": 8472.77,
+      "x": 3864.99,
+      "y": 8407.81,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 4065.82,
-      "y": 8478.77,
+      "x": 3868.99,
+      "y": 8405.81,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 26.8
       }
     },
     {
-      "x": 4054.82,
-      "y": 8485.77,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 51.0
-      }
-    },
-    {
-      "x": 4047.25,
-      "y": 8466.43,
+      "x": 3864.89,
+      "y": 8378.57,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 13.0
-      }
-    },
-    {
-      "x": 4035.25,
-      "y": 8448.43,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4032.25,
-      "y": 8445.43,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4030.25,
-      "y": 8443.43,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 24.2
+        "seconds": 43.2
       }
     }
   ]

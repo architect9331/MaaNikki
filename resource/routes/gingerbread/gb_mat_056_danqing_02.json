@@ -1,0 +1,54 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_056_danqing_02",
+  "title": "【抱抱绒团】丹青屿·栖龙峰侧峰（2个/53秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 162,
+  "teleport": {
+    "name": "栖龙峰侧峰",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1072.586,
+    "y": 284.388
+  },
+  "material": "抱抱绒团",
+  "count_materials": [
+    "满满果",
+    "玉簪蚱蜢",
+    "蓝珀鸟羽",
+    "抱抱绒团",
+    "荷包草"
+  ],
+  "capacity": 14,
+  "points": [
+    {
+      "x": 1072.59,
+      "y": 284.39,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1064.99,
+      "y": 264.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1062.99,
+      "y": 256.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 32.0
+      }
+    }
+  ]
+}

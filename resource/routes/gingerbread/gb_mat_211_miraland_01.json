@@ -1,155 +1,116 @@
 {
   "schema_version": 3,
   "id": "gb_mat_211_miraland_01",
-  "title": "【板刷狸绒】巨木之森·巨藤林地北侧探险家营地（5个/101秒）",
+  "title": "【板刷狸绒】巨木之森·蜗牛诊所（2个/52秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 266,
+  "timeout": 160,
   "teleport": {
-    "name": "巨藤林地北侧探险家营地",
+    "name": "蜗牛诊所",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4176.294,
-    "y": 8476.89
+    "x": 4489.828,
+    "y": 8147.981
   },
   "material": "板刷狸绒",
   "count_materials": [
-    "板刷狸绒",
-    "垂穗魔果",
-    "小野菊",
-    "王子鹰羽"
+    "板刷狸绒"
   ],
-  "capacity": 8,
+  "capacity": 2,
   "points": [
     {
-      "x": 4176.29,
-      "y": 8476.89,
+      "x": 4489.83,
+      "y": 8147.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4177.29,
-      "y": 8497.89,
+      "x": 4489.82,
+      "y": 8149.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4177.29,
-      "y": 8517.89,
+      "x": 4489.82,
+      "y": 8161.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4169.29,
-      "y": 8537.89,
+      "x": 4471.82,
+      "y": 8170.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4169.29,
-      "y": 8557.89,
+      "x": 4450.82,
+      "y": 8173.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4429.82,
+      "y": 8170.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4417.82,
+      "y": 8179.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4405.82,
+      "y": 8197.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4393.82,
+      "y": 8209.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4387.82,
+      "y": 8224.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4381.82,
+      "y": 8224.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4373.82,
+      "y": 8230.35,
       "radius": 2.0,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 4169.29,
-      "y": 8577.89,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4169.29,
-      "y": 8597.89,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4181.29,
-      "y": 8613.89,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4201.29,
-      "y": 8621.89,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4221.29,
-      "y": 8621.89,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4229.29,
-      "y": 8633.89,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4233.29,
-      "y": 8637.89,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4237.56,
-      "y": 8645.89,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 27.6
-      }
-    },
-    {
-      "x": 4257.56,
-      "y": 8648.88,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4269.56,
-      "y": 8636.88,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4290.79,
-      "y": 8631.88,
-      "radius": 2.0,
-      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 18.1

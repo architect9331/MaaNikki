@@ -1,0 +1,108 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_074_miraland_03",
+  "title": "【珠链蝶】埋骨地·蓝池北侧疗愈地渡口（63个/503秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 900,
+  "teleport": {
+    "name": "蓝池北侧疗愈地渡口",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7605.469,
+    "y": 4714.484
+  },
+  "material": "珠链蝶",
+  "count_materials": [
+    "珠链蝶",
+    "晴雨伞",
+    "耳坠萤"
+  ],
+  "capacity": 77,
+  "points": [
+    {
+      "x": 7605.47,
+      "y": 4714.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7607.47,
+      "y": 4699.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7607.47,
+      "y": 4696.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 7613.47,
+      "y": 4675.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 7619.47,
+      "y": 4657.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 63.1
+      }
+    },
+    {
+      "x": 7625.47,
+      "y": 4639.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 127.1
+      }
+    },
+    {
+      "x": 7637.47,
+      "y": 4621.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 95.1
+      }
+    },
+    {
+      "x": 7625.47,
+      "y": 4603.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7619.48,
+      "y": 4601.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 150.0
+      }
+    }
+  ]
+}

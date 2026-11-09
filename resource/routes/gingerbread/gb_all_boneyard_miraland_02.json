@@ -1,97 +1,63 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_02",
-  "title": "【全材料·埋骨地】埋骨地·龙巢山飞瀑崖顶（30个/110秒）",
+  "title": "【全材料·埋骨地】埋骨地·龙埙遗所（19个/75秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 286,
+  "timeout": 211,
   "teleport": {
-    "name": "龙巢山飞瀑崖顶",
+    "name": "龙埙遗所",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 8063.15,
-    "y": 5243.188
+    "x": 8586.154,
+    "y": 5376.194
   },
   "material": "全材料·埋骨地",
   "count_materials": [
-    "晴雨伞",
+    "骨焰花",
     "风舞花",
-    "蓝鳞晶"
+    "路灯花",
+    "小野菊",
+    "满满果"
   ],
-  "capacity": 30,
+  "capacity": 19,
   "points": [
     {
-      "x": 8063.15,
-      "y": 5243.19,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 8062.15,
-      "y": 5222.19,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8068.15,
-      "y": 5201.19,
+      "x": 8586.15,
+      "y": 5376.19,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8083.15,
-      "y": 5186.19,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.6
-      }
-    },
-    {
-      "x": 8104.15,
-      "y": 5183.19,
+      "x": 8595.61,
+      "y": 5350.1,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 13.0
       }
     },
     {
-      "x": 8122.15,
-      "y": 5177.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8129.31,
-      "y": 5172.19,
+      "x": 8636.31,
+      "y": 5320.14,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.2
+        "seconds": 26.0
       }
     },
     {
-      "x": 8150.19,
-      "y": 5152.09,
+      "x": 8656.39,
+      "y": 5310.52,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.2
+        "seconds": 10.4
       }
     }
   ]

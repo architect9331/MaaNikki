@@ -28,5 +28,17 @@
     },
     "post_delay": 0,
     "next": []
+  },
+  "MaaNikki_MinigameBling": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.minigame_bling",
+    "custom_action_param": {
+      "rounds": 267,
+      "navigate": true,
+      "route": "minigame_shuttle_adventure"
+    },
+    "post_delay": 0,
+    "next": []
   }
 }

@@ -1,44 +1,107 @@
 {
   "schema_version": 3,
   "id": "gb_all_serenity_serenity_02",
-  "title": "【全材料·无忧岛】无忧岛·布露村村口（8个/38秒）",
+  "title": "【全材料·无忧岛】无忧岛·守望之地（16个/73秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 129,
+  "timeout": 205,
   "teleport": {
-    "name": "布露村村口",
+    "name": "守望之地",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 889.635,
-    "y": 406.18
+    "x": 795.589,
+    "y": 511.792
   },
   "material": "全材料·无忧岛",
   "count_materials": [
     "小绵菊",
-    "小星扇贝",
-    "飞球果",
-    "珠花贝壳"
+    "风絮草",
+    "蓝珀鸟羽"
   ],
-  "capacity": 8,
+  "capacity": 16,
   "points": [
     {
-      "x": 889.63,
-      "y": 406.18,
+      "x": 795.59,
+      "y": 511.79,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 5.2
       }
     },
     {
-      "x": 858.71,
-      "y": 383.99,
+      "x": 799.65,
+      "y": 513.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 799.65,
+      "y": 516.79,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 799.65,
+      "y": 519.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 808.65,
+      "y": 528.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 805.65,
+      "y": 531.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 802.65,
+      "y": 531.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 799.65,
+      "y": 531.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 796.65,
+      "y": 531.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 794.65,
+      "y": 534.38,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
+        "seconds": 50.2
       }
     }
   ]

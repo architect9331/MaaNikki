@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_274_miraland_01",
-  "title": "【羽巾绒】埋骨地·修习所（19个/210秒）",
+  "title": "【羽巾绒】埋骨地·修习所（20个/238秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 507,
+  "timeout": 569,
   "teleport": {
     "name": "修习所",
     "province": "伊赞之土",
@@ -15,10 +15,11 @@
   "material": "羽巾绒",
   "count_materials": [
     "羽巾绒",
+    "龙棘瑚",
     "金灵毛球",
     "珠链蝶"
   ],
-  "capacity": 28,
+  "capacity": 35,
   "points": [
     {
       "x": 7817.79,
@@ -29,73 +30,133 @@
       "params": {}
     },
     {
-      "x": 7858.46,
-      "y": 5216.87,
+      "x": 7834.79,
+      "y": 5144.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7852.79,
+      "y": 5156.57,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 141.6
+        "seconds": 7.8
       }
     },
     {
-      "x": 7860.46,
-      "y": 5215.87,
+      "x": 7858.79,
+      "y": 5171.57,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.3
+      }
+    },
+    {
+      "x": 7858.79,
+      "y": 5174.57,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7863.46,
-      "y": 5218.87,
+      "x": 7858.79,
+      "y": 5177.57,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7866.46,
-      "y": 5221.87,
+      "x": 7858.79,
+      "y": 5180.57,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7878.46,
+      "x": 7858.79,
+      "y": 5183.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7852.79,
+      "y": 5204.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7859.66,
+      "y": 5222.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 132.1
+      }
+    },
+    {
+      "x": 7861.23,
+      "y": 5213.63,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.1
+      }
+    },
+    {
+      "x": 7866.23,
+      "y": 5215.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7869.23,
+      "y": 5215.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7875.23,
+      "y": 5212.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7890.23,
+      "y": 5215.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7885.46,
       "y": 5236.71,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 27.6
-      }
-    },
-    {
-      "x": 7871.25,
-      "y": 5218.68,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7859.25,
-      "y": 5206.68,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7857.25,
-      "y": 5204.68,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 8.6
       }
     }
   ]

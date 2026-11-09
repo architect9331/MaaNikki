@@ -1,0 +1,142 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_094_serenity_03",
+  "title": "【风絮草】无忧岛·酿露工坊（11个/65秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 188,
+  "teleport": {
+    "name": "酿露工坊",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 1062.648,
+    "y": 439.809
+  },
+  "material": "风絮草",
+  "count_materials": [
+    "风絮草",
+    "刺绣蛾",
+    "纽扣松果"
+  ],
+  "capacity": 14,
+  "points": [
+    {
+      "x": 1062.65,
+      "y": 439.81,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1067.65,
+      "y": 441.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1070.65,
+      "y": 438.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1073.65,
+      "y": 441.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1073.65,
+      "y": 450.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1091.65,
+      "y": 459.81,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1105.23,
+      "y": 460.51,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
+      }
+    },
+    {
+      "x": 1092.28,
+      "y": 461.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1077.28,
+      "y": 455.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1074.28,
+      "y": 458.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1071.28,
+      "y": 473.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1050.28,
+      "y": 470.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1029.28,
+      "y": 464.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1024.28,
+      "y": 459.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    }
+  ]
+}

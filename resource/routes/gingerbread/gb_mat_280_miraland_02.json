@@ -1,50 +1,126 @@
 {
   "schema_version": 3,
   "id": "gb_mat_280_miraland_02",
-  "title": "【蜉幽幽】埋骨地·灵魂观察所廊柱厅（2个/32秒）",
+  "title": "【蜉幽幽】埋骨地·修习所（4个/103秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 271,
   "teleport": {
-    "name": "灵魂观察所廊柱厅",
+    "name": "修习所",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 7083.331,
-    "y": 5246.124
+    "x": 7817.786,
+    "y": 5151.568
   },
   "material": "蜉幽幽",
   "count_materials": [
-    "耳坠萤",
+    "龙棘瑚",
     "蜉幽幽",
-    "金灵毛球",
-    "蓝鳞晶"
+    "汐荧蟹",
+    "小星扇贝"
   ],
-  "capacity": 9,
+  "capacity": 18,
   "points": [
     {
-      "x": 7083.33,
-      "y": 5246.12,
+      "x": 7817.79,
+      "y": 5151.57,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7080.93,
-      "y": 5248.12,
+      "x": 7834.79,
+      "y": 5144.57,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7078.93,
-      "y": 5250.6,
+      "x": 7852.79,
+      "y": 5156.57,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.6
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7858.79,
+      "y": 5171.57,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7858.79,
+      "y": 5174.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7861.79,
+      "y": 5177.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7864.79,
+      "y": 5177.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7876.79,
+      "y": 5192.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7885.79,
+      "y": 5210.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7891.79,
+      "y": 5231.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7903.79,
+      "y": 5249.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7906.93,
+      "y": 5260.57,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 52.8
       }
     }
   ]

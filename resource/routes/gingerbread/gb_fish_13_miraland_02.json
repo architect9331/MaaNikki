@@ -1,28 +1,30 @@
 {
   "schema_version": 3,
   "id": "gb_fish_13_miraland_02",
-  "title": "【缎带鱼】微风绿野·菲洛米亚女王行宫遗迹前（6个/151秒）",
+  "title": "【缎带鱼】花愿镇·心愿花街（2个/74秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 378,
+  "timeout": 207,
   "teleport": {
-    "name": "菲洛米亚女王行宫遗迹前",
+    "name": "心愿花街",
     "province": "心愿原野",
-    "region": "微风绿野",
-    "x": 10860.06,
-    "y": 11296.949
+    "region": "花愿镇",
+    "x": 10260.861,
+    "y": 10085.844
   },
   "material": "缎带鱼",
   "count_materials": [
+    "珠花贝壳",
+    "小绵菊",
     "缎带鱼",
-    "瓜子珠",
-    "满满果"
+    "小星扇贝",
+    "钓鱼点"
   ],
-  "capacity": 13,
+  "capacity": 9,
   "points": [
     {
-      "x": 10860.06,
-      "y": 11296.95,
+      "x": 10260.86,
+      "y": 10085.84,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -31,8 +33,16 @@
       }
     },
     {
-      "x": 10871.06,
-      "y": 11282.47,
+      "x": 10262.86,
+      "y": 10084.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10274.86,
+      "y": 10099.84,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -41,16 +51,18 @@
       }
     },
     {
-      "x": 10886.06,
-      "y": 11267.47,
-      "radius": 2.5,
+      "x": 10286.86,
+      "y": 10117.84,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
     },
     {
-      "x": 10901.06,
-      "y": 11252.47,
+      "x": 10298.86,
+      "y": 10135.84,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -59,41 +71,45 @@
       }
     },
     {
-      "x": 10919.06,
-      "y": 11243.47,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 10940.06,
-      "y": 11243.47,
+      "x": 10307.86,
+      "y": 10153.84,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10960.32,
-      "y": 11238.47,
+      "x": 10319.86,
+      "y": 10168.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10322.86,
+      "y": 10180.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10316.86,
+      "y": 10186.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10311.54,
+      "y": 10184.85,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 41.1
-      }
-    },
-    {
-      "x": 10894.68,
-      "y": 11101.25,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 41.1
+        "seconds": 27.1
       }
     }
   ]
