@@ -1,0 +1,109 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_094_miraland_03",
+  "title": "【风絮草】石树田无人区·石碑地（11个/58秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 173,
+  "teleport": {
+    "name": "石碑地",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 9267.482,
+    "y": 8947.913
+  },
+  "material": "风絮草",
+  "count_materials": [
+    "风絮草",
+    "路灯花"
+  ],
+  "capacity": 12,
+  "points": [
+    {
+      "x": 9267.48,
+      "y": 8947.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 9264.53,
+      "y": 8946.1,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 9244.27,
+      "y": 8945.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9226.27,
+      "y": 8951.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9208.27,
+      "y": 8963.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9199.27,
+      "y": 8972.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9196.27,
+      "y": 8972.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9193.27,
+      "y": 8963.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9193.27,
+      "y": 8951.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9191.27,
+      "y": 8948.42,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.2
+      }
+    }
+  ]
+}

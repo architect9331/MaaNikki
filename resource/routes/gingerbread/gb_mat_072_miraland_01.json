@@ -1,0 +1,88 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_072_miraland_01",
+  "title": "【刺绣蛾】磐城·环圃二层（8个/121秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 312,
+  "teleport": {
+    "name": "环圃二层",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3602.076,
+    "y": 4145.587
+  },
+  "material": "刺绣蛾",
+  "count_materials": [
+    "蓝玉甲虫",
+    "刺绣蛾",
+    "金轴蜻蜓",
+    "珠链蝶",
+    "满满果",
+    "珠坠甲虫",
+    "探险家蜜蜂",
+    "壁灯红椒",
+    "晶球绵蚧"
+  ],
+  "capacity": 35,
+  "points": [
+    {
+      "x": 3602.08,
+      "y": 4145.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3577.34,
+      "y": 4154.02,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.2
+      }
+    },
+    {
+      "x": 3545.4,
+      "y": 4138.35,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 18.6
+      }
+    },
+    {
+      "x": 3522.37,
+      "y": 4092.79,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.2
+      }
+    },
+    {
+      "x": 3605.06,
+      "y": 4134.87,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 3622.23,
+      "y": 4171.48,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    }
+  ]
+}

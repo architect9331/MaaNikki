@@ -1,107 +1,43 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_03",
-  "title": "【全材料·万相境】万相境·忘忧楼（8个/49秒）",
+  "title": "【全材料·万相境】万相境·迷花甸（10个/77秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 152,
+  "timeout": 214,
   "teleport": {
-    "name": "忘忧楼",
+    "name": "迷花甸",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 2339.983,
-    "y": 1551.648
+    "x": 1437.138,
+    "y": 1501.957
   },
   "material": "全材料·万相境",
   "count_materials": [
-    "壁灯红椒",
+    "耳坠萤",
     "荷包草",
-    "云绒玉絮"
+    "小绵菊",
+    "刺绣蛾",
+    "珠链蝶"
   ],
-  "capacity": 8,
+  "capacity": 10,
   "points": [
     {
-      "x": 2339.98,
-      "y": 1551.65,
+      "x": 1437.14,
+      "y": 1501.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 2351.98,
-      "y": 1551.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2354.98,
-      "y": 1551.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2363.98,
-      "y": 1569.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2369.98,
-      "y": 1590.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2369.98,
-      "y": 1602.65,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2369.98,
-      "y": 1605.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2366.98,
-      "y": 1620.65,
+      "x": 1439.25,
+      "y": 1493.68,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 2378.98,
-      "y": 1638.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2380.89,
-      "y": 1640.37,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 18.2
+        "seconds": 63.8
       }
     }
   ]

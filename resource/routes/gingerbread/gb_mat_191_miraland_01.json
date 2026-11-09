@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_191_miraland_01",
-  "title": "【花纹围巾蚯蚓】巨木之森·巨兽堡垒断桥旁（6个/105秒）",
+  "title": "【花纹围巾蚯蚓】巨木之森·巨兽堡垒断桥旁（3个/57秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 276,
+  "timeout": 170,
   "teleport": {
     "name": "巨兽堡垒断桥旁",
     "province": "伊赞之土",
@@ -15,12 +15,11 @@
   "material": "花纹围巾蚯蚓",
   "count_materials": [
     "花纹围巾蚯蚓",
-    "壁灯红椒",
-    "芭蕾豆娘",
+    "探险家蜜蜂",
     "满满果",
-    "小野菊"
+    "结结蕨"
   ],
-  "capacity": 16,
+  "capacity": 7,
   "points": [
     {
       "x": 3631.21,
@@ -33,23 +32,55 @@
       }
     },
     {
-      "x": 3606.07,
-      "y": 9093.88,
+      "x": 3649.07,
+      "y": 9020.01,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3655.07,
+      "y": 9029.01,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3655.07,
+      "y": 9050.01,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3640.07,
+      "y": 9065.01,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3622.07,
+      "y": 9074.01,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 3605.07,
+      "y": 9086.95,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 23.1
-      }
-    },
-    {
-      "x": 3543.43,
-      "y": 8991.8,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 39.6
       }
     }
   ]

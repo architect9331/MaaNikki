@@ -1,96 +1,70 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_03",
-  "title": "【全材料·巨木之森】巨木之森·壳壳岛洞察学派据点前（22个/90秒）",
+  "title": "【全材料·巨木之森】巨木之森·巨人墓园（17个/75秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 244,
+  "timeout": 210,
   "teleport": {
-    "name": "壳壳岛洞察学派据点前",
+    "name": "巨人墓园",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4858.254,
-    "y": 8854.546
+    "x": 2891.806,
+    "y": 8601.681
   },
   "material": "全材料·巨木之森",
   "count_materials": [
-    "壁灯红椒",
     "小野菊",
-    "纽扣松果",
-    "蓝珀鸟羽"
+    "结结蕨",
+    "木夹跳甲",
+    "垂穗魔果"
   ],
-  "capacity": 22,
+  "capacity": 17,
   "points": [
     {
-      "x": 4858.25,
-      "y": 8854.55,
+      "x": 2891.81,
+      "y": 8601.68,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2875.16,
+      "y": 8654.74,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 18.2
       }
     },
     {
-      "x": 4870.87,
-      "y": 8852.6,
+      "x": 2853.7,
+      "y": 8656.74,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 3.0
       }
     },
     {
-      "x": 4874.99,
-      "y": 8847.69,
+      "x": 2841.7,
+      "y": 8662.74,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4871.99,
-      "y": 8844.69,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4868.99,
-      "y": 8841.69,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4865.99,
-      "y": 8838.69,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4850.99,
-      "y": 8823.69,
+      "x": 2842.7,
+      "y": 8666.86,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 45.0
-      }
-    },
-    {
-      "x": 4850.33,
-      "y": 8823.92,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.0
+        "seconds": 28.8
       }
     }
   ]

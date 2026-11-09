@@ -1,0 +1,70 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_090_serenity_01",
+  "title": "【路灯花】无忧岛·补丁医务室（3个/31秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "补丁医务室",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 798.256,
+    "y": 738.111
+  },
+  "material": "路灯花",
+  "count_materials": [
+    "刺绣蛾",
+    "珠链蝶",
+    "路灯花",
+    "小绵菊",
+    "美食家蜜蜂"
+  ],
+  "capacity": 15,
+  "points": [
+    {
+      "x": 798.26,
+      "y": 738.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 801.39,
+      "y": 738.94,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 788.09,
+      "y": 725.2,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 782.09,
+      "y": 719.2,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 789.09,
+      "y": 711.2,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    }
+  ]
+}

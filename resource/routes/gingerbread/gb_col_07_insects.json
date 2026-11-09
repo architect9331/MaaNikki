@@ -7,35 +7,35 @@
   "routes": [
     {
       "route": "gb_cat_insect_serenity_01",
-      "title": "【全昆虫速刷】无忧岛·布蜜蜜花园（32个/157秒）"
+      "title": "【全昆虫速刷】无忧岛·泡泡花田（5个/26秒）"
     },
     {
       "route": "gb_cat_insect_danqing_02",
-      "title": "【全昆虫速刷】丹青屿·栖龙峰山腰（8个/39秒）"
+      "title": "【全昆虫速刷】丹青屿·逢花林（45个/276秒）"
     },
     {
-      "route": "gb_cat_insect_danqing_03",
-      "title": "【全昆虫速刷】丹青屿·墨缘坊市（39个/229秒）"
+      "route": "gb_cat_insect_wanxiang_03",
+      "title": "【全昆虫速刷】万相境·忘忧楼（20个/127秒）"
     },
     {
       "route": "gb_cat_insect_miraland_04",
-      "title": "【全昆虫速刷】埋骨地·疗愈地（41个/246秒）"
-    },
-    {
-      "route": "gb_cat_insect_danqing_05",
-      "title": "【全昆虫速刷】丹青屿·村边畦田（39个/241秒）"
-    },
-    {
-      "route": "gb_cat_insect_miraland_06",
       "title": "【全昆虫速刷】磐城·丰饶环圃（38个/254秒）"
     },
     {
-      "route": "gb_cat_insect_serenity_07",
-      "title": "【全昆虫速刷】无忧岛·布露村村口（10个/70秒）"
+      "route": "gb_cat_insect_miraland_05",
+      "title": "【全昆虫速刷】埋骨地·灵魂观察所廊柱厅（37个/250秒）"
     },
     {
-      "route": "gb_cat_insect_wanxiang_08",
-      "title": "【全昆虫速刷】万相境·彩靥城集市（38个/269秒）"
+      "route": "gb_cat_insect_miraland_06",
+      "title": "【全昆虫速刷】埋骨地·疗愈地（36个/260秒）"
+    },
+    {
+      "route": "gb_cat_insect_serenity_07",
+      "title": "【全昆虫速刷】无忧岛·补丁医务室（11个/80秒）"
+    },
+    {
+      "route": "gb_cat_insect_serenity_08",
+      "title": "【全昆虫速刷】无忧岛·布露村村口（28个/211秒）"
     }
   ]
 }

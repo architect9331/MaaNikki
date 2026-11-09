@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_280_miraland_01",
-  "title": "【蜉幽幽】埋骨地·灵魂观察所廊柱厅（14个/139秒）",
+  "title": "【蜉幽幽】埋骨地·灵魂观察所廊柱厅（14个/141秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 351,
+  "timeout": 354,
   "teleport": {
     "name": "灵魂观察所廊柱厅",
     "province": "伊赞之土",
@@ -24,6 +24,14 @@
     {
       "x": 7083.33,
       "y": 5246.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7079.33,
+      "y": 5248.12,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -32,32 +40,32 @@
       }
     },
     {
-      "x": 7074.33,
-      "y": 5261.12,
+      "x": 7076.33,
+      "y": 5263.12,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7077.33,
-      "y": 5264.12,
+      "x": 7079.33,
+      "y": 5263.12,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7080.33,
-      "y": 5267.12,
+      "x": 7079.33,
+      "y": 5266.12,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7083.33,
-      "y": 5270.12,
+      "x": 7085.33,
+      "y": 5272.12,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -74,16 +82,24 @@
       }
     },
     {
-      "x": 7108.93,
-      "y": 5284.91,
+      "x": 7104.93,
+      "y": 5289.91,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7117.67,
-      "y": 5293.56,
+      "x": 7107.93,
+      "y": 5292.91,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7110.95,
+      "y": 5295.53,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -92,16 +108,16 @@
       }
     },
     {
-      "x": 7117.67,
-      "y": 5270.8,
+      "x": 7106.95,
+      "y": 5293.8,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7117.67,
-      "y": 5267.8,
+      "x": 7106.95,
+      "y": 5275.8,
       "radius": 2.5,
       "jump": false,
       "action": "",

@@ -1,35 +1,104 @@
 {
   "schema_version": 3,
   "id": "gb_mat_092_miraland_02",
-  "title": "【星荧草】祈愿树林·星没之地（12个/82秒）",
+  "title": "【星荧草】祈愿树林·守卫遗址（8个/96秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 225,
+  "timeout": 256,
   "teleport": {
-    "name": "星没之地",
+    "name": "守卫遗址",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 12415.738,
-    "y": 9585.43
+    "x": 11849.143,
+    "y": 9617.169
   },
   "material": "星荧草",
   "count_materials": [
     "星荧草",
-    "耳坠萤"
+    "纽扣松果",
+    "路灯花",
+    "小绵菊",
+    "珠链蝶"
   ],
-  "capacity": 22,
+  "capacity": 27,
   "points": [
     {
-      "x": 12415.74,
-      "y": 9585.43,
-      "radius": 2.5,
+      "x": 11849.14,
+      "y": 9617.17,
+      "radius": 2.0,
       "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11847.24,
+      "y": 9619.39,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 11844.24,
+      "y": 9619.39,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11841.24,
+      "y": 9616.39,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11841.24,
+      "y": 9595.39,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 11838.24,
+      "y": 9580.39,
+      "radius": 2.5,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 12428.97,
-      "y": 9691.87,
+      "x": 11835.24,
+      "y": 9577.39,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11832.24,
+      "y": 9577.39,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11830.24,
+      "y": 9575.39,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -38,43 +107,83 @@
       }
     },
     {
-      "x": 12406.21,
-      "y": 9735.14,
-      "radius": 2.0,
+      "x": 11830.22,
+      "y": 9572.77,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 12429.99,
-      "y": 9727.9,
-      "radius": 2.0,
+      "x": 11830.22,
+      "y": 9569.77,
+      "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11830.22,
+      "y": 9566.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11827.22,
+      "y": 9563.77,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11824.22,
+      "y": 9560.77,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11821.22,
+      "y": 9557.77,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 5.2
       }
     },
     {
-      "x": 12369.75,
-      "y": 9693.35,
+      "x": 11812.22,
+      "y": 9539.77,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 12395.95,
-      "y": 9695.99,
+      "x": 11812.22,
+      "y": 9518.77,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 3.0
+      }
+    },
+    {
+      "x": 11813.22,
+      "y": 9498.77,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 20.8
       }
     }
   ]

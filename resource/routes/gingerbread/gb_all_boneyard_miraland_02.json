@@ -1,32 +1,51 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_02",
-  "title": "【全材料·埋骨地】埋骨地·龙巢山飞瀑崖顶（56个/188秒）",
+  "title": "【全材料·埋骨地】埋骨地·孤石滩（29个/95秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 458,
+  "timeout": 255,
   "teleport": {
-    "name": "龙巢山飞瀑崖顶",
+    "name": "孤石滩",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 8063.15,
-    "y": 5243.188
+    "x": 8242.27,
+    "y": 5309.374
   },
   "material": "全材料·埋骨地",
   "count_materials": [
-    "钓鱼点",
-    "羽巾绒",
-    "金灵毛球",
-    "大叶鹿绒",
-    "茸芽鹿绒",
-    "晴雨伞",
-    "风舞花"
+    "蓝鳞晶",
+    "小星扇贝"
   ],
-  "capacity": 56,
+  "capacity": 29,
   "points": [
     {
-      "x": 8063.15,
-      "y": 5243.19,
+      "x": 8242.27,
+      "y": 5309.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8238.27,
+      "y": 5308.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8235.27,
+      "y": 5311.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8235.27,
+      "y": 5329.37,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -35,47 +54,21 @@
       }
     },
     {
-      "x": 8063.6,
-      "y": 5220.97,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8054.6,
-      "y": 5202.97,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8045.6,
-      "y": 5181.97,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 8045.6,
-      "y": 5160.97,
+      "x": 8256.27,
+      "y": 5332.37,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 8042.6,
-      "y": 5157.97,
+      "x": 8265.86,
+      "y": 5331.11,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 150.0
+        "seconds": 70.2
       }
     }
   ]

@@ -6,36 +6,36 @@
   "continue_on_failure": true,
   "routes": [
     {
-      "route": "gb_cat_animal_serenity_01",
-      "title": "【全动物清洁】无忧岛·布蜜蜜花园（31个/125秒）"
+      "route": "gb_cat_animal_miraland_01",
+      "title": "【全动物清洁】埋骨地·古息坡道（22个/102秒）"
     },
     {
-      "route": "gb_cat_animal_danqing_02",
-      "title": "【全动物清洁】丹青屿·栖龙峰山腰（7个/32秒）"
+      "route": "gb_cat_animal_serenity_02",
+      "title": "【全动物清洁】无忧岛·补丁医务室（10个/49秒）"
     },
     {
-      "route": "gb_cat_animal_miraland_03",
-      "title": "【全动物清洁】埋骨地·龙巢山飞瀑崖顶（37个/180秒）"
+      "route": "gb_cat_animal_serenity_03",
+      "title": "【全动物清洁】无忧岛·泡泡花田（5个/26秒）"
     },
     {
       "route": "gb_cat_animal_miraland_04",
-      "title": "【全动物清洁】埋骨地·蓝池北侧疗愈地渡口（51个/252秒）"
+      "title": "【全动物清洁】埋骨地·居落外绿坡（33个/168秒）"
     },
     {
-      "route": "gb_cat_animal_miraland_05",
-      "title": "【全动物清洁】埋骨地·古息坡道（38个/192秒）"
+      "route": "gb_cat_animal_serenity_05",
+      "title": "【全动物清洁】无忧岛·布露村村口（29个/157秒）"
     },
     {
       "route": "gb_cat_animal_serenity_06",
-      "title": "【全动物清洁】无忧岛·咚咚小屋聚落（9个/46秒）"
+      "title": "【全动物清洁】无忧岛·布蜜蜜花园（8个/56秒）"
     },
     {
-      "route": "gb_cat_animal_miraland_07",
-      "title": "【全动物清洁】埋骨地·修习所水岸（33个/202秒）"
+      "route": "gb_cat_animal_wanxiang_07",
+      "title": "【全动物清洁】万相境·迷花甸（6个/43秒）"
     },
     {
       "route": "gb_cat_animal_miraland_08",
-      "title": "【全动物清洁】埋骨地·居落外绿坡（35个/220秒）"
+      "title": "【全动物清洁】小石树田村·紫穗草花田（24个/194秒）"
     }
   ]
 }

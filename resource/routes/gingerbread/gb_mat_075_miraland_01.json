@@ -1,51 +1,91 @@
 {
   "schema_version": 3,
   "id": "gb_mat_075_miraland_01",
-  "title": "【美甲金龟】祈愿树林·工坊水车（4个/60秒）",
+  "title": "【美甲金龟】祈愿树林·幽林山洞（4个/75秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 177,
+  "timeout": 210,
   "teleport": {
-    "name": "工坊水车",
+    "name": "幽林山洞",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 11592.661,
-    "y": 8793.661
+    "x": 11964.59,
+    "y": 9774.674
   },
   "material": "美甲金龟",
   "count_materials": [
+    "纽扣松果",
     "美甲金龟",
-    "美食家蜜蜂",
-    "纽扣松果"
+    "路灯花"
   ],
-  "capacity": 9,
+  "capacity": 11,
   "points": [
     {
-      "x": 11592.66,
-      "y": 8793.66,
+      "x": 11964.59,
+      "y": 9774.67,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11538.85,
-      "y": 8847.86,
+      "x": 11972.59,
+      "y": 9794.67,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11972.27,
+      "y": 9800.95,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 26.6
+        "seconds": 37.0
       }
     },
     {
-      "x": 11513.03,
-      "y": 8851.65,
-      "radius": 2.0,
+      "x": 11969.28,
+      "y": 9784.77,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11963.28,
+      "y": 9769.77,
+      "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11963.28,
+      "y": 9751.77,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11957.28,
+      "y": 9742.77,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11955.28,
+      "y": 9740.77,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 7.1
+        "seconds": 13.2
       }
     }
   ]

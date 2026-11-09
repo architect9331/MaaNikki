@@ -1,0 +1,152 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_084_miraland_01",
+  "title": "【珠花贝壳】微风绿野·绿野货运码头（10个/89秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 241,
+  "teleport": {
+    "name": "绿野货运码头",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10430.453,
+    "y": 10861.881
+  },
+  "material": "珠花贝壳",
+  "count_materials": [
+    "珠花贝壳",
+    "小星扇贝",
+    "布布果"
+  ],
+  "capacity": 14,
+  "points": [
+    {
+      "x": 10430.45,
+      "y": 10861.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10428.86,
+      "y": 10858.21,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10426.86,
+      "y": 10844.21,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10425.86,
+      "y": 10864.21,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10440.86,
+      "y": 10870.21,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10461.86,
+      "y": 10876.21,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10473.89,
+      "y": 10885.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10511.69,
+      "y": 10900.03,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10528.69,
+      "y": 10911.03,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10546.69,
+      "y": 10920.03,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10567.69,
+      "y": 10917.03,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10586.97,
+      "y": 10915.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10625.88,
+      "y": 10907.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10600.52,
+      "y": 10931.5,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    }
+  ]
+}

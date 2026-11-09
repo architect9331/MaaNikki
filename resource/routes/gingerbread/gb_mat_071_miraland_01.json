@@ -1,56 +1,81 @@
 {
   "schema_version": 3,
   "id": "gb_mat_071_miraland_01",
-  "title": "【尖帽仙】小石树田村·村居岔路（6个/68秒）",
+  "title": "【尖帽仙】花愿镇·愿望梦境仓库旋廊（9个/103秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 196,
+  "timeout": 272,
   "teleport": {
-    "name": "村居岔路",
+    "name": "愿望梦境仓库旋廊",
     "province": "心愿原野",
-    "region": "小石树田村",
-    "x": 9389.052,
-    "y": 10562.456
+    "region": "花愿镇",
+    "x": 10259.912,
+    "y": 9754.312
   },
   "material": "尖帽仙",
   "count_materials": [
     "尖帽仙",
-    "背带毛团"
+    "纽扣松果",
+    "织衣蛛",
+    "路灯花",
+    "抱抱绒团"
   ],
-  "capacity": 7,
+  "capacity": 16,
   "points": [
     {
-      "x": 9389.05,
-      "y": 10562.46,
+      "x": 10259.91,
+      "y": 9754.31,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9413.05,
-      "y": 10562.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9434.05,
-      "y": 10568.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9450.44,
-      "y": 10583.12,
+      "x": 10257.87,
+      "y": 9745.21,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 47.1
+        "seconds": 23.1
+      }
+    },
+    {
+      "x": 10269.93,
+      "y": 9760.72,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 23.1
+      }
+    },
+    {
+      "x": 10268.93,
+      "y": 9741.05,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10280.93,
+      "y": 9723.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10285.28,
+      "y": 9721.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.8
       }
     }
   ]

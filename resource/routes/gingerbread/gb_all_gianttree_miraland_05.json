@@ -1,52 +1,51 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_05",
-  "title": "【全材料·巨木之森】巨木之森·巨人墓园（16个/72秒）",
+  "title": "【全材料·巨木之森】巨木之森·蜗牛诊所（8个/43秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 202,
+  "timeout": 140,
   "teleport": {
-    "name": "巨人墓园",
+    "name": "蜗牛诊所",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 2891.806,
-    "y": 8601.681
+    "x": 4489.828,
+    "y": 8147.981
   },
   "material": "全材料·巨木之森",
   "count_materials": [
+    "壁灯红椒",
     "小野菊",
-    "结结蕨",
-    "木夹跳甲",
-    "垂穗魔果"
+    "刺绣蛾"
   ],
-  "capacity": 16,
+  "capacity": 8,
   "points": [
     {
-      "x": 2891.81,
-      "y": 8601.68,
+      "x": 4489.83,
+      "y": 8147.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 2875.16,
-      "y": 8654.74,
+      "x": 4492.58,
+      "y": 8133.99,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 18.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 2842.7,
-      "y": 8666.86,
+      "x": 4475.58,
+      "y": 8125.99,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 28.8
+        "seconds": 23.6
       }
     }
   ]

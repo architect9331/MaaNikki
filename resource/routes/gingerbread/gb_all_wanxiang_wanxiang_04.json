@@ -1,88 +1,43 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_04",
-  "title": "【全材料·万相境】万相境·彩靥城集市（7个/46秒）",
+  "title": "【全材料·万相境】万相境·彩靥城近郊（6个/52秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 147,
+  "timeout": 159,
   "teleport": {
-    "name": "彩靥城集市",
+    "name": "彩靥城近郊",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1447.756,
-    "y": 983.204
+    "x": 1598.932,
+    "y": 983.366
   },
   "material": "全材料·万相境",
   "count_materials": [
     "荷包草",
-    "刺绣蛾"
+    "蓝珀鸟羽",
+    "画眉毛团"
   ],
-  "capacity": 7,
+  "capacity": 6,
   "points": [
     {
-      "x": 1447.76,
-      "y": 983.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1456.76,
-      "y": 992.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1468.76,
-      "y": 1010.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1471.76,
-      "y": 1013.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1477.76,
-      "y": 1022.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1483.76,
-      "y": 1022.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1495.76,
-      "y": 1007.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1498.85,
-      "y": 1004.82,
+      "x": 1598.93,
+      "y": 983.37,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.6
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1604.37,
+      "y": 1003.79,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 33.7
       }
     }
   ]

@@ -1,85 +1,65 @@
 {
   "schema_version": 3,
   "id": "gb_mat_232_miraland_01",
-  "title": "【盗面毛团】巨木之森·叶子河上游（3个/58秒）",
+  "title": "【盗面毛团】巨木之森·岩村遗址（1个/35秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 173,
+  "timeout": 121,
   "teleport": {
-    "name": "叶子河上游",
+    "name": "岩村遗址",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 3559.549,
-    "y": 7913.234
+    "x": 4858.67,
+    "y": 9851.466
   },
   "material": "盗面毛团",
   "count_materials": [
+    "珠花贝壳",
     "盗面毛团",
-    "发卡蚱蜢",
-    "小野菊"
+    "小星扇贝"
   ],
-  "capacity": 7,
+  "capacity": 4,
   "points": [
     {
-      "x": 3559.55,
-      "y": 7913.23,
+      "x": 4858.67,
+      "y": 9851.47,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3548.83,
-      "y": 7894.44,
+      "x": 4862.09,
+      "y": 9853.47,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3545.83,
-      "y": 7873.44,
+      "x": 4862.09,
+      "y": 9865.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4847.09,
+      "y": 9880.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4845.09,
+      "y": 9880.15,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 3545.83,
-      "y": 7849.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3548.83,
-      "y": 7831.44,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 18.1
-      }
-    },
-    {
-      "x": 3531.53,
-      "y": 7846.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3519.53,
-      "y": 7850.07,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 8.6
+        "seconds": 17.3
       }
     }
   ]

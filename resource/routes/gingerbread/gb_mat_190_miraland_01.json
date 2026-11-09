@@ -1,48 +1,49 @@
 {
   "schema_version": 3,
   "id": "gb_mat_190_miraland_01",
-  "title": "【探险家蜜蜂】磐城·集市旁停泊处（24个/233秒）",
+  "title": "【探险家蜜蜂】磐城·金时醇酿馆（20个/217秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 558,
+  "timeout": 522,
   "teleport": {
-    "name": "集市旁停泊处",
+    "name": "金时醇酿馆",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4129.301,
-    "y": 4158.628
+    "x": 4119.105,
+    "y": 3800.743
   },
   "material": "探险家蜜蜂",
   "count_materials": [
-    "探险家蜜蜂",
-    "小野菊",
     "珠链蝶",
-    "蓝珀鸟羽",
-    "满满果"
+    "探险家蜜蜂",
+    "金轴蜻蜓",
+    "刺绣蛾",
+    "机雀羽",
+    "钓鱼点"
   ],
-  "capacity": 37,
+  "capacity": 56,
   "points": [
     {
-      "x": 4129.3,
-      "y": 4158.63,
+      "x": 4119.1,
+      "y": 3800.74,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4124.67,
-      "y": 4163.64,
+      "x": 4114.46,
+      "y": 3794.21,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 117.2
+        "seconds": 15.1
       }
     },
     {
-      "x": 4102.23,
-      "y": 4145.02,
+      "x": 4147.18,
+      "y": 3756.95,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -51,13 +52,53 @@
       }
     },
     {
-      "x": 4089.34,
-      "y": 4078.89,
+      "x": 4078.04,
+      "y": 3740.17,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 58.4
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 4098.28,
+      "y": 3649.6,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 4143.99,
+      "y": 3626.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
+      }
+    },
+    {
+      "x": 4162.21,
+      "y": 3603.09,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
+      }
+    },
+    {
+      "x": 4208.7,
+      "y": 3650.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
       }
     }
   ]

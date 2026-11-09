@@ -1,0 +1,65 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_062_firework_02",
+  "title": "【织衣蛛】花焰群岛·幽暗洞窟前（2个/35秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 123,
+  "teleport": {
+    "name": "幽暗洞窟前",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 945.342,
+    "y": 225.634
+  },
+  "material": "织衣蛛",
+  "count_materials": [
+    "耳坠萤",
+    "织衣蛛"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 945.34,
+      "y": 225.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 946.83,
+      "y": 204.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 946.83,
+      "y": 183.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 946.83,
+      "y": 174.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 938.83,
+      "y": 169.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
+      }
+    }
+  ]
+}

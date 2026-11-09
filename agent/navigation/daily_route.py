@@ -308,13 +308,16 @@ class RouteActions:
         user_quiet = self.gb_config.get("quiet_seconds")
         quiet_s = float(user_quiet) if isinstance(user_quiet, (int, float)) and user_quiet > 0 else default_quiet_s
         user_init = self.gb_config.get("initial_wait_seconds")
-        base_init_s = (
-            float(user_init)
-            if isinstance(user_init, (int, float)) and user_init > 0
-            else max(min_dwell_s + quiet_s, 9.0)
+        if isinstance(user_init, (int, float)) and user_init > 0:
+            initial_no_toast_s = max(float(user_init), quiet_s)
+        else:
+            base_init_s = max(min_dwell_s + quiet_s, 9.0)
+            initial_no_toast_s = min(base_init_s, max(wait_sec + 1.5, min_dwell_s + 1.0, quiet_s))
+        max_wait_s = (
+            max(wait_sec, ceiling_s, min_dwell_s + quiet_s + 8.0, initial_no_toast_s + 4.0)
+            if adaptive_exit
+            else wait_sec
         )
-        initial_no_toast_s = min(base_init_s, max(wait_sec + 1.5, min_dwell_s + 1.0))
-        max_wait_s = max(wait_sec, ceiling_s) if adaptive_exit else wait_sec
 
         arrived_at = time.monotonic()
         recent_toast = self.gb_toast_reader.last_toast_activity_at
@@ -386,10 +389,7 @@ class RouteActions:
             if adaptive_exit:
                 quiet_elapsed = now - last_activity_at
                 if picked_events:
-                    all_approach_only = (last_pickup_s == 0.0)
-                    effective_quiet_s = min(quiet_s, max(3.0, wait_sec)) if all_approach_only else quiet_s
-                    effective_min_dwell_s = min(min_dwell_s, wait_sec) if all_approach_only else min_dwell_s
-                    if elapsed >= effective_min_dwell_s and quiet_elapsed >= effective_quiet_s:
+                    if elapsed >= min_dwell_s and quiet_elapsed >= quiet_s:
                         exit_reason = "toast_quiet_after_pickup"
                         break
                 else:

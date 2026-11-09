@@ -1,0 +1,224 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_serenity_08",
+  "title": "【全昆虫速刷】无忧岛·布露村村口（28个/211秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 510,
+  "teleport": {
+    "name": "布露村村口",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 889.635,
+    "y": 406.18
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "发卡蚱蜢",
+    "小绵菊",
+    "耳坠萤",
+    "珠花贝壳",
+    "瓜子珠",
+    "小星扇贝",
+    "刺绣蛾"
+  ],
+  "capacity": 28,
+  "points": [
+    {
+      "x": 889.63,
+      "y": 406.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 894.63,
+      "y": 403.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 914.63,
+      "y": 403.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 934.63,
+      "y": 403.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 954.63,
+      "y": 403.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 974.63,
+      "y": 399.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 994.63,
+      "y": 395.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1014.63,
+      "y": 395.18,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1034.63,
+      "y": 395.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1046.63,
+      "y": 403.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1054.63,
+      "y": 423.18,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1066.63,
+      "y": 431.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1071.88,
+      "y": 435.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 47.1
+      }
+    },
+    {
+      "x": 1079.88,
+      "y": 452.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1094.88,
+      "y": 452.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1100.88,
+      "y": 446.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1099.62,
+      "y": 437.81,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
+      }
+    },
+    {
+      "x": 1099.86,
+      "y": 451.81,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1081.86,
+      "y": 463.81,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 1075.86,
+      "y": 481.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1060.86,
+      "y": 496.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1052.86,
+      "y": 503.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 39.1
+      }
+    }
+  ]
+}

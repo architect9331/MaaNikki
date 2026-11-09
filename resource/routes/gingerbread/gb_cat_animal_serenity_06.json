@@ -1,78 +1,79 @@
 {
   "schema_version": 3,
   "id": "gb_cat_animal_serenity_06",
-  "title": "【全动物清洁】无忧岛·咚咚小屋聚落（9个/46秒）",
+  "title": "【全动物清洁】无忧岛·布蜜蜜花园（8个/56秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 146,
+  "timeout": 168,
   "teleport": {
-    "name": "咚咚小屋聚落",
+    "name": "布蜜蜜花园",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 822.676,
-    "y": 542.497
+    "x": 840.84,
+    "y": 864.333
   },
   "material": "全动物清洁",
   "count_materials": [
-    "小绵菊",
-    "小星扇贝",
-    "飞球果",
-    "珠花贝壳"
+    "路灯花",
+    "兔尾绒团",
+    "布布果",
+    "满满果",
+    "兔兔妆粉"
   ],
-  "capacity": 9,
+  "capacity": 8,
   "points": [
     {
-      "x": 822.68,
-      "y": 542.5,
+      "x": 840.84,
+      "y": 864.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 838.22,
+      "y": 860.24,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 829.22,
+      "y": 857.24,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 841.45,
-      "y": 551.5,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 844.45,
-      "y": 554.5,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 841.45,
-      "y": 569.5,
+      "x": 808.22,
+      "y": 857.24,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 820.45,
-      "y": 572.5,
+      "x": 787.22,
+      "y": 863.24,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 808.45,
-      "y": 562.95,
+      "x": 782.22,
+      "y": 864.24,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 13.0
+        "seconds": 29.4
       }
     }
   ]

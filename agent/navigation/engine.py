@@ -777,7 +777,7 @@ class Navigator:
             return self.observe((pose.x, pose.y)), False
         duration = max(.04, duration)
         if recovery:
-            duration = min(1.0, duration)
+            duration = max(1.15, min(1.35, duration))
         motion.forward(duration)
         if getattr(self.inputs, "generation", 0) != generation:
             motion.close()
@@ -848,6 +848,7 @@ class Navigator:
         speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
         last = None
         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+        blocked_steps, unstuck_attempts = 0, 0
         best_distance = distance(pose, origin)
         index = 0
         self.current_index = 0
@@ -992,6 +993,7 @@ class Navigator:
                         last = None
                         turnback_since = None
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, route.points[index])
                         self.event({"type": "route_rejoined", "index": index, **pose.dict()})
                         continue
@@ -1041,6 +1043,7 @@ class Navigator:
                         self.overlay.publish_route(route, index, pose)
                     if index < len(route.points):
                         stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, route.points[index])
                         map_checked = False
                     last = None
@@ -1053,21 +1056,29 @@ class Navigator:
                     scene_retries = 0
                     heading_rechecks = 0
                     stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                    blocked_steps, unstuck_attempts = 0, 0
                     best_distance = remaining_distance
                     map_checked = False
                 stuck_time = time.monotonic()-stuck_since
                 if stuck_time > 30:
                     raise NavigationStuckError("原地卡住超过 30 秒，停止路线。")
-                recovery = stuck_time > 5 and not recovered
+                recovery = (blocked_steps >= 2) or (stuck_time > 2.2 and not recovered)
+                detour_deg = 0.0
                 if recovery:
-                    self.event({"type": "unstuck", "seconds": stuck_time, "index": index,
+                    detour_table = (0.0, 42.0, -42.0, 68.0, -68.0, 95.0, -95.0)
+                    detour_deg = detour_table[min(unstuck_attempts, len(detour_table) - 1)]
+                    self.event({"type": "unstuck", "seconds": round(stuck_time, 3), "index": index,
+                                "attempt": unstuck_attempts + 1, "blocked_steps": blocked_steps,
+                                "detour_deg": detour_deg,
                                 "remaining": remaining_distance, "best_remaining": best_distance})
-                    if self.relocalize and not map_checked and self.map_recoveries < 3:
+                    if (self.relocalize and not map_checked and self.map_recoveries < 3
+                            and unstuck_attempts >= 4 and stuck_time > 8.0):
                         pose = self.reacquire_position(last_good, deadline, force_map=True)
                         rejoin = self.rejoin_point(route, index, pose)
                         map_checked = True
                         last_good = stuck_anchor = pose
                         stuck_since, recovered = time.monotonic(), False
+                        blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, rejoin)
                         last = None
                         speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
@@ -1075,7 +1086,8 @@ class Navigator:
                 turn_begin = time.monotonic()
                 turn_input = motion.forward_elapsed()
                 before_turn = pose
-                bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
+                base_bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
+                bearing = (base_bearing + detour_deg) % 360
                 tolerance = self.travel_tolerance(remaining_distance, radius)
                 if last is not None and rejoin is None:
                     step_dx, step_dy = pose.x-last.x, pose.y-last.y
@@ -1134,7 +1146,7 @@ class Navigator:
                 # sub-pixel minimap correlation jitter, keep the completed
                 # stationary alignment so a 0.05-unit grid step near the
                 # waypoint cannot loop without advancing.
-                bearing = math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) % 360
+                bearing = (math.degrees(math.atan2(target.x-pose.x, pose.y-target.y)) + detour_deg) % 360
                 tolerance = self.travel_tolerance(distance(pose, target), radius)
                 coasted = turn_forward > .02 or distance(before_turn, pose) > .15
                 if coasted and abs(angle_delta(bearing, pose.heading)) > tolerance:
@@ -1157,12 +1169,21 @@ class Navigator:
                 before_move = pose
                 forward_before = motion.forward_elapsed()
                 pose, recovery_done = self.advance(pose, target, radius, speeds, recovery=recovery)
+                move_input = max(0.0, motion.forward_elapsed()-forward_before)
+                move_disp = distance(before_move, pose)
+                move_speed = move_disp/move_input if move_input > 0 else 0.0
                 if (pose.heading is not None and pose.position_reliable
-                        and motion.forward_elapsed()-forward_before >= .08):
+                        and move_input >= .08):
                     self.heading_recheck_count = 0
                 last = None if recovery else before_move
                 if recovery_done:
-                    recovered = True
+                    unstuck_attempts += 1
+                    blocked_steps = 1 if move_disp < .8 else 0
+                    recovered = unstuck_attempts >= 7
+                elif move_input >= .14 and move_speed < .95 and distance(pose, target) > radius+.35:
+                    blocked_steps += 1
+                elif move_speed >= 2.2:
+                    blocked_steps = 0
             self.event({"type": "arrived", **pose.dict()})
             return pose
         finally:

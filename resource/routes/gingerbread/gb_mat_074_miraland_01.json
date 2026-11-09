@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_074_miraland_01",
-  "title": "【珠链蝶】埋骨地·居落广场升降台（35个/228秒）",
+  "title": "【珠链蝶】埋骨地·居落广场升降台（36个/236秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 547,
+  "timeout": 564,
   "teleport": {
     "name": "居落广场升降台",
     "province": "伊赞之土",
@@ -20,7 +20,7 @@
     "蓝珀鸟羽",
     "刺绣蛾"
   ],
-  "capacity": 59,
+  "capacity": 60,
   "points": [
     {
       "x": 7130.38,
@@ -33,60 +33,78 @@
       }
     },
     {
-      "x": 7124.38,
-      "y": 4460.64,
+      "x": 7120.38,
+      "y": 4432.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7127.38,
-      "y": 4475.64,
+      "x": 7120.38,
+      "y": 4426.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7130.38,
-      "y": 4478.64,
+      "x": 7129.38,
+      "y": 4420.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7151.38,
-      "y": 4475.64,
+      "x": 7150.38,
+      "y": 4420.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7175.38,
-      "y": 4475.64,
+      "x": 7168.38,
+      "y": 4420.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7196.38,
-      "y": 4472.64,
+      "x": 7189.38,
+      "y": 4420.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7220.38,
-      "y": 4472.64,
+      "x": 7204.38,
+      "y": 4432.64,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7222.38,
+      "y": 4444.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
+    },
+    {
+      "x": 7237.38,
+      "y": 4459.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
     },
     {
       "x": 7238.03,

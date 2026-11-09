@@ -1,52 +1,85 @@
 {
   "schema_version": 3,
   "id": "gb_all_wishing_miraland_03",
-  "title": "【全材料·祈愿树林】祈愿树林·苦修派营地（21个/84秒）",
+  "title": "【全材料·祈愿树林】祈愿树林·愿望质检中心前（14个/67秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 230,
+  "timeout": 193,
   "teleport": {
-    "name": "苦修派营地",
+    "name": "愿望质检中心前",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 12035.69,
-    "y": 9396.429
+    "x": 11461.917,
+    "y": 9344.459
   },
   "material": "全材料·祈愿树林",
   "count_materials": [
     "纽扣松果",
-    "路灯花",
-    "星荧草",
-    "发卡蚱蜢"
+    "小绵菊",
+    "抱抱绒团"
   ],
-  "capacity": 21,
+  "capacity": 14,
   "points": [
     {
-      "x": 12035.69,
-      "y": 9396.43,
+      "x": 11461.92,
+      "y": 9344.46,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12050.67,
-      "y": 9400.62,
-      "radius": 2.0,
+      "x": 11458.86,
+      "y": 9340.88,
+      "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11455.86,
+      "y": 9337.88,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11446.86,
+      "y": 9319.88,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 39.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 12035.79,
-      "y": 9372.79,
+      "x": 11428.86,
+      "y": 9313.88,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 26.2
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11425.86,
+      "y": 9292.88,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11426.86,
+      "y": 9281.88,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 38.1
       }
     }
   ]

@@ -1,0 +1,131 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_095_danqing_02",
+  "title": "【壁灯红椒】丹青屿·望水渡（19个/114秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 295,
+  "teleport": {
+    "name": "望水渡",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1328.798,
+    "y": 1218.711
+  },
+  "material": "壁灯红椒",
+  "count_materials": [
+    "壁灯红椒",
+    "小绵菊"
+  ],
+  "capacity": 22,
+  "points": [
+    {
+      "x": 1328.8,
+      "y": 1218.71,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1394.11,
+      "y": 1081.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
+      }
+    },
+    {
+      "x": 1397.32,
+      "y": 1074.47,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 1397.24,
+      "y": 1053.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1391.24,
+      "y": 1032.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1389.24,
+      "y": 1018.74,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 1381.71,
+      "y": 1017.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1369.71,
+      "y": 999.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1360.71,
+      "y": 990.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1339.71,
+      "y": 996.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1324.71,
+      "y": 1011.74,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 1322.71,
+      "y": 1024.66,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    }
+  ]
+}

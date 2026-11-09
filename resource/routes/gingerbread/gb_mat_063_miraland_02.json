@@ -1,36 +1,30 @@
 {
   "schema_version": 3,
   "id": "gb_mat_063_miraland_02",
-  "title": "【芭蕾豆娘】祈愿树林·巨树浅滩（19个/252秒）",
+  "title": "【芭蕾豆娘】巨木之森·巨兽堡垒断桥旁（9个/158秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 598,
+  "timeout": 392,
   "teleport": {
-    "name": "巨树浅滩",
-    "province": "心愿原野",
-    "region": "祈愿树林",
-    "x": 11850.974,
-    "y": 9024.453
+    "name": "巨兽堡垒断桥旁",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3631.213,
+    "y": 9021.011
   },
   "material": "芭蕾豆娘",
   "count_materials": [
+    "壁灯红椒",
     "芭蕾豆娘",
-    "珠链蝶",
     "小星扇贝",
-    "耳坠萤",
-    "发卡蚱蜢",
-    "珠花贝壳",
-    "花环毛团",
-    "小绵菊",
     "满满果",
-    "美甲金龟",
-    "鹿冠毛团"
+    "珠花贝壳"
   ],
-  "capacity": 51,
+  "capacity": 26,
   "points": [
     {
-      "x": 11850.97,
-      "y": 9024.45,
+      "x": 3631.21,
+      "y": 9021.01,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -39,73 +33,57 @@
       }
     },
     {
-      "x": 11854.07,
-      "y": 9003.54,
+      "x": 3642.21,
+      "y": 9006.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3657.21,
+      "y": 8991.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3675.21,
+      "y": 8982.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3680.52,
+      "y": 8965.51,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 29.2
+        "seconds": 31.8
       }
     },
     {
-      "x": 11815.67,
-      "y": 9001.0,
+      "x": 3766.54,
+      "y": 9040.79,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 26.6
+        "seconds": 45.2
       }
     },
     {
-      "x": 11784.06,
-      "y": 9042.48,
+      "x": 3757.11,
+      "y": 9056.36,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 29.2
-      }
-    },
-    {
-      "x": 11785.11,
-      "y": 9089.65,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 29.2
-      }
-    },
-    {
-      "x": 11831.13,
-      "y": 9131.25,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 26.6
-      }
-    },
-    {
-      "x": 11894.79,
-      "y": 9104.17,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 29.2
-      }
-    },
-    {
-      "x": 12031.26,
-      "y": 9129.45,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
+        "seconds": 36.6
       }
     }
   ]

@@ -1,29 +1,27 @@
 {
   "schema_version": 3,
   "id": "gb_all_danqing_danqing_02",
-  "title": "【全材料·丹青屿】丹青屿·奉龙塔（22个/86秒）",
+  "title": "【全材料·丹青屿】丹青屿·后山（7个/40秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 233,
+  "timeout": 133,
   "teleport": {
-    "name": "奉龙塔",
+    "name": "后山",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1796.922,
-    "y": 998.178
+    "x": 1435.992,
+    "y": 896.783
   },
   "material": "全材料·丹青屿",
   "count_materials": [
     "壁灯红椒",
-    "小绵菊",
-    "荷包草",
-    "满满果"
+    "小绵菊"
   ],
-  "capacity": 22,
+  "capacity": 7,
   "points": [
     {
-      "x": 1796.92,
-      "y": 998.18,
+      "x": 1435.99,
+      "y": 896.78,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -32,89 +30,101 @@
       }
     },
     {
-      "x": 1799.92,
-      "y": 999.35,
+      "x": 1443.99,
+      "y": 909.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1805.92,
-      "y": 999.35,
+      "x": 1461.99,
+      "y": 900.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1820.92,
-      "y": 984.35,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 1835.92,
-      "y": 969.35,
+      "x": 1464.99,
+      "y": 897.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1850.92,
-      "y": 951.35,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1865.09,
-      "y": 951.35,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 23.4
-      }
-    },
-    {
-      "x": 1868.09,
-      "y": 951.35,
+      "x": 1467.99,
+      "y": 894.44,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 1871.09,
-      "y": 951.35,
+      "x": 1470.99,
+      "y": 894.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1874.09,
-      "y": 954.35,
+      "x": 1473.99,
+      "y": 894.44,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1886.1,
-      "y": 963.33,
+      "x": 1476.99,
+      "y": 894.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1479.99,
+      "y": 894.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1482.99,
+      "y": 894.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1485.99,
+      "y": 894.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1488.99,
+      "y": 894.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1491.0,
+      "y": 892.44,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 26.0
+        "seconds": 15.6
       }
     }
   ]

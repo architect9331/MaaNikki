@@ -1,41 +1,43 @@
 {
   "schema_version": 3,
   "id": "gb_all_wishing_miraland_04",
-  "title": "【全材料·祈愿树林】祈愿树林·心愿庆典管理处（10个/41秒）",
+  "title": "【全材料·祈愿树林】祈愿树林·古木河畔（13个/73秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 135,
+  "timeout": 206,
   "teleport": {
-    "name": "心愿庆典管理处",
+    "name": "古木河畔",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 12311.192,
-    "y": 9200.472
+    "x": 11336.613,
+    "y": 9573.273
   },
   "material": "全材料·祈愿树林",
   "count_materials": [
-    "壁灯红椒",
-    "布布果",
-    "滋滋花粉"
+    "星荧草",
+    "耳坠萤",
+    "路灯花"
   ],
-  "capacity": 10,
+  "capacity": 13,
   "points": [
     {
-      "x": 12311.19,
-      "y": 9200.47,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12306.65,
-      "y": 9221.98,
+      "x": 11336.61,
+      "y": 9573.27,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 26.0
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 11335.39,
+      "y": 9573.9,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 55.6
       }
     }
   ]

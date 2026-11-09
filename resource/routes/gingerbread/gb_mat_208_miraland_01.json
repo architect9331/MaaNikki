@@ -1,53 +1,68 @@
 {
   "schema_version": 3,
   "id": "gb_mat_208_miraland_01",
-  "title": "【朝朝蝶】巨木之森·帕克亚火山口探险家营地（11个/184秒）",
+  "title": "【朝朝蝶】巨木之森·巨兽堡垒东侧（5个/90秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 449,
+  "timeout": 242,
   "teleport": {
-    "name": "帕克亚火山口探险家营地",
+    "name": "巨兽堡垒东侧",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 5405.991,
-    "y": 8261.83
+    "x": 3869.066,
+    "y": 8412.612
   },
   "material": "朝朝蝶",
   "count_materials": [
+    "珠链蝶",
     "朝朝蝶",
     "暮暮蝶",
-    "耳坠萤",
-    "流金蜜",
+    "蓝珀鸟羽",
+    "蜜妆粉",
     "小野菊",
-    "裁衣甲",
-    "发卡蚱蜢",
-    "草裙毛团",
-    "木夹跳甲",
     "结结蕨"
   ],
-  "capacity": 49,
+  "capacity": 34,
   "points": [
     {
-      "x": 5405.99,
-      "y": 8261.83,
+      "x": 3869.07,
+      "y": 8412.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 3877.07,
+      "y": 8411.61,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 5408.8,
-      "y": 8266.15,
+      "x": 3880.07,
+      "y": 8432.61,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.6
+        "seconds": 3.0
       }
     },
     {
-      "x": 5392.01,
-      "y": 8229.9,
+      "x": 3886.07,
+      "y": 8453.61,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3887.18,
+      "y": 8460.26,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
@@ -56,63 +71,59 @@
       }
     },
     {
-      "x": 5366.04,
-      "y": 8207.87,
+      "x": 3925.55,
+      "y": 8444.42,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 3909.03,
+      "y": 8440.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3904.03,
+      "y": 8420.33,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 3924.03,
+      "y": 8413.33,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 3942.03,
+      "y": 8419.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3954.38,
+      "y": 8423.98,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 10.6
-      }
-    },
-    {
-      "x": 5487.87,
-      "y": 8245.66,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 15.1
-      }
-    },
-    {
-      "x": 5493.14,
-      "y": 8291.29,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
-      }
-    },
-    {
-      "x": 5411.75,
-      "y": 8315.36,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.8
-      }
-    },
-    {
-      "x": 5391.85,
-      "y": 8289.55,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 23.6
-      }
-    },
-    {
-      "x": 5393.18,
-      "y": 8342.0,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
       }
     }
   ]

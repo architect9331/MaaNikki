@@ -1,73 +1,42 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_02",
-  "title": "【全材料·万相境】万相境·火锅坊（7个/42秒）",
+  "title": "【全材料·万相境】万相境·九华监（6个/32秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 136,
+  "timeout": 120,
   "teleport": {
-    "name": "火锅坊",
+    "name": "九华监",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1399.524,
-    "y": 1108.824
+    "x": 1592.363,
+    "y": 835.825
   },
   "material": "全材料·万相境",
   "count_materials": [
-    "满满果",
-    "小绵菊",
-    "刺绣蛾"
+    "荷包草",
+    "小绵菊"
   ],
-  "capacity": 7,
+  "capacity": 6,
   "points": [
     {
-      "x": 1399.52,
-      "y": 1108.82,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1401.39,
-      "y": 1098.51,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1398.39,
-      "y": 1095.51,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1386.39,
-      "y": 1092.51,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1377.39,
-      "y": 1092.51,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1371.39,
-      "y": 1095.51,
+      "x": 1592.36,
+      "y": 835.83,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.6
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1570.81,
+      "y": 863.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
       }
     }
   ]

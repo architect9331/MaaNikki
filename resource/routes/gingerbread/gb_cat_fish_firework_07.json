@@ -1,0 +1,41 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_fish_firework_07",
+  "title": "【全鱼类垂钓】花焰群岛·幽暗洞窟前（8个/45秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 143,
+  "teleport": {
+    "name": "幽暗洞窟前",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 945.342,
+    "y": 225.634
+  },
+  "material": "全鱼类垂钓",
+  "count_materials": [
+    "壁灯红椒",
+    "兔兔妆粉"
+  ],
+  "capacity": 8,
+  "points": [
+    {
+      "x": 945.34,
+      "y": 225.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1001.35,
+      "y": 160.51,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 20.8
+      }
+    }
+  ]
+}

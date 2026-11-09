@@ -1,0 +1,62 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_076_serenity_03",
+  "title": "【耳坠萤】无忧岛·布裹裹盐浴场（15个/143秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 359,
+  "teleport": {
+    "name": "布裹裹盐浴场",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 822.367,
+    "y": 715.0
+  },
+  "material": "耳坠萤",
+  "count_materials": [
+    "耳坠萤",
+    "蓝珀鸟羽",
+    "美食家蜜蜂",
+    "小星扇贝",
+    "珠花贝壳"
+  ],
+  "capacity": 20,
+  "points": [
+    {
+      "x": 822.37,
+      "y": 715.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 821.66,
+      "y": 707.21,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 85.2
+      }
+    },
+    {
+      "x": 805.87,
+      "y": 695.02,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 785.87,
+      "y": 696.02,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 39.1
+      }
+    }
+  ]
+}

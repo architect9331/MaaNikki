@@ -1,0 +1,129 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_fish_miraland_02",
+  "title": "【全鱼类垂钓】埋骨地·蓝池东侧修习所渡口（50个/255秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 606,
+  "teleport": {
+    "name": "蓝池东侧修习所渡口",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7649.962,
+    "y": 4981.8
+  },
+  "material": "全鱼类垂钓",
+  "count_materials": [
+    "钓鱼点",
+    "龙棘瑚",
+    "晴雨伞",
+    "蓝鳞晶",
+    "骨焰花",
+    "汐荧蟹"
+  ],
+  "capacity": 50,
+  "points": [
+    {
+      "x": 7649.96,
+      "y": 4981.8,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7651.96,
+      "y": 4961.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7639.96,
+      "y": 4943.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7618.96,
+      "y": 4940.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.2
+      }
+    },
+    {
+      "x": 7600.96,
+      "y": 4934.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7594.96,
+      "y": 4913.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 7600.96,
+      "y": 4895.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 7618.96,
+      "y": 4883.77,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7630.96,
+      "y": 4877.77,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7642.96,
+      "y": 4877.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7652.37,
+      "y": 4881.77,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 150.0
+      }
+    }
+  ]
+}

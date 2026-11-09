@@ -1,0 +1,115 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_miraland_05",
+  "title": "【全昆虫速刷】埋骨地·灵魂观察所廊柱厅（37个/250秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 595,
+  "teleport": {
+    "name": "灵魂观察所廊柱厅",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7083.331,
+    "y": 5246.124
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "耳坠萤",
+    "晴雨伞",
+    "汐荧蟹",
+    "蜉幽幽",
+    "骨焰花",
+    "蓝鳞晶"
+  ],
+  "capacity": 37,
+  "points": [
+    {
+      "x": 7083.33,
+      "y": 5246.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7080.71,
+      "y": 5248.12,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7068.71,
+      "y": 5266.12,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7065.71,
+      "y": 5269.12,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7059.71,
+      "y": 5290.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 7060.71,
+      "y": 5308.11,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 150.0
+      }
+    },
+    {
+      "x": 7059.71,
+      "y": 5288.6,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 7062.71,
+      "y": 5267.6,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7074.71,
+      "y": 5252.6,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7078.93,
+      "y": 5250.6,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 58.6
+      }
+    }
+  ]
+}

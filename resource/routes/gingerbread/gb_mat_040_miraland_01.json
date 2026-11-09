@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_040_miraland_01",
-  "title": "【贵族卷毛】微风绿野·捕虫小屋（2个/58秒）",
+  "title": "【贵族卷毛】微风绿野·捕虫小屋（2个/79秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 172,
+  "timeout": 219,
   "teleport": {
     "name": "捕虫小屋",
     "province": "心愿原野",
@@ -14,11 +14,11 @@
   },
   "material": "贵族卷毛",
   "count_materials": [
+    "小绵菊",
     "骑士马鬃",
-    "贵族卷毛",
-    "小绵菊"
+    "贵族卷毛"
   ],
-  "capacity": 6,
+  "capacity": 13,
   "points": [
     {
       "x": 10143.9,
@@ -29,10 +29,100 @@
       "params": {}
     },
     {
+      "x": 10148.9,
+      "y": 10479.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10168.9,
+      "y": 10487.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10180.9,
+      "y": 10499.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10196.9,
+      "y": 10511.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10208.9,
+      "y": 10519.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10216.9,
+      "y": 10539.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10216.9,
+      "y": 10559.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10224.9,
+      "y": 10575.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10236.9,
+      "y": 10591.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10248.9,
+      "y": 10603.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 10258.58,
       "y": 10607.84,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 21.6

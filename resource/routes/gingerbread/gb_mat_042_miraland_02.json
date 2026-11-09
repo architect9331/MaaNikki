@@ -1,29 +1,30 @@
 {
   "schema_version": 3,
   "id": "gb_mat_042_miraland_02",
-  "title": "【骑士马鬃】微风绿野·绿野活动支援中心（6个/115秒）",
+  "title": "【骑士马鬃】祈愿树林·巨树浅滩（3个/89秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 298,
+  "timeout": 240,
   "teleport": {
-    "name": "绿野活动支援中心",
+    "name": "巨树浅滩",
     "province": "心愿原野",
-    "region": "微风绿野",
-    "x": 9971.072,
-    "y": 10637.347
+    "region": "祈愿树林",
+    "x": 11850.974,
+    "y": 9024.453
   },
   "material": "骑士马鬃",
   "count_materials": [
-    "骑士马鬃",
     "小绵菊",
-    "瓜子珠",
-    "路灯花"
+    "珠花贝壳",
+    "骑士马鬃",
+    "小星扇贝",
+    "珠链蝶"
   ],
   "capacity": 13,
   "points": [
     {
-      "x": 9971.07,
-      "y": 10637.35,
+      "x": 11850.97,
+      "y": 9024.45,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -32,23 +33,87 @@
       }
     },
     {
-      "x": 10126.34,
-      "y": 10668.09,
+      "x": 11837.97,
+      "y": 9038.45,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 27.6
+        "seconds": 3.0
       }
     },
     {
-      "x": 10155.0,
-      "y": 10631.0,
+      "x": 11840.97,
+      "y": 9050.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 11855.97,
+      "y": 9065.45,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 44.1
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11870.97,
+      "y": 9080.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11885.97,
+      "y": 9095.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11897.97,
+      "y": 9110.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 11909.97,
+      "y": 9125.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11918.97,
+      "y": 9143.45,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11926.63,
+      "y": 9153.92,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.1
       }
     }
   ]

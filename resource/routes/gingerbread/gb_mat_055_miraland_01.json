@@ -1,36 +1,54 @@
 {
   "schema_version": 3,
   "id": "gb_mat_055_miraland_01",
-  "title": "【领结毛团】石树田无人区·水龙卷观测站（1个/23秒）",
+  "title": "【领结毛团】小石树田村·村居岔路（1个/29秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
   "teleport": {
-    "name": "水龙卷观测站",
+    "name": "村居岔路",
     "province": "心愿原野",
-    "region": "石树田无人区",
-    "x": 8697.597,
-    "y": 9008.739
+    "region": "小石树田村",
+    "x": 9389.052,
+    "y": 10562.456
   },
   "material": "领结毛团",
   "count_materials": [
-    "领结毛团"
+    "刺绣蛾",
+    "领结毛团",
+    "汪汪毛线"
   ],
-  "capacity": 1,
+  "capacity": 3,
   "points": [
     {
-      "x": 8697.6,
-      "y": 9008.74,
+      "x": 9389.05,
+      "y": 10562.46,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8707.76,
-      "y": 8998.28,
-      "radius": 2.0,
+      "x": 9409.05,
+      "y": 10553.76,
+      "radius": 2.5,
       "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9427.05,
+      "y": 10544.76,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9429.52,
+      "y": 10527.76,
+      "radius": 2.0,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 8.6

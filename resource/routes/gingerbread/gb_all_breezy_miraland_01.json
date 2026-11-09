@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_01",
-  "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（37个/130秒）",
+  "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（38个/134秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 331,
+  "timeout": 339,
   "teleport": {
     "name": "筑心王国边境哨所",
     "province": "心愿原野",
@@ -15,10 +15,12 @@
   "material": "全材料·微风绿野",
   "count_materials": [
     "壁灯红椒",
-    "满满果",
-    "纽扣松果"
+    "小绵菊",
+    "瓜子珠",
+    "纽扣松果",
+    "满满果"
   ],
-  "capacity": 37,
+  "capacity": 38,
   "points": [
     {
       "x": 10782.91,
@@ -39,43 +41,51 @@
       }
     },
     {
-      "x": 10786.1,
-      "y": 11876.36,
+      "x": 10797.1,
+      "y": 11912.95,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10809.1,
+      "y": 11916.38,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 18.2
+      }
+    },
+    {
+      "x": 10828.45,
+      "y": 11900.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 10824.45,
+      "y": 11880.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 10833.45,
+      "y": 11862.99,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 5.2
-      }
-    },
-    {
-      "x": 10783.19,
-      "y": 11858.36,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 26.0
-      }
-    },
-    {
-      "x": 10804.19,
-      "y": 11857.99,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 10828.19,
-      "y": 11857.99,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
       }
     },
     {

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_045_miraland_01",
-  "title": "【花香羊毛】小石树田村·村居岔路（18个/237秒）",
+  "title": "【花香羊毛】小石树田村·村居岔路（12个/176秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 567,
+  "timeout": 433,
   "teleport": {
     "name": "村居岔路",
     "province": "心愿原野",
@@ -14,16 +14,15 @@
   },
   "material": "花香羊毛",
   "count_materials": [
-    "花香羊毛",
     "珠链蝶",
-    "耳坠萤",
+    "花香羊毛",
     "小绵菊",
-    "绣球羊毛",
-    "发卡蚱蜢",
+    "美食家蜜蜂",
     "围巾蚯蚓",
-    "美食家蜜蜂"
+    "绣球羊毛",
+    "发卡蚱蜢"
   ],
-  "capacity": 66,
+  "capacity": 51,
   "points": [
     {
       "x": 9389.05,
@@ -34,40 +33,88 @@
       "params": {}
     },
     {
-      "x": 9334.39,
-      "y": 10443.7,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 74.3
-      }
+      "x": 9403.05,
+      "y": 10547.54,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
     },
     {
-      "x": 9320.52,
-      "y": 10484.06,
-      "radius": 2.0,
+      "x": 9403.05,
+      "y": 10526.54,
+      "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9397.05,
+      "y": 10505.54,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9385.05,
+      "y": 10487.54,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9385.05,
+      "y": 10466.54,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9388.05,
+      "y": 10445.54,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9389.96,
+      "y": 10443.54,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 52.7
       }
     },
     {
-      "x": 9361.25,
-      "y": 10498.13,
+      "x": 9381.16,
+      "y": 10431.98,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 14.7
+      }
+    },
+    {
+      "x": 9400.47,
+      "y": 10399.65,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 27.6
       }
     },
     {
-      "x": 9377.44,
-      "y": 10477.23,
+      "x": 9383.33,
+      "y": 10473.45,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 33.7

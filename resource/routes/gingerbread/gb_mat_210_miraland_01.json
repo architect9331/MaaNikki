@@ -1,105 +1,51 @@
 {
   "schema_version": 3,
   "id": "gb_mat_210_miraland_01",
-  "title": "【草裙毛团】巨木之森·巨藤林地南侧废墟（8个/139秒）",
+  "title": "【草裙毛团】巨木之森·咻咻快道入口（2个/35秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 351,
+  "timeout": 122,
   "teleport": {
-    "name": "巨藤林地南侧废墟",
+    "name": "咻咻快道入口",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4226.458,
-    "y": 8872.653
+    "x": 4654.987,
+    "y": 7946.512
   },
   "material": "草裙毛团",
   "count_materials": [
-    "耳坠萤",
     "草裙毛团",
-    "珠链蝶",
-    "绒领毛团",
-    "结结蕨",
-    "垂穗魔果",
-    "抱抱绒团",
-    "小野菊",
-    "裁衣甲"
+    "木夹跳甲",
+    "行鹭羽"
   ],
-  "capacity": 38,
+  "capacity": 5,
   "points": [
     {
-      "x": 4226.46,
-      "y": 8872.65,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 4278.3,
-      "y": 8874.27,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 18.1
-      }
-    },
-    {
-      "x": 4382.8,
-      "y": 8834.74,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 43.2
-      }
-    },
-    {
-      "x": 4382.84,
-      "y": 8811.84,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 4385.84,
-      "y": 8790.84,
+      "x": 4654.99,
+      "y": 7946.51,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4385.84,
-      "y": 8769.84,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4370.84,
-      "y": 8754.84,
+      "x": 4647.07,
+      "y": 7958.27,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 8.6
       }
     },
     {
-      "x": 4361.84,
-      "y": 8742.84,
+      "x": 4666.15,
+      "y": 7978.32,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.1
+        "seconds": 8.6
       }
     }
   ]

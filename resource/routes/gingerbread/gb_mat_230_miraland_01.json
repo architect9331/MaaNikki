@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_230_miraland_01",
-  "title": "【绒领毛团】巨木之森·巨兽堡垒断桥旁（13个/251秒）",
+  "title": "【绒领毛团】巨木之森·巨兽堡垒断桥旁（13个/258秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 596,
+  "timeout": 613,
   "teleport": {
     "name": "巨兽堡垒断桥旁",
     "province": "伊赞之土",
@@ -18,13 +18,12 @@
     "结结蕨",
     "小野菊",
     "满满果",
-    "发卡蚱蜢",
-    "探险家蜜蜂",
     "咕咕之羽",
     "朝朝蝶",
-    "暮暮蝶"
+    "暮暮蝶",
+    "发卡蚱蜢"
   ],
-  "capacity": 41,
+  "capacity": 40,
   "points": [
     {
       "x": 3631.21,
@@ -35,6 +34,40 @@
       "params": {
         "seconds": 3.0
       }
+    },
+    {
+      "x": 3648.21,
+      "y": 9020.01,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3666.21,
+      "y": 9032.01,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 3687.21,
+      "y": 9032.01,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3702.21,
+      "y": 9044.01,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
     },
     {
       "x": 3715.46,
@@ -87,8 +120,8 @@
       }
     },
     {
-      "x": 3758.52,
-      "y": 9161.65,
+      "x": 3753.9,
+      "y": 9163.56,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -97,20 +130,20 @@
       }
     },
     {
-      "x": 3776.29,
-      "y": 9159.31,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 12.1
-      }
-    },
-    {
       "x": 3719.8,
       "y": 9159.64,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 17.3
+      }
+    },
+    {
+      "x": 3726.24,
+      "y": 9187.61,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 17.3

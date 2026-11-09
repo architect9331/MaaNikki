@@ -1,37 +1,103 @@
 {
   "schema_version": 3,
   "id": "gb_mat_213_miraland_01",
-  "title": "【荧夜鬃】巨木之森·巨藤林地南侧废墟（10个/142秒）",
+  "title": "【荧夜鬃】巨木之森·深林小径（10个/155秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 357,
+  "timeout": 386,
   "teleport": {
-    "name": "巨藤林地南侧废墟",
+    "name": "深林小径",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4226.458,
-    "y": 8872.653
+    "x": 3996.951,
+    "y": 8847.273
   },
   "material": "荧夜鬃",
   "count_materials": [
     "荧夜鬃",
     "耳坠萤",
-    "垂穗魔果",
     "结结蕨",
     "袋袋果",
     "小野菊",
-    "木夹跳甲"
+    "木夹跳甲",
+    "垂穗魔果"
   ],
   "capacity": 23,
   "points": [
     {
-      "x": 4226.46,
-      "y": 8872.65,
+      "x": 3996.95,
+      "y": 8847.27,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3995.95,
+      "y": 8843.17,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4004.95,
+      "y": 8828.17,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4025.95,
+      "y": 8828.17,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4046.95,
+      "y": 8822.17,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4067.95,
+      "y": 8822.17,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4088.95,
+      "y": 8816.17,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 4109.95,
+      "y": 8816.17,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4127.43,
+      "y": 8811.17,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 57.9
       }
     },
     {
@@ -42,16 +108,6 @@
       "action": "wait",
       "params": {
         "seconds": 52.7
-      }
-    },
-    {
-      "x": 4127.43,
-      "y": 8811.17,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 57.9
       }
     }
   ]

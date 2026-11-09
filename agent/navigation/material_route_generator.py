@@ -404,6 +404,8 @@ class TerrainWalkabilityGrid:
         self.z_map: np.ndarray | None = None
         self.slope_deg: np.ndarray | None = None
         self.obs_mask: np.ndarray | None = None
+        self.near_obs_mask: np.ndarray | None = None
+        self.wide_obs_mask: np.ndarray | None = None
         self.water_mask: np.ndarray | None = None
         self.sea_z: float = MAP_SEA_Z.get(map_id, -999.0)
         self._load_grids()
@@ -425,29 +427,43 @@ class TerrainWalkabilityGrid:
             except Exception:
                 self.z_map = None
 
-        if self.z_map is None:
-            terrain_png = self.root / "resource/navigation/terrain" / f"{self.map_id}.png"
-            manifest_path = self.root / "resource/navigation/terrain/manifest.json"
-            if terrain_png.is_file():
-                try:
-                    raw = np.fromfile(str(terrain_png), dtype=np.uint8)
-                    bgr = cv2.imdecode(raw, cv2.IMREAD_COLOR)
-                    if bgr is not None:
-                        b_ch = bgr[:, :, 0]
+        terrain_png = self.root / "resource/navigation/terrain" / f"{self.map_id}.png"
+        manifest_path = self.root / "resource/navigation/terrain/manifest.json"
+        if terrain_png.is_file():
+            try:
+                raw = np.fromfile(str(terrain_png), dtype=np.uint8)
+                bgr = cv2.imdecode(raw, cv2.IMREAD_COLOR)
+                if bgr is not None:
+                    b_ch = bgr[:, :, 0]
+                    png_obs = ((b_ch >> 1) & 1) > 0
+                    if self.z_map is None:
                         g_ch = bgr[:, :, 1].astype(np.uint16)
                         r_ch = bgr[:, :, 2].astype(np.uint16)
                         hu16 = (r_ch << 8) | g_ch
                         valid = (b_ch & 1) > 0
-                        z = np.where(valid & (hu16 > 0), hu16.astype(np.float32) / 10.0 - 500.0, np.nan)
-                        self.z_map = z
-                        self.slope_deg = ((b_ch >> 2) & 0x3F).astype(np.float32)
-                        self.obs_mask = ((b_ch >> 1) & 1) > 0
+                        z_off, z_sc = -300.0, 64.0
                         self.px_scale = 0.25 if self.map_id == "miraland" else 0.5
                         if manifest_path.is_file():
                             m_data = json.loads(manifest_path.read_text(encoding="utf-8"))
                             if self.map_id in m_data:
                                 self.px_scale = float(m_data[self.map_id].get("px_scale", self.px_scale))
-                except Exception:
+                                z_off = float(m_data[self.map_id].get("z_offset", z_off))
+                                z_sc = float(m_data[self.map_id].get("z_scale", z_sc))
+                        self.z_map = np.where(valid & (hu16 > 0), hu16.astype(np.float32) / z_sc + z_off, np.nan)
+                        self.slope_deg = ((b_ch >> 2) & 0x3F).astype(np.float32)
+                        self.obs_mask = png_obs
+                    elif self.obs_mask is not None:
+                        if png_obs.shape == self.obs_mask.shape:
+                            self.obs_mask |= png_obs
+                        else:
+                            up_obs = cv2.resize(
+                                png_obs.astype(np.uint8),
+                                (self.obs_mask.shape[1], self.obs_mask.shape[0]),
+                                interpolation=cv2.INTER_NEAREST,
+                            ) > 0
+                            self.obs_mask |= up_obs
+            except Exception:
+                if self.z_map is None:
                     self.z_map = None
 
         # Build 2D water mask from reference map image when 3D grid is absent or map is compact
@@ -461,6 +477,13 @@ class TerrainWalkabilityGrid:
                     self.water_mask = (b - r >= 28) & (b >= 95) & (r <= 145)
             except Exception:
                 self.water_mask = None
+
+        if self.obs_mask is not None:
+            base_u8 = self.obs_mask.astype(np.uint8)
+            k_near = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            k_wide = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+            self.near_obs_mask = cv2.dilate(base_u8, k_near, iterations=1) > 0
+            self.wide_obs_mask = cv2.dilate(base_u8, k_wide, iterations=1) > 0
 
     def elevation(self, x: float, y: float, default: float = float("nan")) -> float:
         if self.z_map is None:
@@ -505,6 +528,17 @@ class TerrainWalkabilityGrid:
             return bool(self.obs_mask[gy, gx])
         return False
 
+    def has_obstacle_near(self, x: float, y: float, clearance_px: float = 2.4) -> bool:
+        mask = self.wide_obs_mask if clearance_px >= 3.6 else self.near_obs_mask
+        if mask is None:
+            return self.is_obstacle(x, y)
+        gh, gw = mask.shape
+        gx = int(round(x * self.px_scale))
+        gy = int(round(y * self.px_scale))
+        if 0 <= gx < gw and 0 <= gy < gh:
+            return bool(mask[gy, gx])
+        return False
+
     def is_walkable(self, x: float, y: float, ref_z: float | None = None, max_slope: float = 42.0) -> bool:
         if not (4.0 <= x < self.width - 4.0 and 4.0 <= y < self.height - 4.0):
             return False
@@ -531,7 +565,7 @@ class TerrainWalkabilityGrid:
         gz = self.elevation(cx, cy, default=cz)
         anchor_z = gz if (not math.isnan(gz) and abs(gz - cz) <= 6.0) else cz
 
-        if self.is_walkable(cx, cy, ref_z=anchor_z, max_slope=36.0):
+        if self.is_walkable(cx, cy, ref_z=anchor_z, max_slope=34.0) and not self.has_obstacle_near(cx, cy, clearance_px=3.0):
             if all(math.hypot(p.x - cx, p.y - cy) <= spec.safe_radius_px for p in points):
                 return round(cx, 2), round(cy, 2), round(anchor_z, 2)
 
@@ -554,14 +588,15 @@ class TerrainWalkabilityGrid:
                 if covered < len(points) and len(points) > 1:
                     continue
                 slp_pen = self.slope(tx, ty) * 0.08
-                sc = covered * 100.0 - r * 0.5 - slp_pen
+                obs_pen = 65.0 if self.has_obstacle_near(tx, ty, clearance_px=3.0) else (20.0 if self.has_obstacle_near(tx, ty, clearance_px=5.0) else 0.0)
+                sc = covered * 100.0 - r * 0.45 - slp_pen - obs_pen
                 if sc > best_score:
                     best_score = sc
                     tz = self.elevation(tx, ty, default=cz)
                     if math.isnan(tz) or abs(tz - cz) > 6.0:
                         tz = cz
                     best_pt = (round(tx, 2), round(ty, 2), round(tz, 2))
-            if best_score > 0:
+            if best_score >= len(points) * 100.0 - 15.0:
                 break
         return best_pt
 
@@ -584,7 +619,7 @@ class TerrainWalkabilityGrid:
         if dist > 170.0 and step_px < 4.0:
             step_px = 4.0
 
-        # Check if straight line is completely clear and gentle
+        # Check if straight line is completely clear and gentle with safety clearance
         n_samples = max(2, int(math.ceil(dist / 2.0)))
         line_ok = True
         prev_z = sz
@@ -592,7 +627,7 @@ class TerrainWalkabilityGrid:
             t = i / n_samples
             mx = sx + (gx - sx) * t
             my = sy + (gy - sy) * t
-            if not self.is_walkable(mx, my, max_slope=38.0):
+            if not self.is_walkable(mx, my, max_slope=36.0) or self.has_obstacle_near(mx, my, clearance_px=2.2):
                 line_ok = False
                 break
             mz = self.elevation(mx, my, default=sz + (gz - sz) * t)
@@ -601,11 +636,11 @@ class TerrainWalkabilityGrid:
                 break
             prev_z = mz
         if line_ok:
-            jmp = (gz - sz) >= 0.85 and (gz - sz) <= 2.2
+            jmp = 0.55 <= (gz - sz) <= 2.5
             return [(round(gx, 2), round(gy, 2), round(gz, 2), jmp)]
 
         # Run grid A* in local bounding box with margin
-        margin = 45.0
+        margin = 55.0
         min_x = max(4.0, min(sx, gx) - margin)
         max_x = min(self.width - 5.0, max(sx, gx) + margin)
         min_y = max(4.0, min(sy, gy) - margin)
@@ -631,11 +666,11 @@ class TerrainWalkabilityGrid:
             (-1, -1, 1.414), (1, -1, 1.414), (-1, 1, 1.414), (1, 1, 1.414),
         ]
 
-        max_slp = 56.0 if relaxed else 46.0
+        max_slp = 56.0 if relaxed else 45.0
         max_step_dz = 5.0 if relaxed else 3.2
         visited = 0
         reached = False
-        while open_heap and visited < 5000:
+        while open_heap and visited < 6500:
             _, cost, c, r = heapq.heappop(open_heap)
             if (c, r) == (gc, gr):
                 reached = True
@@ -657,7 +692,13 @@ class TerrainWalkabilityGrid:
                 if abs(dz) > max_step_dz:
                     continue
                 slp = self.slope(nx, ny)
-                step_cost = d_mult * step_px * (1.0 + max(0.0, slp - 15.0) * 0.04 + max(0.0, dz) * 0.35)
+                obs_pen = 0.0
+                if (nc, nr) != (gc, gr):
+                    if self.has_obstacle_near(nx, ny, clearance_px=2.4):
+                        obs_pen = 2.4
+                    elif self.has_obstacle_near(nx, ny, clearance_px=4.2):
+                        obs_pen = 0.75
+                step_cost = d_mult * step_px * (1.0 + obs_pen + max(0.0, slp - 15.0) * 0.04 + max(0.0, dz) * 0.35)
                 ng = cost + step_cost
                 if ng < g_score.get((nc, nr), 1e18):
                     g_score[(nc, nr)] = ng
@@ -694,27 +735,27 @@ class TerrainWalkabilityGrid:
         if len(raw_pts) <= 2:
             gx, gy, gz = raw_pts[-1]
             sz = raw_pts[0][2]
-            jmp = 0.85 <= (gz - sz) <= 2.2
+            jmp = 0.55 <= (gz - sz) <= 2.5
             return [(round(gx, 2), round(gy, 2), round(gz, 2), jmp)]
 
-        # Line-of-sight greedy string pulling + max segment length ~24 px (~21.6 m)
+        # Line-of-sight greedy string pulling + max segment length ~22 px (~19.8 m)
         simplified = [raw_pts[0]]
         i = 0
         n = len(raw_pts)
         while i < n - 1:
             best_j = i + 1
-            for j in range(min(n - 1, i + 10), i + 1, -1):
+            for j in range(min(n - 1, i + 9), i + 1, -1):
                 p0, p1 = raw_pts[i], raw_pts[j]
                 seg_d = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
-                if seg_d > 24.0:
+                if seg_d > 22.0:
                     continue
                 clear = True
-                steps = max(2, int(math.ceil(seg_d / 2.0)))
+                steps = max(2, int(math.ceil(seg_d / 1.8)))
                 for s in range(1, steps):
                     t = s / steps
                     mx = p0[0] + (p1[0] - p0[0]) * t
                     my = p0[1] + (p1[1] - p0[1]) * t
-                    if not self.is_walkable(mx, my, max_slope=44.0):
+                    if not self.is_walkable(mx, my, max_slope=42.0) or self.has_obstacle_near(mx, my, clearance_px=2.0):
                         clear = False
                         break
                 if clear:
@@ -728,7 +769,7 @@ class TerrainWalkabilityGrid:
             prev_z = simplified[k - 1][2]
             x, y, z = simplified[k]
             dz = (z - prev_z) if not (math.isnan(z) or math.isnan(prev_z)) else 0.0
-            jmp = 0.85 <= dz <= 2.2
+            jmp = 0.55 <= dz <= 2.5
             out.append((round(x, 2), round(y, 2), round(z, 2), jmp))
         return out
 
@@ -1213,15 +1254,18 @@ class MaterialRouteGenerator:
                 pts = prepare_map_points(self.catalog.points_by_map.get(map_id, []))
                 if not any(p.catalog_id in target_cids for p in pts):
                     continue
+                scored_spires = []
                 for spire in self.catalog.spires_by_map.get(map_id, []):
                     if region_set and spire.region not in region_set and spire.province not in region_set:
                         continue
                     near_target = sum(
                         1 for p in pts
-                        if p.catalog_id in target_cids and math.hypot(p.x - spire.x, p.y - spire.y) <= search_r
+                        if p.catalog_id in target_cids and abs(p.x - spire.x) <= search_r and abs(p.y - spire.y) <= search_r and math.hypot(p.x - spire.x, p.y - spire.y) <= search_r
                     )
-                    if near_target == 0:
-                        continue
+                    if near_target > 0:
+                        scored_spires.append((near_target, spire))
+                scored_spires.sort(key=lambda x: x[0], reverse=True)
+                for _, spire in scored_spires[: max(top_k * 3, 10)]:
                     plan = self._plan_spire_route(
                         spire=spire,
                         map_points=pts,

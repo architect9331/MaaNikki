@@ -1,0 +1,208 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_095_firework_01",
+  "title": "【壁灯红椒】花焰群岛·聆风高地山麓（30个/172秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 423,
+  "teleport": {
+    "name": "聆风高地山麓",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 748.755,
+    "y": 548.546
+  },
+  "material": "壁灯红椒",
+  "count_materials": [
+    "壁灯红椒",
+    "小绵菊",
+    "满满果",
+    "小星扇贝",
+    "晴日蝶兰/雨滴蝶兰",
+    "噼啪花粉",
+    "芭蕾豆娘",
+    "香薰睡莲",
+    "珠花贝壳"
+  ],
+  "capacity": 46,
+  "points": [
+    {
+      "x": 748.75,
+      "y": 548.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 748.29,
+      "y": 535.06,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 753.29,
+      "y": 555.06,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 759.29,
+      "y": 573.06,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 773.99,
+      "y": 583.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 781.99,
+      "y": 592.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 799.99,
+      "y": 580.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 800.45,
+      "y": 578.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
+      }
+    },
+    {
+      "x": 808.45,
+      "y": 595.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 823.45,
+      "y": 610.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 832.45,
+      "y": 622.82,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 835.45,
+      "y": 622.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 840.07,
+      "y": 629.6,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.2
+      }
+    },
+    {
+      "x": 842.07,
+      "y": 608.01,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 842.07,
+      "y": 587.01,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 842.07,
+      "y": 566.01,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 848.07,
+      "y": 545.01,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 851.07,
+      "y": 524.01,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 852.51,
+      "y": 513.01,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.2
+      }
+    }
+  ]
+}

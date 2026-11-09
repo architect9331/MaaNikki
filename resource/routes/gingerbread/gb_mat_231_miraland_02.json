@@ -1,50 +1,90 @@
 {
   "schema_version": 3,
   "id": "gb_mat_231_miraland_02",
-  "title": "【行鹭羽】巨木之森·壳壳岛西侧对岸码头（9个/113秒）",
+  "title": "【行鹭羽】巨木之森·咻咻快道入口（8个/101秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 293,
+  "timeout": 268,
   "teleport": {
-    "name": "壳壳岛西侧对岸码头",
+    "name": "咻咻快道入口",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4595.558,
-    "y": 8814.467
+    "x": 4654.987,
+    "y": 7946.512
   },
   "material": "行鹭羽",
   "count_materials": [
     "行鹭羽",
-    "钓鱼点"
+    "木夹跳甲"
   ],
-  "capacity": 12,
+  "capacity": 9,
   "points": [
     {
-      "x": 4595.56,
-      "y": 8814.47,
+      "x": 4654.99,
+      "y": 7946.51,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4609.94,
-      "y": 8816.17,
+      "x": 4665.99,
+      "y": 7951.51,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4669.81,
+      "y": 7950.09,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.1
+        "seconds": 37.1
       }
     },
     {
-      "x": 4715.85,
-      "y": 8834.3,
+      "x": 4661.25,
+      "y": 7949.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4658.25,
+      "y": 7928.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4658.25,
+      "y": 7907.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4655.25,
+      "y": 7886.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4635.25,
+      "y": 7878.79,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 65.6
+        "seconds": 37.1
       }
     }
   ]

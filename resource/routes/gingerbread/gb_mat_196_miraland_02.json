@@ -16,8 +16,8 @@
   "count_materials": [
     "袋袋果",
     "壁灯红椒",
-    "耳坠萤",
-    "小野菊"
+    "结结蕨",
+    "耳坠萤"
   ],
   "capacity": 7,
   "points": [
@@ -30,18 +30,24 @@
       "params": {}
     },
     {
-      "x": 4124.1,
-      "y": 8539.26,
-      "radius": 2.0,
+      "x": 4162.01,
+      "y": 8490.89,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 4115.27,
-      "y": 8560.26,
+      "x": 4153.01,
+      "y": 8508.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4144.01,
+      "y": 8526.89,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -50,10 +56,28 @@
       }
     },
     {
-      "x": 4115.27,
-      "y": 8563.67,
+      "x": 4141.01,
+      "y": 8541.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4127.01,
+      "y": 8545.63,
       "radius": 2.0,
       "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 4128.11,
+      "y": 8561.69,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 7.8

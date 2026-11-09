@@ -43,7 +43,7 @@
       "x": 1077.45,
       "y": 328.03,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 10.4

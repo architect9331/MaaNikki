@@ -1,65 +1,50 @@
 {
   "schema_version": 3,
   "id": "gb_all_danqing_danqing_01",
-  "title": "【全材料·丹青屿】丹青屿·栖龙峰山腰（18个/68秒）",
+  "title": "【全材料·丹青屿】丹青屿·栖龙峰侧峰（8个/37秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 195,
+  "timeout": 127,
   "teleport": {
-    "name": "栖龙峰山腰",
+    "name": "栖龙峰侧峰",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1115.313,
-    "y": 388.774
+    "x": 1072.586,
+    "y": 284.388
   },
   "material": "全材料·丹青屿",
   "count_materials": [
-    "壁灯红椒",
     "满满果",
-    "荷包草",
-    "玉簪蚱蜢",
-    "云绒玉絮"
+    "荷包草"
   ],
-  "capacity": 18,
+  "capacity": 8,
   "points": [
     {
-      "x": 1115.31,
-      "y": 388.77,
+      "x": 1072.59,
+      "y": 284.39,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {
-      "x": 1119.26,
-      "y": 382.99,
-      "radius": 2.0,
+      "x": 1054.14,
+      "y": 275.14,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 10.4
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 1135.44,
-      "y": 385.94,
+      "x": 1043.14,
+      "y": 273.14,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
-      }
-    },
-    {
-      "x": 1135.0,
-      "y": 388.11,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 26.2
+        "seconds": 15.6
       }
     }
   ]

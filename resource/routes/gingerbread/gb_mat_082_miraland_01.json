@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_082_miraland_01",
-  "title": "【飞球果】石树田无人区·木桶荫地（12个/54秒）",
+  "title": "【飞球果】石树田无人区·木桶荫地（18个/96秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 164,
+  "timeout": 257,
   "teleport": {
     "name": "木桶荫地",
     "province": "心愿原野",
@@ -15,9 +15,12 @@
   "material": "飞球果",
   "count_materials": [
     "飞球果",
-    "滋滋花粉"
+    "珠链蝶",
+    "风絮草",
+    "滋滋花粉",
+    "花伞藤萝"
   ],
-  "capacity": 13,
+  "capacity": 35,
   "points": [
     {
       "x": 8230.08,
@@ -30,45 +33,79 @@
       }
     },
     {
-      "x": 8217.64,
-      "y": 10303.04,
+      "x": 8219.46,
+      "y": 10301.01,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8205.64,
-      "y": 10285.04,
+      "x": 8216.46,
+      "y": 10286.01,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8199.64,
-      "y": 10279.04,
+      "x": 8201.46,
+      "y": 10280.01,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8202.64,
-      "y": 10276.04,
+      "x": 8198.46,
+      "y": 10277.01,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8202.64,
-      "y": 10273.04,
+      "x": 8201.46,
+      "y": 10274.01,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8205.46,
+      "y": 10272.01,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 31.2
+      }
+    },
+    {
+      "x": 8219.46,
+      "y": 10274.01,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8222.46,
+      "y": 10277.01,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8235.23,
+      "y": 10285.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 36.4
       }
     }
   ]

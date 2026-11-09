@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_200_miraland_01",
-  "title": "【垂穗魔果】巨木之森·卢米菈的小屋（12个/132秒）",
+  "title": "【垂穗魔果】巨木之森·卢米菈的小屋（10个/105秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 335,
+  "timeout": 275,
   "teleport": {
     "name": "卢米菈的小屋",
     "province": "伊赞之土",
@@ -17,7 +17,7 @@
     "垂穗魔果",
     "结结蕨"
   ],
-  "capacity": 13,
+  "capacity": 17,
   "points": [
     {
       "x": 5199.3,
@@ -30,13 +30,13 @@
       }
     },
     {
-      "x": 5175.55,
-      "y": 9133.66,
+      "x": 5183.03,
+      "y": 9079.69,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
@@ -50,8 +50,48 @@
       }
     },
     {
-      "x": 5271.77,
-      "y": 9064.81,
+      "x": 5175.93,
+      "y": 9052.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5166.93,
+      "y": 9070.29,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5160.93,
+      "y": 9091.29,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5157.93,
+      "y": 9112.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5160.93,
+      "y": 9127.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5170.93,
+      "y": 9131.74,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -60,8 +100,36 @@
       }
     },
     {
-      "x": 5346.05,
-      "y": 9087.17,
+      "x": 5103.22,
+      "y": 9108.96,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 5094.42,
+      "y": 9123.83,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 5089.05,
+      "y": 9137.83,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5087.05,
+      "y": 9143.69,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
@@ -70,8 +138,8 @@
       }
     },
     {
-      "x": 5382.57,
-      "y": 9135.23,
+      "x": 5106.36,
+      "y": 9165.8,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
@@ -80,28 +148,8 @@
       }
     },
     {
-      "x": 5295.66,
-      "y": 9166.79,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 5264.82,
-      "y": 9151.82,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 5183.03,
-      "y": 9079.69,
+      "x": 5127.52,
+      "y": 9159.29,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

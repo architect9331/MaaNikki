@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_038_miraland_02",
-  "title": "【兔尾绒团】花愿镇·心愿花街（10个/173秒）",
+  "title": "【兔尾绒团】花愿镇·心愿花街（10个/238秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 425,
+  "timeout": 569,
   "teleport": {
     "name": "心愿花街",
     "province": "心愿原野",
@@ -14,14 +14,16 @@
   },
   "material": "兔尾绒团",
   "count_materials": [
-    "兔尾绒团",
     "小绵菊",
+    "兔尾绒团",
+    "路灯花",
     "兔兔妆粉",
     "发卡蚱蜢",
-    "路灯花",
+    "草绒球",
+    "布布果",
     "珠链蝶"
   ],
-  "capacity": 26,
+  "capacity": 44,
   "points": [
     {
       "x": 10260.86,
@@ -30,14 +32,42 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10271.02,
+      "y": 10093.84,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10268.02,
+      "y": 10114.84,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10253.02,
+      "y": 10123.84,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
       }
     },
     {
       "x": 10236.02,
       "y": 10130.77,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 21.6
@@ -54,6 +84,132 @@
       }
     },
     {
+      "x": 10206.41,
+      "y": 10178.35,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10185.41,
+      "y": 10181.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10164.41,
+      "y": 10181.35,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 10143.41,
+      "y": 10181.35,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 10125.41,
+      "y": 10193.35,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10119.41,
+      "y": 10211.35,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 10119.41,
+      "y": 10226.35,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10137.41,
+      "y": 10232.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10152.41,
+      "y": 10220.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10156.41,
+      "y": 10219.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 24.2
+      }
+    },
+    {
+      "x": 10170.41,
+      "y": 10233.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10185.41,
+      "y": 10248.17,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10200.41,
+      "y": 10263.17,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10197.41,
+      "y": 10272.17,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 10193.15,
       "y": 10272.27,
       "radius": 2.0,
@@ -61,16 +217,6 @@
       "action": "wait",
       "params": {
         "seconds": 36.3
-      }
-    },
-    {
-      "x": 10162.47,
-      "y": 10209.99,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 21.6
       }
     }
   ]

@@ -1,28 +1,80 @@
 {
   "schema_version": 3,
   "id": "gb_mat_052_miraland_02",
-  "title": "【背带毛团】石树田无人区·石碑地（5个/80秒）",
+  "title": "【背带毛团】石树田无人区·乘风磨坊入口（6个/96秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 221,
+  "timeout": 257,
   "teleport": {
-    "name": "石碑地",
+    "name": "乘风磨坊入口",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 9267.482,
-    "y": 8947.913
+    "x": 7767.721,
+    "y": 9965.897
   },
   "material": "背带毛团",
   "count_materials": [
+    "蓝珀鸟羽",
     "背带毛团",
-    "路灯花",
-    "花伞藤萝"
+    "发卡蚱蜢",
+    "小星扇贝",
+    "珠花贝壳"
   ],
-  "capacity": 7,
+  "capacity": 21,
   "points": [
     {
-      "x": 9267.48,
-      "y": 8947.91,
+      "x": 7767.72,
+      "y": 9965.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7765.45,
+      "y": 9964.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7762.45,
+      "y": 9964.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7747.45,
+      "y": 9949.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7748.45,
+      "y": 9941.29,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 37.1
+      }
+    },
+    {
+      "x": 7750.45,
+      "y": 9961.29,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7762.45,
+      "y": 9973.29,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -31,45 +83,37 @@
       }
     },
     {
-      "x": 9282.48,
-      "y": 8962.91,
+      "x": 7777.45,
+      "y": 9973.29,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9297.48,
-      "y": 8977.91,
+      "x": 7795.45,
+      "y": 9961.29,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9312.48,
-      "y": 8992.91,
+      "x": 7813.45,
+      "y": 9952.29,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9315.48,
-      "y": 9013.91,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9317.55,
-      "y": 9036.94,
+      "x": 7827.26,
+      "y": 9944.78,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 50.1
+        "seconds": 24.2
       }
     }
   ]

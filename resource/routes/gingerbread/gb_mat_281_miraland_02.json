@@ -1,37 +1,99 @@
 {
   "schema_version": 3,
   "id": "gb_mat_281_miraland_02",
-  "title": "【晴雨伞】埋骨地·湖岸营地（36个/142秒）",
+  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（33个/149秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 357,
+  "timeout": 373,
   "teleport": {
-    "name": "湖岸营地",
+    "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 6139.401,
-    "y": 5241.84
+    "x": 8063.15,
+    "y": 5243.188
   },
   "material": "晴雨伞",
   "count_materials": [
     "晴雨伞",
+    "风舞花",
     "钓鱼点",
-    "珠链蝶",
-    "风舞花"
+    "蜜妆兔绒",
+    "蜜妆粉",
+    "蓝鳞晶"
   ],
-  "capacity": 48,
+  "capacity": 43,
   "points": [
     {
-      "x": 6139.4,
-      "y": 5241.84,
+      "x": 8063.15,
+      "y": 5243.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 8080.15,
+      "y": 5237.19,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8101.15,
+      "y": 5243.19,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 6133.9,
-      "y": 5205.58,
+      "x": 8116.15,
+      "y": 5243.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8131.15,
+      "y": 5240.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8137.15,
+      "y": 5219.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 8140.15,
+      "y": 5198.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8134.15,
+      "y": 5180.19,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8129.31,
+      "y": 5172.19,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -40,67 +102,33 @@
       }
     },
     {
-      "x": 6084.74,
-      "y": 5172.92,
+      "x": 8085.72,
+      "y": 5180.51,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.2
+        "seconds": 23.4
       }
     },
     {
-      "x": 6102.55,
-      "y": 5198.41,
+      "x": 8100.11,
+      "y": 5143.93,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 13.0
+        "seconds": 18.2
       }
     },
     {
-      "x": 6123.55,
-      "y": 5198.91,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6144.55,
-      "y": 5201.91,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6168.55,
-      "y": 5201.91,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6180.36,
-      "y": 5195.91,
+      "x": 8149.7,
+      "y": 5141.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
-      }
-    },
-    {
-      "x": 6197.15,
-      "y": 5190.69,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
+        "seconds": 18.2
       }
     }
   ]

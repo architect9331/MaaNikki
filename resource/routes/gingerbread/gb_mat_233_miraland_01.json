@@ -1,59 +1,65 @@
 {
   "schema_version": 3,
   "id": "gb_mat_233_miraland_01",
-  "title": "【扣扣毛球】磐城·咏叹剧院（3个/46秒）",
+  "title": "【扣扣毛球】磐城·街区钟塔（4个/93秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 147,
+  "timeout": 249,
   "teleport": {
-    "name": "咏叹剧院",
+    "name": "街区钟塔",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3937.799,
-    "y": 3509.925
+    "x": 3841.69,
+    "y": 4046.966
   },
   "material": "扣扣毛球",
   "count_materials": [
-    "扣扣毛球"
+    "探险家蜜蜂",
+    "扣扣毛球",
+    "蓝玉甲虫",
+    "风舞花",
+    "满满果",
+    "晶球绵蚧",
+    "珠坠甲虫"
   ],
-  "capacity": 3,
+  "capacity": 20,
   "points": [
     {
-      "x": 3937.8,
-      "y": 3509.93,
+      "x": 3841.69,
+      "y": 4046.97,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3929.64,
-      "y": 3518.04,
+      "x": 3818.14,
+      "y": 4004.98,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 8.6
+        "seconds": 17.3
       }
     },
     {
-      "x": 3904.23,
-      "y": 3519.77,
+      "x": 3882.98,
+      "y": 3998.61,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.6
+        "seconds": 14.7
       }
     },
     {
-      "x": 3899.23,
-      "y": 3495.72,
+      "x": 3843.33,
+      "y": 3897.01,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.6
+        "seconds": 18.1
       }
     }
   ]

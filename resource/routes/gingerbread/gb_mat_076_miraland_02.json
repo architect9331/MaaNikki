@@ -1,50 +1,113 @@
 {
   "schema_version": 3,
   "id": "gb_mat_076_miraland_02",
-  "title": "【耳坠萤】巨木之森·火山湖洞窟外（30个/204秒）",
+  "title": "【耳坠萤】埋骨地·灵魂观察所廊柱厅（48个/400秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 495,
+  "timeout": 900,
   "teleport": {
-    "name": "火山湖洞窟外",
+    "name": "灵魂观察所廊柱厅",
     "province": "伊赞之土",
-    "region": "巨木之森",
-    "x": 5903.737,
-    "y": 7720.742
+    "region": "埋骨地",
+    "x": 7083.331,
+    "y": 5246.124
   },
   "material": "耳坠萤",
   "count_materials": [
     "耳坠萤",
-    "咕咕之羽"
+    "骨焰花",
+    "晴雨伞",
+    "汐荧蟹",
+    "蓝鳞晶"
   ],
-  "capacity": 33,
+  "capacity": 59,
   "points": [
     {
-      "x": 5903.74,
-      "y": 7720.74,
-      "radius": 2.5,
+      "x": 7083.33,
+      "y": 5246.12,
+      "radius": 2.0,
       "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 39.1
+      }
+    },
+    {
+      "x": 7080.71,
+      "y": 5248.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 7068.71,
+      "y": 5266.12,
+      "radius": 2.5,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 5902.78,
-      "y": 7716.51,
+      "x": 7065.71,
+      "y": 5269.12,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 39.1
+      }
+    },
+    {
+      "x": 7059.71,
+      "y": 5290.12,
       "radius": 2.0,
       "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 23.8
+      }
+    },
+    {
+      "x": 7060.71,
+      "y": 5308.11,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 150.0
       }
     },
     {
-      "x": 5912.0,
-      "y": 7733.59,
+      "x": 7051.11,
+      "y": 5289.31,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 39.1
+        "seconds": 18.6
+      }
+    },
+    {
+      "x": 7048.11,
+      "y": 5274.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 45.2
+      }
+    },
+    {
+      "x": 7037.11,
+      "y": 5275.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 53.2
       }
     }
   ]

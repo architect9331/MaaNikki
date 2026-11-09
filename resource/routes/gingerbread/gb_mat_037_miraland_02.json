@@ -1,0 +1,53 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_037_miraland_02",
+  "title": "【汪汪毛线】花愿镇·镇长宅邸前（2个/37秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 127,
+  "teleport": {
+    "name": "镇长宅邸前",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10544.632,
+    "y": 9974.37
+  },
+  "material": "汪汪毛线",
+  "count_materials": [
+    "美食家蜜蜂",
+    "汪汪毛线",
+    "满满果",
+    "小绵菊"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 10544.63,
+      "y": 9974.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10543.63,
+      "y": 9971.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10552.48,
+      "y": 9963.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.1
+      }
+    }
+  ]
+}

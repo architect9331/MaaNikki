@@ -1,58 +1,73 @@
 {
   "schema_version": 3,
   "id": "gb_mat_047_miraland_01",
-  "title": "【花环毛团】祈愿树林·金蔷薇花谷（4个/62秒）",
+  "title": "【花环毛团】祈愿树林·巨树浅滩（3个/66秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 182,
+  "timeout": 190,
   "teleport": {
-    "name": "金蔷薇花谷",
+    "name": "巨树浅滩",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 12311.612,
-    "y": 9450.761
+    "x": 11850.974,
+    "y": 9024.453
   },
   "material": "花环毛团",
   "count_materials": [
+    "珠链蝶",
+    "小星扇贝",
     "花环毛团",
     "小绵菊",
-    "鹿冠毛团",
-    "发卡蚱蜢"
+    "发卡蚱蜢",
+    "珠花贝壳",
+    "鹿冠毛团"
   ],
-  "capacity": 8,
+  "capacity": 16,
   "points": [
     {
-      "x": 12311.61,
-      "y": 9450.76,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12326.61,
-      "y": 9436.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12341.61,
-      "y": 9421.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12348.41,
-      "y": 9415.95,
+      "x": 11850.97,
+      "y": 9024.45,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 43.2
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 11830.06,
+      "y": 9020.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11809.06,
+      "y": 9017.45,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11797.06,
+      "y": 9020.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11786.06,
+      "y": 9029.13,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 36.3
       }
     }
   ]

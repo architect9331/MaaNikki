@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_florawish_miraland_01",
-  "title": "【全材料·花愿镇】花愿镇·织裙街（39个/138秒）",
+  "title": "【全材料·花愿镇】花愿镇·织裙街（40个/142秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 349,
+  "timeout": 356,
   "teleport": {
     "name": "织裙街",
     "province": "心愿原野",
@@ -21,7 +21,7 @@
     "瓜子珠",
     "发卡蚱蜢"
   ],
-  "capacity": 39,
+  "capacity": 40,
   "points": [
     {
       "x": 10728.75,
@@ -34,8 +34,8 @@
       }
     },
     {
-      "x": 10771.02,
-      "y": 10087.34,
+      "x": 10773.32,
+      "y": 10086.64,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
@@ -44,14 +44,48 @@
       }
     },
     {
-      "x": 10818.8,
-      "y": 10101.59,
+      "x": 10787.32,
+      "y": 10085.64,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10805.32,
+      "y": 10094.64,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10820.32,
+      "y": 10097.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10819.88,
+      "y": 10099.97,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 39.2
       }
+    },
+    {
+      "x": 10833.88,
+      "y": 10090.58,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
       "x": 10832.69,
@@ -62,14 +96,6 @@
       "params": {
         "seconds": 20.8
       }
-    },
-    {
-      "x": 10826.2,
-      "y": 10077.41,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
     },
     {
       "x": 10826.2,

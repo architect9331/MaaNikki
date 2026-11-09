@@ -1,82 +1,158 @@
 {
   "schema_version": 3,
   "id": "gb_mat_277_miraland_01",
-  "title": "【革袋甲】埋骨地·龙眠花冢（9个/149秒）",
+  "title": "【革袋甲】埋骨地·孤石滩（7个/98秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 373,
+  "timeout": 261,
   "teleport": {
-    "name": "龙眠花冢",
+    "name": "孤石滩",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 6524.864,
-    "y": 5029.647
+    "x": 8242.27,
+    "y": 5309.374
   },
   "material": "革袋甲",
   "count_materials": [
     "革袋甲",
-    "骨焰花",
-    "珠链蝶",
     "风舞花"
   ],
-  "capacity": 21,
+  "capacity": 9,
   "points": [
     {
-      "x": 6524.86,
-      "y": 5029.65,
+      "x": 8242.27,
+      "y": 5309.37,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 6640.99,
-      "y": 5028.96,
+      "x": 8238.74,
+      "y": 5308.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8217.74,
+      "y": 5305.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8209.74,
+      "y": 5303.5,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 47.8
+        "seconds": 15.1
       }
     },
     {
-      "x": 6611.53,
-      "y": 5032.41,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 21.0
-      }
+      "x": 8226.74,
+      "y": 5296.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
-      "x": 6622.94,
-      "y": 5041.62,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 13.2
-      }
+      "x": 8229.74,
+      "y": 5293.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
-      "x": 6688.41,
-      "y": 4977.4,
+      "x": 8244.74,
+      "y": 5278.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8262.74,
+      "y": 5284.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8268.74,
+      "y": 5290.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8268.74,
+      "y": 5293.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8271.74,
+      "y": 5299.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8277.74,
+      "y": 5305.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8280.74,
+      "y": 5326.5,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.1
+        "seconds": 26.6
       }
     },
     {
-      "x": 6715.74,
-      "y": 4942.99,
+      "x": 8301.74,
+      "y": 5329.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8322.74,
+      "y": 5332.5,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.1
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 8326.74,
+      "y": 5336.13,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
       }
     }
   ]

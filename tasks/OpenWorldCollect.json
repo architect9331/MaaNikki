@@ -34,18 +34,31 @@
     "OpenWorldQuietWindow": {
       "type": "select",
       "label": "驻留结束与测时策略",
-      "default_case": "Conservative",
+      "default_case": "Wait20s",
       "description": "在采集点停下等待姜饼人拾取时，实时读取屏幕左侧弹出的材料提示。若连续一段时间没有新材料弹出，则判定该点位已拾取完毕并记录耗时，继续前往下一点位。",
       "cases": [
         {
-          "name": "Conservative",
-          "label": "保守判定（6秒无新提示后离开，防漏捡）",
+          "name": "Wait20s",
+          "label": "20秒无新提示后离开（推荐，适配姜饼人远距飞行）",
           "pipeline_override": {
             "MaaNikki_OpenWorldCollect": {
               "custom_action_param": {
                 "adaptive_exit": true,
-                "quiet_seconds": 6.0,
-                "initial_wait_seconds": 9.5
+                "quiet_seconds": 20.0,
+                "initial_wait_seconds": 20.0
+              }
+            }
+          }
+        },
+        {
+          "name": "Wait15s",
+          "label": "15秒无新提示后离开（兼顾远距拾取与效率）",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "adaptive_exit": true,
+                "quiet_seconds": 15.0,
+                "initial_wait_seconds": 15.0
               }
             }
           }
@@ -59,6 +72,19 @@
                 "adaptive_exit": true,
                 "quiet_seconds": 8.0,
                 "initial_wait_seconds": 12.0
+              }
+            }
+          }
+        },
+        {
+          "name": "Conservative",
+          "label": "保守判定（6秒无新提示后离开，防漏捡）",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "adaptive_exit": true,
+                "quiet_seconds": 6.0,
+                "initial_wait_seconds": 9.5
               }
             }
           }
@@ -83,8 +109,8 @@
             "MaaNikki_OpenWorldCollect": {
               "custom_action_param": {
                 "adaptive_exit": false,
-                "quiet_seconds": 6.0,
-                "initial_wait_seconds": 9.5
+                "quiet_seconds": 20.0,
+                "initial_wait_seconds": 20.0
               }
             }
           }

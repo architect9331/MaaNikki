@@ -294,7 +294,7 @@ function structureColors(
 }
 
 const MESH_N = 240;
-const MAX_STRUCTS = 1600;
+const MAX_STRUCTS = 3200;
 
 interface GLTerrainState {
   gl: WebGLRenderingContext;
@@ -1016,16 +1016,28 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
             structVertsData[svPtr++] = sh;
           };
 
-          for (let i = 0; i < grid.structures.length && sCount < MAX_STRUCTS; i++) {
+          const visibleStructs: StructureBox3D[] = [];
+          for (let i = 0; i < grid.structures.length; i++) {
             const st = grid.structures[i];
-            if (Math.abs(st.cx - patchCenterX) > cullDist || Math.abs(st.cy - patchCenterY) > cullDist) {
-              continue;
+            if (Math.abs(st.cx - patchCenterX) <= cullDist && Math.abs(st.cy - patchCenterY) <= cullDist) {
+              visibleStructs.push(st);
             }
+          }
+          if (visibleStructs.length > MAX_STRUCTS) {
+            visibleStructs.sort((a, b) => {
+              const da = (a.cx - patchCenterX) ** 2 + (a.cy - patchCenterY) ** 2;
+              const db = (b.cx - patchCenterX) ** 2 + (b.cy - patchCenterY) ** 2;
+              return da - db;
+            });
+          }
+
+          for (let i = 0; i < visibleStructs.length && sCount < MAX_STRUCTS; i++) {
+            const st = visibleStructs[i];
             const normZ = (st.zTop - zMin) / zSpan;
             const { wall, roof } = structureColors(st.kind, surfaceMode, normZ);
             const [wr, wg, wb] = wall;
             const [rr, rg, rb] = roof;
-            const taper = st.kind === 5 || st.kind === 6 ? 0.1 : st.kind === 1 ? 0.04 : 0.0;
+            const taper = st.kind === 6 ? 0.14 : st.kind === 5 ? 0.1 : st.kind === 1 ? 0.04 : 0.0;
             const dx = (st.x1 - st.x0) * taper;
             const dy = (st.y1 - st.y0) * taper;
             const tx0 = st.x0 + dx;

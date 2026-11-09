@@ -1,167 +1,39 @@
 {
   "schema_version": 3,
   "id": "gb_cat_insect_serenity_01",
-  "title": "【全昆虫速刷】无忧岛·布蜜蜜花园（32个/157秒）",
+  "title": "【全昆虫速刷】无忧岛·泡泡花田（5个/26秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 390,
+  "timeout": 120,
   "teleport": {
-    "name": "布蜜蜜花园",
+    "name": "泡泡花田",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 840.84,
-    "y": 864.333
+    "x": 1062.068,
+    "y": 537.513
   },
   "material": "全昆虫速刷",
   "count_materials": [
-    "小绵菊",
-    "壁灯红椒",
-    "耳坠萤",
-    "纽扣松果",
-    "满满果",
-    "布布果",
-    "小星扇贝"
+    "风絮草"
   ],
-  "capacity": 32,
+  "capacity": 5,
   "points": [
     {
-      "x": 840.84,
-      "y": 864.33,
+      "x": 1062.07,
+      "y": 537.51,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 844.65,
-      "y": 858.61,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 844.65,
-      "y": 834.61,
+      "x": 1063.63,
+      "y": 534.63,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.4
-      }
-    },
-    {
-      "x": 844.65,
-      "y": 810.61,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 844.65,
-      "y": 786.61,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 844.65,
-      "y": 762.61,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 840.65,
-      "y": 742.61,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 20.8
-      }
-    },
-    {
-      "x": 840.65,
-      "y": 726.61,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 832.65,
-      "y": 706.61,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 832.65,
-      "y": 702.61,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 824.65,
-      "y": 694.61,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 804.65,
-      "y": 686.61,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 784.65,
-      "y": 682.61,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 772.65,
-      "y": 670.61,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 765.65,
-      "y": 671.61,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 45.2
+        "seconds": 13.0
       }
     }
   ]

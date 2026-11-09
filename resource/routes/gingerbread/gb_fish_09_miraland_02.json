@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_09_miraland_02",
-  "title": "【插梳鱼】祈愿树林·花谷瀑布（6个/145秒）",
+  "title": "【插梳鱼】祈愿树林·花谷瀑布（6个/160秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 363,
+  "timeout": 397,
   "teleport": {
     "name": "花谷瀑布",
     "province": "心愿原野",
@@ -15,12 +15,12 @@
   "material": "插梳鱼",
   "count_materials": [
     "插梳鱼",
+    "珠花贝壳",
     "钓鱼点",
-    "小星扇贝",
     "满满果",
-    "珠花贝壳"
+    "小星扇贝"
   ],
-  "capacity": 12,
+  "capacity": 17,
   "points": [
     {
       "x": 12166.38,
@@ -31,16 +31,32 @@
       "params": {}
     },
     {
-      "x": 12147.32,
-      "y": 9178.3,
+      "x": 12152.32,
+      "y": 9180.3,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12126.32,
-      "y": 9181.3,
+      "x": 12131.32,
+      "y": 9174.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12113.32,
+      "y": 9177.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12107.32,
+      "y": 9183.3,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -57,48 +73,64 @@
       }
     },
     {
-      "x": 12117.32,
-      "y": 9202.3,
+      "x": 12107.32,
+      "y": 9192.3,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12120.32,
-      "y": 9205.3,
+      "x": 12110.32,
+      "y": 9195.3,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12123.32,
-      "y": 9223.3,
+      "x": 12113.32,
+      "y": 9198.3,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12120.32,
-      "y": 9241.3,
+      "x": 12116.32,
+      "y": 9219.3,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12123.32,
-      "y": 9244.3,
+      "x": 12116.32,
+      "y": 9222.3,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12126.32,
-      "y": 9247.3,
+      "x": 12119.32,
+      "y": 9222.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12122.32,
+      "y": 9243.3,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12122.32,
+      "y": 9249.3,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -107,12 +139,14 @@
       }
     },
     {
-      "x": 12147.32,
-      "y": 9244.3,
-      "radius": 2.5,
+      "x": 12143.32,
+      "y": 9246.3,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 12163.62,
@@ -125,8 +159,62 @@
       }
     },
     {
+      "x": 12168.62,
+      "y": 9259.74,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 12177.62,
+      "y": 9277.74,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12174.62,
+      "y": 9295.74,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 12177.62,
+      "y": 9316.74,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 12177.62,
+      "y": 9337.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12171.62,
+      "y": 9358.74,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 12170.2,
-      "y": 9379.73,
+      "y": 9370.73,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

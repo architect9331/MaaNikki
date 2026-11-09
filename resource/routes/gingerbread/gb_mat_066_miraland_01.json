@@ -1,63 +1,85 @@
 {
   "schema_version": 3,
   "id": "gb_mat_066_miraland_01",
-  "title": "【泳镜蝽】小石树田村·村居岔路（5个/108秒）",
+  "title": "【泳镜蝽】花愿镇·织裙街（3个/82秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 282,
+  "timeout": 224,
   "teleport": {
-    "name": "村居岔路",
+    "name": "织裙街",
     "province": "心愿原野",
-    "region": "小石树田村",
-    "x": 9389.052,
-    "y": 10562.456
+    "region": "花愿镇",
+    "x": 10728.751,
+    "y": 10052.912
   },
   "material": "泳镜蝽",
   "count_materials": [
-    "香薰睡莲",
+    "瓜子珠",
+    "芭蕾豆娘",
     "泳镜蝽",
-    "钓鱼点",
+    "香薰睡莲",
+    "小星扇贝",
+    "纽扣松果",
+    "小绵菊",
     "珠花贝壳",
-    "小星扇贝"
+    "衬衫毛团"
   ],
-  "capacity": 18,
+  "capacity": 21,
   "points": [
     {
-      "x": 9389.05,
-      "y": 10562.46,
+      "x": 10728.75,
+      "y": 10052.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10712.12,
+      "y": 10066.91,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 10704.12,
+      "y": 10070.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.0
+      }
+    },
+    {
+      "x": 10708.97,
+      "y": 10065.88,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9384.28,
-      "y": 10667.88,
-      "radius": 2.0,
+      "x": 10702.97,
+      "y": 10047.88,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 21.2
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 9422.67,
-      "y": 10671.93,
+      "x": 10694.97,
+      "y": 10042.88,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 18.4
-      }
-    },
-    {
-      "x": 9446.86,
-      "y": 10739.36,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 26.4
       }
     }
   ]

@@ -1,27 +1,30 @@
 {
   "schema_version": 3,
   "id": "gb_all_danqing_danqing_04",
-  "title": "【全材料·丹青屿】丹青屿·后山（7个/38秒）",
+  "title": "【全材料·丹青屿】丹青屿·望水渡（11个/77秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 129,
+  "timeout": 215,
   "teleport": {
-    "name": "后山",
+    "name": "望水渡",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1435.992,
-    "y": 896.783
+    "x": 1328.798,
+    "y": 1218.711
   },
   "material": "全材料·丹青屿",
   "count_materials": [
-    "壁灯红椒",
-    "小绵菊"
+    "小绵菊",
+    "玉簪蚱蜢",
+    "耳坠萤",
+    "珠链蝶",
+    "小星扇贝"
   ],
-  "capacity": 7,
+  "capacity": 11,
   "points": [
     {
-      "x": 1435.99,
-      "y": 896.78,
+      "x": 1328.8,
+      "y": 1218.71,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -30,29 +33,13 @@
       }
     },
     {
-      "x": 1444.99,
-      "y": 909.4,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1465.99,
-      "y": 906.4,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1480.18,
-      "y": 894.4,
+      "x": 1356.74,
+      "y": 1225.76,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 15.6
+        "seconds": 58.4
       }
     }
   ]

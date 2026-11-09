@@ -1,0 +1,133 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_090_serenity_02",
+  "title": "【路灯花】无忧岛·布裹裹盐浴场（5个/52秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 160,
+  "teleport": {
+    "name": "布裹裹盐浴场",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 822.367,
+    "y": 715.0
+  },
+  "material": "路灯花",
+  "count_materials": [
+    "路灯花",
+    "珠花贝壳"
+  ],
+  "capacity": 6,
+  "points": [
+    {
+      "x": 822.37,
+      "y": 715.0,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 826.53,
+      "y": 735.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 823.53,
+      "y": 744.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 820.53,
+      "y": 744.0,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 817.53,
+      "y": 744.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 799.53,
+      "y": 756.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 778.53,
+      "y": 759.0,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 773.53,
+      "y": 759.93,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 753.07,
+      "y": 758.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 732.07,
+      "y": 761.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 711.07,
+      "y": 761.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 693.07,
+      "y": 770.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 688.07,
+      "y": 777.25,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    }
+  ]
+}

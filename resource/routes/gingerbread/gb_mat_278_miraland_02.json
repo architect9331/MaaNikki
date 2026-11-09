@@ -1,53 +1,183 @@
 {
   "schema_version": 3,
   "id": "gb_mat_278_miraland_02",
-  "title": "【珍蛛】埋骨地·白汐滩归望湾（5个/79秒）",
+  "title": "【珍蛛】埋骨地·蓝池东侧修习所渡口（4个/103秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 219,
+  "timeout": 272,
   "teleport": {
-    "name": "白汐滩归望湾",
+    "name": "蓝池东侧修习所渡口",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 7691.911,
-    "y": 5296.073
+    "x": 7649.962,
+    "y": 4981.8
   },
   "material": "珍蛛",
   "count_materials": [
     "珍蛛",
-    "金灵毛球",
-    "汐荧蟹",
-    "珠花贝壳",
-    "羽巾绒"
+    "龙棘瑚",
+    "蓝珀鸟羽"
   ],
-  "capacity": 10,
+  "capacity": 8,
   "points": [
     {
-      "x": 7691.91,
-      "y": 5296.07,
+      "x": 7649.96,
+      "y": 4981.8,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7637.75,
-      "y": 5413.27,
+      "x": 7669.96,
+      "y": 4982.44,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 29.2
+        "seconds": 7.8
       }
     },
     {
-      "x": 7663.13,
-      "y": 5388.33,
+      "x": 7690.96,
+      "y": 4982.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7711.96,
+      "y": 4982.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7732.96,
+      "y": 4985.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7750.96,
+      "y": 4994.44,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7771.96,
+      "y": 4997.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7792.96,
+      "y": 5003.44,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7813.96,
+      "y": 5003.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7807.96,
+      "y": 4982.44,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7795.15,
+      "y": 4968.44,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 15.1
+      }
+    },
+    {
+      "x": 7796.54,
+      "y": 4947.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7796.54,
+      "y": 4926.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7796.54,
+      "y": 4905.64,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7787.54,
+      "y": 4887.64,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7772.54,
+      "y": 4872.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7757.54,
+      "y": 4857.64,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7743.54,
+      "y": 4852.64,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.1
+        "seconds": 7.1
+      }
+    },
+    {
+      "x": 7732.87,
+      "y": 4812.16,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
       }
     }
   ]

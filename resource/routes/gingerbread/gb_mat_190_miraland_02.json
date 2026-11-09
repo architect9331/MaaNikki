@@ -1,80 +1,68 @@
 {
   "schema_version": 3,
   "id": "gb_mat_190_miraland_02",
-  "title": "【探险家蜜蜂】磐城·金庭大桥前（21个/207秒）",
+  "title": "【探险家蜜蜂】磐城·丰饶环圃（22个/246秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 500,
+  "timeout": 586,
   "teleport": {
-    "name": "金庭大桥前",
+    "name": "丰饶环圃",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3675.783,
-    "y": 3589.825
+    "x": 3679.349,
+    "y": 4116.242
   },
   "material": "探险家蜜蜂",
   "count_materials": [
+    "探险家蜜蜂",
     "珠链蝶",
-    "探险家蜜蜂"
+    "小野菊",
+    "满满果",
+    "纽扣松果",
+    "蓝珀鸟羽",
+    "刺绣蛾",
+    "壁灯红椒",
+    "晶球绵蚧",
+    "金轴蜻蜓"
   ],
-  "capacity": 54,
+  "capacity": 59,
   "points": [
     {
-      "x": 3675.78,
-      "y": 3589.82,
+      "x": 3679.35,
+      "y": 4116.24,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3684.48,
-      "y": 3572.24,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 23.1
-      }
-    },
-    {
-      "x": 3762.09,
-      "y": 3623.77,
+      "x": 3662.65,
+      "y": 4133.68,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 63.1
+        "seconds": 77.0
       }
     },
     {
-      "x": 3737.17,
-      "y": 3643.78,
+      "x": 3644.3,
+      "y": 4104.54,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 98.2
+      }
+    },
+    {
+      "x": 3627.15,
+      "y": 4141.0,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
-      }
-    },
-    {
-      "x": 3719.48,
-      "y": 3657.25,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.1
-      }
-    },
-    {
-      "x": 3662.94,
-      "y": 3671.58,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 31.1
+        "seconds": 45.0
       }
     }
   ]

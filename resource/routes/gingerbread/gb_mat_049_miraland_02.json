@@ -1,78 +1,73 @@
 {
   "schema_version": 3,
   "id": "gb_mat_049_miraland_02",
-  "title": "【名流鸦羽】磐城·启明学庭（14个/207秒）",
+  "title": "【名流鸦羽】石树田无人区·志愿兵团哨塔（3个/48秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 501,
+  "timeout": 151,
   "teleport": {
-    "name": "启明学庭",
-    "province": "伊赞之土",
-    "region": "磐城",
-    "x": 3886.897,
-    "y": 2816.416
+    "name": "志愿兵团哨塔",
+    "province": "心愿原野",
+    "region": "石树田无人区",
+    "x": 8420.194,
+    "y": 9016.353
   },
   "material": "名流鸦羽",
   "count_materials": [
-    "名流鸦羽",
-    "满满果",
-    "珠链蝶",
-    "纽扣松果",
-    "路灯花",
-    "风舞花",
-    "小野菊",
-    "织衣蛛"
+    "名流鸦羽"
   ],
-  "capacity": 30,
+  "capacity": 3,
   "points": [
     {
-      "x": 3886.9,
-      "y": 2816.42,
+      "x": 8420.19,
+      "y": 9016.35,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8429.09,
+      "y": 9025.69,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 8.6
       }
     },
     {
-      "x": 3853.39,
-      "y": 2810.73,
-      "radius": 2.0,
+      "x": 8410.57,
+      "y": 9014.94,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 67.4
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 3939.36,
-      "y": 2807.83,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 36.3
-      }
+      "x": 8395.57,
+      "y": 9008.94,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
     },
     {
-      "x": 3966.92,
-      "y": 2820.55,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 33.7
-      }
+      "x": 8389.57,
+      "y": 9017.94,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
     },
     {
-      "x": 3931.19,
-      "y": 2760.61,
+      "x": 8387.57,
+      "y": 9024.94,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 24.2
+        "seconds": 18.1
       }
     }
   ]

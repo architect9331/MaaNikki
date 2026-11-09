@@ -1,48 +1,40 @@
 {
   "schema_version": 3,
   "id": "gb_mat_312_miraland_03",
-  "title": "【蓝玉甲虫】磐城·金庭角门（20个/201秒）",
+  "title": "【蓝玉甲虫】磐城·圆心市场（20个/208秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 486,
+  "timeout": 502,
   "teleport": {
-    "name": "金庭角门",
+    "name": "圆心市场",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3691.557,
-    "y": 3288.31
+    "x": 3780.747,
+    "y": 3896.514
   },
   "material": "蓝玉甲虫",
   "count_materials": [
     "蓝玉甲虫",
     "珠坠甲虫",
-    "满满果"
+    "探险家蜜蜂",
+    "金轴蜻蜓",
+    "晶球绵蚧",
+    "满满果",
+    "扣扣毛球"
   ],
-  "capacity": 26,
+  "capacity": 34,
   "points": [
     {
-      "x": 3691.56,
-      "y": 3288.31,
-      "radius": 2.0,
+      "x": 3780.75,
+      "y": 3896.51,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 3700.24,
-      "y": 3285.81,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 31.1
-      }
-    },
-    {
-      "x": 3775.89,
-      "y": 3299.69,
+      "x": 3752.14,
+      "y": 3938.83,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -51,28 +43,38 @@
       }
     },
     {
-      "x": 3819.11,
-      "y": 3298.11,
+      "x": 3814.1,
+      "y": 3963.94,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 31.1
       }
     },
     {
-      "x": 3823.18,
-      "y": 3263.54,
+      "x": 3885.09,
+      "y": 4002.63,
       "radius": 2.0,
       "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 34.6
+      }
+    },
+    {
+      "x": 3907.26,
+      "y": 4002.82,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 31.1
       }
     },
     {
-      "x": 3845.19,
-      "y": 3214.9,
+      "x": 3895.0,
+      "y": 4046.86,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

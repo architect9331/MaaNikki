@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_229_miraland_02",
-  "title": "【咕咕之羽】巨木之森·菇菇聚落（6个/135秒）",
+  "title": "【咕咕之羽】巨木之森·菇菇聚落（5个/116秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 341,
+  "timeout": 301,
   "teleport": {
     "name": "菇菇聚落",
     "province": "伊赞之土",
@@ -14,15 +14,15 @@
   },
   "material": "咕咕之羽",
   "count_materials": [
-    "咕咕之羽",
     "小野菊",
-    "荧夜鬃",
+    "咕咕之羽",
     "草裙毛团",
+    "木夹跳甲",
+    "荧夜鬃",
     "朝朝蝶",
-    "暮暮蝶",
-    "裁衣甲"
+    "暮暮蝶"
   ],
-  "capacity": 19,
+  "capacity": 17,
   "points": [
     {
       "x": 4901.47,
@@ -53,18 +53,76 @@
       }
     },
     {
-      "x": 4986.82,
-      "y": 8559.03,
+      "x": 4880.01,
+      "y": 8574.05,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4892.01,
+      "y": 8559.05,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4907.01,
+      "y": 8544.05,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.7
+        "seconds": 3.0
       }
     },
     {
-      "x": 4972.03,
-      "y": 8534.1,
+      "x": 4928.01,
+      "y": 8541.05,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4946.01,
+      "y": 8529.05,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4958.19,
+      "y": 8518.05,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.3
+      }
+    },
+    {
+      "x": 4960.19,
+      "y": 8538.05,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4969.19,
+      "y": 8547.05,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4973.13,
+      "y": 8548.63,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -73,18 +131,104 @@
       }
     },
     {
-      "x": 4964.08,
-      "y": 8514.27,
-      "radius": 2.0,
+      "x": 4975.13,
+      "y": 8553.63,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 12.1
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 5056.51,
-      "y": 8586.7,
+      "x": 4975.13,
+      "y": 8556.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4975.13,
+      "y": 8559.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4975.13,
+      "y": 8562.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4975.13,
+      "y": 8565.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4978.13,
+      "y": 8568.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4981.13,
+      "y": 8568.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4984.13,
+      "y": 8568.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4987.13,
+      "y": 8568.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4990.13,
+      "y": 8568.63,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4993.13,
+      "y": 8565.63,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4996.13,
+      "y": 8562.63,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4995.59,
+      "y": 8561.04,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

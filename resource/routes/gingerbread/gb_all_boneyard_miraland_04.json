@@ -1,66 +1,75 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_04",
-  "title": "【全材料·埋骨地】埋骨地·修习所水岸（61个/232秒）",
+  "title": "【全材料·埋骨地】埋骨地·古息坡道（13个/52秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 555,
+  "timeout": 160,
   "teleport": {
-    "name": "修习所水岸",
+    "name": "古息坡道",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 7935.058,
-    "y": 5300.96
+    "x": 6883.245,
+    "y": 4762.082
   },
   "material": "全材料·埋骨地",
   "count_materials": [
-    "钓鱼点",
-    "羽巾绒",
-    "金灵毛球",
-    "大叶鹿绒",
-    "茸芽鹿绒",
-    "小星扇贝",
-    "珠花贝壳",
-    "烛融花/烛荧花"
+    "晴雨伞",
+    "蓝鳞晶",
+    "小星扇贝"
   ],
-  "capacity": 61,
+  "capacity": 13,
   "points": [
     {
-      "x": 7935.06,
-      "y": 5300.96,
+      "x": 6883.24,
+      "y": 4762.08,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7872.56,
-      "y": 5423.58,
+      "x": 6885.24,
+      "y": 4761.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6888.24,
+      "y": 4761.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6891.24,
+      "y": 4758.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6909.24,
+      "y": 4758.84,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 150.0
+        "seconds": 7.8
       }
     },
     {
-      "x": 7875.04,
-      "y": 5451.62,
+      "x": 6927.47,
+      "y": 4756.84,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 27.7
-      }
-    },
-    {
-      "x": 7849.98,
-      "y": 5462.38,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.6
+        "seconds": 26.0
       }
     }
   ]

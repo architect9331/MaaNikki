@@ -1,94 +1,86 @@
 {
   "schema_version": 3,
   "id": "gb_all_wishing_miraland_02",
-  "title": "【全材料·祈愿树林】祈愿树林·种植园入口（20个/76秒）",
+  "title": "【全材料·祈愿树林】祈愿树林·古铸剑遗址入口（18个/86秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 213,
+  "timeout": 234,
   "teleport": {
-    "name": "种植园入口",
+    "name": "古铸剑遗址入口",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 11716.18,
-    "y": 8833.256
+    "x": 11846.959,
+    "y": 9216.097
   },
   "material": "全材料·祈愿树林",
   "count_materials": [
-    "壁灯红椒",
     "瓜子珠",
+    "路灯花",
+    "小星扇贝",
+    "兔尾绒团",
     "纽扣松果",
-    "小绵菊"
+    "小绵菊",
+    "满满果",
+    "兔兔妆粉"
   ],
-  "capacity": 20,
+  "capacity": 18,
   "points": [
     {
-      "x": 11716.18,
-      "y": 8833.26,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11716.18,
-      "y": 8810.98,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11716.18,
-      "y": 8807.98,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11719.16,
-      "y": 8807.98,
+      "x": 11846.96,
+      "y": 9216.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 20.8
+        "seconds": 5.2
       }
     },
     {
-      "x": 11723.83,
-      "y": 8802.43,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11723.83,
-      "y": 8796.43,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11714.83,
-      "y": 8784.43,
+      "x": 11863.96,
+      "y": 9206.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
+        "seconds": 3.0
       }
     },
     {
-      "x": 11742.94,
-      "y": 8800.81,
+      "x": 11881.96,
+      "y": 9215.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11881.96,
+      "y": 9236.1,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11884.96,
+      "y": 9239.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11885.92,
+      "y": 9259.75,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 47.6
       }
     }
   ]

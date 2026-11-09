@@ -1,0 +1,53 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_062_firework_03",
+  "title": "【织衣蛛】花焰群岛·聆风高地山麓（4个/76秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 213,
+  "teleport": {
+    "name": "聆风高地山麓",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 748.755,
+    "y": 548.546
+  },
+  "material": "织衣蛛",
+  "count_materials": [
+    "织衣蛛",
+    "路灯花",
+    "小绵菊",
+    "纽扣松果"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 748.75,
+      "y": 548.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 751.82,
+      "y": 689.79,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.2
+      }
+    },
+    {
+      "x": 788.92,
+      "y": 689.86,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.6
+      }
+    }
+  ]
+}
