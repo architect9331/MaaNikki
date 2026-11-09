@@ -1,8 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Compass, Eye, Layers, Lock, Mountain, Navigation, RotateCcw, Sparkles, Unlock } from 'lucide-react';
-import clsx from 'clsx';
 import { invoke } from '@tauri-apps/api/core';
-import { actionMeta, type Checkpoint, type RoutePoint, type TrialWaypointReport } from '@/services/routeDocument';
+import type { Checkpoint, RoutePoint, TrialWaypointReport } from '@/services/routeDocument';
 import { readLocalFile } from '@/services/routeStudioService';
 import type { MapCanvasHandle, MapInfo } from './RouteMapCanvas';
 
@@ -158,18 +156,153 @@ function elevationColor(t: number): [number, number, number] {
   const c = Math.max(0, Math.min(1, Number.isFinite(t) ? t : 0.35));
   if (c < 0.2) {
     const u = c / 0.2;
-    return [Math.round(38 + 32 * u), Math.round(115 + 65 * u), Math.round(168 - 20 * u)];
+    return [0.15 + 0.12 * u, 0.45 + 0.25 * u, 0.66 - 0.08 * u];
   }
   if (c < 0.52) {
     const u = (c - 0.2) / 0.32;
-    return [Math.round(70 + 88 * u), Math.round(180 + 22 * u), Math.round(148 - 65 * u)];
+    return [0.27 + 0.35 * u, 0.70 + 0.08 * u, 0.58 - 0.25 * u];
   }
   if (c < 0.8) {
     const u = (c - 0.52) / 0.28;
-    return [Math.round(158 + 68 * u), Math.round(202 - 48 * u), Math.round(83 + 12 * u)];
+    return [0.62 + 0.26 * u, 0.78 - 0.18 * u, 0.33 + 0.05 * u];
   }
   const u = (c - 0.8) / 0.2;
-  return [Math.round(226 + 24 * u), Math.round(154 + 88 * u), Math.round(95 + 135 * u)];
+  return [0.88 + 0.10 * u, 0.60 + 0.35 * u, 0.38 + 0.52 * u];
+}
+
+const MESH_N = 112;
+
+interface GLTerrainState {
+  gl: WebGLRenderingContext;
+  program: WebGLProgram;
+  vbo: WebGLBuffer;
+  ibo: WebGLBuffer;
+  indexCount: number;
+  vertsData: Float32Array;
+  mapTex: WebGLTexture;
+  hasMapTex: boolean;
+  uScaleX: WebGLUniformLocation | null;
+  uScaleY: WebGLUniformLocation | null;
+  uMode: WebGLUniformLocation | null;
+}
+
+function initGLTerrain(canvas: HTMLCanvasElement): GLTerrainState | null {
+  const gl = canvas.getContext('webgl', { antialias: true, alpha: false, depth: true });
+  if (!gl) return null;
+
+  const vsSource = `
+    attribute vec3 a_pos;
+    attribute vec2 a_uv;
+    attribute vec3 a_tint;
+    attribute float a_shade;
+    uniform float u_scaleX;
+    uniform float u_scaleY;
+    varying vec2 v_uv;
+    varying vec3 v_tint;
+    varying float v_shade;
+    void main() {
+      v_uv = a_uv;
+      v_tint = a_tint;
+      v_shade = a_shade;
+      float cz = max(8.0, a_pos.z);
+      float near = 8.0;
+      float far = 5000.0;
+      float clipZ = cz * ((far + near) / (far - near)) - (2.0 * far * near) / (far - near);
+      gl_Position = vec4(a_pos.x * u_scaleX, a_pos.y * u_scaleY, clipZ, cz);
+    }
+  `;
+
+  const fsSource = `
+    precision mediump float;
+    varying vec2 v_uv;
+    varying vec3 v_tint;
+    varying float v_shade;
+    uniform sampler2D u_mapTex;
+    uniform float u_mode;
+    void main() {
+      vec4 tex = texture2D(u_mapTex, v_uv);
+      vec3 base = tex.a > 0.08 ? tex.rgb : v_tint;
+      if (u_mode > 0.5) {
+        base = mix(base, v_tint, 0.68);
+      }
+      gl_FragColor = vec4(clamp(base * v_shade, 0.0, 1.0), 1.0);
+    }
+  `;
+
+  const compile = (type: number, src: string) => {
+    const sh = gl.createShader(type)!;
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    return sh;
+  };
+  const vs = compile(gl.VERTEX_SHADER, vsSource);
+  const fs = compile(gl.FRAGMENT_SHADER, fsSource);
+  const program = gl.createProgram()!;
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  gl.useProgram(program);
+
+  const numVerts = (MESH_N + 1) * (MESH_N + 1);
+  // 9 floats per vertex: camRight, camUp, cz, u, v, r, g, b, shade
+  const vertsData = new Float32Array(numVerts * 9);
+  const vbo = gl.createBuffer()!;
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, vertsData.byteLength, gl.DYNAMIC_DRAW);
+
+  const indices = new Uint16Array(MESH_N * MESH_N * 6);
+  let ptr = 0;
+  for (let iy = 0; iy < MESH_N; iy++) {
+    for (let ix = 0; ix < MESH_N; ix++) {
+      const i00 = iy * (MESH_N + 1) + ix;
+      const i10 = i00 + 1;
+      const i01 = i00 + (MESH_N + 1);
+      const i11 = i01 + 1;
+      indices[ptr++] = i00;
+      indices[ptr++] = i10;
+      indices[ptr++] = i11;
+      indices[ptr++] = i00;
+      indices[ptr++] = i11;
+      indices[ptr++] = i01;
+    }
+  }
+  const ibo = gl.createBuffer()!;
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+
+  const stride = 9 * 4;
+  const bindAttr = (name: string, size: number, offsetFloats: number) => {
+    const loc = gl.getAttribLocation(program, name);
+    if (loc >= 0) {
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, offsetFloats * 4);
+    }
+  };
+  bindAttr('a_pos', 3, 0);
+  bindAttr('a_uv', 2, 3);
+  bindAttr('a_tint', 3, 5);
+  bindAttr('a_shade', 1, 8);
+
+  const mapTex = gl.createTexture()!;
+  gl.bindTexture(gl.TEXTURE_2D, mapTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+  return {
+    gl,
+    program,
+    vbo,
+    ibo,
+    indexCount: indices.length,
+    vertsData,
+    mapTex,
+    hasMapTex: false,
+    uScaleX: gl.getUniformLocation(program, 'u_scaleX'),
+    uScaleY: gl.getUniformLocation(program, 'u_scaleY'),
+    uMode: gl.getUniformLocation(program, 'u_mode'),
+  };
 }
 
 const KIND_COLOR: Record<string, string> = {
@@ -221,8 +354,11 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const glCanvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const radarRef = useRef<HTMLCanvasElement>(null);
+  const glStateRef = useRef<GLTerrainState | null>(null);
+
   const [size, setSize] = useState({ width: 900, height: 640 });
   const [grid, setGrid] = useState<TerrainGridData | null>(null);
   const [spawners, setSpawners] = useState<SpawnerPoint3D[]>([]);
@@ -230,18 +366,18 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
   const [zScale, setZScale] = useState<number>(1.8);
   const [showAura, setShowAura] = useState(true);
   const [showSpawners, setShowSpawners] = useState(true);
-  const [freeLook, setFreeLook] = useState(true);
-  const [hudStat, setHudStat] = useState({ pitchDeg: 47, elevM: -190, yawDeg: 0 });
+  const [pointerLocked, setPointerLocked] = useState(false);
+  const [hudStat, setHudStat] = useState({ pitchDeg: 42, elevM: -190, yawDeg: 0 });
 
-  // Keep live camera in a ref so 125Hz+ mousemove / 60fps WASD never trigger React re-renders
+  // True First-Person 3D Fly-Cam state:
+  // yaw=0 is due North (-Y), yaw=+pi/2 is due East (+X); pitch>0 is angle looking down below horizon.
   const camRef = useRef({
-    targetX: 8960,
-    targetY: 7940,
+    camX: 8960,
+    camY: 8140,
+    heightPx: 185,
     yaw: 0.0,
-    pitch: 0.82,
-    distance: 320,
+    pitch: 0.72,
   });
-  const lastMouseRef = useRef<{ x: number; y: number } | null>(null);
   const rafDrawRef = useRef<number>(0);
   const drawFnRef = useRef<() => void>(() => {});
 
@@ -254,7 +390,6 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
 
   const screenWaypointsRef = useRef<Array<{ index: number; sx: number; sy: number; depth: number; z: number; slope: number }>>([]);
   const screenSpawnersRef = useRef<Array<{ pt: SpawnerPoint3D; sx: number; sy: number; captured: boolean }>>([]);
-  const mapPixelsRef = useRef<{ data: Uint8ClampedArray; w: number; h: number } | null>(null);
   const radarBgRef = useRef<HTMLCanvasElement | null>(null);
 
   const scheduleDraw = useCallback(() => {
@@ -266,30 +401,54 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
   }, []);
 
   useEffect(() => {
+    if (glCanvasRef.current && !glStateRef.current) {
+      glStateRef.current = initGLTerrain(glCanvasRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const onLockChange = () => {
+      const locked = document.pointerLockElement === overlayCanvasRef.current;
+      setPointerLocked(locked);
+      if (locked) setHoverInfo(null);
+    };
+    document.addEventListener('pointerlockchange', onLockChange);
+    return () => document.removeEventListener('pointerlockchange', onLockChange);
+  }, []);
+
+  const togglePointerLock = useCallback(() => {
+    const cvs = overlayCanvasRef.current;
+    if (!cvs) return;
+    if (document.pointerLockElement === cvs) {
+      document.exitPointerLock();
+    } else {
+      void cvs.requestPointerLock?.();
+    }
+  }, []);
+
+  // Upload full-resolution colorful 2D map image to WebGL texture + cache 176x176 radar thumbnail
+  useEffect(() => {
+    const glSt = glStateRef.current;
     if (!image) {
-      mapPixelsRef.current = null;
+      if (glSt) glSt.hasMapTex = false;
       radarBgRef.current = null;
       return;
     }
-    try {
-      const ctx = image.getContext('2d', { willReadFrequently: true });
-      if (ctx) {
-        const imgData = ctx.getImageData(0, 0, image.width, image.height);
-        mapPixelsRef.current = { data: imgData.data, w: image.width, h: image.height };
-      }
-      // Pre-render 176x176 radar background ONCE so frames never downsample a 4608x4778 canvas
-      const thumb = document.createElement('canvas');
-      thumb.width = 176;
-      thumb.height = 176;
-      const tCtx = thumb.getContext('2d')!;
-      tCtx.fillStyle = '#0f172a';
-      tCtx.fillRect(0, 0, 176, 176);
-      tCtx.drawImage(image, 0, 0, 176, 176);
-      radarBgRef.current = thumb;
-      scheduleDraw();
-    } catch {
-      mapPixelsRef.current = null;
+    if (glSt) {
+      const { gl, mapTex } = glSt;
+      gl.bindTexture(gl.TEXTURE_2D, mapTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      glSt.hasMapTex = true;
     }
+    const thumb = document.createElement('canvas');
+    thumb.width = 176;
+    thumb.height = 176;
+    const tCtx = thumb.getContext('2d')!;
+    tCtx.fillStyle = '#0f172a';
+    tCtx.fillRect(0, 0, 176, 176);
+    tCtx.drawImage(image, 0, 0, 176, 176);
+    radarBgRef.current = thumb;
+    scheduleDraw();
   }, [image, scheduleDraw]);
 
   useEffect(() => {
@@ -327,6 +486,23 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
     return () => obs.disconnect();
   }, []);
 
+  const lookAtPoint = useCallback(
+    (tx: number, ty: number, dist?: number) => {
+      const c = camRef.current;
+      const d = dist ?? Math.max(120, c.heightPx / Math.sin(Math.max(0.28, c.pitch)));
+      const pitch = Math.max(0.35, c.pitch);
+      const horizBack = d * Math.cos(pitch);
+      const fwdX = Math.sin(c.yaw);
+      const fwdY = -Math.cos(c.yaw);
+      c.camX = tx - fwdX * horizBack;
+      c.camY = ty - fwdY * horizBack;
+      c.heightPx = Math.max(55, Math.min(1400, d * Math.sin(pitch)));
+      c.pitch = pitch;
+      scheduleDraw();
+    },
+    [scheduleDraw],
+  );
+
   const fit = useCallback(() => {
     const activePts = preview?.length ? preview : points;
     if (activePts.length > 0) {
@@ -340,34 +516,27 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
         if (p.y < minY) minY = p.y;
         if (p.y > maxY) maxY = p.y;
       }
-      camRef.current.targetX = (minX + maxX) * 0.5;
-      camRef.current.targetY = (minY + maxY) * 0.5;
-      camRef.current.distance = Math.min(1400, Math.max(130, Math.hypot(maxX - minX, maxY - minY) * 1.25));
-      scheduleDraw();
+      const cx = (minX + maxX) * 0.5;
+      const cy = (minY + maxY) * 0.5;
+      const dist = Math.min(1100, Math.max(150, Math.hypot(maxX - minX, maxY - minY) * 1.25));
+      camRef.current.yaw = 0.0;
+      camRef.current.pitch = 0.72;
+      lookAtPoint(cx, cy, dist);
       return;
     }
     if (startTeleport) {
-      camRef.current.targetX = startTeleport.x;
-      camRef.current.targetY = startTeleport.y;
-      camRef.current.distance = 280;
-      scheduleDraw();
+      lookAtPoint(startTeleport.x, startTeleport.y, 260);
       return;
     }
     if (teleports && teleports.length > 0) {
       const florawish = teleports.find((t) => t.region?.includes('花愿镇')) ?? teleports[0];
-      camRef.current.targetX = florawish.x;
-      camRef.current.targetY = florawish.y;
-      camRef.current.distance = 380;
-      scheduleDraw();
+      lookAtPoint(florawish.x, florawish.y, 340);
       return;
     }
     if (map) {
-      camRef.current.targetX = map.id === 'miraland' ? 8960 : map.width * 0.5;
-      camRef.current.targetY = map.id === 'miraland' ? 7940 : map.height * 0.5;
-      camRef.current.distance = 450;
-      scheduleDraw();
+      lookAtPoint(map.id === 'miraland' ? 8960 : map.width * 0.5, map.id === 'miraland' ? 7940 : map.height * 0.5, 420);
     }
-  }, [points, preview, startTeleport, teleports, map, scheduleDraw]);
+  }, [points, preview, startTeleport, teleports, map, lookAtPoint]);
 
   useEffect(() => {
     fit();
@@ -378,17 +547,14 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
     () => ({
       fit,
       zoom: (factor: number) => {
-        camRef.current.distance = Math.max(70, Math.min(2200, camRef.current.distance / factor));
+        camRef.current.heightPx = Math.max(40, Math.min(1500, camRef.current.heightPx / factor));
         scheduleDraw();
       },
       focus: (x: number, y: number) => {
-        camRef.current.targetX = x;
-        camRef.current.targetY = y;
-        camRef.current.distance = Math.min(camRef.current.distance, 220);
-        scheduleDraw();
+        lookAtPoint(x, y, 210);
       },
     }),
-    [fit, scheduleDraw],
+    [fit, lookAtPoint, scheduleDraw],
   );
 
   // Enrich route points with ground Z and slope
@@ -402,7 +568,7 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
     });
   }, [points, preview, grid]);
 
-  // Precompute which spawners are captured by the route ONCE (independent of camera movement!)
+  // Precompute which spawners are captured by the route ONCE
   const annotatedSpawners = useMemo(() => {
     if (!spawners.length) return { list: [], capturedCount: 0 };
     const auraPx = 14.5 / 0.9;
@@ -430,220 +596,163 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
   // Update drawFnRef whenever non-camera props/state change, and trigger a draw
   useEffect(() => {
     drawFnRef.current = () => {
-      const cvs = canvasRef.current;
-      if (!cvs) return;
-      const ctx = cvs.getContext('2d');
+      const overlayCvs = overlayCanvasRef.current;
+      const glCvs = glCanvasRef.current;
+      const glSt = glStateRef.current;
+      if (!overlayCvs || !glCvs) return;
+      const ctx = overlayCvs.getContext('2d');
       if (!ctx) return;
+
       const dpr = window.devicePixelRatio || 1;
       const targetW = Math.round(size.width * dpr);
       const targetH = Math.round(size.height * dpr);
-      if (cvs.width !== targetW || cvs.height !== targetH) {
-        cvs.width = targetW;
-        cvs.height = targetH;
+      if (overlayCvs.width !== targetW || overlayCvs.height !== targetH) {
+        overlayCvs.width = targetW;
+        overlayCvs.height = targetH;
+      }
+      if (glCvs.width !== targetW || glCvs.height !== targetH) {
+        glCvs.width = targetW;
+        glCvs.height = targetH;
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, size.width, size.height);
 
       const cam = camRef.current;
-      const centerSample = sampleTerrain(
-        grid,
-        cam.targetX,
-        cam.targetY,
-        points3D[0]?.z ?? (grid ? (grid.zMin + grid.zMax) * 0.35 : -190),
-      );
-      const centerZ = centerSample.z;
-
-      const bgGrad = ctx.createLinearGradient(0, 0, 0, size.height);
-      bgGrad.addColorStop(0, '#1e293b');
-      bgGrad.addColorStop(0.45, '#1e3a5f');
-      bgGrad.addColorStop(1, '#0f172a');
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, size.width, size.height);
-
-      const cosYaw = Math.cos(cam.yaw);
-      const sinYaw = Math.sin(cam.yaw);
+      const fwdX = Math.sin(cam.yaw);
+      const fwdY = -Math.cos(cam.yaw);
+      const rightX = Math.cos(cam.yaw);
+      const rightY = Math.sin(cam.yaw);
       const cosPitch = Math.cos(cam.pitch);
       const sinPitch = Math.sin(cam.pitch);
-      const fovScale = Math.min(size.width, size.height) * 0.95;
+
+      const lookAhead = Math.max(60, Math.min(750, cam.heightPx / Math.tan(Math.max(0.28, cam.pitch))));
+      const patchCenterX = cam.camX + fwdX * lookAhead;
+      const patchCenterY = cam.camY + fwdY * lookAhead;
+
+      const groundSample = sampleTerrain(
+        grid,
+        patchCenterX,
+        patchCenterY,
+        points3D[0]?.z ?? (grid ? (grid.zMin + grid.zMax) * 0.35 : -190),
+      );
+      const groundZ = groundSample.z;
       const mPerPx = 0.9;
+      const fovScale = Math.min(size.width, size.height) * 0.92;
 
       const project = (wx: number, wy: number, wz: number) => {
-        const dx = wx - cam.targetX;
-        const dy = wy - cam.targetY;
-        const up = ((wz - centerZ) / mPerPx) * zScale;
-        const right = dx * cosYaw - dy * sinYaw;
-        const depthGround = -dx * sinYaw - dy * cosYaw;
-        const cz = cam.distance + depthGround * cosPitch - up * sinPitch;
-        if (cz <= 12) return null;
-        const screenUp = depthGround * sinPitch + up * cosPitch;
+        const vx = wx - cam.camX;
+        const vy = wy - cam.camY;
+        const vz = ((wz - groundZ) / mPerPx) * zScale - cam.heightPx;
+        const camRight = vx * rightX + vy * rightY;
+        const horizFwd = vx * fwdX + vy * fwdY;
+        const cz = horizFwd * cosPitch - vz * sinPitch;
+        if (cz <= 8) return null;
+        const camUp = horizFwd * sinPitch + vz * cosPitch;
         const scale = fovScale / cz;
         return {
-          sx: size.width * 0.5 + right * scale,
-          sy: size.height * 0.54 - screenUp * scale,
+          sx: size.width * 0.5 + camRight * scale,
+          sy: size.height * 0.5 - camUp * scale,
           depth: cz,
         };
       };
 
-      const N = 64;
-      const patchRadius = Math.max(90, Math.min(1250, cam.distance * 0.92));
-      const step = (patchRadius * 2) / N;
-      const startX = cam.targetX - patchRadius;
-      const startY = cam.targetY - patchRadius;
+      const patchRadius = Math.max(180, Math.min(1400, cam.heightPx * 2.25));
+      const step = (patchRadius * 2) / MESH_N;
+      const startX = patchCenterX - patchRadius;
+      const startY = patchCenterY - patchRadius;
       const zSpan = Math.max(20, (grid?.zMax ?? 100) - (grid?.zMin ?? -250));
       const zMin = grid?.zMin ?? -250;
-      const mapPx = mapPixelsRef.current;
-      const texScaleX = mapPx && map ? mapPx.w / map.width : 1;
-      const texScaleY = mapPx && map ? mapPx.h / map.height : 1;
+      const mapW = map?.width ?? 4096;
+      const mapH = map?.height ?? 4096;
 
-      const verts: Array<{ sx: number; sy: number; depth: number; z: number; slope: number; obs: boolean; valid: boolean; wx: number; wy: number } | null> =
-        new Array((N + 1) * (N + 1));
+      // Render hardware-accelerated 3D textured terrain mesh in WebGL
+      if (glSt) {
+        const { gl, vertsData, vbo, ibo, indexCount, mapTex, uScaleX, uScaleY, uMode } = glSt;
+        gl.viewport(0, 0, targetW, targetH);
+        gl.clearColor(0.08, 0.13, 0.22, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
 
-      for (let iy = 0; iy <= N; iy++) {
-        const wy = startY + iy * step;
-        for (let ix = 0; ix <= N; ix++) {
-          const wx = startX + ix * step;
-          const s = sampleTerrain(grid, wx, wy, centerZ);
-          const p = project(wx, wy, s.z);
-          verts[iy * (N + 1) + ix] = p
-            ? { sx: p.sx, sy: p.sy, depth: p.depth, z: s.z, slope: s.slope, obs: s.obs, valid: s.valid, wx, wy }
-            : null;
-        }
-      }
+        let vPtr = 0;
+        for (let iy = 0; iy <= MESH_N; iy++) {
+          const wy = startY + iy * step;
+          const v = Math.max(0, Math.min(1, wy / mapH));
+          for (let ix = 0; ix <= MESH_N; ix++) {
+            const wx = startX + ix * step;
+            const u = Math.max(0, Math.min(1, wx / mapW));
+            const s = sampleTerrain(grid, wx, wy, groundZ);
+            const sxRight = sampleTerrain(grid, wx + step, wy, s.z);
+            const syDown = sampleTerrain(grid, wx, wy + step, s.z);
 
-      interface Quad {
-        depth: number;
-        x0: number; y0: number;
-        x1: number; y1: number;
-        x2: number; y2: number;
-        x3: number; y3: number;
-        fill: string;
-      }
-      const quads: Quad[] = [];
-      for (let iy = 0; iy < N; iy++) {
-        for (let ix = 0; ix < N; ix++) {
-          const v00 = verts[iy * (N + 1) + ix];
-          const v10 = verts[iy * (N + 1) + ix + 1];
-          const v11 = verts[(iy + 1) * (N + 1) + ix + 1];
-          const v01 = verts[(iy + 1) * (N + 1) + ix];
-          if (!v00 || !v10 || !v11 || !v01) continue;
+            const vx = wx - cam.camX;
+            const vy = wy - cam.camY;
+            const vz = ((s.z - groundZ) / mPerPx) * zScale - cam.heightPx;
+            const camRight = vx * rightX + vy * rightY;
+            const horizFwd = vx * fwdX + vy * fwdY;
+            const cz = horizFwd * cosPitch - vz * sinPitch;
+            const camUp = horizFwd * sinPitch + vz * cosPitch;
 
-          const dzx = (v10.z - v00.z) / (step * mPerPx);
-          const dzy = (v01.z - v00.z) / (step * mPerPx);
-          let shade = Math.max(0.55, Math.min(1.28, 0.98 + (-dzx * 0.42 - dzy * 0.35) * 0.42));
-          const avgZ = (v00.z + v10.z + v11.z + v01.z) * 0.25;
-          const maxSlp = Math.max(v00.slope, v10.slope, v11.slope, v01.slope);
-          const hasObs = v00.obs || v10.obs || v11.obs || v01.obs;
-          const midX = (v00.wx + v11.wx) * 0.5;
-          const midY = (v00.wy + v11.wy) * 0.5;
-
-          let r = 68;
-          let g = 148;
-          let b = 112;
-          if (surfaceMode === 'map' && mapPx) {
-            const mx = Math.max(0, Math.min(mapPx.w - 1, Math.round(midX * texScaleX)));
-            const my = Math.max(0, Math.min(mapPx.h - 1, Math.round(midY * texScaleY)));
-            const pi = (my * mapPx.w + mx) * 4;
-            if (mapPx.data[pi + 3] > 15) {
-              const mr = mapPx.data[pi];
-              const mg = mapPx.data[pi + 1];
-              const mb = mapPx.data[pi + 2];
-              const lum = (mr + mg + mb) / 3;
-              r = Math.max(0, Math.min(255, Math.round(lum + (mr - lum) * 1.28)));
-              g = Math.max(0, Math.min(255, Math.round(lum + (mg - lum) * 1.28)));
-              b = Math.max(0, Math.min(255, Math.round(lum + (mb - lum) * 1.28)));
-            } else if (v00.valid) {
-              [r, g, b] = elevationColor((avgZ - zMin) / zSpan);
-            } else {
-              continue;
+            const dzx = (sxRight.z - s.z) / (step * mPerPx);
+            const dzy = (syDown.z - s.z) / (step * mPerPx);
+            let shade = Math.max(0.76, Math.min(1.18, 1.0 + (-dzx * 0.35 - dzy * 0.28) * 0.32));
+            if (s.valid && Math.floor(s.z / 15) !== Math.floor(sxRight.z / 15)) {
+              shade *= 1.08;
             }
-          } else if (surfaceMode === 'walkability') {
-            if (!v00.valid && !v11.valid) continue;
-            if (hasObs) [r, g, b] = [42, 128, 225];
-            else if (maxSlp > 42) [r, g, b] = [235, 68, 72];
-            else if (maxSlp > 34) [r, g, b] = [242, 175, 52];
-            else [r, g, b] = [56, 195, 118];
-          } else {
-            if (!v00.valid && !v11.valid) continue;
-            [r, g, b] = elevationColor((avgZ - zMin) / zSpan);
+
+            let tr = 0.25;
+            let tg = 0.55;
+            let tb = 0.42;
+            if (surfaceMode === 'walkability') {
+              if (s.obs) [tr, tg, tb] = [0.16, 0.50, 0.88];
+              else if (s.slope > 42) [tr, tg, tb] = [0.92, 0.26, 0.28];
+              else if (s.slope > 34) [tr, tg, tb] = [0.95, 0.68, 0.20];
+              else [tr, tg, tb] = [0.22, 0.76, 0.46];
+            } else {
+              [tr, tg, tb] = elevationColor((s.z - zMin) / zSpan);
+            }
+
+            vertsData[vPtr++] = camRight;
+            vertsData[vPtr++] = camUp;
+            vertsData[vPtr++] = cz;
+            vertsData[vPtr++] = u;
+            vertsData[vPtr++] = v;
+            vertsData[vPtr++] = tr;
+            vertsData[vPtr++] = tg;
+            vertsData[vPtr++] = tb;
+            vertsData[vPtr++] = shade;
           }
-
-          // Bake contour and grid lines directly into quad RGB (avoids 4,000 slow ctx.stroke() calls!)
-          if (v00.valid && Math.floor(v00.z / 12) !== Math.floor(v11.z / 12)) {
-            shade *= 1.14;
-          } else if (ix % 8 === 0 || iy % 8 === 0) {
-            shade *= 0.93;
-          }
-
-          r = Math.min(255, Math.round(r * shade));
-          g = Math.min(255, Math.round(g * shade));
-          b = Math.min(255, Math.round(b * shade));
-          quads.push({
-            depth: (v00.depth + v10.depth + v11.depth + v01.depth) * 0.25,
-            x0: v00.sx, y0: v00.sy,
-            x1: v10.sx, y1: v10.sy,
-            x2: v11.sx, y2: v11.sy,
-            x3: v01.sx, y3: v01.sy,
-            fill: `rgb(${r},${g},${b})`,
-          });
         }
-      }
-      quads.sort((a, b) => b.depth - a.depth);
 
-      for (const q of quads) {
-        ctx.beginPath();
-        ctx.moveTo(q.x0, q.y0);
-        ctx.lineTo(q.x1, q.y1);
-        ctx.lineTo(q.x2, q.y2);
-        ctx.lineTo(q.x3, q.y3);
-        ctx.closePath();
-        ctx.fillStyle = q.fill;
-        ctx.fill();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertsData);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, mapTex);
+        if (!glSt.hasMapTex && image) {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+          glSt.hasMapTex = true;
+        }
+        gl.uniform1f(uScaleX, fovScale / (size.width * 0.5));
+        gl.uniform1f(uScaleY, fovScale / (size.height * 0.5));
+        gl.uniform1f(uMode, surfaceMode === 'map' && glSt.hasMapTex ? 0.0 : 1.0);
+        gl.drawElements(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0);
       }
 
-      // Camera Target Reticle on 3D ground
-      const pCenter = project(cam.targetX, cam.targetY, centerZ + 0.4);
-      if (pCenter) {
-        const axisLen = Math.max(18, cam.distance * 0.065);
-        const pN = project(cam.targetX, cam.targetY - axisLen, centerZ + 0.4);
-        const pE = project(cam.targetX + axisLen, cam.targetY, centerZ + 0.4);
-        if (pN) {
-          ctx.beginPath();
-          ctx.moveTo(pCenter.sx, pCenter.sy);
-          ctx.lineTo(pN.sx, pN.sy);
-          ctx.strokeStyle = 'rgba(248,113,113,0.85)';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-        if (pE) {
-          ctx.beginPath();
-          ctx.moveTo(pCenter.sx, pCenter.sy);
-          ctx.lineTo(pE.sx, pE.sy);
-          ctx.strokeStyle = 'rgba(56,189,248,0.85)';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-        ctx.beginPath();
-        ctx.arc(pCenter.sx, pCenter.sy, 4.5, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-
-      // 15m Gingerbread-Man aura rings
+      // 2. Gingerbread 15m Aura Rings on Terrain Surface
       if (showAura && points3D.length > 0) {
         const auraPx = 15.0 / mPerPx;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.09)';
+        ctx.lineWidth = 1.3;
         for (let i = 0; i < points3D.length; i++) {
           const wp = points3D[i];
-          const isWait = wp.action === 'wait' || i === selected || i === points3D.length - 1;
-          if (!isWait && i % 2 !== 0) continue;
+          if (Math.hypot(wp.x - patchCenterX, wp.y - patchCenterY) > patchRadius * 1.35) continue;
           ctx.beginPath();
           let started = false;
-          const ringSteps = 20;
-          for (let s = 0; s <= ringSteps; s++) {
-            const ang = (Math.PI * 2 * s) / ringSteps;
-            const rx = wp.x + Math.cos(ang) * auraPx;
-            const ry = wp.y + Math.sin(ang) * auraPx;
-            const rz = sampleTerrain(grid, rx, ry, wp.z).z + 0.5;
-            const p = project(rx, ry, rz);
+          for (let s = 0; s <= 18; s++) {
+            const ang = (s / 18) * Math.PI * 2;
+            const p = project(wp.x + Math.cos(ang) * auraPx, wp.y + Math.sin(ang) * auraPx, wp.z + 0.4);
             if (!p) continue;
             if (!started) {
               ctx.moveTo(p.sx, p.sy);
@@ -654,172 +763,155 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
           }
           if (started) {
             ctx.closePath();
-            ctx.fillStyle = i === selected ? 'rgba(56,189,248,0.22)' : isWait ? 'rgba(250,204,21,0.14)' : 'rgba(74,222,128,0.06)';
             ctx.fill();
-            ctx.strokeStyle = i === selected ? 'rgba(56,189,248,0.9)' : isWait ? 'rgba(250,204,21,0.65)' : 'rgba(74,222,128,0.32)';
-            ctx.lineWidth = i === selected ? 2.0 : 1.2;
             ctx.stroke();
           }
         }
+        ctx.restore();
       }
 
-      // Draw nearby 3D material spawners (using pre-annotated list)
-      const drawnSpawners: Array<{ pt: SpawnerPoint3D; sx: number; sy: number; captured: boolean }> = [];
-      if (showSpawners) {
-        const viewR = Math.max(260, cam.distance * 1.1);
+      // 3. Draw 3D Material Spawner Nodes
+      const nextScreenSpawners: Array<{ pt: SpawnerPoint3D; sx: number; sy: number; captured: boolean }> = [];
+      if (showSpawners && annotatedSpawners.list.length > 0) {
         for (const item of annotatedSpawners.list) {
-          const { pt, captured, isTarget } = item;
-          if (Math.abs(pt.x - cam.targetX) > viewR || Math.abs(pt.y - cam.targetY) > viewR) continue;
-          const pGround = project(pt.x, pt.y, pt.z);
-          const pPin = project(pt.x, pt.y, pt.z + (captured ? 3.5 : 1.6));
-          if (!pGround || !pPin) continue;
-          const color = KIND_COLOR[pt.kind] ?? '#a78bfa';
-          if (captured || isTarget) {
-            ctx.beginPath();
-            ctx.moveTo(pGround.sx, pGround.sy);
-            ctx.lineTo(pPin.sx, pPin.sy);
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 1.4;
+          const sp = item.pt;
+          if (Math.abs(sp.x - patchCenterX) > patchRadius * 1.25 || Math.abs(sp.y - patchCenterY) > patchRadius * 1.25) {
+            continue;
+          }
+          const proj = project(sp.x, sp.y, sp.z + 1.0);
+          if (!proj || proj.sx < -20 || proj.sx > size.width + 20 || proj.sy < -20 || proj.sy > size.height + 20) {
+            continue;
+          }
+          const r = item.isTarget ? 5.2 : item.captured ? 4.0 : 2.5;
+          ctx.beginPath();
+          ctx.arc(proj.sx, proj.sy, r, 0, Math.PI * 2);
+          ctx.fillStyle = KIND_COLOR[sp.kind] ?? '#e2e8f0';
+          ctx.globalAlpha = item.captured || item.isTarget ? 0.96 : 0.52;
+          ctx.fill();
+          if (item.captured || item.isTarget) {
+            ctx.lineWidth = item.isTarget ? 2.0 : 1.2;
+            ctx.strokeStyle = item.isTarget ? '#ffffff' : '#fef08a';
             ctx.stroke();
           }
-          const rad = captured ? (isTarget ? 5.5 : 4.2) : 2.5;
+          ctx.globalAlpha = 1.0;
+          nextScreenSpawners.push({ pt: sp, sx: proj.sx, sy: proj.sy, captured: item.captured });
+        }
+      }
+      screenSpawnersRef.current = nextScreenSpawners;
+
+      // 4. Draw Warp Spire Beacons with Floating Nameplates
+      if (teleports && teleports.length > 0) {
+        const activeTp = startTeleport
+          ? [startTeleport, ...teleports.filter((t) => t.name !== startTeleport.name)]
+          : teleports;
+        ctx.font = '600 11px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        let labelsDrawn = 0;
+        for (const tp of activeTp) {
+          const distFromPatch = Math.hypot(tp.x - patchCenterX, tp.y - patchCenterY);
+          if (distFromPatch > patchRadius * 1.35 && tp.name !== startTeleport?.name) continue;
+          const ts = sampleTerrain(grid, tp.x, tp.y, groundZ);
+          const baseP = project(tp.x, tp.y, ts.z);
+          const topP = project(tp.x, tp.y, ts.z + 24);
+          if (!baseP || !topP) continue;
+          const isStart = startTeleport?.name === tp.name;
+          ctx.strokeStyle = isStart ? '#38bdf8' : 'rgba(147, 197, 253, 0.72)';
+          ctx.lineWidth = isStart ? 3.0 : 1.8;
           ctx.beginPath();
-          ctx.arc(pPin.sx, pPin.sy, rad, 0, Math.PI * 2);
-          ctx.fillStyle = captured ? color : 'rgba(226,232,240,0.55)';
+          ctx.moveTo(baseP.sx, baseP.sy);
+          ctx.lineTo(topP.sx, topP.sy);
+          ctx.stroke();
+          ctx.fillStyle = isStart ? '#38bdf8' : '#93c5fd';
+          ctx.beginPath();
+          ctx.arc(topP.sx, topP.sy, isStart ? 5.5 : 3.8, 0, Math.PI * 2);
           ctx.fill();
-          if (captured) {
-            ctx.strokeStyle = isTarget ? '#ffffff' : '#0f172a';
-            ctx.lineWidth = isTarget ? 1.8 : 1.1;
-            ctx.stroke();
+          if ((isStart || (distFromPatch < patchRadius * 0.85 && labelsDrawn < 14)) && tp.name) {
+            labelsDrawn++;
+            const label = isStart ? `★ ${tp.name}` : tp.name;
+            const tw = ctx.measureText(label).width + 10;
+            ctx.fillStyle = isStart ? 'rgba(3, 105, 161, 0.90)' : 'rgba(15, 23, 42, 0.78)';
+            ctx.fillRect(topP.sx - tw * 0.5, topP.sy - 22, tw, 16);
+            ctx.fillStyle = isStart ? '#e0f2fe' : '#f1f5f9';
+            ctx.fillText(label, topP.sx, topP.sy - 10);
           }
-          drawnSpawners.push({ pt, sx: pPin.sx, sy: pPin.sy, captured });
-        }
-      }
-      screenSpawnersRef.current = drawnSpawners;
-
-      // Draw nearby Warp Spire teleports with floating 3D landmark nameplates
-      if (teleports) {
-        for (const cp of teleports) {
-          if (Math.abs(cp.x - cam.targetX) > patchRadius || Math.abs(cp.y - cam.targetY) > patchRadius) continue;
-          const cz = sampleTerrain(grid, cp.x, cp.y, centerZ).z;
-          const pBase = project(cp.x, cp.y, cz);
-          const pTop = project(cp.x, cp.y, cz + 14);
-          if (!pBase || !pTop) continue;
-          const isStart = startTeleport?.name === cp.name;
-          ctx.beginPath();
-          ctx.moveTo(pBase.sx, pBase.sy);
-          ctx.lineTo(pTop.sx, pTop.sy);
-          ctx.strokeStyle = isStart ? '#d8b4fe' : 'rgba(192,132,252,0.8)';
-          ctx.lineWidth = isStart ? 2.8 : 1.8;
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(pTop.sx, pTop.sy, isStart ? 6.0 : 4.5, 0, Math.PI * 2);
-          ctx.fillStyle = isStart ? '#c084fc' : '#9333ea';
-          ctx.fill();
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 1.4;
-          ctx.stroke();
-
-          ctx.font = isStart ? '600 11px system-ui, sans-serif' : '500 10px system-ui, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.strokeStyle = 'rgba(15,23,42,0.88)';
-          ctx.lineWidth = 3;
-          ctx.strokeText(cp.name, pTop.sx, pTop.sy - 9);
-          ctx.fillStyle = isStart ? '#f3e8ff' : '#e2e8f0';
-          ctx.fillText(cp.name, pTop.sx, pTop.sy - 9);
         }
       }
 
-      // Draw 3D route trajectory and waypoint pillars
-      const drawnWaypoints: Array<{ index: number; sx: number; sy: number; depth: number; z: number; slope: number }> = [];
+      // 5. Draw 3D Route Trajectory + Waypoint Pillars
+      const nextScreenWps: Array<{ index: number; sx: number; sy: number; depth: number; z: number; slope: number }> = [];
       if (points3D.length > 0) {
-        ctx.beginPath();
-        let started = false;
-        for (const wp of points3D) {
-          const p = project(wp.x, wp.y, wp.z + 0.3);
-          if (!p) continue;
-          if (!started) {
-            ctx.moveTo(p.sx, p.sy);
-            started = true;
-          } else {
-            ctx.lineTo(p.sx, p.sy);
+        for (let i = 0; i < points3D.length - 1; i++) {
+          const a = points3D[i];
+          const b = points3D[i + 1];
+          const segSamples = 8;
+          ctx.beginPath();
+          let started = false;
+          for (let s = 0; s <= segSamples; s++) {
+            const t = s / segSamples;
+            const wx = a.x + (b.x - a.x) * t;
+            const wy = a.y + (b.y - a.y) * t;
+            const linZ = a.z + (b.z - a.z) * t;
+            const terr = sampleTerrain(grid, wx, wy, linZ);
+            const wz = Math.max(linZ, terr.z) + 1.8;
+            const p = project(wx, wy, wz);
+            if (!p) continue;
+            if (!started) {
+              ctx.moveTo(p.sx, p.sy);
+              started = true;
+            } else {
+              ctx.lineTo(p.sx, p.sy);
+            }
+          }
+          if (started) {
+            const dz = b.z - a.z;
+            const dxy = Math.max(1, Math.hypot(b.x - a.x, b.y - a.y) * mPerPx);
+            const grade = Math.abs(dz / dxy);
+            ctx.strokeStyle = grade > 0.45 ? '#fb7185' : grade > 0.25 ? '#fbbf24' : '#38bdf8';
+            ctx.lineWidth = preview?.length ? 2.4 : 3.2;
+            ctx.stroke();
           }
         }
-        if (started) {
-          ctx.strokeStyle = 'rgba(15,23,42,0.7)';
-          ctx.lineWidth = 5.0;
-          ctx.stroke();
-        }
 
-        ctx.beginPath();
-        started = false;
-        for (const wp of points3D) {
-          const p = project(wp.x, wp.y, wp.z + 2.0);
-          if (!p) continue;
-          if (!started) {
-            ctx.moveTo(p.sx, p.sy);
-            started = true;
-          } else {
-            ctx.lineTo(p.sx, p.sy);
-          }
-        }
-        if (started) {
-          ctx.strokeStyle = '#38bdf8';
-          ctx.lineWidth = 3.0;
-          ctx.stroke();
-        }
-
-        for (const wp of points3D) {
-          const pBase = project(wp.x, wp.y, wp.z);
-          const pTop = project(wp.x, wp.y, wp.z + (wp.jump ? 5.5 : wp.action ? 4.5 : 2.4));
-          if (!pBase || !pTop) continue;
-          const isSel = selected === wp.index || Boolean(selectedSet?.has(wp.index));
-          const isTrial = activeTrialIndex === wp.index;
-          const meta = actionMeta(wp.action);
-
+        for (let i = 0; i < points3D.length; i++) {
+          const wp = points3D[i];
+          const baseP = project(wp.x, wp.y, wp.z);
+          const headP = project(wp.x, wp.y, wp.z + 5.5);
+          if (!baseP || !headP) continue;
+          const isSel = selected === i || selectedSet?.has(i);
+          const isTrial = activeTrialIndex === i;
+          ctx.strokeStyle = isSel ? '#f43f5e' : 'rgba(255,255,255,0.68)';
+          ctx.lineWidth = isSel ? 2.4 : 1.5;
           ctx.beginPath();
-          ctx.moveTo(pBase.sx, pBase.sy);
-          ctx.lineTo(pTop.sx, pTop.sy);
-          ctx.strokeStyle = isSel ? '#f43f5e' : wp.jump ? '#f59e0b' : meta.color || '#38bdf8';
-          ctx.lineWidth = isSel ? 2.6 : 1.6;
+          ctx.moveTo(baseP.sx, baseP.sy);
+          ctx.lineTo(headP.sx, headP.sy);
           ctx.stroke();
-
-          const r = isSel || isTrial ? 7.8 : wp.action || wp.jump ? 6.2 : 4.6;
+          const radius = isSel || isTrial ? 7.2 : i === 0 || i === points3D.length - 1 ? 6.2 : 4.6;
           ctx.beginPath();
-          ctx.arc(pTop.sx, pTop.sy, r, 0, Math.PI * 2);
-          ctx.fillStyle = isSel
-            ? '#f43f5e'
-            : isTrial
-              ? '#22c55e'
-              : wp.index === 0
-                ? '#10b981'
-                : meta.color || (wp.jump ? '#f59e0b' : '#0ea5e9');
+          ctx.arc(headP.sx, headP.sy, radius, 0, Math.PI * 2);
+          ctx.fillStyle = isTrial ? '#a855f7' : isSel ? '#f43f5e' : i === 0 ? '#22c55e' : i === points3D.length - 1 ? '#f97316' : '#f8fafc';
           ctx.fill();
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = isSel ? 2.2 : 1.4;
+          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = '#0f172a';
           ctx.stroke();
-
-          if (isSel || wp.index === 0 || wp.index === points3D.length - 1 || wp.action) {
-            ctx.font = '600 10px system-ui, sans-serif';
+          if (isSel || i === 0 || i === points3D.length - 1 || i % 4 === 0) {
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = '600 11px system-ui, sans-serif';
             ctx.textAlign = 'center';
-            ctx.strokeStyle = 'rgba(15,23,42,0.85)';
-            ctx.lineWidth = 2.5;
-            ctx.strokeText(`${wp.index + 1}`, pTop.sx, pTop.sy - r - 4);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(`${wp.index + 1}`, pTop.sx, pTop.sy - r - 4);
+            ctx.fillText(`#${i + 1}`, headP.sx, headP.sy - radius - 4);
           }
-          drawnWaypoints.push({ index: wp.index, sx: pTop.sx, sy: pTop.sy, depth: pTop.depth, z: wp.z, slope: wp.slope });
+          nextScreenWps.push({ index: i, sx: headP.sx, sy: headP.sy, depth: headP.depth, z: wp.z, slope: wp.slope });
         }
       }
-      screenWaypointsRef.current = drawnWaypoints;
+      screenWaypointsRef.current = nextScreenWps;
 
+      // 6. Live Pose Indicator
       if (pose) {
-        const pz = sampleTerrain(grid, pose.x, pose.y, centerZ).z;
-        const p = project(pose.x, pose.y, pz + 3.0);
-        if (p) {
+        const ps = sampleTerrain(grid, pose.x, pose.y, groundZ);
+        const pp = project(pose.x, pose.y, ps.z + 4.0);
+        if (pp) {
+          ctx.fillStyle = '#ec4899';
           ctx.beginPath();
-          ctx.arc(p.sx, p.sy, 7.5, 0, Math.PI * 2);
-          ctx.fillStyle = '#22c55e';
+          ctx.arc(pp.sx, pp.sy, 7, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 2;
@@ -827,197 +919,227 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
         }
       }
 
-      // Draw 2D Mini-Radar using the pre-cached 176x176 radarBgRef canvas (0.01ms!)
-      const radar = radarRef.current;
-      if (radar && map) {
-        const rCtx = radar.getContext('2d');
+      // 7. 2D Mini-Radar in Bottom-Right (blits cached 176x176 thumbnail)
+      const rCvs = radarRef.current;
+      if (rCvs && map) {
+        const rCtx = rCvs.getContext('2d');
         if (rCtx) {
-          const rw = radar.width;
-          const rh = radar.height;
+          const rw = 176;
+          const rh = 176;
+          if (rCvs.width !== rw) rCvs.width = rw;
+          if (rCvs.height !== rh) rCvs.height = rh;
           if (radarBgRef.current) {
             rCtx.drawImage(radarBgRef.current, 0, 0);
+            rCtx.fillStyle = 'rgba(15, 23, 42, 0.20)';
+            rCtx.fillRect(0, 0, rw, rh);
           } else {
             rCtx.fillStyle = '#0f172a';
             rCtx.fillRect(0, 0, rw, rh);
           }
-          const sx = rw / map.width;
-          const sy = rh / map.height;
-
           if (points3D.length > 1) {
-            rCtx.beginPath();
-            points3D.forEach((p, idx) => {
-              if (idx === 0) rCtx.moveTo(p.x * sx, p.y * sy);
-              else rCtx.lineTo(p.x * sx, p.y * sy);
-            });
             rCtx.strokeStyle = '#38bdf8';
             rCtx.lineWidth = 1.8;
+            rCtx.beginPath();
+            for (let i = 0; i < points3D.length; i++) {
+              const rx = (points3D[i].x / map.width) * rw;
+              const ry = (points3D[i].y / map.height) * rh;
+              if (i === 0) rCtx.moveTo(rx, ry);
+              else rCtx.lineTo(rx, ry);
+            }
             rCtx.stroke();
           }
-
-          const tx = cam.targetX * sx;
-          const ty = cam.targetY * sy;
-          const lookAng = Math.atan2(-cosYaw, -sinYaw);
-          const coneLen = Math.max(18, Math.min(55, cam.distance * sx * 1.4));
+          const cx = (cam.camX / map.width) * rw;
+          const cy = (cam.camY / map.height) * rh;
+          const lookLen = 28;
+          rCtx.fillStyle = 'rgba(56, 189, 248, 0.26)';
+          rCtx.strokeStyle = '#38bdf8';
+          rCtx.lineWidth = 1.4;
           rCtx.beginPath();
-          rCtx.moveTo(tx, ty);
-          rCtx.arc(tx, ty, coneLen, lookAng - 0.52, lookAng + 0.52);
+          rCtx.moveTo(cx, cy);
+          rCtx.lineTo(cx + Math.sin(cam.yaw - 0.45) * lookLen, cy - Math.cos(cam.yaw - 0.45) * lookLen);
+          rCtx.lineTo(cx + Math.sin(cam.yaw + 0.45) * lookLen, cy - Math.cos(cam.yaw + 0.45) * lookLen);
           rCtx.closePath();
-          rCtx.fillStyle = 'rgba(56,189,248,0.28)';
           rCtx.fill();
-          rCtx.strokeStyle = 'rgba(56,189,248,0.85)';
-          rCtx.lineWidth = 1.2;
           rCtx.stroke();
-
-          rCtx.beginPath();
-          rCtx.arc(tx, ty, 3.5, 0, Math.PI * 2);
           rCtx.fillStyle = '#f43f5e';
+          rCtx.beginPath();
+          rCtx.arc(cx, cy, 3.6, 0, Math.PI * 2);
           rCtx.fill();
-          rCtx.strokeStyle = '#ffffff';
-          rCtx.lineWidth = 1.2;
-          rCtx.stroke();
         }
       }
+
+      setHudStat((prev) => {
+        const pDeg = Math.round((cam.pitch * 180) / Math.PI);
+        const eM = Math.round(groundZ);
+        const yDeg = ((Math.round((cam.yaw * 180) / Math.PI) % 360) + 360) % 360;
+        if (prev.pitchDeg === pDeg && prev.elevM === eM && prev.yawDeg === yDeg) return prev;
+        return { pitchDeg: pDeg, elevM: eM, yawDeg: yDeg };
+      });
     };
     scheduleDraw();
-  }, [size, grid, surfaceMode, zScale, showAura, showSpawners, points3D, annotatedSpawners, teleports, startTeleport, selected, selectedSet, activeTrialIndex, pose, map, scheduleDraw]);
+  }, [
+    size,
+    grid,
+    image,
+    map,
+    points3D,
+    annotatedSpawners,
+    teleports,
+    startTeleport,
+    selected,
+    selectedSet,
+    activeTrialIndex,
+    pose,
+    surfaceMode,
+    zScale,
+    showAura,
+    showSpawners,
+    scheduleDraw,
+  ]);
 
-  // 60fps WASD + Q/E + Shift free-flight camera controller (mutates camRef directly)
+  // 60fps WASD + Q/E + Shift first-person flight loop + F/Tab pointer lock shortcut
   const pressedKeysRef = useRef<Set<string>>(new Set());
-
   useEffect(() => {
     let rafId = 0;
     let lastTime = performance.now();
 
     const stepLoop = (now: number) => {
-      const dt = Math.min(0.06, (now - lastTime) / 1000);
+      const dt = Math.min(0.08, (now - lastTime) / 1000);
       lastTime = now;
       const keys = pressedKeysRef.current;
       if (keys.size > 0) {
-        let forward = 0;
-        let right = 0;
-        let zoomDir = 0;
-        if (keys.has('w') || keys.has('arrowup')) forward += 1;
-        if (keys.has('s') || keys.has('arrowdown')) forward -= 1;
-        if (keys.has('d') || keys.has('arrowright')) right += 1;
-        if (keys.has('a') || keys.has('arrowleft')) right -= 1;
-        if (keys.has('q') || keys.has(' ')) zoomDir += 1;
-        if (keys.has('e') || keys.has('c')) zoomDir -= 1;
-        const boost = keys.has('shift') ? 2.6 : 1.0;
+        const c = camRef.current;
+        const fast = keys.has('shift') ? 2.8 : 1.0;
+        const moveSpd = Math.max(140, c.heightPx * 1.45) * fast * dt;
+        const fwdX = Math.sin(c.yaw);
+        const fwdY = -Math.cos(c.yaw);
+        const rightX = Math.cos(c.yaw);
+        const rightY = Math.sin(c.yaw);
 
-        if (forward !== 0 || right !== 0 || zoomDir !== 0) {
-          const cam = camRef.current;
-          const speed = Math.max(95, cam.distance * 0.95) * boost * dt;
-          const cosY = Math.cos(cam.yaw);
-          const sinY = Math.sin(cam.yaw);
-          const dx = (-sinY * forward + cosY * right) * speed;
-          const dy = (-cosY * forward - sinY * right) * speed;
-          const maxW = map?.width ?? 16000;
-          const maxH = map?.height ?? 16000;
-          cam.targetX = Math.max(0, Math.min(maxW, cam.targetX + dx));
-          cam.targetY = Math.max(0, Math.min(maxH, cam.targetY + dy));
-          cam.distance = Math.max(70, Math.min(2200, cam.distance * (1 + zoomDir * 1.15 * dt)));
-          drawFnRef.current();
+        let dx = 0;
+        let dy = 0;
+        if (keys.has('w') || keys.has('arrowup')) {
+          dx += fwdX;
+          dy += fwdY;
         }
+        if (keys.has('s') || keys.has('arrowdown')) {
+          dx -= fwdX;
+          dy -= fwdY;
+        }
+        if (keys.has('d') || keys.has('arrowright')) {
+          dx += rightX;
+          dy += rightY;
+        }
+        if (keys.has('a') || keys.has('arrowleft')) {
+          dx -= rightX;
+          dy -= rightY;
+        }
+        const len = Math.hypot(dx, dy);
+        if (len > 0) {
+          c.camX = Math.max(0, Math.min(map?.width ?? 16000, c.camX + (dx / len) * moveSpd));
+          c.camY = Math.max(0, Math.min(map?.height ?? 16000, c.camY + (dy / len) * moveSpd));
+        }
+        if (keys.has('e') || keys.has(' ')) {
+          c.heightPx = Math.min(1500, c.heightPx * Math.pow(2.1, dt * fast));
+        }
+        if (keys.has('q') || keys.has('c')) {
+          c.heightPx = Math.max(40, c.heightPx / Math.pow(2.1, dt * fast));
+        }
+        drawFnRef.current();
         rafId = requestAnimationFrame(stepLoop);
       } else {
         rafId = 0;
       }
     };
 
+    const startLoop = () => {
+      if (!rafId) {
+        lastTime = performance.now();
+        rafId = requestAnimationFrame(stepLoop);
+      }
+    };
+
+    const isInputFocused = () => {
+      const tag = document.activeElement?.tagName.toLowerCase();
+      return tag === 'input' || tag === 'textarea' || tag === 'select';
+    };
+
     const onKeyDown = (ev: KeyboardEvent) => {
-      const tag = (ev.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-      if (ev.ctrlKey || ev.metaKey) return;
+      if (isInputFocused()) return;
       const k = ev.key.toLowerCase();
       if (k === 'f' || k === 'tab') {
         ev.preventDefault();
-        setFreeLook((prev) => !prev);
-        lastMouseRef.current = null;
+        togglePointerLock();
         return;
       }
       if (['w', 'a', 's', 'd', 'q', 'e', 'c', ' ', 'shift', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
-        if (k === ' ' || k.startsWith('arrow')) ev.preventDefault();
+        if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) ev.preventDefault();
         pressedKeysRef.current.add(k);
-        if (!rafId) {
-          lastTime = performance.now();
-          rafId = requestAnimationFrame(stepLoop);
-        }
+        startLoop();
       }
     };
 
     const onKeyUp = (ev: KeyboardEvent) => {
-      const k = ev.key.toLowerCase();
-      pressedKeysRef.current.delete(k);
+      pressedKeysRef.current.delete(ev.key.toLowerCase());
     };
-
-    const onBlur = () => {
-      pressedKeysRef.current.clear();
-      lastMouseRef.current = null;
-    };
+    const onBlur = () => pressedKeysRef.current.clear();
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onBlur);
     return () => {
-      if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
+      if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [map?.width, map?.height]);
+  }, [map?.width, map?.height, togglePointerLock]);
 
   const handleMouseDown = (ev: React.MouseEvent<HTMLCanvasElement>) => {
+    const cvs = overlayCanvasRef.current;
+    if (!cvs) return;
     if (ev.button === 2) {
       ev.preventDefault();
-      // Right-click toggles no-hold mouse free-look on/off instantaneously
-      setFreeLook((prev) => !prev);
-      lastMouseRef.current = { x: ev.clientX, y: ev.clientY };
+      togglePointerLock();
       return;
     }
     if (ev.button === 0) {
-      const rect = ev.currentTarget.getBoundingClientRect();
+      if (document.pointerLockElement === cvs) {
+        document.exitPointerLock();
+        return;
+      }
+      const rect = cvs.getBoundingClientRect();
       const mx = ev.clientX - rect.left;
       const my = ev.clientY - rect.top;
       for (const wp of screenWaypointsRef.current) {
-        if (Math.hypot(mx - wp.sx, my - wp.sy) <= 12) {
-          onSelect(wp.index, ev.shiftKey);
+        if (Math.hypot(wp.sx - mx, wp.sy - my) <= 10) {
+          onSelect(wp.index, ev.ctrlKey || ev.metaKey);
           return;
         }
       }
-      onSelect(null);
+      void cvs.requestPointerLock?.();
     }
   };
 
   const handleMouseMove = (ev: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = ev.currentTarget.getBoundingClientRect();
-    const mx = ev.clientX - rect.left;
-    const my = ev.clientY - rect.top;
-
-    // When freeLook is active (or left button is held), moving the mouse directly rotates the camera!
-    if (freeLook || (ev.buttons & 1) === 1) {
-      const prev = lastMouseRef.current;
-      lastMouseRef.current = { x: ev.clientX, y: ev.clientY };
-      if (prev) {
-        const dx = ev.clientX - prev.x;
-        const dy = ev.clientY - prev.y;
-        if (Math.abs(dx) < 120 && Math.abs(dy) < 120 && (dx !== 0 || dy !== 0)) {
-          camRef.current.yaw += dx * 0.0055;
-          camRef.current.pitch = Math.max(0.24, Math.min(1.52, camRef.current.pitch + dy * 0.0048));
-          scheduleDraw();
-        }
-      }
-      if (hoverInfo) setHoverInfo(null);
+    const cvs = overlayCanvasRef.current;
+    if (!cvs) return;
+    const isLocked = document.pointerLockElement === cvs;
+    if (isLocked || (ev.buttons & 1) !== 0) {
+      camRef.current.yaw += ev.movementX * 0.0028;
+      camRef.current.pitch = Math.max(0.16, Math.min(1.52, camRef.current.pitch + ev.movementY * 0.0024));
+      scheduleDraw();
       return;
     }
 
-    lastMouseRef.current = { x: ev.clientX, y: ev.clientY };
-
+    const rect = cvs.getBoundingClientRect();
+    const mx = ev.clientX - rect.left;
+    const my = ev.clientY - rect.top;
     for (const wp of screenWaypointsRef.current) {
-      if (Math.hypot(mx - wp.sx, my - wp.sy) <= 10) {
-        const pt = points3D[wp.index];
+      if (Math.hypot(wp.sx - mx, wp.sy - my) <= 10) {
         setHoverInfo({
-          title: `第 ${wp.index + 1} 点 · ${actionMeta(pt?.action).label}`,
-          subtitle: `坐标 (${pt?.x.toFixed(1)}, ${pt?.y.toFixed(1)}) · 海拔 ${wp.z.toFixed(1)}m · 坡度 ${wp.slope}°`,
+          title: `航点 #${wp.index + 1}`,
+          subtitle: `海拔 ${wp.z.toFixed(1)}m · 坡度 ${wp.slope.toFixed(1)}°`,
           screenX: mx,
           screenY: my,
         });
@@ -1025,179 +1147,254 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
       }
     }
     for (const sp of screenSpawnersRef.current) {
-      if (Math.hypot(mx - sp.sx, my - sp.sy) <= 8) {
+      if (Math.hypot(sp.sx - mx, sp.sy - my) <= 7) {
         setHoverInfo({
-          title: `${sp.pt.name} (${KIND_NAME[sp.pt.kind] ?? sp.pt.kind})${sp.captured ? ' · [路线已覆盖]' : ''}`,
-          subtitle: `海拔 ${sp.pt.z.toFixed(1)}m${sp.pt.cond ? ` · ${sp.pt.cond}` : ''}`,
+          title: `${sp.pt.name} (${KIND_NAME[sp.pt.kind] ?? sp.pt.kind})`,
+          subtitle: `海拔 ${sp.pt.z.toFixed(1)}m · ${sp.captured ? '✓ 15m 光环已覆盖' : '未进入当前路线光环'}`,
           screenX: mx,
           screenY: my,
         });
         return;
       }
     }
-    if (hoverInfo) setHoverInfo(null);
+    setHoverInfo(null);
   };
 
-  const handleRadarJump = (ev: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!map) return;
-    const rect = ev.currentTarget.getBoundingClientRect();
-    const rx = (ev.clientX - rect.left) / rect.width;
-    const ry = (ev.clientY - rect.top) / rect.height;
-    camRef.current.targetX = Math.max(0, Math.min(map.width, rx * map.width));
-    camRef.current.targetY = Math.max(0, Math.min(map.height, ry * map.height));
+  const handleWheel = (ev: React.WheelEvent<HTMLCanvasElement>) => {
+    ev.preventDefault();
+    const factor = ev.deltaY < 0 ? 0.86 : 1.16;
+    camRef.current.heightPx = Math.max(40, Math.min(1500, camRef.current.heightPx * factor));
     scheduleDraw();
   };
 
-  // Periodically sync HUD angle/elevation label without re-rendering on every mouse tick
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      const c = camRef.current;
-      const s = sampleTerrain(grid, c.targetX, c.targetY, -190);
-      setHudStat({
-        pitchDeg: Math.round((c.pitch * 180) / Math.PI),
-        elevM: Math.round(s.z),
-        yawDeg: Math.round((-c.yaw * 180) / Math.PI),
-      });
-    }, 250);
-    return () => window.clearInterval(id);
-  }, [grid]);
+  const handleRadarClick = (ev: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!map || !radarRef.current) return;
+    const rect = radarRef.current.getBoundingClientRect();
+    const rx = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+    const ry = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
+    lookAtPoint(rx * map.width, ry * map.height);
+  };
 
   return (
-    <div ref={containerRef} className="relative h-full w-full select-none overflow-hidden bg-[#0f172a]">
+    <div
+      ref={containerRef}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        background: '#080e1a',
+        userSelect: 'none',
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       <canvas
-        ref={canvasRef}
+        ref={glCanvasRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          pointerEvents: 'none',
+        }}
+      />
+      <canvas
+        ref={overlayCanvasRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          cursor: pointerLocked ? 'none' : 'crosshair',
+        }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseEnter={(ev) => {
-          lastMouseRef.current = { x: ev.clientX, y: ev.clientY };
-        }}
-        onMouseLeave={() => {
-          lastMouseRef.current = null;
-          setHoverInfo(null);
-        }}
-        onContextMenu={(ev) => ev.preventDefault()}
-        onWheel={(ev) => {
-          ev.preventDefault();
-          const factor = ev.deltaY < 0 ? 1.18 : 1 / 1.18;
-          camRef.current.distance = Math.max(70, Math.min(2200, camRef.current.distance / factor));
-          scheduleDraw();
-        }}
-        className={clsx('block h-full w-full', freeLook ? 'cursor-crosshair' : 'cursor-default')}
+        onMouseLeave={() => setHoverInfo(null)}
+        onWheel={handleWheel}
       />
 
-      {/* Top-right 3D surface, free-look toggle & overlay controls */}
-      <div className="absolute right-3 top-3 flex flex-wrap items-center gap-1.5 rounded-xl border border-white/15 bg-slate-900/90 px-2.5 py-1.5 text-xs text-slate-200 shadow-lg backdrop-blur">
-        <button
-          type="button"
-          onClick={() => setFreeLook((v) => !v)}
-          title="右键或按 F / Tab 可随时切换：开启时动鼠标直接转视角，暂停时方便选点或操作侧边栏"
-          className={clsx(
-            'inline-flex items-center gap-1 rounded-lg px-2 py-1 font-medium transition-colors',
-            freeLook ? 'bg-emerald-500/25 text-emerald-300' : 'bg-white/10 text-slate-300 hover:bg-white/15',
-          )}
-        >
-          {freeLook ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-          {freeLook ? '动鼠标转视角：开（右键暂停）' : '视角已固定（右键开启转向）'}
-        </button>
-        <span className="mx-0.5 h-3.5 w-px bg-white/15" />
-        <button
-          type="button"
-          onClick={() => setSurfaceMode('map')}
-          className={clsx('rounded-lg px-2 py-1 transition-colors', surfaceMode === 'map' ? 'bg-sky-500/25 font-medium text-sky-300' : 'hover:bg-white/10')}
-        >
-          <Layers className="mr-1 inline h-3.5 w-3.5" />彩色实景地图
-        </button>
-        <button
-          type="button"
-          onClick={() => setSurfaceMode('elevation')}
-          className={clsx('rounded-lg px-2 py-1 transition-colors', surfaceMode === 'elevation' ? 'bg-emerald-500/25 font-medium text-emerald-300' : 'hover:bg-white/10')}
-        >
-          <Mountain className="mr-1 inline h-3.5 w-3.5" />海拔等高线
-        </button>
-        <button
-          type="button"
-          onClick={() => setSurfaceMode('walkability')}
-          className={clsx('rounded-lg px-2 py-1 transition-colors', surfaceMode === 'walkability' ? 'bg-amber-500/25 font-medium text-amber-300' : 'hover:bg-white/10')}
-        >
-          <Compass className="mr-1 inline h-3.5 w-3.5" />可行走诊断
-        </button>
-        <span className="mx-0.5 h-3.5 w-px bg-white/15" />
-        <button
-          type="button"
-          onClick={() => setZScale((v) => (v < 1.5 ? 2.0 : v < 2.5 ? 3.2 : 1.0))}
-          title="切换 3D 地形垂直起伏倍率"
-          className="rounded-lg px-2 py-1 text-slate-300 hover:bg-white/10"
-        >
-          高度 {zScale === 1.0 ? '1x' : zScale === 2.0 ? '2x' : '3x'}
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowAura((v) => !v)}
-          className={clsx('rounded-lg px-2 py-1 transition-colors', showAura ? 'bg-amber-400/20 text-amber-300' : 'text-slate-400 hover:bg-white/10')}
-        >
-          <Sparkles className="mr-1 inline h-3.5 w-3.5" />15m光环
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowSpawners((v) => !v)}
-          className={clsx('rounded-lg px-2 py-1 transition-colors', showSpawners ? 'bg-emerald-400/20 text-emerald-300' : 'text-slate-400 hover:bg-white/10')}
-        >
-          <Eye className="mr-1 inline h-3.5 w-3.5" />收集物 ({annotatedSpawners.capturedCount})
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            camRef.current.yaw = 0.0;
-            camRef.current.pitch = 0.82;
-            scheduleDraw();
+      {/* Center Crosshair when Pointer Lock is active */}
+      {pointerLocked && (
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            width: 18,
+            height: 18,
+            borderRadius: '50%',
+            border: '1.5px solid rgba(56, 189, 248, 0.85)',
+            boxShadow: '0 0 8px rgba(56, 189, 248, 0.45)',
           }}
-          title="回正朝北 45° 鸟瞰视角"
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-slate-300 hover:bg-white/10"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />正北鸟瞰
-        </button>
-      </div>
+        />
+      )}
 
-      {/* Bottom-right 2D Mini-Radar with live Camera Frustum Cone */}
-      <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1">
-        <div className="overflow-hidden rounded-xl border border-white/20 bg-slate-950/90 p-1 shadow-xl backdrop-blur">
-          <div className="mb-1 flex items-center justify-between px-1 text-[10px] text-slate-300">
-            <span className="flex items-center gap-1 font-medium text-sky-300">
-              <Navigation className="h-3 w-3" style={{ transform: `rotate(${hudStat.yawDeg}deg)` }} />
-              相机雷达（点图瞬移）
-            </span>
-            <span>俯角 {hudStat.pitchDeg}° · 海拔 {hudStat.elevM}m</span>
-          </div>
-          <canvas
-            ref={radarRef}
-            width={176}
-            height={176}
-            onMouseDown={(ev) => {
-              if (ev.buttons === 1) handleRadarJump(ev);
+      {/* Top-Right 3D Controls Overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          background: 'rgba(15, 23, 42, 0.88)',
+          border: '1px solid rgba(148, 163, 184, 0.25)',
+          borderRadius: 10,
+          padding: '8px 10px',
+          backdropFilter: 'blur(8px)',
+          color: '#f8fafc',
+          fontSize: 12,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={togglePointerLock}
+            style={{
+              padding: '3px 9px',
+              borderRadius: 6,
+              border: '1px solid rgba(56, 189, 248, 0.5)',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontWeight: 600,
+              background: pointerLocked ? '#22c55e' : 'rgba(2, 132, 199, 0.35)',
+              color: pointerLocked ? '#052e16' : '#e0f2fe',
             }}
-            onMouseMove={(ev) => {
-              if (ev.buttons === 1) handleRadarJump(ev);
+          >
+            {pointerLocked ? '● 视角已锁定 (Esc/点击解锁)' : '🎯 点击画面/按F锁定鼠标转视角'}
+          </button>
+          <span style={{ color: '#94a3b8', fontWeight: 600 }}>图层:</span>
+          {(['map', 'elevation', 'walkability'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setSurfaceMode(m)}
+              style={{
+                padding: '3px 8px',
+                borderRadius: 6,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 600,
+                background: surfaceMode === m ? '#0284c7' : 'rgba(51, 65, 85, 0.7)',
+                color: '#f8fafc',
+              }}
+            >
+              {m === 'map' ? '原色彩图' : m === 'elevation' ? '海拔等高' : '坡度通行'}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+            <input type="checkbox" checked={showAura} onChange={(e) => setShowAura(e.target.checked)} />
+            <span>15m 姜饼人光环</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+            <input type="checkbox" checked={showSpawners} onChange={(e) => setShowSpawners(e.target.checked)} />
+            <span>3D 材料点 ({annotatedSpawners.capturedCount} 命中)</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ color: '#94a3b8' }}>起伏:</span>
+            <input
+              type="range"
+              min="1.0"
+              max="3.2"
+              step="0.2"
+              value={zScale}
+              onChange={(e) => setZScale(parseFloat(e.target.value))}
+              style={{ width: 64 }}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={fit}
+            style={{
+              padding: '2px 8px',
+              borderRadius: 5,
+              border: '1px solid rgba(148,163,184,0.35)',
+              background: 'rgba(30, 41, 59, 0.85)',
+              color: '#e2e8f0',
+              fontSize: 11,
+              cursor: 'pointer',
             }}
-            className="block h-44 w-44 cursor-crosshair rounded-lg border border-white/10"
-          />
+          >
+            回中
+          </button>
         </div>
       </div>
 
-      {/* Bottom-left WASD & mouse controls legend */}
-      <div className="pointer-events-none absolute bottom-3 left-3 rounded-xl border border-white/15 bg-slate-900/85 px-3 py-1.5 text-[11px] text-slate-200 shadow-lg">
-        直接动鼠标转视角（<kbd className="rounded bg-white/15 px-1 py-0.5 font-mono text-[10px]">右键</kbd> 或 <kbd className="rounded bg-white/15 px-1 py-0.5 font-mono text-[10px]">F</kbd> 锁定/解锁视角） ·{' '}
-        <kbd className="rounded bg-white/15 px-1 py-0.5 font-mono text-[10px]">WASD</kbd> 飞行 ·{' '}
-        <kbd className="rounded bg-white/15 px-1 py-0.5 font-mono text-[10px]">Shift</kbd> 加速 ·{' '}
-        <kbd className="rounded bg-white/15 px-1 py-0.5 font-mono text-[10px]">Q/E</kbd> 升降 · 滚轮缩放
+      {/* Bottom-Right 2D Mini-Radar */}
+      <div
+        style={{
+          position: 'absolute',
+          right: 12,
+          bottom: 12,
+          background: 'rgba(15, 23, 42, 0.9)',
+          border: '1px solid rgba(56, 189, 248, 0.35)',
+          borderRadius: 10,
+          padding: 6,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+          <span>2D 鸟瞰雷达 (点击跳转)</span>
+          <span style={{ color: '#38bdf8' }}>{hudStat.yawDeg}°</span>
+        </div>
+        <canvas
+          ref={radarRef}
+          width={176}
+          height={176}
+          onClick={handleRadarClick}
+          style={{ width: 176, height: 176, borderRadius: 6, cursor: 'pointer', display: 'block' }}
+        />
       </div>
 
-      {hoverInfo && (
+      {/* Bottom-Left Controls Legend */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 12,
+          bottom: 12,
+          background: 'rgba(15, 23, 42, 0.84)',
+          border: '1px solid rgba(148, 163, 184, 0.2)',
+          borderRadius: 8,
+          padding: '6px 10px',
+          color: '#cbd5e1',
+          fontSize: 11,
+          pointerEvents: 'none',
+        }}
+      >
+        <span>
+          操作: <b>左键/右键/F</b> 锁定鼠标自由转视角 (Esc解锁) · <b>WASD</b> 飞行 · <b>E/Q</b> 升降 · <b>Shift</b> 加速 · 仰角{' '}
+          {hudStat.pitchDeg}° · 地面海拔 {hudStat.elevM}m
+        </span>
+      </div>
+
+      {hoverInfo && !pointerLocked && (
         <div
-          style={{ left: Math.min(size.width - 250, hoverInfo.screenX + 14), top: Math.max(12, hoverInfo.screenY - 38) }}
-          className="pointer-events-none absolute z-20 rounded-lg border border-white/20 bg-slate-950/95 px-2.5 py-1.5 text-xs text-white shadow-xl"
+          style={{
+            position: 'absolute',
+            left: Math.min(size.width - 220, hoverInfo.screenX + 14),
+            top: Math.max(12, hoverInfo.screenY - 26),
+            background: 'rgba(15, 23, 42, 0.94)',
+            border: '1px solid rgba(56, 189, 248, 0.45)',
+            borderRadius: 8,
+            padding: '6px 10px',
+            color: '#f8fafc',
+            fontSize: 12,
+            pointerEvents: 'none',
+            boxShadow: '0 6px 18px rgba(0,0,0,0.45)',
+          }}
         >
-          <p className="font-semibold text-sky-300">{hoverInfo.title}</p>
-          <p className="text-[11px] text-slate-300">{hoverInfo.subtitle}</p>
+          <div style={{ fontWeight: 700, color: '#38bdf8' }}>{hoverInfo.title}</div>
+          <div style={{ fontSize: 11, color: '#cbd5e1', marginTop: 2 }}>{hoverInfo.subtitle}</div>
         </div>
       )}
     </div>
