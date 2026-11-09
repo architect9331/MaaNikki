@@ -87,7 +87,12 @@ class MaterialNameResolver:
                     self._register_name(nm, kind)
                 for plist in (raw.get("spawners") or {}).values():
                     for item in plist:
-                        cond = str(item.get("condition") or "")
+                        if isinstance(item, (list, tuple)):
+                            cond = str(item[4]) if len(item) >= 5 else ""
+                        elif isinstance(item, dict):
+                            cond = str(item.get("condition") or item.get("note") or "")
+                        else:
+                            cond = ""
                         if "鱼" in cond or "获得" in cond:
                             for m in re.findall(r"[\u4e00-\u9fa5]{2,8}鱼", cond):
                                 if m not in ("的鱼", "所有鱼", "常见鱼"):
@@ -374,17 +379,28 @@ class GingerbreadRouteAnalyzer:
                               claim_within_m: float = 13.8) -> list[NearbySpawnerInfo]:
         max_px = max_radius_m / M_PER_MAP_PX
         near_raw = []
-        for s in self.spawners:
-            sid = str(s.get("id") or "")
+        for idx, s in enumerate(self.spawners):
+            if isinstance(s, (list, tuple)):
+                if len(s) < 4:
+                    continue
+                sid = f"{self.map_id}_{idx}"
+                cid = str(s[0])
+                sx, sy, sz = float(s[1]), float(s[2]), float(s[3])
+                raw_name = ""
+            elif isinstance(s, dict):
+                sid = str(s.get("id") or f"{self.map_id}_{idx}")
+                cid = str(s.get("cid") or "")
+                sx, sy, sz = float(s.get("x") or 0.0), float(s.get("y") or 0.0), float(s.get("z") or 0.0)
+                raw_name = str(s.get("name") or "")
+            else:
+                continue
             if sid in self.claimed_spawner_ids:
                 continue
-            sx, sy, sz = float(s.get("x") or 0.0), float(s.get("y") or 0.0), float(s.get("z") or 0.0)
             d_px = math.hypot(sx - x, sy - y)
             if d_px <= max_px:
                 d_m = round(d_px * M_PER_MAP_PX, 2)
-                cid = str(s.get("cid") or "")
                 cat = self.catalogs.get(cid) or {}
-                near_raw.append((sid, str(cat.get("name") or s.get("name") or "未知"),
+                near_raw.append((sid, str(cat.get("name") or raw_name or "未知"),
                                  str(cat.get("kind") or "plant"), sx, sy, sz, d_m))
 
         if not near_raw:

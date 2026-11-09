@@ -296,9 +296,9 @@ class RouteActions:
     def wait_gingerbread(self, point, wait_sec: float):
         from .gingerbread_pickup import M_PER_MAP_PX
         wp_index = int(getattr(self.navigator, "current_index", 0) or 0)
-        pose = getattr(self.rt, "last_pose", None) or {}
-        actual_x = float(pose.get("x", point.x)) if isinstance(pose, dict) else float(point.x)
-        actual_y = float(pose.get("y", point.y)) if isinstance(pose, dict) else float(point.y)
+        prev_pose = getattr(getattr(self.navigator, "locator", None), "previous", None)
+        actual_x = float(getattr(prev_pose, "x", point.x) or point.x)
+        actual_y = float(getattr(prev_pose, "y", point.y) or point.y)
         nearby = self.gb_analyzer.query_nearby_spawners(actual_x, actual_y)
         expected_names = list(dict.fromkeys(list(self.count_materials) + [s.name for s in nearby]))
         self.gb_toast_reader.set_expected_names(expected_names)
@@ -308,11 +308,12 @@ class RouteActions:
         user_quiet = self.gb_config.get("quiet_seconds")
         quiet_s = float(user_quiet) if isinstance(user_quiet, (int, float)) and user_quiet > 0 else default_quiet_s
         user_init = self.gb_config.get("initial_wait_seconds")
-        initial_no_toast_s = (
+        base_init_s = (
             float(user_init)
             if isinstance(user_init, (int, float)) and user_init > 0
             else max(min_dwell_s + quiet_s, 9.0)
         )
+        initial_no_toast_s = min(base_init_s, max(wait_sec + 1.5, min_dwell_s + 1.0))
         max_wait_s = max(wait_sec, ceiling_s) if adaptive_exit else wait_sec
 
         arrived_at = time.monotonic()
@@ -385,11 +386,14 @@ class RouteActions:
             if adaptive_exit:
                 quiet_elapsed = now - last_activity_at
                 if picked_events:
-                    if elapsed >= min_dwell_s and quiet_elapsed >= quiet_s:
+                    all_approach_only = (last_pickup_s == 0.0)
+                    effective_quiet_s = min(quiet_s, max(3.0, wait_sec)) if all_approach_only else quiet_s
+                    effective_min_dwell_s = min(min_dwell_s, wait_sec) if all_approach_only else min_dwell_s
+                    if elapsed >= effective_min_dwell_s and quiet_elapsed >= effective_quiet_s:
                         exit_reason = "toast_quiet_after_pickup"
                         break
                 else:
-                    if elapsed >= min(max_wait_s, initial_no_toast_s) and quiet_elapsed >= quiet_s:
+                    if elapsed >= min(max_wait_s, initial_no_toast_s) and quiet_elapsed >= min(quiet_s, initial_no_toast_s):
                         exit_reason = "no_toast_timeout"
                         break
 
