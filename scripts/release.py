@@ -140,7 +140,18 @@ def verify_source():
     for path in files:
         # TypeScript config files use JSONC and are checked by the frontend build.
         if path.suffix == ".json" and not path.name.startswith("tsconfig"):
-            read_json(path)
+            doc = read_json(path)
+            if isinstance(doc, dict) and "fishing_shortcut" in doc:
+                shortcut_name = doc["fishing_shortcut"]
+                sc_path = path.parent / f"{shortcut_name}.json"
+                if not sc_path.is_file():
+                    raise ValueError(f"Missing shortcut route {shortcut_name} referenced by {path}")
+                sc_doc = read_json(sc_path)
+                pts = doc.get("points", [])
+                sc_pts = sc_doc.get("points", [])
+                star_idx = next((i for i, p in enumerate(pts) if p.get("action") == "fishing_star"), None)
+                if star_idx is None or len(sc_pts) <= star_idx + 1 or sc_pts[:star_idx + 1] != pts[:star_idx + 1]:
+                    raise ValueError(f"Fishing shortcut prefix mismatch between {path.name} and {sc_path.name}")
         elif path.suffix == ".py":
             compile(path.read_text(encoding="utf-8-sig"), str(path), "exec")
         if path.stat().st_size >= 100 * 1024 * 1024:

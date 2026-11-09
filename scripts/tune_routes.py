@@ -484,6 +484,25 @@ def main() -> None:
             if changed:
                 route_file.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
+    if args.apply:
+        for rf in ROUTES_DIR.glob("*.json"):
+            try:
+                b_doc = json.loads(rf.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            sc_name = b_doc.get("fishing_shortcut") if isinstance(b_doc, dict) else None
+            if sc_name and isinstance(sc_name, str):
+                sc_file = ROUTES_DIR / f"{sc_name}.json"
+                if sc_file.is_file():
+                    sc_doc = json.loads(sc_file.read_text(encoding="utf-8"))
+                    b_pts = b_doc.get("points", [])
+                    sc_pts = sc_doc.get("points", [])
+                    idx = next((i for i, p in enumerate(b_pts) if p.get("action") == "fishing_star"), None)
+                    if idx is not None and len(sc_pts) > idx:
+                        if sc_pts[:idx + 1] != b_pts[:idx + 1]:
+                            sc_pts[:idx + 1] = [dict(p) for p in b_pts[:idx + 1]]
+                            sc_file.write_text(json.dumps(sc_doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return

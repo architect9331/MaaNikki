@@ -34,8 +34,8 @@
   },
   "points": [
     {
-      "x": 1046.928,
-      "y": 720.026,
+      "x": 1046.8,
+      "y": 719.8,
       "radius": 1.35,
       "jump": false,
       "action": "teleport",
