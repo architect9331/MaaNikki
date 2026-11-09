@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_086_miraland_01",
-  "title": "【滚滚花球】微风绿野·绿野活动支援中心（5个/111秒）",
+  "title": "【滚滚花球】微风绿野·绿野活动支援中心（5个/112秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 290,
@@ -45,10 +45,26 @@
       }
     },
     {
-      "x": 9985.07,
-      "y": 10617.49,
+      "x": 9976.07,
+      "y": 10626.49,
       "radius": 2.5,
       "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9976.07,
+      "y": 10623.49,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9994.07,
+      "y": 10611.49,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -145,22 +161,20 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 7.8
       }
     },
     {
       "x": 10076.73,
-      "y": 10603.34,
-      "radius": 2.0,
+      "y": 10606.34,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 10085.73,
-      "y": 10609.34,
+      "x": 10094.73,
+      "y": 10615.34,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

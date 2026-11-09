@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_082_miraland_02",
-  "title": "【飞球果】石树田无人区·欢乐市集登顶道（9个/112秒）",
+  "title": "【飞球果】石树田无人区·欢乐市集登顶道（9个/114秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 292,
+  "timeout": 297,
   "teleport": {
     "name": "欢乐市集登顶道",
     "province": "心愿原野",
@@ -107,18 +107,26 @@
       }
     },
     {
-      "x": 8245.5,
-      "y": 9674.96,
+      "x": 8257.5,
+      "y": 9686.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8233.5,
-      "y": 9671.96,
+      "x": 8254.5,
+      "y": 9683.96,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8245.5,
+      "y": 9674.96,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -134,33 +142,27 @@
     },
     {
       "x": 8230.5,
-      "y": 9662.96,
+      "y": 9665.96,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 8236.5,
-      "y": 9653.96,
-      "radius": 2.5,
+      "x": 8230.5,
+      "y": 9659.96,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
-      "x": 8236.5,
-      "y": 9650.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8236.5,
-      "y": 9647.96,
+      "x": 8233.5,
+      "y": 9656.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -239,8 +241,16 @@
       "params": {}
     },
     {
-      "x": 8396.29,
-      "y": 9696.56,
+      "x": 8398.5,
+      "y": 9698.96,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8396.91,
+      "y": 9706.46,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

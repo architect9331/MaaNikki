@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_045_miraland_01",
-  "title": "【花香羊毛】小石树田村·村居岔路（18个/249秒）",
+  "title": "【花香羊毛】小石树田村·村居岔路（19个/264秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 593,
+  "timeout": 626,
   "teleport": {
     "name": "村居岔路",
     "province": "心愿原野",
@@ -24,7 +24,7 @@
     "美食家蜜蜂",
     "滋滋花粉"
   ],
-  "capacity": 69,
+  "capacity": 73,
   "points": [
     {
       "x": 9389.05,
@@ -62,9 +62,9 @@
     },
     {
       "x": 9381.39,
-      "y": 10484.7,
+      "y": 10487.7,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
@@ -72,13 +72,13 @@
       "x": 9369.39,
       "y": 10469.7,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 9357.39,
-      "y": 10454.7,
+      "y": 10451.7,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -103,15 +103,15 @@
       }
     },
     {
-      "x": 9325.52,
-      "y": 10463.7,
+      "x": 9326.6,
+      "y": 10460.7,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9316.52,
+      "x": 9317.6,
       "y": 10475.7,
       "radius": 2.0,
       "jump": false,
@@ -121,13 +121,47 @@
       }
     },
     {
-      "x": 9320.52,
-      "y": 10484.06,
+      "x": 9321.6,
+      "y": 10478.61,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 52.7
+      }
+    },
+    {
+      "x": 9320.6,
+      "y": 10480.61,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9323.6,
+      "y": 10483.61,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9326.6,
+      "y": 10486.61,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9347.6,
+      "y": 10489.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.7
       }
     },
     {

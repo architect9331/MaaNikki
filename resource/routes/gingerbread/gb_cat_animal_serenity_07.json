@@ -1,40 +1,27 @@
 {
   "schema_version": 3,
   "id": "gb_cat_animal_serenity_07",
-  "title": "【全动物清洁】无忧岛·布露村村口（11个/66秒）",
+  "title": "【全动物清洁】无忧岛·守望之地（10个/54秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 191,
+  "timeout": 164,
   "teleport": {
-    "name": "布露村村口",
+    "name": "守望之地",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 889.635,
-    "y": 406.18
+    "x": 795.589,
+    "y": 511.792
   },
   "material": "全动物清洁",
   "count_materials": [
     "小绵菊",
-    "小星扇贝",
-    "飞球果",
-    "蓝珀鸟羽",
-    "珠花贝壳"
+    "蓝珀鸟羽"
   ],
-  "capacity": 11,
+  "capacity": 10,
   "points": [
     {
-      "x": 889.63,
-      "y": 406.18,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 880.79,
-      "y": 393.18,
+      "x": 795.59,
+      "y": 511.79,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -43,55 +30,37 @@
       }
     },
     {
-      "x": 859.79,
-      "y": 387.18,
+      "x": 797.59,
+      "y": 513.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 800.59,
+      "y": 516.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 800.59,
+      "y": 519.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 804.21,
+      "y": 522.91,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
-      }
-    },
-    {
-      "x": 847.79,
-      "y": 393.18,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 835.79,
-      "y": 408.18,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 832.79,
-      "y": 414.18,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 832.79,
-      "y": 417.18,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 836.79,
-      "y": 419.76,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 21.6
+        "seconds": 34.6
       }
     }
   ]

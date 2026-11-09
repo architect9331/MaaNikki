@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_287_miraland_01",
-  "title": "【汐荧蟹】埋骨地·白汐滩归望湾（4个/36秒）",
+  "title": "【汐荧蟹】埋骨地·白汐滩归望湾（2个/24秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 123,
+  "timeout": 120,
   "teleport": {
     "name": "白汐滩归望湾",
     "province": "伊赞之土",
@@ -14,11 +14,10 @@
   },
   "material": "汐荧蟹",
   "count_materials": [
-    "汐荧蟹",
     "羽巾绒",
-    "珠花贝壳"
+    "汐荧蟹"
   ],
-  "capacity": 8,
+  "capacity": 5,
   "points": [
     {
       "x": 7691.91,
@@ -29,16 +28,8 @@
       "params": {}
     },
     {
-      "x": 7708.91,
-      "y": 5290.28,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 7711.91,
-      "y": 5287.28,
+      "y": 5289.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -46,7 +37,7 @@
     },
     {
       "x": 7714.91,
-      "y": 5287.28,
+      "y": 5289.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -54,7 +45,7 @@
     },
     {
       "x": 7717.91,
-      "y": 5287.28,
+      "y": 5289.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -62,15 +53,15 @@
     },
     {
       "x": 7720.91,
-      "y": 5287.28,
+      "y": 5289.96,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 7723.91,
-      "y": 5287.28,
+      "y": 5286.96,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -78,7 +69,7 @@
     },
     {
       "x": 7726.91,
-      "y": 5287.28,
+      "y": 5286.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -86,70 +77,28 @@
     },
     {
       "x": 7729.91,
-      "y": 5287.28,
+      "y": 5286.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7734.22,
-      "y": 5285.28,
+      "x": 7732.91,
+      "y": 5286.96,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7736.33,
+      "y": 5284.96,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 5.2
-      }
-    },
-    {
-      "x": 7736.22,
-      "y": 5284.22,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7739.22,
-      "y": 5284.22,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7748.22,
-      "y": 5278.22,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7751.22,
-      "y": 5275.22,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7754.22,
-      "y": 5272.22,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7757.81,
-      "y": 5267.22,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
       }
     }
   ]

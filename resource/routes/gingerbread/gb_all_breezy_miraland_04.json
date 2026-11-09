@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_04",
-  "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（23个/89秒）",
+  "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（24个/91秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 241,
+  "timeout": 246,
   "teleport": {
     "name": "筑心王国边境哨所",
     "province": "心愿原野",
@@ -19,7 +19,7 @@
     "瓜子珠",
     "纽扣松果"
   ],
-  "capacity": 23,
+  "capacity": 24,
   "points": [
     {
       "x": 10782.91,
@@ -30,8 +30,8 @@
       "params": {}
     },
     {
-      "x": 10784.91,
-      "y": 11957.95,
+      "x": 10787.91,
+      "y": 11945.95,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -39,21 +39,21 @@
     },
     {
       "x": 10787.91,
-      "y": 11936.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10787.91,
-      "y": 11915.95,
+      "y": 11924.95,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
+    },
+    {
+      "x": 10787.91,
+      "y": 11903.95,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
       "x": 10783.1,

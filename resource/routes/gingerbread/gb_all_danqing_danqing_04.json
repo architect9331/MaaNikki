@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_danqing_danqing_04",
-  "title": "【全材料·丹青屿】丹青屿·墨缘坊市（36个/226秒）",
+  "title": "【全材料·丹青屿】丹青屿·墨缘坊市（36个/225秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 543,
+  "timeout": 540,
   "teleport": {
     "name": "墨缘坊市",
     "province": "心愿原野",
@@ -47,7 +47,7 @@
     },
     {
       "x": 1508.7,
-      "y": 1090.55,
+      "y": 1086.55,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -55,25 +55,49 @@
     },
     {
       "x": 1512.7,
-      "y": 1090.55,
+      "y": 1086.55,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 1516.7,
-      "y": 1090.55,
+      "x": 1524.7,
+      "y": 1086.55,
       "radius": 2.5,
       "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1528.7,
+      "y": 1090.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1532.7,
+      "y": 1094.55,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 1536.7,
-      "y": 1086.55,
+      "y": 1098.55,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1540.7,
+      "y": 1098.55,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -130,7 +154,15 @@
       "params": {}
     },
     {
-      "x": 1600.7,
+      "x": 1588.7,
+      "y": 1142.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1588.7,
       "y": 1150.55,
       "radius": 2.5,
       "jump": false,
@@ -138,22 +170,12 @@
       "params": {}
     },
     {
-      "x": 1596.7,
-      "y": 1158.55,
+      "x": 1592.7,
+      "y": 1166.55,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
-    },
-    {
-      "x": 1596.7,
-      "y": 1178.55,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
     },
     {
       "x": 1596.7,
@@ -162,7 +184,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {
@@ -172,7 +194,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {

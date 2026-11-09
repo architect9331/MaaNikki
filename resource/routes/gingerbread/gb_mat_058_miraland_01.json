@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_058_miraland_01",
-  "title": "【玫色天鹅绒】微风绿野·捕虫小屋（1个/87秒）",
+  "title": "【玫色天鹅绒】微风绿野·捕虫小屋（1个/85秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 237,
+  "timeout": 232,
   "teleport": {
     "name": "捕虫小屋",
     "province": "心愿原野",
@@ -14,16 +14,16 @@
   },
   "material": "玫色天鹅绒",
   "count_materials": [
-    "小绵菊",
     "布布果",
     "蓝珀鸟羽",
+    "小绵菊",
     "晴日蝶兰/雨滴蝶兰",
     "美食家蜜蜂",
     "珠链蝶",
     "玫色天鹅绒",
     "夜色天鹅绒"
   ],
-  "capacity": 17,
+  "capacity": 16,
   "points": [
     {
       "x": 10143.9,
@@ -50,18 +50,18 @@
       "params": {}
     },
     {
-      "x": 10168.9,
-      "y": 10482.5,
+      "x": 10164.9,
+      "y": 10470.5,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
       "x": 10184.9,
-      "y": 10470.5,
+      "y": 10466.5,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -69,7 +69,7 @@
     },
     {
       "x": 10196.9,
-      "y": 10458.5,
+      "y": 10454.5,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -93,7 +93,7 @@
     },
     {
       "x": 10256.9,
-      "y": 10454.5,
+      "y": 10450.5,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -108,23 +108,7 @@
       "params": {}
     },
     {
-      "x": 10280.9,
-      "y": 10434.5,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 10284.9,
-      "y": 10430.5,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10288.9,
       "y": 10426.5,
       "radius": 2.5,
       "jump": false,
@@ -135,7 +119,7 @@
       "x": 10300.9,
       "y": 10422.5,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 7.8
@@ -243,7 +227,7 @@
       "x": 10372.9,
       "y": 10426.5,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -269,7 +253,7 @@
       "x": 10384.9,
       "y": 10422.5,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },

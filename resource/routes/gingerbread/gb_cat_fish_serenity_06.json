@@ -1,27 +1,27 @@
 {
   "schema_version": 3,
-  "id": "gb_cat_fish_serenity_07",
-  "title": "【全鱼类垂钓】无忧岛·酿露工坊（7个/38秒）",
+  "id": "gb_cat_fish_serenity_06",
+  "title": "【全鱼类垂钓】无忧岛·咚咚小屋聚落（7个/37秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 129,
+  "timeout": 127,
   "teleport": {
-    "name": "酿露工坊",
+    "name": "咚咚小屋聚落",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 1062.648,
-    "y": 439.809
+    "x": 822.676,
+    "y": 542.497
   },
   "material": "全鱼类垂钓",
   "count_materials": [
-    "风絮草",
-    "纽扣松果"
+    "小绵菊",
+    "飞球果"
   ],
   "capacity": 7,
   "points": [
     {
-      "x": 1062.65,
-      "y": 439.81,
+      "x": 822.68,
+      "y": 542.5,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -30,53 +30,73 @@
       }
     },
     {
-      "x": 1067.65,
-      "y": 441.81,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1070.65,
-      "y": 438.81,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1073.65,
-      "y": 441.81,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1073.65,
-      "y": 450.81,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1091.65,
-      "y": 459.81,
+      "x": 820.65,
+      "y": 538.5,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 1105.23,
-      "y": 460.51,
+      "x": 817.65,
+      "y": 535.5,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 811.65,
+      "y": 538.5,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 811.65,
+      "y": 541.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 808.65,
+      "y": 544.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 802.65,
+      "y": 550.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 805.65,
+      "y": 553.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 809.65,
+      "y": 557.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
       }
     }
   ]

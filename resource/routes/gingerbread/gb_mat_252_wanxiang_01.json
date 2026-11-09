@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_252_wanxiang_01",
-  "title": "【胭脂翎羽】万相境·火锅坊（16个/221秒）",
+  "title": "【胭脂翎羽】万相境·火锅坊（16个/215秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 532,
+  "timeout": 518,
   "teleport": {
     "name": "火锅坊",
     "province": "伊赞之土",
@@ -15,11 +15,11 @@
   "material": "胭脂翎羽",
   "count_materials": [
     "胭脂翎羽",
-    "小绵菊",
     "画眉毛团",
+    "小绵菊",
     "刺绣蛾"
   ],
-  "capacity": 21,
+  "capacity": 20,
   "points": [
     {
       "x": 1399.52,
@@ -57,41 +57,31 @@
     },
     {
       "x": 1420.49,
-      "y": 1129.98,
+      "y": 1135.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
-    },
-    {
-      "x": 1423.49,
-      "y": 1108.98,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
     },
     {
       "x": 1441.49,
-      "y": 1102.98,
+      "y": 1135.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1462.49,
-      "y": 1108.98,
+      "x": 1459.49,
+      "y": 1123.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1483.49,
-      "y": 1114.98,
+      "x": 1480.49,
+      "y": 1120.98,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -108,7 +98,7 @@
       }
     },
     {
-      "x": 1508.43,
+      "x": 1505.43,
       "y": 1107.05,
       "radius": 2.5,
       "jump": false,
@@ -116,7 +106,7 @@
       "params": {}
     },
     {
-      "x": 1520.43,
+      "x": 1517.43,
       "y": 1089.05,
       "radius": 2.5,
       "jump": false,
@@ -124,56 +114,16 @@
       "params": {}
     },
     {
-      "x": 1520.43,
-      "y": 1068.05,
+      "x": 1508.43,
+      "y": 1071.05,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1517.43,
+      "x": 1505.43,
       "y": 1062.05,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1517.43,
-      "y": 1059.05,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1517.43,
-      "y": 1056.05,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1517.43,
-      "y": 1053.05,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1514.43,
-      "y": 1050.05,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1511.43,
-      "y": 1047.05,
       "radius": 2.5,
       "jump": false,
       "action": "",

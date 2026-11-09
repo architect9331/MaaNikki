@@ -1,66 +1,102 @@
 {
   "schema_version": 3,
   "id": "gb_cat_animal_serenity_06",
-  "title": "【全动物清洁】无忧岛·守望之地（10个/54秒）",
+  "title": "【全动物清洁】无忧岛·咚咚小屋聚落（7个/37秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 164,
+  "timeout": 127,
   "teleport": {
-    "name": "守望之地",
+    "name": "咚咚小屋聚落",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 795.589,
-    "y": 511.792
+    "x": 822.676,
+    "y": 542.497
   },
   "material": "全动物清洁",
   "count_materials": [
     "小绵菊",
-    "蓝珀鸟羽"
+    "飞球果"
   ],
-  "capacity": 10,
+  "capacity": 7,
   "points": [
     {
-      "x": 795.59,
-      "y": 511.79,
+      "x": 822.68,
+      "y": 542.5,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 797.59,
-      "y": 513.79,
+      "x": 820.65,
+      "y": 538.5,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 800.59,
-      "y": 516.79,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
+      "x": 817.65,
+      "y": 535.5,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
-      "x": 800.59,
-      "y": 519.79,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 804.21,
-      "y": 522.91,
+      "x": 811.65,
+      "y": 538.5,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 34.6
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 811.65,
+      "y": 541.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 808.65,
+      "y": 544.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 802.65,
+      "y": 550.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 805.65,
+      "y": 553.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 809.65,
+      "y": 557.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
       }
     }
   ]

@@ -40,7 +40,7 @@
     },
     {
       "x": 7024.52,
-      "y": 4421.11,
+      "y": 4418.11,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -50,7 +50,7 @@
       "x": 7021.52,
       "y": 4439.11,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },

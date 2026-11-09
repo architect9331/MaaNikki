@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_208_miraland_01",
-  "title": "【朝朝蝶】巨木之森·帕克亚火山口探险家营地（10个/222秒）",
+  "title": "【朝朝蝶】巨木之森·帕克亚火山口探险家营地（10个/221秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 533,
+  "timeout": 531,
   "teleport": {
     "name": "帕克亚火山口探险家营地",
     "province": "伊赞之土",
@@ -257,18 +257,16 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 13.0
       }
     },
     {
       "x": 5404.34,
       "y": 8350.36,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 5401.34,
@@ -277,7 +275,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {
@@ -300,7 +298,7 @@
       "x": 5392.34,
       "y": 8356.36,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
@@ -389,7 +387,7 @@
       "params": {}
     },
     {
-      "x": 5403.64,
+      "x": 5406.64,
       "y": 8365.54,
       "radius": 2.0,
       "jump": false,
@@ -399,7 +397,7 @@
       }
     },
     {
-      "x": 5406.64,
+      "x": 5409.64,
       "y": 8365.54,
       "radius": 2.5,
       "jump": false,
@@ -407,18 +405,8 @@
       "params": {}
     },
     {
-      "x": 5409.64,
-      "y": 8362.54,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 5424.64,
-      "y": 8374.54,
+      "x": 5412.64,
+      "y": 8365.54,
       "radius": 2.5,
       "jump": false,
       "action": "",

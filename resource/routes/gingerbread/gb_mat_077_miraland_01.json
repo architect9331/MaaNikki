@@ -31,7 +31,7 @@
     },
     {
       "x": 12162.38,
-      "y": 9187.45,
+      "y": 9187.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -39,33 +39,41 @@
     },
     {
       "x": 12168.38,
-      "y": 9166.45,
+      "y": 9166.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12159.38,
-      "y": 9148.45,
-      "radius": 2.0,
+      "x": 12162.38,
+      "y": 9154.48,
+      "radius": 2.5,
       "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 12156.38,
-      "y": 9127.45,
+      "y": 9133.48,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 12162.38,
+      "y": 9115.48,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 12165.38,
-      "y": 9112.45,
+      "x": 12177.38,
+      "y": 9100.48,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -74,26 +82,26 @@
       }
     },
     {
-      "x": 12180.38,
-      "y": 9100.45,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
+      "x": 12198.38,
+      "y": 9100.48,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 12201.38,
-      "y": 9097.45,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "y": 9097.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
       "x": 12204.38,
-      "y": 9094.45,
+      "y": 9094.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -101,15 +109,15 @@
     },
     {
       "x": 12207.38,
-      "y": 9091.45,
+      "y": 9091.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12205.09,
-      "y": 9089.45,
+      "x": 12207.15,
+      "y": 9089.48,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

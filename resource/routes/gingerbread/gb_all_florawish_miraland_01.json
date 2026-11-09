@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_florawish_miraland_01",
-  "title": "【全材料·花愿镇】花愿镇·织裙街（45个/157秒）",
+  "title": "【全材料·花愿镇】花愿镇·织裙街（45个/155秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 391,
+  "timeout": 386,
   "teleport": {
     "name": "织裙街",
     "province": "心愿原野",
@@ -41,17 +41,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 7.8
       }
     },
     {
-      "x": 10754.75,
+      "x": 10760.75,
       "y": 10075.91,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
@@ -66,26 +66,16 @@
     },
     {
       "x": 10793.32,
-      "y": 10088.64,
+      "y": 10091.64,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {
-      "x": 10796.32,
-      "y": 10088.64,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 10817.32,
+      "x": 10814.32,
       "y": 10094.64,
       "radius": 2.5,
       "jump": false,
@@ -104,46 +94,30 @@
     },
     {
       "x": 10824.88,
-      "y": 10079.41,
+      "y": 10087.58,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10826.2,
-      "y": 10074.41,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.0
-      }
-    },
-    {
-      "x": 10834.2,
-      "y": 10073.41,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10840.2,
-      "y": 10082.41,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10841.46,
-      "y": 10086.58,
+      "x": 10832.69,
+      "y": 10088.58,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 20.8
+      }
+    },
+    {
+      "x": 10824.38,
+      "y": 10075.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
       }
     }
   ]

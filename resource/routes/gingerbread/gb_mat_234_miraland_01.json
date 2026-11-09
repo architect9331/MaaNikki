@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_234_miraland_01",
-  "title": "【风旋果】巨木之森·安眠之林（2个/45秒）",
+  "title": "【风旋果】巨木之森·安眠之林（2个/44秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 144,
+  "timeout": 142,
   "teleport": {
     "name": "安眠之林",
     "province": "伊赞之土",
@@ -14,11 +14,11 @@
   },
   "material": "风旋果",
   "count_materials": [
+    "小野菊",
     "风旋果",
-    "结结蕨",
-    "小野菊"
+    "结结蕨"
   ],
-  "capacity": 4,
+  "capacity": 5,
   "points": [
     {
       "x": 4069.37,
@@ -31,114 +31,130 @@
       }
     },
     {
-      "x": 4081.3,
-      "y": 9172.03,
+      "x": 4077.37,
+      "y": 9171.65,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {
-      "x": 4093.3,
-      "y": 9175.03,
+      "x": 4092.37,
+      "y": 9174.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4099.3,
-      "y": 9169.03,
+      "x": 4095.37,
+      "y": 9171.65,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4098.37,
+      "y": 9168.65,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4101.37,
+      "y": 9147.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4105.3,
-      "y": 9148.03,
+      "x": 4095.37,
+      "y": 9132.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4099.3,
-      "y": 9127.03,
+      "x": 4092.37,
+      "y": 9132.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4090.3,
-      "y": 9121.03,
+      "x": 4089.37,
+      "y": 9129.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4084.3,
-      "y": 9121.03,
+      "x": 4086.37,
+      "y": 9126.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4078.3,
-      "y": 9115.03,
+      "x": 4089.37,
+      "y": 9123.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4084.3,
-      "y": 9097.03,
+      "x": 4086.37,
+      "y": 9120.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4075.3,
-      "y": 9088.03,
+      "x": 4083.37,
+      "y": 9117.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4072.3,
-      "y": 9085.03,
+      "x": 4080.37,
+      "y": 9114.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4069.3,
-      "y": 9085.03,
+      "x": 4077.37,
+      "y": 9111.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4066.3,
-      "y": 9085.03,
+      "x": 4083.37,
+      "y": 9099.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4061.3,
-      "y": 9086.03,
+      "x": 4075.34,
+      "y": 9091.65,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

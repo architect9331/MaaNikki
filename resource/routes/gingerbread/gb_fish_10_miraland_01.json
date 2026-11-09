@@ -4,7 +4,7 @@
   "title": "【眼影鱼】祈愿树林·巨树浅滩（6个/134秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 339,
+  "timeout": 340,
   "teleport": {
     "name": "巨树浅滩",
     "province": "心愿原野",
@@ -113,7 +113,7 @@
     },
     {
       "x": 11686.58,
-      "y": 8982.53,
+      "y": 8985.53,
       "radius": 2.5,
       "jump": false,
       "action": "",

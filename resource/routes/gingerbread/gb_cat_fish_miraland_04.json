@@ -1,0 +1,222 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_fish_miraland_04",
+  "title": "【全鱼类垂钓】微风绿野·悠悠垂钓协会花愿镇分部（16个/78秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 216,
+  "teleport": {
+    "name": "悠悠垂钓协会花愿镇分部",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10278.224,
+    "y": 10210.305
+  },
+  "material": "全鱼类垂钓",
+  "count_materials": [
+    "小绵菊",
+    "路灯花",
+    "草绒球"
+  ],
+  "capacity": 16,
+  "points": [
+    {
+      "x": 10278.22,
+      "y": 10210.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10274.05,
+      "y": 10206.11,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10271.05,
+      "y": 10203.11,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10271.05,
+      "y": 10200.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10268.05,
+      "y": 10197.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10265.05,
+      "y": 10197.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10262.05,
+      "y": 10194.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10259.05,
+      "y": 10194.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10256.05,
+      "y": 10194.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10253.05,
+      "y": 10191.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10238.05,
+      "y": 10200.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10235.05,
+      "y": 10203.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10232.05,
+      "y": 10206.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10223.05,
+      "y": 10209.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10220.05,
+      "y": 10209.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10217.05,
+      "y": 10209.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10214.05,
+      "y": 10209.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10211.05,
+      "y": 10212.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10196.05,
+      "y": 10221.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10181.05,
+      "y": 10215.11,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 10172.05,
+      "y": 10197.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 10164.05,
+      "y": 10189.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    }
+  ]
+}

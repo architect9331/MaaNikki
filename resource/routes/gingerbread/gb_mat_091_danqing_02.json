@@ -4,7 +4,7 @@
   "title": "【满满果】丹青屿·栖龙峰山腰（7个/43秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 140,
+  "timeout": 139,
   "teleport": {
     "name": "栖龙峰山腰",
     "province": "心愿原野",
@@ -49,7 +49,7 @@
     },
     {
       "x": 1118.5,
-      "y": 386.3,
+      "y": 386.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -57,7 +57,7 @@
     },
     {
       "x": 1118.5,
-      "y": 383.3,
+      "y": 383.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -65,7 +65,7 @@
     },
     {
       "x": 1121.5,
-      "y": 380.3,
+      "y": 380.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -73,7 +73,7 @@
     },
     {
       "x": 1121.5,
-      "y": 377.3,
+      "y": 377.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -81,7 +81,7 @@
     },
     {
       "x": 1124.5,
-      "y": 374.3,
+      "y": 374.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -89,15 +89,15 @@
     },
     {
       "x": 1124.5,
-      "y": 371.3,
+      "y": 371.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1122.13,
-      "y": 369.3,
+      "x": 1124.95,
+      "y": 369.27,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

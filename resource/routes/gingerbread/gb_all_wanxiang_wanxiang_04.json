@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_04",
-  "title": "【全材料·万相境】万相境·抽签大楼（9个/67秒）",
+  "title": "【全材料·万相境】万相境·抽签大楼（9个/66秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 193,
+  "timeout": 191,
   "teleport": {
     "name": "抽签大楼",
     "province": "伊赞之土",
@@ -38,7 +38,7 @@
       "params": {}
     },
     {
-      "x": 1457.01,
+      "x": 1466.01,
       "y": 1153.87,
       "radius": 2.0,
       "jump": false,
@@ -48,24 +48,16 @@
       }
     },
     {
-      "x": 1454.01,
+      "x": 1469.01,
       "y": 1159.87,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1454.01,
-      "y": 1162.87,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 1457.01,
-      "y": 1165.87,
+      "x": 1469.01,
+      "y": 1162.87,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -75,7 +67,7 @@
       "x": 1471.59,
       "y": 1174.43,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 42.4

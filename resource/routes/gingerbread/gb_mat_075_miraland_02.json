@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_075_miraland_02",
-  "title": "【美甲金龟】祈愿树林·古铸剑遗址入口（3个/84秒）",
+  "title": "【美甲金龟】祈愿树林·古铸剑遗址入口（3个/86秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 229,
+  "timeout": 233,
   "teleport": {
     "name": "古铸剑遗址入口",
     "province": "心愿原野",
@@ -33,12 +33,12 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 3.0
       }
     },
     {
-      "x": 11860.96,
-      "y": 9206.1,
+      "x": 11845.96,
+      "y": 9212.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -47,26 +47,52 @@
       }
     },
     {
-      "x": 11875.96,
+      "x": 11851.96,
       "y": 9209.1,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 11890.96,
-      "y": 9224.1,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11908.96,
-      "y": 9236.1,
+      "x": 11854.96,
+      "y": 9209.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11863.96,
+      "y": 9200.1,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11878.96,
+      "y": 9212.1,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11893.96,
+      "y": 9227.1,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11911.96,
+      "y": 9239.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -75,8 +101,8 @@
       }
     },
     {
-      "x": 11920.96,
-      "y": 9251.1,
+      "x": 11923.96,
+      "y": 9254.1,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -93,8 +119,8 @@
       }
     },
     {
-      "x": 11943.41,
-      "y": 9268.16,
+      "x": 11946.41,
+      "y": 9265.16,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -103,7 +129,7 @@
       }
     },
     {
-      "x": 11964.41,
+      "x": 11961.41,
       "y": 9271.16,
       "radius": 2.5,
       "jump": false,

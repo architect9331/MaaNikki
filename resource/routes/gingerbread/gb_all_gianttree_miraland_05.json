@@ -1,48 +1,48 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_05",
-  "title": "【全材料·巨木之森】巨木之森·蜗牛诊所（8个/47秒）",
+  "title": "【全材料·巨木之森】巨木之森·伊赞之土临时搭配师协会（6个/38秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 148,
+  "timeout": 128,
   "teleport": {
-    "name": "蜗牛诊所",
+    "name": "伊赞之土临时搭配师协会",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4489.828,
-    "y": 8147.981
+    "x": 4840.105,
+    "y": 8932.157
   },
   "material": "全材料·巨木之森",
   "count_materials": [
     "壁灯红椒",
-    "刺绣蛾"
+    "裁衣甲"
   ],
-  "capacity": 8,
+  "capacity": 6,
   "points": [
     {
-      "x": 4489.83,
-      "y": 8147.98,
+      "x": 4840.1,
+      "y": 8932.16,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4494.4,
-      "y": 8138.95,
+      "x": 4836.1,
+      "y": 8952.16,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4486.4,
-      "y": 8127.95,
+      "x": 4842.44,
+      "y": 8962.83,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.6
+        "seconds": 21.0
       }
     }
   ]

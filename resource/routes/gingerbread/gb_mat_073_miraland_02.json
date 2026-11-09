@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_073_miraland_02",
-  "title": "【围巾蚯蚓】小石树田村·斯切尔托老宅（7个/249秒）",
+  "title": "【围巾蚯蚓】小石树田村·斯切尔托老宅（7个/247秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 593,
+  "timeout": 589,
   "teleport": {
     "name": "斯切尔托老宅",
     "province": "心愿原野",
@@ -15,8 +15,8 @@
   "material": "围巾蚯蚓",
   "count_materials": [
     "布布果",
-    "纽扣松果",
     "路灯花",
+    "纽扣松果",
     "围巾蚯蚓",
     "小绵菊",
     "发卡蚱蜢",
@@ -105,7 +105,7 @@
       "x": 9094.79,
       "y": 10444.81,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 5.2
@@ -181,17 +181,7 @@
     },
     {
       "x": 9113.47,
-      "y": 10513.96,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 9122.47,
-      "y": 10525.96,
+      "y": 10510.96,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -200,8 +190,8 @@
       }
     },
     {
-      "x": 9140.47,
-      "y": 10522.96,
+      "x": 9128.47,
+      "y": 10519.96,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -216,7 +206,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {
@@ -284,7 +274,7 @@
       }
     },
     {
-      "x": 9189.21,
+      "x": 9190.11,
       "y": 10524.09,
       "radius": 2.0,
       "jump": true,
@@ -294,8 +284,8 @@
       }
     },
     {
-      "x": 9186.21,
-      "y": 10539.09,
+      "x": 9184.11,
+      "y": 10542.09,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
@@ -304,39 +294,23 @@
       }
     },
     {
-      "x": 9180.21,
-      "y": 10542.09,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9174.21,
-      "y": 10542.09,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9171.21,
+      "x": 9172.11,
       "y": 10545.09,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9169.11,
+      "y": 10548.09,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9168.21,
-      "y": 10548.09,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9168.21,
+      "x": 9169.11,
       "y": 10551.09,
       "radius": 2.5,
       "jump": false,
@@ -344,7 +318,7 @@
       "params": {}
     },
     {
-      "x": 9168.21,
+      "x": 9169.11,
       "y": 10554.09,
       "radius": 2.5,
       "jump": false,
@@ -352,25 +326,25 @@
       "params": {}
     },
     {
-      "x": 9168.21,
+      "x": 9169.11,
       "y": 10557.09,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9171.21,
-      "y": 10560.09,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 3.0
       }
     },
     {
-      "x": 9174.21,
+      "x": 9172.11,
+      "y": 10560.09,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9172.11,
       "y": 10563.09,
       "radius": 2.5,
       "jump": true,
@@ -378,8 +352,16 @@
       "params": {}
     },
     {
-      "x": 9175.21,
-      "y": 10568.49,
+      "x": 9172.11,
+      "y": 10566.09,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9173.11,
+      "y": 10568.54,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

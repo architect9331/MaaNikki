@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_076_danqing_01",
-  "title": "【耳坠萤】丹青屿·村边畦田（40个/266秒）",
+  "title": "【耳坠萤】丹青屿·村边畦田（40个/265秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 630,
+  "timeout": 628,
   "teleport": {
     "name": "村边畦田",
     "province": "心愿原野",
@@ -31,12 +31,14 @@
       }
     },
     {
-      "x": 1612.13,
-      "y": 1279.82,
-      "radius": 2.5,
+      "x": 1615.13,
+      "y": 1273.82,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 7.1
+      }
     },
     {
       "x": 1618.13,
@@ -53,7 +55,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.1
+        "seconds": 15.1
       }
     },
     {

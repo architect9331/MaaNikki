@@ -4,7 +4,7 @@
   "title": "【裁衣甲】巨木之森·巨矛前驿站（11个/198秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 481,
+  "timeout": 482,
   "teleport": {
     "name": "巨矛前驿站",
     "province": "伊赞之土",
@@ -35,20 +35,28 @@
       "params": {}
     },
     {
-      "x": 4389.35,
+      "x": 4392.35,
       "y": 7934.61,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 3.0
       }
     },
     {
-      "x": 4404.35,
+      "x": 4395.35,
       "y": 7931.61,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4407.35,
+      "y": 7928.61,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -56,7 +64,7 @@
       "x": 4415.6,
       "y": 7917.61,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 21.2
@@ -83,7 +91,7 @@
       }
     },
     {
-      "x": 4438.6,
+      "x": 4441.6,
       "y": 7952.61,
       "radius": 2.5,
       "jump": false,
@@ -91,7 +99,7 @@
       "params": {}
     },
     {
-      "x": 4456.6,
+      "x": 4453.6,
       "y": 7964.61,
       "radius": 2.5,
       "jump": false,
@@ -109,7 +117,7 @@
       }
     },
     {
-      "x": 4474.6,
+      "x": 4471.6,
       "y": 7997.61,
       "radius": 2.0,
       "jump": false,
@@ -131,10 +139,12 @@
     {
       "x": 4470.38,
       "y": 8031.21,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
     },
     {
       "x": 4465.38,
@@ -143,7 +153,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.2
+        "seconds": 18.6
       }
     },
     {

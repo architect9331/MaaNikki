@@ -1,0 +1,69 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_serenity_07",
+  "title": "【全昆虫速刷】无忧岛·澄净盐主矿区（7个/44秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 142,
+  "teleport": {
+    "name": "澄净盐主矿区",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 691.474,
+    "y": 717.489
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "飞球果",
+    "路灯花",
+    "布布果",
+    "织衣蛛"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 691.47,
+      "y": 717.49,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 693.47,
+      "y": 734.49,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 690.47,
+      "y": 755.49,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 690.47,
+      "y": 776.49,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 691.72,
+      "y": 778.59,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
+      }
+    }
+  ]
+}

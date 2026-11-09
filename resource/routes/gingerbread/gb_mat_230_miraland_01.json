@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_230_miraland_01",
-  "title": "【绒领毛团】巨木之森·巨兽堡垒断桥旁（10个/203秒）",
+  "title": "【绒领毛团】巨木之森·巨兽堡垒断桥旁（10个/204秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 492,
+  "timeout": 493,
   "teleport": {
     "name": "巨兽堡垒断桥旁",
     "province": "伊赞之土",
@@ -42,7 +42,7 @@
       "params": {}
     },
     {
-      "x": 3663.21,
+      "x": 3660.21,
       "y": 9029.01,
       "radius": 2.5,
       "jump": true,
@@ -100,7 +100,7 @@
       "params": {}
     },
     {
-      "x": 3699.21,
+      "x": 3702.21,
       "y": 9035.01,
       "radius": 2.5,
       "jump": false,
@@ -133,7 +133,7 @@
     },
     {
       "x": 3717.21,
-      "y": 9053.01,
+      "y": 9050.01,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -145,7 +145,7 @@
       "x": 3715.46,
       "y": 9056.55,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 33.7
@@ -205,7 +205,7 @@
     },
     {
       "x": 3710.14,
-      "y": 9088.55,
+      "y": 9091.55,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -319,7 +319,7 @@
     },
     {
       "x": 3723.65,
-      "y": 9084.44,
+      "y": 9081.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -327,6 +327,14 @@
     },
     {
       "x": 3726.65,
+      "y": 9081.44,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3729.65,
       "y": 9084.44,
       "radius": 2.5,
       "jump": false,

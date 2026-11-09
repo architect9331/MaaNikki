@@ -4,7 +4,7 @@
   "title": "【全材料·万相境】万相境·火锅坊（7个/41秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 135,
+  "timeout": 134,
   "teleport": {
     "name": "火锅坊",
     "province": "伊赞之土",
@@ -30,22 +30,6 @@
     },
     {
       "x": 1382.39,
-      "y": 1097.51,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1379.39,
-      "y": 1097.51,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1376.39,
       "y": 1100.51,
       "radius": 2.5,
       "jump": false,
@@ -53,8 +37,24 @@
       "params": {}
     },
     {
-      "x": 1370.39,
-      "y": 1097.51,
+      "x": 1379.39,
+      "y": 1100.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1376.39,
+      "y": 1103.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1373.39,
+      "y": 1100.51,
       "radius": 2.5,
       "jump": false,
       "action": "",

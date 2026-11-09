@@ -1,57 +1,34 @@
 {
   "schema_version": 3,
   "id": "gb_all_serenity_serenity_03",
-  "title": "【全材料·无忧岛】无忧岛·布露村村口（8个/39秒）",
+  "title": "【全材料·无忧岛】无忧岛·泡泡花田（5个/26秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 130,
+  "timeout": 120,
   "teleport": {
-    "name": "布露村村口",
+    "name": "泡泡花田",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 889.635,
-    "y": 406.18
+    "x": 1062.068,
+    "y": 537.513
   },
   "material": "全材料·无忧岛",
   "count_materials": [
-    "小绵菊",
-    "小星扇贝",
-    "飞球果",
-    "珠花贝壳"
+    "风絮草"
   ],
-  "capacity": 8,
+  "capacity": 5,
   "points": [
     {
-      "x": 889.63,
-      "y": 406.18,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 881.71,
-      "y": 394.99,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 863.71,
-      "y": 382.99,
+      "x": 1062.07,
+      "y": 537.51,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 858.71,
-      "y": 383.99,
+      "x": 1063.63,
+      "y": 534.63,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

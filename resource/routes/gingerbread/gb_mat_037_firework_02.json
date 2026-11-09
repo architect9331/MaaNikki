@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_037_firework_02",
-  "title": "【汪汪毛线】花焰群岛·滋啦啦服务社（5个/89秒）",
+  "title": "【汪汪毛线】花焰群岛·滋啦啦服务社（5个/90秒）",
   "map": "firework",
   "start_radius": 6,
   "timeout": 242,
@@ -49,8 +49,8 @@
       }
     },
     {
-      "x": 1089.21,
-      "y": 700.29,
+      "x": 1093.82,
+      "y": 700.4,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_052_miraland_02",
-  "title": "【背带毛团】小石树田村·村居岔路（2个/63秒）",
+  "title": "【背带毛团】小石树田村·村居岔路（1个/49秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 183,
+  "timeout": 154,
   "teleport": {
     "name": "村居岔路",
     "province": "心愿原野",
@@ -15,17 +15,17 @@
   "material": "背带毛团",
   "count_materials": [
     "珠链蝶",
-    "背带毛团",
-    "汪汪毛线",
     "美食家蜜蜂",
-    "刺绣蛾",
+    "风絮草",
     "小绵菊",
     "滋滋花粉",
     "满满果",
     "路灯花",
-    "珠花贝壳"
+    "珠花贝壳",
+    "背带毛团",
+    "汪汪毛线"
   ],
-  "capacity": 16,
+  "capacity": 14,
   "points": [
     {
       "x": 9389.05,
@@ -36,58 +36,8 @@
       "params": {}
     },
     {
-      "x": 9400.05,
-      "y": 10544.59,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9403.05,
-      "y": 10541.59,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9406.59,
-      "y": 10539.59,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 8.6
-      }
-    },
-    {
-      "x": 9402.59,
-      "y": 10541.59,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9393.59,
-      "y": 10559.59,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9390.59,
-      "y": 10580.59,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9390.59,
-      "y": 10601.59,
+      "x": 9388.05,
+      "y": 10582.46,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -96,8 +46,18 @@
       }
     },
     {
-      "x": 9396.59,
-      "y": 10616.59,
+      "x": 9391.05,
+      "y": 10600.46,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 9397.05,
+      "y": 10618.46,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -106,8 +66,8 @@
       }
     },
     {
-      "x": 9408.59,
-      "y": 10634.59,
+      "x": 9409.05,
+      "y": 10633.46,
       "radius": 2.5,
       "jump": false,
       "action": "",

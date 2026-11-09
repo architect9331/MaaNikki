@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_095_miraland_02",
-  "title": "【壁灯红椒】巨木之森·巨兽堡垒断桥旁（25个/140秒）",
+  "title": "【壁灯红椒】巨木之森·巨兽堡垒断桥旁（25个/138秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 353,
+  "timeout": 349,
   "teleport": {
     "name": "巨兽堡垒断桥旁",
     "province": "伊赞之土",
@@ -103,7 +103,7 @@
     },
     {
       "x": 3720.21,
-      "y": 9086.01,
+      "y": 9082.01,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -186,45 +186,31 @@
     {
       "x": 3772.21,
       "y": 9106.01,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
     },
     {
-      "x": 3780.21,
-      "y": 9110.01,
-      "radius": 2.5,
+      "x": 3776.21,
+      "y": 9106.01,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
     },
     {
-      "x": 3783.84,
-      "y": 9108.32,
+      "x": 3781.92,
+      "y": 9103.7,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 44.2
-      }
-    },
-    {
-      "x": 3779.95,
-      "y": 9108.87,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3774.95,
-      "y": 9106.87,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 26.0
       }
     }
   ]

@@ -7,11 +7,11 @@
   "routes": [
     {
       "route": "gb_all_gianttree_miraland_01",
-      "title": "【全材料·巨木之森】巨木之森·壳壳岛洞察学派据点前（22个/90秒）"
+      "title": "【全材料·巨木之森】巨木之森·巨兽堡垒断桥旁（17个/76秒）"
     },
     {
       "route": "gb_all_gianttree_miraland_02",
-      "title": "【全材料·巨木之森】巨木之森·巨兽堡垒断桥旁（17个/76秒）"
+      "title": "【全材料·巨木之森】巨木之森·蜗牛诊所（15个/72秒）"
     },
     {
       "route": "gb_all_gianttree_miraland_03",
@@ -23,7 +23,7 @@
     },
     {
       "route": "gb_all_gianttree_miraland_05",
-      "title": "【全材料·巨木之森】巨木之森·蜗牛诊所（8个/47秒）"
+      "title": "【全材料·巨木之森】巨木之森·伊赞之土临时搭配师协会（6个/38秒）"
     },
     {
       "route": "gb_all_boneyard_miraland_01",
@@ -35,11 +35,11 @@
     },
     {
       "route": "gb_all_boneyard_miraland_03",
-      "title": "【全材料·埋骨地】埋骨地·古息坡道（52个/239秒）"
+      "title": "【全材料·埋骨地】埋骨地·居落广场升降台（43个/182秒）"
     },
     {
       "route": "gb_all_boneyard_miraland_04",
-      "title": "【全材料·埋骨地】埋骨地·龙巢山飞瀑崖顶（39个/189秒）"
+      "title": "【全材料·埋骨地】埋骨地·古息坡道（53个/240秒）"
     }
   ]
 }

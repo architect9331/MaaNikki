@@ -4,6 +4,18 @@ import type { Checkpoint, RoutePoint, TrialWaypointReport } from '@/services/rou
 import { readLocalFile } from '@/services/routeStudioService';
 import type { MapCanvasHandle, MapInfo } from './RouteMapCanvas';
 
+export interface LowPolyMeshTemplate3D {
+  bx0: number;
+  by0: number;
+  bz0: number;
+  dx: number;
+  dy: number;
+  dz: number;
+  verts: Uint8Array;
+  solidTris: Uint8Array;
+  folTris: Uint8Array;
+}
+
 export interface StructureBox3D {
   x0: number;
   y0: number;
@@ -15,6 +27,15 @@ export interface StructureBox3D {
   zTop: number;
   kind: number; // 1=roof/house, 2=bridge/dock, 3=platform/stair, 4=bldg/wall/ruin, 5=rock_mesa, 6=giant_tree
   yawDeg: number;
+  meshIdx: number;
+  tx: number;
+  ty: number;
+  tz: number;
+  pitchDeg: number;
+  rollDeg: number;
+  sx: number;
+  sy: number;
+  sz: number;
 }
 
 interface TerrainGridData {
@@ -28,8 +49,19 @@ interface TerrainGridData {
   slopeDeg: Uint8Array;
   obsMask: Uint8Array;
   validMask: Uint8Array;
+  meshes: LowPolyMeshTemplate3D[];
   structures: StructureBox3D[];
   colorImage: HTMLImageElement | null;
+}
+
+function decodeB64Bytes(b64: string): Uint8Array {
+  if (!b64) return new Uint8Array(0);
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) {
+    out[i] = bin.charCodeAt(i);
+  }
+  return out;
 }
 
 export interface SpawnerPoint3D {
@@ -97,7 +129,7 @@ function loadTerrainGrid(mapId: string): Promise<TerrainGridData> {
     const info = manifest[mapId];
     if (!info) throw new Error(`无 ${mapId} 地形网格数据`);
 
-    const [b64, colorImg, structures] = await Promise.all([
+    const [b64, colorImg, structBundle] = await Promise.all([
       invoke<string>('read_local_file_base64', { filename: `resource/navigation/${info.image}` }),
       info.color_image
         ? invoke<string>('read_local_file_base64', { filename: `resource/navigation/${info.color_image}` })
@@ -115,22 +147,65 @@ function loadTerrainGrid(mapId: string): Promise<TerrainGridData> {
       info.structures
         ? readLocalFile(`resource/navigation/${info.structures}`)
             .then((sraw) => {
-              const rows = JSON.parse(sraw.replace(/^\uFEFF/, '')) as number[][];
-              return rows.map((r) => ({
-                x0: Number(r[0]),
-                y0: Number(r[1]),
-                x1: Number(r[2]),
-                y1: Number(r[3]),
-                cx: (Number(r[0]) + Number(r[2])) * 0.5,
-                cy: (Number(r[1]) + Number(r[3])) * 0.5,
-                zBase: Number(r[4]),
-                zTop: Number(r[5]),
-                kind: Number(r[6] ?? 4),
-                yawDeg: Number(r[7] ?? 0),
-              }));
+              const parsed = JSON.parse(sraw.replace(/^\uFEFF/, ''));
+              const rawMeshes: unknown[] = Array.isArray(parsed) ? [] : (parsed.meshes ?? []);
+              const rows: number[][] = Array.isArray(parsed) ? parsed : (parsed.instances ?? []);
+              const meshes: LowPolyMeshTemplate3D[] = rawMeshes.map((m: any) => {
+                const bx0 = Number(m[0] ?? -50);
+                const by0 = Number(m[1] ?? -50);
+                const bz0 = Number(m[2] ?? -50);
+                const bx1 = Number(m[3] ?? 50);
+                const by1 = Number(m[4] ?? 50);
+                const bz1 = Number(m[5] ?? 50);
+                return {
+                  bx0,
+                  by0,
+                  bz0,
+                  dx: Math.max(1, bx1 - bx0),
+                  dy: Math.max(1, by1 - by0),
+                  dz: Math.max(1, bz1 - bz0),
+                  verts: decodeB64Bytes(String(m[6] ?? '')),
+                  solidTris: decodeB64Bytes(String(m[7] ?? '')),
+                  folTris: decodeB64Bytes(String(m[8] ?? '')),
+                };
+              });
+              const structures: StructureBox3D[] = rows.map((r) => {
+                const x0 = Number(r[0]);
+                const y0 = Number(r[1]);
+                const x1 = Number(r[2]);
+                const y1 = Number(r[3]);
+                const zBase = Number(r[4]);
+                const zTop = Number(r[5]);
+                const kind = Number(r[6] ?? 4);
+                const yawDeg = Number(r[7] ?? 0);
+                const cx = (x0 + x1) * 0.5;
+                const cy = (y0 + y1) * 0.5;
+                return {
+                  x0,
+                  y0,
+                  x1,
+                  y1,
+                  cx,
+                  cy,
+                  zBase,
+                  zTop,
+                  kind,
+                  yawDeg,
+                  meshIdx: Number(r[8] ?? Math.max(0, Math.min(5, kind - 1))),
+                  tx: Number(r[9] ?? cx),
+                  ty: Number(r[10] ?? cy),
+                  tz: Number(r[11] ?? (zBase + zTop) * 0.5),
+                  pitchDeg: Number(r[12] ?? 0),
+                  rollDeg: Number(r[13] ?? 0),
+                  sx: Number(r[14] ?? (x1 - x0) * 0.9),
+                  sy: Number(r[15] ?? (y1 - y0) * 0.9),
+                  sz: Number(r[16] ?? Math.max(1.0, zTop - zBase)),
+                };
+              });
+              return { meshes, structures };
             })
-            .catch(() => [] as StructureBox3D[])
-        : Promise.resolve([] as StructureBox3D[]),
+            .catch(() => ({ meshes: [] as LowPolyMeshTemplate3D[], structures: [] as StructureBox3D[] }))
+        : Promise.resolve({ meshes: [] as LowPolyMeshTemplate3D[], structures: [] as StructureBox3D[] }),
     ]);
 
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -176,7 +251,8 @@ function loadTerrainGrid(mapId: string): Promise<TerrainGridData> {
       slopeDeg,
       obsMask,
       validMask,
-      structures,
+      meshes: structBundle.meshes,
+      structures: structBundle.structures,
       colorImage: colorImg,
     };
   })();
@@ -296,7 +372,8 @@ function structureColors(
 }
 
 const MESH_N = 240;
-const MAX_STRUCTS = 3200;
+const MAX_STRUCTS = 3600;
+const MAX_STRUCT_VERTS = 216000; // Up to 72,000 flat-shaded 3D triangles per frame
 
 interface GLTerrainState {
   gl: WebGLRenderingContext;
@@ -306,13 +383,13 @@ interface GLTerrainState {
   indexCount: number;
   vertsData: Float32Array;
   structVbo: WebGLBuffer;
-  structIbo: WebGLBuffer;
   structVertsData: Float32Array;
   mapTex: WebGLTexture;
   hasMapTex: boolean;
   uScaleX: WebGLUniformLocation | null;
   uScaleY: WebGLUniformLocation | null;
   uMode: WebGLUniformLocation | null;
+  uMapSize: WebGLUniformLocation | null;
   bindVertLayout: () => void;
 }
 
@@ -330,11 +407,13 @@ function initGLTerrain(canvas: HTMLCanvasElement): GLTerrainState | null {
     varying vec2 v_uv;
     varying vec3 v_tint;
     varying float v_shade;
+    varying float v_depth;
     void main() {
       v_uv = a_uv;
       v_tint = a_tint;
       v_shade = a_shade;
       float cz = max(6.0, a_pos.z);
+      v_depth = cz;
       float near = 6.0;
       float far = 5500.0;
       float clipZ = cz * ((far + near) / (far - near)) - (2.0 * far * near) / (far - near);
@@ -343,28 +422,80 @@ function initGLTerrain(canvas: HTMLCanvasElement): GLTerrainState | null {
   `;
 
   const fsSource = `
-    precision mediump float;
+    precision highp float;
     varying vec2 v_uv;
     varying vec3 v_tint;
     varying float v_shade;
+    varying float v_depth;
     uniform sampler2D u_mapTex;
     uniform float u_mode;
+    uniform vec2 u_mapSize;
+
+    float hash12(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+
+    float vnoise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      float a = hash12(i);
+      float b = hash12(i + vec2(1.0, 0.0));
+      float c = hash12(i + vec2(0.0, 1.0));
+      float d = hash12(i + vec2(1.0, 1.0));
+      return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+
     void main() {
+      vec3 fogColor = vec3(0.14, 0.22, 0.35);
+      float fogFactor = clamp((v_depth - 950.0) / 2600.0, 0.0, 0.58);
+
       if (v_uv.x < 0.0) {
-        gl_FragColor = vec4(clamp(v_tint * v_shade, 0.0, 1.0), 1.0);
+        vec2 masonryUV = vec2(-v_uv.x - 1.0, v_uv.y);
+        float course = sin(masonryUV.y * 18.0) * 0.5 + 0.5;
+        float grain = vnoise(masonryUV * 6.5) - 0.5;
+        float micro = 1.0 + grain * 0.09 + (course - 0.5) * 0.04;
+        vec3 col = clamp(v_tint * v_shade * micro, 0.0, 1.0);
+        gl_FragColor = vec4(mix(col, fogColor, fogFactor), 1.0);
         return;
       }
+
       bool isRoof = v_uv.y >= 1.5;
       vec2 uv = vec2(v_uv.x, isRoof ? (v_uv.y - 2.0) : v_uv.y);
       vec4 tex = texture2D(u_mapTex, uv);
       bool hasColor = (tex.r + tex.g + tex.b) > 0.035 && tex.a > 0.08;
       vec3 base = hasColor ? tex.rgb : v_tint;
+      vec2 wxy = uv * u_mapSize;
+
       if (u_mode > 0.5) {
         base = mix(base, v_tint, 0.68);
       } else if (isRoof) {
-        base = mix(base, v_tint, 0.38);
+        float tile = sin(wxy.x * 5.2 + wxy.y * 5.2) * 0.04 + (vnoise(wxy * 2.4) - 0.5) * 0.08;
+        base = mix(base, v_tint, 0.46) * (1.0 + tile);
+      } else if (hasColor) {
+        float n1 = vnoise(wxy * 0.55);
+        float n2 = vnoise(wxy * 2.2);
+        float n3 = vnoise(wxy * 6.8);
+        float detail = (n1 - 0.5) * 0.10 + (n2 - 0.5) * 0.08 + (n3 - 0.5) * 0.06;
+        bool isGrass = tex.g > tex.r * 1.03 && tex.g > tex.b * 1.06;
+        bool isWater = tex.b > tex.r * 1.14 && tex.b > tex.g * 1.04;
+        if (isGrass) {
+          vec3 lush = mix(vec3(0.20, 0.48, 0.24), vec3(0.42, 0.68, 0.32), n1);
+          base = mix(base, lush, 0.24) + vec3(-0.02, 0.03, -0.02) * (n2 - 0.5);
+        } else if (isWater) {
+          float ripple = sin(wxy.x * 1.8 + n1 * 5.0) * cos(wxy.y * 1.8 - n2 * 5.0);
+          base = mix(base, vec3(0.14, 0.44, 0.68), 0.22) + vec3(0.04, 0.06, 0.08) * ripple;
+        } else {
+          float strata = sin((wxy.x + wxy.y) * 1.3 + n1 * 4.0) * 0.035;
+          base = base * (1.0 + strata);
+        }
+        base = base * (1.0 + detail);
       }
-      gl_FragColor = vec4(clamp(base * v_shade, 0.0, 1.0), 1.0);
+
+      vec3 lit = clamp(base * v_shade, 0.0, 1.0);
+      gl_FragColor = vec4(mix(lit, fogColor, fogFactor), 1.0);
     }
   `;
 
@@ -408,29 +539,10 @@ function initGLTerrain(canvas: HTMLCanvasElement): GLTerrainState | null {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
-  // 20 vertices (5 faces * 4 corners) and 30 indices (5 faces * 2 triangles) per 3D structure prism
-  const structVertsData = new Float32Array(MAX_STRUCTS * 20 * 9);
+  const structVertsData = new Float32Array(MAX_STRUCT_VERTS * 9);
   const structVbo = gl.createBuffer()!;
   gl.bindBuffer(gl.ARRAY_BUFFER, structVbo);
   gl.bufferData(gl.ARRAY_BUFFER, structVertsData.byteLength, gl.DYNAMIC_DRAW);
-
-  const structIndices = new Uint16Array(MAX_STRUCTS * 30);
-  let sPtr = 0;
-  for (let i = 0; i < MAX_STRUCTS; i++) {
-    const base = i * 20;
-    for (let f = 0; f < 5; f++) {
-      const fb = base + f * 4;
-      structIndices[sPtr++] = fb;
-      structIndices[sPtr++] = fb + 1;
-      structIndices[sPtr++] = fb + 2;
-      structIndices[sPtr++] = fb;
-      structIndices[sPtr++] = fb + 2;
-      structIndices[sPtr++] = fb + 3;
-    }
-  }
-  const structIbo = gl.createBuffer()!;
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, structIbo);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, structIndices, gl.STATIC_DRAW);
 
   const stride = 9 * 4;
   const locPos = gl.getAttribLocation(program, 'a_pos');
@@ -480,13 +592,13 @@ function initGLTerrain(canvas: HTMLCanvasElement): GLTerrainState | null {
     indexCount: indices.length,
     vertsData,
     structVbo,
-    structIbo,
     structVertsData,
     mapTex,
     hasMapTex: false,
     uScaleX: gl.getUniformLocation(program, 'u_scaleX'),
     uScaleY: gl.getUniformLocation(program, 'u_scaleY'),
     uMode: gl.getUniformLocation(program, 'u_mode'),
+    uMapSize: gl.getUniformLocation(program, 'u_mapSize'),
     bindVertLayout,
   };
 }
@@ -905,15 +1017,15 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
           indexCount,
           structVertsData,
           structVbo,
-          structIbo,
           mapTex,
           uScaleX,
           uScaleY,
           uMode,
+          uMapSize,
           bindVertLayout,
         } = glSt;
         gl.viewport(0, 0, targetW, targetH);
-        gl.clearColor(0.08, 0.13, 0.22, 1.0);
+        gl.clearColor(0.11, 0.19, 0.31, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.enable(gl.DEPTH_TEST);
 
@@ -938,9 +1050,9 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
 
             const dzx = (sxRight.z - s.z) / (step * mPerPx);
             const dzy = (syDown.z - s.z) / (step * mPerPx);
-            let shade = Math.max(0.76, Math.min(1.18, 1.0 + (-dzx * 0.35 - dzy * 0.28) * 0.32));
+            let shade = Math.max(0.72, Math.min(1.22, 1.0 + (-dzx * 0.38 - dzy * 0.30) * 0.35));
             if (s.valid && Math.floor(s.z / 15) !== Math.floor(sxRight.z / 15)) {
-              shade *= 1.06;
+              shade *= 1.05;
             }
 
             let tr = 0.25;
@@ -977,6 +1089,7 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
         gl.uniform1f(uScaleX, fovScale / (size.width * 0.5));
         gl.uniform1f(uScaleY, fovScale / (size.height * 0.5));
         gl.uniform1f(uMode, surfaceMode === 'map' && glSt.hasMapTex ? 0.0 : 1.0);
+        if (uMapSize) gl.uniform2f(uMapSize, mapW, mapH);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
         bindVertLayout();
@@ -984,40 +1097,10 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
         gl.drawElements(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0);
 
-        // Render 3D Buildings, Roofs, Bridges, Plazas, Stone Mesas, and Giant Trees
+        // Render True Low-Poly 3D World Meshes (Buildings, Roofs, Bridges, Plazas, Cliffs, and Giant Trees)
         if (showBuildings && grid?.structures?.length) {
-          const cullDist = patchRadius * 1.08;
-          let sCount = 0;
+          const cullDist = patchRadius * 1.12;
           let svPtr = 0;
-
-          const pushVert = (
-            wx: number,
-            wy: number,
-            wz: number,
-            u: number,
-            v: number,
-            r: number,
-            g: number,
-            b: number,
-            sh: number,
-          ) => {
-            const vx = wx - cam.camX;
-            const vy = wy - cam.camY;
-            const vz = ((wz - groundZ) / mPerPx) * zScale - cam.heightPx;
-            const cr = vx * rightX + vy * rightY;
-            const hf = vx * fwdX + vy * fwdY;
-            const cz = hf * cosPitch - vz * sinPitch;
-            const cu = hf * sinPitch + vz * cosPitch;
-            structVertsData[svPtr++] = cr;
-            structVertsData[svPtr++] = cu;
-            structVertsData[svPtr++] = cz;
-            structVertsData[svPtr++] = u;
-            structVertsData[svPtr++] = v;
-            structVertsData[svPtr++] = r;
-            structVertsData[svPtr++] = g;
-            structVertsData[svPtr++] = b;
-            structVertsData[svPtr++] = sh;
-          };
 
           const visibleStructs: StructureBox3D[] = [];
           for (let i = 0; i < grid.structures.length; i++) {
@@ -1026,7 +1109,7 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
               visibleStructs.push(st);
             }
           }
-          if (visibleStructs.length > MAX_STRUCTS) {
+          if (visibleStructs.length > 900) {
             visibleStructs.sort((a, b) => {
               const da = (a.cx - patchCenterX) ** 2 + (a.cy - patchCenterY) ** 2;
               const db = (b.cx - patchCenterX) ** 2 + (b.cy - patchCenterY) ** 2;
@@ -1034,79 +1117,166 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
             });
           }
 
-          for (let i = 0; i < visibleStructs.length && sCount < MAX_STRUCTS; i++) {
+          const wxBuf = new Float32Array(256);
+          const wyBuf = new Float32Array(256);
+          const wzBuf = new Float32Array(256);
+          const crBuf = new Float32Array(256);
+          const cuBuf = new Float32Array(256);
+          const czBuf = new Float32Array(256);
+          const deg2rad = Math.PI / 180.0;
+          const maxFloatIdx = MAX_STRUCT_VERTS * 9;
+
+          for (let i = 0; i < visibleStructs.length && i < MAX_STRUCTS; i++) {
             const st = visibleStructs[i];
+            const tpl = grid.meshes?.[st.meshIdx];
+            if (!tpl || tpl.verts.length < 9) continue;
+
+            const nVerts = Math.min(256, (tpl.verts.length / 3) | 0);
+            const nSolidTris = (tpl.solidTris.length / 3) | 0;
+            const nFolTris = (tpl.folTris.length / 3) | 0;
+            if (svPtr + (nSolidTris + nFolTris) * 27 > maxFloatIdx) break;
+
+            const pRad = (st.pitchDeg || 0) * deg2rad;
+            const yRad = (st.yawDeg || 0) * deg2rad;
+            const rRad = (st.rollDeg || 0) * deg2rad;
+            const cp = Math.cos(pRad), sp = Math.sin(pRad);
+            const cy = Math.cos(yRad), sy = Math.sin(yRad);
+            const cr = Math.cos(rRad), sr = Math.sin(rRad);
+
+            const r00 = cp * cy, r01 = cp * sy, r02 = sp;
+            const r10 = sr * sp * cy - cr * sy, r11 = sr * sp * sy + cr * cy, r12 = -sr * cp;
+            const r20 = -cr * sp * cy - sr * sy, r21 = -cr * sp * sy + sr * cy, r22 = cr * cp;
+
+            const sx = st.sx, syScale = st.sy, sz = st.sz;
+            const flipSign = sx * syScale * sz < 0 ? -1.0 : 1.0;
+            const vBytes = tpl.verts;
+            const inv255Dx = tpl.dx / 255.0;
+            const inv255Dy = tpl.dy / 255.0;
+            const inv255Dz = tpl.dz / 255.0;
+
+            for (let vIdx = 0; vIdx < nVerts; vIdx++) {
+              const bOff = vIdx * 3;
+              const lx = (tpl.bx0 + vBytes[bOff] * inv255Dx) * sx;
+              const ly = (tpl.by0 + vBytes[bOff + 1] * inv255Dy) * syScale;
+              const lz = (tpl.bz0 + vBytes[bOff + 2] * inv255Dz) * sz;
+
+              const dxCm = lx * r00 + ly * r10 + lz * r20;
+              const dyCm = lx * r01 + ly * r11 + lz * r21;
+              const dzCm = lx * r02 + ly * r12 + lz * r22;
+
+              const wx = st.tx + dxCm / 90.0;
+              const wy = st.ty + dyCm / 90.0;
+              const wz = st.tz + dzCm / 100.0;
+              wxBuf[vIdx] = wx;
+              wyBuf[vIdx] = wy;
+              wzBuf[vIdx] = wz;
+
+              const vx = wx - cam.camX;
+              const vy = wy - cam.camY;
+              const vz = ((wz - groundZ) / mPerPx) * zScale - cam.heightPx;
+              const hf = vx * fwdX + vy * fwdY;
+              crBuf[vIdx] = vx * rightX + vy * rightY;
+              czBuf[vIdx] = hf * cosPitch - vz * sinPitch;
+              cuBuf[vIdx] = hf * sinPitch + vz * cosPitch;
+            }
+
             const normZ = (st.zTop - zMin) / zSpan;
             const { wall, roof } = structureColors(st.kind, surfaceMode, normZ);
             const [wr, wg, wb] = wall;
             const [rr, rg, rb] = roof;
-            const taper = st.kind === 6 ? 0.14 : st.kind === 5 ? 0.1 : st.kind === 1 ? 0.04 : 0.0;
-            const hx = (st.x1 - st.x0) * 0.5;
-            const hy = (st.y1 - st.y0) * 0.5;
-            const thx = hx * (1 - 2 * taper);
-            const thy = hy * (1 - 2 * taper);
-            const yawRad = ((st.yawDeg || 0) * Math.PI) / 180;
-            const cosY = Math.cos(yawRad);
-            const sinY = Math.sin(yawRad);
-            const rotX = (lx: number, ly: number) => st.cx + lx * cosY - ly * sinY;
-            const rotY = (lx: number, ly: number) => st.cy + lx * sinY + ly * cosY;
+            const hSpan = Math.max(1.0, st.zTop - st.zBase);
 
-            const bx00 = rotX(-hx, -hy), by00 = rotY(-hx, -hy);
-            const bx10 = rotX(hx, -hy), by10 = rotY(hx, -hy);
-            const bx11 = rotX(hx, hy), by11 = rotY(hx, hy);
-            const bx01 = rotX(-hx, hy), by01 = rotY(-hx, hy);
+            const emitMeshTris = (triBytes: Uint8Array, isFoliage: boolean) => {
+              const tLen = triBytes.length;
+              for (let t = 0; t < tLen; t += 3) {
+                const i0 = triBytes[t];
+                const i1 = triBytes[t + 1];
+                const i2 = triBytes[t + 2];
+                if (czBuf[i0] <= 4 && czBuf[i1] <= 4 && czBuf[i2] <= 4) continue;
 
-            const tx00 = rotX(-thx, -thy), ty00 = rotY(-thx, -thy);
-            const tx10 = rotX(thx, -thy), ty10 = rotY(thx, -thy);
-            const tx11 = rotX(thx, thy), ty11 = rotY(thx, thy);
-            const tx01 = rotX(-thx, thy), ty01 = rotY(-thx, thy);
+                const x0 = wxBuf[i0], y0 = wyBuf[i0], z0 = wzBuf[i0];
+                const x1 = wxBuf[i1], y1 = wyBuf[i1], z1 = wzBuf[i1];
+                const x2 = wxBuf[i2], y2 = wyBuf[i2], z2 = wzBuf[i2];
 
-            const zb = st.zBase;
-            const zt = st.zTop + 0.25;
+                const e1x = (x1 - x0) * 0.9, e1y = (y1 - y0) * 0.9, e1z = z1 - z0;
+                const e2x = (x2 - x0) * 0.9, e2y = (y2 - y0) * 0.9, e2z = z2 - z0;
+                let nx = (e1y * e2z - e1z * e2y) * flipSign;
+                let ny = (e1z * e2x - e1x * e2z) * flipSign;
+                let nz = (e1x * e2y - e1y * e2x) * flipSign;
+                const nLen = Math.hypot(nx, ny, nz);
+                if (nLen > 1e-5) {
+                  nx /= nLen;
+                  ny /= nLen;
+                  nz /= nLen;
+                } else {
+                  nz = 1.0;
+                }
 
-            // Face 0: North wall (-Y), shade = 0.68
-            pushVert(bx00, by00, zb, -1, -1, wr, wg, wb, 0.68);
-            pushVert(bx10, by10, zb, -1, -1, wr, wg, wb, 0.68);
-            pushVert(tx10, ty10, zt, -1, -1, wr, wg, wb, 0.74);
-            pushVert(tx00, ty00, zt, -1, -1, wr, wg, wb, 0.74);
+                const sunDot = Math.max(0.0, nx * -0.46 + ny * -0.38 + Math.abs(nz) * 0.80);
+                const hemi = 0.5 + 0.5 * (isFoliage ? Math.abs(nz) : nz);
+                const avgZ = (z0 + z1 + z2) * 0.3333;
+                const relH = Math.max(0.0, Math.min(1.0, (avgZ - st.zBase) / hSpan));
+                const ao = 0.86 + 0.18 * relH;
+                const shade = (0.52 + 0.24 * hemi + 0.38 * sunDot) * ao;
 
-            // Face 1: South wall (+Y), shade = 0.92
-            pushVert(bx11, by11, zb, -1, -1, wr, wg, wb, 0.92);
-            pushVert(bx01, by01, zb, -1, -1, wr, wg, wb, 0.92);
-            pushVert(tx01, ty01, zt, -1, -1, wr, wg, wb, 0.98);
-            pushVert(tx11, ty11, zt, -1, -1, wr, wg, wb, 0.98);
+                let crCol = wr, cgCol = wg, cbCol = wb;
+                let isRoofTri = false;
+                if (isFoliage) {
+                  if (surfaceMode === 'map') {
+                    crCol = 0.20 + 0.14 * relH;
+                    cgCol = 0.46 + 0.22 * relH;
+                    cbCol = 0.24 + 0.10 * relH;
+                  } else {
+                    crCol = rr;
+                    cgCol = rg;
+                    cbCol = rb;
+                  }
+                } else if (st.kind === 6) {
+                  crCol = wr;
+                  cgCol = wg;
+                  cbCol = wb;
+                } else if (Math.abs(nz) > 0.46) {
+                  crCol = rr;
+                  cgCol = rg;
+                  cbCol = rb;
+                  isRoofTri = surfaceMode === 'map' && st.kind !== 6;
+                }
 
-            // Face 2: West wall (-X), shade = 0.74
-            pushVert(bx01, by01, zb, -1, -1, wr, wg, wb, 0.74);
-            pushVert(bx00, by00, zb, -1, -1, wr, wg, wb, 0.74);
-            pushVert(tx00, ty00, zt, -1, -1, wr, wg, wb, 0.80);
-            pushVert(tx01, ty01, zt, -1, -1, wr, wg, wb, 0.80);
+                const idxs = [i0, i1, i2];
+                for (let k = 0; k < 3; k++) {
+                  const vi = idxs[k];
+                  const vxW = wxBuf[vi];
+                  const vyW = wyBuf[vi];
+                  const vzW = wzBuf[vi];
+                  let uVal = -1.0 - ((vxW * 0.15 + vyW * 0.15) % 1.0 + 1.0) % 1.0;
+                  let vVal = vzW * 0.35;
+                  if (isRoofTri) {
+                    uVal = Math.max(0, Math.min(1, vxW / mapW));
+                    vVal = Math.max(0, Math.min(1, vyW / mapH)) + 2.0;
+                  }
+                  structVertsData[svPtr++] = crBuf[vi];
+                  structVertsData[svPtr++] = cuBuf[vi];
+                  structVertsData[svPtr++] = czBuf[vi];
+                  structVertsData[svPtr++] = uVal;
+                  structVertsData[svPtr++] = vVal;
+                  structVertsData[svPtr++] = crCol;
+                  structVertsData[svPtr++] = cgCol;
+                  structVertsData[svPtr++] = cbCol;
+                  structVertsData[svPtr++] = shade;
+                }
+              }
+            };
 
-            // Face 3: East wall (+X), shade = 0.86
-            pushVert(bx10, by10, zb, -1, -1, wr, wg, wb, 0.86);
-            pushVert(bx11, by11, zb, -1, -1, wr, wg, wb, 0.86);
-            pushVert(tx11, ty11, zt, -1, -1, wr, wg, wb, 0.92);
-            pushVert(tx10, ty10, zt, -1, -1, wr, wg, wb, 0.92);
-
-            // Face 4: Roof / Bridge Deck / Mesa Top cap (v + 2.0 signals roof UV in shader)
-            const u00 = Math.max(0, Math.min(1, tx00 / mapW)), v00 = Math.max(0, Math.min(1, ty00 / mapH)) + 2.0;
-            const u10 = Math.max(0, Math.min(1, tx10 / mapW)), v10 = Math.max(0, Math.min(1, ty10 / mapH)) + 2.0;
-            const u11 = Math.max(0, Math.min(1, tx11 / mapW)), v11 = Math.max(0, Math.min(1, ty11 / mapH)) + 2.0;
-            const u01 = Math.max(0, Math.min(1, tx01 / mapW)), v01 = Math.max(0, Math.min(1, ty01 / mapH)) + 2.0;
-            pushVert(tx00, ty00, zt, u00, v00, rr, rg, rb, 1.06);
-            pushVert(tx10, ty10, zt, u10, v10, rr, rg, rb, 1.06);
-            pushVert(tx11, ty11, zt, u11, v11, rr, rg, rb, 1.06);
-            pushVert(tx01, ty01, zt, u01, v01, rr, rg, rb, 1.06);
-
-            sCount++;
+            emitMeshTris(tpl.solidTris, false);
+            if (nFolTris > 0) emitMeshTris(tpl.folTris, true);
           }
 
-          if (sCount > 0) {
+          const triVertCount = (svPtr / 9) | 0;
+          if (triVertCount > 0) {
             gl.bindBuffer(gl.ARRAY_BUFFER, structVbo);
             bindVertLayout();
-            gl.bufferSubData(gl.ARRAY_BUFFER, 0, structVertsData.subarray(0, sCount * 20 * 9));
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, structIbo);
-            gl.drawElements(gl.TRIANGLES, sCount * 30, gl.UNSIGNED_SHORT, 0);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, structVertsData.subarray(0, svPtr));
+            gl.drawArrays(gl.TRIANGLES, 0, triVertCount);
           }
         }
       }

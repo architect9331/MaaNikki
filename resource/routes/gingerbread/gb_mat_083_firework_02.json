@@ -1,0 +1,113 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_083_firework_02",
+  "title": "【兔兔妆粉】花焰群岛·滋啦啦服务社（7个/96秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 256,
+  "teleport": {
+    "name": "滋啦啦服务社",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 1003.822,
+    "y": 608.643
+  },
+  "material": "兔兔妆粉",
+  "count_materials": [
+    "兔兔妆粉",
+    "兔尾绒团",
+    "小绵菊",
+    "布布果",
+    "瓜子珠",
+    "噼啪花粉",
+    "晴日蝶兰/雨滴蝶兰",
+    "发卡蚱蜢"
+  ],
+  "capacity": 24,
+  "points": [
+    {
+      "x": 1003.82,
+      "y": 608.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1002.82,
+      "y": 586.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1005.82,
+      "y": 565.99,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1008.82,
+      "y": 544.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.0
+      }
+    },
+    {
+      "x": 1020.82,
+      "y": 526.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 1022.61,
+      "y": 521.99,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    },
+    {
+      "x": 1060.81,
+      "y": 499.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1107.8,
+      "y": 557.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 1136.81,
+      "y": 581.52,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    }
+  ]
+}

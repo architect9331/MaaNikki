@@ -1,28 +1,28 @@
 {
   "schema_version": 3,
   "id": "gb_mat_191_miraland_01",
-  "title": "【花纹围巾蚯蚓】巨木之森·巨兽堡垒断桥旁（3个/54秒）",
+  "title": "【花纹围巾蚯蚓】巨木之森·探险大营地（3个/63秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 164,
+  "timeout": 184,
   "teleport": {
-    "name": "巨兽堡垒断桥旁",
+    "name": "探险大营地",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 3631.213,
-    "y": 9021.011
+    "x": 3510.035,
+    "y": 9419.993
   },
   "material": "花纹围巾蚯蚓",
   "count_materials": [
     "花纹围巾蚯蚓",
-    "满满果",
-    "小野菊"
+    "小野菊",
+    "垂穗魔果"
   ],
   "capacity": 5,
   "points": [
     {
-      "x": 3631.21,
-      "y": 9021.01,
+      "x": 3510.03,
+      "y": 9419.99,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -31,24 +31,88 @@
       }
     },
     {
-      "x": 3623.07,
-      "y": 9020.01,
+      "x": 3500.03,
+      "y": 9409.89,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3614.07,
-      "y": 9032.01,
+      "x": 3509.03,
+      "y": 9391.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3524.03,
+      "y": 9376.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3536.03,
+      "y": 9361.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3548.03,
+      "y": 9343.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3554.03,
+      "y": 9331.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3554.03,
+      "y": 9328.89,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 3617.07,
-      "y": 9053.01,
+      "x": 3554.03,
+      "y": 9325.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3551.03,
+      "y": 9313.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3548.03,
+      "y": 9310.89,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3548.03,
+      "y": 9307.89,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -57,32 +121,32 @@
       }
     },
     {
-      "x": 3623.07,
-      "y": 9062.01,
+      "x": 3548.03,
+      "y": 9304.89,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3623.07,
-      "y": 9065.01,
+      "x": 3548.03,
+      "y": 9301.89,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3542.03,
+      "y": 9286.89,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 3611.07,
-      "y": 9080.01,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3606.07,
-      "y": 9093.88,
+      "x": 3543.68,
+      "y": 9284.89,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_01_miraland_02",
-  "title": "【厨师帽鱼】祈愿树林·心愿通行许可处（4个/132秒）",
+  "title": "【厨师帽鱼】祈愿树林·心愿通行许可处（4个/130秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 336,
+  "timeout": 332,
   "teleport": {
     "name": "心愿通行许可处",
     "province": "心愿原野",
@@ -16,13 +16,13 @@
   "count_materials": [
     "满满果",
     "厨师帽鱼",
-    "小星扇贝",
     "珠花贝壳",
     "钓鱼点",
+    "小星扇贝",
     "纽扣松果",
     "香薰睡莲"
   ],
-  "capacity": 17,
+  "capacity": 16,
   "points": [
     {
       "x": 11176.05,
@@ -55,26 +55,8 @@
       }
     },
     {
-      "x": 11178.05,
-      "y": 10175.76,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 11184.05,
-      "y": 10190.76,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11196.05,
-      "y": 10208.76,
+      "x": 11181.05,
+      "y": 10172.76,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -83,8 +65,18 @@
       }
     },
     {
-      "x": 11214.05,
-      "y": 10217.76,
+      "x": 11193.05,
+      "y": 10190.76,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 11199.05,
+      "y": 10211.76,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -117,8 +109,8 @@
       "params": {}
     },
     {
-      "x": 11156.54,
-      "y": 10228.36,
+      "x": 11153.54,
+      "y": 10225.36,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -133,8 +125,8 @@
       "params": {}
     },
     {
-      "x": 11120.54,
-      "y": 10246.36,
+      "x": 11117.54,
+      "y": 10243.36,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -142,7 +134,7 @@
     },
     {
       "x": 11099.54,
-      "y": 10249.36,
+      "y": 10252.36,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

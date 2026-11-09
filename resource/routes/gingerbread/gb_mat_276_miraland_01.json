@@ -4,7 +4,7 @@
   "title": "【涅拉羽】埋骨地·蓝池北侧疗愈地渡口（3个/70秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 199,
+  "timeout": 198,
   "teleport": {
     "name": "蓝池北侧疗愈地渡口",
     "province": "伊赞之土",
@@ -30,14 +30,6 @@
     },
     {
       "x": 7607.47,
-      "y": 4700.66,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7607.47,
       "y": 4697.66,
       "radius": 2.5,
       "jump": false,
@@ -53,7 +45,7 @@
       "params": {}
     },
     {
-      "x": 7616.47,
+      "x": 7613.47,
       "y": 4676.66,
       "radius": 2.5,
       "jump": false,

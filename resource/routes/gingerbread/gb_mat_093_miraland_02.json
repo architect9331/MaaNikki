@@ -27,8 +27,16 @@
       "params": {}
     },
     {
-      "x": 9200.58,
-      "y": 10423.67,
+      "x": 9199.35,
+      "y": 10424.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9198.3,
+      "y": 10426.98,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

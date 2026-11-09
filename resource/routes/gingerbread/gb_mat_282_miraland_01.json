@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_282_miraland_01",
-  "title": "【骨焰花】埋骨地·龙眠花冢（19个/124秒）",
+  "title": "【骨焰花】埋骨地·龙眠花冢（20个/124秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 317,
@@ -15,8 +15,8 @@
   "material": "骨焰花",
   "count_materials": [
     "骨焰花",
-    "风舞花",
     "革袋甲",
+    "风舞花",
     "珠链蝶"
   ],
   "capacity": 33,
@@ -30,8 +30,36 @@
       "params": {}
     },
     {
-      "x": 6544.86,
+      "x": 6535.86,
+      "y": 5025.11,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6556.86,
       "y": 5022.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 6577.86,
+      "y": 5022.11,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 6598.86,
+      "y": 5019.11,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -40,35 +68,15 @@
       }
     },
     {
-      "x": 6565.86,
-      "y": 5022.11,
+      "x": 6610.86,
+      "y": 5013.11,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 6586.86,
-      "y": 5022.11,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 6604.86,
-      "y": 5013.11,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 6625.86,
+      "x": 6631.86,
       "y": 5013.11,
       "radius": 2.5,
       "jump": false,

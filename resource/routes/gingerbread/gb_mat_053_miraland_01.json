@@ -54,8 +54,8 @@
       "params": {}
     },
     {
-      "x": 11962.61,
-      "y": 9060.78,
+      "x": 11965.61,
+      "y": 9054.78,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -63,7 +63,7 @@
     },
     {
       "x": 11977.61,
-      "y": 9045.78,
+      "y": 9042.78,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -96,23 +96,23 @@
       "params": {}
     },
     {
+      "x": 11992.91,
+      "y": 9099.78,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11992.91,
+      "y": 9120.78,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 11998.91,
-      "y": 9096.78,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12004.91,
-      "y": 9117.78,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12004.91,
       "y": 9138.78,
       "radius": 2.5,
       "jump": false,

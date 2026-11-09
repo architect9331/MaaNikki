@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_05_miraland_02",
-  "title": "【手绢鱼】石树田无人区·乘风磨坊入口（9个/206秒）",
+  "title": "【手绢鱼】石树田无人区·乘风磨坊入口（9个/210秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 499,
+  "timeout": 507,
   "teleport": {
     "name": "乘风磨坊入口",
     "province": "心愿原野",
@@ -21,7 +21,7 @@
     "发卡蚱蜢",
     "兔尾绒团"
   ],
-  "capacity": 22,
+  "capacity": 23,
   "points": [
     {
       "x": 7767.72,
@@ -48,15 +48,23 @@
       "params": {}
     },
     {
-      "x": 7780.77,
-      "y": 9982.9,
+      "x": 7771.77,
+      "y": 9973.9,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7762.77,
+      "x": 7783.77,
+      "y": 9979.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7774.77,
       "y": 9991.9,
       "radius": 2.5,
       "jump": false,
@@ -67,7 +75,7 @@
       "x": 7757.77,
       "y": 9991.09,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 30.6
@@ -148,30 +156,30 @@
       }
     },
     {
-      "x": 7722.48,
-      "y": 9918.77,
+      "x": 7725.48,
+      "y": 9921.77,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7722.48,
-      "y": 9915.77,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7716.48,
-      "y": 9894.77,
+      "x": 7725.48,
+      "y": 9903.77,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
+    },
+    {
+      "x": 7713.48,
+      "y": 9885.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
       "x": 7716.06,
@@ -185,7 +193,7 @@
     },
     {
       "x": 7697.06,
-      "y": 9869.84,
+      "y": 9866.84,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -218,6 +226,22 @@
     {
       "x": 7694.06,
       "y": 9854.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7694.06,
+      "y": 9851.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7694.06,
+      "y": 9848.84,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -258,10 +282,10 @@
       }
     },
     {
-      "x": 7742.06,
+      "x": 7745.06,
       "y": 9800.84,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -269,7 +293,7 @@
       "x": 7754.24,
       "y": 9804.84,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 44.6

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_189_miraland_03",
-  "title": "【小野菊】埋骨地·疗愈地（26个/151秒）",
+  "title": "【小野菊】埋骨地·疗愈地（26个/150秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 378,
+  "timeout": 374,
   "teleport": {
     "name": "疗愈地",
     "province": "伊赞之土",
@@ -28,34 +28,50 @@
       "params": {}
     },
     {
-      "x": 7494.07,
-      "y": 4455.6,
+      "x": 7503.07,
+      "y": 4464.6,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7485.07,
-      "y": 4461.6,
+      "x": 7497.07,
+      "y": 4473.6,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7482.07,
+      "x": 7497.07,
+      "y": 4476.6,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7497.07,
+      "y": 4479.6,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7497.07,
       "y": 4482.6,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7488.07,
+      "x": 7491.07,
       "y": 4503.6,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
@@ -105,21 +121,29 @@
     },
     {
       "x": 7448.07,
-      "y": 4536.69,
+      "y": 4533.69,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 7445.07,
-      "y": 4539.69,
+      "y": 4536.69,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 3.0
       }
+    },
+    {
+      "x": 7445.07,
+      "y": 4539.69,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
       "x": 7445.07,
@@ -284,7 +308,7 @@
       "params": {}
     },
     {
-      "x": 7403.82,
+      "x": 7406.82,
       "y": 4621.21,
       "radius": 2.0,
       "jump": false,
@@ -333,7 +357,7 @@
       "x": 7364.11,
       "y": 4584.74,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },

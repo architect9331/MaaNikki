@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_074_miraland_03",
-  "title": "【珠链蝶】埋骨地·蓝池北侧疗愈地渡口（63个/503秒）",
+  "title": "【珠链蝶】埋骨地·蓝池北侧疗愈地渡口（62个/496秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 900,
@@ -18,7 +18,7 @@
     "晴雨伞",
     "耳坠萤"
   ],
-  "capacity": 77,
+  "capacity": 76,
   "points": [
     {
       "x": 7605.47,
@@ -57,8 +57,8 @@
       }
     },
     {
-      "x": 7619.47,
-      "y": 4657.33,
+      "x": 7613.47,
+      "y": 4654.33,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -68,26 +68,26 @@
     },
     {
       "x": 7625.47,
-      "y": 4639.33,
+      "y": 4636.33,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 127.1
+        "seconds": 135.1
       }
     },
     {
       "x": 7637.47,
-      "y": 4621.33,
+      "y": 4618.33,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 95.1
+        "seconds": 79.1
       }
     },
     {
-      "x": 7625.47,
+      "x": 7628.47,
       "y": 4603.33,
       "radius": 2.5,
       "jump": false,

@@ -4,7 +4,7 @@
   "title": "【背带毛团】石树田无人区·遗忘者村居（2个/42秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 138,
+  "timeout": 137,
   "teleport": {
     "name": "遗忘者村居",
     "province": "心愿原野",
@@ -30,22 +30,14 @@
     },
     {
       "x": 9173.66,
-      "y": 8886.93,
+      "y": 8892.93,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9176.66,
-      "y": 8889.93,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9179.66,
+      "x": 9194.66,
       "y": 8895.93,
       "radius": 2.5,
       "jump": false,
@@ -53,10 +45,10 @@
       "params": {}
     },
     {
-      "x": 9200.66,
-      "y": 8892.93,
+      "x": 9203.66,
+      "y": 8889.93,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },

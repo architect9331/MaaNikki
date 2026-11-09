@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_207_miraland_01",
-  "title": "【暮暮蝶】巨木之森·帕克亚火山口探险家营地（10个/224秒）",
+  "title": "【暮暮蝶】巨木之森·帕克亚火山口探险家营地（10个/222秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 537,
+  "timeout": 532,
   "teleport": {
     "name": "帕克亚火山口探险家营地",
     "province": "伊赞之土",
@@ -250,42 +250,26 @@
     {
       "x": 5409.67,
       "y": 8344.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5409.67,
-      "y": 8347.2,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5409.67,
-      "y": 8350.2,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
+        "seconds": 5.2
       }
     },
     {
       "x": 5406.67,
-      "y": 8353.2,
+      "y": 8347.2,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 10.4
       }
     },
     {
       "x": 5403.67,
-      "y": 8353.2,
+      "y": 8350.2,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -293,13 +277,11 @@
     },
     {
       "x": 5400.67,
-      "y": 8356.2,
-      "radius": 2.0,
+      "y": 8353.2,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 5397.67,
@@ -402,17 +384,17 @@
       "params": {}
     },
     {
-      "x": 5403.64,
+      "x": 5406.64,
       "y": 8365.54,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 5.2
       }
     },
     {
-      "x": 5406.64,
+      "x": 5409.64,
       "y": 8365.54,
       "radius": 2.5,
       "jump": false,
@@ -420,16 +402,8 @@
       "params": {}
     },
     {
-      "x": 5409.64,
-      "y": 8362.54,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 5424.64,
-      "y": 8374.54,
+      "x": 5412.64,
+      "y": 8365.54,
       "radius": 2.5,
       "jump": false,
       "action": "",

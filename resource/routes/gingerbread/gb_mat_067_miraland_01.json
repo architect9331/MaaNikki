@@ -4,7 +4,7 @@
   "title": "【发卡蚱蜢】微风绿野·捕虫小屋（21个/256秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 608,
+  "timeout": 607,
   "teleport": {
     "name": "捕虫小屋",
     "province": "心愿原野",
@@ -59,7 +59,7 @@
       "x": 10142.07,
       "y": 10476.03,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -187,25 +187,25 @@
     },
     {
       "x": 10097.53,
-      "y": 10450.84,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10082.53,
-      "y": 10465.84,
+      "y": 10453.84,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 3.0
       }
     },
     {
-      "x": 10070.53,
-      "y": 10480.84,
+      "x": 10079.53,
+      "y": 10465.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10067.53,
+      "y": 10483.84,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -215,7 +215,7 @@
     },
     {
       "x": 10061.53,
-      "y": 10498.84,
+      "y": 10504.84,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -225,7 +225,7 @@
       "x": 10065.53,
       "y": 10512.31,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 42.6
@@ -243,7 +243,7 @@
       "x": 10061.53,
       "y": 10553.31,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 7.1

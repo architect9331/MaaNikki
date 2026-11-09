@@ -1,68 +1,128 @@
 {
   "schema_version": 3,
   "id": "gb_mat_274_miraland_02",
-  "title": "【羽巾绒】埋骨地·居落外绿坡（8个/97秒）",
+  "title": "【羽巾绒】埋骨地·居落广场升降台（8个/101秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 259,
+  "timeout": 268,
   "teleport": {
-    "name": "居落外绿坡",
+    "name": "居落广场升降台",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 7029.142,
-    "y": 4398.112
+    "x": 7130.375,
+    "y": 4439.642
   },
   "material": "羽巾绒",
   "count_materials": [
-    "茸芽鹿绒",
-    "大叶鹿绒",
     "羽巾绒",
-    "金灵毛球",
-    "珠链蝶",
-    "小野菊"
+    "金灵毛球"
   ],
-  "capacity": 38,
+  "capacity": 16,
   "points": [
     {
-      "x": 7029.14,
-      "y": 4398.11,
+      "x": 7130.38,
+      "y": 4439.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7028.27,
-      "y": 4400.11,
+      "x": 7141.38,
+      "y": 4453.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7025.27,
-      "y": 4421.11,
+      "x": 7162.38,
+      "y": 4453.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7022.27,
-      "y": 4442.11,
+      "x": 7174.38,
+      "y": 4450.64,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7023.27,
-      "y": 4444.33,
+      "x": 7177.38,
+      "y": 4450.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7198.38,
+      "y": 4450.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7204.38,
+      "y": 4450.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7207.38,
+      "y": 4453.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7207.38,
+      "y": 4456.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7207.38,
+      "y": 4459.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7207.38,
+      "y": 4462.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7207.38,
+      "y": 4465.64,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7209.33,
+      "y": 4470.18,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 78.6
+        "seconds": 75.1
       }
     }
   ]

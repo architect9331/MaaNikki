@@ -27,16 +27,8 @@
       "params": {}
     },
     {
-      "x": 7818.94,
-      "y": 9186.4,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 7821.94,
-      "y": 9189.4,
+      "y": 9180.4,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -44,7 +36,7 @@
     },
     {
       "x": 7824.94,
-      "y": 9189.4,
+      "y": 9177.4,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -52,9 +44,17 @@
     },
     {
       "x": 7827.94,
-      "y": 9186.4,
+      "y": 9180.4,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7830.94,
+      "y": 9183.4,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
     },

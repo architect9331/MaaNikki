@@ -9,7 +9,9 @@
     "z_offset": -300.0,
     "z_scale": 64.0,
     "z_min": -255.5,
-    "z_max": 110.2
+    "z_max": 109.8,
+    "structure_count": 24000,
+    "mesh_template_count": 1431
   },
   "starsea": {
     "image": "terrain/starsea.png",
@@ -21,7 +23,9 @@
     "z_offset": -300.0,
     "z_scale": 64.0,
     "z_min": -29.0,
-    "z_max": 118.7
+    "z_max": 118.7,
+    "structure_count": 6985,
+    "mesh_template_count": 97
   },
   "serenity": {
     "image": "terrain/serenity.png",
@@ -33,7 +37,9 @@
     "z_offset": -300.0,
     "z_scale": 64.0,
     "z_min": -18.2,
-    "z_max": 25.7
+    "z_max": 25.7,
+    "structure_count": 2099,
+    "mesh_template_count": 147
   },
   "danqing": {
     "image": "terrain/danqing.png",
@@ -45,7 +51,9 @@
     "z_offset": -300.0,
     "z_scale": 64.0,
     "z_min": -256.0,
-    "z_max": -44.7
+    "z_max": -44.7,
+    "structure_count": 2491,
+    "mesh_template_count": 102
   },
   "wanxiang": {
     "image": "terrain/wanxiang.png",
@@ -57,7 +65,9 @@
     "z_offset": -300.0,
     "z_scale": 64.0,
     "z_min": -373.3,
-    "z_max": 536.2
+    "z_max": 536.2,
+    "structure_count": 5116,
+    "mesh_template_count": 229
   },
   "firework": {
     "image": "terrain/firework.png",
@@ -69,7 +79,9 @@
     "z_offset": -300.0,
     "z_scale": 64.0,
     "z_min": -18.3,
-    "z_max": 102.8
+    "z_max": 102.8,
+    "structure_count": 503,
+    "mesh_template_count": 21
   },
   "home": {
     "image": "terrain/home.png",
@@ -81,6 +93,8 @@
     "z_offset": -300.0,
     "z_scale": 64.0,
     "z_min": -7.9,
-    "z_max": 109.8
+    "z_max": 109.8,
+    "structure_count": 1083,
+    "mesh_template_count": 31
   }
 }

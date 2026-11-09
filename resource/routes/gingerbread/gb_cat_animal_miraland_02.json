@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_cat_animal_miraland_02",
-  "title": "【全动物清洁】埋骨地·古息坡道（52个/246秒）",
+  "title": "【全动物清洁】埋骨地·古息坡道（48个/235秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 587,
+  "timeout": 562,
   "teleport": {
     "name": "古息坡道",
     "province": "伊赞之土",
@@ -24,7 +24,7 @@
     "风舞花",
     "小野菊"
   ],
-  "capacity": 52,
+  "capacity": 48,
   "points": [
     {
       "x": 6883.24,
@@ -91,22 +91,20 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 13.0
       }
     },
     {
-      "x": 6930.62,
-      "y": 4764.08,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 18.2
-      }
-    },
-    {
-      "x": 6927.62,
+      "x": 6924.62,
       "y": 4767.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6924.62,
+      "y": 4770.08,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -129,10 +127,26 @@
       "params": {}
     },
     {
-      "x": 6879.62,
-      "y": 4779.08,
+      "x": 6885.62,
+      "y": 4776.08,
       "radius": 2.5,
       "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6882.62,
+      "y": 4776.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6879.62,
+      "y": 4776.08,
+      "radius": 2.5,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -205,7 +219,15 @@
       }
     },
     {
-      "x": 6825.62,
+      "x": 6834.62,
+      "y": 4782.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6828.62,
       "y": 4788.08,
       "radius": 2.5,
       "jump": false,
@@ -213,36 +235,52 @@
       "params": {}
     },
     {
-      "x": 6804.62,
+      "x": 6807.62,
       "y": 4788.08,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
-    },
-    {
-      "x": 6786.62,
-      "y": 4797.08,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 6786.62,
-      "y": 4803.08,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
     },
     {
       "x": 6789.62,
+      "y": 4794.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 6783.62,
+      "y": 4803.08,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 6783.62,
       "y": 4806.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6786.62,
+      "y": 4809.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6789.62,
+      "y": 4809.08,
       "radius": 2.5,
       "jump": false,
       "action": "",

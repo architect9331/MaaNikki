@@ -4,7 +4,7 @@
   "title": "【全动物清洁】埋骨地·龙巢山飞瀑崖顶（39个/203秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 491,
+  "timeout": 492,
   "teleport": {
     "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
@@ -36,7 +36,7 @@
     },
     {
       "x": 8067.19,
-      "y": 5235.44,
+      "y": 5241.44,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -46,7 +46,7 @@
     },
     {
       "x": 8067.19,
-      "y": 5214.44,
+      "y": 5220.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -54,7 +54,7 @@
     },
     {
       "x": 8061.19,
-      "y": 5193.44,
+      "y": 5199.44,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
@@ -63,10 +63,18 @@
       }
     },
     {
-      "x": 8052.19,
-      "y": 5175.44,
+      "x": 8055.19,
+      "y": 5181.44,
       "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8046.19,
+      "y": 5169.44,
+      "radius": 2.5,
+      "jump": true,
       "action": "",
       "params": {}
     },
@@ -74,7 +82,7 @@
       "x": 8034.19,
       "y": 5163.44,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },

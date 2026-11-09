@@ -23,19 +23,19 @@
     },
     {
       "route": "gb_all_serenity_serenity_01",
-      "title": "【全材料·无忧岛】无忧岛·布蜜蜜花园（24个/89秒）"
-    },
-    {
-      "route": "gb_all_serenity_serenity_02",
       "title": "【全材料·无忧岛】无忧岛·守望之地（16个/73秒）"
     },
     {
-      "route": "gb_all_serenity_serenity_03",
+      "route": "gb_all_serenity_serenity_02",
       "title": "【全材料·无忧岛】无忧岛·布露村村口（8个/39秒）"
     },
     {
-      "route": "gb_all_serenity_serenity_04",
+      "route": "gb_all_serenity_serenity_03",
       "title": "【全材料·无忧岛】无忧岛·泡泡花田（5个/26秒）"
+    },
+    {
+      "route": "gb_all_serenity_serenity_04",
+      "title": "【全材料·无忧岛】无忧岛·咚咚小屋聚落（8个/41秒）"
     },
     {
       "route": "gb_all_danqing_danqing_01",
@@ -51,7 +51,7 @@
     },
     {
       "route": "gb_all_danqing_danqing_04",
-      "title": "【全材料·丹青屿】丹青屿·墨缘坊市（36个/226秒）"
+      "title": "【全材料·丹青屿】丹青屿·墨缘坊市（36个/225秒）"
     },
     {
       "route": "gb_all_wanxiang_wanxiang_01",
@@ -67,7 +67,7 @@
     },
     {
       "route": "gb_all_wanxiang_wanxiang_04",
-      "title": "【全材料·万相境】万相境·抽签大楼（9个/67秒）"
+      "title": "【全材料·万相境】万相境·抽签大楼（9个/66秒）"
     }
   ]
 }

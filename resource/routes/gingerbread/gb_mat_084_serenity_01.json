@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "id": "gb_mat_084_serenity_02",
+  "id": "gb_mat_084_serenity_01",
   "title": "【珠花贝壳】无忧岛·布露村村口（30个/253秒）",
   "map": "serenity",
   "start_radius": 6,
@@ -259,7 +259,7 @@
     },
     {
       "x": 910.16,
-      "y": 456.55,
+      "y": 452.55,
       "radius": 2.0,
       "jump": false,
       "action": "wait",

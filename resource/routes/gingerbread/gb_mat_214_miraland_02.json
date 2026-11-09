@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_214_miraland_02",
-  "title": "【王子鹰羽】巨木之森·巨藤林地北侧探险家营地（1个/37秒）",
+  "title": "【王子鹰羽】巨木之森·巨藤林地北侧探险家营地（2个/65秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 126,
+  "timeout": 189,
   "teleport": {
     "name": "巨藤林地北侧探险家营地",
     "province": "伊赞之土",
@@ -15,10 +15,11 @@
   "material": "王子鹰羽",
   "count_materials": [
     "垂穗魔果",
+    "王子鹰羽",
     "小野菊",
-    "王子鹰羽"
+    "结结蕨"
   ],
-  "capacity": 3,
+  "capacity": 7,
   "points": [
     {
       "x": 4176.29,
@@ -134,6 +135,114 @@
       "action": "wait",
       "params": {
         "seconds": 12.1
+      }
+    },
+    {
+      "x": 4151.39,
+      "y": 8428.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4148.39,
+      "y": 8437.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4142.39,
+      "y": 8437.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4139.39,
+      "y": 8437.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4136.39,
+      "y": 8437.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4133.39,
+      "y": 8437.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4130.39,
+      "y": 8437.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4109.39,
+      "y": 8440.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4103.39,
+      "y": 8440.46,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "x": 4100.39,
+      "y": 8440.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4097.39,
+      "y": 8443.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4094.39,
+      "y": 8446.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4089.39,
+      "y": 8445.27,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.7
       }
     }
   ]

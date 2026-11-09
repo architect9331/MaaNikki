@@ -222,15 +222,15 @@
     },
     {
       "x": 2980.56,
-      "y": 8419.05,
+      "y": 8422.05,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 2984.38,
-      "y": 8423.49,
+      "x": 2982.68,
+      "y": 8424.2,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
@@ -242,7 +242,7 @@
       "x": 2995.76,
       "y": 8450.02,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 10.4
