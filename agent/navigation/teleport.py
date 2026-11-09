@@ -13,11 +13,13 @@ POINT_DETAIL_DELAY = .5
 
 
 def terrain_pan(dx, dy):
-    # Move most of the remaining distance, keeping both endpoints on terrain.
-    factor = min(.8, 880/max(abs(dx), 1), 540/max(abs(dy), 1))
+    # Move most of the remaining distance while keeping both drag endpoints
+    # inside the HUD-free central terrain viewport (x in 260..940, y in 130..570),
+    # well clear of the bottom-left circular menu buttons (x <= 220, y >= 605).
+    factor = min(.8, 680/max(abs(dx), 1), 440/max(abs(dy), 1))
     vx, vy = -dx*factor, -dy*factor
-    return ([round(530-vx/2), round(370-vy/2)],
-            [round(530+vx/2), round(370+vy/2)])
+    return ([round(600-vx/2), round(350-vy/2)],
+            [round(600+vx/2), round(350+vy/2)])
 
 
 def normalized(text):
@@ -401,7 +403,7 @@ class Teleporter:
 
     def center(self, x, y, force=False, *, allow_visible=False):
         panned = False
-        for _ in range(8):
+        for _ in range(10):
             self.check()
             px, py = self.locate_map()
             dx, dy = (x-px)/self.locator.spec.bigmap_scale, (y-py)/self.locator.spec.bigmap_scale
