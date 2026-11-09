@@ -486,7 +486,7 @@ class Navigator:
         previous_delta = None
         correction_gain = 1.0
         self.require_heading(pose)
-        if self.turn_ratio is not None and abs(angle_delta(target_heading, pose.heading)) <= tolerance:
+        if abs(angle_delta(target_heading, pose.heading)) <= tolerance:
             return pose
         if (not stationary and self.turn_ratio is not None
                 and self.motion and self.motion.until
@@ -875,7 +875,6 @@ class Navigator:
                     map_checked = False
                     last = None
                     speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
-                    self.turn_ratio = None
                     self.heading_recheck_count = 0
                     scene_interrupted = False
                     heading_rechecks = 0

@@ -215,19 +215,20 @@ class MapMask:
                         self.map_id = None
                 elif self.map_id is None and now-self.region_seen_at > 3:
                     self.map_id = None
-                self.next_region = now + (2 if self.map_id else .8)
+                self.next_region = now + (2 if self.map_id and not self.region_misses else .4)
+        effective_map = None if mode == "bigmap" and self.region_misses > 0 else self.map_id
         maximum = mode == "bigmap" and self.gates["max"].hit(frame)
         with self.lock:
             # Measure continuity where screenshots arrive, not where the worker
             # consumes them: a global search can itself take over a second.
             interrupted = self.last_observed_at and now-self.last_observed_at > 1.2
-            if interrupted or mode != self.mode or self.submitted_map != self.map_id:
+            if interrupted or mode != self.mode or self.submitted_map != effective_map:
                 self.generation += 1
                 self.window.hide()
             self.last_observed_at = now
             self.mode = mode
-            self.submitted_map = self.map_id
-            self.latest = frame.copy(), mode, self.map_id, maximum, now, self.generation
+            self.submitted_map = effective_map
+            self.latest = frame.copy(), mode, effective_map, maximum, now, self.generation
         self.wake.set()
 
     def _read_region(self, frame):
@@ -249,7 +250,8 @@ class MapMask:
             compact = "".join(value.split())
             readings.append((method, compact))
             selected = next((key for key, names in REGIONS.items()
-                             if any(name in compact for name in names)), None)
+                             if any(name in compact or (len(name) >= 4 and name[:3] in compact)
+                                    for name in names)), None)
             if selected:
                 break
         signature = tuple(readings), selected

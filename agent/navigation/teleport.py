@@ -320,7 +320,7 @@ class Teleporter:
 
     def refine_player_pose(self, frame, pose):
         """Cross-check a coarse global candidate using separate terrain tiles."""
-        if pose[2] < .45 or pose[3] < .01:
+        if pose[2] < .38 or pose[3] < .01:
             return pose
         scale = self.locator.spec.bigmap_scale
         candidates = []
@@ -507,6 +507,7 @@ class Teleporter:
             if not self.rt.main() or not self.rt.ui.open_map(self.event):
                 return False
             self.region(checkpoint)
+            self.rt.pause(.5)
             self.zoom()
             return True
         def select_checkpoint():

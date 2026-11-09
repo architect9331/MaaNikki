@@ -533,9 +533,10 @@ class Gameplay:
         submitted = False
         while not self.rt.stopped and time.monotonic() < deadline:
             with self.rt.observe(fresh=True):
-                if self.monthly_tab_selected(page):
+                reward = self.rt.hit("MaaNikki_RewardLayer")
+                if not reward and self.monthly_tab_selected(page):
                     return True
-                if not submitted and self.ui.page_matches("MaaNikki_Monthly_TravelReady"):
+                if not reward and not submitted and self.ui.page_matches("MaaNikki_Monthly_TravelReady"):
                     # Read the entrance and its source from the same frame.
                     # Reward transitions can temporarily distort the tab text.
                     result = self.rt.recognize(f"MaaNikki_Monthly_{page}Tab")
@@ -544,6 +545,8 @@ class Gameplay:
                             self.monthly_diagnostic("travel", "tab_click_failed", f"{page}页签点击未完成")
                             return False
                         submitted = True
+            if reward and not self.rt.key("skip", .25):
+                return False
             if not self.rt.pause(.1):
                 return False
         self.monthly_diagnostic("travel", "tab_unconfirmed", f"{page}页签切换待确认")
@@ -551,7 +554,7 @@ class Gameplay:
 
     def monthly_travel_claim_return(self, page):
         """Finish on the actual receipt or settled task-button update."""
-        deadline, dismissed = time.monotonic()+15, 0
+        deadline, dismissed, settled = time.monotonic()+15, 0, 0
         claim = f"MaaNikki_Monthly_Claim{page}"
         while not self.rt.stopped and time.monotonic() < deadline:
             with self.rt.observe(fresh=True):
@@ -559,13 +562,18 @@ class Gameplay:
                 returned = (not reward and self.monthly_tab_selected(page)
                             and (dismissed > 0 or page == "Task" and not self.rt.hit(claim)))
             if reward:
+                settled = 0
                 if dismissed >= 15:
                     break
                 if not self.rt.key("skip", .25):
                     return False
                 dismissed += 1
             elif returned:
-                return True
+                settled += 1
+                if settled >= (2 if dismissed > 0 else 4):
+                    return True
+            else:
+                settled = 0
             if not self.rt.pause(.2):
                 return False
         self.monthly_diagnostic("travel", "claim_unconfirmed", f"{page}领取结果待确认")

@@ -419,7 +419,7 @@ class OrderedView:
         # Esc retains this viewport. Most consecutive embryos are found here;
         # do not scroll back to an interval boundary after every upgrade.
         frame, cells = self.cells()
-        for cell in ([] if duplicates else cells):
+        for cell in ([] if duplicates and exact_lock is None else cells):
             _, level, match = cell
             candidate = match.get("candidate") or {}
             if match.get("identity_accepted") and candidate.get("name") != target["name"]:
@@ -486,7 +486,7 @@ class OrderedView:
                     right_ordinal = row["ordinal"]
                     rows[right[1]]["ordinal"] = row["ordinal"]
                 if (signature(row) == signature(target)
-                        and (not duplicates or left_seen and not right_seen)
+                        and not right_seen
                         and (exact_lock is None and not row["locked"] or row["locked"] == exact_lock)):
                     if quantities:
                         self.target_quantity(frame, box, row, evidence)

@@ -363,8 +363,9 @@ class Crown(Runtime):
         for target in dict.fromkeys(targets):
             if self.stopped:
                 return
-            self.require(self.ui.find(roi=self.ui.roi("AreaMiraCrownShopItemList"), text=target,
-                                      exact=True, scroll=False), f"未找到“{target}”的兑换按钮")
+            self.require(self.ui.find(roi=self.ui.roi("AreaMiraCrownShopItemList"),
+                                      text=rf"^{re.escape(target)}(?:\s*[xX×]\s*\d+)?$",
+                                      exact=False, scroll=False), f"未找到“{target}”的兑换按钮")
             if not self.wait_asset("ButtonMiraCrownShopMax"):
                 self.log(f"“{target}”当前无法继续兑换，跳过。")
                 continue
