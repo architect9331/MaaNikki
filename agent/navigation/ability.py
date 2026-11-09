@@ -14,7 +14,6 @@ LIST_ICON_SCALE = 5/8
 # Keep wheel scrolling and end-of-list comparison inside the curved list body
 # rather than the bottom-right corner above the outfit-switch button.
 LIST_SCROLL_ROI = [980, 150, 160, 320]
-WHEEL_ROI = [290, 130, 560, 480]
 SLOTS = ((1063, 257), (1205, 433), (1199, 640), (1048, 829),
          (641, 829), (498, 640), (485, 433), (610, 257))
 
@@ -65,7 +64,7 @@ class Ability:
             raise NavigationError(f"未能进入能力配置，尚未开始{self.label}。")
         ability = self.ui.feature(asset="IconAbilityFeature", threshold=.99,
                                   method=cv2.TM_CCORR_NORMED)
-        if not self.ui.wait_page(ability, roi=WHEEL_ROI, stable=True):
+        if not self.ui.wait_page(ability):
             raise NavigationError("未能确认能力配置页面，未更改能力轮盘。")
         slot = self.find_slot(fresh=True)
         if slot is None:
@@ -195,7 +194,7 @@ class Ability:
                                                       "requested": plan, "entry_roi": entry,
                                                       "plan_names": names}):
             return False
-        if self.ui.wait_page(self.plan_selected, roi=WHEEL_ROI, stable=True):
+        if self.ui.wait_page(self.plan_selected):
             self.actions.event({"type": "ability_plan_selected", "plan": plan, "name": self.plan_label})
             return True
         raise NavigationError("未能确认已切换到所选能力方案，未更改能力轮盘。")

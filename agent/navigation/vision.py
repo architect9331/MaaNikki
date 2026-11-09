@@ -132,16 +132,38 @@ class Locator:
                     outside = edge_ring & (np.abs((angles-direction+180) % 360-180) > 55)
                     cone_mask = outside.astype(np.uint8)
                     cone_floor = max(.65, match_floor)
-                    cone = attempt("outside_camera_cone", edge_patch, cone_mask, cone_floor)
+                    cone = attempt("outside_camera_cone", edge_patch, cone_mask, match_floor)
                     diagnostics = matches["outside_camera_cone"]
                     diagnostics.update(heading=direction, confidence=confidence, accepted=False)
                     if cone is not None:
                         cx, cy, score, peak = cone
                         agreement = float(np.hypot(cx-lx, cy-ly))
+                        edge_agreement = (
+                            float(np.hypot(cx-edge[0], cy-edge[1]))
+                            if edge is not None else float("inf")
+                        )
                         known_fraction = coverage(local, patch.shape, cone_mask, (cx+.5, cy+.5))
-                        accepted = (score >= cone_floor and peak >= .02 and agreement <= 2
-                                    and known_fraction >= MIN_KNOWN_COVERAGE)
-                        diagnostics.update(method_agreement=agreement, known_fraction=known_fraction, accepted=accepted)
+                        accepted = (
+                            agreement <= 2
+                            and known_fraction >= MIN_KNOWN_COVERAGE
+                            and (
+                                (score >= cone_floor and peak >= .02)
+                                or (
+                                    score >= match_floor
+                                    and peak >= .04
+                                    and edge is not None
+                                    and edge[2] >= .45
+                                    and edge[3] >= .05
+                                    and edge_agreement <= 2
+                                )
+                            )
+                        )
+                        diagnostics.update(
+                            method_agreement=agreement,
+                            edge_agreement=edge_agreement if np.isfinite(edge_agreement) else None,
+                            known_fraction=known_fraction,
+                            accepted=accepted,
+                        )
                         if accepted:
                             selected, method = cone, "outside_camera_cone"
         px, py, score, detail = selected or (hint[0]-x, hint[1]-y, 0.0, 0.0)

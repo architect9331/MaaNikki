@@ -867,6 +867,8 @@ class WardrobeScanner(InventoryScanner):
                 frame = after
             else:
                 raise RuntimeError("衣柜读取达到页数上限")
+        except RescanSlot:
+            raise
         except BaseException:
             if known:
                 materialize()
@@ -1107,10 +1109,12 @@ class WardrobeScanner(InventoryScanner):
                     and (p not in visited or not self.snapshot["parts"].get(p, {}).get("complete"))
                 ]
                 self.snapshot["complete"] = not missing
-                self.save("待核对部位：" + "、".join(missing) if missing else None)
+                reason = "待核对部位：" + "、".join(missing) if missing else None
+                self.save(reason)
             finally:
                 self._tall_mode = False
                 self.layout["grid"] = [265, 130, 950, 505]
                 self.grid = self.layout["grid"]
 
+        self.save(reason)
         return self.snapshot["complete"]

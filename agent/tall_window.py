@@ -290,6 +290,8 @@ def tall_window(rt):
                     and frame.shape[:2] == (720, 1280)
                     and float(frame.mean()) > 8.0
                     and float(frame.std()) > 5.0
+                    and float(frame[:, 960:].mean()) > 5.0
+                    and float(frame[:, 960:].std()) > 3.0
                 ):
                     rendered_streak += 1
                     if rendered_streak >= 2:

@@ -167,7 +167,7 @@ class BlessingLocker(InventoryScanner):
                     and frame.shape[:2] in ((720, 1280), (5120, 1280))
                     and self.ready(frame)):
                 return frame
-            if attempt < 5 and frame is not None and float(frame.mean()) < 8.0:
+            if attempt < 5:
                 if not self.rt.pause(.15):
                     break
                 continue

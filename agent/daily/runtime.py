@@ -449,7 +449,12 @@ class Runtime:
         return observed
 
     def read_account_uid(self, image):
-        if image is None or image.shape[:2] != (720, 1280) or not self.image_current(image):
+        from tall_window import TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT
+        if (
+            image is None
+            or image.shape[:2] not in ((720, 1280), (TALL_CAPTURE_HEIGHT, TALL_CAPTURE_WIDTH))
+            or not self.image_current(image)
+        ):
             return None
         generation = self._focus_generation
         from .ui import fields
@@ -458,6 +463,7 @@ class Runtime:
         # Latin label on its left and status/artwork on its right. Diagnostic
         # masking intentionally covers a wider area than recognition.
         x, y, w, h = fields(self.context, node)["roi"]
+        y += image.shape[0] - 720
         crop = image[y:y+h, x:x+w]
         if crop.size == 0:
             return None
@@ -502,7 +508,8 @@ class Runtime:
             return
         from game_view import ALLOWED_FRAME_SIZES
         from tall_window import TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT
-        if (TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT) in ALLOWED_FRAME_SIZES and generation == self._focus_generation:
+        tall_allowed = (TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT) in ALLOWED_FRAME_SIZES
+        if tall_allowed and generation == self._focus_generation:
             return
         image = self.frame()
         observed = self.read_account_uid(image)
@@ -519,6 +526,13 @@ class Runtime:
             if session:
                 session.account_mismatch = True
             raise ValueError("游戏账号已切换，本次处理记录仍保留在原 UID，请重新运行任务")
+        if (
+            observed is None
+            and tall_allowed
+            and image is not None
+            and image.shape[:2] == (TALL_CAPTURE_HEIGHT, TALL_CAPTURE_WIDTH)
+        ):
+            return
         if observed is None and (image is None or generation != self._focus_generation):
             raise ValueError("切回游戏后未能确认 UID，本次账号记录暂未更新")
         if observed is not None:
