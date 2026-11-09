@@ -217,6 +217,7 @@ pub fn run() {
             commands::user_routes::list_routes,
             commands::user_routes::save_user_route,
             commands::user_routes::delete_user_route,
+            commands::user_routes::generate_gingerbread_routes,
             commands::wardrobe_scoring::get_wardrobe_scoring,
             commands::wardrobe_scoring::save_wardrobe_scoring,
             commands::wardrobe_scoring::save_material_plan,

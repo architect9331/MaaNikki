@@ -151,6 +151,7 @@ class PearPalMaterialCatalog:
 
     def __init__(self, root: Path):
         self.root = root
+        self.builtin_path = root / "resource/navigation/materials_catalog_v1.json"
         self.cache_path = root / "cache/map-mask/materials_catalog_v1.json"
         self.checkpoints_path = root / "resource/navigation/checkpoints.json"
         self.catalogs: dict[str, dict] = {}
@@ -161,11 +162,16 @@ class PearPalMaterialCatalog:
     def load(self, refresh: bool = False) -> None:
         raw_data = None
         if not refresh and self.cache_path.is_file():
-            if time.time() - self.cache_path.stat().st_mtime < 86400 * 3:
+            if time.time() - self.cache_path.stat().st_mtime < 86400 * 30:
                 try:
                     raw_data = json.loads(self.cache_path.read_text(encoding="utf-8"))
                 except Exception:
                     raw_data = None
+        if raw_data is None and not refresh and self.builtin_path.is_file():
+            try:
+                raw_data = json.loads(self.builtin_path.read_text(encoding="utf-8"))
+            except Exception:
+                raw_data = None
         if raw_data is None:
             raw_data = self._fetch_from_pearpal()
             self.cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -261,23 +267,34 @@ class PearPalMaterialCatalog:
         self.points_by_map.clear()
         for map_id, rows in data.get("spawners", {}).items():
             parsed = []
-            for r in rows:
-                cid = r["cid"]
+            for idx, r in enumerate(rows):
+                if isinstance(r, list):
+                    cid = str(r[0])
+                    rx, ry, rz = float(r[1]), float(r[2]), float(r[3])
+                    rcond = str(r[4]) if len(r) > 4 else ""
+                    rid = f"{map_id}_{idx}"
+                    rtag = ""
+                else:
+                    cid = str(r["cid"])
+                    rx, ry, rz = float(r["x"]), float(r["y"]), float(r["z"])
+                    rcond = r.get("cond", "")
+                    rid = str(r.get("id", f"{map_id}_{idx}"))
+                    rtag = r.get("tag", "")
                 cinfo = self.catalogs.get(cid)
                 if not cinfo:
                     continue
                 parsed.append(
                     MaterialPoint(
-                        id=r["id"],
+                        id=rid,
                         catalog_id=cid,
                         name=cinfo["name"],
                         kind=cinfo["kind"],
                         map_id=map_id,
-                        x=float(r["x"]),
-                        y=float(r["y"]),
-                        z=float(r["z"]),
-                        tag=r.get("tag", ""),
-                        condition=r.get("cond", ""),
+                        x=rx,
+                        y=ry,
+                        z=rz,
+                        tag=rtag,
+                        condition=rcond,
                     )
                 )
             self.points_by_map[map_id] = parsed
@@ -293,10 +310,13 @@ class PearPalMaterialCatalog:
                 best_z = 0.0
                 best_d = 25.0
                 for p in pillars:
-                    d = math.hypot(p["x"] - cx, p["y"] - cy)
+                    px = float(p[0]) if isinstance(p, list) else float(p["x"])
+                    py = float(p[1]) if isinstance(p, list) else float(p["y"])
+                    pz = float(p[2]) if isinstance(p, list) else float(p["z"])
+                    d = math.hypot(px - cx, py - cy)
                     if d < best_d:
                         best_d = d
-                        best_z = float(p["z"])
+                        best_z = pz
                 spires.append(
                     SpireCheckpoint(
                         name=ck["name"],
@@ -403,6 +423,31 @@ class TerrainWalkabilityGrid:
                         self.sea_z = float(np.percentile(valid_z, 3.5))
             except Exception:
                 self.z_map = None
+
+        if self.z_map is None:
+            terrain_png = self.root / "resource/navigation/terrain" / f"{self.map_id}.png"
+            manifest_path = self.root / "resource/navigation/terrain/manifest.json"
+            if terrain_png.is_file():
+                try:
+                    raw = np.fromfile(str(terrain_png), dtype=np.uint8)
+                    bgr = cv2.imdecode(raw, cv2.IMREAD_COLOR)
+                    if bgr is not None:
+                        b_ch = bgr[:, :, 0]
+                        g_ch = bgr[:, :, 1].astype(np.uint16)
+                        r_ch = bgr[:, :, 2].astype(np.uint16)
+                        hu16 = (r_ch << 8) | g_ch
+                        valid = (b_ch & 1) > 0
+                        z = np.where(valid & (hu16 > 0), hu16.astype(np.float32) / 10.0 - 500.0, np.nan)
+                        self.z_map = z
+                        self.slope_deg = ((b_ch >> 2) & 0x3F).astype(np.float32)
+                        self.obs_mask = ((b_ch >> 1) & 1) > 0
+                        self.px_scale = 0.25 if self.map_id == "miraland" else 0.5
+                        if manifest_path.is_file():
+                            m_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+                            if self.map_id in m_data:
+                                self.px_scale = float(m_data[self.map_id].get("px_scale", self.px_scale))
+                except Exception:
+                    self.z_map = None
 
         # Build 2D water mask from reference map image when 3D grid is absent or map is compact
         img_path = self.root / "resource/navigation/maps" / f"{self.map_id}.png"
@@ -1107,6 +1152,7 @@ class MaterialRouteGenerator:
         materials: Iterable[str],
         *,
         map_ids: Iterable[str] | None = None,
+        regions: Iterable[str] | None = None,
         top_k: int = 5,
         quota: int | None = None,
         max_anchors: int = 8,
@@ -1120,6 +1166,7 @@ class MaterialRouteGenerator:
 
         primary_name = queries[0] if len(queries) == 1 else "、".join(queries[:2])
         active_maps = list(map_ids) if map_ids else list(WORLDS.values())
+        region_set = {r.strip() for r in regions if r.strip()} if regions else None
         kind_weights = {"plant": 1.0, "insect": 1.5, "animal": 1.8, "fish": 2.0}
 
         def prepare_map_points(raw_pts: list[MaterialPoint]) -> list[MaterialPoint]:
@@ -1170,6 +1217,8 @@ class MaterialRouteGenerator:
                 if not any(p.catalog_id in target_cids for p in pts):
                     continue
                 for spire in self.catalog.spires_by_map.get(map_id, []):
+                    if region_set and spire.region not in region_set and spire.province not in region_set:
+                        continue
                     near_target = sum(
                         1 for p in pts
                         if p.catalog_id in target_cids and math.hypot(p.x - spire.x, p.y - spire.y) <= search_r
@@ -1303,3 +1352,75 @@ class MaterialRouteGenerator:
                 for p in plans
             ],
         }
+
+
+def generate_from_request_dict(root: Path, req: dict) -> dict:
+    """Entry point for UI on-demand route generation."""
+    mode = str(req.get("mode") or "target")
+    radius = float(req.get("radius") or 13.5)
+    top_k = max(1, min(15, int(req.get("top_k") or 3)))
+    quota = int(req["quota"]) if req.get("quota") else None
+    prefix = str(req.get("prefix") or "gb_custom")
+    map_ids = [m for m in (req.get("maps") or []) if m] or None
+    regions = [r for r in (req.get("regions") or []) if r] or None
+    materials = [m for m in (req.get("materials") or []) if m]
+
+    spec = GingerbreadSpec(
+        safe_radius_m=radius,
+        pass_radius_m=min(15.0, radius + 0.7),
+    )
+    gen = MaterialRouteGenerator(root, spec=spec)
+    if mode == "target" and materials:
+        plans = gen.generate_for_materials(
+            materials,
+            map_ids=map_ids,
+            regions=regions,
+            top_k=top_k,
+            quota=quota,
+            route_id_prefix=prefix,
+        )
+        col_title = f"【按需生成】{'/'.join(materials[:2])}（{len(plans)}条）"
+    else:
+        category = str(req.get("category") or "all")
+        weights_map = {
+            "plant": {"plant": 2.0, "insect": 0.0, "animal": 0.0, "fish": 0.0},
+            "insect": {"plant": 0.2, "insect": 3.0, "animal": 0.0, "fish": 0.0},
+            "animal": {"plant": 0.2, "insect": 0.0, "animal": 3.5, "fish": 0.0},
+            "fish": {"plant": 0.1, "insect": 0.0, "animal": 0.0, "fish": 4.0},
+        }
+        plans = gen.generate_max_yield(
+            map_ids=map_ids,
+            regions=regions,
+            top_k=top_k,
+            kind_weights=weights_map.get(category),
+            route_id_prefix=prefix,
+            title_label=str(req.get("title_label") or "按需大丰收"),
+        )
+        col_title = f"【按需大丰收】综合采集清单（{len(plans)}条）"
+
+    col_doc = gen.build_route_collection(plans, f"{prefix}_col", col_title) if plans else None
+    return {
+        "routes": [p.route_doc for p in plans],
+        "collection": col_doc,
+        "summaries": [
+            {
+                "id": p.route_doc["id"],
+                "title": p.route_doc["title"],
+                "map": p.checkpoint.map_id,
+                "region": p.checkpoint.region,
+                "checkpoint": p.checkpoint.name,
+                "target_count": p.target_count,
+                "total_count": p.total_count,
+                "counts_by_name": p.counts_by_name,
+                "counts_by_kind": p.counts_by_kind,
+                "walk_distance_m": p.walk_distance_m,
+                "estimated_seconds": p.estimated_seconds,
+                "efficiency_per_min": p.efficiency_per_min,
+                "covered_points": [
+                    {"name": cp.name, "kind": cp.kind, "x": cp.x, "y": cp.y, "z": cp.z}
+                    for cp in p.covered_points
+                ],
+            }
+            for p in plans
+        ],
+    }

@@ -170,6 +170,11 @@ def main() -> int:
         default="",
         help="Optional comma-separated map IDs (miraland,wanxiang,firework,serenity,danqing).",
     )
+    parser.add_argument(
+        "--regions",
+        default="",
+        help="Optional comma-separated region or province names (e.g. 花愿镇,巨木之森).",
+    )
     parser.add_argument("--top-k", type=int, default=5, help="Max routes to generate.")
     parser.add_argument("--quota", type=int, default=None, help="Target item count quota.")
     parser.add_argument("--radius", type=float, default=13.5, help="Safe Gingerbread cover radius in meters.")
@@ -181,7 +186,13 @@ def main() -> int:
     )
     parser.add_argument("--prefix", default="gb_auto", help="Route ID prefix.")
     parser.add_argument("--no-save", action="store_true", help="Print summary without writing JSON files.")
+    parser.add_argument("--json-stdout", action="store_true", help="Output generated routes and stats as JSON.")
     args = parser.parse_args()
+
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
 
     spec = GingerbreadSpec(
         safe_radius_m=args.radius,
@@ -208,6 +219,7 @@ def main() -> int:
         return build_full_library(gen, lib_dir)
 
     map_ids = [m.strip() for m in args.maps.split(",") if m.strip()] or None
+    regions = [r.strip() for r in args.regions.split(",") if r.strip()] or None
     if args.mode == "target":
         queries = [m.strip() for m in args.materials.split(",") if m.strip()]
         if not queries:
@@ -215,6 +227,7 @@ def main() -> int:
         plans = gen.generate_for_materials(
             queries,
             map_ids=map_ids,
+            regions=regions,
             top_k=args.top_k,
             quota=args.quota,
             route_id_prefix=args.prefix,
@@ -223,22 +236,59 @@ def main() -> int:
     else:
         plans = gen.generate_max_yield(
             map_ids=map_ids,
+            regions=regions,
             top_k=args.top_k,
             route_id_prefix=args.prefix,
         )
         col_title = f"【姜饼人大丰收】高密度综合采集清单（共{len(plans)}条）"
 
     out_dir = Path(args.output_dir)
+    col_id = f"{args.prefix}_collection"
+    col_doc = gen.build_route_collection(plans, col_id, col_title) if plans else None
     if not args.no_save and plans:
         out_dir.mkdir(parents=True, exist_ok=True)
         for p in plans:
             rp = out_dir / f"{p.route_doc['id']}.json"
             rp.write_text(json.dumps(p.route_doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        col_id = f"{args.prefix}_collection"
-        col_doc = gen.build_route_collection(plans, col_id, col_title)
-        (out_dir / f"{col_id}.json").write_text(
-            json.dumps(col_doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-        )
+        if col_doc:
+            (out_dir / f"{col_id}.json").write_text(
+                json.dumps(col_doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
+
+    if args.json_stdout:
+        payload = {
+            "routes": [p.route_doc for p in plans],
+            "collection": col_doc,
+            "summaries": [
+                {
+                    "id": p.route_doc["id"],
+                    "title": p.route_doc["title"],
+                    "map": p.checkpoint.map_id,
+                    "region": p.checkpoint.region,
+                    "checkpoint": p.checkpoint.name,
+                    "target_count": p.target_count,
+                    "total_count": p.total_count,
+                    "counts_by_name": p.counts_by_name,
+                    "counts_by_kind": p.counts_by_kind,
+                    "walk_distance_m": p.walk_distance_m,
+                    "estimated_seconds": p.estimated_seconds,
+                    "efficiency_per_min": p.efficiency_per_min,
+                    "covered_points": [
+                        {
+                            "name": cp.name,
+                            "kind": cp.kind,
+                            "x": cp.x,
+                            "y": cp.y,
+                            "z": cp.z,
+                        }
+                        for cp in p.covered_points
+                    ],
+                }
+                for p in plans
+            ],
+        }
+        print(json.dumps(payload, ensure_ascii=False))
+        return 0
 
     for idx, p in enumerate(plans, 1):
         top_items = ", ".join(f"{k}×{v}" for k, v in sorted(p.counts_by_name.items(), key=lambda x: -x[1])[:6])

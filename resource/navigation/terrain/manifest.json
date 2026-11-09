@@ -1,0 +1,58 @@
+{
+  "danqing": {
+    "image": "terrain/danqing.png",
+    "width": 1536,
+    "height": 1024,
+    "px_scale": 0.5,
+    "z_min": -256.0,
+    "z_max": -44.2
+  },
+  "firework": {
+    "image": "terrain/firework.png",
+    "width": 1024,
+    "height": 512,
+    "px_scale": 0.5,
+    "z_min": -17.9,
+    "z_max": 105.2
+  },
+  "home": {
+    "image": "terrain/home.png",
+    "width": 1280,
+    "height": 768,
+    "px_scale": 0.5,
+    "z_min": -14.4,
+    "z_max": 109.8
+  },
+  "miraland": {
+    "image": "terrain/miraland.png",
+    "width": 3456,
+    "height": 3584,
+    "px_scale": 0.25,
+    "z_min": -255.2,
+    "z_max": 108.5
+  },
+  "serenity": {
+    "image": "terrain/serenity.png",
+    "width": 1024,
+    "height": 768,
+    "px_scale": 0.5,
+    "z_min": -18.1,
+    "z_max": 25.8
+  },
+  "starsea": {
+    "image": "terrain/starsea.png",
+    "width": 1280,
+    "height": 1024,
+    "px_scale": 0.5,
+    "z_min": -24.4,
+    "z_max": 118.8
+  },
+  "wanxiang": {
+    "image": "terrain/wanxiang.png",
+    "width": 2048,
+    "height": 1536,
+    "px_scale": 0.5,
+    "z_min": -184.4,
+    "z_max": 536.0
+  }
+}

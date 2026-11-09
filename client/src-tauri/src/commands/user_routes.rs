@@ -94,3 +94,53 @@ pub fn delete_user_route(id: String) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[tauri::command]
+pub async fn generate_gingerbread_routes(params: Value) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let exe_dir = get_exe_directory()?;
+        let py_exe = if cfg!(windows) {
+            exe_dir.join("python/python.exe")
+        } else {
+            exe_dir.join("python/bin/python3")
+        };
+        let python = if py_exe.is_file() {
+            py_exe
+        } else {
+            PathBuf::from("python")
+        };
+        let req_str = serde_json::to_string(&params).map_err(|_| "生成请求参数无效。")?;
+        let code = concat!(
+            "import sys, json; ",
+            "sys.stdout.reconfigure(encoding='utf-8'); ",
+            "sys.stderr.reconfigure(encoding='utf-8'); ",
+            "from pathlib import Path; ",
+            "root = Path.cwd(); ",
+            "sys.path.insert(0, str(root / 'agent')); ",
+            "from navigation.material_route_generator import generate_from_request_dict; ",
+            "req = json.loads(sys.argv[1]); ",
+            "res = generate_from_request_dict(root, req); ",
+            "print(json.dumps(res, ensure_ascii=False))"
+        );
+
+        let mut cmd = std::process::Command::new(python);
+        cmd.current_dir(&exe_dir).args(["-c", code, &req_str]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000);
+        }
+        let output = cmd
+            .output()
+            .map_err(|e| format!("无法启动路线生成器：{e}"))?;
+        if !output.status.success() {
+            let err = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("路线生成失败：{}", err.trim()));
+        }
+        let out_str = String::from_utf8_lossy(&output.stdout);
+        serde_json::from_str::<Value>(out_str.trim())
+            .map_err(|e| format!("解析生成路线结果失败：{e}"))
+    })
+    .await
+    .map_err(|e| format!("路线生成任务异常：{e}"))?
+}

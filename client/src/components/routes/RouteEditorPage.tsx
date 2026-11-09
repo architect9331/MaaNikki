@@ -21,9 +21,12 @@ import {
 } from '@/services/routeDocument';
 import {
   clearTrial, deleteUserRoute, discardRecording, listRoutes, readLocalFile, readRoute, runRoute,
-  saveUserRoute, startRecording, stopRouteSession, useRouteStudioStore, type RouteSummary,
+  saveUserRoute, startRecording, stopRouteSession, useRouteStudioStore,
+  type GenerateGingerbreadResponse, type RouteSummary,
 } from '@/services/routeStudioService';
 import { RouteMapCanvas, type MapCanvasHandle, type MapInfo } from './RouteMapCanvas';
+import { Route3DCanvas } from './Route3DCanvas';
+import { RouteGeneratorModal } from './RouteGeneratorPanel';
 
 const field = 'w-full rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 text-xs outline-none focus:border-accent';
 const HISTORY_LIMIT = 100;
@@ -267,6 +270,10 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showTeleports, setShowTeleports] = useState(true);
   const [showRouteConfig, setShowRouteConfig] = useState(false);
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [generatedBatch, setGeneratedBatch] = useState<GenerateGingerbreadResponse | null>(null);
+  const [generatedIdx, setGeneratedIdx] = useState(0);
   const [pendingDelete, setPendingDelete] = useState<RouteSummary | null>(null);
   const [history, setHistory] = useState<{ past: RouteDocument[]; future: RouteDocument[] }>({ past: [], future: [] });
   const canvas = useRef<MapCanvasHandle>(null);
@@ -682,6 +689,46 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
     toast.success('已加入当前任务列表');
   };
 
+  const selectGeneratedCandidate = useCallback((batch: GenerateGingerbreadResponse, idx: number) => {
+    const doc = batch.routes[idx];
+    if (!doc) return;
+    clearTrial();
+    setGeneratedIdx(idx);
+    setCollection(null);
+    setRoute(doc);
+    setReadOnly(false);
+    setSelected(null);
+    setSelectedSet(new Set());
+    setSaved(false);
+    setHistory({ past: [], future: [] });
+    setTimeout(() => canvas.current?.fit(), 80);
+  }, []);
+
+  const saveAllGeneratedToPlaylist = async () => {
+    if (!generatedBatch?.routes.length || !generatedBatch.collection) return;
+    try {
+      for (const r of generatedBatch.routes) {
+        await saveUserRoute(r);
+      }
+      const path = await saveUserRoute(generatedBatch.collection);
+      await refresh();
+      const state = useAppStore.getState();
+      const instanceId = state.activeInstanceId;
+      if (instanceId) {
+        state.addTaskToInstance(instanceId, { name: 'custom_route', option: ['CustomRouteFile'] });
+        const tasks = useAppStore.getState().instances.find((item) => item.id === instanceId)?.selectedTasks ?? [];
+        const task = tasks[tasks.length - 1];
+        if (task) {
+          state.setTaskOptionValue(instanceId, task.id, 'CustomRouteFile', { type: 'input', values: { file: path } });
+          state.renameTask(instanceId, task.id, generatedBatch.collection.title);
+        }
+      }
+      toast.success(`已保存全部 ${generatedBatch.routes.length} 条路线并作为清单加入任务`);
+    } catch (error) {
+      toast.error(String(error));
+    }
+  };
+
   const point = route && selected !== null ? route.points[selected] : null;
   const rows = route ? route.points.map((item, index) => ({ item, index })).filter(({ item }) => filter === 'all' || item.action || item.jump) : [];
   const length = route ? routeLength(route.points) : 0;
@@ -716,6 +763,7 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
         : <h1 className="text-lg font-semibold">路线编辑器</h1>}
       {activeDoc && !readOnly && <span className="flex items-center gap-1 text-xs text-text-muted">{saved ? <><Check className="h-3 w-3" />已保存</> : <><Loader2 className="h-3 w-3 animate-spin" />保存中</>}</span>}
       <span className="ml-auto flex items-center gap-1.5">
+        {!collection && <Segmented label="视图模式" value={viewMode} onChange={(v) => { setViewMode(v); setTimeout(() => canvas.current?.fit(), 60); }} options={[['2d', '2D 平面'], ['3d', '3D 地形']]} />}
         {route && <>
           <button onClick={undo} disabled={!history.past.length} title="撤销（Ctrl+Z）" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-30"><Undo2 className="h-4 w-4" /></button>
           <button onClick={redo} disabled={!history.future.length} title="重做（Ctrl+Y）" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-30"><Redo2 className="h-4 w-4" /></button>
@@ -733,7 +781,8 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
     <div className="flex min-h-0 flex-1">
       <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-bg-secondary">
         <div className="grid grid-cols-2 gap-1.5 p-2.5">
-          <button onClick={() => createRoute()} className={clsx(primaryButton, 'justify-center')}><Plus className="h-3.5 w-3.5" />新建路线</button>
+          <button onClick={() => setShowGenerator(true)} className={clsx(primaryButton, 'col-span-2 justify-center')}><Sparkles className="h-3.5 w-3.5" />3D 智能生成姜饼人路线</button>
+          <button onClick={() => createRoute()} className={clsx(secondaryButton, 'justify-center')}><Plus className="h-3.5 w-3.5" />新建路线</button>
           <button onClick={() => createCollection()} title="把多条路线打包按顺序运行" className={clsx(secondaryButton, 'justify-center')}><Layers className="h-3.5 w-3.5" />新建清单</button>
           <button onClick={() => fileInput.current?.click()} title="从路线文件导入" className={clsx(secondaryButton, 'justify-center')}><FileInput className="h-3.5 w-3.5" />导入</button>
           <button onClick={() => void pasteRoute()} title="从剪贴板直接粘贴路线 JSON" className={clsx(secondaryButton, 'justify-center')}><ClipboardPaste className="h-3.5 w-3.5" />粘贴</button>
@@ -835,108 +884,183 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
           </div>
         </div> : <>
 
-          <RouteMapCanvas ref={canvas} map={map} image={image} points={route?.points ?? []} preview={preview}
-            samples={recording?.samples ?? finished?.samples}
-            pose={recording?.pose ?? (status === 'running' ? trial?.pose : null)}
-            teleports={showTeleports ? knownCheckpoints : undefined}
-            startTeleport={route ? route.teleport : recordTeleport}
-            selected={selected}
-            selectedSet={selectedSet}
-            activeTrialIndex={status === 'running' ? trial?.current_index ?? null : null}
-            trialWaypoints={activeTrialForRoute?.telemetry?.waypoints ?? null}
-            tool={tool} readOnly={readOnly || !route}
-            onSelect={(index, toggle) => {
-              if (index === null) {
-                setSelected(null);
-                setSelectedSet(new Set());
-                return;
-              }
-              if (toggle) {
+          {viewMode === '3d' ? (
+            <Route3DCanvas
+              ref={canvas}
+              map={map}
+              image={image}
+              points={route?.points ?? []}
+              preview={preview}
+              samples={recording?.samples ?? finished?.samples}
+              pose={recording?.pose ?? (status === 'running' ? trial?.pose : null)}
+              teleports={showTeleports ? knownCheckpoints : undefined}
+              startTeleport={route ? route.teleport : recordTeleport}
+              selected={selected}
+              selectedSet={selectedSet}
+              activeTrialIndex={status === 'running' ? trial?.current_index ?? null : null}
+              trialWaypoints={activeTrialForRoute?.telemetry?.waypoints ?? null}
+              readOnly={readOnly || !route}
+              targetMaterial={route?.material}
+              onSelect={(index, toggle) => {
+                if (index === null) {
+                  setSelected(null);
+                  setSelectedSet(new Set());
+                  return;
+                }
+                if (toggle) {
+                  setSelectedSet((prev) => {
+                    const next = new Set(prev);
+                    if (selected !== null) next.add(selected);
+                    if (next.has(index)) next.delete(index); else next.add(index);
+                    return next;
+                  });
+                  setSelected(index);
+                } else {
+                  if (!selectedSet.has(index)) setSelectedSet(new Set());
+                  setSelected(index);
+                }
+              }}
+            />
+          ) : (
+            <RouteMapCanvas ref={canvas} map={map} image={image} points={route?.points ?? []} preview={preview}
+              samples={recording?.samples ?? finished?.samples}
+              pose={recording?.pose ?? (status === 'running' ? trial?.pose : null)}
+              teleports={showTeleports ? knownCheckpoints : undefined}
+              startTeleport={route ? route.teleport : recordTeleport}
+              selected={selected}
+              selectedSet={selectedSet}
+              activeTrialIndex={status === 'running' ? trial?.current_index ?? null : null}
+              trialWaypoints={activeTrialForRoute?.telemetry?.waypoints ?? null}
+              tool={tool} readOnly={readOnly || !route}
+              onSelect={(index, toggle) => {
+                if (index === null) {
+                  setSelected(null);
+                  setSelectedSet(new Set());
+                  return;
+                }
+                if (toggle) {
+                  setSelectedSet((prev) => {
+                    const next = new Set(prev);
+                    if (selected !== null) next.add(selected);
+                    if (next.has(index)) next.delete(index); else next.add(index);
+                    return next;
+                  });
+                  setSelected(index);
+                } else {
+                  if (!selectedSet.has(index)) setSelectedSet(new Set());
+                  setSelected(index);
+                }
+              }}
+              onBoxSelect={(indices, additive) => {
                 setSelectedSet((prev) => {
-                  const next = new Set(prev);
-                  if (selected !== null) next.add(selected);
-                  if (next.has(index)) next.delete(index); else next.add(index);
+                  const next = additive ? new Set(prev) : new Set<number>();
+                  for (const idx of indices) next.add(idx);
                   return next;
                 });
-                setSelected(index);
-              } else {
-                if (!selectedSet.has(index)) setSelectedSet(new Set());
-                setSelected(index);
-              }
-            }}
-            onBoxSelect={(indices, additive) => {
-              setSelectedSet((prev) => {
-                const next = additive ? new Set(prev) : new Set<number>();
-                for (const idx of indices) next.add(idx);
-                return next;
-              });
-              setSelected(indices[0] ?? null);
-              if (tool === 'box') setTool('select');
-            }}
-            onMove={(index, x, y, done) => {
-              if (!route) return;
-              if (!dragStart.current) dragStart.current = route;
-              const basePts = dragStart.current.points;
-              const originPt = basePts[index];
-              const dx = originPt ? Math.round((x - originPt.x) * 100) / 100 : 0;
-              const dy = originPt ? Math.round((y - originPt.y) * 100) / 100 : 0;
-              const movingBatch = selectedSet.size > 1 && selectedSet.has(index);
-              const points = route.points.map((item, position) => {
-                if (movingBatch && selectedSet.has(position) && basePts[position]) {
-                  return { ...item, x: Math.round((basePts[position].x + dx) * 100) / 100, y: Math.round((basePts[position].y + dy) * 100) / 100 };
+                setSelected(indices[0] ?? null);
+                if (tool === 'box') setTool('select');
+              }}
+              onMove={(index, x, y, done) => {
+                if (!route) return;
+                if (!dragStart.current) dragStart.current = route;
+                const basePts = dragStart.current.points;
+                const originPt = basePts[index];
+                const dx = originPt ? Math.round((x - originPt.x) * 100) / 100 : 0;
+                const dy = originPt ? Math.round((y - originPt.y) * 100) / 100 : 0;
+                const movingBatch = selectedSet.size > 1 && selectedSet.has(index);
+                const points = route.points.map((item, position) => {
+                  if (movingBatch && selectedSet.has(position) && basePts[position]) {
+                    return { ...item, x: Math.round((basePts[position].x + dx) * 100) / 100, y: Math.round((basePts[position].y + dy) * 100) / 100 };
+                  }
+                  return position === index ? { ...item, x, y } : item;
+                });
+                if (done) {
+                  commit({ ...route, points }, dragStart.current);
+                  dragStart.current = null;
+                } else {
+                  setRoute({ ...route, points });
                 }
-                return position === index ? { ...item, x, y } : item;
-              });
-              if (done) {
-                commit({ ...route, points }, dragStart.current);
-                dragStart.current = null;
-              } else {
-                setRoute({ ...route, points });
-              }
-            }}
-            onHeadingChange={(index, heading, done) => {
-              if (!route) return;
-              if (!dragStart.current) dragStart.current = route;
-              const points = route.points.map((item, position) =>
-                position === index ? { ...item, params: { ...(item.params ?? {}), facing_heading: heading } } : item);
-              if (done) {
-                commit({ ...route, points }, dragStart.current);
-                dragStart.current = null;
-              } else {
-                setRoute({ ...route, points });
-              }
-            }}
-            onInsert={(after, x, y) => {
-              if (!route) return;
-              const points = [...route.points];
-              points.splice(after+1, 0, { x, y, radius: 1, jump: false });
-              setPoints(points);
-              setSelected(after+1);
-            }}
-            onPickTeleport={(cp) => {
-              if (readOnly) return;
-              if (!route) {
-                setRecordTeleport(cp);
-                toast.success(`已设录制起始传送点：${cp.name}`);
-                return;
-              }
-              if (selected !== null && route.points[selected]?.action === 'teleport') {
-                const points = route.points.map((pt, i) =>
-                  i === selected ? { ...pt, x: cp.x, y: cp.y, params: { ...(pt.params ?? {}), checkpoint: cp } } : pt);
-                commit({ ...route, points });
-                toast.success(`已将第 ${selected + 1} 点传送设为：${cp.name}`);
-              } else if (tool === 'add') {
-                const after = selected ?? route.points.length - 1;
+              }}
+              onHeadingChange={(index, heading, done) => {
+                if (!route) return;
+                if (!dragStart.current) dragStart.current = route;
+                const points = route.points.map((item, position) =>
+                  position === index ? { ...item, params: { ...(item.params ?? {}), facing_heading: heading } } : item);
+                if (done) {
+                  commit({ ...route, points }, dragStart.current);
+                  dragStart.current = null;
+                } else {
+                  setRoute({ ...route, points });
+                }
+              }}
+              onInsert={(after, x, y) => {
+                if (!route) return;
                 const points = [...route.points];
-                points.splice(after + 1, 0, { x: cp.x, y: cp.y, radius: 1, jump: false, action: 'teleport', params: { checkpoint: cp } });
-                commit({ ...route, points });
-                setSelected(after + 1);
-                toast.success(`已插入传送点：${cp.name}`);
-              } else {
-                commit({ ...route, teleport: cp });
-                toast.success(`已设起始传送点：${cp.name}`);
-              }
-            }} />
+                points.splice(after+1, 0, { x, y, radius: 1, jump: false });
+                setPoints(points);
+                setSelected(after+1);
+              }}
+              onPickTeleport={(cp) => {
+                if (readOnly) return;
+                if (!route) {
+                  setRecordTeleport(cp);
+                  toast.success(`已设录制起始传送点：${cp.name}`);
+                  return;
+                }
+                if (selected !== null && route.points[selected]?.action === 'teleport') {
+                  const points = route.points.map((pt, i) =>
+                    i === selected ? { ...pt, x: cp.x, y: cp.y, params: { ...(pt.params ?? {}), checkpoint: cp } } : pt);
+                  commit({ ...route, points });
+                  toast.success(`已将第 ${selected + 1} 点传送设为：${cp.name}`);
+                } else if (tool === 'add') {
+                  const after = selected ?? route.points.length - 1;
+                  const points = [...route.points];
+                  points.splice(after + 1, 0, { x: cp.x, y: cp.y, radius: 1, jump: false, action: 'teleport', params: { checkpoint: cp } });
+                  commit({ ...route, points });
+                  setSelected(after + 1);
+                  toast.success(`已插入传送点：${cp.name}`);
+                } else {
+                  commit({ ...route, teleport: cp });
+                  toast.success(`已设起始传送点：${cp.name}`);
+                }
+              }} />
+          )}
+
+          {generatedBatch && generatedBatch.routes.length > 0 && (
+            <div className="absolute left-16 top-3 z-10 flex max-w-[calc(100%-26rem)] flex-wrap items-center gap-1.5 rounded-xl border border-accent/35 bg-bg-secondary/95 px-2.5 py-1.5 text-xs shadow-lg backdrop-blur">
+              <span className="flex items-center gap-1 font-medium text-accent"><Sparkles className="h-3.5 w-3.5" />智能方案：</span>
+              {generatedBatch.summaries.map((s, idx) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => selectGeneratedCandidate(generatedBatch, idx)}
+                  className={clsx(
+                    'rounded-lg px-2 py-1 transition-colors',
+                    generatedIdx === idx ? 'bg-accent text-white font-medium' : 'bg-bg-primary text-text-secondary hover:bg-bg-hover',
+                  )}
+                >
+                  #{idx + 1} {s.checkpoint}（{s.target_count}个/{Math.round(s.estimated_seconds)}s）
+                </button>
+              ))}
+              {generatedBatch.routes.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => void saveAllGeneratedToPlaylist()}
+                  className="ml-1 inline-flex items-center gap-1 rounded-lg bg-accent/15 px-2.5 py-1 font-medium text-accent hover:bg-accent/25"
+                >
+                  <ListPlus className="h-3.5 w-3.5" />全部存为清单并加入任务
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setGeneratedBatch(null)}
+                title="关闭候选栏"
+                className="rounded p-1 text-text-muted hover:text-text-primary"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
 
           <div className="absolute left-3 top-3 flex flex-col gap-1 rounded-xl border border-border bg-bg-secondary/95 p-1 shadow-sm">
             <button onClick={() => setTool('select')} title="选择和拖动（Shift+点击或框选可多选）" aria-pressed={tool === 'select'} className={clsx('rounded-lg p-2', tool === 'select' ? 'bg-accent/10 text-accent' : 'hover:bg-bg-hover')}><MousePointer2 className="h-4 w-4" /></button>
@@ -1178,5 +1302,14 @@ export function RouteEditorPage({ onClose }: { onClose: () => void }) {
       cancelText="取消" confirmText="删除" destructive
       onCancel={() => setPendingDelete(null)}
       onConfirm={() => { if (pendingDelete) void remove(pendingDelete); }} />
+    <RouteGeneratorModal
+      open={showGenerator}
+      onClose={() => setShowGenerator(false)}
+      onGenerated={(res) => {
+        setGeneratedBatch(res);
+        setViewMode('3d');
+        selectGeneratedCandidate(res, 0);
+      }}
+    />
   </div>;
 }

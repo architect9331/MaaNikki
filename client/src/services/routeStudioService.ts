@@ -37,15 +37,47 @@ export interface RouteSummary {
   teleport?: RouteDocument['teleport'];
 }
 
+export interface GeneratedRouteSummary {
+  id: string;
+  title: string;
+  map: string;
+  region: string;
+  checkpoint: string;
+  target_count: number;
+  total_count: number;
+  counts_by_name: Record<string, number>;
+  counts_by_kind: Record<string, number>;
+  walk_distance_m: number;
+  estimated_seconds: number;
+  efficiency_per_min: number;
+  covered_points: Array<{ name: string; kind: string; x: number; y: number; z: number }>;
+}
+
+export interface GenerateGingerbreadResponse {
+  routes: RouteDocument[];
+  collection: RouteCollectionDocument | null;
+  summaries: GeneratedRouteSummary[];
+}
+
 export const listRoutes = () => invoke<{ user: RouteSummary[]; builtin: RouteSummary[] }>('list_routes');
 export const saveUserRoute = (route: RouteDocument | RouteCollectionDocument) =>
   invoke<string>('save_user_route', { id: route.id, route });
 export const deleteUserRoute = (id: string) => invoke<void>('delete_user_route', { id });
 export const readLocalFile = (filename: string) => invoke<string>('read_local_file', { filename });
+export const generateGingerbreadRoutes = (params: Record<string, unknown>) =>
+  invoke<GenerateGingerbreadResponse>('generate_gingerbread_routes', { params });
 
 export async function readRoute(summary: Pick<RouteSummary, 'id' | 'builtin'>): Promise<RouteDocument | RouteCollectionDocument> {
-  const folder = summary.builtin ? 'resource/routes/daily' : 'config/routes';
-  return JSON.parse((await readLocalFile(`${folder}/${summary.id}.json`)).replace(/^﻿/, ''));
+  if (!summary.builtin) {
+    return JSON.parse((await readLocalFile(`config/routes/${summary.id}.json`)).replace(/^\uFEFF/, ''));
+  }
+  const primary = summary.id.startsWith('gb_') ? 'resource/routes/gingerbread' : 'resource/routes/daily';
+  const fallback = summary.id.startsWith('gb_') ? 'resource/routes/daily' : 'resource/routes/gingerbread';
+  try {
+    return JSON.parse((await readLocalFile(`${primary}/${summary.id}.json`)).replace(/^\uFEFF/, ''));
+  } catch {
+    return JSON.parse((await readLocalFile(`${fallback}/${summary.id}.json`)).replace(/^\uFEFF/, ''));
+  }
 }
 
 let pending: Promise<void> | null = null;
