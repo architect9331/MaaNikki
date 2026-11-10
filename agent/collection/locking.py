@@ -467,9 +467,10 @@ class BlessingLocker(InventoryScanner):
     def selected(self, frame, box):
         x, y, w, h = box
         # Selected cards expand their opaque gold border 3-4 px outside the
-        # nominal unselected cell box, while the translucent interior blends
-        # with the 3D scene behind the panel. Measure the strongest 4 px
-        # border strip across each edge's inner/outer boundary.
+        # nominal unselected cell box, while hovered unselected cards draw a
+        # similar outer border around a dark translucent body. Require both
+        # side borders and the opaque warm-gold card background inside the
+        # side margins (excluding central artwork and bottom level/badge strip).
         x0, x1 = max(0, x - 4), min(frame.shape[1], x + w + 3)
         crop = frame[y + 5:y + h - 8, x0:x1]
         hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
@@ -483,23 +484,31 @@ class BlessingLocker(InventoryScanner):
         # after clear_hover() shrinks the selected card back from its hovered
         # outer frame, the 4 px inner gold strip sits at [x+w-6 : x+w-2] (i=5).
         right = max(float(gold[:, width - 4 - i:width - i].mean()) for i in range(min(6, width - 3)))
-        return bool(left > .45 and right > .45)
+        if left <= .45 or right <= .45:
+            return False
+        inner = cv2.cvtColor(frame[y + 10:y + h - 28, x:x + w], cv2.COLOR_BGR2HSV)
+        if inner.shape[0] < 8 or inner.shape[1] < 24:
+            return False
+        fill = ((inner[:, :, 0] >= 10) & (inner[:, :, 0] <= 38)
+                & (inner[:, :, 1] >= 40) & (inner[:, :, 2] >= 175))
+        margins = np.concatenate([fill[:, 5:13], fill[:, w - 15:w - 7]], axis=1)
+        return bool(float(margins.mean()) > .55)
 
     def select(self, box, facts, generation, *, verify_details=True, already_selected=False):
         self.check_generation(generation)
-        # One direct click selects the card; no preparatory tooltip hover.
+        # Stage the pointer first so Seize/Slate hit-testing settles on the
+        # card before clicking; otherwise LEFTDOWN can land on the previous
+        # clear_hover() position and leave the card merely hovered.
         x, y, w, h = box
         point = [round(x + w / 2), round(y + h * .45)]
-        self._hover_box = None
-        if not already_selected and self._page_frame is not None and self.selected(self._page_frame, box):
-            already_selected = True
-        if not already_selected and (
-                not self.rt.action("Click", target=point, ui_click=False) or not self.rt.pause(.15)):
-            raise RuntimeError("未能选中目标闪光")
         if not already_selected:
-            # Track the pointer only so scrolling can wait for its highlight
-            # to fade after moving away. No tooltip metadata are read.
-            self._hover_box = tuple(box)
+            if self._hover_box != tuple(box):
+                self._hover_box = None
+                if not self.rt.action("TouchMove", target=point) or not self.rt.pause(.15):
+                    raise RuntimeError("未能定位目标闪光")
+                self._hover_box = tuple(box)
+            if not self.rt.action("Click", target=point, ui_click=False) or not self.rt.pause(.15):
+                raise RuntimeError("未能选中目标闪光")
         frame = self.frame(generation)
         if not self.selected(frame, box):
             # Click delivery and the selection animation are asynchronous.
