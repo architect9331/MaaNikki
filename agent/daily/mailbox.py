@@ -28,7 +28,13 @@ class Mailbox:
             return "unknown", None, image
         page = self.rt.recognize(self.PAGE, image=image)
         button = self.rt.recognize(self.CLAIM, image=image)
-        if not page or not page.hit or not button or not button.hit:
+        if not page or not page.hit:
+            return "unknown", None, image
+        if not button or not button.hit:
+            empty = self.rt.recognize("MaaNikki_Mailbox_Empty", image=image)
+            if (empty and empty.hit) or self.rt.text([110, 10, 105, 42], r"^\s*[0０]\s*[/／]", image=image):
+                self.rt.evidence.observe("mailbox_button", state="empty", reason="empty_mailbox")
+                return "empty", None, image
             return "unknown", None, image
         x, y, w, h = self.BUTTON_FILL_ROI
         hsv = cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2HSV)

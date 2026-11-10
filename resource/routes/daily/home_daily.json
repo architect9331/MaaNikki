@@ -44,7 +44,7 @@
     {
       "x": 1050.84,
       "y": 720.18,
-      "radius": 0.45,
+      "radius": 1.2,
       "jump": false,
       "action": "fishing_star",
       "params": {
@@ -78,7 +78,7 @@
     {
       "x": 1047.92,
       "y": 744.72,
-      "radius": 0.45,
+      "radius": 1.2,
       "jump": false,
       "action": "fishing_star",
       "params": {

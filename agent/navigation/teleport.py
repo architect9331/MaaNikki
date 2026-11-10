@@ -95,7 +95,7 @@ class Teleporter:
                     and not self.region_menu_visible())
         closed = self.rt.ui.enter_page(lambda: self.rt.click_template(
             "MaaNikki_Navigation_RegionMenuClose", attempts=1, wait_seconds=0, verify=False),
-            ready, source=self.region_menu_visible, seconds=3)
+            ready, source=self.region_menu_visible, recover=lambda: False, seconds=3)
         self.event({"type": "map_region_menu_closed", "success": closed})
         return closed
 
@@ -104,6 +104,7 @@ class Teleporter:
         province = checkpoint["province"]
         region_roi = self.rt.ui.roi("AreaBigMapRegionName")
         list_roi = self.rt.ui.roi("AreaBigMapRegionSelect")
+        scroll_roi = [950, 120, 180, 480]
         if wanted == "家园":
             # Home names are user-defined; upstream selects the home glyph.
             return self.home_region(region_roi, list_roi)
@@ -132,19 +133,22 @@ class Teleporter:
         def select_region():
             self.check()
             if province == wanted:
-                return self.rt.ui.find(roi=list_roi, text=province, exact=True, scroll=True)
+                return self.rt.ui.find(roi=list_roi, text=province, exact=True,
+                                       scroll=True, scroll_roi=scroll_roi)
             result = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": list_roi, "expected": ".+"})
             entries = {normalized(getattr(item, "text", "")) for item in
                        (getattr(result, "filtered_results", None) or [])}
             first = {"心愿原野": "纪念山地", "伊赞之土": "巨木之森"}.get(province)
             expanded = province in entries and (not first or first in entries)
             if not expanded:
-                if not self.rt.ui.find(roi=list_roi, text=province, exact=True, scroll=True):
+                if not self.rt.ui.find(roi=list_roi, text=province, exact=True,
+                                       scroll=True, scroll_roi=scroll_roi):
                     return False
                 if not self.rt.ui.wait_page(menu_visible, seconds=3):
                     return False
                 expanded = not first or bool(self.rt.text(list_roi, re.escape(first)))
-            if self.rt.ui.find(roi=list_roi, text=wanted, exact=True, scroll=True):
+            if self.rt.ui.find(roi=list_roi, text=wanted, exact=True,
+                               scroll=True, scroll_roi=scroll_roi):
                 return True
             if expanded and menu_visible():
                 raise NavigationError(f"地图区域「{wanted}」尚未解锁。")
@@ -196,7 +200,8 @@ class Teleporter:
             nonlocal selected, home_name
             self.check()
             box = self.rt.ui.find(roi=list_roi, asset="IconBigMapHomeFeature",
-                                 scale=2/3, threshold=.9, color=color, scroll=True, click=False)
+                                 scale=2/3, threshold=.9, color=color, scroll=True,
+                                 scroll_roi=[950, 120, 180, 480], click=False)
             if not box:
                 return False
             # Compare the home row with the current header, including renamed
@@ -342,23 +347,27 @@ class Teleporter:
                 y1 = min(self.locator.spec.height, math.ceil(cy+patch.shape[0]/2+12))
                 try:
                     x, y, score, peak = match_map(
-                        self.locator.map[y0:y1, x0:x1], patch, minimum_score=.65)
+                        self.locator.map[y0:y1, x0:x1], patch, minimum_score=.60)
                 except NavigationError:
                     continue
                 center = x+x0-dx, y+y0-dy
-                accepted = (score >= .65 and peak >= .01
+                accepted = (score >= .60 and peak >= .008
                             and math.hypot(center[0]-pose[0], center[1]-pose[1]) <= 6)
                 self.map_diagnostics.append({"method": "player_terrain_tile",
                     "roi": [left, top, width, height], "x": center[0], "y": center[1],
                     "score": score, "local_peak": peak, "accepted": accepted})
                 if accepted:
                     candidates.append((*center, score, peak))
-        if len(candidates) < 2 or any(math.hypot(a[0]-b[0], a[1]-b[1]) > 2
-                                      for a in candidates for b in candidates):
+        if (len(candidates) < 2
+                or max(p[2] for p in candidates) < .65
+                or max(p[3] for p in candidates) < .01
+                or any(math.hypot(a[0]-b[0], a[1]-b[1]) > 2
+                       for a in candidates for b in candidates)):
             return pose
         return (sum(p[0] for p in candidates)/len(candidates),
                 sum(p[1] for p in candidates)/len(candidates),
-                min(p[2] for p in candidates), min(p[3] for p in candidates))
+                max(.6, min(p[2] for p in candidates)),
+                max(.01, min(p[3] for p in candidates)))
 
     def player_location(self):
         """A freshly opened map centers the player; never pan this view."""

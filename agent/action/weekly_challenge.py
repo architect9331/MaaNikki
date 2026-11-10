@@ -66,28 +66,43 @@ class WeeklyChallengeAction(CustomAction):
             if not rt.ui.realm("weekly"):
                 return False
             results = []
-            for node, label in targets:
+            remaining_quota = max(0, total - finished)
+            for index, (node, label) in enumerate(targets):
                 if rt.stopped:
                     return False
+                if remaining_quota <= 0:
+                    rt.log("本周幻境次数已满，跳过剩余目标。")
+                    break
+                if energy is not None and energy < game.MIN_ENERGY["weekly"]:
+                    results.append(game.exhausted(True, energy))
+                    break
                 rt.log(f"正在完成每周幻境：{label}。")
                 ok = game.realm("weekly", maximize=False, entered=True, weekly_node=node, allow_exhausted=True)
                 results.append(ok)
                 if game.energy_exhausted:
                     break
-                if not ok:
-                    rt.log(f"{label}未确认完成。")
-                    # A failed confirmation/reward may leave a dialog open.
-                    # Do not search/click another level on that unknown page.
-                    break
-            rt.log("每周幻境处理结束。" if all(results) else "部分每周幻境未完成，请检查游戏状态。")
-            if not all(results) and combined and not rt.stopped:
+                if ok:
+                    if not game.weekly_quota_used:
+                        remaining_quota = max(0, remaining_quota - 1)
+                        if energy is not None:
+                            energy = max(0, energy - game.MIN_ENERGY["weekly"])
+                    continue
+                rt.log(f"{label}未确认完成。")
+                if game.level_missing and index + 1 < len(targets):
+                    continue
+                # A failed confirmation/reward may leave a dialog open.
+                # Do not search/click another level on that unknown page.
+                break
+            overall_ok = bool(results) and (all(results) or remaining_quota == 0)
+            rt.log("每周幻境处理结束。" if overall_ok else "部分每周幻境未完成，请检查游戏状态。")
+            if not overall_ok and combined and not rt.stopped:
                 recovered = rt.main()
                 if recovered and not context.override_pipeline({
                         argv.node_name: {"on_error": ["MaaNikki_RealmWeeklyIncomplete"]},
                         "MaaNikki_RealmReview": {"custom_action_param": {
                             "stage": "settle", "realm_success": False}}}):
                     rt.log("未能恢复后续幻境流程，本次停止。")
-            return all(results)
+            return overall_ok
 
         returned = True
         try:

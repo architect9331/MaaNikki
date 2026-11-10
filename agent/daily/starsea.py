@@ -208,7 +208,11 @@ class Starsea:
             self.rt.log("正在长按摇铃键（4 秒）。", detail=True)
             ok = self.rt.hold("bell", 4)
             if ok:
-                ok = self.rt.ui.wait_page("MaaNikki_MainDetected", seconds=5 if timed else 10)
+                ok = self.rt.ui.wait_page("MaaNikki_MainDetected", seconds=8 if timed else 10)
+                if not ok and not self.rt.stopped:
+                    ok = self.rt.main()
+            if not ok and not self.rt.stopped:
+                self.rt.log("摇铃后未能确认返回主界面。")
             self.events.append({"type": "bell", "input_completed": bool(ok), "duration": 4})
             if ok and not at_hub:
                 self.rt.log("摇铃操作已结束，稍后统一核实积分。", detail=True)
@@ -378,6 +382,7 @@ class Starsea:
                 else:
                     empty_frames += 1
                     if (time.monotonic()-start >= CRYSTAL_APPEAR_WAIT
+                            and (scan["max_markers"] > 0 or scan["view_confirmed"])
                             and time.monotonic()-last_markers_at >= 1.5 and empty_frames >= 2):
                         scan["reason"] = "markers_disappeared"
                         break
@@ -579,6 +584,22 @@ class Starsea:
                     break
                 if index+1 < len(CRYSTAL_VIEWS):
                     self.rt.log("切换地图视野，继续定位剩余结晶。", detail=True)
+            if selected is None and not self.rt.stopped and len(self.crystal_locations) >= 2:
+                if self.crystal_routes is None:
+                    self.crystal_routes = [load_route(self.resource, f"xinghai_crystal_{n}")
+                                           for n in CRYSTAL_ROUTE_ORDER]
+                if all(route is not None for route in self.crystal_routes):
+                    fallback_selected, fallback_distances = select_crystal_route_by_path(
+                        self.crystal_locations, self.crystal_routes)
+                    if fallback_selected is not None:
+                        selected, distances = fallback_selected, fallback_distances
+                        total = len(self.crystal_locations)
+                        location = tuple(sum(p[i] for p in self.crystal_locations)/total for i in (0, 1))
+                        self.crystal_selection = selected, distances
+                        self.crystal_marker_count = total
+                        self.events.append({"type": "crystal_route_selection", "location": list(location),
+                                            "marker_count": total, "partial_match": True,
+                                            "candidates": distances, "selected": selected})
             if selected is None:
                 # Absence only counts after every known viewport was reached
                 # on a reliable map frame. Partial markers still need routing.

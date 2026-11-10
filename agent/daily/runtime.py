@@ -513,14 +513,32 @@ class Runtime:
             return
         image = self.frame()
         observed = self.read_account_uid(image)
-        if (observed is not None and self._account_uid is not None
-                and len(observed) == len(self._account_uid)
-                and sum(left != right for left, right in zip(observed, self._account_uid)) == 1):
-            # The account stays fixed during this run. One substituted OCR
-            # digit reuses the already-bound save, rather than changing its
-            # owner. Fresh runs still bind from the observed number directly.
-            self.evidence.observe("account_uid", method="bound_uid_reuse", differing_digits=1)
-            observed = self._account_uid
+        if observed is not None and self._account_uid is not None and observed != self._account_uid:
+            same_focus = generation == self._focus_generation
+            if (len(observed) == len(self._account_uid)
+                    and sum(left != right for left, right in zip(observed, self._account_uid)) <= (2 if same_focus else 1)):
+                self.evidence.observe("account_uid", method="bound_uid_reuse", differing_digits=1)
+                observed = self._account_uid
+            elif (same_focus and abs(len(observed) - len(self._account_uid)) == 1
+                    and (observed in self._account_uid or self._account_uid in observed)):
+                self.evidence.observe("account_uid", method="bound_uid_substring_reuse")
+                observed = self._account_uid
+            else:
+                confirmed_other = 0
+                for _ in range(2):
+                    if not self.pause(.2):
+                        break
+                    retry_img = self.capture()
+                    retry_uid = self.read_account_uid(retry_img)
+                    if retry_uid == self._account_uid or (
+                            retry_uid is not None and len(retry_uid) == len(self._account_uid)
+                            and sum(l != r for l, r in zip(retry_uid, self._account_uid)) == 1):
+                        observed = self._account_uid
+                        break
+                    if retry_uid == observed:
+                        confirmed_other += 1
+                if observed != self._account_uid and confirmed_other == 0 and same_focus:
+                    observed = None
         if observed is not None and observed != self._account_uid:
             self._account_mismatch = True
             if session:

@@ -31,6 +31,12 @@
     "expected": "^邮件$",
     "action": "DoNothing"
   },
+  "MaaNikki_Mailbox_Empty": {
+    "recognition": "OCR",
+    "roi": [90, 415, 290, 75],
+    "expected": "暂无新邮件",
+    "action": "DoNothing"
+  },
   "MaaNikki_Mailbox_ClaimAll": {
     "recognition": "OCR",
     "roi": [270, 650, 195, 58],

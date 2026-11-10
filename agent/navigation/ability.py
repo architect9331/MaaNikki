@@ -102,7 +102,7 @@ class Ability:
                 if not self.ui.find(roi=list_roi, scroll_roi=LIST_SCROLL_ROI, asset=self.icon,
                                     scale=LIST_ICON_SCALE, color=WHITE, threshold=.8,
                                     method=cv2.TM_CCORR_NORMED):
-                    raise NavigationError(f"能力列表中未能识别{self.label}图标，本项停止。")
+                    raise NavigationError(f"能力列表中未能识别{self.label}图标，请确认已解锁该能力。")
                 configured_slot = None
                 def configured():
                     nonlocal configured_slot

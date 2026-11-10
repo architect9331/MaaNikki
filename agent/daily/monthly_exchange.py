@@ -26,6 +26,17 @@ class MonthlyExchange(ShopWorkflow):
         if not self.ui.enter_page(lambda: self.ui.click_box(box),
                 self.TITLE_NODES[name], source="MaaNikki_Shop_QuietReady", attempts=1):
             return self.fail(f"未能打开{name}详情")
+        detail_image = self.rt.capture()
+        if detail_image is not None:
+            detail_sold = self.rt.recognize("MaaNikki_Shop_SoldOut", {
+                "roi": [325, 220, 215, 175]}, image=detail_image)
+            if (detail_sold and detail_sold.hit) or self.rt.text(
+                    [325, 220, 215, 175], r"已售罄|本月限购\s*[0０]\s*[/／]\s*5", image=detail_image):
+                self.ui.enter_page(self.rt.back, "MaaNikki_Shop_QuietReady",
+                                   source=self.TITLE_NODES[name], attempts=2, seconds=5)
+                self.confirm(name, "sold_out")
+                self.rt.log(f"{self.LABEL}：{name}本月已兑换，跳过。", detail=True)
+                return True
         if not self.rt.click_template("MaaNikki_Shop_ExchangeMax", attempts=1,
                                       wait_seconds=.3, verify=False):
             return self.fail(f"未能选择{name}最大数量")

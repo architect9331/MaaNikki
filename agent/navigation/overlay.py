@@ -860,6 +860,9 @@ def resolve_route_overlay_mode(context=None) -> str:
     return _read_live_overlay_mode("full")
 
 
+_CAPTURE_INCOMPATIBLE = False
+
+
 class RouteMinimapOverlay:
     """Capture-excluded Win32 overlay showing active 3D AR route guidance and minimap trajectory."""
 
@@ -867,7 +870,8 @@ class RouteMinimapOverlay:
         self.game = int(game_hwnd or 0)
         self.spec = spec
         self.exclude_from_capture = exclude_from_capture
-        self.mode = _CASE_TO_MODE.get(initial_mode or "", "") or _read_live_overlay_mode("full")
+        self.mode = "off" if _CAPTURE_INCOMPATIBLE else (
+            _CASE_TO_MODE.get(initial_mode or "", "") or _read_live_overlay_mode("full"))
         self._cfg_mtime_ns = _mxu_mtime_ns()
         self.lock = threading.Lock()
         self.snapshot: dict | None = None
@@ -879,10 +883,18 @@ class RouteMinimapOverlay:
         self.stop = threading.Event()
         self.ready = threading.Event()
         self.thread: threading.Thread | None = None
-        if self.game > 0:
+        if self.game > 0 and not _CAPTURE_INCOMPATIBLE:
             self.thread = threading.Thread(target=self._thread_main, name="route-minimap-overlay", daemon=True)
             self.thread.start()
             self.ready.wait(1.5)
+
+    def disable_for_capture(self):
+        global _CAPTURE_INCOMPATIBLE
+        if not _CAPTURE_INCOMPATIBLE:
+            _CAPTURE_INCOMPATIBLE = True
+            write_message("检测到当前窗口截图方式与路线导航遮罩不兼容（截图画面全黑），已自动关闭路线遮罩。", None)
+        self.mode = "off"
+        self.close()
 
     def notify_camera_turn(self, delta_deg: float):
         if not math.isfinite(delta_deg):
@@ -1065,7 +1077,8 @@ class RouteMinimapOverlay:
             hwnd = checked(create(exstyle, class_name, "MaaNikki 路线导航遮罩", 0x80000000,
                                   0, 0, 1, 1, None, None, module, None), "创建小地图路线遮罩窗口")
             affinity = 0x11 if self.exclude_from_capture else 0
-            bind(user, "SetWindowDisplayAffinity", w.BOOL, w.HWND, w.DWORD)(hwnd, affinity)
+            if affinity and not bind(user, "SetWindowDisplayAffinity", w.BOOL, w.HWND, w.DWORD)(hwnd, affinity):
+                return
             get_client = bind(user, "GetClientRect", w.BOOL, w.HWND, ctypes.POINTER(w.RECT))
             to_screen = bind(user, "ClientToScreen", w.BOOL, w.HWND, ctypes.POINTER(w.POINT))
             foreground = bind(user, "GetForegroundWindow", w.HWND)

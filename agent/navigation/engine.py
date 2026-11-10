@@ -257,6 +257,13 @@ class Navigator:
         begin = time.monotonic()
         input_begin = self.motion.forward_elapsed() if self.motion else 0
         frame = self.capture()
+        if (frame is not None and self.overlay is not None
+                and getattr(self.overlay, "thread", None) is not None
+                and int(frame.max()) == 0):
+            self.overlay.disable_for_capture()
+            self.pause(0.08)
+            begin = time.monotonic()
+            frame = self.capture()
         # A screenshot describes capture time, not the later OCR completion.
         # Midpoint is an estimate because Maa does not expose a frame timestamp.
         self.pose_at = (begin+time.monotonic())/2

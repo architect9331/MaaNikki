@@ -61,7 +61,7 @@ class Gameplay:
             if 0 <= current <= total and total > 0:
                 remaining = current
         raw_energy = self.rt.text([1100, 15, 150, 50], image=image)
-        match = re.fullmatch(r"\s*(\d+)\s*[/／]\s*(\d+)\s*", raw_energy)
+        match = re.search(r"(\d+)\s*[/／]\s*(\d+)", raw_energy)
         energy = None
         if match:
             current, total = map(int, match.groups())
@@ -201,6 +201,8 @@ class Gameplay:
             raise ValueError("固定挑战数量必须是 1～999 的整数")
         self.energy_exhausted = False
         self.quick_unavailable = False
+        self.level_missing = False
+        self.weekly_quota_used = False
         prefix = {"jihua": "Jihua", "bless": "Bless", "monster": "Monster", "weekly": "Weekly"}[kind]
         cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
 
@@ -228,6 +230,7 @@ class Gameplay:
                     return False
                 remaining, energy = self.weekly_state()
                 if remaining == 0:
+                    self.weekly_quota_used = True
                     self.rt.log("当前每周幻境的奖励次数已用完，跳过。")
                     return True
                 if energy is not None and energy < self.MIN_ENERGY[kind]:
@@ -303,6 +306,8 @@ class Gameplay:
         if self.ui.find(roi=self.REALM_LEVEL_ROI, node=node, scroll_roi=self.REALM_SCROLL_ROI):
             return True
         if not self.rt.stopped:
+            if kind == "weekly" and self.rt.hit("MaaNikki_Weekly_PageReady"):
+                self.level_missing = True
             self.rt.log("未找到所选幻境关卡，请确认已在游戏中解锁该试炼。")
             self.realm_level_diagnostic(kind, node)
         return False
@@ -371,11 +376,16 @@ class Gameplay:
 
     def jihua_reward(self):
         # Animation skip and reward skip are separate layers.
-        if not self.rt.wait_hit("MaaNikki_Energy_SkipReward", 10):
-            if not self.rt.stopped:
-                self.rt.diagnostic("jihua_reward", "未识别到素材激化动画跳过提示")
-                self.rt.log("未识别到素材激化动画跳过提示，请检查游戏画面。")
-            return False
+        if not self.rt.wait_hit("MaaNikki_Energy_SkipReward", 4):
+            if not self.rt.stopped and self.rt.hit("MaaNikki_Jihua_NumConfirm"):
+                self.rt.click_template("MaaNikki_Jihua_NumConfirm", attempts=1, wait_seconds=.3)
+            if not self.rt.stopped and self.rt.hit("MaaNikki_Jihua_FinalConfirm"):
+                self.rt.click_template("MaaNikki_Jihua_FinalConfirm", attempts=1, wait_seconds=.2)
+            if not self.rt.wait_hit("MaaNikki_Energy_SkipReward", 8):
+                if not self.rt.stopped:
+                    self.rt.diagnostic("jihua_reward", "未识别到素材激化动画跳过提示")
+                    self.rt.log("未识别到素材激化动画跳过提示，请检查游戏画面。")
+                return False
         if not self.rt.pause(.5) or not self.rt.key("skip", .5):
             return False
         result = self.ui.skip_reward()
@@ -447,29 +457,37 @@ class Gameplay:
         most = (self.rt.context.get_node_data("MaaNikki_Jihua_MaterialMostOpen") or {}).get("enabled", False)
         selected = False
         if most:
-            selected = (self.rt.action("Click", target=[93, 675]) and self.rt.pause(.2)
-                        and self.ui.find(roi=[60, 585, 75, 85], text="数量", scroll=False)
-                        and self.ui.click_asset("ButtonJihuaSort")
-                        and self.ui.stable() and self.rt.action("Click", target=self.ui.roi("AreaJihuaFirstMaterial")))
+            first_roi = self.ui.roi("AreaJihuaFirstMaterial")
+            if (self.rt.action("Click", target=[93, 675]) and self.rt.pause(.2)
+                    and self.ui.find(roi=[60, 585, 75, 85], text="数量", scroll=False)
+                    and self.ui.click_asset("ButtonJihuaSort")
+                    and self.ui.stable()):
+                selected = self.ui.enter_page(
+                    lambda: self.rt.action("Click", target=first_roi),
+                    "MaaNikki_Jihua_NumConfirm", attempts=2, seconds=3)
         if not selected:
             if most:
                 self.rt.log("未能按数量选择材料，尝试已设置的首选和备选材料。")
             options = fields(self.rt.context, "MaaNikki_Jihua_Material").get("expected", [])
             options = options if isinstance(options, list) else [options]
             metadata = catalog(self.ui.resource)["materials"]
+            cost_roi = self.ui.roi("AreaJihuaCostSelect")
             for label in options:
                 label = {"小棉菊": "小绵菊"}.get(label, label)
                 item = metadata.get(label)
                 if not item or not item.get("jihua"):
                     self.rt.log(f"{label}不能作为激化材料，尝试备选。")
                     continue
-                if self.ui.find(roi=self.ui.roi("AreaJihuaCostSelect"), asset=item["game_img"], scale=.5*2/3, threshold=.7):
+                if self.ui.enter_page(
+                        lambda asset=item["game_img"]: self.ui.find(
+                            roi=cost_roi, asset=asset, scale=.5*2/3, threshold=.7),
+                        "MaaNikki_Jihua_NumConfirm", attempts=2, seconds=3):
                     selected = True
                     break
         if not selected:
             self.rt.log("未找到可用的激化材料。")
             return False
-        return self.rt.pause(.5)
+        return self.rt.pause(.3)
 
     def monthly_diagnostic(self, kind, stage, reason=None):
         """Retain the unfamiliar reward layer before ordinary page recovery."""
