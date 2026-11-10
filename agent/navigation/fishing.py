@@ -287,7 +287,7 @@ class Fishing:
         deadline = time.monotonic()+5
         while not self.rt.stopped:
             if time.monotonic() >= deadline:
-                if self.kind == "home" and not retried:
+                if self.kind == "home" and not self.passive:
                     # Retry only from a fresh, confirmed entrance; R can also
                     # withdraw the rod if fishing has already started.
                     pending = self.state()
@@ -300,12 +300,15 @@ class Fishing:
                                roi=self.ui.roi("AreaSubAbilityButton"), color=WHITE, threshold=.8)
                            if ready and ready.hit else None)
                     if box:
-                        retried = True
-                        self.actions.event({"type": "star_fishing_retry", "attempt": 2, "box": box})
-                        self.rt.log("钓星未启动，已确认副能力可用，重试一次。")
-                        self.switch_fishing()
-                        deadline = time.monotonic()+5
-                        continue
+                        if not retried:
+                            retried = True
+                            self.actions.event({"type": "star_fishing_retry", "attempt": 2, "box": box})
+                            self.rt.log("钓星未启动，已确认副能力可用，重试一次。")
+                            self.switch_fishing()
+                            deadline = time.monotonic()+5
+                            continue
+                        self.fail_state('多次按下“能力衍生功能 1”按键仍未进入钓星，请检查键位设置是否与游戏内一致。',
+                                        leave_home=True)
                 if self.passive and self.last_known_state is None:
                     self.actions.event({"type": self.event_prefix+"_prompts_ended",
                                         "main": bool(self.rt.hit("MaaNikki_MainDetected")),
