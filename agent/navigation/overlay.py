@@ -330,20 +330,32 @@ class MinimapHudSurface:
         fwd_x, fwd_y = math.sin(rad), -math.cos(rad)
         right_x, right_y = math.cos(rad), math.sin(rad)
 
-        # Calibrated Unreal Engine third-person follow camera (90 deg horizontal FOV, 3.85m arm, 2.15m height, 10.4 deg pitch)
-        cam_back_m = 3.85
-        cam_h_m = 2.15 + jump_z_m
-        pitch_rad = math.radians(10.4)
+        # Unpacked 3C follow camera (CBPD_CameraConfigBase + CameraSlopeFollowPitchCurve + ArmlengthFixedByPitch_Normal):
+        # - BirthRotation.Pitch = -18.0 deg (AirLandPitch = -18.0 deg), flat-ground PitchSync band [-18.0, -15.0] deg
+        # - Horizontal FOV = 75.0 deg (MaintainXFOV -> focal = (width * 0.5) / tan(37.5 deg))
+        # - BaseArmLength = 4.00m + ArmlengthFixedByPitch_Normal cubic curve (+5.50m at -45 deg, 0m in [-10, +10] deg)
+        # - SpringArm pivot height = 0.90m above character feet, centered at (0.50 * width, 0.50 * height)
+        fwd_slope = dz_dx_m * fwd_x + dz_dy_m * fwd_y
+        fwd_slope_deg = math.degrees(math.atan(fwd_slope))
+        pitch_down_deg = max(8.0, min(28.0, 17.2 - fwd_slope_deg * 0.55))
+        pitch_rad = math.radians(pitch_down_deg)
         cos_p, sin_p = math.cos(pitch_rad), math.sin(pitch_rad)
-        focal = self.width * 0.50
-        cx_scr, cy_scr = self.width * 0.50, self.height * 0.512
+        if pitch_down_deg > 10.0:
+            u_arm = min(1.0, (pitch_down_deg - 10.0) / 35.0)
+            arm_len_m = 4.00 + 5.50 * (3.0 * u_arm * u_arm - 2.0 * u_arm * u_arm * u_arm)
+        else:
+            arm_len_m = 4.00
+        cam_back_m = arm_len_m * cos_p
+        cam_h_m = 0.90 + arm_len_m * sin_p + jump_z_m
+        focal = (self.width * 0.50) / math.tan(math.radians(37.5))
+        cx_scr, cy_scr = self.width * 0.50, self.height * 0.50
 
         def project_3d(wx: float, wy: float, wz: float, offset_x_m: float = 0.0, offset_y_m: float = 0.0):
             dx_m = (wx - cur_x) * 0.90 + offset_x_m
             dy_m = (wy - cur_y) * 0.90 + offset_y_m
-            # Compensate for third-person SpringArm auto-pitching parallel to the local ground slope
             local_slope_z = dz_dx_m * dx_m + dz_dy_m * dy_m
-            dz_m = (wz - ground_z - local_slope_z * 0.65) * 0.52
+            raw_dz = max(-4.0, min(4.0, wz - ground_z - local_slope_z * 0.45))
+            dz_m = raw_dz * 0.55
             cam_r = dx_m * right_x + dy_m * right_y
             horiz_f = dx_m * fwd_x + dy_m * fwd_y + cam_back_m
             vz = dz_m - cam_h_m
