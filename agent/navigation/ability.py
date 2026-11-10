@@ -46,7 +46,7 @@ def ability_matches(runtime, node):
     x, y, w, h = cv2.boundingRect(image)
     if not w or not h:
         return False
-    return float(cv2.matchTemplate(patch, image[y:y+h, x:x+w], cv2.TM_CCORR_NORMED).max()) > .8
+    return float(cv2.matchTemplate(patch, image[y:y+h, x:x+w], cv2.TM_CCORR_NORMED).max()) > .78
 
 
 class Ability:
@@ -100,7 +100,7 @@ class Ability:
                 # the actual icon at the list thumbnail size in either layout.
                 # Do not infer the layout from OCR word counts or a swap button.
                 if not self.ui.find(roi=list_roi, scroll_roi=LIST_SCROLL_ROI, asset=self.icon,
-                                    scale=LIST_ICON_SCALE, color=WHITE, threshold=.8,
+                                    scale=LIST_ICON_SCALE, color=WHITE, threshold=.78,
                                     method=cv2.TM_CCORR_NORMED):
                     raise NavigationError(f"能力列表中未能识别{self.label}图标，请确认已解锁该能力。")
                 configured_slot = None
@@ -146,7 +146,7 @@ class Ability:
         for index, (x, y) in enumerate(SLOTS, 1):
             area = [round((x-50)*2/3), round((y-50)*2/3), 67, 67]
             if self.ui.asset(self.icon, image=frame, roi=area, scale=2/3, color=WHITE,
-                             threshold=.8, method=cv2.TM_CCORR_NORMED):
+                             threshold=.78, method=cv2.TM_CCORR_NORMED):
                 return index
         return None
 

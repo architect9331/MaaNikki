@@ -112,23 +112,39 @@ def camera_heading(reference, map_image, spec, x, y, *, terrain=None):
     radial, angular = np.indices((d, d), dtype=np.float32)
     angle = angular*2*np.pi/d
     polar = cv2.remap(cone, d/2+radial/2*np.cos(angle), d/2+radial/2*np.sin(angle), cv2.INTER_LINEAR)
-    polar = cv2.resize(polar[d*2//10:d*7//10].astype(np.float32), None, fx=2, fy=2)
     polar_valid = cv2.remap(gradient_valid, d/2+radial/2*np.cos(angle),
                             d/2+radial/2*np.sin(angle), cv2.INTER_NEAREST)
-    polar_valid = cv2.resize(polar_valid[d*2//10:d*7//10], None, fx=2, fy=2,
-                             interpolation=cv2.INTER_NEAREST)
+    # Angular column 0 and column d-1 meet at angle 0 (heading 135 deg). Pad
+    # circularly before resizing, Scharr and 1D peak finding so border-reflect
+    # symmetry does not zero the derivative at the seam or merge seam peaks.
+    pad = 8
+    polar = np.pad(polar[d*2//10:d*7//10].astype(np.float32), ((0, 0), (pad, pad)), mode="wrap")
+    polar = cv2.resize(polar, None, fx=2, fy=2)
+    polar_valid = np.pad(polar_valid[d*2//10:d*7//10], ((0, 0), (pad, pad)), mode="wrap")
+    polar_valid = cv2.resize(polar_valid, None, fx=2, fy=2, interpolation=cv2.INTER_NEAREST)
     polar_valid = cv2.erode(polar_valid, np.ones((3, 3), np.uint8))
-    gradient = cv2.Scharr(polar, cv2.CV_32F, 1, 0)
+    # The minimap light-cone shader fades radially from 0.2R to 0.7R; compensate
+    # the outer radial rows before the uniform peak height gate.
+    radial_fade = np.linspace(1.0, 1.4, polar.shape[0], dtype=np.float32)[:, None]
+    gradient = cv2.Scharr(polar, cv2.CV_32F, 1, 0) * radial_fade
     gradient[polar_valid == 0] = 0
     width = d*2
+    pad2 = pad*2
+    padded_width = width+2*pad2
     rising_peaks = find_peaks(gradient.ravel(), height=150, wlen=width)[0]
     falling_peaks = find_peaks(-gradient.ravel(), height=150, wlen=width)[0]
-    rising = np.bincount(rising_peaks % width, minlength=width)
-    falling = np.bincount(falling_peaks % width, minlength=width)
-    rising_rows = np.zeros(gradient.shape, bool)
-    falling_rows = np.zeros(gradient.shape, bool)
-    rising_rows.ravel()[rising_peaks] = True
-    falling_rows.ravel()[falling_peaks] = True
+    rising_r, rising_c = divmod(rising_peaks, padded_width)
+    falling_r, falling_c = divmod(falling_peaks, padded_width)
+    rising_keep = (rising_c >= pad2) & (rising_c < pad2+width)
+    falling_keep = (falling_c >= pad2) & (falling_c < pad2+width)
+    rising_r, rising_c = rising_r[rising_keep], rising_c[rising_keep]-pad2
+    falling_r, falling_c = falling_r[falling_keep], falling_c[falling_keep]-pad2
+    rising = np.bincount(rising_c, minlength=width)
+    falling = np.bincount(falling_c, minlength=width)
+    rising_rows = np.zeros((polar.shape[0], width), bool)
+    falling_rows = np.zeros((polar.shape[0], width), bool)
+    rising_rows[rising_r, rising_c] = True
+    falling_rows[falling_r, falling_c] = True
     left_edge, right_edge = np.maximum(rising-falling, 0), np.maximum(falling-rising, 0)
     profiles = []
     for shift in range(-3, 4):

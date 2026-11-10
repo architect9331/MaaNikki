@@ -304,7 +304,7 @@ class Teleporter:
             # outside the mask; accept an unmasked coarse peak only when at
             # least two disjoint terrain tiles confirm it on the full-scale map.
             ux, uy, uscore, udetail = match_map(self.locator.coarse, patch, kernel=9)
-            if all(math.isfinite(v) for v in (ux, uy, uscore, udetail)) and uscore >= .45 and udetail >= .01:
+            if all(math.isfinite(v) for v in (ux, uy, uscore, udetail)) and uscore >= .20 and udetail >= .01:
                 unmasked = ux*4, uy*4, uscore, udetail
                 self.map_diagnostics.append({"method": "whole_map_unmasked_peak", "x": unmasked[0], "y": unmasked[1],
                                              "score": uscore, "local_peak": udetail})
@@ -327,7 +327,7 @@ class Teleporter:
 
     def refine_player_pose(self, frame, pose):
         """Cross-check a coarse global candidate using separate terrain tiles."""
-        if pose[2] < .38 or pose[3] < .01:
+        if pose[2] < .20 or pose[3] < .01:
             return pose
         scale = self.locator.spec.bigmap_scale
         candidates = []

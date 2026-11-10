@@ -408,7 +408,7 @@ class GameUI:
                 return False
         return self.rt.click_template(node)
 
-    def find(self, *, roi, text=None, node=None, asset=None, scale=1, threshold=.75,
+    def find(self, *, roi, text=None, pattern=None, node=None, asset=None, scale=1, threshold=.75,
              color=None, method=None, exact=False, scroll=True, click=True, scroll_roi=None, paged=False):
         """Search current view, then top to bottom; optionally return the box without clicking."""
         if node:
@@ -438,14 +438,14 @@ class GameUI:
                 if node:
                     result = self.rt.recognize(node, {"roi": roi}, image=image)
                 else:
-                    pattern = "^"+re.escape(text)+"$" if exact else re.escape(text)
+                    expected = pattern if pattern is not None else ("^"+re.escape(text)+"$" if exact else re.escape(text))
                     if color:
                         x, y, w, h = roi
                         filtered = cv2.inRange(cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2HSV),
                                                np.array(color[0]), np.array(color[1]))
                         image = image.copy()
                         image[y:y+h, x:x+w] = cv2.cvtColor(filtered, cv2.COLOR_GRAY2BGR)
-                    result = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": roi, "expected": pattern}, image=image)
+                    result = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": roi, "expected": expected}, image=image)
                 box = list(result.box) if result and result.hit else None
             if box:
                 if not click:
@@ -866,6 +866,8 @@ class GameUI:
                     page = "reward_overlay"
                 elif self.rt.hit("MaaNikki_Bless_Cancel"):
                     page = "realm_confirm"
+                elif self.asset("ButtonDungeonQuitOK", threshold=.75, method=cv2.TM_CCOEFF_NORMED):
+                    page = "quit_confirm"
                 elif self.star_collect_world_ready():
                     page = "main"
                 elif self.rt.hit("MaaNikki_Navigation_ReviveButton"):
@@ -901,6 +903,10 @@ class GameUI:
                 break
             elif page == "death":
                 return bool(self.revive(event))
+            elif page == "quit_confirm":
+                if not self.click_asset("ButtonDungeonQuitOK", threshold=.75,
+                                        method=cv2.TM_CCOEFF_NORMED, attempts=1):
+                    return False
             elif page == "dungeon":
                 if not (self.rt.key("exit", 0)
                         and self.wait_page(asset="ButtonDungeonQuitOK", threshold=.75)
@@ -995,8 +1001,12 @@ class GameUI:
             selected = cv2.inRange(cv2.cvtColor(patch, cv2.COLOR_BGR2HSV),
                                    (10, 40, 150), (35, 220, 255))
             return cv2.countNonZero(selected) / selected.size >= .45
-        ability = self.feature(asset="IconAbilityFeature", threshold=.99,
-                               method=cv2.TM_CCORR_NORMED)
+        ability_icon = self.feature(asset="IconAbilityFeature", threshold=.99,
+                                    method=cv2.TM_CCORR_NORMED)
+        def ability():
+            return bool(ability_icon()
+                        and not self.asset("ButtonDungeonQuitOK", threshold=.75,
+                                           method=cv2.TM_CCOEFF_NORMED))
         if self.page_matches(ability) and self.wait_page(ability):
             return True
         def open_wardrobe():
