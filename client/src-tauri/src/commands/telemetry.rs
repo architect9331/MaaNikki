@@ -802,6 +802,101 @@ fn evidence_isolated_for_ids<'a>(
     !running_instances.any(|running_id| running_id != current_instance)
 }
 
+/// 预任务（pretask）执行期间的诊断证据窗口，用于上报连接 Controller 前的启动失败。
+pub struct PretaskTelemetry {
+    task_name: String,
+    node_name: String,
+    started_at: Instant,
+    started_wall_time: SystemTime,
+    evidence_start: Option<TaskEvidenceStart>,
+    evidence_isolated: bool,
+    evidence_epoch: u64,
+}
+
+fn infer_pretask_identity(program: &str, args: &[String]) -> (String, String) {
+    let is_start_game = std::iter::once(program)
+        .chain(args.iter().map(String::as_str))
+        .any(|part| part.contains("start_game"));
+    if is_start_game {
+        ("start_game".to_string(), "MaaNikki_StartGame".to_string())
+    } else {
+        ("pretask".to_string(), "mxu.pretask".to_string())
+    }
+}
+
+pub fn begin_pretask(
+    instance_id: &str,
+    program: &str,
+    args: &[String],
+) -> Option<PretaskTelemetry> {
+    if !is_diagnostics_active() {
+        return None;
+    }
+    let evidence_isolated = RUNS
+        .lock()
+        .ok()
+        .map(|runs| evidence_isolated_for_ids(instance_id, runs.keys().map(String::as_str)))
+        .unwrap_or(false);
+    let evidence_epoch = EVIDENCE_EPOCH
+        .fetch_add(1, Ordering::SeqCst)
+        .wrapping_add(1);
+    let evidence_start =
+        evidence_isolated.then(|| task_diagnostics::capture_task_start(&get_logs_dir()));
+    let (task_name, node_name) = infer_pretask_identity(program, args);
+    Some(PretaskTelemetry {
+        task_name,
+        node_name,
+        started_at: Instant::now(),
+        started_wall_time: SystemTime::now(),
+        evidence_start,
+        evidence_isolated,
+        evidence_epoch,
+    })
+}
+
+pub fn on_pretask_failed(pretask: PretaskTelemetry, exit_code: i32) {
+    if !is_diagnostics_active() {
+        return;
+    }
+    let run_id = sentry::types::random_uuid().to_string();
+    let event_config = TELEMETRY_CONFIG
+        .lock()
+        .ok()
+        .and_then(|config| config.as_ref().map(FailureEventConfig::from))
+        .unwrap_or_default();
+    let duration_ms = Some(pretask.started_at.elapsed().as_millis() as u64);
+    let signal = FailureSignal {
+        node: pretask.node_name,
+        stage: "pretask".to_string(),
+        source_task_id: 0,
+        node_id: None,
+        duration_ms,
+    };
+    let tags = BTreeMap::from([
+        ("run.id".to_string(), run_id.clone()),
+        ("pretask.exit_code".to_string(), exit_code.to_string()),
+    ]);
+    submit_failure_report(TaskFailureReport {
+        run_id,
+        maa_task_id: 0,
+        task: TaskMeta {
+            name: pretask.task_name,
+            options: BTreeMap::new(),
+        },
+        duration_ms,
+        started_wall_time: Some(pretask.started_wall_time),
+        failure: Some(signal.clone()),
+        terminal_failure: Some(signal),
+        failed_node_count: 1,
+        trace_context: None,
+        tags,
+        event_config,
+        evidence_start: pretask.evidence_start,
+        evidence_isolated: pretask.evidence_isolated,
+        evidence_epoch: pretask.evidence_epoch,
+    });
+}
+
 /// 整批运行开始：创建 Transaction，并记录本次使用的 controller。
 pub fn on_run_start(instance_id: &str, task_names: &[String], controller: Option<&ControllerInfo>) {
     if !is_active() {

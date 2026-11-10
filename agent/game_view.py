@@ -17,6 +17,7 @@ def require_game_frame(frame):
     height, width = frame.shape[:2]
     if (width, height) not in ALLOWED_FRAME_SIZES:
         raise GameFrameSizeError(
-            f"当前游戏截图为 {width}×{height}，识别与点击需要 1280×720 基准画面。"
-            "请在游戏设置中选择 16:9 分辨率（推荐 1920×1080），"
-            "并确保游戏窗口实际保持 16:9 后重新运行。")
+            f"当前游戏截图为 {width}×{height}，识别与点击需要 1280×720（16:9）基准画面。"
+            "请在游戏设置中选择 16:9 分辨率（若窗口高度被标题栏或任务栏挤占，"
+            "请在 16:9 屏幕上改用全屏/无边框或换用 1600×900、1280×720 等更小的 16:9 窗口；"
+            "若开启超分辨率 TSR 后分辨率异常，请切换为 DLSS/XeSS/TAA）后重新运行。")

@@ -70,14 +70,60 @@ pub fn handle_task_callback(
         return;
     }
 
-    // 解析 task_id
-    let task_id: i64 = match serde_json::from_str::<serde_json::Value>(details)
-        .ok()
-        .and_then(|v| v.get("task_id").and_then(|id| id.as_i64()))
-    {
+    // 解析 task_id 与内部停止伪任务标识（MaaTaskerPostStop）
+    let parsed_details = match serde_json::from_str::<serde_json::Value>(details) {
+        Ok(v) => v,
+        Err(_) => return,
+    };
+    let task_id: i64 = match parsed_details.get("task_id").and_then(|id| id.as_i64()) {
         Some(id) => id,
         None => return,
     };
+    if parsed_details.get("entry").and_then(|e| e.as_str()) == Some("MaaTaskerPostStop") {
+        // MaaFramework 调用 post_stop 时会派发内部伪任务 MaaTaskerPostStop，并直接清空后续排队任务而不逐个触发 Task.Failed。
+        // 1. 忽略其 Starting，避免递增 EVIDENCE_EPOCH 打断刚失败任务的截图与诊断日志冻结，也避免产生空名 Span；
+        // 2. 在非用户手动取消的内部 post_stop 收尾时，将队列中尚未执行的剩余任务一并收尾，结束整轮状态与遥测。
+        if is_started {
+            return;
+        }
+        let aborted_remaining = {
+            let mut instances = match maa_state.instances.lock() {
+                Ok(g) => g,
+                Err(_) => return,
+            };
+            let instance = match instances.get_mut(instance_id) {
+                Some(i) => i,
+                None => return,
+            };
+            if instance.stop_in_progress
+                || instance.task_run_state.overall_status.as_deref() != Some("Running")
+            {
+                false
+            } else {
+                let state = &mut instance.task_run_state;
+                for status in state.statuses.values_mut() {
+                    if status == "pending" || status == "running" {
+                        *status = "failed".to_string();
+                    }
+                }
+                state.overall_status = Some("Failed".to_string());
+                instance.task_ids.clear();
+                true
+            }
+        };
+        if aborted_remaining {
+            super::telemetry::on_run_finished(instance_id);
+            emit_state_changed(app, instance_id, "task-progress");
+            emit_state_changed(app, instance_id, "tasks-completed");
+            if let Err(e) = super::maa_agent::stop_agent_impl(maa_state, instance_id) {
+                log::warn!(
+                    "[handle_task_callback] Failed to stop agents after post_stop abort: {}",
+                    e
+                );
+            }
+        }
+        return;
+    }
 
     let all_done = {
         let mut instances = match maa_state.instances.lock() {

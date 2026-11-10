@@ -9,7 +9,7 @@ from client_config import parse_custom_param
 from registration import agent_action
 from task_control import task_time as time
 from daily.runtime import Executors, ROOT
-from game_view import GameFrameSizeError, require_game_frame
+from game_view import ALLOWED_FRAME_SIZES, GameFrameSizeError, require_game_frame
 
 
 @agent_action("nikki.start_game", stop_on_failure=True)
@@ -19,10 +19,13 @@ class StartGameAction(CustomAction):
         options = parse_custom_param(argv.custom_action_param)
         timeout = int(options.get("timeout", 900))
         bootstrap = options.get("bootstrap") is True
+        already_running = options.get("already_running") is True
         self.restart_requested = False
         self.elapsed_seconds = 0.0
+        self.stop_reason = None
         if not 30 <= timeout <= 900:
-            runtime.log("启动等待上限应在30至900秒之间。")
+            self.stop_reason = "启动等待上限应在30至900秒之间。"
+            runtime.log(self.stop_reason)
             context.tasker.post_stop()
             return False
         started_at = time.monotonic()
@@ -35,6 +38,7 @@ class StartGameAction(CustomAction):
         unknown_since = None
 
         def incomplete(reason="尚未完成进入游戏"):
+            self.stop_reason = reason
             if not runtime.stopped:
                 folder = ROOT / "logs/startup"
                 folder.mkdir(parents=True, exist_ok=True)
@@ -121,8 +125,10 @@ class StartGameAction(CustomAction):
 
         # The splash or health warning can open at 16:9 or the launcher's aspect
         # ratio and transiently resize while Unreal applies saved display settings.
-        # Guard captures across this initial window; ordinary input keeps geometry checks.
-        frame_deadline = min(deadline, started_at+30)
+        # Guard captures across this initial window; when attaching to an already
+        # running game window, allow only a brief settle window for focus/restore.
+        frame_wait_seconds = 3 if already_running else 30
+        frame_deadline = min(deadline, started_at + frame_wait_seconds)
         frame_wait_logged = False
 
         def capture_startup_frame():
@@ -136,24 +142,21 @@ class StartGameAction(CustomAction):
                     continue
                 if image is None or image.size == 0:
                     return None
-                if (
-                    image.shape[:2] != (720, 1280)
-                    and abs(image.shape[1] - 1280) <= 2
-                    and abs(image.shape[0] - 720) <= 2
-                ):
+                if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES:
                     from tall_window import heal_16_9_window
                     healed = heal_16_9_window(runtime.controller)
                     if healed is not None:
                         image = healed
                 try:
                     require_game_frame(image)
-                except GameFrameSizeError:
+                except GameFrameSizeError as error:
                     if (
                         time.monotonic() >= frame_deadline
                         or entered > 0
                         or logged_in > 0
                         or update_attempts > 0
                     ):
+                        self.stop_reason = str(error)
                         runtime.evidence.remember_frame(image, runtime._focus_generation)
                         runtime.validate_frame(image)
                     unknown_since = None

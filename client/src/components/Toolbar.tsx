@@ -545,19 +545,22 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
               });
 
               throwIfPreActionStopped(targetId);
-              const exitCode = await maaService.runPretask(
+              const { exitCode, message: pretaskMessage } = await maaService.runPretask(
                 targetId, item.exec, args, basePath, item.cancel_on_stop,
               );
               throwIfPreActionStopped(targetId);
 
               if (exitCode !== 0) {
-                log.warn(`实例 ${targetInstance.name}: 预任务退出码非零:`, exitCode);
+                const detail = pretaskMessage?.trim();
+                log.warn(`实例 ${targetInstance.name}: 预任务退出码非零:`, exitCode, detail);
                 addLog(targetId, {
                   type: 'warning',
-                  message: t('action.pretaskExitCode', { code: exitCode }),
+                  message: detail || t('action.pretaskExitCode', { code: exitCode }),
                 });
                 if (requiredPretask) {
-                  throw new Error(`${displayName}: ${t('action.pretaskExitCode', { code: exitCode })}`);
+                  throw new Error(
+                    `${displayName}: ${detail || t('action.pretaskExitCode', { code: exitCode })}`,
+                  );
                 }
               } else {
                 addLog(targetId, {

@@ -104,6 +104,11 @@ def _user32():
         u32.SetThreadDpiAwarenessContext.restype = wintypes.HANDLE
     except Exception:
         pass
+    try:
+        u32.GetDpiForWindow.argtypes = [wintypes.HWND]
+        u32.GetDpiForWindow.restype = wintypes.UINT
+    except Exception:
+        pass
     return u32
 
 
@@ -165,7 +170,9 @@ def _poll_capture(rt):
 
 
 def heal_16_9_window(controller=None, *, hwnd: int | None = None):
-    """Repair a windowed 16:9 game window whose physical client size is off by 1-4 px."""
+    """Repair a windowed 16:9 game window whose physical client size is off by border/DPI rounding."""
+    if (TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT) in ALLOWED_FRAME_SIZES:
+        return None
     u32 = _user32()
     target_hwnd = int(hwnd) if hwnd else _resolve_hwnd(controller=controller)
     if not target_hwnd:
@@ -180,24 +187,47 @@ def heal_16_9_window(controller=None, *, hwnd: int | None = None):
         cw, ch = csize
         if cw <= 0 or ch <= 0:
             return None
+        dpi = 96
+        try:
+            queried_dpi = int(u32.GetDpiForWindow(target_hwnd))
+            if queried_dpi > 0:
+                dpi = queried_dpi
+        except Exception:
+            pass
+        # Allow up to 4 logical pixels of Win32 border / DPI / swapchain rounding,
+        # never attempting to expand past the monitor's usable work area.
+        max_px = max(4, round(4 * dpi / 96))
         target_cw = round(ch * 16 / 9)
         target_ch = round(cw * 9 / 16)
+        wrect = RECT()
+        if not u32.GetWindowRect(target_hwnd, ctypes.byref(wrect)):
+            return None
+        win_w = int(wrect.right - wrect.left)
+        win_h = int(wrect.bottom - wrect.top)
+        work_w = work_h = 0
+        hmon = u32.MonitorFromWindow(target_hwnd, MONITOR_DEFAULTTONEAREST)
+        if hmon:
+            mi = MONITORINFO()
+            mi.cbSize = ctypes.sizeof(MONITORINFO)
+            if u32.GetMonitorInfoW(hmon, ctypes.byref(mi)):
+                work_w = int(mi.rcWork.right - mi.rcWork.left)
+                work_h = int(mi.rcWork.bottom - mi.rcWork.top)
         dw = dh = 0
-        if (cw, ch) != (target_cw, ch) and 1 <= abs(cw - target_cw) <= 4:
-            dw = target_cw - cw
-        elif (cw, ch) != (cw, target_ch) and 1 <= abs(ch - target_ch) <= 4:
-            dh = target_ch - ch
+        cand_dw = target_cw - cw
+        cand_dh = target_ch - ch
+        if 1 <= abs(cand_dw) <= max_px and (work_w <= 0 or win_w + cand_dw <= work_w):
+            dw = cand_dw
+        elif 1 <= abs(cand_dh) <= max_px and (work_h <= 0 or win_h + cand_dh <= work_h):
+            dh = cand_dh
         if dw or dh:
-            wrect = RECT()
-            if u32.GetWindowRect(target_hwnd, ctypes.byref(wrect)):
-                w = int(wrect.right - wrect.left) + dw
-                h = int(wrect.bottom - wrect.top) + dh
-                if w > 0 and h > 0:
-                    resized = bool(
-                        u32.SetWindowPos(
-                            target_hwnd, 0, int(wrect.left), int(wrect.top), w, h, SWP_RECT_FLAGS
-                        )
+            w = win_w + dw
+            h = win_h + dh
+            if w > 0 and h > 0:
+                resized = bool(
+                    u32.SetWindowPos(
+                        target_hwnd, 0, int(wrect.left), int(wrect.top), w, h, SWP_RECT_FLAGS
                     )
+                )
     if not resized or controller is None:
         return None
     for _ in range(8):

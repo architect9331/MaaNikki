@@ -17,7 +17,7 @@ from client_config import node_action_params as parameters
 from game_keys import GameKeys
 from performance import count, measure
 from message_log import write_message
-from game_view import require_game_frame
+from game_view import ALLOWED_FRAME_SIZES, require_game_frame
 
 
 RESOURCE = ROOT / "resource"
@@ -319,11 +319,7 @@ class Runtime:
             if image is None or image.size == 0:
                 count("capture.failed")
                 return None
-            if (
-                image.shape[:2] != (720, 1280)
-                and abs(image.shape[1] - 1280) <= 2
-                and abs(image.shape[0] - 720) <= 2
-            ):
+            if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES:
                 from tall_window import heal_16_9_window
                 healed = heal_16_9_window(self.controller)
                 if healed is not None:

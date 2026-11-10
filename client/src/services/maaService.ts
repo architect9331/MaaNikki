@@ -903,20 +903,20 @@ export const maaService = {
     args: string[],
     cwd?: string,
     cancelOnStop = false,
-  ): Promise<number> {
+  ): Promise<{ exitCode: number; message?: string | null }> {
     if (!isTauri()) {
       throw new Error('此功能仅在 Tauri 环境中可用');
     }
     log.info('执行预任务:', program, args);
-    const exitCode = await invoke<number>('run_pretask', {
+    const result = await invoke<{ exitCode: number; message?: string | null }>('run_pretask', {
       instanceId,
       program,
       args,
       cwd: cwd || null,
       cancelOnStop,
     });
-    log.info('预任务执行完成, 退出码:', exitCode);
-    return exitCode;
+    log.info('预任务执行完成, 退出码:', result.exitCode, result.message || '');
+    return result;
   },
 
   /**

@@ -40,6 +40,10 @@ def startup_step(record, stage):
     def timed_out():
         record.update(success=False, reason=f"启动初始化超时（{stage}），本轮停止。")
         save_record(record)
+        try:
+            print(record["reason"], file=sys.stderr, flush=True)
+        except Exception:
+            pass
         # This is the owned prerequisite process, with no daily tasks queued.
         # Native destructors can block on the same job; leave the game untouched.
         os._exit(1)
@@ -476,6 +480,7 @@ def prepare_game(timeout, record):
                 "MaaNikki_StartGame": {"custom_action_param": {
                     "timeout": min(900, int(remaining)), "bootstrap": True,
                     "allow_restart": restarts < 3,
+                    "already_running": bool(record.get("already_running")) and restarts == 0,
                 }},
             }).wait().get()
         finally:
@@ -492,6 +497,10 @@ def prepare_game(timeout, record):
                 record.update(success=True, stage="ready", restarts=restarts,
                               game_hwnd=hwnd, game_class="UnrealWindow")
                 return
+            stop_reason = getattr(action, "stop_reason", None)
+            if stop_reason:
+                record["message_logged"] = True
+                raise RuntimeError(stop_reason)
             raise RuntimeError("尚未完成进入游戏，请检查 logs/startup 中的记录和截图。")
 
         restarts += 1
@@ -550,10 +559,16 @@ def main():
         record["success"] = False
         record["reason"] = str(error)
         try:
-            from message_log import write_message
-            write_message(record["reason"], record["reason"])
+            print(record["reason"], file=sys.stderr, flush=True)
         except Exception:
             pass
+        if not record.get("message_logged"):
+            try:
+                from message_log import write_message
+                write_message(record["reason"], record["reason"])
+            except Exception:
+                pass
+        record.pop("message_logged", None)
     finally:
         save_record(record)
         if fault_log is not None:

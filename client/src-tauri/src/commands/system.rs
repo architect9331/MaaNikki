@@ -595,6 +595,28 @@ pub async fn run_action(
     }
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PretaskResult {
+    pub exit_code: i32,
+    pub message: Option<String>,
+}
+
+fn extract_pretask_error_message(stderr_text: &str) -> Option<String> {
+    stderr_text
+        .lines()
+        .rev()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .map(|line| {
+            let mut out: String = line.chars().take(400).collect();
+            if line.chars().count() > 400 {
+                out.push('…');
+            }
+            out
+        })
+}
+
 /// 执行 PI v2.7.0 pretask（预任务）外部程序，在连接 Controller 前调用。
 ///
 /// 与 `run_action` 不同：`args` 直接以数组形式传入，不做 shell 分词，从而完整保留
@@ -608,7 +630,7 @@ pub async fn run_pretask(
     args: Vec<String>,
     cwd: Option<String>,
     cancel_on_stop: Option<bool>,
-) -> Result<i32, String> {
+) -> Result<PretaskResult, String> {
     info!(
         "run_pretask: instance_id={}, program={}, args={:?}, cwd={:?}",
         instance_id, program, args, cwd
@@ -624,7 +646,10 @@ pub async fn run_pretask(
         None => program.clone(),
     };
 
+    let pretask_telemetry = super::telemetry::begin_pretask(&instance_id, &program, &args);
+
     let mut cmd = super::utils::build_launch_command(&resolved_program, &args, false);
+    cmd.stderr(std::process::Stdio::piped());
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -644,14 +669,51 @@ pub async fn run_pretask(
         .spawn()
         .map_err(|e| format!("Failed to run pretask: {} - {}", program, e))?;
 
+    let stderr_reader = child.stderr.take().map(|mut pipe| {
+        std::thread::spawn(move || {
+            use std::io::Read;
+            let mut buf = Vec::new();
+            let mut chunk = [0u8; 1024];
+            while let Ok(n) = pipe.read(&mut chunk) {
+                if n == 0 {
+                    break;
+                }
+                if buf.len() < 8192 {
+                    let take = n.min(8192 - buf.len());
+                    buf.extend_from_slice(&chunk[..take]);
+                }
+            }
+            String::from_utf8_lossy(&buf).into_owned()
+        })
+    });
+
     loop {
         if let Some(status) = child
             .try_wait()
             .map_err(|e| format!("Failed to wait pretask: {} - {}", program, e))?
         {
             let exit_code = status.code().unwrap_or(-1);
-            info!("run_pretask finished with exit code: {}", exit_code);
-            return Ok(exit_code);
+            let stderr_text = stderr_reader
+                .and_then(|handle| handle.join().ok())
+                .unwrap_or_default();
+            let message = if exit_code != 0 {
+                extract_pretask_error_message(&stderr_text)
+            } else {
+                None
+            };
+            if exit_code != 0 {
+                log::warn!(
+                    "run_pretask finished with exit code {}: {:?}",
+                    exit_code,
+                    message
+                );
+                if let Some(ctx) = pretask_telemetry {
+                    super::telemetry::on_pretask_failed(ctx, exit_code);
+                }
+            } else {
+                info!("run_pretask finished with exit code: {}", exit_code);
+            }
+            return Ok(PretaskResult { exit_code, message });
         }
 
         let stop_requested = {
