@@ -66,6 +66,7 @@ class WeeklyChallengeAction(CustomAction):
             if not rt.ui.realm("weekly"):
                 return False
             results = []
+            skipped_missing = 0
             remaining_quota = max(0, total - finished)
             for index, (node, label) in enumerate(targets):
                 if rt.stopped:
@@ -78,6 +79,10 @@ class WeeklyChallengeAction(CustomAction):
                     break
                 rt.log(f"正在完成每周幻境：{label}。")
                 ok = game.realm("weekly", maximize=False, entered=True, weekly_node=node, allow_exhausted=True)
+                if not ok and game.level_missing:
+                    skipped_missing += 1
+                    rt.log(f"未找到{label}，可能尚未解锁，本次跳过。")
+                    continue
                 results.append(ok)
                 if game.energy_exhausted:
                     break
@@ -88,12 +93,11 @@ class WeeklyChallengeAction(CustomAction):
                             energy = max(0, energy - game.MIN_ENERGY["weekly"])
                     continue
                 rt.log(f"{label}未确认完成。")
-                if game.level_missing and index + 1 < len(targets):
-                    continue
                 # A failed confirmation/reward may leave a dialog open.
                 # Do not search/click another level on that unknown page.
                 break
-            overall_ok = bool(results) and (all(results) or remaining_quota == 0)
+            overall_ok = (bool(results) and (all(results) or remaining_quota == 0)) or (
+                not results and skipped_missing == len(targets))
             rt.log("每周幻境处理结束。" if overall_ok else "部分每周幻境未完成，请检查游戏状态。")
             if not overall_ok and combined and not rt.stopped:
                 recovered = rt.main()

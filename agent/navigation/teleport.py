@@ -347,22 +347,34 @@ class Teleporter:
                 y1 = min(self.locator.spec.height, math.ceil(cy+patch.shape[0]/2+12))
                 try:
                     x, y, score, peak = match_map(
-                        self.locator.map[y0:y1, x0:x1], patch, minimum_score=.60)
+                        self.locator.map[y0:y1, x0:x1], patch, minimum_score=.35)
                 except NavigationError:
                     continue
                 center = x+x0-dx, y+y0-dy
-                accepted = (score >= .60 and peak >= .008
+                # Locked Home Island expansion plots overlay a dark tint and
+                # dashed border on valid terrain, lowering normalized score
+                # while keeping a sharp local correlation peak.
+                accepted = (((score >= .60 and peak >= .008) or (score >= .35 and peak >= .04))
                             and math.hypot(center[0]-pose[0], center[1]-pose[1]) <= 6)
                 self.map_diagnostics.append({"method": "player_terrain_tile",
                     "roi": [left, top, width, height], "x": center[0], "y": center[1],
                     "score": score, "local_peak": peak, "accepted": accepted})
                 if accepted:
                     candidates.append((*center, score, peak))
+        best_cluster = []
+        for anchor in candidates:
+            cluster = [p for p in candidates if math.hypot(p[0]-anchor[0], p[1]-anchor[1]) <= 2]
+            cluster = [p for p in cluster if all(math.hypot(p[0]-q[0], p[1]-q[1]) <= 2 for q in cluster)]
+            if (len(cluster), sum(p[2] for p in cluster)) > (len(best_cluster), sum(p[2] for p in best_cluster)):
+                best_cluster = cluster
+        candidates = best_cluster
+        strong_ok = max((p[2] for p in candidates), default=0) >= .60
+        consensus_ok = (len(candidates) >= 3
+                        and max((p[2] for p in candidates), default=0) >= .45
+                        and min((p[3] for p in candidates), default=0) >= .04)
         if (len(candidates) < 2
-                or max(p[2] for p in candidates) < .65
-                or max(p[3] for p in candidates) < .01
-                or any(math.hypot(a[0]-b[0], a[1]-b[1]) > 2
-                       for a in candidates for b in candidates)):
+                or not (strong_ok or consensus_ok)
+                or max(p[3] for p in candidates) < .01):
             return pose
         return (sum(p[0] for p in candidates)/len(candidates),
                 sum(p[1] for p in candidates)/len(candidates),

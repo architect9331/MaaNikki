@@ -9,6 +9,9 @@ from vision import read_image
 from .models import NavigationError
 
 WHITE = ([0, 0, 230], [180, 60, 255])
+# 720p HUD button strokes are 1-2 px wide over a translucent circle; preserve
+# anti-aliased white edges that dip below V=230 without admitting coloured backgrounds.
+HUD_WHITE = ([0, 0, 200], [180, 60, 255])
 # List thumbnails are smaller than wheel icons, in both list layouts.
 LIST_ICON_SCALE = 5/8
 # Keep wheel scrolling and end-of-list comparison inside the curved list body
@@ -35,12 +38,12 @@ def ability_matches(runtime, node):
     if image is None or frame is None:
         return False
     x, y, w, h = definition.get("roi", runtime.ui.roi("AreaAbilityButton"))
-    def white(value):
+    def white(value, bounds=WHITE):
         return cv2.inRange(cv2.cvtColor(value, cv2.COLOR_BGR2HSV),
-                           np.array(WHITE[0]), np.array(WHITE[1]))
+                           np.array(bounds[0]), np.array(bounds[1]))
     scale = .73*2/3 if template.startswith("game/") else 1
     image = cv2.resize(white(image), None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
-    patch = white(frame[y:y+h, x:x+w])
+    patch = white(frame[y:y+h, x:x+w], HUD_WHITE)
     if patch.shape[0] < image.shape[0] or patch.shape[1] < image.shape[1]:
         return False
     x, y, w, h = cv2.boundingRect(image)
