@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_190_miraland_01",
-  "title": "【探险家蜜蜂】磐城·金时醇酿馆（20个/217秒）",
+  "title": "【探险家蜜蜂】磐城·金时醇酿馆（29个/207秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 522,
+  "timeout": 500,
   "teleport": {
     "name": "金时醇酿馆",
     "province": "伊赞之土",
@@ -14,14 +14,13 @@
   },
   "material": "探险家蜜蜂",
   "count_materials": [
-    "珠链蝶",
     "探险家蜜蜂",
+    "珠链蝶",
+    "蓝玉甲虫",
     "金轴蜻蜓",
-    "刺绣蛾",
-    "机雀羽",
-    "钓鱼点"
+    "斗篷绒毛"
   ],
-  "capacity": 56,
+  "capacity": 58,
   "points": [
     {
       "x": 4119.1,
@@ -38,7 +37,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.1
+        "seconds": 9.1
       }
     },
     {
@@ -48,57 +47,47 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 19.7
       }
     },
     {
-      "x": 4078.04,
-      "y": 3740.17,
+      "x": 4260.02,
+      "y": 3844.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 47.9
       }
     },
     {
-      "x": 4098.28,
-      "y": 3649.6,
+      "x": 4259.88,
+      "y": 3878.43,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 22.1
       }
     },
     {
-      "x": 4143.99,
-      "y": 3626.05,
+      "x": 4204.18,
+      "y": 3932.11,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.1
+        "seconds": 42.1
       }
     },
     {
-      "x": 4162.21,
-      "y": 3603.09,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 15.1
-      }
-    },
-    {
-      "x": 4208.7,
-      "y": 3650.64,
+      "x": 4233.33,
+      "y": 3924.67,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.1
+        "seconds": 8.2
       }
     }
   ]

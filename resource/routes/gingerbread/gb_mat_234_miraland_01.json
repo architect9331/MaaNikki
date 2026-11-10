@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_234_miraland_01",
-  "title": "【风旋果】巨木之森·安眠之林（2个/44秒）",
+  "title": "【风旋果】巨木之森·安眠之林（2个/43秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 142,
+  "timeout": 139,
   "teleport": {
     "name": "安眠之林",
     "province": "伊赞之土",
@@ -23,12 +23,10 @@
     {
       "x": 4069.37,
       "y": 9156.47,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 4077.37,
@@ -37,7 +35,7 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 9.0
       }
     },
     {
@@ -49,40 +47,16 @@
       "params": {}
     },
     {
-      "x": 4095.37,
-      "y": 9171.65,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 4098.37,
       "y": 9168.65,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 4101.37,
       "y": 9147.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4095.37,
-      "y": 9132.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4092.37,
-      "y": 9132.65,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -113,30 +87,6 @@
       "params": {}
     },
     {
-      "x": 4086.37,
-      "y": 9120.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4083.37,
-      "y": 9117.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4080.37,
-      "y": 9114.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 4077.37,
       "y": 9111.65,
       "radius": 2.5,
@@ -159,7 +109,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 4.7
       }
     }
   ]

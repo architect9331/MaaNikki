@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_287_miraland_01",
-  "title": "【汐荧蟹】埋骨地·白汐滩归望湾（2个/24秒）",
+  "title": "【汐荧蟹】埋骨地·白汐滩归望湾（2个/22秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -28,77 +28,21 @@
       "params": {}
     },
     {
-      "x": 7711.91,
-      "y": 5289.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 7714.91,
-      "y": 5289.96,
+      "y": 5289.26,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7717.91,
-      "y": 5289.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7720.91,
-      "y": 5289.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7723.91,
-      "y": 5286.96,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7726.91,
-      "y": 5286.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7729.91,
-      "y": 5286.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7732.91,
-      "y": 5286.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7736.33,
-      "y": 5284.96,
+      "x": 7737.04,
+      "y": 5284.26,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 5.5
       }
     }
   ]

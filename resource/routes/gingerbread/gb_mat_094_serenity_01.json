@@ -1,0 +1,32 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_094_serenity_01",
+  "title": "【风絮草】无忧岛·泡泡花田（5个/23秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "泡泡花田",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 1062.068,
+    "y": 537.513
+  },
+  "material": "风絮草",
+  "count_materials": [
+    "风絮草"
+  ],
+  "capacity": 5,
+  "points": [
+    {
+      "x": 1063.63,
+      "y": 534.63,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.1
+      }
+    }
+  ]
+}

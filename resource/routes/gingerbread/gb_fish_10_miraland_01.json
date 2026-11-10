@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_10_miraland_01",
-  "title": "【眼影鱼】祈愿树林·巨树浅滩（6个/134秒）",
+  "title": "【眼影鱼】祈愿树林·巨树浅滩（6个/88秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 340,
+  "timeout": 239,
   "teleport": {
     "name": "巨树浅滩",
     "province": "心愿原野",
@@ -19,48 +19,34 @@
     "小绵菊",
     "珠花贝壳"
   ],
-  "capacity": 11,
+  "capacity": 10,
   "points": [
     {
       "x": 11850.97,
       "y": 9024.45,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 11847.99,
+      "x": 11838.99,
       "y": 9026.44,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 11826.99,
-      "y": 9020.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11808.99,
-      "y": 9008.44,
-      "radius": 2.0,
+      "x": 11820.99,
+      "y": 9014.44,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 11787.99,
+      "x": 11799.99,
       "y": 9008.44,
       "radius": 2.5,
       "jump": false,
@@ -68,7 +54,7 @@
       "params": {}
     },
     {
-      "x": 11766.99,
+      "x": 11775.99,
       "y": 9008.44,
       "radius": 2.5,
       "jump": false,
@@ -76,18 +62,16 @@
       "params": {}
     },
     {
-      "x": 11748.99,
-      "y": 9002.44,
-      "radius": 2.0,
+      "x": 11754.99,
+      "y": 9005.44,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 11733.99,
-      "y": 8987.44,
+      "x": 11736.99,
+      "y": 8990.44,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -100,7 +84,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 41.1
+        "seconds": 25.5
       }
     },
     {
@@ -126,7 +110,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 41.1
+        "seconds": 26.6
       }
     }
   ]

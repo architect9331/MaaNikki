@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_077_miraland_01",
-  "title": "【面膜草蛉】祈愿树林·花谷瀑布（3个/72秒）",
+  "title": "【面膜草蛉】祈愿树林·花谷瀑布（3个/54秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 203,
+  "timeout": 165,
   "teleport": {
     "name": "花谷瀑布",
     "province": "心愿原野",
@@ -46,8 +46,8 @@
       "params": {}
     },
     {
-      "x": 12162.38,
-      "y": 9154.48,
+      "x": 12159.38,
+      "y": 9145.48,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -55,45 +55,23 @@
     },
     {
       "x": 12156.38,
-      "y": 9133.48,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 12162.38,
-      "y": 9115.48,
+      "y": 9124.48,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 12177.38,
-      "y": 9100.48,
-      "radius": 2.0,
+      "x": 12168.38,
+      "y": 9106.48,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 12198.38,
+      "x": 12189.38,
       "y": 9100.48,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 12201.38,
-      "y": 9097.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -103,15 +81,7 @@
       "x": 12204.38,
       "y": 9094.48,
       "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12207.38,
-      "y": 9091.48,
-      "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
@@ -122,7 +92,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.8
+        "seconds": 25.0
       }
     }
   ]

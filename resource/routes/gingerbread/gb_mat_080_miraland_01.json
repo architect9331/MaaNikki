@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_080_miraland_01",
-  "title": "【日光果/星光果】祈愿树林·心愿研发所（3个/42秒）",
+  "title": "【日光果/星光果】祈愿树林·心愿研发所（3个/34秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 136,
+  "timeout": 120,
   "teleport": {
     "name": "心愿研发所",
     "province": "心愿原野",
@@ -14,14 +14,14 @@
   },
   "material": "日光果/星光果",
   "count_materials": [
-    "耳坠萤",
     "日光果/星光果",
-    "纽扣松果",
     "美食家蜜蜂",
+    "耳坠萤",
+    "纽扣松果",
     "星荧草",
     "抱抱绒团"
   ],
-  "capacity": 12,
+  "capacity": 10,
   "points": [
     {
       "x": 11475.07,
@@ -32,40 +32,8 @@
       "params": {}
     },
     {
-      "x": 11471.07,
-      "y": 9205.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11471.07,
-      "y": 9208.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11468.07,
-      "y": 9211.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11468.07,
-      "y": 9214.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11465.07,
-      "y": 9217.95,
+      "x": 11462.07,
+      "y": 9220.95,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -82,24 +50,14 @@
     {
       "x": 11450.07,
       "y": 9247.95,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 11465.07,
-      "y": 9256.95,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11474.07,
-      "y": 9271.95,
+      "x": 11465.07,
+      "y": 9256.95,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -114,15 +72,7 @@
       "params": {}
     },
     {
-      "x": 11477.07,
-      "y": 9277.95,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11480.07,
+      "x": 11483.07,
       "y": 9283.95,
       "radius": 2.5,
       "jump": false,
@@ -130,13 +80,13 @@
       "params": {}
     },
     {
-      "x": 11488.56,
-      "y": 9278.77,
+      "x": 11488.37,
+      "y": 9279.98,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.4
+        "seconds": 7.9
       }
     }
   ]

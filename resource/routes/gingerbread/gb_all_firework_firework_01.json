@@ -1,45 +1,65 @@
 {
   "schema_version": 3,
   "id": "gb_all_firework_firework_01",
-  "title": "【全材料·花焰群岛】花焰群岛·月角浅滩（11个/51秒）",
+  "title": "【全材料·花焰群岛】花焰群岛·聆风高地山麓（24个/94秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 156,
+  "timeout": 251,
   "teleport": {
-    "name": "月角浅滩",
+    "name": "聆风高地山麓",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 1142.641,
-    "y": 358.56
+    "x": 748.755,
+    "y": 548.546
   },
   "material": "全材料·花焰群岛",
   "count_materials": [
+    "壁灯红椒",
+    "耳坠萤",
+    "草绒球",
     "小绵菊",
-    "瓜子珠",
-    "噼啪花粉",
     "满满果",
+    "噼啪花粉",
     "发卡蚱蜢"
   ],
-  "capacity": 11,
+  "capacity": 24,
   "points": [
     {
-      "x": 1142.64,
-      "y": 358.56,
+      "x": 748.75,
+      "y": 548.55,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 748.29,
+      "y": 535.06,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 10.7
       }
     },
     {
-      "x": 1110.37,
-      "y": 364.86,
+      "x": 803.8,
+      "y": 562.18,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 33.5
+      }
+    },
+    {
+      "x": 773.71,
+      "y": 577.39,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 28.8
+        "seconds": 24.0
       }
     }
   ]

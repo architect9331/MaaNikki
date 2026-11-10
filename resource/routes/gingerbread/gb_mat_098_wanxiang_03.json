@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_098_wanxiang_03",
-  "title": "【小星扇贝】万相境·迷花甸（5个/63秒）",
+  "title": "【小星扇贝】万相境·迷花甸（5个/56秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 184,
+  "timeout": 168,
   "teleport": {
     "name": "迷花甸",
     "province": "伊赞之土",
@@ -24,12 +24,10 @@
     {
       "x": 1437.14,
       "y": 1501.96,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 1433.14,
@@ -40,40 +38,30 @@
       "params": {}
     },
     {
-      "x": 1430.14,
-      "y": 1497.86,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 1427.14,
       "y": 1491.86,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1439.14,
-      "y": 1476.86,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 9.0
       }
+    },
+    {
+      "x": 1442.14,
+      "y": 1473.86,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
       "x": 1454.14,
       "y": 1470.86,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 1469.14,
@@ -86,12 +74,10 @@
     {
       "x": 1490.14,
       "y": 1473.86,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 1511.14,
@@ -102,7 +88,7 @@
       "params": {}
     },
     {
-      "x": 1529.14,
+      "x": 1532.14,
       "y": 1488.86,
       "radius": 2.5,
       "jump": false,
@@ -116,7 +102,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 7.2
       }
     },
     {

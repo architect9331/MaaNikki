@@ -1,75 +1,76 @@
 {
   "schema_version": 3,
   "id": "gb_mat_312_miraland_03",
-  "title": "【蓝玉甲虫】磐城·圆心市场（20个/208秒）",
+  "title": "【蓝玉甲虫】磐城·街区钟塔（32个/227秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 502,
+  "timeout": 545,
   "teleport": {
-    "name": "圆心市场",
+    "name": "街区钟塔",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3780.747,
-    "y": 3896.514
+    "x": 3841.69,
+    "y": 4046.966
   },
   "material": "蓝玉甲虫",
   "count_materials": [
     "蓝玉甲虫",
     "珠坠甲虫",
-    "探险家蜜蜂",
+    "风舞花",
+    "扣扣毛球",
     "金轴蜻蜓",
     "晶球绵蚧",
-    "满满果",
-    "扣扣毛球"
+    "探险家蜜蜂",
+    "满满果"
   ],
-  "capacity": 34,
+  "capacity": 52,
   "points": [
     {
-      "x": 3780.75,
-      "y": 3896.51,
+      "x": 3841.69,
+      "y": 4046.97,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3752.14,
-      "y": 3938.83,
+      "x": 3835.66,
+      "y": 4096.75,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 15.5
       }
     },
     {
-      "x": 3814.1,
-      "y": 3963.94,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 31.1
-      }
-    },
-    {
-      "x": 3885.09,
-      "y": 4002.63,
+      "x": 3838.21,
+      "y": 4135.1,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 34.6
+        "seconds": 15.5
       }
     },
     {
-      "x": 3907.26,
-      "y": 4002.82,
+      "x": 3875.11,
+      "y": 4158.08,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 21.3
+      }
+    },
+    {
+      "x": 3894.0,
+      "y": 4003.81,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 43.3
       }
     },
     {
@@ -79,7 +80,27 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 18.0
+      }
+    },
+    {
+      "x": 3814.1,
+      "y": 3963.94,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
+      }
+    },
+    {
+      "x": 3752.14,
+      "y": 3938.83,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 16.3
       }
     }
   ]

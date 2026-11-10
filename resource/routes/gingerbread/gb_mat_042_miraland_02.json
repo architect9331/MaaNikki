@@ -1,182 +1,107 @@
 {
   "schema_version": 3,
   "id": "gb_mat_042_miraland_02",
-  "title": "【骑士马鬃】微风绿野·河畔山地林间道（7个/174秒）",
+  "title": "【骑士马鬃】祈愿树林·巨树浅滩（3个/58秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 428,
+  "timeout": 172,
   "teleport": {
-    "name": "河畔山地林间道",
+    "name": "巨树浅滩",
     "province": "心愿原野",
-    "region": "微风绿野",
-    "x": 10608.939,
-    "y": 11286.416
+    "region": "祈愿树林",
+    "x": 11850.974,
+    "y": 9024.453
   },
   "material": "骑士马鬃",
   "count_materials": [
     "小绵菊",
     "骑士马鬃",
-    "布布果",
-    "满满果",
-    "瓜子珠",
-    "纽扣松果",
-    "贵族卷毛",
-    "珠花贝壳"
+    "小星扇贝",
+    "珠花贝壳",
+    "珠链蝶"
   ],
-  "capacity": 31,
+  "capacity": 11,
   "points": [
     {
-      "x": 10608.94,
-      "y": 11286.42,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 10.4
-      }
-    },
-    {
-      "x": 10588.35,
-      "y": 11284.3,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 10570.35,
-      "y": 11272.3,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 10561.35,
-      "y": 11254.3,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 10546.35,
-      "y": 11239.3,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 10537.35,
-      "y": 11221.3,
+      "x": 11850.97,
+      "y": 9024.45,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10531.35,
-      "y": 11206.3,
+      "x": 11867.97,
+      "y": 9035.45,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10513.35,
-      "y": 11200.3,
+      "x": 11867.97,
+      "y": 9056.45,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10502.35,
-      "y": 11195.3,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 36.3
-      }
-    },
-    {
-      "x": 10513.35,
-      "y": 11176.78,
+      "x": 11873.97,
+      "y": 9077.45,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10513.35,
-      "y": 11155.78,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 10513.35,
-      "y": 11134.78,
+      "x": 11888.97,
+      "y": 9095.45,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10519.35,
-      "y": 11113.78,
+      "x": 11888.97,
+      "y": 9119.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11894.97,
+      "y": 9140.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11900.97,
+      "y": 9161.45,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 10518.71,
-      "y": 11111.78,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 41.5
-      }
-    },
-    {
-      "x": 10509.42,
-      "y": 11125.78,
+      "x": 11918.97,
+      "y": 9161.45,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10491.42,
-      "y": 11131.78,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10489.42,
-      "y": 11135.82,
+      "x": 11926.63,
+      "y": 9153.92,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 8.6
+        "seconds": 22.0
       }
     }
   ]

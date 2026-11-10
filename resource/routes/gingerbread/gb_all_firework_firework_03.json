@@ -1,39 +1,96 @@
 {
   "schema_version": 3,
   "id": "gb_all_firework_firework_03",
-  "title": "【全材料·花焰群岛】花焰群岛·聆风高地山麓（5个/27秒）",
+  "title": "【全材料·花焰群岛】花焰群岛·滋啦啦服务社（39个/180秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 441,
   "teleport": {
-    "name": "聆风高地山麓",
+    "name": "滋啦啦服务社",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 748.755,
-    "y": 548.546
+    "x": 1003.822,
+    "y": 608.643
   },
   "material": "全材料·花焰群岛",
   "count_materials": [
-    "壁灯红椒"
+    "壁灯红椒",
+    "美食家蜜蜂",
+    "噼啪花粉",
+    "耳坠萤",
+    "布布果",
+    "小绵菊",
+    "刺绣蛾",
+    "珠链蝶",
+    "蓝珀鸟羽",
+    "晴日蝶兰/雨滴蝶兰",
+    "芭蕾豆娘",
+    "名流鸦羽"
   ],
-  "capacity": 5,
+  "capacity": 39,
   "points": [
     {
-      "x": 748.75,
-      "y": 548.55,
+      "x": 1003.82,
+      "y": 608.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 50.8
+      }
+    },
+    {
+      "x": 1019.51,
+      "y": 638.41,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 43.8
+      }
+    },
+    {
+      "x": 1004.28,
+      "y": 655.41,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 17.6
+      }
+    },
+    {
+      "x": 989.28,
+      "y": 673.41,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 748.29,
-      "y": 535.06,
+      "x": 989.28,
+      "y": 676.41,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 980.28,
+      "y": 685.41,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 975.28,
+      "y": 684.04,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
+        "seconds": 43.4
       }
     }
   ]

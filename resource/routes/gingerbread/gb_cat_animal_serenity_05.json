@@ -1,0 +1,88 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_serenity_05",
+  "title": "【全动物清洁】无忧岛·布蜜蜜花园（12个/53秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 161,
+  "teleport": {
+    "name": "布蜜蜜花园",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 840.84,
+    "y": 864.333
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "路灯花",
+    "壁灯红椒",
+    "满满果",
+    "兔尾绒团",
+    "布布果",
+    "小绵菊",
+    "兔兔妆粉"
+  ],
+  "capacity": 12,
+  "points": [
+    {
+      "x": 840.84,
+      "y": 864.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 840.22,
+      "y": 860.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 828.22,
+      "y": 851.33,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 819.22,
+      "y": 848.33,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.1
+      }
+    },
+    {
+      "x": 813.22,
+      "y": 848.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 795.22,
+      "y": 860.33,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 778.22,
+      "y": 870.8,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 22.5
+      }
+    }
+  ]
+}

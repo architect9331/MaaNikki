@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_stonewoods_miraland_01",
-  "title": "【全材料·小石树田村】小石树田村·落石谷（22个/73秒）",
+  "title": "【全材料·小石树田村】小石树田村·落石谷（60个/215秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 205,
+  "timeout": 518,
   "teleport": {
     "name": "落石谷",
     "province": "心愿原野",
@@ -15,11 +15,16 @@
   "material": "全材料·小石树田村",
   "count_materials": [
     "壁灯红椒",
-    "滋滋花粉",
     "满满果",
-    "路灯花"
+    "耳坠萤",
+    "滋滋花粉",
+    "布布果",
+    "纽扣松果",
+    "小绵菊",
+    "路灯花",
+    "发卡蚱蜢"
   ],
-  "capacity": 22,
+  "capacity": 60,
   "points": [
     {
       "x": 8980.7,
@@ -30,63 +35,69 @@
       "params": {}
     },
     {
-      "x": 8981.41,
-      "y": 10204.21,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8979.41,
-      "y": 10202.21,
+      "x": 8975.85,
+      "y": 10196.79,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 36.4
+        "seconds": 48.8
       }
     },
     {
-      "x": 8978.41,
-      "y": 10195.32,
+      "x": 8998.85,
+      "y": 10202.63,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.8
+      }
+    },
+    {
+      "x": 9013.85,
+      "y": 10199.63,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8978.41,
-      "y": 10192.32,
+      "x": 9031.85,
+      "y": 10184.63,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8981.41,
-      "y": 10189.32,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8981.41,
-      "y": 10186.32,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8980.77,
-      "y": 10184.32,
+      "x": 9040.2,
+      "y": 10179.63,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 20.8
+        "seconds": 56.2
+      }
+    },
+    {
+      "x": 9063.17,
+      "y": 10204.61,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 39.3
+      }
+    },
+    {
+      "x": 9050.49,
+      "y": 10232.49,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 31.0
       }
     }
   ]

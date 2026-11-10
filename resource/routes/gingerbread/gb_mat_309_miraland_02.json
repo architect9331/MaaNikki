@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_309_miraland_02",
-  "title": "【机雀羽】磐城·磐城门前（16个/196秒）",
+  "title": "【机雀羽】磐城·磐城门前（22个/206秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 477,
+  "timeout": 499,
   "teleport": {
     "name": "磐城门前",
     "province": "伊赞之土",
@@ -17,11 +17,16 @@
     "机雀羽",
     "珠链蝶",
     "蓝玉甲虫",
+    "钓鱼点",
     "探险家蜜蜂",
+    "金轴蜻蜓",
+    "小野菊",
     "王子鹰羽",
-    "珠坠甲虫"
+    "珠坠甲虫",
+    "机芯果",
+    "晶球绵蚧"
   ],
-  "capacity": 36,
+  "capacity": 50,
   "points": [
     {
       "x": 4282.29,
@@ -38,7 +43,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 56.1
+        "seconds": 38.4
       }
     },
     {
@@ -48,17 +53,37 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 46.6
+        "seconds": 32.9
       }
     },
     {
-      "x": 4302.99,
-      "y": 3624.28,
+      "x": 4302.13,
+      "y": 3623.42,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 46.6
+        "seconds": 35.6
+      }
+    },
+    {
+      "x": 4264.47,
+      "y": 3653.18,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 26.1
+      }
+    },
+    {
+      "x": 4202.67,
+      "y": 3629.13,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.9
       }
     }
   ]

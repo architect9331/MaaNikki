@@ -419,30 +419,45 @@ class GingerbreadRouteAnalyzer:
                     id=sid, name=nm, kind=kind, x=sx, y=sy, z=sz, d_2d_m=d_m, dz_m=dz_m
                 )
             )
-            if d_m <= claim_within_m and dz_m <= 5.0:
+            if math.hypot(d_m, dz_m) <= claim_within_m and dz_m <= 10.5:
                 self.claimed_spawner_ids.add(sid)
         return results
 
     @staticmethod
     def conservative_budget_seconds(nearby: list[NearbySpawnerInfo], configured_s: float) -> tuple[float, float, float]:
-        """Return (min_dwell_s, quiet_window_s, max_ceiling_s) for a stationary stop."""
-        in_15m = [s for s in nearby if s.d_2d_m <= 15.0 and s.dz_m <= 5.5]
+        """Return (min_dwell_s, quiet_window_s, max_ceiling_s) for a stationary stop.
+
+        Calibrated from ChristmasGingerbreadProcessor + BP_ChristmasGingerbreadMan_C:
+        - Each item cycle takes <= 2.0s flight (avg ~1.55s) + collect_s (1s/3s/4s/7s) + 0.55s exit.
+        - Gap between consecutive left-HUD toasts is ~2.8s (plant), ~5.2s (insect), ~6.3s (animal), ~9.5s (fish).
+        """
+        in_15m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m <= 10.5]
         plants = sum(1 for s in in_15m if s.kind == "plant")
         insects = sum(1 for s in in_15m if s.kind == "insect")
         animals = sum(1 for s in in_15m if s.kind == "animal")
         fish = sum(1 for s in in_15m if s.kind == "fish")
-        has_slow = (insects + animals + fish) > 0
 
         map_est = (
-            (3.5 + max(0, plants - 1) * 2.6 if plants else 0.0)
-            + insects * 8.0
-            + animals * 9.5
-            + fish * 14.0
+            (2.6 + max(0, plants - 1) * 2.25 if plants else 0.0)
+            + insects * 5.4
+            + animals * 6.6
+            + fish * 9.8
         )
-        quiet_s = 7.0 if has_slow else 5.5
-        min_dwell_s = 6.5 if has_slow else (4.5 if len(in_15m) >= 2 else 3.5)
-        max_ceiling_s = min(120.0, max(configured_s * 1.4, map_est + 6.0, min_dwell_s + quiet_s))
+        if fish > 0:
+            quiet_s = 9.5
+            min_dwell_s = 8.0
+        elif animals > 0:
+            quiet_s = 6.5
+            min_dwell_s = 5.8
+        elif insects > 0:
+            quiet_s = 5.5
+            min_dwell_s = 4.8
+        else:
+            quiet_s = 3.8
+            min_dwell_s = 3.0 if len(in_15m) >= 2 else 2.4
+        max_ceiling_s = min(120.0, max(configured_s * 1.35, map_est + 4.5, min_dwell_s + quiet_s))
         return round(min_dwell_s, 1), round(quiet_s, 1), round(max_ceiling_s, 1)
+
     def evaluate_waypoint(
         self,
         *,
@@ -457,11 +472,11 @@ class GingerbreadRouteAnalyzer:
         picked_events: list[dict],
         nearby: list[NearbySpawnerInfo],
     ) -> dict:
-        in_8m = [s for s in nearby if s.d_2d_m <= 8.0 and s.dz_m <= 4.5]
-        in_12m = [s for s in nearby if s.d_2d_m <= 12.0 and s.dz_m <= 4.5]
-        in_15m = [s for s in nearby if s.d_2d_m <= 15.0 and s.dz_m <= 5.5]
-        outer_12_15m = [s for s in in_15m if s.d_2d_m > 12.0]
-        high_dz_15m = [s for s in nearby if s.d_2d_m <= 15.0 and s.dz_m > 4.0]
+        in_8m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 8.0 and s.dz_m <= 8.0]
+        in_12m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 12.0 and s.dz_m <= 10.5]
+        in_15m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m <= 10.5]
+        outer_12_15m = [s for s in in_15m if math.hypot(s.d_2d_m, s.dz_m) > 12.0]
+        high_dz_15m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m > 6.0]
 
         expected_by_name: dict[str, int] = {}
         for s in in_15m:

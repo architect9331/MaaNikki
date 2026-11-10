@@ -311,10 +311,10 @@ class RouteActions:
         if isinstance(user_init, (int, float)) and user_init > 0:
             initial_no_toast_s = max(float(user_init), quiet_s)
         else:
-            base_init_s = max(min_dwell_s + quiet_s, 9.0)
-            initial_no_toast_s = min(base_init_s, max(wait_sec + 1.5, min_dwell_s + 1.0, quiet_s))
+            base_init_s = max(min_dwell_s + 1.4, quiet_s + 0.4)
+            initial_no_toast_s = min(base_init_s, max(wait_sec + 1.0, min_dwell_s + 0.8, quiet_s))
         max_wait_s = (
-            max(wait_sec, ceiling_s, min_dwell_s + quiet_s + 8.0, initial_no_toast_s + 4.0)
+            max(wait_sec, ceiling_s, min_dwell_s + quiet_s + 4.0, initial_no_toast_s + 3.0)
             if adaptive_exit
             else wait_sec
         )

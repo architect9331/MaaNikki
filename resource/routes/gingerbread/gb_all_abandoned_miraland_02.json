@@ -1,42 +1,94 @@
 {
   "schema_version": 3,
   "id": "gb_all_abandoned_miraland_02",
-  "title": "【全材料·石树田无人区】石树田无人区·石碑地（5个/26秒）",
+  "title": "【全材料·石树田无人区】石树田无人区·星空钓场旁（小道）（24个/128秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 326,
   "teleport": {
-    "name": "石碑地",
+    "name": "星空钓场旁（小道）",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 9267.482,
-    "y": 8947.913
+    "x": 7828.444,
+    "y": 9367.482
   },
   "material": "全材料·石树田无人区",
   "count_materials": [
-    "风絮草",
-    "路灯花"
+    "蓝珀鸟羽",
+    "小绵菊",
+    "芭蕾豆娘",
+    "珠花贝壳",
+    "路灯花",
+    "小星扇贝"
   ],
-  "capacity": 5,
+  "capacity": 24,
   "points": [
     {
-      "x": 9267.48,
-      "y": 8947.91,
+      "x": 7828.44,
+      "y": 9367.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7819.33,
+      "y": 9362.79,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 56.4
       }
     },
     {
-      "x": 9271.53,
-      "y": 8946.1,
+      "x": 7827.33,
+      "y": 9367.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7836.33,
+      "y": 9376.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7845.33,
+      "y": 9373.48,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7845.33,
+      "y": 9367.48,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7842.33,
+      "y": 9361.48,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7844.01,
+      "y": 9359.48,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.4
+        "seconds": 53.1
       }
     }
   ]

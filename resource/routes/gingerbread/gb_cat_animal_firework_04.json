@@ -1,0 +1,69 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_firework_04",
+  "title": "【全动物清洁】花焰群岛·聆风高地山腰（8个/34秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "聆风高地山腰",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 739.356,
+    "y": 443.9
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "纽扣松果",
+    "满满果",
+    "路灯花",
+    "小绵菊",
+    "蓝珀鸟羽",
+    "抱抱绒团"
+  ],
+  "capacity": 8,
+  "points": [
+    {
+      "x": 739.36,
+      "y": 443.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 762.36,
+      "y": 442.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 780.36,
+      "y": 454.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 789.36,
+      "y": 454.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 793.39,
+      "y": 456.43,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.4
+      }
+    }
+  ]
+}

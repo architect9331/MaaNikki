@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_310_miraland_02",
-  "title": "【桂冠翎羽】磐城·磐城门前（5个/81秒）",
+  "title": "【桂冠翎羽】磐城·磐城门前（5个/59秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 223,
+  "timeout": 175,
   "teleport": {
     "name": "磐城门前",
     "province": "伊赞之土",
@@ -16,10 +16,12 @@
   "count_materials": [
     "桂冠翎羽",
     "珠链蝶",
+    "钓鱼点",
+    "浮冠果",
     "探险家蜜蜂",
     "金轴蜻蜓"
   ],
-  "capacity": 11,
+  "capacity": 13,
   "points": [
     {
       "x": 4282.29,
@@ -36,7 +38,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.1
+        "seconds": 9.3
       }
     },
     {
@@ -46,17 +48,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.1
+        "seconds": 9.3
       }
     },
     {
-      "x": 4252.19,
-      "y": 3613.05,
+      "x": 4250.78,
+      "y": 3616.21,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.6
+        "seconds": 5.5
       }
     }
   ]

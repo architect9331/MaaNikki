@@ -1,37 +1,148 @@
 {
   "schema_version": 3,
   "id": "gb_all_florawish_miraland_02",
-  "title": "【全材料·花愿镇】花愿镇·搭配师协会纪念旧址旁（9个/36秒）",
+  "title": "【全材料·花愿镇】花愿镇·心愿花街（50个/190秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 125,
+  "timeout": 462,
   "teleport": {
-    "name": "搭配师协会纪念旧址旁",
+    "name": "心愿花街",
     "province": "心愿原野",
     "region": "花愿镇",
-    "x": 9839.854,
-    "y": 9851.62
+    "x": 10260.861,
+    "y": 10085.844
   },
   "material": "全材料·花愿镇",
   "count_materials": [
     "小绵菊",
-    "纽扣松果"
+    "布布果",
+    "壁灯红椒",
+    "珠链蝶",
+    "发卡蚱蜢",
+    "瓜子珠",
+    "草绒球"
   ],
-  "capacity": 9,
+  "capacity": 50,
   "points": [
     {
-      "x": 9839.85,
-      "y": 9851.62,
+      "x": 10260.86,
+      "y": 10085.84,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.1
+      }
+    },
+    {
+      "x": 10254.88,
+      "y": 10081.84,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9844.08,
-      "y": 9845.81,
+      "x": 10251.88,
+      "y": 10081.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10248.88,
+      "y": 10084.84,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10245.88,
+      "y": 10087.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10237.88,
+      "y": 10090.08,
       "radius": 2.0,
       "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 33.7
+      }
+    },
+    {
+      "x": 10220.09,
+      "y": 10074.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10205.09,
+      "y": 10071.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10190.09,
+      "y": 10089.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.8
+      }
+    },
+    {
+      "x": 10176.09,
+      "y": 10108.49,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 53.7
+      }
+    },
+    {
+      "x": 10167.26,
+      "y": 10113.49,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10153.26,
+      "y": 10114.9,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 23.3
+      }
+    },
+    {
+      "x": 10140.59,
+      "y": 10128.9,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10135.59,
+      "y": 10146.42,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 23.4

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_286_miraland_01",
-  "title": "【蓝鳞晶】埋骨地·蓝池东侧修习所渡口（8个/67秒）",
+  "title": "【蓝鳞晶】埋骨地·蓝池东侧修习所渡口（8个/53秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 193,
+  "timeout": 162,
   "teleport": {
     "name": "蓝池东侧修习所渡口",
     "province": "伊赞之土",
@@ -36,45 +36,25 @@
     },
     {
       "x": 7660.96,
-      "y": 4965.24,
+      "y": 4962.48,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 6.7
       }
     },
     {
-      "x": 7669.96,
-      "y": 4947.24,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 7675.96,
-      "y": 4938.24,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 7675.96,
-      "y": 4935.24,
+      "x": 7672.96,
+      "y": 4944.48,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 7684.96,
-      "y": 4920.24,
+      "x": 7681.96,
+      "y": 4926.48,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -82,52 +62,36 @@
     },
     {
       "x": 7687.96,
-      "y": 4911.24,
+      "y": 4908.48,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 7687.96,
-      "y": 4908.24,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 7684.96,
-      "y": 4890.24,
+      "y": 4887.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7669.96,
-      "y": 4875.24,
+      "x": 7666.96,
+      "y": 4875.48,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7663.96,
-      "y": 4875.24,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7660.48,
-      "y": 4876.24,
+      "x": 7660.37,
+      "y": 4876.48,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 20.8
+        "seconds": 17.7
       }
     }
   ]

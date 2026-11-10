@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_02",
-  "title": "【全材料·微风绿野】微风绿野·菲洛米亚女王行宫遗迹西侧树林（21个/79秒）",
+  "title": "【全材料·微风绿野】微风绿野·菲洛米亚女王行宫遗迹西侧树林（21个/78秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 219,
+  "timeout": 216,
   "teleport": {
     "name": "菲洛米亚女王行宫遗迹西侧树林",
     "province": "心愿原野",
@@ -27,32 +27,12 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 9.1
       }
     },
     {
-      "x": 10697.69,
+      "x": 10700.69,
       "y": 11474.38,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 10706.69,
-      "y": 11474.38,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 10709.69,
-      "y": 11477.38,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -67,40 +47,12 @@
       "params": {}
     },
     {
-      "x": 10715.69,
-      "y": 11480.38,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 10718.69,
       "y": 11483.38,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
-    },
-    {
-      "x": 10721.69,
-      "y": 11483.38,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 10724.69,
-      "y": 11486.38,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
     },
     {
       "x": 10739.69,
@@ -113,12 +65,10 @@
     {
       "x": 10742.69,
       "y": 11486.38,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 10745.85,
@@ -127,7 +77,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 36.4
+        "seconds": 48.3
       }
     }
   ]

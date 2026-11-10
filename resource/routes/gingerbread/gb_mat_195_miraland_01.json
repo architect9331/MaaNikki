@@ -35,17 +35,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 8.7
       }
     },
     {
-      "x": 3862.22,
-      "y": 8379.24,
+      "x": 3875.57,
+      "y": 8375.95,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 5.6
       }
     }
   ]

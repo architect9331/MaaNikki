@@ -1,0 +1,114 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_fish_miraland_08",
+  "title": "【全鱼类垂钓】花愿镇·镇长宅邸前（20个/89秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 241,
+  "teleport": {
+    "name": "镇长宅邸前",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10544.632,
+    "y": 9974.37
+  },
+  "material": "全鱼类垂钓",
+  "count_materials": [
+    "小绵菊",
+    "瓜子珠",
+    "钓鱼点",
+    "晴日蝶兰/雨滴蝶兰",
+    "滋滋花粉",
+    "满满果",
+    "珠花贝壳"
+  ],
+  "capacity": 20,
+  "points": [
+    {
+      "x": 10544.63,
+      "y": 9974.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10541.26,
+      "y": 9970.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.8
+      }
+    },
+    {
+      "x": 10532.26,
+      "y": 9964.37,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10523.26,
+      "y": 9985.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10523.26,
+      "y": 10009.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10520.26,
+      "y": 10021.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10505.26,
+      "y": 10036.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10496.26,
+      "y": 10057.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.0
+      }
+    },
+    {
+      "x": 10487.26,
+      "y": 10069.37,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10473.26,
+      "y": 10072.89,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 32.2
+      }
+    }
+  ]
+}

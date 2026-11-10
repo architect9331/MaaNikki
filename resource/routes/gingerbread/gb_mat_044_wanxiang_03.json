@@ -1,0 +1,64 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_044_wanxiang_03",
+  "title": "【蓝珀鸟羽】万相境·忘忧楼（2个/26秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "忘忧楼",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 2339.983,
+    "y": 1551.648
+  },
+  "material": "蓝珀鸟羽",
+  "count_materials": [
+    "蓝珀鸟羽"
+  ],
+  "capacity": 2,
+  "points": [
+    {
+      "x": 2339.98,
+      "y": 1551.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2337.65,
+      "y": 1550.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2334.65,
+      "y": 1553.65,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2331.65,
+      "y": 1559.65,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2317.65,
+      "y": 1557.67,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.8
+      }
+    }
+  ]
+}

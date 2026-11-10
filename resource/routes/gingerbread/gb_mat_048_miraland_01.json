@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_048_miraland_01",
-  "title": "【鹿冠毛团】祈愿树林·巨树浅滩（1个/50秒）",
+  "title": "【鹿冠毛团】祈愿树林·巨树浅滩（1个/35秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 154,
+  "timeout": 123,
   "teleport": {
     "name": "巨树浅滩",
     "province": "心愿原野",
@@ -33,45 +33,15 @@
       "params": {}
     },
     {
-      "x": 11849.16,
-      "y": 9023.45,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 11846.16,
+      "x": 11840.16,
       "y": 9026.45,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 11828.16,
-      "y": 9017.45,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11810.16,
-      "y": 9008.45,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 11792.16,
+      "x": 11822.16,
       "y": 9014.45,
       "radius": 2.5,
       "jump": false,
@@ -79,13 +49,29 @@
       "params": {}
     },
     {
+      "x": 11801.16,
+      "y": 9008.45,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11786.16,
+      "y": 9026.45,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 11787.16,
       "y": 9029.39,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 17.3
+        "seconds": 13.7
       }
     }
   ]

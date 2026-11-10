@@ -1,36 +1,87 @@
 {
   "schema_version": 3,
   "id": "gb_mat_311_miraland_02",
-  "title": "【珠坠甲虫】磐城·金时醇酿馆（8个/139秒）",
+  "title": "【珠坠甲虫】磐城·三殿堂（9个/129秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 351,
+  "timeout": 330,
   "teleport": {
-    "name": "金时醇酿馆",
+    "name": "三殿堂",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4119.105,
-    "y": 3800.743
+    "x": 3969.658,
+    "y": 3756.794
   },
   "material": "珠坠甲虫",
   "count_materials": [
     "蓝玉甲虫",
-    "珠链蝶",
     "珠坠甲虫",
-    "探险家蜜蜂",
+    "珠链蝶",
     "机雀羽",
     "金轴蜻蜓",
+    "探险家蜜蜂",
+    "晶球绵蚧",
     "桂冠翎羽"
   ],
-  "capacity": 76,
+  "capacity": 58,
   "points": [
     {
-      "x": 4119.1,
-      "y": 3800.74,
+      "x": 3969.66,
+      "y": 3756.79,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
+    },
+    {
+      "x": 3948.24,
+      "y": 3736.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 3951.68,
+      "y": 3689.09,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 3984.95,
+      "y": 3684.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 4044.33,
+      "y": 3592.81,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 4088.76,
+      "y": 3708.15,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
     },
     {
       "x": 4095.28,
@@ -39,77 +90,27 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.1
+        "seconds": 4.8
       }
     },
     {
-      "x": 4087.92,
-      "y": 3708.68,
+      "x": 4089.47,
+      "y": 3867.12,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.1
+        "seconds": 10.4
       }
     },
     {
-      "x": 4175.89,
-      "y": 3648.35,
+      "x": 4075.62,
+      "y": 3831.64,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.1
-      }
-    },
-    {
-      "x": 4231.91,
-      "y": 3728.49,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
-      }
-    },
-    {
-      "x": 4215.22,
-      "y": 3743.73,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
-      }
-    },
-    {
-      "x": 4253.47,
-      "y": 3863.02,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
-      }
-    },
-    {
-      "x": 4237.04,
-      "y": 3907.91,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
-      }
-    },
-    {
-      "x": 4242.19,
-      "y": 3901.77,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.1
+        "seconds": 4.8
       }
     }
   ]

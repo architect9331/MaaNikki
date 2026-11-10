@@ -1,76 +1,74 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_04",
-  "title": "【全材料·万相境】万相境·抽签大楼（9个/66秒）",
+  "title": "【全材料·万相境】万相境·迷花甸（9个/55秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 191,
+  "timeout": 166,
   "teleport": {
-    "name": "抽签大楼",
+    "name": "迷花甸",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1461.008,
-    "y": 1112.867
+    "x": 1437.138,
+    "y": 1501.957
   },
   "material": "全材料·万相境",
   "count_materials": [
-    "珠链蝶",
+    "耳坠萤",
     "荷包草",
     "小绵菊",
-    "云绒玉絮"
+    "珠链蝶"
   ],
   "capacity": 9,
   "points": [
     {
-      "x": 1461.01,
-      "y": 1112.87,
+      "x": 1437.14,
+      "y": 1501.96,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1460.01,
-      "y": 1132.87,
+      "x": 1433.14,
+      "y": 1500.59,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1466.01,
-      "y": 1153.87,
+      "x": 1427.14,
+      "y": 1491.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1430.14,
+      "y": 1488.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1442.14,
+      "y": 1488.59,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1444.88,
+      "y": 1492.59,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 1469.01,
-      "y": 1159.87,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1469.01,
-      "y": 1162.87,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1471.59,
-      "y": 1174.43,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 42.4
+        "seconds": 39.5
       }
     }
   ]

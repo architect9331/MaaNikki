@@ -71,7 +71,7 @@ export function RouteGeneratorModal({
   const [region, setRegion] = useState('');
   const [topK, setTopK] = useState(3);
   const [quota, setQuota] = useState(0);
-  const [radius, setRadius] = useState(13.5);
+  const [radius, setRadius] = useState(14.0);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -375,9 +375,9 @@ export function RouteGeneratorModal({
                 onChange={(e) => setRadius(Number(e.target.value))}
                 className="w-full rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 text-xs outline-none focus:border-accent"
               >
-                <option value={13.5}>13.5 米（推荐稳妥）</option>
-                <option value={14.2}>14.2 米（标准范围）</option>
-                <option value={15.0}>15.0 米（极限边缘）</option>
+                <option value={13.5}>13.5 米（保守容差）</option>
+                <option value={14.0}>14.0 米（推荐 3D 球面）</option>
+                <option value={14.6}>14.6 米（贴近 15m 边界）</option>
               </select>
             </label>
           </div>

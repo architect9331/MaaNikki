@@ -1,0 +1,105 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_firework_01",
+  "title": "【全昆虫速刷】花焰群岛·月角浅滩（70个/253秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 602,
+  "teleport": {
+    "name": "月角浅滩",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 1142.641,
+    "y": 358.56
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "瓜子珠",
+    "小绵菊",
+    "噼啪花粉",
+    "耳坠萤",
+    "珠链蝶",
+    "芭蕾豆娘",
+    "满满果",
+    "发卡蚱蜢",
+    "尖帽仙",
+    "小星扇贝",
+    "晴日蝶兰/雨滴蝶兰",
+    "珠花贝壳",
+    "草绒球",
+    "美食家蜜蜂"
+  ],
+  "capacity": 70,
+  "points": [
+    {
+      "x": 1142.64,
+      "y": 358.56,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.3
+      }
+    },
+    {
+      "x": 1117.59,
+      "y": 317.49,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 20.9
+      }
+    },
+    {
+      "x": 1146.38,
+      "y": 284.74,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 39.5
+      }
+    },
+    {
+      "x": 1189.47,
+      "y": 300.68,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.2
+      }
+    },
+    {
+      "x": 1194.61,
+      "y": 356.81,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.5
+      }
+    },
+    {
+      "x": 1128.16,
+      "y": 393.94,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.3
+      }
+    },
+    {
+      "x": 1038.86,
+      "y": 195.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 55.5
+      }
+    }
+  ]
+}

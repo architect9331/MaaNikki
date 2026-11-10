@@ -1,48 +1,98 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_05",
-  "title": "【全材料·巨木之森】巨木之森·伊赞之土临时搭配师协会（6个/38秒）",
+  "title": "【全材料·巨木之森】巨木之森·巨兽堡垒断桥旁（21个/114秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 128,
+  "timeout": 297,
   "teleport": {
-    "name": "伊赞之土临时搭配师协会",
+    "name": "巨兽堡垒断桥旁",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4840.105,
-    "y": 8932.157
+    "x": 3631.213,
+    "y": 9021.011
   },
   "material": "全材料·巨木之森",
   "count_materials": [
     "壁灯红椒",
-    "裁衣甲"
+    "发卡蚱蜢",
+    "蓝珀鸟羽",
+    "织衣蛛",
+    "小野菊",
+    "满满果",
+    "刺绣蛾",
+    "扣扣毛球"
   ],
-  "capacity": 6,
+  "capacity": 21,
   "points": [
     {
-      "x": 4840.1,
-      "y": 8932.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4836.1,
-      "y": 8952.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4842.44,
-      "y": 8962.83,
+      "x": 3631.21,
+      "y": 9021.01,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.0
+        "seconds": 8.0
+      }
+    },
+    {
+      "x": 3609.93,
+      "y": 9029.01,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3591.93,
+      "y": 9041.01,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3576.93,
+      "y": 9056.01,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3555.93,
+      "y": 9056.01,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3553.93,
+      "y": 9049.92,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 30.9
+      }
+    },
+    {
+      "x": 3537.53,
+      "y": 9063.92,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3526.53,
+      "y": 9078.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 46.7
       }
     }
   ]

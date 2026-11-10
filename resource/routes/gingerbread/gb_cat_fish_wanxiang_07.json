@@ -1,72 +1,56 @@
 {
   "schema_version": 3,
   "id": "gb_cat_fish_wanxiang_07",
-  "title": "【全鱼类垂钓】万相境·火锅坊（6个/32秒）",
+  "title": "【全鱼类垂钓】万相境·九华监（6个/26秒）",
   "map": "wanxiang",
   "start_radius": 6,
   "timeout": 120,
   "teleport": {
-    "name": "火锅坊",
+    "name": "九华监",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1399.524,
-    "y": 1108.824
+    "x": 1592.363,
+    "y": 835.825
   },
   "material": "全鱼类垂钓",
   "count_materials": [
-    "满满果",
+    "荷包草",
     "小绵菊"
   ],
   "capacity": 6,
   "points": [
     {
-      "x": 1399.52,
-      "y": 1108.82,
+      "x": 1592.36,
+      "y": 835.83,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1380.52,
-      "y": 1100.63,
+      "x": 1587.81,
+      "y": 837.83,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1572.81,
+      "y": 855.83,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1377.52,
-      "y": 1100.63,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1374.52,
-      "y": 1100.63,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1371.52,
-      "y": 1097.63,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1372.52,
-      "y": 1095.63,
+      "x": 1570.81,
+      "y": 858.29,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
+        "seconds": 11.6
       }
     }
   ]

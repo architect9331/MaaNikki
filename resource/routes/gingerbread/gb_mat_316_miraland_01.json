@@ -1,16 +1,16 @@
 {
   "schema_version": 3,
   "id": "gb_mat_316_miraland_01",
-  "title": "【浮冠果】磐城·磐城门前（10个/98秒）",
+  "title": "【浮冠果】磐城·行与思广场（10个/95秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 261,
+  "timeout": 253,
   "teleport": {
-    "name": "磐城门前",
+    "name": "行与思广场",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4282.294,
-    "y": 3501.475
+    "x": 4180.56,
+    "y": 3588.066
   },
   "material": "浮冠果",
   "count_materials": [
@@ -19,27 +19,46 @@
     "珠链蝶",
     "探险家蜜蜂",
     "金轴蜻蜓",
-    "刺绣蛾",
-    "晶球绵蚧"
+    "刺绣蛾"
   ],
-  "capacity": 42,
+  "capacity": 33,
   "points": [
     {
-      "x": 4282.29,
-      "y": 3501.47,
+      "x": 4180.56,
+      "y": 3588.07,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4260.68,
-      "y": 3560.37,
+      "x": 4153.13,
+      "y": 3599.06,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 5.6
+      }
+    },
+    {
+      "x": 4189.4,
+      "y": 3511.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.1
+      }
+    },
+    {
+      "x": 4260.68,
+      "y": 3560.37,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.6
       }
     },
     {
@@ -49,47 +68,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 4182.81,
-      "y": 3501.45,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 4185.59,
-      "y": 3525.9,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 4153.13,
-      "y": 3599.06,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 4132.53,
-      "y": 3505.4,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
+        "seconds": 2.4
       }
     },
     {
@@ -99,7 +78,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 2.4
+      }
+    },
+    {
+      "x": 4132.53,
+      "y": 3505.4,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 2.4
       }
     }
   ]

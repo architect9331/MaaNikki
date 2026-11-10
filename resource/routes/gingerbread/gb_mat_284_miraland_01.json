@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_284_miraland_01",
-  "title": "【烛融花/烛荧花】埋骨地·纪念地（6个/32秒）",
+  "title": "【烛融花/烛荧花】埋骨地·纪念地（6个/33秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -29,21 +29,21 @@
       "params": {}
     },
     {
-      "x": 7073.16,
-      "y": 4242.32,
+      "x": 7082.16,
+      "y": 4239.72,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7088.0,
-      "y": 4246.32,
+      "x": 7086.5,
+      "y": 4243.72,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
+        "seconds": 18.4
       }
     }
   ]

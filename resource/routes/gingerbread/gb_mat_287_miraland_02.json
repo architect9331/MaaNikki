@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_287_miraland_02",
-  "title": "【汐荧蟹】埋骨地·修习所（2个/25秒）",
+  "title": "【汐荧蟹】埋骨地·修习所（2个/24秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -27,7 +27,7 @@
       "params": {}
     },
     {
-      "x": 7806.42,
+      "x": 7797.42,
       "y": 5141.57,
       "radius": 2.5,
       "jump": false,
@@ -35,10 +35,10 @@
       "params": {}
     },
     {
-      "x": 7788.42,
-      "y": 5144.57,
+      "x": 7785.42,
+      "y": 5147.57,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
@@ -49,7 +49,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 5.7
       }
     }
   ]

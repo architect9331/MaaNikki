@@ -1,112 +1,56 @@
 {
   "schema_version": 3,
   "id": "gb_mat_083_firework_02",
-  "title": "【兔兔妆粉】花焰群岛·滋啦啦服务社（7个/96秒）",
+  "title": "【兔兔妆粉】花焰群岛·幽暗洞窟前（6个/64秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 256,
+  "timeout": 187,
   "teleport": {
-    "name": "滋啦啦服务社",
+    "name": "幽暗洞窟前",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 1003.822,
-    "y": 608.643
+    "x": 945.342,
+    "y": 225.634
   },
   "material": "兔兔妆粉",
   "count_materials": [
     "兔兔妆粉",
-    "兔尾绒团",
+    "壁灯红椒",
     "小绵菊",
-    "布布果",
-    "瓜子珠",
+    "发卡蚱蜢",
     "噼啪花粉",
-    "晴日蝶兰/雨滴蝶兰",
-    "发卡蚱蜢"
+    "草绒球",
+    "兔尾绒团",
+    "满满果"
   ],
-  "capacity": 24,
+  "capacity": 23,
   "points": [
     {
-      "x": 1003.82,
-      "y": 608.64,
+      "x": 945.34,
+      "y": 225.63,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1002.82,
-      "y": 586.99,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1005.82,
-      "y": 565.99,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1008.82,
-      "y": 544.99,
+      "x": 1012.32,
+      "y": 163.31,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
+        "seconds": 6.6
       }
     },
     {
-      "x": 1020.82,
-      "y": 526.99,
+      "x": 1077.45,
+      "y": 328.03,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 1022.61,
-      "y": 521.99,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 1060.81,
-      "y": 499.62,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 1107.8,
-      "y": 557.89,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 1136.81,
-      "y": 581.52,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 10.4
+        "seconds": 10.2
       }
     }
   ]

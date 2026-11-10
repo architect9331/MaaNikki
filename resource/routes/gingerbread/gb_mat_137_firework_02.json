@@ -1,86 +1,49 @@
 {
   "schema_version": 3,
   "id": "gb_mat_137_firework_02",
-  "title": "【噼啪花粉】花焰群岛·幽暗洞窟前（11个/120秒）",
+  "title": "【噼啪花粉】花焰群岛·月角浅滩（12个/128秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 308,
+  "timeout": 327,
   "teleport": {
-    "name": "幽暗洞窟前",
+    "name": "月角浅滩",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 945.342,
-    "y": 225.634
+    "x": 1142.641,
+    "y": 358.56
   },
   "material": "噼啪花粉",
   "count_materials": [
     "噼啪花粉",
-    "发卡蚱蜢",
+    "小绵菊",
     "瓜子珠",
     "耳坠萤",
+    "发卡蚱蜢",
+    "路灯花",
     "草绒球",
-    "小绵菊",
     "满满果",
-    "路灯花"
+    "小星扇贝",
+    "名流鸦羽",
+    "珠花贝壳"
   ],
-  "capacity": 28,
+  "capacity": 38,
   "points": [
     {
-      "x": 945.34,
-      "y": 225.63,
+      "x": 1142.64,
+      "y": 358.56,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 968.38,
-      "y": 239.15,
+      "x": 1167.89,
+      "y": 361.64,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 994.66,
-      "y": 195.69,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 1081.91,
-      "y": 247.55,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 1112.2,
-      "y": 260.19,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 10.4
-      }
-    },
-    {
-      "x": 1131.79,
-      "y": 294.97,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.0
+        "seconds": 11.8
       }
     },
     {
@@ -90,27 +53,123 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 5.7
       }
     },
     {
-      "x": 1118.29,
-      "y": 326.85,
+      "x": 1118.99,
+      "y": 326.15,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 2.4
       }
+    },
+    {
+      "x": 1131.79,
+      "y": 294.97,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 13.5
+      }
+    },
+    {
+      "x": 1081.91,
+      "y": 247.55,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.9
+      }
+    },
+    {
+      "x": 1112.2,
+      "y": 260.19,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.8
+      }
+    },
+    {
+      "x": 1129.2,
+      "y": 244.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1150.2,
+      "y": 238.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1157.65,
+      "y": 242.71,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 3.9
+      }
+    },
+    {
+      "x": 1133.99,
+      "y": 241.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1118.99,
+      "y": 256.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1103.99,
+      "y": 271.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1088.99,
+      "y": 286.71,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1073.99,
+      "y": 301.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
     },
     {
       "x": 1068.99,
       "y": 306.22,
       "radius": 2.0,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 2.4
       }
     }
   ]

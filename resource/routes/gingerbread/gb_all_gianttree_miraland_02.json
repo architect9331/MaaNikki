@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_02",
-  "title": "【全材料·巨木之森】巨木之森·蜗牛诊所（15个/72秒）",
+  "title": "【全材料·巨木之森】巨木之森·蜗牛诊所（32个/171秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 203,
+  "timeout": 421,
   "teleport": {
     "name": "蜗牛诊所",
     "province": "伊赞之土",
@@ -14,23 +14,30 @@
   },
   "material": "全材料·巨木之森",
   "count_materials": [
+    "耳坠萤",
+    "壁灯红椒",
+    "探险家蜜蜂",
+    "裁衣甲",
+    "刺绣蛾",
+    "钓鱼点",
     "小野菊",
-    "结结蕨",
-    "行鹭羽"
+    "结结蕨"
   ],
-  "capacity": 15,
+  "capacity": 32,
   "points": [
     {
       "x": 4489.83,
       "y": 8147.98,
-      "radius": 2.5,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 35.8
+      }
     },
     {
-      "x": 4488.83,
-      "y": 8152.45,
+      "x": 4491.83,
+      "y": 8153.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -38,7 +45,7 @@
     },
     {
       "x": 4497.83,
-      "y": 8155.45,
+      "y": 8153.27,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -46,66 +53,56 @@
     },
     {
       "x": 4509.83,
-      "y": 8137.45,
-      "radius": 2.5,
+      "y": 8135.27,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 11.1
+      }
     },
     {
       "x": 4515.83,
-      "y": 8125.45,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
-    },
-    {
-      "x": 4521.83,
-      "y": 8125.45,
+      "y": 8120.27,
       "radius": 2.5,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 4524.83,
-      "y": 8128.45,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 7.8
-      }
-    },
-    {
-      "x": 4542.83,
-      "y": 8137.45,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 4545.83,
-      "y": 8137.45,
+      "x": 4506.83,
+      "y": 8105.27,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4558.13,
-      "y": 8129.45,
+      "x": 4508.64,
+      "y": 8100.27,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 30.3
+        "seconds": 75.7
+      }
+    },
+    {
+      "x": 4497.58,
+      "y": 8120.27,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4486.58,
+      "y": 8125.99,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 22.7
       }
     }
   ]

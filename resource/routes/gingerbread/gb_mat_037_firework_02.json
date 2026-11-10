@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_037_firework_02",
-  "title": "【汪汪毛线】花焰群岛·滋啦啦服务社（5个/90秒）",
+  "title": "【汪汪毛线】花焰群岛·滋啦啦服务社（5个/74秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 242,
+  "timeout": 208,
   "teleport": {
     "name": "滋啦啦服务社",
     "province": "心愿原野",
@@ -14,11 +14,15 @@
   },
   "material": "汪汪毛线",
   "count_materials": [
+    "噼啪花粉",
     "汪汪毛线",
+    "小绵菊",
+    "美食家蜜蜂",
     "刺绣蛾",
-    "美食家蜜蜂"
+    "满满果",
+    "路灯花"
   ],
-  "capacity": 10,
+  "capacity": 20,
   "points": [
     {
       "x": 1003.82,
@@ -35,7 +39,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.1
+        "seconds": 12.7
       }
     },
     {
@@ -45,7 +49,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.1
+        "seconds": 12.6
       }
     },
     {
@@ -55,7 +59,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.6
+        "seconds": 5.6
       }
     }
   ]

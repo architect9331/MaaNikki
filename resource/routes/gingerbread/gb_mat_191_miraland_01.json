@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_191_miraland_01",
-  "title": "【花纹围巾蚯蚓】巨木之森·探险大营地（3个/63秒）",
+  "title": "【花纹围巾蚯蚓】巨木之森·探险大营地（3个/44秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 184,
+  "timeout": 142,
   "teleport": {
     "name": "探险大营地",
     "province": "伊赞之土",
@@ -16,19 +16,18 @@
   "count_materials": [
     "花纹围巾蚯蚓",
     "小野菊",
+    "结结蕨",
     "垂穗魔果"
   ],
-  "capacity": 5,
+  "capacity": 6,
   "points": [
     {
       "x": 3510.03,
       "y": 9419.99,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 3500.03,
@@ -55,40 +54,8 @@
       "params": {}
     },
     {
-      "x": 3536.03,
-      "y": 9361.89,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3548.03,
-      "y": 9343.89,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3554.03,
-      "y": 9331.89,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3554.03,
-      "y": 9328.89,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3554.03,
-      "y": 9325.89,
+      "x": 3539.03,
+      "y": 9358.89,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -96,15 +63,15 @@
     },
     {
       "x": 3551.03,
-      "y": 9313.89,
+      "y": 9340.89,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3548.03,
-      "y": 9310.89,
+      "x": 3554.03,
+      "y": 9322.89,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -112,27 +79,9 @@
     },
     {
       "x": 3548.03,
-      "y": 9307.89,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
-    },
-    {
-      "x": 3548.03,
-      "y": 9304.89,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3548.03,
       "y": 9301.89,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
@@ -151,7 +100,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.1
+        "seconds": 11.3
       }
     }
   ]

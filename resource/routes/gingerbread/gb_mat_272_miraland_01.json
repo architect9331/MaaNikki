@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_272_miraland_01",
-  "title": "【茸芽鹿绒】埋骨地·居落外绿坡（8个/97秒）",
+  "title": "【茸芽鹿绒】埋骨地·居落外绿坡（8个/74秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 259,
+  "timeout": 207,
   "teleport": {
     "name": "居落外绿坡",
     "province": "伊赞之土",
@@ -33,7 +33,7 @@
     },
     {
       "x": 7028.51,
-      "y": 4400.11,
+      "y": 4406.11,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -41,17 +41,9 @@
     },
     {
       "x": 7025.51,
-      "y": 4421.11,
+      "y": 4427.11,
       "radius": 2.5,
       "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7022.51,
-      "y": 4442.11,
-      "radius": 2.5,
-      "jump": true,
       "action": "",
       "params": {}
     },
@@ -62,7 +54,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 78.6
+        "seconds": 56.8
       }
     }
   ]

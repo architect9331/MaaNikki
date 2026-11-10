@@ -38,18 +38,38 @@ M_PER_MAP_PX = 0.90
 
 @dataclass(frozen=True)
 class GingerbreadSpec:
-    """Physical range and per-category conservative service time of the Gingerbread-Man aura."""
+    """Exact reverse-engineered kinematics and 3D spherical range of the Gingerbread-Man ability.
+
+    Derived from Patch 2872 Lua/Blueprint CDOs:
+      - BP_ChristmasGingerbreadDetector_C: 3D SphereOverlapActors with BP_ScanRadius = 1500 cm (15.0m)
+      - ChristmasGingerbreadProcessor: BP_ReplanTickInterval = 0.5s, BP_QueueCapacity = 2, sorted by 3D distance
+      - BP_ChristmasGingerbreadMan_C:
+          * MovingToTarget: BP_CollectMoveTotalTime = 2.0s (speed = dist / 2.0), BP_ArriveRadius = 100 cm (1.0m),
+            MaxFollowDistance = 2000 cm (20.0m)
+          * Collecting: Plant = 1.0s, Insect = 3.0s, Clean (Animal) = 4.0s, Fishing = 7.0s
+          * CollectSuccess: AnimNotify_GingerbreadCollectComplete -> AnimNotify_GingerbreadCollectMontageExit (~0.55s),
+            chaining directly to the next queued target without returning to Nikki.
+    """
     aura_radius_m: float = 15.0
-    safe_radius_m: float = 13.5
-    pass_radius_m: float = 14.2
-    max_dz_m: float = 5.5
+    safe_radius_m: float = 14.0
+    pass_radius_m: float = 13.5
+    max_dz_m: float = 10.5
+    min_anchor_sep_m: float = 20.0
     run_speed_mps: float = 6.5
-    teleport_overhead_s: float = 12.0
-    plant_first_s: float = 3.5
-    plant_extra_s: float = 2.6
-    insect_s: float = 8.0
-    animal_s: float = 9.5
-    fish_s: float = 14.0
+    teleport_overhead_s: float = 10.5
+    replan_interval_s: float = 0.5
+    move_total_time_s: float = 2.0
+    arrive_radius_m: float = 1.0
+    collect_exit_s: float = 0.55
+    plant_collect_s: float = 1.0
+    insect_collect_s: float = 3.35
+    animal_collect_s: float = 4.5
+    fish_collect_s: float = 8.2
+    plant_first_s: float = 2.8
+    plant_extra_s: float = 2.2
+    insect_s: float = 5.4
+    animal_s: float = 6.6
+    fish_s: float = 9.8
     fish_casts_per_spot: int = 1
 
     @property
@@ -64,37 +84,82 @@ class GingerbreadSpec:
     def aura_radius_px(self) -> float:
         return self.aura_radius_m / M_PER_MAP_PX
 
-    def service_seconds(self, points: Iterable["MaterialPoint"]) -> float:
-        plants = insects = animals = fish = 0
-        for p in points:
-            if p.kind == "plant":
-                plants += 1
-            elif p.kind == "insect":
-                insects += 1
-            elif p.kind == "animal":
-                animals += 1
-            elif p.kind == "fish":
-                fish += 1
-        t_plant = (self.plant_first_s + max(0, plants - 1) * self.plant_extra_s) if plants else 0.0
-        t_other = (
-            insects * self.insect_s
-            + animals * self.animal_s
-            + fish * self.fish_s * max(1, self.fish_casts_per_spot)
-        )
-        return t_plant + t_other
+    def item_collect_seconds(self, kind: str) -> float:
+        if kind == "plant":
+            return self.plant_collect_s
+        if kind == "insect":
+            return self.insect_collect_s
+        if kind == "animal":
+            return self.animal_collect_s
+        return self.fish_collect_s * max(1, self.fish_casts_per_spot)
 
-    def net_wait_seconds(self, points: list["MaterialPoint"], chord_m: float = 16.0) -> float:
+    def move_flight_seconds(self, dist_m: float) -> float:
+        if dist_m <= self.arrive_radius_m:
+            return 0.15
+        return self.move_total_time_s * (dist_m - self.arrive_radius_m) / dist_m
+
+    def service_seconds(
+        self,
+        points: Iterable["MaterialPoint"],
+        anchor_xyz: tuple[float, float, float] | None = None,
+    ) -> float:
+        pts = list(points)
+        if not pts:
+            return 0.0
+        if anchor_xyz is not None:
+            ax, ay, az = anchor_xyz
+        else:
+            ax = sum(p.x for p in pts) / len(pts)
+            ay = sum(p.y for p in pts) / len(pts)
+            az = sum(p.z for p in pts) / len(pts)
+
+        # ChristmasGingerbreadProcessor:SortTasks orders tasks by ascending 3D distance from Nikki
+        ordered = sorted(
+            pts,
+            key=lambda p: (
+                ((p.x - ax) * M_PER_MAP_PX) ** 2
+                + ((p.y - ay) * M_PER_MAP_PX) ** 2
+                + (p.z - az) ** 2
+            ),
+        )
+        cur_x, cur_y, cur_z = ax, ay, az
+        total_s = 0.0
+        for p in ordered:
+            dx_m = (p.x - cur_x) * M_PER_MAP_PX
+            dy_m = (p.y - cur_y) * M_PER_MAP_PX
+            dz_m = p.z - cur_z
+            step_d_m = math.sqrt(dx_m * dx_m + dy_m * dy_m + dz_m * dz_m)
+            move_s = self.move_flight_seconds(step_d_m)
+            collect_s = self.item_collect_seconds(p.kind)
+            total_s += move_s + collect_s + self.collect_exit_s
+            if step_d_m > self.arrive_radius_m:
+                ratio = (step_d_m - self.arrive_radius_m) / step_d_m
+                cur_x += (p.x - cur_x) * ratio
+                cur_y += (p.y - cur_y) * ratio
+                cur_z += (p.z - cur_z) * ratio
+        return total_s
+
+    def net_wait_seconds(
+        self,
+        points: list["MaterialPoint"],
+        chord_m: float = 16.0,
+        anchor_xyz: tuple[float, float, float] | None = None,
+        is_start_point: bool = False,
+    ) -> float:
         if not points:
             return 0.0
-        total_service = self.service_seconds(points)
-        pass_time = max(0.0, chord_m / max(1.0, self.run_speed_mps))
+        total_service = self.service_seconds(points, anchor_xyz=anchor_xyz)
         has_slow = any(p.kind in ("insect", "animal", "fish") for p in points)
-        # Only a single isolated plant along a transit segment can be swept with a brief pause;
-        # any cluster >= 2 items or any slow item gets a conservative stationary wait budget.
-        if not has_slow and len(points) == 1:
-            return 3.0
-        net = total_service - 0.35 * pass_time
-        return round(min(150.0, max(6.0 if has_slow else 4.5, net)), 1)
+        if is_start_point:
+            # Includes 1.0s DelaySpawnTime + 0.25s initial replan latency at teleport spawn
+            net = total_service + 1.25
+        else:
+            # While Nikki walks the last ~14m into the 15m sphere (~2.1s), the 0.5s replan tick
+            # already dispatches Gingerbread Man toward the first item in-stride.
+            approach_overlap_s = min(1.1, 0.45 * max(0.0, chord_m / max(1.0, self.run_speed_mps)))
+            net = total_service - approach_overlap_s
+        min_floor = 4.8 if has_slow else (2.4 if len(points) == 1 else 3.2)
+        return round(min(150.0, max(min_floor, net)), 1)
 
 
 @dataclass(frozen=True)
@@ -557,46 +622,77 @@ class TerrainWalkabilityGrid:
         self,
         points: list[MaterialPoint],
         spec: GingerbreadSpec,
+        existing_anchors: list[tuple[float, float, float]] | None = None,
     ) -> tuple[float, float, float]:
-        """Find a safe walkable ground anchor within safe_radius_px covering the cluster."""
+        """Find a safe walkable ground anchor within safe_radius_m (3D) covering the cluster,
+        maximizing separation from existing_anchors to prevent overlapping 15m spheres."""
         cx = sum(p.x for p in points) / len(points)
         cy = sum(p.y for p in points) / len(points)
         cz = float(np.median([p.z for p in points]))
         gz = self.elevation(cx, cy, default=cz)
-        anchor_z = gz if (not math.isnan(gz) and abs(gz - cz) <= 6.0) else cz
+        anchor_z = gz if (not math.isnan(gz) and abs(gz - cz) <= 6.5) else cz
 
-        if self.is_walkable(cx, cy, ref_z=anchor_z, max_slope=34.0) and not self.has_obstacle_near(cx, cy, clearance_px=3.0):
-            if all(math.hypot(p.x - cx, p.y - cy) <= spec.safe_radius_px for p in points):
-                return round(cx, 2), round(cy, 2), round(anchor_z, 2)
+        def count_3d_covered(tx: float, ty: float, tz: float, tol_m: float = 0.0) -> int:
+            r_lim = spec.safe_radius_m + tol_m
+            cnt = 0
+            for p in points:
+                dz = abs(p.z - tz)
+                if dz > spec.max_dz_m:
+                    continue
+                dx_m = (p.x - tx) * M_PER_MAP_PX
+                dy_m = (p.y - ty) * M_PER_MAP_PX
+                if dx_m * dx_m + dy_m * dy_m + dz * dz <= r_lim * r_lim:
+                    cnt += 1
+            return cnt
 
-        # Search spiral around centroid up to safe_radius_px
+        def min_sep_m(tx: float, ty: float, tz: float) -> float:
+            if not existing_anchors:
+                return 999.0
+            best = 999.0
+            for ax, ay, az in existing_anchors:
+                if abs(tz - az) <= 10.5:
+                    d_m = math.hypot(tx - ax, ty - ay) * M_PER_MAP_PX
+                    if d_m < best:
+                        best = d_m
+            return best
+
+        if not existing_anchors:
+            if self.is_walkable(cx, cy, ref_z=anchor_z, max_slope=34.0) and not self.has_obstacle_near(cx, cy, clearance_px=3.0):
+                if count_3d_covered(cx, cy, anchor_z) == len(points):
+                    return round(cx, 2), round(cy, 2), round(anchor_z, 2)
+
         best_pt = (round(cx, 2), round(cy, 2), round(anchor_z, 2))
         best_score = -1e9
         max_r = int(math.ceil(spec.safe_radius_px))
-        for r in range(1, max_r + 1, 2):
-            steps = max(8, int(round(2 * math.pi * r / 2.0)))
+        radii = [0] + list(range(1, max_r + 1, 2))
+        for r in radii:
+            steps = 1 if r == 0 else max(8, int(round(2 * math.pi * r / 2.0)))
             for s in range(steps):
                 ang = 2.0 * math.pi * s / steps
-                tx = cx + r * math.cos(ang)
-                ty = cy + r * math.sin(ang)
+                tx = cx if r == 0 else cx + r * math.cos(ang)
+                ty = cy if r == 0 else cy + r * math.sin(ang)
                 if not self.is_walkable(tx, ty, ref_z=anchor_z, max_slope=38.0):
                     continue
-                covered = sum(
-                    1 for p in points
-                    if math.hypot(p.x - tx, p.y - ty) <= spec.safe_radius_px + 0.5
-                )
+                tz = self.elevation(tx, ty, default=cz)
+                if math.isnan(tz) or abs(tz - cz) > 6.5:
+                    tz = cz
+                covered = count_3d_covered(tx, ty, tz, tol_m=0.35)
                 if covered < len(points) and len(points) > 1:
                     continue
                 slp_pen = self.slope(tx, ty) * 0.08
                 obs_pen = 65.0 if self.has_obstacle_near(tx, ty, clearance_px=3.0) else (20.0 if self.has_obstacle_near(tx, ty, clearance_px=5.0) else 0.0)
-                sc = covered * 100.0 - r * 0.45 - slp_pen - obs_pen
+                sep_term = 0.0
+                if existing_anchors:
+                    sep_m = min_sep_m(tx, ty, tz)
+                    if sep_m < 17.5:
+                        sep_term = -500.0 + sep_m * 20.0
+                    else:
+                        sep_term = min(sep_m, 26.5) * 2.2
+                sc = covered * 100.0 + sep_term - r * 0.32 - slp_pen - obs_pen
                 if sc > best_score:
                     best_score = sc
-                    tz = self.elevation(tx, ty, default=cz)
-                    if math.isnan(tz) or abs(tz - cz) > 6.0:
-                        tz = cz
                     best_pt = (round(tx, 2), round(ty, 2), round(tz, 2))
-            if best_score >= len(points) * 100.0 - 15.0:
+            if not existing_anchors and best_score >= len(points) * 100.0 - 15.0:
                 break
         return best_pt
 
@@ -738,24 +834,42 @@ class TerrainWalkabilityGrid:
             jmp = 0.55 <= (gz - sz) <= 2.5
             return [(round(gx, 2), round(gy, 2), round(gz, 2), jmp)]
 
-        # Line-of-sight greedy string pulling + max segment length ~22 px (~19.8 m)
+        # Line-of-sight greedy string pulling + max segment length ~24 px (~21.6 m)
         simplified = [raw_pts[0]]
         i = 0
         n = len(raw_pts)
         while i < n - 1:
             best_j = i + 1
-            for j in range(min(n - 1, i + 9), i + 1, -1):
+            for j in range(min(n - 1, i + 10), i + 1, -1):
                 p0, p1 = raw_pts[i], raw_pts[j]
                 seg_d = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
-                if seg_d > 22.0:
+                if seg_d > 24.0:
                     continue
+                # Check if intermediate A* grid cells are collinear (e.g. straight walk along a path)
+                max_dev = 0.0
+                if seg_d > 1e-3:
+                    ux = (p1[0] - p0[0]) / seg_d
+                    uy = (p1[1] - p0[1]) / seg_d
+                    for k in range(i + 1, j):
+                        pk = raw_pts[k]
+                        dev = abs((pk[0] - p0[0]) * (-uy) + (pk[1] - p0[1]) * ux)
+                        if dev > max_dev:
+                            max_dev = dev
+                is_collinear = max_dev <= 0.65
+                orig_near_obs = any(
+                    self.has_obstacle_near(raw_pts[k][0], raw_pts[k][1], clearance_px=2.0)
+                    for k in range(i, j + 1)
+                )
                 clear = True
                 steps = max(2, int(math.ceil(seg_d / 1.8)))
                 for s in range(1, steps):
                     t = s / steps
                     mx = p0[0] + (p1[0] - p0[0]) * t
                     my = p0[1] + (p1[1] - p0[1]) * t
-                    if not self.is_walkable(mx, my, max_slope=42.0) or self.has_obstacle_near(mx, my, clearance_px=2.0):
+                    if not self.is_walkable(mx, my, max_slope=44.0):
+                        clear = False
+                        break
+                    if not is_collinear and not orig_near_obs and self.has_obstacle_near(mx, my, clearance_px=2.0):
                         clear = False
                         break
                 if clear:
@@ -849,60 +963,114 @@ class MaterialRouteGenerator:
             dtype=bool,
         )
 
-        # Build candidate disk centers: all target points + midpoints of close pairs
+        # Build candidate sphere centers: target points + close pair midpoints + local centroids
         cand_idx = np.where(is_tgt_arr)[0]
         if len(cand_idx) == 0:
             return [], []
-        cx_list = list(px_arr[cand_idx])
-        cy_list = list(py_arr[cand_idx])
-        cz_list = list(pz_arr[cand_idx])
-        r_px = self.spec.safe_radius_px
+        tx = px_arr[cand_idx]
+        ty = py_arr[cand_idx]
+        tz = pz_arr[cand_idx]
+        cx_list = list(tx)
+        cy_list = list(ty)
+        cz_list = list(tz)
+        r_m = self.spec.safe_radius_m
         max_dz = self.spec.max_dz_m
 
-        if len(cand_idx) <= 220:
-            for ii in range(len(cand_idx)):
-                i = cand_idx[ii]
-                for jj in range(ii + 1, min(len(cand_idx), ii + 8)):
-                    j = cand_idx[jj]
-                    if math.hypot(px_arr[i] - px_arr[j], py_arr[i] - py_arr[j]) <= r_px * 1.6 and abs(pz_arr[i] - pz_arr[j]) <= max_dz:
-                        cx_list.append((px_arr[i] + px_arr[j]) * 0.5)
-                        cy_list.append((py_arr[i] + py_arr[j]) * 0.5)
-                        cz_list.append((pz_arr[i] + pz_arr[j]) * 0.5)
+        if len(cand_idx) <= 320:
+            tdx_m = (tx[:, None] - tx[None, :]) * M_PER_MAP_PX
+            tdy_m = (ty[:, None] - ty[None, :]) * M_PER_MAP_PX
+            tdz_m = np.abs(tz[:, None] - tz[None, :])
+            td3d_m = np.sqrt(tdx_m * tdx_m + tdy_m * tdy_m + tdz_m * tdz_m)
+            # Pairwise midpoints for all pairs within 2 * safe_radius_m
+            iu, ju = np.triu_indices(len(cand_idx), k=1)
+            pair_mask = (td3d_m[iu, ju] <= r_m * 2.0) & (tdz_m[iu, ju] <= max_dz * 1.4)
+            for idx_p in np.where(pair_mask)[0][:750]:
+                ii, jj = int(iu[idx_p]), int(ju[idx_p])
+                cx_list.append((tx[ii] + tx[jj]) * 0.5)
+                cy_list.append((ty[ii] + ty[jj]) * 0.5)
+                cz_list.append((tz[ii] + tz[jj]) * 0.5)
+            # Local neighborhood centroids
+            for rad_c in (r_m, r_m * 1.38):
+                nb_mat = (td3d_m <= rad_c) & (tdz_m <= max_dz)
+                for ii in range(len(cand_idx)):
+                    nbs = np.where(nb_mat[ii])[0]
+                    if len(nbs) >= 3:
+                        cx_list.append(float(np.mean(tx[nbs])))
+                        cy_list.append(float(np.mean(ty[nbs])))
+                        cz_list.append(float(np.mean(tz[nbs])))
 
         cx_arr = np.array(cx_list, dtype=np.float32)
         cy_arr = np.array(cy_list, dtype=np.float32)
         cz_arr = np.array(cz_list, dtype=np.float32)
 
-        dx = px_arr[:, None] - cx_arr[None, :]
-        dy = py_arr[:, None] - cy_arr[None, :]
-        dz = np.abs(pz_arr[:, None] - cz_arr[None, :])
-        cover_mat = ((dx * dx + dy * dy) <= (r_px * r_px)) & (dz <= max_dz)
+        dx_m = (px_arr[:, None] - cx_arr[None, :]) * M_PER_MAP_PX
+        dy_m = (py_arr[:, None] - cy_arr[None, :]) * M_PER_MAP_PX
+        dz_m = np.abs(pz_arr[:, None] - cz_arr[None, :])
+        d3d_sq = dx_m * dx_m + dy_m * dy_m + dz_m * dz_m
+        cover_mat = (d3d_sq <= (r_m * r_m)) & (dz_m <= max_dz)
 
         active = np.ones(n_pts, dtype=bool)
         anchors: list[AnchorCluster] = []
+        existing_xyz: list[tuple[float, float, float]] = []
+        min_sep_m = self.spec.min_anchor_sep_m
+        claim_r_m = min(self.spec.aura_radius_m - 0.4, r_m + 0.5)
 
         while np.any(active & is_tgt_arr) and len(anchors) < 24:
             cur_w = np.where(active, w_arr, 0.0)
             raw_scores = cover_mat.T @ cur_w
+            new_cnts = cover_mat.T @ active.astype(np.int32)
+            tgt_counts = cover_mat.T @ (active & is_tgt_arr).astype(np.int32)
             if target_cids is None:
                 cur_srv = np.where(active, srv_arr, 0.0)
                 est_srv = cover_mat.T @ cur_srv
-                cand_scores = raw_scores / (4.0 + 0.32 * est_srv)
+                cand_scores = raw_scores / (3.4 + 0.30 * est_srv)
             else:
-                cand_scores = raw_scores
-            tgt_counts = cover_mat.T @ (active & is_tgt_arr).astype(np.int32)
+                cand_scores = raw_scores.copy()
             cand_scores = np.where(tgt_counts > 0, cand_scores, -1.0)
+
+            if existing_xyz:
+                ex_arr = np.array(existing_xyz, dtype=np.float32)
+                adx_m = (cx_arr[:, None] - ex_arr[None, :, 0]) * M_PER_MAP_PX
+                ady_m = (cy_arr[:, None] - ex_arr[None, :, 1]) * M_PER_MAP_PX
+                adz_m = np.abs(cz_arr[:, None] - ex_arr[None, :, 2])
+                min_d_anc = np.min(np.sqrt(adx_m * adx_m + ady_m * ady_m + adz_m * adz_m), axis=1)
+                overlap_pen = 1.0 - 0.40 * np.clip((28.0 - min_d_anc) / 10.0, 0.0, 0.85)
+                cand_scores = cand_scores * overlap_pen + 1e-3 * np.minimum(min_d_anc, 30.0)
+                if target_cids is None:
+                    cand_scores = np.where(min_d_anc >= min_sep_m, cand_scores, -1.0)
+                    cand_scores = np.where((new_cnts >= 3) | (min_d_anc >= 24.0), cand_scores, -1.0)
+                else:
+                    pref_scores = np.where(min_d_anc >= min_sep_m, cand_scores, -1.0)
+                    if np.max(pref_scores) > 0.0:
+                        cand_scores = pref_scores
+                    else:
+                        cand_scores = np.where(min_d_anc >= 16.5, cand_scores, -1.0)
+
             best_c = int(np.argmax(cand_scores))
             if cand_scores[best_c] <= 0.0:
                 break
 
             grp_idx = np.where(active & cover_mat[:, best_c])[0]
             best_group = [local_points[i] for i in grp_idx]
-            ax, ay, az = tgrid.find_walkable_anchor(best_group, self.spec)
+            ax, ay, az = tgrid.find_walkable_anchor(
+                best_group, self.spec, existing_anchors=existing_xyz
+            )
+            if existing_xyz:
+                min_after_m = min(
+                    math.sqrt(((ax - ex) * M_PER_MAP_PX) ** 2 + ((ay - ey) * M_PER_MAP_PX) ** 2 + (az - ez) ** 2)
+                    for ex, ey, ez in existing_xyz
+                )
+                if min_after_m < (min_sep_m - 1.5 if target_cids is None else 15.0):
+                    active[grp_idx] = False
+                    continue
 
-            dist_a = np.hypot(px_arr - ax, py_arr - ay)
+            dist_3d_m = np.sqrt(
+                ((px_arr - ax) * M_PER_MAP_PX) ** 2
+                + ((py_arr - ay) * M_PER_MAP_PX) ** 2
+                + (pz_arr - az) ** 2
+            )
             dz_a = np.abs(pz_arr - az)
-            cov_mask = active & (dist_a <= self.spec.pass_radius_px) & (dz_a <= max_dz)
+            cov_mask = active & (dist_3d_m <= claim_r_m) & (dz_a <= max_dz)
             if not np.any(cov_mask & is_tgt_arr):
                 cov_mask = np.zeros(n_pts, dtype=bool)
                 cov_mask[grp_idx] = True
@@ -919,9 +1087,10 @@ class MaterialRouteGenerator:
                     points=covered_now,
                     score=float(np.sum(w_arr[cov_indices])),
                     target_count=len(tgt_pts),
-                    wait_seconds=self.spec.net_wait_seconds(wait_pts),
+                    wait_seconds=self.spec.net_wait_seconds(wait_pts, anchor_xyz=(ax, ay, az)),
                 )
             )
+            existing_xyz.append((ax, ay, az))
             active[cov_indices] = False
 
         return anchors, local_points
@@ -1050,7 +1219,18 @@ class MaterialRouteGenerator:
         wp_z: list[float] = [spire.z]
         anchor_wp_indices: list[int] = []
 
-        for anc, seg in zip(selected_anchors, path_segments):
+        for anc_i, (anc, seg) in enumerate(zip(selected_anchors, path_segments)):
+            if (
+                anc_i == 0
+                and len(seg) == 1
+                and math.hypot(seg[0][0] - spire.x, seg[0][1] - spire.y) * M_PER_MAP_PX <= 3.0
+            ):
+                waypoints[0]["x"] = round(seg[0][0], 2)
+                waypoints[0]["y"] = round(seg[0][1], 2)
+                waypoints[0]["radius"] = 2.2
+                wp_z[0] = seg[0][2]
+                anchor_wp_indices.append(0)
+                continue
             for idx, (px, py, pz, jmp) in enumerate(seg):
                 is_anchor = idx == len(seg) - 1
                 waypoints.append(
@@ -1067,7 +1247,6 @@ class MaterialRouteGenerator:
                 if is_anchor:
                     anchor_wp_indices.append(len(waypoints) - 1)
 
-        # Sweep all local_points within pass_radius_px of the trajectory and assign to nearest waypoint
         wp_items: dict[int, list[MaterialPoint]] = {i: [] for i in range(len(waypoints))}
         covered_ids: set[str] = set()
         for anc, wp_i in zip(selected_anchors, anchor_wp_indices):
@@ -1076,36 +1255,93 @@ class MaterialRouteGenerator:
                     covered_ids.add(p.id)
                     wp_items[wp_i].append(p)
 
-        pass_r = self.spec.pass_radius_px
+        claim_r_m = min(self.spec.aura_radius_m - 0.4, self.spec.safe_radius_m + 0.5)
+        pass_r_m = self.spec.pass_radius_m
         max_dz = self.spec.max_dz_m
+
+        # 1. Stationary anchors claim all uncovered points within their 3D sphere first
         for p in local_points:
             if p.id in covered_ids:
-                continue
-            # Along non-anchor transit segments, only auto-sweep fast plants or explicitly targeted items
-            if target_cids is None and p.kind != "plant":
                 continue
             if target_cids is not None and p.catalog_id not in target_cids and p.kind != "plant":
                 continue
             best_wi = -1
-            best_d = pass_r
-            for wi, wp in enumerate(waypoints):
-                if abs(p.z - wp_z[wi]) > max_dz:
+            best_d_m = claim_r_m
+            for wi in anchor_wp_indices:
+                dz = abs(p.z - wp_z[wi])
+                if dz > max_dz:
                     continue
-                d = math.hypot(p.x - wp["x"], p.y - wp["y"])
-                if d <= best_d:
-                    best_d = d
+                d_2d_m = math.hypot(p.x - waypoints[wi]["x"], p.y - waypoints[wi]["y"]) * M_PER_MAP_PX
+                d_3d_m = math.hypot(d_2d_m, dz)
+                if d_3d_m <= best_d_m:
+                    best_d_m = d_3d_m
                     best_wi = wi
             if best_wi >= 0:
                 covered_ids.add(p.id)
                 wp_items[best_wi].append(p)
 
-        # Set wait action on waypoints where net dwell time > 0 (splitting >60s into <=60s steps)
+        # 2. Promote a non-anchor waypoint (e.g. spire #00) to a stationary stop ONLY if >= min_anchor_sep_m
+        #    from all existing stops AND it covers a dense cluster (>=3 plants or >=2 target items)
+        stop_wis: list[int] = list(dict.fromkeys(anchor_wp_indices))
+        for wi, wp in enumerate(waypoints):
+            if wi in stop_wis:
+                continue
+            if any(
+                math.sqrt(
+                    ((wp["x"] - waypoints[sw]["x"]) * M_PER_MAP_PX) ** 2
+                    + ((wp["y"] - waypoints[sw]["y"]) * M_PER_MAP_PX) ** 2
+                    + (wp_z[wi] - wp_z[sw]) ** 2
+                )
+                < self.spec.min_anchor_sep_m
+                for sw in stop_wis
+            ):
+                continue
+            cand_pts = [
+                p
+                for p in local_points
+                if p.id not in covered_ids
+                and abs(p.z - wp_z[wi]) <= max_dz
+                and math.hypot(
+                    math.hypot(p.x - wp["x"], p.y - wp["y"]) * M_PER_MAP_PX,
+                    abs(p.z - wp_z[wi]),
+                )
+                <= claim_r_m
+                and (target_cids is None or p.catalog_id in target_cids or p.kind == "plant")
+            ]
+            tgt_here = [p for p in cand_pts if target_cids is not None and p.catalog_id in target_cids]
+            slow_here = [p for p in cand_pts if p.kind != "plant" and (target_cids is None or p.catalog_id in target_cids)]
+            if len(cand_pts) >= 3 or len(tgt_here) >= 2 or len(slow_here) >= 1:
+                stop_wis.append(wi)
+                for p in cand_pts:
+                    covered_ids.add(p.id)
+                    wp_items[wi].append(p)
+
+        # 3. Remaining single/pair roadside plants within pass_radius_m of walking segments are picked up in-stride
+        in_stride_items: list[MaterialPoint] = []
+        for p in local_points:
+            if p.id in covered_ids or p.kind != "plant":
+                continue
+            for k in range(len(waypoints) - 1):
+                x0, y0, z0 = waypoints[k]["x"], waypoints[k]["y"], wp_z[k]
+                x1, y1, z1 = waypoints[k + 1]["x"], waypoints[k + 1]["y"], wp_z[k + 1]
+                vx, vy, vz = x1 - x0, y1 - y0, z1 - z0
+                seg_len_sq = vx * vx + vy * vy
+                t = max(0.0, min(1.0, ((p.x - x0) * vx + (p.y - y0) * vy) / seg_len_sq)) if seg_len_sq > 1e-6 else 0.0
+                cx, cy, cz = x0 + t * vx, y0 + t * vy, z0 + t * vz
+                dz = abs(p.z - cz)
+                if dz <= max_dz and math.hypot(math.hypot(p.x - cx, p.y - cy) * M_PER_MAP_PX, dz) <= pass_r_m:
+                    covered_ids.add(p.id)
+                    in_stride_items.append(p)
+                    break
+
+        # Set wait action ONLY on stationary stop waypoints
+        stop_wi_set = set(stop_wis)
         total_wait_s = 0.0
-        all_covered: list[MaterialPoint] = []
+        all_covered: list[MaterialPoint] = list(in_stride_items)
         final_waypoints: list[dict] = []
         for wi, wp in enumerate(waypoints):
             items = wp_items.get(wi, [])
-            if not items:
+            if wi not in stop_wi_set or not items:
                 final_waypoints.append(wp)
                 continue
             all_covered.extend(items)
@@ -1114,7 +1350,11 @@ class MaterialRouteGenerator:
                 if target_cids is None
                 else [p for p in items if p.catalog_id in target_cids or p.kind == "plant"]
             )
-            wait_s = self.spec.net_wait_seconds(dwell_items) if dwell_items else 0.0
+            wait_s = (
+                self.spec.net_wait_seconds(dwell_items, anchor_xyz=(wp["x"], wp["y"], wp_z[wi]))
+                if dwell_items
+                else 0.0
+            )
             if wait_s <= 0.0:
                 final_waypoints.append(wp)
                 continue
@@ -1398,7 +1638,7 @@ class MaterialRouteGenerator:
 def generate_from_request_dict(root: Path, req: dict) -> dict:
     """Entry point for UI on-demand route generation."""
     mode = str(req.get("mode") or "target")
-    radius = float(req.get("radius") or 13.5)
+    radius = float(req.get("radius") or 14.0)
     top_k = max(1, min(15, int(req.get("top_k") or 3)))
     quota = int(req["quota"]) if req.get("quota") else None
     prefix = str(req.get("prefix") or "gb_custom")
@@ -1408,7 +1648,7 @@ def generate_from_request_dict(root: Path, req: dict) -> dict:
 
     spec = GingerbreadSpec(
         safe_radius_m=radius,
-        pass_radius_m=min(15.0, radius + 0.7),
+        pass_radius_m=min(14.5, max(12.0, radius - 0.5)),
     )
     gen = MaterialRouteGenerator(root, spec=spec)
     if mode == "target" and materials:

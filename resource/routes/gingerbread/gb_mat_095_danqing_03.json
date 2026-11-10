@@ -1,0 +1,132 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_095_danqing_03",
+  "title": "【壁灯红椒】丹青屿·奉龙塔（14个/76秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 213,
+  "teleport": {
+    "name": "奉龙塔",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1796.922,
+    "y": 998.178
+  },
+  "material": "壁灯红椒",
+  "count_materials": [
+    "壁灯红椒",
+    "小绵菊",
+    "荷包草"
+  ],
+  "capacity": 19,
+  "points": [
+    {
+      "x": 1796.92,
+      "y": 998.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1819.92,
+      "y": 999.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1837.92,
+      "y": 996.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1846.92,
+      "y": 975.62,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1855.92,
+      "y": 969.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1858.92,
+      "y": 966.62,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1869.75,
+      "y": 952.62,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.2
+      }
+    },
+    {
+      "x": 1857.6,
+      "y": 966.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1845.6,
+      "y": 969.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1830.6,
+      "y": 951.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1821.6,
+      "y": 933.84,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1803.6,
+      "y": 918.84,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1795.6,
+      "y": 913.84,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 16.2
+      }
+    }
+  ]
+}

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_069_serenity_01",
-  "title": "【美食家蜜蜂】无忧岛·酿露工坊（8个/84秒）",
+  "title": "【美食家蜜蜂】无忧岛·酿露工坊（8个/61秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 230,
+  "timeout": 179,
   "teleport": {
     "name": "酿露工坊",
     "province": "心愿原野",
@@ -23,12 +23,10 @@
     {
       "x": 1062.65,
       "y": 439.81,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 1070.65,
@@ -47,23 +45,31 @@
       "params": {}
     },
     {
-      "x": 1067.14,
-      "y": 457.3,
+      "x": 1068.91,
+      "y": 456.22,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 47.1
+        "seconds": 37.5
       }
     },
     {
-      "x": 1076.96,
-      "y": 439.53,
+      "x": 1076.91,
+      "y": 436.47,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1079.3,
+      "y": 428.47,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.1
+        "seconds": 4.8
       }
     }
   ]

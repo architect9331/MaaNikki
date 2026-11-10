@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_093_miraland_01",
-  "title": "【花伞藤萝】石树田无人区·遗忘者村居（3个/42秒）",
+  "title": "【花伞藤萝】石树田无人区·遗忘者村居（3个/39秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 136,
+  "timeout": 131,
   "teleport": {
     "name": "遗忘者村居",
     "province": "心愿原野",
@@ -35,14 +35,6 @@
       "params": {}
     },
     {
-      "x": 9164.66,
-      "y": 8893.32,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 9161.66,
       "y": 8893.32,
       "radius": 2.5,
@@ -51,16 +43,8 @@
       "params": {}
     },
     {
-      "x": 9146.66,
-      "y": 8881.32,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9134.66,
-      "y": 8866.32,
+      "x": 9143.66,
+      "y": 8878.32,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -68,38 +52,38 @@
     },
     {
       "x": 9131.66,
-      "y": 8845.32,
+      "y": 8860.32,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9137.66,
-      "y": 8827.32,
+      "x": 9131.66,
+      "y": 8836.32,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9152.66,
-      "y": 8812.32,
+      "x": 9146.66,
+      "y": 8818.32,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9164.66,
-      "y": 8797.32,
+      "x": 9161.66,
+      "y": 8800.32,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9182.66,
+      "x": 9179.66,
       "y": 8788.32,
       "radius": 2.5,
       "jump": false,
@@ -113,7 +97,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 6.9
       }
     }
   ]

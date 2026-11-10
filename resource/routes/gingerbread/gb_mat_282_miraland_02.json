@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_282_miraland_02",
-  "title": "【骨焰花】埋骨地·龙埙遗所（18个/120秒）",
+  "title": "【骨焰花】埋骨地·龙埙遗所（18个/126秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 309,
+  "timeout": 322,
   "teleport": {
     "name": "龙埙遗所",
     "province": "伊赞之土",
@@ -21,7 +21,7 @@
     "小野菊",
     "路灯花"
   ],
-  "capacity": 46,
+  "capacity": 45,
   "points": [
     {
       "x": 8586.15,
@@ -34,12 +34,10 @@
     {
       "x": 8597.15,
       "y": 5358.14,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.2
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 8612.15,
@@ -52,12 +50,10 @@
     {
       "x": 8627.15,
       "y": 5328.14,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 8636.31,
@@ -66,47 +62,47 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 26.0
+        "seconds": 30.2
       }
     },
     {
-      "x": 8619.06,
-      "y": 5341.79,
+      "x": 8610.32,
+      "y": 5334.52,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.2
+        "seconds": 15.7
       }
     },
     {
-      "x": 8650.36,
-      "y": 5356.86,
+      "x": 8634.6,
+      "y": 5351.21,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 15.6
       }
     },
     {
-      "x": 8656.39,
-      "y": 5310.52,
+      "x": 8654.39,
+      "y": 5301.74,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.4
+        "seconds": 15.9
       }
     },
     {
-      "x": 8631.38,
-      "y": 5293.55,
+      "x": 8629.88,
+      "y": 5290.95,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 8.2
       }
     }
   ]

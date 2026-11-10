@@ -1,0 +1,41 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_076_miraland_01",
+  "title": "【耳坠萤】埋骨地·荧湖西岸（15个/92秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 248,
+  "teleport": {
+    "name": "荧湖西岸",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 5720.788,
+    "y": 5415.967
+  },
+  "material": "耳坠萤",
+  "count_materials": [
+    "耳坠萤",
+    "风舞花"
+  ],
+  "capacity": 17,
+  "points": [
+    {
+      "x": 5720.79,
+      "y": 5415.97,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5722.56,
+      "y": 5419.44,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 81.4
+      }
+    }
+  ]
+}

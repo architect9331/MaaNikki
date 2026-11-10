@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_062_danqing_03",
-  "title": "【织衣蛛】丹青屿·望龙亭（1个/25秒）",
+  "title": "【织衣蛛】丹青屿·望龙亭（1个/21秒）",
   "map": "danqing",
   "start_radius": 6,
   "timeout": 120,
@@ -28,14 +28,6 @@
       "params": {}
     },
     {
-      "x": 1556.36,
-      "y": 964.49,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 1565.36,
       "y": 973.49,
       "radius": 2.5,
@@ -50,7 +42,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.6
+        "seconds": 8.0
       }
     }
   ]

@@ -1,0 +1,61 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_094_miraland_02",
+  "title": "【风絮草】小石树田村·村居岔路（9个/43秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 140,
+  "teleport": {
+    "name": "村居岔路",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 9389.052,
+    "y": 10562.456
+  },
+  "material": "风絮草",
+  "count_materials": [
+    "风絮草",
+    "芭蕾豆娘",
+    "发卡蚱蜢",
+    "小绵菊"
+  ],
+  "capacity": 14,
+  "points": [
+    {
+      "x": 9389.05,
+      "y": 10562.46,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9382.76,
+      "y": 10588.23,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 16.1
+      }
+    },
+    {
+      "x": 9376.09,
+      "y": 10580.21,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9359.09,
+      "y": 10569.21,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.8
+      }
+    }
+  ]
+}

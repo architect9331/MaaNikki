@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_313_miraland_02",
-  "title": "【晶球绵蚧】磐城·街区钟塔（12个/178秒）",
+  "title": "【晶球绵蚧】磐城·街区钟塔（14个/165秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 436,
+  "timeout": 408,
   "teleport": {
     "name": "街区钟塔",
     "province": "伊赞之土",
@@ -19,13 +19,12 @@
     "珠链蝶",
     "风舞花",
     "蓝玉甲虫",
-    "沙沙毛团",
     "刺绣蛾",
-    "小野菊",
     "珠坠甲虫",
-    "金轴蜻蜓"
+    "沙沙毛团",
+    "扣扣毛球"
   ],
-  "capacity": 58,
+  "capacity": 56,
   "points": [
     {
       "x": 3841.69,
@@ -42,17 +41,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.6
+        "seconds": 7.9
       }
     },
     {
-      "x": 3896.49,
-      "y": 4048.97,
+      "x": 3896.19,
+      "y": 4049.68,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.1
+        "seconds": 9.7
       }
     },
     {
@@ -62,27 +61,17 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.1
+        "seconds": 15.8
       }
     },
     {
-      "x": 3999.07,
-      "y": 3971.36,
+      "x": 4004.32,
+      "y": 3954.99,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.1
-      }
-    },
-    {
-      "x": 4005.87,
-      "y": 3933.94,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 21.0
+        "seconds": 10.5
       }
     },
     {
@@ -92,7 +81,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.1
+        "seconds": 4.8
       }
     },
     {
@@ -102,7 +91,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.2
+        "seconds": 10.2
       }
     },
     {
@@ -112,7 +101,17 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 15.1
+        "seconds": 9.9
+      }
+    },
+    {
+      "x": 3816.38,
+      "y": 4001.45,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 19.2
       }
     }
   ]

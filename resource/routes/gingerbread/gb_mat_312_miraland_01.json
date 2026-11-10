@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_312_miraland_01",
-  "title": "【蓝玉甲虫】磐城·晨曦集市（20个/195秒）",
+  "title": "【蓝玉甲虫】磐城·晨曦集市（32个/204秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 474,
+  "timeout": 495,
   "teleport": {
     "name": "晨曦集市",
     "province": "伊赞之土",
@@ -21,7 +21,7 @@
     "探险家蜜蜂",
     "风舞花"
   ],
-  "capacity": 44,
+  "capacity": 56,
   "points": [
     {
       "x": 4026.35,
@@ -32,13 +32,13 @@
       "params": {}
     },
     {
-      "x": 4037.54,
-      "y": 3936.99,
+      "x": 4035.83,
+      "y": 3936.28,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 66.6
+        "seconds": 46.6
       }
     },
     {
@@ -48,7 +48,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 17.5
       }
     },
     {
@@ -58,17 +58,37 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 18.3
       }
     },
     {
-      "x": 4078.46,
-      "y": 3871.36,
+      "x": 4146.95,
+      "y": 3900.05,
       "radius": 2.0,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 31.1
+        "seconds": 15.5
+      }
+    },
+    {
+      "x": 4089.47,
+      "y": 3867.12,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 43.2
+      }
+    },
+    {
+      "x": 4075.62,
+      "y": 3831.64,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.8
       }
     }
   ]

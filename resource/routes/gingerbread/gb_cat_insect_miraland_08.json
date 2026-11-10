@@ -1,55 +1,70 @@
 {
   "schema_version": 3,
   "id": "gb_cat_insect_miraland_08",
-  "title": "【全昆虫速刷】磐城·丰饶环圃（38个/254秒）",
+  "title": "【全昆虫速刷】磐城·环圃一层种植区（49个/235秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 603,
+  "timeout": 562,
   "teleport": {
-    "name": "丰饶环圃",
+    "name": "环圃一层种植区",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3679.349,
-    "y": 4116.242
+    "x": 3514.092,
+    "y": 4165.524
   },
   "material": "全昆虫速刷",
   "count_materials": [
-    "珠链蝶",
     "探险家蜜蜂",
-    "小野菊",
-    "蓝玉甲虫",
-    "金轴蜻蜓",
+    "珠链蝶",
     "满满果",
-    "珠坠甲虫"
+    "耳坠萤",
+    "壁灯红椒",
+    "蓝玉甲虫",
+    "织衣蛛",
+    "刺绣蛾",
+    "小野菊",
+    "珠坠甲虫",
+    "金轴蜻蜓",
+    "纽扣松果"
   ],
-  "capacity": 38,
+  "capacity": 49,
   "points": [
     {
-      "x": 3679.35,
-      "y": 4116.24,
+      "x": 3514.09,
+      "y": 4165.52,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3662.07,
-      "y": 4122.02,
+      "x": 3467.96,
+      "y": 4179.47,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 150.0
+        "seconds": 87.8
       }
     },
     {
-      "x": 3614.14,
-      "y": 4135.57,
+      "x": 3453.77,
+      "y": 4136.34,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 82.4
+        "seconds": 69.6
+      }
+    },
+    {
+      "x": 3495.3,
+      "y": 4167.17,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 46.9
       }
     }
   ]

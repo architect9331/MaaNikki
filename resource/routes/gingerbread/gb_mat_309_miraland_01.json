@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_309_miraland_01",
-  "title": "【机雀羽】磐城·金时醇酿馆（18个/211秒）",
+  "title": "【机雀羽】磐城·金时醇酿馆（27个/196秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 510,
+  "timeout": 477,
   "teleport": {
     "name": "金时醇酿馆",
     "province": "伊赞之土",
@@ -14,11 +14,9 @@
   },
   "material": "机雀羽",
   "count_materials": [
-    "机雀羽",
-    "晶球绵蚧",
-    "金轴蜻蜓"
+    "机雀羽"
   ],
-  "capacity": 21,
+  "capacity": 27,
   "points": [
     {
       "x": 4119.1,
@@ -29,23 +27,13 @@
       "params": {}
     },
     {
-      "x": 4145.1,
-      "y": 3810.18,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 27.6
-      }
-    },
-    {
       "x": 4105.91,
       "y": 3769.53,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 27.6
+        "seconds": 14.4
       }
     },
     {
@@ -55,17 +43,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 27.6
-      }
-    },
-    {
-      "x": 4010.42,
-      "y": 3796.98,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 56.1
+        "seconds": 14.3
       }
     },
     {
@@ -75,7 +53,47 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 27.6
+        "seconds": 14.4
+      }
+    },
+    {
+      "x": 4010.42,
+      "y": 3796.98,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 34.0
+      }
+    },
+    {
+      "x": 3957.23,
+      "y": 3739.42,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 33.9
+      }
+    },
+    {
+      "x": 3975.81,
+      "y": 3693.8,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.4
+      }
+    },
+    {
+      "x": 4003.4,
+      "y": 3668.31,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.3
       }
     }
   ]

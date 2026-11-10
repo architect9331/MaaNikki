@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_07_miraland_02",
-  "title": "【提包鱼】花愿镇·织裙街（6个/170秒）",
+  "title": "【提包鱼】花愿镇·织裙街（6个/142秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 418,
+  "timeout": 358,
   "teleport": {
     "name": "织裙街",
     "province": "心愿原野",
@@ -18,9 +18,9 @@
     "提包鱼",
     "纽扣松果",
     "布布果",
-    "小绵菊",
     "晴日蝶兰/雨滴蝶兰",
     "蓝珀鸟羽",
+    "小绵菊",
     "珠花贝壳"
   ],
   "capacity": 28,
@@ -32,42 +32,40 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 15.3
       }
     },
     {
-      "x": 10731.5,
-      "y": 10072.91,
+      "x": 10734.5,
+      "y": 10075.91,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
+        "seconds": 7.6
       }
     },
     {
-      "x": 10743.5,
-      "y": 10087.91,
+      "x": 10749.5,
+      "y": 10093.91,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.8
+        "seconds": 24.0
       }
     },
     {
-      "x": 10752.5,
-      "y": 10099.91,
-      "radius": 2.0,
+      "x": 10749.5,
+      "y": 10105.91,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 20.8
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 10743.5,
-      "y": 10108.91,
+      "x": 10728.5,
+      "y": 10111.91,
       "radius": 2.5,
       "jump": false,
       "action": "",
@@ -80,7 +78,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 44.6
+        "seconds": 33.6
       }
     },
     {
@@ -92,24 +90,16 @@
       "params": {}
     },
     {
-      "x": 10755.5,
-      "y": 10128.91,
+      "x": 10761.5,
+      "y": 10131.91,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10758.5,
-      "y": 10128.91,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10779.5,
-      "y": 10134.91,
+      "x": 10773.5,
+      "y": 10131.91,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -122,7 +112,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 41.1
+        "seconds": 28.9
       }
     }
   ]

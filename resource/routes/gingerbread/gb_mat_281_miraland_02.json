@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_281_miraland_02",
-  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（39个/174秒）",
+  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（39个/143秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 427,
+  "timeout": 360,
   "teleport": {
     "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
@@ -16,50 +16,44 @@
   "count_materials": [
     "晴雨伞",
     "耳坠萤",
-    "风舞花",
     "钓鱼点",
     "大叶鹿绒",
     "茸芽鹿绒",
+    "风舞花",
     "蜜妆兔绒",
     "蜜妆粉",
     "蓝鳞晶",
     "羽巾绒"
   ],
-  "capacity": 61,
+  "capacity": 60,
   "points": [
     {
       "x": 8063.15,
       "y": 5243.19,
-      "radius": 2.0,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 8065.15,
-      "y": 5239.88,
-      "radius": 2.0,
+      "x": 8068.15,
+      "y": 5236.88,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 8071.15,
-      "y": 5218.88,
-      "radius": 2.0,
+      "y": 5215.88,
+      "radius": 2.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 3.0
-      }
+      "action": "",
+      "params": {}
     },
     {
       "x": 8080.15,
-      "y": 5200.88,
+      "y": 5197.88,
       "radius": 2.5,
       "jump": true,
       "action": "",
@@ -72,11 +66,11 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.4
+        "seconds": 18.6
       }
     },
     {
-      "x": 8096.81,
+      "x": 8099.81,
       "y": 5172.22,
       "radius": 2.5,
       "jump": false,
@@ -84,7 +78,7 @@
       "params": {}
     },
     {
-      "x": 8117.81,
+      "x": 8123.81,
       "y": 5172.22,
       "radius": 2.5,
       "jump": true,
@@ -98,85 +92,101 @@
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 31.2
+        "seconds": 23.8
       }
     },
     {
-      "x": 8093.39,
+      "x": 8096.39,
       "y": 5141.96,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.2
+        "seconds": 15.2
       }
     },
     {
-      "x": 8148.7,
-      "y": 5139.17,
+      "x": 8119.39,
+      "y": 5143.96,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8140.39,
+      "y": 5137.96,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8152.19,
+      "y": 5143.31,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.2
+        "seconds": 15.2
       }
     },
     {
-      "x": 8134.78,
-      "y": 5141.17,
+      "x": 8137.96,
+      "y": 5136.31,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8116.78,
-      "y": 5150.17,
+      "x": 8122.96,
+      "y": 5151.31,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8101.78,
-      "y": 5162.17,
+      "x": 8104.96,
+      "y": 5163.31,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8080.78,
-      "y": 5168.17,
+      "x": 8083.96,
+      "y": 5166.31,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8059.78,
-      "y": 5168.17,
+      "x": 8059.96,
+      "y": 5166.31,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8038.78,
-      "y": 5171.17,
+      "x": 8038.96,
+      "y": 5169.31,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8036.78,
-      "y": 5172.96,
+      "x": 8033.96,
+      "y": 5171.94,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.6
+        "seconds": 12.5
       }
     }
   ]

@@ -1,0 +1,74 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_091_wanxiang_01",
+  "title": "【满满果】万相境·火锅坊（5个/32秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "火锅坊",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 1399.524,
+    "y": 1108.824
+  },
+  "material": "满满果",
+  "count_materials": [
+    "满满果",
+    "小绵菊",
+    "刺绣蛾"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 1399.52,
+      "y": 1108.82,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1382.39,
+      "y": 1100.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1379.39,
+      "y": 1100.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1376.39,
+      "y": 1103.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1370.39,
+      "y": 1097.51,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1371.39,
+      "y": 1095.51,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 16.0
+      }
+    }
+  ]
+}

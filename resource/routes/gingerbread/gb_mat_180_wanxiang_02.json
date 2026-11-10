@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_180_wanxiang_02",
-  "title": "【荷包草】万相境·九华监（7个/53秒）",
+  "title": "【荷包草】万相境·九华监（8个/48秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 161,
+  "timeout": 151,
   "teleport": {
     "name": "九华监",
     "province": "伊赞之土",
@@ -16,10 +16,10 @@
   "count_materials": [
     "荷包草",
     "耳坠萤",
-    "玉簪蚱蜢",
-    "小绵菊"
+    "小绵菊",
+    "玉簪蚱蜢"
   ],
-  "capacity": 14,
+  "capacity": 16,
   "points": [
     {
       "x": 1592.36,
@@ -30,26 +30,18 @@
       "params": {}
     },
     {
-      "x": 1590.81,
-      "y": 834.83,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 1587.81,
       "y": 837.83,
       "radius": 2.5,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 1575.81,
-      "y": 852.83,
+      "x": 1572.81,
+      "y": 855.83,
       "radius": 2.5,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
@@ -60,59 +52,43 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.4
+        "seconds": 11.6
       }
     },
     {
-      "x": 1587.81,
-      "y": 846.93,
+      "x": 1590.81,
+      "y": 847.64,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1608.81,
-      "y": 843.93,
+      "x": 1611.81,
+      "y": 844.64,
       "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1628.47,
-      "y": 844.93,
-      "radius": 2.0,
       "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1627.76,
+      "y": 845.64,
+      "radius": 2.0,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 5.7
       }
     },
     {
-      "x": 1608.93,
-      "y": 844.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1587.93,
-      "y": 847.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1585.93,
-      "y": 839.16,
+      "x": 1632.46,
+      "y": 806.38,
       "radius": 2.0,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 2.4
       }
     }
   ]

@@ -1,59 +1,256 @@
 {
   "schema_version": 3,
   "id": "gb_mat_178_danqing_01",
-  "title": "【远黛扇羽】丹青屿·逢花林（1个/27秒）",
+  "title": "【远黛扇羽】丹青屿·望水渡（6个/127秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 324,
   "teleport": {
-    "name": "逢花林",
+    "name": "望水渡",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1749.147,
-    "y": 1183.285
+    "x": 1328.798,
+    "y": 1218.711
   },
   "material": "远黛扇羽",
   "count_materials": [
-    "珠链蝶",
+    "远黛扇羽",
+    "小星扇贝",
+    "小绵菊",
     "荷包草",
-    "远黛扇羽"
+    "玉簪蚱蜢",
+    "珠链蝶",
+    "满满果",
+    "耳坠萤",
+    "胭脂芙蕖",
+    "刺绣蛾"
   ],
-  "capacity": 7,
+  "capacity": 31,
   "points": [
     {
-      "x": 1749.15,
-      "y": 1183.29,
+      "x": 1328.8,
+      "y": 1218.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1333.8,
+      "y": 1202.96,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1351.8,
+      "y": 1187.96,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1356.03,
+      "y": 1188.96,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 19.0
       }
     },
     {
-      "x": 1751.15,
-      "y": 1185.29,
+      "x": 1335.48,
+      "y": 1182.13,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1317.48,
+      "y": 1176.13,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1754.15,
-      "y": 1188.29,
+      "x": 1312.48,
+      "y": 1183.13,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.2
+      }
+    },
+    {
+      "x": 1326.48,
+      "y": 1200.13,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1329.48,
+      "y": 1206.13,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1768.93,
-      "y": 1193.08,
+      "x": 1329.48,
+      "y": 1212.13,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1344.48,
+      "y": 1230.13,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1359.48,
+      "y": 1245.13,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1374.48,
+      "y": 1260.13,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1377.48,
+      "y": 1266.59,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 1385.48,
+      "y": 1245.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1400.48,
+      "y": 1227.22,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1415.48,
+      "y": 1212.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1427.48,
+      "y": 1194.22,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1439.48,
+      "y": 1176.22,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1433.48,
+      "y": 1158.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1419.35,
+      "y": 1156.22,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 8.6
+      }
+    },
+    {
+      "x": 1442.35,
+      "y": 1161.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1457.35,
+      "y": 1176.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1472.35,
+      "y": 1191.22,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1484.35,
+      "y": 1200.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1508.35,
+      "y": 1200.22,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1518.18,
+      "y": 1201.7,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 9.1
       }
     }
   ]

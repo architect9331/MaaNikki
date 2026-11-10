@@ -1,75 +1,45 @@
 {
   "schema_version": 3,
   "id": "gb_all_firework_firework_02",
-  "title": "【全材料·花焰群岛】花焰群岛·滋啦啦服务社（10个/50秒）",
+  "title": "【全材料·花焰群岛】花焰群岛·月角浅滩（12个/54秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 155,
+  "timeout": 165,
   "teleport": {
-    "name": "滋啦啦服务社",
+    "name": "月角浅滩",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 1003.822,
-    "y": 608.643
+    "x": 1142.641,
+    "y": 358.56
   },
   "material": "全材料·花焰群岛",
   "count_materials": [
-    "壁灯红椒",
-    "路灯花",
-    "小绵菊"
+    "小绵菊",
+    "瓜子珠",
+    "噼啪花粉",
+    "发卡蚱蜢",
+    "满满果"
   ],
-  "capacity": 10,
+  "capacity": 12,
   "points": [
     {
-      "x": 1003.82,
-      "y": 608.64,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 995.97,
-      "y": 591.21,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 980.97,
-      "y": 576.21,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 965.97,
-      "y": 561.21,
+      "x": 1142.64,
+      "y": 358.56,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 11.3
       }
     },
     {
-      "x": 953.97,
-      "y": 543.21,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 951.97,
-      "y": 541.21,
+      "x": 1110.37,
+      "y": 364.86,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 20.8
+        "seconds": 28.1
       }
     }
   ]

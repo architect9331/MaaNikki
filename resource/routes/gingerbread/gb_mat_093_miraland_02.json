@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_093_miraland_02",
-  "title": "【花伞藤萝】小石树田村·滑翔训练石树（1个/16秒）",
+  "title": "【花伞藤萝】小石树田村·滑翔训练石树（1个/14秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -27,21 +27,13 @@
       "params": {}
     },
     {
-      "x": 9199.35,
-      "y": 10424.55,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 9198.3,
       "y": 10426.98,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 2.4
       }
     }
   ]

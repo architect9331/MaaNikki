@@ -1,43 +1,90 @@
 {
   "schema_version": 3,
   "id": "gb_mat_231_miraland_02",
-  "title": "【行鹭羽】巨木之森·古木荫地附近遗迹（6个/77秒）",
+  "title": "【行鹭羽】巨木之森·咻咻快道入口（8个/78秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 215,
+  "timeout": 216,
   "teleport": {
-    "name": "古木荫地附近遗迹",
+    "name": "咻咻快道入口",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 3704.478,
-    "y": 9230.438
+    "x": 4654.987,
+    "y": 7946.512
   },
   "material": "行鹭羽",
   "count_materials": [
     "行鹭羽",
-    "小野菊",
-    "织衣蛛"
+    "木夹跳甲"
   ],
-  "capacity": 8,
+  "capacity": 9,
   "points": [
     {
-      "x": 3704.48,
-      "y": 9230.44,
-      "radius": 2.0,
+      "x": 4654.99,
+      "y": 7946.51,
+      "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4668.99,
+      "y": 7945.51,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4674.43,
+      "y": 7952.0,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 3.0
+        "seconds": 26.4
       }
     },
     {
-      "x": 3704.92,
-      "y": 9275.08,
-      "radius": 2.0,
+      "x": 4655.25,
+      "y": 7937.79,
+      "radius": 2.5,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4658.25,
+      "y": 7916.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4658.25,
+      "y": 7904.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4640.25,
+      "y": 7889.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4635.25,
+      "y": 7878.79,
+      "radius": 2.0,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 56.1
+        "seconds": 25.0
       }
     }
   ]

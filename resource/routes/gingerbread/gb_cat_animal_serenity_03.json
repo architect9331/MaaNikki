@@ -1,39 +1,57 @@
 {
   "schema_version": 3,
   "id": "gb_cat_animal_serenity_03",
-  "title": "【全动物清洁】无忧岛·泡泡花田（5个/26秒）",
+  "title": "【全动物清洁】无忧岛·守望之地（11个/44秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 141,
   "teleport": {
-    "name": "泡泡花田",
+    "name": "守望之地",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 1062.068,
-    "y": 537.513
+    "x": 795.589,
+    "y": 511.792
   },
   "material": "全动物清洁",
   "count_materials": [
-    "风絮草"
+    "小绵菊",
+    "蓝珀鸟羽",
+    "花伞藤萝"
   ],
-  "capacity": 5,
+  "capacity": 11,
   "points": [
     {
-      "x": 1062.07,
-      "y": 537.51,
+      "x": 795.59,
+      "y": 511.79,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1063.63,
-      "y": 534.63,
+      "x": 797.59,
+      "y": 513.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 800.59,
+      "y": 516.79,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 804.21,
+      "y": 522.91,
       "radius": 2.0,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 13.0
+        "seconds": 31.0
       }
     }
   ]

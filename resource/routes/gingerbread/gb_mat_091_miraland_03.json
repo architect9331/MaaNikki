@@ -1,0 +1,119 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_091_miraland_03",
+  "title": "【满满果】磐城·永续识馆（22个/143秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 359,
+  "teleport": {
+    "name": "永续识馆",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 4133.939,
+    "y": 2774.733
+  },
+  "material": "满满果",
+  "count_materials": [
+    "满满果",
+    "珠链蝶",
+    "金轴蜻蜓",
+    "小野菊",
+    "晶球绵蚧",
+    "蓝玉甲虫",
+    "织衣蛛",
+    "路灯花",
+    "咕咕之羽",
+    "珠坠甲虫"
+  ],
+  "capacity": 68,
+  "points": [
+    {
+      "x": 4133.94,
+      "y": 2774.73,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4103.63,
+      "y": 2767.73,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 4066.64,
+      "y": 2740.44,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 8.7
+      }
+    },
+    {
+      "x": 3955.53,
+      "y": 2769.09,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 19.3
+      }
+    },
+    {
+      "x": 3967.17,
+      "y": 2797.08,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.7
+      }
+    },
+    {
+      "x": 3986.7,
+      "y": 2774.88,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.0
+      }
+    },
+    {
+      "x": 3978.96,
+      "y": 2836.32,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.2
+      }
+    },
+    {
+      "x": 3982.19,
+      "y": 2873.49,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 5.2
+      }
+    },
+    {
+      "x": 4045.52,
+      "y": 2847.76,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.1
+      }
+    }
+  ]
+}

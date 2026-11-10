@@ -1,0 +1,82 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_serenity_02",
+  "title": "【全动物清洁】无忧岛·咚咚小屋聚落（8个/31秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "咚咚小屋聚落",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 822.676,
+    "y": 542.497
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "小绵菊",
+    "飞球果",
+    "小星扇贝"
+  ],
+  "capacity": 8,
+  "points": [
+    {
+      "x": 822.68,
+      "y": 542.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 820.86,
+      "y": 538.5,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 817.86,
+      "y": 535.5,
+      "radius": 2.5,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 811.86,
+      "y": 538.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 811.86,
+      "y": 541.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 802.86,
+      "y": 550.5,
+      "radius": 2.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 812.86,
+      "y": 561.38,
+      "radius": 2.0,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.6
+      }
+    }
+  ]
+}

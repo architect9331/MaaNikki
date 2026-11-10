@@ -905,14 +905,38 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
 
   const annotatedSpawners = useMemo(() => {
     if (!spawners.length) return { list: [], capturedCount: 0 };
-    const auraPx = 14.5 / 0.9;
+    const auraPx = 15.0 / 0.9;
+    const hasWait = points3D.some((wp) => wp.action === 'wait');
+    const stopWps = hasWait ? points3D.filter((wp) => wp.action === 'wait') : points3D;
     const tgtQuery = (targetMaterial ?? '').trim();
     let capturedCount = 0;
     const list = spawners.map((sp) => {
       let captured = false;
-      for (const wp of points3D) {
+      for (const wp of stopWps) {
         if (Math.abs(sp.x - wp.x) <= auraPx && Math.abs(sp.y - wp.y) <= auraPx) {
-          if (Math.hypot(sp.x - wp.x, sp.y - wp.y) <= auraPx && Math.abs(sp.z - wp.z) <= 6.2) {
+          const dz = Math.abs(sp.z - wp.z);
+          const d2dM = Math.hypot(sp.x - wp.x, sp.y - wp.y) * 0.9;
+          if (dz <= 10.5 && Math.hypot(d2dM, dz) <= 15.0) {
+            captured = true;
+            break;
+          }
+        }
+      }
+      if (!captured && sp.kind === 'plant' && points3D.length >= 2) {
+        for (let k = 0; k < points3D.length - 1; k++) {
+          const p0 = points3D[k];
+          const p1 = points3D[k + 1];
+          const vx = p1.x - p0.x;
+          const vy = p1.y - p0.y;
+          const vz = p1.z - p0.z;
+          const lenSq = vx * vx + vy * vy;
+          const t = lenSq > 1e-6 ? Math.max(0, Math.min(1, ((sp.x - p0.x) * vx + (sp.y - p0.y) * vy) / lenSq)) : 0;
+          const cx = p0.x + t * vx;
+          const cy = p0.y + t * vy;
+          const cz = p0.z + t * vz;
+          const dz = Math.abs(sp.z - cz);
+          const d2dM = Math.hypot(sp.x - cx, sp.y - cy) * 0.9;
+          if (dz <= 10.5 && Math.hypot(d2dM, dz) <= 13.5) {
             captured = true;
             break;
           }
@@ -1284,12 +1308,15 @@ export const Route3DCanvas = forwardRef<MapCanvasHandle, Route3DCanvasProps>(fun
       // 2. Gingerbread 15m Aura Rings on Terrain Surface
       if (showAura && points3D.length > 0) {
         const auraPx = 15.0 / mPerPx;
+        const hasWaitStops = points3D.some((p) => p.action === 'wait');
         ctx.save();
         ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
         ctx.fillStyle = 'rgba(251, 191, 36, 0.09)';
         ctx.lineWidth = 1.3;
         for (let i = 0; i < points3D.length; i++) {
           const wp = points3D[i];
+          const isSel = selected === i || selectedSet?.has(i);
+          if (hasWaitStops && wp.action !== 'wait' && !isSel) continue;
           if (Math.hypot(wp.x - patchCenterX, wp.y - patchCenterY) > patchRadius * 1.35) continue;
           ctx.beginPath();
           let started = false;

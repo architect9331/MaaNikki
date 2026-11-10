@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_04",
-  "title": "【全材料·巨木之森】巨木之森·巨人墓园（11个/64秒）",
+  "title": "【全材料·巨木之森】巨木之森·巨人墓园（16个/87秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 185,
+  "timeout": 236,
   "teleport": {
     "name": "巨人墓园",
     "province": "伊赞之土",
@@ -15,9 +15,11 @@
   "material": "全材料·巨木之森",
   "count_materials": [
     "壁灯红椒",
+    "耳坠萤",
+    "木夹跳甲",
     "刺绣蛾"
   ],
-  "capacity": 11,
+  "capacity": 16,
   "points": [
     {
       "x": 2891.81,
@@ -28,7 +30,7 @@
       "params": {}
     },
     {
-      "x": 2893.81,
+      "x": 2896.81,
       "y": 8597.68,
       "radius": 2.5,
       "jump": false,
@@ -36,20 +38,22 @@
       "params": {}
     },
     {
-      "x": 2899.81,
-      "y": 8600.68,
+      "x": 2902.81,
+      "y": 8606.68,
       "radius": 2.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 2908.81,
-      "y": 8618.68,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
+      "x": 2914.81,
+      "y": 8624.68,
+      "radius": 2.0,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 20.8
+      }
     },
     {
       "x": 2920.81,
@@ -60,23 +64,17 @@
       "params": {}
     },
     {
-      "x": 2929.81,
-      "y": 8633.68,
-      "radius": 2.5,
+      "x": 2941.81,
+      "y": 8639.68,
+      "radius": 2.0,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
     },
     {
-      "x": 2947.81,
-      "y": 8645.68,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2968.81,
+      "x": 2962.81,
       "y": 8648.68,
       "radius": 2.5,
       "jump": false,
@@ -84,7 +82,7 @@
       "params": {}
     },
     {
-      "x": 2989.81,
+      "x": 2983.81,
       "y": 8654.68,
       "radius": 2.5,
       "jump": false,
@@ -98,7 +96,7 @@
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 34.0
+        "seconds": 32.9
       }
     }
   ]
