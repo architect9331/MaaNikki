@@ -649,6 +649,8 @@ pub async fn run_pretask(
     let pretask_telemetry = super::telemetry::begin_pretask(&instance_id, &program, &args);
 
     let mut cmd = super::utils::build_launch_command(&resolved_program, &args, false);
+    cmd.env("PYTHONIOENCODING", "utf-8");
+    cmd.env("PYTHONUTF8", "1");
     cmd.stderr(std::process::Stdio::piped());
     #[cfg(windows)]
     {
@@ -708,7 +710,7 @@ pub async fn run_pretask(
                     message
                 );
                 if let Some(ctx) = pretask_telemetry {
-                    super::telemetry::on_pretask_failed(ctx, exit_code);
+                    super::telemetry::on_pretask_failed(ctx, exit_code, message.as_deref());
                 }
             } else {
                 info!("run_pretask finished with exit code: {}", exit_code);

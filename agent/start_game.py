@@ -20,6 +20,14 @@ REPORT = ROOT / "logs/startup" / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from file_io import write_json
 
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if callable(_reconfigure):
+        try:
+            _reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 PROGRAMS = ("InfinityNikki.exe", "X6Game.exe", "X6Game-Win64-Shipping.exe")
 
 

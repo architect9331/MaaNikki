@@ -937,14 +937,21 @@ pub async fn start_tasks_impl(
             task_ids.len()
         );
         let state = &mut instance.task_run_state;
-        state.overall_status = Some("Running".to_string());
-        if reset_state {
-            instance.task_ids = task_ids;
+        if reset_state && task_ids.is_empty() {
+            state.overall_status = Some("Failed".to_string());
+            instance.task_ids.clear();
+            drop(telemetry_posting);
+            super::telemetry::on_run_cancelled(&instance_id);
         } else {
-            instance.task_ids.extend(task_ids);
+            state.overall_status = Some("Running".to_string());
+            if reset_state {
+                instance.task_ids = task_ids;
+            } else {
+                instance.task_ids.extend(task_ids);
+            }
+            drop(telemetry_posting);
         }
         debug!("[start_tasks] TaskRunState updated");
-        drop(telemetry_posting);
     }
 
     // 通知所有客户端：任务已启动，需刷新运行时状态

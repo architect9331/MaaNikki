@@ -682,6 +682,9 @@ pub fn destroy_instance_impl(state: &Arc<MaaState>, instance_id: &str) -> Result
         }
     }
 
+    // 确保临时辅助实例在销毁时收尾遥测运行状态，避免残留导致后续任务被判定为并发实例
+    super::telemetry::on_run_cancelled(instance_id);
+
     if let Ok(mut log_buffer) = state.log_buffer.lock() {
         log_buffer.clear_instance(instance_id);
     }
@@ -1458,6 +1461,7 @@ pub fn stop_task_impl(state: &MaaState, instance_id: &str) -> Result<(), String>
     let Some(tasker) = instance.tasker.as_ref() else {
         instance.stop_in_progress = true;
         instance.stop_started_at = Some(Instant::now());
+        super::telemetry::on_run_cancelled(instance_id);
         return Ok(());
     };
 
@@ -1465,6 +1469,7 @@ pub fn stop_task_impl(state: &MaaState, instance_id: &str) -> Result<(), String>
         if !tasker.running() {
             instance.stop_in_progress = false;
             instance.stop_started_at = None;
+            super::telemetry::on_run_cancelled(instance_id);
             return Ok(());
         }
         let elapsed = instance

@@ -173,6 +173,7 @@ struct TaskFailureReport {
     started_wall_time: Option<SystemTime>,
     failure: Option<FailureSignal>,
     terminal_failure: Option<FailureSignal>,
+    pretask_message: Option<String>,
     failed_node_count: u32,
     trace_context: Option<sentry::protocol::TraceContext>,
     tags: BTreeMap<String, String>,
@@ -854,7 +855,7 @@ pub fn begin_pretask(
     })
 }
 
-pub fn on_pretask_failed(pretask: PretaskTelemetry, exit_code: i32) {
+pub fn on_pretask_failed(pretask: PretaskTelemetry, exit_code: i32, message: Option<&str>) {
     if !is_diagnostics_active() {
         return;
     }
@@ -872,6 +873,9 @@ pub fn on_pretask_failed(pretask: PretaskTelemetry, exit_code: i32) {
         node_id: None,
         duration_ms,
     };
+    let pretask_message = message
+        .map(sanitize_pretask_message)
+        .filter(|sanitized| !sanitized.is_empty());
     let tags = BTreeMap::from([
         ("run.id".to_string(), run_id.clone()),
         ("pretask.exit_code".to_string(), exit_code.to_string()),
@@ -887,6 +891,7 @@ pub fn on_pretask_failed(pretask: PretaskTelemetry, exit_code: i32) {
         started_wall_time: Some(pretask.started_wall_time),
         failure: Some(signal.clone()),
         terminal_failure: Some(signal),
+        pretask_message,
         failed_node_count: 1,
         trace_context: None,
         tags,
@@ -1368,6 +1373,7 @@ pub fn on_task_finished(instance_id: &str, maa_task_id: i64, success: bool) {
                     started_wall_time,
                     failure,
                     terminal_failure,
+                    pretask_message: None,
                     failed_node_count,
                     trace_context,
                     tags: run.tags.clone(),
@@ -1697,6 +1703,11 @@ fn capture_failure_event(
         .filter(|terminal| report.failure.as_ref() != Some(*terminal))
     {
         set_failure_extra(&mut event, "terminal_failure", terminal);
+    }
+    if let Some(pretask_message) = report.pretask_message {
+        event
+            .extra
+            .insert("pretask.message".to_string(), pretask_message.into());
     }
     for (key, value) in report.task.options {
         event.extra.insert(format!("option.{key}"), value.into());
@@ -2390,6 +2401,75 @@ fn should_sample_attachment(run_id: &str, maa_task_id: i64, sample_rate: f32) ->
 
 fn tag_value(value: &str) -> String {
     value.chars().take(200).collect()
+}
+
+fn is_path_stop_char(character: char) -> bool {
+    character.is_whitespace()
+        || matches!(
+            character,
+            '"' | '\''
+                | '`'
+                | '<'
+                | '>'
+                | '|'
+                | '('
+                | ')'
+                | '['
+                | ']'
+                | '{'
+                | '}'
+                | '，'
+                | '。'
+                | '；'
+                | '：'
+                | '！'
+                | '？'
+                | '（'
+                | '）'
+                | '【'
+                | '】'
+                | '「'
+                | '」'
+        )
+}
+
+fn sanitize_pretask_message(message: &str) -> String {
+    let chars: Vec<char> = message
+        .chars()
+        .map(|character| {
+            if character.is_control() {
+                ' '
+            } else {
+                character
+            }
+        })
+        .collect();
+    let mut sanitized = String::with_capacity(message.len().min(256));
+    let mut index = 0;
+    while index < chars.len() {
+        let is_drive_path = index + 2 < chars.len()
+            && chars[index].is_ascii_alphabetic()
+            && chars[index + 1] == ':'
+            && matches!(chars[index + 2], '\\' | '/');
+        let is_unc_path =
+            index + 2 < chars.len() && chars[index] == '\\' && chars[index + 1] == '\\';
+        if is_drive_path || is_unc_path {
+            sanitized.push_str("<path>");
+            index += 2;
+            while index < chars.len() && !is_path_stop_char(chars[index]) {
+                index += 1;
+            }
+            continue;
+        }
+        sanitized.push(chars[index]);
+        index += 1;
+    }
+    let trimmed = sanitized.trim();
+    let mut bounded: String = trimmed.chars().take(200).collect();
+    if trimmed.chars().count() > 200 {
+        bounded.push('…');
+    }
+    bounded
 }
 
 fn unix_time_ms(time: SystemTime) -> Option<u64> {
