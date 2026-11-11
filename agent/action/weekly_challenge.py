@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import cv2
 from registration import agent_action
+from task_control import TaskStopped
 from maa.custom_action import CustomAction
 from daily.runtime import Executors
 from daily.gameplay import Gameplay
@@ -111,6 +112,8 @@ class WeeklyChallengeAction(CustomAction):
         returned = True
         try:
             ok = steps()
+        except TaskStopped:
+            raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             if not rt.stopped:
                 rt.diagnostic("weekly_challenge", str(error))

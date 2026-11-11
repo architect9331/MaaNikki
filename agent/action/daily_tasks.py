@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import re
-from task_control import task_time as time
+from task_control import TaskStopped, task_time as time
 
 import cv2
 
@@ -328,6 +328,8 @@ class DailyRun(Executors):
 
         try:
             completed = steps()
+        except TaskStopped:
+            raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             self.log(f"{self.title}停止：{error}。")
             if not self.stopped:
@@ -417,6 +419,8 @@ class CollectStarlightCrystalsAction(CustomAction):
             completed = bool(runtime.crystals("xinghai", card) and not runtime.stopped)
             if completed:
                 runtime.log("跑图收集星光结晶已完成。", detail=True)
+        except TaskStopped:
+            raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             runtime.log(f"跑图收集星光结晶未完成：{error}。")
         finally:

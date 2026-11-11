@@ -71,6 +71,8 @@ class ForegroundInput:
         self.user32.IsWindow.restype = wintypes.BOOL
         self.user32.IsIconic.argtypes = [wintypes.HWND]
         self.user32.IsIconic.restype = wintypes.BOOL
+        self.user32.IsHungAppWindow.argtypes = [wintypes.HWND]
+        self.user32.IsHungAppWindow.restype = wintypes.BOOL
         self.user32.MapVirtualKeyW.argtypes = [wintypes.UINT, wintypes.UINT]
         self.user32.MapVirtualKeyW.restype = wintypes.UINT
         self.user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
@@ -100,7 +102,14 @@ class ForegroundInput:
             session.register(self)
 
     def foreground(self):
-        return bool(self.user32.IsWindow(self.hwnd) and self.user32.GetForegroundWindow() == self.hwnd)
+        return bool(
+            self.user32.IsWindow(self.hwnd)
+            and not self.user32.IsIconic(self.hwnd)
+            and self.user32.GetForegroundWindow() == self.hwnd
+        )
+
+    def hung(self):
+        return bool(self.user32.IsWindow(self.hwnd) and self.user32.IsHungAppWindow(self.hwnd))
 
     def check(self):
         if self.stopped():

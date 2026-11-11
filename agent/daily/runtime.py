@@ -17,7 +17,7 @@ from client_config import node_action_params as parameters
 from game_keys import GameKeys
 from performance import count, measure
 from message_log import write_message
-from game_view import ALLOWED_FRAME_SIZES, require_game_frame
+from game_view import ALLOWED_FRAME_SIZES, is_clipped_game_frame, require_game_frame
 
 
 RESOURCE = ROOT / "resource"
@@ -41,6 +41,7 @@ class Runtime:
         self._account_uid = None
         self._account_generation = None
         self._account_mismatch = False
+        self._frame_incomplete = False
         from .ui import GameUI
         self.ui = GameUI(self, RESOURCE)
 
@@ -319,7 +320,7 @@ class Runtime:
             if image is None or image.size == 0:
                 count("capture.failed")
                 return None
-            if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES:
+            if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES or is_clipped_game_frame(image):
                 from tall_window import heal_16_9_window
                 healed = heal_16_9_window(self.controller)
                 if healed is not None:
@@ -435,6 +436,7 @@ class Runtime:
                 raise ValueError("未能打开游戏主界面确认 UID")
             observed = self.read_account_uid(self.capture())
         if observed is None:
+            self._frame_incomplete = True
             raise ValueError("未能识别左下角 UID，请确认游戏画面完整")
         AccountState.bind(ROOT, observed)
         self._account_uid = observed
@@ -552,6 +554,8 @@ class Runtime:
 
     def finish(self, entry):
         """Leave a verified page suited to the next submitted task."""
+        if self.stopped or self._frame_incomplete or self._account_mismatch:
+            return None, False
         from .run_state import next_page
         page = next_page(entry)
         ok = self.ui.calendar() if page == "calendar" else self.main()

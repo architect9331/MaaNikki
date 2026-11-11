@@ -7,9 +7,9 @@ from datetime import datetime
 from maa.custom_action import CustomAction
 from client_config import parse_custom_param
 from registration import agent_action
-from task_control import task_time as time
+from task_control import TaskStopped, task_time as time
 from daily.runtime import Executors, ROOT
-from game_view import ALLOWED_FRAME_SIZES, GameFrameSizeError, require_game_frame
+from game_view import ALLOWED_FRAME_SIZES, GameFrameSizeError, is_clipped_game_frame, require_game_frame
 
 
 @agent_action("nikki.start_game", stop_on_failure=True)
@@ -60,7 +60,14 @@ class StartGameAction(CustomAction):
             # Read only after the ordinary HUD has been established by the
             # startup flow. Binding also refreshes the desktop account view.
             try:
+                for _ in range(2):
+                    if runtime.read_account_uid(runtime.frame()) is not None:
+                        break
+                    if not runtime.pause(.15) or runtime.capture() is None:
+                        break
                 runtime.account_uid()
+            except TaskStopped:
+                raise
             except (OSError, ValueError) as error:
                 # Startup also serves tasks which do not persist role data.
                 # Account-bound tasks confirm identity at their own entrance.
@@ -142,7 +149,7 @@ class StartGameAction(CustomAction):
                     continue
                 if image is None or image.size == 0:
                     return None
-                if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES:
+                if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES or is_clipped_game_frame(image):
                     from tall_window import heal_16_9_window
                     healed = heal_16_9_window(runtime.controller)
                     if healed is not None:

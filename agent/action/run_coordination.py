@@ -5,6 +5,7 @@ import json
 import cv2
 from client_config import parse_custom_param
 from registration import agent_action
+from task_control import TaskStopped
 from maa.custom_action import CustomAction
 
 from daily import run_state
@@ -97,6 +98,8 @@ class RunCoordinationAction(CustomAction):
                 # attachment window, so retain them with their original times.
                 rt.evidence.republish(pending.failure_evidence)
             return realm_ok and reviewed
+        except TaskStopped:
+            raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             rt.log(f"本轮任务衔接未完成：{error}。")
             return False

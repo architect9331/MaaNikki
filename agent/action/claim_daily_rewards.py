@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from task_control import task_time as time
+from task_control import TaskStopped, task_time as time
 import cv2
 import numpy as np
 from client_config import parse_custom_param
@@ -59,6 +59,8 @@ class ClaimDailyRewardsAction(CustomAction):
                     rt.log("领取后未能回到每日奖励页面，本项停止。")
                     return False
             return not rt.stopped
+        except TaskStopped:
+            raise
         except (OSError, ValueError, TypeError, KeyError, RuntimeError, cv2.error) as error:
             rt.log(f"每日奖励领取停止：{error}")
             return False

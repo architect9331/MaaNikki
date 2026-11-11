@@ -6,6 +6,7 @@ import cv2
 from maa.custom_action import CustomAction
 
 from registration import agent_action
+from task_control import TaskStopped
 from daily.runtime import Executors, parameters
 from collection.material_pursuit import run_crafting_pursuit, run_glow_prep
 
@@ -19,6 +20,8 @@ class GlowMaterialPrepAction(CustomAction):
             ok = run_glow_prep(rt)
             if not ok and not rt.stopped:
                 rt.diagnostic("glow_material_prep", "焕新材料筹备未完成")
+        except TaskStopped:
+            raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             if not rt.stopped:
                 rt.diagnostic("glow_material_prep", str(error), details={
@@ -41,6 +44,8 @@ class CraftingPursuitAction(CustomAction):
             ok = run_crafting_pursuit(rt)
             if not ok and not rt.stopped:
                 rt.diagnostic("crafting_pursuit", "制衣材料全收集未完成")
+        except TaskStopped:
+            raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             if not rt.stopped:
                 rt.diagnostic("crafting_pursuit", str(error), details={

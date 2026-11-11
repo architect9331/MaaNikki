@@ -6,6 +6,7 @@ import traceback
 import cv2
 from maa.custom_action import CustomAction
 from registration import agent_action
+from task_control import TaskStopped
 from daily.exploration import Exploration
 from daily.crown import Crown
 from daily.settings import ROOT
@@ -24,6 +25,8 @@ class ExplorationAction(CustomAction):
         rt = Exploration(context)
         try:
             return rt.run_assist()
+        except TaskStopped:
+            raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             if not rt.stopped:
                 rt.diagnostic("exploration", str(error), details={
@@ -48,6 +51,8 @@ class CrownAction(CustomAction):
                 completed = bool(rt.run_crown(account, target))
                 if not completed and not rt.stopped:
                     rt.diagnostic("crown", "巅峰赛流程未完成")
+        except TaskStopped:
+            raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             rt.log(f"巅峰赛未完成：{error}。")
             if not rt.stopped:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import cv2
 from client_config import parse_custom_param
 from registration import agent_action
+from task_control import TaskStopped
 from maa.custom_action import CustomAction
 from daily.gameplay import Gameplay
 from daily.runtime import Executors
@@ -26,6 +27,8 @@ class UIClickAction(CustomAction):
                 # Retries must recognize a fresh box, not argv's stale box.
                 return runtime.click_template(argv.node_name, ready=ready, wait_seconds=0)
             return runtime.action("Click", target=target)
+        except TaskStopped:
+            raise
         except (ValueError, TypeError, KeyError, RuntimeError) as error:
             runtime.log(f"界面点击失败：{error}。")
             return False
@@ -62,6 +65,8 @@ class GameplayAction(CustomAction):
                 return game.realm(kind, allow_exhausted=True,
                                   return_page=options.get("return_page", "main"))
             return False
+        except TaskStopped:
+            raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             runtime.log(f"任务未完成：{error}。")
             if not runtime.stopped:

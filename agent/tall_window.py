@@ -11,7 +11,7 @@ import ctypes
 from ctypes import wintypes
 import time
 
-from game_view import ALLOWED_FRAME_SIZES
+from game_view import ALLOWED_FRAME_SIZES, is_clipped_game_frame
 from start_game import game_window
 from task_control import active_session
 
@@ -205,11 +205,13 @@ def heal_16_9_window(controller=None, *, hwnd: int | None = None):
         win_w = int(wrect.right - wrect.left)
         win_h = int(wrect.bottom - wrect.top)
         work_w = work_h = 0
+        mi = None
         hmon = u32.MonitorFromWindow(target_hwnd, MONITOR_DEFAULTTONEAREST)
         if hmon:
-            mi = MONITORINFO()
-            mi.cbSize = ctypes.sizeof(MONITORINFO)
-            if u32.GetMonitorInfoW(hmon, ctypes.byref(mi)):
+            info = MONITORINFO()
+            info.cbSize = ctypes.sizeof(MONITORINFO)
+            if u32.GetMonitorInfoW(hmon, ctypes.byref(info)):
+                mi = info
                 work_w = int(mi.rcWork.right - mi.rcWork.left)
                 work_h = int(mi.rcWork.bottom - mi.rcWork.top)
         dw = dh = 0
@@ -219,15 +221,25 @@ def heal_16_9_window(controller=None, *, hwnd: int | None = None):
             dw = cand_dw
         elif 1 <= abs(cand_dh) <= max_px and (work_h <= 0 or win_h + cand_dh <= work_h):
             dh = cand_dh
-        if dw or dh:
-            w = win_w + dw
-            h = win_h + dh
-            if w > 0 and h > 0:
-                resized = bool(
-                    u32.SetWindowPos(
-                        target_hwnd, 0, int(wrect.left), int(wrect.top), w, h, SWP_RECT_FLAGS
-                    )
+        w = win_w + dw
+        h = win_h + dh
+        new_left = int(wrect.left)
+        new_top = int(wrect.top)
+        if mi is not None and 0 < w <= work_w and 0 < h <= work_h:
+            if (
+                int(wrect.right) > int(mi.rcMonitor.right)
+                or int(wrect.bottom) > int(mi.rcMonitor.bottom)
+                or new_left < int(mi.rcMonitor.left)
+                or new_top < int(mi.rcMonitor.top)
+            ):
+                new_left = max(int(mi.rcWork.left), min(new_left, int(mi.rcWork.right) - w))
+                new_top = max(int(mi.rcWork.top), min(new_top, int(mi.rcWork.bottom) - h))
+        if (dw or dh or new_left != int(wrect.left) or new_top != int(wrect.top)) and w > 0 and h > 0:
+            resized = bool(
+                u32.SetWindowPos(
+                    target_hwnd, 0, new_left, new_top, w, h, SWP_RECT_FLAGS
                 )
+            )
     if not resized or controller is None:
         return None
     for _ in range(8):
@@ -235,7 +247,7 @@ def heal_16_9_window(controller=None, *, hwnd: int | None = None):
         try:
             job = controller.post_screencap().wait()
             frame = job.get() if job.succeeded else None
-            if frame is not None and frame.shape[:2] == (720, 1280):
+            if frame is not None and frame.shape[:2] == (720, 1280) and not is_clipped_game_frame(frame):
                 return frame
         except Exception:
             break

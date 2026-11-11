@@ -26,6 +26,7 @@ class ForegroundChanged(RuntimeError):
 
 _ACTIVE = ContextVar("foreground_task", default=None)
 REFOCUS_INTERVAL = 3
+HUNG_WINDOW_TIMEOUT = 20.0
 _SESSIONS = OrderedDict()
 _RUNNING = {}
 
@@ -126,6 +127,29 @@ class ForegroundSession:
                     traceback.print_exc()
         raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
 
+    def window_hung(self):
+        """Stop the queue when the connected game window stays unresponsive past recovery."""
+        message = "游戏窗口长时间未响应，后续任务已停止。请恢复或重启游戏后再运行。"
+        self.evidence.save("window_hung", message, generation=self.generation)
+        self._frame_failure = message
+        write_message(message, message)
+        for inputs in list(self.inputs):
+            try:
+                inputs.release()
+            except Exception:
+                traceback.print_exc()
+        if not self._background_observation:
+            try:
+                self.notify(message)
+            except Exception:
+                traceback.print_exc()
+            finally:
+                try:
+                    self.context.tasker.post_stop()
+                except Exception:
+                    traceback.print_exc()
+        raise TaskStopped(message)
+
     @contextmanager
     def coalesce_stop_queries(self, interval=.05):
         """Bound resident-helper IPC polling without caching window focus."""
@@ -197,6 +221,24 @@ class ForegroundSession:
                 self.generation += 1
             self._observed_foreground = foreground
             return
+        if not self._background_observation and adapter.hung():
+            hung_begin = wall_time.monotonic()
+            self.waiting = True
+            try:
+                for inputs in list(self.inputs):
+                    inputs.release()
+                while adapter.hung():
+                    if self.stopped() or adapter.stopped():
+                        raise TaskStopped("任务已停止。")
+                    if not adapter.user32.IsWindow(adapter.hwnd):
+                        self.window_closed()
+                    if wall_time.monotonic()-hung_begin >= HUNG_WINDOW_TIMEOUT:
+                        self.window_hung()
+                    wall_time.sleep(.1)
+                self.generation += 1
+            finally:
+                self.paused_seconds += wall_time.monotonic()-hung_begin
+                self.waiting = False
         if adapter.foreground():
             return
         if self.stopped():
@@ -211,20 +253,28 @@ class ForegroundSession:
                         else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。")
             stable_since = None
             refocused_at = None
+            hung_since = None
             while True:
                 if self.stopped() or adapter.stopped():
                     raise TaskStopped("任务已停止。")
                 if not adapter.user32.IsWindow(adapter.hwnd):
                     self.window_closed()
                 now = wall_time.monotonic()
-                if adapter.foreground():
+                if not self._background_observation and adapter.hung():
+                    hung_since = now if hung_since is None else hung_since
+                    if now-hung_since >= HUNG_WINDOW_TIMEOUT:
+                        self.window_hung()
+                else:
+                    hung_since = None
+                if adapter.foreground() and not adapter.hung():
                     stable_since = now if stable_since is None else stable_since
                     if now-stable_since >= .15:
                         break
                 else:
                     stable_since = None
                     # Spaced out so a user alt-tabbing away can still reach the stop button.
-                    if bring_back and (refocused_at is None or now-refocused_at >= REFOCUS_INTERVAL):
+                    if (bring_back and hung_since is None
+                            and (refocused_at is None or now-refocused_at >= REFOCUS_INTERVAL)):
                         refocused_at = now
                         adapter.controller.post_key_up(18).wait()
                 wall_time.sleep(.05)
