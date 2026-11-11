@@ -101,7 +101,7 @@ class Gameplay:
         if shortage:
             return self.exhausted(allow_exhausted, energy)
         # Re-read after returning safely, including when preflight OCR missed.
-        if self.ui.calendar():
+        if kind != "jihua" and self.ui.calendar():
             energy = self.read_energy()
             if energy is not None and energy < self.MIN_ENERGY[kind]:
                 return self.exhausted(allow_exhausted, energy)
@@ -335,14 +335,17 @@ class Gameplay:
             if not self.ui.enter_page(enter, "MaaNikki_MainDetected",
                     source="MaaNikki_Jihua_PageReady", attempts=1, seconds=30):
                 return False
-            if not self.jihua_open_table() or not self.jihua_select_target() or not self.jihua_select_material():
+            if not self.jihua_open_table() or not self.jihua_select_target():
                 return False
-            if fixed_count is not None and not self.rt.set_amount("jihua", 0, desired_count=fixed_count):
+            staged = self.jihua_stage_materials(maximize, fixed_count)
+            if staged is None:
                 return False
-            if fixed_count is None and maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
-                return False
-            if not self.rt.click_template("MaaNikki_Jihua_NumConfirm"):
-                return False
+            if not staged:
+                if self.jihua_table_idle():
+                    self.rt.log("当前无可继续激化的材料或已达今日激化上限，本次正常结束。" if allow_exhausted else
+                                "当前无可继续激化的材料或已达今日激化上限，本项未执行，不计入心愿完成。")
+                    return bool(allow_exhausted)
+                return self.confirm_unavailable("jihua", allow_exhausted)
             if not self.rt.click_template("MaaNikki_Jihua_FinalConfirm"):
                 return self.confirm_unavailable("jihua", allow_exhausted)
             return self.jihua_reward()
@@ -455,41 +458,77 @@ class Gameplay:
             self.rt.log("未能确认选择素材激化目标产物，本项停止。")
         return False
 
-    def jihua_select_material(self):
+    def jihua_table_idle(self):
+        if self.rt.stopped or self.rt.hit("MaaNikki_Jihua_NumConfirm"):
+            return False
+        return (not self.rt.hit("MaaNikki_Jihua_FinalConfirm")
+                and bool(self.rt.text([900, 560, 240, 100], r"激\s*化\s*材\s*料")))
+
+    def jihua_stage_one(self, open_dialog, maximize, fixed_count):
+        if not self.ui.enter_page(open_dialog, "MaaNikki_Jihua_NumConfirm", attempts=2, seconds=3):
+            return "not_opened"
+        if not self.rt.pause(.3):
+            return "error"
+        if fixed_count is not None and not self.rt.set_amount("jihua", 0, desired_count=fixed_count):
+            return "error"
+        if fixed_count is None and maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
+            return "error"
+        if not self.rt.click_template("MaaNikki_Jihua_NumConfirm"):
+            return "error"
+        if self.rt.wait_hit("MaaNikki_Jihua_FinalConfirm", 1.0):
+            return "ready"
+        return "insufficient"
+
+    def jihua_stage_materials(self, maximize, fixed_count):
         most = (self.rt.context.get_node_data("MaaNikki_Jihua_MaterialMostOpen") or {}).get("enabled", False)
-        selected = False
+        attempted_any = False
         if most:
             first_roi = self.ui.roi("AreaJihuaFirstMaterial")
             if (self.rt.action("Click", target=[93, 675]) and self.rt.pause(.2)
                     and self.ui.find(roi=[60, 585, 75, 85], text="数量", scroll=False)
                     and self.ui.click_asset("ButtonJihuaSort")
                     and self.ui.stable()):
-                selected = self.ui.enter_page(
-                    lambda: self.rt.action("Click", target=first_roi),
-                    "MaaNikki_Jihua_NumConfirm", attempts=2, seconds=3)
-        if not selected:
-            if most:
-                self.rt.log("未能按数量选择材料，尝试已设置的首选和备选材料。")
-            options = fields(self.rt.context, "MaaNikki_Jihua_Material").get("expected", [])
-            options = options if isinstance(options, list) else [options]
-            metadata = catalog(self.ui.resource)["materials"]
-            cost_roi = self.ui.roi("AreaJihuaCostSelect")
-            for label in options:
-                label = {"小棉菊": "小绵菊"}.get(label, label)
-                item = metadata.get(label)
-                if not item or not item.get("jihua"):
-                    self.rt.log(f"{label}不能作为激化材料，尝试备选。")
-                    continue
-                if self.ui.enter_page(
-                        lambda asset=item["game_img"]: self.ui.find(
-                            roi=cost_roi, asset=asset, scale=.5*2/3, threshold=.7),
-                        "MaaNikki_Jihua_NumConfirm", attempts=2, seconds=3):
-                    selected = True
+                slots = 1 if fixed_count is not None else 5
+                for col in range(slots):
+                    cell_roi = [first_roi[0] + col * 105, first_roi[1], first_roi[2], first_roi[3]]
+                    state = self.jihua_stage_one(
+                        lambda target=cell_roi: self.rt.action("Click", target=target),
+                        maximize, fixed_count)
+                    if state == "ready":
+                        return True
+                    if state == "error":
+                        return None
+                    if state == "not_opened":
+                        break
+                    attempted_any = True
+            self.rt.log("未能按数量投入足够激化材料，尝试已设置的首选和备选材料。" if attempted_any
+                        else "未能按数量选择材料，尝试已设置的首选和备选材料。")
+        options = fields(self.rt.context, "MaaNikki_Jihua_Material").get("expected", [])
+        options = options if isinstance(options, list) else [options]
+        metadata = catalog(self.ui.resource)["materials"]
+        cost_roi = self.ui.roi("AreaJihuaCostSelect")
+        for label in options:
+            label = {"小棉菊": "小绵菊"}.get(label, label)
+            item = metadata.get(label)
+            if not item or not item.get("jihua"):
+                self.rt.log(f"{label}不能作为激化材料，尝试备选。")
+                continue
+            state = self.jihua_stage_one(
+                lambda asset=item["game_img"]: self.ui.find(
+                    roi=cost_roi, asset=asset, scale=.5*2/3, threshold=.7),
+                maximize, fixed_count)
+            if state == "ready":
+                return True
+            if state == "error":
+                return None
+            if state == "insufficient":
+                attempted_any = True
+                if fixed_count is not None:
                     break
-        if not selected:
-            self.rt.log("未找到可用的激化材料。")
+        if attempted_any:
             return False
-        return self.rt.pause(.3)
+        self.rt.log("未找到可用的激化材料。")
+        return None
 
     def monthly_diagnostic(self, kind, stage, reason=None):
         """Retain the unfamiliar reward layer before ordinary page recovery."""
@@ -648,7 +687,6 @@ class Gameplay:
                 return None
             if not self.rt.click_template(claim, wait_seconds=.5):
                 return None
-            self.monthly_diagnostic("paradise", "after_claim")
             if not self.paradise_reward_return():
                 return None
             claimed = True

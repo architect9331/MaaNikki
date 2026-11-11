@@ -203,15 +203,30 @@
     "custom_action": "nikki.ui_click"
   },
   "MaaNikki_Jihua_FinalConfirm": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      900,
-      560,
-      240,
-      100
-    ],
-    "template": "game/energy/jihua_final_confirm.png",
-    "threshold": 0.66,
+    "recognition": "Custom",
+    "custom_recognition": "nikki.ui_template",
+    "custom_recognition_param": {
+      "roi": [
+        900,
+        560,
+        240,
+        100
+      ],
+      "template": "game/energy/jihua_final_confirm.png",
+      "color": [
+        [
+          8,
+          65,
+          150
+        ],
+        [
+          28,
+          255,
+          255
+        ]
+      ],
+      "threshold": 0.72
+    },
     "action": "Custom",
     "post_delay": 1500,
     "next": [],
