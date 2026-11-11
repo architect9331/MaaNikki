@@ -532,6 +532,51 @@ pub async fn start_tasks_impl(
     info!("agent_configs: {:?}", agent_configs);
     info!("cwd: {}, tcp_compat_mode: {}", cwd, tcp_compat_mode);
 
+    let reconnect_config = {
+        let instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
+        instances.get(&instance_id).and_then(|inst| {
+            if inst.controller_stopped {
+                inst.controller_config.clone()
+            } else {
+                None
+            }
+        })
+    };
+    if let Some(cfg) = reconnect_config {
+        info!(
+            "[start_tasks] Refreshing stopped controller before starting tasks for instance {}",
+            instance_id
+        );
+        let app_for_ctrl = app.clone();
+        let conn_id = super::maa_core::connect_controller_impl(
+            Arc::clone(maa_state),
+            instance_id.clone(),
+            cfg,
+            Arc::new(move |msg, detail| emit_callback_event(&app_for_ctrl, msg, detail)),
+        )
+        .await?;
+        let ctrl_to_wait = {
+            let instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
+            instances
+                .get(&instance_id)
+                .and_then(|inst| inst.controller.clone())
+        };
+        if let Some(ctrl) = ctrl_to_wait {
+            let connected = tokio::task::spawn_blocking(move || {
+                if conn_id > 0 {
+                    ctrl.wait(conn_id).succeeded() && ctrl.connected()
+                } else {
+                    ctrl.connected()
+                }
+            })
+            .await
+            .map_err(|e| e.to_string())?;
+            if !connected {
+                return Err("游戏截图控制器重连失败，请检查游戏窗口后重试".to_string());
+            }
+        }
+    }
+
     let (resource, controller, tasker, start_generation, stale_clients, stale_children) = {
         debug!("[start_tasks] Acquiring instances lock...");
         let mut instances = maa_state.instances.lock().map_err(|e| e.to_string())?;

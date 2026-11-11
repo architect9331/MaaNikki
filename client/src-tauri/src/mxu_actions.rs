@@ -518,31 +518,69 @@ fn kill_process_by_name(name: &str) -> bool {
     {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        match Command::new("taskkill")
-            .args(["/F", "/IM", name])
-            .creation_flags(CREATE_NO_WINDOW)
-            .output()
-        {
-            Ok(output) => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                if output.status.success() {
-                    info!("[MXU_KILLPROC] taskkill succeeded: {}", stdout.trim());
-                    true
-                } else {
-                    warn!(
-                        "[MXU_KILLPROC] taskkill failed: stdout={}, stderr={}",
-                        stdout.trim(),
-                        stderr.trim()
-                    );
-                    false
+
+        let trimmed = name.trim().trim_matches('"');
+        let base = std::path::Path::new(trimmed)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or(trimmed)
+            .trim();
+        let stem_lower = base
+            .strip_suffix(".exe")
+            .or_else(|| base.strip_suffix(".EXE"))
+            .unwrap_or(base)
+            .trim()
+            .to_ascii_lowercase();
+
+        let (candidates, try_all): (Vec<String>, bool) = match stem_lower.as_str() {
+            "无限暖暖" | "無限暖暖" | "infinity nikki" | "infinitynikki" => (
+                vec![
+                    "X6Game-Win64-Shipping.exe".to_string(),
+                    "X6Game.exe".to_string(),
+                    "InfinityNikki.exe".to_string(),
+                ],
+                true,
+            ),
+            _ if !base.to_ascii_lowercase().ends_with(".exe") => {
+                (vec![base.to_string(), format!("{base}.exe")], false)
+            }
+            _ => (vec![base.to_string()], false),
+        };
+
+        let mut any_succeeded = false;
+        let mut last_failure: Option<(String, String)> = None;
+        for target in &candidates {
+            match Command::new("taskkill")
+                .args(["/F", "/IM", target])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+            {
+                Ok(output) => {
+                    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                    if output.status.success() {
+                        info!("[MXU_KILLPROC] taskkill succeeded ({target}): {stdout}");
+                        any_succeeded = true;
+                        if !try_all {
+                            break;
+                        }
+                    } else {
+                        last_failure = Some((stdout, stderr));
+                    }
+                }
+                Err(e) => {
+                    log::error!("[MXU_KILLPROC] Failed to execute taskkill ({target}): {e}");
                 }
             }
-            Err(e) => {
-                log::error!("[MXU_KILLPROC] Failed to execute taskkill: {}", e);
-                false
+        }
+
+        if !any_succeeded {
+            if let Some((stdout, stderr)) = last_failure {
+                warn!("[MXU_KILLPROC] taskkill failed: stdout={stdout}, stderr={stderr}");
             }
         }
+        any_succeeded
     }
 
     #[cfg(not(windows))]

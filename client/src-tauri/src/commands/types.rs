@@ -213,6 +213,8 @@ pub struct InstanceRuntime {
     pub controller: Option<Controller>,
     /// 当前控制器的配置（用于 ControllerPool 引用管理）
     pub controller_config: Option<ControllerConfig>,
+    /// 当前控制器是否因停止任务而进入需重连状态
+    pub controller_stopped: bool,
     pub tasker: Option<Tasker>,
     pub agent_clients: Vec<AgentClient>,
     pub agent_children: Vec<Child>,
@@ -323,8 +325,8 @@ pub struct MaaState {
     pub instances: Mutex<HashMap<String, InstanceRuntime>>,
     /// 前置程序停止请求（用于中断等待退出）
     pub pre_action_stop_requests: Mutex<HashSet<String>>,
-    /// Controller 连接池：相同配置的 Controller 复用同一个 MaaControllerHandle
-    pub controller_pool: Mutex<HashMap<ControllerConfig, Controller>>,
+    /// Controller 连接池：按实例与配置隔离复用 MaaControllerHandle，避免跨实例 stop 互相污染
+    pub controller_pool: Mutex<HashMap<(String, ControllerConfig), Controller>>,
     /// 缓存的 ADB 设备列表（全局共享，避免重复搜索）
     pub cached_adb_devices: Mutex<Vec<AdbDevice>>,
     /// 缓存的 Win32 窗口列表（全局共享）

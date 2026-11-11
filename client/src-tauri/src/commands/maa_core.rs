@@ -323,26 +323,24 @@ fn update_instance_controller(
     controller: maa_framework::controller::Controller,
     new_config: super::types::ControllerConfig,
 ) -> Result<(), String> {
-    let cleanup_config = {
+    let cleanup_key = {
         let mut instances = state.instances.lock().map_err(|e| e.to_string())?;
         let instance = instances.get_mut(instance_id).ok_or("Instance not found")?;
 
         let old_config = instance.controller_config.clone();
         instance.controller = Some(controller);
         instance.controller_config = Some(new_config.clone());
+        instance.controller_stopped = false;
         instance.tasker = None;
 
-        old_config.filter(|old| {
-            *old != new_config
-                && !instances
-                    .values()
-                    .any(|inst| inst.controller_config.as_ref() == Some(old))
-        })
+        old_config
+            .filter(|old| *old != new_config)
+            .map(|old| (instance_id.to_string(), old))
     };
 
-    if let Some(old_cfg) = cleanup_config {
+    if let Some(old_key) = cleanup_key {
         if let Ok(mut pool) = state.controller_pool.lock() {
-            pool.remove(&old_cfg);
+            pool.remove(&old_key);
             info!("ControllerPool: removed unused entry for old config");
         }
     }
@@ -654,7 +652,7 @@ pub fn maa_create_instance(state: State<Arc<MaaState>>, instance_id: String) -> 
 pub fn destroy_instance_impl(state: &Arc<MaaState>, instance_id: &str) -> Result<(), String> {
     info!("destroy_instance_impl called, instance_id: {}", instance_id);
 
-    let cleanup_config = {
+    let cleanup_key = {
         let mut instances = state.instances.lock().map_err(|e| e.to_string())?;
         let old_config = instances
             .get(instance_id)
@@ -666,11 +664,7 @@ pub fn destroy_instance_impl(state: &Arc<MaaState>, instance_id: &str) -> Result
                 "destroy_instance_impl success, instance_id: {}",
                 instance_id
             );
-            old_config.filter(|cfg| {
-                !instances
-                    .values()
-                    .any(|inst| inst.controller_config.as_ref() == Some(cfg))
-            })
+            old_config.map(|cfg| (instance_id.to_string(), cfg))
         } else {
             warn!(
                 "destroy_instance_impl: instance not found, instance_id: {}",
@@ -680,10 +674,10 @@ pub fn destroy_instance_impl(state: &Arc<MaaState>, instance_id: &str) -> Result
         }
     };
 
-    // ControllerPool: 清理不再被任何实例使用的条目
-    if let Some(cfg) = cleanup_config {
+    // ControllerPool: 清理该实例持有的控制器条目
+    if let Some(key) = cleanup_key {
         if let Ok(mut pool) = state.controller_pool.lock() {
-            pool.remove(&cfg);
+            pool.remove(&key);
             info!("ControllerPool: cleaned up entry after instance destroy");
         }
     }
@@ -812,7 +806,10 @@ fn connect_win32_ordered(
             .controller_pool
             .lock()
             .map_err(|e| e.to_string())?
-            .insert(config.clone(), controller.clone());
+            .insert(
+                (instance_id.to_string(), config.clone()),
+                controller.clone(),
+            );
     }
     update_instance_controller(state, instance_id, controller, config)?;
     on_event(
@@ -836,19 +833,20 @@ pub async fn connect_controller_impl(
 ) -> Result<i64, String> {
     super::maa_library::ensure_loaded(&state_arc)?;
     tokio::task::spawn_blocking(move || {
-        // ControllerPool: 检查是否有可复用的已连接控制器
+        let pool_key = (instance_id.clone(), config.clone());
+        // ControllerPool: 检查该实例是否有可复用的已连接控制器
         let pooled = {
             let pool = state_arc
                 .controller_pool
                 .lock()
                 .map_err(|e| e.to_string())?;
-            pool.get(&config).filter(|c| c.connected()).cloned()
+            pool.get(&pool_key).filter(|c| c.connected()).cloned()
         };
 
         if let Some(pooled_ctrl) = pooled {
             info!(
-                "ControllerPool hit: reusing connected controller for {:?}",
-                config
+                "ControllerPool hit: reusing connected controller for instance {} ({:?})",
+                instance_id, config
             );
 
             let conn_id = next_synthetic_conn_id();
@@ -869,7 +867,7 @@ pub async fn connect_controller_impl(
                 .controller_pool
                 .lock()
                 .map_err(|e| e.to_string())?;
-            pool.remove(&config);
+            pool.remove(&pool_key);
         }
 
         info!(
@@ -1099,7 +1097,7 @@ pub async fn connect_controller_impl(
                 .controller_pool
                 .lock()
                 .map_err(|e| e.to_string())?;
-            pool.insert(config.clone(), controller.clone());
+            pool.insert((instance_id.clone(), config.clone()), controller.clone());
         }
 
         // 更新实例状态
@@ -1496,8 +1494,21 @@ pub fn stop_task_impl(state: &MaaState, instance_id: &str) -> Result<(), String>
     // 遥测：用户取消，以 cancelled 结束当前运行的 Transaction（幂等，仅首次生效）
     super::telemetry::on_run_cancelled(instance_id);
 
-    tasker.post_stop().map_err(|e| e.to_string())?;
-    Ok(())
+    instance.controller_stopped = true;
+    let evict_key = instance
+        .controller_config
+        .clone()
+        .map(|cfg| (instance_id.to_string(), cfg));
+    let stop_result = tasker.post_stop().map(|_| ()).map_err(|e| e.to_string());
+    drop(instances);
+
+    if let Some(key) = evict_key {
+        if let Ok(mut pool) = state.controller_pool.lock() {
+            pool.remove(&key);
+        }
+    }
+
+    stop_result
 }
 
 #[tauri::command]
