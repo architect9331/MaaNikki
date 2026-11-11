@@ -1,6 +1,7 @@
 """Capture-excluded Win32 route overlay with minimap trajectory and 3D AR ground guidance."""
 from __future__ import annotations
 
+import base64
 import ctypes
 from ctypes import wintypes as w
 import json
@@ -55,19 +56,30 @@ ACTION_BGR = {
 
 
 class _TerrainSampler:
-    """Lazy sub-pixel bilinear terrain elevation reader backed by resource/navigation/terrain/<map_id>.png."""
+    """Multi-layer 3D world surface reader combining terrain heightmaps, 3D solid structures, and spire anchors."""
 
     _cache: dict[str, "_TerrainSampler"] = {}
+    _pillars_by_map: dict[str, list[tuple[float, float, float]]] | None = None
     _lock = threading.Lock()
 
     def __init__(self, map_id: str):
+        self.map_id = map_id
         self.px_scale = 0.5
         self.z_offset = -300.0
         self.z_scale = 64.0
         self.z_grid: np.ndarray | None = None
         self.valid_grid: np.ndarray | None = None
+        self.obs_grid: np.ndarray | None = None
         self.h = 0
         self.w = 0
+        self._raw_meshes: list = []
+        self._mesh_cache: dict[int, tuple[np.ndarray, np.ndarray] | None] = {}
+        self._instances: list = []
+        self._buckets: dict[tuple[int, int], list[int]] = {}
+        self._inst_cache: dict[int, tuple | None] = {}
+        self._layer_cache: dict[tuple[int, int], tuple[float, ...]] = {}
+        self._query_lock = threading.Lock()
+        self.pillars: list[tuple[float, float, float]] = self._load_pillars(map_id)
         try:
             manifest_path = NAV_ROOT / "terrain/manifest.json"
             if manifest_path.is_file():
@@ -86,14 +98,47 @@ class _TerrainSampler:
                         hu16 = (r << 8) | g
                         valid = ((b & 1) != 0) & (hu16 > 0)
                         self.valid_grid = valid
+                        self.obs_grid = ((b >> 1) & 1) != 0
                         self.z_grid = np.where(
                             valid,
                             hu16.astype(np.float32) / self.z_scale + self.z_offset,
                             np.nan,
                         )
+                if info and info.get("structures"):
+                    struct_path = NAV_ROOT / info["structures"]
+                    if struct_path.is_file():
+                        sdata = json.loads(struct_path.read_text(encoding="utf-8"))
+                        self._raw_meshes = sdata.get("meshes") or []
+                        self._instances = sdata.get("instances") or []
+                        buckets: dict[tuple[int, int], list[int]] = {}
+                        for idx, row in enumerate(self._instances):
+                            bx0 = int(math.floor(float(row[0]))) >> 5
+                            bx1 = int(math.floor(float(row[2]))) >> 5
+                            by0 = int(math.floor(float(row[1]))) >> 5
+                            by1 = int(math.floor(float(row[3]))) >> 5
+                            for bx in range(bx0, bx1 + 1):
+                                for by in range(by0, by1 + 1):
+                                    buckets.setdefault((bx, by), []).append(idx)
+                        self._buckets = buckets
         except Exception:
             self.z_grid = None
             self.valid_grid = None
+            self.obs_grid = None
+
+    @classmethod
+    def _load_pillars(cls, map_id: str) -> list[tuple[float, float, float]]:
+        if cls._pillars_by_map is None:
+            loaded: dict[str, list[tuple[float, float, float]]] = {}
+            try:
+                cat_path = NAV_ROOT / "materials_catalog_v1.json"
+                if cat_path.is_file():
+                    cat = json.loads(cat_path.read_text(encoding="utf-8"))
+                    for mid, pts in (cat.get("pillars") or {}).items():
+                        loaded[mid] = [(float(p[0]), float(p[1]), float(p[2])) for p in pts if len(p) >= 3]
+            except Exception:
+                loaded = {}
+            cls._pillars_by_map = loaded
+        return cls._pillars_by_map.get(map_id, [])
 
     @classmethod
     def get(cls, map_id: str) -> "_TerrainSampler":
@@ -132,30 +177,432 @@ class _TerrainSampler:
         vals = [v for v in (z00, z10, z01, z11) if not math.isnan(v)]
         return sum(vals) / len(vals) if vals else fallback
 
-    def sample_smooth(self, wx: float, wy: float, fallback: float = 0.0) -> float:
-        z0 = self.sample_z(wx, wy, math.nan)
-        if math.isnan(z0):
-            return fallback
-        acc = z0 * 2.0
-        w_sum = 2.0
-        for dx, dy in ((-1.6, 0.0), (1.6, 0.0), (0.0, -1.6), (0.0, 1.6)):
-            zn = self.sample_z(wx + dx, wy + dy, math.nan)
-            if not math.isnan(zn) and abs(zn - z0) <= 4.5:
-                acc += zn
-                w_sum += 1.0
-        return acc / w_sum
+    def is_base_obstacle(self, wx: float, wy: float) -> bool:
+        if self.obs_grid is None:
+            return False
+        ix = min(self.w - 1, max(0, int(round(wx * self.px_scale))))
+        iy = min(self.h - 1, max(0, int(round(wy * self.px_scale))))
+        return bool(self.obs_grid[iy, ix])
 
-    def sample_local_slope(self, wx: float, wy: float, ground_z: float) -> tuple[float, float]:
-        """Return local terrain gradient (dz/dx_m, dz/dy_m) around (wx, wy) over a 4.5m baseline."""
-        step_px = 5.0  # 4.5 meters in map space
-        zx1 = self.sample_smooth(wx + step_px, wy, ground_z)
-        zx0 = self.sample_smooth(wx - step_px, wy, ground_z)
-        zy1 = self.sample_smooth(wx, wy + step_px, ground_z)
-        zy0 = self.sample_smooth(wx, wy - step_px, ground_z)
-        span_m = step_px * 2.0 * 0.90
-        dz_dx = max(-0.35, min(0.35, (zx1 - zx0) / span_m))
-        dz_dy = max(-0.35, min(0.35, (zy1 - zy0) / span_m))
-        return dz_dx, dz_dy
+    def nearest_pillar_z(self, wx: float, wy: float, max_dist_m: float = 14.0) -> float | None:
+        best_d = max_dist_m
+        best_z: float | None = None
+        for px, py, pz in self.pillars:
+            d_m = math.hypot(wx - px, wy - py) * 0.90
+            if d_m <= best_d:
+                best_d = d_m
+                best_z = pz
+        return best_z
+
+    def _get_mesh(self, mesh_idx: int) -> tuple[np.ndarray, np.ndarray] | None:
+        if mesh_idx in self._mesh_cache:
+            return self._mesh_cache[mesh_idx]
+        if mesh_idx < 0 or mesh_idx >= len(self._raw_meshes):
+            self._mesh_cache[mesh_idx] = None
+            return None
+        try:
+            m = self._raw_meshes[mesh_idx]
+            bx0, by0, bz0, bx1, by1, bz1 = (float(m[k]) for k in range(6))
+            dx, dy, dz = max(1.0, bx1 - bx0), max(1.0, by1 - by0), max(1.0, bz1 - bz0)
+            vb = np.frombuffer(base64.b64decode(m[6]), dtype=np.uint8).reshape(-1, 3).astype(np.float32)
+            tb = base64.b64decode(m[7]) if len(m) > 7 and m[7] else b""
+            if len(vb) < 3 or len(tb) < 3:
+                self._mesh_cache[mesh_idx] = None
+                return None
+            tris = np.frombuffer(tb, dtype=np.uint8).reshape(-1, 3)
+            if int(tris.max()) >= len(vb):
+                self._mesh_cache[mesh_idx] = None
+                return None
+            verts = np.column_stack((
+                bx0 + vb[:, 0] * (dx / 255.0),
+                by0 + vb[:, 1] * (dy / 255.0),
+                bz0 + vb[:, 2] * (dz / 255.0),
+            ))
+            res = (verts, tris)
+        except Exception:
+            res = None
+        self._mesh_cache[mesh_idx] = res
+        return res
+
+    def _get_inst_tris(self, idx: int) -> tuple | None:
+        if idx in self._inst_cache:
+            return self._inst_cache[idx]
+        row = self._instances[idx]
+        mesh_idx = int(row[8]) if len(row) > 8 else max(0, min(5, int(row[6]) - 1))
+        mesh = self._get_mesh(mesh_idx)
+        if mesh is None:
+            self._inst_cache[idx] = None
+            return None
+        verts, tris = mesh
+        tx = float(row[9]) if len(row) > 9 else (float(row[0]) + float(row[2])) * 0.5
+        ty = float(row[10]) if len(row) > 10 else (float(row[1]) + float(row[3])) * 0.5
+        tz = float(row[11]) if len(row) > 11 else (float(row[4]) + float(row[5])) * 0.5
+        yr = math.radians(float(row[7]) if len(row) > 7 else 0.0)
+        pr = math.radians(float(row[12]) if len(row) > 12 else 0.0)
+        rr = math.radians(float(row[13]) if len(row) > 13 else 0.0)
+        sx = float(row[14]) if len(row) > 14 else 1.0
+        sy = float(row[15]) if len(row) > 15 else 1.0
+        sz = float(row[16]) if len(row) > 16 else 1.0
+        flip = -1.0 if (sx * sy * sz < 0.0) else 1.0
+        cp, sp = math.cos(pr), math.sin(pr)
+        cy, syr = math.cos(yr), math.sin(yr)
+        cr, sr = math.cos(rr), math.sin(rr)
+        rot = np.array([
+            [cp * cy, cp * syr, sp],
+            [sr * sp * cy - cr * syr, sr * sp * syr + cr * cy, -sr * cp],
+            [-cr * sp * cy - sr * syr, -cr * sp * syr + sr * cy, cr * cp],
+        ], dtype=np.float32)
+        wv = (verts * np.array([sx, sy, sz], dtype=np.float32)) @ rot
+        vx = tx + wv[:, 0] / 90.0
+        vy = ty + wv[:, 1] / 90.0
+        vz = tz + wv[:, 2] / 100.0
+        i0, i1, i2 = tris[:, 0], tris[:, 1], tris[:, 2]
+        x0, y0, z0 = vx[i0], vy[i0], vz[i0]
+        x1, y1, z1 = vx[i1], vy[i1], vz[i1]
+        x2, y2, z2 = vx[i2], vy[i2], vz[i2]
+        e1 = np.column_stack(((x1 - x0) * 0.90, (y1 - y0) * 0.90, z1 - z0))
+        e2 = np.column_stack(((x2 - x0) * 0.90, (y2 - y0) * 0.90, z2 - z0))
+        n = -np.cross(e1, e2) * flip
+        nzu = n[:, 2] / np.maximum(1e-6, np.linalg.norm(n, axis=1))
+        denom = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
+        keep = (np.abs(denom) > 1e-6) & ((nzu >= 0.36) | (nzu <= -0.30))
+        if not np.any(keep):
+            self._inst_cache[idx] = None
+            return None
+        x0, y0, z0 = x0[keep], y0[keep], z0[keep]
+        x1, y1, z1 = x1[keep], y1[keep], z1[keep]
+        x2, y2, z2 = x2[keep], y2[keep], z2[keep]
+        denom = denom[keep]
+        nzu = nzu[keep]
+        inv_d = 1.0 / denom
+        abs_d = np.abs(denom)
+        e0_pad = -0.07 * np.hypot(x2 - x1, y2 - y1) / abs_d
+        e1_pad = -0.07 * np.hypot(x0 - x2, y0 - y2) / abs_d
+        e2_pad = -0.07 * np.hypot(x1 - x0, y1 - y0) / abs_d
+        tx0 = np.minimum(np.minimum(x0, x1), x2) - 0.08
+        tx1 = np.maximum(np.maximum(x0, x1), x2) + 0.08
+        ty0 = np.minimum(np.minimum(y0, y1), y2) - 0.08
+        ty1 = np.maximum(np.maximum(y0, y1), y2) + 0.08
+        ux = (y1 - y2) * inv_d
+        uy = (x2 - x1) * inv_d
+        uc = -ux * x2 - uy * y2
+        vx_c = (y2 - y0) * inv_d
+        vy_c = (x0 - x2) * inv_d
+        vc = -vx_c * x2 - vy_c * y2
+        res = (tx0, tx1, ty0, ty1, ux, uy, uc, vx_c, vy_c, vc, z0, z1, z2, e0_pad, e1_pad, e2_pad, nzu)
+        self._inst_cache[idx] = res
+        return res
+
+    def query_layers(self, wx: float, wy: float, fallback: float = 0.0) -> list[float]:
+        qkey = (int(round(wx * 20.0)), int(round(wy * 20.0)))
+        cached = self._layer_cache.get(qkey)
+        if cached is not None:
+            return list(cached)
+        qwx = qkey[0] * 0.05
+        qwy = qkey[1] * 0.05
+        gz = self.sample_z(qwx, qwy, math.nan)
+        struct_tops: list[float] = []
+        buried_spans: list[tuple[float, float]] = []
+        cand_indices = self._buckets.get((int(math.floor(qwx)) >> 5, int(math.floor(qwy)) >> 5))
+        if cand_indices:
+            with self._query_lock:
+                for idx in cand_indices:
+                    row = self._instances[idx]
+                    if not (float(row[0]) - 0.12 <= qwx <= float(row[2]) + 0.12 and float(row[1]) - 0.12 <= qwy <= float(row[3]) + 0.12):
+                        continue
+                    td = self._get_inst_tris(idx)
+                    if td is None:
+                        continue
+                    tx0, tx1, ty0, ty1, ux, uy, uc, vx_c, vy_c, vc, z0, z1, z2, e0_pad, e1_pad, e2_pad, nzu = td
+                    m_bb = (qwx >= tx0) & (qwx <= tx1) & (qwy >= ty0) & (qwy <= ty1)
+                    if not np.any(m_bb):
+                        continue
+                    u = ux[m_bb] * qwx + uy[m_bb] * qwy + uc[m_bb]
+                    v = vx_c[m_bb] * qwx + vy_c[m_bb] * qwy + vc[m_bb]
+                    w = 1.0 - u - v
+                    z0_m, z1_m, z2_m = z0[m_bb], z1[m_bb], z2[m_bb]
+                    nzu_m = nzu[m_bb]
+                    hit_pad = (u >= e0_pad[m_bb]) & (v >= e1_pad[m_bb]) & (w >= e2_pad[m_bb])
+                    up_m = hit_pad & (nzu_m >= 0.38)
+                    if np.any(up_m):
+                        zh_u = np.sort(u[up_m] * z0_m[up_m] + v[up_m] * z1_m[up_m] + w[up_m] * z2_m[up_m])
+                        grp_max = float(zh_u[0])
+                        for zv in zh_u[1:]:
+                            zf = float(zv)
+                            if zf - grp_max <= 0.65:
+                                grp_max = zf
+                            else:
+                                struct_tops.append(grp_max)
+                                grp_max = zf
+                        struct_tops.append(grp_max)
+                    hit_s = (u >= -1e-4) & (v >= -1e-4) & (w >= -1e-4)
+                    up_s = hit_s & (nzu_m >= 0.38)
+                    dn_s = hit_s & (nzu_m <= -0.30)
+                    if np.any(up_s) and np.any(dn_s):
+                        z_up_s = float(np.max(u[up_s] * z0_m[up_s] + v[up_s] * z1_m[up_s] + w[up_s] * z2_m[up_s]))
+                        z_dn_s = float(np.min(u[dn_s] * z0_m[dn_s] + v[dn_s] * z1_m[dn_s] + w[dn_s] * z2_m[dn_s]))
+                        if 0.05 < z_up_s - z_dn_s <= 24.0:
+                            buried_spans.append((z_dn_s - 0.80, z_up_s - 0.18))
+
+        raw: list[tuple[float, bool]] = [(z, True) for z in struct_tops]
+        if not math.isnan(gz):
+            raw.append((gz, False))
+        if not raw:
+            return [fallback]
+        raw.sort(key=lambda it: (it[0], it[1]))
+        filtered: list[tuple[float, bool]] = []
+        for zc, is_st in raw:
+            if any(lo <= zc < hi for lo, hi in buried_spans):
+                continue
+            filtered.append((zc, is_st))
+        if not filtered:
+            filtered = [raw[-1]]
+        merged: list[tuple[float, bool]] = [filtered[0]]
+        for zc, is_st in filtered[1:]:
+            pz, pst = merged[-1]
+            if zc - pz <= 0.26:
+                if is_st or not pst:
+                    merged[-1] = (zc, is_st)
+            else:
+                merged.append((zc, is_st))
+        out_tuple = tuple(z for z, _ in merged)
+        if len(self._layer_cache) > 24576:
+            self._layer_cache.clear()
+        self._layer_cache[qkey] = out_tuple
+        return list(out_tuple)
+
+    @staticmethod
+    def _step_cost(z0: float, z1: float, ds_m: float, is_jump: bool, obs1: bool, multi1: bool) -> float:
+        dz = z1 - z0
+        pen = 1.6 if (obs1 and multi1) else 0.0
+        if is_jump:
+            max_r = 0.75 + ds_m * 0.95
+            min_r = -1.20 - ds_m * 1.15
+            if min_r <= dz <= max_r:
+                return pen + abs(dz) * 0.38
+            if max_r < dz <= 4.8:
+                return pen + 0.35 + abs(dz) * 0.42
+            if -18.0 <= dz < min_r:
+                return pen + 0.55 + abs(dz) * 0.45
+            return pen + 28.0 + abs(dz) * 9.0
+        max_w = 0.72 + ds_m * 0.95
+        min_w = -0.85 - ds_m * 1.05
+        if min_w <= dz <= max_w:
+            return pen + abs(dz) * 0.45
+        if dz < min_w:
+            return pen + 1.20 + abs(dz) * 0.85
+        return pen + 16.0 + dz * 6.5
+
+    def resolve_char_surface_z(
+        self,
+        wx: float,
+        wy: float,
+        prev_z: float | None,
+        upcoming_pts: list[tuple[float, float, bool]],
+    ) -> float:
+        layers = self.query_layers(wx, wy, prev_z if prev_z is not None else 0.0)
+        if prev_z is None:
+            pz = self.nearest_pillar_z(wx, wy, 14.0)
+            if pz is not None:
+                best = min(layers, key=lambda z: abs(z - pz))
+                if abs(best - pz) <= 4.5:
+                    return best
+            if len(layers) > 1 and upcoming_pts:
+                chain = [(wx, wy, False)] + upcoming_pts[:4]
+                node_layers = [layers] + [self.query_layers(px, py, layers[0]) for px, py, _ in upcoming_pts[:4]]
+                obs0 = self.is_base_obstacle(wx, wy)
+                best_start = 0
+                best_total = math.inf
+                for s_idx in range(len(layers)):
+                    dp = [math.inf] * len(layers)
+                    dp[s_idx] = 1.5 if (obs0 and s_idx == 0) else 0.02 * s_idx
+                    for step_i in range(1, len(chain)):
+                        x0, y0, _ = chain[step_i - 1]
+                        x1, y1, jmp = chain[step_i]
+                        ds_m = math.hypot(x1 - x0, y1 - y0) * 0.90
+                        cur_ls = node_layers[step_i]
+                        obs1 = self.is_base_obstacle(x1, y1)
+                        dp = [
+                            min(
+                                dp[k] + self._step_cost(node_layers[step_i - 1][k], z1, ds_m, jmp, obs1 and j == 0, len(cur_ls) > 1)
+                                for k in range(len(dp))
+                            )
+                            for j, z1 in enumerate(cur_ls)
+                        ]
+                    tot = min(dp)
+                    if tot < best_total:
+                        best_total = tot
+                        best_start = s_idx
+                return layers[best_start]
+            return layers[1] if (len(layers) > 1 and self.is_base_obstacle(wx, wy)) else layers[0]
+
+        # Capsule-perimeter support check (0.25m foot radius) to prevent minimap jitter on ledge edges
+        if all(abs(z - prev_z) > 0.60 for z in layers):
+            z_low = min(layers)
+            for ox, oy in ((0.28, 0.0), (-0.28, 0.0), (0.0, 0.28), (0.0, -0.28)):
+                for zp in self.query_layers(wx + ox, wy + oy, prev_z):
+                    if abs(zp - prev_z) <= 0.48 and zp > z_low + 0.60:
+                        layers = sorted(layers + [zp])
+                        break
+                else:
+                    continue
+                break
+
+        obs_here = self.is_base_obstacle(wx, wy)
+        best_z = layers[0]
+        best_c = math.inf
+        for idx_l, zc in enumerate(layers):
+            dz = zc - prev_z
+            if abs(dz) <= 0.85:
+                c = abs(dz) * 0.4
+            elif 0.85 < dz <= 4.8:
+                c = 1.2 + dz * 0.85
+            elif dz < -0.85:
+                c = 1.0 + abs(dz) * 0.65
+            else:
+                c = 30.0 + abs(dz) * 8.0
+            if obs_here and idx_l == 0 and len(layers) > 1:
+                c += 1.5
+            if c < best_c:
+                best_c = c
+                best_z = zc
+        return best_z
+
+    def sample_footing_slope(self, wx: float, wy: float, surface_z: float) -> tuple[float, float]:
+        """Return continuous footing gradient (dz/dx_m, dz/dy_m), rejecting cliff/wall steps."""
+        step_px = 1.2  # ~1.08m around character capsule
+
+        def _same_layer(nx: float, ny: float) -> float | None:
+            ls = self.query_layers(nx, ny, surface_z)
+            near = min(ls, key=lambda z: abs(z - surface_z))
+            return near if abs(near - surface_z) <= 0.68 else None
+
+        zx1, zx0 = _same_layer(wx + step_px, wy), _same_layer(wx - step_px, wy)
+        zy1, zy0 = _same_layer(wx, wy + step_px), _same_layer(wx, wy - step_px)
+        half_m = step_px * 0.90
+        if zx1 is not None and zx0 is not None:
+            dz_dx = (zx1 - zx0) / (2.0 * half_m)
+        elif zx1 is not None:
+            dz_dx = (zx1 - surface_z) / half_m
+        elif zx0 is not None:
+            dz_dx = (surface_z - zx0) / half_m
+        else:
+            dz_dx = 0.0
+
+        if zy1 is not None and zy0 is not None:
+            dz_dy = (zy1 - zy0) / (2.0 * half_m)
+        elif zy1 is not None:
+            dz_dy = (zy1 - surface_z) / half_m
+        elif zy0 is not None:
+            dz_dy = (surface_z - zy0) / half_m
+        else:
+            dz_dy = 0.0
+        return max(-0.40, min(0.40, dz_dx)), max(-0.40, min(0.40, dz_dy))
+
+    def solve_path_elevations(
+        self,
+        dense_pts: list[tuple[float, float, bool, str]],
+        start_z: float,
+        tail_wps: list[tuple[float, float, bool]],
+    ) -> tuple[list[float], list[float]]:
+        if not dense_pts:
+            return [], []
+        nodes: list[tuple[float, float, bool]] = [(p[0], p[1], p[2]) for p in dense_pts] + list(tail_wps)
+        node_layers: list[list[float]] = [[start_z]]
+        node_obs: list[bool] = [False]
+        for wx, wy, _ in nodes[1:]:
+            node_layers.append(self.query_layers(wx, wy, start_z))
+            node_obs.append(self.is_base_obstacle(wx, wy))
+
+        n_nodes = len(nodes)
+        back_ptrs: list[list[int]] = [[0]]
+        dp = [0.0]
+        for i in range(1, n_nodes):
+            x0, y0, _ = nodes[i - 1]
+            x1, y1, is_jmp = nodes[i]
+            ds_m = math.hypot(x1 - x0, y1 - y0) * 0.90
+            prev_ls = node_layers[i - 1]
+            cur_ls = node_layers[i]
+            obs1 = node_obs[i]
+            multi1 = len(cur_ls) > 1
+            cur_dp: list[float] = []
+            cur_bp: list[int] = []
+            for j, z1 in enumerate(cur_ls):
+                best_k = 0
+                best_v = math.inf
+                o_flag = obs1 and j == 0
+                for k, z0 in enumerate(prev_ls):
+                    v = dp[k] + self._step_cost(z0, z1, ds_m, is_jmp, o_flag, multi1)
+                    if v < best_v:
+                        best_v = v
+                        best_k = k
+                cur_dp.append(best_v)
+                cur_bp.append(best_k)
+            dp = cur_dp
+            back_ptrs.append(cur_bp)
+
+        idx_best = int(min(range(len(dp)), key=dp.__getitem__))
+        solved = [0.0] * n_nodes
+        for i in range(n_nodes - 1, -1, -1):
+            solved[i] = node_layers[i][idx_best]
+            idx_best = back_ptrs[i][idx_best]
+
+        m = len(dense_pts)
+        zs = solved[:m]
+        tail_zs = solved[m:]
+
+        # Bridge narrow (<3.2m) V-shaped crevasses/tile seams where surface drops >0.65m and immediately recovers
+        if m >= 3:
+            cum = [0.0] * m
+            for i in range(1, m):
+                cum[i] = cum[i - 1] + math.hypot(dense_pts[i][0] - dense_pts[i - 1][0], dense_pts[i][1] - dense_pts[i - 1][1]) * 0.90
+            i = 0
+            while i < m - 2:
+                bridged = False
+                for j in range(min(m - 1, i + 8), i + 1, -1):
+                    span_m = cum[j] - cum[i]
+                    if span_m <= 0.05 or span_m > 3.2 or abs(zs[j] - zs[i]) > 0.85:
+                        continue
+                    min_drop = min(zs[k] - (zs[i] + (zs[j] - zs[i]) * ((cum[k] - cum[i]) / span_m)) for k in range(i + 1, j))
+                    if min_drop < -0.65:
+                        for k in range(i + 1, j):
+                            u_t = (cum[k] - cum[i]) / span_m
+                            zs[k] = max(zs[k], zs[i] + (zs[j] - zs[i]) * u_t)
+                        i = j
+                        bridged = True
+                        break
+                if not bridged:
+                    i += 1
+
+            # Suppress narrow (<2.2m) grazed-column/roof spikes that immediately return to the same base elevation
+            i = 0
+            while i < m - 2:
+                bridged = False
+                for j in range(min(m - 1, i + 7), i + 1, -1):
+                    span_m = cum[j] - cum[i]
+                    if span_m <= 0.05 or span_m > 2.2 or abs(zs[j] - zs[i]) > 0.75:
+                        continue
+                    max_rise = max(zs[k] - (zs[i] + (zs[j] - zs[i]) * ((cum[k] - cum[i]) / span_m)) for k in range(i + 1, j))
+                    has_jump = any(dense_pts[k][2] for k in range(i + 1, j + 1))
+                    if max_rise > 3.2 or (max_rise > 0.75 and not has_jump):
+                        for k in range(i + 1, j):
+                            u_t = (cum[k] - cum[i]) / span_m
+                            zs[k] = min(zs[k], zs[i] + (zs[j] - zs[i]) * u_t)
+                        i = j
+                        bridged = True
+                        break
+                if not bridged:
+                    i += 1
+
+            # Edge-preserving micro-smoothing: smooth flat/sloped ground while keeping wall/ledge steps >0.45m razor-sharp
+            for _ in range(2):
+                nxt = list(zs)
+                for k in range(1, m - 1):
+                    if abs(zs[k] - zs[k - 1]) <= 0.45 and abs(zs[k + 1] - zs[k]) <= 0.45:
+                        nxt[k] = 0.25 * zs[k - 1] + 0.50 * zs[k] + 0.25 * zs[k + 1]
+                zs = nxt
+
+        return zs, tail_zs
 
 
 def _premul(bgr: tuple[int, int, int], alpha: float) -> tuple[int, int, int, int]:
@@ -198,6 +645,12 @@ class MinimapHudSurface:
         self.mm_h = max(64, min(self.client_h, round(self.MM_REF_H * self.sy)))
         self.dirty_boxes: list[tuple[int, int, int, int]] = []
         self._smooth_pose: tuple[float, float, float] | None = None
+        self._last_map_id: str = ""
+        self._char_xy: tuple[float, float] | None = None
+        self._char_surface_z: float | None = None
+        self._smooth_pitch_deg: float | None = None
+        self._last_jump_start: float = 0.0
+        self._jump_takeoff_z: float = 0.0
         self.user = ctypes.WinDLL("user32", use_last_error=True)
         self.gdi = ctypes.WinDLL("gdi32", use_last_error=True)
         self.dc = self.bitmap = self.old_bitmap = None
@@ -314,7 +767,7 @@ class MinimapHudSurface:
         cur_x: float,
         cur_y: float,
         heading_deg: float,
-        jump_z_m: float,
+        jump_start: float,
         points: tuple,
         current_index: int,
         map_id: str,
@@ -323,8 +776,51 @@ class MinimapHudSurface:
         if current_index < 0 or current_index >= len(points):
             return
         sampler = _TerrainSampler.get(map_id) if map_id else None
-        ground_z = sampler.sample_smooth(cur_x, cur_y, 0.0) if sampler else 0.0
-        dz_dx_m, dz_dy_m = sampler.sample_local_slope(cur_x, cur_y, ground_z) if sampler else (0.0, 0.0)
+
+        upcoming_wps: list[tuple[int, float, float, bool, str]] = []
+        for idx in range(current_index, min(len(points), current_index + 6)):
+            pt = points[idx]
+            act = pt[4] if len(pt) >= 5 else ""
+            if idx > current_index and act == "teleport":
+                break
+            upcoming_wps.append((idx, float(pt[0]), float(pt[1]), bool(pt[3]) if len(pt) >= 4 else False, act))
+
+        reloc = (
+            map_id != self._last_map_id
+            or self._char_xy is None
+            or math.hypot(cur_x - self._char_xy[0], cur_y - self._char_xy[1]) * 0.90 > 12.0
+        )
+        if reloc:
+            self._last_map_id = map_id
+            self._char_surface_z = None
+            self._smooth_pitch_deg = None
+            self._last_jump_start = 0.0
+        self._char_xy = (cur_x, cur_y)
+
+        upcoming_for_char = [(wx_p, wy_p, jmp_p) for _, wx_p, wy_p, jmp_p, _ in upcoming_wps]
+        target_surf_z = sampler.resolve_char_surface_z(cur_x, cur_y, self._char_surface_z, upcoming_for_char) if sampler else 0.0
+        if self._char_surface_z is None:
+            char_surface_z = target_surf_z
+        elif abs(target_surf_z - self._char_surface_z) <= 0.55:
+            char_surface_z = self._char_surface_z + (target_surf_z - self._char_surface_z) * 0.45
+        else:
+            char_surface_z = self._char_surface_z + (target_surf_z - self._char_surface_z) * 0.65
+        self._char_surface_z = char_surface_z
+
+        char_feet_z = char_surface_z
+        if jump_start > 0.0 and jump_start != self._last_jump_start:
+            self._last_jump_start = jump_start
+            self._jump_takeoff_z = char_surface_z
+        dt_jmp = now - jump_start if jump_start > 0.0 else -1.0
+        if 0.0 < dt_jmp < 1.25:
+            if dt_jmp <= 0.42:
+                arc_h = 1.65 * math.sin(0.5 * math.pi * (dt_jmp / 0.42))
+            else:
+                u_j = (dt_jmp - 0.42) / 0.83
+                arc_h = 1.65 * max(0.0, 1.0 - u_j * u_j)
+            char_feet_z = max(char_surface_z, self._jump_takeoff_z + arc_h)
+
+        dz_dx_m, dz_dy_m = sampler.sample_footing_slope(cur_x, cur_y, char_surface_z) if sampler else (0.0, 0.0)
 
         rad = math.radians(heading_deg)
         fwd_x, fwd_y = math.sin(rad), -math.cos(rad)
@@ -337,7 +833,13 @@ class MinimapHudSurface:
         # - SpringArm pivot height = 0.90m above character feet, centered at (0.50 * width, 0.50 * height)
         fwd_slope = dz_dx_m * fwd_x + dz_dy_m * fwd_y
         fwd_slope_deg = math.degrees(math.atan(fwd_slope))
-        pitch_down_deg = max(8.0, min(28.0, 17.2 - fwd_slope_deg * 0.55))
+        raw_pitch_deg = max(8.0, min(28.0, 17.5 - fwd_slope_deg * 0.55))
+        if self._smooth_pitch_deg is None:
+            pitch_down_deg = raw_pitch_deg
+        else:
+            pitch_down_deg = self._smooth_pitch_deg + (raw_pitch_deg - self._smooth_pitch_deg) * 0.30
+        self._smooth_pitch_deg = pitch_down_deg
+
         pitch_rad = math.radians(pitch_down_deg)
         cos_p, sin_p = math.cos(pitch_rad), math.sin(pitch_rad)
         if pitch_down_deg > 10.0:
@@ -346,55 +848,76 @@ class MinimapHudSurface:
         else:
             arm_len_m = 4.00
         cam_back_m = arm_len_m * cos_p
-        cam_h_m = 0.90 + arm_len_m * sin_p + jump_z_m
+        cam_h_m = 0.90 + arm_len_m * sin_p
         focal = (self.width * 0.50) / math.tan(math.radians(37.5))
         cx_scr, cy_scr = self.width * 0.50, self.height * 0.50
 
-        def project_3d(wx: float, wy: float, wz: float, offset_x_m: float = 0.0, offset_y_m: float = 0.0):
+        def project_3d(
+            wx: float,
+            wy: float,
+            wz: float,
+            offset_x_m: float = 0.0,
+            offset_y_m: float = 0.0,
+            offset_z_m: float = 0.0,
+        ):
             dx_m = (wx - cur_x) * 0.90 + offset_x_m
             dy_m = (wy - cur_y) * 0.90 + offset_y_m
-            local_slope_z = dz_dx_m * dx_m + dz_dy_m * dy_m
-            raw_dz = max(-4.0, min(4.0, wz - ground_z - local_slope_z * 0.45))
-            dz_m = raw_dz * 0.55
+            dz_m = (wz - char_feet_z) + offset_z_m
             cam_r = dx_m * right_x + dy_m * right_y
             horiz_f = dx_m * fwd_x + dy_m * fwd_y + cam_back_m
             vz = dz_m - cam_h_m
             cz = horiz_f * cos_p - vz * sin_p
-            if cz <= 2.2:
+            if cz <= 1.35:
                 return None
             cam_u = horiz_f * sin_p + vz * cos_p
             scale = focal / cz
-            sx_px = int(round(cx_scr + cam_r * scale))
-            sy_px = int(round(cy_scr - cam_u * scale))
-            return sx_px, sy_px, cz, scale
+            sx_f = cx_scr + cam_r * scale
+            sy_f = cy_scr - cam_u * scale
+            if abs(sx_f) > self.width * 4 or abs(sy_f) > self.height * 4:
+                return None
+            return int(round(sx_f)), int(round(sy_f)), cz, scale
 
         # Build corner-rounded 3D path from character feet through upcoming waypoints (up to 44 meters)
         raw_chain = [(cur_x, cur_y, False, "")]
-        for idx in range(current_index, min(len(points), current_index + 6)):
-            pt = points[idx]
-            act = pt[4] if len(pt) >= 5 else ""
-            if idx > current_index and act == "teleport":
-                break
-            wx_pt, wy_pt = float(pt[0]), float(pt[1])
-            if math.hypot(wx_pt - raw_chain[-1][0], wy_pt - raw_chain[-1][1]) * 0.90 < 0.35 and idx == current_index and idx + 1 < len(points):
-                continue
-            raw_chain.append((wx_pt, wy_pt, bool(pt[3]) if len(pt) >= 4 else False, act))
+        skipped_cur = False
+        for idx, wx_pt, wy_pt, jmp_pt, act_pt in upcoming_wps:
+            if idx == current_index and idx + 1 < len(points):
+                d_cur_m = math.hypot(wx_pt - cur_x, wy_pt - cur_y) * 0.90
+                cur_rad = float(points[idx][2]) if len(points[idx]) >= 3 else 1.0
+                if d_cur_m < 0.35 or (
+                    not act_pt
+                    and d_cur_m <= max(1.25, cur_rad * 1.35)
+                    and (wx_pt - cur_x) * fwd_x + (wy_pt - cur_y) * fwd_y < -0.15
+                ):
+                    skipped_cur = True
+                    continue
+            raw_chain.append((wx_pt, wy_pt, jmp_pt, act_pt))
 
-        # Subdivide with quadratic Bezier corner rounding at interior waypoints
         dense_2d: list[tuple[float, float, bool, str]] = []
-        step_m = 0.75
+        tail_wps: list[tuple[float, float, bool]] = []
+        max_dist_m = 44.0
+        acc_chain_m = 0.0
         for i in range(len(raw_chain) - 1):
             x0, y0, _, _ = raw_chain[i]
             x1, y1, jmp1, act1 = raw_chain[i + 1]
             seg_len_m = math.hypot(x1 - x0, y1 - y0) * 0.90
-            if seg_len_m < 0.15:
+            if seg_len_m < 0.12:
                 continue
+            if acc_chain_m >= max_dist_m:
+                tail_wps.append((x1, y1, jmp1))
+                continue
+            step_m = 0.38 if (jmp1 or acc_chain_m < 16.0) else 0.65
             n_sub = max(2, int(math.ceil(seg_len_m / step_m)))
-            for s_i in range(n_sub + (1 if i == len(raw_chain) - 2 else 0)):
+            include_end = (i == len(raw_chain) - 2) or (acc_chain_m + seg_len_m >= max_dist_m)
+            for s_i in range(n_sub + (1 if include_end else 0)):
                 t = s_i / n_sub
+                seg_d = acc_chain_m + seg_len_m * t
+                if seg_d > max_dist_m and dense_2d:
+                    tail_wps.append((x1, y1, jmp1))
+                    break
                 dense_2d.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, jmp1, act1))
+            acc_chain_m += seg_len_m
 
-        # Apply 2 passes of Chaikin-style corner smoothing on (x, y) while keeping endpoints fixed
         if len(dense_2d) >= 5:
             for _ in range(2):
                 smoothed = [dense_2d[0]]
@@ -405,36 +928,52 @@ class MinimapHudSurface:
                 smoothed.append(dense_2d[-1])
                 dense_2d = smoothed
 
-        samples_3d = []  # (wx, wy, wz, tx, ty, cum_m, is_jump, act)
-        cum_m = 0.0
-        max_dist_m = 44.0
-        raw_zs = []
-        for wx, wy, _, _ in dense_2d:
-            rz = sampler.sample_smooth(wx, wy, ground_z) if sampler else ground_z
-            raw_zs.append(rz)
-        # Smooth Z along curve to eliminate any residual micro-ripples
-        smooth_zs = list(raw_zs)
-        if len(raw_zs) >= 3:
-            for i in range(1, len(raw_zs) - 1):
-                smooth_zs[i] = 0.25 * raw_zs[i - 1] + 0.50 * raw_zs[i] + 0.25 * raw_zs[i + 1]
+        if sampler and dense_2d:
+            solved_zs, tail_zs = sampler.solve_path_elevations(dense_2d, char_surface_z, tail_wps)
+        else:
+            solved_zs = [char_surface_z] * len(dense_2d)
+            tail_zs = [char_surface_z] * len(tail_wps)
 
+        # Subdivide steep vertical climbs/drops (>= 0.55m) so wall faces clip cleanly and carry upward 3D chevrons
+        pts_3d: list[tuple[float, float, float, bool, str]] = []
         for i in range(len(dense_2d)):
-            wx, wy, seg_jump, seg_act = dense_2d[i]
-            if i > 0:
-                cum_m += math.hypot(wx - dense_2d[i - 1][0], wy - dense_2d[i - 1][1]) * 0.90
-            if cum_m > max_dist_m:
-                break
+            wx, wy, sj, sa = dense_2d[i]
+            wz = solved_zs[i]
+            pts_3d.append((wx, wy, wz, sj, sa))
             if i + 1 < len(dense_2d):
-                dx_t, dy_t = dense_2d[i + 1][0] - wx, dense_2d[i + 1][1] - wy
+                wx2, wy2, sj2, sa2 = dense_2d[i + 1]
+                wz2 = solved_zs[i + 1]
+                dz_step = abs(wz2 - wz)
+                if dz_step >= 0.55:
+                    n_vert = max(2, min(14, int(math.ceil(dz_step / 0.42))))
+                    for v_i in range(1, n_vert):
+                        ut = v_i / n_vert
+                        pts_3d.append((wx + (wx2 - wx) * ut, wy + (wy2 - wy) * ut, wz + (wz2 - wz) * ut, sj2, sa2))
+
+        samples_3d = []  # (wx, wy, wz, hx, hy, tx_m, ty_m, tz_m, cum_xy_m, cum_3d_m, is_jump, act)
+        cum_xy_m = 0.0
+        cum_3d_m = 0.0
+        last_hx, last_hy = fwd_x, fwd_y
+        for i in range(len(pts_3d)):
+            wx, wy, wz, seg_jump, seg_act = pts_3d[i]
+            if i > 0:
+                ds_xy = math.hypot(wx - pts_3d[i - 1][0], wy - pts_3d[i - 1][1]) * 0.90
+                ds_z = wz - pts_3d[i - 1][2]
+                cum_xy_m += ds_xy
+                cum_3d_m += math.hypot(ds_xy, ds_z)
+            if i + 1 < len(pts_3d):
+                dx_w, dy_w, dz_w = pts_3d[i + 1][0] - wx, pts_3d[i + 1][1] - wy, pts_3d[i + 1][2] - wz
             elif i > 0:
-                dx_t, dy_t = wx - dense_2d[i - 1][0], wy - dense_2d[i - 1][1]
+                dx_w, dy_w, dz_w = wx - pts_3d[i - 1][0], wy - pts_3d[i - 1][1], wz - pts_3d[i - 1][2]
             else:
-                dx_t, dy_t = fwd_x, fwd_y
-            t_len = max(1e-5, math.hypot(dx_t, dy_t))
-            tx, ty = dx_t / t_len, dy_t / t_len
-            blend_feet = min(1.0, cum_m / 4.0)
-            wz = ground_z * (1.0 - blend_feet) + smooth_zs[i] * blend_feet
-            samples_3d.append((wx, wy, wz, tx, ty, cum_m, seg_jump, seg_act))
+                dx_w, dy_w, dz_w = fwd_x, fwd_y, 0.0
+            dx_m_t, dy_m_t = dx_w * 0.90, dy_w * 0.90
+            h_len = math.hypot(dx_m_t, dy_m_t)
+            if h_len > 1e-4:
+                last_hx, last_hy = dx_m_t / h_len, dy_m_t / h_len
+            t3_len = max(1e-5, math.hypot(h_len, dz_w))
+            tx_m, ty_m, tz_m = dx_m_t / t3_len, dy_m_t / t3_len, dz_w / t3_len
+            samples_3d.append((wx, wy, wz, last_hx, last_hy, tx_m, ty_m, tz_m, cum_xy_m, cum_3d_m, seg_jump, seg_act))
 
         min_bx, min_by = self.width, self.height
         max_bx, max_by = 0, 0
@@ -446,24 +985,24 @@ class MinimapHudSurface:
             max_bx = max(max_bx, min(self.width, x1 + pad))
             max_by = max(max_by, min(self.height, y1 + pad))
 
-        # 1. Project & draw 3D perspective ground ribbon + glowing edge rails
+        # 1. Project & draw 3D perspective surface/wall ribbon + glowing edge rails
         half_w_m = 0.42
         proj_ribbon = []
-        for wx, wy, wz, tx, ty, d_m, seg_jump, seg_act in samples_3d:
-            # Perpendicular normal in map space: (-ty, tx)
-            nx_m, ny_m = -ty * half_w_m, tx * half_w_m
-            p_left = project_3d(wx, wy, wz + 0.08, -nx_m, -ny_m)
-            p_ctr = project_3d(wx, wy, wz + 0.08, 0.0, 0.0)
-            p_right = project_3d(wx, wy, wz + 0.08, nx_m, ny_m)
+        for wx, wy, wz, hx, hy, tx_m, ty_m, tz_m, d_xy_m, d_3d_m, seg_jump, seg_act in samples_3d:
+            # Horizontal cross-ribbon vector keeps ribbon level across slopes and vertical wall climbs
+            nx_m, ny_m = -hy * half_w_m, hx * half_w_m
+            p_left = project_3d(wx, wy, wz + 0.06, -nx_m, -ny_m)
+            p_ctr = project_3d(wx, wy, wz + 0.06, 0.0, 0.0)
+            p_right = project_3d(wx, wy, wz + 0.06, nx_m, ny_m)
             if p_left and p_ctr and p_right:
-                proj_ribbon.append((p_left, p_ctr, p_right, d_m, seg_jump, seg_act, wx, wy, wz, tx, ty))
+                proj_ribbon.append((p_left, p_ctr, p_right, d_xy_m, d_3d_m, seg_jump, seg_act))
 
         rail_w = max(2, round(2.2 * self.s))
-        # Draw from far to near so closer translucent segments layer cleanly
+        # Draw from far to near so closer translucent segments and wall faces layer cleanly
         for i in range(len(proj_ribbon) - 2, -1, -1):
-            l0, c0, r0, d0, jmp0, act0, *_ = proj_ribbon[i]
-            l1, c1, r1, d1, *_ = proj_ribbon[i + 1]
-            if d1 < 0.55:
+            l0, c0, r0, d0_xy, d0_3d, jmp0, act0 = proj_ribbon[i]
+            l1, c1, r1, d1_xy, d1_3d, *_ = proj_ribbon[i + 1]
+            if d1_3d < 0.42:
                 continue
             if (
                 max(l0[0], r0[0], l1[0], r1[0]) < 0
@@ -472,7 +1011,7 @@ class MinimapHudSurface:
                 or min(l0[1], r0[1], l1[1], r1[1]) >= self.height
             ):
                 continue
-            fade = max(0.16, min(0.92, 1.0 - d0 / 45.0))
+            fade = max(0.16, min(0.92, 1.0 - d0_xy / 45.0))
             if jmp0:
                 base_bgr = (45, 215, 255)  # Electric gold-amber for jump segments
             elif act0:
@@ -480,10 +1019,11 @@ class MinimapHudSurface:
             else:
                 base_bgr = (255, 215, 45)  # Cyber cyan-blue for standard path
 
-            quad = np.array([[l0[0], l0[1]], [r0[0], r0[1]], [r1[0], r1[1]], [l1[0], l1[1]]], dtype=np.int32)
+            ql1, qr1 = (r1, l1) if (r0[0] - l0[0]) * (r1[0] - l1[0]) + (r0[1] - l0[1]) * (r1[1] - l1[1]) < 0 else (l1, r1)
+            quad = np.array([[l0[0], l0[1]], [r0[0], r0[1]], [qr1[0], qr1[1]], [ql1[0], ql1[1]]], dtype=np.int32)
             cv2.fillConvexPoly(pixels, quad, _premul(base_bgr, fade * 0.24), cv2.LINE_AA)
-            cv2.line(pixels, (l0[0], l0[1]), (l1[0], l1[1]), _premul(base_bgr, fade * 0.82), rail_w, cv2.LINE_AA)
-            cv2.line(pixels, (r0[0], r0[1]), (r1[0], r1[1]), _premul(base_bgr, fade * 0.82), rail_w, cv2.LINE_AA)
+            cv2.line(pixels, (l0[0], l0[1]), (ql1[0], ql1[1]), _premul(base_bgr, fade * 0.82), rail_w, cv2.LINE_AA)
+            cv2.line(pixels, (r0[0], r0[1]), (qr1[0], qr1[1]), _premul(base_bgr, fade * 0.82), rail_w, cv2.LINE_AA)
             mark_dirty(
                 min(l0[0], r0[0], l1[0], r1[0]),
                 min(l0[1], r0[1], l1[1], r1[1]),
@@ -492,31 +1032,40 @@ class MinimapHudSurface:
                 pad=rail_w + 4,
             )
 
-        # 2. Draw animated flowing AR chevrons (>>>) along the 3D ground ribbon
+        # 2. Draw animated flowing 3D tangent-aligned chevrons (>>>) across ground, slopes, and walls
         if len(samples_3d) >= 2:
             chev_spacing_m = 3.0
             phase_m = (now * 4.2) % chev_spacing_m
             chev_w = max(2, round(2.6 * self.s))
             for idx in range(len(samples_3d) - 1):
-                wx0, wy0, wz0, tx, ty, d0, jmp0, _ = samples_3d[idx]
-                wx1, wy1, wz1, _, _, d1, _, _ = samples_3d[idx + 1]
-                if d1 <= d0:
+                wx0, wy0, wz0, hx0, hy0, tx0, ty0, tz0, d0_xy, d0_3d, jmp0, _ = samples_3d[idx]
+                wx1, wy1, wz1, _, _, _, _, _, d1_xy, d1_3d, _, _ = samples_3d[idx + 1]
+                if d1_3d <= d0_3d:
                     continue
-                # Check if a chevron tip falls within [d0, d1]
-                k = math.ceil((max(1.2, d0) - phase_m) / chev_spacing_m)
+                k = math.ceil((max(0.95, d0_3d) - phase_m) / chev_spacing_m)
                 d_tip = phase_m + k * chev_spacing_m
-                if d0 <= d_tip <= d1 and d_tip <= 38.0:
-                    u = (d_tip - d0) / (d1 - d0)
+                if d0_3d <= d_tip <= d1_3d:
+                    u = (d_tip - d0_3d) / (d1_3d - d0_3d)
+                    d_xy = d0_xy + (d1_xy - d0_xy) * u
+                    if d_xy > 38.0:
+                        continue
                     cx_w = wx0 + (wx1 - wx0) * u
                     cy_w = wy0 + (wy1 - wy0) * u
-                    cz_w = wz0 + (wz1 - wz0) * u + 0.10
-                    nx_m, ny_m = -ty * 0.30, tx * 0.30
-                    back_x_m, back_y_m = -tx * 0.68, -ty * 0.68
-                    p_tip = project_3d(cx_w, cy_w, cz_w, 0.0, 0.0)
-                    p_lw = project_3d(cx_w, cy_w, cz_w, back_x_m - nx_m, back_y_m - ny_m)
-                    p_rw = project_3d(cx_w, cy_w, cz_w, back_x_m + nx_m, back_y_m + ny_m)
+                    cz_w = wz0 + (wz1 - wz0) * u + 0.08
+                    nx_m, ny_m = -hy0 * 0.30, hx0 * 0.30
+                    back_x_m, back_y_m, back_z_m = -tx0 * 0.68, -ty0 * 0.68, -tz0 * 0.68
+                    p_tip = project_3d(cx_w, cy_w, cz_w)
+                    p_lw = project_3d(cx_w, cy_w, cz_w, back_x_m - nx_m, back_y_m - ny_m, back_z_m)
+                    p_rw = project_3d(cx_w, cy_w, cz_w, back_x_m + nx_m, back_y_m + ny_m, back_z_m)
                     if p_tip and p_lw and p_rw:
-                        fade = max(0.22, min(0.96, 1.0 - d_tip / 40.0))
+                        if (
+                            max(p_lw[0], p_rw[0], p_tip[0]) < 0
+                            or min(p_lw[0], p_rw[0], p_tip[0]) >= self.width
+                            or max(p_lw[1], p_rw[1], p_tip[1]) < 0
+                            or min(p_lw[1], p_rw[1], p_tip[1]) >= self.height
+                        ):
+                            continue
+                        fade = max(0.22, min(0.96, 1.0 - d_xy / 40.0))
                         c_bgr = (140, 245, 255) if jmp0 else (255, 250, 200)
                         col = _premul(c_bgr, fade * 0.92)
                         cv2.line(pixels, (p_lw[0], p_lw[1]), (p_tip[0], p_tip[1]), col, chev_w, cv2.LINE_AA)
@@ -529,22 +1078,33 @@ class MinimapHudSurface:
                             pad=chev_w + 4,
                         )
 
-        # 3. Draw 3D Holographic Waypoint Pillars, Ground Rings & Floating Distance Badges
+        # 3. Draw 3D Holographic Waypoint Pillars, Surface Rings & Floating Distance Badges
+        ref_nodes: list[tuple[float, float, float]] = [
+            (dense_2d[k][0], dense_2d[k][1], solved_zs[k]) for k in range(len(dense_2d))
+        ] + [
+            (tail_wps[k][0], tail_wps[k][1], tail_zs[k]) for k in range(len(tail_wps))
+        ]
+        eff_cur_idx = current_index + 1 if skipped_cur else current_index
         badge_queue = []
-        for wp_idx in range(min(len(points) - 1, current_index + 2), current_index - 1, -1):
+        for wp_idx in range(min(len(points) - 1, eff_cur_idx + 2), eff_cur_idx - 1, -1):
             pt = points[wp_idx]
             act = pt[4] if len(pt) >= 5 else ""
-            if wp_idx > current_index and act == "teleport":
+            if wp_idx > eff_cur_idx and act == "teleport":
                 continue
             wx, wy = float(pt[0]), float(pt[1])
             dist_m = math.hypot(wx - cur_x, wy - cur_y) * 0.90
-            if wp_idx > current_index and dist_m > 45.0:
+            if wp_idx > eff_cur_idx and dist_m > 45.0:
                 continue
-            wz = sampler.sample_smooth(wx, wy, ground_z) if sampler else ground_z
-            if dist_m < 3.2:
-                wz = ground_z * (1.0 - dist_m / 3.2) + wz * (dist_m / 3.2)
+            ref_z = char_surface_z
+            if ref_nodes:
+                ref_z = min(ref_nodes, key=lambda rn: (rn[0] - wx) ** 2 + (rn[1] - wy) ** 2)[2]
+            if sampler:
+                wp_layers = sampler.query_layers(wx, wy, ref_z)
+                wz = min(wp_layers, key=lambda z: abs(z - ref_z))
+            else:
+                wz = ref_z
 
-            is_cur = wp_idx == current_index
+            is_cur = wp_idx == eff_cur_idx
             jmp = bool(pt[3]) if len(pt) >= 4 else False
             if act:
                 b_bgr = ACTION_BGR.get(act, (165, 255, 75))
@@ -553,39 +1113,58 @@ class MinimapHudSurface:
             else:
                 b_bgr = (255, 215, 55) if is_cur else (225, 190, 95)
 
-            # Ground 3D arrival ring
+            # Surface 3D arrival ring anchored on the resolved waypoint elevation layer
             ring_r_m = min(2.2, max(0.65, float(pt[2] if len(pt) >= 3 else 1.0) * 0.85)) if is_cur else 0.55
             ring_pts = []
             for a_i in range(16):
                 ang = (a_i / 16.0) * math.pi * 2.0
-                pr = project_3d(wx, wy, wz + 0.08, math.cos(ang) * ring_r_m, math.sin(ang) * ring_r_m)
+                pr = project_3d(wx, wy, wz + 0.06, math.cos(ang) * ring_r_m, math.sin(ang) * ring_r_m)
                 if pr:
                     ring_pts.append([pr[0], pr[1]])
             if len(ring_pts) >= 6:
                 arr = np.array(ring_pts, dtype=np.int32)
-                ring_w = max(2, round((2.4 if is_cur else 1.6) * self.s))
-                cv2.polylines(pixels, [arr], True, _premul(b_bgr, 0.82 if is_cur else 0.50), ring_w, cv2.LINE_AA)
-                mark_dirty(int(arr[:, 0].min()), int(arr[:, 1].min()), int(arr[:, 0].max()), int(arr[:, 1].max()), pad=6)
+                if (
+                    arr[:, 0].max() >= 0
+                    and arr[:, 0].min() < self.width
+                    and arr[:, 1].max() >= 0
+                    and arr[:, 1].min() < self.height
+                ):
+                    ring_w = max(2, round((2.4 if is_cur else 1.6) * self.s))
+                    cv2.polylines(pixels, [arr], True, _premul(b_bgr, 0.82 if is_cur else 0.50), ring_w, cv2.LINE_AA)
+                    mark_dirty(int(arr[:, 0].min()), int(arr[:, 1].min()), int(arr[:, 0].max()), int(arr[:, 1].max()), pad=6)
 
             # Vertical holographic beacon pillar
             pillar_h_m = 2.45 if is_cur else 1.55
-            p_base = project_3d(wx, wy, wz + 0.08)
+            p_base = project_3d(wx, wy, wz + 0.06)
             p_top = project_3d(wx, wy, wz + pillar_h_m)
-            if p_base and p_top and 0 <= p_base[0] < self.width and 0 <= p_base[1] < self.height:
+            if p_base and p_top:
                 bx, by = p_base[0], p_base[1]
                 tx_p, ty_p = p_top[0], p_top[1]
-                glow_w = max(4, round((6.0 if is_cur else 3.5) * self.s))
-                core_w = max(2, round((2.5 if is_cur else 1.6) * self.s))
-                cv2.line(pixels, (bx, by), (tx_p, ty_p), _premul(b_bgr, 0.32 if is_cur else 0.20), glow_w, cv2.LINE_AA)
-                cv2.line(pixels, (bx, by), (tx_p, ty_p), _premul((255, 255, 255), 0.90 if is_cur else 0.62), core_w, cv2.LINE_AA)
-                orb_r = max(4, round((5.5 if is_cur else 3.8) * self.s))
-                cv2.circle(pixels, (tx_p, ty_p), orb_r + 2, _premul(b_bgr, 0.85), -1, cv2.LINE_AA)
-                cv2.circle(pixels, (tx_p, ty_p), max(2, orb_r - 1), _premul((255, 255, 255), 0.95), -1, cv2.LINE_AA)
-                mark_dirty(min(bx, tx_p), min(by, ty_p), max(bx, tx_p), max(by, ty_p), pad=orb_r + 8)
-                if wp_idx <= current_index + 1:
-                    act_label = ACTION_LABELS.get(act, act or ("跳跃" if jmp else "途经"))
-                    tag = f"#{wp_idx + 1} {act_label} · {dist_m:.1f}m" if is_cur else f"#{wp_idx + 1} {act_label} · {dist_m:.0f}m"
-                    badge_queue.append((tx_p, ty_p, tag, b_bgr, is_cur))
+                if (
+                    max(bx, tx_p) >= 0
+                    and min(bx, tx_p) < self.width
+                    and max(by, ty_p) >= 0
+                    and min(by, ty_p) < self.height
+                ):
+                    glow_w = max(4, round((6.0 if is_cur else 3.5) * self.s))
+                    core_w = max(2, round((2.5 if is_cur else 1.6) * self.s))
+                    cv2.line(pixels, (bx, by), (tx_p, ty_p), _premul(b_bgr, 0.32 if is_cur else 0.20), glow_w, cv2.LINE_AA)
+                    cv2.line(pixels, (bx, by), (tx_p, ty_p), _premul((255, 255, 255), 0.90 if is_cur else 0.62), core_w, cv2.LINE_AA)
+                    orb_r = max(4, round((5.5 if is_cur else 3.8) * self.s))
+                    if 0 <= tx_p < self.width and 0 <= ty_p < self.height:
+                        cv2.circle(pixels, (tx_p, ty_p), orb_r + 2, _premul(b_bgr, 0.85), -1, cv2.LINE_AA)
+                        cv2.circle(pixels, (tx_p, ty_p), max(2, orb_r - 1), _premul((255, 255, 255), 0.95), -1, cv2.LINE_AA)
+                    mark_dirty(min(bx, tx_p), min(by, ty_p), max(bx, tx_p), max(by, ty_p), pad=orb_r + 8)
+                    if wp_idx <= eff_cur_idx + 1:
+                        act_label = ACTION_LABELS.get(act, act or ("跳跃" if jmp else "途经"))
+                        tag = f"#{wp_idx + 1} {act_label} · {dist_m:.1f}m" if is_cur else f"#{wp_idx + 1} {act_label} · {dist_m:.0f}m"
+                        if 0 <= tx_p < self.width and round(38 * self.sy) <= ty_p < self.height:
+                            badge_queue.append((tx_p, ty_p, tag, b_bgr, is_cur))
+                        elif ty_p < round(38 * self.sy) and by >= round(52 * self.sy):
+                            t_clamp = (round(42 * self.sy) - by) / (ty_p - by) if ty_p != by else 0.0
+                            bx_top = int(round(bx + (tx_p - bx) * max(0.0, min(1.0, t_clamp))))
+                            if 0 <= bx_top < self.width:
+                                badge_queue.append((bx_top, round(42 * self.sy), tag, b_bgr, is_cur))
 
         if max_bx > min_bx and max_by > min_by:
             self.dirty_boxes.append((min_bx, min_by, max_bx, max_by))
@@ -597,8 +1176,8 @@ class MinimapHudSurface:
             f_scale = 0.92 if is_cur else 0.80
             pw = round((22 + len(tag) * 9.6) * self.sx * f_scale)
             ph = round(25 * self.sy * f_scale)
-            px0 = tx_p - pw // 2
-            py0 = ty_p - ph - round(10 * self.sy)
+            px0 = max(round(6 * self.sx), min(self.width - pw - round(6 * self.sx), tx_p - pw // 2))
+            py0 = max(round(6 * self.sy), ty_p - ph - round(10 * self.sy))
             # Keep outside top-left circular minimap area
             if px0 < mm_excl_w and py0 < mm_excl_h:
                 continue
@@ -610,7 +1189,7 @@ class MinimapHudSurface:
             )
 
         # 4. Off-Screen AR Turn Indicator when current target is outside camera horizontal FOV
-        tgt_idx = current_index
+        tgt_idx = eff_cur_idx
         if math.hypot(float(points[tgt_idx][0]) - cur_x, float(points[tgt_idx][1]) - cur_y) * 0.90 < 0.85 and tgt_idx + 1 < len(points):
             tgt_idx += 1
         tgt = points[tgt_idx]
@@ -660,8 +1239,7 @@ class MinimapHudSurface:
         if pose is not None and len(pose) == 2:
             px_world, py_world = float(pose[0]), float(pose[1])
             heading = snapshot.get("heading")
-            # Dead-reckon forward movement and jump arc at 30 FPS between observations
-            jump_z_m = 0.0
+            # Dead-reckon forward movement and track 3D jump takeoff state at 30 FPS between observations
             if snapshot.get("ar_active") and heading is not None:
                 pose_time = float(snapshot.get("pose_time") or now)
                 move_until = float(snapshot.get("move_until") or 0.0)
@@ -672,8 +1250,6 @@ class MinimapHudSurface:
                     px_world += math.sin(rad_h) * vel * dt_move
                     py_world -= math.cos(rad_h) * vel * dt_move
                 jump_start = float(snapshot.get("jump_start") or 0.0)
-                if 0.0 < now - jump_start < 1.25:
-                    jump_z_m = 2.2 * math.sin(math.pi * ((now - jump_start) / 1.25))
 
                 h_val = float(heading)
                 if self._smooth_pose is not None:
@@ -690,7 +1266,7 @@ class MinimapHudSurface:
                     px_world,
                     py_world,
                     h_val,
-                    jump_z_m,
+                    jump_start,
                     points,
                     current_index,
                     str(snapshot.get("map_id") or ""),
