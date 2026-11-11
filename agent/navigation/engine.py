@@ -279,7 +279,8 @@ class Navigator:
                 # any more movement; the route loop then verifies recovery.
                 self.motion.close()
                 self.inputs.check()
-                if not self.point_action.rt.key("skip", .5):
+                overlay = self.point_action.rt.hit("MaaNikki_RewardOverlayReady", image=frame)
+                if not self.point_action.rt.skip_prompt(.5, scene=not overlay):
                     raise NavigationError("未能跳过获取提示。")
                 self.event({"type": "route_reward_skipped"})
                 self.locator.heading_diagnostics = {"method": "reward_overlay"}
@@ -666,7 +667,8 @@ class Navigator:
                             raise NavigationStuckError("角色倒下后已复活，需要从起点重新运行路线。")
                         raise NavigationError("角色倒下后未能完成复活，本条路线停止。")
                 if self.point_action and self.point_action.rt.hit("MaaNikki_Energy_SkipReward"):
-                    if not self.point_action.rt.key("skip", .5):
+                    overlay = self.point_action.rt.hit("MaaNikki_RewardOverlayReady")
+                    if not self.point_action.rt.skip_prompt(.5, scene=not overlay):
                         raise NavigationError("未能跳过获取提示。")
                 previous = None
                 steady_since = None

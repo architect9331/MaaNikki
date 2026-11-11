@@ -57,9 +57,15 @@ class Exploration(Runtime):
             return False
         guard = ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
         binding = self.game_keys.get("interact")
+        clear_use_key = False
+        background_capable = (
+            not guard.capture_requires_foreground
+            and binding.kind == "key"
+            and (enabled["Pickup"] or enabled["Dialogue"] or clear_use_key and enabled["Clear"])
+        )
         self.log("辅助功能已启动：当前使用前台截图，切出游戏或最小化后暂停。"
                  if guard.capture_requires_foreground else
-                 "辅助功能已启动：键盘交互支持切出游戏后继续拾取、对白和跳过；鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
+                 "辅助功能已启动：键盘交互支持切出游戏后继续拾取和对白；清洁跳过、鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
         schedule = AssistSchedule(enabled, now=time.monotonic())
         waiting_clear = False
         previous_mode = None
@@ -68,8 +74,7 @@ class Exploration(Runtime):
         def available():
             return (not self.stopped and guard.user32.IsWindow(guard.hwnd)
                     and not guard.user32.IsIconic(guard.hwnd)
-                    and (not guard.capture_requires_foreground or guard.foreground())
-                    and (binding.kind == "key" or guard.foreground()))
+                    and (guard.foreground() or background_capable))
 
         @measure("input.assist")
         def press():
@@ -90,7 +95,7 @@ class Exploration(Runtime):
                     if not guard.foreground():
                         count("assist.background_key")
                 return result
-            if not available():
+            if not available() or not guard.foreground():
                 return False
             self.invalidate_frame()
             try:
@@ -98,7 +103,24 @@ class Exploration(Runtime):
             except NavigationError:
                 # The resident helper pauses on focus loss, including loss
                 # during the short pulse; click_mouse has already released it.
-                if not available():
+                if not available() or not guard.foreground():
+                    return False
+                raise
+
+        @measure("input.assist_clear")
+        def click_clear():
+            if clear_use_key:
+                return press()
+            session = active_session()
+            if session and session.stopped(fresh=True):
+                return False
+            if not available() or not guard.foreground():
+                return False
+            self.invalidate_frame()
+            try:
+                return guard.click_mouse(0)
+            except NavigationError:
+                if not available() or not guard.foreground():
                     return False
                 raise
 
@@ -131,7 +153,7 @@ class Exploration(Runtime):
                 foreground = guard.foreground()
                 mode = ("minimized" if guard.user32.IsIconic(guard.hwnd) else
                         "foreground" if foreground else
-                        "background" if binding.kind == "key" and not guard.capture_requires_foreground
+                        "background" if background_capable
                         else "paused")
                 if mode != previous_mode:
                     self.log({"foreground": "辅助功能在游戏前台运行，键盘交互使用 PostMessage。",
@@ -139,7 +161,7 @@ class Exploration(Runtime):
                               "minimized": "游戏已最小化，辅助功能暂停识别和输入。",
                               "paused": ("当前使用前台截图，切出游戏后辅助功能暂停；切回后继续。"
                                          if guard.capture_requires_foreground else
-                                         "交互键设置为鼠标按键，切出游戏后暂停；切回后继续。")}[mode],
+                                         "当前开启的辅助项需要鼠标或前台执行，切出游戏后暂停；切回后继续。")}[mode],
                              # Alt-tabbing changes the mode constantly; the startup message explains it.
                              detail=True)
                     previous_mode = mode
@@ -175,6 +197,8 @@ class Exploration(Runtime):
                 now = time.monotonic()
                 if "MapMask" in schedule.next_check and now+.01 >= schedule.next_check["MapMask"]:
                     schedule.checked("MapMask", now)
+                if waiting_clear and not clear_use_key and not guard.foreground():
+                    waiting_clear = False
                 if waiting_clear:
                     if not found("IconSkip", frame):
                         waiting_clear = False
@@ -216,11 +240,14 @@ class Exploration(Runtime):
                                 guard.release()
                                 schedule.checked(helper, time.monotonic(), acted=True)
                         break
+                    if helper == "Clear" and not clear_use_key and not guard.foreground():
+                        schedule.checked(helper, time.monotonic())
+                        continue
                     matched = found(icons[helper], frame)
                     schedule.checked(helper, time.monotonic())
                     if not matched:
                         continue
-                    if available() and press():
+                    if available() and (click_clear() if helper == "Clear" else press()):
                         count("assist."+helper)
                         schedule.checked(helper, time.monotonic(), acted=True)
                         waiting_clear = helper == "Clear"

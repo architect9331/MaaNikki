@@ -166,9 +166,9 @@
     "action": "Custom",
     "post_delay": 1200,
     "timeout": 5000,
-    "custom_action": "nikki.game_key",
+    "custom_action": "nikki.ui_click",
     "custom_action_param": {
-      "name": "skip"
+      "target": [1200, 692]
     },
     "next": []
   },

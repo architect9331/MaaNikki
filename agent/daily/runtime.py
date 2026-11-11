@@ -25,6 +25,7 @@ RESOURCE = ROOT / "resource"
 
 class Runtime:
     OBSERVATION_MAX_AGE = .25
+    SKIP_PROMPT_TARGET = [1200, 692]
 
     def __init__(self, context):
         self.context = context
@@ -213,6 +214,27 @@ class Runtime:
                 return clicked and self.pause(delay)
             value = binding.code
         return self.action("ClickKey", key=value) and self.pause(delay)
+
+    def skip_prompt(self, delay=0.25, *, target=None, scene=False, use_key=False, key_name="skip"):
+        """Dismiss a bottom-right skip/continue prompt by click; keep key path available."""
+        if self.stopped:
+            return False
+        if use_key:
+            return self.key(key_name, delay)
+        point = list(self.SKIP_PROMPT_TARGET if target is None else target)
+        if scene:
+            # 3D scene animations capture the camera in Seize mode; pulse
+            # MouseLeft in place without relocating the pointer.
+            if self.navigation_inputs is not None or foreground_inputs():
+                self.invalidate_frame()
+                with self.input_guard() as inputs:
+                    clicked = inputs.click_mouse(0)
+                return clicked and (self.pause(delay) if delay > 0 else not self.stopped)
+            return (self.action("Click", target=point, ui_click=False)
+                    and (self.pause(delay) if delay > 0 else not self.stopped))
+        with self.ui.preserve_cursor():
+            clicked = self.action("Click", target=point)
+        return clicked and (self.pause(delay) if delay > 0 else not self.stopped)
 
     def hold(self, key, seconds):
         if type(seconds) not in (int, float) or not math.isfinite(seconds) or not 0 <= seconds <= 8 or self.stopped:

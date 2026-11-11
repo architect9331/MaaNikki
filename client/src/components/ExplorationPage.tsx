@@ -52,7 +52,7 @@ export function ExplorationPage({ onClose }: { onClose: () => void }) {
       <div className="space-y-4">
         <Card icon={Hand} title="交互辅助">
           <FeatureRows features={explorationFeatures.slice(0, 4)} />
-          <p className="border-t border-border px-4 py-3 text-xs leading-5 text-text-muted">键盘交互支持后台拾取、对白和跳过；鼠标交互及钓鱼在游戏前台运行，游戏最小化后暂停。</p>
+          <p className="border-t border-border px-4 py-3 text-xs leading-5 text-text-muted">键盘交互支持后台拾取和对白；清洁跳过、鼠标交互及钓鱼在游戏前台运行，游戏最小化后暂停。</p>
         </Card>
       </div>
       <div className="space-y-4">

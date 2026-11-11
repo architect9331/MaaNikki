@@ -237,7 +237,7 @@ class StartGameAction(CustomAction):
                             seconds=min(5, max(.1, deadline-time.monotonic()))):
                         return incomplete("客户端资源更新确认未生效")
             elif reward:
-                if not runtime.key("skip", .5):
+                if not runtime.skip_prompt(.5):
                     return incomplete()
             elif main:
                 if runtime.ui.wait_page("MaaNikki_MainDetected"):

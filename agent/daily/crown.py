@@ -74,7 +74,7 @@ class Crown(Runtime):
                     return False
                 if not self.dialogue_visible():
                     return True
-            if not self.key("interact", 0):
+            if not self.skip_prompt(0, target=self.ui.roi("IconSkipDialog"), key_name="interact"):
                 return False
         return False
 
@@ -91,7 +91,7 @@ class Crown(Runtime):
             return bool(self.click_template("MaaNikki_Crown_EntryRewardContinue",
                                             attempts=1, wait_seconds=0, verify=False)
                         and self.ui.wait_page(lambda: not self.hit("MaaNikki_RewardOverlayReady")))
-        return bool(self.pause(1) and self.key("skip", 0)
+        return bool(self.pause(1) and self.skip_prompt(0)
                     and self.ui.wait_page(lambda: not visible(), allow_reward=True))
 
     def challenge_transition(self, *, result_dismissed=False):
@@ -127,7 +127,7 @@ class Crown(Runtime):
                 result_dismissed = True
             elif dialogue:
                 dialogue_seen = True
-                self.require(self.key("skip", .5), "未能继续赛场对话")
+                self.require(self.skip_prompt(.5, target=self.ui.roi("IconSkipDialog")), "未能继续赛场对话")
             elif summit and self.ui.wait_page("MaaNikki_Crown_SummitReady"):
                 return "rewards"
             elif world and self.ui.wait_page(world_ready, seconds=2):
@@ -294,12 +294,12 @@ class Crown(Runtime):
                 if self.hit("MaaNikki_RewardOverlayReady"):
                     break
                 if self.asset("IconClickSkip"):
-                    self.key("interact", 0)
+                    self.skip_prompt(0, key_name="interact")
                     break
                 self.pause(1)
             else:
                 if not self.stopped:
-                    self.key("interact", 0)
+                    self.skip_prompt(0, key_name="interact")
             self.pause(2)
             result_dismissed = self.reward_popup()
         return "stopped"

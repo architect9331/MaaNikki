@@ -391,7 +391,9 @@ class Gameplay:
                     self.rt.diagnostic("jihua_reward", "未识别到素材激化动画跳过提示")
                     self.rt.log("未识别到素材激化动画跳过提示，请检查游戏画面。")
                 return False
-        if not self.rt.pause(.5) or not self.rt.key("skip", .5):
+        with self.rt.observe(fresh=True):
+            overlay = self.ui.page_matches("MaaNikki_RewardOverlayReady")
+        if not self.rt.pause(.5) or not self.rt.skip_prompt(.5, scene=not overlay):
             return False
         result = self.ui.skip_reward()
         if not result and not self.rt.stopped:
@@ -555,7 +557,7 @@ class Gameplay:
                     break
                 dismissed += 1
                 self.rt.log("乐园构想：已识别奖励继续提示，尝试关闭奖励页面。", detail=True)
-                if not self.rt.key("skip", .5):
+                if not self.rt.skip_prompt(.5):
                     return False
             elif returned and dismissed:
                 return self.ui.wait_page(page_returned)
@@ -604,7 +606,7 @@ class Gameplay:
                             self.monthly_diagnostic("travel", "tab_click_failed", f"{page}页签点击未完成")
                             return False
                         submitted = True
-            if reward and not self.rt.key("skip", .25):
+            if reward and not self.rt.skip_prompt(.25):
                 return False
             if not self.rt.pause(.1):
                 return False
@@ -624,7 +626,7 @@ class Gameplay:
                 settled = 0
                 if dismissed >= 15:
                     break
-                if not self.rt.key("skip", .25):
+                if not self.rt.skip_prompt(.25):
                     return False
                 dismissed += 1
             elif returned:

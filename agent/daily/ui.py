@@ -359,7 +359,7 @@ class GameUI:
             for _ in range(20):
                 if self.rt.stopped or time.monotonic() >= deadline:
                     return False
-                if not self.rt.key("skip", .25):
+                if not self.rt.skip_prompt(.25):
                     return False
                 clear = 0
                 check_deadline = min(deadline, time.monotonic()+2.5)
@@ -502,7 +502,7 @@ class GameUI:
                 # A press during the reward item reveal can only fast-forward
                 # the animation; verify closure and retry if the popup remains.
                 for _ in range(6):
-                    if not self.rt.key("skip", 0):
+                    if not self.rt.skip_prompt(0):
                         return False
                     if self.wait_page(lambda: not self.rt.hit(node), seconds=2.5, allow_reward=True):
                         return True
@@ -795,7 +795,7 @@ class GameUI:
                 need_click = True
                 continue
             if skip_prompt:
-                if not self.rt.key("skip", .5):
+                if not self.rt.skip_prompt(.5, scene=True):
                     break
                 event({"type": "revive_reward_dismissed"})
                 need_click = True
@@ -919,7 +919,7 @@ class GameUI:
                 if self.dismiss_realm_confirm() is not True:
                     return False
             elif page == "reward":
-                if not self.rt.key("skip", .5):
+                if not self.rt.skip_prompt(.5, scene=True):
                     return False
             else:
                 if self.page_matches("MaaNikki_MainDetected"):

@@ -234,18 +234,29 @@ class Fishing:
             if gap < .18:
                 self.wait(.18-gap)
 
-    def skip(self):
+    def skip(self, *, use_key=False):
         deadline = time.monotonic()+30
         while not self.rt.stopped and time.monotonic() < deadline:
             self.wait(.5)
             with self.rt.observe(fresh=True):
                 frame = self.rt.frame()
-                skip = (self.ui.asset("IconSkip", image=frame, threshold=.8, gray=(210, 255))
-                        or self.rt.hit("MaaNikki_Energy_SkipReward")
+                overlay = self.rt.hit("MaaNikki_RewardOverlayReady", image=frame)
+                skip = (overlay
+                        or self.ui.asset("IconSkip", image=frame, threshold=.8, gray=(210, 255))
+                        or self.rt.hit("MaaNikki_Energy_SkipReward", image=frame)
                         or self.state(image=frame) == FishingState.SKIP)
-                returned = not skip and self.rt.hit("MaaNikki_MainDetected")
+                returned = not skip and self.rt.hit("MaaNikki_MainDetected", image=frame)
             if skip:
-                self.press("interact")
+                if use_key:
+                    self.press("interact")
+                elif overlay and not self.passive:
+                    if not self.rt.skip_prompt(0, key_name="interact"):
+                        raise NavigationError(f"{self.label}跳过未成功。")
+                else:
+                    self.inputs.check()
+                    self.rt.invalidate_frame()
+                    if not self.inputs.click_mouse(0):
+                        raise NavigationError(f"{self.label}跳过未成功。")
                 continue
             if returned:
                 self.record_material()
