@@ -219,7 +219,7 @@ pub fn capture_route_telemetry_start(root: &Path) -> RouteTelemetryStart {
 /// Read newly appended route telemetry JSONL records since the task started.
 pub fn read_route_telemetry_records(start: &RouteTelemetryStart) -> Vec<serde_json::Value> {
     const MAX_ROUTE_TELEMETRY_BYTES: u64 = 512 * 1024;
-    const MAX_ROUTE_RECORDS: usize = 32;
+    const MAX_ROUTE_RECORDS: usize = 64;
 
     let Ok(entries) = std::fs::read_dir(&start.dir) else {
         return Vec::new();

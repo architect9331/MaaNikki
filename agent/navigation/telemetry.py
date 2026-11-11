@@ -135,11 +135,13 @@ def summarize_route_telemetry(
             "action_ok": None if not pt.action else False,
             "action_gain": 0,
             "stuck_poses": [],
+            "gb_report": None,
         })
 
     current_idx = 0
     last_pose: tuple[float, float] | None = None
     segment_starts: dict[int, tuple[float, float]] = {}
+    total_obtained = 0
 
     for ev in events:
         if not isinstance(ev, dict):
@@ -267,10 +269,20 @@ def summarize_route_telemetry(
                 wp_states[current_idx]["map_recoveries"] += 1
 
         elif kind == "obtained":
-            if 0 <= current_idx < count:
-                amt = ev.get("amount", 0)
-                if isinstance(amt, int) and amt > 0:
+            amt = ev.get("amount", 0)
+            if isinstance(amt, int) and amt > 0:
+                total_obtained += amt
+                if 0 <= current_idx < count and ev.get("phase") != "transit":
                     wp_states[current_idx]["action_gain"] += amt
+
+        elif kind == "gingerbread_waypoint_report":
+            wp_idx = ev.get("waypoint_index", ev.get("wp_index"))
+            target_idx = wp_idx if isinstance(wp_idx, int) and 0 <= wp_idx < count else current_idx
+            if 0 <= target_idx < count:
+                wp_states[target_idx]["gb_report"] = ev
+                picked_tot = ev.get("picked_total")
+                if isinstance(picked_tot, int) and picked_tot >= 0:
+                    wp_states[target_idx]["action_gain"] = picked_tot
 
         elif kind == "bottle_result":
             if 0 <= current_idx < count and ev.get("success"):
@@ -302,6 +314,15 @@ def summarize_route_telemetry(
     stationary_turns_total = 0
     moving_turns_total = 0
     turn_stop_total_ms = 0
+    gb_stops = 0
+    gb_stationary_picked = 0
+    gb_expected_15m = 0
+    gb_configured_wait_s = 0.0
+    gb_waited_s = 0.0
+    gb_effective_pickup_s = 0.0
+    gb_ceiling_stops = 0
+    gb_zero_yield_stops = 0
+    gb_picked_by_name_total: dict[str, int] = {}
 
     for idx, state in enumerate(wp_states):
         pt = points[idx]
@@ -353,6 +374,46 @@ def summarize_route_telemetry(
         moving_turns_total += state["moving_turns"]
         turn_stop_total_ms += state["turn_stop_ms"]
 
+        gb = state["gb_report"]
+        gb_fields: dict[str, Any] = {}
+        if isinstance(gb, dict):
+            gb_stops += 1
+            p_tot = int(gb.get("picked_total") or 0)
+            e_tot = int(gb.get("expected_0_15m") or 0)
+            cfg_w = float(gb.get("configured_wait_s") or 0.0)
+            act_w = float(gb.get("waited_s") or 0.0)
+            first_s = gb.get("first_pickup_s")
+            last_s = gb.get("last_pickup_s")
+            inf_r = gb.get("inferred_radius_m")
+            exit_r = str(gb.get("exit_reason") or "")
+            gb_stationary_picked += p_tot
+            gb_expected_15m += e_tot
+            gb_configured_wait_s += cfg_w
+            gb_waited_s += act_w
+            if isinstance(last_s, (int, float)) and last_s > 0:
+                gb_effective_pickup_s += float(last_s)
+            if exit_r == "ceiling_reached":
+                gb_ceiling_stops += 1
+            if e_tot > 0 and p_tot == 0:
+                gb_zero_yield_stops += 1
+            picked_map = gb.get("picked_by_name") if isinstance(gb.get("picked_by_name"), dict) else {}
+            expected_map = gb.get("expected_by_name") if isinstance(gb.get("expected_by_name"), dict) else {}
+            for k, v in picked_map.items():
+                if isinstance(v, int) and v > 0:
+                    gb_picked_by_name_total[str(k)] = gb_picked_by_name_total.get(str(k), 0) + v
+            gb_fields = {
+                "gb_configured_wait_s": round(cfg_w, 2),
+                "gb_waited_s": round(act_w, 2),
+                "gb_first_pickup_s": round(float(first_s), 2) if isinstance(first_s, (int, float)) else None,
+                "gb_last_pickup_s": round(float(last_s), 2) if isinstance(last_s, (int, float)) else None,
+                "gb_exit_reason": exit_r,
+                "gb_picked_total": p_tot,
+                "gb_expected_15m": e_tot,
+                "gb_inferred_radius_m": round(float(inf_r), 2) if isinstance(inf_r, (int, float)) else None,
+                **({"gb_picked_by_name": picked_map} if picked_map else {}),
+                **({"gb_expected_by_name": expected_map} if expected_map else {}),
+            }
+
         waypoints_out.append({
             "index": idx,
             "target": state["target"],
@@ -391,6 +452,7 @@ def summarize_route_telemetry(
             "action_ok": state["action_ok"],
             "action_gain": state["action_gain"],
             **({"stuck_poses": state["stuck_poses"]} if state["stuck_poses"] else {}),
+            **gb_fields,
         })
 
     # Link each waypoint with the downstream segment (index + 1) to measure whether
@@ -452,6 +514,25 @@ def summarize_route_telemetry(
             if key in profile
         },
         "error": stopped_ev.get("reason") if stopped_ev else None,
+        **(
+            {
+                "gingerbread": {
+                    "stops": gb_stops,
+                    "picked_total": gb_stationary_picked + max(0, total_obtained - gb_stationary_picked),
+                    "stationary_picked": gb_stationary_picked,
+                    "in_stride_picked": max(0, total_obtained - gb_stationary_picked),
+                    "expected_15m": gb_expected_15m,
+                    "configured_wait_s": round(gb_configured_wait_s, 2),
+                    "waited_s": round(gb_waited_s, 2),
+                    "effective_pickup_s": round(gb_effective_pickup_s, 2),
+                    "ceiling_stops": gb_ceiling_stops,
+                    "zero_yield_stops": gb_zero_yield_stops,
+                    **({"picked_by_name": gb_picked_by_name_total} if gb_picked_by_name_total else {}),
+                }
+            }
+            if gb_stops > 0
+            else {}
+        ),
         "waypoints": waypoints_out,
     }
 

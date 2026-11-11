@@ -2018,6 +2018,32 @@ fn capture_route_telemetry_logs(
                 base_attrs.insert(attr_key.to_string(), val.into());
             }
         }
+        if let Some(gb) = record.get("gingerbread").and_then(|v| v.as_object()) {
+            for (field, attr_key) in [
+                ("stops", "gb.stops"),
+                ("picked_total", "gb.picked_total"),
+                ("stationary_picked", "gb.stationary_picked"),
+                ("in_stride_picked", "gb.in_stride_picked"),
+                ("expected_15m", "gb.expected_15m"),
+                ("ceiling_stops", "gb.ceiling_stops"),
+                ("zero_yield_stops", "gb.zero_yield_stops"),
+            ] {
+                if let Some(val) = gb.get(field).and_then(|v| v.as_i64()) {
+                    base_attrs.insert(attr_key.to_string(), val.into());
+                }
+            }
+            for (field, attr_key) in [
+                ("configured_wait_s", "gb.configured_wait_s"),
+                ("waited_s", "gb.waited_s"),
+                ("effective_pickup_s", "gb.effective_pickup_s"),
+            ] {
+                if let Some(val) = gb.get(field).and_then(|v| v.as_f64()) {
+                    if val.is_finite() {
+                        base_attrs.insert(attr_key.to_string(), val.into());
+                    }
+                }
+            }
+        }
         if let Some(tid) = trace_id {
             base_attrs.insert("trace.id".to_string(), tid.to_string().into());
         }
@@ -2073,6 +2099,10 @@ fn capture_route_telemetry_logs(
                 .get("next_outcome")
                 .and_then(|v| v.as_str())
                 .unwrap_or_default();
+            let wp_gb_exit_reason = wp
+                .get("gb_exit_reason")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default();
             let mut wp_attrs = sentry::protocol::Map::new();
             for (key, value) in [
                 ("diagnostic.reason", "route_tuning"),
@@ -2087,6 +2117,7 @@ fn capture_route_telemetry_logs(
                 ("waypoint.outcome", wp_outcome),
                 ("waypoint.direction", wp_direction),
                 ("waypoint.next_outcome", wp_next_outcome),
+                ("waypoint.gb_exit_reason", wp_gb_exit_reason),
             ] {
                 if !value.is_empty() {
                     wp_attrs.insert(key.to_string(), bounded_log_attribute(value).into());
@@ -2107,6 +2138,8 @@ fn capture_route_telemetry_logs(
                 ("forward_steps", "waypoint.forward_steps"),
                 ("action_gain", "waypoint.action_gain"),
                 ("next_turnbacks", "waypoint.next_turnbacks"),
+                ("gb_picked_total", "waypoint.gb_picked_total"),
+                ("gb_expected_15m", "waypoint.gb_expected_15m"),
             ] {
                 if let Some(val) = wp.get(field).and_then(|v| v.as_i64()) {
                     wp_attrs.insert(attr_key.to_string(), val.into());
@@ -2139,6 +2172,11 @@ fn capture_route_telemetry_logs(
                 ("stop_drift", "waypoint.stop_drift"),
                 ("drift_dx", "waypoint.drift_dx"),
                 ("drift_dy", "waypoint.drift_dy"),
+                ("gb_configured_wait_s", "waypoint.gb_configured_wait_s"),
+                ("gb_waited_s", "waypoint.gb_waited_s"),
+                ("gb_first_pickup_s", "waypoint.gb_first_pickup_s"),
+                ("gb_last_pickup_s", "waypoint.gb_last_pickup_s"),
+                ("gb_inferred_radius_m", "waypoint.gb_inferred_radius_m"),
             ] {
                 if let Some(val) = wp.get(field).and_then(|v| v.as_f64()) {
                     if val.is_finite() {
