@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_cat_fish_serenity_01",
-  "title": "【全鱼类垂钓】无忧岛·守望之地（15个/51秒）",
+  "title": "【全鱼类垂钓】无忧岛·守望之地（15个/57秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 157,
+  "timeout": 170,
   "teleport": {
     "name": "守望之地",
     "province": "心愿原野",
@@ -22,7 +22,7 @@
     {
       "x": 795.59,
       "y": 511.79,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -30,7 +30,7 @@
     {
       "x": 797.59,
       "y": 513.79,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -38,7 +38,7 @@
     {
       "x": 800.59,
       "y": 516.79,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -46,7 +46,7 @@
     {
       "x": 806.59,
       "y": 528.79,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -54,7 +54,7 @@
     {
       "x": 803.59,
       "y": 531.79,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -62,7 +62,7 @@
     {
       "x": 799.81,
       "y": 534.24,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

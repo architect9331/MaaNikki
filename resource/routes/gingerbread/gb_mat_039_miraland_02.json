@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_039_miraland_02",
-  "title": "【长袜羊毛】微风绿野·绿野活动支援中心（6个/117秒）",
+  "title": "【长袜羊毛】微风绿野·绿野活动支援中心（6个/162秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 303,
+  "timeout": 401,
   "teleport": {
     "name": "绿野活动支援中心",
     "province": "心愿原野",
@@ -19,75 +19,60 @@
     "纽扣松果",
     "满满果",
     "布布果",
-    "瓜子珠",
-    "草绒球",
     "滚滚花球",
+    "草绒球",
     "路灯花"
   ],
-  "capacity": 32,
+  "capacity": 30,
   "points": [
     {
       "x": 9971.07,
       "y": 10637.35,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9977.72,
-      "y": 10621.58,
-      "radius": 2.5,
+      "x": 9979.67,
+      "y": 10617.43,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9971.72,
-      "y": 10606.58,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9953.72,
-      "y": 10597.58,
-      "radius": 2.0,
-      "jump": true,
+      "x": 9955.67,
+      "y": 10593.43,
+      "radius": 3.2,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.5
+        "seconds": 19.4
       }
     },
     {
-      "x": 9938.72,
-      "y": 10582.58,
-      "radius": 2.5,
+      "x": 9931.67,
+      "y": 10569.43,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.5
+      }
+    },
+    {
+      "x": 9898.67,
+      "y": 10551.43,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9923.72,
-      "y": 10564.58,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9902.72,
-      "y": 10555.58,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9882.72,
-      "y": 10550.58,
-      "radius": 2.0,
+      "x": 9893.67,
+      "y": 10552.43,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -97,7 +82,7 @@
     {
       "x": 9843.6,
       "y": 10480.4,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -107,7 +92,7 @@
     {
       "x": 9870.13,
       "y": 10467.25,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

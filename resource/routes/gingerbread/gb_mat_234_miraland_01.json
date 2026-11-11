@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_234_miraland_01",
-  "title": "【风旋果】巨木之森·安眠之林（2个/43秒）",
+  "title": "【风旋果】巨木之森·安眠之林（2个/56秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 139,
+  "timeout": 167,
   "teleport": {
     "name": "安眠之林",
     "province": "伊赞之土",
@@ -14,16 +14,16 @@
   },
   "material": "风旋果",
   "count_materials": [
+    "结结蕨",
     "小野菊",
-    "风旋果",
-    "结结蕨"
+    "风旋果"
   ],
-  "capacity": 5,
+  "capacity": 6,
   "points": [
     {
       "x": 4069.37,
       "y": 9156.47,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -31,8 +31,8 @@
     {
       "x": 4077.37,
       "y": 9171.65,
-      "radius": 2.0,
-      "jump": true,
+      "radius": 3.2,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 9.0
@@ -41,7 +41,7 @@
     {
       "x": 4092.37,
       "y": 9174.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -49,15 +49,15 @@
     {
       "x": 4098.37,
       "y": 9168.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 4101.37,
-      "y": 9147.65,
-      "radius": 2.5,
+      "y": 9138.65,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -65,7 +65,7 @@
     {
       "x": 4089.37,
       "y": 9129.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -73,7 +73,7 @@
     {
       "x": 4086.37,
       "y": 9126.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -81,7 +81,7 @@
     {
       "x": 4089.37,
       "y": 9123.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -89,7 +89,7 @@
     {
       "x": 4077.37,
       "y": 9111.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -97,7 +97,7 @@
     {
       "x": 4083.37,
       "y": 9099.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -105,7 +105,7 @@
     {
       "x": 4075.34,
       "y": 9091.65,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_275_miraland_01",
-  "title": "【金灵毛球】埋骨地·居落外绿坡（8个/66秒）",
+  "title": "【金灵毛球】埋骨地·居落外绿坡（8个/73秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 191,
+  "timeout": 205,
   "teleport": {
     "name": "居落外绿坡",
     "province": "伊赞之土",
@@ -26,7 +26,7 @@
     {
       "x": 7029.14,
       "y": 4398.11,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -34,15 +34,15 @@
     {
       "x": 7028.27,
       "y": 4400.11,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7025.27,
-      "y": 4421.11,
-      "radius": 2.5,
+      "x": 7022.27,
+      "y": 4436.11,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -50,7 +50,7 @@
     {
       "x": 7023.27,
       "y": 4444.33,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

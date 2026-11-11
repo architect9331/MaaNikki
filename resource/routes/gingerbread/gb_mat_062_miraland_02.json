@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_062_miraland_02",
-  "title": "【织衣蛛】石树田无人区·木桶荫地（1个/17秒）",
+  "title": "【织衣蛛】石树田无人区·木桶荫地（1个/23秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -22,7 +22,15 @@
     {
       "x": 8230.08,
       "y": 10320.13,
-      "radius": 2.5,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8228.35,
+      "y": 10318.46,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -30,8 +38,8 @@
     {
       "x": 8220.35,
       "y": 10319.46,
-      "radius": 2.0,
-      "jump": true,
+      "radius": 3.2,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 4.8

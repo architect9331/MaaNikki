@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_09_miraland_01",
-  "title": "【插梳鱼】祈愿树林·巨树浅滩（4个/70秒）",
+  "title": "【插梳鱼】祈愿树林·巨树浅滩（4个/83秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 200,
+  "timeout": 228,
   "teleport": {
     "name": "巨树浅滩",
     "province": "心愿原野",
@@ -25,7 +25,7 @@
     {
       "x": 11850.97,
       "y": 9024.45,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -33,39 +33,23 @@
     {
       "x": 11838.99,
       "y": 9026.44,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11820.99,
-      "y": 9014.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11799.99,
+      "x": 11805.99,
       "y": 9008.44,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11775.99,
+      "x": 11769.99,
       "y": 9008.44,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11754.99,
-      "y": 9005.44,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -73,7 +57,7 @@
     {
       "x": 11736.99,
       "y": 8990.44,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -81,7 +65,7 @@
     {
       "x": 11728.99,
       "y": 8985.44,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -89,29 +73,21 @@
       }
     },
     {
-      "x": 11707.58,
-      "y": 8988.53,
-      "radius": 2.5,
+      "x": 11693.28,
+      "y": 8989.23,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11686.58,
-      "y": 8985.53,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11681.58,
-      "y": 8980.53,
-      "radius": 2.0,
+      "x": 11682.28,
+      "y": 8981.23,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 17.7
+        "seconds": 18.0
       }
     }
   ]

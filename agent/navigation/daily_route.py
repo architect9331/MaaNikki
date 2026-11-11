@@ -111,6 +111,7 @@ class RouteActions:
         self.gb_toast_reader = None
         self.gb_config = {}
         self.gb_pending_approach_pickups = []
+        self.gb_empty_stop_streak = 0
         if self.executor == "navigation":
             from .gingerbread_pickup import GingerbreadRouteAnalyzer, LeftMaterialToastReader
             root_dir = self.resource.parent
@@ -299,29 +300,35 @@ class RouteActions:
         prev_pose = getattr(getattr(self.navigator, "locator", None), "previous", None)
         actual_x = float(getattr(prev_pose, "x", point.x) or point.x)
         actual_y = float(getattr(prev_pose, "y", point.y) or point.y)
-        nearby = self.gb_analyzer.query_nearby_spawners(actual_x, actual_y)
+        nearby = self.gb_analyzer.query_nearby_spawners(
+            actual_x, actual_y, target_names=self.count_materials
+        )
         expected_names = list(dict.fromkeys(list(self.count_materials) + [s.name for s in nearby]))
         self.gb_toast_reader.set_expected_names(expected_names)
 
         adaptive_exit = bool(self.gb_config.get("adaptive_exit", True))
         min_dwell_s, default_quiet_s, ceiling_s = self.gb_analyzer.conservative_budget_seconds(nearby, wait_sec)
         user_quiet = self.gb_config.get("quiet_seconds")
-        quiet_s = float(user_quiet) if isinstance(user_quiet, (int, float)) and user_quiet > 0 else default_quiet_s
+        has_custom_quiet = isinstance(user_quiet, (int, float)) and user_quiet > 0
+        quiet_s = float(user_quiet) if has_custom_quiet else default_quiet_s
         user_init = self.gb_config.get("initial_wait_seconds")
         if isinstance(user_init, (int, float)) and user_init > 0:
             initial_no_toast_s = max(float(user_init), quiet_s)
         else:
-            base_init_s = max(min_dwell_s + 1.4, quiet_s + 0.4)
-            initial_no_toast_s = min(base_init_s, max(wait_sec + 1.0, min_dwell_s + 0.8, quiet_s))
+            initial_no_toast_s = max(min_dwell_s + 2.8, quiet_s + 1.5)
+            prior_empty_routes = int(self.gb_config.get("empty_streak") or 0)
+            if (self.gb_empty_stop_streak >= 3 or (prior_empty_routes >= 1 and self.count == 0)) and not has_custom_quiet:
+                initial_no_toast_s = min(initial_no_toast_s, 5.8)
         max_wait_s = (
-            max(wait_sec, ceiling_s, min_dwell_s + quiet_s + 4.0, initial_no_toast_s + 3.0)
+            max(wait_sec, ceiling_s, min_dwell_s + quiet_s + 4.0, initial_no_toast_s + 2.5)
             if adaptive_exit
             else wait_sec
         )
+        hard_max_wait_s = min(155.0, max_wait_s + 28.0) if adaptive_exit else max_wait_s
 
         arrived_at = time.monotonic()
-        recent_toast = self.gb_toast_reader.last_toast_activity_at
-        last_activity_at = arrived_at
+        recent_material_toast = self.gb_toast_reader.last_material_pickup_at
+        last_material_at = arrived_at
         first_pickup_s = None
         last_pickup_s = None
         picked_events = []
@@ -338,25 +345,30 @@ class RouteActions:
             else:
                 remaining_pending.append(ev)
         self.gb_pending_approach_pickups = remaining_pending
-        if recent_toast > 0 and (arrived_at - recent_toast) <= 2.5:
-            last_activity_at = arrived_at
+        if recent_material_toast > 0 and (arrived_at - recent_material_toast) <= 2.5:
+            last_material_at = arrived_at
+        if picked_events:
+            self.gb_empty_stop_streak = 0
         exit_reason = "configured_timeout"
 
         while not self.rt.stopped:
             now = time.monotonic()
             elapsed = now - arrived_at
             if elapsed >= max_wait_s:
-                exit_reason = "ceiling_reached" if adaptive_exit else "fixed_wait_complete"
-                break
+                if adaptive_exit and picked_events and (now - last_material_at) < quiet_s and max_wait_s < hard_max_wait_s:
+                    max_wait_s = min(hard_max_wait_s, elapsed + quiet_s + 1.0)
+                else:
+                    exit_reason = "ceiling_reached" if adaptive_exit else "fixed_wait_complete"
+                    break
             self.inputs.check()
             if self.motion:
                 self.motion.tick()
-            new_obs, any_act = self.gb_toast_reader.poll()
+            new_obs, _ = self.gb_toast_reader.poll()
             now = time.monotonic()
             elapsed = now - arrived_at
-            if any_act:
-                last_activity_at = now
             if new_obs:
+                last_material_at = now
+                self.gb_empty_stop_streak = 0
                 t_rel = round(elapsed, 2)
                 if first_pickup_s is None:
                     first_pickup_s = t_rel
@@ -387,13 +399,13 @@ class RouteActions:
                     break
 
             if adaptive_exit:
-                quiet_elapsed = now - last_activity_at
+                quiet_elapsed = now - last_material_at
                 if picked_events:
                     if elapsed >= min_dwell_s and quiet_elapsed >= quiet_s:
                         exit_reason = "toast_quiet_after_pickup"
                         break
                 else:
-                    if elapsed >= min(max_wait_s, initial_no_toast_s) and quiet_elapsed >= min(quiet_s, initial_no_toast_s):
+                    if elapsed >= min(max_wait_s, initial_no_toast_s):
                         exit_reason = "no_toast_timeout"
                         break
 
@@ -416,6 +428,10 @@ class RouteActions:
             picked_events=picked_events,
             nearby=nearby,
         )
+        if report["picked_total"] == 0 and report["expected_0_15m"] >= 2:
+            self.gb_empty_stop_streak += 1
+        elif report["picked_total"] > 0:
+            self.gb_empty_stop_streak = 0
         self.event({"type": "gingerbread_waypoint_report", **report})
         items_str = "、".join(f"{k}×{v}" for k, v in report["picked_by_name"].items()) or "无"
         finish_str = f"{report['last_pickup_s']:.1f}s" if report["last_pickup_s"] is not None else "0.0s"

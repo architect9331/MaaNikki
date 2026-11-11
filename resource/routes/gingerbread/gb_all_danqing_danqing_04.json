@@ -1,81 +1,52 @@
 {
   "schema_version": 3,
   "id": "gb_all_danqing_danqing_04",
-  "title": "【全材料·丹青屿】丹青屿·村边畦田（29个/156秒）",
+  "title": "【全材料·丹青屿】丹青屿·栖龙峰侧峰（13个/83秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 389,
+  "timeout": 227,
   "teleport": {
-    "name": "村边畦田",
+    "name": "栖龙峰侧峰",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1598.127,
-    "y": 1286.992
+    "x": 1072.586,
+    "y": 284.388
   },
   "material": "全材料·丹青屿",
   "count_materials": [
-    "耳坠萤",
+    "满满果",
+    "蓝珀鸟羽",
     "荷包草",
-    "小绵菊"
+    "玉簪蚱蜢"
   ],
-  "capacity": 29,
+  "capacity": 13,
   "points": [
     {
-      "x": 1598.13,
-      "y": 1286.99,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1609.13,
-      "y": 1276.97,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1609.13,
-      "y": 1267.97,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1609.13,
-      "y": 1264.97,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1606.13,
-      "y": 1261.97,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1609.13,
-      "y": 1258.97,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1613.91,
-      "y": 1253.97,
-      "radius": 2.0,
+      "x": 1072.59,
+      "y": 284.39,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 140.1
+        "seconds": 19.7
+      }
+    },
+    {
+      "x": 1069.95,
+      "y": 280.51,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1055.95,
+      "y": 266.51,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 37.8
       }
     }
   ]

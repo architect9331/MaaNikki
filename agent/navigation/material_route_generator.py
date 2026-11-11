@@ -35,6 +35,29 @@ KIND_LABELS = {
 CM_PER_MAP_PX = 90.0
 M_PER_MAP_PX = 0.90
 
+# Materials enclosed in hard pods/shells requiring Nikki's active plunge/purification
+# (e.g. cid=89 瓜子珠 inside 宝匣瓜 pods) cannot be harvested directly by Gingerbread Man.
+NON_GINGERBREAD_CIDS = frozenset({"89"})
+NIGHT_ONLY_CIDS = frozenset({"72", "76", "97", "137"})
+NIGHT_ONLY_KEYWORDS = ("仅夜晚", "仅晴天夜晚")
+
+
+def _is_strict_night_only(cid: str, cond: str) -> bool:
+    if "白天" in cond or "无时间要求" in cond:
+        return False
+    if cid in NIGHT_ONLY_CIDS:
+        return True
+    return any(k in cond for k in NIGHT_ONLY_KEYWORDS)
+
+# Verified unmodeled static prop footprints (map_id -> list of (x_min, y_min, x_max, y_max) in map px)
+# where 3D heightmaps mark ground under wooden market stalls/tents as walkable.
+UNMODELED_OBSTACLE_BOXES: dict[str, tuple[tuple[float, float, float, float], ...]] = {
+    "miraland": (
+        # Shell Island (贝壳岛) central wooden market stalls & pottery racks
+        (4819.0, 8913.0, 4829.5, 8929.5),
+    ),
+}
+
 
 @dataclass(frozen=True)
 class GingerbreadSpec:
@@ -51,12 +74,13 @@ class GingerbreadSpec:
             chaining directly to the next queued target without returning to Nikki.
     """
     aura_radius_m: float = 15.0
-    safe_radius_m: float = 14.0
-    pass_radius_m: float = 13.5
-    max_dz_m: float = 10.5
-    min_anchor_sep_m: float = 20.0
-    run_speed_mps: float = 6.5
-    teleport_overhead_s: float = 10.5
+    safe_radius_m: float = 13.8
+    pass_radius_m: float = 13.2
+    max_dz_m: float = 4.8
+    min_anchor_sep_m: float = 20.5
+    run_speed_mps: float = 6.0
+    teleport_overhead_s: float = 11.0
+    quiet_tail_s: float = 5.2
     replan_interval_s: float = 0.5
     move_total_time_s: float = 2.0
     arrive_radius_m: float = 1.0
@@ -346,6 +370,8 @@ class PearPalMaterialCatalog:
                     rcond = r.get("cond", "")
                     rid = str(r.get("id", f"{map_id}_{idx}"))
                     rtag = r.get("tag", "")
+                if cid in NON_GINGERBREAD_CIDS:
+                    continue
                 cinfo = self.catalogs.get(cid)
                 if not cinfo:
                     continue
@@ -544,11 +570,73 @@ class TerrainWalkabilityGrid:
                 self.water_mask = None
 
         if self.obs_mask is not None:
+            self._apply_telemetry_obstacles()
             base_u8 = self.obs_mask.astype(np.uint8)
             k_near = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
             k_wide = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
             self.near_obs_mask = cv2.dilate(base_u8, k_near, iterations=1) > 0
             self.wide_obs_mask = cv2.dilate(base_u8, k_wide, iterations=1) > 0
+
+    def _apply_telemetry_obstacles(self) -> None:
+        """Mark verified unmodeled prop footprints and repeated telemetry stuck poses in obs_mask."""
+        if self.obs_mask is None:
+            return
+        gh, gw = self.obs_mask.shape
+
+        # 1. Static unmodeled prop boxes (e.g. wooden market stalls lacking terrain collision)
+        for x0, y0, x1, y1 in UNMODELED_OBSTACLE_BOXES.get(self.map_id, ()):
+            gx0 = max(0, int(math.floor(x0 * self.px_scale)))
+            gx1 = min(gw - 1, int(math.ceil(x1 * self.px_scale)))
+            gy0 = max(0, int(math.floor(y0 * self.px_scale)))
+            gy1 = min(gh - 1, int(math.ceil(y1 * self.px_scale)))
+            if gx0 <= gx1 and gy0 <= gy1:
+                self.obs_mask[gy0 : gy1 + 1, gx0 : gx1 + 1] = True
+
+        # 2. Historical multi-unstuck poses from debug/route_telemetry/*.jsonl
+        telem_dir = self.root / "debug/route_telemetry"
+        if not telem_dir.is_dir():
+            return
+        spire_coords: list[tuple[float, float]] = []
+        ckpt_path = self.root / "resource/navigation/checkpoints.json"
+        if ckpt_path.is_file():
+            try:
+                ckpts = json.loads(ckpt_path.read_text(encoding="utf-8")).get("maps", {}).get(self.map_id, [])
+                spire_coords = [(float(c["x"]), float(c["y"])) for c in ckpts if "x" in c and "y" in c]
+            except Exception:
+                spire_coords = []
+
+        stuck_pts: list[tuple[float, float]] = []
+        for jf in sorted(telem_dir.glob("*.jsonl"))[-60:]:
+            try:
+                for line in jf.read_text(encoding="utf-8", errors="ignore").splitlines():
+                    if not line.strip():
+                        continue
+                    rec = json.loads(line)
+                    if rec.get("map") != self.map_id:
+                        continue
+                    for wp in rec.get("waypoints") or ():
+                        unstucks = int(wp.get("unstuck_count") or 0)
+                        if unstucks < 2 and not (wp.get("outcome") == "failed" and unstucks >= 1):
+                            continue
+                        for sp in wp.get("stuck_poses") or ():
+                            if isinstance(sp, (list, tuple)) and len(sp) >= 2:
+                                sx, sy = float(sp[0]), float(sp[1])
+                                if any(math.hypot(sx - cx, sy - cy) <= 4.0 for cx, cy in spire_coords):
+                                    continue
+                                stuck_pts.append((sx, sy))
+            except Exception:
+                continue
+
+        rad_cells = max(1, int(round(2.0 * self.px_scale)))
+        for sx, sy in stuck_pts:
+            gx = int(round(sx * self.px_scale))
+            gy = int(round(sy * self.px_scale))
+            for dy in range(-rad_cells, rad_cells + 1):
+                for dx in range(-rad_cells, rad_cells + 1):
+                    if dx * dx + dy * dy <= rad_cells * rad_cells:
+                        nx, ny = gx + dx, gy + dy
+                        if 0 <= nx < gw and 0 <= ny < gh:
+                            self.obs_mask[ny, nx] = True
 
     def elevation(self, x: float, y: float, default: float = float("nan")) -> float:
         if self.z_map is None:
@@ -657,7 +745,7 @@ class TerrainWalkabilityGrid:
             return best
 
         if not existing_anchors:
-            if self.is_walkable(cx, cy, ref_z=anchor_z, max_slope=34.0) and not self.has_obstacle_near(cx, cy, clearance_px=3.0):
+            if self.is_walkable(cx, cy, ref_z=anchor_z, max_slope=34.0) and not self.has_obstacle_near(cx, cy, clearance_px=3.8):
                 if count_3d_covered(cx, cy, anchor_z) == len(points):
                     return round(cx, 2), round(cy, 2), round(anchor_z, 2)
 
@@ -674,13 +762,13 @@ class TerrainWalkabilityGrid:
                 if not self.is_walkable(tx, ty, ref_z=anchor_z, max_slope=38.0):
                     continue
                 tz = self.elevation(tx, ty, default=cz)
-                if math.isnan(tz) or abs(tz - cz) > 6.5:
+                if math.isnan(tz) or abs(tz - cz) > 5.0:
                     tz = cz
                 covered = count_3d_covered(tx, ty, tz, tol_m=0.35)
                 if covered < len(points) and len(points) > 1:
                     continue
                 slp_pen = self.slope(tx, ty) * 0.08
-                obs_pen = 65.0 if self.has_obstacle_near(tx, ty, clearance_px=3.0) else (20.0 if self.has_obstacle_near(tx, ty, clearance_px=5.0) else 0.0)
+                obs_pen = 80.0 if self.has_obstacle_near(tx, ty, clearance_px=3.8) else (24.0 if self.has_obstacle_near(tx, ty, clearance_px=5.5) else 0.0)
                 sep_term = 0.0
                 if existing_anchors:
                     sep_m = min_sep_m(tx, ty, tz)
@@ -834,16 +922,16 @@ class TerrainWalkabilityGrid:
             jmp = 0.55 <= (gz - sz) <= 2.5
             return [(round(gx, 2), round(gy, 2), round(gz, 2), jmp)]
 
-        # Line-of-sight greedy string pulling + max segment length ~24 px (~21.6 m)
+        # Line-of-sight greedy string pulling + max segment length ~38 px (~34.2 m)
         simplified = [raw_pts[0]]
         i = 0
         n = len(raw_pts)
         while i < n - 1:
             best_j = i + 1
-            for j in range(min(n - 1, i + 10), i + 1, -1):
+            for j in range(min(n - 1, i + 15), i + 1, -1):
                 p0, p1 = raw_pts[i], raw_pts[j]
                 seg_d = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
-                if seg_d > 24.0:
+                if seg_d > 38.0:
                     continue
                 # Check if intermediate A* grid cells are collinear (e.g. straight walk along a path)
                 max_dev = 0.0
@@ -857,34 +945,50 @@ class TerrainWalkabilityGrid:
                             max_dev = dev
                 is_collinear = max_dev <= 0.65
                 orig_near_obs = any(
-                    self.has_obstacle_near(raw_pts[k][0], raw_pts[k][1], clearance_px=2.0)
+                    self.has_obstacle_near(raw_pts[k][0], raw_pts[k][1], clearance_px=2.4)
                     for k in range(i, j + 1)
                 )
+                if seg_d > 24.0 and orig_near_obs:
+                    continue
                 clear = True
                 steps = max(2, int(math.ceil(seg_d / 1.8)))
+                prev_mz = p0[2]
                 for s in range(1, steps):
                     t = s / steps
                     mx = p0[0] + (p1[0] - p0[0]) * t
                     my = p0[1] + (p1[1] - p0[1]) * t
-                    if not self.is_walkable(mx, my, max_slope=44.0):
+                    if not self.is_walkable(mx, my, max_slope=42.0):
                         clear = False
                         break
-                    if not is_collinear and not orig_near_obs and self.has_obstacle_near(mx, my, clearance_px=2.0):
+                    if not is_collinear and not orig_near_obs and self.has_obstacle_near(mx, my, clearance_px=2.4):
                         clear = False
                         break
+                    mz = self.elevation(mx, my, default=prev_mz)
+                    if not math.isnan(mz) and not math.isnan(prev_mz) and abs(mz - prev_mz) > 2.4:
+                        clear = False
+                        break
+                    prev_mz = mz
                 if clear:
                     best_j = j
                     break
             simplified.append(raw_pts[best_j])
             i = best_j
 
-        out = []
+        out: list[tuple[float, float, float, bool]] = []
         for k in range(1, len(simplified)):
             prev_z = simplified[k - 1][2]
             x, y, z = simplified[k]
             dz = (z - prev_z) if not (math.isnan(z) or math.isnan(prev_z)) else 0.0
-            jmp = 0.55 <= dz <= 2.5
-            out.append((round(x, 2), round(y, 2), round(z, 2), jmp))
+            jmp = 0.65 <= dz <= 2.5
+            if (
+                out
+                and k < len(simplified) - 1
+                and math.hypot(x - out[-1][0], y - out[-1][1]) < 4.2
+                and (jmp or out[-1][3])
+            ):
+                out[-1] = (round(x, 2), round(y, 2), round(z, 2), bool(jmp or out[-1][3]))
+            else:
+                out.append((round(x, 2), round(y, 2), round(z, 2), jmp))
         return out
 
 
@@ -1137,7 +1241,7 @@ class MaterialRouteGenerator:
                 if dist_px > max_step_px or abs(anc.z - cur_pos[2]) > max_step_dz:
                     continue
                 est_walk_m = dist_px * M_PER_MAP_PX
-                est_dt = est_walk_m / self.spec.run_speed_mps + anc.wait_seconds + 0.5
+                est_dt = est_walk_m / self.spec.run_speed_mps + anc.wait_seconds + self.spec.quiet_tail_s
                 if total_time_s + est_dt > max_route_seconds and selected_anchors:
                     continue
                 ratio = anc.score / max(2.5, est_dt)
@@ -1155,7 +1259,7 @@ class MaterialRouteGenerator:
                     for k in range(len(pts_chain) - 1)
                 )
                 seg_m = seg_px * M_PER_MAP_PX
-                dt = seg_m / self.spec.run_speed_mps + anc.wait_seconds
+                dt = seg_m / self.spec.run_speed_mps + anc.wait_seconds + self.spec.quiet_tail_s
                 if total_time_s + dt > max_route_seconds and selected_anchors:
                     continue
                 true_ratio = anc.score / max(2.5, dt)
@@ -1210,7 +1314,7 @@ class MaterialRouteGenerator:
             {
                 "x": round(spire.x, 2),
                 "y": round(spire.y, 2),
-                "radius": 2.5,
+                "radius": 2.8,
                 "jump": False,
                 "action": "",
                 "params": {},
@@ -1227,7 +1331,7 @@ class MaterialRouteGenerator:
             ):
                 waypoints[0]["x"] = round(seg[0][0], 2)
                 waypoints[0]["y"] = round(seg[0][1], 2)
-                waypoints[0]["radius"] = 2.2
+                waypoints[0]["radius"] = 3.2
                 wp_z[0] = seg[0][2]
                 anchor_wp_indices.append(0)
                 continue
@@ -1237,7 +1341,7 @@ class MaterialRouteGenerator:
                     {
                         "x": round(px, 2),
                         "y": round(py, 2),
-                        "radius": 2.2 if is_anchor else 2.5,
+                        "radius": 3.2 if is_anchor else 2.8,
                         "jump": bool(jmp),
                         "action": "",
                         "params": {},
@@ -1255,7 +1359,7 @@ class MaterialRouteGenerator:
                     covered_ids.add(p.id)
                     wp_items[wp_i].append(p)
 
-        claim_r_m = min(self.spec.aura_radius_m - 0.4, self.spec.safe_radius_m + 0.5)
+        claim_r_m = self.spec.aura_radius_m - 0.2
         pass_r_m = self.spec.pass_radius_m
         max_dz = self.spec.max_dz_m
 
@@ -1337,6 +1441,7 @@ class MaterialRouteGenerator:
         # Set wait action ONLY on stationary stop waypoints
         stop_wi_set = set(stop_wis)
         total_wait_s = 0.0
+        stationary_stop_cnt = 0
         all_covered: list[MaterialPoint] = list(in_stride_items)
         final_waypoints: list[dict] = []
         for wi, wp in enumerate(waypoints):
@@ -1351,7 +1456,11 @@ class MaterialRouteGenerator:
                 else [p for p in items if p.catalog_id in target_cids or p.kind == "plant"]
             )
             wait_s = (
-                self.spec.net_wait_seconds(dwell_items, anchor_xyz=(wp["x"], wp["y"], wp_z[wi]))
+                self.spec.net_wait_seconds(
+                    dwell_items,
+                    anchor_xyz=(wp["x"], wp["y"], wp_z[wi]),
+                    is_start_point=(wi == 0),
+                )
                 if dwell_items
                 else 0.0
             )
@@ -1359,10 +1468,11 @@ class MaterialRouteGenerator:
                 final_waypoints.append(wp)
                 continue
             total_wait_s += wait_s
+            stationary_stop_cnt += 1
             wp_copy = dict(wp)
             wp_copy["action"] = "wait"
             wp_copy["params"] = {"seconds": round(min(150.0, wait_s), 1)}
-            wp_copy["radius"] = 2.0
+            wp_copy["radius"] = 3.2
             final_waypoints.append(wp_copy)
         waypoints = final_waypoints
 
@@ -1370,7 +1480,9 @@ class MaterialRouteGenerator:
         if waypoints[-1]["action"] == "" and wp_items.get(len(waypoints) - 1):
             waypoints[-1]["action"] = "wait"
             waypoints[-1]["params"] = {"seconds": 5.0}
+            waypoints[-1]["radius"] = 3.2
             total_wait_s += 5.0
+            stationary_stop_cnt += 1
 
         counts_by_name: dict[str, int] = {}
         counts_by_kind: dict[str, int] = {}
@@ -1382,7 +1494,11 @@ class MaterialRouteGenerator:
                 target_count += 1
 
         est_seconds = round(
-            self.spec.teleport_overhead_s + walk_m / self.spec.run_speed_mps + total_wait_s, 1
+            self.spec.teleport_overhead_s
+            + walk_m / self.spec.run_speed_mps
+            + total_wait_s
+            + stationary_stop_cnt * self.spec.quiet_tail_s,
+            1,
         )
         eff_per_min = round(target_count * 60.0 / max(10.0, est_seconds), 2)
         timeout_s = int(min(900, max(120, round(est_seconds * 2.2 + 45))))
@@ -1552,10 +1668,11 @@ class MaterialRouteGenerator:
         regions: Iterable[str] | None = None,
         top_k: int = 5,
         kind_weights: dict[str, float] | None = None,
-        max_anchors: int = 10,
-        max_route_seconds: float = 260.0,
+        max_anchors: int = 8,
+        max_route_seconds: float = 205.0,
         route_id_prefix: str = "gb_sweep",
         title_label: str = "",
+        exclude_night_only: bool = True,
     ) -> list[GeneratedRoutePlan]:
         weights = kind_weights or {"plant": 1.0, "insect": 1.8, "animal": 2.2, "fish": 2.4}
         active_maps = list(map_ids) if map_ids else list(WORLDS.values())
@@ -1563,7 +1680,12 @@ class MaterialRouteGenerator:
         candidates: list[GeneratedRoutePlan] = []
 
         for map_id in active_maps:
-            pts = [p for p in self.catalog.points_by_map.get(map_id, []) if weights.get(p.kind, 0.0) > 0]
+            pts = [
+                p
+                for p in self.catalog.points_by_map.get(map_id, [])
+                if weights.get(p.kind, 0.0) > 0
+                and not (exclude_night_only and _is_strict_night_only(p.catalog_id, p.condition))
+            ]
             if not pts:
                 continue
             spires = self.catalog.spires_by_map.get(map_id, [])

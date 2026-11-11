@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_231_miraland_02",
-  "title": "【行鹭羽】巨木之森·咻咻快道入口（8个/78秒）",
+  "title": "【行鹭羽】巨木之森·咻咻快道入口（8个/90秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 216,
+  "timeout": 243,
   "teleport": {
     "name": "咻咻快道入口",
     "province": "伊赞之土",
@@ -22,7 +22,7 @@
     {
       "x": 4654.99,
       "y": 7946.51,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -30,7 +30,7 @@
     {
       "x": 4668.99,
       "y": 7945.51,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
@@ -38,7 +38,7 @@
     {
       "x": 4674.43,
       "y": 7952.0,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": true,
       "action": "wait",
       "params": {
@@ -48,15 +48,15 @@
     {
       "x": 4655.25,
       "y": 7937.79,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 4658.25,
-      "y": 7916.79,
-      "radius": 2.5,
+      "y": 7913.79,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -64,15 +64,15 @@
     {
       "x": 4658.25,
       "y": 7904.79,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4640.25,
-      "y": 7889.79,
-      "radius": 2.5,
+      "x": 4637.25,
+      "y": 7883.79,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -80,7 +80,7 @@
     {
       "x": 4635.25,
       "y": 7878.79,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": true,
       "action": "wait",
       "params": {

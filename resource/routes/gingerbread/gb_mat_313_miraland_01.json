@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_313_miraland_01",
-  "title": "【晶球绵蚧】磐城·咏叹剧院（23个/206秒）",
+  "title": "【晶球绵蚧】磐城·咏叹剧院（19个/204秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 498,
+  "timeout": 493,
   "teleport": {
     "name": "咏叹剧院",
     "province": "伊赞之土",
@@ -18,64 +18,52 @@
     "珠链蝶",
     "探险家蜜蜂",
     "金轴蜻蜓",
-    "蓝玉甲虫",
-    "机雀羽",
-    "珠坠甲虫"
+    "机雀羽"
   ],
-  "capacity": 63,
+  "capacity": 39,
   "points": [
     {
       "x": 3937.8,
       "y": 3509.93,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3847.83,
-      "y": 3616.09,
-      "radius": 2.0,
+      "x": 3848.12,
+      "y": 3614.12,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 26.7
+        "seconds": 26.9
       }
     },
     {
-      "x": 3905.53,
-      "y": 3632.55,
-      "radius": 2.0,
+      "x": 3904.43,
+      "y": 3632.2,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 20.8
+        "seconds": 20.9
       }
     },
     {
-      "x": 3868.99,
+      "x": 3944.76,
+      "y": 3612.35,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.5
+      }
+    },
+    {
+      "x": 3866.99,
       "y": 3659.36,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 16.0
-      }
-    },
-    {
-      "x": 3801.34,
-      "y": 3574.9,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 21.4
-      }
-    },
-    {
-      "x": 3793.91,
-      "y": 3529.36,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -83,23 +71,13 @@
       }
     },
     {
-      "x": 3818.19,
-      "y": 3475.84,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 15.6
-      }
-    },
-    {
-      "x": 3873.02,
-      "y": 3530.63,
-      "radius": 2.0,
+      "x": 3801.34,
+      "y": 3574.9,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.8
+        "seconds": 21.4
       }
     }
   ]

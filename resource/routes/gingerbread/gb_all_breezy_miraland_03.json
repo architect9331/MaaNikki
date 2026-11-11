@@ -1,100 +1,73 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_03",
-  "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（31个/117秒）",
+  "title": "【全材料·微风绿野】微风绿野·绿野货运码头（12个/64秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 303,
+  "timeout": 186,
   "teleport": {
-    "name": "筑心王国边境哨所",
+    "name": "绿野货运码头",
     "province": "心愿原野",
     "region": "微风绿野",
-    "x": 10782.912,
-    "y": 11960.809
+    "x": 10430.453,
+    "y": 10861.881
   },
   "material": "全材料·微风绿野",
   "count_materials": [
-    "壁灯红椒",
-    "纽扣松果",
-    "小绵菊",
-    "发卡蚱蜢",
-    "瓜子珠",
+    "小星扇贝",
+    "珠花贝壳",
     "蓝珀鸟羽"
   ],
-  "capacity": 31,
+  "capacity": 12,
   "points": [
     {
-      "x": 10782.91,
-      "y": 11960.81,
-      "radius": 2.5,
+      "x": 10430.45,
+      "y": 10861.88,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10787.91,
-      "y": 11947.62,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.8
-      }
-    },
-    {
-      "x": 10787.91,
-      "y": 11923.62,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.6
-      }
-    },
-    {
-      "x": 10787.91,
-      "y": 11899.62,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10784.9,
-      "y": 11897.62,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 35.9
-      }
-    },
-    {
-      "x": 10825.28,
-      "y": 11896.74,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.9
-      }
-    },
-    {
-      "x": 10811.65,
-      "y": 11913.74,
-      "radius": 2.5,
+      "x": 10438.45,
+      "y": 10858.02,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10809.65,
-      "y": 11916.84,
-      "radius": 2.0,
+      "x": 10444.45,
+      "y": 10849.02,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10438.45,
+      "y": 10843.02,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10438.45,
+      "y": 10840.02,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10442.74,
+      "y": 10838.02,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 20.4
+        "seconds": 42.3
       }
     }
   ]

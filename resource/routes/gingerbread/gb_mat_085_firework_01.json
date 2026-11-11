@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_085_firework_01",
-  "title": "【晴日蝶兰/雨滴蝶兰】花焰群岛·月角浅滩（7个/99秒）",
+  "title": "【晴日蝶兰/雨滴蝶兰】花焰群岛·月角浅滩（7个/130秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 264,
+  "timeout": 331,
   "teleport": {
     "name": "月角浅滩",
     "province": "心愿原野",
@@ -14,40 +14,29 @@
   },
   "material": "晴日蝶兰/雨滴蝶兰",
   "count_materials": [
-    "晴日蝶兰/雨滴蝶兰",
     "小绵菊",
+    "晴日蝶兰/雨滴蝶兰",
     "噼啪花粉",
     "小星扇贝",
     "芭蕾豆娘",
-    "满满果",
     "珠花贝壳",
-    "草绒球",
+    "满满果",
     "发卡蚱蜢"
   ],
-  "capacity": 24,
+  "capacity": 27,
   "points": [
     {
       "x": 1142.64,
       "y": 358.56,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1150.35,
-      "y": 381.97,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.4
-      }
-    },
-    {
       "x": 1035.98,
       "y": 421.2,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -57,7 +46,7 @@
     {
       "x": 1111.46,
       "y": 395.86,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -65,9 +54,19 @@
       }
     },
     {
+      "x": 1150.35,
+      "y": 381.97,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
       "x": 1200.26,
       "y": 343.56,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -77,7 +76,7 @@
     {
       "x": 1111.71,
       "y": 219.89,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": true,
       "action": "wait",
       "params": {

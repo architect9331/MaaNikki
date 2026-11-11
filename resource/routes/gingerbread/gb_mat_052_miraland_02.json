@@ -1,201 +1,63 @@
 {
   "schema_version": 3,
   "id": "gb_mat_052_miraland_02",
-  "title": "【背带毛团】小石树田村·紫穗草花田（2个/75秒）",
+  "title": "【背带毛团】小石树田村·村居岔路（1个/37秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 211,
+  "timeout": 127,
   "teleport": {
-    "name": "紫穗草花田",
+    "name": "村居岔路",
     "province": "心愿原野",
     "region": "小石树田村",
-    "x": 9342.041,
-    "y": 10401.192
+    "x": 9389.052,
+    "y": 10562.456
   },
   "material": "背带毛团",
   "count_materials": [
+    "珠链蝶",
+    "美食家蜜蜂",
     "小绵菊",
-    "花香羊毛",
-    "纽扣松果",
-    "背带毛团",
     "滋滋花粉",
-    "刺绣蛾",
+    "满满果",
+    "路灯花",
+    "珠花贝壳",
+    "背带毛团",
     "汪汪毛线"
   ],
-  "capacity": 19,
+  "capacity": 13,
   "points": [
     {
-      "x": 9342.04,
-      "y": 10401.19,
-      "radius": 2.5,
+      "x": 9389.05,
+      "y": 10562.46,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9344.97,
-      "y": 10403.19,
-      "radius": 2.5,
+      "x": 9391.05,
+      "y": 10597.46,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9335.97,
-      "y": 10421.19,
-      "radius": 2.5,
+      "x": 9400.05,
+      "y": 10624.46,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9323.97,
-      "y": 10433.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9302.97,
-      "y": 10436.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9296.97,
-      "y": 10433.19,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9293.97,
-      "y": 10430.19,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9291.97,
-      "y": 10425.16,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 11.5
-      }
-    },
-    {
-      "x": 9293.97,
-      "y": 10430.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9308.97,
-      "y": 10442.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9332.97,
-      "y": 10442.16,
-      "radius": 2.0,
+      "x": 9411.08,
+      "y": 10639.78,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.9
-      }
-    },
-    {
-      "x": 9353.97,
-      "y": 10445.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9362.97,
-      "y": 10463.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9377.97,
-      "y": 10478.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9383.97,
-      "y": 10496.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9383.97,
-      "y": 10505.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9389.97,
-      "y": 10526.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9392.97,
-      "y": 10544.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9404.97,
-      "y": 10550.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9410.97,
-      "y": 10547.16,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9412.48,
-      "y": 10543.38,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 5.5
+        "seconds": 8.6
       }
     }
   ]

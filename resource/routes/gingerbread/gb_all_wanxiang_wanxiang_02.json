@@ -1,54 +1,84 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_02",
-  "title": "【全材料·万相境】万相境·九华监（14个/79秒）",
+  "title": "【全材料·万相境】万相境·迷花甸（11个/68秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 218,
+  "timeout": 194,
   "teleport": {
-    "name": "九华监",
+    "name": "迷花甸",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1592.363,
-    "y": 835.825
+    "x": 1437.138,
+    "y": 1501.957
   },
   "material": "全材料·万相境",
   "count_materials": [
-    "耳坠萤",
+    "小绵菊",
     "珠链蝶",
     "荷包草",
-    "小绵菊",
-    "刺绣蛾",
     "玉簪蚱蜢"
   ],
-  "capacity": 14,
+  "capacity": 11,
   "points": [
     {
-      "x": 1592.36,
-      "y": 835.83,
-      "radius": 2.0,
+      "x": 1437.14,
+      "y": 1501.96,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.1
+        "seconds": 13.1
       }
     },
     {
-      "x": 1615.36,
-      "y": 840.83,
-      "radius": 2.5,
+      "x": 1432.86,
+      "y": 1501.84,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1621.1,
-      "y": 847.66,
-      "radius": 2.0,
+      "x": 1429.86,
+      "y": 1498.84,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1429.86,
+      "y": 1495.84,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1426.86,
+      "y": 1492.84,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1408.86,
+      "y": 1492.84,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1394.86,
+      "y": 1496.84,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 52.6
+        "seconds": 26.0
       }
     }
   ]

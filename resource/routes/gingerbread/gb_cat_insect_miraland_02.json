@@ -1,0 +1,157 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_miraland_02",
+  "title": "【全昆虫速刷】埋骨地·大拉姆居落迎厅入口（46个/229秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 549,
+  "teleport": {
+    "name": "大拉姆居落迎厅入口",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 6985.204,
+    "y": 4526.323
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "珠链蝶",
+    "小野菊",
+    "满满果",
+    "木夹跳甲"
+  ],
+  "capacity": 46,
+  "points": [
+    {
+      "x": 6985.2,
+      "y": 4526.32,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6987.24,
+      "y": 4525.32,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6990.24,
+      "y": 4525.32,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6993.24,
+      "y": 4522.32,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6996.24,
+      "y": 4519.32,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6999.24,
+      "y": 4516.32,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6996.24,
+      "y": 4516.32,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6993.24,
+      "y": 4516.32,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6981.24,
+      "y": 4519.32,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6978.24,
+      "y": 4522.32,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6972.24,
+      "y": 4543.32,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6973.24,
+      "y": 4544.96,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 124.2
+      }
+    },
+    {
+      "x": 6970.21,
+      "y": 4540.96,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6961.21,
+      "y": 4540.96,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6934.21,
+      "y": 4561.96,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6914.21,
+      "y": 4552.48,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 63.5
+      }
+    }
+  ]
+}

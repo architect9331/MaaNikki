@@ -1,83 +1,59 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_02",
-  "title": "【全材料·微风绿野】微风绿野·菲洛米亚女王行宫遗迹西侧树林（21个/78秒）",
+  "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（13个/69秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 216,
+  "timeout": 196,
   "teleport": {
-    "name": "菲洛米亚女王行宫遗迹西侧树林",
+    "name": "筑心王国边境哨所",
     "province": "心愿原野",
     "region": "微风绿野",
-    "x": 10677.691,
-    "y": 11478.383
+    "x": 10782.912,
+    "y": 11960.809
   },
   "material": "全材料·微风绿野",
   "count_materials": [
     "壁灯红椒",
     "纽扣松果",
-    "小绵菊"
+    "发卡蚱蜢"
   ],
-  "capacity": 21,
+  "capacity": 13,
   "points": [
     {
-      "x": 10677.69,
-      "y": 11478.38,
-      "radius": 2.0,
+      "x": 10782.91,
+      "y": 11960.81,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10787.91,
+      "y": 11945.95,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.1
+        "seconds": 7.9
       }
     },
     {
-      "x": 10700.69,
-      "y": 11474.38,
-      "radius": 2.5,
+      "x": 10787.91,
+      "y": 11909.95,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10712.69,
-      "y": 11477.38,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10718.69,
-      "y": 11483.38,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10739.69,
-      "y": 11486.38,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10742.69,
-      "y": 11486.38,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10745.85,
-      "y": 11488.63,
-      "radius": 2.0,
+      "x": 10783.1,
+      "y": 11898.95,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 48.3
+        "seconds": 29.7
       }
     }
   ]

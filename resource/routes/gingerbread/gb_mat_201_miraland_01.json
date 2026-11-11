@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_201_miraland_01",
-  "title": "【结结蕨】巨木之森·巨兽堡垒东侧（7个/54秒）",
+  "title": "【结结蕨】巨木之森·巨兽堡垒东侧（7个/66秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 164,
+  "timeout": 190,
   "teleport": {
     "name": "巨兽堡垒东侧",
     "province": "伊赞之土",
@@ -24,7 +24,7 @@
     {
       "x": 3869.07,
       "y": 8412.61,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -32,31 +32,23 @@
     {
       "x": 3871.07,
       "y": 8392.45,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3889.07,
-      "y": 8380.45,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3910.07,
-      "y": 8389.45,
-      "radius": 2.5,
+      "x": 3901.07,
+      "y": 8383.45,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 3934.07,
+      "x": 3916.07,
       "y": 8389.45,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -64,7 +56,7 @@
     {
       "x": 3937.69,
       "y": 8390.45,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -72,9 +64,9 @@
       }
     },
     {
-      "x": 3928.34,
-      "y": 8370.41,
-      "radius": 2.5,
+      "x": 3922.34,
+      "y": 8364.41,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -82,8 +74,8 @@
     {
       "x": 3920.34,
       "y": 8362.41,
-      "radius": 2.0,
-      "jump": false,
+      "radius": 3.2,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 8.6

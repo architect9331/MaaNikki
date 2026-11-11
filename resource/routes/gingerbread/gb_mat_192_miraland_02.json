@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_192_miraland_02",
-  "title": "【沙沙毛团】埋骨地·修习所（2个/36秒）",
+  "title": "【沙沙毛团】埋骨地·修习所（2个/42秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 123,
+  "timeout": 137,
   "teleport": {
     "name": "修习所",
     "province": "伊赞之土",
@@ -23,7 +23,7 @@
     {
       "x": 7817.79,
       "y": 5151.57,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -31,7 +31,7 @@
     {
       "x": 7828.79,
       "y": 5147.57,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -39,7 +39,7 @@
     {
       "x": 7852.0,
       "y": 5151.99,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

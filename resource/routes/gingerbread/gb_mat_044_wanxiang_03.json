@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_044_wanxiang_03",
-  "title": "【蓝珀鸟羽】万相境·忘忧楼（2个/26秒）",
+  "title": "【蓝珀鸟羽】万相境·忘忧楼（2个/32秒）",
   "map": "wanxiang",
   "start_radius": 6,
   "timeout": 120,
@@ -21,7 +21,7 @@
     {
       "x": 2339.98,
       "y": 1551.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -29,7 +29,7 @@
     {
       "x": 2337.65,
       "y": 1550.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -37,7 +37,7 @@
     {
       "x": 2334.65,
       "y": 1553.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -45,7 +45,7 @@
     {
       "x": 2331.65,
       "y": 1559.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
@@ -53,11 +53,11 @@
     {
       "x": 2317.65,
       "y": 1557.67,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.8
+        "seconds": 11.7
       }
     }
   ]

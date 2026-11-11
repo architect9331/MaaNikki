@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_037_miraland_01",
-  "title": "【汪汪毛线】微风绿野·西西亚艺术学院采风基地（3个/36秒）",
+  "title": "【汪汪毛线】微风绿野·西西亚艺术学院采风基地（3个/42秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 125,
+  "timeout": 137,
   "teleport": {
     "name": "西西亚艺术学院采风基地",
     "province": "心愿原野",
@@ -21,39 +21,31 @@
     {
       "x": 9971.52,
       "y": 10280.06,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9967.05,
-      "y": 10278.9,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9961.05,
-      "y": 10284.9,
-      "radius": 2.5,
+      "x": 9965.76,
+      "y": 10267.97,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 9946.05,
-      "y": 10269.9,
-      "radius": 2.5,
+      "x": 9941.76,
+      "y": 10261.97,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9941.05,
-      "y": 10261.9,
-      "radius": 2.0,
+      "x": 9939.76,
+      "y": 10259.97,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_284_miraland_01",
-  "title": "【烛融花/烛荧花】埋骨地·纪念地（6个/33秒）",
+  "title": "【烛融花/烛荧花】埋骨地·纪念地（6个/40秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 133,
   "teleport": {
     "name": "纪念地",
     "province": "伊赞之土",
@@ -23,15 +23,39 @@
     {
       "x": 7065.16,
       "y": 4255.36,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7082.16,
-      "y": 4239.72,
-      "radius": 2.5,
+      "x": 7067.16,
+      "y": 4251.72,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7073.16,
+      "y": 4242.72,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7073.16,
+      "y": 4236.72,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7079.16,
+      "y": 4236.72,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -39,7 +63,7 @@
     {
       "x": 7086.5,
       "y": 4243.72,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

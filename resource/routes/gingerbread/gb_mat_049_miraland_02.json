@@ -1,90 +1,63 @@
 {
   "schema_version": 3,
   "id": "gb_mat_049_miraland_02",
-  "title": "【名流鸦羽】磐城·集贤回廊（17个/232秒）",
+  "title": "【名流鸦羽】磐城·永续识馆（10个/157秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 555,
+  "timeout": 390,
   "teleport": {
-    "name": "集贤回廊",
+    "name": "永续识馆",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3964.247,
-    "y": 2674.387
+    "x": 4133.939,
+    "y": 2774.733
   },
   "material": "名流鸦羽",
   "count_materials": [
-    "小野菊",
     "名流鸦羽",
+    "小野菊",
     "满满果",
-    "耳坠萤",
-    "蓝玉甲虫",
-    "风舞花",
-    "路灯花",
-    "珠链蝶",
-    "纽扣松果",
     "金轴蜻蜓",
-    "珠坠甲虫",
-    "织衣蛛"
+    "耳坠萤"
   ],
-  "capacity": 71,
+  "capacity": 31,
   "points": [
     {
-      "x": 3964.25,
-      "y": 2674.39,
-      "radius": 2.5,
+      "x": 4133.94,
+      "y": 2774.73,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3971.57,
-      "y": 2608.68,
-      "radius": 2.0,
+      "x": 4145.72,
+      "y": 2816.16,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 30.2
+        "seconds": 29.8
       }
     },
     {
-      "x": 3965.17,
-      "y": 2819.68,
-      "radius": 2.0,
+      "x": 4251.85,
+      "y": 2692.75,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 24.4
+        "seconds": 31.0
       }
     },
     {
-      "x": 3938.36,
-      "y": 2807.83,
-      "radius": 2.0,
+      "x": 4174.61,
+      "y": 2649.88,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 28.4
-      }
-    },
-    {
-      "x": 3852.39,
-      "y": 2810.73,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 52.9
-      }
-    },
-    {
-      "x": 3931.19,
-      "y": 2760.61,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 17.9
+        "seconds": 25.3
       }
     }
   ]

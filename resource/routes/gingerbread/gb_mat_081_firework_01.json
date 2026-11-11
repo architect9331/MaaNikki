@@ -1,0 +1,95 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_081_firework_01",
+  "title": "【草绒球】花焰群岛·幽暗洞窟前（8个/90秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 243,
+  "teleport": {
+    "name": "幽暗洞窟前",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 945.342,
+    "y": 225.634
+  },
+  "material": "草绒球",
+  "count_materials": [
+    "草绒球",
+    "珠链蝶",
+    "噼啪花粉",
+    "美食家蜜蜂",
+    "耳坠萤",
+    "小绵菊",
+    "路灯花",
+    "满满果",
+    "蓝珀鸟羽",
+    "名流鸦羽"
+  ],
+  "capacity": 30,
+  "points": [
+    {
+      "x": 945.34,
+      "y": 225.63,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1013.84,
+      "y": 194.97,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.5
+      }
+    },
+    {
+      "x": 1043.56,
+      "y": 208.0,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.3
+      }
+    },
+    {
+      "x": 1069.56,
+      "y": 231.0,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1102.56,
+      "y": 249.0,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1109.89,
+      "y": 247.66,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.6
+      }
+    },
+    {
+      "x": 1144.26,
+      "y": 267.38,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.6
+      }
+    }
+  ]
+}

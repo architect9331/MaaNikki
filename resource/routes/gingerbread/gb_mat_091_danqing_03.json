@@ -1,0 +1,43 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_091_danqing_03",
+  "title": "【满满果】丹青屿·栖龙峰山腰（4个/36秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 124,
+  "teleport": {
+    "name": "栖龙峰山腰",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1115.313,
+    "y": 388.774
+  },
+  "material": "满满果",
+  "count_materials": [
+    "满满果",
+    "荷包草",
+    "玉簪蚱蜢",
+    "云绒玉絮"
+  ],
+  "capacity": 7,
+  "points": [
+    {
+      "x": 1115.31,
+      "y": 388.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1114.68,
+      "y": 395.66,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 18.9
+      }
+    }
+  ]
+}

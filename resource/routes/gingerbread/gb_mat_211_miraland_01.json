@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_211_miraland_01",
-  "title": "【板刷狸绒】巨木之森·蜗牛诊所（2个/45秒）",
+  "title": "【板刷狸绒】巨木之森·蜗牛诊所（2个/52秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 144,
+  "timeout": 160,
   "teleport": {
     "name": "蜗牛诊所",
     "province": "伊赞之土",
@@ -21,7 +21,7 @@
     {
       "x": 4489.83,
       "y": 8147.98,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -29,23 +29,15 @@
     {
       "x": 4486.82,
       "y": 8161.98,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4468.82,
+      "x": 4459.82,
       "y": 8173.98,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4447.82,
-      "y": 8170.98,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -53,39 +45,31 @@
     {
       "x": 4429.82,
       "y": 8170.98,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4414.82,
-      "y": 8185.98,
-      "radius": 2.5,
+      "x": 4411.82,
+      "y": 8188.98,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4399.82,
-      "y": 8200.98,
-      "radius": 2.5,
+      "x": 4396.82,
+      "y": 8209.98,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4390.82,
+      "x": 4387.82,
       "y": 8221.98,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4375.82,
-      "y": 8227.98,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -93,7 +77,7 @@
     {
       "x": 4373.82,
       "y": 8230.35,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

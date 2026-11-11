@@ -1,0 +1,77 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_090_firework_03",
+  "title": "【路灯花】花焰群岛·聆风高地山麓（4个/60秒）",
+  "map": "firework",
+  "start_radius": 6,
+  "timeout": 177,
+  "teleport": {
+    "name": "聆风高地山麓",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 748.755,
+    "y": 548.546
+  },
+  "material": "路灯花",
+  "count_materials": [
+    "路灯花",
+    "纽扣松果",
+    "噼啪花粉",
+    "风铃子"
+  ],
+  "capacity": 9,
+  "points": [
+    {
+      "x": 748.75,
+      "y": 548.55,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 791.39,
+      "y": 516.18,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.7
+      }
+    },
+    {
+      "x": 781.66,
+      "y": 486.53,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 769.66,
+      "y": 477.53,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 745.66,
+      "y": 498.53,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 737.66,
+      "y": 499.53,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 11.9
+      }
+    }
+  ]
+}

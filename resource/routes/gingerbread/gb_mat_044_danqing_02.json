@@ -1,0 +1,70 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_044_danqing_02",
+  "title": "【蓝珀鸟羽】丹青屿·栖龙峰侧峰（6个/90秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 244,
+  "teleport": {
+    "name": "栖龙峰侧峰",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1072.586,
+    "y": 284.388
+  },
+  "material": "蓝珀鸟羽",
+  "count_materials": [
+    "蓝珀鸟羽",
+    "满满果",
+    "玉簪蚱蜢",
+    "云绒玉絮",
+    "荷包草"
+  ],
+  "capacity": 16,
+  "points": [
+    {
+      "x": 1072.59,
+      "y": 284.39,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1069.82,
+      "y": 282.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1052.82,
+      "y": 256.57,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 40.9
+      }
+    },
+    {
+      "x": 1054.82,
+      "y": 258.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1070.7,
+      "y": 280.37,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.4
+      }
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_danqing_08",
+  "title": "【全昆虫速刷】丹青屿·栖龙峰侧峰（10个/57秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 170,
+  "teleport": {
+    "name": "栖龙峰侧峰",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1072.586,
+    "y": 284.388
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "满满果",
+    "玉簪蚱蜢",
+    "云绒玉絮"
+  ],
+  "capacity": 10,
+  "points": [
+    {
+      "x": 1072.59,
+      "y": 284.39,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1073.04,
+      "y": 282.12,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1059.04,
+      "y": 253.12,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 35.4
+      }
+    }
+  ]
+}

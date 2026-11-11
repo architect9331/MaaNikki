@@ -1,0 +1,118 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_084_miraland_01",
+  "title": "【珠花贝壳】埋骨地·修习所（8个/80秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 221,
+  "teleport": {
+    "name": "修习所",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7817.786,
+    "y": 5151.568
+  },
+  "material": "珠花贝壳",
+  "count_materials": [
+    "珠花贝壳",
+    "龙棘瑚",
+    "探险家蜜蜂",
+    "沙沙毛团",
+    "金灵毛球"
+  ],
+  "capacity": 18,
+  "points": [
+    {
+      "x": 7817.79,
+      "y": 5151.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7828.79,
+      "y": 5147.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7840.79,
+      "y": 5150.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7858.79,
+      "y": 5168.57,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.0
+      }
+    },
+    {
+      "x": 7858.79,
+      "y": 5189.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7873.79,
+      "y": 5195.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7906.79,
+      "y": 5177.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7927.79,
+      "y": 5180.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7930.79,
+      "y": 5177.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7951.79,
+      "y": 5201.57,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7950.36,
+      "y": 5203.37,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 16.8
+      }
+    }
+  ]
+}

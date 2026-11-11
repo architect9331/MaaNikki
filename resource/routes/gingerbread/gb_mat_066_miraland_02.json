@@ -1,61 +1,47 @@
 {
   "schema_version": 3,
   "id": "gb_mat_066_miraland_02",
-  "title": "【泳镜蝽】小石树田村·村居岔路（5个/131秒）",
+  "title": "【泳镜蝽】花愿镇·镇长宅邸前（6个/201秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 333,
+  "timeout": 488,
   "teleport": {
-    "name": "村居岔路",
+    "name": "镇长宅邸前",
     "province": "心愿原野",
-    "region": "小石树田村",
-    "x": 9389.052,
-    "y": 10562.456
+    "region": "花愿镇",
+    "x": 10544.632,
+    "y": 9974.37
   },
   "material": "泳镜蝽",
   "count_materials": [
-    "香薰睡莲",
-    "珠花贝壳",
-    "泳镜蝽",
-    "小星扇贝",
-    "瓜子珠",
-    "满满果",
-    "风絮草",
-    "路灯花",
-    "钓鱼点",
     "小绵菊",
-    "滋滋花粉"
+    "泳镜蝽",
+    "香薰睡莲",
+    "滋滋花粉",
+    "满满果",
+    "晴日蝶兰/雨滴蝶兰",
+    "珠花贝壳",
+    "芭蕾豆娘",
+    "草绒球",
+    "小星扇贝",
+    "布布果",
+    "路灯花",
+    "衬衫毛团"
   ],
-  "capacity": 34,
+  "capacity": 43,
   "points": [
     {
-      "x": 9389.05,
-      "y": 10562.46,
-      "radius": 2.5,
+      "x": 10544.63,
+      "y": 9974.37,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9390.05,
-      "y": 10583.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9390.05,
-      "y": 10599.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9398.05,
-      "y": 10619.46,
-      "radius": 2.0,
+      "x": 10540.41,
+      "y": 9970.37,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -63,217 +49,195 @@
       }
     },
     {
-      "x": 9414.05,
-      "y": 10631.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9434.05,
-      "y": 10635.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9454.05,
-      "y": 10639.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9462.05,
-      "y": 10643.46,
-      "radius": 2.5,
+      "x": 10531.41,
+      "y": 9964.37,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 9466.05,
-      "y": 10647.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9470.05,
-      "y": 10647.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9474.05,
-      "y": 10651.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9474.05,
-      "y": 10655.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9474.05,
-      "y": 10659.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9462.05,
-      "y": 10675.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9450.05,
-      "y": 10695.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9438.05,
-      "y": 10707.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9442.05,
-      "y": 10727.46,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9446.86,
-      "y": 10739.36,
-      "radius": 2.0,
+      "x": 10528.41,
+      "y": 9967.37,
+      "radius": 2.8,
       "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10525.41,
+      "y": 9988.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10522.41,
+      "y": 10021.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10513.41,
+      "y": 10030.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10510.41,
+      "y": 10066.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10502.41,
+      "y": 10084.63,
+      "radius": 3.2,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.3
+        "seconds": 36.4
       }
     },
     {
-      "x": 9425.28,
-      "y": 10732.88,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9404.28,
-      "y": 10732.88,
-      "radius": 2.5,
+      "x": 10531.41,
+      "y": 10061.98,
+      "radius": 3.2,
       "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9389.28,
-      "y": 10717.88,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9380.28,
-      "y": 10696.88,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9392.28,
-      "y": 10684.88,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9392.28,
-      "y": 10669.88,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9384.28,
-      "y": 10667.88,
-      "radius": 2.0,
-      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.8
+        "seconds": 14.7
       }
     },
     {
-      "x": 9404.28,
-      "y": 10666.88,
-      "radius": 2.5,
+      "x": 10547.41,
+      "y": 10053.98,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9410.28,
-      "y": 10675.88,
-      "radius": 2.5,
+      "x": 10551.41,
+      "y": 10045.98,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 9416.28,
-      "y": 10675.88,
-      "radius": 2.5,
+      "x": 10551.41,
+      "y": 10037.98,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10579.41,
+      "y": 10025.98,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9419.28,
-      "y": 10675.88,
-      "radius": 2.5,
+      "x": 10583.41,
+      "y": 10021.98,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10607.41,
+      "y": 10021.98,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9426.2,
-      "y": 10675.47,
-      "radius": 2.0,
+      "x": 10623.41,
+      "y": 10017.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10627.41,
+      "y": 10021.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10647.41,
+      "y": 10021.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10667.41,
+      "y": 10017.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10687.41,
+      "y": 10029.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10707.41,
+      "y": 10057.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10703.74,
+      "y": 10068.98,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 16.3
+        "seconds": 17.0
+      }
+    },
+    {
+      "x": 10703.49,
+      "y": 10050.93,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10695.49,
+      "y": 10039.93,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.5
       }
     }
   ]

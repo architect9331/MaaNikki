@@ -1,108 +1,59 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_02",
-  "title": "【全材料·巨木之森】巨木之森·蜗牛诊所（32个/171秒）",
+  "title": "【全材料·巨木之森】巨木之森·巨矛前驿站（14个/82秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 421,
+  "timeout": 226,
   "teleport": {
-    "name": "蜗牛诊所",
+    "name": "巨矛前驿站",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4489.828,
-    "y": 8147.981
+    "x": 4387.351,
+    "y": 7929.628
   },
   "material": "全材料·巨木之森",
   "count_materials": [
-    "耳坠萤",
-    "壁灯红椒",
-    "探险家蜜蜂",
-    "裁衣甲",
-    "刺绣蛾",
-    "钓鱼点",
     "小野菊",
-    "结结蕨"
+    "满满果",
+    "行鹭羽",
+    "路灯花",
+    "草裙毛团"
   ],
-  "capacity": 32,
+  "capacity": 14,
   "points": [
     {
-      "x": 4489.83,
-      "y": 8147.98,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 35.8
-      }
-    },
-    {
-      "x": 4491.83,
-      "y": 8153.27,
-      "radius": 2.5,
+      "x": 4387.35,
+      "y": 7929.63,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4497.83,
-      "y": 8153.27,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4509.83,
-      "y": 8135.27,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 11.1
-      }
-    },
-    {
-      "x": 4515.83,
-      "y": 8120.27,
-      "radius": 2.5,
+      "x": 4392.35,
+      "y": 7934.38,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 4506.83,
-      "y": 8105.27,
-      "radius": 2.5,
+      "x": 4419.35,
+      "y": 7922.38,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4508.64,
-      "y": 8100.27,
-      "radius": 2.0,
+      "x": 4431.77,
+      "y": 7920.38,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 75.7
-      }
-    },
-    {
-      "x": 4497.58,
-      "y": 8120.27,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4486.58,
-      "y": 8125.99,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 22.7
+        "seconds": 58.6
       }
     }
   ]

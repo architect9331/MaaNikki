@@ -1,59 +1,38 @@
 {
   "schema_version": 3,
   "id": "gb_mat_190_miraland_01",
-  "title": "【探险家蜜蜂】磐城·金时醇酿馆（29个/207秒）",
+  "title": "【探险家蜜蜂】磐城·王迹长廊（24个/198秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 500,
+  "timeout": 481,
   "teleport": {
-    "name": "金时醇酿馆",
+    "name": "王迹长廊",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4119.105,
-    "y": 3800.743
+    "x": 4198.233,
+    "y": 3737.442
   },
   "material": "探险家蜜蜂",
   "count_materials": [
     "探险家蜜蜂",
     "珠链蝶",
     "蓝玉甲虫",
-    "金轴蜻蜓",
-    "斗篷绒毛"
+    "珠坠甲虫"
   ],
-  "capacity": 58,
+  "capacity": 48,
   "points": [
     {
-      "x": 4119.1,
-      "y": 3800.74,
-      "radius": 2.5,
+      "x": 4198.23,
+      "y": 3737.44,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4114.46,
-      "y": 3794.21,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 9.1
-      }
-    },
-    {
-      "x": 4147.18,
-      "y": 3756.95,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 19.7
-      }
-    },
-    {
       "x": 4260.02,
       "y": 3844.1,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -61,33 +40,33 @@
       }
     },
     {
-      "x": 4259.88,
-      "y": 3878.43,
-      "radius": 2.0,
+      "x": 4261.29,
+      "y": 3877.36,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 22.1
+        "seconds": 20.4
       }
     },
     {
-      "x": 4204.18,
-      "y": 3932.11,
-      "radius": 2.0,
-      "jump": false,
+      "x": 4203.5,
+      "y": 3930.51,
+      "radius": 3.2,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 42.1
+        "seconds": 48.9
       }
     },
     {
-      "x": 4233.33,
-      "y": 3924.67,
-      "radius": 2.0,
+      "x": 4233.23,
+      "y": 3921.9,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.2
+        "seconds": 9.1
       }
     }
   ]

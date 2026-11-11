@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_050_miraland_01",
-  "title": "【天星之羽】石树田无人区·星空钓场顶端（1个/22秒）",
+  "title": "【天星之羽】石树田无人区·星空钓场顶端（1个/28秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -21,7 +21,7 @@
     {
       "x": 7822.94,
       "y": 9184.4,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -29,7 +29,7 @@
     {
       "x": 7821.94,
       "y": 9180.4,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -37,7 +37,7 @@
     {
       "x": 7824.94,
       "y": 9177.4,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -45,7 +45,7 @@
     {
       "x": 7827.94,
       "y": 9180.4,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -53,7 +53,7 @@
     {
       "x": 7836.94,
       "y": 9198.4,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -61,7 +61,7 @@
     {
       "x": 7842.94,
       "y": 9207.4,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -69,7 +69,7 @@
     {
       "x": 7845.86,
       "y": 9210.29,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

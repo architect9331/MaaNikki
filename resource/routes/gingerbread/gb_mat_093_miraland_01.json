@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_093_miraland_01",
-  "title": "【花伞藤萝】石树田无人区·遗忘者村居（3个/39秒）",
+  "title": "【花伞藤萝】石树田无人区·遗忘者村居（3个/46秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 131,
+  "timeout": 147,
   "teleport": {
     "name": "遗忘者村居",
     "province": "心愿原野",
@@ -21,7 +21,7 @@
     {
       "x": 9171.66,
       "y": 8889.88,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -29,7 +29,7 @@
     {
       "x": 9167.66,
       "y": 8893.32,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -37,55 +37,39 @@
     {
       "x": 9161.66,
       "y": 8893.32,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9143.66,
-      "y": 8878.32,
-      "radius": 2.5,
+      "x": 9137.66,
+      "y": 8869.32,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9131.66,
-      "y": 8860.32,
-      "radius": 2.5,
+      "x": 9134.66,
+      "y": 8833.32,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9131.66,
-      "y": 8836.32,
-      "radius": 2.5,
+      "x": 9155.66,
+      "y": 8806.32,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9146.66,
-      "y": 8818.32,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9161.66,
-      "y": 8800.32,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9179.66,
-      "y": 8788.32,
-      "radius": 2.5,
+      "x": 9185.66,
+      "y": 8785.32,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -93,7 +77,7 @@
     {
       "x": 9188.97,
       "y": 8786.32,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

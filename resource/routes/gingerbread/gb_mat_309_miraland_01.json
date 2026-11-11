@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_309_miraland_01",
-  "title": "【机雀羽】磐城·金时醇酿馆（27个/196秒）",
+  "title": "【机雀羽】磐城·金时醇酿馆（24个/214秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 477,
+  "timeout": 515,
   "teleport": {
     "name": "金时醇酿馆",
     "province": "伊赞之土",
@@ -16,12 +16,12 @@
   "count_materials": [
     "机雀羽"
   ],
-  "capacity": 27,
+  "capacity": 24,
   "points": [
     {
       "x": 4119.1,
       "y": 3800.74,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -29,7 +29,7 @@
     {
       "x": 4105.91,
       "y": 3769.53,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -39,7 +39,7 @@
     {
       "x": 4072.17,
       "y": 3800.6,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -47,19 +47,9 @@
       }
     },
     {
-      "x": 4042.78,
-      "y": 3766.95,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 14.4
-      }
-    },
-    {
       "x": 4010.42,
       "y": 3796.98,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -69,7 +59,7 @@
     {
       "x": 3957.23,
       "y": 3739.42,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -79,7 +69,7 @@
     {
       "x": 3975.81,
       "y": 3693.8,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -89,7 +79,7 @@
     {
       "x": 4003.4,
       "y": 3668.31,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

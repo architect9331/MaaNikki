@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_071_miraland_01",
-  "title": "【尖帽仙】花愿镇·愿望梦境仓库旋廊（7个/62秒）",
+  "title": "【尖帽仙】花愿镇·愿望梦境仓库旋廊（6个/69秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 181,
+  "timeout": 196,
   "teleport": {
     "name": "愿望梦境仓库旋廊",
     "province": "心愿原野",
@@ -20,32 +20,38 @@
     "路灯花",
     "抱抱绒团"
   ],
-  "capacity": 14,
+  "capacity": 13,
   "points": [
     {
       "x": 10259.91,
       "y": 9754.31,
-      "radius": 2.0,
+      "radius": 2.8,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.8
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 10257.35,
-      "y": 9747.25,
-      "radius": 2.0,
+      "x": 10258.35,
+      "y": 9751.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10256.35,
+      "y": 9749.18,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.7
+        "seconds": 14.9
       }
     },
     {
       "x": 10282.47,
       "y": 9720.03,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

@@ -1,51 +1,106 @@
 {
   "schema_version": 3,
   "id": "gb_mat_182_danqing_02",
-  "title": "【胭脂芙蕖】丹青屿·望水渡（2个/45秒）",
+  "title": "【胭脂芙蕖】丹青屿·后山（2个/56秒）",
   "map": "danqing",
   "start_radius": 6,
-  "timeout": 144,
+  "timeout": 168,
   "teleport": {
-    "name": "望水渡",
+    "name": "后山",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1328.798,
-    "y": 1218.711
+    "x": 1435.992,
+    "y": 896.783
   },
   "material": "胭脂芙蕖",
   "count_materials": [
     "小绵菊",
+    "胭脂芙蕖",
     "小星扇贝",
-    "胭脂芙蕖"
+    "云绒玉絮"
   ],
-  "capacity": 12,
+  "capacity": 8,
   "points": [
     {
-      "x": 1328.8,
-      "y": 1218.71,
-      "radius": 2.5,
+      "x": 1435.99,
+      "y": 896.78,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1383.28,
-      "y": 1243.01,
-      "radius": 2.0,
+      "x": 1428.01,
+      "y": 913.78,
+      "radius": 2.8,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.4
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 1489.37,
-      "y": 1160.13,
-      "radius": 2.0,
+      "x": 1408.01,
+      "y": 925.78,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1396.01,
+      "y": 925.78,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1360.01,
+      "y": 921.78,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1328.01,
+      "y": 933.78,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1304.01,
+      "y": 957.78,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1280.01,
+      "y": 981.78,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1264.01,
+      "y": 1005.78,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1267.01,
+      "y": 1010.5,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.2
+        "seconds": 5.6
       }
     }
   ]

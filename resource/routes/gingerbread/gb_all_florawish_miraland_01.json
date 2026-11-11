@@ -1,131 +1,40 @@
 {
   "schema_version": 3,
   "id": "gb_all_florawish_miraland_01",
-  "title": "【全材料·花愿镇】花愿镇·织裙街（65个/246秒）",
+  "title": "【全材料·花愿镇】花愿镇·搭配师协会纪念旧址旁（10个/48秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 587,
+  "timeout": 150,
   "teleport": {
-    "name": "织裙街",
+    "name": "搭配师协会纪念旧址旁",
     "province": "心愿原野",
     "region": "花愿镇",
-    "x": 10728.751,
-    "y": 10052.912
+    "x": 9839.854,
+    "y": 9851.62
   },
   "material": "全材料·花愿镇",
   "count_materials": [
-    "壁灯红椒",
     "小绵菊",
-    "瓜子珠",
-    "纽扣松果",
-    "耳坠萤",
-    "发卡蚱蜢",
-    "路灯花",
-    "芭蕾豆娘",
-    "布布果",
-    "晴日蝶兰/雨滴蝶兰",
-    "珠花贝壳"
+    "纽扣松果"
   ],
-  "capacity": 65,
+  "capacity": 10,
   "points": [
     {
-      "x": 10728.75,
-      "y": 10052.91,
-      "radius": 2.5,
+      "x": 9839.85,
+      "y": 9851.62,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10718.47,
-      "y": 10066.75,
-      "radius": 2.0,
+      "x": 9847.14,
+      "y": 9843.62,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 37.1
-      }
-    },
-    {
-      "x": 10737.77,
-      "y": 10080.94,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 35.8
-      }
-    },
-    {
-      "x": 10754.77,
-      "y": 10094.94,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10758.95,
-      "y": 10095.94,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 41.0
-      }
-    },
-    {
-      "x": 10766.95,
-      "y": 10101.56,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10787.95,
-      "y": 10101.56,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 17.5
-      }
-    },
-    {
-      "x": 10802.95,
-      "y": 10089.56,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10817.95,
-      "y": 10095.56,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10824.48,
-      "y": 10084.56,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 43.9
-      }
-    },
-    {
-      "x": 10824.2,
-      "y": 10115.99,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 36.1
+        "seconds": 29.8
       }
     }
   ]

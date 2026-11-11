@@ -28,8 +28,25 @@ TOAST_TEXT_ROI = [44, 365, 236, 230]
 TOAST_FULL_ROI = [15, 365, 265, 230]
 TOAST_LEGACY_ROI = [15, 451, 147, 133]
 
-BYPRODUCT_KEYWORDS = ("心得", "精粹", "种子", "噗灵", "经验", "探索度")
+BYPRODUCT_KEYWORDS = ("心得", "精粹", "种子", "噗灵", "经验", "探索度", "丝线", "丝带", "闪光粒子", "泡泡")
 UI_NOISE_KEYWORDS = ("任务", "追踪", "距离", "前往", "点击", "按", "键", "查看", "地图")
+
+# Materials that require Nikki's active skill/plunge to break open before pickup
+# (e.g. cid=89 瓜子珠 inside hard 宝匣瓜 pods requiring jump + plunge smash).
+NON_GINGERBREAD_CIDS = frozenset({"89"})
+NON_GINGERBREAD_NAMES = frozenset({"瓜子珠"})
+NIGHT_ONLY_CIDS = frozenset({"72", "76", "97", "137"})
+NIGHT_ONLY_KEYWORDS = ("仅夜晚", "仅晴天夜晚")
+MAX_RELIABLE_DZ_M = 5.0
+
+
+def is_strict_night_only(cid: str, cond: str) -> bool:
+    """Return True if a spawner is strictly collectable at night (excluding 24h day/night dual plants)."""
+    if "白天" in cond or "无时间要求" in cond:
+        return False
+    if cid in NIGHT_ONLY_CIDS:
+        return True
+    return any(k in cond for k in NIGHT_ONLY_KEYWORDS)
 
 
 @dataclass
@@ -63,6 +80,7 @@ class NearbySpawnerInfo:
     z: float
     d_2d_m: float
     dz_m: float
+    night_only: bool = False
 
 
 class MaterialNameResolver:
@@ -229,9 +247,18 @@ class LeftMaterialToastReader:
             )
 
         nm, matched = resolver.resolve(raw_nm, expected_names)
-        # Accept if it matched a known material OR had an explicit "× N" toast suffix
-        if not matched and not has_explicit_qty:
-            return None
+        if not matched:
+            if not has_explicit_qty:
+                return None
+            # Unrecognized "× N" toasts (e.g. 纯真丝线×1, 缠绕丝带×1) are non-material byproducts.
+            return ToastObservation(
+                raw_text=compact,
+                name=raw_nm,
+                amount=amt,
+                kind="byproduct",
+                y_center=y_center,
+                matched_catalog=False,
+            )
 
         return ToastObservation(
             raw_text=compact,
@@ -239,7 +266,7 @@ class LeftMaterialToastReader:
             amount=amt,
             kind="material",
             y_center=y_center,
-            matched_catalog=matched,
+            matched_catalog=True,
         )
 
     def read_observations(self, image=None) -> list[ToastObservation]:
@@ -291,26 +318,60 @@ class LeftMaterialToastReader:
         new_materials: list[ToastObservation] = []
         any_new_activity = False
         used_slot_indices: set[int] = set()
+        matched_slot_for_obs: dict[int, int] = {}
 
-        for obs in observations:
-            # Find matching active slot of the same name (or same vertical position within 0.6s for OCR jitter)
-            best_si = -1
-            best_dy = 999.0
+        # Pass 1: Match observations to active slots with the exact same canonical (name, kind).
+        # New toasts insert at the top of the HUD stack and push existing rows downward
+        # (obs.y_center > slot.y_center, so dy < 0), while expiring rows slide upward (dy > 0).
+        candidate_pairs: list[tuple[float, int, int]] = []
+        for oi, obs in enumerate(observations):
             for si, slot in enumerate(self.active_slots):
-                if si in used_slot_indices:
-                    continue
                 if slot.name == obs.name and slot.kind == obs.kind:
-                    # Existing toast either stays in place (|dy| <= 14) or slides UP (obs.y_center < slot.y_center)
                     dy = slot.y_center - obs.y_center
-                    if -14.0 <= dy <= 68.0 and abs(dy) < best_dy:
-                        best_dy = abs(dy)
+                    if -155.0 <= dy <= 115.0:
+                        candidate_pairs.append((abs(dy), oi, si))
+        candidate_pairs.sort(key=lambda item: item[0])
+        for _, oi, si in candidate_pairs:
+            if oi in matched_slot_for_obs or si in used_slot_indices:
+                continue
+            matched_slot_for_obs[oi] = si
+            used_slot_indices.add(si)
+
+        # Pass 2: Handle matched updates and remaining unmatched observations.
+        for oi, obs in enumerate(observations):
+            best_si = matched_slot_for_obs.get(oi, -1)
+            if best_si < 0:
+                best_dy = 999.0
+                for si, slot in enumerate(self.active_slots):
+                    if si in used_slot_indices or slot.kind != obs.kind:
+                        continue
+                    # Same-y OCR jitter fallback only for non-catalog rows (never let two distinct
+                    # catalog materials steal each other's slot when a new toast inserts at top).
+                    if (
+                        not (obs.kind == "material" and obs.matched_catalog and slot.name != obs.name)
+                        and abs(slot.y_center - obs.y_center) <= 10.0
+                        and (now - slot.last_seen) <= 0.65
+                        and abs(slot.y_center - obs.y_center) < best_dy
+                    ):
+                        best_dy = abs(slot.y_center - obs.y_center)
                         best_si = si
-                elif slot.kind == obs.kind and abs(slot.y_center - obs.y_center) <= 10.0 and (now - slot.last_seen) <= 0.65:
-                    best_dy = abs(slot.y_center - obs.y_center)
-                    best_si = si
+                if best_si < 0 and obs.kind == "material":
+                    # Single-agent kinematic guard: one Gingerbread cycle is >= 1.65s, and
+                    # rapid second copies stack into ×2 on the same toast row. Merge fade-in/reflow
+                    # duplicates of the same material seen within 1.4s when count has not increased.
+                    for si, slot in enumerate(self.active_slots):
+                        if (
+                            slot.kind == "material"
+                            and slot.name == obs.name
+                            and (now - slot.first_seen) <= 1.40
+                            and obs.amount <= slot.amount
+                        ):
+                            best_si = si
+                            break
+                if best_si >= 0:
+                    used_slot_indices.add(best_si)
 
             if best_si >= 0:
-                used_slot_indices.add(best_si)
                 slot = self.active_slots[best_si]
                 slot.y_center = obs.y_center
                 slot.last_seen = now
@@ -376,8 +437,10 @@ class GingerbreadRouteAnalyzer:
             self.spawners = []
 
     def query_nearby_spawners(self, x: float, y: float, max_radius_m: float = 18.0,
-                              claim_within_m: float = 13.8) -> list[NearbySpawnerInfo]:
+                              claim_within_m: float = 14.8,
+                              target_names: Iterable[str] = ()) -> list[NearbySpawnerInfo]:
         max_px = max_radius_m / M_PER_MAP_PX
+        explicit_targets = {str(n).strip() for n in target_names if str(n).strip()}
         near_raw = []
         for idx, s in enumerate(self.spawners):
             if isinstance(s, (list, tuple)):
@@ -386,22 +449,27 @@ class GingerbreadRouteAnalyzer:
                 sid = f"{self.map_id}_{idx}"
                 cid = str(s[0])
                 sx, sy, sz = float(s[1]), float(s[2]), float(s[3])
+                cond = str(s[4]) if len(s) >= 5 else ""
                 raw_name = ""
             elif isinstance(s, dict):
                 sid = str(s.get("id") or f"{self.map_id}_{idx}")
                 cid = str(s.get("cid") or "")
                 sx, sy, sz = float(s.get("x") or 0.0), float(s.get("y") or 0.0), float(s.get("z") or 0.0)
+                cond = str(s.get("condition") or s.get("note") or "")
                 raw_name = str(s.get("name") or "")
             else:
                 continue
-            if sid in self.claimed_spawner_ids:
+            if cid in NON_GINGERBREAD_CIDS or sid in self.claimed_spawner_ids:
                 continue
             d_px = math.hypot(sx - x, sy - y)
             if d_px <= max_px:
                 d_m = round(d_px * M_PER_MAP_PX, 2)
                 cat = self.catalogs.get(cid) or {}
-                near_raw.append((sid, str(cat.get("name") or raw_name or "未知"),
-                                 str(cat.get("kind") or "plant"), sx, sy, sz, d_m))
+                nm = str(cat.get("name") or raw_name or "未知")
+                if nm in NON_GINGERBREAD_NAMES:
+                    continue
+                is_night = is_strict_night_only(cid, cond)
+                near_raw.append((sid, nm, str(cat.get("kind") or "plant"), sx, sy, sz, d_m, is_night))
 
         if not near_raw:
             return []
@@ -412,14 +480,19 @@ class GingerbreadRouteAnalyzer:
         ref_z = closest_z[len(closest_z) // 2]
 
         results: list[NearbySpawnerInfo] = []
-        for sid, nm, kind, sx, sy, sz, d_m in near_raw:
+        for sid, nm, kind, sx, sy, sz, d_m, is_night in near_raw:
+            if is_night and len(explicit_targets) == 1 and nm in explicit_targets:
+                eff_night = False
+            else:
+                eff_night = is_night
             dz_m = round(abs(sz - ref_z), 2)
             results.append(
                 NearbySpawnerInfo(
-                    id=sid, name=nm, kind=kind, x=sx, y=sy, z=sz, d_2d_m=d_m, dz_m=dz_m
+                    id=sid, name=nm, kind=kind, x=sx, y=sy, z=sz, d_2d_m=d_m, dz_m=dz_m,
+                    night_only=eff_night,
                 )
             )
-            if math.hypot(d_m, dz_m) <= claim_within_m and dz_m <= 10.5:
+            if math.hypot(d_m, dz_m) <= claim_within_m and dz_m <= MAX_RELIABLE_DZ_M:
                 self.claimed_spawner_ids.add(sid)
         return results
 
@@ -427,35 +500,39 @@ class GingerbreadRouteAnalyzer:
     def conservative_budget_seconds(nearby: list[NearbySpawnerInfo], configured_s: float) -> tuple[float, float, float]:
         """Return (min_dwell_s, quiet_window_s, max_ceiling_s) for a stationary stop.
 
-        Calibrated from ChristmasGingerbreadProcessor + BP_ChristmasGingerbreadMan_C:
-        - Each item cycle takes <= 2.0s flight (avg ~1.55s) + collect_s (1s/3s/4s/7s) + 0.55s exit.
-        - Gap between consecutive left-HUD toasts is ~2.8s (plant), ~5.2s (insect), ~6.3s (animal), ~9.5s (fish).
+        Calibrated from empirical Gingerbread telemetry (n=139 inter-pickup intervals):
+        - First pickup arrives at median 3.1s (p95 6.85s, max 8.34s).
+        - Inter-pickup intervals including cross-diameter return flights have p90/p95 of
+          6.2s/7.4s (plants) and 6.7s/7.5s (insects/animals), with fish taking ~9.5-11.5s.
         """
-        in_15m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m <= 10.5]
+        in_15m = [
+            s for s in nearby
+            if not s.night_only and math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m <= MAX_RELIABLE_DZ_M
+        ]
         plants = sum(1 for s in in_15m if s.kind == "plant")
         insects = sum(1 for s in in_15m if s.kind == "insect")
         animals = sum(1 for s in in_15m if s.kind == "animal")
         fish = sum(1 for s in in_15m if s.kind == "fish")
 
         map_est = (
-            (2.6 + max(0, plants - 1) * 2.25 if plants else 0.0)
-            + insects * 5.4
-            + animals * 6.6
-            + fish * 9.8
+            (3.2 + max(0, plants - 1) * 3.1 if plants else 0.0)
+            + insects * 5.8
+            + animals * 6.8
+            + fish * 10.2
         )
         if fish > 0:
-            quiet_s = 9.5
-            min_dwell_s = 8.0
+            quiet_s = 11.5
+            min_dwell_s = 9.0
         elif animals > 0:
-            quiet_s = 6.5
-            min_dwell_s = 5.8
+            quiet_s = 8.8
+            min_dwell_s = 6.8
         elif insects > 0:
-            quiet_s = 5.5
-            min_dwell_s = 4.8
+            quiet_s = 7.8
+            min_dwell_s = 6.0
         else:
-            quiet_s = 3.8
-            min_dwell_s = 3.0 if len(in_15m) >= 2 else 2.4
-        max_ceiling_s = min(120.0, max(configured_s * 1.35, map_est + 4.5, min_dwell_s + quiet_s))
+            quiet_s = 6.8
+            min_dwell_s = 4.6 if len(in_15m) >= 2 else 3.8
+        max_ceiling_s = min(135.0, max(configured_s * 1.35, map_est + 6.5, min_dwell_s + quiet_s + 2.0))
         return round(min_dwell_s, 1), round(quiet_s, 1), round(max_ceiling_s, 1)
 
     def evaluate_waypoint(
@@ -472,11 +549,12 @@ class GingerbreadRouteAnalyzer:
         picked_events: list[dict],
         nearby: list[NearbySpawnerInfo],
     ) -> dict:
-        in_8m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 8.0 and s.dz_m <= 8.0]
-        in_12m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 12.0 and s.dz_m <= 10.5]
-        in_15m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m <= 10.5]
+        active_nearby = [s for s in nearby if not s.night_only]
+        in_8m = [s for s in active_nearby if math.hypot(s.d_2d_m, s.dz_m) <= 8.0 and s.dz_m <= MAX_RELIABLE_DZ_M]
+        in_12m = [s for s in active_nearby if math.hypot(s.d_2d_m, s.dz_m) <= 12.0 and s.dz_m <= MAX_RELIABLE_DZ_M]
+        in_15m = [s for s in active_nearby if math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m <= MAX_RELIABLE_DZ_M]
         outer_12_15m = [s for s in in_15m if math.hypot(s.d_2d_m, s.dz_m) > 12.0]
-        high_dz_15m = [s for s in nearby if math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m > 6.0]
+        high_dz_15m = [s for s in active_nearby if math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m > MAX_RELIABLE_DZ_M]
 
         expected_by_name: dict[str, int] = {}
         for s in in_15m:

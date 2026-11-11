@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_cat_fish_wanxiang_07",
-  "title": "【全鱼类垂钓】万相境·九华监（6个/26秒）",
+  "title": "【全鱼类垂钓】万相境·九华监（6个/32秒）",
   "map": "wanxiang",
   "start_radius": 6,
   "timeout": 120,
@@ -22,7 +22,7 @@
     {
       "x": 1592.36,
       "y": 835.83,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -30,23 +30,15 @@
     {
       "x": 1587.81,
       "y": 837.83,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1572.81,
-      "y": 855.83,
-      "radius": 2.5,
-      "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 1570.81,
       "y": 858.29,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

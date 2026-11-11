@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_065_miraland_01",
-  "title": "【花球娘】微风绿野·绿野活动支援中心（5个/118秒）",
+  "title": "【花球娘】微风绿野·绿野活动支援中心（5个/150秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 304,
+  "timeout": 374,
   "teleport": {
     "name": "绿野活动支援中心",
     "province": "心愿原野",
@@ -14,69 +14,74 @@
   },
   "material": "花球娘",
   "count_materials": [
-    "瓜子珠",
-    "满满果",
+    "小绵菊",
     "草绒球",
     "滚滚花球",
     "花球娘",
-    "小绵菊",
-    "布布果",
     "发卡蚱蜢",
+    "布布果",
     "珠链蝶",
-    "路灯花"
+    "路灯花",
+    "满满果"
   ],
-  "capacity": 40,
+  "capacity": 35,
   "points": [
     {
       "x": 9971.07,
       "y": 10637.35,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9982.07,
-      "y": 10617.49,
-      "radius": 2.5,
+      "x": 9977.22,
+      "y": 10621.25,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9997.38,
-      "y": 10609.49,
-      "radius": 2.0,
+      "x": 9977.22,
+      "y": 10606.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9959.22,
+      "y": 10576.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9954.22,
+      "y": 10574.25,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.8
+        "seconds": 17.9
       }
     },
     {
-      "x": 9969.81,
-      "y": 10583.72,
-      "radius": 2.0,
-      "jump": false,
+      "x": 9974.22,
+      "y": 10561.34,
+      "radius": 3.2,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 24.5
-      }
-    },
-    {
-      "x": 9945.19,
-      "y": 10567.08,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 6.4
+        "seconds": 7.7
       }
     },
     {
       "x": 9999.73,
       "y": 10556.34,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -84,33 +89,59 @@
       }
     },
     {
-      "x": 10013.73,
-      "y": 10570.34,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10034.73,
-      "y": 10573.34,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10052.73,
-      "y": 10588.34,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10073.73,
+      "x": 10002.38,
       "y": 10591.34,
-      "radius": 2.0,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9999.38,
+      "y": 10606.34,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9997.38,
+      "y": 10609.49,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 10011.38,
+      "y": 10635.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10041.38,
+      "y": 10641.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10050.38,
+      "y": 10638.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10065.38,
+      "y": 10641.49,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -118,9 +149,9 @@
       }
     },
     {
-      "x": 10079.73,
-      "y": 10609.34,
-      "radius": 2.5,
+      "x": 10071.38,
+      "y": 10641.49,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -128,7 +159,7 @@
     {
       "x": 10096.36,
       "y": 10618.34,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

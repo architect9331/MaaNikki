@@ -1,0 +1,49 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_fish_danqing_06",
+  "title": "【全鱼类垂钓】丹青屿·栖龙峰侧峰（9个/45秒）",
+  "map": "danqing",
+  "start_radius": 6,
+  "timeout": 145,
+  "teleport": {
+    "name": "栖龙峰侧峰",
+    "province": "心愿原野",
+    "region": "丹青屿",
+    "x": 1072.586,
+    "y": 284.388
+  },
+  "material": "全鱼类垂钓",
+  "count_materials": [
+    "满满果",
+    "荷包草"
+  ],
+  "capacity": 9,
+  "points": [
+    {
+      "x": 1072.59,
+      "y": 284.39,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1069.39,
+      "y": 280.47,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1055.39,
+      "y": 269.47,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 25.7
+      }
+    }
+  ]
+}

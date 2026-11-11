@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_200_miraland_02",
-  "title": "【垂穗魔果】巨木之森·巨藤林地北侧探险家营地（3个/36秒）",
+  "title": "【垂穗魔果】巨木之森·巨藤林地北侧探险家营地（3个/48秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 125,
+  "timeout": 151,
   "teleport": {
     "name": "巨藤林地北侧探险家营地",
     "province": "伊赞之土",
@@ -26,89 +26,81 @@
     {
       "x": 4176.29,
       "y": 8476.89,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4174.55,
-      "y": 8473.14,
-      "radius": 2.5,
+      "x": 4172.51,
+      "y": 8475.38,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4169.55,
-      "y": 8462.14,
-      "radius": 2.0,
-      "jump": true,
+      "x": 4172.51,
+      "y": 8466.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4167.51,
+      "y": 8461.38,
+      "radius": 3.2,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 2.4
       }
     },
     {
-      "x": 4161.47,
-      "y": 8448.78,
-      "radius": 2.5,
+      "x": 4161.29,
+      "y": 8447.76,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4158.47,
-      "y": 8445.78,
-      "radius": 2.5,
+      "x": 4158.29,
+      "y": 8444.76,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4152.47,
-      "y": 8439.78,
-      "radius": 2.5,
+      "x": 4146.29,
+      "y": 8438.76,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4131.47,
-      "y": 8436.78,
-      "radius": 2.5,
+      "x": 4122.29,
+      "y": 8438.76,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4110.47,
-      "y": 8439.78,
-      "radius": 2.5,
+      "x": 4101.29,
+      "y": 8441.76,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4101.47,
-      "y": 8442.78,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4098.47,
-      "y": 8445.78,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4093.47,
-      "y": 8446.78,
-      "radius": 2.0,
+      "x": 4096.29,
+      "y": 8445.76,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

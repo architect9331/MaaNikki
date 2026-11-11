@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_282_miraland_02",
-  "title": "【骨焰花】埋骨地·龙埙遗所（18个/126秒）",
+  "title": "【骨焰花】埋骨地·龙埙遗所（18个/153秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 322,
+  "timeout": 382,
   "teleport": {
     "name": "龙埙遗所",
     "province": "伊赞之土",
@@ -21,54 +21,56 @@
     "小野菊",
     "路灯花"
   ],
-  "capacity": 45,
+  "capacity": 44,
   "points": [
     {
       "x": 8586.15,
       "y": 5376.19,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8597.15,
-      "y": 5358.14,
-      "radius": 2.5,
+      "x": 8600.15,
+      "y": 5354.62,
+      "radius": 2.8,
       "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8612.15,
-      "y": 5343.14,
-      "radius": 2.5,
-      "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 8627.15,
-      "y": 5328.14,
-      "radius": 2.5,
+      "y": 5330.62,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8636.31,
-      "y": 5320.14,
-      "radius": 2.0,
-      "jump": true,
+      "x": 8637.83,
+      "y": 5319.62,
+      "radius": 3.2,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 30.2
+        "seconds": 33.4
+      }
+    },
+    {
+      "x": 8634.6,
+      "y": 5351.21,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.6
       }
     },
     {
       "x": 8610.32,
       "y": 5334.52,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -76,33 +78,23 @@
       }
     },
     {
-      "x": 8634.6,
-      "y": 5351.21,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 15.6
-      }
-    },
-    {
-      "x": 8654.39,
-      "y": 5301.74,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.9
-      }
-    },
-    {
       "x": 8629.88,
       "y": 5290.95,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
         "seconds": 8.2
+      }
+    },
+    {
+      "x": 8662.58,
+      "y": 5324.58,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.5
       }
     }
   ]

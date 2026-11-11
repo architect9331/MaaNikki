@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_080_miraland_01",
-  "title": "【日光果/星光果】祈愿树林·心愿研发所（3个/34秒）",
+  "title": "【日光果/星光果】祈愿树林·心愿研发所（3个/43秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 140,
   "teleport": {
     "name": "心愿研发所",
     "province": "心愿原野",
@@ -14,19 +14,19 @@
   },
   "material": "日光果/星光果",
   "count_materials": [
-    "日光果/星光果",
-    "美食家蜜蜂",
     "耳坠萤",
+    "日光果/星光果",
     "纽扣松果",
+    "美食家蜜蜂",
     "星荧草",
     "抱抱绒团"
   ],
-  "capacity": 10,
+  "capacity": 12,
   "points": [
     {
       "x": 11475.07,
       "y": 9203.95,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -34,7 +34,7 @@
     {
       "x": 11462.07,
       "y": 9220.95,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -42,51 +42,51 @@
     {
       "x": 11450.07,
       "y": 9226.95,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11450.07,
-      "y": 9247.95,
-      "radius": 2.5,
+      "x": 11453.07,
+      "y": 9250.95,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11465.07,
-      "y": 9256.95,
-      "radius": 2.5,
+      "x": 11462.07,
+      "y": 9253.95,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 11474.07,
-      "y": 9274.95,
-      "radius": 2.5,
+      "y": 9268.95,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11483.07,
+      "x": 11480.07,
       "y": 9283.95,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11488.37,
-      "y": 9279.98,
-      "radius": 2.0,
+      "x": 11489.27,
+      "y": 9278.06,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.9
+        "seconds": 9.6
       }
     }
   ]

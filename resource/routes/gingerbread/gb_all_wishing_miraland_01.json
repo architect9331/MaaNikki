@@ -1,49 +1,88 @@
 {
   "schema_version": 3,
   "id": "gb_all_wishing_miraland_01",
-  "title": "【全材料·祈愿树林】祈愿树林·心愿庆典管理处（10个/40秒）",
+  "title": "【全材料·祈愿树林】祈愿树林·心愿研发所（15个/64秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 132,
+  "timeout": 185,
   "teleport": {
-    "name": "心愿庆典管理处",
+    "name": "心愿研发所",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 12311.192,
-    "y": 9200.472
+    "x": 11475.068,
+    "y": 9203.951
   },
   "material": "全材料·祈愿树林",
   "count_materials": [
-    "壁灯红椒",
-    "布布果",
-    "滋滋花粉"
+    "纽扣松果",
+    "抱抱绒团"
   ],
-  "capacity": 10,
+  "capacity": 15,
   "points": [
     {
-      "x": 12311.19,
-      "y": 9200.47,
-      "radius": 2.5,
+      "x": 11475.07,
+      "y": 9203.95,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12311.66,
-      "y": 9217.47,
-      "radius": 2.5,
+      "x": 11468.99,
+      "y": 9214.95,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 12309.66,
-      "y": 9221.4,
-      "radius": 2.0,
+      "x": 11465.99,
+      "y": 9217.95,
+      "radius": 2.8,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11447.99,
+      "y": 9232.95,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11435.99,
+      "y": 9250.95,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11432.99,
+      "y": 9253.95,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11426.99,
+      "y": 9274.95,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11421.99,
+      "y": 9278.7,
+      "radius": 3.2,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 26.0
+        "seconds": 33.4
       }
     }
   ]

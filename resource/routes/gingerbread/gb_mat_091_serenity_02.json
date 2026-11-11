@@ -1,0 +1,40 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_091_serenity_02",
+  "title": "【满满果】无忧岛·旧迹之地（3个/25秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 120,
+  "teleport": {
+    "name": "旧迹之地",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 952.68,
+    "y": 767.581
+  },
+  "material": "满满果",
+  "count_materials": [
+    "满满果"
+  ],
+  "capacity": 3,
+  "points": [
+    {
+      "x": 952.68,
+      "y": 767.58,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 950.58,
+      "y": 764.6,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.3
+      }
+    }
+  ]
+}

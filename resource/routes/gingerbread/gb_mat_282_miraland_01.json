@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_282_miraland_01",
-  "title": "【骨焰花】埋骨地·龙眠花冢（20个/125秒）",
+  "title": "【骨焰花】埋骨地·龙眠花冢（8个/53秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 321,
+  "timeout": 161,
   "teleport": {
     "name": "龙眠花冢",
     "province": "伊赞之土",
@@ -19,12 +19,12 @@
     "革袋甲",
     "珠链蝶"
   ],
-  "capacity": 36,
+  "capacity": 14,
   "points": [
     {
       "x": 6524.86,
       "y": 5029.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -32,173 +32,59 @@
     {
       "x": 6544.86,
       "y": 5022.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 6568.86,
+      "x": 6580.86,
       "y": 5022.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 6592.86,
-      "y": 5022.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6607.86,
+      "x": 6610.86,
       "y": 5013.65,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6616.86,
-      "y": 5019.65,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6622.86,
-      "y": 5025.65,
-      "radius": 2.5,
-      "jump": true,
       "action": "",
       "params": {}
     },
     {
       "x": 6622.86,
       "y": 5028.65,
-      "radius": 2.5,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6619.86,
+      "y": 5031.65,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 6615.54,
+      "x": 6616.86,
+      "y": 5031.65,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6612.54,
       "y": 5034.17,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.9
-      }
-    },
-    {
-      "x": 6629.54,
-      "y": 5021.35,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6631.08,
-      "y": 5007.35,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 16.0
-      }
-    },
-    {
-      "x": 6639.08,
-      "y": 5015.35,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6650.37,
-      "y": 5030.35,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.7
-      }
-    },
-    {
-      "x": 6682.79,
-      "y": 4997.42,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 8.5
-      }
-    },
-    {
-      "x": 6696.79,
-      "y": 4982.01,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6709.54,
-      "y": 4974.01,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.2
-      }
-    },
-    {
-      "x": 6699.22,
-      "y": 4958.01,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6678.22,
-      "y": 4955.01,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6660.22,
-      "y": 4955.01,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6645.22,
-      "y": 4973.01,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 6646.22,
-      "y": 4983.37,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 2.4
+        "seconds": 18.7
       }
     }
   ]

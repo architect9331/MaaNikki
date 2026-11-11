@@ -1,71 +1,41 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_03",
-  "title": "【全材料·万相境】万相境·深谷幽泉（13个/74秒）",
+  "title": "【全材料·万相境】万相境·九华监（6个/44秒）",
   "map": "wanxiang",
   "start_radius": 6,
-  "timeout": 207,
+  "timeout": 142,
   "teleport": {
-    "name": "深谷幽泉",
+    "name": "九华监",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 2136.137,
-    "y": 1326.019
+    "x": 1592.363,
+    "y": 835.825
   },
   "material": "全材料·万相境",
   "count_materials": [
-    "耳坠萤",
+    "珠链蝶",
     "小绵菊",
-    "刺绣蛾",
-    "荷包草",
-    "名流鸦羽"
+    "荷包草"
   ],
-  "capacity": 13,
+  "capacity": 6,
   "points": [
     {
-      "x": 2136.14,
-      "y": 1326.02,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.8
-      }
-    },
-    {
-      "x": 2141.14,
-      "y": 1343.02,
-      "radius": 2.5,
+      "x": 1592.36,
+      "y": 835.83,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 2141.14,
-      "y": 1361.02,
-      "radius": 2.0,
-      "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 7.5
-      }
-    },
-    {
-      "x": 2144.14,
-      "y": 1373.02,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2154.78,
-      "y": 1389.42,
-      "radius": 2.0,
+      "x": 1596.42,
+      "y": 845.29,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 41.3
+        "seconds": 26.3
       }
     }
   ]

@@ -1,0 +1,225 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_084_serenity_02",
+  "title": "【珠花贝壳】无忧岛·布露村村口（27个/288秒）",
+  "map": "serenity",
+  "start_radius": 6,
+  "timeout": 679,
+  "teleport": {
+    "name": "布露村村口",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 889.635,
+    "y": 406.18
+  },
+  "material": "珠花贝壳",
+  "count_materials": [
+    "珠花贝壳",
+    "小绵菊",
+    "小星扇贝",
+    "纽扣松果",
+    "芭蕾豆娘",
+    "飞球果"
+  ],
+  "capacity": 53,
+  "points": [
+    {
+      "x": 889.63,
+      "y": 406.18,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.4
+      }
+    },
+    {
+      "x": 880.63,
+      "y": 393.75,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 862.63,
+      "y": 387.75,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.2
+      }
+    },
+    {
+      "x": 826.63,
+      "y": 393.75,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 818.63,
+      "y": 394.75,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.2
+      }
+    },
+    {
+      "x": 771.25,
+      "y": 413.4,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.7
+      }
+    },
+    {
+      "x": 738.8,
+      "y": 444.84,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.3
+      }
+    },
+    {
+      "x": 732.87,
+      "y": 464.84,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 720.87,
+      "y": 500.84,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 721.87,
+      "y": 517.18,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.3
+      }
+    },
+    {
+      "x": 730.87,
+      "y": 481.33,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 8.8
+      }
+    },
+    {
+      "x": 734.87,
+      "y": 453.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 766.87,
+      "y": 433.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 798.87,
+      "y": 413.33,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.3
+      }
+    },
+    {
+      "x": 834.87,
+      "y": 401.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 854.87,
+      "y": 389.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 870.87,
+      "y": 389.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 890.87,
+      "y": 405.33,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 914.87,
+      "y": 429.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 928.37,
+      "y": 444.33,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.5
+      }
+    },
+    {
+      "x": 986.77,
+      "y": 410.8,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.1
+      }
+    },
+    {
+      "x": 1013.4,
+      "y": 390.22,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 15.7
+      }
+    }
+  ]
+}

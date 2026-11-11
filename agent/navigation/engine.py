@@ -968,11 +968,19 @@ class Navigator:
                     heading_rechecks = 0
                     if precise:
                         arrival_pose = pose
+                        broad_wait = (
+                            rejoin is None
+                            and target.action == "wait"
+                            and radius >= 2.8
+                            and not (target.params or {}).get("compare_map_positions")
+                        )
+                        accept_radius = radius + 1.1 if broad_wait else radius
                         motion.stop()
                         motion.jump(False, self.walking(), reason="waypoint_arrival")
                         self.pause(.12)
                         confirmed = self.observe((pose.x, pose.y))
-                        settled = distance(pose, confirmed) <= max(.15, min(.4, radius*.25))
+                        settle_tol = 1.0 if broad_wait else max(.15, min(.4, radius*.25))
+                        settled = distance(pose, confirmed) <= settle_tol
                         self.event({"type": "arrival_check", "index": index,
                                     "target": [target.x, target.y], "radius": radius,
                                     "before_stop": [arrival_pose.x, arrival_pose.y],
@@ -981,10 +989,10 @@ class Navigator:
                                     "remaining": distance(confirmed, target), "stop": motion.last_stop})
                         pose = confirmed
                         last = None
-                        if (pose.heading is None or distance(pose, target) > radius or not settled
+                        if (pose.heading is None or distance(pose, target) > accept_radius or not settled
                                 or getattr(self.inputs, "generation", 0) != generation):
                             if getattr(self.inputs, "generation", 0) == generation and (
-                                    distance(pose, target) > radius or not settled):
+                                    distance(pose, target) > accept_radius or not settled):
                                 if turnback_since is None:
                                     turnback_since = time.monotonic()
                                 self.event({

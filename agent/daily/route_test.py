@@ -482,6 +482,7 @@ class RouteTest(Runtime):
         collection_title = str(source.get("title") or "路线清单").strip()
         self.log(f"{collection_title}：共 {len(prepared)} 条路线，开始逐条运行。")
         try:
+            consecutive_empty_routes = 0
             for index, (model, spec, title) in enumerate(prepared, 1):
                 if self.stopped:
                     summary["stopped"] = True
@@ -494,12 +495,22 @@ class RouteTest(Runtime):
                 started = time.monotonic()
                 child_run_settings = {
                     "mode": mode,
+                    "empty_streak": consecutive_empty_routes,
                     **({k: settings[k] for k in ("adaptive_exit", "quiet_seconds", "initial_wait_seconds") if k in settings}),
                 }
                 ok = runner.run_single(child_run_settings, prepared=(model, spec),
                                        directory=child, refocus=index == 1,
                                        force_teleport=bool(model.document.get("teleport")))
                 details = runner.last_result or {"success": False, "error": "执行结果未保存"}
+                gb_info = details.get("gingerbread") if isinstance(details.get("gingerbread"), dict) else None
+                if gb_info is not None:
+                    if int(gb_info.get("expected_0_15m") or 0) >= 4 and int(gb_info.get("total_picked") or 0) == 0:
+                        consecutive_empty_routes += 1
+                        if consecutive_empty_routes == 1:
+                            hint = "提示：首条路线未读取到新材料拾取提示，请确认已召唤小姜饼人随行，或该区域材料尚在冷却中。"
+                            self.log(hint, ui_text=hint)
+                    elif int(gb_info.get("total_picked") or 0) > 0:
+                        consecutive_empty_routes = 0
                 summary["routes"].append({"index": index, "route": model.id, "title": title,
                                           "directory": child.name,
                                           "active_seconds": round(time.monotonic()-started, 3),
@@ -658,7 +669,7 @@ class RouteTest(Runtime):
                 actions.teleporter = teleporter
                 actions.gb_config = {
                     k: settings[k]
-                    for k in ("adaptive_exit", "quiet_seconds", "initial_wait_seconds")
+                    for k in ("adaptive_exit", "quiet_seconds", "initial_wait_seconds", "empty_streak")
                     if k in settings
                 }
             if mode == "home":

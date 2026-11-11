@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_088_miraland_02",
-  "title": "【香薰睡莲】花愿镇·镇长宅邸前（3个/49秒）",
+  "title": "【香薰睡莲】花愿镇·镇长宅邸前（3个/61秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 152,
+  "timeout": 179,
   "teleport": {
     "name": "镇长宅邸前",
     "province": "心愿原野",
@@ -18,16 +18,16 @@
     "晴日蝶兰/雨滴蝶兰",
     "泳镜蝽",
     "香薰睡莲",
-    "满满果",
     "芭蕾豆娘",
-    "滋滋花粉"
+    "滋滋花粉",
+    "满满果"
   ],
-  "capacity": 23,
+  "capacity": 22,
   "points": [
     {
       "x": 10544.63,
       "y": 9974.37,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -35,7 +35,7 @@
     {
       "x": 10541.99,
       "y": 9970.37,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -45,7 +45,7 @@
     {
       "x": 10532.99,
       "y": 9964.37,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
@@ -53,7 +53,7 @@
     {
       "x": 10523.99,
       "y": 9976.37,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -61,7 +61,7 @@
     {
       "x": 10523.99,
       "y": 10000.37,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -69,7 +69,7 @@
     {
       "x": 10520.99,
       "y": 10021.37,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -77,23 +77,15 @@
     {
       "x": 10514.99,
       "y": 10030.37,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10514.99,
-      "y": 10054.37,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10499.99,
-      "y": 10072.37,
-      "radius": 2.5,
+      "x": 10502.99,
+      "y": 10066.37,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -101,7 +93,7 @@
     {
       "x": 10500.99,
       "y": 10086.46,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

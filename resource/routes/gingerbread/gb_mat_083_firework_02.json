@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_083_firework_02",
-  "title": "【兔兔妆粉】花焰群岛·幽暗洞窟前（6个/64秒）",
+  "title": "【兔兔妆粉】花焰群岛·幽暗洞窟前（6个/78秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 187,
+  "timeout": 218,
   "teleport": {
     "name": "幽暗洞窟前",
     "province": "心愿原野",
@@ -15,20 +15,18 @@
   "material": "兔兔妆粉",
   "count_materials": [
     "兔兔妆粉",
-    "壁灯红椒",
     "小绵菊",
     "发卡蚱蜢",
     "噼啪花粉",
-    "草绒球",
     "兔尾绒团",
     "满满果"
   ],
-  "capacity": 23,
+  "capacity": 17,
   "points": [
     {
       "x": 945.34,
       "y": 225.63,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -36,7 +34,7 @@
     {
       "x": 1012.32,
       "y": 163.31,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -46,7 +44,7 @@
     {
       "x": 1077.45,
       "y": 328.03,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": true,
       "action": "wait",
       "params": {

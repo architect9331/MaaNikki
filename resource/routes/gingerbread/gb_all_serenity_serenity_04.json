@@ -1,51 +1,74 @@
 {
   "schema_version": 3,
   "id": "gb_all_serenity_serenity_04",
-  "title": "【全材料·无忧岛】无忧岛·泡泡花田（13个/64秒）",
+  "title": "【全材料·无忧岛】无忧岛·布蜜蜜花园（29个/175秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 186,
+  "timeout": 429,
   "teleport": {
-    "name": "泡泡花田",
+    "name": "布蜜蜜花园",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 1062.068,
-    "y": 537.513
+    "x": 840.84,
+    "y": 864.333
   },
   "material": "全材料·无忧岛",
   "count_materials": [
     "珠链蝶",
-    "风絮草",
-    "美食家蜜蜂"
+    "美食家蜜蜂",
+    "满满果",
+    "兔尾绒团",
+    "布布果",
+    "路灯花",
+    "小绵菊",
+    "兔兔妆粉"
   ],
-  "capacity": 13,
+  "capacity": 29,
   "points": [
     {
-      "x": 1062.07,
-      "y": 537.51,
-      "radius": 2.0,
+      "x": 840.84,
+      "y": 864.33,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 40.7
+        "seconds": 102.3
       }
     },
     {
-      "x": 1064.07,
-      "y": 535.18,
-      "radius": 2.5,
+      "x": 841.45,
+      "y": 860.13,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1063.79,
-      "y": 530.18,
-      "radius": 2.0,
+      "x": 823.45,
+      "y": 845.13,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.0
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 808.45,
+      "y": 851.13,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 785.45,
+      "y": 864.13,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 26.6
       }
     }
   ]

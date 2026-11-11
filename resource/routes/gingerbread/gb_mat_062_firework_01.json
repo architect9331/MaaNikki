@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_062_firework_01",
-  "title": "【织衣蛛】花焰群岛·幽暗洞窟前（2个/29秒）",
+  "title": "【织衣蛛】花焰群岛·幽暗洞窟前（2个/35秒）",
   "map": "firework",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 123,
   "teleport": {
     "name": "幽暗洞窟前",
     "province": "心愿原野",
@@ -17,56 +17,48 @@
     "耳坠萤",
     "织衣蛛"
   ],
-  "capacity": 9,
+  "capacity": 7,
   "points": [
     {
       "x": 945.34,
       "y": 225.63,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 944.53,
-      "y": 204.17,
-      "radius": 2.5,
+      "x": 947.06,
+      "y": 188.51,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 944.53,
-      "y": 180.17,
-      "radius": 2.5,
+      "x": 947.06,
+      "y": 176.51,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 944.53,
-      "y": 177.17,
-      "radius": 2.5,
+      "x": 944.06,
+      "y": 173.51,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 944.53,
-      "y": 174.17,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 939.53,
-      "y": 169.17,
-      "radius": 2.0,
+      "x": 939.06,
+      "y": 168.51,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.0
+        "seconds": 10.1
       }
     }
   ]

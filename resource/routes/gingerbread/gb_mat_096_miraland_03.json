@@ -1,0 +1,212 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_096_miraland_03",
+  "title": "【小绵菊】微风绿野·捕虫小屋（28个/203秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 491,
+  "teleport": {
+    "name": "捕虫小屋",
+    "province": "心愿原野",
+    "region": "微风绿野",
+    "x": 10143.896,
+    "y": 10474.933
+  },
+  "material": "小绵菊",
+  "count_materials": [
+    "小绵菊",
+    "珠链蝶",
+    "草绒球",
+    "刺绣蛾",
+    "骑士马鬃",
+    "发卡蚱蜢",
+    "贵族卷毛"
+  ],
+  "capacity": 62,
+  "points": [
+    {
+      "x": 10143.9,
+      "y": 10474.93,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10145.9,
+      "y": 10482.93,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10169.02,
+      "y": 10481.68,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.7
+      }
+    },
+    {
+      "x": 10201.69,
+      "y": 10511.76,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.0
+      }
+    },
+    {
+      "x": 10220.8,
+      "y": 10543.36,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.1
+      }
+    },
+    {
+      "x": 10221.46,
+      "y": 10557.36,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10212.46,
+      "y": 10593.36,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10210.46,
+      "y": 10626.89,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.1
+      }
+    },
+    {
+      "x": 10245.46,
+      "y": 10613.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10254.07,
+      "y": 10614.57,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.3
+      }
+    },
+    {
+      "x": 10274.07,
+      "y": 10582.69,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10283.07,
+      "y": 10561.69,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10288.95,
+      "y": 10550.69,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.1
+      }
+    },
+    {
+      "x": 10260.92,
+      "y": 10527.6,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10254.92,
+      "y": 10503.6,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10261.92,
+      "y": 10495.6,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.1
+      }
+    },
+    {
+      "x": 10245.55,
+      "y": 10461.44,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10233.55,
+      "y": 10437.44,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10233.55,
+      "y": 10404.44,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10236.55,
+      "y": 10401.44,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10240.55,
+      "y": 10399.44,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    }
+  ]
+}

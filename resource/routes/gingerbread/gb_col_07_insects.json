@@ -6,36 +6,36 @@
   "continue_on_failure": true,
   "routes": [
     {
-      "route": "gb_cat_insect_firework_01",
-      "title": "【全昆虫速刷】花焰群岛·月角浅滩（70个/253秒）"
+      "route": "gb_cat_insect_miraland_01",
+      "title": "【全昆虫速刷】埋骨地·居落广场升降台（54个/202秒）"
     },
     {
-      "route": "gb_cat_insect_serenity_02",
-      "title": "【全昆虫速刷】无忧岛·守望之地（9个/41秒）"
+      "route": "gb_cat_insect_miraland_02",
+      "title": "【全昆虫速刷】埋骨地·大拉姆居落迎厅入口（46个/229秒）"
     },
     {
-      "route": "gb_cat_insect_danqing_03",
-      "title": "【全昆虫速刷】丹青屿·栖龙峰山腰（9个/42秒）"
+      "route": "gb_cat_insect_serenity_03",
+      "title": "【全昆虫速刷】无忧岛·守望之地（10个/51秒）"
     },
     {
       "route": "gb_cat_insect_serenity_04",
-      "title": "【全昆虫速刷】无忧岛·布蜜蜜花园（36个/169秒）"
+      "title": "【全昆虫速刷】无忧岛·布露村村口（22个/118秒）"
     },
     {
       "route": "gb_cat_insect_firework_05",
-      "title": "【全昆虫速刷】花焰群岛·滋啦啦服务社（59个/278秒）"
+      "title": "【全昆虫速刷】花焰群岛·聆风高地山麓（15个/82秒）"
     },
     {
-      "route": "gb_cat_insect_serenity_06",
-      "title": "【全昆虫速刷】无忧岛·布露村村口（55个/260秒）"
+      "route": "gb_cat_insect_miraland_06",
+      "title": "【全昆虫速刷】磐城·金庭前广场（34个/190秒）"
     },
     {
-      "route": "gb_cat_insect_miraland_07",
-      "title": "【全昆虫速刷】磐城·糖坊上层（54个/257秒）"
+      "route": "gb_cat_insect_firework_07",
+      "title": "【全昆虫速刷】花焰群岛·滋啦啦服务社（36个/204秒）"
     },
     {
-      "route": "gb_cat_insect_miraland_08",
-      "title": "【全昆虫速刷】磐城·环圃一层种植区（49个/235秒）"
+      "route": "gb_cat_insect_danqing_08",
+      "title": "【全昆虫速刷】丹青屿·栖龙峰侧峰（10个/57秒）"
     }
   ]
 }

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_286_miraland_02",
-  "title": "【蓝鳞晶】埋骨地·疗愈地（6个/44秒）",
+  "title": "【蓝鳞晶】埋骨地·疗愈地（6个/54秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 141,
+  "timeout": 164,
   "teleport": {
     "name": "疗愈地",
     "province": "伊赞之土",
@@ -23,59 +23,53 @@
     {
       "x": 7509.21,
       "y": 4444.6,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7494.45,
-      "y": 4425.85,
-      "radius": 2.5,
+      "x": 7490.42,
+      "y": 4415.1,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7485.45,
-      "y": 4404.85,
-      "radius": 2.5,
+      "x": 7484.42,
+      "y": 4379.1,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7485.45,
-      "y": 4380.85,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7488.45,
-      "y": 4365.85,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7497.45,
-      "y": 4353.85,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7498.45,
-      "y": 4345.85,
-      "radius": 2.0,
+      "x": 7487.42,
+      "y": 4367.1,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 18.0
+        "seconds": 5.3
+      }
+    },
+    {
+      "x": 7499.42,
+      "y": 4352.1,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7497.42,
+      "y": 4344.1,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.9
       }
     }
   ]

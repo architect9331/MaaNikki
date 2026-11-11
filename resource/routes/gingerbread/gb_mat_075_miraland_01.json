@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_075_miraland_01",
-  "title": "【美甲金龟】祈愿树林·古铸剑遗址入口（3个/54秒）",
+  "title": "【美甲金龟】祈愿树林·古铸剑遗址入口（3个/68秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 164,
+  "timeout": 194,
   "teleport": {
     "name": "古铸剑遗址入口",
     "province": "心愿原野",
@@ -14,62 +14,62 @@
   },
   "material": "美甲金龟",
   "count_materials": [
+    "珠链蝶",
     "小星扇贝",
     "满满果",
     "长袜羊毛",
     "美甲金龟",
-    "珠链蝶",
     "珠花贝壳",
     "路灯花",
     "发卡蚱蜢",
     "美食家蜜蜂"
   ],
-  "capacity": 23,
+  "capacity": 24,
   "points": [
     {
       "x": 11846.96,
       "y": 9216.1,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11851.96,
-      "y": 9209.1,
-      "radius": 2.5,
+      "x": 11845.96,
+      "y": 9212.1,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11869.96,
-      "y": 9203.1,
-      "radius": 2.5,
+      "x": 11857.96,
+      "y": 9206.1,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11884.96,
-      "y": 9218.1,
-      "radius": 2.5,
+      "x": 11863.96,
+      "y": 9200.1,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11902.96,
-      "y": 9233.1,
-      "radius": 2.5,
+      "x": 11890.96,
+      "y": 9224.1,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11917.96,
-      "y": 9248.1,
-      "radius": 2.5,
+      "x": 11911.96,
+      "y": 9239.1,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -77,7 +77,7 @@
     {
       "x": 11926.41,
       "y": 9257.16,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -85,29 +85,21 @@
       }
     },
     {
-      "x": 11946.41,
-      "y": 9265.16,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 11961.41,
       "y": 9271.16,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11965.63,
-      "y": 9269.9,
-      "radius": 2.0,
+      "x": 11967.36,
+      "y": 9269.22,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.9
+        "seconds": 11.0
       }
     }
   ]

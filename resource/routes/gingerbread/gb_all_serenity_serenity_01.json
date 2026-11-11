@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_serenity_serenity_01",
-  "title": "【全材料·无忧岛】无忧岛·咚咚小屋聚落（8个/32秒）",
+  "title": "【全材料·无忧岛】无忧岛·咚咚小屋聚落（8个/38秒）",
   "map": "serenity",
   "start_radius": 6,
-  "timeout": 120,
+  "timeout": 128,
   "teleport": {
     "name": "咚咚小屋聚落",
     "province": "心愿原野",
@@ -16,50 +16,66 @@
   "count_materials": [
     "小绵菊",
     "飞球果",
-    "芭蕾豆娘"
+    "小星扇贝"
   ],
   "capacity": 8,
   "points": [
     {
       "x": 822.68,
       "y": 542.5,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 820.07,
+      "x": 820.86,
       "y": 538.5,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 802.07,
-      "y": 547.5,
-      "radius": 2.5,
+      "x": 817.86,
+      "y": 535.5,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 811.86,
+      "y": 538.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 799.07,
-      "y": 553.5,
-      "radius": 2.5,
+      "x": 811.86,
+      "y": 541.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 803.07,
-      "y": 558.06,
-      "radius": 2.0,
+      "x": 802.86,
+      "y": 550.5,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 812.86,
+      "y": 561.38,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 16.6
+        "seconds": 14.6
       }
     }
   ]

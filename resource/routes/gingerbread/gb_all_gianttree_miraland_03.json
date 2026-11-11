@@ -1,67 +1,82 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_03",
-  "title": "【全材料·巨木之森】巨木之森·巨矛前驿站（14个/75秒）",
+  "title": "【全材料·巨木之森】巨木之森·巨人墓园（11个/72秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 211,
+  "timeout": 203,
   "teleport": {
-    "name": "巨矛前驿站",
+    "name": "巨人墓园",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4387.351,
-    "y": 7929.628
+    "x": 2891.806,
+    "y": 8601.681
   },
   "material": "全材料·巨木之森",
   "count_materials": [
-    "小野菊",
-    "满满果",
-    "行鹭羽",
-    "路灯花",
-    "草裙毛团"
+    "壁灯红椒",
+    "木夹跳甲"
   ],
-  "capacity": 14,
+  "capacity": 11,
   "points": [
     {
-      "x": 4387.35,
-      "y": 7929.63,
-      "radius": 2.5,
+      "x": 2891.81,
+      "y": 8601.68,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4392.35,
-      "y": 7935.41,
-      "radius": 2.5,
+      "x": 2896.81,
+      "y": 8597.68,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4395.35,
-      "y": 7932.41,
-      "radius": 2.5,
+      "x": 2902.81,
+      "y": 8606.68,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4416.35,
-      "y": 7923.41,
-      "radius": 2.5,
-      "jump": false,
+      "x": 2917.81,
+      "y": 8630.68,
+      "radius": 2.8,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 4429.95,
-      "y": 7921.41,
-      "radius": 2.0,
+      "x": 2929.81,
+      "y": 8633.68,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 58.2
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 2962.81,
+      "y": 8648.68,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2995.62,
+      "y": 8653.41,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 26.3
       }
     }
   ]

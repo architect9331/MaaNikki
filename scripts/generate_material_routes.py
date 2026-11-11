@@ -177,7 +177,7 @@ def main() -> int:
     )
     parser.add_argument("--top-k", type=int, default=5, help="Max routes to generate.")
     parser.add_argument("--quota", type=int, default=None, help="Target item count quota.")
-    parser.add_argument("--radius", type=float, default=13.5, help="Safe Gingerbread cover radius in meters.")
+    parser.add_argument("--radius", type=float, default=13.8, help="Safe Gingerbread cover radius in meters.")
     parser.add_argument("--fish-casts", type=int, default=1, help="Fishing catches per fishing spot.")
     parser.add_argument(
         "--output-dir",

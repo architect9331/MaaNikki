@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_mat_280_miraland_01",
-  "title": "【蜉幽幽】埋骨地·灵魂观察所廊柱厅（2个/28秒）",
+  "title": "【蜉幽幽】埋骨地·灵魂观察所廊柱厅（2个/34秒）",
   "map": "miraland",
   "start_radius": 6,
   "timeout": 120,
@@ -25,63 +25,55 @@
     {
       "x": 7083.33,
       "y": 5246.12,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7075.89,
+      "x": 7076.33,
       "y": 5245.12,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7072.89,
-      "y": 5248.12,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7069.89,
+      "x": 7070.33,
       "y": 5251.12,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7069.89,
+      "x": 7070.33,
       "y": 5254.12,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7072.89,
+      "x": 7073.33,
       "y": 5257.12,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7081.89,
-      "y": 5254.12,
-      "radius": 2.5,
+      "x": 7076.33,
+      "y": 5257.12,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7082.89,
-      "y": 5251.58,
-      "radius": 2.0,
+      "x": 7083.34,
+      "y": 5251.81,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

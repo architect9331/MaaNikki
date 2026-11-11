@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_281_miraland_02",
-  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（39个/143秒）",
+  "title": "【晴雨伞】埋骨地·龙巢山飞瀑崖顶（39个/177秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 360,
+  "timeout": 435,
   "teleport": {
     "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
@@ -25,156 +25,108 @@
     "蓝鳞晶",
     "羽巾绒"
   ],
-  "capacity": 60,
+  "capacity": 61,
   "points": [
     {
       "x": 8063.15,
       "y": 5243.19,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8068.15,
-      "y": 5236.88,
-      "radius": 2.5,
+      "x": 8065.15,
+      "y": 5244.22,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8071.15,
-      "y": 5215.88,
-      "radius": 2.5,
+      "x": 8089.15,
+      "y": 5220.22,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8080.15,
-      "y": 5197.88,
-      "radius": 2.5,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8082.81,
-      "y": 5186.88,
-      "radius": 2.0,
+      "x": 8107.15,
+      "y": 5199.22,
+      "radius": 2.8,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 18.6
-      }
-    },
-    {
-      "x": 8099.81,
-      "y": 5172.22,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8123.81,
-      "y": 5172.22,
-      "radius": 2.5,
-      "jump": true,
       "action": "",
       "params": {}
     },
     {
       "x": 8126.5,
       "y": 5173.22,
-      "radius": 2.0,
-      "jump": true,
+      "radius": 3.2,
+      "jump": false,
       "action": "wait",
       "params": {
         "seconds": 23.8
       }
     },
     {
+      "x": 8090.81,
+      "y": 5178.22,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8082.81,
+      "y": 5186.88,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 18.6
+      }
+    },
+    {
       "x": 8096.39,
       "y": 5141.96,
-      "radius": 2.0,
-      "jump": false,
+      "radius": 3.2,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 15.2
       }
     },
     {
-      "x": 8119.39,
-      "y": 5143.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8140.39,
-      "y": 5137.96,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8152.19,
-      "y": 5143.31,
-      "radius": 2.0,
+      "x": 8148.7,
+      "y": 5139.17,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.2
+        "seconds": 15.3
       }
     },
     {
-      "x": 8137.96,
-      "y": 5136.31,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8122.96,
-      "y": 5151.31,
-      "radius": 2.5,
+      "x": 8134.96,
+      "y": 5141.17,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 8104.96,
-      "y": 5163.31,
-      "radius": 2.5,
+      "y": 5159.17,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8083.96,
-      "y": 5166.31,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8059.96,
-      "y": 5166.31,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8038.96,
-      "y": 5169.31,
-      "radius": 2.5,
+      "x": 8068.96,
+      "y": 5168.17,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -182,7 +134,7 @@
     {
       "x": 8033.96,
       "y": 5171.94,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

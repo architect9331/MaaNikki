@@ -1,73 +1,59 @@
 {
   "schema_version": 3,
   "id": "gb_mat_315_miraland_02",
-  "title": "【机芯果】磐城·集市旁停泊处（10个/79秒）",
+  "title": "【机芯果】磐城·金庭大桥前（9个/78秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 219,
+  "timeout": 217,
   "teleport": {
-    "name": "集市旁停泊处",
+    "name": "金庭大桥前",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4129.301,
-    "y": 4158.628
+    "x": 3675.783,
+    "y": 3589.825
   },
   "material": "机芯果",
   "count_materials": [
-    "探险家蜜蜂",
-    "珠链蝶",
-    "机芯果",
-    "小野菊",
-    "满满果"
+    "机芯果"
   ],
-  "capacity": 53,
+  "capacity": 9,
   "points": [
     {
-      "x": 4129.3,
-      "y": 4158.63,
-      "radius": 2.5,
+      "x": 3675.78,
+      "y": 3589.82,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4128.62,
-      "y": 4177.58,
-      "radius": 2.0,
+      "x": 3657.94,
+      "y": 3666.57,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 8.9
+        "seconds": 8.5
       }
     },
     {
-      "x": 4159.44,
-      "y": 4143.97,
-      "radius": 2.0,
+      "x": 3684.58,
+      "y": 3696.51,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.3
+        "seconds": 8.5
       }
     },
     {
-      "x": 4191.31,
-      "y": 4187.07,
-      "radius": 2.0,
+      "x": 3724.07,
+      "y": 3660.35,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.7
-      }
-    },
-    {
-      "x": 4174.65,
-      "y": 4211.22,
-      "radius": 2.0,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 15.2
+        "seconds": 8.5
       }
     }
   ]

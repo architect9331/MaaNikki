@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_192_miraland_01",
-  "title": "【沙沙毛团】磐城·晨曦集市（8个/100秒）",
+  "title": "【沙沙毛团】磐城·晨曦集市（8个/140秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 265,
+  "timeout": 353,
   "teleport": {
     "name": "晨曦集市",
     "province": "伊赞之土",
@@ -27,15 +27,15 @@
     {
       "x": 4026.35,
       "y": 3950.48,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4044.12,
+      "x": 4042.12,
       "y": 3946.74,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -45,7 +45,7 @@
     {
       "x": 4024.68,
       "y": 3982.86,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -55,7 +55,7 @@
     {
       "x": 3996.26,
       "y": 3972.38,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -65,7 +65,7 @@
     {
       "x": 3978.1,
       "y": 4016.13,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -75,7 +75,7 @@
     {
       "x": 3982.03,
       "y": 4045.9,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": true,
       "action": "wait",
       "params": {
@@ -85,7 +85,7 @@
     {
       "x": 3911.48,
       "y": 4046.89,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -95,7 +95,7 @@
     {
       "x": 3936.21,
       "y": 4131.15,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": true,
       "action": "wait",
       "params": {

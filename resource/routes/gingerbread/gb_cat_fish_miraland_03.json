@@ -1,0 +1,80 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_fish_miraland_03",
+  "title": "【全鱼类垂钓】埋骨地·古息坡道（19个/89秒）",
+  "map": "miraland",
+  "start_radius": 6,
+  "timeout": 241,
+  "teleport": {
+    "name": "古息坡道",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 6883.245,
+    "y": 4762.082
+  },
+  "material": "全鱼类垂钓",
+  "count_materials": [
+    "晴雨伞",
+    "蓝鳞晶",
+    "钓鱼点",
+    "珠花贝壳",
+    "小星扇贝"
+  ],
+  "capacity": 19,
+  "points": [
+    {
+      "x": 6883.24,
+      "y": 4762.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6888.24,
+      "y": 4758.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6900.24,
+      "y": 4758.08,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.6
+      }
+    },
+    {
+      "x": 6906.24,
+      "y": 4761.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6942.24,
+      "y": 4764.08,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.8
+      }
+    },
+    {
+      "x": 6970.23,
+      "y": 4779.08,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 31.2
+      }
+    }
+  ]
+}

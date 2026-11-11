@@ -1,88 +1,69 @@
 {
   "schema_version": 3,
   "id": "gb_mat_274_miraland_02",
-  "title": "【羽巾绒】埋骨地·居落广场升降台（8个/75秒）",
+  "title": "【羽巾绒】埋骨地·龙巢山飞瀑崖顶（8个/82秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 211,
+  "timeout": 226,
   "teleport": {
-    "name": "居落广场升降台",
+    "name": "龙巢山飞瀑崖顶",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 7130.375,
-    "y": 4439.642
+    "x": 8063.15,
+    "y": 5243.188
   },
   "material": "羽巾绒",
   "count_materials": [
+    "钓鱼点",
     "羽巾绒",
-    "金灵毛球"
+    "金灵毛球",
+    "大叶鹿绒",
+    "茸芽鹿绒",
+    "晴雨伞",
+    "风舞花"
   ],
-  "capacity": 16,
+  "capacity": 53,
   "points": [
     {
-      "x": 7130.38,
-      "y": 4439.64,
-      "radius": 2.5,
+      "x": 8063.15,
+      "y": 5243.19,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7141.38,
-      "y": 4453.64,
-      "radius": 2.5,
+      "x": 8067.31,
+      "y": 5238.75,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7165.38,
-      "y": 4453.64,
-      "radius": 2.5,
+      "x": 8061.31,
+      "y": 5202.75,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7174.38,
-      "y": 4450.64,
-      "radius": 2.5,
+      "x": 8052.31,
+      "y": 5166.75,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7198.38,
-      "y": 4450.64,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7204.38,
-      "y": 4450.64,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7207.38,
-      "y": 4453.64,
-      "radius": 2.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7209.33,
-      "y": 4470.18,
-      "radius": 2.0,
-      "jump": false,
+      "x": 8047.31,
+      "y": 5158.75,
+      "radius": 3.2,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 50.7
+        "seconds": 52.7
       }
     }
   ]

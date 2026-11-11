@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_mat_286_miraland_01",
-  "title": "【蓝鳞晶】埋骨地·蓝池东侧修习所渡口（8个/53秒）",
+  "title": "【蓝鳞晶】埋骨地·蓝池东侧修习所渡口（8个/66秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 162,
+  "timeout": 190,
   "teleport": {
     "name": "蓝池东侧修习所渡口",
     "province": "伊赞之土",
@@ -29,7 +29,7 @@
     {
       "x": 7649.96,
       "y": 4981.8,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -37,7 +37,7 @@
     {
       "x": 7660.96,
       "y": 4962.48,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -47,7 +47,7 @@
     {
       "x": 7672.96,
       "y": 4944.48,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
@@ -55,7 +55,7 @@
     {
       "x": 7681.96,
       "y": 4926.48,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
@@ -63,7 +63,7 @@
     {
       "x": 7687.96,
       "y": 4908.48,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
@@ -71,7 +71,7 @@
     {
       "x": 7684.96,
       "y": 4887.48,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -79,7 +79,7 @@
     {
       "x": 7666.96,
       "y": 4875.48,
-      "radius": 2.5,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
@@ -87,7 +87,7 @@
     {
       "x": 7660.37,
       "y": 4876.48,
-      "radius": 2.0,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

@@ -1,49 +1,77 @@
 {
   "schema_version": 3,
   "id": "gb_mat_308_miraland_01",
-  "title": "【斗篷绒毛】磐城·晨曦集市（8个/93秒）",
+  "title": "【斗篷绒毛】磐城·幼蘑休憩处（13个/194秒）",
   "map": "miraland",
   "start_radius": 6,
-  "timeout": 249,
+  "timeout": 471,
   "teleport": {
-    "name": "晨曦集市",
+    "name": "幼蘑休憩处",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 4026.351,
-    "y": 3950.481
+    "x": 3752.36,
+    "y": 4232.805
   },
   "material": "斗篷绒毛",
   "count_materials": [
-    "蓝玉甲虫",
     "斗篷绒毛",
-    "珠坠甲虫",
-    "珠链蝶",
-    "沙沙毛团"
+    "风舞花",
+    "名流鸦羽"
   ],
-  "capacity": 25,
+  "capacity": 17,
   "points": [
     {
-      "x": 4026.35,
-      "y": 3950.48,
-      "radius": 2.5,
+      "x": 3752.36,
+      "y": 4232.81,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4047.93,
-      "y": 3965.15,
-      "radius": 2.0,
+      "x": 3783.61,
+      "y": 4298.59,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.7
+        "seconds": 9.3
       }
     },
     {
-      "x": 4000.8,
-      "y": 3914.22,
-      "radius": 2.0,
+      "x": 3818.01,
+      "y": 4331.72,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.3
+      }
+    },
+    {
+      "x": 3870.49,
+      "y": 4271.99,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.3
+      }
+    },
+    {
+      "x": 3915.95,
+      "y": 4242.01,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 15.5
+      }
+    },
+    {
+      "x": 3906.93,
+      "y": 4173.54,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
@@ -51,29 +79,29 @@
       }
     },
     {
-      "x": 4091.12,
-      "y": 3892.9,
-      "radius": 2.0,
+      "x": 3889.74,
+      "y": 4161.83,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 17.4
+        "seconds": 4.8
       }
     },
     {
-      "x": 4144.52,
-      "y": 3884.25,
-      "radius": 2.0,
+      "x": 3784.13,
+      "y": 4134.93,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 10.8
+        "seconds": 4.8
       }
     },
     {
-      "x": 4152.6,
-      "y": 3848.22,
-      "radius": 2.0,
+      "x": 3773.04,
+      "y": 4203.93,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {

@@ -7,67 +7,67 @@
   "routes": [
     {
       "route": "gb_all_firework_firework_01",
-      "title": "【全材料·花焰群岛】花焰群岛·聆风高地山麓（24个/94秒）"
+      "title": "【全材料·花焰群岛】花焰群岛·聆风高地山麓（5个/29秒）"
     },
     {
       "route": "gb_all_firework_firework_02",
-      "title": "【全材料·花焰群岛】花焰群岛·月角浅滩（12个/54秒）"
+      "title": "【全材料·花焰群岛】花焰群岛·聆风高地山腰（8个/47秒）"
     },
     {
       "route": "gb_all_firework_firework_03",
-      "title": "【全材料·花焰群岛】花焰群岛·滋啦啦服务社（39个/180秒）"
+      "title": "【全材料·花焰群岛】花焰群岛·幽暗洞窟前（14个/89秒）"
     },
     {
       "route": "gb_all_firework_firework_04",
-      "title": "【全材料·花焰群岛】花焰群岛·聆风高地山腰（11个/58秒）"
+      "title": "【全材料·花焰群岛】花焰群岛·月角浅滩（6个/42秒）"
     },
     {
       "route": "gb_all_serenity_serenity_01",
-      "title": "【全材料·无忧岛】无忧岛·咚咚小屋聚落（8个/32秒）"
+      "title": "【全材料·无忧岛】无忧岛·咚咚小屋聚落（8个/38秒）"
     },
     {
       "route": "gb_all_serenity_serenity_02",
-      "title": "【全材料·无忧岛】无忧岛·守望之地（19个/77秒）"
+      "title": "【全材料·无忧岛】无忧岛·守望之地（19个/92秒）"
     },
     {
       "route": "gb_all_serenity_serenity_03",
-      "title": "【全材料·无忧岛】无忧岛·布蜜蜜花园（52个/223秒）"
+      "title": "【全材料·无忧岛】无忧岛·布露村村口（9个/52秒）"
     },
     {
       "route": "gb_all_serenity_serenity_04",
-      "title": "【全材料·无忧岛】无忧岛·泡泡花田（13个/64秒）"
+      "title": "【全材料·无忧岛】无忧岛·布蜜蜜花园（29个/175秒）"
     },
     {
       "route": "gb_all_danqing_danqing_01",
-      "title": "【全材料·丹青屿】丹青屿·栖龙峰山腰（9个/42秒）"
+      "title": "【全材料·丹青屿】丹青屿·栖龙峰山腰（8个/34秒）"
     },
     {
       "route": "gb_all_danqing_danqing_02",
-      "title": "【全材料·丹青屿】丹青屿·栖龙峰侧峰（28个/144秒）"
+      "title": "【全材料·丹青屿】丹青屿·奉龙塔（12个/75秒）"
     },
     {
       "route": "gb_all_danqing_danqing_03",
-      "title": "【全材料·丹青屿】丹青屿·逢花林（52个/280秒）"
+      "title": "【全材料·丹青屿】丹青屿·村边畦田（12个/75秒）"
     },
     {
       "route": "gb_all_danqing_danqing_04",
-      "title": "【全材料·丹青屿】丹青屿·村边畦田（29个/156秒）"
+      "title": "【全材料·丹青屿】丹青屿·栖龙峰侧峰（13个/83秒）"
     },
     {
       "route": "gb_all_wanxiang_wanxiang_01",
-      "title": "【全材料·万相境】万相境·火锅坊（26个/128秒）"
+      "title": "【全材料·万相境】万相境·彩靥城近郊（13个/78秒）"
     },
     {
       "route": "gb_all_wanxiang_wanxiang_02",
-      "title": "【全材料·万相境】万相境·九华监（14个/79秒）"
+      "title": "【全材料·万相境】万相境·迷花甸（11个/68秒）"
     },
     {
       "route": "gb_all_wanxiang_wanxiang_03",
-      "title": "【全材料·万相境】万相境·深谷幽泉（13个/74秒）"
+      "title": "【全材料·万相境】万相境·九华监（6个/44秒）"
     },
     {
       "route": "gb_all_wanxiang_wanxiang_04",
-      "title": "【全材料·万相境】万相境·迷花甸（9个/55秒）"
+      "title": "【全材料·万相境】万相境·深谷幽泉（6个/50秒）"
     }
   ]
 }

@@ -1,0 +1,105 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_wanxiang_08",
+  "title": "【全动物清洁】万相境·火锅坊（16个/98秒）",
+  "map": "wanxiang",
+  "start_radius": 6,
+  "timeout": 261,
+  "teleport": {
+    "name": "火锅坊",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 1399.524,
+    "y": 1108.824
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "满满果",
+    "蓝珀鸟羽",
+    "胭脂翎羽",
+    "小绵菊",
+    "荷包草",
+    "画眉毛团"
+  ],
+  "capacity": 16,
+  "points": [
+    {
+      "x": 1399.52,
+      "y": 1108.82,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1395.46,
+      "y": 1104.68,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1386.46,
+      "y": 1101.68,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.3
+      }
+    },
+    {
+      "x": 1383.46,
+      "y": 1092.68,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1383.46,
+      "y": 1065.68,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 25.0
+      }
+    },
+    {
+      "x": 1398.46,
+      "y": 1053.68,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1401.46,
+      "y": 1050.68,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1401.46,
+      "y": 1041.68,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1387.46,
+      "y": 1027.68,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 22.7
+      }
+    }
+  ]
+}

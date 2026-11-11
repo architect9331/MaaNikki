@@ -7,35 +7,35 @@
   "routes": [
     {
       "route": "gb_cat_fish_serenity_01",
-      "title": "【全鱼类垂钓】无忧岛·守望之地（15个/51秒）"
+      "title": "【全鱼类垂钓】无忧岛·守望之地（15个/57秒）"
     },
     {
-      "route": "gb_cat_fish_miraland_02",
-      "title": "【全鱼类垂钓】微风绿野·悠悠垂钓协会花愿镇分部（24个/86秒）"
+      "route": "gb_cat_fish_danqing_02",
+      "title": "【全鱼类垂钓】丹青屿·栖龙峰山腰（8个/34秒）"
     },
     {
-      "route": "gb_cat_fish_firework_03",
-      "title": "【全鱼类垂钓】花焰群岛·月角浅滩（10个/37秒）"
+      "route": "gb_cat_fish_miraland_03",
+      "title": "【全鱼类垂钓】埋骨地·古息坡道（19个/89秒）"
     },
     {
       "route": "gb_cat_fish_serenity_04",
-      "title": "【全鱼类垂钓】无忧岛·咚咚小屋聚落（8个/31秒）"
+      "title": "【全鱼类垂钓】无忧岛·咚咚小屋聚落（8个/38秒）"
     },
     {
       "route": "gb_cat_fish_miraland_05",
-      "title": "【全鱼类垂钓】埋骨地·古息坡道（20个/85秒）"
+      "title": "【全鱼类垂钓】微风绿野·悠悠垂钓协会花愿镇分部（20个/99秒）"
     },
     {
-      "route": "gb_cat_fish_firework_06",
-      "title": "【全鱼类垂钓】花焰群岛·幽暗洞窟前（10个/43秒）"
+      "route": "gb_cat_fish_danqing_06",
+      "title": "【全鱼类垂钓】丹青屿·栖龙峰侧峰（9个/45秒）"
     },
     {
       "route": "gb_cat_fish_wanxiang_07",
-      "title": "【全鱼类垂钓】万相境·九华监（6个/26秒）"
+      "title": "【全鱼类垂钓】万相境·九华监（6个/32秒）"
     },
     {
       "route": "gb_cat_fish_miraland_08",
-      "title": "【全鱼类垂钓】花愿镇·镇长宅邸前（20个/89秒）"
+      "title": "【全鱼类垂钓】花愿镇·镇长宅邸前（16个/88秒）"
     }
   ]
 }
