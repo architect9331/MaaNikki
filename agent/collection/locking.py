@@ -211,19 +211,27 @@ class BlessingLocker(InventoryScanner):
         for _ in range(8 if settle_card else 6):
             frame = self.frame(generation)
             visible = False
-            if old_box is not None:
-                roi = self.detail_roi(panel[2]) if panel is not None else self.header_region(frame, old_box)
-                if roi is not None:
-                    if panel is not None and self.same_fields(panel[3], frame, panel[2]):
-                        visible = True
-                    elif not (self.same_structure(frame, self._page_frame, roi)
-                              or previous is not None and self.same_structure(previous, frame, roi)):
-                        # Bright clothing can look like the tooltip's paper.
-                        # The clear-page reference handles unchanged scenery;
-                        # after selection/camera changes, verify local header
-                        # text using the scanner's existing stale-panel check.
-                        visible = bool(self.ocr(roi, frame, HEADER))
+            candidates = ([self.detail_roi(panel[2]) if panel is not None else self.header_region(frame, old_box)]
+                          if old_box is not None else
+                          [self.header_region(frame, [self.layout["first_x"] + col * self.layout["column_pitch"], 72, 95, 101])
+                           for col in range(self.layout["columns"])])
+            for roi in candidates:
+                if roi is None:
+                    continue
+                if old_box is not None and panel is not None and self.same_fields(panel[3], frame, panel[2]):
+                    visible = True
+                    break
+                if not (self.same_structure(frame, self._page_frame, roi)
+                        or previous is not None and self.same_structure(previous, frame, roi)):
+                    # Bright clothing can look like the tooltip's paper.
+                    # The clear-page reference handles unchanged scenery;
+                    # after selection/camera changes, verify local header
+                    # text using the scanner's existing stale-panel check.
+                    if self.ocr(roi, frame, HEADER):
                         self.check_generation(generation)
+                        visible = True
+                        break
+                    self.check_generation(generation)
             if not visible:
                 if (not settle_card or old_box is None or previous is not None
                         and self.same_structure(previous, frame, old_box, threshold=.997)):
@@ -234,6 +242,7 @@ class BlessingLocker(InventoryScanner):
                 previous = frame
             else:
                 previous = None
+                self.rt.action("TouchMove", target=[900, 32])
             if not self.rt.pause(.04):
                 self.check_generation(generation)
         reason = "悬停提示尚未关闭" if visible else "格子高亮尚未稳定"
@@ -253,12 +262,15 @@ class BlessingLocker(InventoryScanner):
     def scroll_list(self, amount):
         # Generic ui.scroll waits .2 s with the pointer still over the grid;
         # the scanner then moves it away and waits another .25 s. Issue both
-        # inputs together here and retain the full post-move settling window.
-        # advance() still verifies translation before reading the next page.
+        # inputs together in the inter-column gap so wheel events never hover a
+        # card, and retain the full post-move settling window.
         x, y, w, h = self.grid
+        gap_x = (self.layout["first_x"] + self.layout["card_size"][0]
+                 + max(2, (self.layout["column_pitch"] - self.layout["card_size"][0]) // 2))
+        target_x = min(x + w - 8, max(x + 8, gap_x))
         target_y = min(y + h - 8, 520)
-        return (self.rt.action("Scroll", target=[x + w - 8, target_y], dx=0, dy=amount)
-                and self.rt.action("TouchMove", target=[420, 32]) and self.rt.pause(.25))
+        return (self.rt.action("Scroll", target=[target_x, target_y], dx=0, dy=amount)
+                and self.rt.action("TouchMove", target=[900, 32]) and self.rt.pause(.25))
 
     def scroll_amounts(self):
         # Observed 1200 wheel units move 213 px; 1800 targets about 320 px.

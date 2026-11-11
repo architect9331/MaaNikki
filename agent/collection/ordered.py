@@ -143,7 +143,12 @@ class OrderedView:
                     "scroll_step": 0, "delayed": True,
                     "attempts": 1, "seconds": round(time.monotonic() - started, 6)})
                 return prior_delta
-        self.remember_view(before, boxes)
+            # Zero displacement confirms the list has not scrolled; only local
+            # lighting or an unrecorded hover overlay differed from the verified
+            # checkpoint. Keep the clean checkpoint frame rather than polluting it.
+            before = checkpoint["frame"]
+        else:
+            self.remember_view(before, boxes)
         if direction > 0:
             after, delta = self.o.advance(before, self.generation)
         else:
