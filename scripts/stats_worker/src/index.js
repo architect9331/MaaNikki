@@ -58,20 +58,24 @@ async function report(request, env) {
 }
 
 async function summary(env) {
-  const colors = await env.DB.prepare(
-    `SELECT color, SUM(count) AS count FROM rolls WHERE reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)
-     GROUP BY color ORDER BY count DESC`).all();
-  const bling = await env.DB.prepare(
-    `SELECT COUNT(*) AS runs, SUM(energy) AS energy, SUM(gain) AS gain FROM bling_runs
-     WHERE reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)`).first();
+  const active = 'reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)';
+  const [colors, slots, setColors, rollReporters, bling] = await env.DB.batch([
+    env.DB.prepare(`SELECT color, SUM(count) AS count FROM rolls WHERE ${active} GROUP BY color ORDER BY count DESC`),
+    env.DB.prepare(`SELECT slot, SUM(count) AS count FROM rolls WHERE ${active} GROUP BY slot ORDER BY count DESC`),
+    env.DB.prepare(`SELECT name, color, SUM(count) AS count FROM rolls WHERE ${active} GROUP BY name, color ORDER BY name ASC, count DESC`),
+    env.DB.prepare(`SELECT COUNT(DISTINCT reporter) AS count FROM rolls WHERE ${active}`),
+    env.DB.prepare(`SELECT COUNT(*) AS runs, SUM(energy) AS energy, SUM(gain) AS gain FROM bling_runs WHERE ${active}`),
+  ]);
   const digTargets = await env.DB.prepare(
     `SELECT item, SUM(count) AS count, COUNT(DISTINCT reporter) AS reporters FROM dig_targets
-     WHERE reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)
-     GROUP BY item ORDER BY count DESC`).all().catch(() => ({ results: [] }));
+     WHERE ${active} GROUP BY item ORDER BY count DESC`).all().catch(() => ({ results: [] }));
+  const digReporters = await env.DB.prepare(
+    `SELECT COUNT(DISTINCT reporter) AS count FROM dig_targets WHERE ${active}`).first().catch(() => ({ count: 0 }));
   const preferences = await env.DB.prepare(
     `SELECT category, value, COUNT(DISTINCT reporter) AS reporters FROM reporter_preferences
-     WHERE reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)
-     GROUP BY category, value ORDER BY category ASC, reporters DESC`).all().catch(() => ({ results: [] }));
+     WHERE ${active} GROUP BY category, value ORDER BY category ASC, reporters DESC`).all().catch(() => ({ results: [] }));
+  const prefReporters = await env.DB.prepare(
+    `SELECT COUNT(DISTINCT reporter) AS count FROM reporter_preferences WHERE ${active}`).first().catch(() => ({ count: 0 }));
   // A lost response can orphan an issued ID, so count only IDs that hold data.
   const reporters = await env.DB.prepare(
     `SELECT COUNT(*) AS count FROM reporters WHERE excluded = 0
@@ -81,8 +85,25 @@ async function summary(env) {
       `SELECT COUNT(*) AS count FROM reporters WHERE excluded = 0
        AND (id IN (SELECT reporter FROM rolls) OR id IN (SELECT reporter FROM bling_runs))`).first());
   return Response.json(
-    { reporters: reporters.count, colors: colors.results, bling, digTargets: digTargets.results, preferences: preferences.results },
-    { headers: { 'Access-Control-Allow-Origin': '*' } },
+    {
+      updatedAt: new Date().toISOString(),
+      reporters: reporters?.count ?? 0,
+      rollReporters: rollReporters.results[0]?.count ?? 0,
+      digReporters: digReporters?.count ?? 0,
+      prefReporters: prefReporters?.count ?? 0,
+      colors: colors.results,
+      slots: slots.results,
+      setColors: setColors.results,
+      bling: bling.results[0] ?? { runs: 0, energy: 0, gain: 0 },
+      digTargets: digTargets.results,
+      preferences: preferences.results,
+    },
+    {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'public, max-age=120',
+      },
+    },
   );
 }
 
