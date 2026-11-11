@@ -1,5 +1,7 @@
 import type { FieldBonus, HeartSettings, Match, OwnedItem, PieceScore, ScoreItem, ScoringCatalog, StarCondition } from './types';
 
+export const MIN_ITEM_LEVEL = 0;
+export const effectiveItemLevel = (level: number | null | undefined): number => level ?? MIN_ITEM_LEVEL;
 export const isAccessory = (item: ScoreItem) => item.type >= 100 && item.type < 200;
 export const isFlash = (item: ScoreItem) => item.type >= 300;
 export const heartGroup = (type: number) => type === 1 ? 0 : type === 3 ? 1 : [2, 4, 5].includes(type) ? 2 : type === 6 ? 3 : type === 7 ? 4 : 5;
@@ -47,9 +49,9 @@ export function bonusCount(bonus: FieldBonus, context: ScoreContext) {
   return 1;
 }
 
-export function upgradeCost(catalog: ScoringCatalog, item: ScoreItem, from: number | null, to: number) {
+export function upgradeCost(catalog: ScoringCatalog, item: ScoreItem, from: number | null | undefined, to: number) {
   const cost: Record<string, number> = {};
-  const base = from ?? 0;
+  const base = effectiveItemLevel(from);
   if (isFlash(item) || base >= to) return cost;
   const curve = catalog.curves[item.curve];
   for (const [id, value] of Object.entries(curve.costs[to] ?? {})) {
@@ -105,8 +107,9 @@ export function scorePiece(catalog: ScoringCatalog, owned: OwnedItem, level: num
   const multiplier = 1 + part / 100 + display / 100;
   const score = Math.ceil((attributeScores.reduce((sum, value) => sum + value, 0) + tagScore) * multiplier);
   if (!Number.isFinite(score)) throw new Error('加成数值过大，请检查设置。');
-  return { item: owned, type: item.type, from: owned.level, level, score, attributeScores, grownAttributes, tagScore,
-    multiplier, cost: upgradeCost(catalog, item, owned.level, level) };
+  const from = effectiveItemLevel(owned.level);
+  return { item: owned, type: item.type, from, level, score, attributeScores, grownAttributes, tagScore,
+    multiplier, cost: upgradeCost(catalog, item, from, level) };
 }
 
 export function resolveRankThreshold(match: Match, thresholds: Record<string, number>, rank: number | string) {

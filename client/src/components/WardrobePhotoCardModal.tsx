@@ -15,7 +15,7 @@ interface GamePhotoItem {
   modified: number;
 }
 
-const levelLabel = (level: number | null) => level === null ? '等级未知' : level === 11 ? '已焕新' : `${level} 级`;
+const levelLabel = (level: number | null) => level === null ? '0 级' : level === 11 ? '已焕新' : `${level} 级`;
 const num = (v: number) => v.toLocaleString('zh-CN', { maximumFractionDigits: 0 });
 
 export function WardrobePhotoCardModal({ open, onClose, outfit, match, catalog, modeLabel, customHeadline }: {

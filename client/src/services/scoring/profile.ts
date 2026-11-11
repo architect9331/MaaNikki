@@ -65,8 +65,9 @@ export function buildOwnedProfile(payload: ScoringPayload, settings: ScoringSett
     if (ids?.length !== 1) continue;
     const id = ids[0];
     const ratios = catalog.curves[catalog.items[id].curve].ratios;
-    if (!Number.isInteger(row.level) || row.level < 0 || row.level >= ratios.length) continue;
-    if ((flashes.get(id)?.level ?? -1) < row.level) flashes.set(id, { id, name: `${row.name}·${row.slot}`, level: row.level, evidence: '祝福闪光记录' });
+    const level = row.level ?? 0;
+    if (!Number.isInteger(level) || level < 0 || level >= ratios.length) continue;
+    if ((flashes.get(id)?.level ?? -1) < level) flashes.set(id, { id, name: `${row.name}·${row.slot}`, level, evidence: '祝福闪光记录' });
   }
   result.items.push(...flashes.values());
   return result;

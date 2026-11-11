@@ -16,7 +16,7 @@ const PAGE_SIZE = 36;
 
 function LevelBadgeInput({ value, inferred, onChange }: { value: number | null; inferred?: string | null; onChange: (level: number | null) => void }) {
   if (inferred) return <span className="shrink-0 rounded-lg bg-accent/10 px-2 py-0.5 text-[11px] text-accent">已焕新</span>;
-  return <input aria-label="共享等级 0-11" type="number" min="0" max="11" placeholder="等级" value={value ?? ''}
+  return <input aria-label="共享等级 0-11，留空按 0 级计" type="number" min="0" max="11" placeholder="0" value={value ?? ''}
     className={clsx(field, '!w-14 shrink-0 !px-1.5 !py-0.5 text-center tabular-nums')}
     onChange={(e) => {
       const raw = e.target.value;
@@ -116,7 +116,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
           {view === 'suits' ? <>
             <option value="all">全部状态</option><option value="complete">已集齐</option><option value="near">差 1～2 件集齐</option><option value="incomplete">收集中</option><option value="unowned">暂未获得</option>
           </> : <>
-            <option value="all">全部拥有状态</option><option value="owned">已拥有</option><option value="unowned">未拥有</option><option value="chest_missing">未收集的大世界宝箱散件</option><option value="refreshed">已焕新 (11级)</option><option value="unknown_lv">已拥有但等级未知</option>
+            <option value="all">全部拥有状态</option><option value="owned">已拥有</option><option value="unowned">未拥有</option><option value="chest_missing">未收集的大世界宝箱散件</option><option value="refreshed">已焕新 (11级)</option><option value="unknown_lv">已拥有但未填等级</option>
           </>}
         </select>
         <select aria-label="星级筛选" className={field} value={qualityFilter} onChange={(e) => setQualityFilter(e.target.value)}>
@@ -239,18 +239,21 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
           choice: null,
           exact: true,
           targetMet: sharingSuit.complete,
-          pieces: sharingSuit.parts.map((p) => ({
-            item: { id: p.id, name: p.name, group: p.groupId, level: p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? null) : null },
-            type: payload.catalog.items[p.id]?.type ?? 1,
-            from: null,
-            level: p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? 0) : 0,
-            score: p.owned ? 1 : 0,
-            attributeScores: [0, 0, 0, 0, 0],
-            grownAttributes: [0, 0, 0, 0, 0],
-            tagScore: 0,
-            multiplier: 1,
-            cost: {},
-          })),
+          pieces: sharingSuit.parts.map((p) => {
+            const effectiveLv = p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? 0) : 0;
+            return {
+              item: { id: p.id, name: p.name, group: p.groupId, level: p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? null) : null },
+              type: payload.catalog.items[p.id]?.type ?? 1,
+              from: effectiveLv,
+              level: effectiveLv,
+              score: p.owned ? 1 : 0,
+              attributeScores: [0, 0, 0, 0, 0],
+              grownAttributes: [0, 0, 0, 0, 0],
+              tagScore: 0,
+              multiplier: 1,
+              cost: {},
+            };
+          }),
         } satisfies OutfitResult}
         match={{
           name: sharingSuit.name,

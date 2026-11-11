@@ -1,4 +1,4 @@
-import { bonusCount, evaluateStars, fits, isAccessory, isFlash, outfitContext, scorePiece, suitRequirement, upgradeCost, type ScoreContext } from './math';
+import { bonusCount, effectiveItemLevel, evaluateStars, fits, isAccessory, isFlash, outfitContext, scorePiece, suitRequirement, upgradeCost, type ScoreContext } from './math';
 import type { BatchCalculationResult, BatchStageSummary, BatchUpgradeItem, CalculationRequest, CalculationResult, FieldBonus, Match, OutfitResult, OwnedItem, PieceScore, ScoreItem, StarCondition } from './types';
 
 interface Requirement { min: number; max: number; accepts: (item: ScoreItem, level: number) => boolean }
@@ -96,7 +96,6 @@ function suiteRule(request: CalculationRequest, ids: number[], condition?: Extra
 }
 
 function* starBranches(request: CalculationRequest, match: Match, candidates: Candidate[], check: () => void): Generator<Requirement[]> {
-  const available = new Set(candidates.map((entry) => entry.owned.id));
   function* expandCondition(rule: StarCondition): Generator<Requirement[]> {
     if (rule.kind === 'rank') { yield []; return; }
     if (rule.kind === 'pieces') { yield [{ min: rule.count, max: Infinity, accepts: (item) => fits(item, rule) }]; return; }
@@ -105,8 +104,9 @@ function* starBranches(request: CalculationRequest, match: Match, candidates: Ca
       if (rule.suit && rule.suit !== suit.id || !suit.items.length) continue;
       const required = suiteRule(request, suit.items, rule);
       const matching = candidates.filter((candidate) => required.accepts(request.catalog.items[candidate.owned.id], candidate.level));
+      const matchingIds = new Set(matching.map((entry) => entry.owned.id));
       if (matching.length < required.min || suit.items.some((id) => !request.catalog.items[id]
-        || !isAccessory(request.catalog.items[id]) && !available.has(String(id)))) continue;
+        || !isAccessory(request.catalog.items[id]) && !matchingIds.has(String(id)))) continue;
       yield [required];
     }
   }
@@ -161,8 +161,7 @@ function summarize(request: CalculationRequest, match: Match, entries: Candidate
   const bonuses = [...match.bonuses, ...choice === null ? [] : [match.choices[choice]]];
   const pieces = entries.map((entry) => {
     const piece = scorePiece(request.catalog, entry.owned, entry.level, match, request.settings.heart, bonuses, context);
-    const from = entry.owned.level;
-    const base = from ?? 0;
+    const base = piece.from;
     piece.gain = isFlash(request.catalog.items[entry.owned.id]) || base >= entry.level ? 0
       : piece.score - scorePiece(request.catalog, entry.owned, base, match, request.settings.heart, bonuses, context).score;
     return piece;
@@ -173,7 +172,7 @@ function summarize(request: CalculationRequest, match: Match, entries: Candidate
   const cost: Record<string, number> = {};
   for (const piece of pieces) for (const [id, count] of Object.entries(piece.cost)) cost[id] = (cost[id] ?? 0) + count;
   return { score, pieces: pieces.sort((a, b) => a.type - b.type), globalScore, stars, cost, choice, exact: true,
-    unknownCostGroups: [...new Set(pieces.filter((piece) => piece.from === null).map((piece) => piece.item.group).filter((id): id is string => !!id))],
+    unknownCostGroups: [...new Set(pieces.filter((piece) => piece.item.level === null && piece.level > piece.from).map((piece) => piece.item.group).filter((id): id is string => !!id))],
     targetMet: !stars.length ? null : stars.includes(false) ? false : stars.includes(null) ? null : true };
 }
 
@@ -184,8 +183,7 @@ function optimize(request: CalculationRequest, potential: boolean): OutfitResult
   const check = () => { if (performance.now() > deadline) throw new SearchLimit(); };
   const userExcluded = new Set(request.excludedIds ?? []);
   const owned = request.owned.filter((entry) => !userExcluded.has(entry.id)
-    && (!entry.group || !userExcluded.has(entry.group))
-    && (entry.level !== null || potential && !isFlash(request.catalog.items[entry.id])));
+    && (!entry.group || !userExcluded.has(entry.group)));
   const choices = request.choice === null ? match.choices.length ? match.choices.map((_, index) => index) : [null] : [request.choice];
   const bestResult: { value: OutfitResult | null } = { value: null };
   try {
@@ -195,7 +193,8 @@ function optimize(request: CalculationRequest, potential: boolean): OutfitResult
       for (const { context, rules } of contexts(request, bonuses, owned, check)) {
         const candidates = owned.map((entry): Candidate => {
           const item = request.catalog.items[entry.id];
-          const level = potential && !isFlash(item) ? request.catalog.curves[item.curve].ratios.length - 1 : entry.level!;
+          const baseLevel = effectiveItemLevel(entry.level);
+          const level = potential && !isFlash(item) ? request.catalog.curves[item.curve].ratios.length - 1 : baseLevel;
           return { owned: entry, level, piece: scorePiece(request.catalog, entry, level, match, request.settings.heart, bonuses, context) };
         });
         const search = (requirements: Requirement[]) => {
@@ -235,7 +234,7 @@ function optimize(request: CalculationRequest, potential: boolean): OutfitResult
 export function calculateBatch(request: CalculationRequest, matchIds: string[], progress?: (stage: string) => void): BatchCalculationResult {
   const started = performance.now();
   const stages: BatchStageSummary[] = [];
-  const groupTarget = new Map<string, { item: OwnedItem; from: number | null; to: number; totalGain: number; stages: string[] }>();
+  const groupTarget = new Map<string, { item: OwnedItem; from: number; to: number; totalGain: number; stages: string[] }>();
   const unknownCostGroups = new Set<string>();
 
   for (let index = 0; index < matchIds.length; index++) {
@@ -253,7 +252,7 @@ export function calculateBatch(request: CalculationRequest, matchIds: string[], 
     for (const piece of potential.pieces) {
       const groupId = piece.item.group;
       if (!groupId || isFlash(request.catalog.items[piece.item.id])) continue;
-      if (piece.from !== null && piece.level <= piece.from) continue;
+      if (piece.level <= piece.from) continue;
       const existing = groupTarget.get(groupId);
       const gain = piece.gain ?? 0;
       if (!existing) {
@@ -280,7 +279,7 @@ export function calculateBatch(request: CalculationRequest, matchIds: string[], 
     for (const [matId, amount] of Object.entries(itemCost)) {
       totalCost[matId] = (totalCost[matId] ?? 0) + amount;
     }
-    if (entry.to > (entry.from ?? 0)) {
+    if (entry.to > entry.from) {
       upgrades.push({
         groupId,
         item: entry.item,
@@ -305,7 +304,7 @@ export function calculateBatch(request: CalculationRequest, matchIds: string[], 
 
 export function calculate(request: CalculationRequest, progress?: (stage: string) => void): CalculationResult {
   const started = performance.now();
-  progress?.('正在计算已知等级搭配');
+  progress?.('正在计算当前等级搭配');
   const current = optimize(request, false);
   progress?.('正在计算焕新潜力搭配');
   const potential = optimize(request, true);

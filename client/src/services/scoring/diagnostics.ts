@@ -12,6 +12,7 @@ import type {
 } from './types';
 import {
   bonusCount,
+  effectiveItemLevel,
   evaluateStars,
   fits,
   hasSuit,
@@ -146,7 +147,6 @@ export interface SuitDiagnosticCandidate {
   requiredCount: number;
   readyCount: number;
   complete: boolean;
-  unknownGroups: GrowthGroup[];
   unrefreshedGroups: GrowthGroup[];
   missingParts: { id: string; name: string; partName: string; source?: string }[];
 }
@@ -157,7 +157,8 @@ export interface MinimumUpgradeItem {
   name: string;
   partName: string;
   suitName?: string;
-  fromLevel: number | null;
+  fromLevel: number;
+  levelKnown: boolean;
   toLevel: number;
   scoreAtFrom: number;
   scoreAtTo: number;
@@ -175,14 +176,6 @@ export interface MinimumStarUpgradePlan {
   mandatorySuitName?: string;
   mandatorySuitRequiredCount?: number;
   upgradeItems: MinimumUpgradeItem[];
-  zeroLevelWearItems: {
-    groupId: string;
-    itemId: string;
-    name: string;
-    partName: string;
-    suitName?: string;
-    reason: string;
-  }[];
   totalCost: Record<string, number>;
 }
 
@@ -289,7 +282,7 @@ export function buildMinimumStarUpgradePlan(
       zeroBaselineLevels.set(pid, p.level);
       workingLevels.set(pid, p.level);
     } else {
-      const baseLvl = p.from ?? 0;
+      const baseLvl = p.from;
       zeroBaselineLevels.set(pid, baseLvl);
       workingLevels.set(pid, mandatoryRefreshIds.has(pid) ? 11 : baseLvl);
     }
@@ -355,14 +348,13 @@ export function buildMinimumStarUpgradePlan(
   }
 
   const upgradeItems: MinimumUpgradeItem[] = [];
-  const zeroLevelWearItems: MinimumStarUpgradePlan['zeroLevelWearItems'] = [];
   const totalCost: Record<string, number> = {};
 
   for (const p of potentialOutfit.pieces) {
     const rec = catalog.items[p.item.id];
     if (isFlash(rec) || !p.item.group) continue;
     const pid = String(p.item.id);
-    const baseLvl = p.from ?? 0;
+    const baseLvl = p.from;
     const targetLvl = workingLevels.get(pid) ?? baseLvl;
     const suitName = pieceSuitName.get(pid);
     const mandatorySuitRefresh = mandatoryRefreshIds.has(pid);
@@ -387,7 +379,8 @@ export function buildMinimumStarUpgradePlan(
         name: p.item.name,
         partName: shortPartName(catalog, p.type),
         suitName,
-        fromLevel: p.from,
+        fromLevel: baseLvl,
+        levelKnown: p.item.level !== null,
         toLevel: targetLvl,
         scoreAtFrom,
         scoreAtTo,
@@ -396,19 +389,10 @@ export function buildMinimumStarUpgradePlan(
         reason,
         cost: itemCost,
       });
-    } else if (p.from === null && targetLvl === 0 && (suitName || pieceRuleLabels.has(pid))) {
-      zeroLevelWearItems.push({
-        groupId: p.item.group,
-        itemId: pid,
-        name: p.item.name,
-        partName: shortPartName(catalog, p.type),
-        suitName,
-        reason: suitName
-          ? `「${suitName}」套装部件（0级穿戴即可）`
-          : `满足${pieceRuleLabels.get(pid)}件数（0级穿戴即可）`,
-      });
     }
   }
+
+  if (!upgradeItems.length) return null;
 
   upgradeItems.sort((a, b) => {
     if (a.mandatorySuitRefresh !== b.mandatorySuitRefresh) {
@@ -425,7 +409,6 @@ export function buildMinimumStarUpgradePlan(
     mandatorySuitName,
     mandatorySuitRequiredCount,
     upgradeItems,
-    zeroLevelWearItems,
     totalCost,
   };
 }
@@ -450,7 +433,6 @@ export type RuleDiagnostic =
       equippedCount: number;
       requiredCount: number;
       maxEquipableOwnedCount: number;
-      unknownGroups: GrowthGroup[];
       upgradeableEquipped: PieceScore[];
       recommendedUnowned: UnownedRecommendation[];
     }
@@ -512,19 +494,12 @@ export function analyzeUnmetStars(
       const satisfied = equippedCount >= rule.count;
 
       const ownedMatchingItems: ScoreItem[] = [];
-      const unknownGroupIds = new Set<string>();
       for (const owned of profile.items) {
         const record = catalog.items[owned.id];
         if (!record || !fits(record, rule)) continue;
         ownedMatchingItems.push(record);
-        if (owned.level === null && owned.group) {
-          unknownGroupIds.add(owned.group);
-        }
       }
       const { count: maxEquipableOwnedCount, coveredTypes } = maxNonConflictingSlots(ownedMatchingItems);
-      const unknownGroups = [...unknownGroupIds]
-        .map((id) => groupById.get(id))
-        .filter((g): g is GrowthGroup => Boolean(g));
 
       const upgradeableEquipped = matchingEquipped.filter((p) => p.level < 11);
 
@@ -567,7 +542,6 @@ export function analyzeUnmetStars(
         equippedCount,
         requiredCount: rule.count,
         maxEquipableOwnedCount,
-        unknownGroups,
         upgradeableEquipped,
         recommendedUnowned,
       };
@@ -590,7 +564,6 @@ export function analyzeUnmetStars(
       let ownedCount = 0;
       let readyCount = 0;
       let maxQuality = 3;
-      const unknownGroupIds = new Set<string>();
       const unrefreshedGroupIds = new Set<string>();
       const missingParts: { id: string; name: string; partName: string; source?: string }[] = [];
 
@@ -605,10 +578,11 @@ export function analyzeUnmetStars(
         if (ownedScoreIds.has(String(id))) {
           ownedCount++;
           const group = gameGroup ? groupById.get(gameGroup) : undefined;
-          if (group) {
-            if (group.level === null) unknownGroupIds.add(group.id);
-            else if (rule.refreshed && group.level < 11) unrefreshedGroupIds.add(group.id);
-            else readyCount++;
+          const groupLevel = effectiveItemLevel(group?.level);
+          if (rule.refreshed && groupLevel < 11) {
+            if (group) unrefreshedGroupIds.add(group.id);
+          } else {
+            readyCount++;
           }
         } else {
           missingParts.push({
@@ -631,7 +605,6 @@ export function analyzeUnmetStars(
         requiredCount: reqCount,
         readyCount,
         complete: ownedCount >= reqCount,
-        unknownGroups: [...unknownGroupIds].map((gid) => groupById.get(gid)!).filter(Boolean),
         unrefreshedGroups: [...unrefreshedGroupIds].map((gid) => groupById.get(gid)!).filter(Boolean),
         missingParts,
       };

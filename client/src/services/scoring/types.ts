@@ -178,7 +178,7 @@ export interface OwnedProfile {
 export interface PieceScore {
   item: OwnedItem;
   type: number;
-  from: number | null;
+  from: number;
   level: number;
   score: number;
   attributeScores: number[];
@@ -186,8 +186,8 @@ export interface PieceScore {
   tagScore: number;
   multiplier: number;
   cost: Record<string, number>;
-  /** Score above the current level; null while that level is unknown. */
-  gain?: number | null;
+  /** Score gain above the effective current level (unknown levels default to 0). */
+  gain?: number;
 }
 export interface OutfitResult {
   score: number;
@@ -213,7 +213,7 @@ export interface CalculationRequest {
 export interface BatchUpgradeItem {
   groupId: string;
   item: OwnedItem;
-  from: number | null;
+  from: number;
   to: number;
   totalGain: number;
   stages: string[];

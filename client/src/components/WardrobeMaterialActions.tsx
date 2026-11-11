@@ -8,7 +8,7 @@ import type { BatchCalculationResult, MaterialsState, ScoringCatalog } from '@/s
 
 const card = 'rounded-xl border border-border bg-bg-secondary p-4';
 const number = (value: number) => value.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
-const levelLabel = (level: number | null) => level === null ? '等级未知' : level === 11 ? '已焕新' : `${level} 级`;
+const levelLabel = (level: number | null) => level === null ? '0 级' : level === 11 ? '已焕新' : `${level} 级`;
 
 export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sourceLabel, onMaterialsChange }: {
   cost: Record<string, number>;
@@ -93,7 +93,7 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
   }
 
   if (!entries.length) {
-    return <p className="mt-2 text-xs text-text-secondary">已知等级的部件暂无材料差额</p>;
+    return <p className="mt-2 text-xs text-text-secondary">当前搭配暂无养成材料差额</p>;
   }
 
   return (
@@ -209,7 +209,7 @@ export function WardrobeBatchPlanView({ batch, catalog, activeMatchId, onSelectS
             ))}
           </ol>
         ) : (
-          <p className="mt-2 text-xs text-text-secondary">整期所有场次用到的已知等级部件均已满级。</p>
+          <p className="mt-2 text-xs text-text-secondary">整期所有场次用到的服装均已满级焕新。</p>
         )}
       </div>
 
@@ -217,7 +217,7 @@ export function WardrobeBatchPlanView({ batch, catalog, activeMatchId, onSelectS
         <h4 className="text-xs font-semibold text-text-secondary">整期去重总材料差额</h4>
         <WardrobeMaterialList cost={batch.cost} catalog={catalog} accountKey={accountKey} materials={materials} sourceLabel={sourceLabel} onMaterialsChange={onMaterialsChange} />
         {!!batch.unknownCostGroups.length && (
-          <p className="mt-2 text-xs text-text-secondary">另有 {batch.unknownCostGroups.length} 组登场部件等级未知，在下方补充等级后即可计入整期总材料差额。</p>
+          <p className="mt-2 text-xs text-text-secondary">其中 {batch.unknownCostGroups.length} 组未填等级的登场部件已按最低等级（0 级）计入总材料差额；若游戏内已强化，在下方补充实际等级即可扣减对应消耗。</p>
         )}
       </div>
     </section>
