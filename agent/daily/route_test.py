@@ -514,7 +514,7 @@ class RouteTest(Runtime):
                 if details.get("fatal"):
                     summary.update(error=details["error"], error_type=details["error_type"],
                                    fatal=True)
-                    self.log("星海跑图合集遇到程序异常，已停止后续路线。")
+                    self.log(f"{collection_title}遇到程序异常，已停止后续路线。")
                     break
                 if not ok and not source.get("continue_on_failure", True):
                     break
@@ -529,16 +529,16 @@ class RouteTest(Runtime):
                         summary["stopped"] = True
                         break
                     if not ready:
-                        summary.update(error="游戏页面未恢复，跑图合集已停止。",
+                        summary.update(error=f"游戏页面未恢复，{collection_title}已停止。",
                                        error_type="NavigationError", interrupted=True)
-                        self.log("游戏页面未恢复，跑图合集已停止。")
+                        self.log(f"游戏页面未恢复，{collection_title}已停止。")
                         break
         except (NavigationError, OSError, KeyError, TypeError, AttributeError, ValueError, RuntimeError, cv2.error) as error:
             if self.stopped:
                 summary["stopped"] = True
             else:
                 summary.update(error=str(error), error_type=type(error).__name__)
-                self.log("星海跑图合集停止："+str(error))
+                self.log(f"{collection_title}停止：{error}")
         finally:
             summary["completed"] = len(summary["routes"])
             summary["passed"] = sum(bool(item["success"]) for item in summary["routes"])

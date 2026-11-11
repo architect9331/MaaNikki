@@ -19,7 +19,11 @@
   },
   "MaaNikki_Home_StarCollectReady": {
     "recognition": "Or",
-    "any_of": ["MaaNikki_Home_StarCollectActive", "MaaNikki_Home_StarCollectExhaustedIcon"],
+    "any_of": [
+      "MaaNikki_Home_StarCollectActive",
+      "MaaNikki_Home_StarCollectExhaustedIcon",
+      "MaaNikki_Home_StarCollectTitle"
+    ],
     "action": "DoNothing"
   },
   "MaaNikki_Home_StarCollectActive": {
@@ -50,7 +54,7 @@
       "roi": [585, 105, 115, 40],
       "template": "nikki/home/star_collect_title.png",
       "gray_limit": [175, 255],
-      "threshold": 0.88
+      "threshold": 0.76
     },
     "action": "DoNothing"
   },

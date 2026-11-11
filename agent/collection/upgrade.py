@@ -109,11 +109,25 @@ class UpgradeUI:
         current = dict(facts)
         # Each auto-fill may stop at an intermediate level. Keep this selection
         # until maxed or short of resources; never infer colour from the overlay.
-        for _ in range(100):
+        for step in range(100):
             # A fresh upgrade page, or a confirmed completed upgrade, starts
             # with no selected materials. Only clear a nonempty rejected batch.
             fields, frame = self.read(generation)
-            if fields["name"] != current["name"] or self.integer(fields["level"]) != current["level"]:
+            page_level = self.integer(fields["level"])
+            if (
+                step == 0
+                and fields["name"] == current["name"]
+                and page_level is not None
+                and page_level != current["level"]
+                and 0 <= page_level < maximum
+                and "等级已满" not in fields["maxed"]
+                and isinstance(evidence, dict)
+                and evidence.get("level_source") == "numeral_model"
+            ):
+                current["level"] = page_level
+                if getattr(self.owner, "active", None) is not None:
+                    self.owner.active["level"] = page_level
+            if fields["name"] != current["name"] or page_level != current["level"]:
                 raise RuntimeError("升级页名称或当前等级与选中闪光不一致")
             old_xp = self.experience(fields["xp"])
             if not re.fullmatch(FILTER, self.text("material_filter", frame)):

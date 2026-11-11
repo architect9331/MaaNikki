@@ -23,7 +23,7 @@
     {
       "x": 855.993,
       "y": 1003.632,
-      "radius": 1.0,
+      "radius": 0.65,
       "jump": false,
       "action": "music"
     }

@@ -168,7 +168,12 @@ def iter_telemetry_records(paths: list[Path]):
                             yield item
 
 
-def compute_waypoint_adjustment(samples: list[dict], target: list[float], configured_radius: float) -> dict:
+FIXED_PROP_ACTIONS = {"chat", "music", "delivery", "place", "fishing_star", "fishing"}
+
+
+def compute_waypoint_adjustment(
+    samples: list[dict], target: list[float], configured_radius: float, action: str | None = None
+) -> dict:
     total = len(samples)
     clean = [s for s in samples if s.get("outcome") == "clean"]
     turnbacks = [
@@ -273,7 +278,7 @@ def compute_waypoint_adjustment(samples: list[dict], target: list[float], config
     radius_reason = "keep_current_radius"
 
     if turnback_rate >= 0.15 and not missed:
-        if downstream_problem_rate <= 0.10:
+        if downstream_problem_rate <= 0.10 and action not in FIXED_PROP_ACTIONS:
             # Excessive turn-backs without downstream off-course penalties.
             if miss_dists:
                 p85 = miss_dists[min(len(miss_dists) - 1, int(len(miss_dists) * 0.85))]
@@ -432,7 +437,8 @@ def main() -> None:
                     sc["dx"] = float(act[0]) - base_t[0]
                     sc["dy"] = float(act[1]) - base_t[1]
                 norm_samples.append(sc)
-            analysis = compute_waypoint_adjustment(norm_samples, base_t, base_r)
+            pt_action = pts[idx].get("action") if 0 <= idx < len(pts) and isinstance(pts[idx], dict) else None
+            analysis = compute_waypoint_adjustment(norm_samples, base_t, base_r, action=pt_action)
             analysis["target"] = base_t
             route_report[idx] = analysis
         report[route_id] = route_report

@@ -955,8 +955,20 @@ class Executors(Runtime):
         from .starsea import Starsea
         return Starsea(self, RESOURCE).ring()
 
+    def _wait_world_prompt(self, prompt):
+        if self.ui.wait_text(prompt, INTERACTION_ROI, attempts=3):
+            return True
+        for _ in range(2):
+            if self.stopped or not self.ui.page_matches("MaaNikki_MainDetected"):
+                return False
+            if not self.hold("forward", .3) or not self.pause(.2):
+                return False
+            if self.ui.wait_text(prompt, INTERACTION_ROI, attempts=2):
+                return True
+        return False
+
     def interaction(self, kind):
-        if not self.ui.wait_text(PROMPTS[kind], INTERACTION_ROI, attempts=3):
+        if not self._wait_world_prompt(PROMPTS[kind]):
             return False
         if kind == "music":
             # No dedicated music-page marker is available; submit only once.
@@ -1002,20 +1014,26 @@ class Executors(Runtime):
         return True
 
     def chat(self, mode):
-        for attempt in range(3):
-            if self.ui.asset("IconSetdownFeature", roi=INTERACTION_ROI, scale=2/3):
-                break
-            if attempt == 2 or not self.pause(1):
-                return False
-        if not self.key("interact", 2):
+        def sit_on_couch():
+            for _ in range(2):
+                if not self.main() or not self._wait_world_prompt(PROMPTS["chat"]):
+                    return False
+                if not self.key("interact", 2):
+                    return False
+                if self.text([1050, 120, 220, 500], r"牵手|添加好友"):
+                    self.key("menu", .5)
+                    if not self.hold("forward", .25) or not self.pause(.2):
+                        return False
+                    continue
+                if not self.text(INTERACTION_ROI, PROMPTS["chat"]):
+                    return True
             return False
-        # Recovery must restore the seat before reopening the chat channel.
-        def recover_seat():
-            return (self.main() and self.ui.wait_page(self.ui.feature(
-                asset="IconSetdownFeature", roi=INTERACTION_ROI, scale=2/3))
-                    and self.key("interact", 2))
+
+        # Gathering chat only appears while seated; never open chat standing.
+        if not sit_on_couch():
+            return False
         if not self.ui.enter_page(lambda: self.key("chat", 0), "MaaNikki_Daily_GroupChat",
-                                  source="MaaNikki_MainDetected", recover=recover_seat):
+                                  source="MaaNikki_MainDetected", recover=sit_on_couch):
             return False
         # An unread message opens its own conversation first while the party
         # channel entry stays visible, so the entry must be clicked. Wait for
