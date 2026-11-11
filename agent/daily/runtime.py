@@ -215,23 +215,13 @@ class Runtime:
             value = binding.code
         return self.action("ClickKey", key=value) and self.pause(delay)
 
-    def skip_prompt(self, delay=0.25, *, target=None, scene=False, use_key=False, key_name="skip"):
-        """Dismiss a bottom-right skip/continue prompt by click; keep key path available."""
+    def skip_prompt(self, delay=0.25, *, target=None, use_key=False, key_name="skip"):
+        """Dismiss a bottom-right '空白区域继续' overlay by click; keep key path available."""
         if self.stopped:
             return False
         if use_key:
             return self.key(key_name, delay)
         point = list(self.SKIP_PROMPT_TARGET if target is None else target)
-        if scene:
-            # 3D scene animations capture the camera in Seize mode; pulse
-            # MouseLeft in place without relocating the pointer.
-            if self.navigation_inputs is not None or foreground_inputs():
-                self.invalidate_frame()
-                with self.input_guard() as inputs:
-                    clicked = inputs.click_mouse(0)
-                return clicked and (self.pause(delay) if delay > 0 else not self.stopped)
-            return (self.action("Click", target=point, ui_click=False)
-                    and (self.pause(delay) if delay > 0 else not self.stopped))
         with self.ui.preserve_cursor():
             clicked = self.action("Click", target=point)
         return clicked and (self.pause(delay) if delay > 0 else not self.stopped)

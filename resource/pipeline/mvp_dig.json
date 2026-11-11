@@ -79,9 +79,9 @@
     "action": "Custom",
     "post_delay": 1300,
     "next": [],
-    "custom_action": "nikki.ui_click",
+    "custom_action": "nikki.game_key",
     "custom_action_param": {
-      "target": [1200, 692]
+      "name": "skip"
     }
   },
   "MaaNikki_Dig_Again": {

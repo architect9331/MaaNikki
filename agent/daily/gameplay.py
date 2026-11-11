@@ -391,9 +391,7 @@ class Gameplay:
                     self.rt.diagnostic("jihua_reward", "未识别到素材激化动画跳过提示")
                     self.rt.log("未识别到素材激化动画跳过提示，请检查游戏画面。")
                 return False
-        with self.rt.observe(fresh=True):
-            overlay = self.ui.page_matches("MaaNikki_RewardOverlayReady")
-        if not self.rt.pause(.5) or not self.rt.skip_prompt(.5, scene=not overlay):
+        if not self.rt.pause(.5) or not self.rt.key("skip", .5):
             return False
         result = self.ui.skip_reward()
         if not result and not self.rt.stopped:

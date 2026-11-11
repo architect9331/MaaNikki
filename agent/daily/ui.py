@@ -502,7 +502,9 @@ class GameUI:
                 # A press during the reward item reveal can only fast-forward
                 # the animation; verify closure and retry if the popup remains.
                 for _ in range(6):
-                    if not self.rt.skip_prompt(0):
+                    ok = (self.rt.skip_prompt(0) if self.page_matches("MaaNikki_RewardOverlayReady")
+                          else self.rt.key("skip", 0))
+                    if not ok:
                         return False
                     if self.wait_page(lambda: not self.rt.hit(node), seconds=2.5, allow_reward=True):
                         return True
@@ -795,7 +797,7 @@ class GameUI:
                 need_click = True
                 continue
             if skip_prompt:
-                if not self.rt.skip_prompt(.5, scene=True):
+                if not self.rt.key("skip", .5):
                     break
                 event({"type": "revive_reward_dismissed"})
                 need_click = True
@@ -919,7 +921,7 @@ class GameUI:
                 if self.dismiss_realm_confirm() is not True:
                     return False
             elif page == "reward":
-                if not self.rt.skip_prompt(.5, scene=True):
+                if not self.rt.key("skip", .5):
                     return False
             else:
                 if self.page_matches("MaaNikki_MainDetected"):

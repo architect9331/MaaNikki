@@ -74,7 +74,7 @@ class Crown(Runtime):
                     return False
                 if not self.dialogue_visible():
                     return True
-            if not self.skip_prompt(0, target=self.ui.roi("IconSkipDialog"), key_name="interact"):
+            if not self.key("interact", 0):
                 return False
         return False
 
@@ -127,7 +127,7 @@ class Crown(Runtime):
                 result_dismissed = True
             elif dialogue:
                 dialogue_seen = True
-                self.require(self.skip_prompt(.5, target=self.ui.roi("IconSkipDialog")), "未能继续赛场对话")
+                self.require(self.key("skip", .5), "未能继续赛场对话")
             elif summit and self.ui.wait_page("MaaNikki_Crown_SummitReady"):
                 return "rewards"
             elif world and self.ui.wait_page(world_ready, seconds=2):
@@ -299,7 +299,7 @@ class Crown(Runtime):
                 self.pause(1)
             else:
                 if not self.stopped:
-                    self.skip_prompt(0, key_name="interact")
+                    self.key("interact", 0)
             self.pause(2)
             result_dismissed = self.reward_popup()
         return "stopped"
