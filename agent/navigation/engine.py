@@ -557,13 +557,16 @@ class Navigator:
                     return pose
                 if time.monotonic() >= deadline:
                     break
-                # Reduce corrections when feedback crosses the target instead
-                # of repeating full-size opposite turns on the same bearing.
-                if previous_delta is not None and delta*previous_delta < 0:
+                # Reduce corrections when feedback crosses the target (0 deg),
+                # ignoring sign flips across the +/-180-degree antipodal seam.
+                if previous_delta is not None and delta*previous_delta < 0 and abs(delta)+abs(previous_delta) < 180:
                     correction_gain = max(.125, correction_gain*.5)
+                elif previous_delta is not None and delta*previous_delta > 0 and abs(delta) < abs(previous_delta):
+                    correction_gain = min(1.0, correction_gain*1.5)
                 previous_delta = delta
                 before = pose.heading
-                pixels = self.camera(delta*self.turn_ratio*correction_gain)
+                step_deg = max(-90.0, min(90.0, delta*correction_gain))
+                pixels = self.camera(step_deg*self.turn_ratio)
                 expected_rotation = pixels/self.turn_ratio
                 pose = self.stable_heading(pose)
                 actual = angle_delta(pose.heading, before)
