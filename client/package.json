@@ -1,7 +1,7 @@
 {
   "name": "maanikki-client",
   "private": true,
-  "version": "2.7.1-maanikki.43",
+  "version": "2.7.1-maanikki.44",
   "type": "module",
   "scripts": {
     "dev": "vite",
