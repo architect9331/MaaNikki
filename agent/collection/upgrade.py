@@ -26,6 +26,16 @@ class UpgradeUI:
             return (frame is not None and int(frame[180:215, 948:1028].max()) >= 180
                     and self.rt.hit(UPGRADE) and not self.rt.hit(RESULT))
 
+    def dismiss_result(self, *, key_name="skip"):
+        attempt = 0
+
+        def step():
+            nonlocal attempt
+            attempt += 1
+            return self.rt.skip_prompt(0, use_key=attempt > 2, key_name=key_name)
+
+        return self.rt.ui.enter_page(step, self.upgrade_ready, source=RESULT, attempts=4)
+
     def frame(self, generation, page=UPGRADE):
         frame = self.rt.capture()
         self.owner.check_generation(generation)
@@ -178,8 +188,7 @@ class UpgradeUI:
             if not self.rt.ui.wait_page(RESULT, seconds=20):
                 raise RuntimeError("未确认升级完成界面，已停止且不重试")
             self.owner.check_generation(generation)
-            if not self.rt.ui.enter_page(lambda: self.rt.skip_prompt(0, key_name=70), self.upgrade_ready,
-                                         source=RESULT, attempts=3):
+            if not self.dismiss_result(key_name=70):
                 raise RuntimeError("未能关闭升级完成界面")
             fields, frame = self.read(generation)
             level, xp = self.integer(fields["level"]), self.experience(fields["xp"])

@@ -356,10 +356,10 @@ class GameUI:
         try:
             # Overworld rewards queue up and pop up back-to-back once any UI
             # page opens; a press during fade-in only fast-forwards the reveal.
-            for _ in range(20):
+            for attempt in range(20):
                 if self.rt.stopped or time.monotonic() >= deadline:
                     return False
-                if not self.rt.skip_prompt(.25):
+                if not self.rt.skip_prompt(.25, use_key=(attempt // 2) % 2 == 1):
                     return False
                 clear = 0
                 check_deadline = min(deadline, time.monotonic()+2.5)
@@ -501,10 +501,9 @@ class GameUI:
                     return self.dismiss_reward(include_title=True) is True
                 # A press during the reward item reveal can only fast-forward
                 # the animation; verify closure and retry if the popup remains.
-                for _ in range(6):
-                    ok = (self.rt.skip_prompt(0) if self.page_matches("MaaNikki_RewardOverlayReady")
-                          else self.rt.key("skip", 0))
-                    if not ok:
+                for attempt in range(6):
+                    use_key = (attempt // 2) % 2 == 1 or not self.page_matches("MaaNikki_RewardOverlayReady")
+                    if not self.rt.skip_prompt(0, use_key=use_key):
                         return False
                     if self.wait_page(lambda: not self.rt.hit(node), seconds=2.5, allow_reward=True):
                         return True

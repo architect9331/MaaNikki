@@ -216,7 +216,7 @@ class Runtime:
         return self.action("ClickKey", key=value) and self.pause(delay)
 
     def skip_prompt(self, delay=0.25, *, target=None, use_key=False, key_name="skip"):
-        """Dismiss a bottom-right '空白区域继续' overlay by click; keep key path available."""
+        """Dismiss a bottom-right '空白区域继续' overlay by click; fall back to key when needed."""
         if self.stopped:
             return False
         if use_key:
@@ -224,6 +224,8 @@ class Runtime:
         point = list(self.SKIP_PROMPT_TARGET if target is None else target)
         with self.ui.preserve_cursor():
             clicked = self.action("Click", target=point)
+        if not clicked and not self.stopped:
+            return self.key(key_name, delay)
         return clicked and (self.pause(delay) if delay > 0 else not self.stopped)
 
     def hold(self, key, seconds):

@@ -88,11 +88,30 @@ class Crown(Runtime):
         if self.hit("MaaNikki_RewardOverlayReady"):
             # A challenge reward returns to arena dialogue, while an entry
             # reward returns to the lobby. Confirm dismissal, not its parent.
-            return bool(self.click_template("MaaNikki_Crown_EntryRewardContinue",
-                                            attempts=1, wait_seconds=0, verify=False)
-                        and self.ui.wait_page(lambda: not self.hit("MaaNikki_RewardOverlayReady")))
-        return bool(self.pause(1) and self.skip_prompt(0)
-                    and self.ui.wait_page(lambda: not visible(), allow_reward=True))
+            if (self.click_template("MaaNikki_Crown_EntryRewardContinue",
+                                    attempts=1, wait_seconds=0, verify=False)
+                    and self.ui.wait_page(lambda: not self.hit("MaaNikki_RewardOverlayReady"), seconds=2.5)):
+                return True
+            for use_key in (False, True):
+                with self.observe(fresh=True):
+                    if self.stopped or not self.hit("MaaNikki_RewardOverlayReady"):
+                        return not self.stopped
+                if not self.skip_prompt(0, use_key=use_key):
+                    return False
+                if self.ui.wait_page(lambda: not self.hit("MaaNikki_RewardOverlayReady"), seconds=2.5):
+                    return True
+            return False
+        if not self.pause(1):
+            return False
+        for use_key in (False, False, True):
+            if not self.skip_prompt(0, use_key=use_key):
+                return False
+            if self.ui.wait_page(lambda: not visible(), seconds=2.5, allow_reward=True):
+                return True
+            with self.observe(fresh=True):
+                if self.stopped or not visible():
+                    return not self.stopped
+        return False
 
     def challenge_transition(self, *, result_dismissed=False):
         """Follow arena rewards and dialogue until a positive next-state signal."""
@@ -288,14 +307,22 @@ class Crown(Runtime):
             self.pause(5)
             self.require(self.wait_asset("ButtonMiraCrownNextStep", click=True), "未找到下一步按钮")
             self.require(self.wait_asset("ButtonMiraCrownConfirmMatch", click=True), "未找到确认搭配按钮")
-            deadline = time.monotonic() + 20
+            deadline, click_attempts = time.monotonic() + 20, 0
             while not self.stopped and time.monotonic() < deadline:
                 self.wait_asset("ButtonMiraCrownSkipAll", attempts=1, click=True)
                 if self.hit("MaaNikki_RewardOverlayReady"):
                     break
                 if self.asset("IconClickSkip"):
+                    if click_attempts >= 2:
+                        self.key("interact", 0)
+                        break
+                    click_attempts += 1
                     self.skip_prompt(0, key_name="interact")
-                    break
+                    if self.ui.wait_page(
+                            lambda: not self.asset("IconClickSkip") or self.hit("MaaNikki_RewardOverlayReady"),
+                            seconds=1.5, allow_reward=True):
+                        break
+                    continue
                 self.pause(1)
             else:
                 if not self.stopped:

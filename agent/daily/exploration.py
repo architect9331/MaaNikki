@@ -67,7 +67,7 @@ class Exploration(Runtime):
                  if guard.capture_requires_foreground else
                  "辅助功能已启动：键盘交互支持切出游戏后继续拾取和对白；清洁跳过、鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
         schedule = AssistSchedule(enabled, now=time.monotonic())
-        waiting_clear = False
+        clear_stage, clear_clicked_at = 0, 0.0
         previous_mode = None
         map_mask = None
 
@@ -172,7 +172,7 @@ class Exploration(Runtime):
                     continue
                 # A single async Maa capture overlaps the last part of the idle
                 # period. Inputs always finish before posting the next capture.
-                deadline = schedule.deadline(["Clear"] if waiting_clear else None)
+                deadline = schedule.deadline(["Clear"] if clear_stage else None)
                 frame = self.capture_at(deadline, available=available)
                 if frame is None:
                     self.pause(.1)
@@ -197,12 +197,21 @@ class Exploration(Runtime):
                 now = time.monotonic()
                 if "MapMask" in schedule.next_check and now+.01 >= schedule.next_check["MapMask"]:
                     schedule.checked("MapMask", now)
-                if waiting_clear and not clear_use_key and not guard.foreground():
-                    waiting_clear = False
-                if waiting_clear:
+                if clear_stage and not clear_use_key and not guard.foreground():
+                    clear_stage = 0
+                if clear_stage:
+                    checked_at = time.monotonic()
                     if not found("IconSkip", frame):
-                        waiting_clear = False
-                    schedule.checked("Clear", time.monotonic())
+                        clear_stage = 0
+                        schedule.checked("Clear", checked_at)
+                    elif clear_stage == 1 and checked_at - clear_clicked_at >= 1.0:
+                        clear_stage = 2
+                        acted = bool(available() and press())
+                        if acted:
+                            count("assist.Clear")
+                        schedule.checked("Clear", time.monotonic(), acted=acted)
+                    else:
+                        schedule.checked("Clear", checked_at)
                     continue
                 icons = {"Clear": "IconSkip", "Dialogue": "IconSkipDialog", "Pickup": "IconPickupFeature"}
                 # Share one frame with checks due within 10 ms; keep feature
@@ -249,8 +258,11 @@ class Exploration(Runtime):
                         continue
                     if available() and (click_clear() if helper == "Clear" else press()):
                         count("assist."+helper)
-                        schedule.checked(helper, time.monotonic(), acted=True)
-                        waiting_clear = helper == "Clear"
+                        acted_at = time.monotonic()
+                        schedule.checked(helper, acted_at, acted=True)
+                        if helper == "Clear":
+                            clear_stage = 2 if clear_use_key else 1
+                            clear_clicked_at = acted_at
                     # Submit at most one input for this frame, even on failure.
                     # Skips/dialogue precede pickup when multiple features match.
                     break
