@@ -471,12 +471,20 @@ fn collect_debug_subdir_files(
     Ok(files)
 }
 
-/// Include recent collection evidence stored outside debug/, including card icons.
+/// Include recent task and collection evidence stored under `logs/` outside `debug/`.
 fn collect_recent_collection_files(data_dir: &Path) -> Result<Vec<ExportEntry>, String> {
+    const ALLOWED_EXTS: &[&str] = &["log", "json", "png", "jpg", "jpeg"];
+    const MAX_FLAT_ENTRIES_PER_KIND: usize = 60;
+
     let mut files = Vec::new();
-    for kind in ["blessing-lock", "blessing-pursuit", "wardrobe"] {
+    for kind in [
+        "blessing-lock",
+        "blessing-pursuit",
+        "wardrobe",
+        "daily-upgrade",
+    ] {
         let directory = data_dir.join("logs").join(kind);
-        if !directory.is_dir() {
+        if !directory.is_dir() || directory.is_symlink() {
             continue;
         }
         let mut runs: Vec<_> = std::fs::read_dir(&directory)
@@ -491,12 +499,33 @@ fn collect_recent_collection_files(data_dir: &Path) -> Result<Vec<ExportEntry>, 
             files.extend(
                 collect_files_recursively(&run.path(), &prefix)?
                     .into_iter()
-                    .filter(|entry| {
-                        has_extension(&entry.source_path, &["log", "json", "png", "jpg", "jpeg"])
-                    }),
+                    .filter(|entry| has_extension(&entry.source_path, ALLOWED_EXTS)),
             );
         }
     }
+
+    for kind in [
+        "daily",
+        "navigation",
+        "startup",
+        "fishing",
+        "minigame_bling",
+        "performance",
+    ] {
+        let directory = data_dir.join("logs").join(kind);
+        if !directory.is_dir() || directory.is_symlink() {
+            continue;
+        }
+        let prefix = format!("logs/{}", kind);
+        let mut kind_files: Vec<_> = collect_files_recursively(&directory, &prefix)?
+            .into_iter()
+            .filter(|entry| has_extension(&entry.source_path, ALLOWED_EXTS))
+            .collect();
+        sort_newest_first(&mut kind_files);
+        kind_files.truncate(MAX_FLAT_ENTRIES_PER_KIND);
+        files.extend(kind_files);
+    }
+
     Ok(files)
 }
 
