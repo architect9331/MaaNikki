@@ -451,11 +451,13 @@ class Navigator:
             # terrain. Re-reading the same angle cannot restore its missing
             # boundary. Reuse the calibration probe while stationary to expose
             # another angle; both rays must still pass the normal checks.
+            probe_scale = 2 if self.heading_recheck_count >= 3 else 1
+            probe = self.camera_probe_pixels * probe_scale * (-1 if self.heading_recheck_count % 2 == 0 else 1)
             self.event({"type": "heading_visibility_probe",
                         "attempt": self.heading_recheck_count,
-                        "pixels": self.camera_probe_pixels,
+                        "pixels": probe,
                         "diagnostics": dict(diagnostics)})
-            self.camera(self.camera_probe_pixels)
+            self.camera(probe)
             return self.stable_heading(pose, deadline=deadline)
 
     def calibrate(self, pose):

@@ -165,8 +165,9 @@ def camera_heading(reference, map_image, spec, x, y, *, terrain=None):
     peaks = [int(peak-width) for peak in peaks if width <= peak < 2*width]
     peaks.sort(key=lambda peak: float(signal[peak]), reverse=True)
     coverage_floor = .1 if live_pixels else .2
+    runner_up_strength = float(signal[peaks[1]]) if len(peaks) > 1 else 1.0
     candidates = []
-    for boundary in peaks:
+    for rank, boundary in enumerate(peaks):
         left_bins = (boundary+np.arange(-6, 7)) % width
         right_bins = (boundary+width//4+np.arange(-9, 10)) % width
         # Polar columns are 2x upsampled (0.88 deg/bin) around the minimap
@@ -179,12 +180,23 @@ def camera_heading(reference, map_image, spec, x, y, *, terrain=None):
         rows = [rising_rows[:, left_bins].any(axis=1), falling_rows[:, right_bins].any(axis=1)]
         radial_coverage = [float(value.mean()) for value in rows]
         halves = [float(part.mean()) for value in rows for part in np.array_split(value, 2)]
-        # Keep the existing missing-background support allowance, but apply
-        # evidence checks to complete maps too. Both rays must extend across
-        # the inner and outer sampling bands, not just a small terrain arc.
-        supported = (min(support) >= polar.shape[0]*coverage_floor
-                     and min(radial_coverage) >= coverage_floor
-                     and min(halves) >= coverage_floor/2)
+        # Keep the existing missing-background support allowance, while accounting
+        # for ~85% 3-bin slice capture on 4-bin tilted rays and allowing a single
+        # icon-occluded half-ray when the primary 90-degree cone is unambiguous.
+        full_ray_ok = (min(support) >= polar.shape[0]*coverage_floor*.85
+                       and min(radial_coverage) >= coverage_floor
+                       and min(halves) >= coverage_floor/2)
+        icon_occluded_ok = (
+            rank == 0
+            and float(signal[boundary]) >= runner_up_strength*8.0
+            and min(support) >= max(45, polar.shape[0]*coverage_floor)
+            and max(radial_coverage) >= .60
+            and min(radial_coverage) >= max(.34, coverage_floor*1.7)
+            and sum(h >= coverage_floor/2 for h in halves) >= 3
+            and max(halves[:2]) >= .60
+            and max(halves[2:]) >= .60
+        )
+        supported = full_ray_ok or icon_occluded_ok
         candidates.append({"heading": (boundary/width*360+135) % 360,
                            "strength": float(signal[boundary]), "edge_support": support,
                            "radial_coverage": radial_coverage, "radial_halves": halves,

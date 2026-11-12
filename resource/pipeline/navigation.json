@@ -91,6 +91,18 @@
     "threshold": 0.76,
     "action": "DoNothing"
   },
+  "MaaNikki_Navigation_LayerClose": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      20,
+      180,
+      50,
+      410
+    ],
+    "template": "nikki/navigation/layer_close.png",
+    "threshold": 0.78,
+    "action": "DoNothing"
+  },
   "MaaNikki_Navigation_Pickup": {
     "recognition": "TemplateMatch",
     "roi": [

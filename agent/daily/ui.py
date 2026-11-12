@@ -135,6 +135,17 @@ class GameUI:
             return 0.0
         return float(cv2.matchTemplate(a, b, cv2.TM_CCORR_NORMED)[0, 0])
 
+    @staticmethod
+    def scroll_unchanged(before, after):
+        """Detect end-of-scroll without confusing bright uniform cards for static content."""
+        if before is None or after is None or before.shape != after.shape:
+            return False
+        if float(cv2.matchTemplate(before, after, cv2.TM_CCORR_NORMED)[0, 0]) <= .99:
+            return False
+        if float(cv2.absdiff(before, after).mean()) <= 1.5:
+            return True
+        return float(cv2.matchTemplate(before, after, cv2.TM_CCOEFF_NORMED)[0, 0]) > .95
+
     def stable(self, threshold=.9995, seconds=5, roi=None):
         end, previous = time.monotonic()+seconds, None
         unchanged_since, confirmations = time.monotonic(), 0
@@ -470,7 +481,7 @@ class GameUI:
                     similarity = self.similarity(before, current)
                     if paged:
                         self.rt.evidence.observe("menu_scroll", direction="start", similarity=similarity)
-                    if similarity > .99:
+                    if self.scroll_unchanged(before, current):
                         break
                     before = current.copy()
                 next_image = frame
@@ -481,10 +492,11 @@ class GameUI:
             frame = self.rt.capture()
             if frame is None:
                 return False
-            similarity = self.similarity(before, frame[y:y+h, x:x+w])
+            current = frame[y:y+h, x:x+w]
+            similarity = self.similarity(before, current)
             if paged:
                 self.rt.evidence.observe("menu_scroll", direction="next", similarity=similarity)
-            if similarity > .99:
+            if self.scroll_unchanged(before, current):
                 # Even at the end, recognize the final frame before reporting
                 # absence: the comparison must not discard a matching entry.
                 scroll = False

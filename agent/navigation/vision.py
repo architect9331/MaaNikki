@@ -112,6 +112,7 @@ class Locator:
         match_floor = MINIMAP_POSITION_SCORE if floor is None else floor
         selected = initial = attempt("luma", patch, mask, match_floor)
         method = "luma"
+        consensus_accepted = False
         if selected is None or selected[2] < match_floor:
             edge_ring = (radius_squared <= 96**2) & (radius_squared > 16**2)
             edge_mask = edge_ring.astype(np.uint8)
@@ -143,6 +144,22 @@ class Locator:
                             if edge is not None else float("inf")
                         )
                         known_fraction = coverage(local, patch.shape, cone_mask, (cx+.5, cy+.5))
+                        # Dense checkpoint/building icons can cap normalized luma
+                        # scores just below match_floor (~0.50-0.54) even at the
+                        # true sub-pixel pose; accept when luma, Sobel terrain
+                        # edges, and outside-cone all peak within 1.5 px with sharp
+                        # prominence.
+                        triple_consensus = (
+                            agreement <= 1.5
+                            and edge_agreement <= 1.5
+                            and score >= max(.48, match_floor-.07)
+                            and peak >= .05
+                            and initial[2] >= max(.48, match_floor-.07)
+                            and initial[3] >= .05
+                            and edge is not None
+                            and edge[2] >= .45
+                            and edge[3] >= .06
+                        )
                         accepted = (
                             agreement <= 2
                             and known_fraction >= MIN_KNOWN_COVERAGE
@@ -156,21 +173,25 @@ class Locator:
                                     and edge[3] >= .05
                                     and edge_agreement <= 2
                                 )
+                                or triple_consensus
                             )
                         )
                         diagnostics.update(
                             method_agreement=agreement,
                             edge_agreement=edge_agreement if np.isfinite(edge_agreement) else None,
                             known_fraction=known_fraction,
+                            triple_consensus=triple_consensus,
                             accepted=accepted,
                         )
                         if accepted:
                             selected, method = cone, "outside_camera_cone"
+                            consensus_accepted = triple_consensus
         px, py, score, detail = selected or (hint[0]-x, hint[1]-y, 0.0, 0.0)
         px, py = px+x, py+y
         candidate = [px, py]
         elapsed = time.monotonic()-self.position_time
-        unreliable = selected is None or not np.isfinite(score) or (floor is not None and score < floor)
+        unreliable = (selected is None or not np.isfinite(score)
+                      or (floor is not None and score < floor and not consensus_accepted))
         rejected = bool(self.previous and not reset_continuity and elapsed <= 20
                         and np.hypot(px-self.previous.x, py-self.previous.y) >= 50*elapsed+.5)
         if rejected or unreliable:

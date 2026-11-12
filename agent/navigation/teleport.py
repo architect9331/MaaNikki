@@ -104,7 +104,7 @@ class Teleporter:
         province = checkpoint["province"]
         region_roi = self.rt.ui.roi("AreaBigMapRegionName")
         list_roi = self.rt.ui.roi("AreaBigMapRegionSelect")
-        scroll_roi = [950, 120, 180, 480]
+        scroll_roi = [890, 95, 240, 505]
         if wanted == "家园":
             # Home names are user-defined; upstream selects the home glyph.
             return self.home_region(region_roi, list_roi)
@@ -201,7 +201,7 @@ class Teleporter:
             self.check()
             box = self.rt.ui.find(roi=list_roi, asset="IconBigMapHomeFeature",
                                  scale=2/3, threshold=.9, color=color, scroll=True,
-                                 scroll_roi=[950, 120, 180, 480], click=False)
+                                 scroll_roi=[890, 95, 240, 505], click=False)
             if not box:
                 return False
             # Compare the home row with the current header, including renamed
@@ -273,16 +273,32 @@ class Teleporter:
             raise NavigationError("确认家园后未能关闭地图区域列表。")
         return in_home
 
+    def exit_layer_view(self):
+        """Close the left-hand multi-layer floor overlay so surface terrain is undimmed."""
+        for _ in range(3):
+            self.check()
+            if not self.rt.hit("MaaNikki_Navigation_LayerClose"):
+                return True
+            clicked = self.rt.click_template(
+                "MaaNikki_Navigation_LayerClose", attempts=1, wait_seconds=.35, verify=False)
+            self.event({"type": "map_layer_closed", "clicked": bool(clicked)})
+            if not clicked:
+                return False
+        return not self.rt.hit("MaaNikki_Navigation_LayerClose")
+
     def zoom(self):
+        self.exit_layer_view()
         for _ in range(3):
             self.check()
             if self.rt.hit("MaaNikki_Navigation_MapMaxScale"):
+                self.exit_layer_view()
                 return
             if not self.rt.click_template("MaaNikki_Navigation_MapZoom", attempts=1):
                 break
             self.rt.pause(.5)
         if not self.rt.hit("MaaNikki_Navigation_MapMaxScale"):
             raise NavigationError("未能放大地图，请确认没有点位详情遮挡缩放按钮。")
+        self.exit_layer_view()
 
     def map_pose(self, frame):
         self.map_diagnostics = []
@@ -363,8 +379,14 @@ class Teleporter:
                     candidates.append((*center, score, peak))
         best_cluster = []
         for anchor in candidates:
-            cluster = [p for p in candidates if math.hypot(p[0]-anchor[0], p[1]-anchor[1]) <= 2]
-            cluster = [p for p in cluster if all(math.hypot(p[0]-q[0], p[1]-q[1]) <= 2 for q in cluster)]
+            neighbors = sorted(
+                (p for p in candidates if math.hypot(p[0]-anchor[0], p[1]-anchor[1]) <= 2.5),
+                key=lambda p: (p is not anchor, -p[2]),
+            )
+            cluster = []
+            for p in neighbors:
+                if all(math.hypot(p[0]-q[0], p[1]-q[1]) <= 2.5 for q in cluster):
+                    cluster.append(p)
             if (len(cluster), sum(p[2] for p in cluster)) > (len(best_cluster), sum(p[2] for p in best_cluster)):
                 best_cluster = cluster
         candidates = best_cluster
