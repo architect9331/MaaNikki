@@ -76,6 +76,14 @@ def can_review():
             and entries.index("MaaNikki_Zhaoxi") < entries.index("MaaNikki_RealmChallenge"))
 
 
+def realm_preceded_zhaoxi():
+    if PLAN is None:
+        return False
+    entries = PLAN["entries"]
+    return ("MaaNikki_RealmChallenge" in entries and "MaaNikki_Zhaoxi" in entries
+            and entries.index("MaaNikki_RealmChallenge") < entries.index("MaaNikki_Zhaoxi"))
+
+
 def planned_realm():
     """Saved realm options only guide scheduling within an actual later stage."""
     if not can_review():

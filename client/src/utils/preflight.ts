@@ -46,6 +46,13 @@ export async function preflightIssues(instance: Instance): Promise<PreflightIssu
   const issues: PreflightIssue[] = [];
   const state = useAppStore.getState();
 
+  const realmIdx = instance.selectedTasks.findIndex((task) => task.taskName === 'realm_challenge' && task.enabled);
+  const zhaoxiIdx = instance.selectedTasks.findIndex((task) => task.taskName === 'zhaoxi' && task.enabled);
+  if (realmIdx >= 0 && zhaoxiIdx > realmIdx) {
+    issues.push({ id: 'realm-before-zhaoxi', once: true, title: '「幻境挑战」排在「朝夕心愿」之前',
+      detail: '幻境挑战会先消耗完当天的活跃能量；若当天朝夕心愿刷出其他指定幻境且不耗体力心愿不足 500 分，将没有剩余体力自动补分。建议将「朝夕心愿」拖动到「幻境挑战」上方。' });
+  }
+
   const realm = enabledTask(instance, 'realm_challenge');
   if (realm && realmCollectionEnabled(realm.optionValues)) {
     const farmOnly = realmFarmOnlyEnabled(realm.optionValues);

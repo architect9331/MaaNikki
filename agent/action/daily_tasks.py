@@ -35,6 +35,62 @@ class DailyRun(Executors):
         self.handoff_page = None
         self.handoff_ok = None
         self.score_reads = []
+        self.energy_exhausted = False
+
+    def skip_reason(self, card, allow_energy):
+        rule = card.rule
+        if not rule.executor:
+            return "尚未收获或需单独执行" if rule.key == "dig" else "需手动完成"
+        if not self.task_selected(self.mode, rule.key):
+            return "已在任务选项中关闭"
+        if rule.energy and not allow_energy:
+            return "已关闭「允许用活跃能量补足心愿积分」"
+        if rule.route:
+            return "缺少已校准的路线或当前交互位置不匹配"
+        return "当前条件未满足"
+
+    def shortfall_message(self, score, cards, allow_energy):
+        unfinished = [c for c in cards if not (c.rule and c.rule.key in self.successful)]
+        realm_cards = [c for c in unfinished if c.rule and c.rule.energy and c.rule.key != "energy"]
+        realm_names = "、".join(dict.fromkeys(c.rule.label for c in realm_cards))
+        disabled = [c for c in unfinished
+                    if self.mode == "xinghai" and c.rule and c.rule.executor
+                    and not self.task_selected(self.mode, c.rule.key)]
+        disabled_names = "、".join(dict.fromkeys(c.rule.label for c in disabled))
+        failed = [c for c in unfinished
+                  if c.slot in self.attempted and c.rule and not c.rule.energy
+                  and c.rule.key not in self.successful
+                  and not (c.rule.key == "upgrade"
+                           and getattr(self, "daily_upgrade_result", {}).get("status") == "no_candidate")]
+        failed_names = "、".join(dict.fromkeys(c.rule.label for c in failed))
+        manual = [c for c in unfinished if not c.rule or not c.rule.executor]
+        manual_names = "、".join(dict.fromkeys(
+            (c.rule.label if c.rule else "未适配项目") for c in manual))
+        energy_unfinished = any(c.rule and c.rule.key == "energy" for c in unfinished)
+        realm_first = self.mode == "zhaoxi" and run_state.realm_preceded_zhaoxi()
+
+        if self.mode == "zhaoxi" and realm_cards and not allow_energy:
+            if realm_first:
+                return (f"{self.title}当前实际 {score}/500，未达标。剩余「{realm_names}」因关闭"
+                        "「允许用活跃能量补足心愿积分」未执行，且「幻境挑战」排在「朝夕心愿」之前已先消耗体力；"
+                        "可将朝夕心愿移到幻境挑战上方并开启补分，或手动完成其余心愿。")
+            return (f"{self.title}当前实际 {score}/500，未达标。剩余「{realm_names}」因关闭"
+                    "「允许用活跃能量补足心愿积分」未执行；可开启该选项自动补分，或手动完成其余心愿。")
+        if self.mode == "zhaoxi" and realm_cards and self.energy_exhausted:
+            if realm_first:
+                return (f"{self.title}当前实际 {score}/500，未达标。「幻境挑战」排在「朝夕心愿」之前"
+                        f"已先消耗活跃能量，剩余体力不足以完成「{realm_names}」；请将朝夕心愿移到幻境挑战上方。")
+            return f"{self.title}当前实际 {score}/500，未达标。当前活跃能量不足以完成「{realm_names}」，其余任务需手动完成。"
+        if disabled_names:
+            return (f"{self.title}当前实际 {score}/500，未达标。剩余「{disabled_names}」已在任务选项中关闭，"
+                    "可开启对应子任务或手动完成其余项目。")
+        if failed_names:
+            return f"{self.title}当前实际 {score}/500，未达标。「{failed_names}」未完成，其余项目暂需手动处理。"
+        if self.mode == "zhaoxi" and energy_unfinished and not manual_names:
+            return f"{self.title}当前实际 {score}/500；「消耗活跃能量」尚未完成，可在后续运行「幻境挑战」或手动补足。"
+        if manual_names:
+            return f"{self.title}当前实际 {score}/500；剩余任务（{manual_names}）需要手动完成，本轮未达标。"
+        return f"{self.title}当前实际 {score}/500；剩余任务需要手动完成，本轮未达标。"
 
     def open_page(self):
         ready = f"MaaNikki_{self.prefix}_DailyReady"
@@ -234,9 +290,11 @@ class DailyRun(Executors):
             if score == 500:
                 self.log(f"{self.title}已达 500 分，领取可领取奖励。")
                 return self.claim()
-            if not self.setting(self.mode).get("auto_complete", True):
+            options = self.setting(self.mode)
+            if not options.get("auto_complete", True):
                 self.log(f"{self.title}当前 {score}/500，仅领取已经解锁的奖励。")
                 return self.claim()
+            allow_energy = self.mode == "zhaoxi" and options.get("allow_energy", True)
             cards = self.scan()
             if cards is None:
                 return False
@@ -244,8 +302,8 @@ class DailyRun(Executors):
             for card in cards:
                 if self.available(self.mode, card):
                     available.append(card)
-                elif card.rule:
-                    reason = "缺少已校准的路线或当前交互位置不匹配" if card.rule.route else "暂未适配或已关闭"
+                elif card.rule and card.rule.key != "energy":
+                    reason = self.skip_reason(card, allow_energy)
                     self.log(f"{card.rule.label}：{reason}，本轮跳过。", detail=True)
             upgrade_card = next((c for c in available if c.rule.key == "upgrade"), None)
             later_realm = run_state.planned_realm() if self.mode == "zhaoxi" and upgrade_card else None
@@ -257,7 +315,8 @@ class DailyRun(Executors):
             expected_free = sum(c.rule.score for c in free)
             self.log(f"当前 {score}/500；可执行的不耗活跃能量任务预计贡献 {expected_free} 分。"
                      + ("优先仅使用这些任务凑分。" if score+expected_free >= 500 else
-                        "先做这些任务，不足部分再考虑当天幻境。" if self.mode == "zhaoxi" else
+                        "先做这些任务，不足部分再考虑当天幻境。" if allow_energy else
+                        "先做这些任务；已关闭活跃能量补分，不会挑战幻境。" if self.mode == "zhaoxi" else
                         "先做可执行任务；其余任务不会使用幻境活跃能量补分。"),
                      ui_text=f"{self.title}：当前 {score}/500，开始完成任务。")
             while score < 500 and any(c.slot not in self.attempted for c in free) and not self.stopped:
@@ -323,7 +382,14 @@ class DailyRun(Executors):
                     followup = "处理待补升级并复核积分和领奖" if pending_upgrade else "复核积分和领奖"
                     self.log(f"朝夕心愿当前 {score}/500，将在本轮幻境挑战后{followup}。")
                     return claimed
-            self.log(f"{self.title}当前实际 {score}/500；剩余任务需要手动完成，本轮未达标。")
+            summary = self.shortfall_message(score, cards, allow_energy)
+            self.log(summary)
+            if not self.stopped:
+                self.diagnostic("daily_incomplete", summary, details={
+                    "mode": self.mode, "score": score, "allow_energy": allow_energy,
+                    "energy_exhausted": self.energy_exhausted,
+                    "realm_preceded": self.mode == "zhaoxi" and run_state.realm_preceded_zhaoxi(),
+                    "scans": self.scans, "events": self.events})
             return False
 
         try:
@@ -391,7 +457,12 @@ class DailyRun(Executors):
                 self.log("朝夕心愿已完成 500 分，奖励处理结束。" if claimed else
                          "朝夕心愿已达 500 分，但奖励未能确认领取。")
                 return claimed
-            self.log(f"清活跃能量后朝夕心愿实际 {score}/500；不再追加挑战，剩余任务需要手动完成。")
+            summary = f"清活跃能量后朝夕心愿实际 {score}/500；不再追加挑战，剩余任务需要手动完成。"
+            self.log(summary)
+            if not self.stopped:
+                self.diagnostic("daily_incomplete", summary, details={
+                    "mode": self.mode, "phase": self.phase, "score": score,
+                    "scans": self.scans, "events": self.events})
             return False
 
         try:

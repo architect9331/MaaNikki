@@ -1214,10 +1214,12 @@ class Executors(Runtime):
             return False
         # Supplement a specific realm card with its default minimum, never Max.
         child = Executors(clone)
+        game = Gameplay(child)
         try:
-            return Gameplay(child).realm(kind, maximize=False, return_page="calendar")
+            return game.realm(kind, maximize=False, return_page="calendar")
         finally:
             self.navigation_halted |= child.navigation_halted
+            self.energy_exhausted = getattr(self, "energy_exhausted", False) or game.energy_exhausted
 
     def set_amount(self, kind, minimum_energy, *, desired_count=None):
         count_node = "MaaNikki_Daily_JihuaCount" if kind == "jihua" else "MaaNikki_Daily_QuickCount"
