@@ -1219,7 +1219,9 @@ class Executors(Runtime):
             return game.realm(kind, maximize=False, return_page="calendar")
         finally:
             self.navigation_halted |= child.navigation_halted
-            self.energy_exhausted = getattr(self, "energy_exhausted", False) or game.energy_exhausted
+            exhausted = bool(game.energy_exhausted or game.jihua_exhausted)
+            self.last_energy_exhausted = exhausted
+            self.energy_exhausted = getattr(self, "energy_exhausted", False) or exhausted
 
     def set_amount(self, kind, minimum_energy, *, desired_count=None):
         count_node = "MaaNikki_Daily_JihuaCount" if kind == "jihua" else "MaaNikki_Daily_QuickCount"

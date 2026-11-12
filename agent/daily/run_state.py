@@ -53,6 +53,7 @@ class PendingReview:
     realm_kind: str | None = None
     collection_mode: bool = False
     failure_evidence: list = field(default_factory=list)
+    unexpected_unavailable: list = field(default_factory=list)
 
 
 _pending: dict[tuple[str, str], PendingReview] = {}
@@ -113,7 +114,8 @@ def defer(runtime, task_id, score, energy_card=None, *, upgrade_card=None):
                                      "custom_action_param": deepcopy(parameters(runtime.context, claim_node))}},
         events=deepcopy(runtime.events), scans=deepcopy(runtime.scans), created=time.monotonic(),
         upgrade_card=deepcopy(upgrade_card), uid=runtime.account_uid(),
-        failure_evidence=deepcopy(list(runtime.evidence.records)))
+        failure_evidence=deepcopy(list(runtime.evidence.records)),
+        unexpected_unavailable=deepcopy(getattr(runtime, "unexpected_unavailable", [])))
     return True
 
 

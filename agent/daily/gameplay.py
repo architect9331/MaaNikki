@@ -21,6 +21,7 @@ class Gameplay:
     def __init__(self, runtime):
         self.rt, self.ui = runtime, runtime.ui
         self.energy_exhausted = False
+        self.jihua_exhausted = False
         self.quick_unavailable = False
 
     def read_energy(self):
@@ -200,6 +201,7 @@ class Gameplay:
         if fixed_count is not None and (type(fixed_count) is not int or not 1 <= fixed_count <= 999):
             raise ValueError("固定挑战数量必须是 1～999 的整数")
         self.energy_exhausted = False
+        self.jihua_exhausted = False
         self.quick_unavailable = False
         self.level_missing = False
         self.weekly_quota_used = False
@@ -342,6 +344,7 @@ class Gameplay:
                 return False
             if not staged:
                 if self.jihua_table_idle():
+                    self.jihua_exhausted = True
                     self.rt.log("当前无可继续激化的材料或已达今日激化上限，本次正常结束。" if allow_exhausted else
                                 "当前无可继续激化的材料或已达今日激化上限，本项未执行，不计入心愿完成。")
                     return bool(allow_exhausted)

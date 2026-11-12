@@ -36,6 +36,25 @@ class DailyRun(Executors):
         self.handoff_ok = None
         self.score_reads = []
         self.energy_exhausted = False
+        self.last_energy_exhausted = False
+        self.unexpected_unavailable = []
+
+    def has_unexpected_failure(self):
+        if self.unexpected_unavailable:
+            return True
+        for event in self.events:
+            task = event.get("task")
+            if not task or event.get("success"):
+                continue
+            if task == "upgrade":
+                if (event.get("result") or {}).get("status") == "failed":
+                    return True
+            elif task in ("jihua", "bless", "monster"):
+                if not event.get("exhausted"):
+                    return True
+            else:
+                return True
+        return False
 
     def skip_reason(self, card, allow_energy):
         rule = card.rule
@@ -49,7 +68,7 @@ class DailyRun(Executors):
             return "缺少已校准的路线或当前交互位置不匹配"
         return "当前条件未满足"
 
-    def shortfall_message(self, score, cards, allow_energy):
+    def shortfall_message(self, score, cards, allow_energy, *, claimed=True, unexpected=False):
         unfinished = [c for c in cards if not (c.rule and c.rule.key in self.successful)]
         realm_cards = [c for c in unfinished if c.rule and c.rule.energy and c.rule.key != "energy"]
         realm_names = "、".join(dict.fromkeys(c.rule.label for c in realm_cards))
@@ -60,37 +79,49 @@ class DailyRun(Executors):
         failed = [c for c in unfinished
                   if c.slot in self.attempted and c.rule and not c.rule.energy
                   and c.rule.key not in self.successful
-                  and not (c.rule.key == "upgrade"
-                           and getattr(self, "daily_upgrade_result", {}).get("status") == "no_candidate")]
+                  and (c.rule.key != "upgrade"
+                       or getattr(self, "daily_upgrade_result", {}).get("status") == "failed")]
         failed_names = "、".join(dict.fromkeys(c.rule.label for c in failed))
+        failed_realms = "、".join(dict.fromkeys(
+            c.rule.label for c in realm_cards
+            if any(e.get("slot") == c.slot and not e.get("success") and not e.get("exhausted")
+                   for e in self.events)))
+        unavailable_names = "、".join(dict.fromkeys(self.unexpected_unavailable))
         manual = [c for c in unfinished if not c.rule or not c.rule.executor]
         manual_names = "、".join(dict.fromkeys(
             (c.rule.label if c.rule else "未适配项目") for c in manual))
         energy_unfinished = any(c.rule and c.rule.key == "energy" for c in unfinished)
         realm_first = self.mode == "zhaoxi" and run_state.realm_preceded_zhaoxi()
 
+        if not claimed:
+            return f"{self.title}当前实际 {score}/500，且奖励未能确认领取。"
+        if unexpected:
+            if failed_names:
+                return f"{self.title}当前实际 {score}/500，未达标。「{failed_names}」执行未完成，请检查相关地图、能力或界面状态。"
+            if failed_realms:
+                return f"{self.title}当前实际 {score}/500，未达标。「{failed_realms}」补分未完成，请确认对应幻境关卡和快速挑战已解锁。"
+            if unavailable_names:
+                return f"{self.title}当前实际 {score}/500，未达标。「{unavailable_names}」缺少可用路线或前置条件未满足。"
+            return f"{self.title}当前实际 {score}/500，存在未完成的自动步骤。"
+
+        prefix = f"{self.title}当前 {score}/500，已领取已解锁奖励；"
         if self.mode == "zhaoxi" and realm_cards and not allow_energy:
             if realm_first:
-                return (f"{self.title}当前实际 {score}/500，未达标。剩余「{realm_names}」因关闭"
-                        "「允许用活跃能量补足心愿积分」未执行，且「幻境挑战」排在「朝夕心愿」之前已先消耗体力；"
-                        "可将朝夕心愿移到幻境挑战上方并开启补分，或手动完成其余心愿。")
-            return (f"{self.title}当前实际 {score}/500，未达标。剩余「{realm_names}」因关闭"
-                    "「允许用活跃能量补足心愿积分」未执行；可开启该选项自动补分，或手动完成其余心愿。")
+                return (prefix + f"「{realm_names}」因关闭活跃能量补分未执行（且幻境挑战排在前面已先消耗体力），"
+                        "其余心愿需手动完成。")
+            return prefix + f"「{realm_names}」因关闭「允许用活跃能量补足心愿积分」未执行，其余心愿需手动完成。"
         if self.mode == "zhaoxi" and realm_cards and self.energy_exhausted:
             if realm_first:
-                return (f"{self.title}当前实际 {score}/500，未达标。「幻境挑战」排在「朝夕心愿」之前"
-                        f"已先消耗活跃能量，剩余体力不足以完成「{realm_names}」；请将朝夕心愿移到幻境挑战上方。")
-            return f"{self.title}当前实际 {score}/500，未达标。当前活跃能量不足以完成「{realm_names}」，其余任务需手动完成。"
+                return (prefix + f"因「幻境挑战」排在前面已先消耗活跃能量，剩余体力不足以完成「{realm_names}」，"
+                        "其余心愿需手动完成。")
+            return prefix + f"当前活跃能量不足以完成「{realm_names}」，其余心愿需手动完成。"
         if disabled_names:
-            return (f"{self.title}当前实际 {score}/500，未达标。剩余「{disabled_names}」已在任务选项中关闭，"
-                    "可开启对应子任务或手动完成其余项目。")
-        if failed_names:
-            return f"{self.title}当前实际 {score}/500，未达标。「{failed_names}」未完成，其余项目暂需手动处理。"
+            return prefix + f"「{disabled_names}」已在任务选项中关闭，其余项目需手动完成。"
         if self.mode == "zhaoxi" and energy_unfinished and not manual_names:
-            return f"{self.title}当前实际 {score}/500；「消耗活跃能量」尚未完成，可在后续运行「幻境挑战」或手动补足。"
+            return prefix + "「消耗活跃能量」尚未完成，可在后续运行「幻境挑战」或手动补足。"
         if manual_names:
-            return f"{self.title}当前实际 {score}/500；剩余任务（{manual_names}）需要手动完成，本轮未达标。"
-        return f"{self.title}当前实际 {score}/500；剩余任务需要手动完成，本轮未达标。"
+            return prefix + f"剩余心愿（{manual_names}）需手动完成。"
+        return prefix + "剩余心愿需手动完成。"
 
     def open_page(self):
         ready = f"MaaNikki_{self.prefix}_DailyReady"
@@ -256,7 +287,9 @@ class DailyRun(Executors):
     def save_report(self, score):
         directory = ROOT / "logs" / "daily"
         stamp = datetime.now()
-        operation_failed = score is None or self.rewards_ok is False or self.handoff_ok is False
+        unexpected = self.has_unexpected_failure()
+        operation_failed = (score is None or self.rewards_ok is False or self.handoff_ok is False
+                            or (score != 500 and not self.deferred and unexpected))
         report = {
             "time": stamp.isoformat(timespec="seconds"), "mode": self.mode,
             "actual_score": score, "score_complete": score == 500,
@@ -303,6 +336,9 @@ class DailyRun(Executors):
                 if self.available(self.mode, card):
                     available.append(card)
                 elif card.rule and card.rule.key != "energy":
+                    if (card.rule.executor and self.task_selected(self.mode, card.rule.key)
+                            and (not card.rule.energy or allow_energy)):
+                        self.unexpected_unavailable.append(card.rule.label)
                     reason = self.skip_reason(card, allow_energy)
                     self.log(f"{card.rule.label}：{reason}，本轮跳过。", detail=True)
             upgrade_card = next((c for c in available if c.rule.key == "upgrade"), None)
@@ -341,8 +377,10 @@ class DailyRun(Executors):
                         card = select_energy(pending, predicted, preferred)
                         pending.remove(card)
                         self.log(f"不耗活跃能量任务不足，使用{card.rule.label}补分；保留其余活跃能量。")
+                        self.last_energy_exhausted = False
                         ok = self.energy(card, preferred, overrides)
-                        self.events.append({"slot": card.slot, "task": card.rule.key, "success": ok})
+                        self.events.append({"slot": card.slot, "task": card.rule.key, "success": ok,
+                                            "exhausted": bool(not ok and self.last_energy_exhausted)})
                         if ok:
                             predicted += card.rule.score
                             self.successful.add(card.rule.key)
@@ -382,15 +420,19 @@ class DailyRun(Executors):
                     followup = "处理待补升级并复核积分和领奖" if pending_upgrade else "复核积分和领奖"
                     self.log(f"朝夕心愿当前 {score}/500，将在本轮幻境挑战后{followup}。")
                     return claimed
-            summary = self.shortfall_message(score, cards, allow_energy)
+            unexpected = self.has_unexpected_failure()
+            summary = self.shortfall_message(score, cards, allow_energy,
+                                             claimed=claimed, unexpected=unexpected)
             self.log(summary)
-            if not self.stopped:
-                self.diagnostic("daily_incomplete", summary, details={
-                    "mode": self.mode, "score": score, "allow_energy": allow_energy,
-                    "energy_exhausted": self.energy_exhausted,
-                    "realm_preceded": self.mode == "zhaoxi" and run_state.realm_preceded_zhaoxi(),
-                    "scans": self.scans, "events": self.events})
-            return False
+            if unexpected or not claimed:
+                if not self.stopped:
+                    self.diagnostic("daily_incomplete", summary, details={
+                        "mode": self.mode, "score": score, "allow_energy": allow_energy,
+                        "energy_exhausted": self.energy_exhausted,
+                        "realm_preceded": self.mode == "zhaoxi" and run_state.realm_preceded_zhaoxi(),
+                        "scans": self.scans, "events": self.events})
+                return False
+            return True
 
         try:
             completed = steps()
@@ -417,6 +459,7 @@ class DailyRun(Executors):
         """Settle the score, optionally completing the one explicitly deferred wish."""
         self.phase = "after_energy"
         self.events, self.scans = pending.events, pending.scans
+        self.unexpected_unavailable = list(getattr(pending, "unexpected_unavailable", []))
         score = None
 
         def steps():
@@ -457,13 +500,18 @@ class DailyRun(Executors):
                 self.log("朝夕心愿已完成 500 分，奖励处理结束。" if claimed else
                          "朝夕心愿已达 500 分，但奖励未能确认领取。")
                 return claimed
-            summary = f"清活跃能量后朝夕心愿实际 {score}/500；不再追加挑战，剩余任务需要手动完成。"
-            self.log(summary)
-            if not self.stopped:
-                self.diagnostic("daily_incomplete", summary, details={
-                    "mode": self.mode, "phase": self.phase, "score": score,
-                    "scans": self.scans, "events": self.events})
-            return False
+            unexpected = not realm_ok or self.has_unexpected_failure()
+            if unexpected or not claimed:
+                summary = (f"清活跃能量后朝夕心愿实际 {score}/500，且奖励未能确认领取。" if not claimed else
+                           f"清活跃能量后朝夕心愿实际 {score}/500，未达标；存在未完成的自动步骤。")
+                self.log(summary)
+                if not self.stopped:
+                    self.diagnostic("daily_incomplete", summary, details={
+                        "mode": self.mode, "phase": self.phase, "score": score,
+                        "scans": self.scans, "events": self.events})
+                return False
+            self.log(f"清活跃能量后朝夕心愿当前 {score}/500，已领取已解锁奖励；剩余心愿需手动完成。")
+            return True
 
         try:
             completed = steps()
