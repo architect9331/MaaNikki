@@ -3,7 +3,7 @@
   "id": "gb_cat_fish_serenity_04",
   "title": "【全鱼类垂钓】无忧岛·咚咚小屋聚落（8个/38秒）",
   "map": "serenity",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 128,
   "teleport": {
     "name": "咚咚小屋聚落",
@@ -23,7 +23,7 @@
     {
       "x": 822.68,
       "y": 542.5,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

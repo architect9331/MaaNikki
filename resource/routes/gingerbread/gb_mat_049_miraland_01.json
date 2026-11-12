@@ -1,85 +1,59 @@
 {
   "schema_version": 3,
   "id": "gb_mat_049_miraland_01",
-  "title": "【名流鸦羽】石树田无人区·丰饶古村村口（11个/159秒）",
+  "title": "【名流鸦羽】石树田无人区·遗忘者村居（8个/82秒）",
   "map": "miraland",
-  "start_radius": 6,
-  "timeout": 396,
+  "start_radius": 12,
+  "timeout": 226,
   "teleport": {
-    "name": "丰饶古村村口",
+    "name": "遗忘者村居",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 9154.968,
-    "y": 9131.621
+    "x": 9171.655,
+    "y": 8889.882
   },
   "material": "名流鸦羽",
   "count_materials": [
     "名流鸦羽",
-    "耳坠萤",
-    "小绵菊",
-    "滋滋花粉"
+    "耳坠萤"
   ],
-  "capacity": 20,
+  "capacity": 13,
   "points": [
     {
-      "x": 9154.97,
-      "y": 9131.62,
+      "x": 9171.66,
+      "y": 8889.88,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9173.66,
+      "y": 8891.88,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9153.97,
-      "y": 9127.49,
+      "x": 9170.66,
+      "y": 8912.88,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9150.97,
-      "y": 9091.49,
+      "x": 9170.66,
+      "y": 8948.88,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9150.97,
-      "y": 9055.49,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9150.97,
-      "y": 9019.49,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9162.97,
-      "y": 8983.49,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9165.97,
-      "y": 8974.49,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9180.97,
-      "y": 8977.49,
+      "x": 9176.66,
+      "y": 8972.88,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -93,72 +67,6 @@
       "action": "wait",
       "params": {
         "seconds": 51.3
-      }
-    },
-    {
-      "x": 9181.37,
-      "y": 8977.49,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9163.37,
-      "y": 8974.49,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9154.37,
-      "y": 9010.49,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9151.37,
-      "y": 9028.49,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9175.37,
-      "y": 9055.49,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9196.37,
-      "y": 9082.49,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9220.37,
-      "y": 9109.49,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9242.94,
-      "y": 9129.14,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 27.2
       }
     }
   ]

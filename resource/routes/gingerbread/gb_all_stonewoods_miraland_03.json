@@ -3,7 +3,7 @@
   "id": "gb_all_stonewoods_miraland_03",
   "title": "【全材料·小石树田村】小石树田村·斯切尔托老宅（15个/79秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 218,
   "teleport": {
     "name": "斯切尔托老宅",
@@ -27,7 +27,7 @@
     {
       "x": 9071.79,
       "y": 10403.81,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_284_miraland_01",
   "title": "【烛融花/烛荧花】埋骨地·纪念地（6个/40秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 133,
   "teleport": {
     "name": "纪念地",
@@ -23,7 +23,7 @@
     {
       "x": 7065.16,
       "y": 4255.36,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

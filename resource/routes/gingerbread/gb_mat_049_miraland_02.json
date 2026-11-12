@@ -3,7 +3,7 @@
   "id": "gb_mat_049_miraland_02",
   "title": "【名流鸦羽】磐城·永续识馆（10个/157秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 390,
   "teleport": {
     "name": "永续识馆",
@@ -25,7 +25,7 @@
     {
       "x": 4133.94,
       "y": 2774.73,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

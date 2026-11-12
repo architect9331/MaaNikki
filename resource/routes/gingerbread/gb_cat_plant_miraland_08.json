@@ -3,7 +3,7 @@
   "id": "gb_cat_plant_miraland_08",
   "title": "【全植物速刷】埋骨地·蓝池北侧疗愈地渡口（40个/163秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 404,
   "teleport": {
     "name": "蓝池北侧疗愈地渡口",
@@ -23,7 +23,7 @@
     {
       "x": 7605.47,
       "y": 4714.48,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

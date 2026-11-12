@@ -3,7 +3,7 @@
   "id": "gb_mat_277_miraland_01",
   "title": "【革袋甲】埋骨地·蓝池北侧疗愈地渡口（2个/32秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "蓝池北侧疗愈地渡口",
@@ -21,7 +21,7 @@
     {
       "x": 7605.47,
       "y": 4714.48,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

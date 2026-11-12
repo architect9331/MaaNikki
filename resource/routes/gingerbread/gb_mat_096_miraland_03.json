@@ -3,7 +3,7 @@
   "id": "gb_mat_096_miraland_03",
   "title": "【小绵菊】微风绿野·捕虫小屋（28个/203秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 491,
   "teleport": {
     "name": "捕虫小屋",
@@ -27,7 +27,7 @@
     {
       "x": 10143.9,
       "y": 10474.93,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

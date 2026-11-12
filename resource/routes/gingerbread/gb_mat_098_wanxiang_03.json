@@ -3,7 +3,7 @@
   "id": "gb_mat_098_wanxiang_03",
   "title": "【小星扇贝】万相境·彩靥城近郊（4个/52秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 160,
   "teleport": {
     "name": "彩靥城近郊",
@@ -24,7 +24,7 @@
     {
       "x": 1598.93,
       "y": 983.37,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

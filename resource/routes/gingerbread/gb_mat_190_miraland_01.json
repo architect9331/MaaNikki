@@ -3,7 +3,7 @@
   "id": "gb_mat_190_miraland_01",
   "title": "【探险家蜜蜂】磐城·王迹长廊（24个/198秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 481,
   "teleport": {
     "name": "王迹长廊",
@@ -24,7 +24,7 @@
     {
       "x": 4198.23,
       "y": 3737.44,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

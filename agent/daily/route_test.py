@@ -483,6 +483,7 @@ class RouteTest(Runtime):
         self.log(f"{collection_title}：共 {len(prepared)} 条路线，开始逐条运行。")
         try:
             consecutive_empty_routes = 0
+            session_total_picked = 0
             for index, (model, spec, title) in enumerate(prepared, 1):
                 if self.stopped:
                     summary["stopped"] = True
@@ -504,12 +505,17 @@ class RouteTest(Runtime):
                 details = runner.last_result or {"success": False, "error": "执行结果未保存"}
                 gb_info = details.get("gingerbread") if isinstance(details.get("gingerbread"), dict) else None
                 if gb_info is not None:
-                    if int(gb_info.get("expected_0_15m") or 0) >= 4 and int(gb_info.get("total_picked") or 0) == 0:
+                    picked_now = int(gb_info.get("total_picked") or 0)
+                    session_total_picked += picked_now
+                    if int(gb_info.get("expected_0_15m") or 0) >= 4 and picked_now == 0:
                         consecutive_empty_routes += 1
-                        if consecutive_empty_routes == 1:
+                        if consecutive_empty_routes == 1 and session_total_picked == 0:
                             hint = "提示：首条路线未读取到新材料拾取提示，请确认已召唤小姜饼人随行，或该区域材料尚在冷却中。"
                             self.log(hint, ui_text=hint)
-                    elif int(gb_info.get("total_picked") or 0) > 0:
+                        elif consecutive_empty_routes == 3 and session_total_picked == 0:
+                            hint = "注意：已连续 3 条路线未读取到拾取提示，请确认右下角已切换并召唤小姜饼人随行。"
+                            self.log(hint, ui_text=hint)
+                    elif picked_now > 0:
                         consecutive_empty_routes = 0
                 summary["routes"].append({"index": index, "route": model.id, "title": title,
                                           "directory": child.name,

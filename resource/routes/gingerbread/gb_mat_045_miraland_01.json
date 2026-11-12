@@ -3,7 +3,7 @@
   "id": "gb_mat_045_miraland_01",
   "title": "【花香羊毛】小石树田村·紫穗草花田（24个/250秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 596,
   "teleport": {
     "name": "紫穗草花田",
@@ -29,7 +29,7 @@
     {
       "x": 9342.04,
       "y": 10401.19,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

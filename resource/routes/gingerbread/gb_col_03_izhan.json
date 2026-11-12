@@ -7,19 +7,19 @@
   "routes": [
     {
       "route": "gb_all_gianttree_miraland_01",
-      "title": "【全材料·巨木之森】巨木之森·古木荫地附近遗迹（21个/123秒）"
+      "title": "【全材料·巨木之森】巨木之森·古木荫地附近遗迹（27个/141秒）"
     },
     {
       "route": "gb_all_gianttree_miraland_02",
-      "title": "【全材料·巨木之森】巨木之森·巨矛前驿站（14个/82秒）"
+      "title": "【全材料·巨木之森】巨木之森·巨兽堡垒断桥旁（25个/140秒）"
     },
     {
       "route": "gb_all_gianttree_miraland_03",
-      "title": "【全材料·巨木之森】巨木之森·巨人墓园（11个/72秒）"
+      "title": "【全材料·巨木之森】巨木之森·巨矛前驿站（14个/82秒）"
     },
     {
       "route": "gb_all_gianttree_miraland_04",
-      "title": "【全材料·巨木之森】巨木之森·巨兽堡垒断桥旁（11个/72秒）"
+      "title": "【全材料·巨木之森】巨木之森·巨人墓园（11个/72秒）"
     },
     {
       "route": "gb_all_gianttree_miraland_05",
@@ -31,7 +31,7 @@
     },
     {
       "route": "gb_all_boneyard_miraland_02",
-      "title": "【全材料·埋骨地】埋骨地·居落广场升降台（55个/224秒）"
+      "title": "【全材料·埋骨地】埋骨地·湖岸营地（34个/118秒）"
     },
     {
       "route": "gb_all_boneyard_miraland_03",
@@ -39,7 +39,7 @@
     },
     {
       "route": "gb_all_boneyard_miraland_04",
-      "title": "【全材料·埋骨地】埋骨地·疗愈地（47个/237秒）"
+      "title": "【全材料·埋骨地】埋骨地·花涧幽谷（24个/116秒）"
     }
   ]
 }

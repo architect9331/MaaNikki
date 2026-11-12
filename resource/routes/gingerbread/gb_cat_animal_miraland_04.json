@@ -3,7 +3,7 @@
   "id": "gb_cat_animal_miraland_04",
   "title": "【全动物清洁】埋骨地·古息坡道（49个/240秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 574,
   "teleport": {
     "name": "古息坡道",
@@ -30,7 +30,7 @@
     {
       "x": 6883.24,
       "y": 4762.08,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_309_miraland_01",
   "title": "【机雀羽】磐城·金时醇酿馆（24个/214秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 515,
   "teleport": {
     "name": "金时醇酿馆",
@@ -21,7 +21,7 @@
     {
       "x": 4119.1,
       "y": 3800.74,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_fish_03_miraland_02",
   "title": "【大笔刷鱼】石树田无人区·乘风磨坊入口（5个/147秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 368,
   "teleport": {
     "name": "乘风磨坊入口",
@@ -25,7 +25,7 @@
     {
       "x": 7767.72,
       "y": 9965.9,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

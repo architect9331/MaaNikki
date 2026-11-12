@@ -3,7 +3,7 @@
   "id": "gb_mat_206_miraland_02",
   "title": "【裁衣甲】巨木之森·蜗牛诊所（16个/266秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 629,
   "teleport": {
     "name": "蜗牛诊所",
@@ -31,7 +31,7 @@
     {
       "x": 4489.83,
       "y": 8147.98,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

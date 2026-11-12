@@ -3,7 +3,7 @@
   "id": "gb_mat_083_firework_01",
   "title": "【兔兔妆粉】花焰群岛·月角浅滩（3个/37秒）",
   "map": "firework",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 127,
   "teleport": {
     "name": "月角浅滩",
@@ -25,7 +25,7 @@
     {
       "x": 1142.64,
       "y": 358.56,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

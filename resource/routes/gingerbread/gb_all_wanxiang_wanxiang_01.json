@@ -3,7 +3,7 @@
   "id": "gb_all_wanxiang_wanxiang_01",
   "title": "【全材料·万相境】万相境·彩靥城近郊（13个/78秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 217,
   "teleport": {
     "name": "彩靥城近郊",
@@ -25,7 +25,7 @@
     {
       "x": 1598.93,
       "y": 983.37,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

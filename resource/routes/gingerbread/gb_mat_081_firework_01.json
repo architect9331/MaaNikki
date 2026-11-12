@@ -3,7 +3,7 @@
   "id": "gb_mat_081_firework_01",
   "title": "【草绒球】花焰群岛·幽暗洞窟前（8个/90秒）",
   "map": "firework",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 243,
   "teleport": {
     "name": "幽暗洞窟前",
@@ -30,7 +30,7 @@
     {
       "x": 945.34,
       "y": 225.63,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_081_miraland_02",
   "title": "【草绒球】微风绿野·捕虫小屋（24个/274秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 648,
   "teleport": {
     "name": "捕虫小屋",
@@ -29,7 +29,7 @@
     {
       "x": 10143.9,
       "y": 10474.93,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

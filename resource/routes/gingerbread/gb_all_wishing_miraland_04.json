@@ -3,7 +3,7 @@
   "id": "gb_all_wishing_miraland_04",
   "title": "【全材料·祈愿树林】祈愿树林·幽林山洞（11个/58秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 174,
   "teleport": {
     "name": "幽林山洞",
@@ -25,7 +25,7 @@
     {
       "x": 11964.59,
       "y": 9774.67,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

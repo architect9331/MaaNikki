@@ -3,7 +3,7 @@
   "id": "gb_all_wishing_miraland_01",
   "title": "【全材料·祈愿树林】祈愿树林·心愿研发所（15个/64秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 185,
   "teleport": {
     "name": "心愿研发所",
@@ -22,7 +22,7 @@
     {
       "x": 11475.07,
       "y": 9203.95,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

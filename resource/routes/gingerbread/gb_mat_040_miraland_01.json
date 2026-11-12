@@ -3,7 +3,7 @@
   "id": "gb_mat_040_miraland_01",
   "title": "【贵族卷毛】微风绿野·捕虫小屋（2个/61秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 179,
   "teleport": {
     "name": "捕虫小屋",
@@ -23,7 +23,7 @@
     {
       "x": 10143.9,
       "y": 10474.93,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

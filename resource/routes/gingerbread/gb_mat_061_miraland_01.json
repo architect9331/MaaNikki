@@ -3,7 +3,7 @@
   "id": "gb_mat_061_miraland_01",
   "title": "【布布袜虫】花愿镇·镇长宅邸前（1个/64秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 185,
   "teleport": {
     "name": "镇长宅邸前",
@@ -27,7 +27,7 @@
     {
       "x": 10544.63,
       "y": 9974.37,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

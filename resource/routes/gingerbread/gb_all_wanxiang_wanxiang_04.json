@@ -3,7 +3,7 @@
   "id": "gb_all_wanxiang_wanxiang_04",
   "title": "【全材料·万相境】万相境·深谷幽泉（6个/50秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 155,
   "teleport": {
     "name": "深谷幽泉",
@@ -23,7 +23,7 @@
     {
       "x": 2136.14,
       "y": 1326.02,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

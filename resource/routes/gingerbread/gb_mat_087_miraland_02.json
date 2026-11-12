@@ -3,7 +3,7 @@
   "id": "gb_mat_087_miraland_02",
   "title": "【纽扣松果】微风绿野·遗迹山坡（38个/257秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 610,
   "teleport": {
     "name": "遗迹山坡",
@@ -28,7 +28,7 @@
     {
       "x": 10093.04,
       "y": 11104.11,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

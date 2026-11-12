@@ -3,7 +3,7 @@
   "id": "gb_cat_animal_danqing_01",
   "title": "【全动物清洁】丹青屿·栖龙峰山腰（8个/34秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "栖龙峰山腰",
@@ -23,7 +23,7 @@
     {
       "x": 1115.31,
       "y": 388.77,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

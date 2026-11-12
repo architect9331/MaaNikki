@@ -3,7 +3,7 @@
   "id": "gb_mat_092_miraland_01",
   "title": "【星荧草】祈愿树林·古木河畔（32个/260秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 617,
   "teleport": {
     "name": "古木河畔",
@@ -28,7 +28,7 @@
     {
       "x": 11336.61,
       "y": 9573.27,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

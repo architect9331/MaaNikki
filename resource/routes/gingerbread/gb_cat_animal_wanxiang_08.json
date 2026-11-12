@@ -3,7 +3,7 @@
   "id": "gb_cat_animal_wanxiang_08",
   "title": "【全动物清洁】万相境·火锅坊（16个/98秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 261,
   "teleport": {
     "name": "火锅坊",
@@ -26,7 +26,7 @@
     {
       "x": 1399.52,
       "y": 1108.82,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

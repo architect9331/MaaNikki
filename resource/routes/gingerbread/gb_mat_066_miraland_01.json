@@ -3,7 +3,7 @@
   "id": "gb_mat_066_miraland_01",
   "title": "【泳镜蝽】花愿镇·织裙街（3个/69秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 197,
   "teleport": {
     "name": "织裙街",
@@ -28,7 +28,7 @@
     {
       "x": 10728.75,
       "y": 10052.91,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

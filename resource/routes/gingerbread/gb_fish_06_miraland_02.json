@@ -3,7 +3,7 @@
   "id": "gb_fish_06_miraland_02",
   "title": "【拉夫领鱼】小石树田村·村居岔路（7个/212秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 512,
   "teleport": {
     "name": "村居岔路",
@@ -30,7 +30,7 @@
     {
       "x": 9389.05,
       "y": 10562.46,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

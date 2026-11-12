@@ -3,7 +3,7 @@
   "id": "gb_mat_137_firework_02",
   "title": "【噼啪花粉】花焰群岛·月角浅滩（12个/166秒）",
   "map": "firework",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 410,
   "teleport": {
     "name": "月角浅滩",
@@ -29,7 +29,7 @@
     {
       "x": 1142.64,
       "y": 358.56,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

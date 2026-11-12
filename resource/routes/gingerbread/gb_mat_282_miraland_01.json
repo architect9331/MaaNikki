@@ -3,7 +3,7 @@
   "id": "gb_mat_282_miraland_01",
   "title": "【骨焰花】埋骨地·龙眠花冢（8个/53秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 161,
   "teleport": {
     "name": "龙眠花冢",
@@ -24,7 +24,7 @@
     {
       "x": 6524.86,
       "y": 5029.65,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_200_miraland_02",
   "title": "【垂穗魔果】巨木之森·巨藤林地北侧探险家营地（3个/48秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 151,
   "teleport": {
     "name": "巨藤林地北侧探险家营地",
@@ -26,7 +26,7 @@
     {
       "x": 4176.29,
       "y": 8476.89,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

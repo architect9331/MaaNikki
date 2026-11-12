@@ -3,7 +3,7 @@
   "id": "gb_fish_01_miraland_02",
   "title": "【厨师帽鱼】花愿镇·镇长宅邸前（12个/337秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 786,
   "teleport": {
     "name": "镇长宅邸前",
@@ -29,7 +29,7 @@
     {
       "x": 10544.63,
       "y": 9974.37,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

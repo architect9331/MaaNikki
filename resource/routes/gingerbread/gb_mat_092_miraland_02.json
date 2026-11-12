@@ -3,7 +3,7 @@
   "id": "gb_mat_092_miraland_02",
   "title": "【星荧草】祈愿树林·心愿庆典管理处（14个/195秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 474,
   "teleport": {
     "name": "心愿庆典管理处",
@@ -31,7 +31,7 @@
     {
       "x": 12311.19,
       "y": 9200.47,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

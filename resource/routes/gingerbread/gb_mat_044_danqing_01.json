@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
-  "id": "gb_mat_044_danqing_02",
+  "id": "gb_mat_044_danqing_01",
   "title": "【蓝珀鸟羽】丹青屿·栖龙峰侧峰（6个/90秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 244,
   "teleport": {
     "name": "栖龙峰侧峰",
@@ -25,7 +25,7 @@
     {
       "x": 1072.59,
       "y": 284.39,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

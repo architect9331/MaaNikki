@@ -3,7 +3,7 @@
   "id": "gb_mat_079_miraland_03",
   "title": "【布布果】花愿镇·心愿花街（28个/284秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 670,
   "teleport": {
     "name": "心愿花街",
@@ -35,7 +35,7 @@
     {
       "x": 10260.86,
       "y": 10085.84,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

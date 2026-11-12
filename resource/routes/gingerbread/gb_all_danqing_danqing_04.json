@@ -3,7 +3,7 @@
   "id": "gb_all_danqing_danqing_04",
   "title": "【全材料·丹青屿】丹青屿·栖龙峰侧峰（13个/83秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 227,
   "teleport": {
     "name": "栖龙峰侧峰",
@@ -24,7 +24,7 @@
     {
       "x": 1072.59,
       "y": 284.39,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

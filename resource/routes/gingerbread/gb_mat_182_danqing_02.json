@@ -3,7 +3,7 @@
   "id": "gb_mat_182_danqing_02",
   "title": "【胭脂芙蕖】丹青屿·后山（2个/56秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 168,
   "teleport": {
     "name": "后山",
@@ -24,7 +24,7 @@
     {
       "x": 1435.99,
       "y": 896.78,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

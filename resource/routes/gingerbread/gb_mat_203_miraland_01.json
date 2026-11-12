@@ -3,7 +3,7 @@
   "id": "gb_mat_203_miraland_01",
   "title": "【木夹跳甲】巨木之森·咻咻快道入口（17个/224秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 538,
   "teleport": {
     "name": "咻咻快道入口",
@@ -27,7 +27,7 @@
     {
       "x": 4654.99,
       "y": 7946.51,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

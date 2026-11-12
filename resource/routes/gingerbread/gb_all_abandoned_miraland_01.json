@@ -3,7 +3,7 @@
   "id": "gb_all_abandoned_miraland_01",
   "title": "【全材料·石树田无人区】石树田无人区·石碑地（5个/26秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "石碑地",
@@ -22,7 +22,7 @@
     {
       "x": 9267.48,
       "y": 8947.91,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

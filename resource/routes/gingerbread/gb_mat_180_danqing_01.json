@@ -3,7 +3,7 @@
   "id": "gb_mat_180_danqing_01",
   "title": "【荷包草】丹青屿·逢花林（32个/226秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 543,
   "teleport": {
     "name": "逢花林",
@@ -27,7 +27,7 @@
     {
       "x": 1749.15,
       "y": 1183.29,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

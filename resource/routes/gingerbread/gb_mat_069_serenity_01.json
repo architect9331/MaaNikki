@@ -3,7 +3,7 @@
   "id": "gb_mat_069_serenity_01",
   "title": "【美食家蜜蜂】无忧岛·酿露工坊（8个/72秒）",
   "map": "serenity",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 204,
   "teleport": {
     "name": "酿露工坊",
@@ -23,7 +23,7 @@
     {
       "x": 1062.65,
       "y": 439.81,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

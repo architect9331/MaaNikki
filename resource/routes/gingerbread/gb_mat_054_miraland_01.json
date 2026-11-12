@@ -3,7 +3,7 @@
   "id": "gb_mat_054_miraland_01",
   "title": "【明珠翎羽】祈愿树林·愿望质检中心前（4个/79秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 219,
   "teleport": {
     "name": "愿望质检中心前",
@@ -27,7 +27,7 @@
     {
       "x": 11461.92,
       "y": 9344.46,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

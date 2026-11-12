@@ -3,7 +3,7 @@
   "id": "gb_mat_038_miraland_02",
   "title": "【兔尾绒团】花愿镇·心愿花街（10个/201秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 487,
   "teleport": {
     "name": "心愿花街",
@@ -27,7 +27,7 @@
     {
       "x": 10260.86,
       "y": 10085.84,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -11,11 +11,11 @@
     },
     {
       "route": "gb_all_florawish_miraland_02",
-      "title": "【全材料·花愿镇】花愿镇·搭配师协会前（8个/49秒）"
+      "title": "【全材料·花愿镇】花愿镇·秘密基地（33个/204秒）"
     },
     {
       "route": "gb_all_florawish_miraland_03",
-      "title": "【全材料·花愿镇】花愿镇·秘密基地（33个/204秒）"
+      "title": "【全材料·花愿镇】花愿镇·镇长宅邸前（26个/164秒）"
     },
     {
       "route": "gb_all_breezy_miraland_01",
@@ -51,15 +51,15 @@
     },
     {
       "route": "gb_all_abandoned_miraland_02",
-      "title": "【全材料·石树田无人区】石树田无人区·星空钓场旁（小道）（20个/106秒）"
-    },
-    {
-      "route": "gb_all_abandoned_miraland_03",
       "title": "【全材料·石树田无人区】石树田无人区·欢乐市集入口（5个/29秒）"
     },
     {
-      "route": "gb_all_abandoned_miraland_04",
+      "route": "gb_all_abandoned_miraland_03",
       "title": "【全材料·石树田无人区】石树田无人区·乘风磨坊中层（16个/101秒）"
+    },
+    {
+      "route": "gb_all_abandoned_miraland_04",
+      "title": "【全材料·石树田无人区】石树田无人区·星空钓场旁（小道）（23个/145秒）"
     },
     {
       "route": "gb_all_wishing_miraland_01",

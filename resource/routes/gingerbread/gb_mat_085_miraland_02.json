@@ -3,7 +3,7 @@
   "id": "gb_mat_085_miraland_02",
   "title": "【晴日蝶兰/雨滴蝶兰】花愿镇·镇长宅邸前（14个/288秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 679,
   "teleport": {
     "name": "镇长宅邸前",
@@ -33,7 +33,7 @@
     {
       "x": 10544.63,
       "y": 9974.37,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

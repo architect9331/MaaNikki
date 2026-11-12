@@ -3,7 +3,7 @@
   "id": "gb_mat_282_miraland_02",
   "title": "【骨焰花】埋骨地·龙埙遗所（18个/153秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 382,
   "teleport": {
     "name": "龙埙遗所",
@@ -26,7 +26,7 @@
     {
       "x": 8586.15,
       "y": 5376.19,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

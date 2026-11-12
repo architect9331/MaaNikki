@@ -3,7 +3,7 @@
   "id": "gb_all_gianttree_miraland_05",
   "title": "【全材料·巨木之森】巨木之森·探险大营地（9个/60秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 176,
   "teleport": {
     "name": "探险大营地",
@@ -22,7 +22,7 @@
     {
       "x": 3510.03,
       "y": 9419.99,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

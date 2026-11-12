@@ -1,0 +1,81 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_plant_serenity_05",
+  "title": "【全植物速刷】无忧岛·守望之地（15个/59秒）",
+  "map": "serenity",
+  "start_radius": 12,
+  "timeout": 175,
+  "teleport": {
+    "name": "守望之地",
+    "province": "心愿原野",
+    "region": "无忧岛",
+    "x": 795.589,
+    "y": 511.792
+  },
+  "material": "全植物速刷",
+  "count_materials": [
+    "小绵菊",
+    "风絮草"
+  ],
+  "capacity": 15,
+  "points": [
+    {
+      "x": 795.59,
+      "y": 511.79,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 797.59,
+      "y": 513.79,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 800.59,
+      "y": 516.79,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 803.59,
+      "y": 522.79,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 812.59,
+      "y": 528.79,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 806.59,
+      "y": 537.79,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 799.81,
+      "y": 534.24,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 36.2
+      }
+    }
+  ]
+}

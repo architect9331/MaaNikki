@@ -3,7 +3,7 @@
   "id": "gb_mat_042_miraland_02",
   "title": "【骑士马鬃】祈愿树林·巨树浅滩（3个/65秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 189,
   "teleport": {
     "name": "巨树浅滩",
@@ -25,7 +25,7 @@
     {
       "x": 11850.97,
       "y": 9024.45,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

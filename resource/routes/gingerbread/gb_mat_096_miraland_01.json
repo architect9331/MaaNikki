@@ -3,7 +3,7 @@
   "id": "gb_mat_096_miraland_01",
   "title": "【小绵菊】微风绿野·悠悠垂钓协会花愿镇分部（34个/232秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 556,
   "teleport": {
     "name": "悠悠垂钓协会花愿镇分部",
@@ -27,7 +27,7 @@
     {
       "x": 10278.22,
       "y": 10210.31,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

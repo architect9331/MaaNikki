@@ -1,59 +1,59 @@
 {
   "schema_version": 3,
   "id": "gb_mat_074_miraland_03",
-  "title": "【珠链蝶】磐城·咏叹剧院（32个/204秒）",
+  "title": "【珠链蝶】磐城·金庭大桥前（34个/218秒）",
   "map": "miraland",
-  "start_radius": 6,
-  "timeout": 494,
+  "start_radius": 12,
+  "timeout": 526,
   "teleport": {
-    "name": "咏叹剧院",
+    "name": "金庭大桥前",
     "province": "伊赞之土",
     "region": "磐城",
-    "x": 3937.799,
-    "y": 3509.925
+    "x": 3675.783,
+    "y": 3589.825
   },
   "material": "珠链蝶",
   "count_materials": [
     "珠链蝶"
   ],
-  "capacity": 32,
+  "capacity": 34,
   "points": [
     {
-      "x": 3937.8,
-      "y": 3509.93,
-      "radius": 2.8,
+      "x": 3675.78,
+      "y": 3589.82,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3935.22,
-      "y": 3526.79,
+      "x": 3759.76,
+      "y": 3551.8,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.0
+        "seconds": 31.3
       }
     },
     {
-      "x": 3956.19,
-      "y": 3606.69,
+      "x": 3827.92,
+      "y": 3595.99,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 44.6
+        "seconds": 64.5
       }
     },
     {
-      "x": 3880.34,
-      "y": 3647.12,
+      "x": 3869.93,
+      "y": 3654.41,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 62.9
+        "seconds": 31.7
       }
     },
     {

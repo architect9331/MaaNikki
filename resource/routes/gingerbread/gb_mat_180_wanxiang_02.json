@@ -3,7 +3,7 @@
   "id": "gb_mat_180_wanxiang_02",
   "title": "【荷包草】万相境·彩靥城近郊（27个/219秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 527,
   "teleport": {
     "name": "彩靥城近郊",
@@ -28,7 +28,7 @@
     {
       "x": 1598.93,
       "y": 983.37,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
-  "id": "gb_mat_044_wanxiang_03",
+  "id": "gb_mat_044_wanxiang_02",
   "title": "【蓝珀鸟羽】万相境·忘忧楼（2个/32秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "忘忧楼",
@@ -21,7 +21,7 @@
     {
       "x": 2339.98,
       "y": 1551.65,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

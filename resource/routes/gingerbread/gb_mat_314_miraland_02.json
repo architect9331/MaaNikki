@@ -3,7 +3,7 @@
   "id": "gb_mat_314_miraland_02",
   "title": "【金轴蜻蜓】磐城·王迹长廊（20个/212秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 512,
   "teleport": {
     "name": "王迹长廊",
@@ -27,7 +27,7 @@
     {
       "x": 4198.23,
       "y": 3737.44,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

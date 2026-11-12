@@ -1,0 +1,115 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_062_miraland_01",
+  "title": "【织衣蛛】磐城·巧工园废墟（16个/216秒）",
+  "map": "miraland",
+  "start_radius": 12,
+  "timeout": 520,
+  "teleport": {
+    "name": "巧工园废墟",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3937.839,
+    "y": 4270.455
+  },
+  "material": "织衣蛛",
+  "count_materials": [
+    "织衣蛛",
+    "耳坠萤",
+    "珠链蝶",
+    "满满果",
+    "木夹跳甲",
+    "纽扣松果"
+  ],
+  "capacity": 58,
+  "points": [
+    {
+      "x": 3937.84,
+      "y": 4270.45,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3961.37,
+      "y": 4274.47,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 17.0
+      }
+    },
+    {
+      "x": 3923.83,
+      "y": 4320.34,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 18.2
+      }
+    },
+    {
+      "x": 3908.6,
+      "y": 4355.92,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.8
+      }
+    },
+    {
+      "x": 3881.11,
+      "y": 4324.9,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.0
+      }
+    },
+    {
+      "x": 3965.77,
+      "y": 4228.26,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.5
+      }
+    },
+    {
+      "x": 3918.74,
+      "y": 4239.34,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 16.0
+      }
+    },
+    {
+      "x": 3924.76,
+      "y": 4252.35,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 3950.09,
+      "y": 4220.23,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    }
+  ]
+}

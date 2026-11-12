@@ -3,7 +3,7 @@
   "id": "gb_all_firework_firework_03",
   "title": "【全材料·花焰群岛】花焰群岛·幽暗洞窟前（14个/89秒）",
   "map": "firework",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 241,
   "teleport": {
     "name": "幽暗洞窟前",
@@ -26,7 +26,7 @@
     {
       "x": 945.34,
       "y": 225.63,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

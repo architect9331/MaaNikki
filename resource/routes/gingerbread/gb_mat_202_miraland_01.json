@@ -3,7 +3,7 @@
   "id": "gb_mat_202_miraland_01",
   "title": "【草棘果】巨木之森·无名花野（5个/35秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 122,
   "teleport": {
     "name": "无名花野",
@@ -21,7 +21,7 @@
     {
       "x": 4390.32,
       "y": 8613.9,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

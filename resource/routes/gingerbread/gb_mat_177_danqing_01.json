@@ -3,7 +3,7 @@
   "id": "gb_mat_177_danqing_01",
   "title": "【画眉毛团】丹青屿·墨缘坊市（5个/118秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 304,
   "teleport": {
     "name": "墨缘坊市",
@@ -28,7 +28,7 @@
     {
       "x": 1495.7,
       "y": 1089.55,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

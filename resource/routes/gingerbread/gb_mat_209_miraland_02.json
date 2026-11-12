@@ -3,7 +3,7 @@
   "id": "gb_mat_209_miraland_02",
   "title": "【蜜妆兔绒】巨木之森·古木荫地附近遗迹（10个/178秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 437,
   "teleport": {
     "name": "古木荫地附近遗迹",
@@ -27,7 +27,7 @@
     {
       "x": 3704.48,
       "y": 9230.44,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
@@ -65,7 +65,7 @@
       "params": {}
     },
     {
-      "x": 3784.48,
+      "x": 3781.48,
       "y": 9238.44,
       "radius": 2.8,
       "jump": true,
@@ -73,16 +73,16 @@
       "params": {}
     },
     {
-      "x": 3802.48,
-      "y": 9253.44,
+      "x": 3799.48,
+      "y": 9250.44,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3820.48,
-      "y": 9268.44,
+      "x": 3811.48,
+      "y": 9262.44,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -90,7 +90,7 @@
     },
     {
       "x": 3832.48,
-      "y": 9283.44,
+      "y": 9280.44,
       "radius": 2.8,
       "jump": false,
       "action": "",

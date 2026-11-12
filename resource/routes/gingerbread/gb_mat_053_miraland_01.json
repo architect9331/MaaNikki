@@ -3,7 +3,7 @@
   "id": "gb_mat_053_miraland_01",
   "title": "【兜帽绒羽】祈愿树林·巨树居民区（4个/108秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 283,
   "teleport": {
     "name": "巨树居民区",
@@ -27,7 +27,7 @@
     {
       "x": 11959.3,
       "y": 9084.29,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

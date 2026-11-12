@@ -3,7 +3,7 @@
   "id": "gb_mat_178_danqing_01",
   "title": "【远黛扇羽】丹青屿·望水渡（6个/160秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 396,
   "teleport": {
     "name": "望水渡",
@@ -30,7 +30,7 @@
     {
       "x": 1328.8,
       "y": 1218.71,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

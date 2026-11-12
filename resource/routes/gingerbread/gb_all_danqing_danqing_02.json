@@ -3,7 +3,7 @@
   "id": "gb_all_danqing_danqing_02",
   "title": "【全材料·丹青屿】丹青屿·奉龙塔（12个/75秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 209,
   "teleport": {
     "name": "奉龙塔",
@@ -25,7 +25,7 @@
     {
       "x": 1796.92,
       "y": 998.18,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

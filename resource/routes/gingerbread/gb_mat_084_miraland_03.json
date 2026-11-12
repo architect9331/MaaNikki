@@ -3,7 +3,7 @@
   "id": "gb_mat_084_miraland_03",
   "title": "【珠花贝壳】微风绿野·绿野货运码头（21个/316秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 740,
   "teleport": {
     "name": "绿野货运码头",
@@ -27,7 +27,7 @@
     {
       "x": 10430.45,
       "y": 10861.88,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_091_danqing_03",
   "title": "【满满果】丹青屿·栖龙峰山腰（4个/36秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 124,
   "teleport": {
     "name": "栖龙峰山腰",
@@ -24,7 +24,7 @@
     {
       "x": 1115.31,
       "y": 388.77,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

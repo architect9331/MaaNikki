@@ -3,7 +3,7 @@
   "id": "gb_mat_078_miraland_02",
   "title": "【丝巾蛾】石树田无人区·欢乐市集登顶道（2个/77秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 214,
   "teleport": {
     "name": "欢乐市集登顶道",
@@ -25,7 +25,7 @@
     {
       "x": 8284.23,
       "y": 9784.42,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

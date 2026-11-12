@@ -3,7 +3,7 @@
   "id": "gb_mat_207_miraland_02",
   "title": "【暮暮蝶】巨木之森·菇菇聚落（6个/141秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 356,
   "teleport": {
     "name": "菇菇聚落",
@@ -26,7 +26,7 @@
     {
       "x": 4901.47,
       "y": 8493.72,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_087_miraland_03",
   "title": "【纽扣松果】微风绿野·菲洛米亚女王行宫遗迹西侧树林（35个/242秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 577,
   "teleport": {
     "name": "菲洛米亚女王行宫遗迹西侧树林",
@@ -25,7 +25,7 @@
     {
       "x": 10677.69,
       "y": 11478.38,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

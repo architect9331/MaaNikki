@@ -3,7 +3,7 @@
   "id": "gb_mat_214_miraland_01",
   "title": "【王子鹰羽】磐城·城门前停泊处（2个/39秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 131,
   "teleport": {
     "name": "城门前停泊处",
@@ -24,7 +24,7 @@
     {
       "x": 4332.62,
       "y": 3378.81,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

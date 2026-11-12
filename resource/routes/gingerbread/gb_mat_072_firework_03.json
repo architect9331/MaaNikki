@@ -1,0 +1,136 @@
+{
+  "schema_version": 3,
+  "id": "gb_mat_072_firework_03",
+  "title": "【刺绣蛾】花焰群岛·滋啦啦服务社（13个/210秒）",
+  "map": "firework",
+  "start_radius": 12,
+  "timeout": 508,
+  "teleport": {
+    "name": "滋啦啦服务社",
+    "province": "心愿原野",
+    "region": "花焰群岛",
+    "x": 1003.822,
+    "y": 608.643
+  },
+  "material": "刺绣蛾",
+  "count_materials": [
+    "耳坠萤",
+    "刺绣蛾",
+    "小绵菊",
+    "美食家蜜蜂",
+    "噼啪花粉",
+    "珠链蝶",
+    "满满果",
+    "蓝珀鸟羽",
+    "汪汪毛线",
+    "路灯花",
+    "衬衫毛团"
+  ],
+  "capacity": 78,
+  "points": [
+    {
+      "x": 1003.82,
+      "y": 608.64,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1016.32,
+      "y": 619.31,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 16.9
+      }
+    },
+    {
+      "x": 988.27,
+      "y": 607.74,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 13.8
+      }
+    },
+    {
+      "x": 1085.75,
+      "y": 678.93,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 21.8
+      }
+    },
+    {
+      "x": 1060.22,
+      "y": 641.17,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.3
+      }
+    },
+    {
+      "x": 1074.22,
+      "y": 622.09,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1068.22,
+      "y": 586.09,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1065.04,
+      "y": 572.09,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.5
+      }
+    },
+    {
+      "x": 1009.84,
+      "y": 571.71,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 981.85,
+      "y": 544.3,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 10.4
+      }
+    },
+    {
+      "x": 953.68,
+      "y": 573.58,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.8
+      }
+    }
+  ]
+}

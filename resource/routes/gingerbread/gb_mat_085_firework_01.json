@@ -3,7 +3,7 @@
   "id": "gb_mat_085_firework_01",
   "title": "【晴日蝶兰/雨滴蝶兰】花焰群岛·月角浅滩（7个/130秒）",
   "map": "firework",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 331,
   "teleport": {
     "name": "月角浅滩",
@@ -28,7 +28,7 @@
     {
       "x": 1142.64,
       "y": 358.56,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

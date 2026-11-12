@@ -3,7 +3,7 @@
   "id": "gb_all_wanxiang_wanxiang_02",
   "title": "【全材料·万相境】万相境·迷花甸（11个/68秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 194,
   "teleport": {
     "name": "迷花甸",
@@ -24,7 +24,7 @@
     {
       "x": 1437.14,
       "y": 1501.96,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

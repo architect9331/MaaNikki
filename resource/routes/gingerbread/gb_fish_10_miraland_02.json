@@ -3,7 +3,7 @@
   "id": "gb_fish_10_miraland_02",
   "title": "【眼影鱼】祈愿树林·愿望质检中心前（2个/79秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 219,
   "teleport": {
     "name": "愿望质检中心前",
@@ -25,7 +25,7 @@
     {
       "x": 11461.92,
       "y": 9344.46,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

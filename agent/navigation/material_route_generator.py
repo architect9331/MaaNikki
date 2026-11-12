@@ -49,12 +49,37 @@ def _is_strict_night_only(cid: str, cond: str) -> bool:
         return True
     return any(k in cond for k in NIGHT_ONLY_KEYWORDS)
 
+# Indoor / underground sub-layer Warp Spires whose minimap displays an indoor
+# floorplan rather than the outdoor world map.
+EXCLUDED_INDOOR_SPIRES = frozenset({
+    "居落广场升降台",
+    "往归摆厅",
+    "灵魂观察所廊柱厅",
+    "福鸣之井",
+    "愿望梦境仓库旋廊",
+    "母菇林地洞窟",
+    "幽荧潭水洞窟",
+    "巨人密殿遗迹",
+    "幽灵列车入口",
+})
+
 # Verified unmodeled static prop footprints (map_id -> list of (x_min, y_min, x_max, y_max) in map px)
-# where 3D heightmaps mark ground under wooden market stalls/tents as walkable.
+# where 3D heightmaps mark ground under wooden market stalls/tents/ledges as walkable.
 UNMODELED_OBSTACLE_BOXES: dict[str, tuple[tuple[float, float, float, float], ...]] = {
     "miraland": (
         # Shell Island (贝壳岛) central wooden market stalls & pottery racks
         (4819.0, 8913.0, 4829.5, 8929.5),
+        # Florawish Stylist's Guild front stone balustrade hedge & NPC cluster
+        (10270.0, 9938.0, 10275.5, 9942.5),
+        # Stellar Fishing Ground shoreline drop-off facing open water
+        (7830.5, 9368.5, 7836.5, 9374.5),
+        # Giant Tree ancient shade ruins multi-root ledges
+        (3720.0, 9218.0, 3727.0, 9227.0),
+        (3751.0, 9134.5, 3758.5, 9145.0),
+    ),
+    "serenity": (
+        # Serenity Island wooden hut cliff ledge between Watchtower and Thuddy Squash Settlement
+        (801.5, 528.0, 807.5, 533.5),
     ),
 }
 
@@ -398,6 +423,8 @@ class PearPalMaterialCatalog:
             pillars = pillars_raw.get(map_id, [])
             spires = []
             for ck in ckpts:
+                if ck.get("name") in EXCLUDED_INDOOR_SPIRES:
+                    continue
                 cx, cy = float(ck["x"]), float(ck["y"])
                 best_z = 0.0
                 best_d = 25.0
@@ -605,7 +632,7 @@ class TerrainWalkabilityGrid:
             except Exception:
                 spire_coords = []
 
-        stuck_pts: list[tuple[float, float]] = []
+        stuck_pts: list[tuple[float, float, int]] = []
         for jf in sorted(telem_dir.glob("*.jsonl"))[-60:]:
             try:
                 for line in jf.read_text(encoding="utf-8", errors="ignore").splitlines():
@@ -623,12 +650,13 @@ class TerrainWalkabilityGrid:
                                 sx, sy = float(sp[0]), float(sp[1])
                                 if any(math.hypot(sx - cx, sy - cy) <= 4.0 for cx, cy in spire_coords):
                                     continue
-                                stuck_pts.append((sx, sy))
+                                stuck_pts.append((sx, sy, unstucks))
             except Exception:
                 continue
 
-        rad_cells = max(1, int(round(2.0 * self.px_scale)))
-        for sx, sy in stuck_pts:
+        for sx, sy, unstucks in stuck_pts:
+            rad_px = 3.2 if unstucks >= 4 else 2.0
+            rad_cells = max(1, int(round(rad_px * self.px_scale)))
             gx = int(round(sx * self.px_scale))
             gy = int(round(sy * self.px_scale))
             for dy in range(-rad_cells, rad_cells + 1):
@@ -1309,12 +1337,15 @@ class MaterialRouteGenerator:
         route_index: int,
         primary_material_name: str,
     ) -> GeneratedRoutePlan:
-        # Build waypoint list: #00 is the Warp Spire spawn point
+        # Build waypoint list: #00 is the Warp Spire spawn region (Nikki lands
+        # 4.5-8.0 px in front of the spire icon center; use an 8.5 px arrival
+        # radius so she departs directly from her landing spot without walking
+        # backward into the spire plinth).
         waypoints: list[dict] = [
             {
                 "x": round(spire.x, 2),
                 "y": round(spire.y, 2),
-                "radius": 2.8,
+                "radius": 8.5,
                 "jump": False,
                 "action": "",
                 "params": {},
@@ -1331,7 +1362,7 @@ class MaterialRouteGenerator:
             ):
                 waypoints[0]["x"] = round(seg[0][0], 2)
                 waypoints[0]["y"] = round(seg[0][1], 2)
-                waypoints[0]["radius"] = 3.2
+                waypoints[0]["radius"] = 8.5
                 wp_z[0] = seg[0][2]
                 anchor_wp_indices.append(0)
                 continue
@@ -1472,7 +1503,7 @@ class MaterialRouteGenerator:
             wp_copy = dict(wp)
             wp_copy["action"] = "wait"
             wp_copy["params"] = {"seconds": round(min(150.0, wait_s), 1)}
-            wp_copy["radius"] = 3.2
+            wp_copy["radius"] = 8.5 if wi == 0 else 3.2
             final_waypoints.append(wp_copy)
         waypoints = final_waypoints
 
@@ -1514,7 +1545,7 @@ class MaterialRouteGenerator:
             "id": route_id,
             "title": title,
             "map": spire.map_id,
-            "start_radius": 6,
+            "start_radius": 12,
             "timeout": timeout_s,
             "teleport": {
                 "name": spire.name,

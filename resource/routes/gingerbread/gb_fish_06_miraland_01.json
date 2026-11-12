@@ -3,7 +3,7 @@
   "id": "gb_fish_06_miraland_01",
   "title": "【拉夫领鱼】祈愿树林·工坊水车（6个/140秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 353,
   "teleport": {
     "name": "工坊水车",
@@ -26,7 +26,7 @@
     {
       "x": 11592.66,
       "y": 8793.66,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

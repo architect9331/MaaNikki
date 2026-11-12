@@ -7,35 +7,35 @@
   "routes": [
     {
       "route": "gb_cat_insect_miraland_01",
-      "title": "【全昆虫速刷】埋骨地·居落广场升降台（54个/202秒）"
-    },
-    {
-      "route": "gb_cat_insect_miraland_02",
       "title": "【全昆虫速刷】埋骨地·大拉姆居落迎厅入口（46个/229秒）"
     },
     {
-      "route": "gb_cat_insect_serenity_03",
+      "route": "gb_cat_insect_serenity_02",
       "title": "【全昆虫速刷】无忧岛·守望之地（10个/51秒）"
     },
     {
-      "route": "gb_cat_insect_serenity_04",
+      "route": "gb_cat_insect_serenity_03",
       "title": "【全昆虫速刷】无忧岛·布露村村口（22个/118秒）"
     },
     {
-      "route": "gb_cat_insect_firework_05",
+      "route": "gb_cat_insect_firework_04",
       "title": "【全昆虫速刷】花焰群岛·聆风高地山麓（15个/82秒）"
     },
     {
-      "route": "gb_cat_insect_miraland_06",
+      "route": "gb_cat_insect_miraland_05",
       "title": "【全昆虫速刷】磐城·金庭前广场（34个/190秒）"
     },
     {
-      "route": "gb_cat_insect_firework_07",
+      "route": "gb_cat_insect_firework_06",
       "title": "【全昆虫速刷】花焰群岛·滋啦啦服务社（36个/204秒）"
     },
     {
-      "route": "gb_cat_insect_danqing_08",
+      "route": "gb_cat_insect_danqing_07",
       "title": "【全昆虫速刷】丹青屿·栖龙峰侧峰（10个/57秒）"
+    },
+    {
+      "route": "gb_cat_insect_danqing_08",
+      "title": "【全昆虫速刷】丹青屿·栖龙峰山腰（7个/40秒）"
     }
   ]
 }

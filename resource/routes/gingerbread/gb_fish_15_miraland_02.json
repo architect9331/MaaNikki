@@ -3,7 +3,7 @@
   "id": "gb_fish_15_miraland_02",
   "title": "【胡子鲶鱼】微风绿野·菲洛米亚女王行宫遗迹前（4个/114秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 295,
   "teleport": {
     "name": "菲洛米亚女王行宫遗迹前",
@@ -24,7 +24,7 @@
     {
       "x": 10860.06,
       "y": 11296.95,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

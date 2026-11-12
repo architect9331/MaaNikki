@@ -3,7 +3,7 @@
   "id": "gb_mat_200_miraland_01",
   "title": "【垂穗魔果】巨木之森·卢米菈的小屋（14个/213秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 513,
   "teleport": {
     "name": "卢米菈的小屋",
@@ -22,7 +22,7 @@
     {
       "x": 5199.3,
       "y": 9097.88,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

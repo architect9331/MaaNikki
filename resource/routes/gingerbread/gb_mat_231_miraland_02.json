@@ -3,7 +3,7 @@
   "id": "gb_mat_231_miraland_02",
   "title": "【行鹭羽】巨木之森·咻咻快道入口（8个/90秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 243,
   "teleport": {
     "name": "咻咻快道入口",
@@ -22,7 +22,7 @@
     {
       "x": 4654.99,
       "y": 7946.51,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

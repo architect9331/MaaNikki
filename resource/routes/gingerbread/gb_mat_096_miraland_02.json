@@ -3,7 +3,7 @@
   "id": "gb_mat_096_miraland_02",
   "title": "【小绵菊】微风绿野·绿野货运码头（33个/234秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 560,
   "teleport": {
     "name": "绿野货运码头",
@@ -24,7 +24,7 @@
     {
       "x": 10430.45,
       "y": 10861.88,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -1,57 +1,80 @@
 {
   "schema_version": 3,
   "id": "gb_cat_insect_serenity_03",
-  "title": "【全昆虫速刷】无忧岛·守望之地（10个/51秒）",
+  "title": "【全昆虫速刷】无忧岛·布露村村口（22个/118秒）",
   "map": "serenity",
-  "start_radius": 6,
-  "timeout": 157,
+  "start_radius": 12,
+  "timeout": 304,
   "teleport": {
-    "name": "守望之地",
+    "name": "布露村村口",
     "province": "心愿原野",
     "region": "无忧岛",
-    "x": 795.589,
-    "y": 511.792
+    "x": 889.635,
+    "y": 406.18
   },
   "material": "全昆虫速刷",
   "count_materials": [
     "小绵菊",
+    "美食家蜜蜂",
+    "珠链蝶",
     "芭蕾豆娘",
-    "丝巾蛾"
+    "布布果",
+    "飞球果"
   ],
-  "capacity": 10,
+  "capacity": 22,
   "points": [
     {
-      "x": 795.59,
-      "y": 511.79,
+      "x": 889.63,
+      "y": 406.18,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 891.63,
+      "y": 408.18,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 797.59,
-      "y": 513.79,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 800.59,
-      "y": 516.79,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 797.3,
-      "y": 523.27,
+      "x": 891.64,
+      "y": 417.07,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 32.6
+        "seconds": 24.5
+      }
+    },
+    {
+      "x": 878.58,
+      "y": 431.07,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 882.58,
+      "y": 450.35,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 27.5
+      }
+    },
+    {
+      "x": 854.72,
+      "y": 459.43,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 27.3
       }
     }
   ]

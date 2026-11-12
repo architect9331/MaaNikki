@@ -3,7 +3,7 @@
   "id": "gb_mat_189_miraland_01",
   "title": "【小野菊】巨木之森·巨人墓园（51个/236秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 564,
   "teleport": {
     "name": "巨人墓园",
@@ -25,7 +25,7 @@
     {
       "x": 2891.81,
       "y": 8601.68,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

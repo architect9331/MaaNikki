@@ -3,7 +3,7 @@
   "id": "gb_mat_063_firework_02",
   "title": "【芭蕾豆娘】花焰群岛·月角浅滩（9个/139秒）",
   "map": "firework",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 351,
   "teleport": {
     "name": "月角浅滩",
@@ -28,7 +28,7 @@
     {
       "x": 1142.64,
       "y": 358.56,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

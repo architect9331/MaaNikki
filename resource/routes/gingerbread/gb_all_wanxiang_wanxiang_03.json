@@ -3,7 +3,7 @@
   "id": "gb_all_wanxiang_wanxiang_03",
   "title": "【全材料·万相境】万相境·九华监（6个/44秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 142,
   "teleport": {
     "name": "九华监",
@@ -23,7 +23,7 @@
     {
       "x": 1592.36,
       "y": 835.83,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

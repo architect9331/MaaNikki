@@ -3,7 +3,7 @@
   "id": "gb_cat_plant_miraland_07",
   "title": "【全植物速刷】小石树田村·小石树田村入口（54个/219秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 526,
   "teleport": {
     "name": "小石树田村入口",
@@ -25,7 +25,7 @@
     {
       "x": 9675.94,
       "y": 10849.74,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_fish_12_miraland_01",
-  "title": "【纱裙鱼】石树田无人区·星空钓场旁（小道）（7个/193秒）",
+  "title": "【纱裙鱼】石树田无人区·星空钓场旁（小道）（7个/204秒）",
   "map": "miraland",
-  "start_radius": 6,
-  "timeout": 469,
+  "start_radius": 12,
+  "timeout": 494,
   "teleport": {
     "name": "星空钓场旁（小道）",
     "province": "心愿原野",
@@ -16,8 +16,8 @@
   "count_materials": [
     "钓鱼点",
     "小绵菊",
-    "珠花贝壳",
     "纱裙鱼",
+    "珠花贝壳",
     "蓝珀鸟羽",
     "小星扇贝",
     "路灯花"
@@ -27,67 +27,83 @@
     {
       "x": 7828.44,
       "y": 9367.48,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7827.44,
+      "y": 9380.89,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7833.44,
-      "y": 9375.48,
+      "x": 7842.44,
+      "y": 9380.89,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7841.18,
-      "y": 9375.18,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 18.6
-      }
-    },
-    {
-      "x": 7845.79,
-      "y": 9365.44,
+      "x": 7845.44,
+      "y": 9368.89,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 7842.79,
-      "y": 9344.44,
+      "x": 7842.44,
+      "y": 9365.89,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7840.79,
-      "y": 9342.44,
+      "x": 7840.57,
+      "y": 9366.89,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 15.7
+        "seconds": 29.4
       }
     },
     {
-      "x": 7804.71,
+      "x": 7845.57,
+      "y": 9345.44,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7842.76,
+      "y": 9337.44,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.6
+      }
+    },
+    {
+      "x": 7807.71,
       "y": 9332.02,
       "radius": 3.2,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 8.9
+        "seconds": 8.7
       }
     },
     {
-      "x": 7786.71,
+      "x": 7783.71,
       "y": 9317.02,
       "radius": 2.8,
       "jump": false,

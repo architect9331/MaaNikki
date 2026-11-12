@@ -3,7 +3,7 @@
   "id": "gb_mat_213_miraland_01",
   "title": "【荧夜鬃】巨木之森·母菇林地（2个/51秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 157,
   "teleport": {
     "name": "母菇林地",
@@ -23,7 +23,7 @@
     {
       "x": 5153.24,
       "y": 8668.33,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

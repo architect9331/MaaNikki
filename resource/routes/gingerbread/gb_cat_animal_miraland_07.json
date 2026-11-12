@@ -1,80 +1,91 @@
 {
   "schema_version": 3,
   "id": "gb_cat_animal_miraland_07",
-  "title": "【全动物清洁】埋骨地·蓝池北侧疗愈地渡口（33个/191秒）",
+  "title": "【全动物清洁】埋骨地·疗愈地（36个/201秒）",
   "map": "miraland",
-  "start_radius": 6,
-  "timeout": 465,
+  "start_radius": 12,
+  "timeout": 487,
   "teleport": {
-    "name": "蓝池北侧疗愈地渡口",
+    "name": "疗愈地",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 7605.469,
-    "y": 4714.484
+    "x": 7509.209,
+    "y": 4444.597
   },
   "material": "全动物清洁",
   "count_materials": [
+    "蓝鳞晶",
     "羽巾绒",
     "金灵毛球",
     "晴雨伞",
-    "蓝鳞晶",
-    "行鹭羽"
+    "行鹭羽",
+    "沙沙毛团"
   ],
-  "capacity": 33,
+  "capacity": 36,
   "points": [
     {
-      "x": 7605.47,
-      "y": 4714.48,
+      "x": 7509.21,
+      "y": 4444.6,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7499.21,
+      "y": 4470.6,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7607.63,
-      "y": 4692.22,
+      "x": 7496.21,
+      "y": 4485.6,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7607.63,
-      "y": 4656.22,
+      "x": 7517.21,
+      "y": 4491.6,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7523.21,
+      "y": 4509.6,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7544.21,
+      "y": 4536.6,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.8
+      }
+    },
+    {
+      "x": 7556.21,
+      "y": 4539.6,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7583.21,
+      "y": 4539.6,
       "radius": 2.8,
       "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7586.63,
-      "y": 4629.22,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7580.63,
-      "y": 4620.22,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7580.63,
-      "y": 4587.22,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7589.63,
-      "y": 4551.22,
-      "radius": 2.8,
-      "jump": false,
       "action": "",
       "params": {}
     },

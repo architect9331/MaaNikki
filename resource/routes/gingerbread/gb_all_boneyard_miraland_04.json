@@ -1,96 +1,52 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_04",
-  "title": "【全材料·埋骨地】埋骨地·疗愈地（47个/237秒）",
+  "title": "【全材料·埋骨地】埋骨地·花涧幽谷（24个/116秒）",
   "map": "miraland",
-  "start_radius": 6,
-  "timeout": 566,
+  "start_radius": 12,
+  "timeout": 301,
   "teleport": {
-    "name": "疗愈地",
+    "name": "花涧幽谷",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 7509.209,
-    "y": 4444.597
+    "x": 6392.937,
+    "y": 5112.806
   },
   "material": "全材料·埋骨地",
   "count_materials": [
-    "钓鱼点",
-    "蓝鳞晶",
-    "羽巾绒",
-    "金灵毛球",
+    "晴雨伞",
     "珠链蝶",
-    "沙沙毛团"
+    "风舞花",
+    "革袋甲"
   ],
-  "capacity": 47,
+  "capacity": 24,
   "points": [
     {
-      "x": 7509.21,
-      "y": 4444.6,
-      "radius": 2.8,
+      "x": 6392.94,
+      "y": 5112.81,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7499.21,
-      "y": 4470.6,
+      "x": 6369.62,
+      "y": 5128.01,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 29.3
+        "seconds": 31.2
       }
     },
     {
-      "x": 7496.21,
-      "y": 4485.6,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7517.21,
-      "y": 4491.6,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7523.21,
-      "y": 4509.6,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7544.21,
-      "y": 4536.6,
+      "x": 6394.51,
+      "y": 5111.8,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.8
-      }
-    },
-    {
-      "x": 7580.21,
-      "y": 4539.6,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7587.46,
-      "y": 4550.84,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 150.0
+        "seconds": 55.1
       }
     }
   ]

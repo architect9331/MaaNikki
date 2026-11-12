@@ -3,7 +3,7 @@
   "id": "gb_mat_233_miraland_01",
   "title": "【扣扣毛球】巨木之森·探险大营地（7个/161秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 399,
   "teleport": {
     "name": "探险大营地",
@@ -26,7 +26,7 @@
     {
       "x": 3510.03,
       "y": 9419.99,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

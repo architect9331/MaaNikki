@@ -3,7 +3,7 @@
   "id": "gb_mat_076_miraland_02",
   "title": "【耳坠萤】埋骨地·荧湖西岸（15个/98秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 261,
   "teleport": {
     "name": "荧湖西岸",
@@ -22,7 +22,7 @@
     {
       "x": 5720.79,
       "y": 5415.97,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

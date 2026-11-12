@@ -3,7 +3,7 @@
   "id": "gb_all_florawish_miraland_01",
   "title": "【全材料·花愿镇】花愿镇·搭配师协会纪念旧址旁（10个/48秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 150,
   "teleport": {
     "name": "搭配师协会纪念旧址旁",
@@ -22,7 +22,7 @@
     {
       "x": 9839.85,
       "y": 9851.62,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_all_breezy_miraland_01",
   "title": "【全材料·微风绿野】微风绿野·菲洛米亚女王行宫遗迹西侧树林（21个/103秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 272,
   "teleport": {
     "name": "菲洛米亚女王行宫遗迹西侧树林",
@@ -23,7 +23,7 @@
     {
       "x": 10677.69,
       "y": 11478.38,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

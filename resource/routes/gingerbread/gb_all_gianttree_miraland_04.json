@@ -1,77 +1,82 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_04",
-  "title": "【全材料·巨木之森】巨木之森·巨兽堡垒断桥旁（11个/72秒）",
+  "title": "【全材料·巨木之森】巨木之森·巨人墓园（11个/72秒）",
   "map": "miraland",
-  "start_radius": 6,
-  "timeout": 204,
+  "start_radius": 12,
+  "timeout": 203,
   "teleport": {
-    "name": "巨兽堡垒断桥旁",
+    "name": "巨人墓园",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 3631.213,
-    "y": 9021.011
+    "x": 2891.806,
+    "y": 8601.681
   },
   "material": "全材料·巨木之森",
   "count_materials": [
     "壁灯红椒",
-    "蓝珀鸟羽",
-    "小野菊",
-    "满满果",
-    "行鹭羽"
+    "木夹跳甲"
   ],
   "capacity": 11,
   "points": [
     {
-      "x": 3631.21,
-      "y": 9021.01,
+      "x": 2891.81,
+      "y": 8601.68,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2896.81,
+      "y": 8597.68,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3609.93,
-      "y": 9029.01,
+      "x": 2902.81,
+      "y": 8606.68,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2917.81,
+      "y": 8630.68,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 2929.81,
+      "y": 8633.68,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.8
+        "seconds": 4.8
       }
     },
     {
-      "x": 3585.93,
-      "y": 9047.01,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3567.93,
-      "y": 9059.01,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 3552.93,
-      "y": 9053.01,
+      "x": 2962.81,
+      "y": 8648.68,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3553.93,
-      "y": 9049.92,
+      "x": 2995.62,
+      "y": 8653.41,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 30.9
+        "seconds": 26.3
       }
     }
   ]

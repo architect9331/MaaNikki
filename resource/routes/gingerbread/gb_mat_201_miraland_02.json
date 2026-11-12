@@ -3,7 +3,7 @@
   "id": "gb_mat_201_miraland_02",
   "title": "【结结蕨】巨木之森·探险大营地（10个/109秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 284,
   "teleport": {
     "name": "探险大营地",
@@ -26,7 +26,7 @@
     {
       "x": 3510.03,
       "y": 9419.99,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

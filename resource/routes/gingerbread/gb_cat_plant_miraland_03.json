@@ -3,7 +3,7 @@
   "id": "gb_cat_plant_miraland_03",
   "title": "【全植物速刷】微风绿野·河畔山地林间道（76个/287秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 677,
   "teleport": {
     "name": "河畔山地林间道",
@@ -24,7 +24,7 @@
     {
       "x": 10608.94,
       "y": 11286.42,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

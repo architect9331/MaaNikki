@@ -3,7 +3,7 @@
   "id": "gb_mat_314_miraland_01",
   "title": "【金轴蜻蜓】磐城·广场前停泊处（21个/223秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 535,
   "teleport": {
     "name": "广场前停泊处",
@@ -29,7 +29,7 @@
     {
       "x": 4017.79,
       "y": 3108.51,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

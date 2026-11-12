@@ -3,7 +3,7 @@
   "id": "gb_mat_056_miraland_01",
   "title": "【抱抱绒团】祈愿树林·心愿庆典管理处（10个/227秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 544,
   "teleport": {
     "name": "心愿庆典管理处",
@@ -28,7 +28,7 @@
     {
       "x": 12311.19,
       "y": 9200.47,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

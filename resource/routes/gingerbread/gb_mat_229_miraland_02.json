@@ -3,7 +3,7 @@
   "id": "gb_mat_229_miraland_02",
   "title": "【咕咕之羽】巨木之森·巨矛前驿站（2个/53秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 162,
   "teleport": {
     "name": "巨矛前驿站",
@@ -24,7 +24,7 @@
     {
       "x": 4387.35,
       "y": 7929.63,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

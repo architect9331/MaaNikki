@@ -3,7 +3,7 @@
   "id": "gb_mat_182_danqing_01",
   "title": "【胭脂芙蕖】丹青屿·奉龙塔（12个/166秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 410,
   "teleport": {
     "name": "奉龙塔",
@@ -26,7 +26,7 @@
     {
       "x": 1796.92,
       "y": 998.18,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

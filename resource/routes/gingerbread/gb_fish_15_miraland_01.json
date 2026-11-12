@@ -3,7 +3,7 @@
   "id": "gb_fish_15_miraland_01",
   "title": "【胡子鲶鱼】花愿镇·心愿花街（4个/100秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 264,
   "teleport": {
     "name": "心愿花街",
@@ -25,7 +25,7 @@
     {
       "x": 10260.86,
       "y": 10085.84,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

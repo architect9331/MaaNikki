@@ -3,7 +3,7 @@
   "id": "gb_all_firework_firework_02",
   "title": "【全材料·花焰群岛】花焰群岛·聆风高地山腰（8个/47秒）",
   "map": "firework",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 148,
   "teleport": {
     "name": "聆风高地山腰",
@@ -26,7 +26,7 @@
     {
       "x": 739.36,
       "y": 443.9,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

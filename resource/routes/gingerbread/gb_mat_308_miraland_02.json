@@ -3,7 +3,7 @@
   "id": "gb_mat_308_miraland_02",
   "title": "【斗篷绒毛】磐城·晨曦集市（7个/107秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 280,
   "teleport": {
     "name": "晨曦集市",
@@ -21,7 +21,7 @@
     {
       "x": 4026.35,
       "y": 3950.48,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

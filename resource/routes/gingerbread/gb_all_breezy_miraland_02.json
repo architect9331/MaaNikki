@@ -3,7 +3,7 @@
   "id": "gb_all_breezy_miraland_02",
   "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（13个/69秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 196,
   "teleport": {
     "name": "筑心王国边境哨所",
@@ -23,7 +23,7 @@
     {
       "x": 10782.91,
       "y": 11960.81,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

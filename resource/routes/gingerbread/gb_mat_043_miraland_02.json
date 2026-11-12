@@ -1,58 +1,47 @@
 {
   "schema_version": 3,
   "id": "gb_mat_043_miraland_02",
-  "title": "【衬衫毛团】花愿镇·搭配师协会前（1个/25秒）",
+  "title": "【衬衫毛团】微风绿野·菲洛米亚女王行宫遗迹高塔（1个/24秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
-    "name": "搭配师协会前",
+    "name": "菲洛米亚女王行宫遗迹高塔",
     "province": "心愿原野",
-    "region": "花愿镇",
-    "x": 10263.141,
-    "y": 9946.46
+    "region": "微风绿野",
+    "x": 11003.118,
+    "y": 11648.469
   },
   "material": "衬衫毛团",
   "count_materials": [
-    "美食家蜜蜂",
-    "满满果",
-    "珠链蝶",
     "衬衫毛团"
   ],
-  "capacity": 5,
+  "capacity": 1,
   "points": [
     {
-      "x": 10263.14,
-      "y": 9946.46,
+      "x": 11003.12,
+      "y": 11648.47,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11002.12,
+      "y": 11645.76,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10263.95,
-      "y": 9948.46,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10254.95,
-      "y": 9960.46,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10246.95,
-      "y": 9966.84,
+      "x": 11003.97,
+      "y": 11637.76,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.8
+        "seconds": 5.7
       }
     }
   ]

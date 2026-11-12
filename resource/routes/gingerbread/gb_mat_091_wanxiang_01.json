@@ -3,7 +3,7 @@
   "id": "gb_mat_091_wanxiang_01",
   "title": "【满满果】万相境·火锅坊（5个/39秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 131,
   "teleport": {
     "name": "火锅坊",
@@ -23,7 +23,7 @@
     {
       "x": 1399.52,
       "y": 1108.82,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

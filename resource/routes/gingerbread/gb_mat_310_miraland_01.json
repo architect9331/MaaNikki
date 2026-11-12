@@ -3,7 +3,7 @@
   "id": "gb_mat_310_miraland_01",
   "title": "【桂冠翎羽】磐城·圆心市场（6个/75秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 209,
   "teleport": {
     "name": "圆心市场",
@@ -21,7 +21,7 @@
     {
       "x": 3780.75,
       "y": 3896.51,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

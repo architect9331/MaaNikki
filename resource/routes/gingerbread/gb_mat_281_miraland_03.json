@@ -3,7 +3,7 @@
   "id": "gb_mat_281_miraland_03",
   "title": "【晴雨伞】埋骨地·古息坡道（57个/267秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 633,
   "teleport": {
     "name": "古息坡道",
@@ -30,7 +30,7 @@
     {
       "x": 6883.24,
       "y": 4762.08,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

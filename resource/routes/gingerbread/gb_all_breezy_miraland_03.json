@@ -3,7 +3,7 @@
   "id": "gb_all_breezy_miraland_03",
   "title": "【全材料·微风绿野】微风绿野·绿野货运码头（12个/64秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 186,
   "teleport": {
     "name": "绿野货运码头",
@@ -23,7 +23,7 @@
     {
       "x": 10430.45,
       "y": 10861.88,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

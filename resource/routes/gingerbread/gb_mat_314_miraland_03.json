@@ -3,7 +3,7 @@
   "id": "gb_mat_314_miraland_03",
   "title": "【金轴蜻蜓】磐城·咏叹剧院（19个/210秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 508,
   "teleport": {
     "name": "咏叹剧院",
@@ -29,7 +29,7 @@
     {
       "x": 3937.8,
       "y": 3509.93,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

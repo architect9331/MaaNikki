@@ -3,7 +3,7 @@
   "id": "gb_cat_fish_wanxiang_07",
   "title": "【全鱼类垂钓】万相境·九华监（6个/32秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "九华监",
@@ -22,7 +22,7 @@
     {
       "x": 1592.36,
       "y": 835.83,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

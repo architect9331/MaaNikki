@@ -3,7 +3,7 @@
   "id": "gb_mat_309_miraland_02",
   "title": "【机雀羽】磐城·磐城门前（20个/207秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 500,
   "teleport": {
     "name": "磐城门前",
@@ -27,7 +27,7 @@
     {
       "x": 4282.29,
       "y": 3501.47,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

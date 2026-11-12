@@ -1,83 +1,168 @@
 {
   "schema_version": 3,
   "id": "gb_mat_280_miraland_01",
-  "title": "【蜉幽幽】埋骨地·灵魂观察所廊柱厅（2个/34秒）",
+  "title": "【蜉幽幽】埋骨地·蓝池东侧修习所渡口（9个/192秒）",
   "map": "miraland",
-  "start_radius": 6,
-  "timeout": 120,
+  "start_radius": 12,
+  "timeout": 468,
   "teleport": {
-    "name": "灵魂观察所廊柱厅",
+    "name": "蓝池东侧修习所渡口",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 7083.331,
-    "y": 5246.124
+    "x": 7649.962,
+    "y": 4981.8
   },
   "material": "蜉幽幽",
   "count_materials": [
-    "耳坠萤",
+    "钓鱼点",
+    "龙棘瑚",
     "蜉幽幽",
-    "风舞花",
+    "蓝鳞晶",
+    "羽巾绒",
     "金灵毛球",
-    "蓝鳞晶"
+    "茸芽鹿绒",
+    "大叶鹿绒",
+    "晴雨伞",
+    "珠链蝶"
   ],
-  "capacity": 10,
+  "capacity": 89,
   "points": [
     {
-      "x": 7083.33,
-      "y": 5246.12,
-      "radius": 2.8,
+      "x": 7649.96,
+      "y": 4981.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7076.33,
-      "y": 5245.12,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7070.33,
-      "y": 5251.12,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7070.33,
-      "y": 5254.12,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7073.33,
-      "y": 5257.12,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7076.33,
-      "y": 5257.12,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7083.34,
-      "y": 5251.81,
+      "x": 7660.96,
+      "y": 4964.23,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 12.7
+        "seconds": 6.8
+      }
+    },
+    {
+      "x": 7675.96,
+      "y": 4937.23,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 6.9
+      }
+    },
+    {
+      "x": 7687.96,
+      "y": 4913.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7687.96,
+      "y": 4892.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7672.96,
+      "y": 4877.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7659.04,
+      "y": 4875.23,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 59.8
+      }
+    },
+    {
+      "x": 7681.53,
+      "y": 4883.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7687.53,
+      "y": 4904.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7687.53,
+      "y": 4916.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7675.53,
+      "y": 4934.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7672.53,
+      "y": 4943.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7666.53,
+      "y": 4949.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7648.53,
+      "y": 4943.23,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 6.3
+      }
+    },
+    {
+      "x": 7630.53,
+      "y": 4934.23,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7613.53,
+      "y": 4936.8,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 32.2
       }
     }
   ]

@@ -3,7 +3,7 @@
   "id": "gb_all_wishing_miraland_02",
   "title": "【全材料·祈愿树林】祈愿树林·心愿圣殿（11个/56秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 168,
   "teleport": {
     "name": "心愿圣殿",
@@ -24,7 +24,7 @@
     {
       "x": 11936.57,
       "y": 9098.02,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

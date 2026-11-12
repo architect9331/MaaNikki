@@ -3,7 +3,7 @@
   "id": "gb_mat_315_miraland_01",
   "title": "【机芯果】磐城·集市旁停泊处（12个/90秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 242,
   "teleport": {
     "name": "集市旁停泊处",
@@ -22,7 +22,7 @@
     {
       "x": 4129.3,
       "y": 4158.63,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

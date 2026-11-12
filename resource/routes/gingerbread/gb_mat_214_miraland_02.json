@@ -3,7 +3,7 @@
   "id": "gb_mat_214_miraland_02",
   "title": "【王子鹰羽】巨木之森·巨藤林地北侧探险家营地（2个/62秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 181,
   "teleport": {
     "name": "巨藤林地北侧探险家营地",
@@ -24,7 +24,7 @@
     {
       "x": 4176.29,
       "y": 8476.89,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

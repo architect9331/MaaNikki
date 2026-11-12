@@ -1,60 +1,42 @@
 {
   "schema_version": 3,
   "id": "gb_all_abandoned_miraland_02",
-  "title": "【全材料·石树田无人区】石树田无人区·星空钓场旁（小道）（20个/106秒）",
+  "title": "【全材料·石树田无人区】石树田无人区·欢乐市集入口（5个/29秒）",
   "map": "miraland",
-  "start_radius": 6,
-  "timeout": 278,
+  "start_radius": 12,
+  "timeout": 120,
   "teleport": {
-    "name": "星空钓场旁（小道）",
+    "name": "欢乐市集入口",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 7828.444,
-    "y": 9367.482
+    "x": 8375.994,
+    "y": 9845.598
   },
   "material": "全材料·石树田无人区",
   "count_materials": [
+    "满满果",
     "小绵菊",
-    "蓝珀鸟羽",
-    "钓鱼点",
-    "珠花贝壳",
     "路灯花",
-    "小星扇贝"
+    "纽扣松果"
   ],
-  "capacity": 20,
+  "capacity": 5,
   "points": [
     {
-      "x": 7828.44,
-      "y": 9367.48,
-      "radius": 2.8,
+      "x": 8375.99,
+      "y": 9845.6,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7836.44,
-      "y": 9375.77,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7845.44,
-      "y": 9372.77,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7843.3,
-      "y": 9358.77,
+      "x": 8371.71,
+      "y": 9846.46,
       "radius": 3.2,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 84.5
+        "seconds": 12.2
       }
     }
   ]

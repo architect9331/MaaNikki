@@ -3,7 +3,7 @@
   "id": "gb_mat_285_miraland_01",
   "title": "【龙棘瑚】埋骨地·蓝池东侧修习所渡口（45个/250秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 595,
   "teleport": {
     "name": "蓝池东侧修习所渡口",
@@ -27,7 +27,7 @@
     {
       "x": 7649.96,
       "y": 4981.8,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

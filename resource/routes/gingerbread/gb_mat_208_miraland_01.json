@@ -3,7 +3,7 @@
   "id": "gb_mat_208_miraland_01",
   "title": "【朝朝蝶】巨木之森·伊赞之土临时搭配师协会（1个/23秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "伊赞之土临时搭配师协会",
@@ -24,7 +24,7 @@
     {
       "x": 4840.1,
       "y": 8932.16,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_313_miraland_02",
   "title": "【晶球绵蚧】磐城·丰饶环圃（12个/190秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 464,
   "teleport": {
     "name": "丰饶环圃",
@@ -30,7 +30,7 @@
     {
       "x": 3679.35,
       "y": 4116.24,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

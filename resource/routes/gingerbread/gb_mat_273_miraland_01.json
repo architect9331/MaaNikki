@@ -3,7 +3,7 @@
   "id": "gb_mat_273_miraland_01",
   "title": "【大叶鹿绒】埋骨地·居落外绿坡（8个/80秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 221,
   "teleport": {
     "name": "居落外绿坡",
@@ -26,7 +26,7 @@
     {
       "x": 7029.14,
       "y": 4398.11,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

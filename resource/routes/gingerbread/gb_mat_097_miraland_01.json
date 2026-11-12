@@ -3,7 +3,7 @@
   "id": "gb_mat_097_miraland_01",
   "title": "【滋滋花粉】小石树田村·落石谷（6个/176秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 433,
   "teleport": {
     "name": "落石谷",
@@ -25,7 +25,7 @@
     {
       "x": 8980.7,
       "y": 10207.76,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

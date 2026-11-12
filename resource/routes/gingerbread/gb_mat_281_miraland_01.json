@@ -3,7 +3,7 @@
   "id": "gb_mat_281_miraland_01",
   "title": "【晴雨伞】埋骨地·湖岸营地（36个/163秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 403,
   "teleport": {
     "name": "湖岸营地",
@@ -24,7 +24,7 @@
     {
       "x": 6139.4,
       "y": 5241.84,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

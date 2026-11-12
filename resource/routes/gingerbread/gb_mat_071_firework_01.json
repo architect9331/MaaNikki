@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
-  "id": "gb_mat_071_firework_02",
+  "id": "gb_mat_071_firework_01",
   "title": "【尖帽仙】花焰群岛·月角浅滩（3个/42秒）",
   "map": "firework",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 137,
   "teleport": {
     "name": "月角浅滩",
@@ -25,7 +25,7 @@
     {
       "x": 1142.64,
       "y": 358.56,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

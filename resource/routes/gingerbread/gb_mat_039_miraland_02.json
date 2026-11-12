@@ -3,7 +3,7 @@
   "id": "gb_mat_039_miraland_02",
   "title": "【长袜羊毛】微风绿野·绿野活动支援中心（6个/162秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 401,
   "teleport": {
     "name": "绿野活动支援中心",
@@ -28,7 +28,7 @@
     {
       "x": 9971.07,
       "y": 10637.35,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

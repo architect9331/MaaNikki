@@ -3,7 +3,7 @@
   "id": "gb_mat_082_serenity_01",
   "title": "【飞球果】无忧岛·澄净盐主矿区（2个/22秒）",
   "map": "serenity",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "澄净盐主矿区",
@@ -21,7 +21,7 @@
     {
       "x": 691.47,
       "y": 717.49,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

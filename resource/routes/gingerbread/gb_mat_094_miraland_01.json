@@ -3,7 +3,7 @@
   "id": "gb_mat_094_miraland_01",
   "title": "【风絮草】小石树田村·村居岔路（9个/55秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 165,
   "teleport": {
     "name": "村居岔路",
@@ -23,7 +23,7 @@
     {
       "x": 9389.05,
       "y": 10562.46,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

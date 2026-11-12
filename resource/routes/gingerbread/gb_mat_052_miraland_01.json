@@ -3,7 +3,7 @@
   "id": "gb_mat_052_miraland_01",
   "title": "【背带毛团】石树田无人区·遗忘者村居（2个/41秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 136,
   "teleport": {
     "name": "遗忘者村居",
@@ -23,7 +23,7 @@
     {
       "x": 9171.66,
       "y": 8889.88,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

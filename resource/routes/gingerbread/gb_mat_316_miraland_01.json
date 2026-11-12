@@ -3,7 +3,7 @@
   "id": "gb_mat_316_miraland_01",
   "title": "【浮冠果】磐城·行与思广场（10个/134秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 341,
   "teleport": {
     "name": "行与思广场",
@@ -26,7 +26,7 @@
     {
       "x": 4180.56,
       "y": 3588.07,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_211_miraland_02",
   "title": "【板刷狸绒】巨木之森·巨兽堡垒断桥旁（9个/240秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 573,
   "teleport": {
     "name": "巨兽堡垒断桥旁",
@@ -28,7 +28,7 @@
     {
       "x": 3631.21,
       "y": 9021.01,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

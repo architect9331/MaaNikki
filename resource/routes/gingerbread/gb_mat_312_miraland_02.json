@@ -3,7 +3,7 @@
   "id": "gb_mat_312_miraland_02",
   "title": "【蓝玉甲虫】磐城·金庭前广场（24个/187秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 456,
   "teleport": {
     "name": "金庭前广场",
@@ -22,7 +22,7 @@
     {
       "x": 3810.53,
       "y": 3094.59,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

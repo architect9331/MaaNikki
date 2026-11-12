@@ -3,7 +3,7 @@
   "id": "gb_cat_fish_danqing_06",
   "title": "【全鱼类垂钓】丹青屿·栖龙峰侧峰（9个/45秒）",
   "map": "danqing",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 145,
   "teleport": {
     "name": "栖龙峰侧峰",
@@ -22,7 +22,7 @@
     {
       "x": 1072.59,
       "y": 284.39,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

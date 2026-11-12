@@ -3,7 +3,7 @@
   "id": "gb_mat_068_miraland_01",
   "title": "【裙撑萤】微风绿野·河畔山地林间道（13个/254秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 603,
   "teleport": {
     "name": "河畔山地林间道",
@@ -25,7 +25,7 @@
     {
       "x": 10608.94,
       "y": 11286.42,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

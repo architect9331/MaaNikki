@@ -3,7 +3,7 @@
   "id": "gb_mat_312_miraland_03",
   "title": "【蓝玉甲虫】磐城·街区钟塔（28个/227秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 544,
   "teleport": {
     "name": "街区钟塔",
@@ -28,7 +28,7 @@
     {
       "x": 3841.69,
       "y": 4046.97,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

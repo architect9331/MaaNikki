@@ -3,7 +3,7 @@
   "id": "gb_mat_043_firework_01",
   "title": "【衬衫毛团】花焰群岛·滋啦啦服务社（3个/67秒）",
   "map": "firework",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 193,
   "teleport": {
     "name": "滋啦啦服务社",
@@ -27,7 +27,7 @@
     {
       "x": 1003.82,
       "y": 608.64,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

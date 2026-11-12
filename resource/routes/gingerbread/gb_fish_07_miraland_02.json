@@ -3,7 +3,7 @@
   "id": "gb_fish_07_miraland_02",
   "title": "【提包鱼】祈愿树林·心愿通行许可处（6个/142秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 357,
   "teleport": {
     "name": "心愿通行许可处",
@@ -26,7 +26,7 @@
     {
       "x": 11176.05,
       "y": 10134.76,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

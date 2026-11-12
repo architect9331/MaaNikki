@@ -3,7 +3,7 @@
   "id": "gb_mat_177_wanxiang_02",
   "title": "【画眉毛团】万相境·彩靥城集市（5个/155秒）",
   "map": "wanxiang",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 385,
   "teleport": {
     "name": "彩靥城集市",
@@ -26,7 +26,7 @@
     {
       "x": 1447.76,
       "y": 983.2,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

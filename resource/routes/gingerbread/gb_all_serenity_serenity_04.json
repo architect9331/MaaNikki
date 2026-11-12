@@ -3,7 +3,7 @@
   "id": "gb_all_serenity_serenity_04",
   "title": "【全材料·无忧岛】无忧岛·布蜜蜜花园（29个/175秒）",
   "map": "serenity",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 429,
   "teleport": {
     "name": "布蜜蜜花园",
@@ -28,7 +28,7 @@
     {
       "x": 840.84,
       "y": 864.33,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

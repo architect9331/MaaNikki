@@ -3,7 +3,7 @@
   "id": "gb_all_stonewoods_miraland_02",
   "title": "【全材料·小石树田村】小石树田村·小石树田村入口（7个/33秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "小石树田村入口",
@@ -23,7 +23,7 @@
     {
       "x": 9675.94,
       "y": 10849.74,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_079_miraland_01",
   "title": "【布布果】小石树田村·斯切尔托老宅（39个/290秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 684,
   "teleport": {
     "name": "斯切尔托老宅",
@@ -33,7 +33,7 @@
     {
       "x": 9071.79,
       "y": 10403.81,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

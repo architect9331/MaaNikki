@@ -3,7 +3,7 @@
   "id": "gb_fish_13_miraland_01",
   "title": "【缎带鱼】微风绿野·菲洛米亚女王行宫遗迹前（6个/132秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 335,
   "teleport": {
     "name": "菲洛米亚女王行宫遗迹前",
@@ -23,7 +23,7 @@
     {
       "x": 10860.06,
       "y": 11296.95,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

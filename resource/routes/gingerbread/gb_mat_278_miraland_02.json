@@ -3,7 +3,7 @@
   "id": "gb_mat_278_miraland_02",
   "title": "【珍蛛】埋骨地·蓝池东侧修习所渡口（3个/129秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 329,
   "teleport": {
     "name": "蓝池东侧修习所渡口",
@@ -22,7 +22,7 @@
     {
       "x": 7649.96,
       "y": 4981.8,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

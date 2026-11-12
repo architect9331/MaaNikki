@@ -3,7 +3,7 @@
   "id": "gb_all_wishing_miraland_03",
   "title": "【全材料·祈愿树林】祈愿树林·守卫遗址（29个/151秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 376,
   "teleport": {
     "name": "守卫遗址",
@@ -29,7 +29,7 @@
     {
       "x": 11849.14,
       "y": 9617.17,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

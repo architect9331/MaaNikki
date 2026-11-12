@@ -3,7 +3,7 @@
   "id": "gb_fish_09_miraland_01",
   "title": "【插梳鱼】祈愿树林·巨树浅滩（4个/83秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 228,
   "teleport": {
     "name": "巨树浅滩",
@@ -25,7 +25,7 @@
     {
       "x": 11850.97,
       "y": 9024.45,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

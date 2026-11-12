@@ -3,7 +3,7 @@
   "id": "gb_mat_279_miraland_01",
   "title": "【埙音甲】埋骨地·幽息廊道外荒径（9个/165秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 407,
   "teleport": {
     "name": "幽息廊道外荒径",
@@ -24,7 +24,7 @@
     {
       "x": 8444.54,
       "y": 5247.85,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

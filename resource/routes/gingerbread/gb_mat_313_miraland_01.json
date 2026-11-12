@@ -3,7 +3,7 @@
   "id": "gb_mat_313_miraland_01",
   "title": "【晶球绵蚧】磐城·咏叹剧院（19个/204秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 493,
   "teleport": {
     "name": "咏叹剧院",
@@ -25,7 +25,7 @@
     {
       "x": 3937.8,
       "y": 3509.93,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

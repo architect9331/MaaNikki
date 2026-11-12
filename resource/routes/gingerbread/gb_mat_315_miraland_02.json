@@ -3,7 +3,7 @@
   "id": "gb_mat_315_miraland_02",
   "title": "【机芯果】磐城·金庭大桥前（9个/78秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 217,
   "teleport": {
     "name": "金庭大桥前",
@@ -21,7 +21,7 @@
     {
       "x": 3675.78,
       "y": 3589.82,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

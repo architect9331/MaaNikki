@@ -3,7 +3,7 @@
   "id": "gb_all_boneyard_miraland_03",
   "title": "【全材料·埋骨地】埋骨地·大拉姆居落迎厅入口（83个/366秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 850,
   "teleport": {
     "name": "大拉姆居落迎厅入口",
@@ -25,7 +25,7 @@
     {
       "x": 6985.2,
       "y": 4526.32,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

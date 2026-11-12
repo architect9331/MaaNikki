@@ -3,7 +3,7 @@
   "id": "gb_mat_312_miraland_01",
   "title": "【蓝玉甲虫】磐城·晨曦集市（28个/212秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 512,
   "teleport": {
     "name": "晨曦集市",
@@ -26,7 +26,7 @@
     {
       "x": 4026.35,
       "y": 3950.48,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

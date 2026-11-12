@@ -3,7 +3,7 @@
   "id": "gb_mat_094_serenity_02",
   "title": "【风絮草】无忧岛·酿露工坊（11个/69秒）",
   "map": "serenity",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 196,
   "teleport": {
     "name": "酿露工坊",
@@ -23,7 +23,7 @@
     {
       "x": 1062.65,
       "y": 439.81,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

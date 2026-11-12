@@ -3,7 +3,7 @@
   "id": "gb_mat_091_serenity_02",
   "title": "【满满果】无忧岛·旧迹之地（3个/25秒）",
   "map": "serenity",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "旧迹之地",
@@ -21,7 +21,7 @@
     {
       "x": 952.68,
       "y": 767.58,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

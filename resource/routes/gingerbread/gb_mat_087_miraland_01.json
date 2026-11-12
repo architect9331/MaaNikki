@@ -3,7 +3,7 @@
   "id": "gb_mat_087_miraland_01",
   "title": "【纽扣松果】微风绿野·河畔山地林间道（52个/266秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 630,
   "teleport": {
     "name": "河畔山地林间道",
@@ -26,7 +26,7 @@
     {
       "x": 10608.94,
       "y": 11286.42,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {

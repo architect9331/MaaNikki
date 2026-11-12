@@ -3,7 +3,7 @@
   "id": "gb_mat_050_miraland_01",
   "title": "【天星之羽】石树田无人区·星空钓场顶端（1个/28秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 120,
   "teleport": {
     "name": "星空钓场顶端",
@@ -21,7 +21,7 @@
     {
       "x": 7822.94,
       "y": 9184.4,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

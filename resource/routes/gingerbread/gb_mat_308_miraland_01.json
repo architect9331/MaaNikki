@@ -3,7 +3,7 @@
   "id": "gb_mat_308_miraland_01",
   "title": "【斗篷绒毛】磐城·幼蘑休憩处（13个/194秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 471,
   "teleport": {
     "name": "幼蘑休憩处",
@@ -23,7 +23,7 @@
     {
       "x": 3752.36,
       "y": 4232.81,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

@@ -3,7 +3,7 @@
   "id": "gb_mat_075_miraland_01",
   "title": "【美甲金龟】祈愿树林·古铸剑遗址入口（3个/68秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 194,
   "teleport": {
     "name": "古铸剑遗址入口",
@@ -29,7 +29,7 @@
     {
       "x": 11846.96,
       "y": 9216.1,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

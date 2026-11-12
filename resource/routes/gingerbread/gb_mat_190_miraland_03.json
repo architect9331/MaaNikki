@@ -3,7 +3,7 @@
   "id": "gb_mat_190_miraland_03",
   "title": "【探险家蜜蜂】磐城·街区钟塔（24个/214秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 515,
   "teleport": {
     "name": "街区钟塔",
@@ -30,7 +30,7 @@
     {
       "x": 3841.69,
       "y": 4046.97,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

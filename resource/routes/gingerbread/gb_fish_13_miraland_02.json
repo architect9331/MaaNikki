@@ -3,7 +3,7 @@
   "id": "gb_fish_13_miraland_02",
   "title": "【缎带鱼】花愿镇·心愿花街（5个/116秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 300,
   "teleport": {
     "name": "心愿花街",
@@ -25,7 +25,7 @@
     {
       "x": 10260.86,
       "y": 10085.84,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

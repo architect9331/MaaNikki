@@ -3,7 +3,7 @@
   "id": "gb_mat_082_miraland_02",
   "title": "【飞球果】石树田无人区·欢乐市集登顶道（9个/112秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 291,
   "teleport": {
     "name": "欢乐市集登顶道",
@@ -27,7 +27,7 @@
     {
       "x": 8284.23,
       "y": 9784.42,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

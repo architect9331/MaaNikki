@@ -3,7 +3,7 @@
   "id": "gb_all_breezy_miraland_04",
   "title": "【全材料·微风绿野】微风绿野·遗迹山坡（15个/81秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 223,
   "teleport": {
     "name": "遗迹山坡",
@@ -23,7 +23,7 @@
     {
       "x": 10093.04,
       "y": 11104.11,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

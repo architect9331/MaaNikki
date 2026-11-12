@@ -3,7 +3,7 @@
   "id": "gb_mat_285_miraland_02",
   "title": "【龙棘瑚】埋骨地·修习所（12个/95秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 254,
   "teleport": {
     "name": "修习所",
@@ -23,7 +23,7 @@
     {
       "x": 7817.79,
       "y": 5151.57,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

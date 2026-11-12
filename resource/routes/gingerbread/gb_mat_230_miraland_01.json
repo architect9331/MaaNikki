@@ -3,7 +3,7 @@
   "id": "gb_mat_230_miraland_01",
   "title": "【绒领毛团】巨木之森·巨兽堡垒断桥旁（10个/189秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 461,
   "teleport": {
     "name": "巨兽堡垒断桥旁",
@@ -26,7 +26,7 @@
     {
       "x": 3631.21,
       "y": 9021.01,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

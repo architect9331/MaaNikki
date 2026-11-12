@@ -3,7 +3,7 @@
   "id": "gb_mat_202_miraland_02",
   "title": "【草棘果】巨木之森·深林小径（5个/63秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 183,
   "teleport": {
     "name": "深林小径",
@@ -21,7 +21,7 @@
     {
       "x": 3996.95,
       "y": 8847.27,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

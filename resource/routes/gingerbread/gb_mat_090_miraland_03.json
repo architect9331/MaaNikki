@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
-  "id": "gb_mat_090_miraland_02",
+  "id": "gb_mat_090_miraland_03",
   "title": "【路灯花】小石树田村·小石树田村入口（16个/223秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 536,
   "teleport": {
     "name": "小石树田村入口",
@@ -29,7 +29,7 @@
     {
       "x": 9675.94,
       "y": 10849.74,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

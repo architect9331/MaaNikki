@@ -3,7 +3,7 @@
   "id": "gb_mat_272_miraland_02",
   "title": "【茸芽鹿绒】埋骨地·龙巢山飞瀑崖顶（8个/91秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 245,
   "teleport": {
     "name": "龙巢山飞瀑崖顶",
@@ -27,7 +27,7 @@
     {
       "x": 8063.15,
       "y": 5243.19,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

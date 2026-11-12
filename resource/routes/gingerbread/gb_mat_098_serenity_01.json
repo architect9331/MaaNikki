@@ -3,7 +3,7 @@
   "id": "gb_mat_098_serenity_01",
   "title": "【小星扇贝】无忧岛·咚咚小屋聚落（27个/252秒）",
   "map": "serenity",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 600,
   "teleport": {
     "name": "咚咚小屋聚落",
@@ -26,7 +26,7 @@
     {
       "x": 822.68,
       "y": 542.5,
-      "radius": 2.8,
+      "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}

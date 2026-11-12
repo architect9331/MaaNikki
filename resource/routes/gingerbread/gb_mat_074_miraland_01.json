@@ -3,7 +3,7 @@
   "id": "gb_mat_074_miraland_01",
   "title": "【珠链蝶】埋骨地·大拉姆居落迎厅入口（54个/291秒）",
   "map": "miraland",
-  "start_radius": 6,
+  "start_radius": 12,
   "timeout": 685,
   "teleport": {
     "name": "大拉姆居落迎厅入口",
@@ -25,7 +25,7 @@
     {
       "x": 6985.2,
       "y": 4526.32,
-      "radius": 3.2,
+      "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {
