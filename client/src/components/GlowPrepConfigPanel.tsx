@@ -144,7 +144,7 @@ export function GlowPrepConfigPanel({ externalMaterials, accountKey: propKey, on
             )}
           </span>
           <p className="mt-0.5 text-[11px] text-text-secondary">
-            直接填写每种材料的目标库存，或点「+数量」在现有库存上追加；幻境挑战的「换新材料」会刷到目标后交给下一项。
+            直接填写每种材料的目标库存，或点「+数量」在现有库存上追加；幻境挑战的「焕新材料」会刷到目标后交给下一项。
           </p>
         </div>
         <div className="flex items-center gap-1.5">

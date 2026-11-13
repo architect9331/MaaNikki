@@ -180,7 +180,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         </button> : undefined}
         note={mode === 'all'
           ? '已读衣柜里有的衣服会自动排除；两次读取之间自己做了衣服时，每日背包扫描发现晶石减少会自动核销，避免重复刷。'
-          : '做好勾选的衣服后重新读取衣柜，它们会自动移出计划。噗灵、丝线与换新共用库存，两边同时规划时请留足余量。'}
+          : '做好勾选的衣服后重新读取衣柜，它们会自动移出计划。噗灵、丝线与焕新共用库存，两边同时规划时请留足余量。'}
       />}
     />
   </div>;

@@ -1,4 +1,4 @@
-"""Maa action for the realm challenge priority queue (每周幻境 / 换新材料 / 制衣材料 / 五星闪光 → 兜底)."""
+"""Maa action for the realm challenge priority queue (每周幻境 / 焕新材料 / 制衣材料 / 五星闪光 → 兜底)."""
 from __future__ import annotations
 
 import traceback

@@ -137,7 +137,7 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
   const tiles = <>
     <FeatureTile icon={Sparkles} title="收集进度" compact={compact} warn={Boolean(error)}
       status={error ? '读取失败' : progress.percentage === null ? '尚无记录' : `${progress.percentage}%`}
-      tooltip={<div className="space-y-1"><p className="font-medium">收集进度</p><p className="text-text-secondary">我的衣柜、制衣、换新与祝福闪光的收集计划。</p><p className="text-text-secondary">{detail}</p></div>}
+      tooltip={<div className="space-y-1"><p className="font-medium">收集进度</p><p className="text-text-secondary">我的衣柜、制衣、焕新与祝福闪光的收集计划。</p><p className="text-text-secondary">{detail}</p></div>}
       onClick={() => open('blessing')} />
     <FeatureTile icon={Calculator} title="搭配计算" compact={compact} busy={wardrobeBusy}
       status={wardrobeBusy || wardrobeStatus === 'error' ? wardrobeLabels[wardrobeStatus] : wardrobe ? `${wardrobe.scanned_count} 件` : '尚未读取'}

@@ -91,6 +91,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
         <Tile label="已收录散件" value={<>{ownedPiecesCount}<span className="ml-1 text-xs font-normal text-text-muted">/ {pieces.length}</span></>} />
         <Tile label="已焕新养成组" value={<>{refreshedGroupsCount}<span className="ml-1 text-xs font-normal text-text-muted">/ {profile.groups.length}</span></>} />
       </div>
+      <p className="text-[11px] leading-5 text-text-secondary">顶部进度按本地资料中的 {suits.length} 套服装统计，同一计分款的不同颜色合并判断，不代表全衣柜或全颜色收集率。散件与妆容不计入套装总数，新内容随资料更新补充。</p>
       <div className="flex flex-wrap items-center gap-2">
         <Segmented label="浏览视图" value={view} options={[['suits', '按套装查看'], ['pieces', '按散件查看']] as const} onChange={(v) => { setView(v); setStatusFilter('all'); }} />
         <select aria-label="状态筛选" className={field} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>

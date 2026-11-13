@@ -10,7 +10,7 @@ export type RealmGoal = 'weekly' | 'renewal' | 'crafting' | 'glow';
 export type PlanGoal = Exclude<RealmGoal, 'weekly'>;
 export interface RealmQueueEntry { goal: RealmGoal; enabled: boolean }
 export const REALM_GOALS: RealmGoal[] = ['weekly', 'renewal', 'crafting', 'glow'];
-export const REALM_GOAL_LABELS: Record<RealmGoal, string> = { weekly: '每周幻境', renewal: '换新材料', crafting: '制衣材料', glow: '五星闪光' };
+export const REALM_GOAL_LABELS: Record<RealmGoal, string> = { weekly: '每周幻境', renewal: '焕新材料', crafting: '制衣材料', glow: '五星闪光' };
 export const WEEKLY_TARGETS = [{ id: 'Qiggeda', label: '奇格格达' }, { id: 'Juan', label: '卷卷' }] as const;
 
 const hasWeeklyToken = (raw: string | undefined) =>
@@ -139,7 +139,7 @@ export function realmOptionSections(keys: string[], values: Record<string, Optio
     },
     {
       id: 'materials', title: '素材激化 · 共用消耗材料',
-      description: '决定拿哪些材料兑换奖励。换新备料、五星闪光补噗灵、素材激化兜底及朝夕心愿补分都会沿用；兑换哪种奖励由各自目标决定。',
+      description: '决定拿哪些材料兑换奖励。焕新备料、五星闪光补噗灵、素材激化兜底及朝夕心愿补分都会沿用；兑换哪种奖励由各自目标决定。',
       keys: available.filter((key) => materialKeys.has(key)),
     },
   ].filter((section) => section.keys.length > 0);

@@ -131,7 +131,7 @@ export interface CraftingPlanState {
 export interface RenewalPlanState {
   /** Legacy flag from the standalone 焕新材料筹备 task; `source` supersedes it. */
   enabled?: boolean;
-  /** What drives the 换新材料 goal: this wardrobe plan, or fixed glow_plan targets. */
+  /** What drives the 焕新材料 goal: this wardrobe plan, or fixed glow_plan targets. */
   source?: 'plan' | 'targets';
   mode: PlanMode;
   /** Clothing group id -> target level (10 full level, 11 renewed); used by 自选. */

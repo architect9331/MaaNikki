@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 REALM_GOALS = ("weekly", "renewal", "crafting", "glow")
-GOAL_LABELS = {"weekly": "每周幻境", "renewal": "换新材料", "crafting": "制衣材料", "glow": "五星闪光"}
+GOAL_LABELS = {"weekly": "每周幻境", "renewal": "焕新材料", "crafting": "制衣材料", "glow": "五星闪光"}
 
 
 def parse_realm_queue(raw) -> list[str]:

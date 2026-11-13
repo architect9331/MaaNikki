@@ -80,10 +80,10 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
       inventory_updated_at: new Date().toISOString() }));
   }
 
-  if (loading && !payload) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在加载换新规划</div>;
+  if (loading && !payload) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在加载焕新规划</div>;
   if (!payload?.snapshot) return <PlanEmpty icon={Sparkles}
     action={<button type="button" onClick={onOpenCloset} className={secondaryButton}>去「我的衣柜」读取</button>}>
-    换新计划需要先知道你拥有哪些衣服。读取一次衣柜后，这里会列出还能升级或焕新的衣服和要备的材料。
+    焕新计划需要先知道你拥有哪些衣服。读取一次衣柜后，这里会列出还能升级或焕新的衣服和要备的材料。
   </PlanEmpty>;
 
   const q = search.trim();
@@ -180,7 +180,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
 
       summary={<>
         <WardrobeMaterialSummary
-          title="换新材料清单"
+          title="焕新材料清单"
           scope={planLabel}
           totals={totals}
           groups={['jihua', 'vortex', 'chroma', 'crystal', 'world']}
@@ -198,7 +198,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
             <ChevronDown className={clsx('ml-auto h-4 w-4 text-text-muted transition-transform', showManual && 'rotate-180')} />
           </button>
           {showManual && <div className="border-t border-border p-3">
-            <p className="mb-2 text-[11px] leading-5 text-text-muted">不按衣服计算、直接指定每种材料的目标库存。保存手动目标或从搭配计算导入后，「换新材料」改按手动目标刷取；在上方切换全收集或自选即可改回衣服计划。</p>
+            <p className="mb-2 text-[11px] leading-5 text-text-muted">不按衣服计算、直接指定每种材料的目标库存。保存手动目标或从搭配计算导入后，「焕新材料」改按手动目标刷取；在上方切换全收集或自选即可改回衣服计划。</p>
             <GlowPrepConfigPanel externalMaterials={materials} accountKey={payload.account_key} onChanged={adoptMaterials} />
           </div>}
         </section>

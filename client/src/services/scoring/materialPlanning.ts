@@ -132,7 +132,7 @@ export function renewalCost(catalog: ScoringCatalog, group: RenewalGroup, target
   return item ? upgradeCost(catalog, item, group.level, target) : {};
 }
 
-/** Mirrors the agent: which data drives the 换新材料 goal. */
+/** Mirrors the agent: which data drives the 焕新材料 goal. */
 export function renewalSource(materials: MaterialsState): 'plan' | 'targets' {
   const plan = materials.renewal_plan;
   if (plan?.source) return plan.source;

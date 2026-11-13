@@ -8,7 +8,7 @@ import { HelpTip } from './ui/HelpTip';
 import { Segmented, secondaryButton } from './ui/FeaturePage';
 
 /**
- * Building blocks shared by every collection plan (制衣、换新、五星闪光).
+ * Building blocks shared by every collection plan (制衣、焕新、五星闪光).
  * Each plan opens with the same panel — what the numbers are based on, what is
  * in scope, and where the realm challenge farms for it (read-only: the order,
  * its switches and the weekly realm are all set in the realm challenge task) — followed by the

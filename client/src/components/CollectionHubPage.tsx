@@ -17,9 +17,9 @@ import { WardrobeRenewalPlanner } from './WardrobeRenewalPlanner';
 type Tab = CollectionTab;
 // Each tab carries its own progress, so the page reads as an overview before any tab is opened.
 const TABS = [
-  ['closet', Shirt, '我的衣柜', '套'],
+  ['closet', Shirt, '我的衣柜', '套装'],
   ['crafting', Hammer, '制衣', '张'],
-  ['renewal', Gem, '换新', '组'],
+  ['renewal', Gem, '焕新', '组'],
   ['blessing', Sparkles, '祝福闪光', '色'],
 ] as const;
 const figure = (progress: Progress | null, unit: string) => progress
@@ -90,7 +90,7 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
         : !busy && <section className="rounded-xl border border-dashed border-border bg-bg-secondary px-6 py-10 text-center">
           <Shirt className="mx-auto h-10 w-10 text-accent opacity-60" />
           <h3 className="mt-3 text-sm font-semibold">先读取一次衣柜</h3>
-          <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-text-secondary">读取后可以按套装查看收集进度，制衣、换新和搭配计算也会根据你拥有的衣服自动计算。</p>
+          <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-text-secondary">读取后可以按套装查看收集进度，制衣、焕新和搭配计算也会根据你拥有的衣服自动计算。</p>
           <ol className="mx-auto mt-4 max-w-sm space-y-1 text-left text-xs text-text-secondary">
             <li>1. 打开游戏并停在主界面</li>
             <li>2. 清空衣柜里的筛选条件</li>

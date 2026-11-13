@@ -44,7 +44,7 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     }
     const nextMaterials: MaterialsState = {
       ...(base ?? {}),
-      // Imported targets replace the wardrobe renewal plan as the 换新 goal's source.
+      // Imported targets replace the wardrobe renewal plan as the 焕新 goal's source.
       renewal_plan: { enabled: false, mode: 'all', targets: {}, ...(base?.renewal_plan ?? {}), source: 'targets' },
       glow_plan: {
         enabled: true,
@@ -58,10 +58,10 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
       await saveMaterialPlan(accountKey, nextMaterials);
       onMaterialsChange?.(nextMaterials);
       if (shared.payload?.account_key === accountKey) shared.adoptMaterials(nextMaterials);
-      const saved = mode === 'add' ? '已累加到换新材料目标' : '已设为换新材料目标';
+      const saved = mode === 'add' ? '已累加到焕新材料目标' : '已设为焕新材料目标';
       toast.success(realmTask && realmGoalRank(realmTask.optionValues, 'renewal') !== null
         ? saved
-        : `${saved}；在幻境挑战的刷取顺序中打开「换新材料」后会自动刷取`);
+        : `${saved}；在幻境挑战的刷取顺序中打开「焕新材料」后会自动刷取`);
     } catch (err) {
       toast.error(String(err));
     }
@@ -75,7 +75,7 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     <div className="mt-2.5 space-y-2.5">
       {accountKey && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs">
-          <span className="text-text-secondary">设为「换新材料」备料目标（可在收集进度 → 换新中调整）：</span>
+          <span className="text-text-secondary">设为「焕新材料」备料目标（可在收集进度 → 焕新中调整）：</span>
           <div className="flex flex-wrap gap-1.5">
             <button type="button" onClick={() => void applyGlowPrepPlan('replace')}
               className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover">

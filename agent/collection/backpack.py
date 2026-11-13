@@ -30,7 +30,7 @@ def wardrobe_snapshot(role: dict) -> dict:
 
 
 def renewal_source(mats: dict) -> str:
-    """Which data drives the 换新 goal: the wardrobe plan, or fixed material targets.
+    """Which data drives the 焕新 goal: the wardrobe plan, or fixed material targets.
 
     Older saves have no explicit source: an enabled wardrobe plan means "plan";
     otherwise unfinished targets from the calculator or manual entry mean "targets".
@@ -377,7 +377,7 @@ def ensure_backpack_scanned(rt, account: AccountState, crafting_catalog: dict) -
                     logs.append(f"检测到 {meta.get('name', mid)} 库存减少 {used}（{prev_qty} -> {new_qty}），已自动核销对应制衣材料需求。")
                 if (kind == "monster_glow" or mid == "50361309") and renewal_dynamic and renewal_key:
                     renewal_consumed[mid] = int(renewal_consumed.get(mid, 0)) + used
-                    logs.append(f"检测到 {meta.get('name', mid)} 库存减少 {used}（已用于服装换新），换新计划所需已同步扣减。")
+                    logs.append(f"检测到 {meta.get('name', mid)} 库存减少 {used}（已用于服装焕新），焕新计划所需已同步扣减。")
                 elif (kind == "monster_glow" or mid == "50361309") and glow_targets and int(glow_targets.get(mid, 0)) > 0:
                     old_target = int(glow_targets[mid])
                     new_target = max(0, old_target - used)

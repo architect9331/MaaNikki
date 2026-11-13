@@ -19,7 +19,7 @@ import { SwitchTrack } from './ui/SwitchTrack';
 export const REALM_QUEUE_CARD_ID = 'realm-queue-card';
 const GOAL_INFO: Record<RealmGoal, { icon: typeof Shirt; detail: string; tab?: CollectionTab }> = {
   weekly: { icon: CalendarClock, detail: '本周仍有挑战次数时，依次挑战所选关卡各一次' },
-  renewal: { icon: Shirt, detail: '按「换新」计划刷泡泡、丝线与噗灵', tab: 'renewal' },
+  renewal: { icon: Shirt, detail: '按「焕新」计划刷泡泡、丝线与噗灵', tab: 'renewal' },
   crafting: { icon: Hammer, detail: '按「制衣」计划刷魔物试炼晶石', tab: 'crafting' },
   glow: { icon: Sparkles, detail: '按「祝福闪光」计划选本追新色，所选范围收齐后跳过', tab: 'blessing' },
 };

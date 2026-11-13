@@ -1,4 +1,4 @@
-"""Live material shortfalls of the realm queue goals (换新 / 制衣) and their farming."""
+"""Live material shortfalls of the realm queue goals (焕新 / 制衣) and their farming."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
