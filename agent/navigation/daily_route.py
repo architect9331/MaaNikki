@@ -40,6 +40,7 @@ def load_macro(resource: Path, name):
 
 # Game actions a user route can press directly; UI and movement keys stay out.
 ROUTE_KEYS = {"interact", "jump", "falling", "attack", "capture", "bell", "ability_use", "sub_ability",
+              "ability_derive_1", "ability_derive_2",
               *(f"ability_{index}" for index in range(1, 9))}
 
 

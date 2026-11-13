@@ -67,8 +67,35 @@ export function realmOptionBackup(key: string, values: Record<string, OptionValu
   return (key in REALM_MODE_TARGETS || key === 'BlessTarget') && !realmOptionActive(key, values);
 }
 
+/** Game key inputs regrouped to mirror the game's key settings page: [input, from, to]. */
+const MOVED_GAME_KEYS: [string, string, string][] = [
+  ['bell', 'GameKeysActions', 'GameKeysMove'],
+  ['sub_ability', 'GameKeysActions', 'GameKeysMove'],
+  ['chat', 'GameKeysActions', 'GameKeysPages'],
+  ['exit', 'GameKeysPages', 'GameKeysActions'],
+];
+
+/** Carry saved bindings into their new group; a value already saved there wins. */
+function migrateGameKeyGroups(values: Record<string, OptionValue>): Record<string, OptionValue> {
+  let next = values;
+  for (const [name, from, to] of MOVED_GAME_KEYS) {
+    const source = next[from];
+    if (source?.type !== 'input' || !(name in source.values)) continue;
+    const target = next[to];
+    const targetValues = target?.type === 'input' ? target.values : {};
+    const { [name]: moved, ...rest } = source.values;
+    if (next === values) next = { ...values };
+    next[from] = { ...source, values: rest };
+    if (!(name in targetValues)) {
+      next[to] = { ...(target?.type === 'input' ? target : { type: 'input' as const }), values: { ...targetValues, [name]: moved } };
+    }
+  }
+  return next;
+}
+
 /** The former realm "five-star collection" case is now its own mode switch. */
-export function migrateNikkiOptionValues(values: Record<string, OptionValue>): Record<string, OptionValue> {
+export function migrateNikkiOptionValues(input: Record<string, OptionValue>): Record<string, OptionValue> {
+  const values = migrateGameKeyGroups(input);
   const realm = values.RealmTypes;
   const legacyCollection = realm?.type === 'select' && realm.caseName === 'FiveStarCollection';
   if (!legacyCollection && !('CollectionPriority' in values)) return values;

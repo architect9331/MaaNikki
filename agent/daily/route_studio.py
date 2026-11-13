@@ -42,6 +42,7 @@ HOTKEYS = {0x75: "point", 0x76: "collect", 0x77: "wait", 0x78: "fishing", 0x79: 
 # jump and dive stay with the walk itself; a later name sharing a physical key
 # with an earlier one is the same input and is not watched twice.
 RECORDED_KEYS = ("attack", "ability_use", "capture", "bell", "sub_ability",
+                 "ability_derive_1", "ability_derive_2",
                  *(f"ability_{index}" for index in range(1, 9)))
 # Same bounds the route key action accepts.
 MAX_HOLD = 10.0

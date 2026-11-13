@@ -7,25 +7,34 @@ from client_config import node_action_params
 import re
 
 
+# Labels follow the rows of the game's 键位设置 page so players can copy them.
 # Keep photo shutter and UI shortcuts separate from movement bindings.
 DEFAULTS = {
-    "map": ("M", "地图"), "calendar": ("L", "奇想日历"),
-    "monthly": ("J", "奇迹之旅"), "photo": ("P", "拍照模式"),
-    "shop": ("H", "商城"),
-    "dress": ("C", "换装"), "backpack": ("B", "背包"), "ability_config": ("E", "能力配置"),
-    "item": ("Z", "消耗品／摆饰"), "interact": ("F", "交互／拾取"),
-    "bell": ("X", "摇铃"), "skip": ("F", "跳过动画／奖励"),
-    "menu": ("Esc", "菜单／返回"), "exit": ("Backspace", "退出变身／关卡"),
-    "shutter": ("Space", "拍照快门"), "chat": ("Enter", "打开聊天"),
-    "forward": ("W", "前进"), "left": ("A", "左移"),
-    "backward": ("S", "后退"), "right": ("D", "右移"),
-    "jump": ("Space", "跳跃"), "falling": ("Q", "急坠"),
-    "attack": ("MouseLeft", "净化攻击"), "capture": ("MouseRight", "捕虫动作"),
+    # 基础操作
+    "forward": ("W", "向前移动"), "backward": ("S", "向后移动"),
+    "left": ("A", "向左移动"), "right": ("D", "向右移动"),
+    "jump": ("Space", "跳跃"), "falling": ("Q", "急坠"), "bell": ("X", "摇铃"),
+    "ability_derive_1": ("G", "能力衍生功能1"), "ability_derive_2": ("T", "能力衍生功能2"),
+    "sub_ability": ("R", "家园能力衍生功能1"),
+    # 系统功能
+    "map": ("M", "地图"), "backpack": ("B", "背包"), "photo": ("P", "拍照"),
+    "dress": ("C", "换装"), "calendar": ("L", "奇想日历"),
+    "monthly": ("J", "奇迹之旅/乐园构想"), "item": ("Z", "使用消耗品"),
+    "shop": ("H", "商城"), "chat": ("Enter", "聊天"),
+    **{f"ability_{i}": (str(i), f"切换能力：{n}") for i, n in enumerate("一二三四五六七八", 1)},
+    # 通用 / 关卡 / 玩法
+    "interact": ("F", "交互"), "skip": ("F", "跳过动画／奖励"),
+    "exit": ("Backspace", "退出关卡"), "fishing_reel": ("MouseRight", "钓鱼：收线"),
+    # Not rebindable in the game (greyed rows or absent from the page).
+    "menu": ("Esc", "美鸭梨"), "attack": ("MouseLeft", "净化"),
+    "ability_use": ("MouseRight", "主能力按键"), "capture": ("MouseRight", "主能力按键（捕虫）"),
     "place": ("MouseLeft", "放置摆饰"), "recover": ("MouseRight", "收回摆饰"),
-    "ability_use": ("MouseRight", "使用／结束能力"),
-    "sub_ability": ("R", "能力衍生功能 1"), "fishing_reel": ("MouseRight", "钓鱼／钓星收线"),
-    **{f"ability_{i}": (str(i), f"快捷能力 {i}") for i in range(1, 9)},
+    "shutter": ("Space", "拍照快门"), "ability_config": ("E", "换装页能力配置切换"),
 }
+# The game greys these out (or never lists them), so they cannot differ from
+# the defaults and are not offered as settings.
+FIXED = frozenset({"menu", "attack", "ability_use", "capture", "place", "recover",
+                   "shutter", "ability_config"})
 MOVEMENT = {"forward", "left", "backward", "right"}
 MACRO_KEYS = MOVEMENT | {"jump", "falling", "attack"}
 SPECIAL = {"ESC": 27, "ESCAPE": 27, "SPACE": 32, "ENTER": 13, "RETURN": 13,
@@ -83,7 +92,10 @@ class GameKeys:
             raise ValueError("未登记的游戏动作。")
         if name not in self.cache:
             value = self.values.get(name, DEFAULTS[name][0])
-            if self.context is not None:
+            if name in FIXED:
+                # Not configurable in the game; a stale saved value cannot apply.
+                value = DEFAULTS[name][0]
+            elif self.context is not None:
                 value = node_action_params(self.context, node_name(name)).get("value", value)
             try:
                 self.cache[name] = parse_key(value)

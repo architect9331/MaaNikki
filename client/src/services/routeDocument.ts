@@ -114,7 +114,8 @@ export const MACROS = [['starsea_fall', '原地下落攻击'], ['zhaoxi_attack',
 
 export const ROUTE_KEYS = [
   ['interact', '交互／拾取'], ['jump', '跳跃'], ['falling', '急坠'], ['attack', '净化攻击'],
-  ['capture', '捕虫动作'], ['bell', '摇铃'], ['ability_use', '使用／结束能力'], ['sub_ability', '能力衍生功能'],
+  ['capture', '捕虫动作'], ['bell', '摇铃'], ['ability_use', '使用／结束能力'], ['sub_ability', '家园能力衍生功能1'],
+  ['ability_derive_1', '能力衍生功能1'], ['ability_derive_2', '能力衍生功能2'],
   ...Array.from({ length: 8 }, (_, index) => [`ability_${index+1}`, `快捷能力 ${index+1}`] as const),
 ] as const;
 

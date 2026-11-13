@@ -23,9 +23,12 @@ const switchOn = (values: Record<string, OptionValue>, key: string, fallback: bo
 };
 
 /**
- * Only the four movement keys must differ. Other actions share keys by default,
- * such as F for both skipping and picking up.
+ * Only the four movement keys must differ. Other actions share keys in the
+ * game's own default layout, such as F for skipping and interacting, or R for
+ * both 奇想战技2 and 家园能力衍生功能1, so they are never compared.
  */
+const MOVE_KEYS = new Set(['forward', 'backward', 'left', 'right']);
+
 function duplicateMoveKeys(): string[] {
   const state = useAppStore.getState();
   const definition = state.projectInterface?.option?.GameKeysMove;
@@ -33,6 +36,7 @@ function duplicateMoveKeys(): string[] {
   const saved = state.globalOptionValues?.GameKeysMove;
   const owners = new Map<string, string[]>();
   for (const input of definition.inputs) {
+    if (!MOVE_KEYS.has(input.name)) continue;
     const raw = (saved?.type === 'input' ? saved.values[input.name] : undefined) ?? input.default ?? '';
     const name = raw.trim().toLowerCase();
     if (name) owners.set(name, [...owners.get(name) ?? [], String(input.label ?? input.name)]);
@@ -71,7 +75,7 @@ export async function preflightIssues(instance: Instance): Promise<PreflightIssu
   const duplicates = duplicateMoveKeys();
   if (duplicates.length) {
     issues.push({ id: 'duplicate-keys', title: '移动方向的按键重复',
-      detail: `${duplicates.join('；')}。四个移动方向需要不同的键，请在「设置 → 任务设置 → 游戏键位」中修改，并和游戏内保持一致。` });
+      detail: `${duplicates.join('；')}。四个移动方向需要不同的键，请在「设置 → 任务设置 → 游戏键位 → 基础操作」中修改，并和游戏内保持一致。` });
   }
 
   const start = enabledTask(instance, '__MXU_PRETASK__start_game');

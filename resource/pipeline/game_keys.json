@@ -1,140 +1,4 @@
 {
-  "MaaNikki_Key_map": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "M"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_calendar": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "L"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_monthly": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "J"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_shop": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "H"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_photo": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "P"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_item": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "Z"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_menu": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "Esc"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_skip": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "F"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_exit": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "Backspace"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_interact": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "F"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_bell": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "X"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_shutter": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "Space"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_chat": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "Enter"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_attack": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "MouseLeft"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_capture": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "MouseRight"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_place": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "MouseLeft"
-    },
-    "custom_action": "nikki.daily_config"
-  },
-  "MaaNikki_Key_recover": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "MouseRight"
-    },
-    "custom_action": "nikki.daily_config"
-  },
   "MaaNikki_Key_forward": {
     "recognition": "DirectHit",
     "action": "Custom",
@@ -143,19 +7,19 @@
     },
     "custom_action": "nikki.daily_config"
   },
-  "MaaNikki_Key_left": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "A"
-    },
-    "custom_action": "nikki.daily_config"
-  },
   "MaaNikki_Key_backward": {
     "recognition": "DirectHit",
     "action": "Custom",
     "custom_action_param": {
       "value": "S"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_left": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "A"
     },
     "custom_action": "nikki.daily_config"
   },
@@ -180,6 +44,110 @@
     "action": "Custom",
     "custom_action_param": {
       "value": "Q"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_bell": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "X"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_ability_derive_1": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "G"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_ability_derive_2": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "T"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_sub_ability": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "R"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_map": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "M"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_backpack": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "B"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_photo": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "P"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_dress": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "C"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_calendar": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "L"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_monthly": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "J"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_item": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "Z"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_shop": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "H"
+    },
+    "custom_action": "nikki.daily_config"
+  },
+  "MaaNikki_Key_chat": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "Enter"
     },
     "custom_action": "nikki.daily_config"
   },
@@ -247,51 +215,35 @@
     },
     "custom_action": "nikki.daily_config"
   },
-  "MaaNikki_Key_dress": {
+  "MaaNikki_Key_interact": {
     "recognition": "DirectHit",
     "action": "Custom",
-    "custom_action": "nikki.daily_config",
     "custom_action_param": {
-      "value": "C"
-    }
+      "value": "F"
+    },
+    "custom_action": "nikki.daily_config"
   },
-  "MaaNikki_Key_ability_config": {
+  "MaaNikki_Key_skip": {
     "recognition": "DirectHit",
     "action": "Custom",
-    "custom_action": "nikki.daily_config",
     "custom_action_param": {
-      "value": "E"
-    }
+      "value": "F"
+    },
+    "custom_action": "nikki.daily_config"
   },
-  "MaaNikki_Key_ability_use": {
+  "MaaNikki_Key_exit": {
     "recognition": "DirectHit",
     "action": "Custom",
-    "custom_action": "nikki.daily_config",
     "custom_action_param": {
-      "value": "MouseRight"
-    }
-  },
-  "MaaNikki_Key_sub_ability": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.daily_config",
-    "custom_action_param": {
-      "value": "R"
-    }
+      "value": "Backspace"
+    },
+    "custom_action": "nikki.daily_config"
   },
   "MaaNikki_Key_fishing_reel": {
     "recognition": "DirectHit",
     "action": "Custom",
-    "custom_action": "nikki.daily_config",
     "custom_action_param": {
       "value": "MouseRight"
-    }
-  },
-  "MaaNikki_Key_backpack": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "B"
     },
     "custom_action": "nikki.daily_config"
   }

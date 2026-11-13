@@ -25,6 +25,7 @@ import type { InterfaceSettingSection, ProjectInterface } from '@/types/interfac
 import { loadIconAsDataUrl } from '@/services/contentResolver';
 import { ConfirmDialog } from './ConfirmDialog';
 import { OptionEditor } from './OptionEditor';
+import { GameKeyAutoRead } from './GameKeyAutoRead';
 import {
   AppearanceSection,
   HotkeySection,
@@ -135,6 +136,7 @@ function TaskSettingsSection({
         </span>
       </summary>
       <div className="px-4 pb-4 pt-2 space-y-3">
+        {section.name === 'game_keys' && <GameKeyAutoRead />}
         {availableOptionKeys.length === 0 ? (
           <div className="text-sm text-text-muted">{t('settings.taskSettingsEmpty')}</div>
         ) : (

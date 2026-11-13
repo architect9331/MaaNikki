@@ -1,0 +1,70 @@
+{
+  "MaaNikki_GameKeysRead": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.game_keys_read",
+    "custom_action_param": {
+      "ready": "MaaNikki_GameKeys_KeybindReady",
+      "source": "MaaNikki_MainDetected"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_GameKeys_SettingsEntrance": {
+    "recognition": "OCR",
+    "roi": [0, 0, 1280, 720],
+    "expected": "^设置$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_GameKeys_SettingsReady",
+      "source": "MaaNikki_MenuReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_GameKeys_SettingsReady": {
+    "recognition": "OCR",
+    "roi": [66, 15, 153, 37],
+    "expected": "^设置$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_GameKeys_ControlTab": {
+    "recognition": "OCR",
+    "roi": [330, 10, 700, 60],
+    "expected": "^控制$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_GameKeys_ControlReady",
+      "source": "MaaNikki_GameKeys_SettingsReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_GameKeys_ControlReady": {
+    "recognition": "OCR",
+    "roi": [220, 115, 300, 70],
+    "expected": "^键位设置",
+    "action": "DoNothing"
+  },
+  "MaaNikki_GameKeys_KeybindEntrance": {
+    "recognition": "OCR",
+    "roi": [575, 115, 480, 70],
+    "expected": "前往",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_GameKeys_KeybindReady",
+      "source": "MaaNikki_GameKeys_ControlReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_GameKeys_KeybindReady": {
+    "recognition": "OCR",
+    "roi": [66, 15, 220, 45],
+    "expected": "^键盘与鼠标$",
+    "action": "DoNothing"
+  }
+}
