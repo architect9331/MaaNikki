@@ -18,12 +18,19 @@ setting retain the generic client's existing Sentry attachment transport.
    exposed. `GET http://127.0.0.1:9340/healthz` reports process availability.
 3. Install `nginx-limits.conf` in `/etc/nginx/conf.d/`. Install
    `nginx-location.conf` as a snippet included **only in the HTTPS server**.
+   For an independent project hostname, adapt `nginx-site.conf.example` and enable
+   it as a separate site. Point a proxied DNS record at the origin and install a
+   certificate for that hostname. A Cloudflare Origin CA certificate requires the
+   Cloudflare proxy and Full / Full (strict) origin TLS mode; do not use Flexible.
    Create `/etc/nginx/maanikki-diagnostics.htpasswd` with a separate operator
    password using `htpasswd`, root ownership, group `www-data` and mode `0640`.
    Keep the password outside source control and application packages.
 4. Run `nginx -t` before reloading nginx. Configure the application with
    `https://YOUR_DOMAIN/maanikki-diagnostics/upload`. Do not put the operator
    password in this URL or in the distributed client.
+
+MaaNikki uses `https://diagnostics.maanikki.cn/maanikki-diagnostics/upload`.
+Its screenshot locations are included only in this dedicated hostname's site.
 
 Default limits: 5,000,000,000 stored bytes, 30-day retention, at least 2 GiB disk
 free, 512 MiB daily intake (UTC), 10,000 files, 5 MiB per upload, 128 images per

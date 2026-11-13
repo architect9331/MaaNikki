@@ -1,0 +1,19 @@
+# Dedicated project hostname. Install the certificate and key before enabling.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name diagnostics.maanikki.cn;
+    return 301 https://diagnostics.maanikki.cn$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name diagnostics.maanikki.cn;
+    ssl_certificate /etc/nginx/ssl/diagnostics.maanikki.cn/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/diagnostics.maanikki.cn/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    include /etc/nginx/snippets/maanikki-diagnostics.conf;
+    location / { return 404; }
+}
