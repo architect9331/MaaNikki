@@ -106,7 +106,7 @@ def collect_task_preferences(root) -> list[list[str]]:
             coll = "glow" in goals
             wf = opts.get("CollectionWorkflow", {}).get("caseName") or "Managed"
             rtype = opts.get("RealmTypes", {}).get("caseName") or "Bless"
-            first = goals[0] if goals else None
+            first = next((goal for goal in goals if goal != "weekly"), None)
             mode = (
                 ("collection:farm_only" if wf == "FarmOnly" else "collection:managed") if first == "glow"
                 else first if first

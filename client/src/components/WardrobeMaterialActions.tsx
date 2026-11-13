@@ -1,10 +1,10 @@
-import { ArrowUpRight, Check, Flame, ListPlus, Star } from 'lucide-react';
+import { ArrowUpRight, ListPlus, Star } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { useAppStore } from '@/stores/appStore';
 import { saveMaterialPlan } from '@/services/scoring/api';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
-import { realmQueue, realmQueueOption } from '@/utils/nikkiOptions';
+import { realmGoalRank } from '@/utils/nikkiOptions';
 import { MATERIAL_REALM_TARGETS } from '@/services/scoring/heartPresets';
 import type { BatchCalculationResult, MaterialsState, ScoringCatalog } from '@/services/scoring/types';
 
@@ -22,25 +22,11 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
 }) {
   const instances = useAppStore((state) => state.instances);
   const activeInstanceId = useAppStore((state) => state.activeInstanceId);
-  const setTaskOptionValue = useAppStore((state) => state.setTaskOptionValue);
   const entries = Object.entries(cost).filter(([, count]) => count > 0);
 
+  // Farming itself (order, switches, fallback realm) is set only in the realm challenge task.
   const activeInstance = instances.find((inst) => inst.id === activeInstanceId) ?? instances[0];
   const realmTask = activeInstance?.selectedTasks.find((task) => task.taskName === 'realm_challenge');
-  const realmValues = realmTask?.optionValues ?? {};
-  const activeRealmType = realmValues.RealmTypes?.type === 'select' ? realmValues.RealmTypes.caseName : 'Bless';
-
-  function applyRealmTarget(materialId: string) {
-    const target = MATERIAL_REALM_TARGETS[materialId];
-    if (!target) return;
-    if (!activeInstance || !realmTask) {
-      toast.error('当前配置页签中尚未添加「幻境挑战」任务，请先在主界面添加。');
-      return;
-    }
-    setTaskOptionValue(activeInstance.id, realmTask.id, 'RealmTypes', { type: 'select', caseName: target.realmType });
-    setTaskOptionValue(activeInstance.id, realmTask.id, target.optionKey, { type: 'select', caseName: target.caseName });
-    toast.success(`已将幻境挑战的兜底副本设为「${target.label}」`);
-  }
 
   async function applyGlowPrepPlan(mode: 'replace' | 'add') {
     if (!accountKey || !entries.length) return;
@@ -72,13 +58,10 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
       await saveMaterialPlan(accountKey, nextMaterials);
       onMaterialsChange?.(nextMaterials);
       if (shared.payload?.account_key === accountKey) shared.adoptMaterials(nextMaterials);
-      if (activeInstance && realmTask) {
-        const queue = realmQueue(realmTask.optionValues).map((entry) => entry.goal === 'renewal' ? { ...entry, enabled: true } : entry);
-        setTaskOptionValue(activeInstance.id, realmTask.id, 'RealmQueue', realmQueueOption(queue));
-      }
-      toast.success(realmTask
-        ? (mode === 'add' ? '已累加到换新材料目标，并加入幻境挑战顺序' : '已设为换新材料目标，并加入幻境挑战顺序')
-        : '已保存换新材料目标；请在主界面添加「幻境挑战」任务后开启刷取顺序中的换新材料');
+      const saved = mode === 'add' ? '已累加到换新材料目标' : '已设为换新材料目标';
+      toast.success(realmTask && realmGoalRank(realmTask.optionValues, 'renewal') !== null
+        ? saved
+        : `${saved}；在幻境挑战的刷取顺序中打开「换新材料」后会自动刷取`);
     } catch (err) {
       toast.error(String(err));
     }
@@ -92,7 +75,7 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     <div className="mt-2.5 space-y-2.5">
       {accountKey && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs">
-          <span className="text-text-secondary">设为幻境挑战「换新材料」目标（可在收集进度 → 换新中调整）：</span>
+          <span className="text-text-secondary">设为「换新材料」备料目标（可在收集进度 → 换新中调整）：</span>
           <div className="flex flex-wrap gap-1.5">
             <button type="button" onClick={() => void applyGlowPrepPlan('replace')}
               className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover">
@@ -109,10 +92,6 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
       {entries.map(([id, count]) => {
         const name = catalog.material_names[id] ?? id;
         const target = MATERIAL_REALM_TARGETS[id];
-        const currentCase = target && realmValues[target.optionKey]?.type === 'select'
-          ? (realmValues[target.optionKey] as { type: 'select'; caseName: string }).caseName
-          : undefined;
-        const isCurrentTarget = !!target && activeRealmType === target.realmType && currentCase === target.caseName;
 
         return (
           <div key={id} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-bg-primary px-3 py-2 text-xs">
@@ -121,17 +100,6 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
               <strong className="ml-1.5 tabular-nums text-accent">{number(count)}</strong>
               {target && <p className="mt-0.5 truncate text-[11px] text-text-muted">{target.label}</p>}
             </div>
-            {target && realmTask && (
-              <button type="button" onClick={() => applyRealmTarget(id)}
-                className={clsx(' inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[11px] transition-colors',
-                  isCurrentTarget
-                    ? 'bg-accent/15 font-medium text-accent'
-                    : 'border border-border bg-bg-secondary text-text-secondary hover:border-accent hover:text-accent')}
-                title={`把幻境挑战的兜底副本设为：${target.label}`}>
-                {isCurrentTarget ? <Check className="h-3 w-3" /> : <Flame className="h-3 w-3" />}
-                {isCurrentTarget ? '已设兜底' : '设为兜底'}
-              </button>
-            )}
           </div>
         );
       })}

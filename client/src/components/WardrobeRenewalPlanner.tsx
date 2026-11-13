@@ -123,8 +123,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
       queueStatus={usingTargets
         ? <>当前按手动材料目标刷取 <button type="button" onClick={() => savePlan({})} className="ml-1 text-accent hover:underline">改用上面的衣服计划</button></>
         : totals.missingKinds ? `还差 ${totals.missingKinds} 种材料` : '材料已备齐，轮到时直接交给下一项'}
-      queueHint="幻境挑战每批前按当前衣柜和已填等级重新计算缺口，刷泡泡、丝线和噗灵。升级或焕新后请在列表里更新等级。"
-      queueDisabled={!planned.length && !usingTargets} />
+      queueHint="幻境挑战每批前按当前衣柜和已填等级重新计算缺口，刷泡泡、丝线和噗灵。升级或焕新后请在列表里更新等级。" />
     <PlanLayout
       list={<PlanListPanel title={mode === 'all' ? '全收集包含的衣服' : '想养成哪些衣服'} mode={mode}
         includedCount={planned.length} selectedCount={pickedCount} onClear={() => savePlan({ mode: 'selected', targets: {} })}

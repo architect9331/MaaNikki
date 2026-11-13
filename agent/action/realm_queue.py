@@ -1,4 +1,4 @@
-"""Maa action for the realm challenge priority queue (换新材料 / 制衣材料 / 五星闪光 → 兜底)."""
+"""Maa action for the realm challenge priority queue (每周幻境 / 换新材料 / 制衣材料 / 五星闪光 → 兜底)."""
 from __future__ import annotations
 
 import traceback
@@ -14,7 +14,8 @@ from collection.realm_goals import GOAL_LABELS, parse_realm_queue
 from .blessing_pursuit import glow_shortfall
 
 FALLBACK_KINDS = {"MaaNikki_Jihua": "jihua", "MaaNikki_Bless": "bless", "MaaNikki_Monster": "monster"}
-HANDOFF_NODES = {"glow": "MaaNikki_BlessingPursuit", "fallback": "MaaNikki_RealmEnergy", "done": "MaaNikki_RealmReview"}
+HANDOFF_NODES = {"glow": "MaaNikki_BlessingPursuit", "fallback": "MaaNikki_RealmEnergy",
+                 "done": "MaaNikki_RealmReview", "weekly": "MaaNikki_RealmWeekly"}
 
 
 def fallback_kind(context) -> str | None:
@@ -35,14 +36,31 @@ class RealmQueueAction(CustomAction):
         node = argv.node_name
         failed = False
         last_kind = None
+        param = parameters(context, node)
         try:
-            goals = parse_realm_queue(parameters(context, node).get("order"))
+            order = param.get("order")
+            goals = parse_realm_queue(order)
             organize = parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto")
+            resumed = param.get("after_goal")
+            if resumed in goals:
+                goals = goals[goals.index(resumed) + 1:]
+            weekly_next = False
+            if "weekly" in goals:
+                index = goals.index("weekly")
+                # Goals ranked above the weekly realm get the energy first.
+                goals, weekly_next = goals[:index], True
+            if not resumed:
+                labels = [GOAL_LABELS[goal] for goal in parse_realm_queue(order)]
+                rt.log("幻境挑战顺序：" + " → ".join(labels + ["兜底副本"]) + "。")
             if goals:
-                rt.log("幻境挑战顺序：" + " → ".join(GOAL_LABELS[goal] for goal in goals) + " → 兜底副本。")
                 handoff, last_kind = run_material_goals(rt, goals, lambda role: glow_shortfall(rt, role, organize))
             else:
                 handoff = "fallback"
+            if weekly_next:
+                if handoff == "fallback":
+                    handoff = "weekly"
+                elif handoff == "glow":
+                    rt.log("幻境挑战顺序：五星闪光排在每周幻境前，收齐所选范围后才会继续每周幻境。")
         except TaskStopped:
             raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
@@ -52,6 +70,11 @@ class RealmQueueAction(CustomAction):
             handoff, failed = "fallback", True
         if rt.stopped:
             return False
+        if handoff == "weekly":
+            # The weekly node returns here; the resumed queue continues after it.
+            return context.override_pipeline({node: {
+                "next": [HANDOFF_NODES["weekly"]],
+                "custom_action_param": {**param, "after_goal": "weekly"}}})
         kind = "bless" if handoff == "glow" else fallback_kind(context) if handoff == "fallback" else last_kind
         run_state.update_realm(rt, kind=kind, collection=handoff == "glow")
         overrides = {node: {"next": [HANDOFF_NODES[handoff]]}}

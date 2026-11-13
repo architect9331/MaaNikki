@@ -322,9 +322,7 @@ function OptionListRenderer({
             disabled={disabled || optionIncompatible}
             labelOverride={taskName === 'realm_challenge' ? realmOptionLabel(group.optionKey, optionValues) : undefined}
             inactiveHint={taskName === 'realm_challenge' && !realmOptionActive(group.optionKey, optionValues)
-              ? group.optionKey === 'WeeklyTargets'
-                ? { label: '周本优先已关闭', description: '开启“优先完成每周幻境”后，按此处所选目标使用本周剩余挑战次数。' }
-                : { label: '补分备用', description: '朝夕心愿允许用活跃能量补分时，会根据当天心愿按需使用此处设置。剩余活跃能量按上方所选消耗方式处理。' }
+              ? { label: '补分备用', description: '朝夕心愿允许用活跃能量补分时，会根据当天心愿按需使用此处设置。剩余活跃能量按上方所选消耗方式处理。' }
               : undefined}
             controllerIncompatible={optionIncompatible}
             parentIncompatibilityReason={parentIncompatibilityReason}
@@ -654,6 +652,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
     for (const optionKey of taskDef.option || []) {
       if (task.taskName === 'realm_challenge' && (
         optionKey === 'RealmQueue'
+        || optionKey === 'WeeklyTargets'
         || optionKey === 'CollectionWorkflow'
         || !realmOptionActive(optionKey, task.optionValues)
       )) {
@@ -1271,10 +1270,12 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                   taskId={task.id}
                   taskName={task.taskName}
                   optionKeys={task.taskName === 'realm_challenge'
+                    // The queue card holds the order, the weekly levels and the blessing workflow.
                     ? (taskDef.option || []).filter((key) => key !== 'RealmQueue'
+                      && key !== 'WeeklyTargets'
                       && key !== 'CollectionWorkflow'
                       && !realmOptionBackup(key, task.optionValues)
-                      && (realmOptionActive(key, task.optionValues) || key === 'WeeklyTargets'))
+                      && realmOptionActive(key, task.optionValues))
                     : taskDef.option || []}
                   optionValues={task.optionValues}
                   disabled={!canEditOptions || isIncompatible}

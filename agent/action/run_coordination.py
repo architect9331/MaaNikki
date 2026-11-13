@@ -55,8 +55,12 @@ class RunCoordinationAction(CustomAction):
                     "on_error": ["MaaNikki_RealmReviewFailed"],
                     "custom_action_param": {
                         **parameters(context, "MaaNikki_BlessingPursuit"),
+                        "resume_queue": True,
                         "return_page": "calendar"}}
                 overrides["MaaNikki_RealmQueue"] = {
+                    "next": ["MaaNikki_RealmEnergy"],
+                    "custom_action_param": {
+                        **parameters(context, "MaaNikki_RealmQueue"), "after_goal": ""},
                     "on_error": ["MaaNikki_RealmReviewFailed"]}
                 return context.override_pipeline(overrides)
             if options.get("stage") != "settle":

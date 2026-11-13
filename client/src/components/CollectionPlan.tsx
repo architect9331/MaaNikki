@@ -1,16 +1,17 @@
 import { Fragment, type ReactNode } from 'react';
-import { ChevronRight, ListPlus, Square, X } from 'lucide-react';
+import { ChevronRight, Settings2, X } from 'lucide-react';
 import clsx from 'clsx';
 import type { PlanMode } from '@/services/scoring/types';
-import { REALM_GOAL_LABELS, type RealmGoal } from '@/utils/nikkiOptions';
+import { REALM_GOAL_LABELS, type PlanGoal, type RealmGoal } from '@/utils/nikkiOptions';
 import { useRealmQueue } from './RealmQueueCard';
 import { HelpTip } from './ui/HelpTip';
-import { Segmented, primaryButton, secondaryButton } from './ui/FeaturePage';
+import { Segmented, secondaryButton } from './ui/FeaturePage';
 
 /**
  * Building blocks shared by every collection plan (制衣、换新、五星闪光).
  * Each plan opens with the same panel — what the numbers are based on, what is
- * in scope, and whether the realm challenge farms for it — followed by the
+ * in scope, and where the realm challenge farms for it (read-only: the order,
+ * its switches and the weekly realm are all set in the realm challenge task) — followed by the
  * same two columns: the items on the left, what they add up to on the right.
  */
 
@@ -41,12 +42,12 @@ function QueueChain({ goal }: { goal: RealmGoal }) {
 }
 
 export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChange, modeDetail, selectDisabledReason,
-  queueStatus, queueHint, queueDisabled, advice }: {
+  queueStatus, queueHint, advice }: {
   tone?: keyof typeof TONE_DOT;
   /** What this plan is calculated from, and how fresh that is. */
   basis: ReactNode;
   actions?: ReactNode;
-  goal: RealmGoal;
+  goal: PlanGoal;
   mode: PlanMode;
   onModeChange: (mode: PlanMode) => void;
   /** One line describing what the current scope covers. */
@@ -55,7 +56,6 @@ export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChang
   selectDisabledReason?: string;
   queueStatus: ReactNode;
   queueHint?: ReactNode;
-  queueDisabled?: boolean;
   advice?: { title: ReactNode; detail?: ReactNode; warn?: boolean };
 }) {
   const queue = useRealmQueue();
@@ -72,14 +72,11 @@ export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChang
         : <Segmented label="收集范围" value={mode} options={MODES} onChange={onModeChange} />}
       <span className="min-w-40 flex-1 text-xs leading-5 text-text-secondary">{selectDisabledReason && mode === 'all' ? `${selectDisabledReason} ` : ''}{modeDetail}</span>
     </Row>
-    <Row label="自动刷取" actions={<>
-      <button type="button" onClick={queue.openOrderCard} className="text-xs text-text-secondary hover:text-accent hover:underline">调整顺序</button>
-      {rank
-        ? <button type="button" onClick={() => queue.setEnabled(goal, false)} className={secondaryButton}><Square className="h-3.5 w-3.5" />移出顺序</button>
-        : <button type="button" onClick={() => queue.setEnabled(goal, true)} disabled={queueDisabled} className={primaryButton}><ListPlus className="h-3.5 w-3.5" />加入幻境挑战</button>}
-    </>}>
+    <Row label="自动刷取" actions={
+      <button type="button" onClick={queue.openOrderCard} className={secondaryButton}><Settings2 className="h-3.5 w-3.5" />刷取设置</button>
+    }>
       <span className={clsx('inline-flex items-center gap-1 text-xs font-medium', rank ? 'text-accent' : 'text-text-primary')}>
-        {rank ? `幻境挑战第 ${rank} 位` : '未加入幻境挑战'}
+        {rank ? `刷取顺序第 ${rank} 位` : `未开启（在幻境挑战的刷取顺序中打开「${REALM_GOAL_LABELS[goal]}」）`}
         {queueHint && <HelpTip content={queueHint} label="自动刷取说明" />}
       </span>
       <QueueChain goal={goal} />

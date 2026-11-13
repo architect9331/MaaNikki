@@ -7,7 +7,6 @@
       "stage": "begin_realm"
     },
     "next": [
-      "MaaNikki_RealmWeekly",
       "MaaNikki_RealmQueue"
     ],
     "focus": {
@@ -16,7 +15,6 @@
     }
   },
   "MaaNikki_RealmWeekly": {
-    "enabled": true,
     "recognition": "DirectHit",
     "action": "Custom",
     "custom_action": "nikki.weekly_challenge",

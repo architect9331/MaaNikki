@@ -1,50 +1,11 @@
 import { useState, type ReactNode } from 'react';
-import { Check, Flame, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import clsx from 'clsx';
-import { toast } from 'sonner';
-import { useAppStore } from '@/stores/appStore';
-import type { RealmMaterialTarget } from '@/services/scoring/heartPresets';
 import { Tile } from './ui/FeaturePage';
 import { MATERIAL_GROUP_LABELS, type MaterialGroup, type MaterialRow, type MaterialTotals } from '@/services/scoring/materialPlanning';
 
 const num = (value: number) => value.toLocaleString('zh-CN');
 const stockField = 'w-20 rounded-md border border-border bg-bg-primary px-1.5 py-0.5 text-right text-xs tabular-nums outline-none focus:border-accent';
-
-/** Points the realm challenge's fallback (兜底) stage at one material. */
-export function useRealmChallenge() {
-  const instances = useAppStore((state) => state.instances);
-  const activeInstanceId = useAppStore((state) => state.activeInstanceId);
-  const setTaskOptionValue = useAppStore((state) => state.setTaskOptionValue);
-  const instance = instances.find((item) => item.id === activeInstanceId) ?? instances[0];
-  const task = instance?.selectedTasks.find((item) => item.taskName === 'realm_challenge');
-  const values = task?.optionValues ?? {};
-  const realmType = values.RealmTypes?.type === 'select' ? values.RealmTypes.caseName : 'Bless';
-
-  const isCurrent = (target: RealmMaterialTarget) => {
-    const option = values[target.optionKey];
-    return realmType === target.realmType && option?.type === 'select' && option.caseName === target.caseName;
-  };
-  const apply = (target: RealmMaterialTarget) => {
-    if (!instance || !task) {
-      toast.error('当前配置中还没有「幻境挑战」任务，请先在主界面添加。');
-      return;
-    }
-    setTaskOptionValue(instance.id, task.id, 'RealmTypes', { type: 'select', caseName: target.realmType });
-    setTaskOptionValue(instance.id, task.id, target.optionKey, { type: 'select', caseName: target.caseName });
-    toast.success(`已将幻境挑战的兜底副本设为「${target.label}」`);
-  };
-  return { hasTask: !!task, isCurrent, apply };
-}
-
-function SourceButton({ target }: { target: RealmMaterialTarget }) {
-  const realm = useRealmChallenge();
-  const current = realm.isCurrent(target);
-  return <button type="button" onClick={() => realm.apply(target)} title={`把幻境挑战的兜底副本设为：${target.label}`}
-    className={clsx('inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] transition-colors',
-      current ? 'bg-accent/15 font-medium text-accent' : 'border border-border text-text-secondary hover:border-accent hover:text-accent')}>
-    {current ? <Check className="h-3 w-3" /> : <Flame className="h-3 w-3" />}{current ? '已设兜底' : '设为兜底'}
-  </button>;
-}
 
 function MaterialLine({ row, onStockChange }: { row: MaterialRow; onStockChange?: (id: string, value: number) => void }) {
   const done = row.owned !== null && row.missing === 0;
@@ -63,7 +24,6 @@ function MaterialLine({ row, onStockChange }: { row: MaterialRow; onStockChange?
       <span className={clsx('w-28 text-right tabular-nums', done ? 'text-success' : row.owned === null ? 'text-text-muted' : 'font-semibold text-accent')}>
         {row.owned === null ? '库存未记录' : done ? '已够' : `还差 ${num(row.missing)}`}
       </span>
-      {row.source ? <SourceButton target={row.source} /> : <span className="w-[52px]" />}
     </div>
     {row.owned !== null && <div className="col-span-2 h-1 overflow-hidden rounded-full bg-border">
       <div className={clsx('h-full rounded-full', done ? 'bg-success' : 'bg-accent')} style={{ width: `${pct}%` }} />

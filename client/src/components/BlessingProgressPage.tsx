@@ -248,8 +248,7 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
           ? '全部未收集的五星闪光颜色，按出新色概率跨套组挑选副本。'
           : <>只追勾选套组的缺色，收齐后交给顺序里的下一项，已选 {number(scopeSets.length)} 个套组。</>}
         queueStatus={<>{isFarmOnly ? '只刷胚子' : '全流程托管'} · {progress.known ? (remaining > 0 ? `还差 ${number(remaining)} 色` : '所选范围已收齐') : '首次运行会先整理仓库'}</>}
-        queueHint="执行方式、保留噗灵与爆仓分解在主界面幻境挑战设置中调整。所选范围收齐前会优先刷闪光，建议把急需的材料排在前面。"
-        queueDisabled={planMode === 'selected' && !scopeSets.length}
+        queueHint="顺序、执行方式、保留噗灵与爆仓分解都在「刷取设置」中调整。所选范围收齐前会一直刷闪光，建议把急需的材料排在前面。"
         advice={advice} />
       <Notices items={notices} />
 

@@ -114,8 +114,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         ? <>全部未制作的设计图，共 {num(uncraftedScoped.length)} 张；做好的衣服下次读衣柜后自动移出。</>
         : <>只为勾选的套装或部件备料，已选 {num(picked.length)} 张。</>}
       queueStatus={crystalShort ? `还差 ${crystalShort} 种试炼晶石` : '试炼晶石已备齐，轮到时直接交给下一项'}
-      queueHint="幻境挑战按缺口刷取魔物试炼晶石；噗灵、丝线和大世界采集物请按清单自行准备。"
-      queueDisabled={!planned.length} />
+      queueHint="幻境挑战按缺口刷取魔物试炼晶石；噗灵、丝线和大世界采集物请按清单自行准备。" />
     <PlanLayout
       list={<PlanListPanel title={mode === 'all' ? '全收集包含的设计图' : '想做哪些衣服'} mode={mode}
         includedCount={planned.length} selectedCount={picked.length} onClear={() => setPlan('selected', new Set())}

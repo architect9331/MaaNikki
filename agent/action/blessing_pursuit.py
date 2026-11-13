@@ -124,17 +124,27 @@ class BlessingPursuitAction(CustomAction):
                 ROOT,
                 parameters(context, "MaaNikki_Pursuit_StatsOption").get("enabled") is not False,
             )
-            ok = FiveStarPursuit(pursuit, decompose_duplicates=decompose, auto_bling=auto_bling,
-                                 chance_priority=True, share_statistics=share,
-                                 farm_only=farm_only, reserve_bling=reserve_bling,
-                                 focus_sets=blessing_focus(AccountState.for_runtime(ROOT, rt).load())).run()
+            flow = FiveStarPursuit(pursuit, decompose_duplicates=decompose, auto_bling=auto_bling,
+                                  chance_priority=True, share_statistics=share,
+                                  farm_only=farm_only, reserve_bling=reserve_bling,
+                                  focus_sets=blessing_focus(AccountState.for_runtime(ROOT, rt).load()))
+            ok = flow.run()
             if not ok and not rt.stopped:
                 rt.diagnostic("blessing_pursuit", "祝福闪光处理未完成")
             progress_path = pursuit.report.get("inventory", {}).get("path") or pursuit.report.get("startup", {}).get("path")
             rt.log(f"五星处理记录：{folder / 'pursuit.json'}。"
                    f"收集进度：{progress_path or pursuit.store.reference(pursuit.store.last_scan_path)}。", detail=True)
             if options.get("return_page") == "calendar":
-                return rt.ui.calendar() and ok
+                if not rt.ui.calendar() or not ok:
+                    return False
+                if options.get("resume_queue") and flow.target_complete():
+                    # Completion is explicit: a normal pause (energy/materials)
+                    # must not start a second pursuit or skip unfinished colours.
+                    return context.override_pipeline({
+                        argv.node_name: {"next": ["MaaNikki_RealmQueue"]},
+                        "MaaNikki_RealmQueue": {"custom_action_param": {
+                            **parameters(context, "MaaNikki_RealmQueue"), "after_goal": "glow"}}})
+                return True
             _, finished = rt.finish(argv.node_name)
             return finished and ok
         except TaskStopped as error:

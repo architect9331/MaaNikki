@@ -8,9 +8,8 @@
                 "daily"
             ],
             "default_check": true,
-            "description": "先处理所选周本，再按「刷取顺序」使用剩余活跃能量：每批挑战前选择排在最前、仍有缺口的目标（换新材料、制衣材料、五星闪光），都完成后交给兜底副本。与朝夕心愿同轮运行时，请排在朝夕心愿之后。",
+            "description": "按「刷取顺序」使用活跃能量：每批挑战前选择排在最前、仍有缺口的目标（每周幻境、换新材料、制衣材料、五星闪光），都完成后交给兜底副本。与朝夕心愿同轮运行时，请排在朝夕心愿之后。",
             "option": [
-                "WeeklyEnabled",
                 "WeeklyTargets",
                 "RealmQueue",
                 "RealmTypes",
@@ -27,32 +26,6 @@
         }
     ],
     "option": {
-        "WeeklyEnabled": {
-            "type": "switch",
-            "label": "优先完成每周幻境",
-            "description": "优先完成本周尚余次数的每周幻境，然后继续处理剩余活跃能量。",
-            "cases": [
-                {
-                    "name": "Yes",
-                    "label": "开启",
-                    "pipeline_override": {
-                        "MaaNikki_RealmWeekly": {
-                            "enabled": true
-                        }
-                    }
-                },
-                {
-                    "name": "No",
-                    "label": "关闭",
-                    "pipeline_override": {
-                        "MaaNikki_RealmWeekly": {
-                            "enabled": false
-                        }
-                    }
-                }
-            ],
-            "default_case": "Yes"
-        },
         "RealmTypes": {
             "type": "select",
             "label": "兜底副本",
@@ -687,7 +660,7 @@
         "WeeklyTargets": {
             "type": "checkbox",
             "label": "每周幻境目标",
-            "description": "本周仍有挑战次数时，按所选目标依次挑战，每个目标一次。",
+            "description": "刷取顺序中的每周幻境轮到时，若本周仍有挑战次数，按所选目标依次挑战，每个目标一次。",
             "cases": [
                 {
                     "name": "Qiggeda",
@@ -718,14 +691,14 @@
         "RealmQueue": {
             "type": "input",
             "label": "刷取顺序",
-            "description": "按顺序排列换新材料、制衣材料与五星闪光三个目标，可分别开关。每批挑战前选择排在最前、仍有缺口的目标；全部完成或未开启时，剩余活跃能量交给下方兜底副本。",
+            "description": "按顺序排列每周幻境、换新材料、制衣材料与五星闪光，可分别开关。每批挑战前选择排在最前、仍有缺口的目标；全部完成或未开启时，剩余活跃能量交给下方兜底副本。",
             "inputs": [
                 {
                     "name": "order",
                     "label": "刷取顺序",
-                    "default": "-renewal,-crafting,-glow",
+                    "default": "weekly,-renewal,-crafting,-glow",
                     "pipeline_type": "string",
-                    "verify": "^-?(renewal|crafting|glow)(,-?(renewal|crafting|glow))*$",
+                    "verify": "^-?(weekly|renewal|crafting|glow)(,-?(weekly|renewal|crafting|glow))*$",
                     "pattern_msg": "请在任务设置的刷取顺序卡片中调整"
                 }
             ],

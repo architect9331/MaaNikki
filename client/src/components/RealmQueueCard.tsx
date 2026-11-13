@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { AlertTriangle, Check, ChevronRight, GripVertical, Hammer, Shield, Sparkles, Shirt } from 'lucide-react';
+import { useMemo, type ReactNode } from 'react';
+import { AlertTriangle, CalendarClock, Check, ChevronRight, GripVertical, Hammer, Shield, Sparkles, Shirt } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
@@ -10,14 +10,15 @@ import { useAccountStateStore } from '@/stores/accountStateStore';
 import { openCollectionHub, type CollectionTab } from '@/stores/collectionHubStore';
 import { getBlessingProgress } from '@/utils/blessingProgress';
 import {
-  REALM_GOAL_LABELS, realmCollectionWorkflow, realmQueue, realmQueueOption, realmReserveBling,
+  REALM_GOAL_LABELS, WEEKLY_TARGETS, realmCollectionWorkflow, realmQueue, realmQueueOption, realmReserveBling, weeklyTargets,
   type RealmGoal, type RealmQueueEntry,
 } from '@/utils/nikkiOptions';
 import type { OptionValue } from '@/types/interface';
 import { SwitchTrack } from './ui/SwitchTrack';
 
 export const REALM_QUEUE_CARD_ID = 'realm-queue-card';
-const GOAL_INFO: Record<RealmGoal, { icon: typeof Shirt; detail: string; tab: CollectionTab }> = {
+const GOAL_INFO: Record<RealmGoal, { icon: typeof Shirt; detail: string; tab?: CollectionTab }> = {
+  weekly: { icon: CalendarClock, detail: '本周仍有挑战次数时，依次挑战所选关卡各一次' },
   renewal: { icon: Shirt, detail: '按「换新」计划刷泡泡、丝线与噗灵', tab: 'renewal' },
   crafting: { icon: Hammer, detail: '按「制衣」计划刷魔物试炼晶石', tab: 'crafting' },
   glow: { icon: Sparkles, detail: '按「祝福闪光」计划选本追新色，所选范围收齐后跳过', tab: 'blessing' },
@@ -48,11 +49,6 @@ export function useRealmQueue() {
     const index = enabledGoals.indexOf(goal);
     return index < 0 ? null : index + 1;
   };
-  const setEnabled = (goal: RealmGoal, enabled: boolean) => {
-    if (save(entries.map((entry) => entry.goal === goal ? { ...entry, enabled } : entry))) {
-      toast.success(enabled ? `已加入幻境挑战顺序：${REALM_GOAL_LABELS[goal]}` : `已移出幻境挑战顺序：${REALM_GOAL_LABELS[goal]}`);
-    }
-  };
   const openOrderCard = () => {
     if (!instance || !task) {
       toast.error('当前配置中还没有「幻境挑战」任务，请先在主界面添加。');
@@ -62,11 +58,11 @@ export function useRealmQueue() {
     if (!task.expanded) toggleTaskExpanded(instance.id, task.id);
     window.setTimeout(() => document.getElementById(REALM_QUEUE_CARD_ID)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
   };
-  return { hasTask: !!task, taskEnabled: !!task?.enabled, entries, enabledGoals, rank, setEnabled, save, openOrderCard };
+  return { hasTask: !!task, taskEnabled: !!task?.enabled, entries, enabledGoals, rank, save, openOrderCard };
 }
 
-function QueueRow({ entry, rank, disabled, warn, onToggle }: {
-  entry: RealmQueueEntry; rank: number | null; disabled: boolean; warn: boolean; onToggle: (enabled: boolean) => void;
+function QueueRow({ entry, rank, disabled, warn, onToggle, children }: {
+  entry: RealmQueueEntry; rank: number | null; disabled: boolean; warn: boolean; onToggle: (enabled: boolean) => void; children?: ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.goal, disabled });
   const info = GOAL_INFO[entry.goal];
@@ -84,11 +80,12 @@ function QueueRow({ entry, rank, disabled, warn, onToggle }: {
     <div className="min-w-0 flex-1">
       <p className="font-semibold text-text-primary">{REALM_GOAL_LABELS[entry.goal]}</p>
       <p className="truncate text-[11px] text-text-secondary">{info.detail}</p>
-      {warn && <p className="mt-0.5 flex items-center gap-1 text-[11px] text-warning"><AlertTriangle className="h-3 w-3 shrink-0" />所选范围收齐前会优先刷闪光，建议把急需的材料排在前面</p>}
+      {children}
+      {warn && <p className="mt-0.5 flex items-center gap-1 text-[11px] text-warning"><AlertTriangle className="h-3 w-3 shrink-0" />所选范围收齐前会一直刷闪光，排在后面的目标要等收齐后才会轮到</p>}
     </div>
-    <button type="button" onClick={() => openCollectionHub(info.tab)} className="inline-flex shrink-0 items-center text-[11px] text-text-secondary hover:text-accent">
+    {info.tab && <button type="button" onClick={() => openCollectionHub(info.tab!)} className="inline-flex shrink-0 items-center text-[11px] text-text-secondary hover:text-accent">
       查看计划<ChevronRight className="h-3 w-3" />
-    </button>
+    </button>}
     <button type="button" role="switch" aria-checked={entry.enabled} aria-label={`开启${REALM_GOAL_LABELS[entry.goal]}`} disabled={disabled}
       onClick={() => onToggle(!entry.enabled)}
       className="inline-flex shrink-0 items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50">
@@ -101,6 +98,24 @@ const WORKFLOW_MODES = [
   { id: 'Managed', title: '全流程托管', detail: '自动整理、按预期新色刷本、分解、升级并锁定满级新颜色' },
   { id: 'FarmOnly', title: '只刷胚子', detail: '按已收集颜色与仓库胚子数算期望选本刷取，升级与管理交给自己' },
 ] as const;
+
+/** The weekly realm levels, picked inside its queue row; at least one stays selected. */
+function WeeklyTargetPicker({ selected, disabled, onChange }: { selected: string[]; disabled: boolean; onChange: (next: string[]) => void }) {
+  return <div className="mt-1 flex flex-wrap items-center gap-1.5" role="group" aria-label="每周幻境目标">
+    {WEEKLY_TARGETS.map(({ id, label }) => {
+      const on = selected.includes(id);
+      const locked = on && selected.length <= 1;
+      return <button key={id} type="button" aria-pressed={on} disabled={disabled || locked}
+        title={locked ? '至少保留一个目标' : undefined}
+        onClick={() => onChange(on ? selected.filter((item) => item !== id) : WEEKLY_TARGETS.map((t) => t.id).filter((item) => item === id || selected.includes(item)))}
+        className={clsx('inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] transition-colors disabled:cursor-not-allowed',
+          on ? 'border-accent/50 bg-accent/10 font-medium text-accent' : 'border-border text-text-secondary hover:border-accent hover:text-accent',
+          disabled && 'opacity-60')}>
+        {on && <Check className="h-3 w-3" />}{label}
+      </button>;
+    })}
+  </div>;
+}
 
 /** 幻境挑战「刷取顺序」: ordered goals with switches, then the fixed fallback realm. */
 export function RealmQueueCard({ instanceId, taskId, values, disabled }: {
@@ -138,7 +153,10 @@ export function RealmQueueCard({ instanceId, taskId, values, disabled }: {
             const index = enabled.indexOf(entry.goal);
             return <QueueRow key={entry.goal} entry={entry} rank={index < 0 ? null : index + 1} disabled={disabled}
               warn={entry.goal === 'glow' && glowIndex >= 0 && glowIndex < enabled.length - 1}
-              onToggle={(on) => save(entries.map((item) => item.goal === entry.goal ? { ...item, enabled: on } : item))} />;
+              onToggle={(on) => save(entries.map((item) => item.goal === entry.goal ? { ...item, enabled: on } : item))}>
+              {entry.goal === 'weekly' && entry.enabled && <WeeklyTargetPicker selected={weeklyTargets(values)} disabled={disabled}
+                onChange={(next) => setTaskOptionValue(instanceId, taskId, 'WeeklyTargets', { type: 'checkbox', caseNames: next })} />}
+            </QueueRow>;
           })}
         </div>
       </SortableContext>

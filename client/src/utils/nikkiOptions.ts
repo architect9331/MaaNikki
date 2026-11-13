@@ -5,14 +5,23 @@ const REALM_MODE_TARGETS: Record<string, string> = {
 };
 const COLLECTION_MANAGED_OPTIONS = new Set(['CollectionReserveBling', 'CollectionBling', 'CollectionDecompose']);
 
-export type RealmGoal = 'renewal' | 'crafting' | 'glow';
+export type RealmGoal = 'weekly' | 'renewal' | 'crafting' | 'glow';
+/** Goals that farm toward a collection plan; the weekly realm has no plan. */
+export type PlanGoal = Exclude<RealmGoal, 'weekly'>;
 export interface RealmQueueEntry { goal: RealmGoal; enabled: boolean }
-export const REALM_GOALS: RealmGoal[] = ['renewal', 'crafting', 'glow'];
-export const REALM_GOAL_LABELS: Record<RealmGoal, string> = { renewal: '换新材料', crafting: '制衣材料', glow: '五星闪光' };
+export const REALM_GOALS: RealmGoal[] = ['weekly', 'renewal', 'crafting', 'glow'];
+export const REALM_GOAL_LABELS: Record<RealmGoal, string> = { weekly: '每周幻境', renewal: '换新材料', crafting: '制衣材料', glow: '五星闪光' };
+export const WEEKLY_TARGETS = [{ id: 'Qiggeda', label: '奇格格达' }, { id: 'Juan', label: '卷卷' }] as const;
 
-/** "renewal,-crafting,glow": order is priority, a leading "-" keeps a switched-off goal's place. */
+const hasWeeklyToken = (raw: string | undefined) =>
+  String(raw ?? '').split(',').some((token) => token.trim().replace(/^-/, '') === 'weekly');
+
+/**
+ * "weekly,renewal,-crafting,glow": order is priority, a leading "-" keeps a switched-off goal's place.
+ * Orders saved before the weekly realm joined the queue ran it first, so it leads them switched on.
+ */
 export function parseRealmQueue(raw: string | undefined): RealmQueueEntry[] {
-  const entries: RealmQueueEntry[] = [];
+  const entries: RealmQueueEntry[] = hasWeeklyToken(raw) ? [] : [{ goal: 'weekly', enabled: true }];
   for (const token of String(raw ?? '').split(',')) {
     const name = token.trim().replace(/^-/, '') as RealmGoal;
     if (REALM_GOALS.includes(name) && !entries.some((entry) => entry.goal === name)) {
@@ -60,6 +69,12 @@ export function realmReserveBling(values?: Record<string, OptionValue>): number 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
+/** Selected weekly realm levels; an unsaved option means the default of both. */
+export function weeklyTargets(values?: Record<string, OptionValue>): string[] {
+  const option = values?.WeeklyTargets;
+  return option?.type === 'checkbox' ? option.caseNames : WEEKLY_TARGETS.map((target) => target.id);
+}
+
 const fallbackRealm = (values: Record<string, OptionValue>) =>
   values.RealmTypes?.type === 'select' ? values.RealmTypes.caseName : 'Bless';
 
@@ -72,11 +87,8 @@ export function realmOptionLabel(key: string, values: Record<string, OptionValue
 export function realmOptionActive(key: string, values: Record<string, OptionValue>): boolean {
   const collection = realmCollectionEnabled(values);
   const farmOnly = realmFarmOnlyEnabled(values);
-  if (key === 'WeeklyEnabled' || key === 'RealmQueue' || key === 'RealmTypes') return true;
-  if (key === 'WeeklyTargets') {
-    const weekly = values.WeeklyEnabled;
-    return weekly?.type !== 'switch' || weekly.value;
-  }
+  if (key === 'RealmQueue' || key === 'RealmTypes') return true;
+  if (key === 'WeeklyTargets') return realmGoalRank(values, 'weekly') !== null;
   if (key === 'CollectionWorkflow' || key === 'CollectionOrganize') return collection;
   if (COLLECTION_MANAGED_OPTIONS.has(key)) return collection && !farmOnly;
   const current = fallbackRealm(values);
@@ -95,28 +107,40 @@ export function realmOptionBackup(key: string, values: Record<string, OptionValu
 }
 
 /**
- * The former realm mode switches (五星全收集 / 制衣材料全收集) and the standalone
- * 焕新材料筹备 task become goals of one queue; the realm type stays the fallback.
+ * The former realm mode switches (五星全收集 / 制衣材料全收集), the standalone
+ * 焕新材料筹备 task and the 优先完成每周幻境 switch become goals of one queue;
+ * the realm type stays the fallback.
  */
 export function migrateRealmQueueValues(values: Record<string, OptionValue>, renewalFirst = false): Record<string, OptionValue> {
-  const legacy = 'CollectionMode' in values || 'CraftingCollectionMode' in values;
+  const legacy = 'CollectionMode' in values || 'CraftingCollectionMode' in values || 'WeeklyEnabled' in values;
   if (!legacy && !renewalFirst) return values;
   const next = { ...values };
   const switchOn = (key: string) => next[key]?.type === 'switch' && (next[key] as { value: boolean }).value;
+  const saved = next.RealmQueue?.type === 'input' ? next.RealmQueue.values.order : undefined;
   let entries: RealmQueueEntry[];
-  if (next.RealmQueue?.type === 'input') {
+  if (saved !== undefined) {
     entries = realmQueue(next);
   } else {
     const glow = switchOn('CollectionMode');
     entries = [
+      { goal: 'weekly', enabled: true },
       { goal: 'renewal', enabled: false },
       { goal: 'crafting', enabled: !glow && switchOn('CraftingCollectionMode') },
       { goal: 'glow', enabled: glow },
     ];
   }
-  if (renewalFirst) entries = [{ goal: 'renewal', enabled: true }, ...entries.filter((entry) => entry.goal !== 'renewal')];
+  // The weekly realm used to run before everything else while its switch was on.
+  if (!hasWeeklyToken(saved) && next.WeeklyEnabled?.type === 'switch') {
+    const weekly = next.WeeklyEnabled.value;
+    entries = entries.map((entry) => entry.goal === 'weekly' ? { ...entry, enabled: weekly } : entry);
+  }
+  if (renewalFirst) {
+    const weekly = entries.filter((entry) => entry.goal === 'weekly');
+    entries = [...weekly, { goal: 'renewal', enabled: true }, ...entries.filter((entry) => entry.goal !== 'renewal' && entry.goal !== 'weekly')];
+  }
   delete next.CollectionMode;
   delete next.CraftingCollectionMode;
+  delete next.WeeklyEnabled;
   next.RealmQueue = realmQueueOption(entries);
   return next;
 }
