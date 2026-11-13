@@ -273,7 +273,11 @@ class StartGameAction(CustomAction):
                     return complete()
                 return incomplete()
             elif not enter and not login:
-                if (intro_logged and not entered) or runtime.ui.asset("IconUILoading", threshold=.99):
+                # A confirmed download owns its unrecognized transition frames.
+                # Keep polling startup pages so RestartConfirm can hand the old
+                # window back to bootstrap; generic Esc recovery cannot do that.
+                if (update_waiting or (intro_logged and not entered)
+                        or runtime.ui.asset("IconUILoading", threshold=.99)):
                     unknown_since = None
                 else:
                     # Allow a short unrecognized transition before invoking
