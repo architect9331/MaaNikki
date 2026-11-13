@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BookOpen, Calculator, Check, Compass, LibraryBig, RefreshCw, Route, Sparkles, Star, X } from 'lucide-react';
+import { BookOpen, Calculator, Check, ChevronRight, Compass, LibraryBig, RefreshCw, Route, Sparkles, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
@@ -12,6 +12,7 @@ import { isTauri } from '@/utils/paths';
 import { useAppStore } from '@/stores/appStore';
 import { ModalPortal, useModalFocusTrap } from './ui/Modal';
 import { FeatureTile } from './FeatureTile';
+import { Tooltip } from './ui/Tooltip';
 
 function MeteorIcon({ className }: { className?: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
@@ -143,25 +144,40 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
     const value = unavailable ? plansLoading ? '加载中' : '读取失败'
       : progress && progress.total > 0 ? `${Math.floor(progress.done / progress.total * 100)}%` : '尚无记录';
     const detail = !unavailable && progress ? `${progress.done} / ${progress.total} ${unit}` : value;
-    return { id, label, value, detail };
+    const percentage = !unavailable && progress && progress.total > 0 ? progress.done / progress.total * 100 : null;
+    return { id, label, value, detail, percentage };
   });
   const wardrobeBusy = ['starting', 'reading', 'stopping'].includes(wardrobeStatus);
   const resonanceError = resonance.connectionError || resonance.status.error;
   const explorationBusy = exploration.status === 'starting' || exploration.status === 'stopping';
+  const collectionStatus = error ? '账号状态读取失败' : collections.map((item) => `${item.label} ${item.value}`).join('，');
+  const collectionHint = <div className="space-y-1"><p className="font-medium">收集进度</p>
+    {error ? <p>{error}</p> : collections.map((item) => <p key={item.id} className="flex justify-between gap-4 text-text-secondary"><span>{item.label}</span><span>{item.detail}</span></p>)}
+    <p className="text-text-muted">衣柜按本地套装统计；各项独立计算。</p>
+  </div>;
 
   const tiles = <>
-    <FeatureTile icon={LibraryBig} title="收集进度" compact={compact} warn={Boolean(error || planError)} className="col-span-full"
-      status={error ? '账号状态读取失败' : collections.map((item) => `${item.label} ${item.value}`).join('，')}
-      statusDetail={!error && <span className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
-        {collections.map((item) => <span key={item.id} className="flex min-w-0 items-center justify-between gap-1 text-[11px]">
-          <span>{item.label}</span><span>{item.value}</span>
-        </span>)}
-      </span>}
-      tooltip={<div className="space-y-1"><p className="font-medium">收集进度</p>
-        {error ? <p>{error}</p> : collections.map((item) => <p key={item.id} className="flex justify-between gap-4 text-text-secondary"><span>{item.label}</span><span>{item.detail}</span></p>)}
-        <p className="text-text-muted">衣柜按本地套装统计；各项独立计算，不合并为总完成率。</p>
-      </div>}
-      onClick={() => open('blessing')} />
+    {compact ? <FeatureTile icon={LibraryBig} title="收集进度" compact warn={Boolean(error || planError)}
+      status={collectionStatus} tooltip={collectionHint} onClick={() => open('blessing')} />
+      : <Tooltip side="bottom" content={collectionHint}>
+        <button type="button" onClick={() => open('blessing')} aria-label={`收集进度：${collectionStatus}`}
+          className="col-span-full min-w-0 rounded-xl border border-border bg-bg-secondary px-3 py-3 text-left transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent">
+          <span className="mb-3 flex items-center gap-2 text-sm font-medium text-text-primary">
+            <LibraryBig className="h-4 w-4 text-accent-secondary" />收集进度
+            <ChevronRight className="ml-auto h-3.5 w-3.5 text-text-muted" />
+          </span>
+          {error ? <span className="text-xs text-warning">账号状态读取失败</span>
+            : <span className="grid grid-cols-4 divide-x divide-border">
+              {collections.map((item) => <span key={item.id} className="min-w-0 px-2 first:pl-0 last:pr-0">
+                <span className="block truncate text-[10px] text-text-secondary">{item.label}</span>
+                <span className={clsx('mt-1 block text-sm font-semibold tabular-nums', item.percentage === null ? 'text-text-muted' : 'text-text-primary')}>{item.value}</span>
+                <span className="mt-2 block h-1 overflow-hidden rounded-full bg-border/70">
+                  <span className="block h-full rounded-full bg-accent/70" style={{ width: `${item.percentage ?? 0}%` }} />
+                </span>
+              </span>)}
+            </span>}
+        </button>
+      </Tooltip>}
     <FeatureTile icon={Calculator} title="搭配计算" compact={compact} busy={wardrobeBusy}
       status={wardrobeBusy || wardrobeStatus === 'error' ? wardrobeLabels[wardrobeStatus] : wardrobe ? `${wardrobe.scanned_count} 件` : '尚未读取'}
       warn={wardrobeStatus === 'error'}

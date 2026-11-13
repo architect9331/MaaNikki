@@ -16,11 +16,10 @@ export interface FeatureTileToggle {
  * the icon-only form shown in the top bar while the side panel is collapsed, so
  * their switch moves to the feature's own page.
  */
-export function FeatureTile({ icon: Icon, title, status, statusDetail, tooltip, onClick, warn, busy, toggle, compact, className }: {
+export function FeatureTile({ icon: Icon, title, status, tooltip, onClick, warn, busy, toggle, compact, className }: {
   icon: ComponentType<{ className?: string }>;
   title: string;
   status: string;
-  statusDetail?: ReactNode;
   tooltip?: ReactNode;
   onClick: () => void;
   warn?: boolean;
@@ -51,7 +50,7 @@ export function FeatureTile({ icon: Icon, title, status, statusDetail, tooltip, 
         <span className="text-accent-secondary">{icon}</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-text-primary">{title}</span>
-          <span className={clsx('block text-xs tabular-nums', !statusDetail && 'truncate', warn ? 'text-warning' : 'text-text-muted')}>{statusDetail ?? status}</span>
+          <span className={clsx('block truncate text-xs tabular-nums', warn ? 'text-warning' : 'text-text-muted')}>{status}</span>
         </span>
       </button>
     </Tooltip>
