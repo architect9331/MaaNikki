@@ -551,7 +551,13 @@ def main():
         fault_log = REPORT.with_suffix(".fault.log").open("w", encoding="utf-8")
         faulthandler.enable(file=fault_log)
         options = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {}
-        timeout = int(options.get("StartGameTimeout", {}).get("seconds", 900))
+        # 外部运行器（如 AUTO-MAS）可能为接口已声明但未保存的选项传空串或 null，
+        # 此时回退 interface.json 声明的默认值 900，而不是崩溃。
+        raw_seconds = (options.get("StartGameTimeout") or {}).get("seconds")
+        try:
+            timeout = int(raw_seconds)
+        except (TypeError, ValueError):
+            timeout = 900
         if not 30 <= timeout <= 900:
             raise ValueError("启动等待上限应在30至900秒之间。")
         window = game_window()
