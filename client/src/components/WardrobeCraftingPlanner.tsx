@@ -6,12 +6,13 @@ import { buildOwnedProfile } from '@/services/scoring/profile';
 import { craftingRequirement, summarizeMaterials } from '@/services/scoring/materialPlanning';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import type { CraftingSketch, PlanMode } from '@/services/scoring/types';
-import { Segmented } from './ui/FeaturePage';
-import { PlanLayout, PlanListPanel, PlanModeSwitch, PlanQueueBar, planCheckbox, planField } from './CollectionPlan';
+import { Segmented, secondaryButton } from './ui/FeaturePage';
+import { PlanEmpty, PlanLayout, PlanListPanel, PlanPanel, bulkButton, planCheckbox, planField } from './CollectionPlan';
 import { WardrobeMaterialSummary } from './WardrobeMaterialSummary';
 
 const PAGE_SIZE = 30;
 const num = (value: number) => value.toLocaleString('zh-CN');
+const formatTime = (value: string) => new Date(value).toLocaleString('zh-CN', { hour12: false });
 
 interface SketchGroup { key: string; title: string; quality: number; suit: boolean; total: number; missing: CraftingSketch[] }
 
@@ -91,11 +92,10 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   }
 
   if (loading && !payload) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在加载制衣规划</div>;
-  if (!payload?.snapshot || !crafting) return <div className="rounded-xl border border-border bg-bg-secondary px-5 py-10 text-center text-sm text-text-secondary">
-    <Hammer className="mx-auto mb-2 h-8 w-8 opacity-50" />
-    制衣规划需要先知道你已经做过哪些衣服。
-    <button type="button" onClick={onOpenCloset} className="ml-1 text-accent hover:underline">去「我的衣柜」读取</button>
-  </div>;
+  if (!payload?.snapshot || !crafting) return <PlanEmpty icon={Hammer}
+    action={<button type="button" onClick={onOpenCloset} className={secondaryButton}>去「我的衣柜」读取</button>}>
+    制衣计划需要先知道你已经做过哪些衣服。读取一次衣柜后，这里会列出还没做的设计图和要备的材料。
+  </PlanEmpty>;
 
   const q = search.trim();
   const shown = groups.filter((group) => (quality === 'all' || String(group.quality) === quality)
@@ -105,13 +105,17 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   const planLabel = mode === 'all' ? `全收集 · ${num(planned.length)} 张未制作设计图` : `自选 · ${num(planned.length)} 张设计图`;
 
   return <div className="space-y-4">
-    <PlanModeSwitch value={mode} onChange={(next) => setPlan(next)} allLabel="全部未制作的设计图"
-      allDetail={<>已制作 {num(madeCount)} / {num(scoped.length)}，还有 {num(uncraftedScoped.length)} 张未制作；做好的衣服下次读衣柜后自动移出。</>}
-      selectedDetail="只为勾选的套装或部件备料，适合先做想要的衣服。" />
-    <PlanQueueBar goal="crafting"
-      status={<>{planLabel} · {crystalShort ? `还差 ${crystalShort} 种试炼晶石` : '试炼晶石已备齐，轮到时直接交给下一项'}</>}
-      hint="幻境挑战按缺口刷取魔物试炼晶石；噗灵、丝线和大世界采集物请按清单自行准备。"
-      disabled={!planned.length} />
+    <PlanPanel goal="crafting" tone={payload.snapshot.complete ? 'ok' : 'warn'}
+      basis={<>按 {formatTime(payload.snapshot.updated_at)} 的衣柜记录计算 · 已制作 <strong className="tabular-nums text-text-primary">{num(madeCount)}</strong> / {num(scoped.length)} 张设计图
+        {!payload.snapshot.complete && <span className="text-warning"> · 衣柜尚未读完，未读到的衣服会被当作没做</span>}</>}
+      actions={<button type="button" onClick={onOpenCloset} className={secondaryButton}>更新衣柜</button>}
+      mode={mode} onModeChange={(next) => setPlan(next)}
+      modeDetail={mode === 'all'
+        ? <>全部未制作的设计图，共 {num(uncraftedScoped.length)} 张；做好的衣服下次读衣柜后自动移出。</>
+        : <>只为勾选的套装或部件备料，已选 {num(picked.length)} 张。</>}
+      queueStatus={crystalShort ? `还差 ${crystalShort} 种试炼晶石` : '试炼晶石已备齐，轮到时直接交给下一项'}
+      queueHint="幻境挑战按缺口刷取魔物试炼晶石；噗灵、丝线和大世界采集物请按清单自行准备。"
+      queueDisabled={!planned.length} />
     <PlanLayout
       list={<PlanListPanel title={mode === 'all' ? '全收集包含的设计图' : '想做哪些衣服'} mode={mode}
         includedCount={planned.length} selectedCount={picked.length} onClear={() => setPlan('selected', new Set())}
@@ -129,8 +133,8 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
             onChange={(next) => updateMaterials((previous) => ({ ...previous, crafting_scope: next }))} />}
         </>}
         bulk={<><span>把当前列表全部：</span>
-          <button type="button" onClick={() => toggle(shown.flatMap((group) => group.missing.map((sketch) => sketch.id)), true)} className="rounded-md border border-border px-2 py-0.5 hover:border-accent hover:text-accent">勾选</button>
-          <button type="button" onClick={() => toggle(shown.flatMap((group) => group.missing.map((sketch) => sketch.id)), false)} className="rounded-md border border-border px-2 py-0.5 hover:border-accent hover:text-accent">取消勾选</button></>}
+          <button type="button" onClick={() => toggle(shown.flatMap((group) => group.missing.map((sketch) => sketch.id)), true)} className={bulkButton}>勾选</button>
+          <button type="button" onClick={() => toggle(shown.flatMap((group) => group.missing.map((sketch) => sketch.id)), false)} className={bulkButton}>取消勾选</button></>}
         empty={shown.length ? undefined : groups.length ? '没有符合筛选的未制作设计图' : '设计图已经全部做完啦'}
         more={{ shown: limit, total: shown.length, onMore: () => setLimit((previous) => previous + PAGE_SIZE) }}>
         {shown.slice(0, limit).map((group) => {

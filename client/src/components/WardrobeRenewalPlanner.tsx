@@ -7,12 +7,14 @@ import { addCosts, buildRenewalGroups, MAX_LEVEL, renewalCost, RENEWED_LEVEL, re
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import type { PlanMode, RenewalPlanState } from '@/services/scoring/types';
 import { GlowPrepConfigPanel } from './GlowPrepConfigPanel';
-import { PlanLayout, PlanListPanel, PlanModeSwitch, PlanQueueBar, planCheckbox, planField } from './CollectionPlan';
+import { secondaryButton } from './ui/FeaturePage';
+import { PlanEmpty, PlanLayout, PlanListPanel, PlanPanel, bulkButton, planCheckbox, planField } from './CollectionPlan';
 import { WardrobeMaterialSummary } from './WardrobeMaterialSummary';
 
 const smallField = 'rounded-md border border-border bg-bg-primary px-1 py-0.5 text-xs tabular-nums outline-none focus:border-accent';
 const PAGE_SIZE = 40;
 const num = (value: number) => value.toLocaleString('zh-CN');
+const formatTime = (value: string) => new Date(value).toLocaleString('zh-CN', { hour12: false });
 const effective = (group: RenewalGroup) => group.level ?? 0;
 const topLevel = (group: RenewalGroup) => group.renewable ? RENEWED_LEVEL : MAX_LEVEL;
 
@@ -79,11 +81,10 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   }
 
   if (loading && !payload) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在加载换新规划</div>;
-  if (!payload?.snapshot) return <div className="rounded-xl border border-border bg-bg-secondary px-5 py-10 text-center text-sm text-text-secondary">
-    <Sparkles className="mx-auto mb-2 h-8 w-8 opacity-50" />
-    换新规划需要先知道你拥有哪些衣服。
-    <button type="button" onClick={onOpenCloset} className="ml-1 text-accent hover:underline">去「我的衣柜」读取</button>
-  </div>;
+  if (!payload?.snapshot) return <PlanEmpty icon={Sparkles}
+    action={<button type="button" onClick={onOpenCloset} className={secondaryButton}>去「我的衣柜」读取</button>}>
+    换新计划需要先知道你拥有哪些衣服。读取一次衣柜后，这里会列出还能升级或焕新的衣服和要备的材料。
+  </PlanEmpty>;
 
   const q = search.trim();
   const shown = groups.filter((group) => {
@@ -97,6 +98,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
       && (!q || group.name.includes(q) || (group.suitName ?? '').includes(q) || group.part.includes(q));
   });
   const doneCount = groups.filter((group) => effective(group) >= topLevel(group)).length;
+  const unknownLevels = groups.filter((group) => group.level === null && !group.inferred).length;
   const planLabel = mode === 'all' ? `全收集 · ${num(planned.length)} 件待养成` : `自选 · ${num(planned.length)} 件待养成`;
   const manualTargets = Object.values(materials.glow_plan?.targets ?? {}).filter((value) => Number(value) > 0).length;
 
@@ -110,15 +112,19 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   }
 
   return <div className="space-y-4">
-    <PlanModeSwitch value={mode} onChange={(next) => savePlan({ mode: next })} allLabel="全部未焕新的衣服"
-      allDetail={<>已拥有 {num(groups.length)} 组可养成衣服，已养成到顶 {num(doneCount)} 组；能焕新的按焕新、不能焕新的按满级计算，新得到的衣服读衣柜后自动加入。</>}
-      selectedDetail="只为勾选的衣服备料，可分别选择升到满级或焕新。" />
-    <PlanQueueBar goal="renewal"
-      status={usingTargets
+    <PlanPanel goal="renewal" tone={unknownLevels ? 'warn' : 'ok'}
+      basis={<>按 {formatTime(payload.snapshot.updated_at)} 的衣柜记录和已填等级计算 · 已养成到顶 <strong className="tabular-nums text-text-primary">{num(doneCount)}</strong> / {num(groups.length)} 组
+        {unknownLevels > 0 && <span className="text-warning"> · {num(unknownLevels)} 组没填等级，按 0 级计算</span>}</>}
+      actions={<button type="button" onClick={onOpenCloset} className={secondaryButton}>更新衣柜</button>}
+      mode={mode} onModeChange={(next) => savePlan({ mode: next })}
+      modeDetail={mode === 'all'
+        ? <>全部已拥有的衣服，共 {num(planned.length)} 件待养成；能焕新的按焕新、不能焕新的按满级计算，新衣服读衣柜后自动加入。</>
+        : <>只为勾选的衣服备料，可分别选择升到满级或焕新，已选 {num(pickedCount)} 件。</>}
+      queueStatus={usingTargets
         ? <>当前按手动材料目标刷取 <button type="button" onClick={() => savePlan({})} className="ml-1 text-accent hover:underline">改用上面的衣服计划</button></>
-        : <>{planLabel} · {totals.missingKinds ? `还差 ${totals.missingKinds} 种材料` : '材料已备齐，轮到时直接交给下一项'}</>}
-      hint="幻境挑战每批前按当前衣柜和已填等级重新计算缺口，刷泡泡、丝线和噗灵。升级或焕新后请在列表里更新等级。"
-      disabled={!planned.length && !usingTargets} />
+        : totals.missingKinds ? `还差 ${totals.missingKinds} 种材料` : '材料已备齐，轮到时直接交给下一项'}
+      queueHint="幻境挑战每批前按当前衣柜和已填等级重新计算缺口，刷泡泡、丝线和噗灵。升级或焕新后请在列表里更新等级。"
+      queueDisabled={!planned.length && !usingTargets} />
     <PlanLayout
       list={<PlanListPanel title={mode === 'all' ? '全收集包含的衣服' : '想养成哪些衣服'} mode={mode}
         includedCount={planned.length} selectedCount={pickedCount} onClear={() => savePlan({ mode: 'selected', targets: {} })}
@@ -135,8 +141,8 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
           </select>
         </>}
         bulk={<><span>把当前列表全部：</span>
-          <button type="button" onClick={() => selectShown(MAX_LEVEL)} className="rounded-md border border-border px-2 py-0.5 hover:border-accent hover:text-accent">升到满级</button>
-          <button type="button" onClick={() => selectShown(RENEWED_LEVEL)} className="rounded-md border border-border px-2 py-0.5 hover:border-accent hover:text-accent">焕新</button></>}
+          <button type="button" onClick={() => selectShown(MAX_LEVEL)} className={bulkButton}>升到满级</button>
+          <button type="button" onClick={() => selectShown(RENEWED_LEVEL)} className={bulkButton}>焕新</button></>}
         empty={shown.length ? undefined : groups.length ? '没有符合筛选的衣服' : '衣柜记录里还没有可养成的衣服'}
         more={{ shown: limit, total: shown.length, onMore: () => setLimit((previous) => previous + PAGE_SIZE) }}>
         {shown.slice(0, limit).map((group) => {

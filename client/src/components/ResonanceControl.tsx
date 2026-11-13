@@ -7,7 +7,7 @@ import { SwitchTrack } from './ui/SwitchTrack';
 export function ResonanceControl() {
   const { status, ready, changing } = useResonanceStore();
   return <div role="group" aria-label="共鸣记录" className="flex shrink-0 items-center text-text-secondary">
-    <span className="pl-2 text-sm">{status.enabled ? '已开启' : '已关闭'}</span>
+    <span className="text-xs">自动同步</span>
     <Tooltip side="bottom" content={isTauri() ? `${status.enabled ? '关闭' : '开启'}共鸣记录自动同步` : '请在桌面客户端同步共鸣记录。'}>
       <button type="button" role="switch" aria-checked={status.enabled} aria-label="自动同步共鸣记录"
         disabled={!isTauri() || !ready || changing} onClick={() => void setResonanceEnabled(!status.enabled)}

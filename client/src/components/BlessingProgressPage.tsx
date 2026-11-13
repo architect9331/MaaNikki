@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image as ImageIcon, RefreshCw, Search, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Image as ImageIcon, RefreshCw, Search } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import clsx from 'clsx';
 import { toast } from 'sonner';
@@ -13,8 +13,8 @@ import type { PlanMode } from '@/services/scoring/types';
 import { isTauri } from '@/utils/paths';
 import type { ForecastPart } from '@/services/collectionForecast';
 import { BlessingForecast, type RainbowPreset } from './BlessingForecast';
-import { Segmented, Stat, StatusBar } from './ui/FeaturePage';
-import { PlanLayout, PlanListPanel, PlanModeSwitch, PlanQueueBar, planCheckbox, planField } from './CollectionPlan';
+import { Card, Segmented, Tile, Notices, secondaryButton, type Notice } from './ui/FeaturePage';
+import { PlanLayout, PlanListPanel, PlanPanel, bulkButton, planCheckbox, planField } from './CollectionPlan';
 
 const SUMMARY_URL = 'https://stats.maanikki.cn/v1/summary';
 const COLOR_FILL: Record<string, string> = {
@@ -203,58 +203,55 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
   const listed = [...visible].sort((a, b) => (missingBySource.get(b.source ?? '') ?? 0) - (missingBySource.get(a.source ?? '') ?? 0));
   const scopeLabel = planMode === 'all' ? `全收集 · ${number(sets.length)} 个套组` : `自选 · ${number(scopeSets.length)} 个套组`;
 
+  const time = (value: string) => new Date(value).toLocaleString('zh-CN', { hour12: false });
+  // Everything about how trustworthy the record is, gathered in one place.
+  const notices: Notice[] = [];
+  if (error) notices.push({ tone: 'error', text: `无法读取账号状态：${error}` });
+  else if (!progress.known) notices.push({ tone: 'info', text: loading ? '正在读取本地记录…'
+    : '尚无完整的五星收藏记录。把五星闪光加入幻境挑战并运行一次，会先自动整理；也可以点「美鸭梨核对」预览图鉴已解锁的颜色。' });
+  if (!error && progress.known && !progress.localKnown && pearpalCheck.synced) notices.push({ tone: 'info',
+    text: '当前展示美鸭梨手账图鉴已解锁的颜色（不含胚子数量、噗灵与粒子存量）；首次运行全收集时仍需扫描游戏内仓库。' });
+  if (progress.localKnown && pearpalCheck.synced) notices.push(pearpalCheck.pearpalOnlyCount > 0
+    ? { tone: 'warn', text: `美鸭梨图鉴核对发现 ${pearpalCheck.pearpalOnlyCount} 个图鉴已解锁但本地记录未包含的颜色（可能为手动升级或曾分解旧收藏），下次运行全收集会自动核对相关部位。` }
+    : { tone: 'ok', text: `美鸭梨图鉴核对一致（图鉴已解锁 ${pearpalCheck.pearpalCount} 色，未发现遗漏）。` });
+  if (uncertain) notices.push({ tone: 'warn', text: '存在未确认操作或收藏保护待复核，以下展示上次已确认的记录，下次全收集会自动核对。' });
+  if (rewardPending) notices.push({ tone: 'warn', text: '上次刷取结果待核对，已收藏颜色保留，下次全收集会先处理仓库。' });
+  const remaining = scopeTarget - scopeOwned;
+  const advice = !progress.known ? undefined : needBling
+    ? { warn: true, title: '刷噗灵', detail: effectiveReserveBling > 0
+      ? `扣除保留噗灵（${wan(effectiveReserveBling)}）后不够升级已有胚子，全部体力刷噗灵。`
+      : '噗灵不够升级已有胚子，全部体力刷噗灵。' }
+    : scopeNext?.[1]
+      ? { title: `刷「${scopeNext[0]}」`, detail: isFarmOnly
+        ? '已结合仓库里的满级色与未升级胚子折算，刷这个副本期望新色最高。'
+        : effectiveReserveBling > 0 && spendableBling != null && spendableBling < 72000
+          ? `这里的胚子最可能出新色；噗灵扣除保留（${wan(effectiveReserveBling)}）后不足升级，刷出的胚子会先暂存。`
+          : '这里的胚子最可能出新色。' }
+      : { title: '所选范围已收齐', detail: '可以把体力用在其他目标了。' };
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
-        <span className="mr-auto">{updated ? `闪光记录更新于 ${new Date(updated).toLocaleString('zh-CN', { hour12: false })}` : pearpalCheck.updatedAt ? `美鸭梨手账 ${new Date(pearpalCheck.updatedAt).toLocaleString('zh-CN', { hour12: false })}` : '尚无收集记录'}</span>
-        {isTauri() && (
-          <button onClick={() => void syncPearpal()} disabled={syncingPearpal || loading}
-            className="flex items-center gap-1 rounded-lg border border-border bg-bg-secondary px-2.5 py-1 text-xs text-text-secondary hover:bg-bg-hover disabled:opacity-50"
-            title="从美鸭梨奇想手账获取图鉴已解锁颜色，用于核对本地仓库防漂移">
-            <RefreshCw className={clsx('w-3.5 h-3.5', syncingPearpal && 'animate-spin')} /><span>美鸭梨核对</span>
-          </button>
-        )}
-        {progress.known && <button onClick={() => void copyShareImage()}
-          className="flex items-center gap-1 rounded-lg border border-border bg-bg-secondary px-2.5 py-1 text-xs text-text-secondary hover:bg-bg-hover" title="复制分享图（不含 UID）">
-          <ImageIcon className="w-3.5 h-3.5" />分享图</button>}
-      </div>
-      {error && <div className="rounded-lg border border-error/30 bg-error/5 p-3 text-xs text-error" role="alert">无法读取账号状态：{error}</div>}
-      {!error && !progress.known && <div className="rounded-lg border border-border bg-bg-secondary p-3 text-sm text-text-secondary">{loading ? '正在读取本地记录…' : '尚无完整的五星收藏记录。把五星闪光加入幻境挑战顺序并运行一次，会先自动整理；也可点击上方「美鸭梨核对」预览图鉴已解锁颜色。'}</div>}
-      {!error && progress.known && !progress.localKnown && pearpalCheck.synced && (
-        <p className="flex items-center gap-1.5 text-xs text-text-secondary">
-          <AlertCircle className="w-3.5 h-3.5 text-accent" />
-          当前展示美鸭梨手账图鉴已解锁颜色（不含胚子数量、噗灵与粒子存量）；首次运行全收集时仍需扫描游戏内仓库。
-        </p>
-      )}
-      {progress.localKnown && pearpalCheck.synced && (
-        <p className={clsx('flex items-center gap-1.5 text-xs', pearpalCheck.pearpalOnlyCount > 0 ? 'text-warning' : 'text-text-secondary')}>
-          {pearpalCheck.pearpalOnlyCount > 0
-            ? <><AlertCircle className="w-3.5 h-3.5 shrink-0" /><span>美鸭梨图鉴核对发现 {pearpalCheck.pearpalOnlyCount} 个图鉴已解锁但本地仓库记录未包含的颜色（可能为手动升级或曾分解旧收藏），下次运行全收集将自动核对相关部位。</span></>
-            : <><CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-success" /><span>美鸭梨图鉴核对一致（图鉴已解锁 {pearpalCheck.pearpalCount} 色，未发现漂移遗漏）。</span></>}
-        </p>
-      )}
-      {uncertain && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />存在未确认操作或收藏保护待复核，以下展示上次已确认的记录，下次全收集会自动核对。</p>}
-      {rewardPending && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />上次刷取结果待核对，已收藏颜色保留，下次全收集将先处理仓库。</p>}
-
-      <PlanModeSwitch value={planMode} onChange={(next) => savePlan(next)} allLabel="全部未收集的五星闪光颜色"
-        allDetail={progress.known ? `已收集 ${number(progress.owned.size)} / ${number(target)} 色，按出新色概率跨套组挑选副本。` : '首次运行会先整理祝福闪光仓库，再按出新色概率挑选副本。'}
-        selectedDetail="只追勾选套组的缺色：选本只看这些套组，收齐后交给顺序里的下一项。" />
-      <PlanQueueBar goal="glow"
-        status={<>{scopeLabel} · {isFarmOnly ? '只刷胚子' : '全流程托管'} · {progress.known ? (scopeTarget - scopeOwned > 0 ? `还差 ${number(scopeTarget - scopeOwned)} 色` : '所选范围已收齐') : '尚无收集记录'}</>}
-        hint="执行方式、保留噗灵与爆仓分解在主界面幻境挑战设置中调整。所选范围收齐前会优先刷闪光，建议把急需的材料排在前面。"
-        disabled={planMode === 'selected' && !scopeSets.length} />
-      {progress.known && <StatusBar tone={needBling ? 'warn' : 'ok'} title={needBling ? '今天建议刷噗灵' : scopeNext?.[1] ? `今天建议刷「${scopeNext[0]}」` : '所选范围颜色已收齐'}
-        detail={needBling
-          ? (effectiveReserveBling > 0
-            ? `扣除保留噗灵（${wan(effectiveReserveBling)}）后不够升级已有胚子，全部体力刷噗灵。`
-            : '噗灵不够升级已有胚子，全部体力刷噗灵。')
-          : scopeNext?.[1]
-            ? (isFarmOnly
-              ? '已结合当前仓库已有满级色与未升级胚子数量折算，刷此副本期望新色最高。'
-              : effectiveReserveBling > 0 && spendableBling != null && spendableBling < 72000
-                ? `这里的胚子最可能出新色；当前噗灵扣除保留（${wan(effectiveReserveBling)}）后不足升级，刷出胚子后将暂存待后续补足噗灵。`
-                : '这里的胚子最可能出新色。')
-            : '可以把体力用在其他目标了。'} />}
+      <PlanPanel goal="glow" tone={error || uncertain || rewardPending ? 'warn' : progress.known ? 'ok' : 'idle'}
+        basis={updated ? <>闪光记录更新于 {time(updated)} · 已收集 <strong className="tabular-nums text-text-primary">{number(progress.owned.size)}</strong> / {number(target)} 色</>
+          : pearpalCheck.updatedAt ? `按美鸭梨手账 ${time(pearpalCheck.updatedAt)} 的图鉴显示` : '尚无收集记录'}
+        actions={<>
+          {isTauri() && <button type="button" onClick={() => void syncPearpal()} disabled={syncingPearpal || loading} className={secondaryButton}
+            title="从美鸭梨奇想手账获取图鉴已解锁颜色，核对本地记录有没有遗漏">
+            <RefreshCw className={clsx('h-3.5 w-3.5', syncingPearpal && 'animate-spin')} />美鸭梨核对
+          </button>}
+          {progress.known && <button type="button" onClick={() => void copyShareImage()} className={secondaryButton} title="复制分享图（不含 UID）">
+            <ImageIcon className="h-3.5 w-3.5" />分享图
+          </button>}
+        </>}
+        mode={planMode} onModeChange={(next) => savePlan(next)}
+        modeDetail={planMode === 'all'
+          ? '全部未收集的五星闪光颜色，按出新色概率跨套组挑选副本。'
+          : <>只追勾选套组的缺色，收齐后交给顺序里的下一项，已选 {number(scopeSets.length)} 个套组。</>}
+        queueStatus={<>{isFarmOnly ? '只刷胚子' : '全流程托管'} · {progress.known ? (remaining > 0 ? `还差 ${number(remaining)} 色` : '所选范围已收齐') : '首次运行会先整理仓库'}</>}
+        queueHint="执行方式、保留噗灵与爆仓分解在主界面幻境挑战设置中调整。所选范围收齐前会优先刷闪光，建议把急需的材料排在前面。"
+        queueDisabled={planMode === 'selected' && !scopeSets.length}
+        advice={advice} />
+      <Notices items={notices} />
 
       <PlanLayout
         list={<PlanListPanel title={planMode === 'all' ? '全收集包含的套组' : '想追全哪些套组'} mode={planMode}
@@ -267,8 +264,8 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
               options={[['missing', '未收齐'], ['rainbow', '只缺彩色'], ['complete', '已收齐'], ['all', '全部']]} />
           </>}
           bulk={<><span>把当前列表全部：</span>
-            <button type="button" onClick={() => toggleSets(listed.map((s) => s.name), true)} className="rounded-md border border-border px-2 py-0.5 hover:border-accent hover:text-accent">勾选</button>
-            <button type="button" onClick={() => toggleSets(listed.map((s) => s.name), false)} className="rounded-md border border-border px-2 py-0.5 hover:border-accent hover:text-accent">取消勾选</button></>}
+            <button type="button" onClick={() => toggleSets(listed.map((s) => s.name), true)} className={bulkButton}>勾选</button>
+            <button type="button" onClick={() => toggleSets(listed.map((s) => s.name), false)} className={bulkButton}>取消勾选</button></>}
           empty={data && !listed.length ? '没有符合条件的套组' : undefined}
           more={{ shown: limit, total: listed.length, onMore: () => setLimit((value) => value + 30) }}>
           {listed.slice(0, limit).map((set) => {
@@ -295,30 +292,33 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
           })}
         </PlanListPanel>}
         summary={<>
-          <div className="rounded-xl border border-border bg-bg-secondary p-4">
-            <p className="flex items-center justify-between text-xs text-text-secondary"><span>{planMode === 'all' ? '已收集颜色' : '所选套组已收集颜色'}</span><span>{scopeLabel}</span></p>
-            <p className="mt-1 flex items-baseline gap-2"><strong className="text-4xl font-semibold tabular-nums">{progress.known ? scopeOwned : '—'}</strong>
-              <span className="text-sm text-text-secondary tabular-nums">/ {scopeTarget || '—'}</span>
-              <span className="ml-auto text-lg font-semibold tabular-nums text-accent">{progress.known && scopeTarget ? Math.round(scopeOwned / scopeTarget * 100) : '—'}%</span></p>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-bg-tertiary"><div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${scopeTarget ? scopeOwned / scopeTarget * 100 : 0}%` }} /></div>
-            <dl className="mt-3 grid grid-cols-3 gap-2 text-xs text-text-secondary">
-              <div><dt>收齐套组</dt><dd className="mt-0.5 text-sm font-medium tabular-nums text-text-primary">{scopeComplete}/{scopeSets.length}</dd></div>
-              <div><dt>全部收齐部位</dt><dd className="mt-0.5 text-sm font-medium tabular-nums text-text-primary">{completeParts}/{sets.length * 3}</dd></div>
-              <div><dt>全部彩色</dt><dd className="mt-0.5 text-sm font-medium tabular-nums text-text-primary">{rainbowOwned}/{rainbowTotal}</dd></div>
-            </dl>
-            {planMode === 'selected' && !scopeSets.length && <p className="mt-3 text-xs text-text-secondary">在左侧勾选想追全的套组，这里会显示所选范围的进度与推荐副本。</p>}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Stat label="噗灵" value={resources?.bling == null ? '待读取' : wan(resources.bling)}
-              detail={resources?.bling == null ? '下次升级时读取' : effectiveReserveBling > 0 ? `够升级 ${affordableUpgrades} 次（保留 ${wan(effectiveReserveBling)}）` : `够升级 ${affordableUpgrades} 次`}
-              warn={needBling || (!isFarmOnly && spendableBling != null && spendableBling < 72000)} />
-            <Stat label="可用粒子（含重复折算）" value={resources?.particles == null ? '待读取' : wan(particleTotal)} detail={resources?.particles == null ? '下次分解时读取' : `够升满 ${Math.floor(particleTotal / 360)} 次`} />
-            <Stat label="待升级胚子" value={resources ? number(resources.embryos ?? 0) : '—'} detail="有胚子时优先升级" />
-            <Stat label="满级重复" value={resources ? `约 ${number(resources.duplicates ?? 0)}` : '—'} detail="每件折合 300 粒子" />
-            <Stat label="仓库" value={resources?.capacity ? `${number(resources.capacity[0])}/${number(resources.capacity[1])}` : '待读取'} detail="满了会分解一批再刷本" warn={!!resources?.capacity && resources.capacity[0] >= resources.capacity[1]} />
-            <Stat label="本账号彩色" value={rolls?.total ? `${rolls.colors['彩'] ?? 0} 次` : '—'}
-              detail={rolls?.total ? `升满 ${number(rolls.total)} 次，按 ${((probability?.iridescent ?? 0.05) * 100).toFixed(1)}% 约应出 ${(rolls.total * (probability?.iridescent ?? 0.05)).toFixed(1)} 次` : '还没有记录，全收集下次升满后开始统计'} />
-          </div>
+          <Card title={planMode === 'all' ? '收集进度' : '所选套组的收集进度'} aside={<span className="text-xs text-text-secondary">{scopeLabel}</span>}>
+            <div className="space-y-3 p-4">
+              <p className="flex items-baseline gap-2"><strong className="text-3xl font-semibold tabular-nums">{progress.known ? scopeOwned : '—'}</strong>
+                <span className="text-sm text-text-secondary tabular-nums">/ {scopeTarget || '—'} 色</span>
+                <span className="ml-auto text-lg font-semibold tabular-nums text-accent">{progress.known && scopeTarget ? Math.round(scopeOwned / scopeTarget * 100) : '—'}%</span></p>
+              <div className="h-1.5 overflow-hidden rounded-full bg-border"><div className={clsx('h-full rounded-full transition-[width]', scopeTarget && scopeOwned === scopeTarget ? 'bg-success' : 'bg-accent')} style={{ width: `${scopeTarget ? scopeOwned / scopeTarget * 100 : 0}%` }} /></div>
+              <div className="grid grid-cols-3 gap-2">
+                <Tile label="收齐套组" value={`${scopeComplete} / ${scopeSets.length}`} />
+                <Tile label="收齐部位（全部）" value={`${completeParts} / ${sets.length * 3}`} />
+                <Tile label="彩色（全部）" value={`${rainbowOwned} / ${rainbowTotal}`} />
+              </div>
+              {planMode === 'selected' && !scopeSets.length && <p className="text-xs text-text-secondary">在左侧勾选想追全的套组，这里会显示所选范围的进度与推荐副本。</p>}
+            </div>
+          </Card>
+          <Card title="闪光资源" aside={<span className="text-xs text-text-secondary">运行幻境挑战时自动更新</span>}>
+            <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">
+              <Tile label="噗灵" value={resources?.bling == null ? '待读取' : wan(resources.bling)}
+                detail={resources?.bling == null ? '下次升级时读取' : effectiveReserveBling > 0 ? `够升级 ${affordableUpgrades} 次（保留 ${wan(effectiveReserveBling)}）` : `够升级 ${affordableUpgrades} 次`}
+                warn={needBling || (!isFarmOnly && spendableBling != null && spendableBling < 72000)} />
+              <Tile label="可用粒子（含重复折算）" value={resources?.particles == null ? '待读取' : wan(particleTotal)} detail={resources?.particles == null ? '下次分解时读取' : `够升满 ${Math.floor(particleTotal / 360)} 次`} />
+              <Tile label="待升级胚子" value={resources ? number(resources.embryos ?? 0) : '—'} detail="有胚子时优先升级" />
+              <Tile label="满级重复" value={resources ? `约 ${number(resources.duplicates ?? 0)}` : '—'} detail="每件折合 300 粒子" />
+              <Tile label="仓库" value={resources?.capacity ? `${number(resources.capacity[0])} / ${number(resources.capacity[1])}` : '待读取'} detail="满了会分解一批再刷本" warn={!!resources?.capacity && resources.capacity[0] >= resources.capacity[1]} />
+              <Tile label="本账号彩色" value={rolls?.total ? `${rolls.colors['彩'] ?? 0} 次` : '—'}
+                detail={rolls?.total ? `升满 ${number(rolls.total)} 次，按 ${((probability?.iridescent ?? 0.05) * 100).toFixed(1)}% 约应出 ${(rolls.total * (probability?.iridescent ?? 0.05)).toFixed(1)} 次` : '全收集下次升满后开始统计'} />
+            </div>
+          </Card>
         </>}
       />
 

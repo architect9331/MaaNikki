@@ -1,74 +1,97 @@
-import type { ReactNode } from 'react';
-import { Check, ListChecks, ListOrdered, ListPlus, Square, Sparkles, X } from 'lucide-react';
+import { Fragment, type ReactNode } from 'react';
+import { ChevronRight, ListPlus, Square, X } from 'lucide-react';
 import clsx from 'clsx';
 import type { PlanMode } from '@/services/scoring/types';
-import type { RealmGoal } from '@/utils/nikkiOptions';
+import { REALM_GOAL_LABELS, type RealmGoal } from '@/utils/nikkiOptions';
 import { useRealmQueue } from './RealmQueueCard';
+import { HelpTip } from './ui/HelpTip';
+import { Segmented, primaryButton, secondaryButton } from './ui/FeaturePage';
 
 /**
- * Building blocks shared by every collection plan (制衣、换新、五星闪光):
- * the same 全收集 / 自选 switch, the same "hand to the automatic task" bar,
- * the same item list shell and the same two-column layout.
+ * Building blocks shared by every collection plan (制衣、换新、五星闪光).
+ * Each plan opens with the same panel — what the numbers are based on, what is
+ * in scope, and whether the realm challenge farms for it — followed by the
+ * same two columns: the items on the left, what they add up to on the right.
  */
 
-export function PlanModeSwitch({ value, onChange, allLabel, allDetail, selectedDetail, selectDisabledReason }: {
-  value: PlanMode;
-  onChange: (mode: PlanMode) => void;
-  allLabel: string;
-  allDetail: ReactNode;
-  selectedDetail: ReactNode;
-  /** When set, 自选 is shown but unavailable for this kind of plan. */
-  selectDisabledReason?: string;
-}) {
-  const options = [
-    { id: 'all' as const, icon: Sparkles, title: '全收集', label: allLabel, detail: allDetail, disabled: false },
-    { id: 'selected' as const, icon: ListChecks, title: '自选', label: '只收集勾选的', detail: selectDisabledReason ?? selectedDetail, disabled: !!selectDisabledReason },
-  ];
-  return <div role="radiogroup" aria-label="收集范围" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-    {options.map(({ id, icon: Icon, title, label, detail, disabled }) => {
-      const active = value === id;
-      return <button key={id} type="button" role="radio" aria-checked={active} disabled={disabled} onClick={() => onChange(id)}
-        className={clsx('rounded-xl border px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-55',
-          active ? 'border-accent bg-accent/10' : 'border-border bg-bg-secondary hover:bg-bg-hover')}>
-        <span className="flex items-center gap-2 text-sm font-semibold">
-          <Icon className={clsx('h-4 w-4 shrink-0', active ? 'text-accent' : 'text-text-muted')} />
-          {title}<span className="truncate text-xs font-normal text-text-secondary">{label}</span>
-          {active && <Check className="ml-auto h-4 w-4 shrink-0 text-accent" />}
-        </span>
-        <span className="mt-1 block text-xs leading-5 text-text-secondary">{detail}</span>
-      </button>;
-    })}
+const TONE_DOT = { ok: 'bg-success', warn: 'bg-warning', idle: 'bg-text-muted', busy: 'bg-accent animate-pulse' };
+const MODES = [['all', '全收集'], ['selected', '自选']] as const;
+
+function Row({ label, children, actions }: { label: string; children: ReactNode; actions?: ReactNode }) {
+  return <div className="group/option flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
+    <span className="w-16 shrink-0 text-xs text-text-muted">{label}</span>
+    <div className="flex min-w-56 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">{children}</div>
+    {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
   </div>;
 }
 
-/** One action for every plan: join the realm challenge queue, see the rank, adjust the order. */
-export function PlanQueueBar({ goal, status, hint, disabled }: {
+/** The realm challenge order as chips, so the whole queue is visible without leaving the plan. */
+function QueueChain({ goal }: { goal: RealmGoal }) {
+  const { enabledGoals } = useRealmQueue();
+  return <span className="flex flex-wrap items-center gap-1 text-[11px]" aria-label="幻境挑战刷取顺序">
+    {enabledGoals.map((item, index) => <Fragment key={item}>
+      <span className={clsx('inline-flex items-center gap-1 rounded-md px-1.5 py-0.5',
+        item === goal ? 'bg-accent/15 font-medium text-accent' : 'bg-bg-tertiary text-text-secondary')}>
+        <span className="tabular-nums">{index + 1}</span>{REALM_GOAL_LABELS[item]}
+      </span>
+      <ChevronRight className="h-3 w-3 text-text-muted" aria-hidden="true" />
+    </Fragment>)}
+    <span className="rounded-md border border-dashed border-border px-1.5 py-0.5 text-text-muted">兜底副本</span>
+  </span>;
+}
+
+export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChange, modeDetail, selectDisabledReason,
+  queueStatus, queueHint, queueDisabled, advice }: {
+  tone?: keyof typeof TONE_DOT;
+  /** What this plan is calculated from, and how fresh that is. */
+  basis: ReactNode;
+  actions?: ReactNode;
   goal: RealmGoal;
-  status: ReactNode;
-  hint?: ReactNode;
-  disabled?: boolean;
+  mode: PlanMode;
+  onModeChange: (mode: PlanMode) => void;
+  /** One line describing what the current scope covers. */
+  modeDetail: ReactNode;
+  /** When set, 自选 is unavailable for this kind of plan. */
+  selectDisabledReason?: string;
+  queueStatus: ReactNode;
+  queueHint?: ReactNode;
+  queueDisabled?: boolean;
+  advice?: { title: ReactNode; detail?: ReactNode; warn?: boolean };
 }) {
   const queue = useRealmQueue();
   const rank = queue.rank(goal);
-  return <section className={clsx('flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border px-4 py-3',
-    rank ? 'border-accent/40 bg-accent/5' : 'border-border bg-bg-secondary')}>
-    <ListOrdered className={clsx('h-4 w-4 shrink-0', rank ? 'text-accent' : 'text-text-muted')} />
-    <div className="min-w-48 flex-1">
-      <p className="text-sm font-medium" role="status">
-        {rank ? <>已加入幻境挑战顺序 · 当前排第 <strong className="tabular-nums text-accent">{rank}</strong> 位</> : '未加入幻境挑战顺序'}
-      </p>
-      <p className="mt-0.5 text-xs leading-5 text-text-secondary">{status}</p>
-      {queue.hasTask && !queue.taskEnabled && <p className="mt-0.5 text-[11px] leading-5 text-warning">主界面的「幻境挑战」任务当前未勾选，不会运行。</p>}
-      {hint && <p className="mt-0.5 text-[11px] leading-5 text-text-muted">{hint}</p>}
+  return <section className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-bg-secondary">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
+      <span aria-hidden="true" className={clsx('h-2 w-2 shrink-0 rounded-full', TONE_DOT[tone])} />
+      <p className="min-w-56 flex-1 text-xs leading-5 text-text-secondary" role="status">{basis}</p>
+      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </div>
-    <button type="button" onClick={queue.openOrderCard} className="text-xs text-text-secondary hover:text-accent hover:underline">调整顺序</button>
-    {rank
-      ? <button type="button" onClick={() => queue.setEnabled(goal, false)} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-bg-hover">
-        <Square className="h-3.5 w-3.5" />移出顺序
-      </button>
-      : <button type="button" onClick={() => queue.setEnabled(goal, true)} disabled={disabled} className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hover disabled:opacity-40">
-        <ListPlus className="h-3.5 w-3.5" />加入幻境挑战顺序
-      </button>}
+    <Row label="收集范围">
+      {selectDisabledReason
+        ? <span className="text-xs font-medium text-text-primary">全收集</span>
+        : <Segmented label="收集范围" value={mode} options={MODES} onChange={onModeChange} />}
+      <span className="min-w-40 flex-1 text-xs leading-5 text-text-secondary">{selectDisabledReason && mode === 'all' ? `${selectDisabledReason} ` : ''}{modeDetail}</span>
+    </Row>
+    <Row label="自动刷取" actions={<>
+      <button type="button" onClick={queue.openOrderCard} className="text-xs text-text-secondary hover:text-accent hover:underline">调整顺序</button>
+      {rank
+        ? <button type="button" onClick={() => queue.setEnabled(goal, false)} className={secondaryButton}><Square className="h-3.5 w-3.5" />移出顺序</button>
+        : <button type="button" onClick={() => queue.setEnabled(goal, true)} disabled={queueDisabled} className={primaryButton}><ListPlus className="h-3.5 w-3.5" />加入幻境挑战</button>}
+    </>}>
+      <span className={clsx('inline-flex items-center gap-1 text-xs font-medium', rank ? 'text-accent' : 'text-text-primary')}>
+        {rank ? `幻境挑战第 ${rank} 位` : '未加入幻境挑战'}
+        {queueHint && <HelpTip content={queueHint} label="自动刷取说明" />}
+      </span>
+      <QueueChain goal={goal} />
+      <span className="w-full text-xs leading-5 text-text-secondary">
+        {queueStatus}
+        {queue.hasTask && !queue.taskEnabled && <span className="text-warning"> · 主界面的「幻境挑战」任务当前未勾选，不会运行</span>}
+      </span>
+    </Row>
+    {advice && <Row label="今日建议">
+      <span className={clsx('text-xs font-medium', advice.warn ? 'text-warning' : 'text-text-primary')}>{advice.title}</span>
+      {advice.detail && <span className="min-w-40 flex-1 text-xs leading-5 text-text-secondary">{advice.detail}</span>}
+    </Row>}
   </section>;
 }
 
@@ -88,12 +111,12 @@ export function PlanListPanel({ title, mode, includedCount, selectedCount, onCle
   return <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
     <div className="space-y-2 border-b border-border px-4 py-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h2 className="text-sm font-semibold">{title}</h2>
         {mode === 'selected'
           ? selectedCount > 0
             ? <button type="button" onClick={onClear} className="inline-flex items-center gap-1 text-xs text-text-secondary hover:text-accent"><X className="h-3 w-3" />清空已选 {selectedCount} 件</button>
             : <span className="text-[11px] text-text-muted">勾选要收集的条目</span>
-          : <span className="text-[11px] text-text-muted">全收集共 {includedCount.toLocaleString('zh-CN')} 件，下方仅供查看</span>}
+          : <span className="text-[11px] text-text-muted">共 {includedCount.toLocaleString('zh-CN')} 件，仅供查看</span>}
       </div>
       {filters && <div className="flex flex-wrap gap-2">{filters}</div>}
       {mode === 'selected' && bulk && <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-text-secondary">{bulk}</div>}
@@ -115,5 +138,15 @@ export function PlanLayout({ list, summary }: { list: ReactNode; summary: ReactN
   </div>;
 }
 
+/** Shown in place of a plan that cannot be calculated yet. */
+export function PlanEmpty({ icon: Icon, children, action }: { icon: React.ComponentType<{ className?: string }>; children: ReactNode; action?: ReactNode }) {
+  return <section className="rounded-xl border border-dashed border-border bg-bg-secondary px-6 py-10 text-center">
+    <Icon className="mx-auto h-10 w-10 text-accent opacity-60" />
+    <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-text-secondary">{children}</p>
+    {action && <div className="mt-4 flex justify-center">{action}</div>}
+  </section>;
+}
+
+export const bulkButton = 'rounded-md border border-border px-2 py-0.5 hover:border-accent hover:text-accent';
 export const planField = 'rounded-lg border border-border bg-bg-primary px-2.5 py-1.5 text-xs outline-none focus:border-accent';
 export const planCheckbox = 'h-3.5 w-3.5 shrink-0 accent-accent';

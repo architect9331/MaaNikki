@@ -5,7 +5,9 @@ import { useAccountStateStore } from '@/stores/accountStateStore';
 import { useWardrobeStore, startWardrobeRead, stopWardrobeRead, wardrobeLabels, WARDROBE_INSTANCE_ID } from '@/services/wardrobeService';
 import { isTauri } from '@/utils/paths';
 import { LogsPanel } from './LogsPanel';
-import { FeaturePage, primaryButton, secondaryButton, StatusBar } from './ui/FeaturePage';
+import { FeaturePage, primaryButton, secondaryButton, StatusBar, Tabs } from './ui/FeaturePage';
+import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import { useCollectionOverview, type Progress } from './useCollectionOverview';
 import { WardrobeBrowser } from './WardrobeBrowser';
 import { BlessingProgressPanel } from './BlessingProgressPage';
 import { useCollectionHubStore, type CollectionTab } from '@/stores/collectionHubStore';
@@ -13,12 +15,15 @@ import { WardrobeCraftingPlanner } from './WardrobeCraftingPlanner';
 import { WardrobeRenewalPlanner } from './WardrobeRenewalPlanner';
 
 type Tab = CollectionTab;
+// Each tab carries its own progress, so the page reads as an overview before any tab is opened.
 const TABS = [
-  ['closet', Shirt, '我的衣柜', '读取衣柜，按套装与散件看收集'],
-  ['crafting', Hammer, '制衣', '还没做的衣服缺哪些材料'],
-  ['renewal', Gem, '换新', '升级、焕新已有衣服要备多少材料'],
-  ['blessing', Sparkles, '祝福闪光', '五星闪光颜色收集与追全'],
+  ['closet', Shirt, '我的衣柜', '套'],
+  ['crafting', Hammer, '制衣', '张'],
+  ['renewal', Gem, '换新', '组'],
+  ['blessing', Sparkles, '祝福闪光', '色'],
 ] as const;
+const figure = (progress: Progress | null, unit: string) => progress
+  ? `${progress.done.toLocaleString('zh-CN')} / ${progress.total.toLocaleString('zh-CN')} ${unit}` : '尚无记录';
 const formatTime = (value: string) => new Date(value).toLocaleString('zh-CN', { hour12: false });
 
 /** 收集进度: one hub for the closet, crafting, renewal and blessing collection plans. */
@@ -37,6 +42,9 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
   const parts = Object.entries(scan?.parts ?? {});
   const wasBusy = useRef(busy);
   useEffect(() => { void refresh().catch(() => {}); }, [refresh]);
+  const loadPlans = useWardrobePlanStore((state) => state.load);
+  useEffect(() => { void loadPlans(`${data?.uid ?? ''}:${refreshToken}`); }, [data?.uid, refreshToken, loadPlans]);
+  const overview = useCollectionOverview();
   // Reload the closet and planners once a read ends so new clothes show up.
   useEffect(() => {
     if (wasBusy.current && !busy) setRefreshToken((previous) => previous + 1);
@@ -58,14 +66,10 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
     {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
     <button onClick={() => void refresh().then(() => setRefreshToken((previous) => previous + 1)).catch(() => {})} disabled={loading} title="刷新收集记录" aria-label="刷新收集记录" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><RefreshCw className={clsx('h-4 w-4', loading && 'animate-spin')} /></button>
   </>}>
-    <div role="tablist" aria-label="收集进度" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {TABS.map(([id, Icon, label, detail]) =>
-        <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => open(id)}
-          className={clsx('rounded-xl border p-3 text-left transition-colors', tab === id ? 'border-accent bg-accent/10' : 'border-border bg-bg-secondary hover:bg-bg-hover')}>
-          <span className="flex items-center gap-2 text-sm font-semibold"><Icon className={clsx('h-4 w-4', tab === id ? 'text-accent' : 'text-text-muted')} />{label}</span>
-          <span className="mt-1 block text-xs text-text-secondary">{detail}</span>
-        </button>)}
-    </div>
+    <Tabs label="收集进度" value={tab} onChange={open} tabs={TABS.map(([id, icon, label, unit]) => ({
+      id, icon, label, value: figure(overview[id], unit),
+      progress: overview[id]?.total ? overview[id]!.done / overview[id]!.total : null,
+    }))} />
     {opened.has('closet') && <div className={clsx('space-y-4', tab !== 'closet' && 'hidden')}>
       <StatusBar tone={tone} title={busy || !scan || error || accountError ? wardrobeLabels[status] : scan.complete ? '衣柜记录完整' : '衣柜记录未读完'}
         detail={error || accountError || summary}>

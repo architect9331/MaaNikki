@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Check, Flame, MapPin } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { useAppStore } from '@/stores/appStore';
 import type { RealmMaterialTarget } from '@/services/scoring/heartPresets';
+import { Tile } from './ui/FeaturePage';
 import { MATERIAL_GROUP_LABELS, type MaterialGroup, type MaterialRow, type MaterialTotals } from '@/services/scoring/materialPlanning';
 
 const num = (value: number) => value.toLocaleString('zh-CN');
@@ -81,32 +82,31 @@ export function WardrobeMaterialSummary({ title, scope, totals, groups, onStockC
   note?: ReactNode;
   empty: ReactNode;
 }) {
+  // With a long list, what is still short matters more than what is already enough.
+  const [onlyMissing, setOnlyMissing] = useState(false);
+  const enoughCount = totals.rows.filter((row) => row.group !== 'world' && row.owned !== null && row.missing === 0).length;
   const sections = groups
-    .map((group) => ({ group, rows: totals.rows.filter((row) => row.group === group) }))
+    .map((group) => ({ group, rows: totals.rows.filter((row) => row.group === group
+      && (!onlyMissing || group === 'world' || row.owned === null || row.missing > 0)) }))
     .filter((section) => section.rows.length);
   return <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
     <div className="border-b border-border px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h2 className="text-sm font-semibold">{title}</h2>
         <span className="text-xs text-text-secondary">{scope}</span>
       </div>
-      {totals.rows.length > 0 && <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-lg bg-bg-primary px-2 py-2">
-          <p className="text-[11px] text-text-secondary">还缺材料</p>
-          <p className={clsx('mt-0.5 text-lg font-semibold tabular-nums', totals.missingKinds ? 'text-accent' : 'text-success')}>
-            {totals.missingKinds}<span className="ml-0.5 text-xs font-normal text-text-muted">/ {totals.trackedKinds} 种</span>
-          </p>
-        </div>
-        <div className="rounded-lg bg-bg-primary px-2 py-2">
-          <p className="text-[11px] text-text-secondary">补齐约需能量</p>
-          <p className="mt-0.5 text-lg font-semibold tabular-nums">{num(totals.energy)}</p>
-        </div>
-        <div className="rounded-lg bg-bg-primary px-2 py-2">
-          <p className="text-[11px] text-text-secondary">按每日 320 能量</p>
-          <p className="mt-0.5 text-lg font-semibold tabular-nums">{totals.energy ? <>{totals.days}<span className="ml-0.5 text-xs font-normal text-text-muted">天</span></> : '已备齐'}</p>
-        </div>
+      {totals.rows.length > 0 && <div className="mt-3 grid grid-cols-3 gap-2">
+        <Tile label="还缺材料" value={<><span className={totals.missingKinds ? 'text-accent' : 'text-success'}>{totals.missingKinds}</span><span className="ml-1 text-xs font-normal text-text-muted">/ {totals.trackedKinds} 种</span></>} />
+        <Tile label="补齐约需能量" value={num(totals.energy)} />
+        <Tile label="按每日 320 能量" value={totals.energy ? <>{totals.days}<span className="ml-1 text-xs font-normal text-text-muted">天</span></> : '已备齐'} />
       </div>}
-      {actions && totals.rows.length > 0 && <div className="mt-3 flex flex-wrap items-center gap-2">{actions}</div>}
+      {totals.rows.length > 0 && (actions || enoughCount > 0) && <div className="mt-3 flex flex-wrap items-center gap-2">
+        {enoughCount > 0 && <label className="mr-auto inline-flex cursor-pointer items-center gap-1.5 text-xs text-text-secondary">
+          <input type="checkbox" checked={onlyMissing} onChange={(event) => setOnlyMissing(event.target.checked)} className="h-3.5 w-3.5 accent-accent" />
+          只看还缺的（已够 {enoughCount} 种）
+        </label>}
+        {actions}
+      </div>}
     </div>
     {totals.rows.length === 0
       ? <div className="px-4 py-10 text-center text-xs leading-5 text-text-secondary">{empty}</div>

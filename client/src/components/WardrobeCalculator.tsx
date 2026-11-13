@@ -10,6 +10,7 @@ import { analyzeUnmetStars, buildMinimumStarUpgradePlan, starRequiredGroupBadges
 import { buildOwnedProfile } from '@/services/scoring/profile';
 import { ATTRIBUTES, emptySettings } from '@/services/scoring/types';
 import type { CalculationResult, FieldBonus, Match, OutfitResult, OwnedProfile, ScoringCatalog, ScoringPayload, ScoringSettings } from '@/services/scoring/types';
+import { secondaryButton, StatusBar } from './ui/FeaturePage';
 import { WardrobeHeartEditor } from './WardrobeHeartEditor';
 import { WardrobeMatchPicker } from './WardrobeMatchPicker';
 import { WardrobeBatchPlanView, WardrobeMaterialList } from './WardrobeMaterialActions';
@@ -779,7 +780,18 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
   if (loading) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在读取账号衣柜与计分资料</div>;
   if (!payload || !profile) return <p className={clsx(card, 'text-sm text-warning')} role="alert">{error || '请先读取衣柜。'}</p>;
 
+  const glowKinds = profile.items.filter((item) => !item.group).length;
   return <div className="space-y-4">
+    {/* The same opening strip as the other pages: what the result is based on, and the one thing to fix first. */}
+    <StatusBar tone={!payload.snapshot ? 'idle' : payload.snapshot.complete ? 'ok' : 'warn'}
+      title={!payload.snapshot ? '还没有衣柜记录' : payload.snapshot.complete
+        ? `按 ${new Date(payload.snapshot.updated_at).toLocaleString('zh-CN', { hour12: false })} 的衣柜记录计算` : '衣柜尚未读完，只按已读到的衣服计算'}
+      detail={payload.snapshot
+        ? <>可用衣服 <strong className="tabular-nums text-text-primary">{profile.aligned}</strong> 件 · 已读祝福闪光 {glowKinds} 种
+          {unknownCount > 0 && <> · {unknownCount} 组没填等级，按 0 级计算，可在下方「补充衣服等级」填写</>}</>
+        : '读取一次衣柜后，才能按你拥有的衣服算出最高分搭配。'}>
+      <button type="button" onClick={onOpenRead} className={secondaryButton}>{!payload.snapshot ? '去读取衣柜' : payload.snapshot.complete ? '更新衣柜' : '继续读取'}</button>
+    </StatusBar>
     <WardrobeMatchPicker matches={payload.catalog.matches} value={matchId} onChange={(id) => { setMatchId(id); setChoice(null); }} />
     <div className="grid items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
     <aside className="space-y-3 lg:sticky lg:top-0">
@@ -829,13 +841,9 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
         {error && <p className="flex items-start gap-1.5 text-xs text-warning" role="alert"><AlertCircle className="h-4 w-4 shrink-0" />{error}</p>}
       </section>
       <section className={clsx(card, 'space-y-2 text-xs text-text-secondary')}>
-        <div className="flex justify-between"><span>可用衣服</span><strong className="text-text-primary tabular-nums">{profile.aligned} 件</strong></div>
-        <div className="flex justify-between"><span>未填等级（按 0 级）</span><strong className="text-text-primary tabular-nums">{unknownCount} 组</strong></div>
-        <div className="flex justify-between"><span>已读祝福闪光</span><strong className="text-text-primary tabular-nums">{profile.items.filter((item) => !item.group).length} 种</strong></div>
-        {(!payload.snapshot || !payload.snapshot.complete) && <button onClick={onOpenRead} className="text-accent hover:underline">{payload.snapshot ? '衣柜未读完，继续读取' : '还没有衣柜记录，去读取'}</button>}
         {!!profile.skipped.length && <details><summary className="cursor-pointer">{profile.skipped.length} 件待确认身份</summary>
           <div className="mt-2 max-h-32 space-y-1 overflow-auto">{profile.skipped.map((item, index) => <p key={index}>{item.part} · {item.name} · {item.reason}</p>)}</div></details>}
-        <p className="border-t border-border pt-2 text-[11px] text-text-muted">{saving ? '正在保存…' : dirty ? '设置待保存' : '设置已自动保存'} · 资料 {payload.catalog.version} · <a className="hover:underline" href={payload.catalog.source.url} target="_blank" rel="noreferrer" onClick={(event) => {
+        <p className={clsx('text-[11px] text-text-muted', !!profile.skipped.length && 'border-t border-border pt-2')}>{saving ? '正在保存…' : dirty ? '设置待保存' : '设置已自动保存'} · 资料 {payload.catalog.version} · <a className="hover:underline" href={payload.catalog.source.url} target="_blank" rel="noreferrer" onClick={(event) => {
           if (!isTauri()) return;
           event.preventDefault();
           void openUrl(payload.catalog.source.url).catch((cause: unknown) => setError(String(cause)));

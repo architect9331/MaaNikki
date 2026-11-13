@@ -7,7 +7,7 @@ import { buildOwnedProfile } from '@/services/scoring/profile';
 import { ATTRIBUTES, type Match, type OutfitResult } from '@/services/scoring/types';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { buildPieceEntries, buildSuitEntries, type SuitBrowserEntry } from '@/services/scoring/wardrobeBrowserData';
-import { Segmented, Stat } from './ui/FeaturePage';
+import { Segmented, Tile } from './ui/FeaturePage';
 import { ImageIcon, WardrobePhotoCardModal } from './WardrobePhotoCardModal';
 
 const field = 'rounded-lg border border-border bg-bg-primary px-3 py-1.5 text-xs outline-none focus:border-accent';
@@ -85,13 +85,12 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   const refreshedGroupsCount = profile.groups.filter((g) => g.level === 11).length;
 
   return <div className="space-y-4">
-    <div className="grid grid-cols-3 gap-3">
-      <Stat label="已集齐套装" value={<>{completeSuitsCount}<span className="ml-1 text-sm font-normal text-text-muted">/ {suits.length}</span></>} />
-      <Stat label="已收录散件" value={<>{ownedPiecesCount}<span className="ml-1 text-sm font-normal text-text-muted">/ {pieces.length}</span></>} />
-      <Stat label="已焕新养成组" value={<>{refreshedGroupsCount}<span className="ml-1 text-sm font-normal text-text-muted">/ {profile.groups.length}</span></>} />
-    </div>
-
     <section className={clsx(card, 'space-y-3')}>
+      <div className="grid grid-cols-3 gap-2">
+        <Tile label="已集齐套装" value={<>{completeSuitsCount}<span className="ml-1 text-xs font-normal text-text-muted">/ {suits.length}</span></>} />
+        <Tile label="已收录散件" value={<>{ownedPiecesCount}<span className="ml-1 text-xs font-normal text-text-muted">/ {pieces.length}</span></>} />
+        <Tile label="已焕新养成组" value={<>{refreshedGroupsCount}<span className="ml-1 text-xs font-normal text-text-muted">/ {profile.groups.length}</span></>} />
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <Segmented label="浏览视图" value={view} options={[['suits', '按套装查看'], ['pieces', '按散件查看']] as const} onChange={(v) => { setView(v); setStatusFilter('all'); }} />
         <select aria-label="状态筛选" className={field} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>

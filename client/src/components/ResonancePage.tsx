@@ -125,11 +125,11 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
         {status.accounts.map((item) => <option key={item.key} value={item.key}>UID {item.uid}</option>)}
       </select>
       <button disabled={!current || action} onClick={() => void exportHistory()} title="导出 JSON" aria-label="导出 JSON" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><Download className="h-4 w-4" /></button>
-      <ResonanceControl />
     </>}>
         <StatusBar tone={status.error || connectionError ? 'warn' : status.busy ? 'busy' : status.enabled ? 'ok' : 'idle'} title={resonanceLabel(status)}
           detail={status.busy ? status.banner ? status.banner + (status.page ? ' · 第 ' + status.page + ' 页' : '') : '正在验证美鸭梨账号'
             : '最近同步 ' + timeLabel(account?.last_success) + (status.enabled && !!status.next_sync && !status.auth_paused ? ' · 下次 ' + timeLabel(status.next_sync) : '')}>
+          <ResonanceControl />
           <button disabled={!isTauri() || action} onClick={() => void run('pearpal_open_login')} className={secondaryButton}>{login ? '切换美鸭梨账号' : '登录美鸭梨'}</button>
           <button disabled={!isTauri() || action || status.busy} onClick={() => void run('resonance_sync')} className={primaryButton}><RefreshCw className={clsx('h-3.5 w-3.5', status.busy && 'animate-spin')} />立即同步</button>
         </StatusBar>
