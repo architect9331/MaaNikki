@@ -168,9 +168,9 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
           </span>
           {error ? <span className="text-xs text-warning">账号状态读取失败</span>
             : <span className="grid grid-cols-4 divide-x divide-border">
-              {collections.map((item) => <span key={item.id} className="min-w-0 px-2 first:pl-0 last:pr-0">
-                <span className="block truncate text-[10px] text-text-secondary">{item.label}</span>
-                <span className={clsx('mt-1 block text-sm font-semibold tabular-nums', item.percentage === null ? 'text-text-muted' : 'text-text-primary')}>{item.value}</span>
+              {collections.map((item) => <span key={item.id} className="min-w-0 px-1.5 first:pl-0 last:pr-0">
+                <span className="block text-xs font-medium leading-5 text-text-secondary">{item.label}</span>
+                <span className={clsx('mt-1 block text-base font-semibold leading-6 tabular-nums', item.percentage === null ? 'text-text-muted' : 'text-text-primary')}>{item.value}</span>
                 <span className="mt-2 block h-1 overflow-hidden rounded-full bg-border/70">
                   <span className="block h-full rounded-full bg-accent/70" style={{ width: `${item.percentage ?? 0}%` }} />
                 </span>
@@ -178,11 +178,6 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
             </span>}
         </button>
       </Tooltip>}
-    <FeatureTile icon={Calculator} title="搭配计算" compact={compact} busy={wardrobeBusy}
-      status={wardrobeBusy || wardrobeStatus === 'error' ? wardrobeLabels[wardrobeStatus] : wardrobe ? `${wardrobe.scanned_count} 件` : '尚未读取'}
-      warn={wardrobeStatus === 'error'}
-      tooltip={<div className="space-y-1"><p className="font-medium">搭配计算</p><p className="text-text-secondary">按已读衣柜计算巅峰赛等比赛的最高分搭配；读取衣柜在「收集进度 → 我的衣柜」。</p></div>}
-      onClick={() => open('wardrobe')} />
     <FeatureTile icon={Compass} title="辅助功能" compact={compact} busy={explorationBusy}
       status={explorationStatusLabels[exploration.status]} warn={exploration.status === 'error'}
       tooltip={exploration.error ? <div className="space-y-1"><p className="font-medium">辅助功能</p><p className="text-text-secondary">{exploration.error}</p></div> : undefined}
@@ -194,12 +189,18 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
       toggle={{ checked: resonance.status.enabled, disabled: !isTauri() || !resonance.ready || resonance.changing,
         label: '自动同步共鸣记录', onChange: (value) => void setResonanceEnabled(value) }}
       onClick={() => open('resonance')} />
+    <FeatureTile icon={Calculator} title="搭配计算" compact={compact} busy={wardrobeBusy}
+      status={wardrobeBusy || wardrobeStatus === 'error' ? wardrobeLabels[wardrobeStatus] : wardrobe ? `${wardrobe.scanned_count} 件` : '尚未读取'}
+      warn={wardrobeStatus === 'error'}
+      tooltip={<div className="space-y-1"><p className="font-medium">搭配计算</p><p className="text-text-secondary">按已读衣柜计算巅峰赛等比赛的最高分搭配；读取衣柜在「收集进度 → 我的衣柜」。</p></div>}
+      onClick={() => open('wardrobe')} />
+    <GiantMeteorStatus compact={compact} />
     <FeatureTile icon={Route} title="路线编辑器" compact={compact} status="录制和编辑路线"
       tooltip={<div className="space-y-1"><p className="font-medium">路线编辑器</p><p className="text-text-secondary">走一遍就能录下路线，再加上采集、钓鱼等动作。</p></div>}
+      className={compact ? undefined : 'col-span-full'}
       onClick={() => open('routes')} />
-    <GiantMeteorStatus compact={compact} />
   </>;
   return compact
     ? <>{tiles}</>
-    : <div role="group" aria-label="功能" className="grid shrink-0 grid-cols-[repeat(auto-fit,minmax(8.75rem,1fr))] gap-2">{tiles}</div>;
+    : <div role="group" aria-label="功能" className="grid shrink-0 grid-cols-2 gap-2">{tiles}</div>;
 }
