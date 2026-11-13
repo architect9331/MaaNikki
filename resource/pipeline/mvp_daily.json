@@ -54,7 +54,8 @@
   "MaaNikki_CollectStarlightCrystals": {
     "recognition": "DirectHit",
     "action": "Custom",
-    "custom_action": "nikki.collect_starlight_crystals"
+    "custom_action": "nikki.collect_starlight_crystals",
+    "custom_action_param": {"route": false, "tree": false}
   },
   "MaaNikki_Xinghai": {
     "recognition": "DirectHit",

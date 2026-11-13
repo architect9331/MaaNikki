@@ -531,17 +531,26 @@ class CollectStarlightCrystalsAction(CustomAction):
         runtime = Executors(context)
         completed = False
         try:
-            runtime.log("开始每日跑图收集星光结晶，不受星海拾光积分和子任务开关影响。", detail=True)
-            card = classify("xinghai", "收集10个星光结晶", -1)
-            # Call the same collector directly; daily-task selection applies
-            # only to the score planner's execute() entry point.
-            completed = bool(runtime.crystals("xinghai", card) and not runtime.stopped)
+            options = parse_custom_param(argv.custom_action_param)
+            results = []
+            if options.get("route") is True:
+                runtime.log("开始跑图收集星光结晶。", detail=True)
+                card = classify("xinghai", "收集10个星光结晶", -1)
+                results.append(bool(runtime.crystals("xinghai", card)))
+            if options.get("tree") is True and not runtime.stopped:
+                from daily.crystal_tree import CrystalTree
+                from daily.runtime import RESOURCE
+                # Recover a known page before an independent second subtask.
+                results.append(bool(runtime.main() and CrystalTree(runtime, RESOURCE).collect()))
+            completed = bool(results and all(results) and not runtime.stopped)
+            if not results and not runtime.stopped:
+                runtime.log("未选择星光结晶收集项目。")
             if completed:
-                runtime.log("跑图收集星光结晶已完成。", detail=True)
+                runtime.log("所选星光结晶收集项目已完成。", detail=True)
         except TaskStopped:
             raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
-            runtime.log(f"跑图收集星光结晶未完成：{error}。")
+            runtime.log(f"星光结晶收集未完成：{error}。")
         finally:
             if not runtime.stopped and not runtime.finish("MaaNikki_CollectStarlightCrystals")[1]:
                 runtime.log("星光结晶收集后未能恢复任务衔接页面。")

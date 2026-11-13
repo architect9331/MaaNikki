@@ -1,0 +1,76 @@
+{
+  "id": "xinghai_crystal_tree_loop",
+  "map": "starsea",
+  "points": [
+    {
+      "jump": false,
+      "radius": 0.5,
+      "x": 854.23,
+      "y": 1009.83
+    },
+    {
+      "jump": false,
+      "radius": 1,
+      "x": 859.42,
+      "y": 1010.98
+    },
+    {
+      "jump": false,
+      "radius": 1,
+      "x": 860.67,
+      "y": 1013.27
+    },
+    {
+      "jump": false,
+      "radius": 1,
+      "x": 861.92,
+      "y": 1015.83
+    },
+    {
+      "jump": false,
+      "radius": 1,
+      "x": 859.02,
+      "y": 1019.23
+    },
+    {
+      "jump": false,
+      "radius": 1,
+      "x": 854.17,
+      "y": 1019.83
+    },
+    {
+      "jump": false,
+      "radius": 1,
+      "x": 851.12,
+      "y": 1016.98
+    },
+    {
+      "jump": false,
+      "radius": 1,
+      "x": 851.52,
+      "y": 1012.98
+    },
+    {
+      "jump": false,
+      "radius": 1,
+      "x": 853.92,
+      "y": 1010.12
+    },
+    {
+      "jump": false,
+      "radius": 1,
+      "x": 856.73,
+      "y": 1009.88
+    },
+    {
+      "jump": false,
+      "radius": 0.5,
+      "x": 854.23,
+      "y": 1009.83
+    }
+  ],
+  "schema_version": 3,
+  "start_radius": 6,
+  "timeout": 900,
+  "title": "星忆晶树：绕树收集"
+}
