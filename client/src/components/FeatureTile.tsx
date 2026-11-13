@@ -16,10 +16,11 @@ export interface FeatureTileToggle {
  * the icon-only form shown in the top bar while the side panel is collapsed, so
  * their switch moves to the feature's own page.
  */
-export function FeatureTile({ icon: Icon, title, status, tooltip, onClick, warn, busy, toggle, compact, className }: {
+export function FeatureTile({ icon: Icon, title, status, statusDetail, tooltip, onClick, warn, busy, toggle, compact, className }: {
   icon: ComponentType<{ className?: string }>;
   title: string;
   status: string;
+  statusDetail?: ReactNode;
   tooltip?: ReactNode;
   onClick: () => void;
   warn?: boolean;
@@ -48,9 +49,9 @@ export function FeatureTile({ icon: Icon, title, status, tooltip, onClick, warn,
       <button type="button" onClick={onClick} aria-label={`${title}：${status}`}
         className={clsx('flex w-full min-w-0 items-center gap-2 rounded-xl px-2.5 py-2.5 text-left focus-visible:outline-2 focus-visible:outline-accent', toggle && 'pr-11')}>
         <span className="text-accent-secondary">{icon}</span>
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-text-primary">{title}</span>
-          <span className={clsx('block truncate text-xs tabular-nums', warn ? 'text-warning' : 'text-text-muted')}>{status}</span>
+          <span className={clsx('block text-xs tabular-nums', !statusDetail && 'truncate', warn ? 'text-warning' : 'text-text-muted')}>{statusDetail ?? status}</span>
         </span>
       </button>
     </Tooltip>

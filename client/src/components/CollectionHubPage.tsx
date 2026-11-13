@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Clock, Gem, Hammer, RefreshCw, Play, Sparkles, Square, Shirt } from 'lucide-react';
+import { Check, ChevronDown, Clock, Gem, Hammer, LibraryBig, RefreshCw, Play, Sparkles, Square, Shirt } from 'lucide-react';
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { useAccountStateStore } from '@/stores/accountStateStore';
@@ -62,7 +62,7 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
       {!scan.complete && !busy && <span className="text-warning"> · 尚未读完，可继续读取</span>}</>
     : '进入游戏主界面并清空衣柜筛选后开始，读取期间保持游戏在前台。';
 
-  return <FeaturePage icon={Sparkles} title="收集进度" onBack={onClose} actions={<>
+  return <FeaturePage icon={LibraryBig} title="收集进度" onBack={onClose} actions={<>
     {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
     <button onClick={() => void refresh().then(() => setRefreshToken((previous) => previous + 1)).catch(() => {})} disabled={loading} title="刷新收集记录" aria-label="刷新收集记录" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><RefreshCw className={clsx('h-4 w-4', loading && 'animate-spin')} /></button>
   </>}>

@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Calculator, Check, Compass, RefreshCw, Route, Sparkles, Star, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BookOpen, Calculator, Check, Compass, LibraryBig, RefreshCw, Route, Sparkles, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
 import { explorationStatusLabels, setExplorationEnabled, useExplorationStore } from '@/services/explorationService';
 import { resonanceLabel, setResonanceEnabled, useResonanceStore } from '@/services/resonanceService';
 import { useWardrobeStore, wardrobeLabels } from '@/services/wardrobeService';
-import { getBlessingProgress } from '@/utils/blessingProgress';
+import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import { useCollectionOverview } from './useCollectionOverview';
 import { isTauri } from '@/utils/paths';
 import { useAppStore } from '@/stores/appStore';
 import { ModalPortal, useModalFocusTrap } from './ui/Modal';
@@ -125,19 +126,41 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
   const wardrobeStatus = useWardrobeStore((state) => state.status);
   const open = useAppStore((state) => state.setCurrentPage);
 
-  const progress = useMemo(() => getBlessingProgress(data), [data]);
-  const detail = error ? '账号状态读取失败' : progress.known
-    ? `五星闪光已收集 ${progress.owned.size} / ${progress.target} 个颜色${progress.uncertain ? ' · 上次确认记录，待复核' : ''}`
-    : '尚无闪光记录，把五星闪光加入幻境挑战顺序运行一次时会先自动整理';
   const wardrobe = data?.wardrobe?.inventory ?? data?.wardrobe?.last_scan;
+  const loadPlans = useWardrobePlanStore((state) => state.load);
+  const planError = useWardrobePlanStore((state) => state.error);
+  const plansLoading = useWardrobePlanStore((state) => state.loading);
+  useEffect(() => {
+    if (isTauri() && data?.uid) void loadPlans(`${data.uid}:entry:${wardrobe?.updated_at ?? ''}`);
+  }, [data?.uid, wardrobe?.updated_at, loadPlans]);
+  const overview = useCollectionOverview();
+  const collections = ([
+    ['closet', '衣柜套装', '套'], ['crafting', '制衣', '张'],
+    ['renewal', '焕新', '组'], ['blessing', '祝福闪光', '色'],
+  ] as const).map(([id, label, unit]) => {
+    const progress = overview[id];
+    const unavailable = id !== 'blessing' && (plansLoading || planError);
+    const value = unavailable ? plansLoading ? '加载中' : '读取失败'
+      : progress && progress.total > 0 ? `${Math.floor(progress.done / progress.total * 100)}%` : '尚无记录';
+    const detail = !unavailable && progress ? `${progress.done} / ${progress.total} ${unit}` : value;
+    return { id, label, value, detail };
+  });
   const wardrobeBusy = ['starting', 'reading', 'stopping'].includes(wardrobeStatus);
   const resonanceError = resonance.connectionError || resonance.status.error;
   const explorationBusy = exploration.status === 'starting' || exploration.status === 'stopping';
 
   const tiles = <>
-    <FeatureTile icon={Sparkles} title="收集进度" compact={compact} warn={Boolean(error)}
-      status={error ? '读取失败' : progress.percentage === null ? '尚无记录' : `${progress.percentage}%`}
-      tooltip={<div className="space-y-1"><p className="font-medium">收集进度</p><p className="text-text-secondary">我的衣柜、制衣、焕新与祝福闪光的收集计划。</p><p className="text-text-secondary">{detail}</p></div>}
+    <FeatureTile icon={LibraryBig} title="收集进度" compact={compact} warn={Boolean(error || planError)} className="col-span-full"
+      status={error ? '账号状态读取失败' : collections.map((item) => `${item.label} ${item.value}`).join('，')}
+      statusDetail={!error && <span className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
+        {collections.map((item) => <span key={item.id} className="flex min-w-0 items-center justify-between gap-1 text-[11px]">
+          <span>{item.label}</span><span>{item.value}</span>
+        </span>)}
+      </span>}
+      tooltip={<div className="space-y-1"><p className="font-medium">收集进度</p>
+        {error ? <p>{error}</p> : collections.map((item) => <p key={item.id} className="flex justify-between gap-4 text-text-secondary"><span>{item.label}</span><span>{item.detail}</span></p>)}
+        <p className="text-text-muted">衣柜按本地套装统计；各项独立计算，不合并为总完成率。</p>
+      </div>}
       onClick={() => open('blessing')} />
     <FeatureTile icon={Calculator} title="搭配计算" compact={compact} busy={wardrobeBusy}
       status={wardrobeBusy || wardrobeStatus === 'error' ? wardrobeLabels[wardrobeStatus] : wardrobe ? `${wardrobe.scanned_count} 件` : '尚未读取'}
