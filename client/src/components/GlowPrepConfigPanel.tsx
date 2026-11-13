@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Calculator, Check, Plus, RotateCcw, Sparkles, X } from 'lucide-react';
+import { Check, Plus, RotateCcw, Sparkles, X } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
-import { useAppStore } from '@/stores/appStore';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { loadScoring, saveMaterialPlan } from '@/services/scoring/api';
 import type { MaterialsState } from '@/services/scoring/types';
@@ -39,14 +38,12 @@ const num = (v: number) => v.toLocaleString('zh-CN');
 const hasPositiveTargets = (m?: MaterialsState | null) =>
   Object.values(m?.glow_plan?.targets ?? {}).some((v) => Number(v) > 0);
 
-export function GlowPrepConfigPanel({ compact = false, externalMaterials, accountKey: propKey, onChanged }: {
-  compact?: boolean;
+export function GlowPrepConfigPanel({ externalMaterials, accountKey: propKey, onChanged }: {
   externalMaterials?: MaterialsState | null;
   accountKey?: string;
   onChanged?: (next: MaterialsState) => void;
 }) {
   const activeUid = useAccountStateStore((state) => state.data?.uid);
-  const setCurrentPage = useAppStore((state) => state.setCurrentPage);
   const [accountKey, setAccountKey] = useState(propKey ?? '');
   const [materials, setMaterials] = useState<MaterialsState>(externalMaterials ?? {});
   const [tab, setTab] = useState<'active' | 'vortex' | 'chroma' | 'basic'>(() =>
@@ -94,8 +91,8 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
     const next: MaterialsState = {
       ...materials,
       // Manual targets replace the wardrobe renewal plan as the task's source.
-      renewal_plan: Object.keys(cleaned).length && materials.renewal_plan
-        ? { ...materials.renewal_plan, enabled: false }
+      renewal_plan: Object.keys(cleaned).length
+        ? { enabled: false, mode: 'all', targets: {}, ...(materials.renewal_plan ?? {}), source: 'targets' }
         : materials.renewal_plan,
       glow_plan: Object.keys(cleaned).length ? {
         enabled: true,
@@ -134,12 +131,12 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
     : GLOW_MATERIAL_DEFS.filter((d) => d.group === tab);
 
   return (
-    <div className={clsx('space-y-3', !compact && 'rounded-xl border border-border bg-bg-secondary p-4')}>
+    <div className={'space-y-3 rounded-xl border border-border bg-bg-secondary p-4'}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-primary">
             <Sparkles className="h-3.5 w-3.5 text-accent" />
-            焕新材料筹备目标
+            手动材料目标
             {activeDefs.length > 0 && (
               <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[11px] text-accent">
                 已设 {activeDefs.length} 项 · {totalEnergy > 0 ? `还需约 ${num(totalEnergy)} 能量` : '已全部达标'}
@@ -147,16 +144,10 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
             )}
           </span>
           <p className="mt-0.5 text-[11px] text-text-secondary">
-            可直接填写目标库存或点「+数量」在现有库存上追加，也可从搭配计算导入；刷满后自动跳过并把剩余能量交给下方幻境挑战。
+            直接填写每种材料的目标库存，或点「+数量」在现有库存上追加；幻境挑战的「换新材料」会刷到目标后交给下一项。
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          {compact && (
-            <button type="button" onClick={() => setCurrentPage('wardrobe')}
-              className="inline-flex items-center gap-1 rounded-lg border border-border bg-bg-secondary px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-hover">
-              <Calculator className="h-3 w-3" />搭配计算导入
-            </button>
-          )}
           {activeDefs.length > 0 && (
             <button type="button" onClick={() => saveTargets({}, '')}
               className="inline-flex items-center gap-1 rounded-lg border border-border bg-bg-secondary px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-hover">
@@ -165,13 +156,6 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
           )}
         </div>
       </div>
-
-      {materials.renewal_plan?.enabled && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-[11px] text-text-secondary">
-          <span>正在按衣柜「换新」的{materials.renewal_plan.mode === 'selected' ? '自选' : '全收集'}计划自动计算目标，下方手动目标暂不生效。</span>
-          <button type="button" onClick={() => setCurrentPage('wardrobe')} className="font-medium text-accent hover:underline">查看换新计划 →</button>
-        </div>
-      )}
 
       <div className="flex flex-wrap gap-1 rounded-lg bg-bg-secondary p-0.5 border border-border">
         {([
@@ -190,7 +174,7 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
 
       {shownDefs.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-bg-primary px-4 py-5 text-center text-xs text-text-secondary">
-          当前尚未设置任何焕新材料筹备目标。请切换到右侧的分类标签页手动输入目标库存或点「+数量」追加，也可从搭配计算结果一键导入。
+          当前尚未设置手动材料目标。请切换到右侧的分类标签页手动输入目标库存或点「+数量」追加，也可从搭配计算结果一键导入。
         </div>
       ) : (
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

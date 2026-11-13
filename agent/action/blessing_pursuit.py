@@ -15,8 +15,39 @@ from collection.organize import organize_inventory
 from collection.scanner import RescanSlot
 from collection.statistics import is_enabled as stats_enabled, upload
 from collection.storage import InventoryStore
+from collection.blessing import SLOTS
+from account_state import AccountState
 
 ORGANIZE_OPTIONS = {"auto": None, "always": False, "always_unlock": True}
+
+
+def blessing_focus(role: dict) -> list[str] | None:
+    """Set names chosen in the 祝福闪光 自选 plan; None means 全收集."""
+    plan = (role.get("materials") or {}).get("blessing_plan")
+    if not isinstance(plan, dict) or plan.get("mode") != "selected":
+        return None
+    return [str(name) for name in plan.get("sets") or [] if isinstance(name, str)]
+
+
+def glow_shortfall(rt, role: dict, organize_mode: str = "auto") -> bool:
+    """Whether the blessing goal still has colours to chase (or must organize first)."""
+    if organize_mode != "auto":
+        return True
+    catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+    targets = [item for item in catalog["sets"] if item["rarity"] == 5 and item.get("collection_target", True)]
+    focus = blessing_focus(role)
+    if focus is not None:
+        targets = [item for item in targets if item["name"] in set(focus)]
+        if not targets:
+            return False
+    try:
+        order, protected, _ = InventoryStore(ROOT, catalog, rt).load_organization()
+    except (OSError, ValueError, KeyError, TypeError):
+        return True
+    if order.get("pending_operation") is not None or (order.get("recovery") or {}).get("slots"):
+        return True
+    return any((item["name"], slot, color) not in protected
+               for item in targets for slot in SLOTS for color in item["colors"])
 
 
 def fallback_realm(context, rt, node):
@@ -95,7 +126,8 @@ class BlessingPursuitAction(CustomAction):
             )
             ok = FiveStarPursuit(pursuit, decompose_duplicates=decompose, auto_bling=auto_bling,
                                  chance_priority=True, share_statistics=share,
-                                 farm_only=farm_only, reserve_bling=reserve_bling).run()
+                                 farm_only=farm_only, reserve_bling=reserve_bling,
+                                 focus_sets=blessing_focus(AccountState.for_runtime(ROOT, rt).load())).run()
             if not ok and not rt.stopped:
                 rt.diagnostic("blessing_pursuit", "祝福闪光处理未完成")
             progress_path = pursuit.report.get("inventory", {}).get("path") or pursuit.report.get("startup", {}).get("path")

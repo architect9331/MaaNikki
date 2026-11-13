@@ -98,8 +98,11 @@ def planned_realm():
     collection = overrides.get("MaaNikki_RealmChallenge", {}).get(
         "custom_action_param", {}).get("five_star_collection") is True
     names = overrides.get("MaaNikki_RealmEnergy", {}).get("next", [])
-    return {"kind": "bless" if collection else preferred,
-            "collection": collection or "MaaNikki_BlessingPursuit" in names}
+    order = overrides.get("MaaNikki_RealmQueue", {}).get("custom_action_param", {}).get("order")
+    from collection.realm_goals import parse_realm_queue
+    collection = (collection or "MaaNikki_BlessingPursuit" in names
+                  or "glow" in parse_realm_queue(order))
+    return {"kind": "bless" if collection else preferred, "collection": collection}
 
 
 def defer(runtime, task_id, score, energy_card=None, *, upgrade_card=None):
@@ -132,6 +135,13 @@ def begin_realm(runtime, task_id, *, kind=None, collection=False):
         pending.realm_kind, pending.collection_mode = kind, collection
     else:
         clear(runtime)
+
+
+def update_realm(runtime, *, kind=None, collection=False):
+    """The realm queue decides the actual realm only after the batch began."""
+    pending = _pending.get(key(runtime))
+    if pending and pending.realm_task_id is not None:
+        pending.realm_kind, pending.collection_mode = kind, collection
 
 
 def take(runtime, task_id):

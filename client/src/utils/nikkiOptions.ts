@@ -5,8 +5,44 @@ const REALM_MODE_TARGETS: Record<string, string> = {
 };
 const COLLECTION_MANAGED_OPTIONS = new Set(['CollectionReserveBling', 'CollectionBling', 'CollectionDecompose']);
 
+export type RealmGoal = 'renewal' | 'crafting' | 'glow';
+export interface RealmQueueEntry { goal: RealmGoal; enabled: boolean }
+export const REALM_GOALS: RealmGoal[] = ['renewal', 'crafting', 'glow'];
+export const REALM_GOAL_LABELS: Record<RealmGoal, string> = { renewal: '换新材料', crafting: '制衣材料', glow: '五星闪光' };
+
+/** "renewal,-crafting,glow": order is priority, a leading "-" keeps a switched-off goal's place. */
+export function parseRealmQueue(raw: string | undefined): RealmQueueEntry[] {
+  const entries: RealmQueueEntry[] = [];
+  for (const token of String(raw ?? '').split(',')) {
+    const name = token.trim().replace(/^-/, '') as RealmGoal;
+    if (REALM_GOALS.includes(name) && !entries.some((entry) => entry.goal === name)) {
+      entries.push({ goal: name, enabled: !token.trim().startsWith('-') });
+    }
+  }
+  for (const goal of REALM_GOALS) if (!entries.some((entry) => entry.goal === goal)) entries.push({ goal, enabled: false });
+  return entries;
+}
+
+export const serializeRealmQueue = (entries: RealmQueueEntry[]) =>
+  entries.map((entry) => `${entry.enabled ? '' : '-'}${entry.goal}`).join(',');
+
+export const realmQueueOption = (entries: RealmQueueEntry[]): OptionValue =>
+  ({ type: 'input', values: { order: serializeRealmQueue(entries) } });
+
+export function realmQueue(values?: Record<string, OptionValue>): RealmQueueEntry[] {
+  const option = values?.RealmQueue;
+  return parseRealmQueue(option?.type === 'input' ? option.values.order : undefined);
+}
+
+/** 1-based position among the enabled goals, or null when the goal is off. */
+export function realmGoalRank(values: Record<string, OptionValue> | undefined, goal: RealmGoal): number | null {
+  const enabled = realmQueue(values).filter((entry) => entry.enabled);
+  const index = enabled.findIndex((entry) => entry.goal === goal);
+  return index < 0 ? null : index + 1;
+}
+
 export const realmCollectionEnabled = (values: Record<string, OptionValue>): boolean =>
-  values.CollectionMode?.type === 'switch' && values.CollectionMode.value;
+  realmGoalRank(values, 'glow') !== null;
 
 export const realmCollectionWorkflow = (values: Record<string, OptionValue>): 'Managed' | 'FarmOnly' =>
   values.CollectionWorkflow?.type === 'select' && values.CollectionWorkflow.caseName === 'FarmOnly'
@@ -24,47 +60,74 @@ export function realmReserveBling(values?: Record<string, OptionValue>): number 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-export const realmCraftingEnabled = (values: Record<string, OptionValue>): boolean =>
-  !realmCollectionEnabled(values) && values.CraftingCollectionMode?.type === 'switch' && values.CraftingCollectionMode.value;
+const fallbackRealm = (values: Record<string, OptionValue>) =>
+  values.RealmTypes?.type === 'select' ? values.RealmTypes.caseName : 'Bless';
 
-/** In collection mode the blessing target is only the fallback for a failed organization. */
+/** With the blessing goal queued, the blessing target also covers a failed organization. */
 export function realmOptionLabel(key: string, values: Record<string, OptionValue>): string | undefined {
-  return key === 'BlessTarget' && realmCollectionEnabled(values) ? '备选副本' : undefined;
+  return key === 'BlessTarget' && realmCollectionEnabled(values) && fallbackRealm(values) !== 'Bless' ? '备选副本' : undefined;
 }
 
-// Target choices remain saved while a different consumption mode is active.
+// Target choices remain saved while they are not used.
 export function realmOptionActive(key: string, values: Record<string, OptionValue>): boolean {
   const collection = realmCollectionEnabled(values);
   const farmOnly = realmFarmOnlyEnabled(values);
-  const crafting = realmCraftingEnabled(values);
-  if (key === 'CollectionMode') return collection;
-  if (key === 'CraftingCollectionMode') return crafting;
-  if (key === 'WeeklyEnabled') return true;
+  if (key === 'WeeklyEnabled' || key === 'RealmQueue' || key === 'RealmTypes') return true;
   if (key === 'WeeklyTargets') {
     const weekly = values.WeeklyEnabled;
     return weekly?.type !== 'switch' || weekly.value;
   }
   if (key === 'CollectionWorkflow' || key === 'CollectionOrganize') return collection;
   if (COLLECTION_MANAGED_OPTIONS.has(key)) return collection && !farmOnly;
-  // In collection mode the blessing target is the failed-organization fallback.
-  if (key === 'BlessTarget' && collection) return true;
-  if (key === 'RealmTypes') return !collection && !crafting;
-  if (crafting) return false;
-  // Collection mode's bling runs spend the configured materials.
-  if (collection && (key === 'JihuaMaterialMode' || key === 'JihuaMaterials')) {
-    if (farmOnly) return false;
+  const current = fallbackRealm(values);
+  if (key === 'BlessTarget') return current === 'Bless' || collection;
+  // The blessing goal's bling runs spend the configured materials.
+  if ((key === 'JihuaMaterialMode' || key === 'JihuaMaterials') && collection && !farmOnly) {
     const bling = values.CollectionBling;
-    return bling?.type !== 'switch' || bling.value;
+    if (bling?.type !== 'switch' || bling.value) return true;
   }
-  const selected = values.RealmTypes;
-  const current = collection ? '' : selected?.type === 'select' ? selected.caseName : 'Bless';
-  if (key === 'BlessTarget') return current === 'Bless';
   return !REALM_MODE_TARGETS[key] || REALM_MODE_TARGETS[key] === current;
 }
 
 // Options rendered as backups only matter for the daily wish energy top-up.
 export function realmOptionBackup(key: string, values: Record<string, OptionValue>): boolean {
   return (key in REALM_MODE_TARGETS || key === 'BlessTarget') && !realmOptionActive(key, values);
+}
+
+/**
+ * The former realm mode switches (五星全收集 / 制衣材料全收集) and the standalone
+ * 焕新材料筹备 task become goals of one queue; the realm type stays the fallback.
+ */
+export function migrateRealmQueueValues(values: Record<string, OptionValue>, renewalFirst = false): Record<string, OptionValue> {
+  const legacy = 'CollectionMode' in values || 'CraftingCollectionMode' in values;
+  if (!legacy && !renewalFirst) return values;
+  const next = { ...values };
+  const switchOn = (key: string) => next[key]?.type === 'switch' && (next[key] as { value: boolean }).value;
+  let entries: RealmQueueEntry[];
+  if (next.RealmQueue?.type === 'input') {
+    entries = realmQueue(next);
+  } else {
+    const glow = switchOn('CollectionMode');
+    entries = [
+      { goal: 'renewal', enabled: false },
+      { goal: 'crafting', enabled: !glow && switchOn('CraftingCollectionMode') },
+      { goal: 'glow', enabled: glow },
+    ];
+  }
+  if (renewalFirst) entries = [{ goal: 'renewal', enabled: true }, ...entries.filter((entry) => entry.goal !== 'renewal')];
+  delete next.CollectionMode;
+  delete next.CraftingCollectionMode;
+  next.RealmQueue = realmQueueOption(entries);
+  return next;
+}
+
+/** Drop the retired 焕新材料筹备 task; when it was enabled, renewal leads the realm queue. */
+export function retireGlowPrepTask<T extends { taskName: string; enabled: boolean; optionValues?: Record<string, OptionValue> }>(tasks: T[]): T[] {
+  if (!tasks.some((task) => task.taskName === 'glow_material_prep')) return tasks;
+  const renewalFirst = tasks.some((task) => task.taskName === 'glow_material_prep' && task.enabled);
+  return tasks.filter((task) => task.taskName !== 'glow_material_prep').map((task) => task.taskName === 'realm_challenge'
+    ? { ...task, optionValues: migrateRealmQueueValues(task.optionValues ?? {}, renewalFirst) }
+    : task);
 }
 
 /** Game key inputs regrouped to mirror the game's key settings page: [input, from, to]. */
@@ -98,12 +161,12 @@ export function migrateNikkiOptionValues(input: Record<string, OptionValue>): Re
   const values = migrateGameKeyGroups(input);
   const realm = values.RealmTypes;
   const legacyCollection = realm?.type === 'select' && realm.caseName === 'FiveStarCollection';
-  if (!legacyCollection && !('CollectionPriority' in values)) return values;
+  if (!legacyCollection && !('CollectionPriority' in values)) return migrateRealmQueueValues(values);
   const next = { ...values };
   delete next.CollectionPriority;
   if (legacyCollection) {
     next.RealmTypes = { type: 'select', caseName: 'Bless' };
     next.CollectionMode = { type: 'switch', value: true };
   }
-  return next;
+  return migrateRealmQueueValues(next);
 }

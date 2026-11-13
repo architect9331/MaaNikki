@@ -7,8 +7,8 @@ import { craftingRequirement, summarizeMaterials } from '@/services/scoring/mate
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import type { CraftingSketch, PlanMode } from '@/services/scoring/types';
 import { Segmented } from './ui/FeaturePage';
-import { PlanLayout, PlanListPanel, PlanModeSwitch, PlanTaskBar, planCheckbox, planField } from './CollectionPlan';
-import { useRealmChallenge, WardrobeMaterialSummary } from './WardrobeMaterialSummary';
+import { PlanLayout, PlanListPanel, PlanModeSwitch, PlanQueueBar, planCheckbox, planField } from './CollectionPlan';
+import { WardrobeMaterialSummary } from './WardrobeMaterialSummary';
 
 const PAGE_SIZE = 30;
 const num = (value: number) => value.toLocaleString('zh-CN');
@@ -36,7 +36,6 @@ function groupSketches(sketches: CraftingSketch[], ownedIds: Set<string>) {
 export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refreshToken: number; onOpenCloset: () => void }) {
   const activeUid = useAccountStateStore((state) => state.data?.uid);
   const { payload, settings, materials, loading, load, updateMaterials } = useWardrobePlanStore();
-  const realm = useRealmChallenge();
   const [search, setSearch] = useState('');
   const [quality, setQuality] = useState('all');
   const [kind, setKind] = useState<'all' | 'suit' | 'piece'>('all');
@@ -109,11 +108,10 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     <PlanModeSwitch value={mode} onChange={(next) => setPlan(next)} allLabel="全部未制作的设计图"
       allDetail={<>已制作 {num(madeCount)} / {num(scoped.length)}，还有 {num(uncraftedScoped.length)} 张未制作；做好的衣服下次读衣柜后自动移出。</>}
       selectedDetail="只为勾选的套装或部件备料，适合先做想要的衣服。" />
-    <PlanTaskBar taskLabel="幻境挑战 · 制衣材料收集" active={realm.crafting}
-      status={<>{planLabel} · {crystalShort ? `还差 ${crystalShort} 种试炼晶石` : '试炼晶石已备齐'}</>}
-      hint="自动任务按缺口刷取魔物试炼晶石，噗灵、丝线和大世界采集物请按清单自行准备；它与五星闪光全收集共用幻境挑战，同时只能开启一个。"
-      disabled={!planned.length}
-      onStart={() => realm.setCraftingCollection(true)} onStop={() => realm.setCraftingCollection(false)} />
+    <PlanQueueBar goal="crafting"
+      status={<>{planLabel} · {crystalShort ? `还差 ${crystalShort} 种试炼晶石` : '试炼晶石已备齐，轮到时直接交给下一项'}</>}
+      hint="幻境挑战按缺口刷取魔物试炼晶石；噗灵、丝线和大世界采集物请按清单自行准备。"
+      disabled={!planned.length} />
     <PlanLayout
       list={<PlanListPanel title={mode === 'all' ? '全收集包含的设计图' : '想做哪些衣服'} mode={mode}
         includedCount={planned.length} selectedCount={picked.length} onClear={() => setPlan('selected', new Set())}

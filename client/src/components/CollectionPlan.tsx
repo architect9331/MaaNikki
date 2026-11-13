@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
-import { Bot, Check, ListChecks, Square, Sparkles, X } from 'lucide-react';
+import { Check, ListChecks, ListOrdered, ListPlus, Square, Sparkles, X } from 'lucide-react';
 import clsx from 'clsx';
 import type { PlanMode } from '@/services/scoring/types';
+import type { RealmGoal } from '@/utils/nikkiOptions';
+import { useRealmQueue } from './RealmQueueCard';
 
 /**
  * Building blocks shared by every collection plan (制衣、换新、五星闪光):
@@ -39,30 +41,33 @@ export function PlanModeSwitch({ value, onChange, allLabel, allDetail, selectedD
   </div>;
 }
 
-/** One wording for every plan: hand it to the automatic task, or stop. */
-export function PlanTaskBar({ taskLabel, active, status, onStart, onStop, disabled, hint }: {
-  taskLabel: string;
-  active: boolean;
+/** One action for every plan: join the realm challenge queue, see the rank, adjust the order. */
+export function PlanQueueBar({ goal, status, hint, disabled }: {
+  goal: RealmGoal;
   status: ReactNode;
-  onStart: () => void;
-  onStop: () => void;
-  disabled?: boolean;
   hint?: ReactNode;
+  disabled?: boolean;
 }) {
+  const queue = useRealmQueue();
+  const rank = queue.rank(goal);
   return <section className={clsx('flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border px-4 py-3',
-    active ? 'border-accent/40 bg-accent/5' : 'border-border bg-bg-secondary')}>
-    <Bot className={clsx('h-4 w-4 shrink-0', active ? 'text-accent' : 'text-text-muted')} />
+    rank ? 'border-accent/40 bg-accent/5' : 'border-border bg-bg-secondary')}>
+    <ListOrdered className={clsx('h-4 w-4 shrink-0', rank ? 'text-accent' : 'text-text-muted')} />
     <div className="min-w-48 flex-1">
-      <p className="text-sm font-medium" role="status">{active ? `已交给「${taskLabel}」自动收集` : `未交给自动任务 · 「${taskLabel}」`}</p>
+      <p className="text-sm font-medium" role="status">
+        {rank ? <>已加入幻境挑战顺序 · 当前排第 <strong className="tabular-nums text-accent">{rank}</strong> 位</> : '未加入幻境挑战顺序'}
+      </p>
       <p className="mt-0.5 text-xs leading-5 text-text-secondary">{status}</p>
+      {queue.hasTask && !queue.taskEnabled && <p className="mt-0.5 text-[11px] leading-5 text-warning">主界面的「幻境挑战」任务当前未勾选，不会运行。</p>}
       {hint && <p className="mt-0.5 text-[11px] leading-5 text-text-muted">{hint}</p>}
     </div>
-    {active
-      ? <button type="button" onClick={onStop} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-bg-hover">
-        <Square className="h-3.5 w-3.5" />停止自动收集
+    <button type="button" onClick={queue.openOrderCard} className="text-xs text-text-secondary hover:text-accent hover:underline">调整顺序</button>
+    {rank
+      ? <button type="button" onClick={() => queue.setEnabled(goal, false)} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-bg-hover">
+        <Square className="h-3.5 w-3.5" />移出顺序
       </button>
-      : <button type="button" onClick={onStart} disabled={disabled} className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hover disabled:opacity-40">
-        <Bot className="h-3.5 w-3.5" />交给自动任务
+      : <button type="button" onClick={() => queue.setEnabled(goal, true)} disabled={disabled} className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hover disabled:opacity-40">
+        <ListPlus className="h-3.5 w-3.5" />加入幻境挑战顺序
       </button>}
   </section>;
 }

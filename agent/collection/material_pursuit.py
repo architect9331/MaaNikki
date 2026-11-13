@@ -1,4 +1,4 @@
-"""Inventory-targeted realm farming for glow-up preparation and crafting material collection."""
+"""Live material shortfalls of the realm queue goals (换新 / 制衣) and their farming."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -10,7 +10,8 @@ from account_state import AccountState
 from daily.gameplay import Gameplay
 from daily.runtime import Executors
 from daily.settings import ROOT
-from .backpack import ensure_backpack_scanned, wardrobe_snapshot, wardrobe_snapshot_key
+from .realm_goals import GOAL_LABELS
+from .backpack import ensure_backpack_scanned, renewal_source, wardrobe_snapshot, wardrobe_snapshot_key
 
 
 def load_catalogs():
@@ -205,161 +206,111 @@ def record_accrual(account: AccountState, mid: str | None = None, gained: int = 
     account.update(update)
 
 
-def renewal_plan_enabled(mats_state: dict) -> bool:
-    plan = mats_state.get("renewal_plan")
-    return isinstance(plan, dict) and bool(plan.get("enabled"))
 
-
-def run_glow_prep(rt) -> bool:
-    account = AccountState.for_runtime(ROOT, rt)
-    role = account.load()
-    mats_state = role.get("materials") or {}
-    dynamic = renewal_plan_enabled(mats_state)
-    glow_plan = mats_state.get("glow_plan") or {}
-    targets = glow_plan.get("targets") or {}
-    if dynamic:
+def goal_requirements(goal: str, role: dict, crafting: dict, scoring: dict) -> dict[str, int]:
+    """Materials a goal still needs, computed live from the wardrobe and plan data."""
+    mats = role.get("materials") or {}
+    if goal == "crafting":
         if not wardrobe_snapshot(role):
-            rt.log("焕新材料筹备：尚未读取过衣柜，无法计算换新所需材料，本次跳过。")
-            return True
-        mode = "自选" if plan_mode(mats_state.get("renewal_plan")) == "selected" else "全收集"
-        rt.log(f"焕新材料筹备：按衣柜「换新」{mode}计划，根据当前衣柜与已填等级计算所需材料。")
-    elif not glow_plan.get("enabled", True) or glow_plan.get("completed") or not targets:
-        rt.log("焕新材料筹备：当前无待刷取的焕新材料目标，跳过。")
-        return True
+            return {}
+        mat_defs = crafting.get("materials") or {}
+        # Automatic farming covers the trial crystals; bling, thread and world
+        # materials are listed in the crafting page for the player to prepare.
+        return {mid: count for mid, count in compute_crafting_requirements(role, crafting, scoring).items()
+                if (mat_defs.get(mid) or {}).get("kind") == "monster_craft"}
+    if goal == "renewal":
+        if renewal_source(mats) == "targets":
+            glow_plan = mats.get("glow_plan") or {}
+            if glow_plan.get("completed") or glow_plan.get("enabled") is False:
+                return {}
+            return {str(mid): int(value) for mid, value in (glow_plan.get("targets") or {}).items() if int(value) > 0}
+        return compute_renewal_requirements(role, scoring) if wardrobe_snapshot(role) else {}
+    return {}
 
-    crafting, scoring = load_catalogs()
+
+def goal_deficits(goal: str, role: dict, inventory: dict, crafting: dict, scoring: dict) -> list[tuple]:
+    """Farmable shortfalls of a goal, largest first; trial materials before bling and thread."""
     mat_defs = crafting.get("materials") or {}
-    inventory = ensure_backpack_scanned(rt, account, crafting)
-    role = account.load()
-    if dynamic:
-        targets = compute_renewal_requirements(role, scoring)
-    else:
-        targets = ((role.get("materials") or {}).get("glow_plan") or {}).get("targets") or {}
-
-    def pending_deficits():
-        items = []
-        for mid, target_val in targets.items():
-            meta = mat_defs.get(str(mid))
-            if not meta or "realm" not in meta:
-                continue
-            current = int(inventory.get(str(mid), 0))
-            deficit = int(target_val) - current
-            if deficit > 0:
-                prio = 0 if meta["kind"] == "monster_glow" else 1
-                items.append((prio, -deficit, str(mid), meta, deficit))
-        items.sort()
-        return items
-
-    deficits = pending_deficits()
-    if not deficits:
-        record_accrual(account, mark_glow_completed=not dynamic)
-        rt.log("焕新材料筹备：目标材料库存均已达标，跳过。")
-        return True
-
-    if not rt.ui.calendar():
-        return False
-    game = Gameplay(rt)
-    energy = game.read_energy()
-    if energy is None:
-        rt.log("焕新材料筹备：无法读取当前活跃能量，本次停止。")
-        return False
-
-    while not rt.stopped and deficits:
-        _, _, mid, meta, deficit = deficits[0]
-        kind = meta["realm"]
-        e_per_run = int(meta["energy"])
-        d_per_run = int(meta["drop"])
-        if energy < game.MIN_ENERGY[kind]:
-            rt.log(f"焕新材料筹备：剩余活跃能量 {energy} 点，不足继续挑战，今日筹备结束。")
-            return True
-        runs_needed = math.ceil(deficit / d_per_run)
-        max_runs = energy // e_per_run
-        runs_to_do = min(runs_needed, max_runs)
-        use_max = runs_needed >= max_runs
-        rt.log(f"焕新材料筹备：{meta['name']} 还差 {deficit}，计划挑战「{meta['level']}」{runs_to_do} 次。")
-        ok, energy_after = execute_material_run(rt, kind, meta["level"], runs_to_do, use_max)
-        spent = max(0, energy - energy_after)
-        actual_runs = spent // e_per_run
-        gained = actual_runs * d_per_run
-        if gained > 0:
-            inventory[mid] = int(inventory.get(mid, 0)) + gained
-            remaining = pending_deficits()
-            record_accrual(account, mid, gained, mark_glow_completed=not dynamic and not remaining)
-            rt.log(f"焕新材料筹备：已获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
-        energy = energy_after
-        if not ok or spent == 0:
-            break
-        deficits = pending_deficits()
-
-    if not pending_deficits():
-        rt.log("焕新材料筹备：全部焕新目标材料已刷齐！剩余活跃能量交由后续任务继续使用。")
-    return True
+    items = []
+    for mid, need in goal_requirements(goal, role, crafting, scoring).items():
+        meta = mat_defs.get(str(mid))
+        if not meta or not meta.get("realm") or not meta.get("level"):
+            continue
+        deficit = int(need) - int(inventory.get(str(mid), 0))
+        if deficit > 0:
+            priority = 0 if meta.get("kind") in ("monster_glow", "monster_craft") else 1
+            items.append((priority, -deficit, str(mid), meta, deficit))
+    items.sort()
+    return items
 
 
-def run_crafting_pursuit(rt) -> bool:
+def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str | None]:
+    """Farm the enabled goals in order, re-choosing before every challenge batch.
+
+    Returns the hand-off ("glow", "fallback" or "done") and the realm kind last
+    farmed. ``glow_shortfall(role)`` reports whether the blessing goal still has
+    colours to chase; a pending glow goal hands off to the blessing workflow.
+    """
     account = AccountState.for_runtime(ROOT, rt)
-    role = account.load()
-    if not wardrobe_snapshot(role):
-        rt.log("制衣材料全收集：尚未读取过衣柜，本次跳过；请先在「衣柜与搭配」中读取衣柜以建立设计图缺口清单。")
-        return True
-
     crafting, scoring = load_catalogs()
-    mat_defs = crafting.get("materials") or {}
-    inventory = ensure_backpack_scanned(rt, account, crafting)
-    role = account.load()
-    required = compute_crafting_requirements(role, crafting, scoring)
-
-    def crystal_deficits():
-        items = []
-        for mid, meta in mat_defs.items():
-            if meta.get("kind") != "monster_craft":
+    inventory = None
+    energy = None
+    game = None
+    last_kind = None
+    finished: set[str] = set()
+    while not rt.stopped:
+        role = account.load()
+        picked = None
+        for goal in goals:
+            if goal == "glow":
+                if glow_shortfall(role):
+                    return "glow", last_kind
+                if goal not in finished:
+                    finished.add(goal)
+                    rt.log("幻境挑战顺序：五星闪光已收齐所选范围，跳过。")
                 continue
-            req = int(required.get(mid, 0))
-            cur = int(inventory.get(mid, 0))
-            deficit = req - cur
-            if deficit > 0:
-                items.append((-deficit, mid, meta, deficit, req, cur))
-        items.sort()
-        return items
-
-    deficits = crystal_deficits()
-    if not deficits:
-        rt.log("制衣材料收集：当前制衣计划所需的魔物试炼晶石已全部集齐！本次不消耗活跃能量。")
-        return True
-
-    if not rt.ui.calendar():
-        return False
-    game = Gameplay(rt)
-    energy = game.read_energy()
-    if energy is None:
-        rt.log("制衣材料全收集：无法读取当前活跃能量，本次停止。")
-        return False
-
-    while not rt.stopped and deficits:
-        _, mid, meta, deficit, req, cur = deficits[0]
-        kind = meta.get("realm", "monster")
-        e_per_run = int(meta.get("energy", 40))
-        d_per_run = int(meta.get("drop", 5))
+            if inventory is None:
+                inventory = ensure_backpack_scanned(rt, account, crafting)
+                role = account.load()
+            deficits = goal_deficits(goal, role, inventory, crafting, scoring)
+            if deficits:
+                picked = (goal, deficits[0])
+                break
+            if goal not in finished:
+                finished.add(goal)
+                rt.log(f"幻境挑战顺序：{GOAL_LABELS[goal]}已备齐，交给下一项。")
+                if goal == "renewal" and renewal_source(role.get("materials") or {}) == "targets":
+                    record_accrual(account, mark_glow_completed=True)
+        if picked is None:
+            return "fallback", last_kind
+        if energy is None:
+            if not rt.ui.calendar():
+                raise RuntimeError("未能进入奇想日历读取活跃能量")
+            game = Gameplay(rt)
+            energy = game.read_energy()
+            if energy is None:
+                raise RuntimeError("无法读取当前活跃能量")
+        goal, (_, _, mid, meta, deficit) = picked
+        kind = meta["realm"]
+        per_run = int(meta.get("energy", 40))
+        per_drop = int(meta.get("drop", 5))
         if energy < game.MIN_ENERGY[kind]:
-            rt.log(f"制衣材料全收集：剩余活跃能量 {energy} 点，不足一次试炼挑战，今日结束。")
-            return True
-        runs_needed = math.ceil(deficit / d_per_run)
-        max_runs = energy // e_per_run
-        runs_to_do = min(runs_needed, max_runs)
+            rt.log(f"幻境挑战顺序：剩余活跃能量 {energy} 点，不足继续挑战。")
+            return "done", last_kind
+        runs_needed = math.ceil(deficit / per_drop)
+        max_runs = energy // per_run
+        runs = min(runs_needed, max_runs)
         use_max = runs_needed >= max_runs
-        rt.log(f"制衣材料全收集：{meta['name']}（已有 {cur}/{req}，差 {deficit}），挑战「{meta['level']}」{runs_to_do} 次。")
-        ok, energy_after = execute_material_run(rt, kind, meta["level"], runs_to_do, use_max)
+        rt.log(f"幻境挑战顺序：{GOAL_LABELS[goal]} · {meta['name']} 还差 {deficit}，挑战「{meta['level']}」{runs} 次。")
+        ok, energy_after = execute_material_run(rt, kind, meta["level"], runs, use_max)
         spent = max(0, energy - energy_after)
-        gained = (spent // e_per_run) * d_per_run
+        gained = (spent // per_run) * per_drop
         if gained > 0:
             inventory[mid] = int(inventory.get(mid, 0)) + gained
             record_accrual(account, mid, gained)
-            rt.log(f"制衣材料全收集：{meta['name']} +{gained}（进度 {inventory[mid]}/{req}）。")
+            rt.log(f"幻境挑战顺序：已获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
         energy = energy_after
+        last_kind = kind
         if not ok or spent == 0:
-            break
-        deficits = crystal_deficits()
-
-    if not crystal_deficits():
-        rt.log("制衣材料收集：当前制衣计划所需的魔物试炼晶石已全部刷齐！")
-    return True
+            raise RuntimeError(f"{GOAL_LABELS[goal]}挑战未完成或未确认活跃能量消耗")
+    return "done", last_kind

@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Loader2, Search, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
-import { useAppStore } from '@/stores/appStore';
 import { buildOwnedProfile } from '@/services/scoring/profile';
-import { addCosts, buildRenewalGroups, MAX_LEVEL, renewalCost, RENEWED_LEVEL, summarizeMaterials, type RenewalGroup } from '@/services/scoring/materialPlanning';
+import { addCosts, buildRenewalGroups, MAX_LEVEL, renewalCost, RENEWED_LEVEL, renewalSource, summarizeMaterials, type RenewalGroup } from '@/services/scoring/materialPlanning';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import type { PlanMode, RenewalPlanState } from '@/services/scoring/types';
 import { GlowPrepConfigPanel } from './GlowPrepConfigPanel';
-import { PlanLayout, PlanListPanel, PlanModeSwitch, PlanTaskBar, planCheckbox, planField } from './CollectionPlan';
+import { PlanLayout, PlanListPanel, PlanModeSwitch, PlanQueueBar, planCheckbox, planField } from './CollectionPlan';
 import { WardrobeMaterialSummary } from './WardrobeMaterialSummary';
 
 const smallField = 'rounded-md border border-border bg-bg-primary px-1 py-0.5 text-xs tabular-nums outline-none focus:border-accent';
@@ -17,34 +16,9 @@ const num = (value: number) => value.toLocaleString('zh-CN');
 const effective = (group: RenewalGroup) => group.level ?? 0;
 const topLevel = (group: RenewalGroup) => group.renewable ? RENEWED_LEVEL : MAX_LEVEL;
 
-/** The standalone 焕新材料筹备 task in the current profile. */
-function useGlowPrepTask() {
-  const instances = useAppStore((state) => state.instances);
-  const activeInstanceId = useAppStore((state) => state.activeInstanceId);
-  const addTaskToInstance = useAppStore((state) => state.addTaskToInstance);
-  const reorderTasks = useAppStore((state) => state.reorderTasks);
-  const toggleTaskEnabled = useAppStore((state) => state.toggleTaskEnabled);
-  const instance = instances.find((item) => item.id === activeInstanceId) ?? instances[0];
-  const task = instance?.selectedTasks.find((item) => item.taskName === 'glow_material_prep');
-  const ensure = () => {
-    if (!instance) return;
-    if (task) {
-      if (!task.enabled) toggleTaskEnabled(instance.id, task.id);
-      return;
-    }
-    addTaskToInstance(instance.id, { name: 'glow_material_prep', option: [] });
-    const updated = useAppStore.getState().instances.find((item) => item.id === instance.id);
-    const from = (updated?.selectedTasks.length ?? 1) - 1;
-    const realm = updated?.selectedTasks.findIndex((item) => item.taskName === 'realm_challenge') ?? -1;
-    if (realm >= 0 && from > realm) reorderTasks(instance.id, from, realm);
-  };
-  return { ready: !!task?.enabled, ensure };
-}
-
 export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refreshToken: number; onOpenCloset: () => void }) {
   const activeUid = useAccountStateStore((state) => state.data?.uid);
   const { payload, settings, materials, loading, load, setLevel, updateMaterials, adoptMaterials } = useWardrobePlanStore();
-  const glowTask = useGlowPrepTask();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'todo' | 'below_max' | 'renewable' | 'selected' | 'all'>('todo');
   const [quality, setQuality] = useState('all');
@@ -83,13 +57,13 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   const totals = useMemo(() => summarizeMaterials(required, payload?.crafting_catalog, inventory, payload?.catalog.material_names),
     [required, payload, inventory]);
   const unknownPlanned = planned.filter(({ group }) => group.level === null).length;
-  const active = !!plan?.enabled && glowTask.ready;
+  const usingTargets = renewalSource(materials) === 'targets';
 
   function savePlan(next: Partial<RenewalPlanState>) {
     updateMaterials((previous) => ({ ...previous, renewal_plan: {
-      enabled: previous.renewal_plan?.enabled ?? false,
       mode: previous.renewal_plan?.mode ?? 'all',
       targets: previous.renewal_plan?.targets ?? {},
+      source: 'plan',
       ...next,
       updated_at: new Date().toISOString(),
     } }));
@@ -102,10 +76,6 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   function setStock(id: string, value: number) {
     updateMaterials((previous) => ({ ...previous, inventory: { ...previous.inventory, [id]: Math.max(0, Math.round(value) || 0) },
       inventory_updated_at: new Date().toISOString() }));
-  }
-  function start() {
-    savePlan({ enabled: true });
-    glowTask.ensure();
   }
 
   if (loading && !payload) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在加载换新规划</div>;
@@ -143,11 +113,12 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
     <PlanModeSwitch value={mode} onChange={(next) => savePlan({ mode: next })} allLabel="全部未焕新的衣服"
       allDetail={<>已拥有 {num(groups.length)} 组可养成衣服，已养成到顶 {num(doneCount)} 组；能焕新的按焕新、不能焕新的按满级计算，新得到的衣服读衣柜后自动加入。</>}
       selectedDetail="只为勾选的衣服备料，可分别选择升到满级或焕新。" />
-    <PlanTaskBar taskLabel="焕新材料筹备" active={active}
-      status={<>{planLabel} · {totals.missingKinds ? `还差 ${totals.missingKinds} 种材料` : '材料已备齐'}</>}
-      hint="自动任务每天先按当前衣柜和已填等级重新计算缺口，再刷泡泡、丝线和噗灵，剩余能量交给幻境挑战。升级或焕新后请在列表里更新等级。"
-      disabled={!planned.length}
-      onStart={start} onStop={() => savePlan({ enabled: false })} />
+    <PlanQueueBar goal="renewal"
+      status={usingTargets
+        ? <>当前按手动材料目标刷取 <button type="button" onClick={() => savePlan({})} className="ml-1 text-accent hover:underline">改用上面的衣服计划</button></>
+        : <>{planLabel} · {totals.missingKinds ? `还差 ${totals.missingKinds} 种材料` : '材料已备齐，轮到时直接交给下一项'}</>}
+      hint="幻境挑战每批前按当前衣柜和已填等级重新计算缺口，刷泡泡、丝线和噗灵。升级或焕新后请在列表里更新等级。"
+      disabled={!planned.length && !usingTargets} />
     <PlanLayout
       list={<PlanListPanel title={mode === 'all' ? '全收集包含的衣服' : '想养成哪些衣服'} mode={mode}
         includedCount={planned.length} selectedCount={pickedCount} onClear={() => savePlan({ mode: 'selected', targets: {} })}
@@ -217,12 +188,12 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
         />
         <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
           <button type="button" onClick={() => setShowManual((value) => !value)} className="flex w-full items-center gap-2 px-4 py-3 text-left text-xs">
-            <span className="font-semibold text-text-primary">手动指定筹备目标</span>
-            <span className="text-text-secondary">{plan?.enabled ? '换新计划进行中，手动目标暂停' : manualTargets ? `${manualTargets} 项目标${materials.glow_plan?.source_label ? ` · 来自${materials.glow_plan.source_label}` : ''}` : '未设置'}</span>
+            <span className="font-semibold text-text-primary">手动材料目标</span>
+            <span className="text-text-secondary">{!usingTargets ? (manualTargets ? '已保存，当前未使用' : '未设置') : manualTargets ? `${manualTargets} 项目标${materials.glow_plan?.source_label ? ` · 来自${materials.glow_plan.source_label}` : ''}` : '未设置'}</span>
             <ChevronDown className={clsx('ml-auto h-4 w-4 text-text-muted transition-transform', showManual && 'rotate-180')} />
           </button>
           {showManual && <div className="border-t border-border p-3">
-            <p className="mb-2 text-[11px] leading-5 text-text-muted">不按衣服计算、直接指定每种材料的目标库存。保存手动目标或从搭配计算导入时，会改为使用手动目标并停止上面的换新计划。</p>
+            <p className="mb-2 text-[11px] leading-5 text-text-muted">不按衣服计算、直接指定每种材料的目标库存。保存手动目标或从搭配计算导入后，「换新材料」改按手动目标刷取；在上方切换全收集或自选即可改回衣服计划。</p>
             <GlowPrepConfigPanel externalMaterials={materials} accountKey={payload.account_key} onChanged={adoptMaterials} />
           </div>}
         </section>

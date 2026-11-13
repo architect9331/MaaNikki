@@ -8,7 +8,7 @@
     },
     "next": [
       "MaaNikki_RealmWeekly",
-      "MaaNikki_RealmEnergy"
+      "MaaNikki_RealmQueue"
     ],
     "focus": {
       "Node.Action.Starting": "正在执行所选幻境挑战。",
@@ -21,11 +21,28 @@
     "action": "Custom",
     "custom_action": "nikki.weekly_challenge",
     "next": [
-      "MaaNikki_RealmEnergy"
+      "MaaNikki_RealmQueue"
     ],
     "on_error": [],
     "focus": {
       "Node.Action.Starting": "正在检查本周幻境挑战次数。"
+    }
+  },
+  "MaaNikki_RealmQueue": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.realm_queue",
+    "custom_action_param": {
+      "order": ""
+    },
+    "next": [
+      "MaaNikki_RealmEnergy"
+    ],
+    "on_error": [
+      "MaaNikki_RealmReviewFailed"
+    ],
+    "focus": {
+      "Node.Action.Starting": "正在按刷取顺序使用剩余活跃能量。"
     }
   },
   "MaaNikki_RealmEnergy": {
@@ -35,7 +52,7 @@
       "MaaNikki_Bless"
     ],
     "focus": {
-      "Node.Action.Starting": "正在使用剩余活跃能量挑战所选幻境。"
+      "Node.Action.Starting": "刷取顺序中的目标已完成，正在用剩余活跃能量挑战兜底幻境。"
     }
   },
   "MaaNikki_RealmReview": {
@@ -60,10 +77,10 @@
     "recognition": "DirectHit",
     "action": "DoNothing",
     "next": [
-      "MaaNikki_RealmEnergy"
+      "MaaNikki_RealmQueue"
     ],
     "focus": {
-      "Node.Action.Starting": "每周幻境部分挑战未完成；已安全返回主界面，继续处理所选普通幻境。"
+      "Node.Action.Starting": "每周幻境部分挑战未完成；已安全返回主界面，继续按刷取顺序使用剩余活跃能量。"
     }
   },
   "MaaNikki_Weekly_CountOCR": {
@@ -76,22 +93,5 @@
     ],
     "expected": "[0-9]+\\s*[/／]\\s*[0-9]+",
     "action": "DoNothing"
-  },
-  "MaaNikki_CraftingPursuit": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.crafting_pursuit",
-    "custom_action_param": {},
-    "next": []
-  },
-  "MaaNikki_GlowMaterialPrep": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.glow_material_prep",
-    "custom_action_param": {},
-    "next": [],
-    "focus": {
-      "Node.Action.Starting": "正在检查焕新材料筹备目标。"
-    }
   }
 }

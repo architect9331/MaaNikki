@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAppStore } from '@/stores/appStore';
 import { saveMaterialPlan } from '@/services/scoring/api';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import { realmQueue, realmQueueOption } from '@/utils/nikkiOptions';
 import { MATERIAL_REALM_TARGETS } from '@/services/scoring/heartPresets';
 import type { BatchCalculationResult, MaterialsState, ScoringCatalog } from '@/services/scoring/types';
 
@@ -22,16 +23,12 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
   const instances = useAppStore((state) => state.instances);
   const activeInstanceId = useAppStore((state) => state.activeInstanceId);
   const setTaskOptionValue = useAppStore((state) => state.setTaskOptionValue);
-  const addTaskToInstance = useAppStore((state) => state.addTaskToInstance);
-  const reorderTasks = useAppStore((state) => state.reorderTasks);
-  const toggleTaskEnabled = useAppStore((state) => state.toggleTaskEnabled);
   const entries = Object.entries(cost).filter(([, count]) => count > 0);
 
   const activeInstance = instances.find((inst) => inst.id === activeInstanceId) ?? instances[0];
   const realmTask = activeInstance?.selectedTasks.find((task) => task.taskName === 'realm_challenge');
   const realmValues = realmTask?.optionValues ?? {};
-  const isCollectionMode = realmValues.CollectionMode?.type === 'switch' && realmValues.CollectionMode.value;
-  const activeRealmType = isCollectionMode ? '' : realmValues.RealmTypes?.type === 'select' ? realmValues.RealmTypes.caseName : 'Bless';
+  const activeRealmType = realmValues.RealmTypes?.type === 'select' ? realmValues.RealmTypes.caseName : 'Bless';
 
   function applyRealmTarget(materialId: string) {
     const target = MATERIAL_REALM_TARGETS[materialId];
@@ -40,11 +37,9 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
       toast.error('当前配置页签中尚未添加「幻境挑战」任务，请先在主界面添加。');
       return;
     }
-    setTaskOptionValue(activeInstance.id, realmTask.id, 'CollectionMode', { type: 'switch', value: false });
-    setTaskOptionValue(activeInstance.id, realmTask.id, 'CraftingCollectionMode', { type: 'switch', value: false });
     setTaskOptionValue(activeInstance.id, realmTask.id, 'RealmTypes', { type: 'select', caseName: target.realmType });
     setTaskOptionValue(activeInstance.id, realmTask.id, target.optionKey, { type: 'select', caseName: target.caseName });
-    toast.success(`已将当前配置的幻境挑战设为「${target.label}」`);
+    toast.success(`已将幻境挑战的兜底副本设为「${target.label}」`);
   }
 
   async function applyGlowPrepPlan(mode: 'replace' | 'add') {
@@ -63,8 +58,8 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     }
     const nextMaterials: MaterialsState = {
       ...(base ?? {}),
-      // Imported targets replace the wardrobe renewal plan as the task's source.
-      renewal_plan: base?.renewal_plan ? { ...base.renewal_plan, enabled: false } : base?.renewal_plan,
+      // Imported targets replace the wardrobe renewal plan as the 换新 goal's source.
+      renewal_plan: { enabled: false, mode: 'all', targets: {}, ...(base?.renewal_plan ?? {}), source: 'targets' },
       glow_plan: {
         enabled: true,
         completed: false,
@@ -77,23 +72,13 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
       await saveMaterialPlan(accountKey, nextMaterials);
       onMaterialsChange?.(nextMaterials);
       if (shared.payload?.account_key === accountKey) shared.adoptMaterials(nextMaterials);
-      if (activeInstance) {
-        const existing = activeInstance.selectedTasks.find((t) => t.taskName === 'glow_material_prep');
-        if (!existing) {
-          addTaskToInstance(activeInstance.id, { name: 'glow_material_prep', option: [] });
-          const updated = useAppStore.getState().instances.find((i) => i.id === activeInstance.id);
-          const fromIdx = (updated?.selectedTasks.length ?? 1) - 1;
-          const realmIdx = updated?.selectedTasks.findIndex((t) => t.taskName === 'realm_challenge') ?? -1;
-          if (realmIdx >= 0 && fromIdx > realmIdx) {
-            reorderTasks(activeInstance.id, fromIdx, realmIdx);
-          }
-        } else if (!existing.enabled) {
-          toggleTaskEnabled(activeInstance.id, existing.id);
-        }
+      if (activeInstance && realmTask) {
+        const queue = realmQueue(realmTask.optionValues).map((entry) => entry.goal === 'renewal' ? { ...entry, enabled: true } : entry);
+        setTaskOptionValue(activeInstance.id, realmTask.id, 'RealmQueue', realmQueueOption(queue));
       }
-      toast.success(mode === 'add'
-        ? '已将本套材料差额累加至「焕新材料筹备」任务目标！'
-        : '已将本套材料差额设为「焕新材料筹备」任务目标！');
+      toast.success(realmTask
+        ? (mode === 'add' ? '已累加到换新材料目标，并加入幻境挑战顺序' : '已设为换新材料目标，并加入幻境挑战顺序')
+        : '已保存换新材料目标；请在主界面添加「幻境挑战」任务后开启刷取顺序中的换新材料');
     } catch (err) {
       toast.error(String(err));
     }
@@ -107,7 +92,7 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     <div className="mt-2.5 space-y-2.5">
       {accountKey && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs">
-          <span className="text-text-secondary">下发给独立任务「焕新材料筹备」（也可在任务栏手动改数量）：</span>
+          <span className="text-text-secondary">设为幻境挑战「换新材料」目标（可在收集进度 → 换新中调整）：</span>
           <div className="flex flex-wrap gap-1.5">
             <button type="button" onClick={() => void applyGlowPrepPlan('replace')}
               className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover">
@@ -142,9 +127,9 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
                   isCurrentTarget
                     ? 'bg-accent/15 font-medium text-accent'
                     : 'border border-border bg-bg-secondary text-text-secondary hover:border-accent hover:text-accent')}
-                title={`将幻境挑战设为：${target.label}`}>
+                title={`把幻境挑战的兜底副本设为：${target.label}`}>
                 {isCurrentTarget ? <Check className="h-3 w-3" /> : <Flame className="h-3 w-3" />}
-                {isCurrentTarget ? '当前目标' : '单刷此项'}
+                {isCurrentTarget ? '已设兜底' : '设为兜底'}
               </button>
             )}
           </div>

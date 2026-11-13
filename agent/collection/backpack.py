@@ -29,6 +29,24 @@ def wardrobe_snapshot(role: dict) -> dict:
     return snapshot if isinstance(snapshot, dict) else {}
 
 
+def renewal_source(mats: dict) -> str:
+    """Which data drives the 换新 goal: the wardrobe plan, or fixed material targets.
+
+    Older saves have no explicit source: an enabled wardrobe plan means "plan";
+    otherwise unfinished targets from the calculator or manual entry mean "targets".
+    """
+    plan = mats.get("renewal_plan") if isinstance(mats.get("renewal_plan"), dict) else None
+    if plan and plan.get("source") in ("plan", "targets"):
+        return plan["source"]
+    if plan and plan.get("enabled"):
+        return "plan"
+    glow_plan = mats.get("glow_plan") if isinstance(mats.get("glow_plan"), dict) else None
+    if (glow_plan and glow_plan.get("enabled", True) and not glow_plan.get("completed")
+            and any(int(value or 0) > 0 for value in (glow_plan.get("targets") or {}).values())):
+        return "targets"
+    return "plan"
+
+
 def wardrobe_snapshot_key(role: dict) -> str:
     snapshot = wardrobe_snapshot(role)
     if not snapshot:
@@ -337,8 +355,7 @@ def ensure_backpack_scanned(rt, account: AccountState, crafting_catalog: dict) -
 
         glow_plan = m.get("glow_plan") if isinstance(m.get("glow_plan"), dict) else None
         glow_targets = glow_plan.get("targets") if (glow_plan and isinstance(glow_plan.get("targets"), dict)) else None
-        renewal_plan = m.get("renewal_plan") if isinstance(m.get("renewal_plan"), dict) else None
-        renewal_dynamic = bool(renewal_plan and renewal_plan.get("enabled"))
+        renewal_dynamic = renewal_source(m) == "plan"
         scoring_state = (data.get("wardrobe") or {}).get("scoring") or {}
         renewal_key = f"{wb_key}|{scoring_state.get('updated_at') or ''}" if wb_key else ""
         if renewal_key and m.get("renewal_baseline_key") != renewal_key:

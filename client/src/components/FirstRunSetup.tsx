@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ArrowRight, Check, ShieldAlert, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import { useAppStore } from '@/stores/appStore';
+import { realmQueue, realmQueueOption } from '@/utils/nikkiOptions';
 import { ModalPortal, useModalFocusTrap } from '@/components/ui/Modal';
 
 /** Raise this and the copy in App.tsx when the notice changes materially. */
@@ -53,7 +54,8 @@ export function FirstRunSetup() {
         const group = TASK_GROUPS.find((item) => (item.tasks as readonly string[]).includes(task.taskName));
         if (group && task.enabled !== groups[group.id]) state.toggleTaskEnabled(instance.id, task.id);
         if (task.taskName !== 'realm_challenge') continue;
-        state.setTaskOptionValue(instance.id, task.id, 'CollectionMode', { type: 'switch', value: collection });
+        state.setTaskOptionValue(instance.id, task.id, 'RealmQueue', realmQueueOption(
+          realmQueue(task.optionValues).map((entry) => entry.goal === 'glow' ? { ...entry, enabled: collection } : entry)));
         if (collection) {
           state.setTaskOptionValue(instance.id, task.id, 'CollectionDecompose', { type: 'switch', value: decompose });
           acknowledgePreflight('collection-decompose');

@@ -11,8 +11,10 @@ from .decompose import DuplicateDecomposer, LowRarityDecomposer
 
 class FiveStarPursuit:
     def __init__(self, inventory, *, decompose_duplicates=False, auto_bling=True, chance_priority=True,
-                 share_statistics=False, farm_only=False, reserve_bling=0):
+                 share_statistics=False, farm_only=False, reserve_bling=0, focus_sets=None):
         self.inventory = inventory
+        # 自选: only these blessing sets weigh realm choice and decide completion.
+        self.focus_sets = set(focus_sets) if focus_sets is not None else None
         self.rt = inventory.rt
         self.decompose_duplicates = decompose_duplicates
         self.auto_bling = auto_bling
@@ -91,10 +93,20 @@ class FiveStarPursuit:
         stock.checkpoint()
         return outcome["status"] != "not_spent"
 
+    def focus_parts(self, progress):
+        parts = progress["parts"]
+        return parts if self.focus_sets is None else [part for part in parts if part["name"] in self.focus_sets]
+
+    def target_complete(self):
+        progress = self.inventory.progress()
+        if self.focus_sets is None:
+            return progress["complete"]
+        return all(not part["missing_colors"] for part in self.focus_parts(progress))
+
     def spend_energy(self):
         stock = self.inventory
         value = Counter()
-        for part in stock.progress()["parts"]:
+        for part in self.focus_parts(stock.progress()):
             value[part["source"]] += (
                 stock.marginal_new_colour_chance(
                     part["name"], part["slot"], embryos=part.get("embryos", 0)
@@ -128,7 +140,7 @@ class FiveStarPursuit:
     def _run_farm_only(self):
         stock = self.inventory
         stock.prepare("farm_only")
-        if stock.progress()["complete"]:
+        if self.target_complete():
             stock.report.update(complete=True, phase="complete",
                                 reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量",
                                 inventory={"reused": True})
@@ -158,7 +170,7 @@ class FiveStarPursuit:
             stock.report["warehouse_full"] = True
             self.rt.log(message, ui_text=message)
             return stock.finish("祝福闪光仓库已满，今天不刷本")
-        if stock.progress()["complete"]:
+        if self.target_complete():
             return stock.finish("本地图鉴内五星颜色已收齐，可选择其他幻境")
         embryos_acquired = bool(self.spend_energy())
         if embryos_acquired and stock.open():
@@ -178,7 +190,7 @@ class FiveStarPursuit:
             return self._run_farm_only()
         stock = self.inventory
         stock.prepare("full_collection")
-        if stock.progress()["complete"]:
+        if self.target_complete():
             stock.report.update(complete=True, phase="complete",
                                 reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量",
                                 inventory={"reused": True})

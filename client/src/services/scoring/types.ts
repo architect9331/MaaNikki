@@ -129,12 +129,19 @@ export interface CraftingPlanState {
   sketch_ids: string[];
 }
 export interface RenewalPlanState {
-  /** When enabled, 焕新材料筹备 computes its targets from this plan instead of glow_plan. */
-  enabled: boolean;
+  /** Legacy flag from the standalone 焕新材料筹备 task; `source` supersedes it. */
+  enabled?: boolean;
+  /** What drives the 换新材料 goal: this wardrobe plan, or fixed glow_plan targets. */
+  source?: 'plan' | 'targets';
   mode: PlanMode;
   /** Clothing group id -> target level (10 full level, 11 renewed); used by 自选. */
   targets: Record<string, number>;
   updated_at?: string;
+}
+export interface BlessingPlanState {
+  mode: PlanMode;
+  /** Five-star blessing set names chased in 自选. */
+  sets: string[];
 }
 export interface MaterialsState {
   inventory?: Record<string, number>;
@@ -145,6 +152,7 @@ export interface MaterialsState {
   crafting_scope?: 'all' | 'suits';
   crafting_plan?: CraftingPlanState | null;
   renewal_plan?: RenewalPlanState | null;
+  blessing_plan?: BlessingPlanState | null;
   renewal_baseline_key?: string;
   renewal_consumed?: Record<string, number>;
   glow_plan?: GlowPlanState | null;

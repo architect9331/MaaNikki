@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Check, Compass, RefreshCw, Route, Shirt, Sparkles, Star, X } from 'lucide-react';
+import { BookOpen, Calculator, Check, Compass, RefreshCw, Route, Sparkles, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
@@ -127,8 +127,8 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
 
   const progress = useMemo(() => getBlessingProgress(data), [data]);
   const detail = error ? '账号状态读取失败' : progress.known
-    ? `已收集 ${progress.owned.size} / ${progress.target} 个颜色${progress.uncertain ? ' · 上次确认记录，待复核' : ''}`
-    : '尚无完整记录，运行幻境挑战的五星全收集时会先自动整理';
+    ? `五星闪光已收集 ${progress.owned.size} / ${progress.target} 个颜色${progress.uncertain ? ' · 上次确认记录，待复核' : ''}`
+    : '尚无闪光记录，把五星闪光加入幻境挑战顺序运行一次时会先自动整理';
   const wardrobe = data?.wardrobe?.inventory ?? data?.wardrobe?.last_scan;
   const wardrobeBusy = ['starting', 'reading', 'stopping'].includes(wardrobeStatus);
   const resonanceError = resonance.connectionError || resonance.status.error;
@@ -137,12 +137,12 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
   const tiles = <>
     <FeatureTile icon={Sparkles} title="收集进度" compact={compact} warn={Boolean(error)}
       status={error ? '读取失败' : progress.percentage === null ? '尚无记录' : `${progress.percentage}%`}
-      tooltip={<div className="space-y-1"><p className="font-medium">祝福闪光收集进度</p><p className="text-text-secondary">{detail}</p></div>}
+      tooltip={<div className="space-y-1"><p className="font-medium">收集进度</p><p className="text-text-secondary">我的衣柜、制衣、换新与祝福闪光的收集计划。</p><p className="text-text-secondary">{detail}</p></div>}
       onClick={() => open('blessing')} />
-    <FeatureTile icon={Shirt} title="衣柜与搭配" compact={compact} busy={wardrobeBusy}
+    <FeatureTile icon={Calculator} title="搭配计算" compact={compact} busy={wardrobeBusy}
       status={wardrobeBusy || wardrobeStatus === 'error' ? wardrobeLabels[wardrobeStatus] : wardrobe ? `${wardrobe.scanned_count} 件` : '尚未读取'}
       warn={wardrobeStatus === 'error'}
-      tooltip={<div className="space-y-1"><p className="font-medium">衣柜与搭配</p><p className="text-text-secondary">读取衣柜，计算巅峰赛等比赛的最高分搭配。</p></div>}
+      tooltip={<div className="space-y-1"><p className="font-medium">搭配计算</p><p className="text-text-secondary">按已读衣柜计算巅峰赛等比赛的最高分搭配；读取衣柜在「收集进度 → 我的衣柜」。</p></div>}
       onClick={() => open('wardrobe')} />
     <FeatureTile icon={Compass} title="辅助功能" compact={compact} busy={explorationBusy}
       status={explorationStatusLabels[exploration.status]} warn={exploration.status === 'error'}

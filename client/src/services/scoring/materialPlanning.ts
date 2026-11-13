@@ -1,6 +1,6 @@
 import { upgradeCost } from './math';
 import type { RealmMaterialTarget } from './heartPresets';
-import type { CraftingCatalog, CraftingMaterialMeta, CraftingSketch, OwnedProfile, ScoringCatalog } from './types';
+import type { CraftingCatalog, CraftingMaterialMeta, CraftingSketch, MaterialsState, OwnedProfile, ScoringCatalog } from './types';
 
 /** Daily active energy used to turn realm energy into a rough number of days. */
 export const DAILY_ENERGY = 320;
@@ -130,4 +130,14 @@ export function buildRenewalGroups(catalog: ScoringCatalog, profile: OwnedProfil
 export function renewalCost(catalog: ScoringCatalog, group: RenewalGroup, target: number) {
   const item = catalog.items[group.scoreId];
   return item ? upgradeCost(catalog, item, group.level, target) : {};
+}
+
+/** Mirrors the agent: which data drives the 换新材料 goal. */
+export function renewalSource(materials: MaterialsState): 'plan' | 'targets' {
+  const plan = materials.renewal_plan;
+  if (plan?.source) return plan.source;
+  if (plan?.enabled) return 'plan';
+  const glow = materials.glow_plan;
+  if (glow && glow.enabled !== false && !glow.completed && Object.values(glow.targets ?? {}).some((value) => Number(value) > 0)) return 'targets';
+  return 'plan';
 }

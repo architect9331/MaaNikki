@@ -1,7 +1,6 @@
 import { useAccountStateStore, periodCompleted, periodTaskLabel, crownTargetStars, crownProgress } from '@/stores/accountStateStore';
-import { realmCollectionEnabled, realmCraftingEnabled, realmFarmOnlyEnabled, realmOptionActive, realmOptionBackup, realmOptionLabel } from '@/utils/nikkiOptions';
-import { GlowPrepConfigPanel } from './GlowPrepConfigPanel';
-import { RealmModeSwitch } from './RealmModeSwitch';
+import { REALM_GOAL_LABELS, realmFarmOnlyEnabled, realmOptionActive, realmOptionBackup, realmOptionLabel, realmQueue } from '@/utils/nikkiOptions';
+import { RealmQueueCard } from './RealmQueueCard';
 import { XinghaiScoreHint, xinghaiSummary } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -647,19 +646,15 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
       }
     }
     if (task.taskName === 'realm_challenge') {
-      const modeName = realmCollectionEnabled(task.optionValues)
-        ? (realmFarmOnlyEnabled(task.optionValues) ? '五星闪光（只刷胚子）' : '五星闪光全收集')
-        : realmCraftingEnabled(task.optionValues)
-          ? '制衣材料收集'
-          : '日常消耗';
-      previews.push({ key: 'mode', label: '模式', value: modeName, type: 'select' });
+      const goals = realmQueue(task.optionValues).filter((entry) => entry.enabled)
+        .map((entry) => entry.goal === 'glow' && realmFarmOnlyEnabled(task.optionValues) ? '五星闪光（只刷胚子）' : REALM_GOAL_LABELS[entry.goal]);
+      previews.push({ key: 'mode', label: '刷取顺序', value: goals.length ? `${goals.join(' → ')} → 兜底` : '仅兜底副本', type: 'select' });
     }
 
     for (const optionKey of taskDef.option || []) {
       if (task.taskName === 'realm_challenge' && (
-        optionKey === 'CollectionMode'
+        optionKey === 'RealmQueue'
         || optionKey === 'CollectionWorkflow'
-        || optionKey === 'CraftingCollectionMode'
         || !realmOptionActive(optionKey, task.optionValues)
       )) {
         continue;
@@ -1232,11 +1227,8 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 </Tooltip>
               )}
               {/* 选项列表 - 仅在有选项时显示 */}
-              {task.taskName === 'glow_material_prep' && (
-                <GlowPrepConfigPanel compact />
-              )}
               {task.taskName === 'realm_challenge' && (
-                <RealmModeSwitch instanceId={instanceId} taskId={task.id} values={task.optionValues}
+                <RealmQueueCard instanceId={instanceId} taskId={task.id} values={task.optionValues}
                   disabled={!canEditOptions || isIncompatible} />
               )}
               {hasOptions && (
@@ -1245,9 +1237,8 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                   taskId={task.id}
                   taskName={task.taskName}
                   optionKeys={task.taskName === 'realm_challenge'
-                    ? (taskDef.option || []).filter((key) => key !== 'CollectionMode'
+                    ? (taskDef.option || []).filter((key) => key !== 'RealmQueue'
                       && key !== 'CollectionWorkflow'
-                      && key !== 'CraftingCollectionMode'
                       && !realmOptionBackup(key, task.optionValues)
                       && (realmOptionActive(key, task.optionValues) || key === 'WeeklyTargets'))
                     : taskDef.option || []}

@@ -1,7 +1,6 @@
 """Batch boundaries, daily settlement and an explicitly deferred single upgrade."""
 from __future__ import annotations
 
-import json
 import cv2
 from client_config import parse_custom_param
 from registration import agent_action
@@ -12,7 +11,7 @@ from daily import run_state
 from daily.runtime import Executors, parameters
 from .daily_tasks import DailyRun
 from daily.settings import ROOT
-from collection.storage import InventoryStore
+from collection.realm_goals import parse_realm_queue
 
 
 @agent_action("nikki.run_coordination")
@@ -33,25 +32,13 @@ class RunCoordinationAction(CustomAction):
                 energy = context.get_node_data("MaaNikki_RealmEnergy") or {}
                 next_names = {item if isinstance(item, str) else item.get("name")
                               for item in energy.get("next", []) if isinstance(item, (str, dict))}
-                collection = options.get("five_star_collection") is True or "MaaNikki_BlessingPursuit" in next_names
+                # The queue picks the actual realm later and updates this record;
+                # until then a queued blessing goal counts as collection mode.
+                queue = parse_realm_queue(parameters(context, "MaaNikki_RealmQueue").get("order"))
+                collection = "glow" in queue
                 kind = "bless" if collection or "MaaNikki_Bless" in next_names else (
                     "jihua" if "MaaNikki_Jihua" in next_names else
-                    "monster" if ("MaaNikki_Monster" in next_names or "MaaNikki_CraftingPursuit" in next_names) else None)
-                # Without a usable record the pursuit step organizes first. Finished
-                # collections skip it unless a requested reread remains.
-                if collection and parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto") == "auto":
-                    catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
-                    try:
-                        order, protected, _ = InventoryStore(ROOT, catalog, rt).load_organization()
-                    except (OSError, ValueError, KeyError, TypeError):
-                        order = None
-                    total = sum(len(item["colors"]) * 3 for item in catalog["sets"]
-                                if item["rarity"] == 5 and item.get("collection_target", True))
-                    if (order is not None and len(protected) == total and order.get("pending_operation") is None
-                            and not order.get("recovery", {}).get("slots")):
-                        rt.log("五星祝福闪光颜色已收齐；本次不消耗活跃能量，请选择其他幻境。")
-                        run_state.begin_realm(rt, task_id, kind=kind, collection=collection)
-                        return context.override_pipeline({"MaaNikki_RealmChallenge": {"next": ["MaaNikki_RealmReview"]}})
+                    "monster" if "MaaNikki_Monster" in next_names else None)
                 run_state.begin_realm(rt, task_id, kind=kind, collection=collection)
                 # Overrides belong only to this RealmChallenge context. Daily
                 # minimum challenges and independent realm entries are unchanged.
@@ -69,10 +56,8 @@ class RunCoordinationAction(CustomAction):
                     "custom_action_param": {
                         **parameters(context, "MaaNikki_BlessingPursuit"),
                         "return_page": "calendar"}}
-                overrides["MaaNikki_CraftingPursuit"] = {
-                    "next": ["MaaNikki_RealmReview"],
-                    "on_error": ["MaaNikki_RealmReviewFailed"],
-                    "custom_action_param": {"return_page": "calendar"}}
+                overrides["MaaNikki_RealmQueue"] = {
+                    "on_error": ["MaaNikki_RealmReviewFailed"]}
                 return context.override_pipeline(overrides)
             if options.get("stage") != "settle":
                 return False

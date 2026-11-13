@@ -9,7 +9,7 @@ import { MATERIAL_GROUP_LABELS, type MaterialGroup, type MaterialRow, type Mater
 const num = (value: number) => value.toLocaleString('zh-CN');
 const stockField = 'w-20 rounded-md border border-border bg-bg-primary px-1.5 py-0.5 text-right text-xs tabular-nums outline-none focus:border-accent';
 
-/** Reads and points the current profile's realm challenge at one material. */
+/** Points the realm challenge's fallback (兜底) stage at one material. */
 export function useRealmChallenge() {
   const instances = useAppStore((state) => state.instances);
   const activeInstanceId = useAppStore((state) => state.activeInstanceId);
@@ -17,9 +17,7 @@ export function useRealmChallenge() {
   const instance = instances.find((item) => item.id === activeInstanceId) ?? instances[0];
   const task = instance?.selectedTasks.find((item) => item.taskName === 'realm_challenge');
   const values = task?.optionValues ?? {};
-  const collection = values.CollectionMode?.type === 'switch' && values.CollectionMode.value;
-  const crafting = !collection && values.CraftingCollectionMode?.type === 'switch' && values.CraftingCollectionMode.value;
-  const realmType = collection || crafting ? '' : values.RealmTypes?.type === 'select' ? values.RealmTypes.caseName : 'Bless';
+  const realmType = values.RealmTypes?.type === 'select' ? values.RealmTypes.caseName : 'Bless';
 
   const isCurrent = (target: RealmMaterialTarget) => {
     const option = values[target.optionKey];
@@ -30,31 +28,20 @@ export function useRealmChallenge() {
       toast.error('当前配置中还没有「幻境挑战」任务，请先在主界面添加。');
       return;
     }
-    setTaskOptionValue(instance.id, task.id, 'CollectionMode', { type: 'switch', value: false });
-    setTaskOptionValue(instance.id, task.id, 'CraftingCollectionMode', { type: 'switch', value: false });
     setTaskOptionValue(instance.id, task.id, 'RealmTypes', { type: 'select', caseName: target.realmType });
     setTaskOptionValue(instance.id, task.id, target.optionKey, { type: 'select', caseName: target.caseName });
-    toast.success(`已将幻境挑战设为「${target.label}」`);
+    toast.success(`已将幻境挑战的兜底副本设为「${target.label}」`);
   };
-  const setCraftingCollection = (enabled: boolean) => {
-    if (!instance || !task) {
-      toast.error('当前配置中还没有「幻境挑战」任务，请先在主界面添加。');
-      return;
-    }
-    if (enabled) setTaskOptionValue(instance.id, task.id, 'CollectionMode', { type: 'switch', value: false });
-    setTaskOptionValue(instance.id, task.id, 'CraftingCollectionMode', { type: 'switch', value: enabled });
-    toast.success(enabled ? '幻境挑战已改为「制衣材料全收集」' : '幻境挑战已关闭制衣材料全收集');
-  };
-  return { hasTask: !!task, crafting, isCurrent, apply, setCraftingCollection };
+  return { hasTask: !!task, isCurrent, apply };
 }
 
 function SourceButton({ target }: { target: RealmMaterialTarget }) {
   const realm = useRealmChallenge();
   const current = realm.isCurrent(target);
-  return <button type="button" onClick={() => realm.apply(target)} title={`将幻境挑战设为：${target.label}`}
+  return <button type="button" onClick={() => realm.apply(target)} title={`把幻境挑战的兜底副本设为：${target.label}`}
     className={clsx('inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] transition-colors',
       current ? 'bg-accent/15 font-medium text-accent' : 'border border-border text-text-secondary hover:border-accent hover:text-accent')}>
-    {current ? <Check className="h-3 w-3" /> : <Flame className="h-3 w-3" />}{current ? '正在刷' : '去刷'}
+    {current ? <Check className="h-3 w-3" /> : <Flame className="h-3 w-3" />}{current ? '已设兜底' : '设为兜底'}
   </button>;
 }
 

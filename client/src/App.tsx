@@ -1,5 +1,5 @@
 import { useAccountStateStore } from '@/stores/accountStateStore';
-import { BlessingProgressPage } from '@/components/BlessingProgressPage';
+import { CollectionHubPage } from '@/components/CollectionHubPage';
 import { ExplorationPage } from '@/components/ExplorationPage';
 import { ResonancePage } from '@/components/ResonancePage';
 import { WardrobePage } from '@/components/WardrobePage';
@@ -1972,7 +1972,7 @@ function App() {
     return (
       <div className="h-full flex flex-col bg-bg-primary relative">
         <TitleBar /><WebUIBetaBanner /><ConnectionLostOverlay />
-        <BlessingProgressPage onClose={() => useAppStore.getState().setCurrentPage("main")} />
+        <CollectionHubPage onClose={() => useAppStore.getState().setCurrentPage("main")} />
         <div className="hidden"><Toolbar showAddPanel={showAddTaskPanel} onToggleAddPanel={() => setShowAddTaskPanel(!showAddTaskPanel)} /></div>
         {toaster}
       </div>

@@ -1,7 +1,7 @@
 {
   "preset": [
     {"name": "Daily", "label": "全套日常", "description": "启动游戏，收集每日星光结晶，完成日常任务、当前周期尚未完成的商城任务与巅峰赛。",
-      "task": [{"name": "start_game"}, {"name": "dig"}, {"name": "zhaoxi"}, {"name": "glow_material_prep"}, {"name": "realm_challenge"},
+      "task": [{"name": "start_game"}, {"name": "dig"}, {"name": "zhaoxi"}, {"name": "realm_challenge"},
                {"name": "starlight_crystals"}, {"name": "xinghai"}, {"name": "home"}, {"name": "monthly_pass"}, {"name": "mailbox"},
                {"name": "weekly_free_gifts"}, {"name": "monthly_crystal_exchange"},
                {"name": "crown", "enabled": true}]}

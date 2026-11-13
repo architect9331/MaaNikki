@@ -2,7 +2,7 @@ import i18n, { getInterfaceLangKey, setLanguage as setI18nLanguage } from '@/i18
 import { saveConfig } from '@/services/configService';
 import { maaService } from '@/services/maaService';
 import { isTaskAvailable } from '@/utils/developerTasks';
-import { migrateNikkiOptionValues } from '@/utils/nikkiOptions';
+import { migrateNikkiOptionValues, retireGlowPrepTask } from '@/utils/nikkiOptions';
 import { isTelemetryBlockedByBuild, setTelemetryEnabled } from '@/services/telemetryService';
 import {
   type AccentColor,
@@ -1137,7 +1137,9 @@ export const useAppStore = create<AppState>()(
         inst.tasks.some((task) => task.taskName === 'exploration') &&
         inst.tasks.every((task) => task.taskName === 'exploration' || !task.enabled) &&
         !inst.schedulePolicies?.length && !inst.preActions?.length && !inst.preAction
-      )).map((inst) => {
+      )).map((savedInst) => {
+        // The standalone 焕新材料筹备 task became a goal in the realm queue.
+        const inst = { ...savedInst, tasks: retireGlowPrepTask(savedInst.tasks) };
         // 记录被过滤掉的无效任务
         const invalidTasks = inst.tasks.filter((t) => t.taskName !== 'exploration' && !validTaskNames.has(t.taskName));
         if (invalidTasks.length > 0) {

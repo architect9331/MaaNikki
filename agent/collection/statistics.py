@@ -101,17 +101,20 @@ def collect_task_preferences(root) -> list[list[str]]:
         if not isinstance(opts, dict):
             continue
         if name == "realm_challenge":
-            coll = opts.get("CollectionMode", {}).get("value") is True
+            from .realm_goals import parse_realm_queue
+            goals = parse_realm_queue(((opts.get("RealmQueue") or {}).get("values") or {}).get("order", ""))
+            coll = "glow" in goals
             wf = opts.get("CollectionWorkflow", {}).get("caseName") or "Managed"
-            craft = not coll and opts.get("CraftingCollectionMode", {}).get("value") is True
             rtype = opts.get("RealmTypes", {}).get("caseName") or "Bless"
+            first = goals[0] if goals else None
             mode = (
-                "collection:farm_only" if (coll and wf == "FarmOnly")
-                else "collection:managed" if coll
-                else "crafting" if craft
+                ("collection:farm_only" if wf == "FarmOnly" else "collection:managed") if first == "glow"
+                else first if first
                 else f"daily:{rtype}"
             )
             add("realm_mode", mode)
+            add("realm_queue", ",".join(goals) or "none")
+            add("realm_fallback", rtype)
             if coll:
                 reserve_raw = (opts.get("CollectionReserveBling", {}).get("values") or {}).get("amount", "0")
                 add("collection_reserve_bling", _reserve_bling_bucket(reserve_raw))
