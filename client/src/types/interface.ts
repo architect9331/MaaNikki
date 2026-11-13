@@ -60,6 +60,8 @@ export interface SentryTelemetryConfig {
   node_trace_sample_rate?: number;
   /** 失败附件独立采样率，取值 0~1。Error Event 本身不受影响。可选，默认 1.0。 */
   failure_attachments_sample_rate?: number;
+  /** 可选的 HTTPS 截图上传地址；设置后截图不再作为 Sentry 附件发送。 */
+  failure_upload_endpoint?: string;
   /** 环境标签（如 production、beta）。可选，缺省由 Client 决定。 */
   environment?: string;
 }

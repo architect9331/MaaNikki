@@ -20,6 +20,7 @@ pub mod utils;
 pub mod account_state;
 pub mod app_config;
 mod diagnostic_images;
+mod diagnostic_upload;
 pub mod download;
 pub mod file_ops;
 mod library_diagnostics;

@@ -1,0 +1,9 @@
+{
+  "port": 9340,
+  "directory": "/srv/maanikki-diagnostics",
+  "retention_days": 30,
+  "max_bytes": 5000000000,
+  "min_free_bytes": 2147483648,
+  "daily_max_bytes": 536870912,
+  "max_files": 10000
+}

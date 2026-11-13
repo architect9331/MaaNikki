@@ -765,6 +765,7 @@ function App() {
           tracesSampleRate: sentryCfg.traces_sample_rate ?? 1.0,
           nodeTraceSampleRate: sentryCfg.node_trace_sample_rate ?? 1.0,
           failureAttachmentsSampleRate: sentryCfg.failure_attachments_sample_rate ?? 1.0,
+          failureUploadEndpoint: sentryCfg.failure_upload_endpoint ?? '',
           appName,
           appVersion,
           mxuVersion,

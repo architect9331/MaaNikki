@@ -1,0 +1,23 @@
+[Unit]
+Description=MaaNikki private diagnostic screenshot storage
+After=network.target
+
+[Service]
+Type=simple
+User=maanikki-diagnostics
+Group=www-data
+ExecStart=/usr/bin/python3 -u /opt/maanikki-diagnostics/server.py --config /etc/maanikki-diagnostics.json
+Restart=on-failure
+RestartSec=5
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/maanikki-diagnostics
+MemoryMax=256M
+TasksMax=24
+LimitNOFILE=128
+
+[Install]
+WantedBy=multi-user.target

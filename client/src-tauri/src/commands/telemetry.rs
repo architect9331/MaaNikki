@@ -39,6 +39,8 @@ static TELEMETRY_GUARD: Mutex<Option<sentry::ClientInitGuard>> = Mutex::new(None
 static TELEMETRY_CONFIG: Mutex<Option<TelemetryInitConfig>> = Mutex::new(None);
 /// 错误与运行诊断开关（崩溃、任务 Span、失败事件与截图）。
 static DIAGNOSTICS_ENABLED: AtomicBool = AtomicBool::new(true);
+/// Revoking consent invalidates existing workers even if immediately re-enabled.
+static DIAGNOSTICS_CONSENT_EPOCH: AtomicU64 = AtomicU64::new(0);
 /// 路线与坐标调优遥测开关（航点偏移、脱困与采集交互统计）。
 static ROUTE_TELEMETRY_ENABLED: AtomicBool = AtomicBool::new(true);
 /// 匿名机器 ID（计算一次后复用，同时作为 Sentry user.id）。
@@ -80,6 +82,9 @@ pub struct TelemetryInitConfig {
     /// 失败截图附件独立采样率 0~1；Error Event 与结构化日志不受此值影响。
     #[serde(default = "default_sample_rate")]
     pub failure_attachments_sample_rate: f32,
+    /// Optional private screenshot store. Empty preserves the generic Sentry transport.
+    #[serde(default)]
+    pub failure_upload_endpoint: String,
     /// 资源项目名（interface.name）。
     pub app_name: String,
     /// 资源项目版本（interface.version）。
@@ -132,6 +137,7 @@ struct FailureEventConfig {
     mxu_version: String,
     node_trace_sample_rate: f32,
     failure_attachments_sample_rate: f32,
+    failure_upload_endpoint: String,
 }
 
 impl From<&TelemetryInitConfig> for FailureEventConfig {
@@ -142,6 +148,7 @@ impl From<&TelemetryInitConfig> for FailureEventConfig {
             mxu_version: config.mxu_version.clone(),
             node_trace_sample_rate: config.node_trace_sample_rate.clamp(0.0, 1.0),
             failure_attachments_sample_rate: config.failure_attachments_sample_rate.clamp(0.0, 1.0),
+            failure_upload_endpoint: config.failure_upload_endpoint.clone(),
         }
     }
 }
@@ -198,12 +205,15 @@ impl PendingFailureWorkers {
         }
     }
 
-    fn register(&self, report: TaskFailureReport) -> Option<u64> {
+    fn register(&self, report: TaskFailureReport, consent_epoch: u64) -> Option<u64> {
         let mut reports = self
             .reports
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if FAILURE_WORKERS_CLOSING.load(Ordering::SeqCst) {
+        if FAILURE_WORKERS_CLOSING.load(Ordering::SeqCst)
+            || !DIAGNOSTICS_ENABLED.load(Ordering::SeqCst)
+            || DIAGNOSTICS_CONSENT_EPOCH.load(Ordering::SeqCst) != consent_epoch
+        {
             return None;
         }
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
@@ -299,8 +309,15 @@ fn any_telemetry_enabled(config: &TelemetryInitConfig) -> bool {
 }
 
 fn sync_feature_flags(config: &TelemetryInitConfig) {
-    DIAGNOSTICS_ENABLED.store(config.enabled, Ordering::SeqCst);
+    set_diagnostics_enabled(config.enabled);
     ROUTE_TELEMETRY_ENABLED.store(config.route_telemetry_enabled, Ordering::SeqCst);
+}
+
+fn set_diagnostics_enabled(enabled: bool) {
+    if DIAGNOSTICS_ENABLED.swap(enabled, Ordering::SeqCst) && !enabled {
+        DIAGNOSTICS_CONSENT_EPOCH.fetch_add(1, Ordering::SeqCst);
+        pending_failure_workers().cancel_all();
+    }
 }
 
 fn pending_failure_workers() -> &'static PendingFailureWorkers {
@@ -463,6 +480,11 @@ fn build_startup_config(app_config: &AppConfigState) -> Option<TelemetryInitConf
             .get("failure_attachments_sample_rate")
             .and_then(|v| v.as_f64())
             .unwrap_or(1.0) as f32,
+        failure_upload_endpoint: sentry_cfg
+            .get("failure_upload_endpoint")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string(),
         app_name,
         app_version,
         mxu_version,
@@ -553,7 +575,7 @@ pub fn telemetry_set_enabled(enabled: bool, route_telemetry_enabled: Option<bool
             .map(|c| c.route_telemetry_enabled)
             .unwrap_or(ROUTE_TELEMETRY_ENABLED.load(Ordering::Relaxed))
     });
-    DIAGNOSTICS_ENABLED.store(enabled, Ordering::SeqCst);
+    set_diagnostics_enabled(enabled);
     ROUTE_TELEMETRY_ENABLED.store(route_enabled, Ordering::SeqCst);
     if let Some(cfg) = cached.as_mut() {
         cfg.enabled = enabled;
@@ -1413,6 +1435,7 @@ pub fn on_task_finished(instance_id: &str, maa_task_id: i64, success: bool) {
 enum FailureAttachmentOutcome {
     NotSelected,
     Attached(ImageBundle),
+    Uploaded(super::diagnostic_upload::UploadedBundle),
     Omitted {
         status: &'static str,
         detail: String,
@@ -1422,6 +1445,10 @@ enum FailureAttachmentOutcome {
 }
 
 fn submit_failure_report(mut report: TaskFailureReport) {
+    let consent_epoch = DIAGNOSTICS_CONSENT_EPOCH.load(Ordering::SeqCst);
+    if !is_diagnostics_active() {
+        return;
+    }
     if !report.evidence_isolated {
         report.evidence_start = None;
         send_failure_event(
@@ -1465,7 +1492,10 @@ fn submit_failure_report(mut report: TaskFailureReport) {
         report.maa_task_id,
         report.event_config.failure_attachments_sample_rate,
     );
-    let Some(worker_id) = workers.register(report.clone()) else {
+    let Some(worker_id) = workers.register(report.clone(), consent_epoch) else {
+        if DIAGNOSTICS_CONSENT_EPOCH.load(Ordering::SeqCst) != consent_epoch {
+            return;
+        }
         send_failure_event(
             report,
             None,
@@ -1497,6 +1527,28 @@ fn submit_failure_report(mut report: TaskFailureReport) {
                         &report.run_id,
                         report.maa_task_id,
                     ) {
+                        Ok(bundle) if !report.event_config.failure_upload_endpoint.is_empty() => {
+                            let selected_raw_bytes = bundle.selected_raw_bytes;
+                            let bundle_bytes = bundle.buffer.len();
+                            match super::diagnostic_upload::upload(
+                                &report.event_config.failure_upload_endpoint,
+                                bundle,
+                                || {
+                                    !FAILURE_WORKERS_CLOSING.load(Ordering::SeqCst)
+                                        && DIAGNOSTICS_ENABLED.load(Ordering::SeqCst)
+                                        && DIAGNOSTICS_CONSENT_EPOCH.load(Ordering::SeqCst)
+                                            == consent_epoch
+                                },
+                            ) {
+                                Ok(uploaded) => FailureAttachmentOutcome::Uploaded(uploaded),
+                                Err(detail) => FailureAttachmentOutcome::Omitted {
+                                    status: "external_upload_failed",
+                                    detail,
+                                    selected_raw_bytes: Some(selected_raw_bytes),
+                                    bundle_bytes: Some(bundle_bytes),
+                                },
+                            }
+                        }
                         Ok(bundle) => FailureAttachmentOutcome::Attached(bundle),
                         Err(error) => attachment_error_outcome(error),
                     }
@@ -1565,7 +1617,7 @@ fn complete_failure_worker(
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     // Shutdown or an explicit opt-out may already have consumed/cancelled this
     // worker's fallback. In that case the detached compressor must remain silent.
-    if pending_failure_workers().take(worker_id).is_some() && is_active() {
+    if pending_failure_workers().take(worker_id).is_some() && is_diagnostics_active() {
         capture_failure_event(report, logs, outcome);
     }
 }
@@ -1578,7 +1630,7 @@ fn send_failure_event(
     let _send_guard = FAILURE_EVENT_SEND_LOCK
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
-    if is_active() {
+    if is_diagnostics_active() {
         capture_failure_event(report, logs, outcome);
     }
 }
@@ -1760,6 +1812,42 @@ fn capture_failure_event(
                 content_type: Some("application/zip".to_string()),
                 ..Default::default()
             })
+        }
+        FailureAttachmentOutcome::Uploaded(uploaded) => {
+            event
+                .extra
+                .insert("attachment.status".into(), "external".into());
+            event
+                .extra
+                .insert("attachment.url".into(), uploaded.url.into());
+            event
+                .extra
+                .insert("attachment.expires_at".into(), uploaded.expires_at.into());
+            event
+                .extra
+                .insert("attachment.sha256".into(), uploaded.sha256.into());
+            event
+                .extra
+                .insert("attachment.bundle_bytes".into(), uploaded.bytes.into());
+            event.extra.insert(
+                "attachment.image_count".into(),
+                (uploaded.bundle.image_count as u64).into(),
+            );
+            event.extra.insert(
+                "attachment.selected_raw_bytes".into(),
+                uploaded.bundle.selected_raw_bytes.into(),
+            );
+            event.extra.insert(
+                "attachment.selection".into(),
+                "new_on_error_screenshots".into(),
+            );
+            if !uploaded.bundle.warnings.is_empty() {
+                event.extra.insert(
+                    "attachment.warnings".into(),
+                    uploaded.bundle.warnings.join(",").into(),
+                );
+            }
+            None
         }
         FailureAttachmentOutcome::Omitted {
             status,
