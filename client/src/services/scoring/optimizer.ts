@@ -1,3 +1,4 @@
+import { buildMinimumStarUpgradePlan } from './diagnostics';
 import { bonusCount, effectiveItemLevel, evaluateStars, fits, isAccessory, isFlash, outfitContext, scorePiece, suitRequirement, upgradeCost, type ScoreContext } from './math';
 import type { BatchCalculationResult, BatchStageSummary, BatchUpgradeItem, CalculationRequest, CalculationResult, FieldBonus, Match, OutfitResult, OwnedItem, PieceScore, ScoreItem, StarCondition } from './types';
 
@@ -246,7 +247,44 @@ export function calculateBatch(request: CalculationRequest, matchIds: string[], 
     const stageReq: CalculationRequest = { ...request, matchId: id, choice: null };
     const current = optimize(stageReq, false);
     const potential = optimize(stageReq, true);
-    stages.push({ matchId: id, matchName: shortName, current, potential });
+    const stage: BatchStageSummary = { matchId: id, matchName: shortName, current, potential };
+    stages.push(stage);
+    if (request.goal === 'stars') {
+      const fullStars = (outfit: OutfitResult | null) => !!outfit && match.stars.length > 0
+        && outfit.stars.length === match.stars.length && outfit.stars.every((passed) => passed === true);
+      if (fullStars(current)) {
+        stage.starPlan = { status: 'ready', score: current!.score };
+        continue;
+      }
+      if (!current || !potential || !match.stars.length || potential.stars.some((passed) => passed === null)) {
+        stage.starPlan = { status: 'unavailable' };
+        continue;
+      }
+      if (!fullStars(potential)) {
+        stage.starPlan = { status: 'blocked' };
+        continue;
+      }
+      const plan = buildMinimumStarUpgradePlan(request.catalog, request.settings, id, match, current, potential);
+      if (!plan) {
+        stage.starPlan = { status: 'unavailable' };
+        continue;
+      }
+      stage.starPlan = { status: 'upgrade', score: plan.achievedScore };
+      for (const upgrade of plan.upgradeItems) {
+        const item = potential.pieces.find((piece) => String(piece.item.id) === upgrade.itemId)!.item;
+        const existing = groupTarget.get(upgrade.groupId);
+        if (!existing) {
+          groupTarget.set(upgrade.groupId, { item, from: upgrade.fromLevel, to: upgrade.toLevel,
+            totalGain: upgrade.gain, stages: [shortName] });
+        } else {
+          existing.to = Math.max(existing.to, upgrade.toLevel);
+          existing.totalGain += upgrade.gain;
+          if (!existing.stages.includes(shortName)) existing.stages.push(shortName);
+        }
+        if (item.level === null) unknownCostGroups.add(upgrade.groupId);
+      }
+      continue;
+    }
     if (!potential) continue;
     for (const group of potential.unknownCostGroups) unknownCostGroups.add(group);
     for (const piece of potential.pieces) {
@@ -291,9 +329,11 @@ export function calculateBatch(request: CalculationRequest, matchIds: string[], 
       });
     }
   }
-  upgrades.sort((a, b) => b.stages.length - a.stages.length || b.totalGain - a.totalGain);
+  upgrades.sort((a, b) => b.stages.length - a.stages.length
+    || (request.goal === 'score' ? b.totalGain - a.totalGain : a.item.name.localeCompare(b.item.name, 'zh-CN')));
 
   return {
+    goal: request.goal,
     stages,
     cost: totalCost,
     upgrades,

@@ -461,7 +461,7 @@ function UnmetStarsPanel({
                               <div className="space-y-1">
                                 <p className="text-text-secondary">缺失部件（共 {cand.missingParts.length} 件）：</p>
                                 <ul className="space-y-1">
-                                  {cand.missingParts.slice(0, 5).map((mp) => (
+                                  {cand.missingParts.map((mp) => (
                                     <li key={mp.id} className="flex flex-wrap items-center justify-between gap-2 text-text-secondary">
                                       <span><strong className="text-text-primary">{mp.name}</strong> · {mp.partName}</span>
                                       <span className="text-[11px] text-text-muted">{mp.source ?? '套装获取'}</span>

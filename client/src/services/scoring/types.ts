@@ -249,8 +249,10 @@ export interface BatchStageSummary {
   matchName: string;
   current: OutfitResult | null;
   potential: OutfitResult | null;
+  starPlan?: { status: 'ready' | 'upgrade' | 'blocked' | 'unavailable'; score?: number };
 }
 export interface BatchCalculationResult {
+  goal: 'score' | 'stars';
   stages: BatchStageSummary[];
   cost: Record<string, number>;
   upgrades: BatchUpgradeItem[];

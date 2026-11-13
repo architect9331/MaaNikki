@@ -392,7 +392,8 @@ export function buildMinimumStarUpgradePlan(
     }
   }
 
-  if (!upgradeItems.length) return null;
+  if (!upgradeItems.length || currentEval.passedCount < targetStars
+    || (targetScore !== undefined && currentEval.score < targetScore)) return null;
 
   upgradeItems.sort((a, b) => {
     if (a.mandatorySuitRefresh !== b.mandatorySuitRefresh) {
