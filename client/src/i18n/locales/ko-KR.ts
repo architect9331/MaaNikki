@@ -1,6 +1,7 @@
 export default {
   // 공통
   common: {
+    expandSidePanel: '사이드 패널 펼치기 (실행 로그 및 연결 설정)',
     confirm: '확인',
     cancel: '취소',
     undo: '실행 취소',
@@ -213,6 +214,17 @@ export default {
 
   // 작업 목록
   taskList: {
+    emptyHint: '자동화할 작업을 추가하거나 기존 설정을 가져오세요',
+    statusNoTasks: '먼저 작업을 추가하세요',
+    statusNoneSelected: '실행할 작업을 선택하세요',
+    statusSelected: '{{count}}개 선택됨',
+    statusRunning: '실행 중 · {{done}} / {{total}} 완료',
+    statusPreAction: '사전 프로그램 실행 중',
+    statusLastFailed: '지난 실행에서 {{count}}개 실패',
+    startFailedHint: '자세한 원인은 실행 로그를 확인하세요',
+    viewLogs: '로그 보기',
+    stopPending: '중지를 요청했습니다. 현재 동작이 끝나기를 기다리는 중입니다',
+    stopFailed: '작업 중지에 실패했습니다. 다시 시도하세요',
     title: '작업 목록',
     selectAll: '모두 선택',
     deselectAll: '모두 선택 해제',
@@ -266,6 +278,7 @@ export default {
 
   // 작업 항목
   taskItem: {
+    removeConfirmMessageNamed: '작업 「{{name}}」을(를) 삭제할까요? 옵션 설정도 함께 제거됩니다.',
     options: '옵션 설정',
     noOptions: '설정 가능한 옵션이 없습니다',
     enabled: '활성화됨',
@@ -470,6 +483,9 @@ export default {
 
   // 로그
   logs: {
+    copied: '로그를 복사했습니다',
+    copyFailed: '복사에 실패했습니다. 다시 시도하세요',
+    jumpToLatest: '최신으로 이동',
     title: '실행 로그',
     clear: '지우기',
     autoscroll: '자동 스크롤',
@@ -857,6 +873,7 @@ export default {
 
   // 권한 프롬프트
   permission: {
+    restartFailed: '관리자 권한으로 다시 시작하지 못했습니다. 프로그램을 닫은 뒤 우클릭하여 「관리자 권한으로 실행」을 선택하세요.',
     title: '관리자 권한이 필요합니다',
     message:
       '현재 컨트롤러가 대상 창을 조작하려면 관리자 권한이 필요합니다. 관리자 권한으로 재시작하세요.',

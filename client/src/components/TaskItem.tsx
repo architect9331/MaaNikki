@@ -1000,7 +1000,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
             'absolute left-0 top-0 bottom-0 w-1.5 transition-colors',
             getStatusIndicatorClass(),
           )}
-          title={t(`taskItem.status.${taskRunStatus}`)}
+          aria-hidden="true"
         />
       )}
 
@@ -1080,6 +1080,21 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 >
                   {displayName}
                 </span>
+                {/* 运行状态用文字标出，不只靠左侧色条的颜色区分 */}
+                {taskRunStatus !== 'idle' && (
+                  <span
+                    className={clsx(
+                      'shrink-0 inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] font-medium',
+                      taskRunStatus === 'running' && 'bg-accent/10 text-accent',
+                      taskRunStatus === 'succeeded' && 'bg-success/10 text-success',
+                      taskRunStatus === 'failed' && 'bg-error/10 text-error',
+                      taskRunStatus === 'pending' && 'bg-bg-tertiary text-text-muted',
+                    )}
+                  >
+                    {taskRunStatus === 'running' && <Loader2 className="w-3 h-3 animate-spin" />}
+                    {t(`taskItem.status.${taskRunStatus}`)}
+                  </span>
+                )}
                 {periodLabel && (
                   <span className="shrink-0 text-[11px] text-text-muted rounded-lg bg-bg-tertiary px-1.5 py-0.5"
                     title={accountError ? `账号状态读取失败：${accountError}` : completedPeriod ? "保留勾选，当前周期自动跳过；下个周期自动恢复。" : "执行前会再次读取账号状态。"}>
@@ -1108,8 +1123,19 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
               {/* 展开/折叠点击区域（包含选项预览） */}
               {canExpand && (
                 <div
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={task.expanded}
+                  aria-label={task.expanded ? t('taskItem.collapse') : t('taskItem.expand')}
                   onClick={() => toggleTaskExpanded(instanceId, task.id)}
-                  className="flex-1 min-w-0 flex items-center self-stretch min-h-[28px] cursor-pointer"
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      toggleTaskExpanded(instanceId, task.id);
+                    }
+                  }}
+                  className="flex-1 min-w-0 flex items-center self-stretch min-h-[28px] cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
                   title={task.expanded ? t('taskItem.collapse') : t('taskItem.expand')}
                 >
                   {/* 选项预览标签 - 未展开时显示：不兼容时显示警告，否则显示选项预览 */}
@@ -1177,10 +1203,11 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
               setShowDeleteConfirm(true);
             }}
             className={clsx(
-              'p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all',
+              'p-1 rounded-lg opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all',
               'text-text-muted hover:bg-error/10 hover:text-error',
             )}
             title={t('taskItem.remove')}
+            aria-label={t('taskItem.remove')}
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -1225,6 +1252,13 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                     <span>{incompatibleReason}</span>
                   </div>
                 </Tooltip>
+              )}
+              {/* 选项被锁定时说明原因，避免以为是界面卡住 */}
+              {!canEditOptions && !isIncompatible && hasOptions && (
+                <div className="mb-3 flex items-center gap-1.5 rounded-lg bg-bg-tertiary px-2 py-1.5 text-xs text-text-secondary">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{t('taskItem.cannotEditRunningTask')}</span>
+                </div>
               )}
               {/* 选项列表 - 仅在有选项时显示 */}
               {task.taskName === 'realm_challenge' && (
@@ -1280,7 +1314,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
       <ConfirmDialog
         open={showDeleteConfirm}
         title={t('taskItem.removeConfirmTitle')}
-        message={t('taskItem.removeConfirmMessage')}
+        message={t('taskItem.removeConfirmMessageNamed', { name: displayName })}
         cancelText={t('common.cancel')}
         confirmText={t('common.delete')}
         destructive

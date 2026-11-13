@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useModalFocusTrap } from '@/components/ui/Modal';
 import { useTranslation } from 'react-i18next';
 import { Loader2, CheckCircle, XCircle, Archive, FolderOpen, Copy, Check } from 'lucide-react';
 
@@ -35,9 +36,18 @@ export function ExportLogsModal({
     }
   }, [zipPath]);
 
-  if (!show) return null;
-
   const canClose = status !== 'exporting';
+  const panelRef = useRef<HTMLDivElement>(null);
+  // 导出进行中不响应 Esc，与点击遮罩的规则一致
+  useModalFocusTrap({
+    active: show,
+    containerRef: panelRef,
+    onEscape: () => {
+      if (canClose) onClose();
+    },
+  });
+
+  if (!show) return null;
 
   return (
     <div
@@ -45,6 +55,10 @@ export function ExportLogsModal({
       onClick={canClose ? onClose : undefined}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('debug.exportLogs')}
         className="mxu-overlay-surface w-full max-w-sm mx-4 bg-bg-secondary rounded-xl shadow-2xl border border-border overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >

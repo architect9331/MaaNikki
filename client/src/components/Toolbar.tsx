@@ -9,7 +9,10 @@ import {
   Play,
   StopCircle,
   Loader2,
+  AlertCircle,
+  X,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAppStore } from '@/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { isControllerAllowed, isResourceAllowed, isTaskCompatible } from '@/stores/helpers';
@@ -195,6 +198,8 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
     devMode,
     // MaaFramework 版本
     maaVersion,
+    taskRunStatuses,
+    setRightPanelCollapsed,
   } = useAppStore(
     useShallow((state) => ({
       // 直接派生当前实例（而非渲染时调用 getActiveInstance），保证实例切换或内容变化时重新渲染
@@ -227,6 +232,10 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
       tcpCompatMode: state.tcpCompatMode,
       devMode: state.devMode,
       maaVersion: state.maaVersion,
+      taskRunStatuses: state.activeInstanceId
+        ? state.instanceTaskRunStatus[state.activeInstanceId]
+        : undefined,
+      setRightPanelCollapsed: state.setRightPanelCollapsed,
     })),
   );
 
@@ -236,7 +245,11 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
 
   // 自动连接状态
   const [autoConnectPhase, setAutoConnectPhase] = useState<AutoConnectPhase>('idle');
-  const [autoConnectError, setAutoConnectError] = useState<string | null>(null);
+  // 启动失败原因按实例记录，切换标签页后不会把别的实例的失败显示在当前页
+  const [startError, setStartError] = useState<{ instanceId: string; message: string } | null>(
+    null,
+  );
+  const [restartError, setRestartError] = useState(false);
 
   // 权限提示弹窗状态
   const [showPermissionModal, setShowPermissionModal] = useState(false);
@@ -1425,16 +1438,60 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
   const scheduleTriggerRef = useRef<typeof startTasksForInstance>(startTasksForInstance);
   scheduleTriggerRef.current = startTasksForInstance;
 
+  const tRef = useRef(t);
+  tRef.current = t;
+
+  /**
+   * 带界面反馈的启动：按钮显示当前阶段，失败时把运行日志里最后一条错误作为原因展示。
+   * 工具栏的开始按钮和任务卡片上的「单独运行 / 从此处运行」共用，保证反馈一致。
+   */
+  const launchWithFeedback = useCallback(
+    async (target: Instance, options?: TaskStartOptions): Promise<boolean> => {
+      const startedAt = Date.now();
+      setIsStarting(true);
+      setStartError(null);
+      let message: string | null = null;
+      try {
+        const success = await startTasksForInstance(target, {
+          ...options,
+          onPhaseChange: setAutoConnectPhase,
+        });
+        if (success || lastStartCancelledRef.current) return success;
+      } catch (err) {
+        log.error('任务启动异常:', err);
+        message = err instanceof Error ? err.message : String(err);
+      } finally {
+        setIsStarting(false);
+        setAutoConnectPhase('idle');
+      }
+      const logged = (useAppStore.getState().instanceLogs[target.id] || [])
+        .filter((entry) => entry.type === 'error' && entry.timestamp.getTime() >= startedAt)
+        .pop()?.message;
+      setStartError({
+        instanceId: target.id,
+        message: logged || message || tRef.current('taskList.autoConnect.startFailed'),
+      });
+      return false;
+    },
+    [startTasksForInstance],
+  );
+
   useEffect(() => {
-    taskStartService.setHandler((instance, options) => startTasksForInstance(instance, options));
+    taskStartService.setHandler(async (instance, options) => {
+      // 与开始按钮共用同一把锁，避免连点任务卡片上的运行按钮重复启动
+      if (startingRef.current) return false;
+      startingRef.current = true;
+      try {
+        return await launchWithFeedback(instance, options);
+      } finally {
+        startingRef.current = false;
+      }
+    });
     return () => taskStartService.setHandler(null);
-  }, [startTasksForInstance]);
+  }, [launchWithFeedback]);
 
   const addLogRef = useRef(addLog);
   addLogRef.current = addLog;
-
-  const tRef = useRef(t);
-  tRef.current = t;
 
   useEffect(() => {
     if (!isTauri()) return;
@@ -1498,12 +1555,14 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
    */
   const handleRestartAsAdmin = async () => {
     setIsRestartingAsAdmin(true);
+    setRestartError(false);
     try {
       await maaService.restartAsAdmin();
       // 成功的话进程会退出，不会执行到这里
     } catch (err) {
       log.error('以管理员身份重启失败:', err);
       setIsRestartingAsAdmin(false);
+      setRestartError(true);
     }
   };
 
@@ -1546,10 +1605,14 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
 
     if (isStartStopRunning) {
       // 停止任务
+      const stoppingPreAction = preActionControlledInstanceIdRef.current === instance.id;
       try {
-        await performStop(instance.id);
+        const stopped = await performStop(instance.id);
+        // 前置程序只是收到停止请求，按钮会保持「停止中」；其余情况超时要告诉用户仍在等待
+        if (!stopped && !stoppingPreAction) toast.warning(t('taskList.stopPending'));
       } catch (err) {
         log.error('停止任务失败:', err);
+        toast.error(t('taskList.stopFailed'));
       }
     } else {
       // 启动任务
@@ -1579,25 +1642,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
           return;
         }
 
-        setIsStarting(true);
-        setAutoConnectError(null);
-
-        try {
-          // 调用统一入口启动任务，传入进度回调以更新 UI 状态
-          const success = await startTasksForInstance(instance, {
-            onPhaseChange: setAutoConnectPhase,
-          });
-
-          if (!success && !lastStartCancelledRef.current) {
-            throw new Error(t('taskList.autoConnect.startFailed'));
-          }
-        } catch (err) {
-          log.error('任务启动异常:', err);
-          setAutoConnectError(err instanceof Error ? err.message : String(err));
-          setAutoConnectPhase('idle');
-        } finally {
-          setIsStarting(false);
-        }
+        await launchWithFeedback(instance);
       } catch (err) {
         log.error('启动前检查异常:', err);
       } finally {
@@ -1741,23 +1786,73 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
     return t('taskList.startTasks');
   };
 
-  // 获取按钮的 title 提示
-  const getButtonTitle = () => {
-    if (autoConnectError) {
-      return autoConnectError;
-    }
-    return undefined;
+  // 开始按钮旁的一句话状态：说明现在处于什么状态，按钮不可用时说明还差哪一步
+  const selectedCount = tasks.filter(isTaskSelectedForRun).length;
+  const runStatuses = Object.values(taskRunStatuses || {}).filter((s) => s !== 'idle');
+  const finishedCount = runStatuses.filter((s) => s === 'succeeded' || s === 'failed').length;
+  const failedCount = runStatuses.filter((s) => s === 'failed').length;
+  const statusLine: { text: string; tone: 'muted' | 'accent' | 'warning' } =
+    isPreActionControlledInstance && !instance?.isRunning
+      ? { text: t('taskList.statusPreAction'), tone: 'accent' }
+      : instance?.isRunning
+        ? {
+            text: t('taskList.statusRunning', { done: finishedCount, total: runStatuses.length }),
+            tone: 'accent',
+          }
+        : tasks.length === 0
+          ? { text: t('taskList.statusNoTasks'), tone: 'muted' }
+          : selectedCount === 0
+            ? { text: t('taskList.statusNoneSelected'), tone: 'muted' }
+            : failedCount > 0
+              ? { text: t('taskList.statusLastFailed', { count: failedCount }), tone: 'warning' }
+              : { text: t('taskList.statusSelected', { count: selectedCount }), tone: 'muted' };
+
+  const visibleStartError =
+    startError && startError.instanceId === instanceId && !isStartStopRunning ? startError : null;
+
+  const handleViewLogs = () => {
+    setRightPanelCollapsed(false);
+    // 等侧栏展开后再定位，窄屏布局下日志在页面下方
+    setTimeout(
+      () => document.getElementById('logs-panel')?.scrollIntoView({ behavior: 'smooth' }),
+      50,
+    );
   };
 
   return (
-    <div
-      className={clsx(
-        'flex items-center justify-between px-3 py-2 bg-bg-secondary border-t border-border',
-        className,
+    <div className={clsx('bg-bg-secondary border-t border-border', className)}>
+      {/* 启动失败原因：留在开始按钮上方，直到再次启动或手动关闭 */}
+      {visibleStartError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 px-3 py-2 border-b border-error/20 bg-error/10 text-xs text-error"
+        >
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1 leading-5">
+            <p className="break-words font-medium">{visibleStartError.message}</p>
+            <p className="text-text-secondary">{t('taskList.startFailedHint')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleViewLogs}
+            className="shrink-0 rounded-lg px-2 py-1 font-medium hover:bg-error/10"
+          >
+            {t('taskList.viewLogs')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setStartError(null)}
+            aria-label={t('common.close')}
+            title={t('common.close')}
+            className="shrink-0 rounded-lg p-1 hover:bg-error/10"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       )}
-    >
+      <div className="flex items-center justify-between gap-2 px-3 py-2">
       {/* 左侧工具按钮 */}
-      <div className="flex items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
         {/* 全选/取消全选 */}
         <button
           onClick={handleSelectAll}
@@ -1815,8 +1910,24 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         </button>
       </div>
 
+      {/* 当前状态：窗口较窄时自动截断，不挤占两侧按钮 */}
+      <span
+        role="status"
+        title={statusLine.text}
+        className={clsx(
+          'min-w-0 flex-1 truncate text-right text-xs tabular-nums',
+          statusLine.tone === 'accent'
+            ? 'text-accent'
+            : statusLine.tone === 'warning'
+              ? 'text-warning'
+              : 'text-text-muted',
+        )}
+      >
+        {statusLine.text}
+      </span>
+
       {/* 右侧执行按钮组 */}
-      <div className="flex items-center gap-2 relative">
+      <div className="flex shrink-0 items-center gap-2 relative">
         {/* 定时执行按钮和状态气泡 */}
         <ScheduleButton
           enabledCount={instance?.schedulePolicies?.filter((p) => p.enabled).length || 0}
@@ -1849,7 +1960,11 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         <PermissionModal
           isOpen={showPermissionModal}
           isRestarting={isRestartingAsAdmin}
-          onCancel={() => setShowPermissionModal(false)}
+          failed={restartError}
+          onCancel={() => {
+            setShowPermissionModal(false);
+            setRestartError(false);
+          }}
           onRestart={handleRestartAsAdmin}
         />
 
@@ -1870,7 +1985,8 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
                     ? 'bg-bg-active text-text-tertiary cursor-not-allowed'
                     : 'bg-accent hover:bg-accent-hover text-on-accent',
           )}
-          title={getButtonTitle()}
+          aria-busy={isStarting || isStopping}
+          title={isDisabled ? statusLine.text : undefined}
         >
           {isStopping ? (
             <>
@@ -1894,6 +2010,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
             </>
           )}
         </button>
+      </div>
       </div>
     </div>
   );

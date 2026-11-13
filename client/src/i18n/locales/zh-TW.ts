@@ -1,6 +1,7 @@
 export default {
   // 通用
   common: {
+    expandSidePanel: '展開側欄（執行日誌與連線設定）',
     confirm: '確定',
     cancel: '取消',
     undo: '復原',
@@ -210,6 +211,17 @@ export default {
 
   // 任務列表
   taskList: {
+    emptyHint: '新增要自動完成的任務，或匯入一份現成的設定',
+    statusNoTasks: '先新增任務',
+    statusNoneSelected: '勾選要執行的任務',
+    statusSelected: '已勾選 {{count}} 項',
+    statusRunning: '執行中 · 已完成 {{done}} / {{total}}',
+    statusPreAction: '正在執行前置程式',
+    statusLastFailed: '上次執行有 {{count}} 項失敗',
+    startFailedHint: '詳細原因請見執行日誌',
+    viewLogs: '查看日誌',
+    stopPending: '停止請求已送出，正在等待目前操作結束',
+    stopFailed: '停止任務失敗，請再試一次',
     title: '任務列表',
     selectAll: '全選',
     deselectAll: '取消全選',
@@ -262,6 +274,7 @@ export default {
 
   // 任務项
   taskItem: {
+    removeConfirmMessageNamed: '確定要刪除任務「{{name}}」嗎？它的選項設定會一併移除。',
     options: '設定選項',
     noOptions: '無可設定選項',
     enabled: '已啟用',
@@ -460,6 +473,9 @@ export default {
 
   // 日誌/資訊流
   logs: {
+    copied: '日誌已複製',
+    copyFailed: '複製失敗，請重試',
+    jumpToLatest: '回到最新',
     title: '執行日誌',
     clear: '清空',
     autoscroll: '自動捲動',
@@ -841,6 +857,7 @@ export default {
 
   // 權限提示
   permission: {
+    restartFailed: '未能以系統管理員身分重新啟動。請關閉程式後，右鍵選擇「以系統管理員身分執行」。',
     title: '需要管理員權限',
     message: '目前控制器需要管理員權限才能正常操作目標視窗。請以管理員身分重啟應用程式。',
     hint: '重啟後將自動恢復目前設定。',

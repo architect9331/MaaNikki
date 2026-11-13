@@ -1,6 +1,7 @@
 export default {
   // 共通
   common: {
+    expandSidePanel: 'サイドパネルを表示（実行ログと接続設定）',
     confirm: '確定',
     cancel: 'キャンセル',
     undo: '元に戻す',
@@ -215,6 +216,17 @@ export default {
 
   // タスクリスト
   taskList: {
+    emptyHint: '自動化したいタスクを追加するか、既存の設定をインポートしてください',
+    statusNoTasks: '先にタスクを追加',
+    statusNoneSelected: '実行するタスクにチェック',
+    statusSelected: '{{count}} 件選択中',
+    statusRunning: '実行中 · {{done}} / {{total}} 完了',
+    statusPreAction: '事前プログラムを実行中',
+    statusLastFailed: '前回の実行で {{count}} 件失敗',
+    startFailedHint: '詳細は実行ログをご確認ください',
+    viewLogs: 'ログを見る',
+    stopPending: '停止を要求しました。現在の操作の終了を待っています',
+    stopFailed: 'タスクの停止に失敗しました。もう一度お試しください',
     title: 'タスクリスト',
     selectAll: 'すべて選択',
     deselectAll: 'すべて解除',
@@ -270,6 +282,7 @@ export default {
 
   // タスク項目
   taskItem: {
+    removeConfirmMessageNamed: 'タスク「{{name}}」を削除しますか？オプション設定も一緒に削除されます。',
     options: 'オプション設定',
     noOptions: '設定可能なオプションはありません',
     enabled: '有効',
@@ -477,6 +490,9 @@ export default {
 
   // ログ
   logs: {
+    copied: 'ログをコピーしました',
+    copyFailed: 'コピーに失敗しました。もう一度お試しください',
+    jumpToLatest: '最新へ移動',
     title: '実行ログ',
     clear: 'クリア',
     autoscroll: '自動スクロール',
@@ -870,6 +886,7 @@ export default {
 
   // 権限プロンプト
   permission: {
+    restartFailed: '管理者として再起動できませんでした。アプリを閉じ、右クリックして「管理者として実行」を選択してください。',
     title: '管理者権限が必要です',
     message:
       '現在のコントローラーは、対象ウィンドウを操作するために管理者権限が必要です。管理者として再起動してください。',

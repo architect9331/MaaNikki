@@ -1,6 +1,7 @@
 export default {
   // Common
   common: {
+    expandSidePanel: 'Show side panel (logs and connection settings)',
     confirm: 'Confirm',
     cancel: 'Cancel',
     undo: 'Undo',
@@ -217,6 +218,17 @@ export default {
 
   // Task list
   taskList: {
+    emptyHint: 'Add the tasks you want automated, or import an existing configuration',
+    statusNoTasks: 'Add a task first',
+    statusNoneSelected: 'Check the tasks to run',
+    statusSelected: '{{count}} selected',
+    statusRunning: 'Running · {{done}} / {{total}} done',
+    statusPreAction: 'Running pre-action program',
+    statusLastFailed: '{{count}} failed in the last run',
+    startFailedHint: 'See the run log for details',
+    viewLogs: 'View logs',
+    stopPending: 'Stop requested; waiting for the current step to finish',
+    stopFailed: 'Failed to stop tasks. Please try again.',
     title: 'Task List',
     selectAll: 'Select All',
     deselectAll: 'Deselect All',
@@ -275,6 +287,7 @@ export default {
 
   // Task item
   taskItem: {
+    removeConfirmMessageNamed: 'Delete the task "{{name}}"? Its option settings will be removed too.',
     options: 'Options',
     noOptions: 'No configurable options',
     enabled: 'Enabled',
@@ -478,6 +491,9 @@ export default {
 
   // Logs
   logs: {
+    copied: 'Logs copied',
+    copyFailed: 'Copy failed. Please try again.',
+    jumpToLatest: 'Jump to latest',
     title: 'Logs',
     clear: 'Clear',
     autoscroll: 'Auto Scroll',
@@ -869,6 +885,7 @@ export default {
 
   // Permission prompt
   permission: {
+    restartFailed: 'Could not restart as administrator. Close the app, then right-click it and choose "Run as administrator".',
     title: 'Administrator Privileges Required',
     message:
       'The current controller requires administrator privileges to interact with the target window. Please restart the application as administrator.',

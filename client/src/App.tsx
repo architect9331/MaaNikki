@@ -101,7 +101,7 @@ import { useRunResultNotifier } from '@/utils/useRunResultNotifier';
 const SETUP_VERSION = 1;
 import { startGlobalCallbackListener } from './components/connection/callbackCache';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { ScrollText } from 'lucide-react';
+import { ChevronLeft, ScrollText } from 'lucide-react';
 import { defaultConfig, defaultWindowSize, isValidMxuConfig } from '@/types/config';
 
 const log = loggers.app;
@@ -2230,12 +2230,48 @@ function App() {
 
             {/* 分隔条 Resizer */}
             <div
-              className={`${rightPanelCollapsed ? 'w-4' : 'w-1'} hover:bg-accent/50 cursor-col-resize flex items-center justify-center group shrink-0 transition-all select-none bg-transparent`}
+              role="separator"
+              aria-orientation="vertical"
+              tabIndex={0}
+              className={`${rightPanelCollapsed ? 'w-5' : 'w-1'} hover:bg-accent/50 focus-visible:bg-accent/50 outline-none cursor-col-resize flex items-center justify-center group shrink-0 transition-all select-none bg-transparent`}
               onMouseDown={handleResizeStart}
+              onKeyDown={(e) => {
+                // 键盘也能调整侧栏：左右方向键改宽度，回车折叠或展开
+                const store = useAppStore.getState();
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  store.setRightPanelCollapsed(!store.rightPanelCollapsed);
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                  e.preventDefault();
+                  if (store.rightPanelCollapsed) {
+                    if (e.key === 'ArrowLeft') store.setRightPanelCollapsed(false);
+                    return;
+                  }
+                  const maxWidth = Math.min(
+                    800,
+                    document.body.clientWidth - MIN_LEFT_PANEL_WIDTH - 4,
+                  );
+                  const next = store.rightPanelWidth + (e.key === 'ArrowLeft' ? 24 : -24);
+                  store.setRightPanelWidth(Math.max(320, Math.min(maxWidth, next)));
+                }
+              }}
               title={t('common.resizeOrCollapse', '拖动调整宽度，向右拖动到底可折叠')}
             >
-              {/* 可视化把手 */}
-              <div className="w-[2px] h-8 rounded-full transition-colors bg-border group-hover:bg-accent" />
+              {rightPanelCollapsed ? (
+                /* 折叠后给出明确的展开入口，不必靠拖动找回侧栏 */
+                <button
+                  type="button"
+                  onClick={() => useAppStore.getState().setRightPanelCollapsed(false)}
+                  title={t('common.expandSidePanel')}
+                  aria-label={t('common.expandSidePanel')}
+                  className="flex h-12 w-full items-center justify-center rounded-l-lg bg-bg-secondary text-text-secondary hover:text-accent cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              ) : (
+                /* 可视化把手 */
+                <div className="w-[2px] h-8 rounded-full transition-colors bg-border group-hover:bg-accent" />
+              )}
             </div>
 
             {/* 右侧信息面板 */}

@@ -553,8 +553,16 @@ export function TaskList() {
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-text-muted gap-3">
               <ListTodo className="w-12 h-12 opacity-30" />
-              <p className="text-sm">{t('taskList.noTasks')}</p>
-              <p className="text-xs">{t('taskList.dragToReorder')}</p>
+              <p className="text-sm text-text-secondary">{t('taskList.noTasks')}</p>
+              <p className="text-xs text-center px-6">{t('taskList.emptyHint')}</p>
+              <button
+                type="button"
+                onClick={() => setShowAddTaskPanel(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:bg-accent-hover transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                {t('taskList.addTask')}
+              </button>
               <ImportConfigButton instanceId={instance.id} />
             </div>
           )}
@@ -606,8 +614,16 @@ export function TaskList() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-text-muted gap-3 min-h-[120px]">
               <ListTodo className="w-12 h-12 opacity-30" />
-              <p className="text-sm">{t('taskList.noTasks')}</p>
-              <p className="text-xs">{t('taskList.dragToReorder')}</p>
+              <p className="text-sm text-text-secondary">{t('taskList.noTasks')}</p>
+              <p className="text-xs text-center px-6">{t('taskList.emptyHint')}</p>
+              <button
+                type="button"
+                onClick={() => setShowAddTaskPanel(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:bg-accent-hover transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                {t('taskList.addTask')}
+              </button>
               <ImportConfigButton instanceId={instance.id} />
             </div>
           )}

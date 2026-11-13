@@ -8,7 +8,8 @@ import {
   useLayoutEffect,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Eraser, Copy, ChevronUp, ChevronDown, Archive } from 'lucide-react';
+import { Eraser, Copy, ChevronUp, ChevronDown, Archive, ArrowDown } from 'lucide-react';
+import { toast } from 'sonner';
 import clsx from 'clsx';
 import { useAppStore, type LogType } from '@/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -43,6 +44,8 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
   const isFollowingTailRef = useRef(true);
   const [visibleLogLimit, setVisibleLogLimit] = useState(DEFAULT_VISIBLE_LOG_LIMIT);
   const [isAtTop, setIsAtTop] = useState(false);
+  // 用户向上翻看旧日志时停止自动跟随，并给出回到最新的入口
+  const [isFollowingTail, setIsFollowingTail] = useState(true);
   const [isExpandingLogs, setIsExpandingLogs] = useState(false);
 
   const {
@@ -78,6 +81,7 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
     setVisibleLogLimit(DEFAULT_VISIBLE_LOG_LIMIT);
     setIsAtTop(false);
     isFollowingTailRef.current = true;
+    setIsFollowingTail(true);
   }, [activeInstanceId]);
 
   useLayoutEffect(() => {
@@ -98,11 +102,22 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
 
     setIsAtTop(top);
     isFollowingTailRef.current = bottom;
+    setIsFollowingTail(bottom);
+  }, []);
+
+  const handleJumpToLatest = useCallback(() => {
+    const el = logsContainerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    isFollowingTailRef.current = true;
+    setIsFollowingTail(true);
   }, []);
 
   const handleClear = useCallback(() => {
     if (activeInstanceId) {
       clearLogs(activeInstanceId);
+      isFollowingTailRef.current = true;
+      setIsFollowingTail(true);
     }
   }, [activeInstanceId, clearLogs]);
 
@@ -110,8 +125,11 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
     const text = visibleLogs
       .map((log) => `[${log.timestamp.toLocaleTimeString()}] ${log.message}`)
       .join('\n');
-    navigator.clipboard.writeText(text);
-  }, [visibleLogs]);
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(t('logs.copied')),
+      () => toast.error(t('logs.copyFailed')),
+    );
+  }, [visibleLogs, t]);
 
   const handleShowMoreLogs = useCallback(() => {
     if (isExpandingLogs) return;
@@ -228,7 +246,7 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
     <div
       id="logs-panel"
       className={clsx(
-        'flex flex-col bg-bg-secondary rounded-lg ring-1 ring-inset ring-border overflow-hidden',
+        'relative flex flex-col bg-bg-secondary rounded-lg ring-1 ring-inset ring-border overflow-hidden',
         // 3rem = TabBar h-12；若 TabBar 高度变更需同步更新
         instanceId ? 'h-full min-h-0' : isMobile ? 'h-[calc(100dvh-3rem)]' : 'flex-1 min-h-50',
       )}
@@ -269,6 +287,7 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
                 : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary',
             )}
             title={t('debug.exportLogs')}
+            aria-label={t('debug.exportLogs')}
           >
             <Archive className="w-3.5 h-3.5" />
           </button>
@@ -277,14 +296,15 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
               e.stopPropagation();
               handleClear();
             }}
-            disabled={!isTauri() && logs.length === 0}
+            disabled={logs.length === 0}
             className={clsx(
               'p-1 rounded-lg transition-colors',
-              !isTauri() && logs.length === 0
+              logs.length === 0
                 ? 'text-text-muted cursor-not-allowed'
                 : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary',
             )}
             title={t('logs.clear')}
+            aria-label={t('logs.clear')}
           >
             <Eraser className="w-3.5 h-3.5" />
           </button>
@@ -378,6 +398,17 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
           </>
         )}
       </div>
+
+      {!isFollowingTail && visibleLogs.length > 0 && (
+        <button
+          type="button"
+          onClick={handleJumpToLatest}
+          className="absolute bottom-3 right-4 inline-flex items-center gap-1 rounded-full border border-border bg-bg-secondary px-3 py-1.5 text-xs text-text-primary shadow-md hover:bg-bg-hover hover:border-accent/50 transition-colors"
+        >
+          <ArrowDown className="w-3.5 h-3.5" />
+          {t('logs.jumpToLatest')}
+        </button>
+      )}
 
       {/* 右键菜单 */}
       {menuState.isOpen && (

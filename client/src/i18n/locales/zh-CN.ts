@@ -1,6 +1,7 @@
 export default {
   // 通用
   common: {
+    expandSidePanel: '展开侧栏（运行日志与连接设置）',
     confirm: '确定',
     cancel: '取消',
     undo: '撤销',
@@ -210,6 +211,17 @@ export default {
 
   // 任务列表
   taskList: {
+    emptyHint: '添加要自动完成的任务，或导入一份现成的配置',
+    statusNoTasks: '先添加任务',
+    statusNoneSelected: '勾选要运行的任务',
+    statusSelected: '已勾选 {{count}} 项',
+    statusRunning: '运行中 · 已完成 {{done}} / {{total}}',
+    statusPreAction: '正在执行前置程序',
+    statusLastFailed: '上次运行有 {{count}} 项失败',
+    startFailedHint: '详细原因见运行日志',
+    viewLogs: '查看日志',
+    stopPending: '停止请求已发送，正在等待当前操作结束',
+    stopFailed: '停止任务失败，请再试一次',
     title: '任务列表',
     selectAll: '全选',
     deselectAll: '取消全选',
@@ -266,6 +278,7 @@ export default {
 
   // 任务项
   taskItem: {
+    removeConfirmMessageNamed: '确定要删除任务「{{name}}」吗？它的选项设置会一并移除。',
     options: '配置选项',
     noOptions: '无可配置选项',
     enabled: '已启用',
@@ -464,6 +477,9 @@ export default {
 
   // 日志/信息流
   logs: {
+    copied: '日志已复制',
+    copyFailed: '复制失败，请重试',
+    jumpToLatest: '回到最新',
     title: '运行日志',
     clear: '清空',
     autoscroll: '自动滚动',
@@ -858,6 +874,7 @@ export default {
 
   // 权限提示
   permission: {
+    restartFailed: '未能以管理员身份重启。请关闭程序后，右键选择「以管理员身份运行」。',
     title: '需要管理员权限',
     message: '当前控制器需要管理员权限才能正常操作目标窗口。请以管理员身份重启应用。',
     hint: '重启后将自动恢复当前配置。',
