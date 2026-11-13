@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { toast } from 'sonner';
 import { primaryButton, secondaryButton } from '@/components/ui/FeaturePage';
 import { generateGingerbreadRoutes, type GenerateGingerbreadResponse } from '@/services/routeStudioService';
-import { loadMaterialCatalog3D } from './Route3DCanvas';
+import { loadMaterialCatalog } from './routeTerrain';
 
 interface SelectableMaterial {
   name: string;
@@ -76,7 +76,7 @@ export function RouteGeneratorModal({
 
   useEffect(() => {
     if (!open || materialsList.length > 0) return;
-    loadMaterialCatalog3D()
+    loadMaterialCatalog()
       .then(({ catalogs, spawnersByMap }) => {
         const list: SelectableMaterial[] = [];
         for (const [cid, info] of Object.entries(catalogs)) {

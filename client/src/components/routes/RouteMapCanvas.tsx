@@ -3,9 +3,17 @@ import {
   actionMeta, usesFacingHeading,
   type Checkpoint, type RoutePoint, type TrialWaypointReport,
 } from '@/services/routeDocument';
+import { MATERIAL_KIND_COLOR, MATERIAL_KIND_NAME, METERS_PER_UNIT, PICKUP_RANGE_M, type AnnotatedSpawner } from './routeTerrain';
 
 export interface MapInfo { id: string; title: string; width: number; height: number; image: string }
 export interface MapCanvasHandle { fit: () => void; zoom: (factor: number) => void; focus: (x: number, y: number) => void }
+export type MapTool = 'select' | 'add' | 'box';
+/** What was under the cursor when the map was right-clicked. */
+export type MapContextTarget =
+  | { kind: 'point'; index: number }
+  | { kind: 'segment'; after: number; x: number; y: number }
+  | { kind: 'teleport'; checkpoint: Checkpoint }
+  | { kind: 'empty'; x: number; y: number };
 
 const HIT_POINT = 10;
 const HIT_SEGMENT = 7;
@@ -44,7 +52,10 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
   selectedSet?: ReadonlySet<number>;
   activeTrialIndex?: number | null;
   trialWaypoints?: TrialWaypointReport[] | null;
-  tool: 'select' | 'add' | 'box';
+  spawners?: AnnotatedSpawner[] | null;
+  /** A spot highlighted from outside the map, e.g. the elevation profile hover. */
+  probe?: { x: number; y: number } | null;
+  tool: MapTool;
   readOnly: boolean;
   onSelect: (index: number | null, toggle?: boolean) => void;
   onBoxSelect?: (indices: number[], additive: boolean) => void;
@@ -53,10 +64,11 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
   onHeadingChange?: (index: number, heading: number, commit: boolean) => void;
   onInsert: (afterIndex: number, x: number, y: number) => void;
   onPickTeleport?: (checkpoint: Checkpoint) => void;
+  onContextMenu?: (target: MapContextTarget, clientX: number, clientY: number) => void;
 }>(function RouteMapCanvas({
   map, image, points, preview, samples, pose, teleports, startTeleport, showPathMask = true,
-  selected, selectedSet, activeTrialIndex, trialWaypoints,
-  tool, readOnly, onSelect, onBoxSelect, onMove, onHeadingChange, onInsert, onPickTeleport,
+  selected, selectedSet, activeTrialIndex, trialWaypoints, spawners, probe,
+  tool, readOnly, onSelect, onBoxSelect, onMove, onHeadingChange, onInsert, onPickTeleport, onContextMenu,
 }, ref) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const view = useRef({ scale: 1, ox: 0, oy: 0 });
@@ -71,7 +83,7 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
     shift: boolean;
   } | null>(null);
   const frame = useRef(0);
-  const [cursor, setCursor] = useState<{ x: number; y: number; teleport?: Checkpoint } | null>(null);
+  const [cursor, setCursor] = useState<{ x: number; y: number; teleport?: Checkpoint; spawner?: AnnotatedSpawner } | null>(null);
   const shown = preview ?? points;
 
   const draw = useCallback(() => {
@@ -137,9 +149,44 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
         context.restore();
       }
     }
+    // Material spawners: filled when the route reaches them, hollow when it misses them.
+    if (spawners?.length) {
+      context.save();
+      const dotR = Math.max(2, Math.min(4.5, scale * 2.2));
+      for (const sp of spawners) {
+        const cx = sx(sp.pt.x);
+        const cy = sy(sp.pt.y);
+        if (cx < -8 || cy < -8 || cx > width + 8 || cy > height + 8) continue;
+        const color = MATERIAL_KIND_COLOR[sp.pt.kind] ?? '#94a3b8';
+        const r = sp.isTarget ? dotR + 1.5 : dotR;
+        context.beginPath();
+        context.arc(cx, cy, r, 0, Math.PI * 2);
+        if (sp.captured) {
+          context.fillStyle = color;
+          context.fill();
+          context.strokeStyle = '#ffffffcc';
+          context.lineWidth = 1;
+          context.stroke();
+        } else {
+          context.fillStyle = `${color}33`;
+          context.fill();
+          context.strokeStyle = color;
+          context.lineWidth = 1.2;
+          context.stroke();
+        }
+        if (sp.isTarget) {
+          context.beginPath();
+          context.arc(cx, cy, r + 3, 0, Math.PI * 2);
+          context.strokeStyle = sp.captured ? '#22c55e' : '#ef4444';
+          context.lineWidth = 1.5;
+          context.stroke();
+        }
+      }
+      context.restore();
+    }
     // 15m Gingerbread pickup coverage mask along route when showPathMask is enabled.
     if (showPathMask && shown.length > 0) {
-      const auraPx = Math.max(4, (15.0 / 0.9) * scale);
+      const auraPx = Math.max(4, (PICKUP_RANGE_M / METERS_PER_UNIT) * scale);
       context.save();
       context.fillStyle = 'rgba(251, 191, 36, 0.10)';
       context.strokeStyle = 'rgba(251, 191, 36, 0.35)';
@@ -311,6 +358,17 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
       context.stroke();
       context.restore();
     }
+    if (probe) {
+      const px = sx(probe.x);
+      const py = sy(probe.y);
+      context.beginPath();
+      context.arc(px, py, 7, 0, Math.PI * 2);
+      context.fillStyle = '#06b6d455';
+      context.fill();
+      context.strokeStyle = '#06b6d4';
+      context.lineWidth = 2;
+      context.stroke();
+    }
     if (drag.current?.kind === 'box' && drag.current.moved) {
       const { x, y, curX, curY } = drag.current;
       const rx = Math.min(x, curX);
@@ -325,7 +383,7 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
       context.strokeRect(rx, ry, rw, rh);
       context.setLineDash([]);
     }
-  }, [map, image, shown, preview, samples, pose, teleports, startTeleport, showPathMask, selected, selectedSet, activeTrialIndex, trialWaypoints, readOnly]);
+  }, [map, image, shown, preview, samples, pose, teleports, startTeleport, showPathMask, selected, selectedSet, activeTrialIndex, trialWaypoints, readOnly, spawners, probe]);
 
   const schedule = useCallback(() => {
     cancelAnimationFrame(frame.current);
@@ -443,6 +501,20 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
     }
     return best;
   };
+  const hitSpawner = (x: number, y: number) => {
+    if (!spawners?.length) return undefined;
+    const { scale, ox, oy } = view.current;
+    let best: AnnotatedSpawner | undefined;
+    let bestDist = 7;
+    for (const sp of spawners) {
+      const d = Math.hypot(ox + sp.pt.x * scale - x, oy + sp.pt.y * scale - y);
+      if (d <= bestDist) {
+        bestDist = d;
+        best = sp;
+      }
+    }
+    return best;
+  };
   const headingFromScreen = (index: number, x: number, y: number) => {
     const point = points[index];
     if (!point) return 0;
@@ -460,6 +532,13 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
   return <div className="relative h-full w-full overflow-hidden bg-bg-tertiary">
     <canvas ref={canvas} className="h-full w-full touch-none" style={{ cursor: (tool === 'add' || tool === 'box') && !readOnly ? 'crosshair' : 'grab' }}
       onPointerDown={(event) => {
+        if (event.button === 1) {
+          const { x, y } = local(event);
+          event.preventDefault();
+          canvas.current?.setPointerCapture(event.pointerId);
+          drag.current = { kind: 'pan', index: -1, x, y, curX: x, curY: y, moved: true, shift: false };
+          return;
+        }
         if (event.button !== 0) return;
         const { x, y } = local(event);
         const hIdx = hitHeadingHandle(x, y);
@@ -483,7 +562,7 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
       onPointerMove={(event) => {
         const { x, y } = local(event);
         const hoveredTp = hitTeleport(x, y);
-        setCursor({ ...toMap(x, y), teleport: hoveredTp ?? undefined });
+        setCursor({ ...toMap(x, y), teleport: hoveredTp ?? undefined, spawner: hoveredTp ? undefined : hitSpawner(x, y) });
         const active = drag.current;
         if (!active) return;
         if (Math.hypot(x-active.x, y-active.y) < 3 && !active.moved) return;
@@ -557,9 +636,25 @@ export const RouteMapCanvas = forwardRef<MapCanvasHandle, {
           onInsert(segment, position.x, position.y);
         }
       }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        if (!onContextMenu || preview) return;
+        const { x, y } = local(event);
+        const index = hitPoint(x, y);
+        if (index >= 0) return onContextMenu({ kind: 'point', index }, event.clientX, event.clientY);
+        const tp = hitTeleport(x, y);
+        if (tp) return onContextMenu({ kind: 'teleport', checkpoint: tp }, event.clientX, event.clientY);
+        const position = toMap(x, y);
+        const segment = hitSegment(x, y);
+        if (segment >= 0) return onContextMenu({ kind: 'segment', after: segment, ...position }, event.clientX, event.clientY);
+        onContextMenu({ kind: 'empty', ...position }, event.clientX, event.clientY);
+      }}
       onPointerLeave={() => setCursor(null)} />
     {cursor && <span className="pointer-events-none absolute bottom-2 right-3 rounded bg-bg-secondary/90 px-2 py-0.5 text-[11px] tabular-nums text-text-muted">
       {cursor.teleport && <strong className="mr-2 font-medium text-[#7c6cf0]">流转之柱：{cursor.teleport.region} · {cursor.teleport.name}</strong>}
+      {cursor.spawner && <strong className="mr-2 font-medium" style={{ color: MATERIAL_KIND_COLOR[cursor.spawner.pt.kind] }}>
+        {MATERIAL_KIND_NAME[cursor.spawner.pt.kind]}：{cursor.spawner.pt.name} · 高度 {cursor.spawner.pt.z.toFixed(1)} · {cursor.spawner.captured ? '路线可拾取' : '路线够不到'}
+      </strong>}
       {cursor.x.toFixed(1)}, {cursor.y.toFixed(1)}
     </span>}
   </div>;
