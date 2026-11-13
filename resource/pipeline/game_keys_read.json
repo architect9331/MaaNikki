@@ -11,9 +11,10 @@
     "next": []
   },
   "MaaNikki_GameKeys_SettingsEntrance": {
-    "recognition": "OCR",
-    "roi": [0, 0, 1280, 720],
-    "expected": "^设置$",
+    "recognition": "TemplateMatch",
+    "roi": [560, 610, 160, 110],
+    "template": "game/ui/ButtonMenuSettings.png",
+    "threshold": 0.8,
     "action": "Custom",
     "custom_action": "nikki.ui_click",
     "custom_action_param": {
