@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Loader2, Search } from 'lucide-react';
 import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
-import { loadScoring, saveScoring } from '@/services/scoring/api';
 import { tagLabel } from '@/services/scoring/diagnostics';
 import { buildOwnedProfile } from '@/services/scoring/profile';
-import { ATTRIBUTES, emptySettings, type Match, type OutfitResult, type ScoringPayload, type ScoringSettings } from '@/services/scoring/types';
+import { ATTRIBUTES, type Match, type OutfitResult } from '@/services/scoring/types';
+import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { buildPieceEntries, buildSuitEntries, type SuitBrowserEntry } from '@/services/scoring/wardrobeBrowserData';
 import { Segmented, Stat } from './ui/FeaturePage';
 import { ImageIcon, WardrobePhotoCardModal } from './WardrobePhotoCardModal';
@@ -28,9 +28,7 @@ function LevelBadgeInput({ value, inferred, onChange }: { value: number | null; 
 
 export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   const activeUid = useAccountStateStore((state) => state.data?.uid);
-  const [payload, setPayload] = useState<ScoringPayload | null>(null);
-  const [settings, setSettings] = useState<ScoringSettings>(emptySettings);
-  const [loading, setLoading] = useState(true);
+  const { payload, settings, loading, load, setLevel } = useWardrobePlanStore();
   const [view, setView] = useState<'suits' | 'pieces'>('suits');
   const [statusFilter, setStatusFilter] = useState('all');
   const [qualityFilter, setQualityFilter] = useState('all');
@@ -41,16 +39,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [sharingSuit, setSharingSuit] = useState<SuitBrowserEntry | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    void loadScoring().then((next) => {
-      if (cancelled) return;
-      setPayload(next);
-      setSettings(next.settings ?? emptySettings());
-    }).catch(() => {}).finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [activeUid, refreshToken]);
+  useEffect(() => { void load(`${activeUid ?? ''}:${refreshToken}`); }, [activeUid, refreshToken, load]);
 
   useEffect(() => { setLimit(PAGE_SIZE); }, [view, statusFilter, qualityFilter, majorFilter, tagFilter, partFilter, search]);
 
@@ -58,17 +47,10 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   const suits = useMemo(() => payload && profile ? buildSuitEntries(payload, profile) : [], [payload, profile]);
   const pieces = useMemo(() => payload && profile ? buildPieceEntries(payload, profile) : [], [payload, profile]);
 
-  function updateLevel(groupId: string, level: number | null) {
-    if (!payload) return;
-    const levels = { ...settings.levels };
-    if (level === null) delete levels[groupId]; else levels[groupId] = level;
-    const next = { ...settings, levels };
-    setSettings(next);
-    void saveScoring(payload.account_key, next).catch(() => {});
-  }
+  const updateLevel = setLevel;
 
-  if (loading) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在加载衣柜图鉴</div>;
-  if (!payload || !profile) return <p className={clsx(card, 'text-sm text-text-secondary')}>请先在「衣柜读取」中读取当前账号的衣柜。</p>;
+  if (loading && !payload) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在加载衣柜图鉴</div>;
+  if (!payload || !profile) return <p className={clsx(card, 'text-sm text-text-secondary')}>暂时无法加载衣柜记录，读取衣柜后点右上角刷新。</p>;
 
   const q = search.trim();
   const tagEntries = Object.entries(payload.catalog.tag_names ?? {}).sort((a, b) => Number(a[0]) - Number(b[0]));
