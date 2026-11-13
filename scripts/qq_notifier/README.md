@@ -40,16 +40,8 @@ GitHub Webhook 使用 HMAC SHA-256 验签，QQ 回调使用 Ed25519 验签。公
 
 `GET /health` 查看服务状态；携带管理令牌访问 `GET /admin/status`，可查看群绑定数量、消息队列和 QQ 接口连通状态。
 
-### 旧服务器备份与回退
+### 旧版回退
 
-2026-10-31 迁移至 Cloudflare，沿用原群绑定和发送进度。旧服务 `nonebot-github.service` 已停用并关闭自动启动，程序保留在 `/opt/nonebot-github/`，配置位于 `/etc/nonebot-github/config.json`，数据库位于 `/var/lib/nonebot-github/state.sqlite3`。源码和最终数据库备份位于 `/var/backups/nonebot-github/20261031-cf-migration/`。
+旧部署的地址、服务配置和备份位置由维护者保存在私密部署记录中。需要回退时，先关闭 Worker 的 `DELIVERY_ENABLED`，保留当前订阅与发送进度的备份，再按部署记录恢复旧服务，并将 GitHub Webhook 与 QQ 回调切换到对应地址。确认接收正常后再恢复发送，避免重复公告。
 
-需要回退时，先关闭 Worker 的 `DELIVERY_ENABLED`，将 GitHub Webhook 改回 `https://arc9331.top/nonebot-github/github/webhook`，再恢复旧服务：
-
-```sh
-systemctl enable --now nonebot-github
-systemctl status nonebot-github --no-pager
-journalctl -u nonebot-github -n 30 --no-pager
-```
-
-QQ 回调配置同时按所选运行端调整。旧版依赖和配置示例见 `requirements.lock`、`config.example.json`。
+旧版依赖和配置示例见 `requirements.lock`、`config.example.json`。
