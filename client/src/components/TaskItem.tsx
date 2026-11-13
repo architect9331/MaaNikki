@@ -637,7 +637,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
       const modeName = realmCollectionEnabled(task.optionValues)
         ? (realmFarmOnlyEnabled(task.optionValues) ? '五星闪光（只刷胚子）' : '五星闪光全收集')
         : realmCraftingEnabled(task.optionValues)
-          ? '制衣材料全收集'
+          ? '制衣材料收集'
           : '日常消耗';
       previews.push({ key: 'mode', label: '模式', value: modeName, type: 'select' });
     }

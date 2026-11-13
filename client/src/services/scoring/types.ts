@@ -123,6 +123,19 @@ export interface GlowPlanState {
   targets: Record<string, number>;
   updated_at?: string;
 }
+export type PlanMode = 'all' | 'selected';
+export interface CraftingPlanState {
+  mode: PlanMode;
+  sketch_ids: string[];
+}
+export interface RenewalPlanState {
+  /** When enabled, 焕新材料筹备 computes its targets from this plan instead of glow_plan. */
+  enabled: boolean;
+  mode: PlanMode;
+  /** Clothing group id -> target level (10 full level, 11 renewed); used by 自选. */
+  targets: Record<string, number>;
+  updated_at?: string;
+}
 export interface MaterialsState {
   inventory?: Record<string, number>;
   inventory_updated_at?: string;
@@ -130,6 +143,10 @@ export interface MaterialsState {
   wardrobe_baseline_key?: string;
   crafted_consumed?: Record<string, number>;
   crafting_scope?: 'all' | 'suits';
+  crafting_plan?: CraftingPlanState | null;
+  renewal_plan?: RenewalPlanState | null;
+  renewal_baseline_key?: string;
+  renewal_consumed?: Record<string, number>;
   glow_plan?: GlowPlanState | null;
   updated_at?: string;
 }

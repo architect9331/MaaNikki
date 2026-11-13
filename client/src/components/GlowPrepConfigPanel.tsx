@@ -93,6 +93,10 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
     const hasRemaining = Object.entries(cleaned).some(([id, t]) => t > Number(inventory[id] ?? 0));
     const next: MaterialsState = {
       ...materials,
+      // Manual targets replace the wardrobe renewal plan as the task's source.
+      renewal_plan: Object.keys(cleaned).length && materials.renewal_plan
+        ? { ...materials.renewal_plan, enabled: false }
+        : materials.renewal_plan,
       glow_plan: Object.keys(cleaned).length ? {
         enabled: true,
         completed: !hasRemaining,
@@ -161,6 +165,13 @@ export function GlowPrepConfigPanel({ compact = false, externalMaterials, accoun
           )}
         </div>
       </div>
+
+      {materials.renewal_plan?.enabled && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-[11px] text-text-secondary">
+          <span>正在按衣柜「换新」的{materials.renewal_plan.mode === 'selected' ? '自选' : '全收集'}计划自动计算目标，下方手动目标暂不生效。</span>
+          <button type="button" onClick={() => setCurrentPage('wardrobe')} className="font-medium text-accent hover:underline">查看换新计划 →</button>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-1 rounded-lg bg-bg-secondary p-0.5 border border-border">
         {([

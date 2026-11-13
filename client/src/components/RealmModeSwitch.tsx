@@ -10,7 +10,7 @@ import type { OptionValue } from '@/types/interface';
 const MODES = [
   { id: 'daily', icon: Flame, title: '日常消耗', detail: '按选定方式清理剩余活跃能量' },
   { id: 'blessing', icon: Sparkles, title: '五星闪光全收集', detail: '按预期新色选本，支持全流程托管或只刷胚子' },
-  { id: 'crafting', icon: Hammer, title: '制衣材料全收集', detail: '按未制作设计图缺口自动刷取魔物试炼晶石' },
+  { id: 'crafting', icon: Hammer, title: '制衣材料收集', detail: '按衣柜「制衣」的全收集或自选计划刷取魔物试炼晶石' },
 ] as const;
 
 const WORKFLOW_MODES = [
@@ -106,9 +106,9 @@ export function RealmModeSwitch({ instanceId, taskId, values, disabled }: {
       {!farmOnly && decompose && <p className="text-warning">已开启爆仓分解：仓库满时会一键分解未锁定的闪光，且不可恢复。请勿手动解锁已收藏的祝福闪光。</p>}
     </div>}
     {crafting && <div className="rounded-lg border border-border bg-bg-primary px-3 py-2.5 text-xs text-text-secondary">
-      <p>根据已读衣柜自动计算全部未制作设计图所需的 10 种魔物试炼晶石（5 种磐岩晶石 + 5 种大地晶珀），按缺口从大到小精准计算次数挑战，刷完一种后同轮剩余能量自动接力下一种。</p>
+      <p>按衣柜「制衣」页的计划计算所需的魔物试炼晶石：全收集为全部未制作设计图，自选为勾选的设计图。按缺口从大到小精准计算次数挑战，刷完一种后同轮剩余能量自动接力下一种。</p>
       <button type="button" onClick={() => setCurrentPage('wardrobe')} className="mt-1.5 font-medium text-accent hover:underline">
-        前往「衣柜与搭配 → 制衣与材料」查看各晶石缺口与库存 →
+        前往「衣柜与搭配 → 制衣」切换全收集或自选、查看各晶石缺口 →
       </button>
     </div>}
   </div>;

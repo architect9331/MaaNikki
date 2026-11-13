@@ -64,7 +64,9 @@ export const useWardrobePlanStore = create<WardrobePlanState>((set, get) => ({
       if (level === null) delete levels[groupId];
       else levels[groupId] = level;
     }
-    const next = { ...settings, levels };
+    // A local timestamp marks the levels as changed so consumption recorded against
+    // the previous levels is no longer deducted, matching the agent.
+    const next = { ...settings, levels, updated_at: new Date().toISOString() };
     set({ settings: next });
     void saveScoring(payload.account_key, next).catch((error) => toast.error(String(error)));
   },

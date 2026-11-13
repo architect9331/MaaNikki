@@ -7,11 +7,12 @@ import { collectionShareImage } from '@/utils/collectionShareImage';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { useAppStore } from '@/stores/appStore';
 import { collectionSlots as slots, collectionKey as keyOf, getBlessingProgress } from '@/utils/blessingProgress';
-import { realmCollectionWorkflow, realmReserveBling } from '@/utils/nikkiOptions';
+import { realmCollectionEnabled, realmCollectionWorkflow, realmReserveBling } from '@/utils/nikkiOptions';
 import { isTauri } from '@/utils/paths';
 import type { ForecastPart } from '@/services/collectionForecast';
 import { BlessingForecast, type RainbowPreset } from './BlessingForecast';
 import { Card, FeaturePage, Segmented, Stat, StatusBar } from './ui/FeaturePage';
+import { PlanModeSwitch, PlanTaskBar } from './CollectionPlan';
 
 const SUMMARY_URL = 'https://stats.maanikki.cn/v1/summary';
 const COLOR_FILL: Record<string, string> = {
@@ -33,6 +34,22 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
     const inst = state.instances.find((i) => i.id === state.activeInstanceId) ?? state.instances[0];
     return inst?.selectedTasks.find((t) => t.taskName === 'realm_challenge')?.optionValues;
   });
+  const realmTarget = useAppStore((state) => {
+    const inst = state.instances.find((i) => i.id === state.activeInstanceId) ?? state.instances[0];
+    const task = inst?.selectedTasks.find((t) => t.taskName === 'realm_challenge');
+    return inst && task ? `${inst.id}\n${task.id}` : '';
+  });
+  const setTaskOptionValue = useAppStore((state) => state.setTaskOptionValue);
+  const collectionActive = !!realmValues && realmCollectionEnabled(realmValues);
+  const setCollection = (enabled: boolean) => {
+    if (!realmTarget) {
+      toast.error('当前配置中还没有「幻境挑战」任务，请先在主界面添加。');
+      return;
+    }
+    const [instanceId, taskId] = realmTarget.split('\n');
+    setTaskOptionValue(instanceId, taskId, 'CollectionMode', { type: 'switch', value: enabled });
+    if (enabled) setTaskOptionValue(instanceId, taskId, 'CraftingCollectionMode', { type: 'switch', value: false });
+  };
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('missing');
   const [community, setCommunity] = useState<{ rate: number; samples: number } | null>(null);
@@ -208,6 +225,13 @@ export function BlessingProgressPage({ onClose }: { onClose: () => void }) {
           {uncertain && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />存在未确认操作或收藏保护待复核，以下展示上次已确认的记录，下次全收集会自动核对。</p>}
           {rewardPending && <p className="flex items-center gap-1.5 text-xs text-warning"><AlertCircle className="w-3.5 h-3.5" />上次刷取结果待核对，已收藏颜色保留，下次全收集将先处理仓库。</p>}
 
+          <PlanModeSwitch value="all" onChange={() => {}} allLabel="全部未收集的五星闪光颜色"
+            allDetail={progress.known ? `已收集 ${number(progress.owned.size)} / ${number(target)} 色，按出新色概率跨套组挑选副本。` : '首次运行会先整理祝福闪光仓库，再按出新色概率挑选副本。'}
+            selectedDetail="" selectDisabledReason="闪光按出新色概率跨套组选本，暂不支持只收集指定套组。" />
+          <PlanTaskBar taskLabel="幻境挑战 · 五星闪光全收集" active={collectionActive}
+            status={<>全收集 · {isFarmOnly ? '只刷胚子' : '全流程托管'} · {progress.known ? (target - progress.owned.size > 0 ? `还差 ${number(target - progress.owned.size)} 色` : '颜色已收齐') : '尚无收集记录'}</>}
+            hint="执行方式、保留噗灵与爆仓分解在主界面的幻境挑战设置中调整；它与制衣材料收集共用幻境挑战，同时只能开启一个。"
+            onStart={() => setCollection(true)} onStop={() => setCollection(false)} />
           {progress.known && <StatusBar tone={needBling ? 'warn' : 'ok'} title={needBling ? '今天建议刷噗灵' : nextSource?.[1] ? `今天建议刷「${nextSource[0]}」` : '颜色已收齐'}
             detail={needBling
               ? (effectiveReserveBling > 0

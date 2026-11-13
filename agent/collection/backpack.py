@@ -337,6 +337,14 @@ def ensure_backpack_scanned(rt, account: AccountState, crafting_catalog: dict) -
 
         glow_plan = m.get("glow_plan") if isinstance(m.get("glow_plan"), dict) else None
         glow_targets = glow_plan.get("targets") if (glow_plan and isinstance(glow_plan.get("targets"), dict)) else None
+        renewal_plan = m.get("renewal_plan") if isinstance(m.get("renewal_plan"), dict) else None
+        renewal_dynamic = bool(renewal_plan and renewal_plan.get("enabled"))
+        scoring_state = (data.get("wardrobe") or {}).get("scoring") or {}
+        renewal_key = f"{wb_key}|{scoring_state.get('updated_at') or ''}" if wb_key else ""
+        if renewal_key and m.get("renewal_baseline_key") != renewal_key:
+            m["renewal_baseline_key"] = renewal_key
+            m["renewal_consumed"] = {}
+        renewal_consumed = m.setdefault("renewal_consumed", {})
 
         for k, v in scanned.items():
             mid = str(k)
@@ -350,7 +358,10 @@ def ensure_backpack_scanned(rt, account: AccountState, crafting_catalog: dict) -
                 if kind == "monster_craft" and same_wardrobe:
                     consumed_map[mid] = int(consumed_map.get(mid, 0)) + used
                     logs.append(f"检测到 {meta.get('name', mid)} 库存减少 {used}（{prev_qty} -> {new_qty}），已自动核销对应制衣材料需求。")
-                if (kind == "monster_glow" or mid == "50361309") and glow_targets and int(glow_targets.get(mid, 0)) > 0:
+                if (kind == "monster_glow" or mid == "50361309") and renewal_dynamic and renewal_key:
+                    renewal_consumed[mid] = int(renewal_consumed.get(mid, 0)) + used
+                    logs.append(f"检测到 {meta.get('name', mid)} 库存减少 {used}（已用于服装换新），换新计划所需已同步扣减。")
+                elif (kind == "monster_glow" or mid == "50361309") and glow_targets and int(glow_targets.get(mid, 0)) > 0:
                     old_target = int(glow_targets[mid])
                     new_target = max(0, old_target - used)
                     if new_target > 0:

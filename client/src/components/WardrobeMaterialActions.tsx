@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { toast } from 'sonner';
 import { useAppStore } from '@/stores/appStore';
 import { saveMaterialPlan } from '@/services/scoring/api';
+import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { MATERIAL_REALM_TARGETS } from '@/services/scoring/heartPresets';
 import type { BatchCalculationResult, MaterialsState, ScoringCatalog } from '@/services/scoring/types';
 
@@ -48,8 +49,11 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
 
   async function applyGlowPrepPlan(mode: 'replace' | 'add') {
     if (!accountKey || !entries.length) return;
-    const inv = materials?.inventory ?? {};
-    const prevTargets = mode === 'add' ? { ...(materials?.glow_plan?.targets ?? {}) } : {};
+    // Prefer the shared copy so plans edited in the crafting/renewal tabs are kept.
+    const shared = useWardrobePlanStore.getState();
+    const base = shared.payload?.account_key === accountKey ? shared.materials : materials;
+    const inv = base?.inventory ?? {};
+    const prevTargets = mode === 'add' ? { ...(base?.glow_plan?.targets ?? {}) } : {};
     const targets: Record<string, number> = { ...prevTargets };
     for (const [id, deficit] of entries) {
       if (MATERIAL_REALM_TARGETS[id]) {
@@ -58,7 +62,9 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
       }
     }
     const nextMaterials: MaterialsState = {
-      ...(materials ?? {}),
+      ...(base ?? {}),
+      // Imported targets replace the wardrobe renewal plan as the task's source.
+      renewal_plan: base?.renewal_plan ? { ...base.renewal_plan, enabled: false } : base?.renewal_plan,
       glow_plan: {
         enabled: true,
         completed: false,
@@ -70,6 +76,7 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     try {
       await saveMaterialPlan(accountKey, nextMaterials);
       onMaterialsChange?.(nextMaterials);
+      if (shared.payload?.account_key === accountKey) shared.adoptMaterials(nextMaterials);
       if (activeInstance) {
         const existing = activeInstance.selectedTasks.find((t) => t.taskName === 'glow_material_prep');
         if (!existing) {
