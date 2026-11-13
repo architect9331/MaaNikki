@@ -14,6 +14,7 @@ import {
   type RealmGoal, type RealmQueueEntry,
 } from '@/utils/nikkiOptions';
 import type { OptionValue } from '@/types/interface';
+import { SwitchTrack } from './ui/SwitchTrack';
 
 export const REALM_QUEUE_CARD_ID = 'realm-queue-card';
 const GOAL_INFO: Record<RealmGoal, { icon: typeof Shirt; detail: string; tab: CollectionTab }> = {
@@ -90,8 +91,8 @@ function QueueRow({ entry, rank, disabled, warn, onToggle }: {
     </button>
     <button type="button" role="switch" aria-checked={entry.enabled} aria-label={`开启${REALM_GOAL_LABELS[entry.goal]}`} disabled={disabled}
       onClick={() => onToggle(!entry.enabled)}
-      className={clsx('relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50', entry.enabled ? 'bg-accent' : 'bg-bg-tertiary')}>
-      <span className={clsx('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform', entry.enabled ? 'translate-x-4' : 'translate-x-0.5')} />
+      className="inline-flex shrink-0 items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50">
+      <SwitchTrack checked={entry.enabled} />
     </button>
   </div>;
 }
