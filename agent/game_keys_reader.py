@@ -29,8 +29,17 @@ ROW_TOLERANCE = 15
 # Scroll with the pointer in the gap between the columns: hovering a key
 # button highlights it, and nothing here may click a binding.
 SCROLL_ROI = [140, 112, 508, 296]
-SCROLL_STEP = -240
+# One wheel notch. The distance a notch moves the list is measured from rows
+# seen before and after each scroll, then the next scroll sends as many
+# notches as keep about 60% of the visible rows on screen; that overlap lets
+# every row be read in at least two positions without skipping any.
+NOTCH = 120
+KEEP_RATIO = .6
+MAX_NOTCHES = 8
 MAX_SCROLLS = 40
+# Key buttons are read one by one with recognition-only OCR on the fixed
+# button box; whole-list detection drops or merges single-letter captions.
+KEY_HALF_HEIGHT = 16
 
 # In-game row label -> our key name. Only keys our features use and the game
 # lets players rebind; greyed rows are fixed internally and not read.
@@ -107,35 +116,53 @@ def key_name(text):
     return candidate
 
 
-def glyph_key(gray, column, centre_y):
-    """Classify an icon-only key button: 'Space', 'icon' (other glyph) or None."""
+def glyph_icon(gray, column, centre_y):
+    """Return 'Space', 'icon' (mouse or other pictogram) or None for a text caption.
+
+    Pictogram keys are drawn on a key-cap plate: the space bar is a flat cap
+    clearly wider than tall, and the mouse icon stands on a thin base bar that
+    spans its full width below a separate body (seen in the user's 键盘与鼠标
+    captures for 净化, 主能力按键 and 钓鱼：收线). Letters, digits and words
+    never carry such a detached full-width bar, so a mouse icon can no longer
+    be accepted as an OCR'd "0"/"9". Limit: icons other than these two
+    shapes fall back to OCR and are rejected only if their text is unknown.
+    """
     _, key_x, key_end = column
-    y0, y1 = max(0, centre_y-15), min(gray.shape[0], centre_y+15)
+    y0, y1 = max(0, centre_y-KEY_HALF_HEIGHT), min(gray.shape[0], centre_y+KEY_HALF_HEIGHT)
     crop = gray[y0:y1, key_x+12:key_end-12]
     if crop.size == 0:
         return None
-    mask = (crop >= 200).astype("uint8")
+    mask = (crop >= 170).astype("uint8")
     count, _, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
-    blobs = [stats[i] for i in range(1, count) if stats[i][cv2.CC_STAT_AREA] >= 25]
+    blobs = [tuple(int(v) for v in stats[i][:5]) for i in range(1, count)
+             if stats[i][cv2.CC_STAT_AREA] >= 3]
     if not blobs:
         return None
-    x = min(int(b[cv2.CC_STAT_LEFT]) for b in blobs)
-    y = min(int(b[cv2.CC_STAT_TOP]) for b in blobs)
-    right = max(int(b[cv2.CC_STAT_LEFT]+b[cv2.CC_STAT_WIDTH]) for b in blobs)
-    bottom = max(int(b[cv2.CC_STAT_TOP]+b[cv2.CC_STAT_HEIGHT]) for b in blobs)
-    width, height = right-x, bottom-y
-    # The space-bar glyph is a flat key cap clearly wider than tall; mouse
-    # glyphs are upright. Anything else stays unknown rather than guessed.
-    if height and width >= 1.6*height:
+    left = min(x for x, _, _, _, _ in blobs)
+    top = min(y for _, y, _, _, _ in blobs)
+    right = max(x+w for x, _, w, _, _ in blobs)
+    bottom = max(y+h for _, y, _, h, _ in blobs)
+    width, height = right-left, bottom-top
+    # Space: one solid plate spanning the glyph. Word captions (Enter, L.Shift)
+    # are just as wide but made of separate thin letters.
+    plate = max(blobs, key=lambda b: b[2])
+    if height and width >= 1.6*height and plate[2] >= .7*width:
         return "Space"
-    return "icon"
+    for blob in blobs:
+        x, y, w, h, _ = blob
+        others = [b for b in blobs if b is not blob]
+        if (h <= 3 and w >= max(8, .7*width) and others
+                and y >= max(oy+oh for _, oy, _, oh, _ in others)):
+            return "icon"
+    return None
 
 
 def parse_rows(rt, frame):
     """Return [(label, name, caption, value, centre_y)] for fully visible known rows."""
     result = rt.recognize("MaaNikki_Daily_OCR", {"roi": LIST_ROI, "expected": ".+"}, image=frame)
     items = list(getattr(result, "all_results", None) or []) if result else []
-    labels, keys = [], []
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    rows = []
     for item in items:
         text = str(getattr(item, "text", "") or "").strip()
         box = getattr(item, "box", None)
@@ -143,25 +170,42 @@ def parse_rows(rt, frame):
         if not text or not box or (isinstance(score, (int, float)) and score < .4):
             continue
         x, y, w, h = (int(v) for v in box)
-        cx, cy = x+w/2, y+h/2
-        for index, (label_x, key_x, key_end) in enumerate(COLUMNS):
-            if label_x <= cx < key_x:
-                labels.append((index, cx, cy, text))
-            elif key_x <= cx <= key_end:
-                keys.append((index, cx, cy, text))
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    rows = []
-    for index, _, cy, text in labels:
+        cx, cy = x+w/2, round(y+h/2)
+        index = next((i for i, (label_x, key_x, _) in enumerate(COLUMNS)
+                      if label_x <= cx < key_x), None)
         label = normalize_label(text)
         name = GAME_ROWS.get(label)
-        if name is None or not ROW_TOP <= cy <= ROW_BOTTOM:
+        if index is None or name is None or not ROW_TOP <= cy <= ROW_BOTTOM:
             continue
-        same_row = sorted((kx, ktext) for kindex, kx, ky, ktext in keys
-                          if kindex == index and abs(ky-cy) <= ROW_TOLERANCE)
-        caption = "".join(ktext for _, ktext in same_row)
-        value = key_name(caption) if caption else glyph_key(gray, COLUMNS[index], round(cy))
-        rows.append((label, name, caption, value, round(cy)))
+        icon = glyph_icon(gray, COLUMNS[index], cy)
+        if icon:
+            rows.append((label, name, "", icon, cy))
+            continue
+        _, key_x, key_end = COLUMNS[index]
+        caption = read_caption(rt, frame, gray, key_x+12, key_end-12, cy)
+        rows.append((label, name, caption, key_name(caption) if caption else None, cy))
     return rows
+
+
+def read_caption(rt, frame, gray, x0, x1, cy):
+    """OCR one key caption from a tight, upscaled crop of its bright glyphs."""
+    y0, y1 = max(0, cy-KEY_HALF_HEIGHT), min(gray.shape[0], cy+KEY_HALF_HEIGHT)
+    ys, xs = (gray[y0:y1, x0:x1] >= 170).nonzero()
+    if not len(xs):
+        return ""
+    pad = 6
+    left, right = max(x0, x0+int(xs.min())-pad), min(x1, x0+int(xs.max())+1+pad)
+    top, bottom = max(y0, y0+int(ys.min())-pad), min(y1, y0+int(ys.max())+1+pad)
+    crop = cv2.resize(frame[top:bottom, left:right], None, fx=3, fy=3,
+                      interpolation=cv2.INTER_CUBIC)
+    h, w = crop.shape[:2]
+    # The crop holds exactly one caption line; recognition-only OCR avoids
+    # the detector dropping lone letters or splitting them from the border.
+    key = rt.recognize("MaaNikki_Daily_OCR", {"roi": [0, 0, w, h], "expected": ".+",
+                                              "only_rec": True}, image=crop)
+    text = getattr(getattr(key, "best_result", None), "text", "") if key else ""
+    return re.sub(r"\s+", "", str(text or ""))
+
 
 
 class GameKeysReader:
@@ -191,48 +235,84 @@ class GameKeysReader:
         x, y, w, h = LIST_ROI
         return frame[y:y+h, x:x+w].copy()
 
-    def scroll(self, amount):
-        if not self.rt.ui.scroll(SCROLL_ROI, amount):
-            return None
-        return self.rt.capture()
+    def settled(self):
+        """Capture once the list's smooth scrolling has stopped moving."""
+        frame = self.rt.capture()
+        for _ in range(8):
+            if frame is None or not self.rt.pause(.15):
+                return None
+            current = self.rt.capture()
+            if current is None:
+                return None
+            if self.rt.ui.scroll_unchanged(self.crop(frame), self.crop(current)):
+                return current
+            frame = current
+        return frame
+
+    def scroll(self, notches):
+        """Scroll by whole wheel notches (positive = down) and return a settled frame."""
+        for _ in range(abs(notches)):
+            if not self.rt.ui.scroll(SCROLL_ROI, -NOTCH if notches > 0 else NOTCH):
+                return None
+        return self.settled()
 
     def record(self, rows):
-        for label, name, caption, value, _ in rows:
-            previous = self.found.get(name)
-            known = value not in (None, "icon")
-            if previous is None or (known and previous["value"] in (None, "icon")):
-                self.found[name] = {"label": label, "caption": caption, "value": value}
-            elif known and previous["value"] != value:
-                self.warnings.append(f"「{label}」两次读到不同按键（{previous['value']} / {value}），保留第一次结果")
+        centre = (ROW_TOP+ROW_BOTTOM)/2
+        for label, name, caption, value, cy in rows:
+            self.found.setdefault(name, []).append(
+                {"label": label, "caption": caption, "value": value, "distance": abs(cy-centre)})
+
+    def entry(self, name):
+        """Majority vote over every read of a row; ties go to the read nearest the list centre."""
+        reads = self.found.get(name) or []
+        known = [read for read in reads if read["value"] not in (None, "icon")]
+        pool = known or reads
+        if not pool:
+            return None
+        counts = {}
+        for read in pool:
+            counts[read["value"]] = counts.get(read["value"], 0)+1
+        best = max(pool, key=lambda read: (counts[read["value"]], -read["distance"]))
+        if len(counts) > 1 and known:
+            summary = " / ".join(f"{value}×{count}" for value, count in counts.items())
+            self.warnings.append(f"「{best['label']}」多次读取结果不一致（{summary}），已采用 {best['value']}")
+        return best
 
     def scan(self):
-        frame = self.rt.capture()
+        frame = self.settled()
         if frame is None:
             return False
         # The page normally opens at the top; make sure before reading.
         for _ in range(10):
             before = self.crop(frame)
-            frame = self.scroll(-SCROLL_STEP)
+            frame = self.scroll(-MAX_NOTCHES)
             if frame is None:
                 return False
             if self.rt.ui.scroll_unchanged(before, self.crop(frame)):
                 break
-        previous_rows = set()
+        span = ROW_BOTTOM-ROW_TOP
+        notches, pixels_per_notch = 3, None
+        previous = {}
         for step in range(MAX_SCROLLS+1):
             if self.rt.stopped:
                 return False
             rows = parse_rows(self.rt, frame)
-            labels = {row[0] for row in rows}
-            if step and previous_rows and labels and not labels & previous_rows:
+            positions = {row[0]: row[4] for row in rows}
+            shifts = sorted(previous[label]-cy for label, cy in positions.items() if label in previous)
+            if step and previous and positions and not shifts:
                 self.warnings.append("列表一次滚动过多，部分键位可能未读取")
+                notches = max(1, notches//2)
+            elif shifts and shifts[len(shifts)//2] > 0:
+                pixels_per_notch = shifts[len(shifts)//2]/notches
+            if pixels_per_notch:
+                notches = max(1, min(MAX_NOTCHES, int((1-KEEP_RATIO)*span/pixels_per_notch)))
             self.record(rows)
-            previous_rows = labels or previous_rows
+            previous = positions or previous
             before = self.crop(frame)
-            frame = self.scroll(SCROLL_STEP)
+            frame = self.scroll(notches)
             if frame is None:
                 return False
             if self.rt.ui.scroll_unchanged(before, self.crop(frame)):
-                self.record(parse_rows(self.rt, frame))
                 return True
         self.warnings.append("列表滚动次数达到上限，可能没有读到末尾")
         return True
@@ -240,7 +320,7 @@ class GameKeysReader:
     def report(self, complete):
         values, rows = {}, []
         for label, name in GAME_ROWS.items():
-            entry = self.found.get(name)
+            entry = self.entry(name)
             if entry is None:
                 continue
             value = entry["value"]
@@ -259,3 +339,4 @@ class GameKeysReader:
                 "complete": bool(complete), "values": values, "rows": rows,
                 "missing": [{"name": name, "label": DEFAULTS[name][1]} for name in missing],
                 "warnings": list(dict.fromkeys(self.warnings))}
+
