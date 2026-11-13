@@ -80,7 +80,14 @@ const fallbackRealm = (values: Record<string, OptionValue>) =>
 
 /** With the blessing goal queued, the blessing target also covers a failed organization. */
 export function realmOptionLabel(key: string, values: Record<string, OptionValue>): string | undefined {
-  return key === 'BlessTarget' && realmCollectionEnabled(values) && fallbackRealm(values) !== 'Bless' ? '备选副本' : undefined;
+  if (key === 'BlessTarget') {
+    return realmCollectionEnabled(values)
+      ? fallbackRealm(values) === 'Bless' ? '兜底 / 闪光整理失败时刷取' : '闪光整理失败时刷取'
+      : '祝福闪光关卡';
+  }
+  if (key === 'JihuaTarget') return '素材激化奖励';
+  if (key === 'MonsterTarget') return '魔物试炼关卡';
+  return undefined;
 }
 
 // Target choices remain saved while they are not used.
@@ -93,6 +100,8 @@ export function realmOptionActive(key: string, values: Record<string, OptionValu
   if (COLLECTION_MANAGED_OPTIONS.has(key)) return collection && !farmOnly;
   const current = fallbackRealm(values);
   if (key === 'BlessTarget') return current === 'Bless' || collection;
+  // Renewal farming also consumes the configured offering materials for bling/thread.
+  if ((key === 'JihuaMaterialMode' || key === 'JihuaMaterials') && realmGoalRank(values, 'renewal') !== null) return true;
   // The blessing goal's bling runs spend the configured materials.
   if ((key === 'JihuaMaterialMode' || key === 'JihuaMaterials') && collection && !farmOnly) {
     const bling = values.CollectionBling;
@@ -104,6 +113,36 @@ export function realmOptionActive(key: string, values: Record<string, OptionValu
 // Options rendered as backups only matter for the daily wish energy top-up.
 export function realmOptionBackup(key: string, values: Record<string, OptionValue>): boolean {
   return (key in REALM_MODE_TARGETS || key === 'BlessTarget') && !realmOptionActive(key, values);
+}
+
+/** Each option has one editor, even when several realm stages share its value. */
+export function realmOptionSections(keys: string[], values: Record<string, OptionValue>) {
+  const current = fallbackRealm(values);
+  const available = keys.filter((key) => !['RealmQueue', 'WeeklyTargets', 'CollectionWorkflow'].includes(key)
+    && realmOptionActive(key, values));
+  const collectionKeys = new Set(['CollectionReserveBling', 'CollectionBling', 'CollectionDecompose', 'CollectionOrganize']);
+  if (current !== 'Bless') collectionKeys.add('BlessTarget');
+  const materialKeys = new Set(['JihuaMaterialMode', 'JihuaMaterials']);
+  return [
+    {
+      id: 'collection', title: '五星闪光 · 收集设置',
+      description: realmFarmOnlyEnabled(values)
+        ? '用于刷取顺序中的「五星闪光」。只刷胚子时不升级、不分解、不修改锁定。'
+        : '用于刷取顺序中的「五星闪光」：整理仓库、升级与收集新颜色。',
+      keys: available.filter((key) => collectionKeys.has(key)),
+    },
+    {
+      id: 'fallback', title: '兜底副本 · 剩余活跃能量',
+      description: '刷取顺序中的目标都完成或未开启后，才使用这里的副本与奖励设置。'
+        + (current === 'Bless' && realmCollectionEnabled(values) ? '所选关卡也用于五星闪光整理失败后的备用刷取。' : ''),
+      keys: available.filter((key) => !collectionKeys.has(key) && !materialKeys.has(key)),
+    },
+    {
+      id: 'materials', title: '素材激化 · 共用消耗材料',
+      description: '决定拿哪些材料兑换奖励。换新备料、五星闪光补噗灵、素材激化兜底及朝夕心愿补分都会沿用；兑换哪种奖励由各自目标决定。',
+      keys: available.filter((key) => materialKeys.has(key)),
+    },
+  ].filter((section) => section.keys.length > 0);
 }
 
 /**

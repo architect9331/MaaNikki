@@ -1,6 +1,6 @@
 import { useAccountStateStore, periodCompleted, periodTaskLabel, crownTargetStars, crownProgress } from '@/stores/accountStateStore';
-import { REALM_GOAL_LABELS, realmFarmOnlyEnabled, realmOptionActive, realmOptionBackup, realmOptionLabel, realmQueue } from '@/utils/nikkiOptions';
-import { RealmQueueCard } from './RealmQueueCard';
+import { REALM_GOAL_LABELS, realmFarmOnlyEnabled, realmOptionActive, realmOptionBackup, realmOptionLabel, realmOptionSections, realmQueue } from '@/utils/nikkiOptions';
+import { RealmCollectionWorkflow, RealmQueueCard } from './RealmQueueCard';
 import { XinghaiScoreHint, xinghaiSummary } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -1264,19 +1264,38 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 <RealmQueueCard instanceId={instanceId} taskId={task.id} values={task.optionValues}
                   disabled={!canEditOptions || isIncompatible} />
               )}
-              {hasOptions && (
+              {hasOptions && task.taskName === 'realm_challenge' && (
+                <div className="space-y-3">
+                  {realmOptionSections(taskDef.option || [], task.optionValues).map((section) => (
+                    <section key={section.id} aria-label={section.title} className="rounded-lg border border-border bg-bg-secondary/40 p-3">
+                      <div className="mb-3 border-b border-border pb-2.5">
+                        <h4 className="text-xs font-semibold text-text-primary">{section.title}</h4>
+                        <p className="mt-1 text-[11px] leading-5 text-text-secondary">{section.description}</p>
+                      </div>
+                      {section.id === 'collection' && (
+                        <RealmCollectionWorkflow instanceId={instanceId} taskId={task.id} values={task.optionValues}
+                          disabled={!canEditOptions || isIncompatible} />
+                      )}
+                      <OptionListRenderer
+                        instanceId={instanceId}
+                        taskId={task.id}
+                        taskName={task.taskName}
+                        optionKeys={section.keys}
+                        optionValues={task.optionValues}
+                        disabled={!canEditOptions || isIncompatible}
+                        currentControllerName={currentControllerName}
+                        currentResourceName={currentResourceName}
+                      />
+                    </section>
+                  ))}
+                </div>
+              )}
+              {hasOptions && task.taskName !== 'realm_challenge' && (
                 <OptionListRenderer
                   instanceId={instanceId}
                   taskId={task.id}
                   taskName={task.taskName}
-                  optionKeys={task.taskName === 'realm_challenge'
-                    // The queue card holds the order, the weekly levels and the blessing workflow.
-                    ? (taskDef.option || []).filter((key) => key !== 'RealmQueue'
-                      && key !== 'WeeklyTargets'
-                      && key !== 'CollectionWorkflow'
-                      && !realmOptionBackup(key, task.optionValues)
-                      && realmOptionActive(key, task.optionValues))
-                    : taskDef.option || []}
+                  optionKeys={taskDef.option || []}
                   optionValues={task.optionValues}
                   disabled={!canEditOptions || isIncompatible}
                   currentControllerName={currentControllerName}
@@ -1287,6 +1306,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 <details className="mt-3 rounded-lg border border-border bg-bg-secondary px-3 py-2">
                   <summary className="cursor-pointer text-xs text-text-secondary">朝夕心愿补分备用设置</summary>
                   <div className="mt-3">
+                    <p className="mb-3 text-[11px] leading-5 text-text-secondary">仅在朝夕心愿需要对应幻境补分时使用，不改变上方刷取顺序或兜底副本。</p>
                     <OptionListRenderer
                       instanceId={instanceId}
                       taskId={task.id}

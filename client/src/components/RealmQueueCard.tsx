@@ -122,8 +122,6 @@ export function RealmQueueCard({ instanceId, taskId, values, disabled }: {
   instanceId: string; taskId: string; values: Record<string, OptionValue>; disabled: boolean;
 }) {
   const setTaskOptionValue = useAppStore((state) => state.setTaskOptionValue);
-  const account = useAccountStateStore((state) => state.data);
-  const progress = useMemo(() => getBlessingProgress(account), [account]);
   const entries = realmQueue(values);
   const enabled = entries.filter((entry) => entry.enabled).map((entry) => entry.goal);
   const glowIndex = enabled.indexOf('glow');
@@ -137,9 +135,6 @@ export function RealmQueueCard({ instanceId, taskId, values, disabled }: {
     if (from >= 0 && to >= 0) save(arrayMove(entries, from, to));
   };
   const fallback = values.RealmTypes?.type === 'select' ? values.RealmTypes.caseName : 'Bless';
-  const workflow = realmCollectionWorkflow(values);
-  const reserveBling = realmReserveBling(values);
-  const decompose = values.CollectionDecompose?.type === 'switch' && values.CollectionDecompose.value;
 
   return <div id={REALM_QUEUE_CARD_ID} className="mb-4 space-y-2 rounded-lg border border-border bg-bg-primary p-3">
     <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -168,7 +163,23 @@ export function RealmQueueCard({ instanceId, taskId, values, disabled }: {
         <p className="text-[11px] text-text-secondary">上面的目标都完成或未开启时，剩余活跃能量按下方「兜底副本」设置使用</p>
       </div>
     </div>
-    {glowIndex >= 0 && <div className="space-y-2 rounded-lg border border-border bg-bg-secondary/60 px-3 py-2.5 text-xs">
+
+  </div>;
+}
+
+/** Execution mode and status belong only to the queued five-star collection goal. */
+export function RealmCollectionWorkflow({ instanceId, taskId, values, disabled }: {
+  instanceId: string; taskId: string; values: Record<string, OptionValue>; disabled: boolean;
+}) {
+  const setTaskOptionValue = useAppStore((state) => state.setTaskOptionValue);
+  const account = useAccountStateStore((state) => state.data);
+  const progress = useMemo(() => getBlessingProgress(account), [account]);
+  const workflow = realmCollectionWorkflow(values);
+  const reserveBling = realmReserveBling(values);
+  const decompose = values.CollectionDecompose?.type === 'switch' && values.CollectionDecompose.value;
+
+  return <div className="mb-3 space-y-2 border-b border-border pb-3 text-xs">
+      <p className="font-medium text-text-primary">五星闪光执行方式</p>
       <div role="radiogroup" aria-label="五星闪光执行方式" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {WORKFLOW_MODES.map(({ id, title, detail }) => {
           const active = workflow === id;
@@ -186,6 +197,5 @@ export function RealmQueueCard({ instanceId, taskId, values, disabled }: {
         : '尚无闪光记录。第一次运行前请清除祝福闪光仓库的筛选，会先读取或整理全部闪光。'}</p>
       {workflow === 'Managed' && reserveBling > 0 && <p className="text-text-secondary">已设置保留噗灵：{reserveBling.toLocaleString()}（升级后噗灵不会低于该数值）。</p>}
       {workflow === 'Managed' && decompose && <p className="text-warning">已开启爆仓分解：仓库满时会一键分解未锁定的闪光，且不可恢复。请勿手动解锁已收藏的祝福闪光。</p>}
-    </div>}
-  </div>;
+    </div>;
 }
