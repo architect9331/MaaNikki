@@ -54,9 +54,8 @@ pub fn init_cli() -> &'static Cli {
             #[cfg(windows)]
             let attach = winsafe::AttachConsole(winsafe::PidParent::Parent);
 
-            print!("{}", get_cli_help_text());
-
             use std::io::Write;
+            let _ = std::io::stdout().write_all(get_cli_help_text().as_bytes());
             let _ = std::io::stdout().flush();
 
             #[cfg(windows)]

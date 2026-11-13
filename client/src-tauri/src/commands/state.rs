@@ -4,6 +4,7 @@
 
 use log::debug;
 use std::collections::HashMap;
+use std::io::Write;
 use std::sync::Arc;
 
 use tauri::State;
@@ -90,8 +91,13 @@ pub fn maa_get_all_states(state: State<Arc<MaaState>>) -> Result<AllInstanceStat
 #[tauri::command]
 pub fn log_to_stdout(message: String) {
     let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S.%3f");
+    let mut stdout = std::io::stdout().lock();
     for line in message.lines() {
-        println!("[{timestamp}] {line}");
+        // A launcher can close its pipe while the application keeps running.
+        // Console output must not turn that I/O error into a command panic.
+        if writeln!(stdout, "[{timestamp}] {line}").is_err() {
+            break;
+        }
     }
 }
 
