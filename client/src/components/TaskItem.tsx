@@ -44,32 +44,39 @@ import { isPasswordInput } from '@/utils/passwordOptionValues';
 import { formatRouteValueLabel, listRoutes, useRouteCatalogStore } from '@/services/routeStudioService';
 import { isTauri } from '@/utils/paths';
 
+/** 列表只保留选项的主文案，括号补充说明留在悬停提示和展开设置中。 */
+function compactOptionPreviewText(text: string): string {
+  const plainText = stripInlineRichText(text);
+  return plainText.split(/[（(]/, 1)[0].trim() || plainText;
+}
+
 /** 选项预览标签组件 */
 function OptionPreviewTag({
   label,
   value,
   type,
+  detail,
 }: {
   label: string;
   value: string;
   type: 'select' | 'checkbox' | 'switch' | 'input';
+  detail?: string;
 }) {
-  // 摘要保留完整文字；空间不足时按项换行。
   const plainLabel = stripInlineRichText(label);
   const plainValue = stripInlineRichText(value);
 
   return (
     <span
       className={clsx(
-        'inline-flex min-w-0 max-w-full shrink-0 items-center gap-1 px-1.5 py-0.5 text-xs rounded-lg',
+        'inline-flex min-w-0 max-w-full items-center gap-1 overflow-hidden px-1.5 py-0.5 text-xs rounded-lg',
         'text-text-tertiary',
       )}
-      title={`${plainLabel}: ${plainValue}`}
+      title={`${plainLabel}: ${stripInlineRichText(detail ?? value)}`}
     >
       {type === 'switch' ? (
         // Switch 类型：显示选项名 + 状态圆点
         <>
-          <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]">{plainLabel}</span>
+          <span className="min-w-0 truncate">{compactOptionPreviewText(label)}</span>
           <span
             className={clsx(
               'w-1.5 h-1.5 rounded-full flex-shrink-0',
@@ -78,9 +85,8 @@ function OptionPreviewTag({
           />
         </>
       ) : (
-        // 名称和值作为完整的一项排布，较长内容可在本项内换行。
-        <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]">
-          {plainLabel}: {plainValue}
+        <span className="min-w-0 truncate">
+          {compactOptionPreviewText(label)}: {plainValue}
         </span>
       )}
     </span>
@@ -334,11 +340,6 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
   const account = useAccountStateStore((s) => s.data);
   const accountError = useAccountStateStore((s) => s.error);
   const routeCatalog = useRouteCatalogStore();
-  useEffect(() => {
-    if (task.taskName === 'custom_route' && !routeCatalog.loaded && isTauri()) {
-      void listRoutes().catch(() => {});
-    }
-  }, [task.taskName, routeCatalog.loaded]);
   const crownTarget = crownTargetStars(task.optionValues);
   const completedPeriod = periodCompleted(account, task.taskName, crownTarget);
   const progress = task.taskName === 'crown' ? crownProgress(account) : null;
@@ -424,6 +425,17 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
         ? buildPretaskDef(pretaskItem)
         : undefined
       : projectInterface?.task.find((t) => t.name === task.taskName);
+
+  const hasRouteOptions = taskDef?.option?.some((key) => {
+    const option = projectInterface?.option?.[key];
+    return option?.type === 'input' && option.inputs.some((input) =>
+      input.input_type === 'route' || input.input_type === 'route_multi');
+  });
+  useEffect(() => {
+    if (hasRouteOptions && !routeCatalog.loaded && isTauri()) {
+      void listRoutes().catch(() => {});
+    }
+  }, [hasRouteOptions, routeCatalog.loaded]);
 
   // 检查任务是否与当前控制器/资源兼容
   // 未选择时，使用第一个控制器/资源作为默认值判断兼容性
@@ -622,6 +634,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
       label: string;
       value: string;
       type: 'select' | 'checkbox' | 'switch' | 'input';
+      detail?: string;
     }[] = [];
     const maxPreviews = 3;
 
@@ -682,16 +695,24 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
         if (firstInput) {
           const inputValue = inputValues[firstInput.name] || firstInput.default || '';
           if (inputValue) {
+            const routeValues = firstInput.input_type === 'route_multi'
+              ? inputValue.split(/[,;\n]+/).map((value) => value.trim()).filter(Boolean)
+              : [];
             const displayVal = isPasswordInput(firstInput)
               ? '••••'
-              : firstInput.input_type === 'route'
-                ? formatRouteValueLabel(inputValue, routeCatalog.user, routeCatalog.builtin)
-                : inputValue;
+              : firstInput.input_type === 'route_multi'
+                ? `已选 ${routeValues.length} 条路线`
+                : firstInput.input_type === 'route'
+                  ? formatRouteValueLabel(inputValue, routeCatalog.user, routeCatalog.builtin)
+                  : inputValue;
             previews.push({
               key: optionKey,
               label: optionLabel,
               value: displayVal,
               type: 'input',
+              detail: !isPasswordInput(firstInput) && firstInput.input_type === 'route_multi'
+                ? routeValues.map((value) => formatRouteValueLabel(value, routeCatalog.user, routeCatalog.builtin)).join('、')
+                : undefined,
             });
           }
         }
@@ -721,8 +742,9 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
         previews.push({
           key: optionKey,
           label: optionLabel,
-          value: caseLabel,
+          value: compactOptionPreviewText(caseLabel),
           type: 'select',
+          detail: caseLabel,
         });
       }
     }
@@ -1097,7 +1119,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 >
                   {/* 选项预览标签 - 未展开时显示：不兼容时显示警告，否则显示选项预览 */}
                   {!task.expanded && (
-                    <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-1.5 gap-y-1 mx-2 py-0.5">
+                    <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden mx-2 py-0.5">
                       {isIncompatible ? (
                         <Tooltip content={supportedControllerHint || undefined}>
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-warning">
@@ -1114,6 +1136,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                             label={preview.label}
                             value={preview.value}
                             type={preview.type}
+                            detail={preview.detail}
                           />
                         ))
                       )}
