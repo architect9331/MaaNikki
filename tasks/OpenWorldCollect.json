@@ -7,7 +7,7 @@
       "group": ["daily", "periodic"],
       "default_check": false,
       "description": "使用姜饼人范围拾取能力，按顺序逐条跑完所选的大世界采集路线。驻留等待时实时读取左侧材料提示，长时间无新材料弹出后自动前往下一处，并在运行结束后输出各点位实测耗时与范围推断报告。",
-      "option": ["OpenWorldRoutes", "OpenWorldQuietWindow", "TaskRouteOverlay"]
+      "option": ["OpenWorldRoutes", "OpenWorldGingerbreadSummon", "OpenWorldQuietWindow", "TaskRouteOverlay"]
     }
   ],
   "option": {
@@ -30,6 +30,78 @@
           }
         }
       }
+    },
+    "OpenWorldGingerbreadSummon": {
+      "type": "switch",
+      "label": "出发前自动召唤小姜饼人",
+      "default_case": "Yes",
+      "description": "每条路线出发前切换到「幸福雪未融」能力，并通过右下角是否出现第二个按键提示确认小姜饼人已在身边；未召唤时按一次「能力衍生功能1」召唤。轮盘里没有该能力时会在所选方案中配置。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "option": ["OpenWorldGingerbreadAbilityPlan"],
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "gingerbread_summon": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭（自行召唤后再开始）",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "gingerbread_summon": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "OpenWorldGingerbreadAbilityPlan": {
+      "type": "select",
+      "label": "小姜饼人允许使用的能力方案",
+      "default_case": "Plan3",
+      "description": "优先沿用当前轮盘中的幸福雪未融，缺少时在所选方案中配置。",
+      "cases": [
+        {
+          "name": "Plan1",
+          "label": "自定义方案一",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "gingerbread_ability_plan": 1
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan2",
+          "label": "自定义方案二",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "gingerbread_ability_plan": 2
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan3",
+          "label": "自定义方案三",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "gingerbread_ability_plan": 3
+              }
+            }
+          }
+        }
+      ]
     },
     "OpenWorldQuietWindow": {
       "type": "select",

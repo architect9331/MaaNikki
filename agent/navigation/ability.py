@@ -60,6 +60,10 @@ class Ability:
         self.ability_id, self.mode, self.slot = ability_id, mode, None
         self.plan_label = None
 
+    def ability_plan(self):
+        """Plan the player allows this feature to modify when the ability is missing."""
+        return self.rt.setting(self.mode).get("ability_plan", 3)
+
     def configure(self):
         if self.actions.ability(self.node):
             return True
@@ -71,7 +75,7 @@ class Ability:
             raise NavigationError("未能确认能力配置页面，未更改能力轮盘。")
         slot = self.find_slot(fresh=True)
         if slot is None:
-            plan = self.rt.setting(self.mode).get("ability_plan", 3)
+            plan = self.ability_plan()
             if type(plan) is not int or plan not in (1, 2, 3):
                 raise NavigationError(f"{self.label}能力方案设置无效，请选择方案一、二或三。")
             if not self.change_plan(plan):

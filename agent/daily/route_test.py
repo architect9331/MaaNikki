@@ -417,6 +417,9 @@ class RouteTest(Runtime):
             self.publish_trial(force=True)
         self.log(f"{self.label}：{message}")
 
+    def prepare_route(self, settings, actions, inputs):
+        """Task-specific setup after arriving at the route start, before walking."""
+
     def run_test(self, settings):
         try:
             if self.dev_only and os.environ.get("PI_MAANIKKI_DEV_MODE") != "1":
@@ -497,7 +500,9 @@ class RouteTest(Runtime):
                 child_run_settings = {
                     "mode": mode,
                     "empty_streak": consecutive_empty_routes,
-                    **({k: settings[k] for k in ("adaptive_exit", "quiet_seconds", "initial_wait_seconds") if k in settings}),
+                    **({k: settings[k] for k in ("adaptive_exit", "quiet_seconds", "initial_wait_seconds",
+                                                 "gingerbread_summon", "gingerbread_ability_plan")
+                        if k in settings}),
                 }
                 ok = runner.run_single(child_run_settings, prepared=(model, spec),
                                        directory=child, refocus=index == 1,
@@ -691,6 +696,7 @@ class RouteTest(Runtime):
                 teleporter.transport(model.document["teleport"])
             else:
                 teleporter.prepare(model)
+            self.prepare_route(settings, actions, inputs)
             self.phase("follow", "正在检查第 1 点并沿路线行走。")
             navigator = create_navigator(self, teleporter, actions=actions, event=self.event)
             pose = navigator.follow(model)

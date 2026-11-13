@@ -307,6 +307,19 @@
     "method": 3,
     "action": "DoNothing"
   },
+  "MaaNikki_Asset_iconabilitygingerbread": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityGingerbread.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "method": 3,
+    "action": "DoNothing"
+  },
   "MaaNikki_Asset_iconclickskip": {
     "recognition": "TemplateMatch",
     "template": "game/ui/IconClickSkip.png",

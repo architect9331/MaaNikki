@@ -224,6 +224,10 @@
       "template": "game/ui/IconAbilityInsect.png",
       "roi": null
     },
+    "IconAbilityGingerbread": {
+      "template": "game/ui/IconAbilityGingerbread.png",
+      "roi": null
+    },
     "IconClickSkip": {
       "template": "game/ui/IconClickSkip.png",
       "roi": [

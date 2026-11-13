@@ -24,10 +24,24 @@
       "mode": "full",
       "adaptive_exit": true,
       "quiet_seconds": 6.0,
-      "initial_wait_seconds": 9.0
+      "initial_wait_seconds": 9.0,
+      "gingerbread_summon": true,
+      "gingerbread_ability_plan": 3
     },
     "post_delay": 0,
     "next": []
+  },
+  "MaaNikki_Navigation_GingerbreadAbility": {
+    "recognition": "TemplateMatch",
+    "roi": [
+      1073,
+      631,
+      60,
+      60
+    ],
+    "template": "game/ui/IconAbilityGingerbread.png",
+    "threshold": 0.7,
+    "action": "DoNothing"
   },
   "MaaNikki_MinigameBling": {
     "recognition": "DirectHit",

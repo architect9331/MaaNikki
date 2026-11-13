@@ -472,3 +472,14 @@ class OpenWorldCollectRun(UserRouteRun):
     dev_only = False
     label = "大世界材料采集"
     default_mode = "full"
+
+    def prepare_route(self, settings, actions, inputs):
+        # Checked after every route's start teleport: when the companion is
+        # already out this only reads the HUD, and it re-summons if a teleport
+        # or a failed route left it dismissed.
+        if not settings.get("gingerbread_summon", True):
+            return
+        from navigation.gingerbread_companion import ensure_companion
+        self.phase("gingerbread_companion", "正在确认小姜饼人随行。")
+        ensure_companion(self, inputs, self.event, settings.get("gingerbread_ability_plan", 3),
+                         actions=actions)
