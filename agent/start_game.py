@@ -484,11 +484,15 @@ def prepare_game(timeout, record):
         record["stage"] = "enter_game"
         save_record(record)
         try:
+            from tall_window import is_auto_adjust_resolution_enabled
             result = tasker.post_task("MaaNikki_StartGame", {
                 "MaaNikki_StartGame": {"custom_action_param": {
                     "timeout": min(900, int(remaining)), "bootstrap": True,
                     "allow_restart": restarts < 3,
                     "already_running": bool(record.get("already_running")) and restarts == 0,
+                }},
+                "MaaNikki_AutoAdjustResolution": {"custom_action_param": {
+                    "value": is_auto_adjust_resolution_enabled(),
                 }},
             }).wait().get()
         finally:
@@ -568,6 +572,8 @@ def main():
             program = resolve_program(options.get("StartGameProgram", {}).get("path", ""))
             launch_game(program, timeout, record)
         prepare_game(timeout, record)
+        from tall_window import persist_session_16_9_handoff
+        persist_session_16_9_handoff()
         code = 0
     except (OSError, ValueError, TypeError, AttributeError, RuntimeError, ImportError, configparser.Error) as error:
         record["success"] = False
@@ -584,6 +590,12 @@ def main():
                 pass
         record.pop("message_logged", None)
     finally:
+        if code != 0:
+            try:
+                from tall_window import restore_session_16_9_windows
+                restore_session_16_9_windows()
+            except Exception:
+                pass
         save_record(record)
         if fault_log is not None:
             faulthandler.disable()

@@ -25,6 +25,7 @@ from action import subtask_test as _subtask_test
 from action import start_game as _start_game
 from recognition import ui_template as _ui_template
 from recognition import crown as _crown
+from tall_window import adopt_session_16_9_handoff, restore_session_16_9_windows
 
 
 def main() -> None:
@@ -38,9 +39,15 @@ def main() -> None:
 
     socket_id = sys.argv[-1]
 
-    AgentServer.start_up(socket_id)
-    AgentServer.join()
-    AgentServer.shut_down()
+    adopt_session_16_9_handoff()
+    try:
+        AgentServer.start_up(socket_id)
+        try:
+            AgentServer.join()
+        finally:
+            AgentServer.shut_down()
+    finally:
+        restore_session_16_9_windows()
 
 
 if __name__ == "__main__":

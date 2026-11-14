@@ -27,7 +27,7 @@
     {
       "name": "nikki_windows",
       "label": "无限暖暖（Windows）",
-      "description": "连接无限暖暖 PC 客户端窗口。所有自动任务均需要实际为 16:9 的游戏画面，推荐 1920×1080。",
+      "description": "连接无限暖暖 PC 客户端窗口。推荐 1920×1080（非 16:9 窗口默认在运行时自动调整为最相近的 16:9 并恢复）。",
       "type": "Win32",
       "permission_required": true,
       "display_short_side": 720,

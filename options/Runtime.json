@@ -1,5 +1,6 @@
 {
   "global_option": [
+    "AutoAdjustResolution",
     "FocusLostBehavior",
     "RouteOverlayMode"
   ],
@@ -8,6 +9,7 @@
       "name": "runtime_behavior",
       "label": "运行行为",
       "option": [
+        "AutoAdjustResolution",
         "FocusLostBehavior",
         "RouteOverlayMode"
       ],
@@ -15,6 +17,36 @@
     }
   ],
   "option": {
+    "AutoAdjustResolution": {
+      "type": "switch",
+      "label": "自动调整游戏分辨率",
+      "default_case": "Yes",
+      "description": "运行任务期间，当游戏窗口不是标准 16:9 或超出屏幕边界时，自动临时切换为当前显示器上最相近的 16:9 无边框窗口（整理祝福闪光或读取图鉴时也会临时切换超长竖屏加速扫描），并在任务结束后恢复原窗口尺寸与位置。独占全屏模式下无法调整。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_AutoAdjustResolution": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "pipeline_override": {
+            "MaaNikki_AutoAdjustResolution": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
     "FocusLostBehavior": {
       "type": "select",
       "label": "游戏离开前台时",

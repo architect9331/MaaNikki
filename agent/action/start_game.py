@@ -150,10 +150,27 @@ class StartGameAction(CustomAction):
                 if image is None or image.size == 0:
                     return None
                 if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES or is_clipped_game_frame(image):
-                    from tall_window import heal_16_9_window
-                    healed = heal_16_9_window(runtime.controller)
-                    if healed is not None:
-                        image = healed
+                    now_mono = time.monotonic()
+                    ready_to_adjust = (
+                        already_running
+                        or not bootstrap
+                        or now_mono >= started_at + 6.0
+                        or (
+                            now_mono >= started_at + 2.5
+                            and float(image.mean()) > 8.0
+                            and float(image.std()) > 5.0
+                        )
+                    )
+                    if ready_to_adjust:
+                        from tall_window import ensure_16_9_window
+                        adjusted = ensure_16_9_window(
+                            runtime.controller, context=context, notify=runtime.log
+                        )
+                    else:
+                        from tall_window import heal_16_9_window
+                        adjusted = heal_16_9_window(runtime.controller)
+                    if adjusted is not None:
+                        image = adjusted
                 try:
                     require_game_frame(image)
                 except GameFrameSizeError as error:

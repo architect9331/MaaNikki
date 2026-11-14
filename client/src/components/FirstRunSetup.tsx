@@ -88,7 +88,7 @@ export function FirstRunSetup() {
   const preparation = <div className="space-y-3 text-sm leading-6 text-text-secondary">
     <p>开始前请确认：</p>
     <ul className="space-y-2">
-      {['游戏画面为 16:9，推荐 1920×1080。',
+      {['游戏画面推荐 1920×1080（非 16:9 窗口运行时默认自动调整并恢复）。',
         '已在「设置 → 任务设置 → 游戏键位」核对按键。',
         '所选任务涉及的地图、传送点、能力和关卡已经解锁。',
         ...(groups.realm && collection ? ['已清除游戏内祝福闪光仓库的筛选。'] : []),

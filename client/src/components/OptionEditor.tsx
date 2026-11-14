@@ -12,7 +12,11 @@ import {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/stores/appStore';
-import { isControllerAllowed, isResourceAllowed } from '@/stores/helpers';
+import {
+  createDefaultOptionValue,
+  isControllerAllowed,
+  isResourceAllowed,
+} from '@/stores/helpers';
 import { useShallow } from 'zustand/react/shallow';
 import { loadIconAsDataUrl, useResolvedContent } from '@/services/contentResolver';
 import type { OptionValue, CaseItem, InputItem, OptionDefinition } from '@/types/interface';
@@ -554,10 +558,19 @@ export function OptionEditor({
         : undefined;
   const effectiveDisabled = disabled || isOptionIncompatible;
 
+  const switchDefaultChecked =
+    optionDef.type === 'switch'
+      ? (() => {
+          const def = createDefaultOptionValue(optionDef);
+          return def.type === 'switch' ? def.value : false;
+        })()
+      : false;
+
   // 获取当前选中的 case（用于渲染嵌套选项）
   const getSelectedCase = (): CaseItem | undefined => {
     if (optionDef.type === 'switch') {
-      const isChecked = effectiveValue?.type === 'switch' ? effectiveValue.value : false;
+      const isChecked =
+        effectiveValue?.type === 'switch' ? effectiveValue.value : switchDefaultChecked;
       return findSwitchCase(optionDef.cases, isChecked);
     }
     if (optionDef.type === 'select' || !optionDef.type) {
@@ -586,7 +599,8 @@ export function OptionEditor({
 
   // Switch 类型
   if (optionDef.type === 'switch') {
-    const isChecked = effectiveValue?.type === 'switch' ? effectiveValue.value : false;
+    const isChecked =
+      effectiveValue?.type === 'switch' ? effectiveValue.value : switchDefaultChecked;
     const handleToggleSwitch = () => {
       if (effectiveDisabled) return;
       commitOptionValue({

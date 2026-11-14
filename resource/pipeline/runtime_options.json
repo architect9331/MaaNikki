@@ -1,4 +1,12 @@
 {
+  "MaaNikki_AutoAdjustResolution": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": true
+    }
+  },
   "MaaNikki_FocusLost": {
     "recognition": "DirectHit",
     "action": "Custom",

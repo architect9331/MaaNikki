@@ -321,10 +321,12 @@ class Runtime:
                 count("capture.failed")
                 return None
             if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES or is_clipped_game_frame(image):
-                from tall_window import heal_16_9_window
-                healed = heal_16_9_window(self.controller)
-                if healed is not None:
-                    image = healed
+                from tall_window import ensure_16_9_window
+                adjusted = ensure_16_9_window(
+                    self.controller, context=self.context, notify=self.log
+                )
+                if adjusted is not None:
+                    image = adjusted
             self.evidence.remember_frame(image, self._focus_generation)
             self.validate_frame(image)
             return image

@@ -417,7 +417,16 @@ export const useAppStore = create<AppState>()(
     interfaceTranslations: {},
     basePath: '.',
     dataPath: '.',
-    setProjectInterface: (pi) => set({ projectInterface: pi }),
+    setProjectInterface: (pi) =>
+      set((state) => ({
+        projectInterface: pi,
+        globalOptionValues:
+          pi?.global_option && pi.option
+            ? initializeAllOptionValues(pi.global_option, pi.option, {
+                ...state.globalOptionValues,
+              })
+            : state.globalOptionValues,
+      })),
     setInterfaceTranslations: (lang, translations) =>
       set((state) => ({
         interfaceTranslations: {
