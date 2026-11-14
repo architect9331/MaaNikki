@@ -1,64 +1,142 @@
 {
   "schema_version": 3,
   "id": "gb_cat_insect_miraland_05",
-  "title": "【全昆虫速刷】磐城·金庭前广场（34个/190秒）",
+  "title": "【全昆虫速刷】埋骨地·疗愈地（58个/289秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 464,
+  "timeout": 681,
   "teleport": {
-    "name": "金庭前广场",
+    "name": "疗愈地",
     "province": "伊赞之土",
-    "region": "磐城",
-    "x": 3810.532,
-    "y": 3094.595
+    "region": "埋骨地",
+    "x": 7509.209,
+    "y": 4444.597
   },
   "material": "全昆虫速刷",
   "count_materials": [
     "珠链蝶",
     "小野菊",
     "探险家蜜蜂",
-    "金轴蜻蜓",
-    "蓝玉甲虫",
-    "珠坠甲虫"
+    "风舞花",
+    "革袋甲",
+    "蜜妆粉"
   ],
-  "capacity": 34,
+  "capacity": 58,
   "points": [
     {
-      "x": 3810.53,
-      "y": 3094.59,
+      "x": 7509.21,
+      "y": 4444.6,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 3789.42,
-      "y": 3175.62,
+      "x": 7486.62,
+      "y": 4461.6,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 83.1
+        "seconds": 15.4
       }
     },
     {
-      "x": 3785.32,
-      "y": 3132.06,
+      "x": 7482.62,
+      "y": 4481.6,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7474.62,
+      "y": 4497.6,
       "radius": 3.2,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 21.0
+        "seconds": 24.2
       }
     },
     {
-      "x": 3848.65,
-      "y": 3123.42,
+      "x": 7466.62,
+      "y": 4497.6,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7438.62,
+      "y": 4473.6,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.0
+        "seconds": 10.0
+      }
+    },
+    {
+      "x": 7418.62,
+      "y": 4473.6,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7390.62,
+      "y": 4497.6,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7354.62,
+      "y": 4493.6,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7345.62,
+      "y": 4498.35,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
+      }
+    },
+    {
+      "x": 7368.62,
+      "y": 4494.35,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 24.9
+      }
+    },
+    {
+      "x": 7404.62,
+      "y": 4506.35,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7409.96,
+      "y": 4508.11,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
       }
     }
   ]

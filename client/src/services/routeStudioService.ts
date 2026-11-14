@@ -67,12 +67,14 @@ export interface GeneratedRouteSummary {
   walk_distance_m: number;
   estimated_seconds: number;
   efficiency_per_min: number;
+  mechanism_notes?: string[];
   covered_points: Array<{ name: string; kind: string; x: number; y: number; z: number }>;
 }
 
 export interface GenerateGingerbreadResponse {
   routes: RouteDocument[];
   collection: RouteCollectionDocument | null;
+  mechanism_notes?: string[];
   summaries: GeneratedRouteSummary[];
 }
 

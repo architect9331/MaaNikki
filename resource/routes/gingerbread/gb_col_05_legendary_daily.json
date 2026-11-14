@@ -2,56 +2,60 @@
   "schema_version": 1,
   "kind": "route_collection",
   "id": "gb_col_05_legendary_daily",
-  "title": "【姜饼人合集】每日传奇动物与稀有材料必刷清单（12条）",
+  "title": "【姜饼人合集】每日传奇动物与稀有材料综合巡猎（13条）",
   "continue_on_failure": true,
   "routes": [
     {
-      "route": "gb_mat_050_miraland_01",
-      "title": "【天星之羽】石树田无人区·星空钓场顶端（1个/28秒）"
+      "route": "gb_cat_rare_legendary_animal_miraland_01",
+      "title": "【涅拉羽】埋骨地·蓝池北侧疗愈地渡口（3个/52秒）"
     },
     {
-      "route": "gb_mat_041_miraland_01",
-      "title": "【盛宴毛毡】微风绿野·河畔山地林间道（1个/171秒）"
-    },
-    {
-      "route": "gb_mat_058_miraland_01",
-      "title": "【玫色天鹅绒】微风绿野·捕虫小屋（1个/81秒）"
-    },
-    {
-      "route": "gb_mat_059_miraland_01",
-      "title": "【夜色天鹅绒】微风绿野·捕虫小屋（1个/81秒）"
-    },
-    {
-      "route": "gb_mat_085_firework_01",
-      "title": "【晴日蝶兰/雨滴蝶兰】花焰群岛·月角浅滩（7个/130秒）"
-    },
-    {
-      "route": "gb_mat_284_miraland_01",
-      "title": "【烛融花/烛荧花】埋骨地·纪念地（6个/40秒）"
-    },
-    {
-      "route": "gb_mat_080_miraland_01",
-      "title": "【日光果/星光果】祈愿树林·心愿研发所（3个/43秒）"
-    },
-    {
-      "route": "gb_fish_12_miraland_01",
-      "title": "【纱裙鱼】石树田无人区·星空钓场旁（小道）（7个/204秒）"
-    },
-    {
-      "route": "gb_fish_06_miraland_01",
-      "title": "【拉夫领鱼】祈愿树林·工坊水车（6个/140秒）"
-    },
-    {
-      "route": "gb_mat_040_miraland_01",
+      "route": "gb_cat_rare_legendary_animal_miraland_02",
       "title": "【贵族卷毛】微风绿野·捕虫小屋（2个/61秒）"
     },
     {
-      "route": "gb_mat_048_miraland_01",
+      "route": "gb_cat_rare_legendary_animal_miraland_03",
       "title": "【鹿冠毛团】祈愿树林·巨树浅滩（1个/42秒）"
     },
     {
-      "route": "gb_mat_276_miraland_01",
-      "title": "【涅拉羽】埋骨地·蓝池北侧疗愈地渡口（3个/65秒）"
+      "route": "gb_cat_rare_legendary_animal_miraland_04",
+      "title": "【贵族卷毛】微风绿野·绿野货运码头（2个/90秒）"
+    },
+    {
+      "route": "gb_cat_rare_legendary_animal_miraland_05",
+      "title": "【鹿冠毛团】祈愿树林·花谷瀑布（1个/45秒）"
+    },
+    {
+      "route": "gb_cat_rare_rare_flora_miraland_01",
+      "title": "【蓝鳞晶】埋骨地·疗愈地（6个/37秒）"
+    },
+    {
+      "route": "gb_cat_rare_rare_flora_miraland_02",
+      "title": "【烛融花/烛荧花】埋骨地·纪念地（11个/80秒）"
+    },
+    {
+      "route": "gb_cat_rare_rare_flora_miraland_03",
+      "title": "【机芯果】磐城·集市旁停泊处（12个/90秒）"
+    },
+    {
+      "route": "gb_cat_rare_rare_flora_miraland_04",
+      "title": "【烛融花/烛荧花】埋骨地·龙埙遗所（29个/224秒）"
+    },
+    {
+      "route": "gb_cat_rare_rare_flora_miraland_05",
+      "title": "【机芯果、浮冠果】磐城·金庭大桥前（11个/102秒）"
+    },
+    {
+      "route": "gb_cat_rare_rare_fish_miraland_01",
+      "title": "【拉夫领鱼】小石树田村·村居岔路（3个/97秒）"
+    },
+    {
+      "route": "gb_cat_rare_rare_fish_miraland_02",
+      "title": "【纱裙鱼】石树田无人区·星空钓场旁（小道）（3个/112秒）"
+    },
+    {
+      "route": "gb_cat_rare_rare_fish_miraland_03",
+      "title": "【拉夫领鱼】祈愿树林·工坊水车（1个/49秒）"
     }
   ]
 }

@@ -1,44 +1,44 @@
 {
   "schema_version": 3,
   "id": "gb_all_firework_firework_02",
-  "title": "【全材料·花焰群岛】花焰群岛·聆风高地山腰（8个/47秒）",
+  "title": "【全材料·花焰群岛】花焰群岛·幽暗洞窟前（14个/89秒）",
   "map": "firework",
   "start_radius": 12,
-  "timeout": 148,
+  "timeout": 241,
   "teleport": {
-    "name": "聆风高地山腰",
+    "name": "幽暗洞窟前",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 739.356,
-    "y": 443.9
+    "x": 945.342,
+    "y": 225.634
   },
   "material": "全材料·花焰群岛",
   "count_materials": [
-    "纽扣松果",
+    "珠链蝶",
+    "小绵菊",
     "美食家蜜蜂",
-    "满满果",
-    "路灯花",
-    "发卡蚱蜢",
-    "小绵菊"
+    "草绒球",
+    "蓝珀鸟羽",
+    "满满果"
   ],
-  "capacity": 8,
+  "capacity": 14,
   "points": [
     {
-      "x": 739.36,
-      "y": 443.9,
+      "x": 945.34,
+      "y": 225.63,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 766.66,
-      "y": 424.5,
+      "x": 1045.48,
+      "y": 216.11,
       "radius": 3.2,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 25.4
+        "seconds": 58.0
       }
     }
   ]

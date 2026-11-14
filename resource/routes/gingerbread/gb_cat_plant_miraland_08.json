@@ -1,143 +1,105 @@
 {
   "schema_version": 3,
   "id": "gb_cat_plant_miraland_08",
-  "title": "【全植物速刷】埋骨地·蓝池北侧疗愈地渡口（40个/163秒）",
+  "title": "【全植物速刷】小石树田村·落石谷（32个/142秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 404,
+  "timeout": 357,
   "teleport": {
-    "name": "蓝池北侧疗愈地渡口",
-    "province": "伊赞之土",
-    "region": "埋骨地",
-    "x": 7605.469,
-    "y": 4714.484
+    "name": "落石谷",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 8980.703,
+    "y": 10207.761
   },
   "material": "全植物速刷",
   "count_materials": [
-    "晴雨伞",
-    "蓝鳞晶",
-    "壁灯红椒"
+    "满满果",
+    "壁灯红椒",
+    "布布果",
+    "纽扣松果",
+    "小绵菊"
   ],
-  "capacity": 40,
+  "capacity": 32,
   "points": [
     {
-      "x": 7605.47,
-      "y": 4714.48,
+      "x": 8980.7,
+      "y": 10207.76,
       "radius": 8.5,
       "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7607.47,
-      "y": 4692.69,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7613.47,
-      "y": 4656.69,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7634.47,
-      "y": 4626.69,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7634.47,
-      "y": 4608.69,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7620.42,
-      "y": 4594.69,
-      "radius": 3.2,
-      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 25.2
+        "seconds": 14.9
       }
     },
     {
-      "x": 7615.42,
-      "y": 4587.46,
+      "x": 8988.7,
+      "y": 10200.52,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7600.42,
-      "y": 4587.46,
+      "x": 8994.7,
+      "y": 10203.52,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7564.42,
-      "y": 4578.46,
+      "x": 9003.7,
+      "y": 10194.52,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7562.42,
-      "y": 4582.46,
+      "x": 9024.7,
+      "y": 10188.52,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9036.06,
+      "y": 10183.52,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 32.1
+        "seconds": 40.4
       }
     },
     {
-      "x": 7565.81,
-      "y": 4561.22,
+      "x": 9053.06,
+      "y": 10215.52,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9048.29,
+      "y": 10233.19,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 27.1
+        "seconds": 23.0
       }
     },
     {
-      "x": 7576.81,
-      "y": 4562.27,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7585.81,
-      "y": 4547.27,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7570.33,
-      "y": 4521.27,
+      "x": 9064.98,
+      "y": 10204.79,
       "radius": 3.2,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 5.1
+        "seconds": 8.7
       }
     }
   ]

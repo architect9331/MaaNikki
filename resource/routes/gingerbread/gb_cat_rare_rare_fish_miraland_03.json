@@ -1,0 +1,107 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_rare_rare_fish_miraland_03",
+  "title": "【拉夫领鱼】祈愿树林·工坊水车（1个/49秒）",
+  "map": "miraland",
+  "start_radius": 12,
+  "timeout": 152,
+  "teleport": {
+    "name": "工坊水车",
+    "province": "心愿原野",
+    "region": "祈愿树林",
+    "x": 11592.661,
+    "y": 8793.661
+  },
+  "material": "拉夫领鱼",
+  "count_materials": [
+    "小绵菊",
+    "小星扇贝",
+    "拉夫领鱼",
+    "珠花贝壳"
+  ],
+  "capacity": 4,
+  "points": [
+    {
+      "x": 11592.66,
+      "y": 8793.66,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11615.66,
+      "y": 8801.66,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11612.66,
+      "y": 8813.66,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11606.66,
+      "y": 8822.66,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11621.66,
+      "y": 8843.66,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11618.66,
+      "y": 8858.66,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11636.66,
+      "y": 8864.66,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11651.66,
+      "y": 8876.66,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11657.66,
+      "y": 8882.66,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11659.45,
+      "y": 8881.62,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.0
+      }
+    }
+  ]
+}

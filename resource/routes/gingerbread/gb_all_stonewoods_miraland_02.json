@@ -1,49 +1,89 @@
 {
   "schema_version": 3,
   "id": "gb_all_stonewoods_miraland_02",
-  "title": "【全材料·小石树田村】小石树田村·小石树田村入口（7个/33秒）",
+  "title": "【全材料·小石树田村】小石树田村·紫穗草花田（40个/199秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 120,
+  "timeout": 483,
   "teleport": {
-    "name": "小石树田村入口",
+    "name": "紫穗草花田",
     "province": "心愿原野",
     "region": "小石树田村",
-    "x": 9675.936,
-    "y": 10849.739
+    "x": 9342.041,
+    "y": 10401.192
   },
   "material": "全材料·小石树田村",
   "count_materials": [
-    "壁灯红椒",
+    "珠链蝶",
+    "花香羊毛",
     "小绵菊",
-    "路灯花"
+    "美食家蜜蜂",
+    "发卡蚱蜢",
+    "绣球羊毛",
+    "画帽羽毛"
   ],
-  "capacity": 7,
+  "capacity": 40,
   "points": [
     {
-      "x": 9675.94,
-      "y": 10849.74,
+      "x": 9342.04,
+      "y": 10401.19,
       "radius": 8.5,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 30.3
+      }
     },
     {
-      "x": 9656.43,
-      "y": 10846.0,
+      "x": 9348.38,
+      "y": 10409.19,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9639.43,
-      "y": 10835.0,
-      "radius": 3.2,
+      "x": 9345.38,
+      "y": 10439.19,
+      "radius": 2.8,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9340.38,
+      "y": 10439.77,
+      "radius": 3.2,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 11.2
+        "seconds": 65.0
+      }
+    },
+    {
+      "x": 9369.38,
+      "y": 10439.15,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9372.38,
+      "y": 10439.15,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9374.6,
+      "y": 10437.15,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
       }
     }
   ]

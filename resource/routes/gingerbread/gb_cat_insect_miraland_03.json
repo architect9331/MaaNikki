@@ -1,0 +1,110 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_miraland_03",
+  "title": "【全昆虫速刷】埋骨地·蓝池北侧疗愈地渡口（59个/260秒）",
+  "map": "miraland",
+  "start_radius": 12,
+  "timeout": 618,
+  "teleport": {
+    "name": "蓝池北侧疗愈地渡口",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7605.469,
+    "y": 4714.484
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "珠链蝶"
+  ],
+  "capacity": 59,
+  "points": [
+    {
+      "x": 7605.47,
+      "y": 4714.48,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7607.47,
+      "y": 4694.66,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 7619.47,
+      "y": 4658.66,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7634.47,
+      "y": 4625.66,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
+      }
+    },
+    {
+      "x": 7634.47,
+      "y": 4607.66,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7620.95,
+      "y": 4602.66,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
+      }
+    },
+    {
+      "x": 7629.9,
+      "y": 4604.66,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7635.9,
+      "y": 4616.66,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7623.9,
+      "y": 4649.66,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7618.9,
+      "y": 4655.54,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
+      }
+    }
+  ]
+}

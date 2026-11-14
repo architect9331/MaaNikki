@@ -1,73 +1,115 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_03",
-  "title": "【全材料·微风绿野】微风绿野·绿野货运码头（12个/64秒）",
+  "title": "【全材料·微风绿野】微风绿野·废弃疯愿之子营地前哨站（11个/62秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 186,
+  "timeout": 182,
   "teleport": {
-    "name": "绿野货运码头",
+    "name": "废弃疯愿之子营地前哨站",
     "province": "心愿原野",
     "region": "微风绿野",
-    "x": 10430.453,
-    "y": 10861.881
+    "x": 10097.693,
+    "y": 11432.88
   },
   "material": "全材料·微风绿野",
   "count_materials": [
-    "小星扇贝",
-    "珠花贝壳",
-    "蓝珀鸟羽"
+    "纽扣松果",
+    "小绵菊",
+    "织衣蛛"
   ],
-  "capacity": 12,
+  "capacity": 11,
   "points": [
     {
-      "x": 10430.45,
-      "y": 10861.88,
+      "x": 10097.69,
+      "y": 11432.88,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10438.45,
-      "y": 10858.02,
+      "x": 10096.69,
+      "y": 11436.53,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10444.45,
-      "y": 10849.02,
+      "x": 10111.69,
+      "y": 11451.53,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10438.45,
-      "y": 10843.02,
+      "x": 10114.69,
+      "y": 11451.53,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10438.45,
-      "y": 10840.02,
+      "x": 10117.69,
+      "y": 11448.53,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 10120.69,
+      "y": 11451.53,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10442.74,
-      "y": 10838.02,
+      "x": 10123.69,
+      "y": 11454.53,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10135.69,
+      "y": 11448.53,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10144.69,
+      "y": 11448.53,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10150.69,
+      "y": 11427.53,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10156.51,
+      "y": 11419.53,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 42.3
+        "seconds": 22.1
       }
     }
   ]

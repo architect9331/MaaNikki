@@ -31,12 +31,13 @@ TOAST_LEGACY_ROI = [15, 451, 147, 133]
 BYPRODUCT_KEYWORDS = ("心得", "精粹", "种子", "噗灵", "经验", "探索度", "丝线", "丝带", "闪光粒子", "泡泡")
 UI_NOISE_KEYWORDS = ("任务", "追踪", "距离", "前往", "点击", "按", "键", "查看", "地图")
 
-# Materials that require Nikki's active skill/plunge to break open before pickup
-# (e.g. cid=89 瓜子珠 inside hard 宝匣瓜 pods requiring jump + plunge smash).
-NON_GINGERBREAD_CIDS = frozenset({"89"})
-NON_GINGERBREAD_NAMES = frozenset({"瓜子珠"})
-NIGHT_ONLY_CIDS = frozenset({"72", "76", "97", "137"})
+# Materials that require Nikki's active skill/plunge/purification before pickup
+# (cid=89 瓜子珠 requires plunge smash; cid=282 骨焰花 requires purification/arrow hit).
+NON_GINGERBREAD_CIDS = frozenset({"89", "282"})
+NON_GINGERBREAD_NAMES = frozenset({"瓜子珠", "骨焰花"})
+NIGHT_ONLY_CIDS = frozenset({"68", "72", "76", "97", "137"})
 NIGHT_ONLY_KEYWORDS = ("仅夜晚", "仅晴天夜晚")
+CONDITIONAL_OTHER_CIDS = frozenset({"61", "88", "281"})
 MAX_RELIABLE_DZ_M = 5.0
 
 
@@ -47,6 +48,15 @@ def is_strict_night_only(cid: str, cond: str) -> bool:
     if cid in NIGHT_ONLY_CIDS:
         return True
     return any(k in cond for k in NIGHT_ONLY_KEYWORDS)
+
+
+def is_conditional_skip(cid: str, cond: str) -> bool:
+    """Return True if spawner is gated by strict time or weather conditions."""
+    if is_strict_night_only(cid, cond):
+        return True
+    if cid in CONDITIONAL_OTHER_CIDS or "仅白天" in cond or "仅晴天" in cond:
+        return True
+    return False
 
 
 @dataclass
@@ -81,6 +91,9 @@ class NearbySpawnerInfo:
     d_2d_m: float
     dz_m: float
     night_only: bool = False
+    catalog_id: str = ""
+    conditional: bool = False
+    fish_species: tuple[str, ...] = ()
 
 
 class MaterialNameResolver:
@@ -469,27 +482,67 @@ class GingerbreadRouteAnalyzer:
                 if nm in NON_GINGERBREAD_NAMES:
                     continue
                 is_night = is_strict_night_only(cid, cond)
-                near_raw.append((sid, nm, str(cat.get("kind") or "plant"), sx, sy, sz, d_m, is_night))
+                is_cond = is_conditional_skip(cid, cond)
+                fish_sp: tuple[str, ...] = ()
+                kind = str(cat.get("kind") or "plant")
+                if kind == "fish" and cond:
+                    txt = cond.replace("可能在该钓鱼点出现的鱼类：", "").replace("可能在该钓鱼点出现的鱼类:", "")
+                    fish_sp = tuple(
+                        part.strip()
+                        for part in txt.replace("、", "/").replace("，", "/").replace(",", "/").split("/")
+                        if part.strip()
+                    )
+                near_raw.append((sid, cid, nm, kind, sx, sy, sz, d_m, is_night, is_cond, fish_sp))
 
         if not near_raw:
             return []
         # Estimate local ground elevation from nearest spawners
-        near_raw.sort(key=lambda item: item[6])
-        closest_z = [item[5] for item in near_raw[: min(5, len(near_raw))]]
+        near_raw.sort(key=lambda item: item[7])
+        closest_z = [item[6] for item in near_raw[: min(5, len(near_raw))]]
         closest_z.sort()
         ref_z = closest_z[len(closest_z) // 2]
 
         results: list[NearbySpawnerInfo] = []
-        for sid, nm, kind, sx, sy, sz, d_m, is_night in near_raw:
-            if is_night and len(explicit_targets) == 1 and nm in explicit_targets:
-                eff_night = False
-            else:
-                eff_night = is_night
+        seen_clusters: dict[tuple, int] = {}
+        for sid, cid, nm, kind, sx, sy, sz, d_m, is_night, is_cond, fish_sp in near_raw:
+            targeted_explicitly = bool(
+                explicit_targets
+                and (
+                    nm in explicit_targets
+                    or any(part.strip() in explicit_targets for part in nm.split("/"))
+                    or any(sp in explicit_targets for sp in fish_sp)
+                )
+            )
+            eff_night = False if (is_night and len(explicit_targets) == 1 and targeted_explicitly) else is_night
+            eff_cond = False if targeted_explicitly else is_cond
             dz_m = round(abs(sz - ref_z), 2)
+            # Collapse duplicate map markers sharing the same physical pond / tight shrub / cliff cluster
+            cell_px = 6.0 if kind == "fish" else 2.6
+            ckey = (cid or nm, round(sx / cell_px), round(sy / cell_px), round(sz / 2.5))
+            seen_cnt = seen_clusters.get(ckey, 0)
+            seen_clusters[ckey] = seen_cnt + 1
+            if kind == "fish" and seen_cnt >= 1:
+                if math.hypot(d_m, dz_m) <= claim_within_m and dz_m <= MAX_RELIABLE_DZ_M:
+                    self.claimed_spawner_ids.add(sid)
+                continue
+            if kind != "fish" and seen_cnt >= 2:
+                if math.hypot(d_m, dz_m) <= claim_within_m and dz_m <= MAX_RELIABLE_DZ_M:
+                    self.claimed_spawner_ids.add(sid)
+                continue
             results.append(
                 NearbySpawnerInfo(
-                    id=sid, name=nm, kind=kind, x=sx, y=sy, z=sz, d_2d_m=d_m, dz_m=dz_m,
+                    id=sid,
+                    name=nm,
+                    kind=kind,
+                    x=sx,
+                    y=sy,
+                    z=sz,
+                    d_2d_m=d_m,
+                    dz_m=dz_m,
                     night_only=eff_night,
+                    catalog_id=cid,
+                    conditional=eff_cond,
+                    fish_species=fish_sp,
                 )
             )
             if math.hypot(d_m, dz_m) <= claim_within_m and dz_m <= MAX_RELIABLE_DZ_M:
@@ -507,7 +560,7 @@ class GingerbreadRouteAnalyzer:
         """
         in_15m = [
             s for s in nearby
-            if not s.night_only and math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m <= MAX_RELIABLE_DZ_M
+            if not s.night_only and not s.conditional and math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m <= MAX_RELIABLE_DZ_M
         ]
         plants = sum(1 for s in in_15m if s.kind == "plant")
         insects = sum(1 for s in in_15m if s.kind == "insect")
@@ -549,7 +602,7 @@ class GingerbreadRouteAnalyzer:
         picked_events: list[dict],
         nearby: list[NearbySpawnerInfo],
     ) -> dict:
-        active_nearby = [s for s in nearby if not s.night_only]
+        active_nearby = [s for s in nearby if not s.night_only and not s.conditional]
         in_8m = [s for s in active_nearby if math.hypot(s.d_2d_m, s.dz_m) <= 8.0 and s.dz_m <= MAX_RELIABLE_DZ_M]
         in_12m = [s for s in active_nearby if math.hypot(s.d_2d_m, s.dz_m) <= 12.0 and s.dz_m <= MAX_RELIABLE_DZ_M]
         in_15m = [s for s in active_nearby if math.hypot(s.d_2d_m, s.dz_m) <= 15.0 and s.dz_m <= MAX_RELIABLE_DZ_M]

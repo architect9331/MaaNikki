@@ -1,0 +1,97 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_animal_miraland_08",
+  "title": "【全动物清洁】巨木之森·巨矛前驿站（21个/138秒）",
+  "map": "miraland",
+  "start_radius": 12,
+  "timeout": 349,
+  "teleport": {
+    "name": "巨矛前驿站",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 4387.351,
+    "y": 7929.628
+  },
+  "material": "全动物清洁",
+  "count_materials": [
+    "行鹭羽",
+    "小野菊",
+    "满满果",
+    "草裙毛团",
+    "路灯花",
+    "板刷狸绒"
+  ],
+  "capacity": 21,
+  "points": [
+    {
+      "x": 4387.35,
+      "y": 7929.63,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4395.35,
+      "y": 7933.65,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4413.35,
+      "y": 7924.65,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.0
+      }
+    },
+    {
+      "x": 4434.35,
+      "y": 7918.65,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4443.06,
+      "y": 7919.65,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 61.4
+      }
+    },
+    {
+      "x": 4434.4,
+      "y": 7895.24,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4425.4,
+      "y": 7874.24,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4438.4,
+      "y": 7860.24,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 19.1
+      }
+    }
+  ]
+}

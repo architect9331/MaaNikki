@@ -1,44 +1,39 @@
 {
   "schema_version": 3,
   "id": "gb_all_firework_firework_03",
-  "title": "【全材料·花焰群岛】花焰群岛·幽暗洞窟前（14个/89秒）",
+  "title": "【全材料·花焰群岛】花焰群岛·滋啦啦服务社（9个/66秒）",
   "map": "firework",
   "start_radius": 12,
-  "timeout": 241,
+  "timeout": 190,
   "teleport": {
-    "name": "幽暗洞窟前",
+    "name": "滋啦啦服务社",
     "province": "心愿原野",
     "region": "花焰群岛",
-    "x": 945.342,
-    "y": 225.634
+    "x": 1003.822,
+    "y": 608.643
   },
   "material": "全材料·花焰群岛",
   "count_materials": [
-    "珠链蝶",
-    "小绵菊",
-    "美食家蜜蜂",
-    "草绒球",
-    "蓝珀鸟羽",
-    "满满果"
+    "美食家蜜蜂"
   ],
-  "capacity": 14,
+  "capacity": 9,
   "points": [
     {
-      "x": 945.34,
-      "y": 225.63,
+      "x": 1003.82,
+      "y": 608.64,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1045.48,
-      "y": 216.11,
+      "x": 1015.34,
+      "y": 612.08,
       "radius": 3.2,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 58.0
+        "seconds": 47.7
       }
     }
   ]

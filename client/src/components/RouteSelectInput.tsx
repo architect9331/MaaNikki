@@ -399,12 +399,11 @@ export function RouteSelectInput({
 }
 
 
-type MultiFilterCategory = 'all' | 'regional' | 'material' | 'category' | 'collection' | 'user';
+type MultiFilterCategory = 'all' | 'regional' | 'category' | 'collection' | 'user';
 
 const CATEGORY_TABS: Array<{ id: MultiFilterCategory; label: string }> = [
   { id: 'all', label: '全部' },
   { id: 'regional', label: '区域全收集' },
-  { id: 'material', label: '单材料路线' },
   { id: 'category', label: '分类速刷' },
   { id: 'collection', label: '推荐合集' },
   { id: 'user', label: '我的路线' },
@@ -415,7 +414,6 @@ function matchRouteCategory(item: RouteSummary, cat: MultiFilterCategory): boole
   if (cat === 'user') return !item.builtin;
   if (cat === 'collection') return item.kind === 'route_collection';
   if (cat === 'regional') return item.id.startsWith('gb_all_');
-  if (cat === 'material') return item.id.startsWith('gb_mat_') || item.id.startsWith('gb_fish_');
   if (cat === 'category') return item.id.startsWith('gb_cat_');
   return true;
 }

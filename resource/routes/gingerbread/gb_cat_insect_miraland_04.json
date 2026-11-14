@@ -1,0 +1,71 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_miraland_04",
+  "title": "【全昆虫速刷】磐城·街区钟塔（47个/220秒）",
+  "map": "miraland",
+  "start_radius": 12,
+  "timeout": 530,
+  "teleport": {
+    "name": "街区钟塔",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3841.69,
+    "y": 4046.966
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "探险家蜜蜂",
+    "小野菊",
+    "蓝玉甲虫",
+    "珠链蝶",
+    "风舞花",
+    "满满果",
+    "金轴蜻蜓",
+    "珠坠甲虫",
+    "蜜妆粉",
+    "晶球绵蚧"
+  ],
+  "capacity": 47,
+  "points": [
+    {
+      "x": 3841.69,
+      "y": 4046.97,
+      "radius": 8.5,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 11.9
+      }
+    },
+    {
+      "x": 3692.52,
+      "y": 4055.99,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
+      }
+    },
+    {
+      "x": 3649.17,
+      "y": 4047.55,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 32.2
+      }
+    },
+    {
+      "x": 3661.22,
+      "y": 3970.7,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 38.9
+      }
+    }
+  ]
+}

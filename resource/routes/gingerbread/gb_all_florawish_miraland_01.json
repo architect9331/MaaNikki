@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_florawish_miraland_01",
-  "title": "【全材料·花愿镇】花愿镇·搭配师协会纪念旧址旁（10个/48秒）",
+  "title": "【全材料·花愿镇】花愿镇·搭配师协会纪念旧址旁（10个/47秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 150,
+  "timeout": 149,
   "teleport": {
     "name": "搭配师协会纪念旧址旁",
     "province": "心愿原野",
@@ -28,13 +28,13 @@
       "params": {}
     },
     {
-      "x": 9847.14,
-      "y": 9843.62,
+      "x": 9848.34,
+      "y": 9843.2,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 29.8
+        "seconds": 29.2
       }
     }
   ]

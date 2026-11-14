@@ -1,59 +1,73 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_02",
-  "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（13个/69秒）",
+  "title": "【全材料·微风绿野】微风绿野·绿野货运码头（12个/64秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 196,
+  "timeout": 186,
   "teleport": {
-    "name": "筑心王国边境哨所",
+    "name": "绿野货运码头",
     "province": "心愿原野",
     "region": "微风绿野",
-    "x": 10782.912,
-    "y": 11960.809
+    "x": 10430.453,
+    "y": 10861.881
   },
   "material": "全材料·微风绿野",
   "count_materials": [
-    "壁灯红椒",
-    "纽扣松果",
-    "发卡蚱蜢"
+    "小星扇贝",
+    "珠花贝壳",
+    "蓝珀鸟羽"
   ],
-  "capacity": 13,
+  "capacity": 12,
   "points": [
     {
-      "x": 10782.91,
-      "y": 11960.81,
+      "x": 10430.45,
+      "y": 10861.88,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10787.91,
-      "y": 11945.95,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 7.9
-      }
-    },
-    {
-      "x": 10787.91,
-      "y": 11909.95,
+      "x": 10438.45,
+      "y": 10858.02,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10783.1,
-      "y": 11898.95,
+      "x": 10444.45,
+      "y": 10849.02,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10438.45,
+      "y": 10843.02,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10438.45,
+      "y": 10840.02,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10442.74,
+      "y": 10838.02,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 29.7
+        "seconds": 42.3
       }
     }
   ]

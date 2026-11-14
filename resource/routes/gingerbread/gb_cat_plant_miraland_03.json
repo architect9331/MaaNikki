@@ -1,184 +1,82 @@
 {
   "schema_version": 3,
   "id": "gb_cat_plant_miraland_03",
-  "title": "【全植物速刷】微风绿野·河畔山地林间道（76个/287秒）",
+  "title": "【全植物速刷】磐城·环圃一层种植区（50个/195秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 677,
+  "timeout": 475,
   "teleport": {
-    "name": "河畔山地林间道",
-    "province": "心愿原野",
-    "region": "微风绿野",
-    "x": 10608.939,
-    "y": 11286.416
+    "name": "环圃一层种植区",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3514.092,
+    "y": 4165.524
   },
   "material": "全植物速刷",
   "count_materials": [
-    "纽扣松果",
-    "小绵菊",
+    "满满果",
     "壁灯红椒",
-    "路灯花"
+    "小野菊",
+    "纽扣松果"
   ],
-  "capacity": 76,
+  "capacity": 50,
   "points": [
     {
-      "x": 10608.94,
-      "y": 11286.42,
+      "x": 3514.09,
+      "y": 4165.52,
       "radius": 8.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 17.9
-      }
-    },
-    {
-      "x": 10587.98,
-      "y": 11282.02,
-      "radius": 2.8,
-      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10551.98,
-      "y": 11288.02,
+      "x": 3478.9,
+      "y": 4143.92,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 11.8
+        "seconds": 26.3
       }
     },
     {
-      "x": 10536.98,
-      "y": 11294.02,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10527.98,
-      "y": 11294.02,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 24.6
-      }
-    },
-    {
-      "x": 10500.98,
-      "y": 11270.02,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 21.7
-      }
-    },
-    {
-      "x": 10476.98,
-      "y": 11258.02,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10467.98,
-      "y": 11255.02,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10465.98,
-      "y": 11253.02,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 40.5
-      }
-    },
-    {
-      "x": 10458.98,
-      "y": 11261.02,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10467.98,
-      "y": 11279.02,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10470.98,
-      "y": 11297.02,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10469.03,
-      "y": 11298.97,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 33.9
-      }
-    },
-    {
-      "x": 10477.03,
-      "y": 11306.97,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10477.03,
-      "y": 11327.97,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10471.97,
-      "y": 11332.06,
+      "x": 3489.08,
+      "y": 4052.11,
       "radius": 3.2,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 21.6
+        "seconds": 37.5
       }
     },
     {
-      "x": 10494.97,
-      "y": 11334.06,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
+      "x": 3464.6,
+      "y": 4039.34,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 13.9
+      }
     },
     {
-      "x": 10498.37,
-      "y": 11335.83,
+      "x": 3424.35,
+      "y": 4093.58,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 21.3
+        "seconds": 27.5
+      }
+    },
+    {
+      "x": 3441.5,
+      "y": 4119.07,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 14.3
       }
     }
   ]

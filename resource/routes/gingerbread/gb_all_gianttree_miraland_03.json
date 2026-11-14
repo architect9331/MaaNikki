@@ -1,59 +1,59 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_03",
-  "title": "【全材料·巨木之森】巨木之森·巨矛前驿站（14个/82秒）",
+  "title": "【全材料·巨木之森】巨木之森·伊赞之土临时搭配师协会（13个/77秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 226,
+  "timeout": 214,
   "teleport": {
-    "name": "巨矛前驿站",
+    "name": "伊赞之土临时搭配师协会",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 4387.351,
-    "y": 7929.628
+    "x": 4840.105,
+    "y": 8932.157
   },
   "material": "全材料·巨木之森",
   "count_materials": [
     "小野菊",
-    "满满果",
-    "行鹭羽",
-    "路灯花",
-    "草裙毛团"
+    "沙沙毛团",
+    "蓝珀鸟羽",
+    "朝朝蝶",
+    "暮暮蝶"
   ],
-  "capacity": 14,
+  "capacity": 13,
   "points": [
     {
-      "x": 4387.35,
-      "y": 7929.63,
+      "x": 4840.1,
+      "y": 8932.16,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4392.35,
-      "y": 7934.38,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 4419.35,
-      "y": 7922.38,
+      "x": 4839.1,
+      "y": 8934.16,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 4431.77,
-      "y": 7920.38,
+      "x": 4842.1,
+      "y": 8937.16,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4844.14,
+      "y": 8936.14,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 58.6
+        "seconds": 59.2
       }
     }
   ]

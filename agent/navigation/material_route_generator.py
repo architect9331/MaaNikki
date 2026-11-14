@@ -35,11 +35,43 @@ KIND_LABELS = {
 CM_PER_MAP_PX = 90.0
 M_PER_MAP_PX = 0.90
 
-# Materials enclosed in hard pods/shells requiring Nikki's active plunge/purification
-# (e.g. cid=89 瓜子珠 inside 宝匣瓜 pods) cannot be harvested directly by Gingerbread Man.
-NON_GINGERBREAD_CIDS = frozenset({"89"})
-NIGHT_ONLY_CIDS = frozenset({"72", "76", "97", "137"})
+# Materials that require Nikki's active plunge/purification mechanics before pickup
+# and cannot be collected directly by the Gingerbread Man aura.
+NON_GINGERBREAD_CIDS = frozenset({"89", "282"})
+NON_GINGERBREAD_INFO: dict[str, tuple[str, str]] = {
+    "89": ("瓜子珠", "包裹在硬壳宝匣瓜内，需跳跃急坠震碎后才能拾取"),
+    "282": ("骨焰花", "需使用净化/弓箭击打触发绽放，无法由姜饼人直接采集"),
+}
+NIGHT_ONLY_CIDS = frozenset({"68", "72", "76", "97", "137"})
 NIGHT_ONLY_KEYWORDS = ("仅夜晚", "仅晴天夜晚")
+CONDITIONAL_OTHER_CIDS = frozenset({"61", "88", "281"})
+
+SPECIAL_MECHANISM_NOTES: dict[str, str] = {
+    "61": "布布袜虫仅晴天出现且受惊后易钻洞潜伏，全天候挂机路线已跳过，建议按需手动或智能生成单独捕捉。",
+    "68": "裙撑萤多数点位仅夜晚出现（宴席白牛周边少量全天刷新），请注意切换游戏时段。",
+    "72": "刺绣蛾仅夜晚可采集，全收集路线已避开，需要时请切至夜晚后智能生成。",
+    "76": "耳坠萤仅夜晚可采集，全收集路线已避开，需要时请切至夜晚后智能生成。",
+    "80": "日光果/星光果随昼夜自动切换形态，全天候均可拾取。",
+    "82": "飞球果多悬挂于高空树枝或藤蔓（需击打震落），已自动优先筛选低矮可触及点位。",
+    "85": "晴日蝶兰/雨滴蝶兰随天气切换形态，全天候均可拾取对应时段形态。",
+    "88": "香薰睡莲仅白天可采集，全收集路线已避开，需要时请切至白天后智能生成。",
+    "92": "星荧草多位于洞窟深层，已自动剔除与流转之柱/地表高差悬殊的地下点位。",
+    "93": "花伞藤萝常攀附较高藤架，高差超过 4.8m 的空中点位已自动跳过。",
+    "94": "风絮草多处于高空树冠或气流上方（超出 4.8m 垂直光环），已优先保留贴近地面的点位。",
+    "95": "壁灯红椒多生于陡峭岩壁且常垂向叠聚，全收集路线已滤除 35°+ 陡壁并对其降权去重。",
+    "97": "滋滋花粉仅晴天夜晚开放采集，全收集路线已避开。",
+    "98": "小星扇贝部分刷新点位于海面水体内，已过滤纯水下点位并保留平缓沙滩可拾取点。",
+    "137": "噼啪花粉仅晴天夜晚开放采集，全收集路线已避开。",
+    "191": "花纹围巾蚯蚓会在土丘间周期探头/潜伏，实际拾取数量随刷新窗口波动。",
+    "196": "袋袋果部分挂于树枝高处，已优先保留低处点位。",
+    "207": "暮暮蝶存在晨昏时段限制，请在对应时段收集。",
+    "208": "朝朝蝶存在晨昏时段限制，请在对应时段收集。",
+    "234": "风旋果多位于高处树冠（需击落），已过滤高差过大点位。",
+    "281": "晴雨伞仅雨天开放掉落、晴天处于闭合状态，全收集路线已避开；请在雨天时段智能生成单刷。",
+    "284": "烛融花/烛荧花随昼夜自动切换形态，全天候均可拾取对应时段形态。",
+    "286": "蓝鳞晶常贴附峭壁且重叠聚集，已滤除极陡岩壁并抑制同点位堆叠虚高。",
+    "73": "围巾蚯蚓会周期性缩回土丘，单轮可拾取数量可能略有波动。",
+}
 
 
 def _is_strict_night_only(cid: str, cond: str) -> bool:
@@ -48,6 +80,45 @@ def _is_strict_night_only(cid: str, cond: str) -> bool:
     if cid in NIGHT_ONLY_CIDS:
         return True
     return any(k in cond for k in NIGHT_ONLY_KEYWORDS)
+
+
+def _is_conditional_sweep_excluded(cid: str, cond: str) -> bool:
+    if cid in NON_GINGERBREAD_CIDS:
+        return True
+    if _is_strict_night_only(cid, cond):
+        return True
+    if cid in CONDITIONAL_OTHER_CIDS or "仅白天" in cond or "仅晴天" in cond:
+        return True
+    return False
+
+
+def _micro_cluster_key(pt: "MaterialPoint") -> tuple:
+    if pt.kind == "fish":
+        return ("fish", round(pt.x / 6.0), round(pt.y / 6.0), round(pt.z / 3.0))
+    return (pt.catalog_id, round(pt.x / 2.6), round(pt.y / 2.6), round(pt.z / 2.5))
+
+
+def _deduplicate_wait_points(points: Iterable["MaterialPoint"], max_fish_per_pond: int = 1, max_per_cell: int = 2) -> list["MaterialPoint"]:
+    counts: dict[tuple, int] = {}
+    out: list[MaterialPoint] = []
+    for pt in points:
+        ckey = _micro_cluster_key(pt)
+        n = counts.get(ckey, 0)
+        limit = max_fish_per_pond if pt.kind == "fish" else max_per_cell
+        if n >= limit:
+            continue
+        counts[ckey] = n + 1
+        out.append(pt)
+    return out
+
+
+def describe_material_mechanisms(cids: Iterable[str]) -> list[str]:
+    notes: list[str] = []
+    for cid in cids:
+        note = SPECIAL_MECHANISM_NOTES.get(str(cid))
+        if note and note not in notes:
+            notes.append(note)
+    return notes
 
 # Indoor / underground sub-layer Warp Spires whose minimap displays an indoor
 # floorplan rather than the outdoor world map.
@@ -1048,45 +1119,89 @@ class MaterialRouteGenerator:
     ) -> tuple[list[AnchorCluster], list[MaterialPoint]]:
         tgrid = self.grid(spire.map_id)
         spire_gz = tgrid.elevation(spire.x, spire.y, default=spire.z)
-        spire_on_ground = math.isnan(spire_gz) or abs(spire.z - spire_gz) <= 8.5
+        spire_on_ground = math.isnan(spire_gz) or abs(spire.z - spire_gz) <= 6.5
+        max_ground_dz = min(5.2, self.spec.max_dz_m + 0.4)
 
-        local_points: list[MaterialPoint] = []
+        raw_local: list[tuple[MaterialPoint, bool]] = []
         for p in map_points:
             d = math.hypot(p.x - spire.x, p.y - spire.y)
             if d > max_spire_dist_px:
                 continue
             pgz = tgrid.elevation(p.x, p.y, default=p.z)
+            has_terrain_z = not math.isnan(pgz)
             if spire_on_ground:
-                if not math.isnan(pgz) and abs(p.z - pgz) > 8.5:
+                if has_terrain_z and abs(p.z - pgz) > max_ground_dz:
                     continue
-                if abs(p.z - spire.z) > 45.0:
+                if abs(p.z - spire.z) > 38.0:
                     continue
             else:
-                if abs(p.z - spire.z) > 22.0:
+                if abs(p.z - spire.z) > 18.0:
                     continue
+
+            steep_or_water = False
+            if has_terrain_z and p.kind != "fish":
+                slp = tgrid.slope(p.x, p.y)
+                in_water = tgrid.is_water(p.x, p.y)
+                obs_cliff = tgrid.is_obstacle(p.x, p.y) and slp >= 40.0 and abs(p.z - pgz) >= 1.2
+                if in_water or slp >= 45.0 or obs_cliff:
+                    steep_or_water = True
+                    # General max-yield sweeps skip underwater shells & steep cliff walls while
+                    # keeping flat/embankment flora accessible within Gingerbread's 15m sphere.
+                    if target_cids is None or in_water:
+                        continue
+                elif slp >= 35.0:
+                    steep_or_water = True
+            raw_local.append((p, steep_or_water))
+
+        if not raw_local:
+            return [], []
+
+        # Collapse duplicate fish pool markers at the same physical pond and attenuate tight spatial stacks
+        cluster_counts: dict[tuple, int] = {}
+        local_points: list[MaterialPoint] = []
+        local_steep: list[bool] = []
+        local_cluster_rank: list[int] = []
+        for p, is_steep in raw_local:
+            ckey = _micro_cluster_key(p)
+            rank = cluster_counts.get(ckey, 0)
+            if p.kind == "fish" and rank >= 1:
+                continue
+            if rank >= 2 and (target_cids is None or p.catalog_id not in target_cids):
+                continue
+            cluster_counts[ckey] = rank + 1
             local_points.append(p)
+            local_steep.append(is_steep)
+            local_cluster_rank.append(rank)
 
         if not local_points:
             return [], []
 
-        def point_weight(pt: MaterialPoint) -> float:
+        def point_weight(pt: MaterialPoint, rank: int, is_steep: bool) -> float:
+            stack_factor = 1.0 if rank == 0 else (0.40 if rank == 1 else (0.15 if rank == 2 else 0.0))
+            terrain_factor = 0.35 if is_steep else 1.0
             if target_cids is not None:
-                return 10.0 if pt.catalog_id in target_cids else 0.15
-            return kind_weights.get(pt.kind, 1.0)
+                base = 10.0 if pt.catalog_id in target_cids else 0.15
+                return base * terrain_factor * (stack_factor if pt.catalog_id not in target_cids or rank < 2 else 0.10)
+            return kind_weights.get(pt.kind, 1.0) * stack_factor * terrain_factor
 
         n_pts = len(local_points)
         px_arr = np.array([p.x for p in local_points], dtype=np.float32)
         py_arr = np.array([p.y for p in local_points], dtype=np.float32)
         pz_arr = np.array([p.z for p in local_points], dtype=np.float32)
-        w_arr = np.array([point_weight(p) for p in local_points], dtype=np.float32)
+        w_arr = np.array(
+            [point_weight(p, rk, stp) for p, rk, stp in zip(local_points, local_cluster_rank, local_steep)],
+            dtype=np.float32,
+        )
         srv_arr = np.array(
             [
-                1.0 if p.kind == "plant" else (
-                    self.spec.insect_s if p.kind == "insect" else (
-                        self.spec.animal_s if p.kind == "animal" else self.spec.fish_s
+                (
+                    1.0 if p.kind == "plant" else (
+                        self.spec.insect_s if p.kind == "insect" else (
+                            self.spec.animal_s if p.kind == "animal" else self.spec.fish_s
+                        )
                     )
-                )
-                for p in local_points
+                ) if rk < 2 else 0.0
+                for p, rk in zip(local_points, local_cluster_rank)
             ],
             dtype=np.float32,
         )
@@ -1210,7 +1325,7 @@ class MaterialRouteGenerator:
             cov_indices = np.where(cov_mask)[0]
             covered_now = [local_points[i] for i in cov_indices]
             tgt_pts = [local_points[i] for i in cov_indices if is_tgt_arr[i]]
-            wait_pts = covered_now if target_cids is None else tgt_pts
+            wait_pts = _deduplicate_wait_points(covered_now if target_cids is None else tgt_pts)
             anchors.append(
                 AnchorCluster(
                     x=ax,
@@ -1219,7 +1334,9 @@ class MaterialRouteGenerator:
                     points=covered_now,
                     score=float(np.sum(w_arr[cov_indices])),
                     target_count=len(tgt_pts),
-                    wait_seconds=self.spec.net_wait_seconds(wait_pts, anchor_xyz=(ax, ay, az)),
+                    wait_seconds=min(65.0, self.spec.net_wait_seconds(wait_pts, anchor_xyz=(ax, ay, az)))
+                    if target_cids is None
+                    else self.spec.net_wait_seconds(wait_pts, anchor_xyz=(ax, ay, az)),
                 )
             )
             existing_xyz.append((ax, ay, az))
@@ -1481,11 +1598,12 @@ class MaterialRouteGenerator:
                 final_waypoints.append(wp)
                 continue
             all_covered.extend(items)
-            dwell_items = (
+            raw_dwell = (
                 items
                 if target_cids is None
                 else [p for p in items if p.catalog_id in target_cids or p.kind == "plant"]
             )
+            dwell_items = _deduplicate_wait_points(raw_dwell)
             wait_s = (
                 self.spec.net_wait_seconds(
                     dwell_items,
@@ -1495,6 +1613,8 @@ class MaterialRouteGenerator:
                 if dwell_items
                 else 0.0
             )
+            if target_cids is None and wait_s > 65.0:
+                wait_s = 65.0
             if wait_s <= 0.0:
                 final_waypoints.append(wp)
                 continue
@@ -1514,6 +1634,12 @@ class MaterialRouteGenerator:
             waypoints[-1]["radius"] = 3.2
             total_wait_s += 5.0
             stationary_stop_cnt += 1
+
+        target_names: set[str] = set()
+        if target_cids is not None:
+            for p in all_covered:
+                if p.catalog_id in target_cids:
+                    target_names.add(p.name)
 
         counts_by_name: dict[str, int] = {}
         counts_by_kind: dict[str, int] = {}
@@ -1535,9 +1661,16 @@ class MaterialRouteGenerator:
         timeout_s = int(min(900, max(120, round(est_seconds * 2.2 + 45))))
 
         sorted_names = sorted(counts_by_name.keys(), key=lambda k: -counts_by_name[k])
-        main_mat = primary_material_name or (sorted_names[0] if sorted_names else "")
+        matched_target_sorted = sorted(
+            target_names,
+            key=lambda k: (-counts_by_name.get(k, 0), k),
+        )
+        if primary_material_name and "、" in primary_material_name and matched_target_sorted:
+            main_mat = "、".join(matched_target_sorted[:2])
+        else:
+            main_mat = primary_material_name or (sorted_names[0] if sorted_names else "")
         route_id = f"{route_id_prefix}_{spire.map_id}_{route_index:02d}"
-        title_prefix = main_mat if primary_material_name else "姜饼人全收集"
+        title_prefix = main_mat if (primary_material_name and "、" not in primary_material_name) or matched_target_sorted else "姜饼人全收集"
         title = f"【{title_prefix}】{spire.region}·{spire.name}（{target_count}个/{int(round(est_seconds))}秒）"
 
         route_doc = {
@@ -1585,6 +1718,22 @@ class MaterialRouteGenerator:
         route_id_prefix: str = "gb_target",
     ) -> list[GeneratedRoutePlan]:
         queries = [m.strip() for m in materials if m.strip()]
+        blocked_msgs: list[str] = []
+        allowed_queries: list[str] = []
+        for q in queries:
+            blocked_hit = None
+            for cid, (nm, reason) in NON_GINGERBREAD_INFO.items():
+                if q == cid or q == nm:
+                    blocked_hit = f"{nm}（cid={cid}）{reason}，小姜饼人能力无法直接拾取。"
+                    break
+            if blocked_hit:
+                if blocked_hit not in blocked_msgs:
+                    blocked_msgs.append(blocked_hit)
+            else:
+                allowed_queries.append(q)
+        if blocked_msgs and not allowed_queries:
+            raise ValueError(" ".join(blocked_msgs))
+        queries = allowed_queries or queries
         target_cids, fish_species = self.catalog.resolve_target_filter(queries)
         if not target_cids:
             raise ValueError(f"未在美鸭梨目录中找到匹配的材料：{', '.join(queries)}")
@@ -1601,12 +1750,13 @@ class MaterialRouteGenerator:
             for p in raw_pts:
                 if p.catalog_id == "99":
                     sp_tuple = self.catalog.parse_fish_species(p.condition)
-                    if any(sp in sp_tuple for sp in fish_species):
+                    matched_fish = [sp for sp in fish_species if sp in sp_tuple]
+                    if matched_fish:
                         out.append(
                             MaterialPoint(
                                 id=p.id,
                                 catalog_id="99",
-                                name=primary_name,
+                                name=matched_fish[0] if len(queries) > 1 else primary_name,
                                 kind=p.kind,
                                 map_id=p.map_id,
                                 x=p.x,
@@ -1704,10 +1854,12 @@ class MaterialRouteGenerator:
         route_id_prefix: str = "gb_sweep",
         title_label: str = "",
         exclude_night_only: bool = True,
+        exclude_conditional: bool | None = None,
     ) -> list[GeneratedRoutePlan]:
         weights = kind_weights or {"plant": 1.0, "insect": 1.8, "animal": 2.2, "fish": 2.4}
         active_maps = list(map_ids) if map_ids else list(WORLDS.values())
         region_set = {r.strip() for r in regions if r.strip()} if regions else None
+        skip_conditional = exclude_night_only if exclude_conditional is None else bool(exclude_conditional)
         candidates: list[GeneratedRoutePlan] = []
 
         for map_id in active_maps:
@@ -1715,7 +1867,7 @@ class MaterialRouteGenerator:
                 p
                 for p in self.catalog.points_by_map.get(map_id, [])
                 if weights.get(p.kind, 0.0) > 0
-                and not (exclude_night_only and _is_strict_night_only(p.catalog_id, p.condition))
+                and not (skip_conditional and _is_conditional_sweep_excluded(p.catalog_id, p.condition))
             ]
             if not pts:
                 continue
@@ -1751,7 +1903,15 @@ class MaterialRouteGenerator:
                 if plan and plan.total_count >= 4:
                     candidates.append(plan)
 
-        candidates.sort(key=lambda r: (r.efficiency_per_min, r.total_count), reverse=True)
+        # Prefer rich multi-stop sweeps over tiny 1-stop routes when overall efficiency is comparable
+        # (extra teleport loading + companion verification overhead favors higher haul per teleport).
+        candidates.sort(
+            key=lambda r: (
+                r.efficiency_per_min * min(1.0, 0.72 + 0.025 * r.total_count),
+                r.total_count,
+            ),
+            reverse=True,
+        )
         selected: list[GeneratedRoutePlan] = []
         claimed_ids: set[str] = set()
         for cand in candidates:
@@ -1790,7 +1950,7 @@ class MaterialRouteGenerator:
 
 def generate_from_request_dict(root: Path, req: dict) -> dict:
     """Entry point for UI on-demand route generation."""
-    mode = str(req.get("mode") or "target")
+    raw_mode = str(req.get("mode") or "").strip()
     radius = float(req.get("radius") or 14.0)
     top_k = max(1, min(15, int(req.get("top_k") or 3)))
     quota = int(req["quota"]) if req.get("quota") else None
@@ -1798,13 +1958,20 @@ def generate_from_request_dict(root: Path, req: dict) -> dict:
     map_ids = [m for m in (req.get("maps") or []) if m] or None
     regions = [r for r in (req.get("regions") or []) if r] or None
     materials = [m for m in (req.get("materials") or []) if m]
+    mode = raw_mode if raw_mode in ("target", "max-yield") else ("target" if materials else "max-yield")
 
     spec = GingerbreadSpec(
         safe_radius_m=radius,
         pass_radius_m=min(14.5, max(12.0, radius - 0.5)),
     )
     gen = MaterialRouteGenerator(root, spec=spec)
+    extra_notes: list[str] = []
     if mode == "target" and materials:
+        for cid, (nm, reason) in NON_GINGERBREAD_INFO.items():
+            if any(m.strip() in (cid, nm) for m in materials):
+                note = f"{nm}（cid={cid}）{reason}，小姜饼人能力无法直接拾取。"
+                if note not in extra_notes:
+                    extra_notes.append(note)
         plans = gen.generate_for_materials(
             materials,
             map_ids=map_ids,
@@ -1833,9 +2000,14 @@ def generate_from_request_dict(root: Path, req: dict) -> dict:
         col_title = f"【按需大丰收】综合采集清单（{len(plans)}条）"
 
     col_doc = gen.build_route_collection(plans, f"{prefix}_col", col_title) if plans else None
+    all_notes = list(dict.fromkeys(extra_notes + describe_material_mechanisms(
+        {cp.catalog_id for p in plans for cp in p.covered_points}
+        | (gen.catalog.resolve_catalog_ids(materials) if mode == "target" and materials else set())
+    )))
     return {
         "routes": [p.route_doc for p in plans],
         "collection": col_doc,
+        "mechanism_notes": all_notes,
         "summaries": [
             {
                 "id": p.route_doc["id"],
@@ -1850,6 +2022,7 @@ def generate_from_request_dict(root: Path, req: dict) -> dict:
                 "walk_distance_m": p.walk_distance_m,
                 "estimated_seconds": p.estimated_seconds,
                 "efficiency_per_min": p.efficiency_per_min,
+                "mechanism_notes": describe_material_mechanisms(cp.catalog_id for cp in p.covered_points),
                 "covered_points": [
                     {"name": cp.name, "kind": cp.kind, "x": cp.x, "y": cp.y, "z": cp.z}
                     for cp in p.covered_points

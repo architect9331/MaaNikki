@@ -1,52 +1,68 @@
 {
   "schema_version": 3,
   "id": "gb_all_danqing_danqing_04",
-  "title": "【全材料·丹青屿】丹青屿·栖龙峰侧峰（13个/83秒）",
+  "title": "【全材料·丹青屿】丹青屿·逢花林（18个/116秒）",
   "map": "danqing",
   "start_radius": 12,
-  "timeout": 227,
+  "timeout": 300,
   "teleport": {
-    "name": "栖龙峰侧峰",
+    "name": "逢花林",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1072.586,
-    "y": 284.388
+    "x": 1749.147,
+    "y": 1183.285
   },
   "material": "全材料·丹青屿",
   "count_materials": [
+    "珠链蝶",
+    "玉簪蚱蜢",
     "满满果",
-    "蓝珀鸟羽",
-    "荷包草",
-    "玉簪蚱蜢"
+    "荷包草"
   ],
-  "capacity": 13,
+  "capacity": 18,
   "points": [
     {
-      "x": 1072.59,
-      "y": 284.39,
+      "x": 1749.15,
+      "y": 1183.29,
       "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1750.0,
+      "y": 1186.8,
+      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 19.7
+        "seconds": 36.7
       }
     },
     {
-      "x": 1069.95,
-      "y": 280.51,
+      "x": 1744.0,
+      "y": 1189.8,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1055.95,
-      "y": 266.51,
+      "x": 1735.0,
+      "y": 1168.8,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1736.0,
+      "y": 1166.8,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 37.8
+        "seconds": 52.6
       }
     }
   ]

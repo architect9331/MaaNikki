@@ -1,50 +1,67 @@
 {
   "schema_version": 3,
   "id": "gb_all_wishing_miraland_02",
-  "title": "【全材料·祈愿树林】祈愿树林·心愿圣殿（11个/56秒）",
+  "title": "【全材料·祈愿树林】祈愿树林·幽林山洞（10个/51秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 168,
+  "timeout": 157,
   "teleport": {
-    "name": "心愿圣殿",
+    "name": "幽林山洞",
     "province": "心愿原野",
     "region": "祈愿树林",
-    "x": 11936.569,
-    "y": 9098.018
+    "x": 11964.59,
+    "y": 9774.674
   },
   "material": "全材料·祈愿树林",
   "count_materials": [
+    "壁灯红椒",
+    "纽扣松果",
     "路灯花",
-    "美食家蜜蜂",
-    "珠链蝶",
-    "发卡蚱蜢"
+    "发卡蚱蜢",
+    "美甲金龟"
   ],
-  "capacity": 11,
+  "capacity": 10,
   "points": [
     {
-      "x": 11936.57,
-      "y": 9098.02,
+      "x": 11964.59,
+      "y": 9774.67,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11934.58,
-      "y": 9100.02,
+      "x": 11959.34,
+      "y": 9782.67,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11935.58,
-      "y": 9115.47,
+      "x": 11959.34,
+      "y": 9785.67,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11956.34,
+      "y": 9791.67,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11948.34,
+      "y": 9796.41,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 37.0
+        "seconds": 30.5
       }
     }
   ]

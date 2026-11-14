@@ -1,0 +1,127 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_rare_rare_flora_miraland_02",
+  "title": "【烛融花/烛荧花】埋骨地·纪念地（11个/80秒）",
+  "map": "miraland",
+  "start_radius": 12,
+  "timeout": 221,
+  "teleport": {
+    "name": "纪念地",
+    "province": "伊赞之土",
+    "region": "埋骨地",
+    "x": 7065.165,
+    "y": 4255.362
+  },
+  "material": "烛融花/烛荧花",
+  "count_materials": [
+    "珠链蝶",
+    "烛融花/烛荧花",
+    "蓝珀鸟羽",
+    "革袋甲"
+  ],
+  "capacity": 30,
+  "points": [
+    {
+      "x": 7065.16,
+      "y": 4255.36,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7067.16,
+      "y": 4252.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7080.46,
+      "y": 4244.99,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.0
+      }
+    },
+    {
+      "x": 7076.42,
+      "y": 4246.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7043.42,
+      "y": 4264.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7035.42,
+      "y": 4268.41,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 7037.42,
+      "y": 4267.41,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7052.42,
+      "y": 4267.41,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7055.42,
+      "y": 4270.41,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7085.42,
+      "y": 4291.41,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7103.42,
+      "y": 4288.41,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7108.5,
+      "y": 4284.43,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.9
+      }
+    }
+  ]
+}

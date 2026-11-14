@@ -1,0 +1,91 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_fish_wanxiang_06",
+  "title": "【全鱼类垂钓】万相境·彩靥城近郊（13个/73秒）",
+  "map": "wanxiang",
+  "start_radius": 12,
+  "timeout": 206,
+  "teleport": {
+    "name": "彩靥城近郊",
+    "province": "伊赞之土",
+    "region": "万相境",
+    "x": 1598.932,
+    "y": 983.366
+  },
+  "material": "全鱼类垂钓",
+  "count_materials": [
+    "荷包草",
+    "小星扇贝",
+    "钓鱼点",
+    "云绒玉絮"
+  ],
+  "capacity": 13,
+  "points": [
+    {
+      "x": 1598.93,
+      "y": 983.37,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1585.93,
+      "y": 982.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1576.93,
+      "y": 997.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1567.93,
+      "y": 1006.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1579.93,
+      "y": 1030.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1576.93,
+      "y": 1039.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1600.93,
+      "y": 1066.37,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1623.07,
+      "y": 1078.05,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 35.9
+      }
+    }
+  ]
+}

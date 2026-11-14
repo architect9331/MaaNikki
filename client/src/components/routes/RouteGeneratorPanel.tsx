@@ -153,6 +153,9 @@ export function RouteGeneratorModal({
         return;
       }
       toast.success(`已结合 3D 地形生成 ${res.routes.length} 条最优姜饼人路线！`);
+      if (res.mechanism_notes?.length) {
+        toast.info(res.mechanism_notes.slice(0, 2).join(' '), { duration: 6000 });
+      }
       onGenerated(res);
       onClose();
     } catch (error) {

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_wishing_miraland_03",
-  "title": "【全材料·祈愿树林】祈愿树林·守卫遗址（29个/151秒）",
+  "title": "【全材料·祈愿树林】祈愿树林·守卫遗址（25个/142秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 376,
+  "timeout": 358,
   "teleport": {
     "name": "守卫遗址",
     "province": "心愿原野",
@@ -20,11 +20,10 @@
     "蓝珀鸟羽",
     "小绵菊",
     "面膜草蛉",
-    "日光果/星光果",
     "发卡蚱蜢",
     "抱抱绒团"
   ],
-  "capacity": 29,
+  "capacity": 25,
   "points": [
     {
       "x": 11849.14,
@@ -38,7 +37,7 @@
     },
     {
       "x": 11845.14,
-      "y": 9605.13,
+      "y": 9605.6,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -46,17 +45,17 @@
     },
     {
       "x": 11863.14,
-      "y": 9593.13,
+      "y": 9593.6,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 23.2
+        "seconds": 23.1
       }
     },
     {
       "x": 11875.14,
-      "y": 9590.13,
+      "y": 9590.6,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -64,7 +63,7 @@
     },
     {
       "x": 11878.14,
-      "y": 9581.13,
+      "y": 9581.6,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -72,20 +71,20 @@
     },
     {
       "x": 11881.14,
-      "y": 9578.13,
+      "y": 9578.6,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11887.17,
-      "y": 9573.13,
+      "x": 11887.14,
+      "y": 9573.6,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 40.6
+        "seconds": 32.2
       }
     }
   ]

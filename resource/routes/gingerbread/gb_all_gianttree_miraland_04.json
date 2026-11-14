@@ -1,82 +1,141 @@
 {
   "schema_version": 3,
   "id": "gb_all_gianttree_miraland_04",
-  "title": "【全材料·巨木之森】巨木之森·巨人墓园（11个/72秒）",
+  "title": "【全材料·巨木之森】巨木之森·巨兽堡垒东侧（31个/190秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 203,
+  "timeout": 463,
   "teleport": {
-    "name": "巨人墓园",
+    "name": "巨兽堡垒东侧",
     "province": "伊赞之土",
     "region": "巨木之森",
-    "x": 2891.806,
-    "y": 8601.681
+    "x": 3869.066,
+    "y": 8412.612
   },
   "material": "全材料·巨木之森",
   "count_materials": [
-    "壁灯红椒",
-    "木夹跳甲"
+    "珠链蝶",
+    "蓝珀鸟羽",
+    "蜜妆粉",
+    "小野菊",
+    "蜜妆兔绒",
+    "结结蕨",
+    "朝朝蝶",
+    "暮暮蝶",
+    "绒领毛团"
   ],
-  "capacity": 11,
+  "capacity": 31,
   "points": [
     {
-      "x": 2891.81,
-      "y": 8601.68,
+      "x": 3869.07,
+      "y": 8412.61,
       "radius": 8.5,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2896.81,
-      "y": 8597.68,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2902.81,
-      "y": 8606.68,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2917.81,
-      "y": 8630.68,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 2929.81,
-      "y": 8633.68,
-      "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 4.8
+        "seconds": 34.7
       }
     },
     {
-      "x": 2962.81,
-      "y": 8648.68,
+      "x": 3871.07,
+      "y": 8393.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 2995.62,
-      "y": 8653.41,
+      "x": 3898.07,
+      "y": 8381.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3928.07,
+      "y": 8399.61,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 26.3
+        "seconds": 23.2
+      }
+    },
+    {
+      "x": 3943.07,
+      "y": 8411.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3943.07,
+      "y": 8420.61,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 12.4
+      }
+    },
+    {
+      "x": 3940.07,
+      "y": 8423.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3940.07,
+      "y": 8432.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3934.07,
+      "y": 8441.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3928.07,
+      "y": 8441.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3925.07,
+      "y": 8444.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3922.07,
+      "y": 8444.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3920.22,
+      "y": 8443.73,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
       }
     }
   ]

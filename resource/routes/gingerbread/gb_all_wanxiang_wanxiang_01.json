@@ -1,67 +1,76 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_01",
-  "title": "【全材料·万相境】万相境·彩靥城近郊（13个/78秒）",
+  "title": "【全材料·万相境】万相境·火锅坊（15个/80秒）",
   "map": "wanxiang",
   "start_radius": 12,
-  "timeout": 217,
+  "timeout": 221,
   "teleport": {
-    "name": "彩靥城近郊",
+    "name": "火锅坊",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1598.932,
-    "y": 983.366
+    "x": 1399.524,
+    "y": 1108.824
   },
   "material": "全材料·万相境",
   "count_materials": [
+    "满满果",
     "荷包草",
-    "珠链蝶",
     "蓝珀鸟羽",
-    "画眉毛团",
-    "云绒玉絮"
+    "小绵菊"
   ],
-  "capacity": 13,
+  "capacity": 15,
   "points": [
     {
-      "x": 1598.93,
-      "y": 983.37,
+      "x": 1399.52,
+      "y": 1108.82,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1611.65,
-      "y": 967.34,
+      "x": 1397.06,
+      "y": 1105.15,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1599.65,
-      "y": 955.34,
+      "x": 1385.06,
+      "y": 1099.15,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 14.6
+      }
+    },
+    {
+      "x": 1382.06,
+      "y": 1087.15,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1572.65,
-      "y": 958.34,
+      "x": 1397.06,
+      "y": 1069.15,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1567.65,
-      "y": 965.34,
+      "x": 1398.06,
+      "y": 1067.15,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 51.0
+        "seconds": 35.4
       }
     }
   ]

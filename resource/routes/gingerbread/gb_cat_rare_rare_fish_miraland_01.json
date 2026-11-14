@@ -1,0 +1,107 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_rare_rare_fish_miraland_01",
+  "title": "【拉夫领鱼】小石树田村·村居岔路（3个/97秒）",
+  "map": "miraland",
+  "start_radius": 12,
+  "timeout": 259,
+  "teleport": {
+    "name": "村居岔路",
+    "province": "心愿原野",
+    "region": "小石树田村",
+    "x": 9389.052,
+    "y": 10562.456
+  },
+  "material": "拉夫领鱼",
+  "count_materials": [
+    "纽扣松果",
+    "拉夫领鱼",
+    "兔兔妆粉",
+    "小绵菊",
+    "珠花贝壳",
+    "滋滋花粉",
+    "路灯花",
+    "钓鱼点"
+  ],
+  "capacity": 15,
+  "points": [
+    {
+      "x": 9389.05,
+      "y": 10562.46,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9354.37,
+      "y": 10576.46,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9345.37,
+      "y": 10591.46,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9349.37,
+      "y": 10594.14,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 19.3
+      }
+    },
+    {
+      "x": 9318.85,
+      "y": 10572.4,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9288.85,
+      "y": 10563.4,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 17.8
+      }
+    },
+    {
+      "x": 9282.85,
+      "y": 10551.4,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9276.85,
+      "y": 10551.4,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9268.85,
+      "y": 10540.4,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.5
+      }
+    }
+  ]
+}

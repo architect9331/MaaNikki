@@ -1,0 +1,71 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_rare_rare_flora_miraland_05",
+  "title": "【机芯果、浮冠果】磐城·金庭大桥前（11个/102秒）",
+  "map": "miraland",
+  "start_radius": 12,
+  "timeout": 270,
+  "teleport": {
+    "name": "金庭大桥前",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3675.783,
+    "y": 3589.825
+  },
+  "material": "机芯果、浮冠果",
+  "count_materials": [
+    "机芯果",
+    "浮冠果"
+  ],
+  "capacity": 11,
+  "points": [
+    {
+      "x": 3675.78,
+      "y": 3589.82,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3657.94,
+      "y": 3666.57,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.5
+      }
+    },
+    {
+      "x": 3684.58,
+      "y": 3696.51,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.5
+      }
+    },
+    {
+      "x": 3724.07,
+      "y": 3660.35,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.5
+      }
+    },
+    {
+      "x": 3662.3,
+      "y": 3726.45,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 5.7
+      }
+    }
+  ]
+}

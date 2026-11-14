@@ -7,35 +7,35 @@
   "routes": [
     {
       "route": "gb_cat_plant_miraland_01",
-      "title": "【全植物速刷】埋骨地·古息坡道（60个/210秒）"
+      "title": "【全植物速刷】小石树田村·斯切尔托老宅（65个/219秒）"
     },
     {
       "route": "gb_cat_plant_miraland_02",
-      "title": "【全植物速刷】花愿镇·心愿花街（56个/210秒）"
+      "title": "【全植物速刷】小石树田村·小石树田村入口（43个/167秒）"
     },
     {
       "route": "gb_cat_plant_miraland_03",
-      "title": "【全植物速刷】微风绿野·河畔山地林间道（76个/287秒）"
+      "title": "【全植物速刷】磐城·环圃一层种植区（50个/195秒）"
     },
     {
-      "route": "gb_cat_plant_miraland_04",
-      "title": "【全植物速刷】小石树田村·村居岔路（50个/195秒）"
+      "route": "gb_cat_plant_serenity_04",
+      "title": "【全植物速刷】无忧岛·守望之地（14个/55秒）"
     },
     {
-      "route": "gb_cat_plant_serenity_05",
-      "title": "【全植物速刷】无忧岛·守望之地（15个/59秒）"
+      "route": "gb_cat_plant_miraland_05",
+      "title": "【全植物速刷】小石树田村·紫穗草花田（41个/169秒）"
     },
     {
       "route": "gb_cat_plant_miraland_06",
-      "title": "【全植物速刷】巨木之森·巨兽堡垒断桥旁（31个/124秒）"
+      "title": "【全植物速刷】小石树田村·村居岔路（39个/165秒）"
     },
     {
       "route": "gb_cat_plant_miraland_07",
-      "title": "【全植物速刷】小石树田村·小石树田村入口（54个/219秒）"
+      "title": "【全植物速刷】微风绿野·河畔山地林间道（56个/239秒）"
     },
     {
       "route": "gb_cat_plant_miraland_08",
-      "title": "【全植物速刷】埋骨地·蓝池北侧疗愈地渡口（40个/163秒）"
+      "title": "【全植物速刷】小石树田村·落石谷（32个/142秒）"
     }
   ]
 }

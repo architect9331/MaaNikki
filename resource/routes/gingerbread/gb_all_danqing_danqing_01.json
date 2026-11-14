@@ -1,65 +1,138 @@
 {
   "schema_version": 3,
   "id": "gb_all_danqing_danqing_01",
-  "title": "【全材料·丹青屿】丹青屿·栖龙峰山腰（8个/34秒）",
+  "title": "【全材料·丹青屿】丹青屿·村边畦田（27个/151秒）",
   "map": "danqing",
   "start_radius": 12,
-  "timeout": 120,
+  "timeout": 377,
   "teleport": {
-    "name": "栖龙峰山腰",
+    "name": "村边畦田",
     "province": "心愿原野",
     "region": "丹青屿",
-    "x": 1115.313,
-    "y": 388.774
+    "x": 1598.127,
+    "y": 1286.992
   },
   "material": "全材料·丹青屿",
   "count_materials": [
+    "珠链蝶",
+    "小绵菊",
     "满满果",
-    "云绒玉絮",
-    "荷包草"
+    "荷包草",
+    "玉簪蚱蜢",
+    "织衣蛛"
   ],
-  "capacity": 8,
+  "capacity": 27,
   "points": [
     {
-      "x": 1115.31,
-      "y": 388.77,
+      "x": 1598.13,
+      "y": 1286.99,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1120.31,
-      "y": 380.27,
+      "x": 1599.13,
+      "y": 1292.18,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1120.31,
-      "y": 377.27,
+      "x": 1603.13,
+      "y": 1296.18,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1123.31,
-      "y": 374.27,
+      "x": 1615.13,
+      "y": 1300.18,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1124.95,
-      "y": 369.27,
+      "x": 1619.13,
+      "y": 1296.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1623.13,
+      "y": 1292.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1643.13,
+      "y": 1280.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1647.13,
+      "y": 1280.18,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.4
+        "seconds": 7.9
+      }
+    },
+    {
+      "x": 1651.13,
+      "y": 1284.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1679.13,
+      "y": 1264.18,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 9.2
+      }
+    },
+    {
+      "x": 1707.13,
+      "y": 1240.18,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.0
+      }
+    },
+    {
+      "x": 1731.13,
+      "y": 1212.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1751.77,
+      "y": 1199.18,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
       }
     }
   ]

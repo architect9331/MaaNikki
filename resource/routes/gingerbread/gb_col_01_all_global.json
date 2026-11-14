@@ -7,27 +7,23 @@
   "routes": [
     {
       "route": "gb_all_boneyard_miraland_01",
-      "title": "【全材料·埋骨地】埋骨地·蓝池东侧修习所渡口（72个/208秒）"
+      "title": "【全材料·埋骨地】埋骨地·蓝池东侧修习所渡口（58个/135秒）"
     },
     {
       "route": "gb_all_boneyard_miraland_02",
-      "title": "【全材料·埋骨地】埋骨地·湖岸营地（34个/118秒）"
-    },
-    {
-      "route": "gb_all_stonewoods_miraland_01",
-      "title": "【全材料·小石树田村】小石树田村·落石谷（23个/92秒）"
-    },
-    {
-      "route": "gb_all_wishing_miraland_01",
-      "title": "【全材料·祈愿树林】祈愿树林·心愿研发所（15个/64秒）"
-    },
-    {
-      "route": "gb_all_danqing_danqing_01",
-      "title": "【全材料·丹青屿】丹青屿·栖龙峰山腰（8个/34秒）"
+      "title": "【全材料·埋骨地】埋骨地·大拉姆居落迎厅入口（140个/402秒）"
     },
     {
       "route": "gb_all_boneyard_miraland_03",
-      "title": "【全材料·埋骨地】埋骨地·大拉姆居落迎厅入口（83个/366秒）"
+      "title": "【全材料·埋骨地】埋骨地·龙巢山飞瀑崖顶（34个/98秒）"
+    },
+    {
+      "route": "gb_all_boneyard_miraland_04",
+      "title": "【全材料·埋骨地】埋骨地·龙埙遗所（38个/125秒）"
+    },
+    {
+      "route": "gb_all_stonewoods_miraland_01",
+      "title": "【全材料·小石树田村】小石树田村·落石谷（20个/86秒）"
     },
     {
       "route": "gb_all_serenity_serenity_01",
@@ -35,70 +31,74 @@
     },
     {
       "route": "gb_all_florawish_miraland_01",
-      "title": "【全材料·花愿镇】花愿镇·搭配师协会纪念旧址旁（10个/48秒）"
-    },
-    {
-      "route": "gb_all_stonewoods_miraland_02",
-      "title": "【全材料·小石树田村】小石树田村·小石树田村入口（7个/33秒）"
-    },
-    {
-      "route": "gb_all_boneyard_miraland_04",
-      "title": "【全材料·埋骨地】埋骨地·花涧幽谷（24个/116秒）"
-    },
-    {
-      "route": "gb_all_breezy_miraland_01",
-      "title": "【全材料·微风绿野】微风绿野·菲洛米亚女王行宫遗迹西侧树林（21个/103秒）"
-    },
-    {
-      "route": "gb_all_serenity_serenity_02",
-      "title": "【全材料·无忧岛】无忧岛·守望之地（19个/93秒）"
-    },
-    {
-      "route": "gb_all_wishing_miraland_02",
-      "title": "【全材料·祈愿树林】祈愿树林·心愿圣殿（11个/56秒）"
-    },
-    {
-      "route": "gb_all_abandoned_miraland_01",
-      "title": "【全材料·石树田无人区】石树田无人区·石碑地（5个/26秒）"
-    },
-    {
-      "route": "gb_all_wishing_miraland_03",
-      "title": "【全材料·祈愿树林】祈愿树林·守卫遗址（29个/151秒）"
+      "title": "【全材料·花愿镇】花愿镇·搭配师协会纪念旧址旁（10个/47秒）"
     },
     {
       "route": "gb_all_gianttree_miraland_01",
-      "title": "【全材料·巨木之森】巨木之森·古木荫地附近遗迹（27个/141秒）"
+      "title": "【全材料·巨木之森】巨木之森·巨人墓园（21个/104秒）"
+    },
+    {
+      "route": "gb_all_stonewoods_miraland_02",
+      "title": "【全材料·小石树田村】小石树田村·紫穗草花田（40个/199秒）"
+    },
+    {
+      "route": "gb_all_wishing_miraland_01",
+      "title": "【全材料·祈愿树林】祈愿树林·心愿圣殿（11个/56秒）"
+    },
+    {
+      "route": "gb_all_wishing_miraland_02",
+      "title": "【全材料·祈愿树林】祈愿树林·幽林山洞（10个/51秒）"
+    },
+    {
+      "route": "gb_all_abandoned_miraland_01",
+      "title": "【全材料·石树田无人区】石树田无人区·乘风磨坊中层（16个/82秒）"
+    },
+    {
+      "route": "gb_all_serenity_serenity_02",
+      "title": "【全材料·无忧岛】无忧岛·守望之地（18个/93秒）"
     },
     {
       "route": "gb_all_stonewoods_miraland_03",
       "title": "【全材料·小石树田村】小石树田村·斯切尔托老宅（15个/79秒）"
     },
     {
+      "route": "gb_all_breezy_miraland_01",
+      "title": "【全材料·微风绿野】微风绿野·遗迹山坡（21个/111秒）"
+    },
+    {
+      "route": "gb_all_wanxiang_wanxiang_01",
+      "title": "【全材料·万相境】万相境·火锅坊（15个/80秒）"
+    },
+    {
       "route": "gb_all_breezy_miraland_02",
-      "title": "【全材料·微风绿野】微风绿野·筑心王国边境哨所（13个/69秒）"
-    },
-    {
-      "route": "gb_all_wishing_miraland_04",
-      "title": "【全材料·祈愿树林】祈愿树林·幽林山洞（11个/58秒）"
-    },
-    {
-      "route": "gb_all_breezy_miraland_03",
       "title": "【全材料·微风绿野】微风绿野·绿野货运码头（12个/64秒）"
     },
     {
+      "route": "gb_all_danqing_danqing_01",
+      "title": "【全材料·丹青屿】丹青屿·村边畦田（27个/151秒）"
+    },
+    {
+      "route": "gb_all_breezy_miraland_03",
+      "title": "【全材料·微风绿野】微风绿野·废弃疯愿之子营地前哨站（11个/62秒）"
+    },
+    {
+      "route": "gb_all_wishing_miraland_03",
+      "title": "【全材料·祈愿树林】祈愿树林·守卫遗址（25个/142秒）"
+    },
+    {
+      "route": "gb_all_wishing_miraland_04",
+      "title": "【全材料·祈愿树林】祈愿树林·愿望质检中心前（19个/109秒）"
+    },
+    {
       "route": "gb_all_breezy_miraland_04",
-      "title": "【全材料·微风绿野】微风绿野·遗迹山坡（15个/81秒）"
+      "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（13个/75秒）"
     },
     {
-      "route": "gb_all_gianttree_miraland_02",
-      "title": "【全材料·巨木之森】巨木之森·巨兽堡垒断桥旁（25个/140秒）"
+      "route": "gb_all_florawish_miraland_02",
+      "title": "【全材料·花愿镇】花愿镇·镇长宅邸前（30个/173秒）"
     },
     {
-      "route": "gb_all_firework_firework_01",
-      "title": "【全材料·花焰群岛】花焰群岛·聆风高地山麓（5个/29秒）"
-    },
-    {
-      "route": "gb_all_serenity_serenity_03",
+      "route": "gb_all_serenity_serenity_04",
       "title": "【全材料·无忧岛】无忧岛·布露村村口（9个/52秒）"
     }
   ]

@@ -1,52 +1,91 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_04",
-  "title": "【全材料·埋骨地】埋骨地·花涧幽谷（24个/116秒）",
+  "title": "【全材料·埋骨地】埋骨地·龙埙遗所（38个/125秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 301,
+  "timeout": 321,
   "teleport": {
-    "name": "花涧幽谷",
+    "name": "龙埙遗所",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 6392.937,
-    "y": 5112.806
+    "x": 8586.154,
+    "y": 5376.194
   },
   "material": "全材料·埋骨地",
   "count_materials": [
-    "晴雨伞",
-    "珠链蝶",
+    "大叶鹿绒",
+    "茸芽鹿绒",
+    "金灵毛球",
+    "探险家蜜蜂",
+    "羽巾绒",
+    "小野菊",
     "风舞花",
-    "革袋甲"
+    "埙音甲",
+    "满满果"
   ],
-  "capacity": 24,
+  "capacity": 38,
   "points": [
     {
-      "x": 6392.94,
-      "y": 5112.81,
+      "x": 8586.15,
+      "y": 5376.19,
       "radius": 8.5,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 7.0
+      }
+    },
+    {
+      "x": 8594.15,
+      "y": 5384.19,
+      "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 6369.62,
-      "y": 5128.01,
+      "x": 8630.15,
+      "y": 5384.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8666.15,
+      "y": 5387.19,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 31.2
+        "seconds": 9.2
       }
     },
     {
-      "x": 6394.51,
-      "y": 5111.8,
+      "x": 8681.15,
+      "y": 5393.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8681.15,
+      "y": 5405.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8676.86,
+      "y": 5407.41,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 55.1
+        "seconds": 65.0
       }
     }
   ]
