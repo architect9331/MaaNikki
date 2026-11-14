@@ -109,6 +109,27 @@ class Gameplay:
         self.rt.log("未能确认挑战，且未确认活跃能量不足，请检查游戏画面。")
         return False
 
+    def read_dig_queue_count(self):
+        frame = self.rt.frame()
+        shape = getattr(frame, "shape", None)
+        if not isinstance(shape, tuple) or len(shape) < 2 or shape[0] < 150 or shape[1] < 1275:
+            return None
+        crop = frame[112:144, 1155:1270]
+        if getattr(crop, "size", 0) == 0:
+            return None
+        zoomed = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+        raw = self.rt.text([0, 0, zoomed.shape[1], zoomed.shape[0]], image=zoomed)
+        if not isinstance(raw, str):
+            return None
+        return re.search(r"(\d+)\s*[/／]", raw)
+
+    def _dig_choice_modal_open(self):
+        for node in ("MaaNikki_Dig_Again", "MaaNikki_Dig_GatherConfirm"):
+            res = self.rt.recognize(node)
+            if getattr(res, "hit", None) is not True:
+                return False
+        return True
+
     def dig(self):
         def steps():
             if not self.ui.find_menu_entry(node="MaaNikki_Dig_Open"):
@@ -117,25 +138,47 @@ class Gameplay:
             if not self.rt.click_template("MaaNikki_Dig_Gather", attempts=1):
                 raw = self.ui.text(self.ui.roi("AreaDigingNumText"))
                 count = re.search(r"(\d+)\s*[/／]", raw)
-                self.rt.log("仍在挖掘，本次没有可收获的奖励。" if count and int(count.group(1)) else
+                if count is None:
+                    count = self.read_dig_queue_count()
+                active = bool(count and int(count.group(1)) > 0)
+                if not active and not self.rt.stopped:
+                    self.rt.diagnostic(
+                        "dig",
+                        "empty_dig_queue" if count else "dig_status_unreadable",
+                        details={"raw": raw},
+                    )
+                self.rt.log("仍在挖掘，本次没有可收获的奖励。" if active else
                             "没有正在挖掘的目标，请在游戏中设置。" if count else "无法读取当前挖掘状态。")
-                return bool(count and int(count.group(1)) > 0)
+                return active
             repeat = (self.rt.context.get_node_data("MaaNikki_Dig_Again") or {}).get("enabled", True)
             # These buttons are mutually exclusive choices in the same dialog.
             choice = "MaaNikki_Dig_Again" if repeat else "MaaNikki_Dig_GatherConfirm"
             label = "再次挖掘" if repeat else "确认收获"
-            if not self.ui.wait_page(choice):
+            if not self.ui.wait_page(choice, stable=True):
+                if not self.rt.stopped:
+                    self.rt.diagnostic("dig", "choice_button_unconfirmed", details={"choice": choice})
                 self.rt.log(f"未确认挖掘收取界面的“{label}”按钮，本项停止。")
                 return False
             self.observe_dig_targets()
             self.rt.log(f"挖掘收取方式：{label}。", detail=True)
-            # Submit exactly one choice. Again returns directly to the dig page.
+            # Submit choice after modal reveal stabilizes. If '再次挖掘' was
+            # ignored while the modal remained open, retry once on that modal.
             if not self.rt.click_template(choice, attempts=1):
+                if not self.rt.stopped:
+                    self.rt.diagnostic("dig", "choice_click_failed", details={"choice": choice})
                 return False
             if not repeat and not self.ui.skip_reward(node="MaaNikki_Dig_SkipReward"):
+                if not self.rt.stopped:
+                    self.rt.diagnostic("dig", "reward_popup_unconfirmed")
                 self.rt.log("未确认挖掘奖励弹窗，本项未完成。")
                 return False
-            if not self.ui.wait_page("MaaNikki_Dig_PageReady"):
+            returned_dig = self.ui.wait_page("MaaNikki_Dig_PageReady")
+            if not returned_dig and repeat and not self.rt.stopped and self._dig_choice_modal_open():
+                if self.rt.pause(0.3) and self.rt.click_template(choice, attempts=1):
+                    returned_dig = self.ui.wait_page("MaaNikki_Dig_PageReady")
+            if not returned_dig:
+                if not self.rt.stopped:
+                    self.rt.diagnostic("dig", "dig_page_return_unconfirmed", details={"repeat": repeat})
                 self.rt.log("挖掘操作后未确认返回挖掘页面，本项未完成。")
                 return False
             self.rt.log("已收取奖励并再次挖掘。" if repeat else "已收取挖掘奖励。")
