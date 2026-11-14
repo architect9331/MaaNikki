@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import ctypes
 from ctypes import wintypes
 import os
 import re
+import time as wall_time
 from task_control import task_time as time
 
 from .models import GameWindowClosed, NavigationError
@@ -35,6 +37,15 @@ def send_mouse(user32, flags, *, dx=0, dy=0, data=0):
     return user32.SendInput(1, ctypes.byref(event), ctypes.sizeof(event)) == 1
 
 
+def _window_key_spec(user32, key: int):
+    scan = user32.MapVirtualKeyW(key, 4)  # MAPVK_VK_TO_VSC_EX
+    extended = (scan >> 8) in (0xE0, 0xE1)
+    flags = 1 | ((scan & 0xFF) << 16) | (int(extended) << 24)
+    # Alt uses WM_SYSKEY*, other configured keys use WM_KEY*.
+    down, up = (0x0104, 0x0105) if key in (18, 164, 165) else (0x0100, 0x0101)
+    return down, up, flags
+
+
 class ForegroundInput:
     """Bounded Maa key pulses. Stop/focus loss always releases held keys."""
     def __init__(self, controller, stopped, ready=lambda: True, bindings=None):
@@ -61,7 +72,8 @@ class ForegroundInput:
         from maa.define import MaaWin32ScreencapMethodEnum
         capture_method = info.get("screencap_method", 0)
         screen_methods = int(MaaWin32ScreencapMethodEnum.Foreground
-                             | MaaWin32ScreencapMethodEnum.DXGI_DesktopDup)
+                             | MaaWin32ScreencapMethodEnum.DXGI_DesktopDup
+                             | MaaWin32ScreencapMethodEnum.GDI)
         self.capture_requires_foreground = bool(type(capture_method) is int
                                                 and capture_method & screen_methods)
         self.user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -127,18 +139,19 @@ class ForegroundInput:
                     raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
                 time.sleep(.05)
 
+    def _post_window_key(self, key: int, *, down: bool) -> bool:
+        down_msg, up_msg, flags = _window_key_spec(self.user32, key)
+        msg = down_msg if down else up_msg
+        lparam = flags if down else (flags | 0xC0000000)
+        return bool(self.user32.PostMessageW(self.hwnd, msg, key, lparam))
+
     def click_window_key(self, key, pause, seconds=.05):
         """Post a key pulse to the connected window without global input/focus."""
         if type(key) is not int or not 0 < key < 256 or not .01 <= seconds <= 1:
             raise NavigationError("后台按键参数无效。")
         if self.stopped() or not self.user32.IsWindow(self.hwnd) or self.user32.IsIconic(self.hwnd):
             return False
-        scan = self.user32.MapVirtualKeyW(key, 4)  # MAPVK_VK_TO_VSC_EX
-        extended = (scan >> 8) in (0xE0, 0xE1)
-        flags = 1 | ((scan & 0xFF) << 16) | (int(extended) << 24)
-        # Alt uses WM_SYSKEY*, other configured keys use WM_KEY*.
-        down, up = (0x0104, 0x0105) if key in (18, 164, 165) else (0x0100, 0x0101)
-        if not self.user32.PostMessageW(self.hwnd, down, key, flags):
+        if not self._post_window_key(key, down=True):
             raise NavigationError(f"无法向游戏窗口发送后台按键（错误 {ctypes.get_last_error()}）。")
         try:
             return pause(seconds)
@@ -146,7 +159,7 @@ class ForegroundInput:
             # Even Stop during the pulse must enqueue the matching window-only up.
             # Never use global key_up here: it could affect the user's active app.
             if self.user32.IsWindow(self.hwnd):
-                if not self.user32.PostMessageW(self.hwnd, up, key, flags | 0xC0000000):
+                if not self._post_window_key(key, down=False):
                     raise NavigationError(f"无法释放游戏窗口的后台按键（错误 {ctypes.get_last_error()}）。")
 
     @property
@@ -254,12 +267,12 @@ class ForegroundInput:
         self.user32.mouse_event({0: 0x0004, 1: 0x0010, 2: 0x0040, 3: 0x0100, 4: 0x0100}[button],
                                 0, 0, button-2 if button >= 3 else 0, 0)
 
-    def hold(self, key, seconds):
+    def hold(self, key, seconds, *, restore=True):
         """Press any registered game action, for route-authored key steps."""
         binding = self.bindings.get(key)
-        self._down(binding)
+        self._down(binding, restore=restore)
         try:
-            self.wait(seconds)
+            self.wait(seconds, restore=restore)
         finally:
             self._up(binding)
 
@@ -269,7 +282,7 @@ class ForegroundInput:
         self.check()
         self._down(self.bindings.get(key))
 
-    def _down(self, binding):
+    def _down(self, binding, *, restore=True):
         self.check()
         if binding.kind == "key" and binding.code in self.held:
             return
@@ -344,6 +357,201 @@ class ForegroundInput:
                 for button in buttons:
                     self.mouse_down(button)
             time.sleep(min(.05, max(0, deadline-time.monotonic())))
+
+
+class BackgroundInput(ForegroundInput):
+    """Window-targeted PostMessage input; pauses on minimize or uncapturable windows."""
+
+    window_only = True
+
+    def __init__(self, controller, stopped, ready=lambda: True, bindings=None):
+        super().__init__(controller, stopped, ready=ready, bindings=bindings)
+        self._restore_keys = set()
+        self._synced_generation = self.generation
+        self.user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+        self.user32.GetClientRect.restype = wintypes.BOOL
+        self.user32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
+        self.user32.ClientToScreen.restype = wintypes.BOOL
+        self.user32.GetCursorPos.argtypes = [ctypes.POINTER(wintypes.POINT)]
+        self.user32.GetCursorPos.restype = wintypes.BOOL
+        self.user32.SetCursorPos.argtypes = [ctypes.c_int, ctypes.c_int]
+        self.user32.SetCursorPos.restype = wintypes.BOOL
+        try:
+            self.user32.SetThreadDpiAwarenessContext.argtypes = [wintypes.HANDLE]
+            self.user32.SetThreadDpiAwarenessContext.restype = wintypes.HANDLE
+        except Exception:
+            pass
+
+    @contextmanager
+    def _per_monitor_dpi(self):
+        prev = None
+        try:
+            prev = self.user32.SetThreadDpiAwarenessContext(ctypes.c_void_p(-4))
+        except Exception:
+            prev = None
+        try:
+            yield
+        finally:
+            if prev:
+                try:
+                    self.user32.SetThreadDpiAwarenessContext(prev)
+                except Exception:
+                    pass
+
+    def capturable(self):
+        return bool(
+            self.user32.IsWindow(self.hwnd)
+            and not self.user32.IsIconic(self.hwnd)
+            and (not self.capture_requires_foreground or self.foreground())
+        )
+
+    def check(self, *, require_foreground=False):
+        if self.stopped():
+            raise NavigationError("已停止导航。")
+        from task_control import active_session
+        session = active_session()
+        if session is not None:
+            session.wait(self, require_foreground=require_foreground, require_capturable=True)
+        else:
+            ready = self.foreground if require_foreground else self.capturable
+            if not ready():
+                self.release()
+                while not ready():
+                    if self.stopped():
+                        raise NavigationError("任务已停止。")
+                    if not self.user32.IsWindow(self.hwnd):
+                        raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
+                    time.sleep(.05)
+        if not require_foreground:
+            self._restore_active_keys()
+
+    def _restore_active_keys(self):
+        if not self._restore_keys or self.generation == self._synced_generation:
+            return
+        self._synced_generation = self.generation
+        # Give UnrealWindow a moment to drain focus-transition state resets
+        # before re-posting sustained movement keys.
+        wall_time.sleep(.05)
+        if self.stopped() or not self.capturable():
+            return
+        for key in list(self._restore_keys):
+            if not self._post_window_key(key, down=True):
+                raise NavigationError(f"恢复游戏窗口后台按键失败（错误 {ctypes.get_last_error()}）。")
+
+    def release_key(self, key):
+        self._restore_keys.discard(key)
+        if key not in self.held:
+            return
+        try:
+            if self.user32.IsWindow(self.hwnd):
+                if not self._post_window_key(key, down=False) and self.user32.IsWindow(self.hwnd):
+                    raise NavigationError(f"无法释放游戏窗口的后台按键（错误 {ctypes.get_last_error()}）。")
+        finally:
+            self.held.discard(key)
+
+    def _down(self, binding, *, restore=True):
+        if binding.kind == "mouse":
+            self.check(require_foreground=True)
+            if binding.code not in self.buttons:
+                self.mouse_down(binding.code)
+            return
+        self.check()
+        if binding.code in self.held:
+            if restore:
+                self._restore_keys.add(binding.code)
+            return
+        self._synced_generation = self.generation
+        self.held.add(binding.code)
+        if restore:
+            self._restore_keys.add(binding.code)
+        if not self._post_window_key(binding.code, down=True):
+            raise NavigationError(f"无法向游戏窗口发送后台按键（错误 {ctypes.get_last_error()}）。")
+
+    def _up(self, binding):
+        if binding.kind == "mouse":
+            if binding.code in self.buttons:
+                self.release_mouse(binding.code)
+            return
+        self.release_key(binding.code)
+
+    def mouse_down(self, button=0):
+        if button not in (0, 1, 2, 3, 4):
+            raise NavigationError("鼠标按键未登记。")
+        self.check(require_foreground=True)
+        self.buttons.add(button)
+        flags = {0: 0x0002, 1: 0x0008, 2: 0x0020, 3: 0x0080, 4: 0x0080}[button]
+        if not send_mouse(self.user32, flags, data=button-2 if button >= 3 else 0):
+            raise NavigationError("鼠标动作输入失败。")
+
+    def _window_point_coords(self, x, y):
+        if type(x) not in (int, float) or type(y) not in (int, float) or not self.user32.IsWindow(self.hwnd):
+            return None
+        with self._per_monitor_dpi():
+            rc = wintypes.RECT()
+            if not self.user32.GetClientRect(self.hwnd, ctypes.byref(rc)):
+                return None
+            width, height = rc.right - rc.left, rc.bottom - rc.top
+            if width <= 0 or height <= 0:
+                return None
+            cx = max(0, min(width - 1, round(x * width / 1280)))
+            cy = max(0, min(height - 1, round(y * height / 720)))
+            pt = wintypes.POINT(cx, cy)
+            if not self.user32.ClientToScreen(self.hwnd, ctypes.byref(pt)):
+                return None
+            lparam = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
+            return lparam, int(pt.x), int(pt.y)
+
+    def move_window_point(self, x, y):
+        """Post a client-relative WM_MOUSEMOVE without moving the physical cursor."""
+        if not self.capturable() or self.stopped():
+            return False
+        coords = self._window_point_coords(x, y)
+        if coords is None:
+            return False
+        lparam, _, _ = coords
+        if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lparam):
+            raise NavigationError(f"无法向游戏窗口发送后台鼠标移动（错误 {ctypes.get_last_error()}）。")
+        return True
+
+    def click_window_point(self, x, y, pause, *, with_cursor_pos=False):
+        """Post a client-relative left click to the bound window; optionally sync cursor briefly."""
+        if not self.capturable() or self.stopped():
+            return False
+        coords = self._window_point_coords(x, y)
+        if coords is None:
+            return False
+        lparam, screen_x, screen_y = coords
+        saved = wintypes.POINT()
+        restore_cursor = False
+        if with_cursor_pos:
+            with self._per_monitor_dpi():
+                restore_cursor = bool(self.user32.GetCursorPos(ctypes.byref(saved)))
+                self.user32.SetCursorPos(screen_x, screen_y)
+        try:
+            if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lparam):
+                raise NavigationError(f"无法向游戏窗口发送后台鼠标移动（错误 {ctypes.get_last_error()}）。")
+            if with_cursor_pos:
+                wall_time.sleep(.02)
+            if not self.user32.PostMessageW(self.hwnd, 0x0201, 0x0001, lparam):
+                raise NavigationError(f"无法向游戏窗口发送后台鼠标点击（错误 {ctypes.get_last_error()}）。")
+            try:
+                if with_cursor_pos:
+                    wall_time.sleep(.05)
+                    pressed = not self.stopped()
+                else:
+                    pressed = pause(.05)
+            finally:
+                if self.user32.IsWindow(self.hwnd):
+                    if not self.user32.PostMessageW(self.hwnd, 0x0202, 0, lparam):
+                        raise NavigationError(f"无法释放游戏窗口的后台鼠标点击（错误 {ctypes.get_last_error()}）。")
+            if with_cursor_pos:
+                wall_time.sleep(.03)
+                return pressed and not self.stopped()
+            return pressed
+        finally:
+            if restore_cursor:
+                with self._per_monitor_dpi():
+                    self.user32.SetCursorPos(saved.x, saved.y)
 
 
 def relative_camera(controller, dx: int, dy: int) -> bool:

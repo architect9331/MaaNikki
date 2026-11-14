@@ -50,7 +50,8 @@
     "custom_action_param": {
       "rounds": 267,
       "navigate": true,
-      "route": "minigame_shuttle_adventure"
+      "route": "minigame_shuttle_adventure",
+      "background": true
     },
     "post_delay": 0,
     "next": []

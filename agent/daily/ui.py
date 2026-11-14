@@ -176,6 +176,9 @@ class GameUI:
         self.rt.invalidate_frame()
         if main:
             return True
+        nav_inputs = self.rt.navigation_inputs
+        if getattr(nav_inputs, "window_only", False) and not nav_inputs.foreground():
+            return nav_inputs.move_window_point(0, 0)
         return self.rt.controller.post_touch_move(0, 0).wait().succeeded
 
     def text(self, roi, image=None, color=None):

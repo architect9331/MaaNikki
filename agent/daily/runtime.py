@@ -141,6 +141,17 @@ class Runtime:
         return self.evidence.save(stage, reason, image=image, details=details,
                                   generation=self._focus_generation)
 
+    @staticmethod
+    def _target_point(target, label):
+        if not isinstance(target, (list, tuple)) or len(target) not in (2, 4):
+            raise ValueError(f"{label}必须是坐标或矩形。")
+        point = list(target[:2])
+        if len(target) == 4:
+            point = [target[0]+target[2]/2, target[1]+target[3]/2]
+        if any(type(value) not in (int, float) or not math.isfinite(value) for value in point):
+            raise ValueError(f"{label}无效。")
+        return [round(value) for value in point]
+
     def action(self, action, *, ui_click=True, focus_generation=None, **fields):
         if self.stopped:
             return False
@@ -156,6 +167,8 @@ class Runtime:
             if name in {"target", "begin", "end", "key", "duration", "dx", "dy"}})
         if self.navigation_inputs:
             self.navigation_inputs.check()
+        window_only = bool(getattr(self.navigation_inputs, "window_only", False))
+        window_cursor_pos = bool(fields.pop("window_cursor_pos", False))
         if action in {"KeyDown", "KeyUp"}:
             session = active_session()
             if session is not None:
@@ -166,16 +179,15 @@ class Runtime:
                 else:
                     inputs._up(Binding("key", fields["key"]))
                 return True
+        if action == "ClickKey" and window_only:
+            with measure("input.action"):
+                return bool(self.navigation_inputs.click_window_key(fields["key"], self.pause))
+        if action == "TouchMove" and window_only and not self.navigation_inputs.foreground():
+            point = self._target_point(fields.get("target"), "界面移动坐标")
+            with measure("input.action"):
+                return bool(self.navigation_inputs.move_window_point(point[0], point[1]))
         if action == "Click" and ui_click:
-            target = fields.get("target")
-            if not isinstance(target, (list, tuple)) or len(target) not in (2, 4):
-                raise ValueError("界面点击目标必须是坐标或矩形。")
-            point = list(target[:2])
-            if len(target) == 4:
-                point = [target[0]+target[2]/2, target[1]+target[3]/2]
-            if any(type(value) not in (int, float) or not math.isfinite(value) for value in point):
-                raise ValueError("界面点击坐标无效。")
-            point = [round(value) for value in point]
+            point = self._target_point(fields.get("target"), "界面点击目标")
             # Maa's rectangular Click target is random inside the box. UI
             # icons can have dead edges, and Seize must settle after moving.
             if (not self.action("TouchMove", target=point, focus_generation=focus_generation)
@@ -187,6 +199,17 @@ class Runtime:
             if self._focus_generation != focus_generation:
                 from task_control import ForegroundChanged
                 raise ForegroundChanged("前台切换后已取消本次输入，等待重新核对")
+        if action == "Click" and window_only and not self.navigation_inputs.foreground():
+            point = self._target_point(fields.get("target"), "界面点击目标")
+            with measure("input.action"):
+                succeeded = bool(self.navigation_inputs.click_window_point(
+                    point[0], point[1], self.pause, with_cursor_pos=window_cursor_pos))
+            if succeeded and ui_click:
+                return self.pause(.1) and self.ui.unhover()
+            return succeeded
+        if window_only and not self.navigation_inputs.foreground():
+            # Never dispatch fallback Seize actions when the game is unfocused.
+            self.navigation_inputs.check(require_foreground=True)
         with measure("input.action"):
             result = self.context.run_action("MaaNikki_Daily_Action", pipeline_override={
                 "MaaNikki_Daily_Action": {"action": action, **fields}})
@@ -318,6 +341,10 @@ class Runtime:
                 count("capture.discarded")
                 continue
             if image is None or image.size == 0:
+                if (getattr(self.navigation_inputs, "window_only", False)
+                        and not self.navigation_inputs.capturable()):
+                    self.navigation_inputs.check()
+                    continue
                 count("capture.failed")
                 return None
             if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES or is_clipped_game_frame(image):

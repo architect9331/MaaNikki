@@ -193,7 +193,51 @@ class ForegroundSession:
             self._observed_foreground = None
             self.generation += 1
 
-    def wait(self, adapter=None, *, require_foreground=False):
+    def _wait_until(self, adapter, ready, pause_message, resume_message, *, check_hung, bring_back):
+        if self.stopped():
+            raise TaskStopped("任务已停止。")
+        begin = wall_time.monotonic()
+        self.waiting = True
+        try:
+            for inputs in list(self.inputs):
+                inputs.release()
+            self.notify(pause_message)
+            stable_since = None
+            refocused_at = None
+            hung_since = None
+            while True:
+                if self.stopped() or adapter.stopped():
+                    raise TaskStopped("任务已停止。")
+                if not adapter.user32.IsWindow(adapter.hwnd):
+                    self.window_closed()
+                now = wall_time.monotonic()
+                if check_hung and adapter.hung():
+                    hung_since = now if hung_since is None else hung_since
+                    if now-hung_since >= HUNG_WINDOW_TIMEOUT:
+                        self.window_hung()
+                else:
+                    hung_since = None
+                if ready() and (not check_hung or hung_since is None):
+                    stable_since = now if stable_since is None else stable_since
+                    if now-stable_since >= .15:
+                        break
+                else:
+                    stable_since = None
+                    # Spaced out so a user alt-tabbing away can still reach the stop button.
+                    if (bring_back and hung_since is None
+                            and (refocused_at is None or now-refocused_at >= REFOCUS_INTERVAL)):
+                        refocused_at = now
+                        adapter.controller.post_key_up(18).wait()
+                wall_time.sleep(.05)
+            self.generation += 1
+            if self._background_observation:
+                self._observed_foreground = adapter.foreground()
+            self.notify(resume_message)
+        finally:
+            self.paused_seconds += wall_time.monotonic()-begin
+            self.waiting = False
+
+    def wait(self, adapter=None, *, require_foreground=False, require_capturable=False):
         if self.waiting:
             return
         if adapter is None:
@@ -214,12 +258,31 @@ class ForegroundSession:
         if self._background_observation and not require_foreground:
             if self.stopped():
                 raise TaskStopped("任务已停止。")
+            window_only = bool(getattr(adapter, "window_only", False))
             foreground = adapter.foreground()
             if self._observed_foreground is not None and foreground != self._observed_foreground:
                 for inputs in list(self.inputs):
-                    inputs.release()
+                    # Keep window-targeted movement keys held across focus switches
+                    # when the window remains capturable; release physical inputs.
+                    if not (getattr(inputs, "window_only", False) and inputs.capturable()):
+                        inputs.release()
                 self.generation += 1
             self._observed_foreground = foreground
+            if not (require_capturable or window_only) or adapter.capturable():
+                return
+            pause_message = (
+                "游戏窗口已最小化，任务暂停；恢复窗口后自动继续。"
+                if adapter.user32.IsIconic(adapter.hwnd)
+                else "游戏已离开前台且当前截图方式需要前台画面，任务暂停；切回无限暖暖后自动继续。"
+            )
+            self._wait_until(
+                adapter,
+                adapter.capturable,
+                pause_message,
+                "游戏窗口已恢复，任务继续。",
+                check_hung=False,
+                bring_back=False,
+            )
             return
         if not self._background_observation and adapter.hung():
             hung_begin = wall_time.monotonic()
@@ -241,48 +304,16 @@ class ForegroundSession:
                 self.waiting = False
         if adapter.foreground():
             return
-        if self.stopped():
-            raise TaskStopped("任务已停止。")
-        begin = wall_time.monotonic()
-        self.waiting = True
-        try:
-            for inputs in list(self.inputs):
-                inputs.release()
-            bring_back = not self._background_observation and self._returns_to_game()
-            self.notify("游戏已离开前台，正在切回游戏继续运行。" if bring_back
-                        else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。")
-            stable_since = None
-            refocused_at = None
-            hung_since = None
-            while True:
-                if self.stopped() or adapter.stopped():
-                    raise TaskStopped("任务已停止。")
-                if not adapter.user32.IsWindow(adapter.hwnd):
-                    self.window_closed()
-                now = wall_time.monotonic()
-                if not self._background_observation and adapter.hung():
-                    hung_since = now if hung_since is None else hung_since
-                    if now-hung_since >= HUNG_WINDOW_TIMEOUT:
-                        self.window_hung()
-                else:
-                    hung_since = None
-                if adapter.foreground() and not adapter.hung():
-                    stable_since = now if stable_since is None else stable_since
-                    if now-stable_since >= .15:
-                        break
-                else:
-                    stable_since = None
-                    # Spaced out so a user alt-tabbing away can still reach the stop button.
-                    if (bring_back and hung_since is None
-                            and (refocused_at is None or now-refocused_at >= REFOCUS_INTERVAL)):
-                        refocused_at = now
-                        adapter.controller.post_key_up(18).wait()
-                wall_time.sleep(.05)
-            self.generation += 1
-            self.notify("游戏已回到前台，任务继续。")
-        finally:
-            self.paused_seconds += wall_time.monotonic()-begin
-            self.waiting = False
+        bring_back = not self._background_observation and self._returns_to_game()
+        self._wait_until(
+            adapter,
+            lambda: adapter.foreground() and not adapter.hung(),
+            ("游戏已离开前台，正在切回游戏继续运行。"
+             if bring_back else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。"),
+            "游戏已回到前台，任务继续。",
+            check_hung=not self._background_observation,
+            bring_back=bring_back,
+        )
 
 
 @contextmanager

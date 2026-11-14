@@ -7,7 +7,7 @@
       "group": ["daily", "periodic"],
       "default_check": false,
       "description": "前往花愿镇心愿花街左上方「穿梭大冒险」小游戏，自动对话与操控自行车完成挑战并连续再次挑战，稳定拿满每日 16 万大世界噗灵上限。",
-      "option": ["MinigameBlingTarget", "MinigameBlingStartMode"]
+      "option": ["MinigameBlingTarget", "MinigameBlingStartMode", "MinigameBlingBackground"]
     }
   ],
   "option": {
@@ -98,6 +98,36 @@
             "MaaNikki_MinigameBling": {
               "custom_action_param": {
                 "navigate": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MinigameBlingBackground": {
+      "type": "switch",
+      "label": "挑战阶段后台运行",
+      "default_case": "Yes",
+      "description": "开启后，到达 NPC 并进入对话、挑战与结算阶段时改为向游戏窗口直接发送按键与点击，切出游戏不会自动暂停或强行切回前台（需保持窗口不最小化，并使用 FramePool 等支持后台截图的方式；初始寻路跑图仍在前台执行）。关闭则全程要求游戏保持前台。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "background": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "background": false
               }
             }
           }
