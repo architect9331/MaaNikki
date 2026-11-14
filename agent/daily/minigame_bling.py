@@ -267,7 +267,7 @@ class MinigameBlingRun(Runtime):
         try:
             inputs._down(fwd)
             inputs.wait(4.5)
-            for hold_d, wait_after in ((1.2, 0.65), (1.1, 1.1), (0.5, 0.3), (0.9, 2.0)):
+            for hold_d, wait_after in ((1.2, 0.65), (1.1, 1.1), (0.5, 3.2)):
                 if self.stopped:
                     return False
                 inputs._down(right)
