@@ -225,17 +225,23 @@ class WardrobeScanner(InventoryScanner):
         if not self.rt.click_text("^重置$", FILTER_RESET_ROI):
             self.rt.action("Click", target=FILTER_RESET)
         self.rt.pause(.35)
-        frame = self.rt.capture()
-        if not self.rt.hit("MaaNikki_CompendiumFilterReady", image=frame):
-            if not self.rt.ui.enter_page(
-                lambda: self.rt.action("Click", target=FILTER_BUTTON),
-                "MaaNikki_CompendiumFilterReady",
-                source="MaaNikki_CompendiumSearchReady",
-                attempts=2,
-            ):
-                raise RuntimeError("重置筛选后未能重新打开筛选面板")
+        owned_selected = False
+        for _ in range(3):
+            frame = self.rt.capture()
+            if not self.rt.hit("MaaNikki_CompendiumFilterReady", image=frame):
+                if not self.rt.ui.enter_page(
+                    lambda: self.rt.action("Click", target=FILTER_BUTTON),
+                    "MaaNikki_CompendiumFilterReady",
+                    source="MaaNikki_CompendiumSearchReady",
+                    attempts=2,
+                ):
+                    raise RuntimeError("重置筛选后未能重新打开筛选面板")
+                self.rt.pause(.25)
+            if self.rt.click_text("^已获得$", FILTER_ACQUIRE_ROI):
+                owned_selected = True
+                break
             self.rt.pause(.25)
-        if not self.rt.click_text("^已获得$", FILTER_ACQUIRE_ROI):
+        if not owned_selected:
             raise RuntimeError("筛选面板未找到“已获得”选项")
         self.rt.pause(.2)
         if not self.rt.click_text("^筛选$", FILTER_CONFIRM_ROI):

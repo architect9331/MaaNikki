@@ -383,7 +383,13 @@ class Runtime:
 
     def click_text(self, words, roi=None):
         fields = {"expected": words, "roi": roi or [0, 0, 1280, 720]}
-        result = self.recognize("MaaNikki_Daily_OCR", fields)
+        result = None
+        for _ in range(2):
+            before = self._focus_generation
+            result = self.recognize("MaaNikki_Daily_OCR", fields)
+            if result is not None or self.stopped or self._focus_generation == before:
+                break
+            self.invalidate_frame()
         return bool(result and result.hit and self.ui.click_box(list(result.box)) and self.pause(0.5))
 
     def click_template(self, node, attempts=3, wait_seconds=None, *, ready=None, verify=True):
@@ -1297,6 +1303,7 @@ class Executors(Runtime):
         result = self.recognize(count_node)
         raw = getattr(result.best_result, "text", "") if result and result.hit else ""
         if not re.fullmatch(r"\s*\d+\s*", raw):
+            self.diagnostic("realm_amount", "无法读取激化投入数量", details={"kind": kind, "raw": raw})
             self.log("无法读取挑战数量，请补充数量弹窗截图；本次未确认消耗。")
             return False
         current = int(raw)
@@ -1307,6 +1314,7 @@ class Executors(Runtime):
             text = self.text([400, 215, 470, 215])
             match = re.search(r"(?:消耗|投入|注入)\D{0,8}(\d+)\s*(?:点|活跃能量)", text)
             if not match or int(match.group(1)) <= 0 or int(match.group(1)) % current:
+                self.diagnostic("realm_amount", "无法读取激化活跃能量消耗", details={"kind": kind, "text": text})
                 self.log("无法读取本次活跃能量消耗，不自动调整挑战次数。")
                 return False
             desired = math.ceil(minimum_energy / (int(match.group(1)) // current))
@@ -1325,6 +1333,11 @@ class Executors(Runtime):
                 return False
             adjusted = self.recognize(count_node)
             if not adjusted or not adjusted.hit or getattr(adjusted.best_result, "text", "").strip() != str(desired):
+                self.diagnostic(
+                    "realm_amount",
+                    "激化数量未能设置为目标值",
+                    details={"kind": kind, "desired": desired},
+                )
                 self.log("挑战数量未能设置为要求值，取消本项。")
                 return False
         self.log(f"已确认本次挑战数量：{desired} 次。")
