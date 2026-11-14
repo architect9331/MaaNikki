@@ -51,42 +51,42 @@
     {
       "x": 823.281,
       "y": 1013.39,
-      "radius": 0.4,
+      "radius": 0.55,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 820.825,
       "y": 989.625,
-      "radius": 0.4,
+      "radius": 0.55,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 812.125,
       "y": 970.8,
-      "radius": 0.4,
+      "radius": 0.55,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 817.675,
       "y": 962.8,
-      "radius": 0.4,
+      "radius": 0.55,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 830.025,
       "y": 956.375,
-      "radius": 0.4,
+      "radius": 0.55,
       "jump": false,
       "action": "bottle"
     },
     {
       "x": 844.38,
       "y": 952.021,
-      "radius": 0.4,
+      "radius": 0.55,
       "jump": false,
       "action": "bottle"
     }

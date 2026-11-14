@@ -230,7 +230,7 @@ def summarize_route_telemetry(
                     last_pose = (float(after_stop[0]), float(after_stop[1]))
                 settled = ev.get("settled", True)
                 rem = ev.get("remaining", 0.0)
-                rad = ev.get("radius", points[current_idx].radius)
+                rad = ev.get("accept_radius", ev.get("radius", points[current_idx].radius))
                 if not settled or (isinstance(rem, (int, float)) and isinstance(rad, (int, float)) and rem > rad):
                     state["overshoot_retries"] += 1
 

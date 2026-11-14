@@ -1316,24 +1316,41 @@ class Navigator:
                     heading_rechecks = 0
                     if precise:
                         arrival_pose = pose
-                        broad_wait = (
+                        is_wait = (
                             rejoin is None
                             and target.action == "wait"
-                            and radius >= 2.8
                             and not (target.params or {}).get("compare_map_positions")
                         )
-                        accept_radius = radius + 1.1 if broad_wait else radius
+                        broad_wait = is_wait and radius >= 2.8
+                        accept_radius = (
+                            radius + 1.1 if broad_wait
+                            else (radius + 0.25 if is_wait else radius)
+                        )
                         motion.stop()
                         motion.jump(False, self.walking(), reason="waypoint_arrival")
-                        self.pause(.12)
-                        confirmed = self.observe((pose.x, pose.y))
-                        settle_tol = 1.0 if broad_wait else max(.15, min(.4, radius*.25))
-                        settled = distance(pose, confirmed) <= settle_tol
+                        settle_tol = (
+                            1.0 if broad_wait
+                            else (0.8 if is_wait else max(.15, min(.4, radius*.25)))
+                        )
+                        # Wait up to ~0.36s while still inside accept_radius so normal
+                        # deceleration does not emit false turnbacks mid-brake.
+                        prev_pose = pose
+                        for _ in range(3):
+                            self.pause(.12)
+                            confirmed = self.observe((prev_pose.x, prev_pose.y))
+                            step_drift = distance(prev_pose, confirmed)
+                            settled = step_drift <= settle_tol
+                            if (confirmed.heading is None or distance(confirmed, target) > accept_radius
+                                    or settled or getattr(self.inputs, "generation", 0) != generation):
+                                break
+                            prev_pose = confirmed
                         self.event({"type": "arrival_check", "index": index,
                                     "target": [target.x, target.y], "radius": radius,
+                                    "accept_radius": accept_radius,
                                     "before_stop": [arrival_pose.x, arrival_pose.y],
                                     "after_stop": [confirmed.x, confirmed.y],
-                                    "drift": distance(arrival_pose, confirmed), "settled": settled,
+                                    "drift": distance(arrival_pose, confirmed),
+                                    "step_drift": step_drift, "settled": settled,
                                     "remaining": distance(confirmed, target), "stop": motion.last_stop})
                         pose = confirmed
                         last = None
