@@ -57,24 +57,19 @@ class Exploration(Runtime):
             return False
         guard = ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
         binding = self.game_keys.get("interact")
-        clear_use_key = False
-        background_capable = (
-            not guard.capture_requires_foreground
-            and binding.kind == "key"
-            and (enabled["Pickup"] or enabled["Dialogue"] or clear_use_key and enabled["Clear"])
-        )
         self.log("辅助功能已启动：当前使用前台截图，切出游戏或最小化后暂停。"
                  if guard.capture_requires_foreground else
-                 "辅助功能已启动：键盘交互支持切出游戏后继续拾取和对白；清洁跳过、鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
+                 "辅助功能已启动：键盘交互支持切出游戏后继续拾取、对白和跳过；鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
         schedule = AssistSchedule(enabled, now=time.monotonic())
-        clear_stage, clear_clicked_at = 0, 0.0
+        waiting_clear = False
         previous_mode = None
         map_mask = None
 
         def available():
             return (not self.stopped and guard.user32.IsWindow(guard.hwnd)
                     and not guard.user32.IsIconic(guard.hwnd)
-                    and (guard.foreground() or background_capable))
+                    and (not guard.capture_requires_foreground or guard.foreground())
+                    and (binding.kind == "key" or guard.foreground()))
 
         @measure("input.assist")
         def press():
@@ -103,23 +98,6 @@ class Exploration(Runtime):
             except NavigationError:
                 # The resident helper pauses on focus loss, including loss
                 # during the short pulse; click_mouse has already released it.
-                if not available() or not guard.foreground():
-                    return False
-                raise
-
-        @measure("input.assist_clear")
-        def click_clear():
-            if clear_use_key:
-                return press()
-            session = active_session()
-            if session and session.stopped(fresh=True):
-                return False
-            if not available() or not guard.foreground():
-                return False
-            self.invalidate_frame()
-            try:
-                return guard.click_mouse(0)
-            except NavigationError:
                 if not available() or not guard.foreground():
                     return False
                 raise
@@ -153,7 +131,7 @@ class Exploration(Runtime):
                 foreground = guard.foreground()
                 mode = ("minimized" if guard.user32.IsIconic(guard.hwnd) else
                         "foreground" if foreground else
-                        "background" if background_capable
+                        "background" if binding.kind == "key" and not guard.capture_requires_foreground
                         else "paused")
                 if mode != previous_mode:
                     self.log({"foreground": "辅助功能在游戏前台运行，键盘交互使用 PostMessage。",
@@ -161,7 +139,7 @@ class Exploration(Runtime):
                               "minimized": "游戏已最小化，辅助功能暂停识别和输入。",
                               "paused": ("当前使用前台截图，切出游戏后辅助功能暂停；切回后继续。"
                                          if guard.capture_requires_foreground else
-                                         "当前开启的辅助项需要鼠标或前台执行，切出游戏后暂停；切回后继续。")}[mode],
+                                         "交互键设置为鼠标按键，切出游戏后暂停；切回后继续。")}[mode],
                              # Alt-tabbing changes the mode constantly; the startup message explains it.
                              detail=True)
                     previous_mode = mode
@@ -172,7 +150,7 @@ class Exploration(Runtime):
                     continue
                 # A single async Maa capture overlaps the last part of the idle
                 # period. Inputs always finish before posting the next capture.
-                deadline = schedule.deadline(["Clear"] if clear_stage else None)
+                deadline = schedule.deadline(["Clear"] if waiting_clear else None)
                 frame = self.capture_at(deadline, available=available)
                 if frame is None:
                     self.pause(.1)
@@ -197,21 +175,10 @@ class Exploration(Runtime):
                 now = time.monotonic()
                 if "MapMask" in schedule.next_check and now+.01 >= schedule.next_check["MapMask"]:
                     schedule.checked("MapMask", now)
-                if clear_stage and not clear_use_key and not guard.foreground():
-                    clear_stage = 0
-                if clear_stage:
-                    checked_at = time.monotonic()
+                if waiting_clear:
                     if not found("IconSkip", frame):
-                        clear_stage = 0
-                        schedule.checked("Clear", checked_at)
-                    elif clear_stage == 1 and checked_at - clear_clicked_at >= 1.0:
-                        clear_stage = 2
-                        acted = bool(available() and press())
-                        if acted:
-                            count("assist.Clear")
-                        schedule.checked("Clear", time.monotonic(), acted=acted)
-                    else:
-                        schedule.checked("Clear", checked_at)
+                        waiting_clear = False
+                    schedule.checked("Clear", time.monotonic())
                     continue
                 icons = {"Clear": "IconSkip", "Dialogue": "IconSkipDialog", "Pickup": "IconPickupFeature"}
                 # Share one frame with checks due within 10 ms; keep feature
@@ -249,20 +216,14 @@ class Exploration(Runtime):
                                 guard.release()
                                 schedule.checked(helper, time.monotonic(), acted=True)
                         break
-                    if helper == "Clear" and not clear_use_key and not guard.foreground():
-                        schedule.checked(helper, time.monotonic())
-                        continue
                     matched = found(icons[helper], frame)
                     schedule.checked(helper, time.monotonic())
                     if not matched:
                         continue
-                    if available() and (click_clear() if helper == "Clear" else press()):
+                    if available() and press():
                         count("assist."+helper)
-                        acted_at = time.monotonic()
-                        schedule.checked(helper, acted_at, acted=True)
-                        if helper == "Clear":
-                            clear_stage = 2 if clear_use_key else 1
-                            clear_clicked_at = acted_at
+                        schedule.checked(helper, time.monotonic(), acted=True)
+                        waiting_clear = helper == "Clear"
                     # Submit at most one input for this frame, even on failure.
                     # Skips/dialogue precede pickup when multiple features match.
                     break

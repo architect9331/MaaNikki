@@ -90,6 +90,9 @@ class GameKeys:
     def get(self, name):
         if name not in DEFAULTS:
             raise ValueError("未登记的游戏动作。")
+        if name == "skip" and "skip" not in self.values:
+            # The game has no separate skip row; skip and reward-continue prompts follow interact.
+            return self.get("interact")
         if name not in self.cache:
             value = self.values.get(name, DEFAULTS[name][0])
             if name in FIXED:

@@ -216,6 +216,13 @@ function migrateGameKeyGroups(values: Record<string, OptionValue>): Record<strin
       next[to] = { ...(target?.type === 'input' ? target : { type: 'input' as const }), values: { ...targetValues, [name]: moved } };
     }
   }
+  const actions = next.GameKeysActions;
+  if (actions?.type === 'input' && 'skip' in actions.values) {
+    const rest = { ...actions.values };
+    delete rest.skip;
+    if (next === values) next = { ...values };
+    next.GameKeysActions = { ...actions, values: rest };
+  }
   return next;
 }
 

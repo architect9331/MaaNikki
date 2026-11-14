@@ -274,7 +274,8 @@ class FiveStarInventory(BlessingLocker):
         """Leave recognised operation pages without submitting more materials."""
         upgrade = UpgradeUI(self)
         if self.rt.hit(RESULT):
-            if not upgrade.dismiss_result():
+            if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), upgrade.upgrade_ready,
+                                         source=RESULT, attempts=3):
                 return False
         if upgrade.upgrade_ready():
             return self.rt.ui.enter_page(lambda: self.rt.key(27, 0), READY,

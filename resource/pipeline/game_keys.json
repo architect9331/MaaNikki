@@ -223,14 +223,6 @@
     },
     "custom_action": "nikki.daily_config"
   },
-  "MaaNikki_Key_skip": {
-    "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action_param": {
-      "value": "F"
-    },
-    "custom_action": "nikki.daily_config"
-  },
   "MaaNikki_Key_exit": {
     "recognition": "DirectHit",
     "action": "Custom",

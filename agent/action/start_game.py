@@ -182,7 +182,6 @@ class StartGameAction(CustomAction):
         if runtime.capture() is None:
             return False if runtime.stopped else incomplete("未获取到游戏启动画面")
 
-        reward_attempts = 0
         while not runtime.stopped and time.monotonic() < deadline:
             with runtime.observe(fresh=True):
                 restart = runtime.hit("MaaNikki_StartGame_RestartConfirm")
@@ -196,8 +195,6 @@ class StartGameAction(CustomAction):
                 loading = (not restart and not update and not reward and not main
                            and not enter and not login and not intro
                            and runtime.hit("MaaNikki_StartGame_Loading"))
-            if not reward:
-                reward_attempts = 0
             if restart or update or reward or main or enter or login or intro or loading:
                 unknown_since = None
             if restart:
@@ -240,9 +237,7 @@ class StartGameAction(CustomAction):
                             seconds=min(5, max(.1, deadline-time.monotonic()))):
                         return incomplete("客户端资源更新确认未生效")
             elif reward:
-                use_key = (reward_attempts // 2) % 2 == 1
-                reward_attempts += 1
-                if not runtime.skip_prompt(.5, use_key=use_key):
+                if not runtime.key("skip", .5):
                     return incomplete()
             elif main:
                 if runtime.ui.wait_page("MaaNikki_MainDetected"):

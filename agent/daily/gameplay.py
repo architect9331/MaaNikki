@@ -556,10 +556,9 @@ class Gameplay:
             if reward or continuation:
                 if dismissed >= 15:
                     break
-                use_key = (dismissed // 2) % 2 == 1
                 dismissed += 1
                 self.rt.log("乐园构想：已识别奖励继续提示，尝试关闭奖励页面。", detail=True)
-                if not self.rt.skip_prompt(.5, use_key=use_key):
+                if not self.rt.key("skip", .5):
                     return False
             elif returned and dismissed:
                 return self.ui.wait_page(page_returned)
@@ -593,7 +592,7 @@ class Gameplay:
     def monthly_travel_tab(self, page):
         """Retry transient OCR misses; submit a tab click only once."""
         deadline = time.monotonic()+5
-        submitted, reward_attempts = False, 0
+        submitted = False
         while not self.rt.stopped and time.monotonic() < deadline:
             with self.rt.observe(fresh=True):
                 reward = self.rt.hit("MaaNikki_RewardLayer")
@@ -608,13 +607,8 @@ class Gameplay:
                             self.monthly_diagnostic("travel", "tab_click_failed", f"{page}页签点击未完成")
                             return False
                         submitted = True
-            if reward:
-                use_key = (reward_attempts // 2) % 2 == 1
-                reward_attempts += 1
-                if not self.rt.skip_prompt(.25, use_key=use_key):
-                    return False
-            else:
-                reward_attempts = 0
+            if reward and not self.rt.key("skip", .25):
+                return False
             if not self.rt.pause(.1):
                 return False
         self.monthly_diagnostic("travel", "tab_unconfirmed", f"{page}页签切换待确认")
@@ -633,7 +627,7 @@ class Gameplay:
                 settled = 0
                 if dismissed >= 15:
                     break
-                if not self.rt.skip_prompt(.25, use_key=(dismissed // 2) % 2 == 1):
+                if not self.rt.key("skip", .25):
                     return False
                 dismissed += 1
             elif returned:

@@ -25,7 +25,6 @@ RESOURCE = ROOT / "resource"
 
 class Runtime:
     OBSERVATION_MAX_AGE = .25
-    SKIP_PROMPT_TARGET = [1200, 692]
 
     def __init__(self, context):
         self.context = context
@@ -214,19 +213,6 @@ class Runtime:
                 return clicked and self.pause(delay)
             value = binding.code
         return self.action("ClickKey", key=value) and self.pause(delay)
-
-    def skip_prompt(self, delay=0.25, *, target=None, use_key=False, key_name="skip"):
-        """Dismiss a bottom-right '空白区域继续' overlay by click; fall back to key when needed."""
-        if self.stopped:
-            return False
-        if use_key:
-            return self.key(key_name, delay)
-        point = list(self.SKIP_PROMPT_TARGET if target is None else target)
-        with self.ui.preserve_cursor():
-            clicked = self.action("Click", target=point)
-        if not clicked and not self.stopped:
-            return self.key(key_name, delay)
-        return clicked and (self.pause(delay) if delay > 0 else not self.stopped)
 
     def hold(self, key, seconds):
         if type(seconds) not in (int, float) or not math.isfinite(seconds) or not 0 <= seconds <= 8 or self.stopped:
