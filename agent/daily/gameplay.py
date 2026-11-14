@@ -450,7 +450,10 @@ class Gameplay:
         return False
 
     def jihua_select_target(self):
-        cost_ready = self.ui.feature(text=".+", roi=self.ui.roi("AreaJihuaCostSelect"))
+        def cost_ready():
+            return bool(self.ui.asset("ButtonJihuaSort")
+                        or self.rt.text([900, 560, 240, 100], r"激\s*化\s*材\s*料"))
+
         target_roi = self.ui.roi("AreaJihuaTargetSelect")
         if self.ui.enter_page(
                 lambda: self.ui.find(roi=target_roi, node="MaaNikki_Jihua_Target"),
@@ -508,12 +511,12 @@ class Gameplay:
                         else "未能按数量选择材料，尝试已设置的首选和备选材料。")
         options = fields(self.rt.context, "MaaNikki_Jihua_Material").get("expected", [])
         options = options if isinstance(options, list) else [options]
-        metadata = catalog(self.ui.resource)["materials"]
-        cost_roi = self.ui.roi("AreaJihuaCostSelect")
-        for label in options:
         options = [str(item).strip() for item in options if str(item or "").strip()]
         if not options:
             options = ["星荧草", "纽扣松果", "小绵菊"]
+        metadata = catalog(self.ui.resource)["materials"]
+        cost_roi = self.ui.roi("AreaJihuaCostSelect")
+        for label in options:
             label = {"小棉菊": "小绵菊"}.get(label, label)
             item = metadata.get(label)
             if not item or not item.get("jihua"):

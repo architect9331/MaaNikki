@@ -1213,7 +1213,82 @@ class Executors(Runtime):
             self.energy_exhausted = getattr(self, "energy_exhausted", False) or exhausted
 
     def set_amount(self, kind, minimum_energy, *, desired_count=None):
-        count_node = "MaaNikki_Daily_JihuaCount" if kind == "jihua" else "MaaNikki_Daily_QuickCount"
+        if kind != "jihua":
+            def read_quick_count():
+                res = self.recognize("MaaNikki_Daily_QuickCount")
+                raw_frac = getattr(res.best_result, "text", "") if res and res.hit else ""
+                m_frac = re.search(r"(\d+)\s*[/／]\s*(\d+)", raw_frac)
+                if m_frac:
+                    cur, cap = int(m_frac.group(1)), int(m_frac.group(2))
+                    if 1 <= cur <= cap <= 99:
+                        return cur, cap
+                summary = self.text([470, 396, 340, 38])
+                m_sum = re.search(r"领取奖励\s*(\d+)\s*次", summary)
+                if m_sum and 1 <= int(m_sum.group(1)) <= 99:
+                    return int(m_sum.group(1)), None
+                return None, None
+
+            current, max_count = read_quick_count()
+            if current is None:
+                self.diagnostic("realm_amount", "无法读取快速挑战次数", details={"kind": kind})
+                self.log("无法读取挑战数量，请补充数量弹窗截图；本次未确认消耗。")
+                return False
+            desired = int(desired_count) if desired_count is not None else 1
+            if desired_count is None and minimum_energy:
+                text = self.text([400, 215, 480, 225])
+                match = re.search(r"(?:消耗|投入|注入)\D{0,8}(\d+)\s*(?:点|活跃能量)", text)
+                if not match or int(match.group(1)) <= 0 or int(match.group(1)) % current:
+                    self.diagnostic("realm_amount", "无法读取本次活跃能量消耗", details={"kind": kind, "text": text})
+                    self.log("无法读取本次活跃能量消耗，不自动调整挑战次数。")
+                    return False
+                desired = math.ceil(minimum_energy / (int(match.group(1)) // current))
+            if max_count is not None and desired > max_count:
+                desired = max_count
+            if current != desired:
+                if max_count is not None and desired == max_count:
+                    prefix = {"bless": "Bless", "monster": "Monster", "weekly": "Weekly"}.get(kind)
+                    clicked = (
+                        self.click_template(f"MaaNikki_{prefix}_Max", wait_seconds=0.25)
+                        if prefix and self.context.get_node_data(f"MaaNikki_{prefix}_Max")
+                        else (self.action("Click", target=[733, 338, 27, 27]) and self.pause(0.25))
+                    )
+                    if not clicked:
+                        return False
+                else:
+                    # Try the + step button immediately left of Max ([733, 338, 27, 27]),
+                    # falling back to proportional slider track selection if unchanged.
+                    plus_box = [698, 338, 27, 27]
+                    if not (self.action("Click", target=plus_box) and self.pause(0.2)):
+                        return False
+                    stepped, new_max = read_quick_count()
+                    if new_max is not None:
+                        max_count = new_max
+                    if stepped == current + 1:
+                        current = stepped
+                        while current < desired:
+                            if not (self.action("Click", target=plus_box) and self.pause(0.2)):
+                                return False
+                            nxt, _ = read_quick_count()
+                            if nxt is None or nxt <= current:
+                                break
+                            current = nxt
+                    elif max_count is not None and max_count > 1:
+                        track_x = round(562 + (desired - 1) / (max_count - 1) * (718 - 562))
+                        if not (self.action("Click", target=[track_x, 351]) and self.pause(0.25)):
+                            return False
+                adjusted_cur, _ = read_quick_count()
+                if adjusted_cur != desired:
+                    self.diagnostic(
+                        "realm_amount",
+                        "快速挑战数量未能设置为目标值",
+                        details={"kind": kind, "desired": desired, "actual": adjusted_cur, "max": max_count},
+                    )
+                    self.log("挑战数量未能设置为要求值，取消本项。")
+                    return False
+            self.log(f"已确认本次挑战数量：{desired} 次。")
+            return True
+
+        count_node = "MaaNikki_Daily_JihuaCount"
         data = self.context.get_node_data(count_node) or {}
         recognition = data.get("recognition")
         roi = recognition.get("param", {}).get("roi") if isinstance(recognition, dict) else data.get("roi")

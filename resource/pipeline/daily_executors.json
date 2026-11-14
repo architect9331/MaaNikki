@@ -21,13 +21,13 @@
   "MaaNikki_Daily_QuickCount": {
     "recognition": "OCR",
     "roi": [
-      570,
-      310,
-      145,
-      75
+      560,
+      358,
+      160,
+      44
     ],
-    "expected": "^[0-9]+$",
-    "threshold": 0.8,
+    "expected": "^\\s*[0-9]+\\s*[/／]\\s*[0-9]+\\s*$",
+    "threshold": 0.75,
     "action": "DoNothing",
     "attach": {}
   },

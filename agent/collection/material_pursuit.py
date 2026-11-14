@@ -311,6 +311,11 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
             rt.log(f"幻境挑战顺序：已获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
         energy = energy_after
         last_kind = kind
-        if not ok or spent == 0:
+        if spent < per_run:
             raise RuntimeError(f"{GOAL_LABELS[goal]}挑战未完成或未确认活跃能量消耗")
+        if not ok:
+            rt.log(
+                f"幻境挑战顺序：结算提示确认超时，但已返回奇想日历并核实消耗 {spent} 点活跃能量。",
+                detail=True,
+            )
     return "done", last_kind
