@@ -46,9 +46,12 @@ class Home:
         if outcome == "found":
             self.rt.log("今日有巨陨星！")
         elif outcome == "not_found":
-            self.rt.log("今日检测未发现巨陨星。")
+            self.rt.log("今日检测未发现巨陨星。", detail=not result)
         else:
-            self.rt.log("巨陨星检测未确认，稍后可重新运行家园日常。")
+            self.rt.log("巨陨星检测未确认，稍后可重新运行家园日常。", detail=not result)
+        if not result:
+            suffix = "（已检测到今日有巨陨星！）" if outcome == "found" else ""
+            self.rt.log(f"家园日常有步骤未完成{suffix}，请查看上方异常提示。")
         return result
 
     def save_meteor(self, outcome, day, text):

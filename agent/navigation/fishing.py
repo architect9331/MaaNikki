@@ -141,12 +141,15 @@ class Fishing:
                 if re.search(r"R.*取消钓", text):
                     found, source = FishingState.FINISH, "text"
                 else:
-                    # Bright shore clutter behind the last character of the left prompt
-                    # can clip "竿"/"线" in OCR and pull the 2-char template slightly below .8.
-                    for icon, state in (("IconFishingFinish", FishingState.FINISH),
-                                        ("IconFishingReelIn", FishingState.REEL_IN)):
-                        if self.ui.asset(icon, image=frame, roi=area, threshold=.64, gray=(210, 255), scale=2/3):
-                            found, source = state, icon
+                    # Bright shore or meteor clutter behind the left prompt can
+                    # distort a character in OCR and pull the template below .8.
+                    for cutoff in (.74, .69, .64):
+                        for icon, state in STATES[:-1]:
+                            if self.ui.asset(icon, image=frame, roi=area, threshold=cutoff,
+                                             gray=(210, 255), scale=2/3):
+                                found, source = state, icon
+                                break
+                        if found != FishingState.UNKNOWN:
                             break
         self.last_state_details = {"state": found.name, "source": source, "text": text, "roi": area}
         if found != FishingState.UNKNOWN:
@@ -176,6 +179,8 @@ class Fishing:
                 self.actions.event({"type": "star_collect_exit", "success": exited})
                 if exited:
                     raise NavigationError(reason)
+        if self.last_known_state is None and self.ui.page_matches("MaaNikki_MainDetected"):
+            raise NavigationError(reason)
         # An unclassified fishing page must not reach ordinary Esc recovery.
         self.rt.navigation_halted = True
         raise NavigationError(reason)
@@ -283,7 +288,9 @@ class Fishing:
     def cast(self):
         self.last_known_state = None
         started = False
+        waited_after_cast = False
         retried = False
+        toast_checks = 0
         deadline = time.monotonic()+5
         while not self.rt.stopped:
             if time.monotonic() >= deadline:
@@ -307,7 +314,7 @@ class Fishing:
                             self.switch_fishing()
                             deadline = time.monotonic()+5
                             continue
-                        self.fail_state('多次按下“能力衍生功能 1”按键仍未进入钓星，请检查键位设置是否与游戏内一致。',
+                        self.fail_state('多次按下“家园能力衍生功能1”按键仍未进入钓星，请检查键位设置是否与游戏内一致。',
                                         leave_home=True)
                 if self.passive and self.last_known_state is None:
                     self.actions.event({"type": self.event_prefix+"_prompts_ended",
@@ -332,7 +339,15 @@ class Fishing:
                 started = True
                 self.switch_fishing()
             else:
+                if (waited_after_cast and not self.passive and self.kind != "home"
+                        and toast_checks < 3 and self.last_state_frame is not None):
+                    toast_checks += 1
+                    toast = re.sub(r"\s+", "", self.ui.text([350, 150, 580, 200], image=self.last_state_frame))
+                    if re.search(r"离水面近一点|无法钓鱼|不可钓鱼", toast):
+                        self.actions.event({"type": "fishing_cast_rejected", "toast": toast})
+                        self.fail_state("当前位置离水面太远或无法抛竿，请靠近水边鱼点后再试。")
                 self.wait(.5)
+                waited_after_cast = True
         if self.rt.stopped:
             raise NavigationError(f"{self.label}已停止。")
         if self.kind is None:
