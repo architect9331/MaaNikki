@@ -440,10 +440,14 @@ class Navigator:
             return self.stable_heading(pose, deadline=deadline)
         except HeadingUncertain:
             diagnostics = self.locator.heading_diagnostics
+            method = diagnostics.get("method")
+            probe_eligible = (
+                (method == "cone_boundaries" and diagnostics.get("edges_supported") is False)
+                or method == "heading_uncertain"
+            )
             if (time.monotonic() >= deadline
                     or not diagnostics.get("position_reliable")
-                    or diagnostics.get("method") != "cone_boundaries"
-                    or diagnostics.get("edges_supported") is not False):
+                    or not probe_eligible):
                 raise
             if not self.inputs.ready():
                 raise SceneUnavailable("方向复核时主界面已变化。")
@@ -759,7 +763,7 @@ class Navigator:
                     "distance": distance(pose, point)})
         return point
 
-    def advance(self, pose, target, radius, speeds, *, recovery=False):
+    def advance(self, pose, target, radius, speeds, *, recovery=False, detour_deg=0.0):
         """Update continuous forward travel using capture-aligned feedback."""
         motion = self.motion
         generation = getattr(self.inputs, "generation", 0)
@@ -789,7 +793,8 @@ class Navigator:
             return self.observe((pose.x, pose.y)), False
         duration = max(.04, duration)
         if recovery:
-            duration = max(1.15, min(1.35, duration))
+            min_recovery = .55 if detour_deg == 0.0 else 1.15
+            duration = max(min_recovery, min(1.35, duration))
         motion.forward(duration)
         if getattr(self.inputs, "generation", 0) != generation:
             motion.close()
@@ -798,7 +803,7 @@ class Navigator:
         if self.overlay:
             self.overlay.notify_motion(velocity, duration, jumping)
         if recovery:
-            self.pause(1.5)
+            self.pause(min(1.5, duration + .35))
             motion.stop()
             motion.jump(False, self.walking(), reason="unstuck_complete")
         elif motion.jump_state in motion.JUMP_PENDING:
@@ -906,6 +911,8 @@ class Navigator:
                     began = time.monotonic()
                     try:
                         pose = self.recheck_heading(pose, deadline)
+                    except HeadingUncertain:
+                        pose = replace(pose, heading=None)
                     except SceneUnavailable:
                         scene_interrupted = True
                     stuck_since += time.monotonic()-began
@@ -1134,6 +1141,8 @@ class Navigator:
                 except HeadingUncertain:
                     try:
                         pose = self.recheck_heading(pose, deadline)
+                    except HeadingUncertain:
+                        pose = replace(pose, heading=None)
                     except SceneUnavailable:
                         scene_interrupted = True
                     stuck_since += max(0, time.monotonic()-turn_begin
@@ -1188,14 +1197,16 @@ class Navigator:
                 heading_rechecks = 0
                 before_move = pose
                 forward_before = motion.forward_elapsed()
-                pose, recovery_done = self.advance(pose, target, radius, speeds, recovery=recovery)
+                pose, recovery_done = self.advance(
+                    pose, target, radius, speeds, recovery=recovery, detour_deg=detour_deg
+                )
                 move_input = max(0.0, motion.forward_elapsed()-forward_before)
                 move_disp = distance(before_move, pose)
                 move_speed = move_disp/move_input if move_input > 0 else 0.0
                 if (pose.heading is not None and pose.position_reliable
                         and move_input >= .08):
                     self.heading_recheck_count = 0
-                last = None if recovery else before_move
+                last = None if (recovery and detour_deg != 0.0) else before_move
                 if recovery_done:
                     unstuck_attempts += 1
                     blocked_steps = 1 if move_disp < .8 else 0

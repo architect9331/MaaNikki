@@ -190,8 +190,8 @@ def camera_heading(reference, map_image, spec, x, y, *, terrain=None):
             rank == 0
             and float(signal[boundary]) >= runner_up_strength*8.0
             and min(support) >= max(45, polar.shape[0]*coverage_floor)
-            and max(radial_coverage) >= .60
-            and min(radial_coverage) >= max(.34, coverage_floor*1.7)
+            and max(radial_coverage) >= .55
+            and min(radial_coverage) >= max(.30, coverage_floor*1.5)
             and sum(h >= coverage_floor/2 for h in halves) >= 3
             and max(halves[:2]) >= .60
             and max(halves[2:]) >= .60

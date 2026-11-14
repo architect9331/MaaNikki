@@ -53,9 +53,9 @@ class Teleporter:
         if browse and not self.rt.hit("MaaNikki_Navigation_MapFeature"):
             raise NavigationError("未能确认地图浏览页面。")
 
-    def region_name(self, expected=None):
+    def region_name(self, expected=None, *, image=None):
         """Read the small map header without discarding its antialiased strokes."""
-        frame = self.rt.frame()
+        frame = self.rt.frame() if image is None else image
         if frame is None:
             return ""
         x, y, w, h = self.rt.ui.roi("AreaBigMapRegionName")
@@ -435,6 +435,7 @@ class Teleporter:
                     previous = None
                 if not self.rt.pause(.25):
                     break
+            self._check_map_mismatch()
             raise NavigationError("大地图角色位置未能稳定匹配，未继续移动。")
         except NavigationError as error:
             if not self.rt.stopped:
@@ -443,6 +444,41 @@ class Teleporter:
         finally:
             if not self.rt.stopped and not self.rt.main():
                 raise NavigationError("复核角色位置后未能返回主界面。")
+
+    def _check_map_mismatch(self):
+        if self.last_frame is None:
+            return
+        header = self.region_name(image=self.last_frame)
+        if not header:
+            return
+        spec_id = self.locator.spec.id
+        spec_title = self.locator.spec.title
+        fixed_headers = {
+            "星海": "starsea",
+            "万相境": "wanxiang",
+            "丹青屿": "danqing",
+            "无忧岛": "serenity",
+            "花焰群岛": "firework",
+        }
+        miraland_headers = (
+            "纪念山地", "花愿镇", "微风绿野", "小石树田村", "石树田无人区",
+            "祈愿树林", "巨木之森", "蜗牛城", "心愿原野", "伊赞之土",
+        )
+        mismatch = False
+        if header in fixed_headers and fixed_headers[header] != spec_id:
+            mismatch = True
+        elif "家园" in header and spec_id != "home":
+            mismatch = True
+        elif spec_id in fixed_headers.values() and len(header) >= 2 and spec_title not in header:
+            mismatch = True
+        elif spec_id == "home" and any(name in header for name in (*fixed_headers, *miraland_headers)):
+            mismatch = True
+        if mismatch:
+            self.event({"type": "map_mismatch", "actual_header": header,
+                        "expected_map": spec_id, "expected_title": spec_title})
+            raise NavigationError(
+                f"当前所在地图（{header}）与路线所属地图（{spec_title}）不一致，请先前往对应地图或为路线设置传送点。"
+            )
 
     def center(self, x, y, force=False, *, allow_visible=False):
         panned = False
