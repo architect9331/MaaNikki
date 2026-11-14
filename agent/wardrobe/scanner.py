@@ -31,6 +31,8 @@ FILTER_CONFIRM = [734, 511]
 FILTER_ACQUIRE_ROI = [300, 200, 680, 280]
 CLOTHES_TAB = [80, 148]
 TAB_X = 203
+PEAR_PAL_PREV_PAGE = [55, 345]
+PEAR_PAL_NEXT_PAGE = [711, 345]
 
 MAJOR_SEQUENCE = [
     ("210", 1),
@@ -179,8 +181,34 @@ class WardrobeScanner(InventoryScanner):
             if self.rt.click_template("MaaNikki_Compendium_SearchEntrance"):
                 return True
         if not self.rt.ui.recover_page("MaaNikki_CompendiumReady"):
-            return False
+            if not self._open_compendium_from_pear_pal():
+                return False
         return self.rt.click_template("MaaNikki_Compendium_SearchEntrance")
+
+    def _open_compendium_from_pear_pal(self):
+        frame = self.rt.capture()
+        if not self.rt.hit("MaaNikki_MenuReady", image=frame):
+            return False
+        for arrow in (
+            PEAR_PAL_PREV_PAGE,
+            PEAR_PAL_PREV_PAGE,
+            PEAR_PAL_NEXT_PAGE,
+            PEAR_PAL_NEXT_PAGE,
+        ):
+            if self.rt.hit("MaaNikki_Compendium_Entrance", image=frame):
+                break
+            if not self.rt.action("Click", target=arrow) or not self.rt.pause(.45):
+                return False
+            frame = self.rt.capture()
+            if not self.rt.hit("MaaNikki_MenuReady", image=frame):
+                return self.rt.hit("MaaNikki_CompendiumReady", image=frame)
+        if not self.rt.hit("MaaNikki_Compendium_Entrance", image=frame):
+            return False
+        return self.rt.ui.enter_page(
+            lambda: self.rt.click_template("MaaNikki_Compendium_Entrance", verify=False),
+            "MaaNikki_CompendiumReady",
+            source="MaaNikki_MenuReady",
+        )
 
     def clear_search_box(self, frame=None):
         frame = frame if frame is not None else self.rt.capture()

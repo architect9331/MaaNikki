@@ -573,6 +573,7 @@ def _apply_borderless_resolution(
 
     nudged_capture = False
     solid_streak = 0
+    clamped_streak = 0
     for _ in range(16):
         if stopped_fn is not None and stopped_fn():
             break
@@ -581,14 +582,35 @@ def _apply_borderless_resolution(
         if frame is None:
             continue
         if frame.shape[:2] == (cap_h, cap_w) and (not require_unclipped or not is_clipped_game_frame(frame)):
-            if float(frame.mean()) > 8.0 and float(frame.std()) > 5.0:
+            if cap_h > cap_w:
+                top_band = frame[: max(1, cap_w * 9 // 16), :]
+                bottom_band = frame[cap_h * 3 // 4 :, :]
+                if (
+                    float(frame.mean()) > 8.0
+                    and float(frame.std()) > 5.0
+                    and float(bottom_band.mean()) > 5.0
+                    and float(bottom_band.std()) > 3.0
+                ):
+                    return True, frame, window_modified
+                if (
+                    float(top_band.mean()) > 8.0
+                    and float(bottom_band.mean()) < 1.0
+                    and float(bottom_band.std()) < 1.0
+                ):
+                    clamped_streak += 1
+                    if clamped_streak >= 4:
+                        break
+                else:
+                    clamped_streak = 0
+            elif float(frame.mean()) > 8.0 and float(frame.std()) > 5.0:
                 return True, frame, window_modified
-            if allow_solid_frame:
+            if allow_solid_frame and cap_h <= cap_w:
                 solid_streak += 1
                 if solid_streak >= 4:
                     return True, frame, window_modified
         else:
             solid_streak = 0
+            clamped_streak = 0
         if not nudged_capture:
             if frame.shape[1] == cap_w and 1 <= abs(frame.shape[0] - cap_h) <= 2:
                 nudged_capture = True
