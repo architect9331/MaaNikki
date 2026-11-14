@@ -11,7 +11,7 @@
     "recognition": "Custom",
     "custom_recognition": "nikki.ui_template",
     "custom_recognition_param": {
-      "roi": [510, 640, 90, 65],
+      "roi": [180, 625, 570, 85],
       "template": "game/mailbox/menu.png",
       "gray_limit": [175, 255],
       "threshold": 0.85
