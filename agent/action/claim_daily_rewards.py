@@ -41,8 +41,22 @@ class ClaimDailyRewardsAction(CustomAction):
                     return True
                 target = candidates[0]
                 attempted.append(target)
-                if (not rt.action("Click", target=list(target)) or not rt.ui.unhover()
-                        or not rt.ui.skip_reward()):
+                claimed = (rt.action("Click", target=list(target))
+                           and rt.ui.unhover()
+                           and rt.ui.skip_reward())
+                if not claimed and not rt.stopped:
+                    page_still_open = any(
+                        getattr(rt.recognize(node), "hit", None) is True
+                        for node in ("MaaNikki_Zhaoxi_DailyReady", "MaaNikki_Xinghai_DailyReady")
+                    )
+                    if page_still_open:
+                        claimed = (rt.action("Click", target=list(target))
+                                   and rt.ui.unhover()
+                                   and rt.ui.skip_reward())
+                if not claimed:
+                    if not rt.stopped:
+                        rt.diagnostic("claim_daily_rewards", "未确认每日奖励领取",
+                                      details={"target": list(target)})
                     rt.log("未确认每日奖励领取，本项停止。")
                     return False
                 # These pages have perpetual particles and swinging bottles.
