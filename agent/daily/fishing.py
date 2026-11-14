@@ -10,7 +10,7 @@ from .runtime import parameters
 from .settings import ROOT, foreground_inputs
 from .startup import focus_game
 from navigation.ability import ability_matches
-from navigation.controller import ForegroundInput
+from navigation.controller import BackgroundInput, ForegroundInput
 from navigation.fishing import Fishing, FishingState, cast_count
 from navigation.models import NavigationError
 
@@ -51,14 +51,21 @@ def run_fishing(runtime, inputs, *, passive=False, max_cast_count=None, use_rhyt
 
 def current_fishing(runtime):
     count = cast_count(parameters(runtime.context, "MaaNikki_Fishing_CastCount").get("value"), 3)
-    if not foreground_inputs():
+    bg = runtime.background_mode()
+    if not bg and not foreground_inputs():
         runtime.log("自动钓鱼需要前台鼠标和键盘输入，请将两者设置为 Seize。")
         return False
-    inputs = ForegroundInput(runtime.controller, lambda: runtime.stopped, bindings=runtime.game_keys)
+    inputs = (
+        BackgroundInput(runtime.controller, lambda: runtime.stopped, bindings=runtime.game_keys)
+        if bg else
+        ForegroundInput(runtime.controller, lambda: runtime.stopped, bindings=runtime.game_keys)
+    )
     previous = runtime.navigation_inputs
     try:
-        if previous:
-            previous.check()
+        if bg or previous:
+            if previous:
+                previous.check()
+            inputs.check()
         else:
             focus_game(runtime, inputs)
         runtime.navigation_inputs = inputs

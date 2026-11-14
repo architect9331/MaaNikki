@@ -19,7 +19,7 @@ import cv2
 from .runtime import Runtime, RESOURCE
 from .settings import ROOT, foreground_inputs as inputs_allowed
 from .startup import focus_game
-from navigation.controller import ForegroundInput
+from navigation.controller import BackgroundInput, ForegroundInput
 from navigation.session import create_navigator
 from navigation.models import NavigationError, maps, parse_route
 from navigation.telemetry import record_route_telemetry
@@ -644,7 +644,8 @@ class RouteTest(Runtime):
                 from navigation.daily_route import RouteActions, preflight
                 executor = {"home": "home", "bottle": "bottle"}.get(mode, "navigation")
                 preflight(RESOURCE, model, executor)
-            if not inputs_allowed():
+            bg = self.background_mode()
+            if not bg and not inputs_allowed():
                 raise NavigationError(f"{self.label}需要当前连接使用前台鼠标和键盘（Seize）。")
             self.directory = directory or ROOT / "logs" / "navigation" / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-route-test")
             self.directory.mkdir(parents=True)
@@ -662,9 +663,14 @@ class RouteTest(Runtime):
                 self.log(f"导航模式跳过任务动作：{skipped}。",
                          ui_text=f"本轮验证路线导航，跳过 {len(skipped)} 个任务动作。")
             locator = Locator(spec)
-            inputs = TestInputs(self.controller, lambda: self.stopped,
+            inputs = (
+                BackgroundInput(self.controller, lambda: self.stopped,
                                 lambda: self.hit("MaaNikki_MainDetected"), bindings=self.game_keys)
-            if refocus:
+                if bg else
+                TestInputs(self.controller, lambda: self.stopped,
+                           lambda: self.hit("MaaNikki_MainDetected"), bindings=self.game_keys)
+            )
+            if refocus and not bg:
                 self.phase("focus_game", "正在自动聚焦游戏。")
                 focus_game(self, inputs)
             else:

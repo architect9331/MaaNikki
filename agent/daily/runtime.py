@@ -31,6 +31,7 @@ class Runtime:
         session = active_session()
         self.controller = session.controller if session else context.tasker.controller
         self.navigation_inputs = None
+        self._bg_adapter = None
         self.navigation_halted = False
         self.game_keys = GameKeys(context)
         self._observations = []
@@ -51,6 +52,34 @@ class Runtime:
             return True
         session = active_session()
         return session.stopped() if session else self.context.tasker.stopping
+
+    def background_mode(self):
+        try:
+            return parameters(self.context, "MaaNikki_FocusLost").get("mode") == "background"
+        except (AttributeError, RuntimeError, TypeError, ValueError):
+            return False
+
+    def _active_inputs(self):
+        if self.navigation_inputs is not None:
+            return self.navigation_inputs
+        session = active_session()
+        if session is not None:
+            return session.adapter
+        if self.background_mode():
+            if self._bg_adapter is None:
+                from navigation.controller import BackgroundInput
+                self._bg_adapter = BackgroundInput(
+                    self.controller, lambda: self.stopped, bindings=self.game_keys
+                )
+            return self._bg_adapter
+        return None
+
+    @staticmethod
+    def _use_window_input(inputs):
+        return bool(
+            getattr(inputs, "window_only", False)
+            and (not inputs.foreground() or not foreground_inputs())
+        )
 
     def check_focus(self):
         session = active_session()
@@ -77,8 +106,9 @@ class Runtime:
         deadline = time.monotonic() + seconds
         with measure("wait"):
             while not self.stopped and time.monotonic() < deadline:
-                if self.navigation_inputs:
-                    self.navigation_inputs.check()
+                inputs = self._active_inputs()
+                if inputs is not None:
+                    inputs.check()
                 time.sleep(min(0.1, max(0, deadline - time.monotonic())))
         return not self.stopped
 
@@ -165,15 +195,15 @@ class Runtime:
         self.evidence.observe("input", action=action, fields={
             name: value for name, value in fields.items()
             if name in {"target", "begin", "end", "key", "duration", "dx", "dy"}})
-        if self.navigation_inputs:
-            self.navigation_inputs.check()
-        window_only = bool(getattr(self.navigation_inputs, "window_only", False))
-        window_cursor_pos = bool(fields.pop("window_cursor_pos", False))
+        inputs = self._active_inputs()
+        if inputs is not None:
+            inputs.check()
+        window_only = bool(getattr(inputs, "window_only", False))
+        use_window = self._use_window_input(inputs)
+        window_cursor_pos = bool(fields.pop("window_cursor_pos", True))
         if action in {"KeyDown", "KeyUp"}:
-            session = active_session()
-            if session is not None:
+            if inputs is not None:
                 from game_keys import Binding
-                inputs = self.navigation_inputs or session.adapter
                 if action == "KeyDown":
                     inputs._down(Binding("key", fields["key"]))
                 else:
@@ -181,11 +211,20 @@ class Runtime:
                 return True
         if action == "ClickKey" and window_only:
             with measure("input.action"):
-                return bool(self.navigation_inputs.click_window_key(fields["key"], self.pause))
-        if action == "TouchMove" and window_only and not self.navigation_inputs.foreground():
+                return bool(inputs.click_window_key(fields["key"], self.pause))
+        if action == "TouchMove" and use_window:
             point = self._target_point(fields.get("target"), "界面移动坐标")
             with measure("input.action"):
-                return bool(self.navigation_inputs.move_window_point(point[0], point[1]))
+                return bool(inputs.move_window_point(point[0], point[1]))
+        if action == "Scroll" and use_window:
+            point = self._target_point(fields.get("target"), "界面滚动目标")
+            with measure("input.action"):
+                return bool(inputs.scroll_window_point(
+                    point[0], point[1], fields.get("dx", 0), fields.get("dy", 0)))
+        if action == "Swipe" and use_window:
+            with measure("input.action"):
+                return bool(inputs.swipe_window_points(
+                    fields.get("begin"), fields.get("end"), fields.get("duration", 300)))
         if action == "Click" and ui_click:
             point = self._target_point(fields.get("target"), "界面点击目标")
             # Maa's rectangular Click target is random inside the box. UI
@@ -199,17 +238,17 @@ class Runtime:
             if self._focus_generation != focus_generation:
                 from task_control import ForegroundChanged
                 raise ForegroundChanged("前台切换后已取消本次输入，等待重新核对")
-        if action == "Click" and window_only and not self.navigation_inputs.foreground():
+        if action == "Click" and use_window:
             point = self._target_point(fields.get("target"), "界面点击目标")
             with measure("input.action"):
-                succeeded = bool(self.navigation_inputs.click_window_point(
+                succeeded = bool(inputs.click_window_point(
                     point[0], point[1], self.pause, with_cursor_pos=window_cursor_pos))
             if succeeded and ui_click:
                 return self.pause(.1) and self.ui.unhover()
             return succeeded
-        if window_only and not self.navigation_inputs.foreground():
+        if window_only and not inputs.foreground():
             # Never dispatch fallback Seize actions when the game is unfocused.
-            self.navigation_inputs.check(require_foreground=True)
+            inputs.check(require_foreground=True)
         with measure("input.action"):
             result = self.context.run_action("MaaNikki_Daily_Action", pipeline_override={
                 "MaaNikki_Daily_Action": {"action": action, **fields}})
@@ -242,7 +281,7 @@ class Runtime:
             return False
         self.invalidate_frame()
         binding = self.game_keys.get(key) if isinstance(key, str) else None
-        if active_session() is not None or binding and (binding.kind == "mouse" or foreground_inputs()):
+        if active_session() is not None or self.background_mode() or binding and (binding.kind == "mouse" or foreground_inputs()):
             if binding is None:
                 from game_keys import Binding
                 binding = Binding("key", key)
@@ -302,8 +341,9 @@ class Runtime:
         if self.stopped:
             return None
         self.check_focus()
-        if self.navigation_inputs:
-            self.navigation_inputs.check()
+        inputs = self._active_inputs()
+        if inputs is not None:
+            inputs.check()
         while not self.stopped:
             if available is not None and not available():
                 return None
@@ -341,9 +381,9 @@ class Runtime:
                 count("capture.discarded")
                 continue
             if image is None or image.size == 0:
-                if (getattr(self.navigation_inputs, "window_only", False)
-                        and not self.navigation_inputs.capturable()):
-                    self.navigation_inputs.check()
+                inputs = self._active_inputs()
+                if getattr(inputs, "window_only", False) and not inputs.capturable():
+                    inputs.check()
                     continue
                 count("capture.failed")
                 return None
@@ -398,6 +438,10 @@ class Runtime:
         if not self.ensure_frame():
             return False
         self.invalidate_frame()
+        inputs = self._active_inputs()
+        if self._use_window_input(inputs):
+            with measure("input.text"):
+                return bool(inputs.input_window_text(content))
         with measure("input.text"):
             return self.controller.post_input_text(content).wait().succeeded
 
@@ -601,12 +645,16 @@ class Runtime:
     @contextmanager
     def input_guard(self):
         """Guard all nested page operations as well as movement; never refocus on loss."""
-        from navigation.controller import ForegroundInput
+        from navigation.controller import BackgroundInput, ForegroundInput
         if not self.ensure_frame():
             from navigation.models import NavigationError
             raise NavigationError("未获取到游戏画面，未执行输入。")
         previous = self.navigation_inputs
-        inputs = previous or ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
+        inputs = previous or (
+            BackgroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
+            if self.background_mode()
+            else ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
+        )
         self.navigation_inputs = inputs
         try:
             inputs.check()
@@ -665,14 +713,15 @@ class Runtime:
 
     def navigate(self, name, mode=None, card=None, progress=None, *, meteor_travel=False,
                  crystal_map_open=False):
-        if not foreground_inputs():
+        bg = self.background_mode()
+        if not bg and not foreground_inputs():
             self.log("路线导航需要前台鼠标和键盘输入，请将两者设置为 Seize。")
             return False
         route = self.routes(name)
         if route is None:
             self.log(f"路线无法读取：{name}。")
             return False
-        from navigation.controller import ForegroundInput
+        from navigation.controller import BackgroundInput, ForegroundInput
         from navigation.session import create_navigator
         from navigation.models import NavigationError, NavigationStuckError, maps, parse_route
         from navigation.telemetry import record_route_telemetry, summarize_route_telemetry
@@ -689,12 +738,18 @@ class Runtime:
                 raise NavigationError("流星移动路线必须使用已验证的坐标路线格式。")
             locator = Locator(maps(RESOURCE)[model.map_id])
             stage = "window_binding"
-            inputs = ForegroundInput(self.controller, lambda: self.stopped,
-                                     lambda: self.hit("MaaNikki_MainDetected"), bindings=self.game_keys)
+            inputs = (
+                BackgroundInput(self.controller, lambda: self.stopped,
+                                lambda: self.hit("MaaNikki_MainDetected"), bindings=self.game_keys)
+                if bg else
+                ForegroundInput(self.controller, lambda: self.stopped,
+                                lambda: self.hit("MaaNikki_MainDetected"), bindings=self.game_keys)
+            )
             stage = "focus_game"
-            if previous_inputs:
-                # A running parent guard must stop on focus loss, not refocus.
-                previous_inputs.check()
+            if bg or previous_inputs:
+                # Never steal foreground in background mode; parent guard stops cleanly on loss.
+                if previous_inputs:
+                    previous_inputs.check()
                 inputs.check()
             else:
                 from .startup import focus_game
@@ -748,7 +803,11 @@ class Runtime:
                     events.append({"type": "crystal_route_attempt", "attempt": attempt+1,
                                    "max_attempts": crystal_retries+1})
                 if attempt == 0:
-                    self.log("正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。", detail=True)
+                    self.log(
+                        "正在后台沿路线自动寻路（WASD 控向）；最小化窗口后暂停，恢复后自动继续。"
+                        if bg else "正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。",
+                        detail=True,
+                    )
                 stage = "route_execution"
                 try:
                     navigator.follow(model)
@@ -1155,7 +1214,7 @@ class Executors(Runtime):
         # Selecting the item / confirming a lantern can activate placement
         # immediately. Do not move away from UI controls after these inputs.
         with self.ui.preserve_cursor():
-            if not foreground_inputs() or not self.select_item():
+            if (not self.background_mode() and not foreground_inputs()) or not self.select_item():
                 self.log("摆饰停止：未能选择摆饰。")
                 return False
             lantern = self.hit("MaaNikki_Daily_LanternConfirm")
@@ -1168,6 +1227,13 @@ class Executors(Runtime):
                 self.save_placement_failure("placement_not_ready")
                 self.main()
                 return False
+        if not foreground_inputs():
+            self.log("摆饰调整视角需要前台鼠标和键盘输入，请设置为 Seize。")
+            self.main()
+            return False
+        active = self._active_inputs()
+        if self.background_mode() and active is not None and not active.foreground():
+            self.log("放置摆饰需要临时在前台调整视角，请切回游戏后自动继续。")
         if not relative_camera(self.controller, 0, -133) or not self.pause(.3):
             return False
         recover_before = bool(self.text([0, 500, 1210, 200], r"收回|回收"))
@@ -1349,13 +1415,24 @@ class Executors(Runtime):
             result = self.recognize(count_node)
             if not result or not result.hit or not self.action("Click", target=list(result.box)):
                 return False
-            if not self.action("KeyDown", key=17):
-                return False
-            try:
-                if not self.key(65, 0.1):
+            active = self._active_inputs()
+            if self._use_window_input(active):
+                if not self.action("ClickKey", key=35):
                     return False
-            finally:
-                self.release_key(17)
+                for _ in range(max(4, len(raw.strip()) + 1)):
+                    if not self.action("ClickKey", key=8):
+                        return False
+                for _ in range(2):
+                    if not self.action("ClickKey", key=46):
+                        return False
+            else:
+                if not self.action("KeyDown", key=17):
+                    return False
+                try:
+                    if not self.key(65, 0.1):
+                        return False
+                finally:
+                    self.release_key(17)
             if not self.input_text(str(desired)) or not self.pause(0.3):
                 return False
             adjusted = self.recognize(count_node)

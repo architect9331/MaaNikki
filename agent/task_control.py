@@ -101,12 +101,32 @@ class ForegroundSession:
             raise TaskStopped(message) from error
         self.frame_validated = True
 
-    def _returns_to_game(self):
+    def _focus_lost_mode(self):
         try:
-            return node_action_params(self.context, "MaaNikki_FocusLost").get("mode") == "return"
+            mode = node_action_params(self.context, "MaaNikki_FocusLost").get("mode")
+            return mode if mode in {"pause", "return", "background"} else "pause"
         except Exception:
             traceback.print_exc()
-            return False
+            return "pause"
+
+    def _background_mode(self):
+        return self._focus_lost_mode() == "background"
+
+    def _background_active(self):
+        return self._background_observation or self._background_mode()
+
+    def _returns_to_game(self):
+        return self._focus_lost_mode() == "return"
+
+    def ensure_adapter(self):
+        if self.adapter is None:
+            if self._background_mode():
+                from navigation.controller import BackgroundInput
+                self.adapter = BackgroundInput(self.controller, self.stopped)
+            else:
+                from navigation.controller import ForegroundInput
+                self.adapter = ForegroundInput(self.controller, self.stopped)
+        return self.adapter
 
     def window_closed(self):
         """Stop the queue: every task after a closed game could only fail too.
@@ -230,7 +250,7 @@ class ForegroundSession:
                         adapter.controller.post_key_up(18).wait()
                 wall_time.sleep(.05)
             self.generation += 1
-            if self._background_observation:
+            if self._background_active():
                 self._observed_foreground = adapter.foreground()
             self.notify(resume_message)
         finally:
@@ -240,22 +260,38 @@ class ForegroundSession:
     def wait(self, adapter=None, *, require_foreground=False, require_capturable=False):
         if self.waiting:
             return
+        bg_active = self._background_active()
         if adapter is None:
-            if self.adapter is None:
-                from navigation.controller import ForegroundInput
-                self.adapter = ForegroundInput(self.controller, self.stopped)
-            adapter = self.adapter
+            adapter = self.ensure_adapter()
         if not adapter.user32.IsWindow(adapter.hwnd):
             self.window_closed()
         if not self.started:
             if self.stopped():
                 raise TaskStopped("任务已停止。")
             self.started = True
-            # Keep automatic startup focus, but never refocus a paused task.
-            if not self._background_observation and not adapter.foreground():
+            # Keep automatic startup focus only for foreground runs.
+            if not bg_active and not adapter.foreground():
                 if not adapter.controller.post_key_up(18).wait().succeeded:
                     raise NavigationError("未能自动聚焦游戏，请检查窗口连接。")
-        if self._background_observation and not require_foreground:
+        if not self._background_observation and adapter.hung():
+            hung_begin = wall_time.monotonic()
+            self.waiting = True
+            try:
+                for inputs in list(self.inputs):
+                    inputs.release()
+                while adapter.hung():
+                    if self.stopped() or adapter.stopped():
+                        raise TaskStopped("任务已停止。")
+                    if not adapter.user32.IsWindow(adapter.hwnd):
+                        self.window_closed()
+                    if wall_time.monotonic()-hung_begin >= HUNG_WINDOW_TIMEOUT:
+                        self.window_hung()
+                    wall_time.sleep(.1)
+                self.generation += 1
+            finally:
+                self.paused_seconds += wall_time.monotonic()-hung_begin
+                self.waiting = False
+        if bg_active and not require_foreground:
             if self.stopped():
                 raise TaskStopped("任务已停止。")
             window_only = bool(getattr(adapter, "window_only", False))
@@ -280,36 +316,23 @@ class ForegroundSession:
                 adapter.capturable,
                 pause_message,
                 "游戏窗口已恢复，任务继续。",
-                check_hung=False,
+                check_hung=not self._background_observation,
                 bring_back=False,
             )
             return
-        if not self._background_observation and adapter.hung():
-            hung_begin = wall_time.monotonic()
-            self.waiting = True
-            try:
-                for inputs in list(self.inputs):
-                    inputs.release()
-                while adapter.hung():
-                    if self.stopped() or adapter.stopped():
-                        raise TaskStopped("任务已停止。")
-                    if not adapter.user32.IsWindow(adapter.hwnd):
-                        self.window_closed()
-                    if wall_time.monotonic()-hung_begin >= HUNG_WINDOW_TIMEOUT:
-                        self.window_hung()
-                    wall_time.sleep(.1)
-                self.generation += 1
-            finally:
-                self.paused_seconds += wall_time.monotonic()-hung_begin
-                self.waiting = False
         if adapter.foreground():
             return
-        bring_back = not self._background_observation and self._returns_to_game()
+        bring_back = not bg_active and self._returns_to_game()
+        pause_message = (
+            "游戏当前动作需要在前台执行，任务暂停；切回无限暖暖后自动继续。"
+            if bg_active else
+            ("游戏已离开前台，正在切回游戏继续运行。"
+             if bring_back else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。")
+        )
         self._wait_until(
             adapter,
             lambda: adapter.foreground() and not adapter.hung(),
-            ("游戏已离开前台，正在切回游戏继续运行。"
-             if bring_back else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。"),
+            pause_message,
             "游戏已回到前台，任务继续。",
             check_hung=not self._background_observation,
             bring_back=bring_back,

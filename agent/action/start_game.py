@@ -115,8 +115,7 @@ class StartGameAction(CustomAction):
         orig_adapter_hung = None
         if session is not None:
             if session.adapter is None:
-                from navigation.controller import ForegroundInput
-                session.adapter = ForegroundInput(session.controller, session.stopped)
+                session.ensure_adapter()
             orig_adapter_hung = session.adapter.hung
         orig_check_focus = runtime.check_focus
         in_hung_guard = False
@@ -128,8 +127,7 @@ class StartGameAction(CustomAction):
             if cur is None:
                 return None, None
             if cur.adapter is None:
-                from navigation.controller import ForegroundInput
-                cur.adapter = ForegroundInput(cur.controller, cur.stopped)
+                cur.ensure_adapter()
                 if cur is session and orig_adapter_hung is None:
                     orig_adapter_hung = cur.adapter.hung
                     startup_adapter_hung = _wrap_hung_fn(orig_adapter_hung, cur.adapter)
@@ -225,7 +223,7 @@ class StartGameAction(CustomAction):
             else None
         )
 
-        def startup_session_wait(adapter_arg=None, *, require_foreground=False):
+        def startup_session_wait(adapter_arg=None, *, require_foreground=False, require_capturable=False):
             nonlocal wait_entered_at
             if session is not None and not session.waiting:
                 wait_startup_responsive()
@@ -242,7 +240,11 @@ class StartGameAction(CustomAction):
             if entered_outer:
                 wait_entered_at = wall_time.monotonic()
             try:
-                return orig_session_wait(adapter_arg, require_foreground=require_foreground)
+                return orig_session_wait(
+                    adapter_arg,
+                    require_foreground=require_foreground,
+                    require_capturable=require_capturable,
+                )
             finally:
                 if entered_outer:
                     wait_entered_at = None

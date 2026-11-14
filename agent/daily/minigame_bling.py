@@ -719,10 +719,11 @@ class MinigameBlingRun(Runtime):
         }
 
     def _run_route(self, route_name: str, *, reset_started: bool = False) -> bool:
-        if not inputs_allowed():
+        bg = self.background_mode()
+        if not bg and not inputs_allowed():
             self.log("前往「穿梭大冒险」NPC 路线需要当前连接使用前台鼠标和键盘（Seize）。")
             return False
-        if reset_started:
+        if reset_started and not bg:
             session = active_session()
             if session is not None:
                 session.started = False
@@ -883,7 +884,8 @@ class MinigameBlingRun(Runtime):
             max_rounds = 267
         navigate = bool(settings.get("navigate", True))
         route_name = str(settings.get("route") or DEFAULT_ROUTE).strip()
-        allow_background = bool(settings.get("background", True))
+        global_background = self.background_mode()
+        allow_background = bool(settings.get("background", True)) or global_background
 
         if not allow_background and not inputs_allowed():
             self.log("关闭后台运行时，小游戏刷噗灵需要当前连接使用前台鼠标和键盘（Seize）。")
@@ -935,6 +937,8 @@ class MinigameBlingRun(Runtime):
                 self.log("已开启后台挑战，但当前截图方式需要前台画面；切出游戏或最小化后将暂停，不会强行切回前台。")
             elif interact_binding.kind == "mouse":
                 self.log("挑战阶段支持后台运行；当前交互键为鼠标按键，需要交互的步骤会等待游戏回到前台（最小化后自动暂停）。")
+            elif navigate and global_background:
+                self.log("已开启完整后台模式：前往「穿梭大冒险」NPC 与后续挑战结算均支持在后台运行（最小化窗口后自动暂停）。")
             elif navigate:
                 self.log("已开启后台刷噗灵：若需跑图前往 NPC 将在前台完成，进入挑战与结算后支持切出游戏运行（最小化窗口后自动暂停）。")
             else:

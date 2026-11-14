@@ -112,7 +112,7 @@ class CrystalTree(Starsea):
 
     def collect(self):
         try:
-            if not foreground_inputs():
+            if not self.rt.background_mode() and not foreground_inputs():
                 raise NavigationError("星忆晶树收集需要前台鼠标和键盘输入，请设置为 Seize。")
             approach = load_route(self.resource, "xinghai_crystal_tree")
             loop = load_route(self.resource, "xinghai_crystal_tree_loop")

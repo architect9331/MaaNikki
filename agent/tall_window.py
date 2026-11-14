@@ -734,7 +734,10 @@ def ensure_16_9_window(controller=None, *, context=None, hwnd: int | None = None
         return None
     u32 = _user32()
     session = active_session()
-    in_bg = bool(session and getattr(session, "_background_observation", False))
+    in_bg = bool(session and (
+        session._background_active() if hasattr(session, "_background_active")
+        else getattr(session, "_background_observation", False)
+    ))
     with _per_monitor_dpi(u32):
         if not u32.IsWindow(target_hwnd) or (in_bg and u32.IsIconic(target_hwnd)):
             return None

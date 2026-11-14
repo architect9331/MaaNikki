@@ -13,7 +13,7 @@ from navigation.models import NavigationError, Point, load_route, maps
 from navigation.geometry import route_distance
 from navigation.vision import Locator
 from navigation.teleport import Teleporter
-from navigation.controller import ForegroundInput
+from navigation.controller import BackgroundInput, ForegroundInput
 from .settings import foreground_inputs
 
 
@@ -117,9 +117,14 @@ class Starsea:
         self.collection_start = None
 
     def teleporter(self):
-        if not foreground_inputs():
+        bg = self.rt.background_mode()
+        if not bg and not foreground_inputs():
             raise NavigationError("星海传送需要前台鼠标和键盘输入，请设置为 Seize。")
-        inputs = ForegroundInput(self.rt.controller, lambda: self.rt.stopped, bindings=self.rt.game_keys)
+        inputs = (
+            BackgroundInput(self.rt.controller, lambda: self.rt.stopped, bindings=self.rt.game_keys)
+            if bg else
+            ForegroundInput(self.rt.controller, lambda: self.rt.stopped, bindings=self.rt.game_keys)
+        )
         return Teleporter(self.rt, Locator(maps(self.resource)["starsea"]), event=self.events.append, inputs=inputs)
 
     def report(self, operation):

@@ -57,6 +57,10 @@ class Motion:
         self.inputs = inputs
         self.event = event
         self.until = 0
+        self.steer_keys = set()
+        self.trim_key = None
+        self.trim_until = 0.0
+        self.last_turn_at = 0.0
         self.jump_state = "idle"
         self.jump_at = 0
         self.forward_started = None
@@ -64,31 +68,73 @@ class Motion:
         self.last_stop = None
         self.generation = getattr(inputs, "generation", 0)
 
-    def forward(self, seconds):
+    def _release_trim(self):
+        key = self.trim_key
+        self.trim_key = None
+        self.trim_until = 0.0
+        if key and key in self.steer_keys:
+            self.steer_keys.discard(key)
+            self.last_turn_at = time.monotonic()
+            self.inputs.key_up(key)
+
+    def steer(self, keys, seconds, *, trim_key=None, trim_seconds=0.0):
         if not math.isfinite(seconds) or seconds <= 0:
-            raise NavigationError("前进时长无效。")
+            raise NavigationError("移动时长无效。")
         generation = self.generation
         self.tick()
         if self.generation != generation:
             return
-        # Include submission latency in the budget instead of starting the
-        # timer after the key-down RPC has already moved the character.
         now = time.monotonic()
-        if self.forward_started is None:
+        wanted = set(keys)
+        if trim_key and trim_seconds > 0 and trim_key not in wanted:
+            wanted.add(trim_key)
+            self.trim_key = trim_key
+            self.trim_until = now + trim_seconds
+        else:
+            self.trim_key = None
+            self.trim_until = 0.0
+        if wanted and self.forward_started is None:
             self.forward_started = now
-        self.until = now+seconds
-        self.inputs.key_down("forward")
+        self.until = now + seconds
+        # Release discontinued keys before pressing newly added keys so opposing
+        # directions (e.g. A -> D or W -> S) are never held at the same time.
+        for key in list(self.steer_keys - wanted):
+            self.steer_keys.discard(key)
+            if key in {"left", "right", "backward"}:
+                self.last_turn_at = now
+            self.inputs.key_up(key)
+        for key in ("forward", "backward", "left", "right"):
+            if key in wanted and key not in self.steer_keys:
+                self.steer_keys.add(key)
+                if key in {"left", "right", "backward"}:
+                    self.last_turn_at = now
+                self.inputs.key_down(key)
+        if self.steer_keys & {"left", "right", "backward"}:
+            self.last_turn_at = now
         self.tick()
+
+    def forward(self, seconds):
+        if not math.isfinite(seconds) or seconds <= 0:
+            raise NavigationError("前进时长无效。")
+        self.steer(("forward",), seconds)
 
     def stop(self):
         deadline = self.until
+        had_steer = bool(self.steer_keys) or self.forward_started is not None
         self.until = 0
+        self.trim_key = None
+        self.trim_until = 0.0
         started = time.monotonic()
         try:
-            self.inputs.key_up("forward")
+            if self.steer_keys & {"left", "right", "backward"}:
+                self.last_turn_at = started
+            for key in list(self.steer_keys) or ["forward"]:
+                self.steer_keys.discard(key)
+                self.inputs.key_up(key)
         finally:
+            self.steer_keys.clear()
             completed = time.monotonic()
-            if self.forward_started is not None:
+            if had_steer and self.forward_started is not None:
                 self.forward_seconds += completed-self.forward_started
                 self.forward_started = None
                 elapsed = completed-started
@@ -144,8 +190,12 @@ class Motion:
             self.close()
             return
         now = time.monotonic()
+        if self.steer_keys & {"left", "right", "backward"}:
+            self.last_turn_at = now
         if self.until and now >= self.until:
             self.stop()
+        elif self.trim_key and now >= self.trim_until:
+            self._release_trim()
         if self.jump_state == "first" and now-self.jump_at >= self.JUMP_HOLD:
             self.inputs.key_up("jump")
             self.jump_transition("second_wait", "first_jump_up")
@@ -182,6 +232,9 @@ class Motion:
 
     def close(self):
         self.until = 0
+        self.trim_key = None
+        self.trim_until = 0.0
+        self.steer_keys.clear()
         if self.jump_state != "idle":
             self.jump_transition("idle", "motion_close")
         if self.forward_started is not None:
@@ -199,7 +252,8 @@ class Navigator:
 
     def __init__(self, locator: Locator, inputs, capture, stopped, pause, event=lambda value: None,
                  point_action=None, waypoint=None, walking=None, page_detector=None, point_prepare=None,
-                 route_branch=None, relocalize=None, scene_recovery=None, overlay=None):
+                 route_branch=None, relocalize=None, scene_recovery=None, overlay=None,
+                 wasd_mode: bool | None = None):
         self.locator, self.inputs, self.capture, self.stopped, self._pause, self.event = locator, inputs, capture, stopped, pause, event
         self.point_action, self.waypoint = point_action, waypoint
         self.point_prepare = point_prepare
@@ -207,6 +261,7 @@ class Navigator:
         self.walking_detector = walking
         self.page_detector = page_detector
         self.overlay = overlay
+        self.wasd_mode = bool(getattr(inputs, "window_only", False)) if wasd_mode is None else bool(wasd_mode)
         self.turn_ratio = None
         self.camera_probe_pixels = self.CAMERA_PROBE_PIXELS
         self.motion = None
@@ -227,6 +282,9 @@ class Navigator:
         self.heading_recheck_count = 0
         self.current_index = 0
         self.active_route = None
+        self._wasd_turn_sign = None
+        self._wasd_straight = False
+        self._wasd_regime = None
 
     def pause(self, seconds):
         return self.motion.wait(seconds) if self.motion else self._pause(seconds)
@@ -308,23 +366,47 @@ class Navigator:
             if pose.heading is not None and verify_heading:
                 evidence = self.heading_state.evidence(pose.heading)
                 arrow = self.locator.heading_diagnostics.get("player_arrow", {}).get("heading")
+                straight_motion = (not self.wasd_mode) or (
+                    self.motion is not None
+                    and self.motion.steer_keys == {"forward"}
+                    and self.pose_at - self.motion.last_turn_at >= .35
+                )
                 # The character follows W after the camera turns. Only use its
                 # arrow once forward has been held beyond the turn transition;
                 # standing arrows are stale camera evidence by definition.
-                arrow_ready = bool(self.motion and self.motion.forward_started is not None
+                arrow_ready = bool(straight_motion and self.motion and self.motion.forward_started is not None
                                    and self.pose_at-self.motion.forward_started >= .25
                                    and self.pose_at-self.heading_turn_at >= .25
                                    and input_begin-self.heading_turn_input >= .25)
                 corroborated = (arrow_ready and arrow is not None
                                 and abs(angle_delta(arrow, pose.heading)) <= 8)
+                wasd_camera_active = bool(
+                    self.wasd_mode
+                    and self.motion is not None
+                    and (bool(self.motion.steer_keys & {"left", "right", "backward"})
+                         or self.pose_at - self.motion.last_turn_at <= .45)
+                )
+                wasd_tol = (
+                    max(18.0, min(55.0, 200.0 * max(.05, self.pose_at - self.heading_turn_at) + 12.0))
+                    if wasd_camera_active else None
+                )
+                wasd_agrees = bool(
+                    wasd_tol is not None
+                    and self.heading_state.reference is not None
+                    and abs(angle_delta(pose.heading, self.heading_state.reference)) <= wasd_tol
+                )
                 self.locator.heading_diagnostics["continuity"] = {
-                    **evidence, "arrow_ready": arrow_ready, "arrow_corroborated": corroborated}
-                if not evidence["agrees"] and not corroborated:
+                    **evidence, "arrow_ready": arrow_ready, "arrow_corroborated": corroborated,
+                    **({"wasd_tol": round(wasd_tol, 1), "wasd_agrees": wasd_agrees}
+                       if wasd_tol is not None else {})}
+                if not evidence["agrees"] and not corroborated and not wasd_agrees:
                     self.locator.heading_diagnostics.update(method="heading_discontinuity",
                                                            raw_heading=pose.heading)
                     pose = replace(pose, heading=None)
                 else:
                     self.heading_state.accept(pose.heading)
+                    if self.wasd_mode:
+                        self.heading_turn_at = self.pose_at
                     self.heading_last_frame = frame
             if pose.heading is None:
                 if self.motion:
@@ -456,6 +538,16 @@ class Navigator:
             # boundary. Reuse the calibration probe while stationary to expose
             # another angle; both rays must still pass the normal checks.
             probe_scale = 2 if self.heading_recheck_count >= 3 else 1
+            if self.wasd_mode:
+                direction = "left" if self.heading_recheck_count % 2 == 0 else "right"
+                hold_seconds = .22 * probe_scale
+                self.event({"type": "heading_visibility_probe",
+                            "attempt": self.heading_recheck_count,
+                            "key": direction, "seconds": hold_seconds,
+                            "diagnostics": dict(diagnostics)})
+                self.inputs.hold(direction, hold_seconds, restore=False)
+                self.heading_turn_at = time.monotonic()
+                return self.stable_heading(pose, deadline=deadline)
             probe = self.camera_probe_pixels * probe_scale * (-1 if self.heading_recheck_count % 2 == 0 else 1)
             self.event({"type": "heading_visibility_probe",
                         "attempt": self.heading_recheck_count,
@@ -502,7 +594,55 @@ class Navigator:
         uncertainty = math.degrees(math.atan2(slack, max(remaining, .01)))
         return max(spec.heading_tolerance_near, min(5.0, uncertainty))
 
+    def _wasd_turn_stationary(self, target_heading, pose, *, tolerance=5):
+        if self.motion:
+            self.motion.stop()
+        else:
+            self.inputs.release()
+        tol = max(tolerance, 15.0)
+        pose = self.stable_heading(pose)
+        anchor = (pose.x, pose.y)
+        turn_sign = None
+        deadline = time.monotonic() + 15
+        try:
+            for _ in range(16):
+                self.inputs.check()
+                delta = angle_delta(target_heading, pose.heading)
+                if abs(delta) <= tol:
+                    return pose
+                if time.monotonic() >= deadline:
+                    break
+                if abs(delta) >= 145.0:
+                    if turn_sign is None:
+                        turn_sign = 1 if delta >= 0 else -1
+                elif abs(delta) < 120.0:
+                    turn_sign = None
+                effective_sign = turn_sign if turn_sign is not None else (1 if delta >= 0 else -1)
+                side = "right" if effective_sign > 0 else "left"
+                pulse = max(.06, min(.26, abs(delta) / 140.0))
+                before = pose.heading
+                self.inputs.hold(side, pulse, restore=False)
+                self.heading_turn_at = time.monotonic()
+                self.pause(.16)
+                pose = self.stable_heading(pose, deadline=deadline)
+                if math.hypot(pose.x - anchor[0], pose.y - anchor[1]) > 2.2:
+                    raise SceneUnavailable("原地按键转向时位置偏移过大，重新确认路线。")
+                self.event({"type": "wasd_turn", "index": self.current_index,
+                            "target": target_heading, "before": before, "after": pose.heading,
+                            "rotation": angle_delta(pose.heading, before),
+                            "key": side, "seconds": pulse, "stationary": True,
+                            "remaining_error": abs(angle_delta(target_heading, pose.heading)),
+                            "tolerance": tol})
+                if abs(angle_delta(target_heading, pose.heading)) <= tol:
+                    return pose
+            raise NavigationError("WASD 未能调整至目标朝向，已停止移动。")
+        except BaseException:
+            self.inputs.release()
+            raise
+
     def turn(self, target_heading, pose, *, stationary=False, tolerance=5):
+        if self.wasd_mode:
+            return self._wasd_turn_stationary(target_heading, pose, tolerance=tolerance)
         generation = getattr(self.inputs, "generation", 0)
         previous_delta = None
         correction_gain = 1.0
@@ -626,8 +766,9 @@ class Navigator:
         timing = self.inputs.face_camera()
         after = self.observe((pose.x, pose.y))
         error = abs(angle_delta(heading, after.heading)) if after.heading is not None else None
+        effective_tol = max(tolerance, 15.0) if self.wasd_mode else tolerance
         confirmed = (getattr(self.inputs, "generation", 0) == generation
-                     and error is not None and error <= tolerance)
+                     and error is not None and error <= effective_tol)
         self.event({"type": "character_facing", "source": "route_heading", "target": heading,
                     "camera_heading": after.heading, "camera_error": error,
                     "before": [pose.x, pose.y], "after": [after.x, after.y],
@@ -838,6 +979,187 @@ class Navigator:
                     "measured_speed": measured, "feedback_valid": learned})
         return after, recovery
 
+    def _wasd_reset_state(self):
+        self._wasd_turn_sign = None
+        self._wasd_straight = False
+        self._wasd_regime = None
+
+    def _wasd_steer_plan(self, bearing, pose, remaining, tolerance, *, velocity, advanced_seconds,
+                         recovery=False, blocked_steps=0):
+        phi = angle_delta(bearing, pose.heading)
+        abs_phi = abs(phi)
+        raw_side = "right" if phi > 0 else "left"
+        if abs_phi >= 145.0:
+            if self._wasd_turn_sign is None:
+                self._wasd_turn_sign = 1 if phi >= 0 else -1
+        elif abs_phi < 120.0:
+            self._wasd_turn_sign = None
+        turn_side = (
+            ("right" if self._wasd_turn_sign > 0 else "left")
+            if self._wasd_turn_sign is not None else raw_side
+        )
+        straight_on = max(5.0, min(9.0, max(tolerance, 5.0)))
+        straight_off = min(13.0, straight_on + 3.5)
+        trim_key = None
+        trim_seconds = 0.0
+        base_duration = remaining / velocity - advanced_seconds - .06
+        if remaining <= 1.8 and not recovery:
+            if abs_phi <= straight_on or (self._wasd_straight and abs_phi <= straight_off):
+                self._wasd_straight = True
+                self._wasd_regime = "straight"
+                chord = ("forward",)
+            elif abs_phi <= 22.5:
+                self._wasd_straight = False
+                self._wasd_regime = "straight"
+                chord = ("forward",)
+            elif abs_phi <= 67.5:
+                self._wasd_straight = False
+                self._wasd_regime = "diag"
+                chord = ("forward", raw_side)
+            elif abs_phi <= 112.5:
+                self._wasd_straight = False
+                self._wasd_regime = "strafe"
+                chord = (raw_side,)
+            elif abs_phi <= 157.5:
+                self._wasd_straight = False
+                self._wasd_regime = "rear_diag"
+                chord = ("backward", raw_side)
+            else:
+                self._wasd_straight = False
+                self._wasd_regime = "rear"
+                chord = ("backward",)
+            duration = base_duration
+            allow_jump = "forward" in chord and abs_phi <= 65.0
+            return phi, chord, trim_key, trim_seconds, duration, allow_jump
+
+        if abs_phi <= straight_on or (self._wasd_straight and abs_phi <= straight_off):
+            self._wasd_straight = True
+            self._wasd_regime = "straight"
+            chord = ("forward",)
+            duration = base_duration
+        elif (abs_phi <= 28.0 or (self._wasd_regime == "trim" and abs_phi <= 31.0)) and remaining > 2.2:
+            self._wasd_straight = False
+            self._wasd_regime = "trim"
+            chord = ("forward",)
+            trim_key = raw_side
+            trim_seconds = max(.05, min(.18, (abs_phi / 28.0) * .15))
+            duration = base_duration
+        elif abs_phi <= 68.0 or (self._wasd_regime == "diag" and abs_phi <= 72.0):
+            self._wasd_straight = False
+            self._wasd_regime = "diag"
+            chord = ("forward", raw_side)
+            duration = base_duration
+        elif abs_phi <= 112.0 or (self._wasd_regime == "strafe" and abs_phi <= 118.0):
+            self._wasd_straight = False
+            self._wasd_regime = "strafe"
+            chord = (turn_side,)
+            duration = max(.28, min(.75, remaining / velocity)) if remaining >= 2.0 else base_duration
+        else:
+            self._wasd_straight = False
+            if (remaining <= 4.0 and not recovery) or blocked_steps >= 1:
+                if abs_phi <= 157.5:
+                    self._wasd_regime = "rear_diag"
+                    chord = ("backward", raw_side)
+                else:
+                    self._wasd_regime = "rear"
+                    chord = ("backward",)
+                duration = base_duration
+            else:
+                # Keep turning laterally in open rear quadrants so camera yaw aligns cleanly.
+                self._wasd_regime = "rear_turn"
+                chord = (turn_side,)
+                duration = max(.35, min(.80, remaining / velocity))
+        allow_jump = recovery or ("forward" in chord and abs_phi <= 65.0)
+        return phi, chord, trim_key, trim_seconds, duration, allow_jump
+
+    def wasd_advance(self, pose, target, radius, speeds, *, tolerance=5.0,
+                     recovery=False, detour_deg=0.0, blocked_steps=0):
+        """Drive closed-loop multi-key WASD steering using live minimap feedback."""
+        motion = self.motion
+        generation = getattr(self.inputs, "generation", 0)
+        remaining = distance(pose, target)
+        before_at, before_input = self.pose_at, self.pose_input
+        walking = self.walking()
+        jumping = target.jump or recovery
+        mode = "jump" if jumping else "travel"
+        samples = speeds[mode]
+        velocity = max(self.MIN_PLANNING_SPEED, median(samples))
+        self.inputs.check()
+        if getattr(self.inputs, "generation", 0) != generation:
+            motion.close()
+            return pose, False, (), 0.0
+        advanced_seconds = max(0, motion.forward_elapsed() - before_input)
+        base_bearing = math.degrees(math.atan2(target.x - pose.x, pose.y - target.y)) % 360
+        bearing = (base_bearing + detour_deg) % 360
+        phi, chord, trim_key, trim_seconds, duration, allow_jump = self._wasd_steer_plan(
+            bearing, pose, remaining, tolerance,
+            velocity=velocity, advanced_seconds=advanced_seconds,
+            recovery=recovery, blocked_steps=blocked_steps,
+        )
+        if duration <= 0 and advanced_seconds > 0:
+            motion.stop()
+            return self.observe((pose.x, pose.y)), False, chord, phi
+        duration = max(.04, duration)
+        if recovery:
+            min_recovery = .55 if detour_deg == 0.0 else 1.15
+            duration = max(min_recovery, min(1.35, duration))
+        motion.steer(chord, duration, trim_key=trim_key, trim_seconds=trim_seconds)
+        if getattr(self.inputs, "generation", 0) != generation:
+            motion.close()
+            return pose, False, chord, phi
+        if allow_jump:
+            motion.jump(jumping, walking, reason="unstuck" if recovery else "segment")
+        elif not jumping and motion.jump_state != "idle":
+            motion.jump(False, walking, reason="segment")
+        if self.overlay and "forward" in chord:
+            self.overlay.notify_motion(velocity, duration, jumping and allow_jump)
+        if recovery:
+            self.pause(min(1.5, duration + .35))
+            motion.stop()
+            motion.jump(False, self.walking(), reason="unstuck_complete")
+        elif motion.jump_state in motion.JUMP_PENDING:
+            while motion.jump_state in motion.JUMP_PENDING:
+                self.pause(.01)
+        else:
+            self.pause(.01)
+        observed_at = time.monotonic()
+        after = self.observe((pose.x, pose.y))
+        observation_seconds = time.monotonic() - observed_at
+        input_seconds = max(0, self.pose_input - before_input)
+        displacement = distance(pose, after)
+        measured = displacement / input_seconds if input_seconds > 0 else 0
+        trusted = (
+            generation == getattr(self.inputs, "generation", 0)
+            and after.heading is not None
+            and input_seconds >= .08
+        )
+        learned = (
+            trusted
+            and chord == ("forward",)
+            and abs(phi) <= 20.0
+            and displacement >= .3
+            and .5 <= measured <= 50
+        )
+        if learned:
+            speeds[mode] = (samples + [measured])[-5:]
+        cam_rot = (
+            round(angle_delta(after.heading, pose.heading), 1)
+            if after.heading is not None and pose.heading is not None else None
+        )
+        self.event({"type": "forward", "index": self.current_index, "control": "wasd",
+                    "regime": self._wasd_regime, "keys": list(chord), "trim_key": trim_key,
+                    "trim_seconds": round(trim_seconds, 3) if trim_key else 0.0,
+                    "phi": round(phi, 1), "camera_rotation": cam_rot,
+                    "duration": duration, "movement_mode": mode, "bearing": bearing,
+                    "jump": jumping and allow_jump, "walking": walking, "jump_state": motion.jump_state,
+                    "recovery": recovery, "planning_speed": velocity,
+                    "input_seconds": input_seconds, "observation_seconds": observation_seconds,
+                    "capture_interval": self.pose_at - before_at, "compensated_input_seconds": advanced_seconds,
+                    "before": [pose.x, pose.y], "after": [after.x, after.y],
+                    "remaining_before": remaining, "remaining_after": distance(after, target),
+                    "measured_speed": measured, "feedback_valid": learned})
+        return after, recovery, chord, phi
+
     def follow(self, route: Route):
         if route.map_id != self.locator.spec.id:
             raise NavigationError("路线使用的地图不匹配。")
@@ -851,11 +1173,13 @@ class Navigator:
         origin = route.points[0]
         spec = self.locator.spec
         self.event({"type": "navigation_profile", "map": route.map_id,
+                    "steering": "wasd" if self.wasd_mode else "camera",
                     "transit_radius_scale": spec.transit_radius_scale,
                     "transit_pass_radius_scale": spec.transit_pass_radius_scale,
                     "heading_tolerance_far": spec.heading_tolerance_far,
                     "heading_tolerance_near": spec.heading_tolerance_near,
                     "heading_position_slack": spec.heading_position_slack})
+        self._wasd_reset_state()
         pose = self.observe((origin.x, origin.y))
         motion = Motion(self.inputs, self.event)
         self.motion = motion
@@ -865,6 +1189,7 @@ class Navigator:
         speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
         last = None
         stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
+        stuck_turn_grace = 0.0
         blocked_steps, unstuck_attempts = 0, 0
         best_distance = distance(pose, origin)
         index = 0
@@ -883,8 +1208,9 @@ class Navigator:
         generation = getattr(self.inputs, "generation", 0)
         try:
             self.inputs.check()
-            if not self.inputs.controller.post_click_key(18).wait().succeeded:
-                raise NavigationError("未能解除游戏光标模式，尚未开始移动。")
+            if not self.wasd_mode:
+                if not self.inputs.controller.post_click_key(18).wait().succeeded:
+                    raise NavigationError("未能解除游戏光标模式，尚未开始移动。")
             while index < len(route.points):
                 self.current_index = index
                 if self.stopped() or time.monotonic() >= deadline:
@@ -893,10 +1219,11 @@ class Navigator:
                 current_generation = getattr(self.inputs, "generation", 0)
                 if current_generation != generation:
                     generation = current_generation
+                    self._wasd_reset_state()
                     self.locator.reset()
                     pose = self.observe((last_good.x, last_good.y))
                     last_good = stuck_anchor = pose
-                    stuck_since, detour_hold_until = time.monotonic(), 0.0
+                    stuck_since, detour_hold_until, stuck_turn_grace = time.monotonic(), 0.0, 0.0
                     best_distance = distance(pose, rejoin or route.points[index])
                     map_checked = False
                     last = None
@@ -932,7 +1259,8 @@ class Navigator:
                     # rejoin the current segment, preserving completed actions.
                     # Distance to waypoints cannot judge a long segment's middle.
                     last_good = stuck_anchor = pose
-                    stuck_since, detour_hold_until = time.monotonic(), 0.0
+                    stuck_since, detour_hold_until, stuck_turn_grace = time.monotonic(), 0.0, 0.0
+                    self._wasd_reset_state()
                     best_distance = distance(pose, rejoin or route.points[index])
                     scene_interrupted, last = False, None
                     heading_rechecks = 0
@@ -951,7 +1279,8 @@ class Navigator:
                         self.locator.reset()
                         pose = self.observe((target.x, target.y))
                         last_good = pose
-                        stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
+                        stuck_anchor, stuck_since, detour_hold_until, stuck_turn_grace = pose, time.monotonic(), 0.0, 0.0
+                        self._wasd_reset_state()
                         best_distance = distance(pose, target)
                         map_checked = False
                         last = None
@@ -1019,7 +1348,8 @@ class Navigator:
                         rejoin = None
                         last = None
                         turnback_since = None
-                        stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
+                        stuck_anchor, stuck_since, detour_hold_until, stuck_turn_grace = pose, time.monotonic(), 0.0, 0.0
+                        self._wasd_reset_state()
                         blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, route.points[index])
                         self.event({"type": "route_rejoined", "index": index, **pose.dict()})
@@ -1048,7 +1378,8 @@ class Navigator:
                         # Page actions/collection change both timers and pose.
                         self.locator.reset()
                         pose = self.observe((target.x, target.y))
-                        stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
+                        stuck_anchor, stuck_since, detour_hold_until, stuck_turn_grace = pose, time.monotonic(), 0.0, 0.0
+                        self._wasd_reset_state()
                         if self.route_branch:
                             replacement = self.route_branch(route, index)
                             if replacement is not None:
@@ -1062,14 +1393,16 @@ class Navigator:
                         if target.jump != next_point.jump:
                             motion.stop()
                             self.pause(.5 if next_point.jump else .2)
-                        elif pose.heading is not None and abs(angle_delta(next_bearing, pose.heading)) >= 45:
+                        elif (not self.wasd_mode and pose.heading is not None
+                              and abs(angle_delta(next_bearing, pose.heading)) >= 45):
                             motion.stop()
                     index += 1
                     self.current_index = index
                     if self.overlay and pose.position_reliable:
                         self.overlay.publish_route(route, index, pose)
                     if index < len(route.points):
-                        stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
+                        stuck_anchor, stuck_since, detour_hold_until, stuck_turn_grace = pose, time.monotonic(), 0.0, 0.0
+                        self._wasd_reset_state()
                         blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, route.points[index])
                         map_checked = False
@@ -1082,7 +1415,7 @@ class Navigator:
                     # toward this waypoint and must not reset recovery timers.
                     scene_retries = 0
                     heading_rechecks = 0
-                    stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
+                    stuck_anchor, stuck_since, detour_hold_until, stuck_turn_grace = pose, time.monotonic(), 0.0, 0.0
                     blocked_steps, unstuck_attempts = 0, 0
                     best_distance = remaining_distance
                     map_checked = False
@@ -1105,7 +1438,8 @@ class Navigator:
                         rejoin = self.rejoin_point(route, index, pose)
                         map_checked = True
                         last_good = stuck_anchor = pose
-                        stuck_since, detour_hold_until = time.monotonic(), 0.0
+                        stuck_since, detour_hold_until, stuck_turn_grace = time.monotonic(), 0.0, 0.0
+                        self._wasd_reset_state()
                         blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, rejoin)
                         last = None
@@ -1137,6 +1471,47 @@ class Navigator:
                             "tolerance": round(tolerance, 2),
                             "pose": [round(pose.x, 3), round(pose.y, 3)],
                         })
+                if self.wasd_mode:
+                    heading_rechecks = 0
+                    before_move = pose
+                    forward_before = motion.forward_elapsed()
+                    step_began = time.monotonic()
+                    pose, recovery_done, chord, _ = self.wasd_advance(
+                        pose, target, radius, speeds, tolerance=tolerance,
+                        recovery=recovery, detour_deg=detour_deg, blocked_steps=blocked_steps,
+                    )
+                    move_input = max(0.0, motion.forward_elapsed() - forward_before)
+                    move_disp = distance(before_move, pose)
+                    move_speed = move_disp / move_input if move_input > 0 else 0.0
+                    if pose.heading is not None and pose.position_reliable and move_input >= .08:
+                        self.heading_recheck_count = 0
+                    turning_progress = 0.0
+                    if before_move.heading is not None and pose.heading is not None:
+                        turning_progress = (
+                            abs(angle_delta(base_bearing, before_move.heading))
+                            - abs(angle_delta(base_bearing, pose.heading))
+                        )
+                    if (not recovery and blocked_steps == 0
+                            and before_move.heading is not None
+                            and abs(angle_delta(base_bearing, before_move.heading)) > 70.0
+                            and turning_progress >= 4.0 and stuck_turn_grace < 2.5):
+                        grace = min(max(0.0, time.monotonic() - step_began), 2.5 - stuck_turn_grace)
+                        stuck_since += grace
+                        stuck_turn_grace += grace
+                    last = None if (recovery and detour_deg != 0.0) else before_move
+                    turning_clean = (
+                        not (set(chord) & {"forward", "backward"})
+                        and turning_progress >= 4.0
+                    )
+                    if recovery_done:
+                        unstuck_attempts += 1
+                        blocked_steps = 1 if move_disp < .8 else 0
+                        detour_hold_until = time.monotonic() + (1.5 if move_disp >= .8 else 0.0)
+                    elif not turning_clean and move_input >= .14 and move_speed < .95 and distance(pose, target) > radius + .35:
+                        blocked_steps += 1
+                    elif move_speed >= 2.2:
+                        blocked_steps = 0
+                    continue
                 try:
                     pose = self.turn(bearing, pose, tolerance=tolerance)
                 except HeadingUncertain:

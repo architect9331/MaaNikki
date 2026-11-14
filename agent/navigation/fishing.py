@@ -211,7 +211,8 @@ class Fishing:
                     pixels = current
                     break
         finally:
-            if self.rt.stopped or not self.inputs.foreground():
+            ready = self.inputs.capturable() if getattr(self.inputs, "window_only", False) else self.inputs.foreground()
+            if self.rt.stopped or not ready:
                 self.inputs.release()
             else:
                 self.inputs._up(binding)

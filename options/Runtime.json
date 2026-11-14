@@ -50,7 +50,7 @@
     "FocusLostBehavior": {
       "type": "select",
       "label": "游戏离开前台时",
-      "description": "任务运行中切出游戏时的处理方式。自动暂停：等你切回后继续。回到游戏：每隔几秒把游戏切回前台继续运行，想操作其他窗口时请先停止任务。辅助功能不受影响。",
+      "description": "任务运行中切出游戏时的处理方式。自动暂停：等你切回后继续。回到游戏：每隔几秒把游戏切回前台继续运行。后台运行：不抢焦点不切回，点击或拖曳界面时瞬时借用鼠标后立即归还，自动寻路改用 WASD 后台控向（需使用支持后台的截图方式且不能最小化游戏，摆饰调视角或鼠标快捷键会临时等待前台）。",
       "default_case": "Pause",
       "cases": [
         {
@@ -71,6 +71,17 @@
             "MaaNikki_FocusLost": {
               "custom_action_param": {
                 "mode": "return"
+              }
+            }
+          }
+        },
+        {
+          "name": "Background",
+          "label": "后台运行（WASD 后台寻路 + 瞬时借位点击）",
+          "pipeline_override": {
+            "MaaNikki_FocusLost": {
+              "custom_action_param": {
+                "mode": "background"
               }
             }
           }

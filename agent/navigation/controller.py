@@ -120,6 +120,13 @@ class ForegroundInput:
             and self.user32.GetForegroundWindow() == self.hwnd
         )
 
+    def focus_details(self):
+        hwnd = self.user32.GetForegroundWindow()
+        text = ctypes.create_unicode_buffer(1024)
+        if hwnd:
+            self.user32.GetWindowTextW(hwnd, text, len(text))
+        return {"game_hwnd": self.hwnd, "foreground_hwnd": int(hwnd or 0), "foreground_title": text.value}
+
     def hung(self):
         return bool(self.user32.IsWindow(self.hwnd) and self.user32.IsHungAppWindow(self.hwnd))
 
@@ -467,6 +474,11 @@ class BackgroundInput(ForegroundInput):
         if not self._post_window_key(binding.code, down=True):
             raise NavigationError(f"无法向游戏窗口发送后台按键（错误 {ctypes.get_last_error()}）。")
 
+    def key_up(self, key):
+        if key not in MACRO_KEYS:
+            raise NavigationError("宏按键未登记。")
+        self._up(self.bindings.get(key))
+
     def _up(self, binding):
         if binding.kind == "mouse":
             if binding.code in self.buttons:
@@ -483,8 +495,26 @@ class BackgroundInput(ForegroundInput):
         if not send_mouse(self.user32, flags, data=button-2 if button >= 3 else 0):
             raise NavigationError("鼠标动作输入失败。")
 
+    @contextmanager
+    def _borrowed_cursor(self, screen_x: int, screen_y: int, *, enabled: bool = True):
+        if not enabled:
+            yield
+            return
+        saved = wintypes.POINT()
+        restore_cursor = False
+        with self._per_monitor_dpi():
+            restore_cursor = bool(self.user32.GetCursorPos(ctypes.byref(saved)))
+            self.user32.SetCursorPos(screen_x, screen_y)
+        try:
+            yield
+        finally:
+            if restore_cursor:
+                with self._per_monitor_dpi():
+                    self.user32.SetCursorPos(saved.x, saved.y)
+
     def _window_point_coords(self, x, y):
-        if type(x) not in (int, float) or type(y) not in (int, float) or not self.user32.IsWindow(self.hwnd):
+        if (type(x) not in (int, float) or type(y) not in (int, float)
+                or not (x == x and y == y) or not self.user32.IsWindow(self.hwnd)):
             return None
         with self._per_monitor_dpi():
             rc = wintypes.RECT()
@@ -499,7 +529,7 @@ class BackgroundInput(ForegroundInput):
             if not self.user32.ClientToScreen(self.hwnd, ctypes.byref(pt)):
                 return None
             lparam = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
-            return lparam, int(pt.x), int(pt.y)
+            return lparam, int(pt.x), int(pt.y), cx, cy
 
     def move_window_point(self, x, y):
         """Post a client-relative WM_MOUSEMOVE without moving the physical cursor."""
@@ -508,26 +538,20 @@ class BackgroundInput(ForegroundInput):
         coords = self._window_point_coords(x, y)
         if coords is None:
             return False
-        lparam, _, _ = coords
+        lparam = coords[0]
         if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lparam):
             raise NavigationError(f"无法向游戏窗口发送后台鼠标移动（错误 {ctypes.get_last_error()}）。")
         return True
 
-    def click_window_point(self, x, y, pause, *, with_cursor_pos=False):
-        """Post a client-relative left click to the bound window; optionally sync cursor briefly."""
+    def click_window_point(self, x, y, pause, *, with_cursor_pos=True):
+        """Post a client-relative left click to the bound window; briefly borrow cursor if requested."""
         if not self.capturable() or self.stopped():
             return False
         coords = self._window_point_coords(x, y)
         if coords is None:
             return False
-        lparam, screen_x, screen_y = coords
-        saved = wintypes.POINT()
-        restore_cursor = False
-        if with_cursor_pos:
-            with self._per_monitor_dpi():
-                restore_cursor = bool(self.user32.GetCursorPos(ctypes.byref(saved)))
-                self.user32.SetCursorPos(screen_x, screen_y)
-        try:
+        lparam, screen_x, screen_y, _, _ = coords
+        with self._borrowed_cursor(screen_x, screen_y, enabled=with_cursor_pos):
             if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lparam):
                 raise NavigationError(f"无法向游戏窗口发送后台鼠标移动（错误 {ctypes.get_last_error()}）。")
             if with_cursor_pos:
@@ -548,10 +572,95 @@ class BackgroundInput(ForegroundInput):
                 wall_time.sleep(.03)
                 return pressed and not self.stopped()
             return pressed
-        finally:
-            if restore_cursor:
-                with self._per_monitor_dpi():
-                    self.user32.SetCursorPos(saved.x, saved.y)
+
+    def scroll_window_point(self, x, y, dx, dy):
+        """Post WM_MOUSEWHEEL to the target coordinate while briefly borrowing cursor hover."""
+        if not self.capturable() or self.stopped():
+            return False
+        coords = self._window_point_coords(x, y)
+        if coords is None:
+            return False
+        lparam, screen_x, screen_y, _, _ = coords
+        # Win32 WM_MOUSEWHEEL lParam carries screen coordinates, not client coordinates.
+        screen_lparam = ((screen_y & 0xFFFF) << 16) | (screen_x & 0xFFFF)
+        with self._borrowed_cursor(screen_x, screen_y, enabled=True):
+            if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lparam):
+                raise NavigationError(f"无法向游戏窗口发送后台鼠标移动（错误 {ctypes.get_last_error()}）。")
+            wall_time.sleep(.04)
+            if dy:
+                delta_y = max(-32768, min(32767, round(dy)))
+                if not self.user32.PostMessageW(self.hwnd, 0x020A, (delta_y & 0xFFFF) << 16, screen_lparam):
+                    raise NavigationError(f"无法向游戏窗口发送后台滚轮消息（错误 {ctypes.get_last_error()}）。")
+            if dx:
+                delta_x = max(-32768, min(32767, round(dx)))
+                if not self.user32.PostMessageW(self.hwnd, 0x020E, (delta_x & 0xFFFF) << 16, screen_lparam):
+                    raise NavigationError(f"无法向游戏窗口发送后台横向滚轮消息（错误 {ctypes.get_last_error()}）。")
+            wall_time.sleep(.03)
+        return not self.stopped()
+
+    def swipe_window_points(self, begin, end, duration_ms=300):
+        """Post a bounded drag between two 1280x720 points while borrowing cursor only during the drag."""
+        if (not self.capturable() or self.stopped()
+                or not isinstance(begin, (list, tuple)) or len(begin) < 2
+                or not isinstance(end, (list, tuple)) or len(end) < 2):
+            return False
+        start_coords = self._window_point_coords(begin[0], begin[1])
+        end_coords = self._window_point_coords(end[0], end[1])
+        if start_coords is None or end_coords is None:
+            return False
+        lp0, sx0, sy0, cx0, cy0 = start_coords
+        _, sx1, sy1, cx1, cy1 = end_coords
+        duration_s = max(.12, min(1.5, float(duration_ms or 300) / 1000.0))
+        steps = max(8, min(30, round(duration_s / .02)))
+        last_lp = lp0
+        pressed = False
+        with self._borrowed_cursor(sx0, sy0, enabled=True):
+            if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lp0):
+                raise NavigationError(f"无法向游戏窗口发送后台拖动起点（错误 {ctypes.get_last_error()}）。")
+            wall_time.sleep(.02)
+            if not self.user32.PostMessageW(self.hwnd, 0x0201, 0x0001, lp0):
+                raise NavigationError(f"无法向游戏窗口发送后台拖动按下（错误 {ctypes.get_last_error()}）。")
+            pressed = True
+            try:
+                wall_time.sleep(.02)
+                for step in range(1, steps + 1):
+                    if self.stopped() or not self.capturable():
+                        return False
+                    ratio = step / steps
+                    cx = round(cx0 + (cx1 - cx0) * ratio)
+                    cy = round(cy0 + (cy1 - cy0) * ratio)
+                    sx = round(sx0 + (sx1 - sx0) * ratio)
+                    sy = round(sy0 + (sy1 - sy0) * ratio)
+                    last_lp = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
+                    with self._per_monitor_dpi():
+                        self.user32.SetCursorPos(sx, sy)
+                    if not self.user32.PostMessageW(self.hwnd, 0x0200, 0x0001, last_lp):
+                        raise NavigationError(f"无法向游戏窗口发送后台拖动轨迹（错误 {ctypes.get_last_error()}）。")
+                    wall_time.sleep(duration_s / steps)
+                wall_time.sleep(.03)
+                return not self.stopped()
+            finally:
+                if pressed and self.user32.IsWindow(self.hwnd):
+                    self.user32.PostMessageW(self.hwnd, 0x0202, 0, last_lp)
+                    wall_time.sleep(.02)
+
+    def input_window_text(self, content):
+        """Post UTF-16 WM_CHAR code units directly to the bound window."""
+        if not isinstance(content, str) or not self.capturable() or self.stopped():
+            return False
+        for ch in content:
+            if self.stopped() or not self.user32.IsWindow(self.hwnd):
+                return False
+            if ch == "\n":
+                if not self._post_window_key(13, down=True) or not self._post_window_key(13, down=False):
+                    return False
+                continue
+            raw = ch.encode("utf-16-le")
+            for idx in range(0, len(raw), 2):
+                code = int.from_bytes(raw[idx:idx+2], "little")
+                if not self.user32.PostMessageW(self.hwnd, 0x0102, code, 1):
+                    raise NavigationError(f"无法向游戏窗口发送后台文本（错误 {ctypes.get_last_error()}）。")
+        return True
 
 
 def relative_camera(controller, dx: int, dy: int) -> bool:

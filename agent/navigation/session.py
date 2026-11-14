@@ -19,4 +19,5 @@ def create_navigator(runtime, teleporter, *, actions=None, event=lambda value: N
         scene_recovery=lambda: runtime.ui.revive(event),
         page_detector=lambda frame: bool(
             (result := runtime.recognize("MaaNikki_MainDetected", image=frame)) and result.hit),
-        overlay=overlay)
+        overlay=overlay,
+        wasd_mode=bool(getattr(teleporter.inputs, "window_only", False)))

@@ -81,11 +81,17 @@ class SubtaskTest(DailyRun):
             else:
                 if self.stopped:
                     raise NavigationError("子任务测试已停止。")
-                if not inputs_allowed():
+                bg = self.background_mode()
+                if not bg and not inputs_allowed():
                     raise NavigationError("子任务测试需要当前连接使用前台鼠标和键盘（Seize）。")
-                inputs = TestInputs(self.controller, lambda: self.stopped, bindings=self.game_keys)
-                self.test_stage = "focus_game"
-                focus_game(self, inputs)
+                if bg:
+                    from navigation.controller import BackgroundInput
+                    inputs = BackgroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
+                    inputs.check()
+                else:
+                    inputs = TestInputs(self.controller, lambda: self.stopped, bindings=self.game_keys)
+                    self.test_stage = "focus_game"
+                    focus_game(self, inputs)
                 self.navigation_inputs = inputs
                 result["window"] = inputs.focus_details()
                 self.test_stage = "prepare"
