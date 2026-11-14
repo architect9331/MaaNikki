@@ -26,6 +26,7 @@ from action import start_game as _start_game
 from recognition import ui_template as _ui_template
 from recognition import crown as _crown
 from tall_window import adopt_session_16_9_handoff, restore_session_16_9_windows
+from game_hud import close_all_huds
 
 
 def main() -> None:
@@ -47,6 +48,7 @@ def main() -> None:
         finally:
             AgentServer.shut_down()
     finally:
+        close_all_huds()
         restore_session_16_9_windows()
 
 

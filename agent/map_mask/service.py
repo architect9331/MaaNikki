@@ -125,7 +125,7 @@ class Gate:
 
 
 class MapMask:
-    def __init__(self, rt, hwnd, kinds):
+    def __init__(self, rt, hwnd, kinds, *, hud_sink=None):
         self.rt, self.kinds = rt, kinds
         self.gates = {key: Gate(rt.context, node) for key, node in (
             ("map", "MaaNikki_Navigation_MapFeature"), ("max", "MaaNikki_Navigation_MapMaxScale"),
@@ -162,7 +162,7 @@ class MapMask:
         try:
             self.data = PearPal(ROOT)
             self.window = OverlayWindow(hwnd, exclude_from_capture=not window_capture,
-                                        tutorial_provider=self.data.tutorial)
+                                        tutorial_provider=self.data.tutorial, hud_sink=hud_sink)
             self.thread.start()
         except Exception:
             if self.data:

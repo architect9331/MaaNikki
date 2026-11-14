@@ -2,7 +2,8 @@
   "global_option": [
     "AutoAdjustResolution",
     "FocusLostBehavior",
-    "RouteOverlayMode"
+    "RouteOverlayMode",
+    "TaskHudMode"
   ],
   "setting": [
     {
@@ -11,7 +12,8 @@
       "option": [
         "AutoAdjustResolution",
         "FocusLostBehavior",
-        "RouteOverlayMode"
+        "RouteOverlayMode",
+        "TaskHudMode"
       ],
       "default_expand": true
     }
@@ -123,6 +125,47 @@
             "MaaNikki_RouteOverlay": {
               "custom_action_param": {
                 "mode": "off"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "TaskHudMode": {
+      "type": "select",
+      "label": "画面状态与切窗原因提示",
+      "description": "任务运行期间在游戏画面顶部统一展示当前任务、运行模式与强切回前台原因（样式同步软件主题与强调色，防截图且不阻挡鼠标）。智能自适应：在前后台切换或强制切回时弹出原因说明，后台运行、跑图与探索辅助显示详细进度，普通前台任务使用紧凑单行条；始终完整显示：全程双行展示当前任务与步骤；仅需关注时显示：仅在强切前台、离开暂停或恢复后台时显示原因提示。",
+      "default_case": "Adaptive",
+      "cases": [
+        {
+          "name": "Adaptive",
+          "label": "智能自适应（推荐）",
+          "pipeline_override": {
+            "MaaNikki_TaskHud": {
+              "custom_action_param": {
+                "mode": "adaptive"
+              }
+            }
+          }
+        },
+        {
+          "name": "Always",
+          "label": "始终完整显示",
+          "pipeline_override": {
+            "MaaNikki_TaskHud": {
+              "custom_action_param": {
+                "mode": "always"
+              }
+            }
+          }
+        },
+        {
+          "name": "ReasonOnly",
+          "label": "仅在需要关注时显示原因",
+          "pipeline_override": {
+            "MaaNikki_TaskHud": {
+              "custom_action_param": {
+                "mode": "reason_only"
               }
             }
           }

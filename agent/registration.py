@@ -62,7 +62,7 @@ def agent_action(name, *, stop_on_failure=False):
             succeeded = False
             with action_profile(argv.node_name) as profile, message_scope(argv.node_name):
                 try:
-                    with task_session(context, task_id) as session:
+                    with task_session(context, task_id, node_name=argv.node_name) as session:
                         saved = session.evidence.saved if session else 0
                         try:
                             result = run(self, context, argv)
@@ -125,7 +125,7 @@ def agent_recognition(name):
         def guarded(self, context, argv):
             task_id = getattr(getattr(argv, "task_detail", None), "task_id", 0)
             try:
-                with task_session(context, task_id) as session:
+                with task_session(context, task_id, node_name=argv.node_name) as session:
                     while True:
                         generation = session.generation if session else 0
                         if session:

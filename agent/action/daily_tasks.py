@@ -242,12 +242,20 @@ class DailyRun(Executors):
         return cards
 
     def claim(self):
+        session = self._active_hud_session()
+        if session is not None:
+            session.set_stage_label("领取奖励")
         name = f"MaaNikki_Claim{self.prefix}Rewards"
         if not (self.context.get_node_data(name) or {}).get("enabled", True):
             self.rewards_ok = True
             return True
         self.rewards_ok = self.run(name, {name: {"next": []}})
         return self.rewards_ok
+
+    @staticmethod
+    def _active_hud_session():
+        from task_control import active_session
+        return active_session()
 
     def check_group(self):
         if not self.open_score_page():
@@ -267,6 +275,9 @@ class DailyRun(Executors):
             card = chosen[0]
             self.attempted.add(card.slot)
             rule = card.rule
+            session = self._active_hud_session()
+            if session is not None:
+                session.set_stage_label(rule.label)
             self.log(f"正在完成{self.title}：{rule.label}（{rule.score} 分，不消耗活跃能量）。",
                      ui_text=f"{self.title}：{rule.label}。")
             linked = rule.key == "animal_one" and "animal_three" in self.successful
@@ -310,6 +321,9 @@ class DailyRun(Executors):
 
         def steps():
             nonlocal score
+            session = self._active_hud_session()
+            if session is not None:
+                session.set_task_label(self.title, reset_stage=True)
             self.account_uid()
             if self.mode == "zhaoxi":
                 run_state.clear(self)
@@ -376,6 +390,9 @@ class DailyRun(Executors):
                     while predicted < 500 and pending and not self.stopped:
                         card = select_energy(pending, predicted, preferred)
                         pending.remove(card)
+                        session = self._active_hud_session()
+                        if session is not None:
+                            session.set_stage_label(card.rule.label)
                         self.log(f"不耗活跃能量任务不足，使用{card.rule.label}补分；保留其余活跃能量。")
                         self.last_energy_exhausted = False
                         ok = self.energy(card, preferred, overrides)
@@ -464,6 +481,9 @@ class DailyRun(Executors):
 
         def steps():
             nonlocal score
+            session = self._active_hud_session()
+            if session is not None:
+                session.set_stage_label("朝夕心愿复核")
             self.log("本轮幻境已处理，复核待补的朝夕心愿积分和奖励。")
             if not self.open_score_page():
                 return False

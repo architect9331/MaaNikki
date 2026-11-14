@@ -22,5 +22,13 @@
     "custom_action_param": {
       "mode": "full"
     }
+  },
+  "MaaNikki_TaskHud": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "mode": "adaptive"
+    }
   }
 }

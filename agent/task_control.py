@@ -52,6 +52,12 @@ class ForegroundSession:
         self._observed_foreground = None
         self._foreground_required_depth = 0
         self._foreground_pause_message = None
+        self._tasker_key = None
+        self._hud = None
+        self._task_label = ""
+        self._stage_label = ""
+        self._step_text = ""
+        self._observation_hud_mode = "observation"
         self.frame_validated = False
         self.account_uid = None
         self.account_generation = None
@@ -119,6 +125,76 @@ class ForegroundSession:
 
     def _returns_to_game(self):
         return self._focus_lost_mode() == "return"
+
+    def _control_mode(self):
+        if self._background_observation:
+            return self._observation_hud_mode or "observation"
+        return self._focus_lost_mode()
+
+    def _resolve_hwnd(self, hwnd=None):
+        if hwnd:
+            return int(hwnd)
+        adapter_hwnd = getattr(self.adapter, "hwnd", 0)
+        if adapter_hwnd:
+            return int(adapter_hwnd)
+        try:
+            ctrl = self.controller
+            info = getattr(ctrl, "info", None)
+            val = info.get("hwnd", 0) if isinstance(info, dict) else 0
+            return int(val or 0)
+        except Exception:
+            return 0
+
+    @property
+    def hud(self):
+        return self._hud
+
+    def ensure_hud(self, hwnd=None):
+        if self._tasker_key is None or self.context is None:
+            return None
+        game_hwnd = self._resolve_hwnd(hwnd)
+        if game_hwnd <= 0:
+            return self._hud
+        from game_hud import acquire_game_hud
+        was_fresh = self._hud is None
+        hud = acquire_game_hud(self._tasker_key, game_hwnd, controller=self._controller, context=self.context)
+        self._hud = hud
+        if hud is not None:
+            if was_fresh:
+                hud.set_paused(False)
+                hud.clear_forced()
+                hud.clear_route()
+                hud.clear_exploration_hint()
+            hud.set_context(
+                control_mode=self._control_mode(),
+                task_label=self._task_label or None,
+                stage_label=self._stage_label,
+                step_text=self._step_text,
+            )
+        return hud
+
+    def set_task_label(self, label, *, reset_stage=False):
+        clean = str(label or "").strip()
+        if not clean:
+            return
+        if clean != self._task_label:
+            self._task_label = clean
+            if reset_stage:
+                self._stage_label = ""
+        elif reset_stage:
+            self._stage_label = ""
+        if self._hud is not None:
+            self._hud.set_task(clean, stage="" if reset_stage else None)
+
+    def set_stage_label(self, label):
+        self._stage_label = str(label or "").strip()
+        if self._hud is not None:
+            self._hud.set_stage(self._stage_label)
+
+    def set_step_text(self, text):
+        self._step_text = str(text or "").strip()
+        if self._hud is not None:
+            self._hud.set_step(self._step_text)
 
     def ensure_adapter(self):
         if self.adapter is None:
@@ -202,31 +278,53 @@ class ForegroundSession:
         return stopping
 
     @contextmanager
-    def background_observation(self):
+    def background_observation(self, *, hud_mode="observation"):
         """Allow resident-helper captures; physical input still requires focus."""
         previous = self._background_observation
+        previous_mode = self._observation_hud_mode
         self._background_observation = True
+        self._observation_hud_mode = hud_mode or "observation"
         self._observed_foreground = None
         self.generation += 1
+        if self._hud is not None:
+            self._hud.set_context(control_mode=self._control_mode())
         try:
             yield
         finally:
             self._background_observation = previous
+            self._observation_hud_mode = previous_mode
             self._observed_foreground = None
             self.generation += 1
+            if self._hud is not None:
+                self._hud.set_context(control_mode=self._control_mode())
 
     @contextmanager
     def foreground_required(self, *, message=None):
         """Seize and auto-pull foreground while a physical-mouse/camera phase runs."""
+        was_depth = self._foreground_required_depth
         self._foreground_required_depth += 1
         previous_message = self._foreground_pause_message
-        if message is not None:
+        if message is not None and (was_depth == 0 or not self._foreground_pause_message):
             self._foreground_pause_message = message
+        bg_mode = self._background_mode()
+        if self._hud is not None and bg_mode and self._foreground_required_depth == 1:
+            self._hud.set_forced(
+                self._foreground_pause_message or "当前阶段需要使用物理鼠标或视角控制",
+                active=True,
+            )
         try:
             yield
         finally:
             self._foreground_pause_message = previous_message
             self._foreground_required_depth = max(0, self._foreground_required_depth - 1)
+            if self._foreground_required_depth == 0 and self._hud is not None:
+                if bg_mode and not self.stopped():
+                    self._hud.clear_forced(
+                        recovered_msg="物理鼠标/视角阶段已完成，可随时切回其他窗口",
+                        recovered_seconds=3.5,
+                    )
+                else:
+                    self._hud.clear_forced()
 
     @staticmethod
     def _bring_to_foreground(adapter):
@@ -324,6 +422,10 @@ class ForegroundSession:
         finally:
             self.paused_seconds += wall_time.monotonic()-begin
             self.waiting = False
+            if self._hud is not None:
+                self._hud.set_paused(False)
+                if self.stopped():
+                    self._hud.clear_forced()
 
     def wait(self, adapter=None, *, require_foreground=False, require_capturable=False):
         if self.waiting:
@@ -333,6 +435,9 @@ class ForegroundSession:
         effective_foreground = require_foreground or self._foreground_required_depth > 0
         if adapter is None:
             adapter = self.ensure_adapter()
+        hud = self.ensure_hud(getattr(adapter, "hwnd", 0))
+        if hud is not None:
+            hud.set_context(control_mode=self._control_mode())
         if not adapter.user32.IsWindow(adapter.hwnd):
             self.window_closed()
         if not self.started:
@@ -375,12 +480,23 @@ class ForegroundSession:
                 self.generation += 1
             self._observed_foreground = foreground
             if not (require_capturable or window_only) or adapter.capturable():
+                if hud is not None:
+                    hud.set_paused(False)
+                    if self._foreground_required_depth == 0:
+                        hud.clear_forced()
                 return
             pause_message = (
                 "游戏窗口已最小化，任务暂停；恢复窗口后自动继续。"
                 if adapter.user32.IsIconic(adapter.hwnd)
                 else "游戏已离开前台且当前截图方式需要前台画面，任务暂停；切回无限暖暖后自动继续。"
             )
+            if hud is not None:
+                hud.set_paused(
+                    True,
+                    reason=("游戏窗口已最小化，请恢复窗口后继续"
+                            if adapter.user32.IsIconic(adapter.hwnd)
+                            else "当前截图方式需要前台画面，切回无限暖暖后继续"),
+                )
             self._wait_until(
                 adapter,
                 adapter.capturable,
@@ -391,21 +507,43 @@ class ForegroundSession:
             )
             return
         if adapter.foreground():
+            if hud is not None:
+                hud.set_paused(False)
+                if bg_mode and self._foreground_required_depth > 0:
+                    hud.set_forced(
+                        self._foreground_pause_message or "当前阶段需要使用物理鼠标或视角控制",
+                        active=True,
+                    )
+                elif self._foreground_required_depth == 0:
+                    hud.clear_forced()
             return
         allow_auto_focus = not self._background_observation
-        bring_back = allow_auto_focus and (
-            (bg_mode and effective_foreground)
-            or self._returns_to_game()
-        )
+        bg_temp_fg = allow_auto_focus and bg_mode and effective_foreground
+        return_fg = allow_auto_focus and (not bg_temp_fg) and self._returns_to_game()
+        bring_back = bg_temp_fg or return_fg
         pause_message = (
             (self._foreground_pause_message
              or "当前操作需要使用前台鼠标或视角控制，正在自动将游戏切回前台并保持至本阶段结束。")
-            if allow_auto_focus and bg_mode and effective_foreground else
+            if bg_temp_fg else
             ("游戏当前动作需要在前台执行，任务暂停；切回无限暖暖后自动继续。"
              if bg_active else
              ("游戏已离开前台，正在切回游戏继续运行。"
-              if bring_back else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。"))
+              if return_fg else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。"))
         )
+        if hud is not None:
+            if bg_temp_fg:
+                hud.set_forced(
+                    self._foreground_pause_message or "当前操作需要使用物理鼠标或视角控制",
+                    active=True,
+                )
+            elif return_fg:
+                hud.set_forced("已开启「回到游戏」模式，正在自动拉回游戏窗口", active=True)
+            else:
+                hud.set_paused(
+                    True,
+                    reason=("当前动作需要在前台执行，切回游戏后继续"
+                            if bg_active else "游戏已离开前台自动暂停，切回窗口后继续"),
+                )
         self._wait_until(
             adapter,
             lambda: adapter.foreground() and not adapter.hung(),
@@ -414,10 +552,15 @@ class ForegroundSession:
             check_hung=not self._background_observation,
             bring_back=bring_back,
         )
+        if hud is not None and return_fg and not self.stopped():
+            hud.clear_forced(
+                flash_reason="已开启「回到游戏」模式，游戏离开前台时会自动切回（可在设置中改为「自动暂停」或「后台运行」）",
+                flash_seconds=4.5,
+            )
 
 
 @contextmanager
-def task_session(context, task_id):
+def task_session(context, task_id, *, node_name=""):
     parent = active_session()
     if parent is not None:
         yield parent
@@ -449,17 +592,30 @@ def task_session(context, task_id):
     else:
         _SESSIONS.move_to_end(key)
         session.context = context
+    session._tasker_key = tasker_key
+    if node_name:
+        from game_hud import resolve_task_label
+        resolved = resolve_task_label(node_name, session._task_label)
+        if resolved:
+            session.set_task_label(resolved)
     token = _ACTIVE.set(session)
     _RUNNING[tasker_key] = session
+    stopping = False
     try:
+        session.ensure_hud()
         yield session
     finally:
         try:
             for inputs in list(session.inputs):
                 inputs.release()
-            if session._frame_failure or context.tasker.stopping:
+            stopping = bool(session._frame_failure or context.tasker.stopping)
+            if stopping:
                 _SESSIONS.pop(key, None)
         finally:
+            from game_hud import release_game_hud
+            release_game_hud(tasker_key, immediate=stopping)
+            if stopping:
+                session._hud = None
             # Native proxy/context lifetimes end with the callback. Persist
             # only pause accounting across successive pipeline nodes.
             session.inputs.clear()

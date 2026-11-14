@@ -43,6 +43,8 @@ class Runtime:
         self._account_generation = None
         self._account_mismatch = False
         self._frame_incomplete = False
+        if session is not None:
+            session.ensure_hud()
         from .ui import GameUI
         self.ui = GameUI(self, RESOURCE)
 
@@ -180,6 +182,13 @@ class Runtime:
             self.context.run_task("MaaNikki_Daily_Message", {
                 "MaaNikki_Daily_Message": {"focus": {
                     "Node.Action.Starting": display if saved else text}}})
+        session = active_session()
+        if session is not None and not detail and not stopped and display:
+            clean = display.strip()
+            if (clean
+                    and not clean.startswith(("游戏已", "游戏窗口已", "当前操作需要使用前台", "前台鼠标操作阶段已结束"))
+                    and "正在抢占并将游戏保持在前台" not in clean):
+                session.set_step_text(clean)
 
     @property
     def evidence(self):

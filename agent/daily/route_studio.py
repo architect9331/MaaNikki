@@ -139,14 +139,20 @@ class RouteRecorder(Runtime):
         self.published_at = 0
         self.publish(force=True)
         session = active_session()
-        observation = session.background_observation() if session else nullcontext()
+        observation = session.background_observation(hud_mode="studio") if session else nullcontext()
         watcher = overlay = None
         try:
             inputs = ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
+            if session is not None:
+                session.set_task_label("录制路线", reset_stage=True)
+            hud = session.ensure_hud(getattr(inputs, "hwnd", 0)) if session is not None else None
             focus_game(self, inputs)
             locator = Locator(spec)
             overlay_mode = resolve_route_overlay_mode(getattr(self, "context", None))
-            overlay = RouteMinimapOverlay(inputs.hwnd, spec, initial_mode=overlay_mode) if getattr(inputs, "hwnd", 0) else None
+            overlay = (
+                RouteMinimapOverlay(inputs.hwnd, spec, initial_mode=overlay_mode, hud_sink=hud)
+                if getattr(inputs, "hwnd", 0) else None
+            )
             watched = {virtual_key(self.game_keys.get("jump")): "jump",
                        virtual_key(self.game_keys.get("interact")): "interact", **HOTKEYS}
             for name in RECORDED_KEYS:

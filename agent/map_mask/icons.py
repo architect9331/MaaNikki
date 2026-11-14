@@ -193,19 +193,24 @@ def marker_icon(kind: str, size: int, *, active: bool = False, badge: bool = Tru
     return np.clip(np.rint(result), 0, 255).astype(np.uint8)
 
 
-@lru_cache(maxsize=32)
-def ui_glyph(kind: str, size: int, *, active: bool = False):
+@lru_cache(maxsize=64)
+def ui_glyph(kind: str, size: int, *, active: bool = False, color_bgr: tuple[int, int, int] | None = None):
     extent = max(24, size * 4)
     unit = extent / 64.0
     canvas = np.zeros((extent, extent, 4), dtype=np.float32)
     if kind == "close":
         pts = _spark_vertices(24.0, 24.0, inner=6.0, tilt=math.pi / 4)
-        color = (72, 92, 156) if active else (92, 114, 142)
+        color = color_bgr if color_bgr is not None else ((72, 92, 156) if active else (92, 114, 142))
         _blend(canvas, _poly_mask(extent, unit, pts), color)
     elif kind == "sparkle":
         pts = _spark_vertices(24.0, 24.0, inner=6.5, tilt=0.0)
-        _blend(canvas, _poly_mask(extent, unit, pts), (156, 174, 192))
+        outer_col = color_bgr if color_bgr is not None else (156, 174, 192)
+        inner_col = (
+            tuple(min(255, round(c * 0.78 + 56)) for c in outer_col)
+            if color_bgr is not None else (186, 202, 218)
+        )
+        _blend(canvas, _poly_mask(extent, unit, pts), outer_col)
         inner = _spark_vertices(13.0, 13.0, inner=3.5, tilt=math.pi / 4)
-        _blend(canvas, _poly_mask(extent, unit, inner), (186, 202, 218))
+        _blend(canvas, _poly_mask(extent, unit, inner), inner_col)
     result = cv2.resize(canvas, (size, size), interpolation=cv2.INTER_AREA)
     return np.clip(np.rint(result), 0, 255).astype(np.uint8)

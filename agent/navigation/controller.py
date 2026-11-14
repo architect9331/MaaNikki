@@ -489,7 +489,7 @@ class BackgroundInput(ForegroundInput):
     def click_mouse(self, button, seconds=.05):
         from task_control import active_session
         session = active_session()
-        with (session.foreground_required() if session is not None else nullcontext()):
+        with (session.foreground_required(message="需要通过物理鼠标点击完成交互") if session is not None else nullcontext()):
             self.check(require_foreground=True)
             return super().click_mouse(button, seconds)
 
@@ -498,7 +498,7 @@ class BackgroundInput(ForegroundInput):
         binding = self.bindings.get(key)
         session = active_session()
         need_fg = session is not None and binding.kind == "mouse"
-        with (session.foreground_required() if need_fg else nullcontext()):
+        with (session.foreground_required(message="需要持续按住物理鼠标按键") if need_fg else nullcontext()):
             return super().hold(key, seconds, restore=restore)
 
     def mouse_down(self, button=0):

@@ -9,7 +9,8 @@ import threading
 import time
 
 from message_log import write_message
-from .surface import LayeredSurface, bind, checked
+from overlay_style import resolve_overlay_theme
+from .surface import LayeredSurface, bind, checked, split_exploration_hint
 
 
 PROC = ctypes.WINFUNCTYPE(ctypes.c_ssize_t, w.HWND, w.UINT, w.WPARAM, w.LPARAM)
@@ -32,10 +33,11 @@ def _in_rect(x, y, rect):
 
 
 class OverlayWindow:
-    def __init__(self, game, *, exclude_from_capture=True, tutorial_provider=None):
+    def __init__(self, game, *, exclude_from_capture=True, tutorial_provider=None, hud_sink=None):
         self.game = game
         self.exclude_from_capture = exclude_from_capture
         self.tutorial_provider = tutorial_provider
+        self.hud_sink = hud_sink
         self.lock = threading.Lock()
         self.snapshot = ((), "", None, 0.0)
         self.status = {"state": "starting"}
@@ -52,6 +54,9 @@ class OverlayWindow:
             self.stop.set()
             raise RuntimeError(self.error or "地图遮罩窗口创建超时。")
 
+    def set_hud_sink(self, hud_sink):
+        self.hud_sink = hud_sink
+
     def publish(self, points=(), hint="", circle=None):
         with self.lock:
             self.snapshot = (points, hint, circle, time.monotonic())
@@ -59,6 +64,9 @@ class OverlayWindow:
     def hide(self):
         with self.lock:
             self.snapshot = ((), "", None, 0.0)
+        hud = self.hud_sink
+        if hud is not None:
+            hud.clear_exploration_hint()
 
     def close(self):
         self.hide()
@@ -176,11 +184,21 @@ class OverlayWindow:
                           "unfocused" if fg not in (self.game, hwnd) else
                           "empty" if not (markers or hint) else
                           "stale" if now - updated >= 1 else "visible")
+                hud = self.hud_sink
+                hud_alive = bool(hud is not None and hud.alive())
+                if reason == "visible" and hud_alive:
+                    if hint:
+                        h_badge, h_title, h_role = split_exploration_hint(hint)
+                        hud.set_exploration_hint(h_title, badge=h_badge, role=h_role, active=True)
+                    else:
+                        hud.clear_exploration_hint()
+                elif hud_alive:
+                    hud.clear_exploration_hint()
                 if reason != "visible" or circle is not None:
                     selected_id = selected_key = None
                     selected_items = ()
                     was_down = dragging_outside = False
-                if reason == "visible":
+                if reason == "visible" and not (hud_alive and not markers):
                     rect, origin = w.RECT(), w.POINT()
                     checked(get_client(self.game, ctypes.byref(rect)), "读取游戏客户区")
                     checked(to_screen(self.game, ctypes.byref(origin)), "读取游戏窗口位置")
@@ -308,12 +326,15 @@ class OverlayWindow:
                             card_sig = (t.point_id, t.loading, t.error, t.image is not None,
                                         card_data["anchor"], card_data["index"], card_data["total"],
                                         card_data["hover"])
+                        theme = resolve_overlay_theme()
                         draw_coords = tuple(entry[:4] for entry in markers)
-                        content = draw_coords, hint, circle, active_key, card_sig
+                        content = (draw_coords, "" if hud_alive else hint, circle, active_key, card_sig,
+                                   theme.mode, theme.accent_name)
                         if content != rendered:
                             self.phase = "draw"
                             rendered_pixels = surface.draw(
-                                markers, hint, circle, active_key=active_key, card=card_data)
+                                markers, hint, circle, active_key=active_key, card=card_data,
+                                delegate_hint=hud_alive)
                         if content != rendered or next_geometry != geometry or not shown(hwnd):
                             self.phase = "present"
                             surface.present(hwnd, origin)
@@ -324,7 +345,7 @@ class OverlayWindow:
                         if now >= next_topmost:
                             checked(move(hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0, 0x0013), "置顶地图遮罩")
                             next_topmost = now + .25
-                if reason != "visible":
+                if reason != "visible" or (hud_alive and not markers):
                     if applied_interactive:
                         set_style(hwnd, -20, passthrough_exstyle)
                         applied_interactive = self.interactive = False

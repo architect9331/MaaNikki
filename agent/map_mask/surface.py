@@ -5,87 +5,33 @@ import ctypes
 from ctypes import wintypes as w
 import numpy as np
 
+from overlay_style import (
+    FONT_FAMILY,
+    BitmapInfo,
+    Blend,
+    _blend_rect,
+    _blend_stamp,
+    _gdi_text_extent,
+    _rounded_mask,
+    bind,
+    checked,
+    mix_bgr,
+    render_top_center_banner,
+    resolve_overlay_theme,
+)
 from .icons import marker_icon, ui_glyph
 
 
-class BitmapInfo(ctypes.Structure):
-    _fields_ = [("size", w.DWORD), ("width", w.LONG), ("height", w.LONG),
-                ("planes", w.WORD), ("bits", w.WORD), ("compression", w.DWORD),
-                ("image_size", w.DWORD), ("x_resolution", w.LONG),
-                ("y_resolution", w.LONG), ("colors", w.DWORD),
-                ("important_colors", w.DWORD), ("color_table", w.DWORD)]
-
-
-class Blend(ctypes.Structure):
-    _fields_ = [("operation", w.BYTE), ("flags", w.BYTE),
-                ("alpha", w.BYTE), ("format", w.BYTE)]
-
-
-def bind(library, name, result, *args):
-    function = getattr(library, name)
-    function.restype, function.argtypes = result, list(args)
-    return function
-
-
-def checked(result, operation):
-    if not result:
-        raise OSError(f"{operation}失败（Win32={ctypes.get_last_error()}）。")
-    return result
-
-
-def _rounded_mask(h, w, radius):
-    yy, xx = np.ogrid[:h, :w]
-    r = max(1.0, float(radius))
-    dx = np.maximum(np.maximum(r - xx, xx - (w - 1 - r)), 0.0)
-    dy = np.maximum(np.maximum(r - yy, yy - (h - 1 - r)), 0.0)
-    dist = np.hypot(dx, dy)
-    return np.clip(r + 0.5 - dist, 0.0, 1.0).astype(np.float32)
-
-
-def _blend_rect(pixels, x0, y0, x1, y1, color_bgr, radius=0, opacity=1.0, border_bgr=None, border_px=1.5):
-    H, W = pixels.shape[:2]
-    cx0, cy0 = max(0, round(x0)), max(0, round(y0))
-    cx1, cy1 = min(W, round(x1)), min(H, round(y1))
-    if cx0 >= cx1 or cy0 >= cy1:
-        return
-    w_box, h_box = round(x1 - x0), round(y1 - y0)
-    yy, xx = np.ogrid[cy0 - round(y0):cy1 - round(y0), cx0 - round(x0):cx1 - round(x0)]
-    r = max(1.0, float(radius))
-    dx = np.maximum(np.maximum(r - xx, xx - (w_box - 1 - r)), 0.0)
-    dy = np.maximum(np.maximum(r - yy, yy - (h_box - 1 - r)), 0.0)
-    dist = np.hypot(dx, dy)
-    outer = np.clip(r + 0.5 - dist, 0.0, 1.0).astype(np.float32) * float(opacity)
-    alpha = outer[..., None]
-    fill = np.asarray(color_bgr, dtype=np.float32)
-    if border_bgr is not None:
-        inner = np.clip(r - border_px + 0.5 - dist, 0.0, 1.0).astype(np.float32)[..., None]
-        b_col = np.asarray(border_bgr, dtype=np.float32)
-        col = fill * inner + b_col * (1.0 - inner)
-    else:
-        col = fill
-    target = pixels[cy0:cy1, cx0:cx1].astype(np.float32)
-    src_pre = np.empty_like(target)
-    src_pre[..., :3] = col * alpha
-    src_pre[..., 3:] = alpha * 255.0
-    pixels[cy0:cy1, cx0:cx1] = np.clip(
-        np.rint(src_pre + target * (1.0 - alpha)), 0, 255).astype(np.uint8)
-
-
-def _blend_stamp(pixels, stamp, left, top, circle=None, sx=1.0, sy=1.0):
-    H, W = pixels.shape[:2]
-    sh, sw = stamp.shape[:2]
-    x0, y0 = max(0, left), max(0, top)
-    x1, y1 = min(W, left + sw), min(H, top + sh)
-    if x0 >= x1 or y0 >= y1:
-        return
-    source = stamp[y0 - top:y1 - top, x0 - left:x1 - left].astype(np.uint16)
-    if circle:
-        cx, cy, radius = circle
-        yy, xx = np.ogrid[y0:y1, x0:x1]
-        inside = ((xx / sx - cx) ** 2 + (yy / sy - cy) ** 2 <= radius ** 2)
-        source = source * inside[..., None]
-    target = pixels[y0:y1, x0:x1]
-    target[:] = source + (target.astype(np.uint16) * (255 - source[..., 3:]) + 127) // 255
+def split_exploration_hint(hint: str) -> tuple[str, str, str]:
+    clean = " ".join((hint or "").split())
+    if not clean:
+        return ("探索辅助", "", "accent")
+    if "登录" in clean:
+        return ("探索辅助", clean, "paused")
+    for prefix in ("地图标记：", "地图标记:"):
+        if clean.startswith(prefix):
+            return ("地图标记", clean[len(prefix):].strip() or clean, "accent")
+    return ("探索辅助", clean, "accent")
 
 
 def _wrap_lines(text, width_chars=21, max_lines=3):
@@ -150,7 +96,7 @@ class LayeredSurface:
             self.delete_dc(self.dc)
             self.dc = None
 
-    def draw(self, points, hint, circle, *, active_key=None, card=None):
+    def draw(self, points, hint, circle, *, active_key=None, card=None, delegate_hint=False):
         self.pixels.fill(0)
         dc, gdi = self.dc, self.gdi
         text_out = bind(gdi, "TextOutW", w.BOOL, w.HDC, ctypes.c_int, ctypes.c_int, w.LPCWSTR, ctypes.c_int)
@@ -158,6 +104,8 @@ class LayeredSurface:
         sx, sy = self.width / 1280.0, self.height / 720.0
         s = min(sx, sy)
         pixels = self.pixels.view(np.uint8).reshape(self.height, self.width, 4)
+        theme = resolve_overlay_theme()
+        badge_rim = mix_bgr(theme.accent_bgr, (255, 255, 255), 0.28)
         objects = []
         old_font = None
         text_items = []
@@ -185,18 +133,29 @@ class LayeredSurface:
                     bx0 = round(px + icon_sz * 0.16)
                     by0 = round(py - icon_sz * 0.46)
                     _blend_rect(pixels, bx0, by0, bx0 + bw, by0 + bh,
-                                (54, 42, 68), radius=bh / 2, border_bgr=(184, 219, 240), border_px=max(1.0, 1.3 * s))
+                                theme.hud_bg_bgr, radius=bh / 2, border_bgr=badge_rim, border_px=max(1.0, 1.3 * s))
                     tx = bx0 + max(3, round((bw - len(label) * 7.2 * s) / 2))
                     ty = by0 + max(1, round(1.5 * s))
-                    text_items.append(("badge", tx, ty, 0xEFF7FF, label))
+                    text_items.append(("badge", tx, ty, theme.hud_title_ref, label))
 
-            if hint:
-                left = max(8, round(260 * sx))
-                _blend_rect(pixels, left - round(12 * sx), round(24 * sy),
-                            min(self.width - 8, left + round(460 * sx)), round(58 * sy),
-                            (38, 30, 26), radius=round(8 * s), opacity=0.88,
-                            border_bgr=(118, 142, 168), border_px=max(1.0, 1.2 * s))
-                text_items.append(("body", left, round(31 * sy), 0xEAF3FA, hint))
+            visible_hint = bool(hint and not delegate_hint)
+            if visible_hint:
+                h_badge, h_title, h_role = split_exploration_hint(hint)
+                render_top_center_banner(
+                    pixels,
+                    self.pixels,
+                    self.dc,
+                    self.gdi,
+                    self.select,
+                    self.delete,
+                    self.width,
+                    self.height,
+                    badge=h_badge,
+                    title=h_title,
+                    subtitle="",
+                    role=h_role,
+                    theme=theme,
+                )
             self.card_layout = None
             if card and not circle:
                 tut = card["tutorial"]
@@ -226,22 +185,24 @@ class LayeredSurface:
 
                 _blend_rect(pixels, cx0 + round(3 * s), cy0 + round(5 * s),
                             cx1 + round(3 * s), cy1 + round(5 * s),
-                            (28, 22, 18), radius=round(14 * s), opacity=0.32)
-                _blend_rect(pixels, cx0, cy0, cx1, cy1, (225, 236, 244),
-                            radius=round(14 * s), border_bgr=(184, 198, 212), border_px=max(1.0, 1.5 * s))
+                            (14, 11, 12), radius=round(14 * s), opacity=0.34)
+                _blend_rect(pixels, cx0, cy0, cx1, cy1, theme.card_bg_bgr,
+                            radius=round(14 * s), border_bgr=theme.card_border_bgr, border_px=max(1.0, 1.5 * s))
                 bar_x = cx1 - round(7 * s)
+                bar_col = mix_bgr(theme.card_border_bgr, theme.card_accent_bgr, 0.58)
                 _blend_rect(pixels, bar_x, cy0 + round(44 * s), bar_x + max(2, round(3 * s)),
-                            cy1 - round(24 * s), (150, 166, 182), radius=round(1.5 * s))
+                            cy1 - round(24 * s), bar_col, radius=round(1.5 * s))
 
                 head_icon = marker_icon(tut.kind, max(16, round(26 * s)), badge=False)
                 _blend_stamp(pixels, head_icon, cx0 + pad, cy0 + round(14 * s))
                 text_items.append(("title", cx0 + pad + round(32 * s), cy0 + round(16 * s),
-                                   0x465870, tut.kind_name))
+                                   theme.card_title_ref, tut.kind_name))
 
                 close_sz = max(14, round(20 * s))
                 close_x = cx1 - pad - close_sz
                 close_y = cy0 + round(17 * s)
-                _blend_stamp(pixels, ui_glyph("close", close_sz, active=(hover == "close")),
+                close_col = theme.card_accent_bgr if hover == "close" else theme.card_glyph_bgr
+                _blend_stamp(pixels, ui_glyph("close", close_sz, active=(hover == "close"), color_bgr=close_col),
                              close_x, close_y)
                 close_rect = (close_x - round(6 * s), close_y - round(6 * s),
                               close_x + close_sz + round(6 * s), close_y + close_sz + round(6 * s))
@@ -251,21 +212,23 @@ class LayeredSurface:
                     nx0 = close_x - nav_w - round(12 * s)
                     ny0 = cy0 + round(16 * s)
                     _blend_rect(pixels, nx0, ny0, nx0 + nav_w, ny0 + nav_h,
-                                (202, 217, 229), radius=nav_h / 2)
+                                theme.card_pill_bgr, radius=nav_h / 2,
+                                border_bgr=theme.card_border_bgr, border_px=max(0.8, 1.0 * s))
                     prev_rect = (nx0, ny0, nx0 + round(24 * s), ny0 + nav_h)
                     next_rect = (nx0 + nav_w - round(24 * s), ny0, nx0 + nav_w, ny0 + nav_h)
                     text_items.append(("small_bold", nx0 + round(6 * s), ny0 + round(2 * s),
-                                       0x364860 if hover == "prev" else 0x5A6E84, "‹"))
+                                       theme.card_accent_ref if hover == "prev" else theme.card_muted_ref, "‹"))
                     page_txt = f"{idx + 1}/{total}"
                     text_items.append(("small", nx0 + round(24 * s), ny0 + round(3 * s),
-                                       0x4A5C72, page_txt))
+                                       theme.card_title_ref, page_txt))
                     text_items.append(("small_bold", nx0 + nav_w - round(14 * s), ny0 + round(2 * s),
-                                       0x364860 if hover == "next" else 0x5A6E84, "›"))
+                                       theme.card_accent_ref if hover == "next" else theme.card_muted_ref, "›"))
 
                 yc = cy0 + round(48 * s)
                 sp_sz = max(12, round(16 * s))
-                _blend_stamp(pixels, ui_glyph("sparkle", sp_sz), cx0 + pad, yc + round(2 * s))
-                text_items.append(("sub", cx0 + pad + round(22 * s), yc, 0x465870, tut.title))
+                _blend_stamp(pixels, ui_glyph("sparkle", sp_sz, color_bgr=theme.card_accent_bgr),
+                             cx0 + pad, yc + round(2 * s))
+                text_items.append(("sub", cx0 + pad + round(22 * s), yc, theme.card_title_ref, tut.title))
                 yc += round(26 * s)
 
                 if has_diff:
@@ -273,9 +236,10 @@ class LayeredSurface:
                     pw = round((18 + len(diff_txt) * 12.5) * s)
                     ph = round(23 * s)
                     _blend_rect(pixels, cx0 + pad, yc, cx0 + pad + pw, yc + ph,
-                                (202, 217, 229), radius=ph / 2)
+                                theme.card_pill_bgr, radius=ph / 2,
+                                border_bgr=theme.card_border_bgr, border_px=max(0.8, 1.0 * s))
                     text_items.append(("small_bold", cx0 + pad + round(10 * s), yc + round(3 * s),
-                                       0x4A5C72, diff_txt))
+                                       theme.card_accent_ref, diff_txt))
                     yc += round(30 * s)
                 img_w = cw - 2 * pad
                 if has_img:
@@ -299,23 +263,23 @@ class LayeredSurface:
                     yc += img_h + round(12 * s)
                 elif tut.loading:
                     _blend_rect(pixels, cx0 + pad, yc, cx0 + pad + img_w, yc + img_h,
-                                (212, 224, 233), radius=round(8 * s))
+                                theme.card_surface_bgr, radius=round(8 * s))
                     text_items.append(("small", cx0 + pad + round(102 * s), yc + round(29 * s),
-                                       0x687A8E, "正在加载点位教程…"))
+                                       theme.card_muted_ref, "正在加载点位教程…"))
                     yc += img_h + round(12 * s)
 
                 for line in lines:
-                    text_items.append(("body", cx0 + pad, yc, 0x3A4B60, line))
+                    text_items.append(("body", cx0 + pad, yc, theme.card_body_ref, line))
                     yc += round(22 * s)
 
                 if footer_rows:
                     yc += round(6 * s)
                     if tut.contributor:
-                        text_items.append(("small", cx0 + pad, yc, 0x6A7D92,
+                        text_items.append(("small", cx0 + pad, yc, theme.card_muted_ref,
                                            f"贡献者：  {tut.contributor}"))
                         yc += round(19 * s)
                     if tut.updated_at:
-                        text_items.append(("small", cx0 + pad, yc, 0x6A7D92,
+                        text_items.append(("small", cx0 + pad, yc, theme.card_muted_ref,
                                            f"更新时间：{tut.updated_at}"))
                 self.card_layout = {
                     "card": (cx0, cy0, cx1, cy1),
@@ -328,18 +292,18 @@ class LayeredSurface:
                 alpha_before = pixels[..., 3].copy()
                 rgb_before = (self.pixels & 0x00FFFFFF).copy()
                 fonts = {
-                    "title": keep(font(-max(14, round(18 * s)), 0, 0, 0, 700,
-                                       0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建标题字体"),
-                    "sub": keep(font(-max(13, round(15 * s)), 0, 0, 0, 700,
-                                     0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建副标题字体"),
-                    "body": keep(font(-max(12, round(15 * s)), 0, 0, 0, 500,
-                                      0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建正文字体"),
-                    "small_bold": keep(font(-max(11, round(13 * s)), 0, 0, 0, 600,
-                                            0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建标签字体"),
-                    "small": keep(font(-max(11, round(12 * s)), 0, 0, 0, 400,
-                                       0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建辅助字体"),
+                    "title": keep(font(-max(14, round(17 * s)), 0, 0, 0, 700,
+                                       0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建标题字体"),
+                    "sub": keep(font(-max(13, round(14 * s)), 0, 0, 0, 700,
+                                     0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建副标题字体"),
+                    "body": keep(font(-max(12, round(13 * s)), 0, 0, 0, 400,
+                                      0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建正文字体"),
+                    "small_bold": keep(font(-max(11, round(12 * s)), 0, 0, 0, 600,
+                                            0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建标签字体"),
+                    "small": keep(font(-max(10, round(11 * s)), 0, 0, 0, 400,
+                                       0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建辅助字体"),
                     "badge": keep(font(-max(10, round(11 * s)), 0, 0, 0, 700,
-                                       0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建角标字体"),
+                                       0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建角标字体"),
                 }
                 bind(gdi, "SetBkMode", ctypes.c_int, w.HDC, ctypes.c_int)(dc, 1)
                 set_color = bind(gdi, "SetTextColor", w.DWORD, w.HDC, w.DWORD)
@@ -358,7 +322,7 @@ class LayeredSurface:
                 pixels[..., 3] = np.where(changed, 255, alpha_before)
 
             count = int(np.count_nonzero(pixels[..., 3]))
-            if (points or hint or card) and count == 0:
+            if (points or visible_hint or card) and count == 0:
                 raise OSError("遮罩绘图没有生成可见像素。")
             return count
         finally:

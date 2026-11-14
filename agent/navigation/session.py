@@ -1,6 +1,7 @@
 """Runtime wiring shared by daily routes, route trials and local approaches."""
 from __future__ import annotations
 
+from task_control import active_session
 from .engine import Navigator
 from .overlay import RouteMinimapOverlay, resolve_route_overlay_mode
 
@@ -9,7 +10,19 @@ def create_navigator(runtime, teleporter, *, actions=None, event=lambda value: N
     """Bind page checks, walking state and independent recovery in one place."""
     hwnd = getattr(teleporter.inputs, "hwnd", 0) or runtime.controller.info.get("hwnd", 0)
     overlay_mode = resolve_route_overlay_mode(getattr(runtime, "context", None))
-    overlay = RouteMinimapOverlay(hwnd, teleporter.locator.spec, initial_mode=overlay_mode) if hwnd else None
+    session = active_session()
+    hud = session.ensure_hud(hwnd) if (session is not None and hwnd) else None
+    allow_bg = bool(session is not None and session._control_mode() == "background")
+    overlay = (
+        RouteMinimapOverlay(
+            hwnd,
+            teleporter.locator.spec,
+            initial_mode=overlay_mode,
+            hud_sink=hud,
+            allow_background=allow_bg,
+        )
+        if hwnd else None
+    )
     return Navigator(teleporter.locator, teleporter.inputs, runtime.capture,
         lambda: runtime.stopped, runtime.pause, event,
         point_action=actions,

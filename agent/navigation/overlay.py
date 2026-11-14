@@ -14,12 +14,28 @@ import time
 import cv2
 import numpy as np
 
-from map_mask.surface import BitmapInfo, Blend, _blend_rect, bind, checked
 from message_log import write_message
+from overlay_style import (
+    FONT_FAMILY,
+    PROC,
+    BitmapInfo,
+    Blend,
+    Paint,
+    WindowClass,
+    _blend_rect,
+    _gdi_text_extent,
+    bgr_to_colorref,
+    bind,
+    checked,
+    hud_scale,
+    mix_bgr,
+    render_top_center_banner,
+    resolve_overlay_theme,
+    sync_overlay_zorder,
+)
 from vision import read_image
 
 
-PROC = ctypes.WINFUNCTYPE(ctypes.c_ssize_t, w.HWND, w.UINT, w.WPARAM, w.LPARAM)
 NAV_ROOT = Path(__file__).resolve().parents[2] / "resource/navigation"
 
 ACTION_LABELS = {
@@ -615,18 +631,6 @@ def _premul(bgr: tuple[int, int, int], alpha: float) -> tuple[int, int, int, int
     )
 
 
-class WindowClass(ctypes.Structure):
-    _fields_ = [("style", w.UINT), ("proc", PROC), ("extra", ctypes.c_int),
-                ("window_extra", w.INT), ("instance", w.HINSTANCE), ("icon", w.HICON),
-                ("cursor", w.HANDLE), ("background", w.HBRUSH), ("menu", w.LPCWSTR),
-                ("name", w.LPCWSTR)]
-
-
-class Paint(ctypes.Structure):
-    _fields_ = [("dc", w.HDC), ("erase", w.BOOL), ("rect", w.RECT),
-                ("restore", w.BOOL), ("update", w.BOOL), ("reserved", w.BYTE * 32)]
-
-
 class MinimapHudSurface:
     """Full-client BGRA surface rendering both the 3D AR ground route and top-left minimap."""
 
@@ -698,6 +702,22 @@ class MinimapHudSurface:
         checked(self.update(hwnd, None, ctypes.byref(origin), ctypes.byref(size), self.dc,
                             ctypes.byref(source), 0, ctypes.byref(blend), 2), "显示小地图路线图层")
 
+    def _measure_text_pill(self, text: str, *, font_px: int, font_scale: float = 1.0) -> tuple[int, int]:
+        _, _, base_s = hud_scale(self.width, self.height)
+        s = base_s * font_scale
+        f_h = max(10, round(font_px * s))
+        font_fn = bind(self.gdi, "CreateFontW", w.HFONT, *([ctypes.c_int] * 5), *([w.DWORD] * 8), w.LPCWSTR)
+        h_font = checked(font_fn(-f_h, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "测量导航标签字体")
+        old = checked(self.select(self.dc, h_font), "选择测量字体")
+        try:
+            tw, th = _gdi_text_extent(self.dc, self.gdi, text)
+        finally:
+            self.select(self.dc, old)
+            self.delete(h_font)
+        pad_x = max(8, round(9 * s))
+        pad_y = max(4, round(5 * s))
+        return tw + pad_x * 2, max(round(20 * s), th + pad_y * 2)
+
     def _draw_text_pill(
         self,
         pixels: np.ndarray,
@@ -708,20 +728,22 @@ class MinimapHudSurface:
         title_line: str,
         sub_line: str = "",
         *,
-        bg_bgr: tuple[int, int, int] = (38, 30, 26),
-        border_bgr: tuple[int, int, int] = (120, 152, 180),
-        title_color: int = 0xFFF6EA,
+        bg_bgr: tuple[int, int, int] = (34, 30, 32),
+        border_bgr: tuple[int, int, int] = (140, 128, 138),
+        title_color: int = 0xEAF0F6,
+        sub_color: int = 0xC0C9D3,
         font_scale: float = 1.0,
     ):
-        sx, sy, s = self.sx, self.sy, self.s * font_scale
+        _, _, base_s = hud_scale(self.width, self.height)
+        s = base_s * font_scale
         x0 = max(2, min(self.width - 20, x0))
         y0 = max(2, min(self.height - 20, y0))
         x1 = max(x0 + 16, min(self.width - 2, x1))
         y1 = max(y0 + 14, min(self.height - 2, y1))
         _blend_rect(
             pixels, x0, y0, x1, y1, bg_bgr,
-            radius=round(8 * s), opacity=0.86,
-            border_bgr=border_bgr, border_px=max(1.0, 1.35 * s),
+            radius=max(5, round(7 * s)), opacity=0.88,
+            border_bgr=border_bgr, border_px=max(1.0, 1.3 * s),
         )
         dc, gdi = self.dc, self.gdi
         text_out = bind(gdi, "TextOutW", w.BOOL, w.HDC, ctypes.c_int, ctypes.c_int, w.LPCWSTR, ctypes.c_int)
@@ -732,22 +754,24 @@ class MinimapHudSurface:
             alpha_before = sub_px[..., 3].copy()
             rgb_slice = self.pixels[y0:y1, x0:x1]
             rgb_before = (rgb_slice & 0x00FFFFFF).copy()
-            f_bold = checked(font_fn(-max(10, round(13 * s)), 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建遮罩标题字体")
+            f_bold = checked(font_fn(-max(10, round(12 * s)), 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建遮罩标题字体")
             if sub_line:
-                f_sub = checked(font_fn(-max(9, round(12 * s)), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Microsoft YaHei"), "创建遮罩正文字体")
+                f_sub = checked(font_fn(-max(9, round(11 * s)), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建遮罩正文字体")
             bind(gdi, "SetBkMode", ctypes.c_int, w.HDC, ctypes.c_int)(dc, 1)
             set_color = bind(gdi, "SetTextColor", w.DWORD, w.HDC, w.DWORD)
-            tx = x0 + round(9 * sx * font_scale)
+            tx = x0 + max(7, round(9 * s))
             if title_line:
                 old_font = checked(self.select(dc, f_bold), "选择遮罩字体")
+                _, th = _gdi_text_extent(dc, gdi, title_line)
                 set_color(dc, title_color)
-                checked(text_out(dc, tx, y0 + round(4 * sy * font_scale), title_line, len(title_line)), "绘制遮罩标题")
+                ty_title = y0 + max(1, (y1 - y0 - th) // 2) if not sub_line else y0 + round(4 * s)
+                checked(text_out(dc, tx, ty_title, title_line, len(title_line)), "绘制遮罩标题")
             if sub_line and f_sub:
                 handle = self.select(dc, f_sub)
                 if old_font is None:
                     old_font = checked(handle, "选择遮罩副字体")
-                set_color(dc, 0xD2E8F8)
-                ty = y0 + round((23 if title_line else 5) * sy * font_scale)
+                set_color(dc, sub_color)
+                ty = y0 + round((21 if title_line else 5) * s)
                 checked(text_out(dc, tx, ty, sub_line, len(sub_line)), "绘制遮罩副标题")
             checked(bind(gdi, "GdiFlush", w.BOOL)(), "提交遮罩文字")
             changed = (rgb_slice & 0x00FFFFFF) != rgb_before
@@ -772,9 +796,11 @@ class MinimapHudSurface:
         current_index: int,
         map_id: str,
         now: float,
+        theme=None,
     ):
         if current_index < 0 or current_index >= len(points):
             return
+        theme = theme or resolve_overlay_theme()
         sampler = _TerrainSampler.get(map_id) if map_id else None
 
         upcoming_wps: list[tuple[int, float, float, bool, str]] = []
@@ -1013,11 +1039,11 @@ class MinimapHudSurface:
                 continue
             fade = max(0.16, min(0.92, 1.0 - d0_xy / 45.0))
             if jmp0:
-                base_bgr = (45, 215, 255)  # Electric gold-amber for jump segments
+                base_bgr = theme.warning_bgr
             elif act0:
-                base_bgr = (165, 255, 75)  # Neon mint-emerald for action segments
+                base_bgr = theme.success_bgr
             else:
-                base_bgr = (255, 215, 45)  # Cyber cyan-blue for standard path
+                base_bgr = mix_bgr(theme.accent_bgr, (250, 244, 248), 0.18)
 
             ql1, qr1 = (r1, l1) if (r0[0] - l0[0]) * (r1[0] - l1[0]) + (r0[1] - l0[1]) * (r1[1] - l1[1]) < 0 else (l1, r1)
             quad = np.array([[l0[0], l0[1]], [r0[0], r0[1]], [qr1[0], qr1[1]], [ql1[0], ql1[1]]], dtype=np.int32)
@@ -1066,7 +1092,8 @@ class MinimapHudSurface:
                         ):
                             continue
                         fade = max(0.22, min(0.96, 1.0 - d_xy / 40.0))
-                        c_bgr = (140, 245, 255) if jmp0 else (255, 250, 200)
+                        c_bgr = (mix_bgr(theme.warning_bgr, (255, 255, 255), 0.25)
+                                 if jmp0 else mix_bgr((234, 240, 246), theme.accent_bgr, 0.20))
                         col = _premul(c_bgr, fade * 0.92)
                         cv2.line(pixels, (p_lw[0], p_lw[1]), (p_tip[0], p_tip[1]), col, chev_w, cv2.LINE_AA)
                         cv2.line(pixels, (p_rw[0], p_rw[1]), (p_tip[0], p_tip[1]), col, chev_w, cv2.LINE_AA)
@@ -1107,11 +1134,11 @@ class MinimapHudSurface:
             is_cur = wp_idx == eff_cur_idx
             jmp = bool(pt[3]) if len(pt) >= 4 else False
             if act:
-                b_bgr = ACTION_BGR.get(act, (165, 255, 75))
+                b_bgr = ACTION_BGR.get(act, theme.success_bgr)
             elif jmp:
-                b_bgr = (45, 215, 255)
+                b_bgr = theme.warning_bgr
             else:
-                b_bgr = (255, 215, 55) if is_cur else (225, 190, 95)
+                b_bgr = theme.secondary_bgr if is_cur else mix_bgr(theme.accent_bgr, (242, 234, 238), 0.24)
 
             # Surface 3D arrival ring anchored on the resolved waypoint elevation layer
             ring_r_m = min(2.2, max(0.65, float(pt[2] if len(pt) >= 3 else 1.0) * 0.85)) if is_cur else 0.55
@@ -1158,13 +1185,13 @@ class MinimapHudSurface:
                     if wp_idx <= eff_cur_idx + 1:
                         act_label = ACTION_LABELS.get(act, act or ("跳跃" if jmp else "途经"))
                         tag = f"#{wp_idx + 1} {act_label} · {dist_m:.1f}m" if is_cur else f"#{wp_idx + 1} {act_label} · {dist_m:.0f}m"
-                        if 0 <= tx_p < self.width and round(38 * self.sy) <= ty_p < self.height:
+                        if 0 <= tx_p < self.width and round(58 * self.sy) <= ty_p < self.height:
                             badge_queue.append((tx_p, ty_p, tag, b_bgr, is_cur))
-                        elif ty_p < round(38 * self.sy) and by >= round(52 * self.sy):
-                            t_clamp = (round(42 * self.sy) - by) / (ty_p - by) if ty_p != by else 0.0
+                        elif ty_p < round(58 * self.sy) and by >= round(72 * self.sy):
+                            t_clamp = (round(64 * self.sy) - by) / (ty_p - by) if ty_p != by else 0.0
                             bx_top = int(round(bx + (tx_p - bx) * max(0.0, min(1.0, t_clamp))))
                             if 0 <= bx_top < self.width:
-                                badge_queue.append((bx_top, round(42 * self.sy), tag, b_bgr, is_cur))
+                                badge_queue.append((bx_top, round(64 * self.sy), tag, b_bgr, is_cur))
 
         if max_bx > min_bx and max_by > min_by:
             self.dirty_boxes.append((min_bx, min_by, max_bx, max_by))
@@ -1173,9 +1200,8 @@ class MinimapHudSurface:
         mm_excl_w = round(218 * self.sx)
         mm_excl_h = round(186 * self.sy)
         for tx_p, ty_p, tag, b_bgr, is_cur in badge_queue:
-            f_scale = 0.92 if is_cur else 0.80
-            pw = round((22 + len(tag) * 9.6) * self.sx * f_scale)
-            ph = round(25 * self.sy * f_scale)
+            f_scale = 0.94 if is_cur else 0.84
+            pw, ph = self._measure_text_pill(tag, font_px=12, font_scale=f_scale)
             px0 = max(round(6 * self.sx), min(self.width - pw - round(6 * self.sx), tx_p - pw // 2))
             py0 = max(round(6 * self.sy), ty_p - ph - round(10 * self.sy))
             # Keep outside top-left circular minimap area
@@ -1183,8 +1209,8 @@ class MinimapHudSurface:
                 continue
             self._draw_text_pill(
                 pixels, px0, py0, px0 + pw, py0 + ph, tag,
-                bg_bgr=(34, 24, 18), border_bgr=b_bgr,
-                title_color=0xFFF8E8 if is_cur else 0xD8E6F2,
+                bg_bgr=theme.hud_bg_bgr, border_bgr=b_bgr,
+                title_color=theme.hud_title_ref if is_cur else theme.hud_body_ref,
                 font_scale=f_scale,
             )
 
@@ -1201,14 +1227,13 @@ class MinimapHudSurface:
             if abs(ang_err) > 27.0:
                 is_right = ang_err > 0
                 turn_txt = f"右转 {abs(ang_err):.0f}° · {dist_tgt_m:.1f}m >>>" if is_right else f"<<< 左转 {abs(ang_err):.0f}° · {dist_tgt_m:.1f}m"
-                tw = round((24 + len(turn_txt) * 9.5) * self.sx * 0.92)
-                th = round(28 * self.sy)
+                tw, th = self._measure_text_pill(turn_txt, font_px=12, font_scale=1.0)
                 ix0 = (self.width - tw - round(28 * self.sx)) if is_right else round(28 * self.sx)
                 iy0 = round(self.height * 0.52)
                 self._draw_text_pill(
                     pixels, ix0, iy0, ix0 + tw, iy0 + th, turn_txt,
-                    bg_bgr=(36, 26, 20), border_bgr=(55, 205, 255),
-                    title_color=0x90EEFF, font_scale=0.92,
+                    bg_bgr=theme.hud_bg_bgr, border_bgr=theme.warning_bgr,
+                    title_color=bgr_to_colorref(theme.warning_bgr), font_scale=1.0,
                 )
 
     def draw(self, snapshot: dict, now: float | None = None) -> int:
@@ -1224,6 +1249,10 @@ class MinimapHudSurface:
 
         sx, sy, s = self.sx, self.sy, self.s
         pixels = self.pixels.view(np.uint8).reshape(self.height, self.width, 4)
+        theme = resolve_overlay_theme()
+        active_col = theme.secondary_bgr
+        upcoming_col = mix_bgr(theme.accent_bgr, (245, 240, 244), 0.28)
+        visited_col = (178, 172, 166)
 
         cx_ref, cy_ref = snapshot["center"]
         r_ref = max(12.0, float(snapshot["radius"]) - 3.0)
@@ -1233,8 +1262,9 @@ class MinimapHudSurface:
         current_index = int(snapshot.get("current_index", 0))
         title_line = str(snapshot.get("title") or "").strip()
         sub_line = str(snapshot.get("subtitle") or "").strip()
-        border_bgr = snapshot.get("border_bgr") or (120, 152, 180)
-        title_color = int(snapshot.get("title_color", 0xFFF6EA))
+        banner_role = str(snapshot.get("role") or "accent")
+        banner_badge = str(snapshot.get("badge") or "自动寻路")
+        delegate_banner = bool(snapshot.get("delegate_banner"))
 
         if pose is not None and len(pose) == 2:
             px_world, py_world = float(pose[0]), float(pose[1])
@@ -1271,6 +1301,7 @@ class MinimapHudSurface:
                     current_index,
                     str(snapshot.get("map_id") or ""),
                     now,
+                    theme=theme,
                 )
 
             # Top-Left Minimap Overlay (drawn in mm_h x mm_w sub-region)
@@ -1296,20 +1327,20 @@ class MinimapHudSurface:
                 if is_teleport:
                     continue
                 if idx < current_index:
-                    cv2.line(canvas_bgr, p0, p1, (190, 185, 175), line_w, cv2.LINE_AA)
+                    cv2.line(canvas_bgr, p0, p1, visited_col, line_w, cv2.LINE_AA)
                     cv2.line(canvas_alpha, p0, p1, 115, line_w, cv2.LINE_AA)
                 elif idx == current_index:
-                    cv2.line(canvas_bgr, p0, p1, (90, 215, 255), active_w, cv2.LINE_AA)
+                    cv2.line(canvas_bgr, p0, p1, active_col, active_w, cv2.LINE_AA)
                     cv2.line(canvas_alpha, p0, p1, 235, active_w, cv2.LINE_AA)
                 else:
-                    cv2.line(canvas_bgr, p0, p1, (130, 145, 235), line_w, cv2.LINE_AA)
+                    cv2.line(canvas_bgr, p0, p1, upcoming_col, line_w, cv2.LINE_AA)
                     cv2.line(canvas_alpha, p0, p1, 185, line_w, cv2.LINE_AA)
 
             if 0 <= current_index < len(coords):
                 p_cur = coords[current_index]
                 c_pt = (round(cx), round(cy))
-                cv2.line(canvas_bgr, c_pt, p_cur, (80, 230, 255), max(1, round(1.8 * s)), cv2.LINE_AA)
-                cv2.line(canvas_alpha, c_pt, p_cur, 210, max(1, round(1.8 * s)), cv2.LINE_AA)
+                cv2.line(canvas_bgr, c_pt, p_cur, active_col, max(1, round(1.8 * s)), cv2.LINE_AA)
+                cv2.line(canvas_alpha, c_pt, p_cur, 215, max(1, round(1.8 * s)), cv2.LINE_AA)
 
             dot_r = max(3, round(3.8 * s))
             act_r = max(4, round(5.2 * s))
@@ -1318,12 +1349,12 @@ class MinimapHudSurface:
                     continue
                 x_px, y_px = coords[idx]
                 if idx < current_index:
-                    cv2.circle(canvas_bgr, (x_px, y_px), max(2, dot_r - 1), (185, 185, 185), -1, cv2.LINE_AA)
+                    cv2.circle(canvas_bgr, (x_px, y_px), max(2, dot_r - 1), visited_col, -1, cv2.LINE_AA)
                     cv2.circle(canvas_alpha, (x_px, y_px), max(2, dot_r - 1), 120, -1, cv2.LINE_AA)
                 else:
                     action = pt[4] if len(pt) >= 5 else ""
                     jump = bool(pt[3]) if len(pt) >= 4 else False
-                    col = ACTION_BGR.get(action, (235, 235, 235)) if action else ((61, 163, 232) if jump else (245, 245, 245))
+                    col = ACTION_BGR.get(action, (235, 235, 235)) if action else (theme.warning_bgr if jump else (245, 245, 245))
                     r_use = act_r if action else dot_r
                     cv2.circle(canvas_bgr, (x_px, y_px), r_use + 1, (30, 26, 24), -1, cv2.LINE_AA)
                     cv2.circle(canvas_bgr, (x_px, y_px), r_use, col, -1, cv2.LINE_AA)
@@ -1338,17 +1369,17 @@ class MinimapHudSurface:
                 dist_ref = math.hypot(dx, dy)
                 if dist_ref <= r_ref - 2.0:
                     if rad_px <= r_px * 0.75:
-                        cv2.circle(canvas_bgr, (tx, ty), rad_px, (80, 225, 255), max(1, round(1.5 * s)), cv2.LINE_AA)
+                        cv2.circle(canvas_bgr, (tx, ty), rad_px, active_col, max(1, round(1.5 * s)), cv2.LINE_AA)
                         cv2.circle(canvas_alpha, (tx, ty), rad_px, 165, max(1, round(1.5 * s)), cv2.LINE_AA)
                     cv2.circle(canvas_bgr, (tx, ty), act_r + 2, (255, 255, 255), -1, cv2.LINE_AA)
-                    cv2.circle(canvas_bgr, (tx, ty), act_r, (55, 195, 255), -1, cv2.LINE_AA)
+                    cv2.circle(canvas_bgr, (tx, ty), act_r, theme.accent_bgr, -1, cv2.LINE_AA)
                     cv2.circle(canvas_alpha, (tx, ty), act_r + 2, 250, -1, cv2.LINE_AA)
                 else:
                     ang = math.atan2(dy, dx)
                     rim_x = round((cx_ref + math.cos(ang) * (r_ref - 5.0)) * sx)
                     rim_y = round((cy_ref + math.sin(ang) * (r_ref - 5.0)) * sy)
                     cv2.circle(canvas_bgr, (rim_x, rim_y), act_r + 2, (255, 255, 255), -1, cv2.LINE_AA)
-                    cv2.circle(canvas_bgr, (rim_x, rim_y), act_r, (55, 195, 255), -1, cv2.LINE_AA)
+                    cv2.circle(canvas_bgr, (rim_x, rim_y), act_r, theme.accent_bgr, -1, cv2.LINE_AA)
                     cv2.circle(canvas_alpha, (rim_x, rim_y), act_r + 2, 250, -1, cv2.LINE_AA)
 
             yy, xx = np.ogrid[:mm_h, :mm_w]
@@ -1363,23 +1394,23 @@ class MinimapHudSurface:
             mm_slice[mask_nz, 3] = np.clip(np.rint(alpha_f[mask_nz] * 255.0), 0, 255).astype(np.uint8)
             self.dirty_boxes.append((0, 0, mm_w, mm_h))
 
-        if title_line or sub_line:
-            pill_x0 = round(22 * sx)
-            pill_y0 = round(154 * sy)
-            pill_h = round((48 if (title_line and sub_line) else 30) * sy)
-            text_len = max(len(title_line), len(sub_line))
-            pill_w = min(self.mm_w - pill_x0 - round(6 * sx), max(round(176 * sx), round((28 + text_len * 12.2) * sx)))
-            self._draw_text_pill(
+        if (title_line or sub_line) and not delegate_banner:
+            dirty_banner = render_top_center_banner(
                 pixels,
-                pill_x0,
-                pill_y0,
-                pill_x0 + pill_w,
-                pill_y0 + pill_h,
-                title_line,
-                sub_line,
-                border_bgr=border_bgr,
-                title_color=title_color,
+                self.pixels,
+                self.dc,
+                self.gdi,
+                self.select,
+                self.delete,
+                self.width,
+                self.height,
+                badge=banner_badge,
+                title=title_line,
+                subtitle=sub_line,
+                role=banner_role,
+                theme=theme,
             )
+            self.dirty_boxes.append(dirty_banner)
 
         return len(self.dirty_boxes)
 
@@ -1454,10 +1485,21 @@ _CAPTURE_INCOMPATIBLE = False
 class RouteMinimapOverlay:
     """Capture-excluded Win32 overlay showing active 3D AR route guidance and minimap trajectory."""
 
-    def __init__(self, game_hwnd: int, spec, *, exclude_from_capture: bool = True, initial_mode: str | None = None):
+    def __init__(
+        self,
+        game_hwnd: int,
+        spec,
+        *,
+        exclude_from_capture: bool = True,
+        initial_mode: str | None = None,
+        hud_sink=None,
+        allow_background: bool = False,
+    ):
         self.game = int(game_hwnd or 0)
         self.spec = spec
         self.exclude_from_capture = exclude_from_capture
+        self.hud_sink = hud_sink
+        self.allow_background = bool(allow_background)
         self.mode = "off" if _CAPTURE_INCOMPATIBLE else (
             _CASE_TO_MODE.get(initial_mode or "", "") or _read_live_overlay_mode("full"))
         self._cfg_mtime_ns = _mxu_mtime_ns()
@@ -1476,11 +1518,23 @@ class RouteMinimapOverlay:
             self.thread.start()
             self.ready.wait(1.5)
 
+    def set_hud_sink(self, hud_sink) -> None:
+        self.hud_sink = hud_sink
+
+    def set_background_mode(self, enabled: bool) -> None:
+        self.allow_background = bool(enabled)
+
     def disable_for_capture(self):
         global _CAPTURE_INCOMPATIBLE
         if not _CAPTURE_INCOMPATIBLE:
             _CAPTURE_INCOMPATIBLE = True
             write_message("检测到当前窗口截图方式与路线导航遮罩不兼容（截图画面全黑），已自动关闭路线遮罩。", None)
+        hud = self.hud_sink
+        if hud is not None:
+            try:
+                hud.disable_due_to_capture("路线导航截图全黑保护")
+            except Exception:
+                pass
         self.mode = "off"
         self.close()
 
@@ -1553,10 +1607,18 @@ class RouteMinimapOverlay:
                 "jump_start": self.jump_start,
                 "points": point_tuples,
                 "current_index": idx,
+                "badge": "自动寻路",
                 "title": header,
                 "subtitle": subtitle,
+                "role": "accent",
             }
             self.updated_at = now
+        hud = self.hud_sink
+        if hud is not None and hud.alive():
+            if self.mode != "off":
+                hud.set_route(header, subtitle, role="accent", active=True)
+            else:
+                hud.clear_route()
 
     def publish_recording(self, samples: list, events: list, pose, state_text: str = "正在录制"):
         if self.thread is None or pose is None or not getattr(pose, "position_reliable", False):
@@ -1564,6 +1626,8 @@ class RouteMinimapOverlay:
             return
         tail = samples[-60:] if len(samples) > 60 else list(samples)
         point_tuples = tuple((round(float(pt[0]), 2), round(float(pt[1]), 2), 1.0, False, "") for pt in tail)
+        title = f"{state_text} · {len(samples)} 采样 · {len(events)} 标记"
+        subtitle = "F6关键点 F7采集 F8等待 F9钓鱼 F10下落"
         with self.lock:
             self.snapshot = {
                 "center": self.spec.center,
@@ -1574,10 +1638,18 @@ class RouteMinimapOverlay:
                 "ar_active": False,
                 "points": point_tuples,
                 "current_index": max(0, len(point_tuples) - 1),
-                "title": f"{state_text} · {len(samples)} 采样 · {len(events)} 标记",
-                "subtitle": "F6关键点 F7采集 F8等待 F9钓鱼 F10下落",
+                "badge": "路线录制",
+                "title": title,
+                "subtitle": subtitle,
+                "role": "accent",
             }
             self.updated_at = time.monotonic()
+        hud = self.hud_sink
+        if hud is not None and hud.alive():
+            if self.mode != "off":
+                hud.set_route(title, subtitle, role="accent", active=True)
+            else:
+                hud.clear_route()
 
     def publish_status(
         self,
@@ -1590,6 +1662,8 @@ class RouteMinimapOverlay:
         if self.thread is None or (not title and not subtitle):
             self.hide()
             return
+        b, g, r = border_bgr
+        role = "recovered" if (g >= 190 and r < 140) else ("paused" if (r >= 210 and g < 165) else "accent")
         with self.lock:
             self.snapshot = {
                 "center": self.spec.center,
@@ -1599,17 +1673,28 @@ class RouteMinimapOverlay:
                 "ar_active": False,
                 "points": (),
                 "current_index": 0,
+                "badge": "路线提示",
                 "title": title,
                 "subtitle": subtitle,
+                "role": role,
                 "border_bgr": border_bgr,
                 "title_color": title_color,
             }
             self.updated_at = time.monotonic()
+        hud = self.hud_sink
+        if hud is not None and hud.alive():
+            if self.mode != "off":
+                hud.set_route(title, subtitle, role=role, active=True)
+            else:
+                hud.clear_route()
 
     def hide(self):
         with self.lock:
             self.snapshot = None
             self.updated_at = 0.0
+        hud = self.hud_sink
+        if hud is not None:
+            hud.clear_route()
 
     def close(self):
         self.hide()
@@ -1661,7 +1746,7 @@ class RouteMinimapOverlay:
             registered = True
             create = bind(user, "CreateWindowExW", w.HWND, w.DWORD, w.LPCWSTR, w.LPCWSTR, w.DWORD,
                           *([ctypes.c_int] * 4), w.HWND, w.HMENU, w.HINSTANCE, ctypes.c_void_p)
-            exstyle = 0x08080088 | 0x00000020  # LAYERED | TOPMOST | TOOLWINDOW | NOACTIVATE | TRANSPARENT
+            exstyle = 0x08080080 | 0x00000020  # LAYERED | TOOLWINDOW | NOACTIVATE | TRANSPARENT
             hwnd = checked(create(exstyle, class_name, "MaaNikki 路线导航遮罩", 0x80000000,
                                   0, 0, 1, 1, None, None, module, None), "创建小地图路线遮罩窗口")
             affinity = 0x11 if self.exclude_from_capture else 0
@@ -1674,13 +1759,13 @@ class RouteMinimapOverlay:
             iconic = bind(user, "IsIconic", w.BOOL, w.HWND)
             shown = bind(user, "IsWindowVisible", w.BOOL, w.HWND)
             show = bind(user, "ShowWindow", w.BOOL, w.HWND, ctypes.c_int)
-            move = bind(user, "SetWindowPos", w.BOOL, w.HWND, w.HWND, *([ctypes.c_int] * 4), w.UINT)
             peek = bind(user, "PeekMessageW", w.BOOL, ctypes.POINTER(w.MSG), w.HWND, w.UINT, w.UINT, w.UINT)
             translate = bind(user, "TranslateMessage", w.BOOL, ctypes.POINTER(w.MSG))
             dispatch = bind(user, "DispatchMessageW", w.BOOL, ctypes.POINTER(w.MSG))
             self.ready.set()
             geometry = rendered = None
-            next_topmost = 0.0
+            last_z = None
+            next_zorder = 0.0
             next_cfg_poll = 0.0
 
             while not self.stop.is_set():
@@ -1694,14 +1779,22 @@ class RouteMinimapOverlay:
                         self._cfg_mtime_ns = cur_mtime
                         self.mode = _read_live_overlay_mode(self.mode, prefer_global=True)
                 mode = self.mode
+                hud = self.hud_sink
+                hud_alive = bool(hud is not None and hud.alive())
+                if mode == "off" and hud_alive:
+                    hud.clear_route()
+                bg_active = bool(self.allow_background or (hud_alive and hud.is_background_mode()))
                 fg = foreground()
+                focused = fg in (self.game, hwnd)
+                fresh = snap is not None and (now - updated < 3.5)
+                if not fresh and hud_alive:
+                    hud.clear_route()
                 visible = (
                     mode != "off"
-                    and snap is not None
-                    and now - updated < 3.5
+                    and fresh
                     and bool(valid(self.game))
                     and not bool(iconic(self.game))
-                    and fg in (self.game, hwnd)
+                    and (focused or bg_active)
                 )
                 if visible:
                     rect, origin = w.RECT(), w.POINT()
@@ -1713,9 +1806,15 @@ class RouteMinimapOverlay:
                             surface = MinimapHudSurface(rect.right, rect.bottom)
                             rendered = None
                         ar_active = bool(snap.get("ar_active")) and (mode == "full")
-                        draw_snap = snap if bool(snap.get("ar_active")) == ar_active else {**snap, "ar_active": ar_active}
+                        draw_snap = dict(snap)
+                        draw_snap["ar_active"] = ar_active
+                        draw_snap["delegate_banner"] = hud_alive
+                        theme = resolve_overlay_theme()
                         sig = (
                             mode,
+                            hud_alive,
+                            theme.mode,
+                            theme.accent_name,
                             int(now * 28) if ar_active else None,
                             snap.get("pose"),
                             snap.get("heading"),
@@ -1723,7 +1822,7 @@ class RouteMinimapOverlay:
                             snap.get("title"),
                             snap.get("subtitle"),
                             len(snap.get("points") or ()),
-                            snap.get("border_bgr"),
+                            snap.get("role"),
                         )
                         if sig != rendered:
                             surface.draw(draw_snap, now)
@@ -1732,14 +1831,18 @@ class RouteMinimapOverlay:
                             rendered, geometry = sig, next_geom
                         if not shown(hwnd):
                             show(hwnd, 4)
-                        if now >= next_topmost:
-                            move(hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0, 0x0013)
-                            next_topmost = now + 0.3
+                        z_sig = (focused, bg_active, fg)
+                        if z_sig != last_z or now >= next_zorder or not focused:
+                            sync_overlay_zorder(user, hwnd, self.game,
+                                                want_topmost=focused, stay_above_game=bg_active)
+                            last_z = z_sig
+                            next_zorder = now + 0.3
                     else:
                         visible = False
                 if not visible and shown(hwnd):
                     show(hwnd, 0)
                     rendered = None
+                    last_z = None
                 msg = w.MSG()
                 for _ in range(16):
                     if self.stop.is_set() or not peek(ctypes.byref(msg), hwnd, 0, 0, 1):

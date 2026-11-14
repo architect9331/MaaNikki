@@ -136,10 +136,12 @@ class Exploration(Runtime):
                                       threshold=.75 if name == "IconPickupFeature" else .73))
 
         try:
+            session = active_session()
+            hud = session.ensure_hud(guard.hwnd) if session is not None else None
             if enabled["MapMask"]:
                 try:
                     from map_mask.service import MapMask
-                    map_mask = MapMask(self, guard.hwnd, map_kinds)
+                    map_mask = MapMask(self, guard.hwnd, map_kinds, hud_sink=hud)
                     self.log("地图标记已启动，打开大地图后自动识别缩放并校准。")
                 except GameWindowClosed:
                     raise
@@ -169,6 +171,26 @@ class Exploration(Runtime):
                                          "交互键设置为鼠标按键，切出游戏后暂停；切回后继续。")}[mode],
                              # Alt-tabbing changes the mode constantly; the startup message explains it.
                              detail=True)
+                    if hud is not None:
+                        hud.set_context(
+                            control_mode="background" if mode == "background" else "observation",
+                            step_text={
+                                "foreground": "前台监测中（拾取 · 对白 · 跳过）",
+                                "background": "后台监测中（按键自动交互）",
+                                "minimized": "游戏窗口已最小化，辅助已暂停",
+                                "paused": ("当前使用前台截图，切回游戏后继续"
+                                           if guard.capture_requires_foreground
+                                           else "交互键为鼠标按键，切回游戏后继续"),
+                            }[mode],
+                        )
+                        hud.set_paused(
+                            mode in ("paused", "minimized"),
+                            reason=("游戏已最小化，恢复窗口后继续探索辅助"
+                                    if mode == "minimized"
+                                    else ("当前使用前台截图，切回游戏后继续"
+                                          if guard.capture_requires_foreground
+                                          else "交互键设为鼠标按键，切回游戏后继续")),
+                        )
                     previous_mode = mode
                 if not available():
                     if map_mask:
