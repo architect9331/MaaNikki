@@ -56,14 +56,30 @@ export interface PearpalNotebookObservation {
     daily_task?: number;
   };
 }
+export interface WeeklyRealmObservation {
+  period?: string;
+  finished?: number;
+  total?: number;
+  completed_targets?: string[];
+  observed_at?: string;
+}
+export interface MaterialHistoryPoint {
+  renewal_energy?: number;
+  crafting_energy?: number;
+  renewal_missing?: number;
+  crafting_missing?: number;
+}
 export interface AccountView {
   wardrobe?: { inventory?: WardrobeSnapshot; last_scan?: WardrobeSnapshot };
   account_key?: string | null;
   uid?: string | null;
+  updated_at?: string | null;
   observations?: {
     eureka_rolls?: { total: number; colors: Record<string, number> };
     anonymous_statistics?: { reporter?: string };
     collection_history?: Record<string, { owned: number }>;
+    material_history?: Record<string, MaterialHistoryPoint>;
+    weekly_realm?: WeeklyRealmObservation;
     pearpal_notebook?: PearpalNotebookObservation;
     giant_meteor?: {
       game_day: string;

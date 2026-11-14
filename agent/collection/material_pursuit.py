@@ -6,7 +6,7 @@ import json
 import math
 import re
 
-from account_state import AccountState
+from account_state import AccountState, game_day
 from daily.gameplay import Gameplay
 from daily.runtime import Executors
 from daily.settings import ROOT
@@ -190,6 +190,52 @@ def execute_material_run(rt, kind: str, level_name: str, runs_to_do: int, use_ma
     return ok, energy_after
 
 
+def _goal_energy_summary(goal: str, role: dict, inventory: dict, crafting: dict, scoring: dict) -> tuple[int, int]:
+    mat_defs = crafting.get("materials") or {}
+    energy_total = 0
+    missing_kinds = 0
+    for mid, need in goal_requirements(goal, role, crafting, scoring).items():
+        meta = mat_defs.get(str(mid)) or {}
+        drop = int(meta.get("drop") or 0)
+        energy = int(meta.get("energy") or 0)
+        deficit = max(0, int(need) - int(inventory.get(str(mid), 0)))
+        if deficit > 0 and drop > 0 and energy > 0:
+            energy_total += math.ceil(deficit / drop) * energy
+            missing_kinds += 1
+    return energy_total, missing_kinds
+
+
+def record_material_history(account: AccountState, crafting: dict, scoring: dict):
+    """Record one daily point of remaining crafting/renewal energy for trend charts."""
+    try:
+        day = str(game_day())
+
+        def update(data):
+            inv = (data.get("materials") or {}).get("inventory") or {}
+            mats = data.get("materials") or {}
+            has_wb = bool(wardrobe_snapshot(data))
+            has_renewal = renewal_source(mats) == "targets" or has_wb
+            if not has_wb and not has_renewal:
+                return
+            point = {}
+            if has_renewal:
+                r_energy, r_missing = _goal_energy_summary("renewal", data, inv, crafting, scoring)
+                point["renewal_energy"] = r_energy
+                point["renewal_missing"] = r_missing
+            if has_wb:
+                c_energy, c_missing = _goal_energy_summary("crafting", data, inv, crafting, scoring)
+                point["crafting_energy"] = c_energy
+                point["crafting_missing"] = c_missing
+            history = data.setdefault("observations", {}).setdefault("material_history", {})
+            history[day] = point
+            for old_day in sorted(history)[:-1000]:
+                del history[old_day]
+
+        account.update(update)
+    except Exception:
+        pass
+
+
 def record_accrual(account: AccountState, mid: str | None = None, gained: int = 0, *, mark_glow_completed: bool = False):
     now = datetime.now(timezone.utc).isoformat()
 
@@ -271,6 +317,7 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
                 continue
             if inventory is None:
                 inventory = ensure_backpack_scanned(rt, account, crafting)
+                record_material_history(account, crafting, scoring)
                 role = account.load()
             deficits = goal_deficits(goal, role, inventory, crafting, scoring)
             if deficits:
@@ -308,6 +355,7 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
         if gained > 0:
             inventory[mid] = int(inventory.get(mid, 0)) + gained
             record_accrual(account, mid, gained)
+            record_material_history(account, crafting, scoring)
             rt.log(f"幻境挑战顺序：已获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
         energy = energy_after
         last_kind = kind

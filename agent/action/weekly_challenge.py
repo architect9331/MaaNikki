@@ -1,14 +1,46 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import re
 import cv2
+from account_state import AccountState, period_key
 from registration import agent_action
-from task_control import TaskStopped
+from task_control import TaskStopped, active_session
 from maa.custom_action import CustomAction
 from daily.runtime import Executors
 from daily.gameplay import Gameplay
+from daily.settings import ROOT
 
 TARGETS = (("MaaNikki_Weekly_Level_Qiggeda", "奇格格达"), ("MaaNikki_Weekly_Level_Juan", "卷卷"))
+
+
+def _record_weekly_state(rt, finished: int, total: int, completed_targets: list[str] | None = None):
+    """Best-effort weekly progress observation using an already-known account UID."""
+    session = active_session()
+    uid = getattr(rt, "_account_uid", None) or (getattr(session, "account_uid", None) if session else None)
+    if not uid:
+        return
+    try:
+        account = AccountState(ROOT, uid, rt)
+        period = period_key("weekly_free_gifts")
+        now = datetime.now(timezone.utc).isoformat()
+
+        def update(data):
+            obs = data.setdefault("observations", {})
+            prev = obs.get("weekly_realm")
+            prev_targets = prev.get("completed_targets", []) if isinstance(prev, dict) and prev.get("period") == period else []
+            merged = list(dict.fromkeys([*(prev_targets if isinstance(prev_targets, list) else []), *(completed_targets or [])]))
+            obs["weekly_realm"] = {
+                "period": period,
+                "finished": max(0, int(finished)),
+                "total": max(0, int(total)),
+                "completed_targets": merged,
+                "observed_at": now,
+            }
+
+        account.update(update)
+    except Exception:
+        pass
 
 
 def read_count(runtime):
@@ -60,16 +92,21 @@ class WeeklyChallengeAction(CustomAction):
             finished, total = count
             rt.log(f"本周幻境已完成 {finished}/{total} 次。")
             if finished >= total:
+                _record_weekly_state(rt, finished, total)
                 rt.log("本周所选目标已无需挑战。")
                 return True
             game = Gameplay(rt)
             energy = game.read_energy()
             if energy is not None and energy < game.MIN_ENERGY["weekly"]:
+                _record_weekly_state(rt, finished, total)
                 return game.exhausted(True, energy)
             if not rt.ui.realm("weekly"):
+                _record_weekly_state(rt, finished, total)
                 return False
             results = []
             skipped_missing = 0
+            completed_targets: list[str] = []
+            finished_now = finished
             remaining_quota = max(0, total - finished)
             for index, (node, label) in enumerate(targets):
                 if rt.stopped:
@@ -90,8 +127,11 @@ class WeeklyChallengeAction(CustomAction):
                 if game.energy_exhausted:
                     break
                 if ok:
+                    target_id = node.rsplit("_", 1)[-1]
+                    completed_targets.append(target_id)
                     if not game.weekly_quota_used:
                         remaining_quota = max(0, remaining_quota - 1)
+                        finished_now = min(total, finished_now + 1)
                         if energy is not None:
                             energy = max(0, energy - game.MIN_ENERGY["weekly"])
                     continue
@@ -99,6 +139,7 @@ class WeeklyChallengeAction(CustomAction):
                 # A failed confirmation/reward may leave a dialog open.
                 # Do not search/click another level on that unknown page.
                 break
+            _record_weekly_state(rt, finished_now, total, completed_targets)
             overall_ok = (bool(results) and (all(results) or remaining_quota == 0)) or (
                 not results and skipped_missing == len(targets))
             rt.log("每周幻境处理结束。" if overall_ok else "部分每周幻境未完成，请检查游戏状态。")

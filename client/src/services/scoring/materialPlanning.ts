@@ -2,8 +2,8 @@ import { upgradeCost } from './math';
 import type { RealmMaterialTarget } from './heartPresets';
 import type { CraftingCatalog, CraftingMaterialMeta, CraftingSketch, MaterialsState, OwnedProfile, ScoringCatalog } from './types';
 
-/** Daily active energy used to turn realm energy into a rough number of days. */
-export const DAILY_ENERGY = 320;
+/** Daily active energy used as fallback when no shared assumption is supplied. */
+export const DAILY_ENERGY = 280;
 export const RENEWED_LEVEL = 11;
 export const MAX_LEVEL = 10;
 
@@ -59,14 +59,16 @@ export function realmSourceFor(meta?: CraftingMaterialMeta): RealmMaterialTarget
 
 /** Compare a requirement with the recorded backpack stock. */
 export function summarizeMaterials(required: Record<string, number>, crafting: CraftingCatalog | null | undefined,
-  inventory: Record<string, number>, names: Record<string, string> = {}): MaterialTotals {
+  inventory: Record<string, number>, names: Record<string, string> = {}, dailyEnergy = DAILY_ENERGY): MaterialTotals {
+  const safeDaily = Math.max(10, dailyEnergy || DAILY_ENERGY);
   const rows: MaterialRow[] = [];
   for (const [id, raw] of Object.entries(required)) {
     const need = Math.max(0, Math.round(raw));
     if (!need) continue;
     const meta = crafting?.materials[id];
     const group = materialGroup(meta);
-    const tracked = group !== 'world';
+    const hasRecordedWorldStock = group === 'world' && Object.prototype.hasOwnProperty.call(inventory, id);
+    const tracked = group !== 'world' || hasRecordedWorldStock;
     const owned = tracked ? Math.max(0, Number(inventory[id] ?? 0)) : null;
     const missing = owned === null ? 0 : Math.max(0, need - owned);
     const runs = missing && meta?.drop ? Math.ceil(missing / meta.drop) : 0;
@@ -77,7 +79,7 @@ export function summarizeMaterials(required: Record<string, number>, crafting: C
   const tracked = rows.filter((row) => row.owned !== null);
   const energy = tracked.reduce((sum, row) => sum + row.energy, 0);
   return { rows, missingKinds: tracked.filter((row) => row.missing > 0).length, trackedKinds: tracked.length,
-    energy, days: Math.ceil(energy / DAILY_ENERGY) };
+    energy, days: Math.ceil(energy / safeDaily) };
 }
 
 export function addCosts(target: Record<string, number>, cost: Record<string, number>) {

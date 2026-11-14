@@ -132,8 +132,8 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
   const planError = useWardrobePlanStore((state) => state.error);
   const plansLoading = useWardrobePlanStore((state) => state.loading);
   useEffect(() => {
-    if (isTauri() && data?.uid) void loadPlans(`${data.uid}:entry:${wardrobe?.updated_at ?? ''}`);
-  }, [data?.uid, wardrobe?.updated_at, loadPlans]);
+    if (data?.uid) void loadPlans(`${data.uid}:${data.updated_at ?? wardrobe?.updated_at ?? ''}:0`);
+  }, [data?.uid, data?.updated_at, wardrobe?.updated_at, loadPlans]);
   const overview = useCollectionOverview();
   const collections = ([
     ['closet', '衣柜套装', '套'], ['crafting', '制衣', '张'],

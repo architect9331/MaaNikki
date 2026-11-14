@@ -215,8 +215,13 @@ fn read_account_state() -> Result<Value, String> {
             }
         }
     }
+    let updated_at = source
+        .and_then(|v| v.get("updated_at"))
+        .cloned()
+        .unwrap_or(Value::Null);
     Ok(json!({
         "account_key": key, "uid": account.as_ref().and_then(|v| v["uid"].as_str()),
+        "updated_at": updated_at,
         "tasks": tasks, "observations": observations, "blessing": summary, "wardrobe": wardrobe,
         "catalog": read_json(&resources.join("blessing_catalog.json"))?,
         "rotation": read_json(&resources.join("xinghai_rotation.json"))?,
