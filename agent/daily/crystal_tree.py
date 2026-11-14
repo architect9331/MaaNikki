@@ -33,9 +33,12 @@ class CrystalTree(Starsea):
             raw = self.rt.text(roi, image=frame)
             text = re.sub(r"\s+", "", raw).replace("／", "/")
             readings[key] = raw
-            match = re.search(re.escape(caption) + r"[:：]?(\d+)/(\d+)$", text)
+            match = re.search(re.escape(caption) + r"(?:[:：]?(\d+)/(\d+)|[:：]?已达上限)$", text)
             if not match:
                 return None
+            if match.group(1) is None:
+                values[key] = capacity
+                continue
             count, total = map(int, match.groups())
             if total != capacity or not 0 <= count <= total:
                 return None
