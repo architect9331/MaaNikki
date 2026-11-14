@@ -1,7 +1,7 @@
 """Automated 'Shuttle Adventure' (穿梭大冒险) mini-game loop for daily 160k Bling farming.
 
 Uses the terrain-aware route from Wishfield Street (心愿花街) to reach the NPC at
-(10153.75, 10053.30) when not already nearby, then executes the Whimcycle hoop
+(10152.80, 10054.80) when not already nearby, then executes the Whimcycle hoop
 course and settlement replay loop while monitoring for the daily Bling cap.
 """
 from __future__ import annotations
@@ -22,10 +22,13 @@ from navigation.controller import ForegroundInput
 from navigation.models import GameWindowClosed, NavigationError, maps
 from navigation.vision import Locator
 
-NPC_X = 10153.75
-NPC_Y = 10053.30
-NEAR_NPC_RADIUS_PX = 10.0
+NPC_X = 10152.80
+NPC_Y = 10054.80
+NEAR_NPC_RADIUS_PX = 2.8
 DEFAULT_ROUTE = "minigame_shuttle_adventure"
+DIALOGUE_MODE_ROI = [65, 12, 140, 60]
+DIALOGUE_SKIP_ROI = [1045, 635, 235, 85]
+DIALOGUE_CHOICE_ROI = [760, 200, 500, 440]
 
 # 1280x720 baseline settlement region and verified button fallbacks:
 # - '挑战失败' screen shows left '退出' [488,432,56,30] and right '重试' [714,432,56,30]
@@ -51,6 +54,10 @@ _RETRY_BTN_RE = re.compile(r"^重试$")
 _EXIT_BTN_RE = re.compile(r"^退出$")
 _OK_BTN_RE = re.compile(r"^(好的|确认|确定)$")
 _CANCEL_BTN_RE = re.compile(r"^取消$")
+_DIALOGUE_EXIT_RE = re.compile(r"不用了|再见|离开|下次再说|取消|稍候|改天|算了|结束")
+_DIALOGUE_OPTION_RE = re.compile(r"开始|挑战|规则|介绍|说明|准备|继续|重新")
+_DIALOGUE_MODE_RE = re.compile(r"手动|自动")
+_DIALOGUE_SKIP_RE = re.compile(r"跳过")
 
 INIT_SEQUENCE: tuple[tuple[str, float] | float, ...] = (
     ("interact", 0.2),
@@ -90,7 +97,7 @@ REPLAY_SEQUENCE: tuple[tuple[str, float] | float, ...] = (
 class MinigameBlingRun(Runtime):
     """Executes the Shuttle Adventure bicycle mini-game loop until target rounds or daily cap."""
 
-    def _already_near_npc(self) -> bool:
+    def _already_near_npc(self, max_radius_px: float = NEAR_NPC_RADIUS_PX) -> bool:
         try:
             spec = maps(RESOURCE).get("miraland")
             if spec is None or not self.hit("MaaNikki_MainDetected"):
@@ -102,11 +109,134 @@ class MinigameBlingRun(Runtime):
             pose = locator.locate(frame, hint=(NPC_X, NPC_Y), search_radius=45.0)
             if pose and pose.position and pose.position_score >= 0.52:
                 px, py = pose.position
-                if math.hypot(px - NPC_X, py - NPC_Y) <= NEAR_NPC_RADIUS_PX:
+                if math.hypot(px - NPC_X, py - NPC_Y) <= max_radius_px:
                     return True
         except Exception:
             return False
         return False
+
+    def _can_interact_with_npc(self) -> bool:
+        frame = self.capture()
+        if frame is None or not self.hit("MaaNikki_MainDetected", image=frame):
+            return False
+        pickup_roi = self.ui.roi("AreaPickup")
+        return bool(
+            self.ui.asset(
+                "IconTalkFeature",
+                image=frame,
+                roi=pickup_roi,
+                scale=2 / 3,
+                gray=(210, 255),
+                threshold=0.75,
+            )
+            or self.ui.asset(
+                "IconPickupFeature",
+                image=frame,
+                roi=pickup_roi,
+                scale=2 / 3,
+                gray=(210, 255),
+                threshold=0.75,
+            )
+        )
+
+    def _dismiss_npc_dialogue(self, inputs: ForegroundInput) -> bool:
+        """Exit active NPC dialogue cleanly without selecting '开始游戏'."""
+        deadline = time.monotonic() + 10.0
+        progressed = False
+        unmatched_choice_frames = 0
+        mode_only_frames = 0
+        while not self.stopped and time.monotonic() < deadline:
+            frame = self.capture()
+            if frame is None:
+                return False
+            generation = self._focus_generation
+            if self.hit("MaaNikki_MainDetected", image=frame):
+                return True
+
+            # Prefer clicking an explicit exit choice when dialogue options are open;
+            # never press 'interact' while choice rows are present.
+            choices = self.recognize("MaaNikki_Daily_OCR", {"roi": DIALOGUE_CHOICE_ROI}, image=frame)
+            choice_rows: list[tuple[str, list[int]]] = []
+            exit_box = None
+            if choices and choices.hit:
+                rows = (
+                    getattr(choices, "filtered_results", None)
+                    or getattr(choices, "all_results", None)
+                    or ([choices.best_result] if getattr(choices, "best_result", None) is not None else [])
+                )
+                for row in rows:
+                    if row is None:
+                        continue
+                    score = getattr(row, "score", None)
+                    if isinstance(score, (int, float)) and score < 0.45:
+                        continue
+                    txt = str(getattr(row, "text", "") or "").strip()
+                    box = self._box_list(getattr(row, "box", None))
+                    if not txt or box is None:
+                        continue
+                    choice_rows.append((txt, box))
+                    if exit_box is None and _DIALOGUE_EXIT_RE.search(txt):
+                        exit_box = box
+            choice_menu_visible = bool(
+                exit_box is not None
+                or len(choice_rows) >= 2
+                or any(_DIALOGUE_OPTION_RE.search(txt) for txt, _ in choice_rows)
+            )
+            if exit_box is not None:
+                progressed = True
+                unmatched_choice_frames = 0
+                mode_only_frames = 0
+                clicked = self._click_guarded(exit_box, generation)
+                if clicked is False:
+                    return False
+                if not self.pause(0.6):
+                    return False
+                continue
+            if choice_menu_visible:
+                progressed = True
+                mode_only_frames = 0
+                if unmatched_choice_frames == 0:
+                    unmatched_choice_frames += 1
+                    if not self.pause(0.35):
+                        return False
+                    continue
+                unmatched_choice_frames = 0
+                bottom_box = max((box for _, box in choice_rows), key=lambda b: b[1])
+                clicked = self._click_guarded(bottom_box, generation)
+                if clicked is False:
+                    return False
+                if not self.pause(0.6):
+                    return False
+                continue
+            unmatched_choice_frames = 0
+
+            has_skip = bool(self.text(DIALOGUE_SKIP_ROI, _DIALOGUE_SKIP_RE.pattern, image=frame))
+            has_mode = bool(not has_skip and self.text(DIALOGUE_MODE_ROI, _DIALOGUE_MODE_RE.pattern, image=frame))
+            if has_skip or has_mode:
+                progressed = True
+                if has_mode and mode_only_frames == 0:
+                    # Wait one frame when '跳过' is absent so newly fading-in
+                    # choice rows can be read before any 'interact' press.
+                    mode_only_frames += 1
+                    if not self.pause(0.35):
+                        return False
+                    continue
+                mode_only_frames = 0
+                inputs.hold("interact", 0.2)
+                if not self.pause(0.55):
+                    return False
+                continue
+            mode_only_frames = 0
+
+            if not progressed:
+                break
+            if not self.pause(0.35):
+                return False
+        if self.stopped:
+            return False
+        if progressed:
+            return bool(self.hit("MaaNikki_MainDetected"))
+        return True
 
     def _run_sequence(self, inputs: ForegroundInput, seq: tuple[tuple[str, float] | float, ...]) -> bool:
         for step in seq:
@@ -519,10 +649,16 @@ class MinigameBlingRun(Runtime):
                         self.log("未能退出挑战失败界面，任务停止。")
                         return False
 
+            if retry_started_at is None:
+                if not self._dismiss_npc_dialogue(inputs):
+                    self.log("未能退出当前对话界面，无法开始小游戏。")
+                    return False
+
             if navigate and retry_started_at is None:
                 if not self.main():
-                    self.log("未能确认大世界主界面，无法前往小游戏 NPC。")
-                    return False
+                    if not (self._dismiss_npc_dialogue(inputs) and self.main()):
+                        self.log("未能确认大世界主界面，无法前往小游戏 NPC。")
+                        return False
                 if self._already_near_npc():
                     self.log("检测到已位于「穿梭大冒险」NPC 附近，直接开始挑战。")
                 else:
@@ -531,9 +667,18 @@ class MinigameBlingRun(Runtime):
                     nav.dev_only = False
                     nav.label = "前往穿梭大冒险"
                     if not nav.run_test({"route": route_name, "mode": "movement"}):
-                        self.log("前往「穿梭大冒险」NPC 路线未完成，任务停止。")
-                        return False
-                    focus_game(self, inputs)
+                        focus_game(self, inputs)
+                        if (
+                            self._dismiss_npc_dialogue(inputs)
+                            and self.main()
+                            and (self._already_near_npc(max_radius_px=1.8) or self._can_interact_with_npc())
+                        ):
+                            self.log("路线复核中断，但已位于「奇米亚」交互范围内，继续开始挑战。")
+                        else:
+                            self.log("前往「穿梭大冒险」NPC 路线未完成，任务停止。")
+                            return False
+                    else:
+                        focus_game(self, inputs)
 
             self.log(f"开始「穿梭大冒险」自动刷噗灵（目标 {max_rounds} 局，预计耗时约 {int(max_rounds * 31.2 // 60)} 分钟）…")
             if retry_started_at is None:
