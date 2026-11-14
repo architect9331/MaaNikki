@@ -509,6 +509,30 @@ def prepare_game(timeout, record, options=None):
                 record.update(success=True, stage="ready", restarts=restarts,
                               game_hwnd=hwnd, game_class="UnrealWindow")
                 return
+            if getattr(action, "window_closed", False) and restarts < 3 and remaining >= 30:
+                prev_hwnd = hwnd
+                wait_closed_at = time.monotonic()
+                rebind_deadline = wait_closed_at + min(5.0, max(0.0, remaining - 30))
+                rebound_hwnd = None
+                while time.monotonic() < rebind_deadline:
+                    candidate = game_window()
+                    if candidate and candidate != prev_hwnd:
+                        rebound_hwnd = candidate
+                        break
+                    time.sleep(.25)
+                if rebound_hwnd:
+                    restarts += 1
+                    remaining -= time.monotonic() - wait_closed_at
+                    del result, tasker, controller, resource, handlers, action
+                    hwnd = rebound_hwnd
+                    record.update(
+                        stage="enter_game",
+                        restarts=restarts,
+                        previous_game_hwnd=prev_hwnd,
+                        game_hwnd=hwnd,
+                    )
+                    save_record(record)
+                    continue
             stop_reason = getattr(action, "stop_reason", None)
             if stop_reason:
                 record["message_logged"] = True

@@ -25,8 +25,20 @@
   },
   "MaaNikki_StartGame_Loading": {
     "recognition": "OCR",
-    "roi": [300, 560, 680, 130],
+    "roi": [300, 560, 680, 155],
     "expected": "正在[进進]入奇[迹跡]大[陆陸]",
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_Updating": {
+    "recognition": "OCR",
+    "roi": [280, 560, 720, 155],
+    "expected": "热更新|熱更新|正在更新|资源更新|資源更新|检查更新|檢查更新|正在下载|正在下載|正在校验|正在校驗|正在解压|正在解壓|着色器",
+    "action": "DoNothing"
+  },
+  "MaaNikki_StartGame_AccountPrompt": {
+    "recognition": "OCR",
+    "roi": [260, 140, 760, 530],
+    "expected": "注册\\s*/\\s*登录|验证码登录|密码登录|获取验证码|扫码登录|游戏APP.*扫码|註冊\\s*/\\s*登錄|驗證碼登錄|密碼登錄|獲取驗證碼|掃碼登錄",
     "action": "DoNothing"
   },
   "MaaNikki_StartGame_UpdateTitle": {
@@ -67,7 +79,7 @@
     "recognition": "Or",
     "any_of": [
       "MaaNikki_StartGame_Enter", "MaaNikki_StartGame_Login",
-      "MaaNikki_StartGame_Loading",
+      "MaaNikki_StartGame_Loading", "MaaNikki_StartGame_Updating",
       "MaaNikki_MainDetected", "MaaNikki_RewardLayer", "MaaNikki_StartGame_RestartConfirm"
     ],
     "action": "DoNothing"

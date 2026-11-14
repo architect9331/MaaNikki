@@ -2,19 +2,97 @@ from __future__ import annotations
 
 from file_io import write_json
 
+import ctypes
+from ctypes import wintypes
 from datetime import datetime
+import os
+import time as wall_time
 
 from maa.custom_action import CustomAction
 from client_config import parse_custom_param
 from registration import agent_action
-from task_control import TaskStopped, task_time as time
+from task_control import GameWindowClosed, TaskStopped, active_session, task_time as time
 from daily.runtime import Executors, ROOT
 from game_view import ALLOWED_FRAME_SIZES, GameFrameSizeError, is_clipped_game_frame, require_game_frame
+
+
+STARTUP_HUNG_TIMEOUT = 90.0
+_WM_NULL = 0x0000
+_SMTO_BLOCK = 0x0001
+_SMTO_ABORTIFHUNG = 0x0002
+_ERROR_TIMEOUT = 1460
+_U32 = None
+
+
+def _startup_user32():
+    global _U32
+    if os.name != "nt":
+        return None
+    if _U32 is None:
+        u32 = ctypes.WinDLL("user32", use_last_error=True)
+        u32.IsWindow.argtypes = [wintypes.HWND]
+        u32.IsWindow.restype = wintypes.BOOL
+        u32.IsHungAppWindow.argtypes = [wintypes.HWND]
+        u32.IsHungAppWindow.restype = wintypes.BOOL
+        u32.SendMessageTimeoutW.argtypes = [
+            wintypes.HWND,
+            wintypes.UINT,
+            wintypes.WPARAM,
+            wintypes.LPARAM,
+            wintypes.UINT,
+            wintypes.UINT,
+            ctypes.POINTER(ctypes.c_size_t),
+        ]
+        u32.SendMessageTimeoutW.restype = ctypes.c_ssize_t
+        _U32 = u32
+    return _U32
+
+
+def _is_window_unresponsive(u32, hwnd) -> bool:
+    if u32 is None or not hwnd:
+        return False
+    if u32.IsHungAppWindow(hwnd):
+        return True
+    ctypes.set_last_error(0)
+    msg_res = ctypes.c_size_t(0)
+    ok = u32.SendMessageTimeoutW(
+        hwnd,
+        _WM_NULL,
+        0,
+        0,
+        _SMTO_BLOCK | _SMTO_ABORTIFHUNG,
+        80,
+        ctypes.byref(msg_res),
+    )
+    if ok != 0:
+        return False
+    return ctypes.get_last_error() == _ERROR_TIMEOUT and bool(u32.IsWindow(hwnd))
 
 
 @agent_action("nikki.start_game", stop_on_failure=True)
 class StartGameAction(CustomAction):
     def run(self, context, argv):
+        self.restart_requested = False
+        self.window_closed = False
+        self.elapsed_seconds = 0.0
+        self.stop_reason = None
+        wall_started_at = wall_time.monotonic()
+        try:
+            return self._run_startup(context, argv, wall_started_at)
+        except GameWindowClosed as error:
+            self.window_closed = True
+            self.elapsed_seconds = max(self.elapsed_seconds, wall_time.monotonic() - wall_started_at)
+            if not self.stop_reason:
+                self.stop_reason = str(error) or "连接的游戏窗口已经关闭，请重新连接。"
+            return False
+        except TaskStopped as error:
+            self.elapsed_seconds = max(self.elapsed_seconds, wall_time.monotonic() - wall_started_at)
+            reason = str(error).strip()
+            if not self.stop_reason and reason and reason != "任务已停止。":
+                self.stop_reason = reason
+            raise
+
+    def _run_startup(self, context, argv, wall_started_at):
         runtime = Executors(context)
         options = parse_custom_param(argv.custom_action_param)
         raw_timeout = options.get("timeout", 900)
@@ -25,14 +103,187 @@ class StartGameAction(CustomAction):
         )
         bootstrap = options.get("bootstrap") is True
         already_running = options.get("already_running") is True
-        self.restart_requested = False
-        self.elapsed_seconds = 0.0
-        self.stop_reason = None
         if not 30 <= timeout <= 900:
             self.stop_reason = "启动等待上限应在30至900秒之间。"
             runtime.log(self.stop_reason)
             context.tasker.post_stop()
             return False
+
+        u32 = _startup_user32()
+        session = active_session()
+        orig_session_wait = session.wait if session is not None else None
+        orig_adapter_hung = None
+        if session is not None:
+            if session.adapter is None:
+                from navigation.controller import ForegroundInput
+                session.adapter = ForegroundInput(session.controller, session.stopped)
+            orig_adapter_hung = session.adapter.hung
+        orig_check_focus = runtime.check_focus
+        in_hung_guard = False
+        wait_entered_at = None
+
+        def _ensure_session_adapter():
+            nonlocal orig_adapter_hung, startup_adapter_hung
+            cur = active_session()
+            if cur is None:
+                return None, None
+            if cur.adapter is None:
+                from navigation.controller import ForegroundInput
+                cur.adapter = ForegroundInput(cur.controller, cur.stopped)
+                if cur is session and orig_adapter_hung is None:
+                    orig_adapter_hung = cur.adapter.hung
+                    startup_adapter_hung = _wrap_hung_fn(orig_adapter_hung, cur.adapter)
+                    cur.adapter.hung = startup_adapter_hung
+            return cur, cur.adapter
+
+        def wait_startup_responsive():
+            nonlocal in_hung_guard
+            if in_hung_guard or u32 is None:
+                return
+            cur, adapter = _ensure_session_adapter()
+            if cur is None or cur._background_observation or adapter is None or not adapter.hwnd:
+                return
+            hwnd = adapter.hwnd
+            if not u32.IsWindow(hwnd):
+                cur.window_closed()
+            if not _is_window_unresponsive(u32, hwnd):
+                return
+            in_hung_guard = True
+            hung_begin = wall_time.monotonic()
+            remaining_budget = (wall_started_at + timeout + cur.paused_seconds) - hung_begin
+            max_wait = min(STARTUP_HUNG_TIMEOUT, max(20.0, remaining_budget))
+            try:
+                for inputs in list(cur.inputs):
+                    inputs.release()
+                logged_stall = False
+                while _is_window_unresponsive(u32, hwnd):
+                    if cur.stopped() or context.tasker.stopping:
+                        raise TaskStopped("任务已停止。")
+                    if not u32.IsWindow(hwnd):
+                        cur.window_closed()
+                    elapsed_hung = wall_time.monotonic() - hung_begin
+                    if not logged_stall and elapsed_hung >= 5.0:
+                        logged_stall = True
+                        runtime.log("游戏窗口正在加载资源（暂时未响应），继续等待恢复。", detail=True)
+                    if elapsed_hung >= max_wait:
+                        if u32.IsHungAppWindow(hwnd):
+                            cur.window_hung()
+                        break
+                    wall_time.sleep(.2)
+                cur.generation += 1
+                runtime.invalidate_frame()
+            finally:
+                in_hung_guard = False
+
+        def _wrap_hung_fn(raw_hung_fn, adapter_obj):
+            def _wrapped_hung():
+                nonlocal in_hung_guard
+                if raw_hung_fn is None or not raw_hung_fn():
+                    return False
+                if session is None or session._background_observation or in_hung_guard or u32 is None:
+                    return True
+                hwnd = getattr(adapter_obj, "hwnd", 0) if adapter_obj is not None else 0
+                if not hwnd:
+                    return True
+                in_hung_guard = True
+                hung_begin = wall_time.monotonic()
+                in_flight_pause = (
+                    max(0.0, hung_begin - wait_entered_at)
+                    if session.waiting and wait_entered_at is not None
+                    else 0.0
+                )
+                remaining_budget = (
+                    wall_started_at + timeout + session.paused_seconds + in_flight_pause
+                ) - hung_begin
+                max_wait = min(STARTUP_HUNG_TIMEOUT, max(20.0, remaining_budget))
+                try:
+                    for inputs in list(session.inputs):
+                        inputs.release()
+                    logged_stall = False
+                    while raw_hung_fn():
+                        if session.stopped() or context.tasker.stopping:
+                            raise TaskStopped("任务已停止。")
+                        if not u32.IsWindow(hwnd):
+                            session.window_closed()
+                        elapsed_hung = wall_time.monotonic() - hung_begin
+                        if not logged_stall and elapsed_hung >= 5.0:
+                            logged_stall = True
+                            runtime.log("游戏窗口正在加载资源（暂时未响应），继续等待恢复。", detail=True)
+                        if elapsed_hung >= max_wait:
+                            session.window_hung()
+                        wall_time.sleep(.2)
+                    session.generation += 1
+                    runtime.invalidate_frame()
+                    return False
+                finally:
+                    in_hung_guard = False
+            return _wrapped_hung
+
+        startup_adapter_hung = (
+            _wrap_hung_fn(orig_adapter_hung, session.adapter)
+            if session is not None and session.adapter is not None and orig_adapter_hung is not None
+            else None
+        )
+
+        def startup_session_wait(adapter_arg=None, *, require_foreground=False):
+            nonlocal wait_entered_at
+            if session is not None and not session.waiting:
+                wait_startup_responsive()
+            custom_orig_hung = None
+            if (
+                session is not None
+                and adapter_arg is not None
+                and adapter_arg is not session.adapter
+                and hasattr(adapter_arg, "hung")
+            ):
+                custom_orig_hung = adapter_arg.hung
+                adapter_arg.hung = _wrap_hung_fn(custom_orig_hung, adapter_arg)
+            entered_outer = wait_entered_at is None
+            if entered_outer:
+                wait_entered_at = wall_time.monotonic()
+            try:
+                return orig_session_wait(adapter_arg, require_foreground=require_foreground)
+            finally:
+                if entered_outer:
+                    wait_entered_at = None
+                if custom_orig_hung is not None:
+                    adapter_arg.hung = custom_orig_hung
+
+        def startup_check_focus():
+            wait_startup_responsive()
+            return orig_check_focus()
+
+        def startup_pause(seconds):
+            runtime.invalidate_frame()
+            wait_startup_responsive()
+            orig_check_focus()
+            pause_end = time.monotonic() + seconds
+            while not runtime.stopped and time.monotonic() < pause_end:
+                if runtime.navigation_inputs:
+                    runtime.navigation_inputs.check()
+                wait_startup_responsive()
+                orig_check_focus()
+                remaining_sleep = pause_end - time.monotonic()
+                if remaining_sleep > 0:
+                    wall_time.sleep(min(0.1, remaining_sleep))
+            wait_startup_responsive()
+            return not runtime.stopped
+
+        runtime.check_focus = startup_check_focus
+        runtime.pause = startup_pause
+        if session is not None and orig_session_wait is not None:
+            session.wait = startup_session_wait
+        if session is not None and session.adapter is not None and orig_adapter_hung is not None:
+            session.adapter.hung = startup_adapter_hung
+        try:
+            return self._run_startup_loop(context, options, runtime, timeout, bootstrap, already_running)
+        finally:
+            if session is not None and orig_session_wait is not None:
+                session.wait = orig_session_wait
+            if session is not None and session.adapter is not None and orig_adapter_hung is not None:
+                session.adapter.hung = orig_adapter_hung
+
+    def _run_startup_loop(self, context, options, runtime, timeout, bootstrap, already_running):
         started_at = time.monotonic()
         deadline = started_at+timeout
         entered, logged_in, update_attempts = 0, 0, 0
@@ -93,6 +344,8 @@ class StartGameAction(CustomAction):
                         or runtime.hit("MaaNikki_RewardLayer")
                         or runtime.ui.asset("IconUILoading", threshold=.99)
                         or runtime.hit("MaaNikki_StartGame_Loading")
+                        or runtime.hit("MaaNikki_StartGame_Updating")
+                        or runtime.hit("MaaNikki_StartGame_AccountPrompt")
                         or runtime.hit("MaaNikki_StartGame_Enter"))
 
         def advance(node, destination):
@@ -219,12 +472,24 @@ class StartGameAction(CustomAction):
                 main = not restart and not update and runtime.hit("MaaNikki_MainDetected")
                 enter = not update and not main and runtime.hit("MaaNikki_StartGame_Enter")
                 login = not update and not main and not enter and runtime.hit("MaaNikki_StartGame_Login")
+                account_prompt = (
+                    not restart and not update and not reward and not main
+                    and not enter and not login
+                    and runtime.hit("MaaNikki_StartGame_AccountPrompt")
+                )
+                updating = (
+                    not restart and not update and not reward and not main
+                    and not enter and not login and not account_prompt
+                    and runtime.hit("MaaNikki_StartGame_Updating")
+                )
                 intro = (not restart and not update and not reward and not main
-                         and not enter and not login and runtime.hit("MaaNikki_StartGame_Intro"))
+                         and not enter and not login and not account_prompt and not updating
+                         and runtime.hit("MaaNikki_StartGame_Intro"))
                 loading = (not restart and not update and not reward and not main
-                           and not enter and not login and not intro
-                           and runtime.hit("MaaNikki_StartGame_Loading"))
-            if restart or update or reward or main or enter or login or intro or loading:
+                           and not enter and not login and not account_prompt and not updating
+                           and not intro and runtime.hit("MaaNikki_StartGame_Loading"))
+            if (restart or update or reward or main or enter or login
+                    or account_prompt or updating or intro or loading):
                 unknown_since = None
             if restart:
                 if not bootstrap or options.get("allow_restart", True) is not True:
@@ -283,6 +548,12 @@ class StartGameAction(CustomAction):
                     return incomplete("点击登录后仍停留在登录页面")
                 if not advance("MaaNikki_StartGame_Login", transition_ready):
                     return incomplete()
+            elif account_prompt:
+                return incomplete("游戏账号未登录，请先手动完成账号登录后再运行")
+            elif updating:
+                if not update_waiting:
+                    runtime.log("检测到客户端正在热更新或校验资源，等待更新完成。")
+                    update_waiting = True
             elif intro:
                 if not intro_logged:
                     runtime.log("正在播放健康提示或光敏警告，等待启动画面结束。", detail=True)
