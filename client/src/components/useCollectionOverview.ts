@@ -4,19 +4,22 @@ import { buildOwnedProfile } from '@/services/scoring/profile';
 import { buildRenewalGroups, MAX_LEVEL, RENEWED_LEVEL } from '@/services/scoring/materialPlanning';
 import { buildSuitEntries } from '@/services/scoring/wardrobeBrowserData';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import bagCatalogRaw from '@/data/bagCatalog.json';
 import { getBlessingProgress } from '@/utils/blessingProgress';
 
 export interface Progress { done: number; total: number }
+const BAG_CATALOG_TOTAL = Object.keys(bagCatalogRaw as Record<string, unknown>).length;
 
 /**
  * Where each collection area stands, for the tabs of 收集进度. The figures
  * match the ones each tab shows; null means there is no record to count yet.
  */
-export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal' | 'blessing', Progress | null> {
+export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal' | 'blessing' | 'backpack', Progress | null> {
   const account = useAccountStateStore((state) => state.data);
   const payload = useWardrobePlanStore((state) => state.payload);
   const settings = useWardrobePlanStore((state) => state.settings);
-  const scope = useWardrobePlanStore((state) => state.materials.crafting_scope ?? 'all');
+  const materials = useWardrobePlanStore((state) => state.materials);
+  const scope = materials.crafting_scope ?? 'all';
 
   const profile = useMemo(() => payload?.snapshot ? buildOwnedProfile(payload, settings) : null, [payload, settings]);
   const closet = useMemo(() => {
@@ -43,6 +46,13 @@ export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal
     const progress = getBlessingProgress(account);
     return progress.known ? { done: progress.owned.size, total: progress.target } : null;
   }, [account]);
+  const backpack = useMemo(() => {
+    const inv = materials.inventory ?? {};
+    const keys = Object.keys(inv);
+    if (!keys.length && !materials.backpack_summary) return null;
+    const stocked = Object.values(inv).filter((v) => Number(v) > 0).length;
+    return { done: stocked, total: Math.max(BAG_CATALOG_TOTAL, stocked) };
+  }, [materials.inventory, materials.backpack_summary]);
 
-  return { closet, crafting, renewal, blessing };
+  return { closet, crafting, renewal, blessing, backpack };
 }

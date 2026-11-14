@@ -104,7 +104,7 @@ export function Tabs<T extends string>({ label, value, tabs, onChange }: {
     onChange(next.id);
     requestAnimationFrame(() => document.getElementById(`page-tab-${next.id}`)?.focus());
   };
-  return <div role="tablist" aria-label={label} className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-bg-secondary p-1 sm:grid-cols-4"
+  return <div role="tablist" aria-label={label} className={clsx('grid grid-cols-2 gap-1 rounded-xl border border-border bg-bg-secondary p-1', tabs.length >= 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4')}
     onKeyDown={(event) => {
       if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
       if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }

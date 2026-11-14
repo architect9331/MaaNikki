@@ -1,12 +1,16 @@
-"""Manual wardrobe read entry point."""
+"""Manual wardrobe, renewal (服装焕新), and backpack read entry points."""
 from datetime import datetime
 
 from maa.custom_action import CustomAction
 
+from account_state import AccountState
+from collection.backpack import rescan_backpack
+from collection.material_pursuit import load_catalogs, record_material_history
 from daily.runtime import Runtime
 from daily.settings import ROOT
 from registration import agent_action
 from task_control import TaskStopped
+from wardrobe.renewal_scanner import RenewalScanner
 from wardrobe.scanner import WardrobeScanner
 
 
@@ -43,4 +47,67 @@ class WardrobeReadAction(CustomAction):
                 except (OSError, ValueError) as save_error:
                     rt.log(f"衣柜账号进度保存失败：{save_error}。", detail=True)
             rt.log(f"衣柜读取暂停：{error}。")
+            return False
+
+
+@agent_action("nikki.renewal_read")
+class RenewalReadAction(CustomAction):
+    def run(self, context, argv):
+        rt = Runtime(context)
+        scanner = None
+        try:
+            rt.log("焕新读取开始。")
+            scanner = RenewalScanner(rt)
+            complete = scanner.run()
+            matched = scanner.summary.get("matched_groups", 0)
+            unmatched = scanner.summary.get("unmatched_count", 0)
+            rt.log(
+                f"焕新读取{'完成' if complete else '结束'}：已同步 {matched} 组服装等级"
+                + (f"（{unmatched} 张卡片未匹配到名称）" if unmatched else "")
+                + "。"
+            )
+            if not complete and scanner.summary.get("reason"):
+                rt.log(scanner.summary["reason"])
+            _, finished = rt.finish(argv.node_name)
+            return complete and finished
+        except TaskStopped:
+            if scanner is not None:
+                try:
+                    scanner.save("用户停止，本次焕新读取进度已保存")
+                except (OSError, ValueError) as error:
+                    rt.log(f"焕新读取进度保存失败：{error}。", detail=True)
+            raise
+        except Exception as error:
+            if not rt.stopped:
+                rt.diagnostic("renewal_read", str(error))
+            if scanner is not None:
+                try:
+                    scanner.save(str(error))
+                except (OSError, ValueError) as save_error:
+                    rt.log(f"焕新读取进度保存失败：{save_error}。", detail=True)
+            rt.log(f"焕新读取暂停：{error}。")
+            return False
+
+
+@agent_action("nikki.backpack_read")
+class BackpackReadAction(CustomAction):
+    def run(self, context, argv):
+        rt = Runtime(context)
+        try:
+            rt.log("背包读取开始。")
+            account = AccountState.for_runtime(ROOT, rt)
+            crafting, scoring = load_catalogs()
+            inv = rescan_backpack(rt, account, crafting)
+            if inv is None:
+                rt.log("背包读取未完成。")
+                return False
+            record_material_history(account, crafting, scoring)
+            _, finished = rt.finish(argv.node_name)
+            return finished
+        except TaskStopped:
+            raise
+        except Exception as error:
+            if not rt.stopped:
+                rt.diagnostic("backpack_read", str(error))
+            rt.log(f"背包读取中断：{error}。")
             return False

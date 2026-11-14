@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Clock, Gem, Hammer, LibraryBig, RefreshCw, Play, Sparkles, Square, Shirt } from 'lucide-react';
+import { Check, ChevronDown, Clock, Gem, Hammer, LibraryBig, Package, RefreshCw, Play, Sparkles, Square, Shirt } from 'lucide-react';
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { useAccountStateStore } from '@/stores/accountStateStore';
@@ -8,6 +8,7 @@ import { LogsPanel } from './LogsPanel';
 import { FeaturePage, primaryButton, secondaryButton, StatusBar, Tabs } from './ui/FeaturePage';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { useCollectionOverview, type Progress } from './useCollectionOverview';
+import { BackpackViewerPanel } from './BackpackViewerPanel';
 import { WardrobeBrowser } from './WardrobeBrowser';
 import { BlessingProgressPanel } from './BlessingProgressPage';
 import { useCollectionHubStore, type CollectionTab } from '@/stores/collectionHubStore';
@@ -21,6 +22,7 @@ const TABS = [
   ['crafting', Hammer, '制衣', '张'],
   ['renewal', Gem, '焕新', '组'],
   ['blessing', Sparkles, '祝福闪光', '色'],
+  ['backpack', Package, '背包库存', '种'],
 ] as const;
 const figure = (progress: Progress | null, unit: string) => progress
   ? `${progress.done.toLocaleString('zh-CN')} / ${progress.total.toLocaleString('zh-CN')} ${unit}` : '尚无记录';
@@ -29,7 +31,7 @@ const formatTime = (value: string) => new Date(value).toLocaleString('zh-CN', { 
 /** 收集进度: one hub for the closet, crafting, renewal and blessing collection plans. */
 export function CollectionHubPage({ onClose }: { onClose: () => void }) {
   const { data, error: accountError, refresh, loading } = useAccountStateStore();
-  const { status, error } = useWardrobeStore();
+  const { status, mode, error } = useWardrobeStore();
   const tab = useCollectionHubStore((state) => state.tab);
   const setTab = useCollectionHubStore((state) => state.setTab);
   const [opened, setOpened] = useState<Set<Tab>>(() => new Set([tab]));
@@ -38,6 +40,7 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
   const [showDetails, setShowDetails] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const busy = ['starting', 'reading', 'stopping'].includes(status);
+  const closetBusy = busy && mode === 'wardrobe';
   const scan = data?.wardrobe?.last_scan ?? data?.wardrobe?.inventory;
   const parts = Object.entries(scan?.parts ?? {});
   const wasBusy = useRef(busy);
@@ -52,11 +55,11 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
     if (wasBusy.current && !busy) setRefreshToken((previous) => previous + 1);
     wasBusy.current = busy;
   }, [busy]);
-  const tone = error || accountError ? 'warn' : busy ? 'busy' : scan?.complete ? 'ok' : 'idle';
+  const tone = (error && mode === 'wardrobe') || accountError ? 'warn' : closetBusy ? 'busy' : scan?.complete ? 'ok' : 'idle';
   const open = (next: Tab) => setTab(next);
   const openCloset = () => { open('closet'); setShowDetails(true); };
-  const readButton = <button disabled={!isTauri() || status === 'stopping'} onClick={() => busy ? stopWardrobeRead() : void startWardrobeRead()} className={busy ? secondaryButton : primaryButton}>
-    {busy ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}{busy ? '停止读取' : scan ? scan.complete ? '更新衣柜' : '继续读取' : '开始读取'}
+  const readButton = <button disabled={!isTauri() || (busy && !closetBusy) || status === 'stopping'} onClick={() => closetBusy ? stopWardrobeRead() : void startWardrobeRead()} className={closetBusy ? secondaryButton : primaryButton}>
+    {closetBusy ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}{closetBusy ? '停止读取' : scan ? scan.complete ? '更新衣柜' : '继续读取' : '开始读取'}
   </button>;
   const summary = scan
     ? <>已读取 <strong className="tabular-nums text-text-primary">{scan.scanned_count}</strong> 件 · 部位 {scan.completed_parts} / {scan.total_parts ?? 28}
@@ -73,14 +76,14 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
       progress: overview[id]?.total ? overview[id]!.done / overview[id]!.total : null,
     }))} />
     {opened.has('closet') && <div className={clsx('space-y-4', tab !== 'closet' && 'hidden')}>
-      <StatusBar tone={tone} title={busy || !scan || error || accountError ? wardrobeLabels[status] : scan.complete ? '衣柜记录完整' : '衣柜记录未读完'}
-        detail={error || accountError || summary}>
-        {(scan || busy) && <button type="button" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails || busy} className={secondaryButton}>
-          读取详情<ChevronDown className={clsx('h-3.5 w-3.5 transition-transform', (showDetails || busy) && 'rotate-180')} />
+      <StatusBar tone={tone} title={closetBusy || !scan || (error && mode === 'wardrobe') || accountError ? wardrobeLabels[closetBusy ? status : 'idle'] : scan.complete ? '衣柜记录完整' : '衣柜记录未读完'}
+        detail={(error && mode === 'wardrobe') || accountError || summary}>
+        {(scan || closetBusy) && <button type="button" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails || closetBusy} className={secondaryButton}>
+          读取详情<ChevronDown className={clsx('h-3.5 w-3.5 transition-transform', (showDetails || closetBusy) && 'rotate-180')} />
         </button>}
         {readButton}
       </StatusBar>
-      {(showDetails || busy) && <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
+      {(showDetails || closetBusy) && <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
         {parts.length > 0 && <div className="grid grid-cols-2 gap-px bg-border/50 sm:grid-cols-4">{parts.map(([id, part]) =>
           <div key={id} className="flex items-center gap-2 bg-bg-secondary px-4 py-2"><span className="min-w-0 flex-1 truncate text-xs">{part.name}</span><strong className="text-xs font-semibold tabular-nums">{part.scanned_count}</strong>{part.complete ? <Check className="h-3.5 w-3.5 text-success" /> : <Clock className="h-3.5 w-3.5 text-text-muted" />}</div>)}</div>}
         {scan?.reason && <p className="border-t border-border px-4 py-2.5 text-xs leading-5 text-text-secondary">{scan.reason}</p>}
@@ -89,7 +92,7 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
       </section>}
       {scan
         ? <WardrobeBrowser refreshToken={refreshToken} />
-        : !busy && <section className="rounded-xl border border-dashed border-border bg-bg-secondary px-6 py-10 text-center">
+        : !closetBusy && <section className="rounded-xl border border-dashed border-border bg-bg-secondary px-6 py-10 text-center">
           <Shirt className="mx-auto h-10 w-10 text-accent opacity-60" />
           <h3 className="mt-3 text-sm font-semibold">先读取一次衣柜</h3>
           <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-text-secondary">读取后可以按套装查看收集进度，制衣、焕新和搭配计算也会根据你拥有的衣服自动计算。</p>
@@ -104,5 +107,6 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
     {opened.has('crafting') && <div className={clsx(tab !== 'crafting' && 'hidden')}><WardrobeCraftingPlanner refreshToken={refreshToken} onOpenCloset={openCloset} /></div>}
     {opened.has('renewal') && <div className={clsx(tab !== 'renewal' && 'hidden')}><WardrobeRenewalPlanner refreshToken={refreshToken} onOpenCloset={openCloset} /></div>}
     {opened.has('blessing') && <div className={clsx(tab !== 'blessing' && 'hidden')}><BlessingProgressPanel refreshToken={refreshToken} /></div>}
+    {opened.has('backpack') && <div className={clsx(tab !== 'backpack' && 'hidden')}><BackpackViewerPanel refreshToken={refreshToken} /></div>}
   </FeaturePage>;
 }

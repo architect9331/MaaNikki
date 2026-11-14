@@ -102,5 +102,51 @@
     "roi": [300, 200, 680, 280],
     "expected": "已获得",
     "action": "DoNothing"
+  },
+  "MaaNikki_Rejuvenate_Entrance": {
+    "recognition": "OCR",
+    "roi": [70, 130, 660, 460],
+    "expected": "^服装焕新$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_RejuvenateReady",
+      "source": "MaaNikki_MenuReady"
+    },
+    "post_delay": 400
+  },
+  "MaaNikki_RejuvenateReady": {
+    "recognition": "OCR",
+    "roi": [65, 15, 200, 48],
+    "expected": "^服装焕新$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_RenewalRead": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.renewal_read",
+    "custom_action_param": {
+      "ready": "MaaNikki_RejuvenateReady",
+      "source": "MaaNikki_MainDetected"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_BackpackReady": {
+    "recognition": "OCR",
+    "roi": [65, 15, 240, 48],
+    "expected": "背包",
+    "action": "DoNothing"
+  },
+  "MaaNikki_BackpackRead": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.backpack_read",
+    "custom_action_param": {
+      "ready": "MaaNikki_BackpackReady",
+      "source": "MaaNikki_MainDetected"
+    },
+    "post_delay": 0,
+    "next": []
   }
 }

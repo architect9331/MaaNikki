@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "major_categories": [
+    {
+      "id": "299",
+      "name": "套装",
+      "major": true,
+      "skip": true,
+      "icon": "T_UI_common_icon_clothes_10"
+    },
+    {
+      "id": "210",
+      "name": "发型",
+      "major": true,
+      "skip": false,
+      "icon": "T_UI_common_icon_clothes_01"
+    },
+    {
+      "id": "290",
+      "name": "连衣裙",
+      "major": true,
+      "skip": false,
+      "icon": "T_UI_common_icon_clothes_05"
+    },
+    {
+      "id": "220",
+      "name": "外套",
+      "major": true,
+      "skip": false,
+      "icon": "T_UI_common_icon_clothes_04"
+    },
+    {
+      "id": "230",
+      "name": "上衣",
+      "major": true,
+      "skip": false,
+      "icon": "T_UI_common_icon_clothes_02"
+    },
+    {
+      "id": "242",
+      "name": "下装",
+      "major": true,
+      "skip": false,
+      "icon": "T_UI_common_icon_clothes_03"
+    },
+    {
+      "id": "250",
+      "name": "袜子",
+      "major": true,
+      "skip": false,
+      "icon": "T_UI_common_icon_clothes_06"
+    },
+    {
+      "id": "260",
+      "name": "鞋子",
+      "major": true,
+      "skip": false,
+      "icon": "T_UI_common_icon_clothes_07"
+    },
+    {
+      "id": "acc",
+      "name": "饰品",
+      "major": true,
+      "skip": false,
+      "icon": "T_UI_common_icon_clothes_08"
+    }
+  ],
+  "accessory_minors": [
+    {
+      "id": "271",
+      "name": "饰品·发饰",
+      "icon": "T_UI_common_icon_clothes_12_s"
+    },
+    {
+      "id": "272",
+      "name": "饰品·帽子",
+      "icon": "T_UI_common_icon_clothes_13_s"
+    },
+    {
+      "id": "273",
+      "name": "饰品·耳饰",
+      "icon": "T_UI_common_icon_clothes_14_s"
+    },
+    {
+      "id": "274",
+      "name": "饰品·颈饰",
+      "icon": "T_UI_common_icon_clothes_15_s"
+    },
+    {
+      "id": "275",
+      "name": "饰品·腕饰",
+      "icon": "T_UI_common_icon_clothes_17_s"
+    },
+    {
+      "id": "276",
+      "name": "饰品·项圈",
+      "icon": "T_UI_common_icon_clothes_16_s"
+    },
+    {
+      "id": "277",
+      "name": "饰品·手套",
+      "icon": "T_UI_common_icon_clothes_18_s"
+    },
+    {
+      "id": "292",
+      "name": "饰品·面饰",
+      "icon": "T_UI_common_icon_clothes_20_s"
+    },
+    {
+      "id": "293",
+      "name": "饰品·胸饰",
+      "icon": "T_UI_common_icon_clothes_21_s"
+    },
+    {
+      "id": "294",
+      "name": "饰品·挂饰",
+      "icon": "T_UI_common_icon_clothes_22_s"
+    },
+    {
+      "id": "295",
+      "name": "饰品·背饰",
+      "icon": "T_UI_common_icon_clothes_24_s"
+    },
+    {
+      "id": "296",
+      "name": "饰品·戒指",
+      "icon": "T_UI_common_icon_clothes_25_s"
+    },
+    {
+      "id": "270",
+      "name": "饰品·臂饰",
+      "icon": "T_UI_common_icon_clothes_26_s"
+    },
+    {
+      "id": "278",
+      "name": "饰品·手持物",
+      "icon": "T_UI_common_icon_clothes_19_s"
+    },
+    {
+      "id": "279",
+      "name": "饰品·肤绘",
+      "icon": "T_UI_common_icon_clothes_31_s"
+    }
+  ]
+}

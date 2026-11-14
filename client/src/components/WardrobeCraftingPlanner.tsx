@@ -7,6 +7,7 @@ import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import type { CraftingSketch, PlanMode } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import { REALM_GOAL_LABELS } from '@/utils/nikkiOptions';
+import { ManualReadButton, ManualReadLogStrip } from './ManualReadControls';
 import { Segmented, secondaryButton } from './ui/FeaturePage';
 import { PlanEmpty, PlanLayout, PlanListPanel, PlanPanel, bulkButton, planCheckbox, planField } from './CollectionPlan';
 import { MaterialForecastPanel } from './RealmForecastPanel';
@@ -151,6 +152,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
 
   return (
     <div className="space-y-4">
+      <ManualReadLogStrip modes={['backpack']} />
       <PlanPanel
         goal="crafting"
         tone={payload.snapshot.complete ? 'ok' : 'warn'}
@@ -309,6 +311,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
             realmTotals={realmTotals}
             groups={['crystal', 'jihua', 'world']}
             onStockChange={setStock}
+            headerAction={<ManualReadButton targetMode="backpack" idleLabel="更新背包" compact />}
             empty={mode === 'selected' && !picked.length ? '在左侧勾选想做的设计图，这里会算出需要、库存与还差多少。' : '不需要额外的制衣材料'}
             actions={
               mode === 'all' && consumedTotal > 0 ? (

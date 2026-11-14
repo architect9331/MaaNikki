@@ -16,8 +16,18 @@ import { reserveDailyWindow, dailyWindowReserved } from './explorationService';
 import { stopInstanceTasks } from './taskStopService';
 
 export const WARDROBE_INSTANCE_ID = 'maanikki-wardrobe';
+export type WardrobeReadMode = 'wardrobe' | 'renewal' | 'backpack';
 type Status = 'idle' | 'starting' | 'reading' | 'stopping' | 'completed' | 'stopped' | 'error';
-export const useWardrobeStore = create<{ status: Status; error: string }>(() => ({ status: 'idle', error: '' }));
+
+const READ_SPECS: Record<WardrobeReadMode, { taskName: string; label: string; entry: string; busyText: string }> = {
+  wardrobe: { taskName: 'wardrobe', label: '衣柜读取', entry: 'MaaNikki_WardrobeRead', busyText: '正在读取衣柜' },
+  renewal: { taskName: 'renewal_read', label: '焕新读取', entry: 'MaaNikki_RenewalRead', busyText: '正在读取服装焕新' },
+  backpack: { taskName: 'backpack_read', label: '背包读取', entry: 'MaaNikki_BackpackRead', busyText: '正在读取背包库存' },
+};
+
+export const useWardrobeStore = create<{ status: Status; mode: WardrobeReadMode; error: string }>(() => ({
+  status: 'idle', mode: 'wardrobe', error: '',
+}));
 export const wardrobeLabels: Record<Status, string> = {
   idle: '准备读取', starting: '连接游戏中', reading: '正在读取衣柜', stopping: '正在停止',
   completed: '读取完成', stopped: '已停止', error: '读取中断',
@@ -36,17 +46,30 @@ export function stopWardrobeRead() {
   cancellation?.abort();
 }
 
-export function startWardrobeRead(): Promise<void> {
+export function startRead(mode: WardrobeReadMode): Promise<void> {
   if (pending) return pending;
   const abort = new AbortController();
   cancellation = abort;
-  useWardrobeStore.setState({ status: 'starting', error: '' });
-  pending = run(abort.signal).finally(() => { pending = null; cancellation = null; });
+  useWardrobeStore.setState({ status: 'starting', mode, error: '' });
+  pending = run(abort.signal, mode).finally(() => { pending = null; cancellation = null; });
   return pending;
 }
 
-async function run(signal: AbortSignal) {
+export function startWardrobeRead(): Promise<void> {
+  return startRead('wardrobe');
+}
+
+export function startRenewalRead(): Promise<void> {
+  return startRead('renewal');
+}
+
+export function startBackpackRead(): Promise<void> {
+  return startRead('backpack');
+}
+
+async function run(signal: AbortSignal, mode: WardrobeReadMode) {
   const id = WARDROBE_INSTANCE_ID;
+  const spec = READ_SPECS[mode];
   let release: (() => void) | undefined;
   let created = false;
   let submitted = false;
@@ -55,21 +78,25 @@ async function run(signal: AbortSignal) {
   try {
     if (retainedCleanup) await retainedCleanup();
     check();
-    if (!isTauri()) throw new Error('请在桌面客户端读取衣柜。');
+    if (!isTauri()) throw new Error(`请在桌面客户端执行${spec.label}。`);
     const state = useAppStore.getState();
-    if (dailyWindowReserved() || state.instances.some((instance) => instance.isRunning)) throw new Error('请等待当前任务结束后读取衣柜。');
+    if (dailyWindowReserved() || state.instances.some((instance) => instance.isRunning)) {
+      throw new Error(`请等待当前任务结束后执行${spec.label}。`);
+    }
     const pi = state.projectInterface;
     const controller = pi?.controller.find((item) => item.type === 'Win32');
     const resource = pi?.resource[0];
     if (!pi || !controller || !resource) throw new Error('请先加载项目资源。');
-    if (await maaService.isWorkstationLocked()) throw new Error('请解锁桌面后读取衣柜。');
+    if (await maaService.isWorkstationLocked()) throw new Error(`请解锁桌面后执行${spec.label}。`);
     check();
-    if (dailyWindowReserved()) throw new Error('请等待当前任务结束后读取衣柜。');
+    if (dailyWindowReserved()) throw new Error(`请等待当前任务结束后执行${spec.label}。`);
     release = await reserveDailyWindow();
     check();
     const backend = await maaService.getAllStates();
     if (!backend) throw new Error('无法读取任务状态。');
-    if (Object.values(backend.instances).some((item) => item.isRunning)) throw new Error('请等待当前任务结束后读取衣柜。');
+    if (Object.values(backend.instances).some((item) => item.isRunning)) {
+      throw new Error(`请等待当前任务结束后执行${spec.label}。`);
+    }
     if (!state.maaInitialized) await maaService.init();
     check();
     await startGlobalCallbackListener();
@@ -90,28 +117,28 @@ async function run(signal: AbortSignal) {
     const paths = computeResourcePaths(resource, controller, state.basePath);
     const resources = await maaService.loadResource(id, paths);
     const results = await Promise.all(resources.map((value) => waitForResResult(value, 60000)));
-    if (!resources.length || results.some((result) => result !== 'succeeded')) throw new Error('衣柜读取资源加载失败。');
+    if (!resources.length || results.some((result) => result !== 'succeeded')) throw new Error(`${spec.label}资源加载失败。`);
     check();
-    const task: SelectedTask = { id, taskName: 'wardrobe', enabled: true, expanded: false, optionValues: {} };
-    const definition = { ...pi, task: [...pi.task, { name: 'wardrobe', label: '衣柜读取', entry: 'MaaNikki_WardrobeRead' }] };
+    const task: SelectedTask = { id, taskName: spec.taskName, enabled: true, expanded: false, optionValues: {} };
+    const definition = { ...pi, task: [...pi.task, { name: spec.taskName, label: spec.label, entry: spec.entry }] };
     const envs = buildPiEnvVars({ projectInterface: pi, controllerName: controller.name, resourceName: resource.name,
       language: state.language, maaVersion: state.maaVersion,
       translations: state.interfaceTranslations[getInterfaceLangKey(state.language)] });
-    state.registerEntryTaskName('MaaNikki_WardrobeRead', '衣柜读取');
+    state.registerEntryTaskName(spec.entry, spec.label);
     submitted = true;
-    const ids = await maaService.startTasks(id, [{ entry: 'MaaNikki_WardrobeRead', task_name: 'wardrobe', selected_task_id: id,
+    const ids = await maaService.startTasks(id, [{ entry: spec.entry, task_name: spec.taskName, selected_task_id: id,
       pipeline_override: generateTaskPipelineOverride(task, definition, controller.name, resource.name, state.globalOptionValues) }],
     normalizeAgentConfigs(pi.agent), state.basePath, state.tcpCompatMode, envs, { name: controller.name, type: controller.type });
-    ids.forEach((value) => state.registerTaskIdName(value, '衣柜读取'));
+    ids.forEach((value) => state.registerTaskIdName(value, spec.label));
     check();
-    if (ids.length !== 1) throw new Error('衣柜读取任务提交失败。');
+    if (ids.length !== 1) throw new Error(`${spec.label}任务提交失败。`);
     useWardrobeStore.setState({ status: 'reading' });
     poll = setInterval(() => { void useAccountStateStore.getState().refresh().catch(() => {}); }, 2000);
     const outcome = await waitForTaskResult(ids[0], { signal });
     check();
-    if (outcome !== 'succeeded') throw new Error('本次读取未完成，已保存读取进度，请查看日志。');
+    if (outcome !== 'succeeded') throw new Error(`本次${spec.label}未完成，已保存读取进度，请查看日志。`);
     useWardrobeStore.setState({ status: 'completed' });
-    toast.success('衣柜读取完成');
+    toast.success(`${spec.label}完成`);
   } catch (error) {
     const message = String(error instanceof Error ? error.message : error);
     useWardrobeStore.setState({ status: signal.aborted ? 'stopped' : 'error', error: signal.aborted ? '' : message });
@@ -122,7 +149,7 @@ async function run(signal: AbortSignal) {
     if (created || submitted || release) {
       const cleanup = async () => {
         if (submitted) {
-          if (!await stopInstanceTasks(id)) throw new Error('衣柜读取尚未停止，请稍后再试。');
+          if (!await stopInstanceTasks(id)) throw new Error(`${spec.label}尚未停止，请稍后再试。`);
           submitted = false;
         }
         if (created) {

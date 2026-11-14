@@ -241,7 +241,9 @@ export function useMaaCallbackLogger() {
           const state = useAppStore.getState();
           const explorationEvent = details.entry === 'MaaNikki_Exploration' ||
             (details.task_id !== undefined && state.maaTaskIdMapping[EXPLORATION_INSTANCE_ID]?.[details.task_id]);
-          const wardrobeEvent = details.entry === 'MaaNikki_WardrobeRead' ||
+          const wardrobeEvent = (details.entry === 'MaaNikki_WardrobeRead' ||
+            details.entry === 'MaaNikki_RenewalRead' ||
+            details.entry === 'MaaNikki_BackpackRead') ||
             (details.task_id !== undefined && state.maaTaskIdMapping[WARDROBE_INSTANCE_ID]?.[details.task_id]);
           // Wardrobe reading owns the window while its standalone instance is
           // connected. Nested action messages can precede task-id registration.

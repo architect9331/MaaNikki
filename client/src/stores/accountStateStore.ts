@@ -70,7 +70,18 @@ export interface MaterialHistoryPoint {
   crafting_missing?: number;
 }
 export interface AccountView {
-  wardrobe?: { inventory?: WardrobeSnapshot; last_scan?: WardrobeSnapshot };
+  wardrobe?: {
+    inventory?: WardrobeSnapshot;
+    last_scan?: WardrobeSnapshot;
+    renewal_scan?: {
+      updated_at?: string;
+      complete?: boolean;
+      tall_mode?: boolean;
+      scanned_cards?: number;
+      matched_groups?: number;
+      unmatched_count?: number;
+    };
+  };
   account_key?: string | null;
   uid?: string | null;
   updated_at?: string | null;

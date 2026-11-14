@@ -9,6 +9,7 @@ import type { PlanMode, RenewalPlanState } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import { REALM_GOAL_LABELS } from '@/utils/nikkiOptions';
 import { GlowPrepConfigPanel } from './GlowPrepConfigPanel';
+import { ManualReadButton, ManualReadLogStrip } from './ManualReadControls';
 import { secondaryButton } from './ui/FeaturePage';
 import { PlanEmpty, PlanLayout, PlanListPanel, PlanPanel, bulkButton, planCheckbox, planField } from './CollectionPlan';
 import { MaterialForecastPanel } from './RealmForecastPanel';
@@ -154,6 +155,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
 
   return (
     <div className="space-y-4">
+      <ManualReadLogStrip modes={['renewal', 'backpack']} />
       <PlanPanel
         goal="renewal"
         tone={unknownLevels ? 'warn' : 'ok'}
@@ -161,13 +163,19 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
           <>
             按 {formatTime(payload.snapshot.updated_at)} 的衣柜记录和已填等级计算 · 已养成到顶{' '}
             <strong className="tabular-nums text-text-primary">{num(doneCount)}</strong> / {num(groups.length)} 组
+            {account?.wardrobe?.renewal_scan?.updated_at && (
+              <> · 焕新读取于 {formatTime(account.wardrobe.renewal_scan.updated_at)}</>
+            )}
             {unknownLevels > 0 && <span className="text-warning"> · {num(unknownLevels)} 组没填等级，按 0 级计算</span>}
           </>
         }
         actions={
-          <button type="button" onClick={onOpenCloset} className={secondaryButton}>
-            更新衣柜
-          </button>
+          <>
+            <ManualReadButton targetMode="renewal" idleLabel="读取焕新" primary={unknownLevels > 0} />
+            <button type="button" onClick={onOpenCloset} className={secondaryButton}>
+              更新衣柜
+            </button>
+          </>
         }
         mode={mode}
         onModeChange={(next) => savePlan({ mode: next })}
@@ -309,6 +317,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
               totals={totals}
               groups={['jihua', 'vortex', 'chroma', 'crystal', 'world']}
               onStockChange={setStock}
+              headerAction={<ManualReadButton targetMode="backpack" idleLabel="更新背包" compact />}
               empty={mode === 'selected' && !pickedCount ? '在左侧勾选想升级或焕新的衣服，这里会算出需要、库存与还差多少。' : '计划里的衣服都已养成到目标，不需要材料'}
               note={
                 <>

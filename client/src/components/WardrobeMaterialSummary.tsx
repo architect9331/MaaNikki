@@ -64,6 +64,7 @@ export function WardrobeMaterialSummary({
   realmTotals,
   groups,
   onStockChange,
+  headerAction,
   actions,
   note,
   empty,
@@ -75,6 +76,7 @@ export function WardrobeMaterialSummary({
   realmTotals?: MaterialTotals;
   groups: MaterialGroup[];
   onStockChange?: (id: string, value: number) => void;
+  headerAction?: ReactNode;
   actions?: ReactNode;
   note?: ReactNode;
   empty: ReactNode;
@@ -98,9 +100,12 @@ export function WardrobeMaterialSummary({
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
       <div className="border-b border-border px-4 py-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">{title}</h2>
-          <span className="text-xs text-text-secondary">{scope}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-text-secondary">{scope}</span>
+            {headerAction}
+          </div>
         </div>
         {totals.rows.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">

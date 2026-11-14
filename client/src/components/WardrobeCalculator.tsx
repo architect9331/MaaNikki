@@ -11,6 +11,7 @@ import { buildOwnedProfile } from '@/services/scoring/profile';
 import { ATTRIBUTES, emptySettings } from '@/services/scoring/types';
 import type { CalculationResult, FieldBonus, Match, OutfitResult, OwnedProfile, ScoringCatalog, ScoringPayload, ScoringSettings } from '@/services/scoring/types';
 import { secondaryButton, StatusBar } from './ui/FeaturePage';
+import { ManualReadButton, ManualReadLogStrip } from './ManualReadControls';
 import { WardrobeHeartEditor } from './WardrobeHeartEditor';
 import { WardrobeMatchPicker } from './WardrobeMatchPicker';
 import { WardrobeBatchPlanView, WardrobeMaterialList } from './WardrobeMaterialActions';
@@ -586,6 +587,7 @@ function OutfitView({ outfit, potentialOutfit, payload, profile, settings, match
 
 export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken: number; onOpenRead: () => void }) {
   const activeUid = useAccountStateStore((state) => state.data?.uid);
+  const renewalUpdatedAt = useAccountStateStore((state) => state.data?.wardrobe?.renewal_scan?.updated_at ?? '');
   const [payload, setPayload] = useState<ScoringPayload | null>(null);
   const [settings, setSettings] = useState<ScoringSettings>(emptySettings);
   const [loading, setLoading] = useState(true);
@@ -633,7 +635,7 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
     }).catch((cause: unknown) => { if (!cancelled) setError(String(cause)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [activeUid, refreshToken]);
+  }, [activeUid, refreshToken, renewalUpdatedAt]);
 
   useEffect(() => {
     worker.current?.terminate(); worker.current = null;
@@ -790,8 +792,10 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
         ? <>可用衣服 <strong className="tabular-nums text-text-primary">{profile.aligned}</strong> 件 · 已读祝福闪光 {glowKinds} 种
           {unknownCount > 0 && <> · {unknownCount} 组没填等级，按 0 级计算，可在下方「补充衣服等级」填写</>}</>
         : '读取一次衣柜后，才能按你拥有的衣服算出最高分搭配。'}>
+      <ManualReadButton targetMode="renewal" idleLabel="读取焕新" primary={!!payload.snapshot && unknownCount > 0} />
       <button type="button" onClick={onOpenRead} className={secondaryButton}>{!payload.snapshot ? '去读取衣柜' : payload.snapshot.complete ? '更新衣柜' : '继续读取'}</button>
     </StatusBar>
+    <ManualReadLogStrip modes={['renewal']} />
     <WardrobeMatchPicker matches={payload.catalog.matches} value={matchId} onChange={(id) => { setMatchId(id); setChoice(null); }} />
     <div className="grid items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
     <aside className="space-y-3 lg:sticky lg:top-0">
@@ -917,7 +921,10 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
         <div className={clsx(stale && 'opacity-60')}><OutfitView outfit={result[mode]} potentialOutfit={result.potential} payload={payload} profile={profile} settings={settings} matchId={completed?.matchId ?? matchId} match={resultMatch} potential={mode === 'potential'} setLevel={setLevel} setLevelsBatch={setLevelsBatch} excludedIds={excludedIds} onToggleExclude={toggleExclude} onMaterialsChange={(next) => setPayload((prev) => prev ? { ...prev, materials: next } : prev)} /></div>
       </> : <div className={clsx(card, 'py-10 text-center text-sm text-text-secondary')}>{profile.items.length ? '选好场次后开始计算，这里会显示推荐搭配。' : '读取衣柜后才能计算搭配。'}</div>}
 
-      <details className={card}><summary className="cursor-pointer text-sm font-medium">补充衣服等级 <span className="ml-1 text-xs font-normal text-text-muted">{profile.groups.length} 组，未填 {unknownCount} 组默认按 0 级计</span></summary>
+      <details className={card}><summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-sm font-medium">
+        <span>补充衣服等级 <span className="ml-1 text-xs font-normal text-text-muted">{profile.groups.length} 组，未填 {unknownCount} 组默认按 0 级计</span></span>
+        <ManualReadButton targetMode="renewal" idleLabel="从游戏读取焕新等级" stopPropagation compact />
+      </summary>
         <p className="mt-3 text-xs leading-5 text-text-secondary">未填写等级的衣服默认按最低等级（0 级）参与计算；若游戏内已强化过部分衣服，可在此补充实际等级（填 0～10，11 表示已焕新，用 Tab 跳到下一项）。同一养成组的各颜色共享等级，当前关卡星级条件涉及的衣服已优先置顶。</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <div className="flex gap-1 rounded-lg bg-bg-primary p-0.5">{([['unknown', '未填'], ['used', '当前搭配'], ['all', '全部']] as const).map(([id, label]) =>

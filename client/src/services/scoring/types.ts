@@ -143,10 +143,20 @@ export interface BlessingPlanState {
   /** Five-star blessing set names chased in 自选. */
   sets: string[];
 }
+export interface BackpackScanSummary {
+  updated_at?: string;
+  complete?: boolean;
+  tall_mode?: boolean;
+  tab1?: { items?: number; clicked?: number; unknown?: number; complete?: boolean };
+  tab2?: { items?: number; clicked?: number; unknown?: number; complete?: boolean };
+  bling?: number;
+  total_tracked?: number;
+}
 export interface MaterialsState {
   inventory?: Record<string, number>;
   inventory_updated_at?: string;
   backpack_scanned_day?: string;
+  backpack_summary?: BackpackScanSummary | null;
   wardrobe_baseline_key?: string;
   crafted_consumed?: Record<string, number>;
   crafting_scope?: 'all' | 'suits';
