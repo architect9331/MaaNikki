@@ -475,14 +475,14 @@
     {
       "x": 1583.9,
       "y": 1018.5,
-      "radius": 1.0,
-      "jump": false
+      "radius": 1.2,
+      "jump": true
     },
     {
       "x": 1578.6,
       "y": 1017.7,
-      "radius": 1.0,
-      "jump": false
+      "radius": 1.25,
+      "jump": true
     },
     {
       "x": 1571.73,

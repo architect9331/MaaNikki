@@ -320,6 +320,8 @@ class Starsea:
         # carry coordinates across bells; every click uses a fresh stable frame.
         start = time.monotonic()
         pans, clicks = 0, 0
+        scan_visits = []
+        pending_visit = None
         snapshot = None
         previous, stable_since = None, start
         counter_reads = 0
@@ -438,6 +440,9 @@ class Starsea:
                         self.crystal_remaining = None
                         self.crystal_counter_conflict = True
                     if total > before:
+                        if pending_visit is not None:
+                            self.crystal_edge_visits.append(pending_visit)
+                            pending_visit = None
                         self.rt.log(f"已定位结晶路线标记 {total} 个。", detail=True)
                     # Reading all remaining crystals is essential when an unseen
                     # indicator may be behind the region switcher.
@@ -474,18 +479,22 @@ class Starsea:
                     if time.monotonic()-start >= CRYSTAL_SCAN_LIMIT:
                         break
                     # Source viewport + indicator position identifies a tried
-                    # transition even after revisiting it through another star.
+                    # transition within this scan, and across bells once its
+                    # destination marker has actually been recorded.
+                    visited = (*self.crystal_edge_visits, *scan_visits)
                     clickable = [box for box in sorted(edges, key=lambda b: (b[0], b[1]))
                         if not any(math.dist(pose[:2], old_pose) < 12
                                    and math.dist((box[0], box[1]), old_box[:2]) < 18
-                                   for old_pose, old_box in self.crystal_edge_visits)]
+                                   for old_pose, old_box in visited)]
                     if clickable and clicks < 4:
                         box = clickable[0]
                         self.events.append({"type": "crystal_edge_click", "box": box,
                                             "map_pose": list(pose), "known": total})
                         if not self.rt.ui.click_box(box):
                             raise NavigationError("结晶边缘提示点击失败。")
-                        self.crystal_edge_visits.append((pose[:2], box))
+                        visit = (pose[:2], box)
+                        scan_visits.append(visit)
+                        pending_visit = visit
                         clicks += 1
                         scan["edge_clicks"] = clicks
                         if clicks == 1:

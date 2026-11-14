@@ -128,12 +128,18 @@ class CrystalTree(Starsea):
                 state = self.observe_counts(teleporter, approach)
                 if sum(state.values()) > sum(before.values()):
                     raise NavigationError("星忆晶树数量前后不一致，未继续收集。")
+                condensed_retry = False
                 if before["ready"] and sum(state.values()) >= sum(before.values()):
-                    raise NavigationError("绕树后未确认结晶减少，未重复跑圈或摇铃。")
+                    if state["stored"] < before["stored"]:
+                        condensed_retry = True
+                        self.rt.log("绕树期间有存储结晶新落地，再绕树一圈确认收取。")
+                    else:
+                        raise NavigationError("绕树后未确认结晶减少，未重复跑圈或摇铃。")
                 while sum(state.values()) > 0:
                     if self.rt.stopped:
                         return False
                     if state["ready"] == 0:
+                        condensed_retry = False
                         self.rt.log("落地结晶已收完，长按摇铃取出下一批（每次最多 40 个）。")
                         if not self.ring(at_hub=True):
                             return False
@@ -146,8 +152,15 @@ class CrystalTree(Starsea):
                     self.rt.log("正在绕树收集落地结晶。")
                     self.follow(teleporter, loop)
                     state = self.observe_counts(teleporter, approach)
+                    if sum(state.values()) > sum(before.values()):
+                        raise NavigationError("星忆晶树数量前后不一致，未继续收集。")
                     if sum(state.values()) >= sum(before.values()):
+                        if state["stored"] < before["stored"] and not condensed_retry:
+                            condensed_retry = True
+                            self.rt.log("绕树期间有存储结晶新落地，再绕树一圈确认收取。")
+                            continue
                         raise NavigationError("绕树后未确认结晶减少，停止收集以避免重复空跑。")
+                    condensed_retry = False
                 self.rt.log("星忆晶树存储与待收获结晶均已取完。")
                 return True
         except TaskStopped:
