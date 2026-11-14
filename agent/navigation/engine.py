@@ -864,7 +864,7 @@ class Navigator:
             self.point_action.navigator = self
         speeds = {"travel": [self.MIN_PLANNING_SPEED], "jump": [self.MIN_PLANNING_SPEED]}
         last = None
-        stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+        stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
         blocked_steps, unstuck_attempts = 0, 0
         best_distance = distance(pose, origin)
         index = 0
@@ -896,7 +896,7 @@ class Navigator:
                     self.locator.reset()
                     pose = self.observe((last_good.x, last_good.y))
                     last_good = stuck_anchor = pose
-                    stuck_since, recovered = time.monotonic(), False
+                    stuck_since, detour_hold_until = time.monotonic(), 0.0
                     best_distance = distance(pose, rejoin or route.points[index])
                     map_checked = False
                     last = None
@@ -932,7 +932,7 @@ class Navigator:
                     # rejoin the current segment, preserving completed actions.
                     # Distance to waypoints cannot judge a long segment's middle.
                     last_good = stuck_anchor = pose
-                    stuck_since, recovered = time.monotonic(), False
+                    stuck_since, detour_hold_until = time.monotonic(), 0.0
                     best_distance = distance(pose, rejoin or route.points[index])
                     scene_interrupted, last = False, None
                     heading_rechecks = 0
@@ -951,7 +951,7 @@ class Navigator:
                         self.locator.reset()
                         pose = self.observe((target.x, target.y))
                         last_good = pose
-                        stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         best_distance = distance(pose, target)
                         map_checked = False
                         last = None
@@ -1019,7 +1019,7 @@ class Navigator:
                         rejoin = None
                         last = None
                         turnback_since = None
-                        stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, route.points[index])
                         self.event({"type": "route_rejoined", "index": index, **pose.dict()})
@@ -1048,7 +1048,7 @@ class Navigator:
                         # Page actions/collection change both timers and pose.
                         self.locator.reset()
                         pose = self.observe((target.x, target.y))
-                        stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         if self.route_branch:
                             replacement = self.route_branch(route, index)
                             if replacement is not None:
@@ -1069,7 +1069,7 @@ class Navigator:
                     if self.overlay and pose.position_reliable:
                         self.overlay.publish_route(route, index, pose)
                     if index < len(route.points):
-                        stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                        stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, route.points[index])
                         map_checked = False
@@ -1082,18 +1082,19 @@ class Navigator:
                     # toward this waypoint and must not reset recovery timers.
                     scene_retries = 0
                     heading_rechecks = 0
-                    stuck_anchor, stuck_since, recovered = pose, time.monotonic(), False
+                    stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                     blocked_steps, unstuck_attempts = 0, 0
                     best_distance = remaining_distance
                     map_checked = False
-                stuck_time = time.monotonic()-stuck_since
+                now = time.monotonic()
+                stuck_time = now - stuck_since
                 if stuck_time > 30:
                     raise NavigationStuckError("原地卡住超过 30 秒，停止路线。")
-                recovery = (blocked_steps >= 2) or (stuck_time > 2.2 and not recovered)
+                recovery = (blocked_steps >= 2) or (stuck_time > 2.2 and now >= detour_hold_until)
                 detour_deg = 0.0
                 if recovery:
-                    detour_table = (0.0, 42.0, -42.0, 68.0, -68.0, 95.0, -95.0)
-                    detour_deg = detour_table[min(unstuck_attempts, len(detour_table) - 1)]
+                    detours = (42.0, -42.0, 68.0, -68.0, 95.0, -95.0)
+                    detour_deg = 0.0 if unstuck_attempts == 0 else detours[(unstuck_attempts - 1) % len(detours)]
                     self.event({"type": "unstuck", "seconds": round(stuck_time, 3), "index": index,
                                 "attempt": unstuck_attempts + 1, "blocked_steps": blocked_steps,
                                 "detour_deg": detour_deg,
@@ -1104,7 +1105,7 @@ class Navigator:
                         rejoin = self.rejoin_point(route, index, pose)
                         map_checked = True
                         last_good = stuck_anchor = pose
-                        stuck_since, recovered = time.monotonic(), False
+                        stuck_since, detour_hold_until = time.monotonic(), 0.0
                         blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, rejoin)
                         last = None
@@ -1210,7 +1211,10 @@ class Navigator:
                 if recovery_done:
                     unstuck_attempts += 1
                     blocked_steps = 1 if move_disp < .8 else 0
-                    recovered = unstuck_attempts >= 7
+                    # Allow a brief straight test after displacing sideways so a
+                    # cleared detour can resume heading toward the target instead
+                    # of immediately reversing direction or locking out timed recovery.
+                    detour_hold_until = time.monotonic() + (1.5 if move_disp >= .8 else 0.0)
                 elif move_input >= .14 and move_speed < .95 and distance(pose, target) > radius+.35:
                     blocked_steps += 1
                 elif move_speed >= 2.2:
