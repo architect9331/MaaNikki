@@ -12,7 +12,7 @@
   },
   "MaaNikki_GameKeys_SettingsEntrance": {
     "recognition": "TemplateMatch",
-    "roi": [560, 610, 160, 110],
+    "roi": [180, 610, 570, 110],
     "template": "game/ui/ButtonMenuSettings.png",
     "threshold": 0.8,
     "action": "Custom",
