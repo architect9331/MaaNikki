@@ -94,12 +94,19 @@ class GameKeys:
             # The game has no separate skip row; skip and reward-continue prompts follow interact.
             return self.get("interact")
         if name not in self.cache:
-            value = self.values.get(name, DEFAULTS[name][0])
+            saved = self.values.get(name)
+            value = (
+                saved
+                if saved is not None and (not isinstance(saved, str) or saved.strip())
+                else DEFAULTS[name][0]
+            )
             if name in FIXED:
                 # Not configurable in the game; a stale saved value cannot apply.
                 value = DEFAULTS[name][0]
             elif self.context is not None:
-                value = node_action_params(self.context, node_name(name)).get("value", value)
+                override = node_action_params(self.context, node_name(name)).get("value")
+                if override is not None and (not isinstance(override, str) or override.strip()):
+                    value = override
             try:
                 self.cache[name] = parse_key(value)
             except ValueError as error:

@@ -155,20 +155,30 @@ def _per_monitor_dpi(u32):
                 pass
 
 
-def is_auto_adjust_resolution_enabled(context=None) -> bool:
+def is_auto_adjust_resolution_enabled(context=None, options=None) -> bool:
     """Return whether automatic window resolution adjustment is enabled in Settings."""
     if context is not None:
         try:
             params = node_action_params(context, "MaaNikki_AutoAdjustResolution")
-            if "value" in params:
+            if "value" in params and params["value"] not in ("", None):
                 return bool(params["value"])
         except Exception:
             pass
+    if isinstance(options, dict) and "AutoAdjustResolution" in options:
+        opt = options.get("AutoAdjustResolution")
+        if isinstance(opt, bool):
+            return opt
+        if isinstance(opt, dict):
+            if opt.get("type") == "switch" and opt.get("value") not in ("", None):
+                return bool(opt.get("value", True))
+            case_name = opt.get("caseName")
+            if case_name in ("Yes", "No"):
+                return case_name == "Yes"
     try:
         cfg = mxu_config(ROOT) or {}
         opt = (cfg.get("globalOptionValues") or {}).get("AutoAdjustResolution")
         if isinstance(opt, dict):
-            if opt.get("type") == "switch":
+            if opt.get("type") == "switch" and opt.get("value") not in ("", None):
                 return bool(opt.get("value", True))
             case_name = opt.get("caseName")
             if case_name in ("Yes", "No"):
@@ -713,7 +723,7 @@ def ensure_16_9_window(controller=None, *, context=None, hwnd: int | None = None
     fail_key = (target_hwnd, current_snap.client_size)
     with _SESSION_LOCK:
         last_fail = _LAST_FAILED_ATTEMPT.get(fail_key)
-        if last_fail is not None and time.monotonic() - last_fail < 2.0:
+        if last_fail is not None and time.monotonic() - last_fail < 1.0:
             return None
 
     adopt_session_16_9_handoff()

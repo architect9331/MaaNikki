@@ -17,7 +17,12 @@ class StartGameAction(CustomAction):
     def run(self, context, argv):
         runtime = Executors(context)
         options = parse_custom_param(argv.custom_action_param)
-        timeout = int(options.get("timeout", 900))
+        raw_timeout = options.get("timeout", 900)
+        timeout = (
+            900
+            if raw_timeout is None or (isinstance(raw_timeout, str) and not raw_timeout.strip())
+            else int(raw_timeout)
+        )
         bootstrap = options.get("bootstrap") is True
         already_running = options.get("already_running") is True
         self.restart_requested = False
@@ -137,9 +142,10 @@ class StartGameAction(CustomAction):
         frame_wait_seconds = 3 if already_running else 30
         frame_deadline = min(deadline, started_at + frame_wait_seconds)
         frame_wait_logged = False
+        mismatch_since = None
 
         def capture_startup_frame():
-            nonlocal frame_wait_logged, unknown_since
+            nonlocal frame_wait_logged, mismatch_since, unknown_since
             while not runtime.stopped:
                 runtime.invalidate_frame()
                 runtime.check_focus()
@@ -154,6 +160,9 @@ class StartGameAction(CustomAction):
                     ready_to_adjust = (
                         already_running
                         or not bootstrap
+                        or entered > 0
+                        or logged_in > 0
+                        or update_attempts > 0
                         or now_mono >= started_at + 6.0
                         or (
                             now_mono >= started_at + 2.5
@@ -174,12 +183,14 @@ class StartGameAction(CustomAction):
                 try:
                     require_game_frame(image)
                 except GameFrameSizeError as error:
-                    if (
-                        time.monotonic() >= frame_deadline
-                        or entered > 0
-                        or logged_in > 0
-                        or update_attempts > 0
-                    ):
+                    now_err = time.monotonic()
+                    if mismatch_since is None:
+                        mismatch_since = now_err
+                    # Unreal can re-apply saved windowed dimensions right after login or
+                    # clicking Enter Game, racing the first borderless resize attempt.
+                    # Give active transitions a bounded retry window before failing.
+                    retry_deadline = min(deadline, max(frame_deadline, mismatch_since + 6.0))
+                    if now_err >= retry_deadline:
                         self.stop_reason = str(error)
                         runtime.evidence.remember_frame(image, runtime._focus_generation)
                         runtime.validate_frame(image)
@@ -190,6 +201,7 @@ class StartGameAction(CustomAction):
                     if not runtime.pause(.25):
                         return None
                     continue
+                mismatch_since = None
                 runtime.evidence.remember_frame(image, runtime._focus_generation)
                 runtime.validate_frame(image)
                 return image

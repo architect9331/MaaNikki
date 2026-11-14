@@ -350,8 +350,10 @@ class Crown(Runtime):
             source=award, recover=self.open_summit), "未能关闭赛事嘉奖")
         if not parameters(self.context, "MaaNikki_Crown_Rewards").get("value", False):
             return
-        raw = parameters(self.context, "MaaNikki_Crown_Targets").get("value", "启示水晶,共鸣水晶")
-        targets = [part.strip() for part in raw.replace("，", ",").split(",") if part.strip()]
+        raw = parameters(self.context, "MaaNikki_Crown_Targets").get("value")
+        if raw is None or (isinstance(raw, str) and not raw.strip()):
+            raw = "启示水晶,共鸣水晶"
+        targets = [part.strip() for part in str(raw).replace("，", ",").split(",") if part.strip()]
         if not targets:
             return
         shop = self.ui.feature(text="晶石兑换", roi=[0, 0, 1280, 230])
@@ -373,10 +375,12 @@ class Crown(Runtime):
             self.pause(.5)
 
     def target_stars(self):
-        raw = parameters(self.context, "MaaNikki_Crown_TargetStars").get("value", 12)
-        if isinstance(raw, bool) or re.fullmatch(r"(?:[1-9]|1[0-9]|2[0-4])", str(raw)) is None:
+        raw = parameters(self.context, "MaaNikki_Crown_TargetStars").get("value")
+        if raw is None or (isinstance(raw, str) and not raw.strip()):
+            raw = 12
+        if isinstance(raw, bool) or re.fullmatch(r"(?:[1-9]|1[0-9]|2[0-4])", str(raw).strip()) is None:
             raise ValueError("巅峰赛完成目标须为1至24星")
-        return int(raw)
+        return int(str(raw).strip())
 
     def read_progress(self, account, *, source="calendar"):
         if source == "calendar":

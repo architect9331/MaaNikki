@@ -431,7 +431,7 @@ def launch_game(program, timeout, record):
     raise RuntimeError("等待官方启动器更新或启动游戏超时，请检查启动器提示；记录见 logs/startup。")
 
 
-def prepare_game(timeout, record):
+def prepare_game(timeout, record, options=None):
     """Keep the batch disconnected until hot updates and restarts are complete."""
     os.environ["MAAFW_BINARY_PATH"] = str(ROOT / "maafw")
     from maa.library import Library
@@ -492,7 +492,7 @@ def prepare_game(timeout, record):
                     "already_running": bool(record.get("already_running")) and restarts == 0,
                 }},
                 "MaaNikki_AutoAdjustResolution": {"custom_action_param": {
-                    "value": is_auto_adjust_resolution_enabled(),
+                    "value": is_auto_adjust_resolution_enabled(options=options),
                 }},
             }).wait().get()
         finally:
@@ -554,14 +554,15 @@ def main():
         import faulthandler
         fault_log = REPORT.with_suffix(".fault.log").open("w", encoding="utf-8")
         faulthandler.enable(file=fault_log)
-        options = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {}
-        # 外部运行器（如 AUTO-MAS）可能为接口已声明但未保存的选项传空串或 null，
-        # 此时回退 interface.json 声明的默认值 900，而不是崩溃。
-        raw_seconds = (options.get("StartGameTimeout") or {}).get("seconds")
-        try:
-            timeout = int(raw_seconds)
-        except (TypeError, ValueError):
-            timeout = 900
+        options = json.loads(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].strip() else {}
+        if not isinstance(options, dict):
+            options = {}
+        raw_timeout = (options.get("StartGameTimeout") or {}).get("seconds")
+        timeout = (
+            900
+            if raw_timeout is None or (isinstance(raw_timeout, str) and not raw_timeout.strip())
+            else int(raw_timeout)
+        )
         if not 30 <= timeout <= 900:
             raise ValueError("启动等待上限应在30至900秒之间。")
         window = game_window()
@@ -569,9 +570,10 @@ def main():
             record.update(success=True, already_running=True,
                           game_hwnd=window, game_class="UnrealWindow")
         else:
-            program = resolve_program(options.get("StartGameProgram", {}).get("path", ""))
+            raw_path = (options.get("StartGameProgram") or {}).get("path")
+            program = resolve_program(raw_path if isinstance(raw_path, str) else "")
             launch_game(program, timeout, record)
-        prepare_game(timeout, record)
+        prepare_game(timeout, record, options=options)
         from tall_window import persist_session_16_9_handoff
         persist_session_16_9_handoff()
         code = 0

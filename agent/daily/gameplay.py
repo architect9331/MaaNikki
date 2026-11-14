@@ -511,6 +511,9 @@ class Gameplay:
         metadata = catalog(self.ui.resource)["materials"]
         cost_roi = self.ui.roi("AreaJihuaCostSelect")
         for label in options:
+        options = [str(item).strip() for item in options if str(item or "").strip()]
+        if not options:
+            options = ["星荧草", "纽扣松果", "小绵菊"]
             label = {"小棉菊": "小绵菊"}.get(label, label)
             item = metadata.get(label)
             if not item or not item.get("jihua"):

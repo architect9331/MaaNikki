@@ -1047,7 +1047,8 @@ class Executors(Runtime):
             self.log("未能切换到聚会频道，本次不发言。")
             self.main()
             return False
-        content = str(self.setting(mode).get("chat_text", "1"))[:40]
+        raw_chat = self.setting(mode).get("chat_text")
+        content = (str(raw_chat).strip() if raw_chat is not None else "")[:40] or "1"
         # Selecting the channel removes editor focus. Refocus inside the text
         # field, clear of the emoji and Send buttons, in the 1280x720 frame.
         if (not content or not self.action("Click", target=[500, 680])
