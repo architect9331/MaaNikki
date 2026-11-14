@@ -266,7 +266,7 @@ class MinigameBlingRun(Runtime):
         right = self.game_keys.get("right")
         try:
             inputs._down(fwd)
-            inputs.wait(5.0)
+            inputs.wait(4.5)
             for hold_d, wait_after in ((0.7, 0.65), (1.1, 1.1), (0.5, 0.3), (0.9, 2.0)):
                 if self.stopped:
                     return False
