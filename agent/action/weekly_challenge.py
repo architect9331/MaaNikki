@@ -49,7 +49,9 @@ class WeeklyChallengeAction(CustomAction):
                 return False
             count = read_count(rt)
             if count is None:
-                if rt.text([470, 415, 220, 45], "尚未解锁|未解锁"):
+                image = rt.frame()
+                if rt.hit("MaaNikki_CalendarReady", image=image) and rt.text(
+                        [860, 175, 290, 60], "尚未解锁|未解锁", image=image):
                     rt.log("心之突破幻境尚未解锁，本次跳过。")
                     return True
                 rt.diagnostic("weekly_count", "无法读取本周挑战次数")

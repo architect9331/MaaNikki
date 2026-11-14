@@ -78,6 +78,10 @@ class RealmQueueAction(CustomAction):
         kind = "bless" if handoff == "glow" else fallback_kind(context) if handoff == "fallback" else last_kind
         run_state.update_realm(rt, kind=kind, collection=handoff == "glow")
         overrides = {node: {"next": [HANDOFF_NODES[handoff]]}}
+        if handoff == "fallback":
+            overrides["MaaNikki_RealmEnergy"] = {"focus": {"Node.Action.Starting": (
+                "刷取顺序中断，正在用剩余活跃能量挑战兜底幻境。"
+                if failed else "刷取顺序中的目标已完成，正在用剩余活跃能量挑战兜底幻境。")}}
         if failed:
             # The fallback still spends the energy, but settlement reports the failure.
             for name, fallback in FALLBACK_KINDS.items():
