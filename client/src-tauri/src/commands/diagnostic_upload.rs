@@ -72,49 +72,65 @@ pub(super) fn upload(
     let receipt = runtime.block_on(async {
         let client = reqwest::Client::builder()
             .redirect(Policy::none())
-            .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(20))
+            .connect_timeout(Duration::from_secs(8))
+            .timeout(Duration::from_secs(24))
             .build()
             .map_err(|_| "diagnostic HTTP client unavailable".to_string())?;
-        let request = async {
-            let mut response = client
-                .post(endpoint.clone())
-                .header(reqwest::header::CONTENT_TYPE, "application/zip")
-                .body(data)
-                .send()
-                .await
-                .map_err(|_| "screenshot upload network failure".to_string())?;
-            if response.status() != reqwest::StatusCode::CREATED {
-                return Err(format!(
-                    "screenshot storage returned HTTP {}",
-                    response.status()
-                ));
-            }
-            let mut body = Vec::new();
-            while let Some(chunk) = response
-                .chunk()
-                .await
-                .map_err(|_| "screenshot receipt read failed".to_string())?
-            {
-                if body.len() + chunk.len() > 4096 {
-                    return Err("screenshot receipt exceeded size limit".to_string());
+        for attempt in 0..2 {
+            let payload = data.clone();
+            let request = async {
+                let mut response = client
+                    .post(endpoint.clone())
+                    .header(reqwest::header::CONTENT_TYPE, "application/zip")
+                    .body(payload)
+                    .send()
+                    .await
+                    .map_err(|_| "screenshot upload network failure".to_string())?;
+                if response.status() != reqwest::StatusCode::CREATED {
+                    return Err(format!(
+                        "screenshot storage returned HTTP {}",
+                        response.status()
+                    ));
                 }
-                body.extend_from_slice(&chunk);
-            }
-            serde_json::from_slice::<Receipt>(&body)
-                .map_err(|_| "invalid screenshot receipt".to_string())
-        };
-        tokio::pin!(request);
-        loop {
-            if !allowed() {
-                return Err("diagnostic upload cancelled".to_string());
-            }
-            if let Ok(result) =
-                tokio::time::timeout(Duration::from_millis(100), request.as_mut()).await
-            {
-                return result;
+                let mut body = Vec::new();
+                while let Some(chunk) = response
+                    .chunk()
+                    .await
+                    .map_err(|_| "screenshot receipt read failed".to_string())?
+                {
+                    if body.len() + chunk.len() > 4096 {
+                        return Err("screenshot receipt exceeded size limit".to_string());
+                    }
+                    body.extend_from_slice(&chunk);
+                }
+                serde_json::from_slice::<Receipt>(&body)
+                    .map_err(|_| "invalid screenshot receipt".to_string())
+            };
+            tokio::pin!(request);
+            let outcome = loop {
+                if !allowed() {
+                    return Err("diagnostic upload cancelled".to_string());
+                }
+                if let Ok(result) =
+                    tokio::time::timeout(Duration::from_millis(100), request.as_mut()).await
+                {
+                    break result;
+                }
+            };
+            match outcome {
+                Ok(receipt) => return Ok(receipt),
+                Err(error) if attempt == 0 && error == "screenshot upload network failure" => {
+                    for _ in 0..5 {
+                        if !allowed() {
+                            return Err("diagnostic upload cancelled".to_string());
+                        }
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                    }
+                }
+                Err(error) => return Err(error),
             }
         }
+        Err("screenshot upload network failure".to_string())
     })?;
     if receipt.bytes != bytes
         || receipt.sha256 != sha256

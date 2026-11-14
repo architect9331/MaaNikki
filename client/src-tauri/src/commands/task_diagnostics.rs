@@ -402,46 +402,75 @@ pub fn build_image_bundle(
     if selection.images.is_empty() {
         return Err(ImageBundleError::NoEvidence);
     }
-    let selected_raw_bytes = selection
+    let total_count = selection.images.len();
+    let total_raw_bytes = selection
         .images
         .iter()
         .map(|entry| entry.len)
         .fold(0u64, u64::saturating_add);
-    if selected_raw_bytes > MAX_IMAGE_RAW_BYTES {
+
+    // Entries are sorted chronologically by archive_name; retain the newest tail
+    // when a long run produces more than MAX_IMAGE_RAW_BYTES of failure captures.
+    let mut start_idx = total_count;
+    let mut tail_raw_bytes = 0u64;
+    for index in (0..total_count).rev() {
+        let next_bytes = tail_raw_bytes.saturating_add(selection.images[index].len);
+        if next_bytes > MAX_IMAGE_RAW_BYTES {
+            break;
+        }
+        tail_raw_bytes = next_bytes;
+        start_idx = index;
+    }
+    if start_idx >= total_count {
         return Err(ImageBundleError::TooLarge {
-            selected_raw_bytes,
+            selected_raw_bytes: total_raw_bytes,
             bundle_bytes: None,
         });
     }
 
-    let cursor = Cursor::new(Vec::new());
-    let mut archive = ZipWriter::new(cursor);
     // PNG/JPEG payloads are already compressed. Deflating them again costs CPU and
     // commonly makes screenshots slightly larger, while Sentry bills final bytes.
     let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
-    for entry in &mut selection.images {
-        write_image(&mut archive, entry, options)?;
+    loop {
+        let slice = &mut selection.images[start_idx..];
+        let selected_raw_bytes = slice
+            .iter()
+            .map(|entry| entry.len)
+            .fold(0u64, u64::saturating_add);
+        let cursor = Cursor::new(Vec::new());
+        let mut archive = ZipWriter::new(cursor);
+        for entry in slice.iter_mut() {
+            write_image(&mut archive, entry, options)?;
+        }
+        let buffer = archive
+            .finish()
+            .map_err(|error| ImageBundleError::Io(format!("finish screenshot ZIP: {error}")))?
+            .into_inner();
+        if buffer.len() <= MAX_IMAGE_BUNDLE_BYTES {
+            let mut warnings = Vec::new();
+            let image_count = total_count - start_idx;
+            if start_idx > 0 {
+                warnings.push(format!(
+                    "images_truncated_to_recent:{image_count}/{total_count}"
+                ));
+            }
+            return Ok(ImageBundle {
+                buffer,
+                filename: format!("mxu-task-failure-{run_id}-{maa_task_id}-screenshots.zip"),
+                image_count,
+                selected_raw_bytes,
+                warnings,
+            });
+        }
+        start_idx += 1;
+        if start_idx >= total_count {
+            return Err(ImageBundleError::TooLarge {
+                selected_raw_bytes,
+                bundle_bytes: Some(buffer.len()),
+            });
+        }
     }
-
-    let buffer = archive
-        .finish()
-        .map_err(|error| ImageBundleError::Io(format!("finish screenshot ZIP: {error}")))?
-        .into_inner();
-    if buffer.len() > MAX_IMAGE_BUNDLE_BYTES {
-        return Err(ImageBundleError::TooLarge {
-            selected_raw_bytes,
-            bundle_bytes: Some(buffer.len()),
-        });
-    }
-
-    Ok(ImageBundle {
-        buffer,
-        filename: format!("mxu-task-failure-{run_id}-{maa_task_id}-screenshots.zip"),
-        image_count: selection.images.len(),
-        selected_raw_bytes,
-        warnings: Vec::new(),
-    })
 }
 
 fn select_entries(start: &TaskEvidenceStart) -> (Vec<LogSlice>, Vec<ImageEntry>, Vec<String>) {
@@ -647,6 +676,9 @@ fn write_image<W: Write + Seek>(
     entry: &mut ImageEntry,
     options: SimpleFileOptions,
 ) -> Result<(), ImageBundleError> {
+    entry.source.seek(SeekFrom::Start(0)).map_err(|error| {
+        ImageBundleError::Io(format!("seek attachment [{}]: {error}", entry.archive_name))
+    })?;
     let mut selected = (&mut entry.source).take(entry.len);
     let mut bytes = Vec::new();
     selected.read_to_end(&mut bytes).map_err(|error| {
