@@ -315,6 +315,9 @@ class RouteTest(Runtime):
     label = "路线测试"
     default_mode = "movement"
 
+    def telemetry_mode(self, mode):
+        return f"test_{mode}"
+
     def __init__(self, context):
         super().__init__(context)
         self.directory = None
@@ -739,7 +742,7 @@ class RouteTest(Runtime):
                 telemetry = record_route_telemetry(
                     ROOT, active_route, self.telemetry_events,
                     executor=actions.executor if actions else mode,
-                    mode=f"test_{mode}", success=bool(result.get("success")), stage=self.stage)
+                    mode=self.telemetry_mode(mode), success=bool(result.get("success")), stage=self.stage)
                 result["telemetry"] = telemetry
                 if self.trial_document is not None:
                     shifted_wps = [

@@ -11,10 +11,76 @@ from collections import defaultdict
 import json
 import math
 from pathlib import Path
+import sys
+
+import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "agent"))
 ROUTES_DIR = ROOT / "resource/routes/daily"
 MAX_STEP_UNITS = 0.6
+
+
+class TerrainGuard:
+    """Lazy loader for `.local/terrain_grids/*.npz` to guard suggested coordinate nudges."""
+
+    def __init__(self, root: Path):
+        self.root = root
+        self._grids: dict[str, dict | None] = {}
+
+    def _load(self, map_id: str) -> dict | None:
+        if map_id in self._grids:
+            return self._grids[map_id]
+        npz_path = self.root / ".local/terrain_grids" / f"{map_id}.npz"
+        if not npz_path.is_file():
+            self._grids[map_id] = None
+            return None
+        try:
+            data = np.load(npz_path, allow_pickle=False)
+            self._grids[map_id] = {
+                "obs": data["obs_mask"].astype(bool),
+                "slope": data["slope_deg"].astype(np.float32),
+                "z": data["z_map"].astype(np.float32),
+                "px_scale": float(data["px_scale"]) if "px_scale" in data.files else 1.0,
+            }
+        except Exception:
+            self._grids[map_id] = None
+        return self._grids[map_id]
+
+    def inspect(self, map_id: str, x: float, y: float) -> dict | None:
+        grid = self._load(map_id)
+        if grid is None:
+            return None
+        scale = grid["px_scale"]
+        obs = grid["obs"]
+        gh, gw = obs.shape
+        gx = max(0, min(gw - 1, int(round(x * scale))))
+        gy = max(0, min(gh - 1, int(round(y * scale))))
+        y0, y1 = max(0, gy - 1), min(gh, gy + 2)
+        x0, x1 = max(0, gx - 1), min(gw, gx + 2)
+        nb_obs = int(np.sum(obs[y0:y1, x0:x1]))
+        slope = float(grid["slope"][gy, gx])
+        z_val = float(grid["z"][gy, gx])
+        return {
+            "obs": bool(obs[gy, gx]),
+            "nb_obs": nb_obs,
+            "slope": round(slope, 1) if math.isfinite(slope) else None,
+            "z": round(z_val, 2) if math.isfinite(z_val) else None,
+            "safe": (not bool(obs[gy, gx])) and math.isfinite(slope) and slope < 35.0 and math.isfinite(z_val),
+        }
+
+
+def _head_route_hashes() -> dict[str, str]:
+    from navigation.models import load_route
+    from navigation.telemetry import route_hash
+
+    hashes: dict[str, str] = {}
+    resource_dir = ROOT / "resource"
+    for rf in sorted(ROUTES_DIR.glob("*.json")):
+        route = load_route(resource_dir, rf.stem)
+        if route is not None:
+            hashes[rf.stem] = route_hash(route)
+    return hashes
 
 
 def _iter_sentry_result_records(results: list[dict]):
@@ -168,7 +234,7 @@ def iter_telemetry_records(paths: list[Path]):
                             yield item
 
 
-FIXED_PROP_ACTIONS = {"chat", "music", "delivery", "place", "fishing_star", "fishing"}
+FIXED_PROP_ACTIONS = {"chat", "music", "delivery", "place", "fishing_star", "fishing", "wait", "teleport"}
 
 
 def compute_waypoint_adjustment(
@@ -176,6 +242,21 @@ def compute_waypoint_adjustment(
 ) -> dict:
     total = len(samples)
     clean = [s for s in samples if s.get("outcome") == "clean"]
+    pass_misses = []
+    braking_overshoots = []
+    for s in samples:
+        tb_cnt = int(s.get("turnback_count") or 0)
+        os_cnt = int(s.get("overshoot_retries") or 0)
+        dist = s.get("dist")
+        eff_r = float(s.get("radius") or configured_radius or 1.0)
+        is_explicit_miss = s.get("closest_miss_dist") is not None or (
+            tb_cnt > 0 and isinstance(dist, (int, float)) and float(dist) > eff_r + 0.05
+        )
+        if is_explicit_miss:
+            pass_misses.append(s)
+        elif os_cnt > 0 or tb_cnt > 0 or s.get("outcome") == "turnback":
+            braking_overshoots.append(s)
+
     turnbacks = [
         s for s in samples
         if s.get("outcome") == "turnback" or (s.get("turnback_count") or 0) > 0 or (s.get("overshoot_retries") or 0) > 0
@@ -231,7 +312,8 @@ def compute_waypoint_adjustment(
 
     nudge_x, nudge_y = 0.0, 0.0
     reason = "stable"
-    if local_problem and local_clean:
+    is_protected = (action or "") in FIXED_PROP_ACTIONS
+    if not is_protected and local_problem and local_clean:
         vec_x = clean_dx - prob_dx
         vec_y = clean_dy - prob_dy
         mag = math.hypot(vec_x, vec_y)
@@ -241,7 +323,7 @@ def compute_waypoint_adjustment(
             nudge_x = vec_x / mag * scale
             nudge_y = vec_y / mag * scale
             reason = "shift_away_from_failure_direction"
-    elif local_problem and not local_clean:
+    elif not is_protected and local_problem and not local_clean:
         mag = math.hypot(prob_dx, prob_dy)
         if mag >= 0.1:
             scale = min(MAX_STEP_UNITS, mag * 0.35)
@@ -249,8 +331,10 @@ def compute_waypoint_adjustment(
             nudge_y = -prob_dy / mag * scale
             reason = "repel_all_problem_offset"
 
-    # Analyze tolerance (radius) vs. turn-backs and downstream off-course drift.
+    # Analyze tolerance (radius) vs. pass-miss vs braking overshoot and downstream off-course drift.
     turnback_rate = len(turnbacks) / total if total else 0.0
+    pass_miss_rate = len(pass_misses) / total if total else 0.0
+    overshoot_rate = len(braking_overshoots) / total if total else 0.0
     mean_turnback_ms = (
         round(sum(int(s.get("turnback_ms") or 0) for s in turnbacks) / len(turnbacks))
         if turnbacks else 0
@@ -277,36 +361,35 @@ def compute_waypoint_adjustment(
     suggested_radius = configured_radius
     radius_reason = "keep_current_radius"
 
-    if turnback_rate >= 0.15 and not missed:
-        if downstream_problem_rate <= 0.10 and action not in FIXED_PROP_ACTIONS:
-            # Excessive turn-backs without downstream off-course penalties.
+    if pass_miss_rate >= 0.15 and not missed and not is_protected:
+        if downstream_problem_rate <= 0.10:
             if miss_dists:
                 p85 = miss_dists[min(len(miss_dists) - 1, int(len(miss_dists) * 0.85))]
                 ratio = (p85 + 0.08) / max(effective_radius, 0.1)
                 candidate = configured_radius * min(1.35, max(1.1, ratio))
             else:
                 candidate = configured_radius * 1.2
-            max_radius_cap = max(3.0, configured_radius + 0.2)
+            max_radius_cap = 0.75 if action == "bottle" else max(3.0, configured_radius + 0.2)
             suggested_radius = round(
                 min(max(configured_radius + 0.35, candidate), max_radius_cap, configured_radius * 1.35), 2
             )
             if suggested_radius > configured_radius + 0.03:
-                radius_reason = "widen_to_reduce_turnbacks"
-        # If braking overshoot or consistent landing cluster on a precise/high-turnback point caused the turn-back,
-        # align the target with the stopping cluster or precompensate braking drift.
-        if precise or downstream_problem_rate <= 0.10:
-            if precise and reason == "stable" and math.hypot(drift_dx, drift_dy) >= 0.12:
-                nudge_x = -drift_dx * 0.5
-                nudge_y = -drift_dy * 0.5
-                reason = "precompensate_braking_overshoot"
-            elif reason == "stable" and turnback_rate >= 0.30 and (local_clean or local_turnbacks):
-                arr_dx, arr_dy = mean_pair(local_clean + local_turnbacks, "dx", "dy")
-                if math.hypot(arr_dx, arr_dy) >= 0.25:
-                    nudge_x = arr_dx * 0.5
-                    nudge_y = arr_dy * 0.5
-                    reason = "align_with_arrival_cluster"
+                radius_reason = "widen_to_reduce_pass_misses"
+    elif action == "bottle" and len(missed) / total >= 0.25 and configured_radius < 0.55 and not recovered and not failed:
+        suggested_radius = 0.55
+        radius_reason = "align_bottle_pickup_radius"
+    elif not is_protected and overshoot_rate >= 0.15 and not missed:
+        if precise and reason == "stable" and math.hypot(drift_dx, drift_dy) >= 0.12:
+            nudge_x = -drift_dx * 0.5
+            nudge_y = -drift_dy * 0.5
+            reason = "precompensate_braking_overshoot"
+        elif reason == "stable" and turnback_rate >= 0.30 and (local_clean or local_turnbacks):
+            arr_dx, arr_dy = mean_pair(local_clean + local_turnbacks, "dx", "dy")
+            if math.hypot(arr_dx, arr_dy) >= 0.25:
+                nudge_x = arr_dx * 0.5
+                nudge_y = arr_dy * 0.5
+                reason = "align_with_arrival_cluster"
     elif not precise and turnback_rate < 0.08 and len(downstream_samples) >= 4:
-        # Check if passing far from this transit waypoint causes the next segment to drift off-course.
         edge_passes = [
             s for s in downstream_samples
             if isinstance(s.get("dist"), (int, float)) and float(s["dist"]) > effective_radius * 0.65
@@ -335,10 +418,14 @@ def compute_waypoint_adjustment(
         "total": total,
         "clean": len(clean),
         "turnback": len(turnbacks),
+        "pass_miss": len(pass_misses),
+        "braking_overshoot": len(braking_overshoots),
         "recovered": len(recovered),
         "action_missed": len(missed),
         "failed": len(failed),
         "turnback_rate": round(turnback_rate, 4),
+        "pass_miss_rate": round(pass_miss_rate, 4),
+        "overshoot_rate": round(overshoot_rate, 4),
         "mean_turnback_ms": mean_turnback_ms,
         "closest_miss_dist_p85": (
             round(miss_dists[min(len(miss_dists) - 1, int(len(miss_dists) * 0.85))], 3)
@@ -374,23 +461,35 @@ def main() -> None:
     parser.add_argument("--route", help="Filter by route id.")
     parser.add_argument("--min-samples", type=int, default=5, help="Minimum samples per waypoint to recommend a shift.")
     parser.add_argument("--apply", action="store_true", help="Write recommended coordinate & radius shifts to resource/routes/daily/*.json.")
+    parser.add_argument("--all-hashes", action="store_true", help="Include stale route_hash records instead of matching HEAD only.")
     parser.add_argument("--json", action="store_true", help="Print full JSON report.")
     args = parser.parse_args()
 
+    head_hashes = _head_route_hashes()
+    head_only = not args.all_hashes
+    terrain = TerrainGuard(ROOT)
+
     grouped: dict[str, dict[int, list[dict]]] = defaultdict(lambda: defaultdict(list))
+    crystal_runs: dict[str, list[dict]] = defaultdict(list)
+    stale_counts: dict[str, int] = defaultdict(int)
     by_sig: dict[tuple, dict] = {}
 
     for record in iter_telemetry_records([Path(p) for p in args.inputs]):
         route_id = record.get("route")
         if not isinstance(route_id, str) or (args.route and route_id != args.route):
             continue
+        if head_only and route_id in head_hashes:
+            r_hash = record.get("route_hash")
+            if r_hash != head_hashes[route_id]:
+                stale_counts[route_id] += 1
+                continue
         wps = record.get("waypoints", [])
         if not isinstance(wps, list) or not wps:
             continue
         started_at = str(record.get("timestamp") or record.get("started_at") or "")
         a0 = tuple(wps[0].get("actual") or []) if isinstance(wps[0], dict) else ()
         a1 = tuple(wps[1].get("actual") or []) if len(wps) > 1 and isinstance(wps[1], dict) else ()
-        sig = (route_id, a0, a1) if len(wps) >= 2 else (route_id, a0, started_at[:19])
+        sig = (route_id, record.get("route_hash") or "", a0, a1) if len(wps) >= 2 else (route_id, record.get("route_hash") or "", a0, started_at[:19])
         if sig not in by_sig or len(wps) > len(by_sig[sig].get("waypoints", [])):
             by_sig[sig] = record
 
@@ -400,6 +499,8 @@ def main() -> None:
     )
     for record in deduped:
         route_id = record["route"]
+        if isinstance(record.get("crystal"), dict) and record["crystal"]:
+            crystal_runs[route_id].append(record["crystal"])
         wps = record.get("waypoints", [])
         by_i = {
             wp["index"]: wp
@@ -425,10 +526,19 @@ def main() -> None:
         route_file = ROUTES_DIR / f"{route_id}.json"
         doc = json.loads(route_file.read_text(encoding="utf-8")) if route_file.is_file() else None
         pts = doc.get("points", []) if isinstance(doc, dict) else []
+        map_id = str(doc.get("map") or "") if isinstance(doc, dict) else ""
         route_report = {}
         for idx, samples in sorted(by_index.items()):
-            base_t = [float(samples[0]["target"][0]), float(samples[0]["target"][1])]
-            base_r = float(samples[0].get("configured_radius", samples[0].get("radius", 3.0)))
+            base_t = (
+                [float(pts[idx]["x"]), float(pts[idx]["y"])]
+                if 0 <= idx < len(pts) and isinstance(pts[idx], dict)
+                else [float(samples[0]["target"][0]), float(samples[0]["target"][1])]
+            )
+            base_r = (
+                float(pts[idx].get("radius", 3.0))
+                if 0 <= idx < len(pts) and isinstance(pts[idx], dict)
+                else float(samples[0].get("configured_radius", samples[0].get("radius", 3.0)))
+            )
             norm_samples = []
             for s in samples:
                 sc = dict(s)
@@ -440,6 +550,19 @@ def main() -> None:
             pt_action = pts[idx].get("action") if 0 <= idx < len(pts) and isinstance(pts[idx], dict) else None
             analysis = compute_waypoint_adjustment(norm_samples, base_t, base_r, action=pt_action)
             analysis["target"] = base_t
+            if map_id:
+                cur_t_info = terrain.inspect(map_id, base_t[0], base_t[1])
+                if cur_t_info is not None:
+                    analysis["terrain"] = cur_t_info
+                if analysis["nudge_distance"] >= 0.05:
+                    sug = analysis["suggested_target"]
+                    sug_t_info = terrain.inspect(map_id, sug[0], sug[1])
+                    if sug_t_info is not None and not sug_t_info["safe"]:
+                        analysis["terrain_blocked"] = True
+                        analysis["nudge"] = [0.0, 0.0]
+                        analysis["nudge_distance"] = 0.0
+                        analysis["suggested_target"] = list(base_t)
+                        analysis["reason"] = f"{analysis['reason']}_blocked_by_terrain"
             route_report[idx] = analysis
         report[route_id] = route_report
 
@@ -449,6 +572,9 @@ def main() -> None:
                 if analysis["total"] < args.min_samples or not (0 <= idx < len(pts)):
                     continue
                 pt = pts[idx]
+                pt_action = pt.get("action") if isinstance(pt, dict) else None
+                if (pt_action or "") in FIXED_PROP_ACTIONS or analysis.get("terrain_blocked"):
+                    continue
                 cur_t = [float(pt["x"]), float(pt["y"])]
                 cur_r = float(pt.get("radius", 3.0))
                 base_t = analysis["target"]
@@ -477,7 +603,7 @@ def main() -> None:
                     if abs(cur_r - base_r) < 0.02 and abs(analysis["suggested_radius"] - cur_r) >= 0.05:
                         pt["radius"] = analysis["suggested_radius"]
                         changed = True
-                    elif analysis["radius_reason"] == "widen_to_reduce_turnbacks" and analysis["suggested_radius"] > cur_r + 0.04:
+                    elif analysis["radius_reason"] in ("widen_to_reduce_pass_misses", "align_bottle_pickup_radius") and analysis["suggested_radius"] > cur_r + 0.04:
                         pt["radius"] = analysis["suggested_radius"]
                         changed = True
                     elif (
@@ -510,7 +636,7 @@ def main() -> None:
                             sc_file.write_text(json.dumps(sc_doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     if args.json:
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        print(json.dumps({"routes": report, "crystal_runs": crystal_runs, "stale_skipped": stale_counts}, ensure_ascii=False, indent=2))
         return
 
     if not report:
@@ -518,7 +644,24 @@ def main() -> None:
         return
 
     for route_id, waypoints in report.items():
-        print(f"=== 路线: {route_id} ===")
+        stale = stale_counts.get(route_id, 0)
+        print(f"=== 路线: {route_id} (HEAD={'yes' if head_only else 'all'}, 跳过旧版本={stale}) ===")
+        c_runs = crystal_runs.get(route_id) or []
+        if c_runs:
+            deltas = [c.get("delta") or {} for c in c_runs if isinstance(c.get("delta"), dict)]
+            if deltas:
+                soul_d = [d["star_soul"] for d in deltas if "star_soul" in d]
+                crys_d = [d["starlight_crystal"] for d in deltas if "starlight_crystal" in d]
+                dust_d = [d["starlight_dust"] for d in deltas if "starlight_dust" in d]
+                parts = []
+                if soul_d:
+                    parts.append(f"星之魄 +{sum(soul_d)} ({len(soul_d)}次)")
+                if crys_d:
+                    parts.append(f"星光结晶 +{sum(crys_d)} (均+{sum(crys_d)/len(crys_d):.1f})")
+                if dust_d:
+                    parts.append(f"星光微尘 +{sum(dust_d)}")
+                if parts:
+                    print("  [结晶收益] " + " | ".join(parts))
         for idx, info in waypoints.items():
             notes = []
             if info["total"] >= args.min_samples and info["nudge_distance"] >= 0.05:
@@ -531,10 +674,13 @@ def main() -> None:
                     f"半径 {info['configured_radius']:.2f} -> {info['suggested_radius']:.2f} "
                     f"[{info['radius_reason']}]"
                 )
+            terr = info.get("terrain")
+            if terr and not terr.get("safe"):
+                notes.append(f"地形警示(obs={terr['obs']}, nb={terr['nb_obs']}, slp={terr['slope']})")
             status = "；".join(notes) if notes else "保持当前坐标与半径"
             print(
                 f"  #{idx:02d} ({info['target'][0]:.3f}, {info['target'][1]:.3f}) r={info['configured_radius']:.2f} | "
-                f"样本={info['total']} 顺畅={info['clean']} 回头={info['turnback']} "
+                f"样本={info['total']} 顺畅={info['clean']} 回头={info['turnback']}(越界={info['pass_miss']},刹停={info['braking_overshoot']}) "
                 f"脱困={info['recovered']} 漏采={info['action_missed']} 失败={info['failed']} | {status}"
             )
 

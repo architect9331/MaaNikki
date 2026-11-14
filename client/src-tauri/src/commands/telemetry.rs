@@ -2132,6 +2132,35 @@ fn capture_route_telemetry_logs(
                 }
             }
         }
+        if let Some(crystal) = record.get("crystal").and_then(|v| v.as_object()) {
+            if let Some(selected) = crystal.get("selected_route").and_then(|v| v.as_str()) {
+                if !selected.is_empty() {
+                    base_attrs.insert(
+                        "crystal.selected_route".to_string(),
+                        bounded_log_attribute(selected).into(),
+                    );
+                }
+            }
+            if let Some(marker_count) = crystal.get("marker_count").and_then(|v| v.as_i64()) {
+                base_attrs.insert("crystal.marker_count".to_string(), marker_count.into());
+            }
+            if let Some(partial_match) = crystal.get("partial_match").and_then(|v| v.as_bool()) {
+                base_attrs.insert("crystal.partial_match".to_string(), partial_match.into());
+            }
+            if let Some(route_success) = crystal.get("route_success").and_then(|v| v.as_bool()) {
+                base_attrs.insert("crystal.route_success".to_string(), route_success.into());
+            }
+            for (section, prefix) in [("before", "before"), ("after", "after"), ("delta", "delta")]
+            {
+                if let Some(counts) = crystal.get(section).and_then(|v| v.as_object()) {
+                    for metric in ["star_soul", "starlight_crystal", "starlight_dust"] {
+                        if let Some(val) = counts.get(metric).and_then(|v| v.as_i64()) {
+                            base_attrs.insert(format!("crystal.{metric}_{prefix}"), val.into());
+                        }
+                    }
+                }
+            }
+        }
         if let Some(tid) = trace_id {
             base_attrs.insert("trace.id".to_string(), tid.to_string().into());
         }

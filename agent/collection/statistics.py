@@ -71,6 +71,39 @@ def _reserve_bling_bucket(raw_value) -> str:
     if amount <= 1_000_000:
         return "50w-100w"
     return "100w+"
+TASK_KEY_ALIASES = {
+    "open_world_collect": "OWC",
+    "OpenWorldCollect": "OWC",
+    "starlight_crystals": "SC",
+    "StarlightCrystals": "SC",
+    "minigame_bling": "MB",
+    "MinigameBling": "MB",
+    "monthly_crystal_exchange": "MCE",
+    "MonthlyCrystalExchange": "MCE",
+    "weekly_free_gifts": "WFG",
+    "WeeklyFreeGifts": "WFG",
+    "realm_challenge": "RC",
+    "RealmChallenge": "RC",
+    "subtask_test": "ST",
+    "SubtaskTest": "ST",
+    "custom_route": "CR",
+    "CustomRoute": "CR",
+    "route_test": "RT",
+    "RouteTest": "RT",
+    "start_game": "SG",
+    "StartGame": "SG",
+    "exploration": "EXP",
+    "Exploration": "EXP",
+    "Energy": "EN",
+    "Xinghai": "XH",
+}
+
+
+def _compact_opt_category(task_name: str, opt_key: str) -> str:
+    alias = TASK_KEY_ALIASES.get(task_name, task_name)
+    return f"opt:{alias}:{opt_key}"
+
+
 def collect_task_preferences(root) -> list[list[str]]:
     """Extract anonymous task & option preference pairs from the active instance."""
     root_path = Path(root)
@@ -83,7 +116,7 @@ def collect_task_preferences(root) -> list[list[str]]:
     seen: set[tuple[str, str]] = set()
 
     def add(category: str, value: str):
-        cat = str(category).strip()[:32]
+        cat = str(category).strip()[:48]
         val = str(value).strip()[:64]
         if cat and val and (cat, val) not in seen and len(pairs) < MAX_ROWS:
             seen.add((cat, val))
@@ -121,17 +154,18 @@ def collect_task_preferences(root) -> list[list[str]]:
         for opt_key, opt_val in opts.items():
             if not isinstance(opt_val, dict):
                 continue
+            opt_cat = _compact_opt_category(name, opt_key)
             kind = opt_val.get("type")
             if kind == "switch":
-                add(f"opt:{name}:{opt_key}", "Yes" if opt_val.get("value") else "No")
+                add(opt_cat, "Yes" if opt_val.get("value") else "No")
             elif kind == "select":
                 case_name = opt_val.get("caseName")
                 if isinstance(case_name, str) and case_name:
-                    add(f"opt:{name}:{opt_key}", case_name)
+                    add(opt_cat, case_name)
             elif kind == "checkbox":
                 for case_name in opt_val.get("caseNames") or []:
                     if isinstance(case_name, str) and case_name:
-                        add(f"opt:{name}:{opt_key}", case_name)
+                        add(opt_cat, case_name)
 
     settings = config.get("settings") or {}
     if isinstance(settings, dict):

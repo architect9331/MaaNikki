@@ -13,7 +13,7 @@ function validate(body) {
   return body.rolls.every((row) => Array.isArray(row) && row.length === 4 && text(row[0], 32) && text(row[1], 8) && text(row[2], 8) && count(row[3], 10000))
     && body.bling.every((row) => Array.isArray(row) && row.length === 2 && count(row[0], 10000) && count(row[1], 100000000))
     && dig.every((row) => Array.isArray(row) && row.length === 2 && text(row[0], 32) && count(row[1], 10000))
-    && prefs.every((row) => Array.isArray(row) && row.length === 2 && text(row[0], 48) && text(row[1], 64));
+    && prefs.every((row) => Array.isArray(row) && row.length === 2 && text(row[0], 64) && text(row[1], 64));
 }
 
 async function report(request, env) {

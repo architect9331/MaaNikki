@@ -194,11 +194,39 @@ class Gameplay:
                     self.rt.log("挖掘处理后未能返回主界面，本项未正常结束。")
         return bool(ok and not self.rt.stopped and returned)
 
-    def observe_dig_targets(self):
+    def _stats_account(self):
+        """Resolve an already-bound account UID without leaving modal dialogs."""
         try:
             from account_state import AccountState
+            from task_control import active_session
+            session = active_session()
+            uid = (
+                getattr(self.rt, "_account_uid", None)
+                or (getattr(session, "account_uid", None) if session else None)
+                or self.rt.read_account_uid(self.rt.frame())
+            )
+            if not uid:
+                index_path = ROOT / "config/accounts/index.json"
+                if index_path.is_file():
+                    index = json.loads(index_path.read_text(encoding="utf-8-sig"))
+                    active = index.get("active_game_account") if isinstance(index, dict) else None
+                    if isinstance(active, str) and active.startswith("CN:"):
+                        candidate = active[3:]
+                        if re.fullmatch(r"[0-9]{1,32}", candidate):
+                            uid = candidate
+            if isinstance(uid, str) and re.fullmatch(r"[0-9]{1,32}", uid):
+                return AccountState(ROOT, uid)
+        except Exception:
+            pass
+        return None
+
+    def observe_dig_targets(self):
+        try:
             from collection import statistics
             if not statistics.is_task_stats_enabled(ROOT):
+                return
+            account = self._stats_account()
+            if account is None:
                 return
             raw_text = self.rt.text([180, 110, 920, 460]) or ""
             materials = catalog(self.ui.resource).get("materials", {})
@@ -213,7 +241,6 @@ class Gameplay:
                 if name in remaining:
                     found.append(name)
                     remaining = remaining.replace(name, " ")
-            account = AccountState(ROOT)
             statistics.sync_task_stats(account, ROOT, extra_dig_targets=found)
             statistics.upload(account, ROOT)
         except Exception:
@@ -238,7 +265,8 @@ class Gameplay:
         return self.rt.main()
 
     def realm(self, kind, maximize=True, entered=False, weekly_node=None, allow_exhausted=False,
-              return_page="main", fixed_count=None, *, allow_unavailable=False, before_submit=None):
+              return_page="main", fixed_count=None, *, allow_unavailable=False, before_submit=None,
+              record_bling_stats=True):
         if kind == "bless":
             self.rt.account_uid()
         if fixed_count is not None and (type(fixed_count) is not int or not 1 <= fixed_count <= 999):
@@ -261,7 +289,8 @@ class Gameplay:
             if not entered and not self.ui.realm(kind):
                 return False
             if kind == "jihua":
-                return self.jihua(maximize, allow_exhausted, fixed_count=fixed_count)
+                return self.jihua(maximize, allow_exhausted, fixed_count=fixed_count,
+                                  record_bling_stats=record_bling_stats)
             node = weekly_node if kind == "weekly" else f"MaaNikki_{prefix}_Level"
             if not self.select_realm_level(kind, node):
                 return False
@@ -367,7 +396,47 @@ class Gameplay:
             "roi": definition.get("roi", self.REALM_LEVEL_ROI),
             "scroll_roi": self.REALM_SCROLL_ROI})
 
-    def jihua(self, maximize, allow_exhausted=False, fixed_count=None):
+    def _read_jihua_bling_quote(self):
+        """Read (energy, gain) from the staged Jihua screen before final confirmation."""
+        try:
+            frame = self.rt.frame()
+            if frame is None:
+                return None
+            target = re.sub(r"\s+", "", self.rt.text([920, 170, 165, 45], image=frame) or "")
+            if target != "噗灵":
+                return None
+            gain_raw = re.sub(r"[,，\s]+", "", self.rt.text([930, 306, 160, 38], image=frame) or "")
+            if not re.fullmatch(r"\d+", gain_raw):
+                return None
+            gain = int(gain_raw)
+            energy_raw = re.sub(r"[,，\s]+", "", self.rt.text([1025, 558, 115, 42], image=frame) or "")
+            energy_match = re.search(r"(\d+)", energy_raw)
+            if energy_match is None:
+                fallback_raw = re.sub(r"[,，\s]+", "", self.rt.text([935, 558, 210, 42], image=frame) or "")
+                energy_match = re.search(r"消耗[^\d]*(\d+)", fallback_raw) or re.search(r"(\d+)$", fallback_raw)
+            if energy_match is None:
+                return None
+            energy = int(energy_match.group(1))
+            if 10 <= energy <= 10000 and 1 <= gain <= 100_000_000:
+                return energy, gain
+        except Exception:
+            pass
+        return None
+
+    def _record_jihua_bling_stats(self, energy: int, gain: int):
+        try:
+            from collection import statistics
+            if not statistics.is_enabled(ROOT):
+                return
+            account = self._stats_account()
+            if account is None:
+                return
+            account.update(lambda data: statistics.queue_change(data, bling=(energy, gain)))
+            statistics.upload(account, ROOT)
+        except Exception:
+            pass
+
+    def jihua(self, maximize, allow_exhausted=False, fixed_count=None, *, record_bling_stats=True):
         submitted = False
 
         def enter():
@@ -392,9 +461,13 @@ class Gameplay:
                                 "当前无可继续激化的材料或已达今日激化上限，本项未执行，不计入心愿完成。")
                     return bool(allow_exhausted)
                 return self.confirm_unavailable("jihua", allow_exhausted)
+            bling_quote = self._read_jihua_bling_quote() if record_bling_stats else None
             if not self.rt.click_template("MaaNikki_Jihua_FinalConfirm"):
                 return self.confirm_unavailable("jihua", allow_exhausted)
-            return self.jihua_reward()
+            rewarded = self.jihua_reward()
+            if rewarded and bling_quote is not None:
+                self._record_jihua_bling_stats(*bling_quote)
+            return rewarded
 
         left = True
         try:

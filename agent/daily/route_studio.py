@@ -473,12 +473,18 @@ class UserRouteRun(RouteTest):
     label = "自定义路线"
     default_mode = "full"
 
+    def telemetry_mode(self, mode):
+        return "custom" if mode == "full" else f"custom_{mode}"
+
 
 class OpenWorldCollectRun(UserRouteRun):
     """Sequential open-world material farming with Gingerbread left-side toast telemetry."""
     dev_only = False
     label = "大世界材料采集"
     default_mode = "full"
+
+    def telemetry_mode(self, mode):
+        return "open_world" if mode == "full" else f"open_world_{mode}"
 
     def prepare_route(self, settings, actions, inputs):
         # Checked after every route's start teleport: when the companion is

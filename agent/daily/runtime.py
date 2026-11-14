@@ -43,6 +43,7 @@ class Runtime:
         self._account_generation = None
         self._account_mismatch = False
         self._frame_incomplete = False
+        self._pending_route_telemetry = None
         if session is not None:
             session.ensure_hud()
         from .ui import GameUI
@@ -748,7 +749,7 @@ class Runtime:
         return route.document if route else None
 
     def navigate(self, name, mode=None, card=None, progress=None, *, meteor_travel=False,
-                 crystal_map_open=False):
+                 crystal_map_open=False, defer_telemetry=False):
         bg = self.background_mode()
         if not bg and not foreground_inputs():
             self.log("路线导航需要前台鼠标和键盘输入，请将两者设置为 Seize。")
@@ -939,19 +940,47 @@ class Runtime:
                     self.log("无法确认导航按键已全部释放，本轮停止，请检查游戏状态。")
                     self.navigation_halted = True
             active_route = getattr(navigator, "active_route", None) or model
-            telemetry = None
-            if active_route is not None:
-                telemetry = record_route_telemetry(
-                    ROOT, active_route, events,
-                    executor=actions.executor if actions else ("meteor" if meteor_travel else "navigation"),
-                    mode=mode or "daily", success=nav_succeeded, stage=stage)
-            folder = ROOT / "logs" / "navigation"
-            try:
-                folder.mkdir(parents=True, exist_ok=True)
-                write_json(folder / (datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".json"),
-                           {"route": name, **({"telemetry": telemetry} if telemetry else {}), "events": events})
-            except (OSError, ValueError):
-                self.log("导航日志保存失败，请检查日志目录权限和磁盘空间。")
+            self._pending_route_telemetry = {
+                "name": name,
+                "active_route": active_route,
+                "events": events,
+                "executor": actions.executor if actions else ("meteor" if meteor_travel else "navigation"),
+                "mode": mode or "daily",
+                "success": nav_succeeded,
+                "stage": stage,
+            }
+            if not defer_telemetry:
+                self.flush_route_telemetry()
+
+    def flush_route_telemetry(self, *, crystal=None):
+        pending = getattr(self, "_pending_route_telemetry", None)
+        if not pending:
+            return None
+        self._pending_route_telemetry = None
+        from navigation.telemetry import record_route_telemetry
+        active_route = pending["active_route"]
+        telemetry = None
+        if active_route is not None:
+            telemetry = record_route_telemetry(
+                ROOT,
+                active_route,
+                pending["events"],
+                executor=pending["executor"],
+                mode=pending["mode"],
+                success=pending["success"],
+                stage=pending["stage"],
+                crystal=crystal,
+            )
+        folder = ROOT / "logs" / "navigation"
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            write_json(
+                folder / (datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".json"),
+                {"route": pending["name"], **({"telemetry": telemetry} if telemetry else {}), "events": pending["events"]},
+            )
+        except (OSError, ValueError):
+            self.log("导航日志保存失败，请检查日志目录权限和磁盘空间。")
+        return telemetry
 
 
 PROMPTS = {"music": "更改音乐", "bottle": "漂流瓶|查看", "delivery": "投递",

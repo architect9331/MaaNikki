@@ -181,7 +181,11 @@ class RouteActions:
                 self.last_notice = compact
                 for name, amount in amounts.items():
                     self.count += amount
-                    self.event({"type": "obtained", "material": name, "amount": amount, "total": self.count, "text": text})
+                    ev = {"type": "obtained", "material": name, "amount": amount, "total": self.count, "text": text}
+                    idx = getattr(self.navigator, "current_index", None)
+                    if isinstance(idx, int):
+                        ev["index"] = idx
+                    self.event(ev)
                     self.rt.log(f"已识别获得{name}，本次累计 {self.count}。", detail=True)
                 return True
             if not any(name in compact for name in self.count_materials):
@@ -318,7 +322,8 @@ class RouteActions:
         nearby = self.gb_analyzer.query_nearby_spawners(
             actual_x, actual_y, target_names=self.count_materials
         )
-        expected_names = list(dict.fromkeys(list(self.count_materials) + [s.name for s in nearby]))
+        extra_species = [sp for s in nearby for sp in getattr(s, "fish_species", ())]
+        expected_names = list(dict.fromkeys(list(self.count_materials) + [s.name for s in nearby] + extra_species))
         self.gb_toast_reader.set_expected_names(expected_names)
 
         adaptive_exit = bool(self.gb_config.get("adaptive_exit", True))
@@ -604,10 +609,14 @@ class RouteActions:
                             "pickup_detected": bool(found), "interacted": bool(interacted),
                             "recognition": diagnostics, "frame": evidence})
                 self.rt.log("此点未确认拾取漂流瓶，继续沿路线查找。", detail=True)
-            self.event({"type": "bottle_result", "x": point.x, "y": point.y,
-                        "sample": point.params.get("sample"), "success": bool(ok),
-                        "pickup_detected": bool(found), "interacted": bool(interacted),
-                        "count": self.count})
+            idx = getattr(self.navigator, "current_index", None)
+            bottle_ev = {"type": "bottle_result", "x": point.x, "y": point.y,
+                         "sample": point.params.get("sample"), "success": bool(ok),
+                         "pickup_detected": bool(found), "interacted": bool(interacted),
+                         "count": self.count}
+            if isinstance(idx, int):
+                bottle_ev["index"] = idx
+            self.event(bottle_ev)
         elif kind == "delivery":
             ok = self.rt.interaction("delivery")
         elif kind == "animal":
@@ -616,14 +625,16 @@ class RouteActions:
             raise NavigationError("路线动作尚未适配。")
         self.inputs.check()
         main_ok = self.rt.main(self.event)
+        idx = getattr(self.navigator, "current_index", None)
+        idx_field = {"index": idx} if isinstance(idx, int) else {}
         if self.rt.ui.revived:
             self.event({"type": "action_result", "action": kind, "success": False,
-                        "interrupted": "revived",
+                        "interrupted": "revived", **idx_field,
                         **({"count": self.count} if self.executor != "crystal" else {})})
             if main_ok:
                 raise NavigationStuckError("角色倒下后已复活，需要从起点重新运行路线。")
             raise NavigationError("角色倒下后未能完成复活，本条路线停止。")
-        self.event({"type": "action_result", "action": kind, "success": bool(ok),
+        self.event({"type": "action_result", "action": kind, "success": bool(ok), **idx_field,
                     **({"count": self.count} if self.executor != "crystal" else {})})
         if ok and kind != "wait":
             self.successes += 1

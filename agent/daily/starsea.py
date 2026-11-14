@@ -295,10 +295,11 @@ class Starsea:
                             "values": result, "readings": readings})
         return result
 
-    def report_collection_statistics(self, *, result=None):
+    def report_collection_statistics(self, *, result=None, before_only=None):
         if self.rt.stopped:
             return False
-        before_only = result is not None
+        if before_only is None:
+            before_only = result is not None
         if result is None:
             if not self.rt.ui.open_map(self.events.append):
                 self.rt.log("跑图后未能打开地图读取收集统计。")
@@ -567,6 +568,7 @@ class Starsea:
             self.crystal_counter_conflict = False
             self.crystal_seen = 0
             self.crystal_edge_visits = []
+            self.crystal_partial_match = False
             location, selected, distances = None, None, []
             # Follow clickable indicators first. The fixed views expose markers
             # occluded by controls; each gets one fresh-bell retry on timeout.
@@ -611,6 +613,7 @@ class Starsea:
                         location = tuple(sum(p[i] for p in self.crystal_locations)/total for i in (0, 1))
                         self.crystal_selection = selected, distances
                         self.crystal_marker_count = total
+                        self.crystal_partial_match = True
                         self.events.append({"type": "crystal_route_selection", "location": list(location),
                                             "marker_count": total, "partial_match": True,
                                             "candidates": distances, "selected": selected})
@@ -645,9 +648,43 @@ class Starsea:
             name = selected["route"]
             self.rt.log(f"已发现 {self.crystal_marker_count} 个结晶路线标记，"
                         f"匹配路线 {name}，开始完整跑图收集。", detail=True)
-            if not self.rt.navigate(name, mode, card, crystal_map_open=True):
+            nav_ok = False
+            after = None
+            try:
+                nav_ok = self.rt.navigate(name, mode, card, crystal_map_open=True, defer_telemetry=True)
+            finally:
+                if not self.rt.stopped and self.rt.ui.open_map(self.events.append):
+                    after = self.read_collection_statistics("after")
+                before_counts = {
+                    key: value["collected"]
+                    for key, value in (self.collection_start or {}).items()
+                    if isinstance(value, dict) and isinstance(value.get("collected"), int)
+                }
+                after_counts = {
+                    key: value["collected"]
+                    for key, value in (after or {}).items()
+                    if isinstance(value, dict) and isinstance(value.get("collected"), int)
+                }
+                deltas = {
+                    key: after_counts[key] - before_counts[key]
+                    for key in ("star_soul", "starlight_crystal", "starlight_dust")
+                    if key in before_counts and key in after_counts
+                }
+                crystal_info = {
+                    "selected_route": name,
+                    "marker_count": self.crystal_marker_count,
+                    "partial_match": bool(getattr(self, "crystal_partial_match", False)),
+                    "route_success": bool(nav_ok),
+                    **({"before": before_counts} if before_counts else {}),
+                    **({"after": after_counts} if after_counts else {}),
+                    **({"delta": deltas} if deltas else {}),
+                }
+                self.rt.flush_route_telemetry(crystal=crystal_info)
+            if not nav_ok:
+                if after is not None:
+                    self.report_collection_statistics(result=after, before_only=False)
                 return False
-            return self.report_collection_statistics()
+            return self.report_collection_statistics(result=after, before_only=False)
         except (ValueError, KeyError, OSError, RuntimeError, cv2.error) as error:
             self.events.append({"type": "stopped", "reason": str(error)})
             self.rt.log(f"星光结晶收集停止：{error}")

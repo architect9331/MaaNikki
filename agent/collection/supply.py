@@ -117,7 +117,8 @@ class CollectionSupply:
             if not clone.override_pipeline({"MaaNikki_Jihua_Target": {"expected": "噗灵"},
                                             "MaaNikki_Jihua_TargetRetry": {"expected": "噗灵"}}):
                 raise RuntimeError("素材激化目标设置未能应用")
-            ok = Gameplay(child).realm("jihua", maximize=True, allow_exhausted=True, return_page="calendar")
+            ok = Gameplay(child).realm("jihua", maximize=True, allow_exhausted=True, return_page="calendar",
+                                       record_bling_stats=False)
         finally:
             self.rt.navigation_halted |= child.navigation_halted
         if self.rt.stopped or not self.rt.ui.calendar():

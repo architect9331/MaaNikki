@@ -289,7 +289,7 @@ def summarize_route_telemetry(
                 wp_states[current_idx]["action_gain"] += 1
 
         elif kind == "action_result":
-            if 0 <= current_idx < count:
+            if 0 <= current_idx < count and wp_states[current_idx]["action"]:
                 wp_states[current_idx]["action_ok"] = bool(ev.get("success", False))
             if current_idx + 1 < count:
                 current_idx += 1
@@ -533,6 +533,11 @@ def summarize_route_telemetry(
             if gb_stops > 0
             else {}
         ),
+        **(
+            {"crystal": dict(crystal)}
+            if isinstance(crystal, dict) and crystal
+            else {}
+        ),
         "waypoints": waypoints_out,
     }
 
@@ -546,6 +551,7 @@ def record_route_telemetry(
     mode: str = "",
     success: bool = False,
     stage: str = "",
+    crystal: dict | None = None,
 ) -> dict:
     summary = summarize_route_telemetry(
         route,
@@ -554,6 +560,7 @@ def record_route_telemetry(
         mode=mode,
         success=success,
         stage=stage,
+        crystal=crystal,
     )
     if not route_telemetry_enabled(root):
         return summary

@@ -93,6 +93,7 @@ class Insect(Ability):
             navigator = create_navigator(self.rt, self.actions.teleporter, event=self.actions.event)
             route_navigator = self.actions.navigator
             if route_navigator is not None:
+                navigator.current_index = route_navigator.current_index
                 navigator.turn_ratio = route_navigator.turn_ratio
                 self.actions.event({"type": "camera_calibration_reused", "pixels_per_degree": navigator.turn_ratio})
             motion = Motion(self.inputs, self.actions.event)
