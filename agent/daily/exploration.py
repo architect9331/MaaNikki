@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from contextlib import nullcontext
+from pathlib import Path
 import time
 
 import cv2
@@ -13,6 +14,21 @@ from navigation.models import GameWindowClosed, NavigationError
 from performance import checkpoint, count, measure
 from scheduling import PeriodicSchedule
 from .runtime import Runtime, parameters
+
+
+class ResourceReplaced(Exception):
+    """Raised when an in-place update moves or replaces the bound resource tree."""
+
+
+def _resource_signature(ui):
+    resource = getattr(ui, "resource", None)
+    if resource is None:
+        return None
+    try:
+        stat = (Path(resource) / "image/game/catalog.json").stat()
+    except OSError:
+        return None
+    return stat.st_ctime_ns, stat.st_mtime_ns, stat.st_size
 
 
 class AssistSchedule(PeriodicSchedule):
@@ -42,6 +58,11 @@ class Exploration(Runtime):
             # Daily tasks still receive the NavigationError subtype as before.
             self.log("游戏已关闭，辅助功能已停止。")
             return True
+        except ResourceReplaced:
+            # An in-place client update moves resource/ to cache/old/ before
+            # replacing files; end the resident helper cleanly instead of failing.
+            self.log("程序资源已更新或移除，辅助功能已停止。")
+            return True
 
     def _run_assist(self):
         enabled = {key: parameters(self.context, "MaaNikki_Assist_" + key).get("value", True)
@@ -61,9 +82,15 @@ class Exploration(Runtime):
                  if guard.capture_requires_foreground else
                  "辅助功能已启动：键盘交互支持切出游戏后继续拾取、对白和跳过；鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
         schedule = AssistSchedule(enabled, now=time.monotonic())
+        initial_resources = _resource_signature(self.ui)
         waiting_clear = False
         previous_mode = None
         map_mask = None
+
+        def resources_replaced(error):
+            return (isinstance(error, FileNotFoundError)
+                    and initial_resources is not None
+                    and _resource_signature(self.ui) != initial_resources)
 
         def available():
             return (not self.stopped and guard.user32.IsWindow(guard.hwnd)
@@ -163,6 +190,8 @@ class Exploration(Runtime):
                     except Exception as error:
                         if not guard.user32.IsWindow(guard.hwnd):
                             raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。") from error
+                        if resources_replaced(error):
+                            raise ResourceReplaced from error
                         self.log(f"地图标记已暂停（{type(error).__name__}），重新运行辅助功能可重试。")
                         map_mask.close()
                         map_mask = None
@@ -234,6 +263,8 @@ class Exploration(Runtime):
             # retain their ordinary handling.
             if not guard.user32.IsWindow(guard.hwnd):
                 raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。") from error
+            if resources_replaced(error):
+                raise ResourceReplaced from error
             raise
         finally:
             try:
