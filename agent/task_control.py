@@ -50,6 +50,8 @@ class ForegroundSession:
         self._cached_stopping = False
         self._background_observation = False
         self._observed_foreground = None
+        self._foreground_required_depth = 0
+        self._foreground_pause_message = None
         self.frame_validated = False
         self.account_uid = None
         self.account_generation = None
@@ -213,6 +215,72 @@ class ForegroundSession:
             self._observed_foreground = None
             self.generation += 1
 
+    @contextmanager
+    def foreground_required(self, *, message=None):
+        """Seize and auto-pull foreground while a physical-mouse/camera phase runs."""
+        self._foreground_required_depth += 1
+        previous_message = self._foreground_pause_message
+        if message is not None:
+            self._foreground_pause_message = message
+        try:
+            yield
+        finally:
+            self._foreground_pause_message = previous_message
+            self._foreground_required_depth = max(0, self._foreground_required_depth - 1)
+
+    @staticmethod
+    def _bring_to_foreground(adapter):
+        if adapter.foreground():
+            return True
+        user32 = adapter.user32
+        hwnd = adapter.hwnd
+        try:
+            if user32.IsIconic(hwnd):
+                user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+        except Exception:
+            pass
+        try:
+            adapter.controller.post_key_up(18).wait()
+        except Exception:
+            pass
+        if adapter.foreground():
+            return True
+        # Fall back to thread-queue attach + Win32 activation if focus lock blocks Seize key-up.
+        try:
+            import ctypes
+            from ctypes import wintypes
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=False)
+            kernel32.GetCurrentThreadId.argtypes = []
+            kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+            user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+            user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+            user32.AttachThreadInput.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.BOOL]
+            user32.AttachThreadInput.restype = wintypes.BOOL
+            user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+            user32.ShowWindow.restype = wintypes.BOOL
+            user32.BringWindowToTop.argtypes = [wintypes.HWND]
+            user32.BringWindowToTop.restype = wintypes.BOOL
+            user32.SetForegroundWindow.argtypes = [wintypes.HWND]
+            user32.SetForegroundWindow.restype = wintypes.BOOL
+            current_thread = kernel32.GetCurrentThreadId()
+            fg_thread = user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), None)
+            target_thread = user32.GetWindowThreadProcessId(hwnd, None)
+            attached = []
+            try:
+                for thread in dict.fromkeys((fg_thread, target_thread)):
+                    if thread and thread != current_thread and user32.AttachThreadInput(current_thread, thread, True):
+                        attached.append(thread)
+                if user32.IsIconic(hwnd):
+                    user32.ShowWindow(hwnd, 9)
+                user32.BringWindowToTop(hwnd)
+                user32.SetForegroundWindow(hwnd)
+            finally:
+                for thread in reversed(attached):
+                    user32.AttachThreadInput(current_thread, thread, False)
+        except Exception:
+            pass
+        return adapter.foreground()
+
     def _wait_until(self, adapter, ready, pause_message, resume_message, *, check_hung, bring_back):
         if self.stopped():
             raise TaskStopped("任务已停止。")
@@ -247,7 +315,7 @@ class ForegroundSession:
                     if (bring_back and hung_since is None
                             and (refocused_at is None or now-refocused_at >= REFOCUS_INTERVAL)):
                         refocused_at = now
-                        adapter.controller.post_key_up(18).wait()
+                        self._bring_to_foreground(adapter)
                 wall_time.sleep(.05)
             self.generation += 1
             if self._background_active():
@@ -260,7 +328,9 @@ class ForegroundSession:
     def wait(self, adapter=None, *, require_foreground=False, require_capturable=False):
         if self.waiting:
             return
-        bg_active = self._background_active()
+        bg_mode = self._background_mode()
+        bg_active = self._background_observation or bg_mode
+        effective_foreground = require_foreground or self._foreground_required_depth > 0
         if adapter is None:
             adapter = self.ensure_adapter()
         if not adapter.user32.IsWindow(adapter.hwnd):
@@ -291,7 +361,7 @@ class ForegroundSession:
             finally:
                 self.paused_seconds += wall_time.monotonic()-hung_begin
                 self.waiting = False
-        if bg_active and not require_foreground:
+        if bg_active and not effective_foreground:
             if self.stopped():
                 raise TaskStopped("任务已停止。")
             window_only = bool(getattr(adapter, "window_only", False))
@@ -322,12 +392,19 @@ class ForegroundSession:
             return
         if adapter.foreground():
             return
-        bring_back = not bg_active and self._returns_to_game()
+        allow_auto_focus = not self._background_observation
+        bring_back = allow_auto_focus and (
+            (bg_mode and effective_foreground)
+            or self._returns_to_game()
+        )
         pause_message = (
-            "游戏当前动作需要在前台执行，任务暂停；切回无限暖暖后自动继续。"
-            if bg_active else
-            ("游戏已离开前台，正在切回游戏继续运行。"
-             if bring_back else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。")
+            (self._foreground_pause_message
+             or "当前操作需要使用前台鼠标或视角控制，正在自动将游戏切回前台并保持至本阶段结束。")
+            if allow_auto_focus and bg_mode and effective_foreground else
+            ("游戏当前动作需要在前台执行，任务暂停；切回无限暖暖后自动继续。"
+             if bg_active else
+             ("游戏已离开前台，正在切回游戏继续运行。"
+              if bring_back else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。"))
         )
         self._wait_until(
             adapter,
@@ -388,6 +465,8 @@ def task_session(context, task_id):
             session.inputs.clear()
             session.evidence.release_frame()
             session.frame_validated = False
+            session._foreground_required_depth = 0
+            session._foreground_pause_message = None
             session.adapter = session._controller = session.context = None
             _RUNNING.pop(tasker_key, None)
             _ACTIVE.reset(token)

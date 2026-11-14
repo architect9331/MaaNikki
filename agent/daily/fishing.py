@@ -71,8 +71,9 @@ def current_fishing(runtime):
         runtime.navigation_inputs = inputs
         if not runtime.main():
             return False
-        return run_fishing(runtime, inputs, max_cast_count=count,
-                           use_rhythms=runtime.setting("fishing")["use_rhythms"])
+        with runtime.foreground_task("自动钓鱼"):
+            return run_fishing(runtime, inputs, max_cast_count=count,
+                               use_rhythms=runtime.setting("fishing")["use_rhythms"])
     finally:
         runtime.navigation_inputs = previous
         inputs.release()

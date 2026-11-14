@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import ctypes
 from ctypes import wintypes
 import os
@@ -130,7 +130,7 @@ class ForegroundInput:
     def hung(self):
         return bool(self.user32.IsWindow(self.hwnd) and self.user32.IsHungAppWindow(self.hwnd))
 
-    def check(self):
+    def check(self, *, require_foreground=True):
         if self.stopped():
             raise NavigationError("已停止导航。")
         from task_control import active_session
@@ -485,6 +485,21 @@ class BackgroundInput(ForegroundInput):
                 self.release_mouse(binding.code)
             return
         self.release_key(binding.code)
+
+    def click_mouse(self, button, seconds=.05):
+        from task_control import active_session
+        session = active_session()
+        with (session.foreground_required() if session is not None else nullcontext()):
+            self.check(require_foreground=True)
+            return super().click_mouse(button, seconds)
+
+    def hold(self, key, seconds, *, restore=True):
+        from task_control import active_session
+        binding = self.bindings.get(key)
+        session = active_session()
+        need_fg = session is not None and binding.kind == "mouse"
+        with (session.foreground_required() if need_fg else nullcontext()):
+            return super().hold(key, seconds, restore=restore)
 
     def mouse_down(self, button=0):
         if button not in (0, 1, 2, 3, 4):

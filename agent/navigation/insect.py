@@ -1,5 +1,6 @@
 """Ability setup and nearby material tracking for insect route points."""
 from __future__ import annotations
+from contextlib import nullcontext
 import math
 from task_control import task_time as time
 import cv2
@@ -84,66 +85,71 @@ class Insect(Ability):
             raise NavigationError("捕虫动作不能与移动方向使用同一按键。")
         if not self.track():
             return False
-        navigator = create_navigator(self.rt, self.actions.teleporter, event=self.actions.event)
-        route_navigator = self.actions.navigator
-        if route_navigator is not None:
-            navigator.turn_ratio = route_navigator.turn_ratio
-            self.actions.event({"type": "camera_calibration_reused", "pixels_per_degree": navigator.turn_ratio})
-        motion = Motion(self.inputs, self.actions.event)
-        navigator.motion = motion
-        initial = self.actions.count
-        end = time.monotonic()+60
-        failed, lit = 0, 0
-        baseline = self.actions.notification()
-        try:
-            while not self.rt.stopped and time.monotonic() < end and self.actions.count-initial < count:
-                self.inputs.check()
-                motion.tick()
-                self.inputs._down(binding)
-                frame = self.rt.capture()
-                motion.tick()
-                if frame is None:
-                    return False
-                if self.active(frame):
-                    motion.stop()
-                    failed = 0
-                    lit += 1
-                    if lit >= 2:
-                        self.inputs._up(binding)
-                        if not self.rt.main() or not self.rt.pause(.5):
-                            return False
-                        self.actions.obtained(baseline, seconds=1, interaction=True)
-                        self.previous_circle = None
-                        self.rt.pause(.8)
-                        baseline = self.actions.notification()
-                        lit = 0
-                else:
-                    lit = 0
-                    degree = self.degree(frame)
-                    if degree is None:
+        scope = (
+            self.rt.foreground_task("捕虫靠近与挥网")
+            if binding.kind == "mouse" and hasattr(self.rt, "foreground_task") else nullcontext()
+        )
+        with scope:
+            navigator = create_navigator(self.rt, self.actions.teleporter, event=self.actions.event)
+            route_navigator = self.actions.navigator
+            if route_navigator is not None:
+                navigator.turn_ratio = route_navigator.turn_ratio
+                self.actions.event({"type": "camera_calibration_reused", "pixels_per_degree": navigator.turn_ratio})
+            motion = Motion(self.inputs, self.actions.event)
+            navigator.motion = motion
+            initial = self.actions.count
+            end = time.monotonic()+60
+            failed, lit = 0, 0
+            baseline = self.actions.notification()
+            try:
+                while not self.rt.stopped and time.monotonic() < end and self.actions.count-initial < count:
+                    self.inputs.check()
+                    motion.tick()
+                    self.inputs._down(binding)
+                    frame = self.rt.capture()
+                    motion.tick()
+                    if frame is None:
+                        return False
+                    if self.active(frame):
                         motion.stop()
-                        failed += 1
-                        if failed > 5:
-                            self.rt.log("附近没有可追踪的昆虫，继续后续点位。", detail=True)
-                            break
-                        motion.wait(.1)
+                        failed = 0
+                        lit += 1
+                        if lit >= 2:
+                            self.inputs._up(binding)
+                            if not self.rt.main() or not self.rt.pause(.5):
+                                return False
+                            self.actions.obtained(baseline, seconds=1, interaction=True)
+                            self.previous_circle = None
+                            self.rt.pause(.8)
+                            baseline = self.actions.notification()
+                            lit = 0
                     else:
-                        pose = self.actions.teleporter.locator.locate(frame, progress=motion.tick)
-                        if pose.heading is None:
+                        lit = 0
+                        degree = self.degree(frame)
+                        if degree is None:
                             motion.stop()
                             failed += 1
                             if failed > 5:
-                                self.rt.log("捕虫时小地图位置未能恢复可信匹配，继续后续点位。")
+                                self.rt.log("附近没有可追踪的昆虫，继续后续点位。", detail=True)
                                 break
                             motion.wait(.1)
-                            continue
-                        failed = 0
-                        # Do not approach on a partially corrected heading.
-                        navigator.turn(degree, pose, stationary=True, tolerance=3)
-                        motion.forward(.35)
-                motion.wait(.05)
-            return self.actions.count > initial
-        finally:
-            if route_navigator is not None:
-                route_navigator.turn_ratio = navigator.turn_ratio
-            motion.close()
+                        else:
+                            pose = self.actions.teleporter.locator.locate(frame, progress=motion.tick)
+                            if pose.heading is None:
+                                motion.stop()
+                                failed += 1
+                                if failed > 5:
+                                    self.rt.log("捕虫时小地图位置未能恢复可信匹配，继续后续点位。")
+                                    break
+                                motion.wait(.1)
+                                continue
+                            failed = 0
+                            # Do not approach on a partially corrected heading.
+                            navigator.turn(degree, pose, stationary=True, tolerance=3)
+                            motion.forward(.35)
+                    motion.wait(.05)
+                return self.actions.count > initial
+            finally:
+                if route_navigator is not None:
+                    route_navigator.turn_ratio = navigator.turn_ratio
+                motion.close()

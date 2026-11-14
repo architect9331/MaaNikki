@@ -9,7 +9,7 @@ import time as wall_time
 import weakref
 from task_control import active_session, task_time as time
 import cv2
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 
 from .planner import Card
 from .settings import ROOT, foreground_inputs
@@ -80,6 +80,30 @@ class Runtime:
             getattr(inputs, "window_only", False)
             and (not inputs.foreground() or not foreground_inputs())
         )
+
+    @contextmanager
+    def foreground_task(self, reason="当前操作需要使用前台鼠标或视角控制"):
+        """Grab and auto-refocus game foreground until this mouse-dependent phase finishes."""
+        session = active_session()
+        if not self.background_mode() or session is None:
+            yield
+            return
+        outermost = session._foreground_required_depth == 0
+        inputs = self._active_inputs()
+        was_background = outermost and inputs is not None and not inputs.foreground()
+        if outermost:
+            self.log(f"{reason}，正在抢占并将游戏保持在前台，完成后自动恢复后台模式。", detail=not was_background)
+        with session.foreground_required(message=f"{reason}，正在自动拉回游戏前台并保持至本阶段结束。"):
+            active = self._active_inputs()
+            if active is not None:
+                active.check(require_foreground=True)
+            else:
+                session.wait(require_foreground=True)
+            try:
+                yield
+            finally:
+                if outermost and not self.stopped:
+                    self.log("前台鼠标操作阶段已结束，恢复后台运行模式。", detail=not was_background)
 
     def check_focus(self):
         session = active_session()
@@ -270,9 +294,10 @@ class Runtime:
                 return False
             if binding.kind == "mouse":
                 self.invalidate_frame()
-                with self.input_guard() as inputs:
-                    clicked = inputs.click_mouse(binding.code)
-                return clicked and self.pause(delay)
+                with self.foreground_task("执行鼠标按键动作"):
+                    with self.input_guard() as inputs:
+                        clicked = inputs.click_mouse(binding.code)
+                    return clicked and self.pause(delay)
             value = binding.code
         return self.action("ClickKey", key=value) and self.pause(delay)
 
@@ -281,27 +306,29 @@ class Runtime:
             return False
         self.invalidate_frame()
         binding = self.game_keys.get(key) if isinstance(key, str) else None
-        if active_session() is not None or self.background_mode() or binding and (binding.kind == "mouse" or foreground_inputs()):
-            if binding is None:
-                from game_keys import Binding
-                binding = Binding("key", key)
-            with self.input_guard() as inputs:
-                if key in {"forward", "left", "backward", "right"}:
-                    self.game_keys.movement()
-                try:
-                    inputs._down(binding)
-                    inputs.wait(seconds)
-                    return not self.stopped
-                finally:
-                    inputs.release()
-        key = binding.code if binding else key
-        if not self.action("KeyDown", key=key):
-            return False
-        try:
-            return self.pause(seconds)
-        finally:
-            # Release even when the user presses Stop.
-            self.release_key(key)
+        is_mouse = binding is not None and binding.kind == "mouse"
+        with (self.foreground_task("执行鼠标按键动作") if is_mouse else nullcontext()):
+            if active_session() is not None or self.background_mode() or binding and (is_mouse or foreground_inputs()):
+                if binding is None:
+                    from game_keys import Binding
+                    binding = Binding("key", key)
+                with self.input_guard() as inputs:
+                    if key in {"forward", "left", "backward", "right"}:
+                        self.game_keys.movement()
+                    try:
+                        inputs._down(binding)
+                        inputs.wait(seconds)
+                        return not self.stopped
+                    finally:
+                        inputs.release()
+            key = binding.code if binding else key
+            if not self.action("KeyDown", key=key):
+                return False
+            try:
+                return self.pause(seconds)
+            finally:
+                # Release even when the user presses Stop.
+                self.release_key(key)
 
     def capture(self):
         return self._capture()
@@ -1064,11 +1091,16 @@ class Executors(Runtime):
     def interaction(self, kind):
         if not self._wait_world_prompt(PROMPTS[kind]):
             return False
-        if kind == "music":
-            # No dedicated music-page marker is available; submit only once.
-            return self.key("interact", 1)
-        if kind == "delivery":
-            return self.delivery_page() and self.delivery_confirm()
+        scope = (
+            self.foreground_task("鼠标绑定交互操作")
+            if self.game_keys.get("interact").kind == "mouse" else nullcontext()
+        )
+        with scope:
+            if kind == "music":
+                # No dedicated music-page marker is available; submit only once.
+                return self.key("interact", 1)
+            if kind == "delivery":
+                return self.delivery_page() and self.delivery_confirm()
         return False
 
     def delivery_page(self):
@@ -1123,9 +1155,11 @@ class Executors(Runtime):
                     return True
             return False
 
-        # Gathering chat only appears while seated; never open chat standing.
-        if not sit_on_couch():
-            return False
+        mouse_interact = self.game_keys.get("interact").kind == "mouse"
+        with (self.foreground_task("鼠标绑定坐下交互") if mouse_interact else nullcontext()):
+            # Gathering chat only appears while seated; never open chat standing.
+            if not sit_on_couch():
+                return False
         if not self.ui.enter_page(lambda: self.key("chat", 0), "MaaNikki_Daily_GroupChat",
                                   source="MaaNikki_MainDetected", recover=sit_on_couch):
             return False
@@ -1146,17 +1180,20 @@ class Executors(Runtime):
         if (not content or not self.action("Click", target=[500, 680])
                 or not self.pause(.3) or not self.input_text(content)):
             return False
-        # Chat opening is rebindable; the text editor's Send is always Enter.
-        return self.key(13, .5) and self.main() and self.key("interact", .5)
+        with (self.foreground_task("鼠标绑定起身交互") if mouse_interact else nullcontext()):
+            # Chat opening is rebindable; the text editor's Send is always Enter.
+            return self.key(13, .5) and self.main() and self.key("interact", .5)
 
     def animal(self, card, times=None):
         if times is None:
             times = card.remaining if card.remaining is not None else (3 if card.rule.key == "animal_three" else 1)
         if type(times) is not int or not 1 <= times <= 3:
             return False
-        for _ in range(times):
-            if not self.ui.wait_text("变身", INTERACTION_ROI, attempts=10) or not self.key("interact", 2):
-                return False
+        mouse_interact = self.game_keys.get("interact").kind == "mouse"
+        with (self.foreground_task("鼠标绑定动物互动") if mouse_interact else nullcontext()):
+            for _ in range(times):
+                if not self.ui.wait_text("变身", INTERACTION_ROI, attempts=10) or not self.key("interact", 2):
+                    return False
         roi = self.ui.roi("AreaDialog")
         return (self.key("exit", 0) and self.ui.wait_page(text="^确认$", roi=roi)
                 and self.ui.find(roi=roi, text="确认", exact=True, scroll=False))
@@ -1231,61 +1268,59 @@ class Executors(Runtime):
             self.log("摆饰调整视角需要前台鼠标和键盘输入，请设置为 Seize。")
             self.main()
             return False
-        active = self._active_inputs()
-        if self.background_mode() and active is not None and not active.foreground():
-            self.log("放置摆饰需要临时在前台调整视角，请切回游戏后自动继续。")
-        if not relative_camera(self.controller, 0, -133) or not self.pause(.3):
-            return False
-        recover_before = bool(self.text([0, 500, 1210, 200], r"收回|回收"))
-        for _ in range(6):
-            if not self.key("place", .3):
+        with self.foreground_task("放置摆饰（需控制视角与鼠标放置）"):
+            if not relative_camera(self.controller, 0, -133) or not self.pause(.3):
                 return False
-            deadline = time.monotonic()+4
-            confirmations = 0
-            rejected = False
-            while not self.stopped and time.monotonic() < deadline:
-                frame = self.capture()
-                if frame is None:
+            recover_before = bool(self.text([0, 500, 1210, 200], r"收回|回收"))
+            for _ in range(6):
+                if not self.key("place", .3):
                     return False
-                if self.hit("MaaNikki_Daily_CantPlace", image=frame):
-                    rejected = True
-                    break
-                toast = self.text([250, 100, 780, 420], r"放置成功|已放置|不可放置|无法放置", image=frame)
-                if re.search(r"不可放置|无法放置", toast):
-                    rejected = True
-                    break
-                success = bool(re.search(r"放置成功|已放置", toast))
-                controls = "" if success else self.text([0, 500, 1210, 200], r"放置|摆放|收回|回收", image=frame)
-                preview = bool(re.search(r"放置|摆放", controls))
-                recover_ready = bool(re.search(r"收回|回收", controls))
-                returned = self.hit("MaaNikki_MainDetected", image=frame)
-                confirmed = success or returned and not preview or recover_ready and not recover_before
-                confirmations = confirmations+1 if confirmed else 0
-                if confirmations >= 2:
-                    self.log("已确认摆饰放置完成，稍后核实任务积分。", detail=True)
-                    return self.main()
-                if not self.pause(.3):
-                    return False
-            # Retry only after an explicit cannot-place response. An ambiguous
-            # submitted placement must not create another object.
-            if not rejected:
-                self.log("摆饰停止：点击后未能确认放置结果。")
-                self.save_placement_failure("placement_unconfirmed")
-                self.main()
-                return False
-            if not relative_camera(self.controller, -133, 0) or not self.pause(.3):
-                return False
-            deadline = time.monotonic()+3
-            while not self.stopped and self.hit("MaaNikki_Daily_CantPlace"):
-                if time.monotonic() >= deadline or not self.pause(.3):
-                    self.log("无法放置提示未消失，本项停止，避免重复提交。")
+                deadline = time.monotonic()+4
+                confirmations = 0
+                rejected = False
+                while not self.stopped and time.monotonic() < deadline:
+                    frame = self.capture()
+                    if frame is None:
+                        return False
+                    if self.hit("MaaNikki_Daily_CantPlace", image=frame):
+                        rejected = True
+                        break
+                    toast = self.text([250, 100, 780, 420], r"放置成功|已放置|不可放置|无法放置", image=frame)
+                    if re.search(r"不可放置|无法放置", toast):
+                        rejected = True
+                        break
+                    success = bool(re.search(r"放置成功|已放置", toast))
+                    controls = "" if success else self.text([0, 500, 1210, 200], r"放置|摆放|收回|回收", image=frame)
+                    preview = bool(re.search(r"放置|摆放", controls))
+                    recover_ready = bool(re.search(r"收回|回收", controls))
+                    returned = self.hit("MaaNikki_MainDetected", image=frame)
+                    confirmed = success or returned and not preview or recover_ready and not recover_before
+                    confirmations = confirmations+1 if confirmed else 0
+                    if confirmations >= 2:
+                        self.log("已确认摆饰放置完成，稍后核实任务积分。", detail=True)
+                        return self.main()
+                    if not self.pause(.3):
+                        return False
+                # Retry only after an explicit cannot-place response. An ambiguous
+                # submitted placement must not create another object.
+                if not rejected:
+                    self.log("摆饰停止：点击后未能确认放置结果。")
+                    self.save_placement_failure("placement_unconfirmed")
                     self.main()
                     return False
-        self.log("当前朝向均无法放置摆饰，本项停止。")
-        self.save_placement_failure("cannot_place")
-        self.key("recover", .3)
-        self.main()
-        return False
+                if not relative_camera(self.controller, -133, 0) or not self.pause(.3):
+                    return False
+                deadline = time.monotonic()+3
+                while not self.stopped and self.hit("MaaNikki_Daily_CantPlace"):
+                    if time.monotonic() >= deadline or not self.pause(.3):
+                        self.log("无法放置提示未消失，本项停止，避免重复提交。")
+                        self.main()
+                        return False
+            self.log("当前朝向均无法放置摆饰，本项停止。")
+            self.save_placement_failure("cannot_place")
+            self.key("recover", .3)
+            self.main()
+            return False
 
     def save_placement_failure(self, stage):
         self.diagnostic("placement", stage)

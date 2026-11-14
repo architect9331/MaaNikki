@@ -1,6 +1,7 @@
 """Task-aware route actions. Movement never grants daily-task credit by itself."""
 from __future__ import annotations
 
+from contextlib import nullcontext
 import json
 import math
 from pathlib import Path
@@ -215,6 +216,19 @@ class RouteActions:
         # Upstream recalibrates at every TELEPORT point, even if transport is skipped.
         self.navigator.turn_ratio = None
         return True
+
+    def _macro_uses_mouse(self, value):
+        for step in value.get("steps", ()):
+            kind = step.get("type", "")
+            if kind.startswith("game_"):
+                key = step.get("key")
+            elif kind.startswith("attack_"):
+                key = "attack"
+            else:
+                continue
+            if key and self.rt.game_keys.get(key).kind == "mouse":
+                return True
+        return False
 
     def collect(self):
         initial = self.count
@@ -479,18 +493,19 @@ class RouteActions:
         elif kind in {"fishing_star", "fishing"}:
             try:
                 heading = (point.params or {}).get("facing_heading")
-                if kind == "fishing_star":
-                    ok = self.fishing.run(facing_heading=heading)
-                else:
-                    settings = self.rt.setting("fishing")
-                    limit = settings.get("route_cast_count")
-                    if limit is None or limit == "":
-                        limit = (point.params or {}).get("cast_count")
-                    ok = self.fishing.run(max_cast_count=limit,
-                                          use_rhythms=settings.get("use_rhythms", False),
-                                          facing_heading=heading)
-                    names = self.count_materials or list(self.fishing.materials)
-                    self.count = sum(self.fishing.materials.get(name, 0) for name in names)
+                with self.rt.foreground_task("钓星" if kind == "fishing_star" else "钓鱼"):
+                    if kind == "fishing_star":
+                        ok = self.fishing.run(facing_heading=heading)
+                    else:
+                        settings = self.rt.setting("fishing")
+                        limit = settings.get("route_cast_count")
+                        if limit is None or limit == "":
+                            limit = (point.params or {}).get("cast_count")
+                        ok = self.fishing.run(max_cast_count=limit,
+                                              use_rhythms=settings.get("use_rhythms", False),
+                                              facing_heading=heading)
+                        names = self.count_materials or list(self.fishing.materials)
+                        self.count = sum(self.fishing.materials.get(name, 0) for name in names)
             except NavigationError as error:
                 # Input interruption still stops the route; ordinary task
                 # failures retain upstream's continue-to-next-point behavior.
@@ -505,7 +520,12 @@ class RouteActions:
                 self.action_failed = False
         elif kind in {"collect", "insect"}:
             if kind == "collect":
-                ok = self.collect()
+                scope = (
+                    self.rt.foreground_task("鼠标交互采集")
+                    if self.rt.game_keys.get("interact").kind == "mouse" else nullcontext()
+                )
+                with scope:
+                    ok = self.collect()
             else:
                 if not self.ability("MaaNikki_Navigation_InsectAbility"):
                     raise NavigationError("捕虫能力未装备或图标识别失败，已停止。")
@@ -516,22 +536,35 @@ class RouteActions:
             if not ok:
                 self.event({"type": "resource_unconfirmed", "action": kind, "x": point.x, "y": point.y})
         elif kind == "macro":
-            heading = (point.params or {}).get("facing_heading")
-            if heading is not None and point.params.get("id") != "starsea_fall":
-                if self.navigator is None:
-                    raise NavigationError("指定宏动作朝向需要路线导航器。")
-                self.navigator.face_heading(heading, tolerance=10)
-            ok = self.macro(point.params["id"])
+            macro_id = point.params["id"]
+            macro_data = load_macro(self.resource, macro_id)
+            scope = (
+                self.rt.foreground_task("执行鼠标战斗或宏动作")
+                if self._macro_uses_mouse(macro_data) else nullcontext()
+            )
+            with scope:
+                heading = (point.params or {}).get("facing_heading")
+                if heading is not None and macro_id != "starsea_fall":
+                    if self.navigator is None:
+                        raise NavigationError("指定宏动作朝向需要路线导航器。")
+                    self.navigator.face_heading(heading, tolerance=10)
+                ok = self.macro(macro_id)
         elif kind == "key":
-            heading = (point.params or {}).get("facing_heading")
-            if heading is not None and point.params.get("key") == "attack":
-                if self.navigator is None:
-                    raise NavigationError("指定攻击朝向需要路线导航器。")
-                self.navigator.face_heading(heading, tolerance=10)
-            for index in range(point.params.get("times", 1)):
-                if index:
-                    self.inputs.wait(.2)
-                self.inputs.hold(point.params["key"], max(.05, point.params.get("hold", .1)))
+            key_name = point.params["key"]
+            scope = (
+                self.rt.foreground_task("执行鼠标按键动作")
+                if self.rt.game_keys.get(key_name).kind == "mouse" else nullcontext()
+            )
+            with scope:
+                heading = (point.params or {}).get("facing_heading")
+                if heading is not None and key_name == "attack":
+                    if self.navigator is None:
+                        raise NavigationError("指定攻击朝向需要路线导航器。")
+                    self.navigator.face_heading(heading, tolerance=10)
+                for index in range(point.params.get("times", 1)):
+                    if index:
+                        self.inputs.wait(.2)
+                    self.inputs.hold(key_name, max(.05, point.params.get("hold", .1)))
             ok = True
         elif kind == "photo":
             ok = self.rt.photo(self.mode)

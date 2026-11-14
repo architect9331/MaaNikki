@@ -933,9 +933,12 @@ class MinigameBlingRun(Runtime):
                 focus_game(self, fg_inputs)
 
             interact_binding = self.game_keys.get("interact")
+            mouse_interact = interact_binding.kind == "mouse"
             if bg_inputs.capture_requires_foreground:
                 self.log("已开启后台挑战，但当前截图方式需要前台画面；切出游戏或最小化后将暂停，不会强行切回前台。")
-            elif interact_binding.kind == "mouse":
+            elif mouse_interact and global_background:
+                self.log("已开启完整后台模式；当前交互键为鼠标按键，进入挑战交互期间将自动切回并保持游戏前台，结束后恢复后台模式。")
+            elif mouse_interact:
                 self.log("挑战阶段支持后台运行；当前交互键为鼠标按键，需要交互的步骤会等待游戏回到前台（最小化后自动暂停）。")
             elif navigate and global_background:
                 self.log("已开启完整后台模式：前往「穿梭大冒险」NPC 与后续挑战结算均支持在后台运行（最小化窗口后自动暂停）。")
@@ -944,20 +947,22 @@ class MinigameBlingRun(Runtime):
             else:
                 self.log("已开启后台刷噗灵：对话、挑战与结算支持切出游戏运行（最小化窗口后自动暂停，不会强行切回前台）。")
 
+            need_route = False
             with self._phase_inputs(bg_inputs, background=True):
-                prep = self._prepare_for_challenge(bg_inputs, navigate=navigate, stats=stats)
-                if prep["action"] != "continue":
-                    return bool(prep["success"])
-                retry_started_at = prep["retry_started_at"]
-                need_route = prep["need_route"]
-                if not need_route:
-                    return self._run_challenge_loop(
-                        bg_inputs,
-                        max_rounds=max_rounds,
-                        retry_started_at=retry_started_at,
-                        stats=stats,
-                        started_at=started_at,
-                    )
+                with (self.foreground_task("小游戏交互键为鼠标按键") if global_background and mouse_interact else nullcontext()):
+                    prep = self._prepare_for_challenge(bg_inputs, navigate=navigate, stats=stats)
+                    if prep["action"] != "continue":
+                        return bool(prep["success"])
+                    retry_started_at = prep["retry_started_at"]
+                    need_route = prep["need_route"]
+                    if not need_route:
+                        return self._run_challenge_loop(
+                            bg_inputs,
+                            max_rounds=max_rounds,
+                            retry_started_at=retry_started_at,
+                            stats=stats,
+                            started_at=started_at,
+                        )
 
             nav_ok = self._run_route(route_name, reset_started=not initially_started)
             if self.stopped:
@@ -969,13 +974,14 @@ class MinigameBlingRun(Runtime):
                     return False
                 if nav_ok and not bg_inputs.capture_requires_foreground:
                     self.log("已到达「穿梭大冒险」NPC 附近，后续挑战与结算可在后台运行，现在可随时切出游戏。")
-                return self._run_challenge_loop(
-                    bg_inputs,
-                    max_rounds=max_rounds,
-                    retry_started_at=None,
-                    stats=stats,
-                    started_at=started_at,
-                )
+                with (self.foreground_task("小游戏交互键为鼠标按键") if global_background and mouse_interact else nullcontext()):
+                    return self._run_challenge_loop(
+                        bg_inputs,
+                        max_rounds=max_rounds,
+                        retry_started_at=None,
+                        stats=stats,
+                        started_at=started_at,
+                    )
         except (NavigationError, GameWindowClosed, OSError, RuntimeError, ValueError, cv2.error) as error:
             if self.stopped and not isinstance(error, GameWindowClosed):
                 stats["stop_reason"] = "stopped"

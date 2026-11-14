@@ -286,6 +286,15 @@ class Navigator:
         self._wasd_straight = False
         self._wasd_regime = None
 
+    @property
+    def use_wasd_steering(self):
+        """Use WASD steering only while no foreground mouse/camera phase is active."""
+        if not self.wasd_mode:
+            return False
+        from task_control import active_session
+        session = active_session()
+        return not (session is not None and session._foreground_required_depth > 0)
+
     def pause(self, seconds):
         return self.motion.wait(seconds) if self.motion else self._pause(seconds)
 
@@ -366,7 +375,8 @@ class Navigator:
             if pose.heading is not None and verify_heading:
                 evidence = self.heading_state.evidence(pose.heading)
                 arrow = self.locator.heading_diagnostics.get("player_arrow", {}).get("heading")
-                straight_motion = (not self.wasd_mode) or (
+                wasd_steering = self.use_wasd_steering
+                straight_motion = (not wasd_steering) or (
                     self.motion is not None
                     and self.motion.steer_keys == {"forward"}
                     and self.pose_at - self.motion.last_turn_at >= .35
@@ -381,7 +391,7 @@ class Navigator:
                 corroborated = (arrow_ready and arrow is not None
                                 and abs(angle_delta(arrow, pose.heading)) <= 8)
                 wasd_camera_active = bool(
-                    self.wasd_mode
+                    wasd_steering
                     and self.motion is not None
                     and (bool(self.motion.steer_keys & {"left", "right", "backward"})
                          or self.pose_at - self.motion.last_turn_at <= .45)
@@ -405,7 +415,7 @@ class Navigator:
                     pose = replace(pose, heading=None)
                 else:
                     self.heading_state.accept(pose.heading)
-                    if self.wasd_mode:
+                    if wasd_steering:
                         self.heading_turn_at = self.pose_at
                     self.heading_last_frame = frame
             if pose.heading is None:
@@ -538,7 +548,7 @@ class Navigator:
             # boundary. Reuse the calibration probe while stationary to expose
             # another angle; both rays must still pass the normal checks.
             probe_scale = 2 if self.heading_recheck_count >= 3 else 1
-            if self.wasd_mode:
+            if self.use_wasd_steering:
                 direction = "left" if self.heading_recheck_count % 2 == 0 else "right"
                 hold_seconds = .22 * probe_scale
                 self.event({"type": "heading_visibility_probe",
@@ -641,7 +651,7 @@ class Navigator:
             raise
 
     def turn(self, target_heading, pose, *, stationary=False, tolerance=5):
-        if self.wasd_mode:
+        if self.use_wasd_steering:
             return self._wasd_turn_stationary(target_heading, pose, tolerance=tolerance)
         generation = getattr(self.inputs, "generation", 0)
         previous_delta = None
@@ -766,7 +776,7 @@ class Navigator:
         timing = self.inputs.face_camera()
         after = self.observe((pose.x, pose.y))
         error = abs(angle_delta(heading, after.heading)) if after.heading is not None else None
-        effective_tol = max(tolerance, 15.0) if self.wasd_mode else tolerance
+        effective_tol = max(tolerance, 15.0) if self.use_wasd_steering else tolerance
         confirmed = (getattr(self.inputs, "generation", 0) == generation
                      and error is not None and error <= effective_tol)
         self.event({"type": "character_facing", "source": "route_heading", "target": heading,
@@ -1173,7 +1183,7 @@ class Navigator:
         origin = route.points[0]
         spec = self.locator.spec
         self.event({"type": "navigation_profile", "map": route.map_id,
-                    "steering": "wasd" if self.wasd_mode else "camera",
+                    "steering": "wasd" if self.use_wasd_steering else "camera",
                     "transit_radius_scale": spec.transit_radius_scale,
                     "transit_pass_radius_scale": spec.transit_pass_radius_scale,
                     "heading_tolerance_far": spec.heading_tolerance_far,
@@ -1208,7 +1218,7 @@ class Navigator:
         generation = getattr(self.inputs, "generation", 0)
         try:
             self.inputs.check()
-            if not self.wasd_mode:
+            if not self.use_wasd_steering:
                 if not self.inputs.controller.post_click_key(18).wait().succeeded:
                     raise NavigationError("未能解除游戏光标模式，尚未开始移动。")
             while index < len(route.points):
@@ -1393,7 +1403,7 @@ class Navigator:
                         if target.jump != next_point.jump:
                             motion.stop()
                             self.pause(.5 if next_point.jump else .2)
-                        elif (not self.wasd_mode and pose.heading is not None
+                        elif (not self.use_wasd_steering and pose.heading is not None
                               and abs(angle_delta(next_bearing, pose.heading)) >= 45):
                             motion.stop()
                     index += 1
@@ -1471,7 +1481,7 @@ class Navigator:
                             "tolerance": round(tolerance, 2),
                             "pose": [round(pose.x, 3), round(pose.y, 3)],
                         })
-                if self.wasd_mode:
+                if self.use_wasd_steering:
                     heading_rechecks = 0
                     before_move = pose
                     forward_before = motion.forward_elapsed()
