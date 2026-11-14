@@ -494,6 +494,8 @@ class WardrobeScanner(InventoryScanner):
         )
 
     def text_scroll_position(self, before, after, boxes):
+        if before is None or after is None or before.shape != after.shape:
+            return None
         gx, gy, _, gh = self.grid
         _, height = self.layout["card_size"]
         maximum = gh - height - self.layout["row_pitch"]
@@ -505,11 +507,13 @@ class WardrobeScanner(InventoryScanner):
         for bx, by, _, _ in anchors:
             col = round((bx - self.layout["first_x"]) / self.layout["column_pitch"])
             left, right, top, bottom = bx + 110, bx + 270, by + 4, by + 30
+            if left < 0 or right > first.shape[1] or top < gy or bottom > first.shape[0]:
+                continue
             template = first[top:bottom, left:right]
             if float(np.std(template)) < 2:
                 continue
             low = max(gy, top - maximum)
-            high = min(top + 3, gy + gh - template.shape[0])
+            high = min(top + 3, gy + gh - template.shape[0], second.shape[0] - template.shape[0])
             if high < low:
                 continue
             search = second[low:high + template.shape[0], left:right]

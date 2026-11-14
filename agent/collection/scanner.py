@@ -198,12 +198,7 @@ class InventoryScanner:
         contours = self.cards(before, [])
         boxes = contours
         boxes = [box for box in boxes if gy + gh / 2 <= box[1] <= gy + gh - height - 8]
-
-        def features(frame):
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
-            return gray - cv2.GaussianBlur(gray, (0, 0), 3)
-
-        first, second = features(before), features(after)
+        first, second = self.features(before), self.features(after)
         maximum = gh - height - self.layout.get("row_pitch", 123)
         if self.layout.get("adaptive_scroll_delta") and boxes:
             maximum = max(maximum, int(max(b[1] for b in boxes) + 22 - gy))
@@ -361,6 +356,12 @@ class InventoryScanner:
         delta = cv2.absdiff(a, b)
         return float(delta.mean()) <= .6 and float(np.mean(delta > 6)) <= .002
 
+    @staticmethod
+    def features(frame):
+        """Extract high-pass luminance edges for scroll and structure matching."""
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
+        return gray - cv2.GaussianBlur(gray, (0, 0), 3)
+
     @classmethod
     def same_structure(cls, first, second, roi, threshold=.985):
         if first is None or second is None or first.shape != second.shape:
@@ -368,12 +369,7 @@ class InventoryScanner:
         a, b = cls.region(first, roi), cls.region(second, roi)
         if not a.size or a.shape != b.shape:
             return False
-
-        def edges(image):
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
-            return gray - cv2.GaussianBlur(gray, (0, 0), 3)
-
-        a, b = edges(a), edges(b)
+        a, b = cls.features(a), cls.features(b)
         # Background lighting drifts; card/text edges establish that the
         # underlying inventory is visible again, without accepting a panel.
         if min(float(a.std()), float(b.std())) < 1:
