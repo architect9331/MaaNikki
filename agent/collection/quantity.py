@@ -56,7 +56,15 @@ def stack_badge(frame, box):
         ink = (patch.max(axis=2) < 195) & (outline > 0)
         if np.count_nonzero(ink) < 8:
             continue
-        ink_x = np.where(ink)[1]
+        # Include 1px adjacent antialiased stroke edges (such as the left serif
+        # of a leading "1") when measuring horizontal ink span, without relaxing
+        # the core dark-pixel threshold that rejects faint single-copy noise.
+        edge_ink = (
+            (cv2.dilate(ink.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0)
+            & (patch.max(axis=2) < 225)
+            & (outline > 0)
+        )
+        ink_x = np.where(edge_ink)[1]
         return {"state": "stack", "roi": [left + bx, top + by, bw, bh], "patch": patch,
                 "ink_span": [left + bx + int(ink_x.min()), left + bx + int(ink_x.max()) + 1]}
     return {"state": "uncertain" if possible else "single", "roi": [left, top, crop.shape[1], crop.shape[0]]}
@@ -121,9 +129,17 @@ def read_count(owner, frame, box, locked, labels, generation, index, *, classifi
                     and float(getattr(item, "score", 0)) >= .95 and re.fullmatch(r"[1-9][0-9]{0,3}", text)):
                 page_reads.append({"text": text, "score": float(item.score), "box": [bx, by, bw, bh]})
                 # Full-page text detection can box only the wider trailing digit
-                # and leave a thin leading "1" outside the box. Accept a page
-                # read only when its box covers the segmented ink span.
-                if ink_span is None or (bx <= ink_span[0] and bx + bw >= ink_span[1]):
+                # and leave a thin leading "1" outside or clipped on its border
+                # while DBNet's unclip margin still reaches ink_span[0]. Single
+                # digits in this badge font span 6-8px, whereas 2+ digits span
+                # >=13px; require full span coverage with left margin and reject
+                # single-digit page boxes over multi-digit ink spans.
+                span_width = (ink_span[1] - ink_span[0]) if ink_span is not None else 0
+                if ink_span is None or (
+                    bx < ink_span[0]
+                    and bx + bw >= ink_span[1]
+                    and not (len(text) == 1 and span_width >= 12)
+                ):
                     values.append(int(text))
         page_values = set(values)
         local_values = []
