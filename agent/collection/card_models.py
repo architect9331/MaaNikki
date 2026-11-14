@@ -76,7 +76,12 @@ class CardModels:
         if not boxes:
             return []
         cards = self.cards(frame, boxes) if cards is None else cards
-        shifts = (0, 2, 4)
+        # Standard 16:9 captures (1280x720) already match the badge CNN's training
+        # crop; shifted crops slice the top of lock shackles/stack digits on 720p.
+        # Only ultra-tall captures (1280x5120) occasionally shift the corner badge
+        # down 2-4 px, so consult shifted crops only as a tall-window fallback when
+        # shift=0 falls outside the training envelope and the valid fallback shifts agree.
+        shifts = (0, 2, 4) if frame.shape[0] > 720 else (0,)
         patches = [card[63 + shift:96 + shift, 60:94] for shift in shifts for card in cards]
         logits, embeddings = self.forward("badge", patches, ["logits", "embedding"])
         count = len(boxes)
@@ -84,7 +89,7 @@ class CardModels:
             raise ValueError("祝福闪光角标输出尺寸无效")
         results = []
         for item_index, box in enumerate(boxes):
-            best = None
+            candidates = []
             for shift_index in range(len(shifts)):
                 row_index = shift_index * count + item_index
                 scores = logits[row_index]
@@ -94,16 +99,23 @@ class CardModels:
                 distance = float(np.linalg.norm(vector - self.centres[index]))
                 reason = None if distance <= radius else "outside_training_envelope"
                 name = self.metadata["badge"]["classes"][index]
-                candidate = {"classifier": "cropped_rgb_cnn", "box": list(box), "roi": badge_roi(box),
-                             "model_version": self.metadata["badge"]["model_version"],
-                             "predicted": name, "badge_state": name if reason is None else None,
-                             "scores": {label: float(score) for label, score in zip(self.metadata["badge"]["classes"], scores)},
-                             "feature_distance": distance, "feature_radius": radius, "reason": reason}
-                if best is None or (candidate["reason"] is None and (
-                        best["reason"] is not None
-                        or distance / max(radius, 1e-6) < best["feature_distance"] / max(best["feature_radius"], 1e-6))):
-                    best = candidate
-            results.append(best)
+                candidates.append({"classifier": "cropped_rgb_cnn", "box": list(box), "roi": badge_roi(box),
+                                   "model_version": self.metadata["badge"]["model_version"],
+                                   "predicted": name, "badge_state": name if reason is None else None,
+                                   "scores": {label: float(score) for label, score in zip(self.metadata["badge"]["classes"], scores)},
+                                   "feature_distance": distance, "feature_radius": radius, "reason": reason})
+            primary = candidates[0]
+            if primary["reason"] is None or len(candidates) == 1:
+                results.append(primary)
+                continue
+            valid = [item for item in candidates[1:] if item["reason"] is None]
+            if not valid:
+                results.append(primary)
+                continue
+            if len({item["badge_state"] for item in valid}) > 1:
+                results.append({**primary, "badge_state": None, "reason": "shift_class_disagreement"})
+                continue
+            results.append(min(valid, key=lambda item: item["feature_distance"] / max(item["feature_radius"], 1e-6)))
         return results
 
     def match_batch(self, frame, boxes, slot):
