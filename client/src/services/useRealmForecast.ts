@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { useAppStore } from '@/stores/appStore';
 import { useForecastAssumptionsStore } from '@/stores/forecastAssumptionsStore';
-import { realmFarmCommonMats, realmQueue } from '@/utils/nikkiOptions';
+import { realmFarmBling, realmFarmThread, realmQueue } from '@/utils/nikkiOptions';
 import type { OptionValue } from '@/types/interface';
 import type { ForecastInput, ForecastResult } from './collectionForecast';
 import {
@@ -121,7 +121,8 @@ export function useRealmForecast(options?: {
   }, [account?.uid, account?.updated_at, wardrobeUpdatedAt, refreshToken, load]);
 
   const entries = useMemo(() => realmQueue(activeOptionValues), [activeOptionValues]);
-  const includeCommonMats = useMemo(() => realmFarmCommonMats(activeOptionValues), [activeOptionValues]);
+  const includeThreadMats = useMemo(() => realmFarmThread(activeOptionValues), [activeOptionValues]);
+  const includeBlingMats = useMemo(() => realmFarmBling(activeOptionValues), [activeOptionValues]);
   const weekly = useMemo(
     () => computeWeeklyEstimate(activeOptionValues, account, dailyEnergy),
     [activeOptionValues, account, dailyEnergy],
@@ -149,9 +150,20 @@ export function useRealmForecast(options?: {
         dailyEnergy,
         dailyBlingIncome,
         options?.extraMaterialEnergy ?? 0,
-        includeCommonMats,
+        includeThreadMats,
+        includeBlingMats,
       ),
-    [payload, settings, materials, account, dailyEnergy, dailyBlingIncome, options?.extraMaterialEnergy, includeCommonMats],
+    [
+      payload,
+      settings,
+      materials,
+      account,
+      dailyEnergy,
+      dailyBlingIncome,
+      options?.extraMaterialEnergy,
+      includeThreadMats,
+      includeBlingMats,
+    ],
   );
   const blessing = useMemo(
     () => buildBlessingContext(account, materials, activeOptionValues, community),

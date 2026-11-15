@@ -81,6 +81,9 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   const pickedCount = groups.filter((group) => targets[group.id] !== undefined).length;
   const { totals, realmTotals } = renewalForecast;
   const unknownPlanned = planned.filter(({ group }) => group.level === null).length;
+  const skippedCommon = [!renewalForecast.includeThreadMats && '丝线', !renewalForecast.includeBlingMats && '噗灵'].filter(Boolean) as string[];
+  const farmedCommon = [renewalForecast.includeThreadMats && '丝线', renewalForecast.includeBlingMats && '噗灵'].filter(Boolean) as string[];
+  const farmedSummary = ['泡泡', ...farmedCommon].join('、');
   const usingTargets = renewalSource(materials) === 'targets';
 
   const enabledGoals = entries.filter((entry) => entry.enabled).map((entry) => entry.goal);
@@ -235,15 +238,17 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
           ) : realmTotals.missingKinds ? (
             `还差 ${realmTotals.missingKinds} 种待刷材料（预计消耗约 ${num(renewalForecast.energy)} 体力）`
           ) : totals.missingKinds ? (
-            '所需泡泡已备齐（丝线/噗灵默认不用体力）'
+            `所需${renewalForecast.includeThreadMats ? '泡泡与丝线' : '泡泡'}已备齐（${skippedCommon.join('/')}未用体力）`
           ) : (
             '材料已备齐，轮到时直接交给下一项'
           )
         }
         queueHint={
-          renewalForecast.includeCommonMats
-            ? '幻境挑战每批前按当前衣柜与等级重新算缺口；已开启「用体力刷丝线与噗灵」，会刷泡泡、丝线与噗灵。'
-            : '幻境挑战默认只用体力刷各类泡泡，自动跳过丝线与噗灵（可在幻境挑战设置中按需开启）；升级或焕新后会随增量同步自动消账。'
+          skippedCommon.length === 0
+            ? '幻境挑战每批前按当前衣柜与等级重新算缺口；已开启用体力刷纯真丝线与噗灵，会刷泡泡、丝线与噗灵。'
+            : skippedCommon.length === 1
+              ? `幻境挑战已开启${farmedCommon[0]}体力刷取、跳过${skippedCommon[0]}（按需可在幻境挑战设置中开启）；升级或焕新后会随增量同步自动消账。`
+              : '幻境挑战默认只用体力刷各类泡泡，自动跳过丝线与噗灵（可在幻境挑战设置中分别按需开启）；升级或焕新后会随增量同步自动消账。'
         }
       />
       {!usingTargets && priorityKeys.length > 0 && (
@@ -390,7 +395,11 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
               scope={planLabel}
               totals={totals}
               realmTotals={realmTotals}
-              realmEnergyLabel={renewalForecast.includeCommonMats ? '幻境所需能量' : '幻境泡泡所需能量'}
+              realmEnergyLabel={
+                renewalForecast.includeThreadMats && renewalForecast.includeBlingMats
+                  ? '幻境所需能量'
+                  : `幻境（${farmedSummary}）所需能量`
+              }
               groups={['jihua', 'vortex', 'chroma', 'crystal', 'world']}
               onStockChange={setStock}
               headerAction={<ManualReadButton targetMode="backpack" idleLabel="更新背包" compact />}
@@ -402,9 +411,11 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                       其中 {unknownPlanned} 件没填当前等级，已按 0 级计算；点上方「增量同步 / 完整读取」或手动填写实际等级即可扣减。
                     </span>
                   )}
-                  {renewalForecast.includeCommonMats
-                    ? '已开启「用体力刷丝线与噗灵」；自己用掉的材料会在每日背包扫描和服装焕新同步时自动核销。'
-                    : '噗灵与丝线默认不消耗体力刷取（仅作参考对照）；如需用体力刷取，请在「幻境挑战 → 素材激化」中开启「用体力刷丝线与噗灵」。'}
+                  {skippedCommon.length === 0
+                    ? '已开启用体力刷纯真丝线与噗灵；自己用掉的材料会在每日背包扫描和服装焕新同步时自动核销。'
+                    : skippedCommon.length === 1
+                      ? `已开启刷取${farmedCommon[0]}，${skippedCommon[0]}不消耗体力（可在幻境挑战设置中分别开关）；用掉的材料会随扫描和焕新同步核销。`
+                      : '噗灵与丝线默认不消耗体力刷取（仅作参考对照）；如需用体力刷取，请在幻境挑战设置中分别开启「用体力刷纯真丝线」或「用体力刷噗灵」。'}
                 </>
               }
             />

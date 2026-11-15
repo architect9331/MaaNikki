@@ -26,7 +26,8 @@
                 "CollectionOrganize",
                 "JihuaTarget",
                 "JihuaMaterialMode",
-                "FarmCommonMats",
+                "FarmThread",
+                "FarmBling",
                 "BlessTarget",
                 "MonsterTarget"
             ]
@@ -790,7 +791,7 @@
         "DoubleJihuaMode": {
             "type": "select",
             "label": "素材激化策略（双倍 / 朝夕补分）",
-            "description": "同时用于超级激化双倍与朝夕心愿补分：「跟随焕新 / 制衣缺口」按「刷取顺序」优先补齐还缺的泡泡（开启下方开关时也含丝线与噗灵），双倍无缺口时自动跳过，朝夕补分无缺口时自动改刷备用「素材激化奖励」；「继承兜底设置」始终按备用目标挑战。",
+            "description": "同时用于超级激化双倍与朝夕心愿补分：「跟随焕新 / 制衣缺口」按「刷取顺序」优先补齐还缺的泡泡（开启下方对应开关时也含纯真丝线或噗灵），双倍无缺口时自动跳过，朝夕补分无缺口时自动改刷备用「素材激化奖励」；「继承兜底设置」始终按备用目标挑战。",
             "cases": [
                 {
                     "name": "FollowDeficit",
@@ -907,10 +908,10 @@
             ],
             "default_case": "Qiggeda"
         },
-        "FarmCommonMats": {
+        "FarmThread": {
             "type": "switch",
-            "label": "用体力刷丝线与噗灵",
-            "description": "关闭时，焕新备料和超级激化双倍（跟随缺口）只消耗活跃能量刷取魔物试炼与闪亮泡泡等不可替代素材；开启后也会按缺口刷取纯真丝线和噗灵。",
+            "label": "用体力刷纯真丝线",
+            "description": "关闭时，焕新备料、激化双倍（跟随缺口）与朝夕心愿（跟随缺口）跳过纯真丝线（可通过每日打怪、宝箱等积累）；开启后会按缺口对其消耗活跃能量。",
             "cases": [
                 {
                     "name": "Yes",
@@ -918,7 +919,7 @@
                     "pipeline_override": {
                         "MaaNikki_FarmCommonMatsOption": {
                             "custom_action_param": {
-                                "enabled": true
+                                "thread": true
                             }
                         }
                     }
@@ -929,7 +930,37 @@
                     "pipeline_override": {
                         "MaaNikki_FarmCommonMatsOption": {
                             "custom_action_param": {
-                                "enabled": false
+                                "thread": false
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "No"
+        },
+        "FarmBling": {
+            "type": "switch",
+            "label": "用体力刷噗灵",
+            "description": "关闭时，焕新备料、激化双倍（跟随缺口）与朝夕心愿（跟随缺口）跳过噗灵（可通过日常和小游戏积累）；开启后会按缺口对其消耗活跃能量。",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "label": "开启",
+                    "pipeline_override": {
+                        "MaaNikki_FarmCommonMatsOption": {
+                            "custom_action_param": {
+                                "bling": true
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "label": "关闭",
+                    "pipeline_override": {
+                        "MaaNikki_FarmCommonMatsOption": {
+                            "custom_action_param": {
+                                "bling": false
                             }
                         }
                     }

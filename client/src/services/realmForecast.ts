@@ -91,7 +91,8 @@ export interface MaterialGoalForecast {
   mode: 'all' | 'selected';
   scope?: 'all' | 'suits';
   source?: 'plan' | 'targets';
-  includeCommonMats?: boolean;
+  includeThreadMats?: boolean;
+  includeBlingMats?: boolean;
   priorityPendingCount?: number;
   priorityEnergy?: number;
   totals: MaterialTotals;
@@ -290,7 +291,7 @@ function simulateMaterialTrend(options: {
   dailyBlingIncome: number;
   extraEnergy?: number;
   includeJihuaInPrimary: boolean;
-  includeCommonMats?: boolean;
+  includeThreadMats?: boolean;
   totalRequiredEnergy: number;
 }): {
   energy: number;
@@ -307,7 +308,7 @@ function simulateMaterialTrend(options: {
     dailyBlingIncome,
     extraEnergy = 0,
     includeJihuaInPrimary,
-    includeCommonMats = true,
+    includeThreadMats = true,
     totalRequiredEnergy,
   } = options;
   const safeDaily = Math.max(10, dailyEnergy);
@@ -505,7 +506,7 @@ function simulateMaterialTrend(options: {
       hadJihuaNonBling &&
       primaryItems.every((item) => (item.id !== SHINY_BUBBLE_ID && item.id !== THREAD_ID) || item.missing <= 0)
     ) {
-      recordMilestone('jihua_mat', includeCommonMats ? '闪亮泡泡与丝线备齐' : '闪亮泡泡备齐', day, energySpent);
+      recordMilestone('jihua_mat', includeThreadMats ? '闪亮泡泡与丝线备齐' : '闪亮泡泡备齐', day, energySpent);
     }
     if (initialRemEnergy > 0 && remEnergy <= halfTarget) {
       recordMilestone('half', '材料缺口完成一半', day, energySpent);
@@ -678,7 +679,8 @@ export function computeRenewalForecast(
   dailyEnergy: number,
   dailyBlingIncome: number,
   extraEnergy = 0,
-  includeCommonMats = false,
+  includeThreadMats = false,
+  includeBlingMats = false,
 ): MaterialGoalForecast {
   const source = renewalSource(materials);
   const plan = materials.renewal_plan;
@@ -691,7 +693,8 @@ export function computeRenewalForecast(
       status: 'needs_wardrobe',
       mode,
       source,
-      includeCommonMats,
+      includeThreadMats,
+      includeBlingMats,
       totals: { rows: [], missingKinds: 0, trackedKinds: 0, energy: 0, days: 0 },
       realmTotals: { rows: [], missingKinds: 0, trackedKinds: 0, energy: 0, days: 0 },
       rawEnergy: 0,
@@ -765,7 +768,8 @@ export function computeRenewalForecast(
   const inventory = materials.inventory ?? {};
   const totals = summarizeMaterials(required, crafting, inventory, payload?.catalog.material_names, dailyEnergy);
   const isRealmFarmed = (id: string) =>
-    source === 'targets' || includeCommonMats || (id !== BLING_ID && id !== THREAD_ID);
+    source === 'targets'
+    || ((id !== THREAD_ID || includeThreadMats) && (id !== BLING_ID || includeBlingMats));
   const farmableRows = totals.rows.filter((row) => row.group !== 'world' && isRealmFarmed(row.id));
   const rawEnergy = farmableRows.reduce((sum, row) => sum + row.energy, 0);
   const safeDaily = Math.max(10, dailyEnergy);
@@ -801,7 +805,7 @@ export function computeRenewalForecast(
     dailyBlingIncome,
     extraEnergy,
     includeJihuaInPrimary: true,
-    includeCommonMats: source === 'targets' || includeCommonMats,
+    includeThreadMats: source === 'targets' || includeThreadMats,
     totalRequiredEnergy,
   });
 
@@ -821,7 +825,8 @@ export function computeRenewalForecast(
     status: sim.energy === 0 ? 'done' : 'ready',
     mode,
     source,
-    includeCommonMats,
+    includeThreadMats,
+    includeBlingMats,
     priorityPendingCount,
     priorityEnergy: prioTotals.energy,
     totals,
@@ -1194,16 +1199,20 @@ export function simulateQueueSchedule(options: {
     }
     const startDay = enabled ? (prefixSim.startDays[goal] ?? afterSim?.startDays[goal] ?? null) : null;
     const finishDay = enabled ? (prefixSim.finishDays[goal] ?? afterSim?.finishDays[goal] ?? null) : null;
-    const includeCommon = f.includeCommonMats ?? false;
+    const includeThread = f.includeThreadMats ?? false;
+    const includeBling = f.includeBlingMats ?? false;
+    const skippedMats = [!includeThread ? '丝线' : null, !includeBling ? '噗灵' : null].filter(Boolean) as string[];
     let note: string | undefined;
     if (goal === 'crafting' && f.energy === 0 && f.allTrackedEnergy > 0) {
       note = '试炼晶石已齐（噗灵/丝线需自备）';
-    } else if (goal === 'renewal' && f.source !== 'targets' && !includeCommon && f.energy === 0 && f.allTrackedEnergy > 0) {
-      note = '所需泡泡已齐（丝线/噗灵默认不消耗体力）';
+    } else if (goal === 'renewal' && f.source !== 'targets' && skippedMats.length > 0 && f.energy === 0 && f.allTrackedEnergy > 0) {
+      const farmedLabel = includeThread ? '所需泡泡与丝线已齐' : '所需泡泡已齐';
+      note = `${farmedLabel}（${skippedMats.join('/')}不消耗体力）`;
     } else if (goal === 'renewal' && (f.priorityPendingCount ?? 0) > 0) {
       note = `优先搭配计算 ${f.priorityPendingCount} 件（约 ${(f.priorityEnergy ?? 0).toLocaleString('zh-CN')} 体力）`;
-    } else if (goal === 'renewal' && f.source !== 'targets' && !includeCommon && f.allTrackedEnergy > f.rawEnergy) {
-      note = '仅计泡泡消耗（已跳过丝线与噗灵）';
+    } else if (goal === 'renewal' && f.source !== 'targets' && skippedMats.length > 0 && f.allTrackedEnergy > f.rawEnergy) {
+      const trackedLabel = includeThread ? '泡泡与丝线' : '泡泡';
+      note = `仅计${trackedLabel}消耗（已跳过${skippedMats.join('与')}）`;
     } else if (f.blingSavedEnergy > 0) {
       note = `日常噗灵抵扣约 ${f.blingSavedEnergy.toLocaleString('zh-CN')} 体力`;
     }

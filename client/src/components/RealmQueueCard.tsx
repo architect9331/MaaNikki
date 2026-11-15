@@ -31,7 +31,8 @@ import {
   doubleJihuaMode,
   doubleTypes,
   realmCollectionWorkflow,
-  realmFarmCommonMats,
+  realmFarmBling,
+  realmFarmThread,
   realmQueue,
   realmQueueOption,
   realmReserveBling,
@@ -342,7 +343,8 @@ export function RealmQueueCard({
 
   const entries = realmQueue(values);
   const enabled = entries.filter((entry) => entry.enabled).map((entry) => entry.goal);
-  const farmCommonMats = realmFarmCommonMats(values);
+  const farmThread = realmFarmThread(values);
+  const farmBling = realmFarmBling(values);
   const dblEnabled = doubleEnabled(values);
   const dblTypes = dblEnabled ? doubleTypes(values) : [];
   const dblTypeLabels: Record<string, string> = { Jihua: '超级激化', Bless: '灵感迸发', Weekly: '深度突破' };
@@ -358,7 +360,13 @@ export function RealmQueueCard({
     && doubleJihuaMode(values) === 'FollowDeficit'
     && !enabled.includes('renewal')
     && enabled.includes('crafting')
-    && !farmCommonMats;
+    && !farmThread
+    && !farmBling;
+  const renewalMats = ['泡泡', farmThread ? '丝线' : null, farmBling ? '噗灵' : null].filter(Boolean) as string[];
+  const renewalSkipped = [!farmThread ? '丝线' : null, !farmBling ? '噗灵' : null].filter(Boolean) as string[];
+  const renewalDetail = renewalSkipped.length
+    ? `按「焕新」计划刷${renewalMats.join('、')}（默认跳过${renewalSkipped.join('与')}）`
+    : '按「焕新」计划刷泡泡、丝线与噗灵';
   const glowIndex = enabled.indexOf('glow');
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -413,7 +421,7 @@ export function RealmQueueCard({
           {dblFollowCraftingNoCommon && (
             <p className="flex items-center gap-1 text-text-secondary">
               <AlertTriangle className="h-3 w-3 shrink-0 text-warning" />
-              制衣材料默认仅刷魔物晶石（不含丝线与噗灵）；如需趁激化双倍刷取丝线/噗灵，请在下方「素材激化」开启「用体力刷丝线与噗灵」。
+              制衣材料默认仅刷魔物晶石（不含丝线与噗灵）；如需趁激化双倍刷取，可在下方分别开启「用体力刷纯真丝线」或「用体力刷噗灵」。
             </p>
           )}
         </div>
@@ -432,11 +440,7 @@ export function RealmQueueCard({
                   estimate={queueSummary.goals[entry.goal]}
                   computing={glowComputing}
                   detailOverride={
-                    entry.goal === 'renewal'
-                      ? farmCommonMats
-                        ? '按「焕新」计划刷泡泡、丝线与噗灵'
-                        : '按「焕新」计划刷各类泡泡（默认不刷丝线与噗灵）'
-                      : undefined
+                    entry.goal === 'renewal' ? renewalDetail : undefined
                   }
                   warn={entry.goal === 'glow' && glowIndex >= 0 && glowIndex < enabled.length - 1}
                   onToggle={(on) => save(entries.map((item) => (item.goal === entry.goal ? { ...item, enabled: on } : item)))}

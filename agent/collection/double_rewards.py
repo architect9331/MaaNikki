@@ -18,7 +18,7 @@ from collection.inventory_workflow import FiveStarInventory
 from collection.material_pursuit import (
     ensure_wardrobe_synced_for_materials,
     execute_material_run,
-    farm_common_mats_enabled,
+    farm_common_mat_flags,
     goal_has_jihua_potential,
     jihua_goal_deficits,
     load_catalogs,
@@ -92,6 +92,7 @@ def load_realm_policy(rt) -> dict:
         reserve_bling = max(0, int(str(raw_reserve or 0).strip().replace(",", "")))
     except (ValueError, TypeError):
         reserve_bling = 0
+    include_thread, include_bling = farm_common_mat_flags(rt)
     return {
         "enabled": enabled,
         "types": types,
@@ -100,7 +101,8 @@ def load_realm_policy(rt) -> dict:
         "monster_mode": str(opt.get("monster_mode", "follow_deficit")),
         "weekly_priority": str(opt.get("weekly_priority", "Qiggeda")),
         "queue_goals": parse_realm_queue(parameters(context, "MaaNikki_RealmQueue").get("order")),
-        "include_common": farm_common_mats_enabled(rt),
+        "include_thread": include_thread,
+        "include_bling": include_bling,
         "organize": parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto"),
         "workflow": parameters(context, "MaaNikki_Pursuit_WorkflowOption").get("mode", "managed"),
         "reserve_bling": reserve_bling,
@@ -447,7 +449,7 @@ def _run_double_jihua(
     goal_satisfied = False
     inventory: dict[str, int] | None = None
     wardrobe_synced = False
-    include_common = farm_common_mats_enabled(rt)
+    include_thread, include_bling = farm_common_mat_flags(rt)
     mat_defs = crafting.get("materials") or {}
 
     for pass_idx in range(2):
@@ -495,7 +497,9 @@ def _run_double_jihua(
                 gained = (double_part // 10) * (base_drop * 2) + (normal_part // 10) * base_drop
                 if gained > 0:
                     record_accrual(account, mid, gained)
-                    record_material_history(account, crafting, scoring, include_common=include_common)
+                    record_material_history(
+                        account, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
+                    )
                     rt.log(f"限时双倍插队 · 超级激化：获得 {meta.get('name', target_label)} +{gained}。")
             energy = energy_after
         else:
@@ -509,12 +513,16 @@ def _run_double_jihua(
                     ensure_wardrobe_synced_for_materials(rt, account)
             role_check = account.load()
             has_any_potential = any(
-                goal_has_jihua_potential(goal, role_check, crafting, scoring, include_common=include_common)
+                goal_has_jihua_potential(
+                    goal, role_check, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
+                )
                 for goal in jihua_goals
             )
             if inventory is None and has_any_potential:
                 inventory = ensure_backpack_scanned(rt, account, crafting)
-                record_material_history(account, crafting, scoring, include_common=include_common)
+                record_material_history(
+                    account, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
+                )
             finished: set[str] = set()
             while rem_double_energy >= 10 and energy >= 10 and not rt.stopped:
                 role = account.load()
@@ -522,7 +530,14 @@ def _run_double_jihua(
                 for goal in jihua_goals:
                     deficits = (
                         jihua_goal_deficits(
-                            goal, role, inventory or {}, crafting, scoring, multiplier=2, include_common=include_common
+                            goal,
+                            role,
+                            inventory or {},
+                            crafting,
+                            scoring,
+                            multiplier=2,
+                            include_thread=include_thread,
+                            include_bling=include_bling,
                         )
                         if has_any_potential
                         else []
@@ -536,7 +551,12 @@ def _run_double_jihua(
                             record_accrual(account, mark_glow_completed=True)
                 if picked is None:
                     goal_satisfied = True
-                    mat_phrase = "泡泡、丝线与噗灵" if include_common else "闪亮泡泡"
+                    mat_parts = ["泡泡" if (include_thread or include_bling) else "闪亮泡泡"]
+                    if include_thread:
+                        mat_parts.append("丝线")
+                    if include_bling:
+                        mat_parts.append("噗灵")
+                    mat_phrase = "、".join(mat_parts)
                     rt.log(
                         f"超级激化双倍（跟随缺口）：所需{mat_phrase}已备齐，停止继续消耗双倍点数。"
                         if any_spent
@@ -564,7 +584,9 @@ def _run_double_jihua(
                 if gained > 0:
                     inventory[mid] = int(inventory.get(mid, 0)) + gained
                     record_accrual(account, mid, gained)
-                    record_material_history(account, crafting, scoring, include_common=include_common)
+                    record_material_history(
+                        account, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
+                    )
                     rt.log(f"限时双倍插队 · 超级激化：获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
                 rem_double_energy = max(0, rem_double_energy - spent)
                 energy = energy_after
@@ -691,7 +713,8 @@ def run_double_priority(rt) -> DoubleRunSummary:
     role = account.load()
     crafting, scoring = load_catalogs()
 
-    include_common = config["include_common"]
+    include_thread = config["include_thread"]
+    include_bling = config["include_bling"]
     candidates: set[str] = set()
     if "weekly" in enabled_types and any(
         (rt.context.get_node_data(node) or {}).get("enabled", False) for node, _ in WEEKLY_TARGETS
@@ -700,7 +723,9 @@ def run_double_priority(rt) -> DoubleRunSummary:
     if "jihua" in enabled_types:
         if config["jihua_mode"] == "inherit_fallback" or any(
             (not wardrobe_snapshot(role) and (goal == "crafting" or renewal_source(role.get("materials") or {}) == "plan"))
-            or goal_has_jihua_potential(goal, role, crafting, scoring, include_common=include_common)
+            or goal_has_jihua_potential(
+                goal, role, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
+            )
             for goal in queue_goals
             if goal in ("renewal", "crafting")
         ):

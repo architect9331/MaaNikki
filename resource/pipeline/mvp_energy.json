@@ -578,7 +578,8 @@
     "action": "Custom",
     "custom_action": "nikki.feature_settings",
     "custom_action_param": {
-      "enabled": false
+      "thread": false,
+      "bling": false
     }
   }
 }

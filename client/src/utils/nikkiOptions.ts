@@ -69,8 +69,11 @@ export const realmCollectionEnabled = (values: Record<string, OptionValue>): boo
 export const doubleEnabled = (values?: Record<string, OptionValue>): boolean =>
   values?.DoubleEnabled?.type === 'switch' ? values.DoubleEnabled.value : true;
 
-export const realmFarmCommonMats = (values?: Record<string, OptionValue>): boolean =>
-  values?.FarmCommonMats?.type === 'switch' ? values.FarmCommonMats.value : false;
+export const realmFarmThread = (values?: Record<string, OptionValue>): boolean =>
+  values?.FarmThread?.type === 'switch' ? values.FarmThread.value : false;
+
+export const realmFarmBling = (values?: Record<string, OptionValue>): boolean =>
+  values?.FarmBling?.type === 'switch' ? values.FarmBling.value : false;
 
 export function doubleTypes(values?: Record<string, OptionValue>): string[] {
   const option = values?.DoubleTypes;
@@ -195,7 +198,7 @@ export function realmOptionActive(key: string, values: Record<string, OptionValu
 
   const hasRenewal = realmGoalRank(values, 'renewal') !== null;
   const hasCrafting = realmGoalRank(values, 'crafting') !== null;
-  if (key === 'FarmCommonMats') {
+  if (key === 'FarmThread' || key === 'FarmBling') {
     return hasRenewal || (jihuaFollow && hasCrafting);
   }
 
@@ -239,7 +242,7 @@ export function realmOptionSections(keys: string[], values: Record<string, Optio
   const collectionKeys = new Set(['CollectionReserveBling', 'CollectionBling', 'CollectionDecompose', 'CollectionOrganize']);
   const collectionActive = realmCollectionEnabled(values) || dblBlessGlow;
   if (current !== 'Bless' && collectionActive) collectionKeys.add('BlessTarget');
-  const materialKeys = new Set(['FarmCommonMats', 'JihuaMaterialMode', 'JihuaMaterials']);
+  const materialKeys = new Set(['FarmThread', 'FarmBling', 'JihuaMaterialMode', 'JihuaMaterials']);
 
   return [
     {
@@ -357,14 +360,23 @@ function migrateGameKeyGroups(values: Record<string, OptionValue>): Record<strin
   return next;
 }
 
-/** The former realm "five-star collection" case is now its own mode switch. */
+/** Migrate retired option shapes and split switches into their current keys. */
 export function migrateNikkiOptionValues(input: Record<string, OptionValue>): Record<string, OptionValue> {
   const values = migrateGameKeyGroups(input);
   const realm = values.RealmTypes;
   const legacyCollection = realm?.type === 'select' && realm.caseName === 'FiveStarCollection';
-  if (!legacyCollection && !('CollectionPriority' in values)) return migrateRealmQueueValues(values);
+  const legacyCommon = 'FarmCommonMats' in values;
+  if (!legacyCollection && !('CollectionPriority' in values) && !legacyCommon) return migrateRealmQueueValues(values);
   const next = { ...values };
   delete next.CollectionPriority;
+  if (legacyCommon) {
+    const common = next.FarmCommonMats;
+    if (common?.type === 'switch') {
+      if (!('FarmThread' in next)) next.FarmThread = { type: 'switch', value: common.value };
+      if (!('FarmBling' in next)) next.FarmBling = { type: 'switch', value: common.value };
+    }
+    delete next.FarmCommonMats;
+  }
   if (legacyCollection) {
     next.RealmTypes = { type: 'select', caseName: 'Bless' };
     next.CollectionMode = { type: 'switch', value: true };

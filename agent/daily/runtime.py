@@ -1451,7 +1451,8 @@ class Executors(Runtime):
                         policy["queue_goals"],
                         inventory=inv,
                         multiplier=1,
-                        include_common=policy["include_common"],
+                        include_thread=policy["include_thread"],
+                        include_bling=policy["include_bling"],
                         wardrobe_synced=synced,
                         crafting=crafting,
                         scoring=scoring,
@@ -1527,7 +1528,13 @@ class Executors(Runtime):
                         record_accrual(account, mid, gained)
                         if isinstance(state.get("inventory"), dict):
                             state["inventory"][mid] = int(state["inventory"].get(mid, 0)) + gained
-                        record_material_history(account, crafting, scoring, include_common=policy["include_common"])
+                        record_material_history(
+                            account,
+                            crafting,
+                            scoring,
+                            include_thread=policy["include_thread"],
+                            include_bling=policy["include_bling"],
+                        )
                         child.log(
                             f"朝夕心愿补分 · {'素材激化' if kind == 'jihua' else '魔物试炼'}：获得 {meta.get('name', level_name or mid)} +{gained}。"
                         )

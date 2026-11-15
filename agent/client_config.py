@@ -66,8 +66,14 @@ def supports_foreground_inputs(controller):
 
 
 def task_options(task: dict, definitions: dict) -> dict:
+    option_values = dict(task.get("optionValues", {}))
+    if "FarmCommonMats" in option_values and isinstance(option_values["FarmCommonMats"], dict):
+        legacy_common = option_values.pop("FarmCommonMats")
+        if legacy_common.get("type") == "switch":
+            option_values.setdefault("FarmThread", legacy_common)
+            option_values.setdefault("FarmBling", legacy_common)
     options = []
-    for name, value in task.get("optionValues", {}).items():
+    for name, value in option_values.items():
         definition = definitions.get(name, {})
         item = {"name": name}
         kind = value.get("type")
