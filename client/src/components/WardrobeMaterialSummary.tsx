@@ -62,6 +62,7 @@ export function WardrobeMaterialSummary({
   scope,
   totals,
   realmTotals,
+  realmEnergyLabel,
   groups,
   onStockChange,
   headerAction,
@@ -74,6 +75,7 @@ export function WardrobeMaterialSummary({
   totals: MaterialTotals;
   /** Optional realm-farmable subset (e.g. trial crystals only for crafting). */
   realmTotals?: MaterialTotals;
+  realmEnergyLabel?: string;
   groups: MaterialGroup[];
   onStockChange?: (id: string, value: number) => void;
   headerAction?: ReactNode;
@@ -119,7 +121,7 @@ export function WardrobeMaterialSummary({
               }
             />
             <Tile
-              label={hasSeparateRealm ? '幻境晶石所需能量' : '补齐约需能量'}
+              label={hasSeparateRealm ? (realmEnergyLabel ?? '幻境晶石所需能量') : '补齐约需能量'}
               value={num(primaryTotals.energy)}
               detail={hasSeparateRealm ? `含噗灵/丝线折算共 ${num(totals.energy)}` : undefined}
             />

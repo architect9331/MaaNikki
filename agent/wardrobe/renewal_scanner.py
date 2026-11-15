@@ -16,12 +16,16 @@ from collection.backpack import wardrobe_snapshot, wardrobe_snapshot_key
 from collection.material_pursuit import load_catalogs, record_material_history
 from daily.settings import ROOT
 from tall_window import tall_window
-from .scanner import PEAR_PAL_NEXT_PAGE, PEAR_PAL_PREV_PAGE
+from .model import WardrobeCatalog
+from .scanner import MAKEUP_PARTS, PEAR_PAL_NEXT_PAGE, PEAR_PAL_PREV_PAGE
 
 
 HEADER_ROI = [65, 15, 200, 48]
 FILTER_BTN = [822, 71]
 FILTER_PANEL_ROI = [200, 120, 980, 560]
+SORT_BOX_ROI = [848, 32, 300, 62]
+SORT_MENU_ROI = [820, 65, 410, 260]
+SORT_DIR_ROI = [1138, 32, 68, 58]
 
 RAIL_X0 = 62
 RAIL_SIZE = 48
@@ -101,14 +105,16 @@ class RejuvenateModel:
             if denom > 1e-6:
                 self.templates.append((cid, norm_t / denom))
 
-        # Build clean_name -> ordered unique group IDs per part and combined for accessories.
+        # Build clean_name -> ordered unique group IDs per part and combined for accessories,
+        # plus canonical metadata per group for merging newly seen pieces into wardrobe.inventory.
         self.part_groups: dict[str, dict[str, list[str]]] = {}
+        self.group_meta: dict[str, dict] = {}
         game_items = scoring.get("game_items") or {}
         entries = sorted(
             game_items.items(),
             key=lambda kv: (kv[0] != str(kv[1].get("group")), int(kv[0])),
         )
-        for _gid, g in entries:
+        for gid, g in entries:
             part = str(g.get("part") or "")
             if not part or part == "413" or part.startswith("28"):
                 continue
@@ -116,6 +122,20 @@ class RejuvenateModel:
             grp = str(g.get("group") or "")
             if not cname or not grp:
                 continue
+            meta = self.group_meta.setdefault(grp, {
+                "group": grp,
+                "part": part,
+                "base_gid": int(gid),
+                "name": str(g.get("name") or ""),
+                "quality": int(g.get("quality") or 3),
+                "reward_gid": None,
+                "reward_name": None,
+                "reward_quality": None,
+            })
+            if g.get("glow_reward") and meta["reward_gid"] is None:
+                meta["reward_gid"] = int(gid)
+                meta["reward_name"] = str(g.get("name") or "")
+                meta["reward_quality"] = int(g.get("quality") or meta["quality"])
             for bucket in ([part, "acc"] if part in ACCESSORY_PARTS else [part]):
                 table = self.part_groups.setdefault(bucket, {})
                 groups = table.setdefault(cname, [])
@@ -416,23 +436,32 @@ def _measure_rejuv_scroll_delta(before: np.ndarray, after: np.ndarray, row_ys: l
 
 
 class RenewalScanner:
-    """Scanner for 美鸭梨 -> 服装焕新, syncing card levels (0..11) to wardrobe.scoring.levels."""
+    """Scanner for 美鸭梨 -> 服装焕新, syncing both wardrobe ownership and levels (0..11)."""
 
-    def __init__(self, rt, account: AccountState | None = None):
+    INCREMENTAL_STOP_STREAK = 12
+
+    def __init__(self, rt, account: AccountState | None = None, *, mode: str = "full"):
         self.rt = rt
         self.account = account or AccountState.for_runtime(ROOT, rt)
+        self.mode = "incremental" if mode == "incremental" else "full"
         self.crafting, self.scoring = load_catalogs()
         self.model = _load_rejuvenate_model(str(self.scoring.get("version") or ""))
+        self.wb_catalog = WardrobeCatalog(ROOT / "resource/model/wardrobe", ROOT / "resource/data/wardrobe_scoring.json")
+        self._started_at = datetime.now(timezone.utc).isoformat()
         self.summary: dict = {
             "complete": False,
+            "mode": self.mode,
             "tall_mode": False,
             "scanned_cards": 0,
             "matched_groups": 0,
+            "added_items": 0,
+            "updated_levels": 0,
             "unmatched_count": 0,
             "unmatched_samples": [],
             "parts": {},
         }
         self.scanned_levels: dict[str, int] = {}
+        self.scanned_renewed: dict[str, bool] = {}
 
     def _owned_groups(self, role: dict) -> set[str]:
         snapshot = wardrobe_snapshot(role)
@@ -493,6 +522,68 @@ class RenewalScanner:
         self.rt.action("TouchMove", target=[640, 36])
         self.rt.pause(0.2)
 
+    @staticmethod
+    def _sort_arrow_descending(frame: np.ndarray | None) -> tuple[bool | None, list[int]]:
+        """Return (is_descending, click_center) for the sort direction arrows on 服装焕新."""
+        default_pt = [1172, 56]
+        if frame is None:
+            return None, default_pt
+        x0, y0, w, h = SORT_DIR_ROI
+        patch = frame[y0:y0 + h, x0:x0 + w]
+        if patch.size == 0:
+            return None, default_pt
+        gray = cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)
+        ys, xs = np.where(gray > 195)
+        if len(xs) < 8:
+            return None, default_pt
+        ax0, ax1 = int(xs.min()), int(xs.max())
+        ay0, ay1 = int(ys.min()), int(ys.max())
+        # When spread across both icons or single arrow inside SORT_DIR_ROI:
+        # split the icon box [ax0-22 .. ax1+22] around center [w//2]: right (↓) bright = descending.
+        mid_x = w // 2
+        left_bright = int(np.sum(gray[:, :mid_x] > 190))
+        right_bright = int(np.sum(gray[:, mid_x:] > 190))
+        click_pt = [x0 + mid_x, y0 + max(10, min(h - 10, (ay0 + ay1) // 2))]
+        if right_bright > left_bright + 8:
+            return True, click_pt
+        if left_bright > right_bright + 8:
+            return False, click_pt
+        return None, click_pt
+
+    def ensure_sort_acquired_desc(self) -> None:
+        """Switch 服装焕新 sort order to 获得时间 descending (newest clothes first)."""
+        frame = self.rt.capture()
+        current_sort = clean_clothing_name(self.rt.text(SORT_BOX_ROI, image=frame)) if frame is not None else ""
+        if "获得时间" not in current_sort:
+            res = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": SORT_BOX_ROI, "expected": ".+"}, image=frame)
+            if res and res.hit and res.best_result is not None:
+                bx, by, bw, bh = list(res.best_result.box)
+                dropdown_pt = [bx + bw // 2, by + bh // 2]
+            else:
+                dropdown_pt = [990, 56]
+            if not self.rt.action("Click", target=dropdown_pt) or not self.rt.pause(0.35):
+                raise RuntimeError("未能展开服装焕新排序菜单")
+            if not self.rt.click_text(r"^获得时间$", SORT_MENU_ROI):
+                self.rt.action("Click", target=[950, 96])
+            self.rt.pause(0.35)
+            self.rt.action("TouchMove", target=[640, 36])
+            self.rt.pause(0.3)
+            frame = self.rt.capture()
+            current_sort = clean_clothing_name(self.rt.text(SORT_BOX_ROI, image=frame)) if frame is not None else ""
+            if "获得时间" not in current_sort:
+                raise RuntimeError("未能将服装焕新切换为按“获得时间”排序")
+
+        is_desc, dir_pt = self._sort_arrow_descending(frame)
+        if is_desc is False:
+            if not self.rt.action("Click", target=dir_pt) or not self.rt.pause(0.35):
+                raise RuntimeError("未能切换服装焕新排序方向")
+            self.rt.action("TouchMove", target=[640, 36])
+            self.rt.pause(0.25)
+            after = self.rt.capture()
+            is_desc_after, _ = self._sort_arrow_descending(after)
+            if is_desc_after is False:
+                raise RuntimeError("未能确认服装焕新为“获得时间降序”")
+
     def _reset_rail_top(self) -> tuple[np.ndarray | None, str | None, int | None]:
         frame = self.rt.capture()
         for _ in range(16):
@@ -536,10 +627,25 @@ class RenewalScanner:
                     return after2, cid2, yc2, True
         return after or prev_frame, prev_cid, prev_yc, False
 
-    def _scan_category(self, cid: str, is_tall: bool, owned_groups: set[str]) -> bool:
+    def _scan_category(
+        self,
+        cid: str,
+        is_tall: bool,
+        owned_groups: set[str],
+        prev_levels: dict[str, int] | None = None,
+        *,
+        incremental: bool = False,
+    ) -> bool:
         frame = _scroll_rejuv_to_top(self.rt)
         if frame is None:
             return False
+        if incremental:
+            cur_sort = clean_clothing_name(self.rt.text(SORT_BOX_ROI, image=frame))
+            if "获得时间" not in cur_sort:
+                self.ensure_sort_acquired_desc()
+                frame = _scroll_rejuv_to_top(self.rt)
+                if frame is None:
+                    return False
         grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
         scroll_y = 0
         first_row_y: int | None = None
@@ -548,7 +654,9 @@ class RenewalScanner:
         cat_matched = 0
         cat_unmatched = 0
         cat_renewed = 0
+        known_tail_streak = 0
         complete = False
+        prev_map = prev_levels or {}
 
         for _page in range(64):
             if self.rt.stopped:
@@ -577,31 +685,54 @@ class RenewalScanner:
                 if cols_needed:
                     rows_to_read.append((by, cols_needed))
 
+            hit_tail = False
             if rows_to_read:
                 parsed = _batch_read_rows_ocr(self.rt, frame, rows_to_read)
-                for (by, col), (raw_name, lv, renewed) in parsed.items():
-                    cat_cards += 1
-                    self.summary["scanned_cards"] += 1
-                    if lv is None:
-                        cat_unmatched += 1
-                        self.summary["unmatched_count"] += 1
-                        continue
-                    groups = self.model.lookup_groups(cid, raw_name)
-                    if not groups:
-                        cat_unmatched += 1
-                        self.summary["unmatched_count"] += 1
-                        if len(self.summary["unmatched_samples"]) < 20:
-                            self.summary["unmatched_samples"].append({
-                                "part": cid, "name": raw_name, "level": lv,
-                            })
-                        continue
-                    owned_hits = [g for g in groups if g in owned_groups]
-                    targets = owned_hits if owned_hits else [groups[0]]
-                    for grp in targets:
-                        self.scanned_levels[grp] = lv
-                        cat_matched += 1
-                    if lv == RENEWED_LEVEL or renewed:
-                        cat_renewed += 1
+                for (by, cols) in rows_to_read:
+                    for col in cols:
+                        item = parsed.get((by, col))
+                        if item is None:
+                            continue
+                        raw_name, lv, renewed = item
+                        cat_cards += 1
+                        self.summary["scanned_cards"] += 1
+                        if lv is None:
+                            cat_unmatched += 1
+                            self.summary["unmatched_count"] += 1
+                            known_tail_streak = 0
+                            continue
+                        groups = self.model.lookup_groups(cid, raw_name)
+                        if not groups:
+                            cat_unmatched += 1
+                            self.summary["unmatched_count"] += 1
+                            known_tail_streak = 0
+                            if len(self.summary["unmatched_samples"]) < 20:
+                                self.summary["unmatched_samples"].append({
+                                    "part": cid, "name": raw_name, "level": lv,
+                                })
+                            continue
+                        owned_hits = [g for g in groups if g in owned_groups]
+                        targets = owned_hits if owned_hits else [groups[0]]
+                        is_renewed = lv == RENEWED_LEVEL or renewed
+                        was_known = all(g in owned_groups and prev_map.get(g) == lv for g in targets)
+                        for grp in targets:
+                            self.scanned_levels[grp] = lv
+                            self.scanned_renewed[grp] = is_renewed
+                            cat_matched += 1
+                        if is_renewed:
+                            cat_renewed += 1
+                        if incremental and was_known:
+                            known_tail_streak += 1
+                            if known_tail_streak >= self.INCREMENTAL_STOP_STREAK:
+                                complete = True
+                                hit_tail = True
+                                break
+                        else:
+                            known_tail_streak = 0
+                    if hit_tail:
+                        break
+            if hit_tail:
+                break
 
             step_dy = -4200 if is_tall else -480
             moved = False
@@ -639,13 +770,169 @@ class RenewalScanner:
         self.summary["matched_groups"] = len(self.scanned_levels)
         return complete
 
+    def _merge_wardrobe_inventory(self, data: dict, now: str) -> tuple[int, bool]:
+        """Merge scanned clothes & renewed rewards into wardrobe.inventory / last_scan.
+
+        Returns (added_row_count, snapshot_complete).
+        """
+        wardrobe = data.setdefault("wardrobe", {})
+        prev_inv = wardrobe.get("inventory")
+        prev_last = wardrobe.get("last_scan")
+        base = deepcopy(
+            prev_inv
+            if isinstance(prev_inv, dict) and isinstance(prev_inv.get("parts"), dict)
+            else prev_last
+            if isinstance(prev_last, dict) and isinstance(prev_last.get("parts"), dict)
+            else None
+        )
+        if not isinstance(base, dict):
+            base = {
+                "schema_version": 2,
+                "model_version": self.wb_catalog.version,
+                "uid": self.account.uid,
+                "label_fingerprint": self.wb_catalog.fingerprint,
+                "sort": "rejuvenate_acquired_desc" if self.mode == "incremental" else "rejuvenate_full",
+                "identity_policy": "compendium_ocr",
+                "identity_verified": True,
+                "scan_source": "rejuvenate",
+                "started_at": self._started_at,
+                "updated_at": now,
+                "complete": False,
+                "parts": {},
+                "verified_parts": [],
+                "skipped_categories": [],
+            }
+        parts: dict = base.setdefault("parts", {})
+        game_items = self.scoring.get("game_items") or {}
+
+        # Index existing groups and item_ids per part to avoid duplicates.
+        existing_groups_by_part: dict[str, set[str]] = {}
+        existing_ids_by_part: dict[str, set[int]] = {}
+        for part_code, pstate in parts.items():
+            if not isinstance(pstate, dict):
+                continue
+            gset: set[str] = set()
+            iset: set[int] = set()
+            for row in pstate.get("items") or []:
+                if not isinstance(row, dict):
+                    continue
+                for iid in row.get("item_ids") or []:
+                    iset.add(int(iid))
+                    meta = game_items.get(str(iid))
+                    if meta and meta.get("group"):
+                        gset.add(str(meta["group"]))
+            existing_groups_by_part[str(part_code)] = gset
+            existing_ids_by_part[str(part_code)] = iset
+
+        def ensure_part(pcode: str) -> dict:
+            pstate = parts.get(pcode)
+            if not isinstance(pstate, dict):
+                pname = (self.wb_catalog.parts.get(pcode) or {}).get("name") or self.model.category_name(pcode)
+                pstate = {
+                    "name": pname,
+                    "items": [],
+                    "scanned_count": 0,
+                    "reused_count": 0,
+                    "ambiguous_count": 0,
+                    "unconfirmed_count": 0,
+                    "complete": False,
+                }
+                parts[pcode] = pstate
+            existing_groups_by_part.setdefault(pcode, set())
+            existing_ids_by_part.setdefault(pcode, set())
+            return pstate
+
+        added = 0
+        for grp, is_renewed in self.scanned_renewed.items():
+            meta = self.model.group_meta.get(grp)
+            if not meta:
+                continue
+            pcode = meta["part"]
+            pstate = ensure_part(pcode)
+            items = list(pstate.get("items") or [])
+            if grp not in existing_groups_by_part[pcode] and meta["base_gid"] not in existing_ids_by_part[pcode]:
+                items.append({
+                    "class_id": -1,
+                    "item_ids": [meta["base_gid"]],
+                    "names": [meta["name"]],
+                    "qualities": [meta["quality"]],
+                    "source": "rejuvenate_ocr",
+                })
+                existing_groups_by_part[pcode].add(grp)
+                existing_ids_by_part[pcode].add(meta["base_gid"])
+                added += 1
+            reward_gid = meta.get("reward_gid")
+            if is_renewed and reward_gid and reward_gid not in existing_ids_by_part[pcode]:
+                items.append({
+                    "class_id": -1,
+                    "item_ids": [reward_gid],
+                    "names": [meta.get("reward_name") or meta["name"]],
+                    "qualities": [int(meta.get("reward_quality") or meta["quality"])],
+                    "source": "rejuvenate_renewed",
+                })
+                existing_ids_by_part[pcode].add(reward_gid)
+                added += 1
+            pstate["items"] = items
+
+        # Mark scanned categories complete in full mode, and ensure empty minor accessory buckets exist.
+        if self.mode == "full":
+            for cid, pinfo in self.summary.get("parts", {}).items():
+                if not isinstance(pinfo, dict) or not pinfo.get("complete"):
+                    continue
+                targets = sorted(ACCESSORY_PARTS) if cid == "acc" else [cid]
+                for pcode in targets:
+                    ensure_part(pcode)["complete"] = True
+
+        # Infer missing ability-suit handhelds whenever 278 is complete.
+        p278 = parts.get("278")
+        if isinstance(p278, dict) and p278.get("complete"):
+            for entry in self.wb_catalog.infer_suit_handhelds(parts):
+                iids = [int(x) for x in entry.get("item_ids") or []]
+                if iids and not any(i in existing_ids_by_part["278"] for i in iids):
+                    p278.setdefault("items", []).append(entry)
+                    existing_ids_by_part["278"].update(iids)
+                    added += 1
+
+        # Recompute counters cleanly.
+        verified_parts = list(base.get("verified_parts") or [])
+        for pcode, pstate in parts.items():
+            if not isinstance(pstate, dict):
+                continue
+            items = list(pstate.get("items") or [])
+            pstate["scanned_count"] = len(items)
+            pstate["ambiguous_count"] = sum(len(item.get("item_ids") or []) > 1 for item in items)
+            pstate["unconfirmed_count"] = sum(
+                item.get("source") == "compendium_ocr_unconfirmed" for item in items
+            )
+            if pstate.get("complete") and pcode not in verified_parts:
+                verified_parts.append(pcode)
+
+        non_makeup_parts = [m["id"] for m in self.model.majors if not m.get("skip") and m["id"] != "acc"] + sorted(ACCESSORY_PARTS)
+        all_non_makeup_complete = all(bool((parts.get(p) or {}).get("complete")) for p in non_makeup_parts)
+        has_makeup = all(bool((parts.get(p) or {}).get("complete")) for p in MAKEUP_PARTS)
+        base["updated_at"] = now
+        base["scanned_count"] = sum(int((p or {}).get("scanned_count") or 0) for p in parts.values() if isinstance(p, dict))
+        base["ambiguous_count"] = sum(int((p or {}).get("ambiguous_count") or 0) for p in parts.values() if isinstance(p, dict))
+        base["unconfirmed_count"] = sum(int((p or {}).get("unconfirmed_count") or 0) for p in parts.values() if isinstance(p, dict))
+        base["completed_parts"] = sum(bool((p or {}).get("complete")) for p in parts.values() if isinstance(p, dict))
+        base["total_parts"] = len(non_makeup_parts) + (len(MAKEUP_PARTS) if has_makeup else 0)
+        base["verified_parts"] = verified_parts
+        base["complete"] = bool(base.get("complete") or (self.mode == "full" and all_non_makeup_complete and self.summary.get("complete")))
+
+        wardrobe["last_scan"] = base
+        if base["complete"]:
+            wardrobe["inventory"] = base
+        return added, bool(base["complete"])
+
     def save(self, reason: str | None = None) -> None:
-        if not self.scanned_levels and not self.summary["parts"]:
+        if not self.scanned_levels and not self.summary["parts"] and not self.summary.get("complete"):
             return
         now = datetime.now(timezone.utc).isoformat()
         self.summary["updated_at"] = now
         if reason is not None:
             self.summary["reason"] = reason
+
+        added_total = [0]
 
         def update(data):
             wardrobe = data.setdefault("wardrobe", {})
@@ -655,17 +942,36 @@ class RenewalScanner:
             else:
                 scoring = deepcopy(scoring)
             levels = scoring.setdefault("levels", {})
+            changed_levels = 0
             for grp, lv in self.scanned_levels.items():
-                levels[str(grp)] = int(lv)
-            scoring["updated_at"] = now
+                key = str(grp)
+                val = int(lv)
+                if levels.get(key) != val:
+                    levels[key] = val
+                    changed_levels += 1
+            if changed_levels > 0 or not scoring.get("updated_at"):
+                scoring["updated_at"] = now
             wardrobe["scoring"] = scoring
+
+            added, _inv_complete = self._merge_wardrobe_inventory(data, now)
+            added_total[0] = added
+            self.summary["added_items"] = added
+            self.summary["updated_levels"] = changed_levels
             wardrobe["renewal_scan"] = dict(self.summary)
+
+            if self.summary.get("complete"):
+                cn = (((data.get("observations") or {}).get("pearpal_notebook") or {}).get("summary") or {}).get("cloth_num")
+                if cn is not None:
+                    wardrobe["pearpal_cloth_num"] = cn
 
             mats = data.setdefault("materials", {})
             wb_key = wardrobe_snapshot_key(data)
-            if wb_key:
-                mats["renewal_baseline_key"] = f"{wb_key}|{now}"
+            if wb_key and (changed_levels > 0 or added > 0 or not mats.get("renewal_baseline_key")):
+                mats["renewal_baseline_key"] = f"{wb_key}|{scoring.get('updated_at') or now}"
                 mats["renewal_consumed"] = {}
+            if wb_key and (added > 0 or not mats.get("wardrobe_baseline_key")):
+                mats["wardrobe_baseline_key"] = wb_key
+                mats["crafted_consumed"] = {}
 
         self.account.update(update)
 
@@ -674,7 +980,19 @@ class RenewalScanner:
             raise RuntimeError("未能打开服装焕新页面")
         role = self.account.load()
         owned_groups = self._owned_groups(role)
+        prev_levels = {
+            str(k): int(v)
+            for k, v in (((role.get("wardrobe") or {}).get("scoring") or {}).get("levels") or {}).items()
+            if isinstance(v, int)
+        }
+        if self.mode == "incremental" and (not owned_groups or not wardrobe_snapshot(role).get("complete")):
+            self.mode = "full"
+            self.summary["mode"] = "full"
+            self.rt.log("焕新读取：当前尚无完整衣柜基准，自动切换为首次完整读取。")
+
         self.clear_filter()
+        if self.mode == "incremental":
+            self.ensure_sort_acquired_desc()
 
         visited_cids: set[str] = set()
         expected_majors = [m["id"] for m in self.model.majors if not m.get("skip")]
@@ -682,7 +1000,11 @@ class RenewalScanner:
             with tall_window(self.rt) as is_tall:
                 self.summary["tall_mode"] = bool(is_tall)
                 if is_tall:
-                    self.rt.log("焕新读取：已切换超长竖屏模式，正在读取各部位服装等级与焕新状态。")
+                    self.rt.log(
+                        "焕新读取：已切换超长竖屏模式，正在按获得时间快速同步新增服装与等级。"
+                        if self.mode == "incremental"
+                        else "焕新读取：已切换超长竖屏模式，正在读取各部位服装等级与焕新状态。"
+                    )
 
                 frame, cid, yc = self._reset_rail_top()
                 for _step in range(32):
@@ -707,7 +1029,13 @@ class RenewalScanner:
 
                     visited_cids.add(cid)
                     self.rt.log(f"焕新读取：正在读取「{self.model.category_name(cid)}」。", detail=True)
-                    self._scan_category(cid, is_tall, owned_groups)
+                    self._scan_category(
+                        cid,
+                        is_tall,
+                        owned_groups,
+                        prev_levels,
+                        incremental=(self.mode == "incremental"),
+                    )
                     self.save()
 
                     frame = self.rt.capture()

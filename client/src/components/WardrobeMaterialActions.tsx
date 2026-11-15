@@ -12,12 +12,13 @@ const card = 'rounded-xl border border-border bg-bg-secondary p-4';
 const number = (value: number) => value.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
 const levelLabel = (level: number | null) => level === null ? '0 级' : level === 11 ? '已焕新' : `${level} 级`;
 
-export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sourceLabel, onMaterialsChange }: {
+export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sourceLabel, upgradeTargets, onMaterialsChange }: {
   cost: Record<string, number>;
   catalog: ScoringCatalog;
   accountKey?: string;
   materials?: MaterialsState | null;
   sourceLabel?: string;
+  upgradeTargets?: { groupId: string; toLevel: number }[];
   onMaterialsChange?: (next: MaterialsState) => void;
 }) {
   const instances = useAppStore((state) => state.instances);
@@ -33,18 +34,63 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     // Prefer the shared copy so plans edited in the crafting/renewal tabs are kept.
     const shared = useWardrobePlanStore.getState();
     const base = shared.payload?.account_key === accountKey ? shared.materials : materials;
+    const cleanTargets = (upgradeTargets ?? []).filter((item) => item.groupId && item.toLevel > 0);
+
+    if (cleanTargets.length > 0) {
+      const prevRenewal = base?.renewal_plan;
+      const nextPrio = mode === 'add' ? { ...(prevRenewal?.priority_targets ?? {}) } : {};
+      for (const item of cleanTargets) {
+        nextPrio[item.groupId] = Math.max(Number(nextPrio[item.groupId] ?? 0), item.toLevel);
+      }
+      const planMode = prevRenewal?.mode === 'selected' ? 'selected' : 'all';
+      const nextTargets = { ...(prevRenewal?.targets ?? {}) };
+      if (planMode === 'selected') {
+        for (const [gid, lv] of Object.entries(nextPrio)) {
+          nextTargets[gid] = Math.max(Number(nextTargets[gid] ?? 0), lv);
+        }
+      }
+      const nextMaterials: MaterialsState = {
+        ...(base ?? {}),
+        renewal_plan: {
+          ...(prevRenewal ?? { mode: 'all', targets: {} }),
+          mode: planMode,
+          targets: nextTargets,
+          source: 'plan',
+          priority_targets: nextPrio,
+          priority_label: mode === 'add' ? `${sourceLabel || '搭配计算'}（已累加）` : (sourceLabel || '搭配计算'),
+          updated_at: new Date().toISOString(),
+        },
+      };
+      try {
+        await saveMaterialPlan(accountKey, nextMaterials);
+        onMaterialsChange?.(nextMaterials);
+        if (shared.payload?.account_key === accountKey) shared.adoptMaterials(nextMaterials);
+        const count = Object.keys(nextPrio).length;
+        const saved = mode === 'add'
+          ? `已累加到优先焕新目标（共 ${count} 件，升级达标后自动消账）`
+          : `已设为优先焕新目标（共 ${count} 件，升级达标后自动继续其余目标）`;
+        toast.success(
+          realmTask && realmGoalRank(realmTask.optionValues, 'renewal') !== null
+            ? saved
+            : `${saved}；在幻境挑战的刷取顺序中打开「焕新材料」后会自动刷取`,
+        );
+      } catch (err) {
+        toast.error(String(err));
+      }
+      return;
+    }
+
     const inv = base?.inventory ?? {};
     const prevTargets = mode === 'add' ? { ...(base?.glow_plan?.targets ?? {}) } : {};
     const targets: Record<string, number> = { ...prevTargets };
     for (const [id, deficit] of entries) {
       if (MATERIAL_REALM_TARGETS[id]) {
-        const base = mode === 'add' ? Math.max(Number(inv[id]) || 0, Number(targets[id]) || 0) : (Number(inv[id]) || 0);
-        targets[id] = Math.round(base + deficit);
+        const baseStock = mode === 'add' ? Math.max(Number(inv[id]) || 0, Number(targets[id]) || 0) : (Number(inv[id]) || 0);
+        targets[id] = Math.round(baseStock + deficit);
       }
     }
     const nextMaterials: MaterialsState = {
       ...(base ?? {}),
-      // Imported targets replace the wardrobe renewal plan as the 焕新 goal's source.
       renewal_plan: { enabled: false, mode: 'all', targets: {}, ...(base?.renewal_plan ?? {}), source: 'targets' },
       glow_plan: {
         enabled: true,
@@ -71,19 +117,24 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
     return <p className="mt-2 text-xs text-text-secondary">当前搭配暂无养成材料差额</p>;
   }
 
+  const hasTargets = (upgradeTargets ?? []).some((item) => item.groupId && item.toLevel > 0);
   return (
     <div className="mt-2.5 space-y-2.5">
       {accountKey && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs">
-          <span className="text-text-secondary">设为「焕新材料」备料目标（可在收集进度 → 焕新中调整）：</span>
+          <span className="text-text-secondary">
+            {hasTargets
+              ? '设为「焕新材料」优先目标（直接绑定部件等级，升级后自动消账）：'
+              : '设为「焕新材料」备料目标（可在收集进度 → 焕新中调整）：'}
+          </span>
           <div className="flex flex-wrap gap-1.5">
             <button type="button" onClick={() => void applyGlowPrepPlan('replace')}
               className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover">
-              <ListPlus className="h-3.5 w-3.5" />设为筹备目标
+              <ListPlus className="h-3.5 w-3.5" />{hasTargets ? '设为优先筹备目标' : '设为筹备目标'}
             </button>
             <button type="button" onClick={() => void applyGlowPrepPlan('add')}
               className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-accent/40 bg-bg-secondary px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent/10">
-              + 累加到现有目标
+              {hasTargets ? '+ 累加到优先目标' : '+ 累加到现有目标'}
             </button>
           </div>
         </div>
@@ -193,7 +244,15 @@ export function WardrobeBatchPlanView({ batch, catalog, activeMatchId, onSelectS
 
       <div>
         <h4 className="text-xs font-semibold text-text-secondary">{forStars ? '满星升级方案的去重材料差额' : '整期去重总材料差额'}</h4>
-        <WardrobeMaterialList cost={batch.cost} catalog={catalog} accountKey={accountKey} materials={materials} sourceLabel={sourceLabel} onMaterialsChange={onMaterialsChange} />
+        <WardrobeMaterialList
+          cost={batch.cost}
+          catalog={catalog}
+          accountKey={accountKey}
+          materials={materials}
+          sourceLabel={sourceLabel}
+          upgradeTargets={batch.upgrades.map((up) => ({ groupId: up.groupId, toLevel: up.to }))}
+          onMaterialsChange={onMaterialsChange}
+        />
         {!!batch.unknownCostGroups.length && (
           <p className="mt-2 text-xs text-text-secondary">其中 {batch.unknownCostGroups.length} 组未填等级的登场部件已按最低等级（0 级）计入总材料差额；若游戏内已强化，在下方补充实际等级即可扣减对应消耗。</p>
         )}

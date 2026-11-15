@@ -73,6 +73,7 @@ export interface AccountView {
   wardrobe?: {
     inventory?: WardrobeSnapshot;
     last_scan?: WardrobeSnapshot;
+    pearpal_cloth_num?: number;
     renewal_scan?: {
       updated_at?: string;
       complete?: boolean;

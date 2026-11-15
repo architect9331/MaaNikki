@@ -1,7 +1,7 @@
 """Five-star protection, upgrades and persistent collection progress."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from copy import deepcopy
 from uuid import uuid4
 
@@ -42,6 +42,7 @@ class FiveStarInventory(BlessingLocker):
         self.chance_priority = True
         self.share_statistics = False
         self.reserve_bling = 0
+        self._last_synced_bling = None
 
     def pearpal_five_star_colors(self, slot=None):
         """Return valid 5-star (name, slot, color) tuples from Pear-Pal notebook."""
@@ -427,17 +428,19 @@ class FiveStarInventory(BlessingLocker):
             **{key: new[key] for key in ("name", "slot", "color", "level")},
             "previous_level": old["level"], "experience": operation.get("experience_after"),
             "confirmed_at": datetime.now().isoformat(timespec="seconds")}
-        self.confirm_change(operation, result={key: new[key] for key in ("name", "slot", "color", "level")})
-        self.verified.clear()
         if self.organization is not None:
             if operation.get("bling_before") is not None and operation.get("cost") is not None:
                 self.observe_bling(operation["bling_before"])
-                self.organization["bling"] = operation["bling_before"] - operation["cost"]
+                bling_after = max(0, int(operation["bling_before"]) - int(operation["cost"]))
+                self.organization["bling"] = bling_after
+                self._sync_bling_inventory(bling_after)
             particles = self.organization.get("particles")
             if type(particles) is int:
                 # Ten experience per particle; the next decomposition page corrects this.
                 spent = sum(self.catalog["upgrade_costs"][str(new["rarity"])]["exp"][old["level"]:new["level"]]) // 10
                 self.organization["particles"] = max(0, particles - spent)
+        self.confirm_change(operation, result={key: new[key] for key in ("name", "slot", "color", "level")})
+        self.verified.clear()
         if self.is_maximum(new) and new["color"] is not None:
             self.record_colour(new)
         self.rt.log(f"升级完成：{new['name']}·{new['slot']}，{old['level']} → {new['level']} 级。"
@@ -521,6 +524,23 @@ class FiveStarInventory(BlessingLocker):
             self.organization["capacity"] = list(counts[0])
         return counts[0][0] >= counts[0][1]
 
+    def _sync_bling_inventory(self, balance):
+        if type(balance) is not int or balance < 0 or balance == self._last_synced_bling:
+            return
+        now = datetime.now(timezone.utc).isoformat()
+
+        def change(data):
+            mats = data.setdefault("materials", {})
+            inv = mats.setdefault("inventory", {})
+            inv["992617511"] = balance
+            mats["inventory_updated_at"] = now
+
+        try:
+            self.store.account.update(change)
+            self._last_synced_bling = balance
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            self.rt.log(f"噗灵库存同步失败：{error}。", detail=True)
+
     def observe_bling(self, balance):
         """Keep the balance the upgrade page showed; it also prices the last refill."""
         if self.organization is None:
@@ -531,6 +551,7 @@ class FiveStarInventory(BlessingLocker):
             self.organization["bling_per_run"] = round(gain * 40 / refill["energy"])
             self.record_bling(refill["energy"], gain)
         self.organization["bling"] = balance
+        self._sync_bling_inventory(balance)
 
     def part_complete(self, name, slot):
         owned = self.owned_colors()

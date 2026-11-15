@@ -16,7 +16,9 @@ from action.weekly_challenge import TARGETS as WEEKLY_TARGETS, _record_weekly_st
 from collection.backpack import ensure_backpack_scanned, renewal_source, wardrobe_snapshot
 from collection.inventory_workflow import FiveStarInventory
 from collection.material_pursuit import (
+    ensure_wardrobe_synced_for_materials,
     execute_material_run,
+    farm_common_mats_enabled,
     goal_has_jihua_potential,
     jihua_goal_deficits,
     load_catalogs,
@@ -287,6 +289,8 @@ def _run_double_jihua(
     any_spent = False
     goal_satisfied = False
     inventory: dict[str, int] | None = None
+    wardrobe_synced = False
+    include_common = farm_common_mats_enabled(rt)
     mat_defs = crafting.get("materials") or {}
 
     for pass_idx in range(2):
@@ -334,19 +338,38 @@ def _run_double_jihua(
                 gained = (double_part // 10) * (base_drop * 2) + (normal_part // 10) * base_drop
                 if gained > 0:
                     record_accrual(account, mid, gained)
-                    record_material_history(account, crafting, scoring)
+                    record_material_history(account, crafting, scoring, include_common=include_common)
                     rt.log(f"限时双倍插队 · 超级激化：获得 {meta.get('name', target_label)} +{gained}。")
             energy = energy_after
         else:
-            if inventory is None:
+            if not wardrobe_synced:
+                wardrobe_synced = True
+                role_now = account.load()
+                if any(
+                    g == "crafting" or (g == "renewal" and renewal_source(role_now.get("materials") or {}) == "plan")
+                    for g in jihua_goals
+                ):
+                    ensure_wardrobe_synced_for_materials(rt, account)
+            role_check = account.load()
+            has_any_potential = any(
+                goal_has_jihua_potential(goal, role_check, crafting, scoring, include_common=include_common)
+                for goal in jihua_goals
+            )
+            if inventory is None and has_any_potential:
                 inventory = ensure_backpack_scanned(rt, account, crafting)
-                record_material_history(account, crafting, scoring)
+                record_material_history(account, crafting, scoring, include_common=include_common)
             finished: set[str] = set()
             while rem_double_energy >= 10 and energy >= 10 and not rt.stopped:
                 role = account.load()
                 picked = None
                 for goal in jihua_goals:
-                    deficits = jihua_goal_deficits(goal, role, inventory, crafting, scoring, multiplier=2)
+                    deficits = (
+                        jihua_goal_deficits(
+                            goal, role, inventory or {}, crafting, scoring, multiplier=2, include_common=include_common
+                        )
+                        if has_any_potential
+                        else []
+                    )
                     if deficits:
                         picked = (goal, deficits[0])
                         break
@@ -356,10 +379,11 @@ def _run_double_jihua(
                             record_accrual(account, mark_glow_completed=True)
                 if picked is None:
                     goal_satisfied = True
+                    mat_phrase = "泡泡、丝线与噗灵" if include_common else "闪亮泡泡"
                     rt.log(
-                        "超级激化双倍（跟随缺口）：所需泡泡、丝线与噗灵已备齐，停止继续消耗双倍点数。"
+                        f"超级激化双倍（跟随缺口）：所需{mat_phrase}已备齐，停止继续消耗双倍点数。"
                         if any_spent
-                        else "超级激化双倍（跟随缺口）：所选焕新／制衣目标的泡泡、丝线与噗灵已备齐，跳过本次双倍。"
+                        else f"超级激化双倍（跟随缺口）：所选焕新／制衣目标的{mat_phrase}已备齐，跳过本次双倍。"
                     )
                     break
                 goal, (_, _, mid, meta, deficit) = picked
@@ -383,7 +407,7 @@ def _run_double_jihua(
                 if gained > 0:
                     inventory[mid] = int(inventory.get(mid, 0)) + gained
                     record_accrual(account, mid, gained)
-                    record_material_history(account, crafting, scoring)
+                    record_material_history(account, crafting, scoring, include_common=include_common)
                     rt.log(f"限时双倍插队 · 超级激化：获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
                 rem_double_energy = max(0, rem_double_energy - spent)
                 energy = energy_after
@@ -559,6 +583,7 @@ def run_double_priority(rt) -> DoubleRunSummary:
     role = account.load()
     crafting, scoring = load_catalogs()
 
+    include_common = farm_common_mats_enabled(rt)
     candidates: set[str] = set()
     if "weekly" in enabled_types and any(
         (rt.context.get_node_data(node) or {}).get("enabled", False) for node, _ in WEEKLY_TARGETS
@@ -566,7 +591,8 @@ def run_double_priority(rt) -> DoubleRunSummary:
         candidates.add("weekly")
     if "jihua" in enabled_types:
         if config["jihua_mode"] == "inherit_fallback" or any(
-            goal_has_jihua_potential(goal, role, crafting, scoring)
+            (not wardrobe_snapshot(role) and (goal == "crafting" or renewal_source(role.get("materials") or {}) == "plan"))
+            or goal_has_jihua_potential(goal, role, crafting, scoring, include_common=include_common)
             for goal in queue_goals
             if goal in ("renewal", "crafting")
         ):

@@ -8,8 +8,9 @@ import re
 
 from account_state import AccountState, game_day
 from daily.gameplay import Gameplay
-from daily.runtime import Executors
+from daily.runtime import Executors, parameters
 from daily.settings import ROOT
+from task_control import TaskStopped
 from .realm_goals import GOAL_LABELS
 from .backpack import ensure_backpack_scanned, renewal_source, wardrobe_snapshot, wardrobe_snapshot_key
 
@@ -81,6 +82,14 @@ COSMETIC_PARTS = {"281", "282", "283", "284", "285", "286"}
 # Bubbles are spent only on clothing growth; bling and thread have other consumers.
 RENEWAL_TRACKED_KINDS = {"monster_glow"}
 RENEWAL_TRACKED_IDS = {"50361309"}
+# Common resources obtainable without stamina; excluded by default unless opted in.
+COMMON_RENEWAL_IDS = {"3448636403", "992617511"}
+
+
+def farm_common_mats_enabled(rt=None) -> bool:
+    if rt is None or getattr(rt, "context", None) is None:
+        return False
+    return parameters(rt.context, "MaaNikki_FarmCommonMatsOption").get("enabled") is True
 
 
 def renewal_baseline_key(role: dict) -> str:
@@ -135,13 +144,15 @@ def renewal_groups(role: dict, scoring: dict) -> list[dict]:
     return result
 
 
-def compute_renewal_requirements(role: dict, scoring: dict) -> dict[str, int]:
-    """Materials still needed for the renewal plan, from the current wardrobe and saved levels."""
+def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict[str, int], dict[str, int]]:
+    """Return (all_planned_totals, priority_targets_totals) after subtracting consumption."""
     mats = role.get("materials") or {}
     plan = mats.get("renewal_plan") or {}
     selected = plan_mode(plan) == "selected"
     targets = plan.get("targets") or {}
+    priority_targets = plan.get("priority_targets") or {}
     totals: dict[str, int] = {}
+    priority: dict[str, int] = {}
     for group in renewal_groups(role, scoring):
         top = RENEWED_LEVEL if group["renewable"] else MAX_LEVEL
         if selected:
@@ -153,12 +164,28 @@ def compute_renewal_requirements(role: dict, scoring: dict) -> dict[str, int]:
             target = top
         for mid, cnt in level_cost(group["curve"], group["level"], target).items():
             totals[mid] = totals.get(mid, 0) + cnt
+        prio_wanted = priority_targets.get(group["id"])
+        if isinstance(prio_wanted, int) and not isinstance(prio_wanted, bool) and prio_wanted > 0:
+            p_target = min(int(prio_wanted), target)
+            for mid, cnt in level_cost(group["curve"], group["level"], p_target).items():
+                priority[mid] = priority.get(mid, 0) + cnt
     key = renewal_baseline_key(role)
     if key and mats.get("renewal_baseline_key") == key:
         for mid, used in (mats.get("renewal_consumed") or {}).items():
             if str(mid) in totals and int(used) > 0:
                 totals[str(mid)] = max(0, totals[str(mid)] - int(used))
-    return totals
+    for mid in list(priority):
+        capped = min(priority[mid], totals.get(mid, 0))
+        if capped > 0:
+            priority[mid] = capped
+        else:
+            del priority[mid]
+    return totals, priority
+
+
+def compute_renewal_requirements(role: dict, scoring: dict) -> dict[str, int]:
+    """Materials still needed for the renewal plan, from the current wardrobe and saved levels."""
+    return compute_renewal_requirements_tiered(role, scoring)[0]
 
 
 def execute_material_run(rt, kind: str, level_name: str, runs_to_do: int, use_max: bool) -> tuple[bool, int]:
@@ -190,11 +217,19 @@ def execute_material_run(rt, kind: str, level_name: str, runs_to_do: int, use_ma
     return ok, energy_after
 
 
-def _goal_energy_summary(goal: str, role: dict, inventory: dict, crafting: dict, scoring: dict) -> tuple[int, int]:
+def _goal_energy_summary(
+    goal: str,
+    role: dict,
+    inventory: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    include_common: bool = False,
+) -> tuple[int, int]:
     mat_defs = crafting.get("materials") or {}
     energy_total = 0
     missing_kinds = 0
-    for mid, need in goal_requirements(goal, role, crafting, scoring).items():
+    for mid, need in goal_requirements(goal, role, crafting, scoring, include_common=include_common).items():
         meta = mat_defs.get(str(mid)) or {}
         drop = int(meta.get("drop") or 0)
         energy = int(meta.get("energy") or 0)
@@ -205,7 +240,13 @@ def _goal_energy_summary(goal: str, role: dict, inventory: dict, crafting: dict,
     return energy_total, missing_kinds
 
 
-def record_material_history(account: AccountState, crafting: dict, scoring: dict):
+def record_material_history(
+    account: AccountState,
+    crafting: dict,
+    scoring: dict,
+    *,
+    include_common: bool = False,
+):
     """Record one daily point of remaining crafting/renewal energy for trend charts."""
     try:
         day = str(game_day())
@@ -219,11 +260,15 @@ def record_material_history(account: AccountState, crafting: dict, scoring: dict
                 return
             point = {}
             if has_renewal:
-                r_energy, r_missing = _goal_energy_summary("renewal", data, inv, crafting, scoring)
+                r_energy, r_missing = _goal_energy_summary(
+                    "renewal", data, inv, crafting, scoring, include_common=include_common,
+                )
                 point["renewal_energy"] = r_energy
                 point["renewal_missing"] = r_missing
             if has_wb:
-                c_energy, c_missing = _goal_energy_summary("crafting", data, inv, crafting, scoring)
+                c_energy, c_missing = _goal_energy_summary(
+                    "crafting", data, inv, crafting, scoring, include_common=include_common,
+                )
                 point["crafting_energy"] = c_energy
                 point["crafting_missing"] = c_missing
             history = data.setdefault("observations", {}).setdefault("material_history", {})
@@ -253,7 +298,14 @@ def record_accrual(account: AccountState, mid: str | None = None, gained: int = 
 
 
 
-def goal_requirements(goal: str, role: dict, crafting: dict, scoring: dict) -> dict[str, int]:
+def goal_requirements(
+    goal: str,
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    include_common: bool = False,
+) -> dict[str, int]:
     """Materials a goal still needs, computed live from the wardrobe and plan data."""
     mats = role.get("materials") or {}
     if goal == "crafting":
@@ -270,8 +322,33 @@ def goal_requirements(goal: str, role: dict, crafting: dict, scoring: dict) -> d
             if glow_plan.get("completed") or glow_plan.get("enabled") is False:
                 return {}
             return {str(mid): int(value) for mid, value in (glow_plan.get("targets") or {}).items() if int(value) > 0}
-        return compute_renewal_requirements(role, scoring) if wardrobe_snapshot(role) else {}
+        if not wardrobe_snapshot(role):
+            return {}
+        reqs = compute_renewal_requirements(role, scoring)
+        if not include_common:
+            reqs = {mid: cnt for mid, cnt in reqs.items() if str(mid) not in COMMON_RENEWAL_IDS}
+        return reqs
     return {}
+
+
+def goal_priority_requirements(
+    goal: str,
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    include_common: bool = False,
+) -> dict[str, int]:
+    """Priority sub-requirements (e.g. from 搭配计算) that should be stocked before general goals."""
+    if goal != "renewal":
+        return {}
+    mats = role.get("materials") or {}
+    if renewal_source(mats) != "plan" or not wardrobe_snapshot(role):
+        return {}
+    _, prio = compute_renewal_requirements_tiered(role, scoring)
+    if not include_common:
+        prio = {mid: cnt for mid, cnt in prio.items() if str(mid) not in COMMON_RENEWAL_IDS}
+    return prio
 
 
 _JIHUA_TIEBREAK = {
@@ -281,29 +358,55 @@ _JIHUA_TIEBREAK = {
 }
 
 
-def _jihua_requirements(goal: str, role: dict, crafting: dict, scoring: dict) -> dict[str, int]:
-    """Full Jihua-farmable requirements for one goal, including crafting bling & thread."""
+def _jihua_requirements(
+    goal: str,
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    include_common: bool = False,
+) -> tuple[dict[str, int], dict[str, int]]:
+    """Return (total_jihua_req, priority_jihua_req) for one goal."""
     mat_defs = crafting.get("materials") or {}
+    mats = role.get("materials") or {}
+    manual_targets = goal == "renewal" and renewal_source(mats) == "targets"
     if goal == "crafting":
         if not wardrobe_snapshot(role):
-            return {}
+            return {}, {}
         raw = compute_crafting_requirements(role, crafting, scoring)
+        prio_raw: dict[str, int] = {}
     elif goal == "renewal":
-        raw = goal_requirements("renewal", role, crafting, scoring)
+        raw = goal_requirements("renewal", role, crafting, scoring, include_common=(include_common or manual_targets))
+        prio_raw = goal_priority_requirements("renewal", role, crafting, scoring, include_common=include_common)
     else:
-        return {}
-    return {
+        return {}, {}
+    allow_common = include_common or manual_targets
+    total = {
         str(mid): int(count)
         for mid, count in raw.items()
         if int(count) > 0
+        and (allow_common or str(mid) not in COMMON_RENEWAL_IDS)
         and (mat_defs.get(str(mid)) or {}).get("realm") == "jihua"
         and (mat_defs.get(str(mid)) or {}).get("level")
     }
+    prio = {
+        str(mid): min(int(count), total[str(mid)])
+        for mid, count in prio_raw.items()
+        if int(count) > 0 and str(mid) in total
+    }
+    return total, prio
 
 
-def goal_has_jihua_potential(goal: str, role: dict, crafting: dict, scoring: dict) -> bool:
+def goal_has_jihua_potential(
+    goal: str,
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    include_common: bool = False,
+) -> bool:
     """Whether an enabled goal could possibly need any Jihua material before backpack subtraction."""
-    return bool(_jihua_requirements(goal, role, crafting, scoring))
+    return bool(_jihua_requirements(goal, role, crafting, scoring, include_common=include_common)[0])
 
 
 def jihua_goal_deficits(
@@ -314,40 +417,120 @@ def jihua_goal_deficits(
     scoring: dict,
     *,
     multiplier: int = 2,
+    include_common: bool = False,
 ) -> list[tuple]:
-    """Jihua-farmable shortfalls for one goal ranked by runs needed under the given drop multiplier."""
+    """Jihua-farmable shortfalls ranked by priority tier first, then runs needed under multiplier."""
     mat_defs = crafting.get("materials") or {}
     scale = max(1, int(multiplier))
+    total_reqs, prio_reqs = _jihua_requirements(goal, role, crafting, scoring, include_common=include_common)
     items = []
-    for mid, need in _jihua_requirements(goal, role, crafting, scoring).items():
+    for mid, need in total_reqs.items():
         meta = mat_defs.get(mid) or {}
         base_drop = int(meta.get("drop") or 0)
         energy = int(meta.get("energy") or 0)
         if base_drop <= 0 or energy <= 0:
             continue
-        deficit = int(need) - int(inventory.get(mid, 0))
+        owned = int(inventory.get(mid, 0))
+        deficit = int(need) - owned
         if deficit > 0:
-            runs_needed = math.ceil(deficit / (base_drop * scale))
+            prio_deficit = max(0, int(prio_reqs.get(mid, 0)) - owned)
+            eff_deficit = prio_deficit if prio_deficit > 0 else deficit
+            tier = 0 if prio_deficit > 0 else 1
+            runs_needed = math.ceil(eff_deficit / (base_drop * scale))
             tiebreak = _JIHUA_TIEBREAK.get(mid, 9)
-            items.append((-runs_needed, tiebreak, mid, meta, deficit))
+            items.append((tier, (-runs_needed, tiebreak), mid, meta, eff_deficit))
     items.sort()
     return items
 
 
-def goal_deficits(goal: str, role: dict, inventory: dict, crafting: dict, scoring: dict) -> list[tuple]:
-    """Farmable shortfalls of a goal, largest first; trial materials before bling and thread."""
+def goal_deficits(
+    goal: str,
+    role: dict,
+    inventory: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    include_common: bool = False,
+) -> list[tuple]:
+    """Farmable shortfalls of a goal: priority tier first, trial drops before jihua, largest deficit first."""
     mat_defs = crafting.get("materials") or {}
+    prio_reqs = goal_priority_requirements(goal, role, crafting, scoring, include_common=include_common)
     items = []
-    for mid, need in goal_requirements(goal, role, crafting, scoring).items():
+    for mid, need in goal_requirements(goal, role, crafting, scoring, include_common=include_common).items():
         meta = mat_defs.get(str(mid))
         if not meta or not meta.get("realm") or not meta.get("level"):
             continue
-        deficit = int(need) - int(inventory.get(str(mid), 0))
+        owned = int(inventory.get(str(mid), 0))
+        deficit = int(need) - owned
         if deficit > 0:
-            priority = 0 if meta.get("kind") in ("monster_glow", "monster_craft") else 1
-            items.append((priority, -deficit, str(mid), meta, deficit))
+            prio_deficit = max(0, int(prio_reqs.get(str(mid), 0)) - owned)
+            eff_deficit = prio_deficit if prio_deficit > 0 else deficit
+            tier = 0 if prio_deficit > 0 else 1
+            sub_prio = 0 if meta.get("kind") in ("monster_glow", "monster_craft") else 1
+            bucket = tier * 2 + sub_prio
+            items.append((bucket, -eff_deficit, str(mid), meta, eff_deficit))
     items.sort()
     return items
+
+
+def ensure_wardrobe_synced_for_materials(rt, account: AccountState) -> bool:
+    """Lazily sync wardrobe & renewal levels before checking renewal/crafting shortfalls.
+
+    - Runs full 服装焕新 scan once when no wardrobe or renewal baseline exists yet.
+    - Runs fast incremental 服装焕新 scan (获得时间 descending) when PearPal cloth_num changed.
+    - Returns immediately with zero UI cost when baseline & cloth_num already match.
+    """
+    role = account.load()
+    snap = wardrobe_snapshot(role)
+    wb = role.get("wardrobe") or {}
+    has_wb = bool(snap and snap.get("parts"))
+    has_renewal = bool((wb.get("renewal_scan") or {}).get("complete"))
+    cn = (((role.get("observations") or {}).get("pearpal_notebook") or {}).get("summary") or {}).get("cloth_num")
+    recorded_cn = wb.get("pearpal_cloth_num")
+
+    need_full = not has_wb or not has_renewal
+    need_inc = (
+        not need_full
+        and isinstance(cn, int)
+        and not isinstance(cn, bool)
+        and cn > 0
+        and recorded_cn != cn
+    )
+    if not need_full and not need_inc:
+        return True
+
+    try:
+        from wardrobe.renewal_scanner import RenewalScanner
+
+        if need_full:
+            reason = "尚无衣柜记录" if not has_wb else "尚未建立服装焕新等级记录"
+            rt.log(f"{reason}，正在通过服装焕新页面进行一次完整读取（同步服装与养成等级）。")
+            scanner = RenewalScanner(rt, account, mode="full")
+            ok = scanner.run()
+            rt.log(
+                f"服装焕新读取{'完成' if ok else '未完全结束'}："
+                f"同步 {scanner.summary.get('matched_groups', 0)} 组等级，"
+                f"录入 {scanner.summary.get('added_items', 0)} 件服装。"
+            )
+            return bool(ok)
+
+        if recorded_cn is None:
+            rt.log(f"正在按获得时间快速核对服装焕新与美鸭梨记录（{cn} 件）。")
+        else:
+            rt.log(f"检测到美鸭梨服装数变化（{recorded_cn} → {cn}），正按获得时间进行服装焕新快速增量同步。")
+        scanner = RenewalScanner(rt, account, mode="incremental")
+        ok = scanner.run()
+        added = scanner.summary.get("added_items", 0)
+        upd = scanner.summary.get("updated_levels", 0)
+        rt.log(f"服装焕新快速增量同步{'完成' if ok else '结束'}：新增 {added} 件服装，更新 {upd} 组等级。")
+        return bool(ok)
+    except TaskStopped:
+        raise
+    except Exception as error:
+        if not rt.stopped:
+            rt.diagnostic("wardrobe_auto_sync", str(error))
+        rt.log(f"自动核对服装焕新未完成（沿用现有衣柜数据继续）：{error}。", detail=True)
+        return False
 
 
 def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str | None]:
@@ -359,10 +542,12 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
     """
     account = AccountState.for_runtime(ROOT, rt)
     crafting, scoring = load_catalogs()
+    include_common = farm_common_mats_enabled(rt)
     inventory = None
     energy = None
     game = None
     last_kind = None
+    wardrobe_synced = False
     finished: set[str] = set()
     while not rt.stopped:
         role = account.load()
@@ -375,11 +560,20 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
                     finished.add(goal)
                     rt.log("幻境挑战顺序：五星闪光已收齐所选范围，跳过。")
                 continue
-            if inventory is None:
-                inventory = ensure_backpack_scanned(rt, account, crafting)
-                record_material_history(account, crafting, scoring)
+            needs_wb = goal == "crafting" or (goal == "renewal" and renewal_source(role.get("materials") or {}) == "plan")
+            if needs_wb and not wardrobe_synced:
+                wardrobe_synced = True
+                ensure_wardrobe_synced_for_materials(rt, account)
                 role = account.load()
-            deficits = goal_deficits(goal, role, inventory, crafting, scoring)
+            reqs = goal_requirements(goal, role, crafting, scoring, include_common=include_common)
+            if reqs:
+                if inventory is None:
+                    inventory = ensure_backpack_scanned(rt, account, crafting)
+                    record_material_history(account, crafting, scoring, include_common=include_common)
+                    role = account.load()
+                deficits = goal_deficits(goal, role, inventory, crafting, scoring, include_common=include_common)
+            else:
+                deficits = []
             if deficits:
                 picked = (goal, deficits[0])
                 break
@@ -415,7 +609,7 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
         if gained > 0:
             inventory[mid] = int(inventory.get(mid, 0)) + gained
             record_accrual(account, mid, gained)
-            record_material_history(account, crafting, scoring)
+            record_material_history(account, crafting, scoring, include_common=include_common)
             rt.log(f"幻境挑战顺序：已获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
         energy = energy_after
         last_kind = kind

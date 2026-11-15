@@ -25,6 +25,7 @@
                 "CollectionOrganize",
                 "JihuaTarget",
                 "JihuaMaterialMode",
+                "FarmCommonMats",
                 "BlessTarget",
                 "MonsterTarget"
             ]
@@ -874,6 +875,36 @@
                 }
             ],
             "default_case": "Qiggeda"
+        },
+        "FarmCommonMats": {
+            "type": "switch",
+            "label": "用体力刷丝线与噗灵",
+            "description": "关闭时，焕新备料和超级激化双倍（跟随缺口）只消耗活跃能量刷取魔物试炼与闪亮泡泡等不可替代素材；开启后也会按缺口刷取纯真丝线和噗灵。",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "label": "开启",
+                    "pipeline_override": {
+                        "MaaNikki_FarmCommonMatsOption": {
+                            "custom_action_param": {
+                                "enabled": true
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "label": "关闭",
+                    "pipeline_override": {
+                        "MaaNikki_FarmCommonMatsOption": {
+                            "custom_action_param": {
+                                "enabled": false
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "No"
         }
     }
 }

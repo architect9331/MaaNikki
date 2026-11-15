@@ -8,6 +8,30 @@
     "next": ["MaaNikki_RealmReview"],
     "on_error": ["MaaNikki_RealmReviewFailed"]
   },
+  "MaaNikki_BlessMaintain_Organize": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.blessing_maintain",
+    "custom_action_param": {"mode": "organize"},
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_BlessMaintain_Upgrade": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.blessing_maintain",
+    "custom_action_param": {"mode": "upgrade"},
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_BlessMaintain_Decompose": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.blessing_maintain",
+    "custom_action_param": {"mode": "decompose"},
+    "post_delay": 0,
+    "next": []
+  },
   "MaaNikki_Pursuit_OrganizeOption": {
     "recognition": "DirectHit",
     "action": "Custom",

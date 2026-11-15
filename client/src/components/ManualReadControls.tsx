@@ -1,6 +1,11 @@
 import { Loader2, Play, Square } from 'lucide-react';
 import {
+  READ_SPECS,
   startBackpackRead,
+  startBlessDecompose,
+  startBlessOrganize,
+  startBlessUpgrade,
+  startRenewalIncrementalRead,
   startRenewalRead,
   stopWardrobeRead,
   useWardrobeStore,
@@ -13,7 +18,11 @@ import { primaryButton, secondaryButton } from './ui/FeaturePage';
 
 const START_BY_MODE: Record<Exclude<WardrobeReadMode, 'wardrobe'>, () => Promise<void>> = {
   renewal: startRenewalRead,
+  renewal_inc: startRenewalIncrementalRead,
   backpack: startBackpackRead,
+  bless_organize: startBlessOrganize,
+  bless_upgrade: startBlessUpgrade,
+  bless_decompose: startBlessDecompose,
 };
 
 export function ManualReadButton({
@@ -56,7 +65,7 @@ export function ManualReadButton({
       }
     >
       {busyHere ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-      {busyHere ? '停止读取' : idleLabel}
+      {busyHere ? (targetMode.startsWith('bless_') ? '停止操作' : '停止读取') : idleLabel}
     </button>
   );
 }
@@ -65,7 +74,7 @@ export function ManualReadLogStrip({ modes }: { modes: WardrobeReadMode[] }) {
   const { status, mode } = useWardrobeStore();
   const busy = ['starting', 'reading', 'stopping'].includes(status);
   if (!busy || !modes.includes(mode)) return null;
-  const label = mode === 'renewal' ? '正在自动读取游戏「服装焕新」页面等级与焕新情况' : mode === 'backpack' ? '正在自动读取游戏背包材料与养成材料库存' : '正在读取衣柜';
+  const label = READ_SPECS[mode]?.busyText ?? '正在处理';
   return (
     <section className="overflow-hidden rounded-xl border border-accent/40 bg-bg-secondary">
       <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-xs text-accent">

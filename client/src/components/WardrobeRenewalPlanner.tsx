@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Loader2, Search, Sparkles } from 'lucide-react';
+import { ChevronDown, Loader2, Search, Sparkles, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { buildOwnedProfile } from '@/services/scoring/profile';
@@ -28,7 +28,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   const wardrobeUpdatedAt = account?.wardrobe?.inventory?.updated_at ?? account?.wardrobe?.last_scan?.updated_at ?? '';
   const { payload, settings, materials, loading, load, setLevel, updateMaterials, adoptMaterials } = useWardrobePlanStore();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<'todo' | 'below_max' | 'renewable' | 'selected' | 'all'>('todo');
+  const [status, setStatus] = useState<'todo' | 'below_max' | 'renewable' | 'selected' | 'priority' | 'all'>('todo');
   const [quality, setQuality] = useState('all');
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [showManual, setShowManual] = useState(false);
@@ -50,6 +50,8 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   const plan = materials.renewal_plan;
   const mode: PlanMode = plan?.mode === 'selected' ? 'selected' : 'all';
   const targets = useMemo(() => plan?.targets ?? {}, [plan]);
+  const priorityTargets = useMemo(() => plan?.priority_targets ?? {}, [plan]);
+  const hasRenewalBaseline = Boolean(payload?.snapshot?.complete && account?.wardrobe?.renewal_scan?.complete);
   const profile = useMemo(() => (payload ? buildOwnedProfile(payload, settings) : null), [payload, settings]);
   const groups = useMemo(() => (payload && profile ? buildRenewalGroups(payload.catalog, profile) : []), [payload, profile]);
   // 全收集: every owned piece to 焕新 (or full level when it cannot be renewed).
@@ -63,8 +65,21 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
       }),
     [groups, mode, targets],
   );
+  const priorityKeys = Object.keys(priorityTargets);
+  const priorityPending = useMemo(
+    () =>
+      groups.flatMap((group) => {
+        const wanted = priorityTargets[group.id];
+        if (wanted === undefined) return [];
+        const cap = mode === 'selected' ? targets[group.id] : topLevel(group);
+        if (cap === undefined) return [];
+        const target = Math.min(wanted, cap, topLevel(group));
+        return effective(group) < target ? [{ group, target }] : [];
+      }),
+    [groups, priorityTargets, mode, targets],
+  );
   const pickedCount = groups.filter((group) => targets[group.id] !== undefined).length;
-  const { totals } = renewalForecast;
+  const { totals, realmTotals } = renewalForecast;
   const unknownPlanned = planned.filter(({ group }) => group.level === null).length;
   const usingTargets = renewalSource(materials) === 'targets';
 
@@ -87,9 +102,22 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   }
   function setTarget(group: RenewalGroup, level: number | null) {
     const next = { ...targets };
-    if (level === null) delete next[group.id];
-    else next[group.id] = level;
-    savePlan({ mode: 'selected', targets: next });
+    const nextPrio = { ...priorityTargets };
+    let prioChanged = false;
+    if (level === null) {
+      delete next[group.id];
+      if (group.id in nextPrio) {
+        delete nextPrio[group.id];
+        prioChanged = true;
+      }
+    } else {
+      next[group.id] = level;
+    }
+    savePlan({
+      mode: 'selected',
+      targets: next,
+      ...(prioChanged ? { priority_targets: Object.keys(nextPrio).length ? nextPrio : undefined } : {}),
+    });
   }
   function setStock(id: string, value: number) {
     updateMaterials((previous) => ({
@@ -125,13 +153,16 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   const q = search.trim();
   const shown = groups.filter((group) => {
     const level = effective(group);
+    const prioTarget = priorityTargets[group.id];
+    const isPrio = prioTarget !== undefined && level < Math.min(prioTarget, topLevel(group));
     return (
       (quality === 'all' || String(group.quality) === quality) &&
       (status === 'all' ||
         (status === 'todo' && level < topLevel(group)) ||
         (status === 'below_max' && level < MAX_LEVEL) ||
         (status === 'renewable' && group.renewable && level < RENEWED_LEVEL) ||
-        (status === 'selected' && targets[group.id] !== undefined)) &&
+        (status === 'selected' && targets[group.id] !== undefined) ||
+        (status === 'priority' && isPrio)) &&
       (!q || group.name.includes(q) || (group.suitName ?? '').includes(q) || group.part.includes(q))
     );
   });
@@ -155,7 +186,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
 
   return (
     <div className="space-y-4">
-      <ManualReadLogStrip modes={['renewal', 'backpack']} />
+      <ManualReadLogStrip modes={['renewal', 'renewal_inc', 'backpack']} />
       <PlanPanel
         goal="renewal"
         tone={unknownLevels ? 'warn' : 'ok'}
@@ -171,9 +202,16 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
         }
         actions={
           <>
-            <ManualReadButton targetMode="renewal" idleLabel="读取焕新" primary={unknownLevels > 0} />
+            {hasRenewalBaseline && (
+              <ManualReadButton targetMode="renewal_inc" idleLabel="增量同步" primary={unknownLevels > 0} />
+            )}
+            <ManualReadButton
+              targetMode="renewal"
+              idleLabel={hasRenewalBaseline ? '完整读取' : '读取焕新'}
+              primary={!hasRenewalBaseline && unknownLevels > 0}
+            />
             <button type="button" onClick={onOpenCloset} className={secondaryButton}>
-              更新衣柜
+              我的衣柜
             </button>
           </>
         }
@@ -181,7 +219,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
         onModeChange={(next) => savePlan({ mode: next })}
         modeDetail={
           mode === 'all' ? (
-            <>全部已拥有的衣服，共 {num(planned.length)} 件待养成；能焕新的按焕新、不能焕新的按满级计算，新衣服读衣柜后自动加入。</>
+            <>全部已拥有的衣服，共 {num(planned.length)} 件待养成；能焕新的按焕新、不能焕新的按满级计算，新衣服同步后自动加入。</>
           ) : (
             <>只为勾选的衣服备料，可分别选择升到满级或焕新，已选 {num(pickedCount)} 件。</>
           )
@@ -194,14 +232,42 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                 改用上面的衣服计划
               </button>
             </>
+          ) : realmTotals.missingKinds ? (
+            `还差 ${realmTotals.missingKinds} 种待刷材料（预计消耗约 ${num(renewalForecast.energy)} 体力）`
           ) : totals.missingKinds ? (
-            `还差 ${totals.missingKinds} 种材料（预计消耗约 ${num(renewalForecast.energy)} 体力）`
+            '所需泡泡已备齐（丝线/噗灵默认不用体力）'
           ) : (
             '材料已备齐，轮到时直接交给下一项'
           )
         }
-        queueHint="幻境挑战每批前按当前衣柜和已填等级重新计算缺口，刷泡泡、丝线和噗灵。升级或焕新后请在列表里更新等级。"
+        queueHint={
+          renewalForecast.includeCommonMats
+            ? '幻境挑战每批前按当前衣柜与等级重新算缺口；已开启「用体力刷丝线与噗灵」，会刷泡泡、丝线与噗灵。'
+            : '幻境挑战默认只用体力刷各类泡泡，自动跳过丝线与噗灵（可在幻境挑战设置中按需开启）；升级或焕新后会随增量同步自动消账。'
+        }
       />
+      {!usingTargets && priorityKeys.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/40 bg-accent/5 px-4 py-2.5 text-xs">
+          <p className="min-w-0 flex-1 text-text-secondary">
+            <strong className="text-accent">优先筹备目标</strong>
+            {plan?.priority_label ? `（${plan.priority_label}）` : ''}：
+            {priorityPending.length > 0
+              ? `还剩 ${priorityPending.length} 件未达目标等级，幻境挑战会优先备齐其材料（约 ${num(renewalForecast.priorityEnergy ?? 0)} 体力），达标后自动继续其余目标。`
+              : '所导入部件已全部达到目标等级，将自动按正常计划继续。'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              savePlan({ priority_targets: undefined, priority_label: undefined });
+              if (status === 'priority') setStatus('todo');
+            }}
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border bg-bg-secondary px-2.5 py-1 text-xs text-text-secondary hover:bg-bg-hover"
+          >
+            <X className="h-3.5 w-3.5" />
+            清除优先
+          </button>
+        </div>
+      )}
       <PlanLayout
         list={
           <PlanListPanel
@@ -226,6 +292,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                   <option value="below_max">未满级</option>
                   <option value="renewable">可焕新但未焕新</option>
                   {mode === 'selected' && <option value="selected">只看已选</option>}
+                  {priorityKeys.length > 0 && <option value="priority">搭配计算优先</option>}
                   <option value="all">全部已拥有</option>
                 </select>
                 <select aria-label="星级" className={planField} value={quality} onChange={(event) => setQuality(event.target.value)}>
@@ -254,8 +321,10 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
               const target = mode === 'all' ? topLevel(group) : targets[group.id];
               const picked = mode === 'selected' && target !== undefined;
               const done = effective(group) >= topLevel(group);
+              const prioTarget = priorityTargets[group.id];
+              const isPriority = prioTarget !== undefined && effective(group) < Math.min(prioTarget, topLevel(group));
               return (
-                <div key={group.id} className={clsx('flex items-center gap-2 px-4 py-2 text-xs', picked && 'bg-accent/5')}>
+                <div key={group.id} className={clsx('flex items-center gap-2 px-4 py-2 text-xs', (picked || isPriority) && 'bg-accent/5')}>
                   {mode === 'selected' && (
                     <input
                       type="checkbox"
@@ -267,6 +336,11 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                     />
                   )}
                   <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{group.quality}★</span>
+                  {isPriority && (
+                    <span className="shrink-0 rounded bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning" title={`优先筹备目标（目标 ${prioTarget === RENEWED_LEVEL ? '焕新' : `${prioTarget} 级`}）`}>
+                      优先
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-text-primary">{group.name}</p>
                     <p className="truncate text-[11px] text-text-muted">
@@ -315,6 +389,8 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
               title="焕新材料清单"
               scope={planLabel}
               totals={totals}
+              realmTotals={realmTotals}
+              realmEnergyLabel={renewalForecast.includeCommonMats ? '幻境所需能量' : '幻境泡泡所需能量'}
               groups={['jihua', 'vortex', 'chroma', 'crystal', 'world']}
               onStockChange={setStock}
               headerAction={<ManualReadButton targetMode="backpack" idleLabel="更新背包" compact />}
@@ -323,10 +399,12 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                 <>
                   {unknownPlanned > 0 && (
                     <span className="block text-warning">
-                      其中 {unknownPlanned} 件没填当前等级，已按 0 级计算；在左侧填上实际等级即可扣减。
+                      其中 {unknownPlanned} 件没填当前等级，已按 0 级计算；点上方「增量同步 / 完整读取」或手动填写实际等级即可扣减。
                     </span>
                   )}
-                  自己用掉的泡泡会在每日背包扫描时自动扣减；噗灵、丝线与制衣共用库存，两边同时规划时请留足余量。
+                  {renewalForecast.includeCommonMats
+                    ? '已开启「用体力刷丝线与噗灵」；自己用掉的材料会在每日背包扫描和服装焕新同步时自动核销。'
+                    : '噗灵与丝线默认不消耗体力刷取（仅作参考对照）；如需用体力刷取，请在「幻境挑战 → 素材激化」中开启「用体力刷丝线与噗灵」。'}
                 </>
               }
             />

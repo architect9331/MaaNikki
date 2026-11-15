@@ -6,7 +6,7 @@ from maa.custom_action import CustomAction
 from account_state import AccountState
 from collection.backpack import rescan_backpack
 from collection.material_pursuit import load_catalogs, record_material_history
-from daily.runtime import Runtime
+from daily.runtime import Runtime, parameters
 from daily.settings import ROOT
 from registration import agent_action
 from task_control import TaskStopped
@@ -56,16 +56,27 @@ class RenewalReadAction(CustomAction):
         rt = Runtime(context)
         scanner = None
         try:
-            rt.log("焕新读取开始。")
-            scanner = RenewalScanner(rt)
+            mode = str(parameters(context, argv.node_name).get("mode", "full"))
+            label = "焕新增量同步" if mode == "incremental" else "焕新读取"
+            rt.log(f"{label}开始。")
+            scanner = RenewalScanner(rt, mode=mode)
             complete = scanner.run()
             matched = scanner.summary.get("matched_groups", 0)
+            added = scanner.summary.get("added_items", 0)
+            updated_lv = scanner.summary.get("updated_levels", 0)
             unmatched = scanner.summary.get("unmatched_count", 0)
-            rt.log(
-                f"焕新读取{'完成' if complete else '结束'}：已同步 {matched} 组服装等级"
-                + (f"（{unmatched} 张卡片未匹配到名称）" if unmatched else "")
-                + "。"
-            )
+            if mode == "incremental":
+                rt.log(
+                    f"{label}{'完成' if complete else '结束'}：新增 {added} 件服装，更新 {updated_lv} 组等级（检查 {matched} 组"
+                    + (f"，{unmatched} 张卡片未匹配" if unmatched else "")
+                    + "）。"
+                )
+            else:
+                rt.log(
+                    f"{label}{'完成' if complete else '结束'}：已同步 {matched} 组服装等级，合入 {added} 件新录入衣柜记录"
+                    + (f"（{unmatched} 张卡片未匹配到名称）" if unmatched else "")
+                    + "。"
+                )
             if not complete and scanner.summary.get("reason"):
                 rt.log(scanner.summary["reason"])
             _, finished = rt.finish(argv.node_name)

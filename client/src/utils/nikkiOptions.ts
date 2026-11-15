@@ -4,6 +4,12 @@ const REALM_MODE_TARGETS: Record<string, string> = {
   JihuaTarget: 'Jihua', JihuaMaterialMode: 'Jihua', JihuaMaterials: 'Jihua', MonsterTarget: 'Monster',
 };
 const COLLECTION_MANAGED_OPTIONS = new Set(['CollectionReserveBling', 'CollectionBling', 'CollectionDecompose']);
+export const COLLECTION_ADVANCED_OPTIONS = new Set([
+  'CollectionReserveBling',
+  'CollectionBling',
+  'CollectionDecompose',
+  'CollectionOrganize',
+]);
 const DOUBLE_OPTION_KEYS = new Set([
   'DoubleEnabled', 'DoubleTypes', 'DoubleJihuaMode', 'DoubleBlessMode', 'DoubleWeeklyPriority',
 ]);
@@ -59,6 +65,9 @@ export const realmCollectionEnabled = (values: Record<string, OptionValue>): boo
 
 export const doubleEnabled = (values?: Record<string, OptionValue>): boolean =>
   values?.DoubleEnabled?.type === 'switch' ? values.DoubleEnabled.value : true;
+
+export const realmFarmCommonMats = (values?: Record<string, OptionValue>): boolean =>
+  values?.FarmCommonMats?.type === 'switch' ? values.FarmCommonMats.value : false;
 
 export function doubleTypes(values?: Record<string, OptionValue>): string[] {
   const option = values?.DoubleTypes;
@@ -166,9 +175,15 @@ export function realmOptionActive(key: string, values: Record<string, OptionValu
   const dblJihuaFollow = dblJihua && doubleJihuaMode(values) === 'FollowDeficit';
   if (key === 'JihuaTarget') return current === 'Jihua' || dblJihuaFallback;
 
-  const hasMaterialNeed = realmGoalRank(values, 'renewal') !== null
+  const hasRenewal = realmGoalRank(values, 'renewal') !== null;
+  const hasCrafting = realmGoalRank(values, 'crafting') !== null;
+  if (key === 'FarmCommonMats') {
+    return hasRenewal || (dblJihuaFollow && hasCrafting);
+  }
+
+  const hasMaterialNeed = hasRenewal
     || dblJihuaFallback
-    || (dblJihuaFollow && realmGoalRank(values, 'crafting') !== null);
+    || (dblJihuaFollow && hasCrafting);
   // Renewal farming and double Jihua also consume the configured offering materials.
   if ((key === 'JihuaMaterialMode' || key === 'JihuaMaterials') && hasMaterialNeed) return true;
   // The blessing goal's bling runs spend the configured materials.
@@ -205,7 +220,7 @@ export function realmOptionSections(keys: string[], values: Record<string, Optio
   const collectionKeys = new Set(['CollectionReserveBling', 'CollectionBling', 'CollectionDecompose', 'CollectionOrganize']);
   const collectionActive = realmCollectionEnabled(values) || dblBlessGlow;
   if (current !== 'Bless' && collectionActive) collectionKeys.add('BlessTarget');
-  const materialKeys = new Set(['JihuaMaterialMode', 'JihuaMaterials']);
+  const materialKeys = new Set(['FarmCommonMats', 'JihuaMaterialMode', 'JihuaMaterials']);
 
   return [
     {

@@ -2,7 +2,16 @@ import { Check, ChevronDown, Clock, Gem, Hammer, LibraryBig, Package, RefreshCw,
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { useAccountStateStore } from '@/stores/accountStateStore';
-import { useWardrobeStore, startWardrobeRead, stopWardrobeRead, wardrobeLabels, WARDROBE_INSTANCE_ID } from '@/services/wardrobeService';
+import {
+  READ_SPECS,
+  startRenewalIncrementalRead,
+  startRenewalRead,
+  startWardrobeRead,
+  stopWardrobeRead,
+  useWardrobeStore,
+  wardrobeLabels,
+  WARDROBE_INSTANCE_ID,
+} from '@/services/wardrobeService';
 import { isTauri } from '@/utils/paths';
 import { LogsPanel } from './LogsPanel';
 import { FeaturePage, primaryButton, secondaryButton, StatusBar, Tabs } from './ui/FeaturePage';
@@ -40,8 +49,15 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
   const [showDetails, setShowDetails] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const busy = ['starting', 'reading', 'stopping'].includes(status);
-  const closetBusy = busy && mode === 'wardrobe';
+  const closetBusy = busy && (mode === 'wardrobe' || mode === 'renewal' || mode === 'renewal_inc');
   const scan = data?.wardrobe?.last_scan ?? data?.wardrobe?.inventory;
+  const renewalScan = data?.wardrobe?.renewal_scan;
+  const hasClosetBaseline = Boolean(scan?.complete && renewalScan?.complete);
+  const pearpalClothNum = data?.observations?.pearpal_notebook?.summary?.cloth_num;
+  const recordedClothNum = data?.wardrobe?.pearpal_cloth_num;
+  const clothDrift = Boolean(
+    scan && typeof pearpalClothNum === 'number' && pearpalClothNum > 0 && recordedClothNum !== pearpalClothNum,
+  );
   const parts = Object.entries(scan?.parts ?? {});
   const wasBusy = useRef(busy);
   useEffect(() => { void refresh().catch(() => {}); }, [refresh]);
@@ -55,17 +71,58 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
     if (wasBusy.current && !busy) setRefreshToken((previous) => previous + 1);
     wasBusy.current = busy;
   }, [busy]);
-  const tone = (error && mode === 'wardrobe') || accountError ? 'warn' : closetBusy ? 'busy' : scan?.complete ? 'ok' : 'idle';
+  const errorHere = error && (mode === 'wardrobe' || mode === 'renewal' || mode === 'renewal_inc');
+  const tone = errorHere || accountError ? 'warn' : closetBusy ? 'busy' : scan?.complete ? 'ok' : 'idle';
   const open = (next: Tab) => setTab(next);
   const openCloset = () => { open('closet'); setShowDetails(true); };
-  const readButton = <button disabled={!isTauri() || (busy && !closetBusy) || status === 'stopping'} onClick={() => closetBusy ? stopWardrobeRead() : void startWardrobeRead()} className={closetBusy ? secondaryButton : primaryButton}>
-    {closetBusy ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}{closetBusy ? '停止读取' : scan ? scan.complete ? '更新衣柜' : '继续读取' : '开始读取'}
-  </button>;
+  const primaryClosetMode = hasClosetBaseline ? 'renewal_inc' : 'renewal';
+  const primaryBusy = busy && mode === primaryClosetMode;
+  const renewalFullBusy = busy && mode === 'renewal';
+  const compendiumBusy = busy && mode === 'wardrobe';
+  const readButton = (
+    <button
+      disabled={!isTauri() || (busy && !primaryBusy) || status === 'stopping'}
+      onClick={() => (primaryBusy ? stopWardrobeRead() : void (hasClosetBaseline ? startRenewalIncrementalRead() : startRenewalRead()))}
+      className={primaryBusy ? secondaryButton : primaryButton}
+      title={hasClosetBaseline ? '按获得时间扫描新增服装与近期升级，几秒完成' : '从「服装焕新」一次同步所有可养成服装与等级'}
+    >
+      {primaryBusy ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+      {primaryBusy ? '停止读取' : hasClosetBaseline ? '快速增量同步' : '从服装焕新读取'}
+    </button>
+  );
+  const fullRenewalButton = hasClosetBaseline ? (
+    <button
+      disabled={!isTauri() || (busy && !renewalFullBusy) || status === 'stopping'}
+      onClick={() => (renewalFullBusy ? stopWardrobeRead() : void startRenewalRead())}
+      className={secondaryButton}
+      title="完整遍历「服装焕新」全部分类，重新核对每件服装等级"
+    >
+      {renewalFullBusy ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+      {renewalFullBusy ? '停止读取' : '完整焕新读取'}
+    </button>
+  ) : null;
+  const compendiumButton = (
+    <button
+      disabled={!isTauri() || (busy && !compendiumBusy) || status === 'stopping'}
+      onClick={() => (compendiumBusy ? stopWardrobeRead() : void startWardrobeRead())}
+      className={secondaryButton}
+      title="额外读取妆容部件及同款进化染色数量（焕新页不包含妆容与进化数）"
+    >
+      {compendiumBusy ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+      {compendiumBusy ? '停止读取' : '博物图鉴校准'}
+    </button>
+  );
   const summary = scan
     ? <>已读取 <strong className="tabular-nums text-text-primary">{scan.scanned_count}</strong> 件 · 部位 {scan.completed_parts} / {scan.total_parts ?? 28}
-      {!!scan.ambiguous_count && <> · 同图候选 {scan.ambiguous_count}</>}{scan.updated_at && <> · 更新于 {formatTime(scan.updated_at)}</>}
+      {renewalScan?.updated_at && <> · 焕新等级于 {formatTime(renewalScan.updated_at)}</>}
+      {!renewalScan?.updated_at && scan.updated_at && <> · 更新于 {formatTime(scan.updated_at)}</>}
+      {clothDrift && (
+        <span className="text-warning">
+          {' '}· 美鸭梨手账记录 {pearpalClothNum} 件{recordedClothNum != null ? `（本地上次 ${recordedClothNum} 件）` : ''}，建议增量同步
+        </span>
+      )}
       {!scan.complete && !busy && <span className="text-warning"> · 尚未读完，可继续读取</span>}</>
-    : '进入游戏主界面并清空衣柜筛选后开始，读取期间保持游戏在前台。';
+    : '推荐先从「服装焕新」读取：可一次同步衣柜拥有情况与全部服装等级，支持按获得时间快速增量更新。';
 
   return <FeaturePage icon={LibraryBig} title="收集进度" onBack={onClose} actions={<>
     {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
@@ -76,11 +133,13 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
       progress: overview[id]?.total ? overview[id]!.done / overview[id]!.total : null,
     }))} />
     {opened.has('closet') && <div className={clsx('space-y-4', tab !== 'closet' && 'hidden')}>
-      <StatusBar tone={tone} title={closetBusy || !scan || (error && mode === 'wardrobe') || accountError ? wardrobeLabels[closetBusy ? status : 'idle'] : scan.complete ? '衣柜记录完整' : '衣柜记录未读完'}
-        detail={(error && mode === 'wardrobe') || accountError || summary}>
+      <StatusBar tone={tone} title={closetBusy ? (READ_SPECS[mode]?.busyText ?? wardrobeLabels[status]) : !scan || errorHere || accountError ? wardrobeLabels['idle'] : scan.complete ? '衣柜记录完整' : '衣柜记录未读完'}
+        detail={errorHere || accountError || summary}>
         {(scan || closetBusy) && <button type="button" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails || closetBusy} className={secondaryButton}>
           读取详情<ChevronDown className={clsx('h-3.5 w-3.5 transition-transform', (showDetails || closetBusy) && 'rotate-180')} />
         </button>}
+        {compendiumButton}
+        {fullRenewalButton}
         {readButton}
       </StatusBar>
       {(showDetails || closetBusy) && <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
@@ -101,7 +160,7 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
             <li>2. 清空衣柜里的筛选条件</li>
             <li>3. 点下方按钮，读取期间保持游戏在前台；中断后可以继续</li>
           </ol>
-          <div className="mt-5 flex justify-center">{readButton}</div>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">{readButton}{compendiumButton}</div>
         </section>}
     </div>}
     {opened.has('crafting') && <div className={clsx(tab !== 'crafting' && 'hidden')}><WardrobeCraftingPlanner refreshToken={refreshToken} onOpenCloset={openCloset} /></div>}

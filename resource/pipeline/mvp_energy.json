@@ -571,5 +571,13 @@
     "enabled": false,
     "recognition": "DirectHit",
     "action": "DoNothing"
+  },
+  "MaaNikki_FarmCommonMatsOption": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "enabled": false
+    }
   }
 }

@@ -127,7 +127,20 @@
     "custom_action": "nikki.renewal_read",
     "custom_action_param": {
       "ready": "MaaNikki_RejuvenateReady",
-      "source": "MaaNikki_MainDetected"
+      "source": "MaaNikki_MainDetected",
+      "mode": "full"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_RenewalIncrementalRead": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.renewal_read",
+    "custom_action_param": {
+      "ready": "MaaNikki_RejuvenateReady",
+      "source": "MaaNikki_MainDetected",
+      "mode": "incremental"
     },
     "post_delay": 0,
     "next": []

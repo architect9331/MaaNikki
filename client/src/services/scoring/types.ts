@@ -136,6 +136,10 @@ export interface RenewalPlanState {
   mode: PlanMode;
   /** Clothing group id -> target level (10 full level, 11 renewed); used by 自选. */
   targets: Record<string, number>;
+  /** Priority clothing group id -> target level (from 搭配计算); farmed first while level < target. */
+  priority_targets?: Record<string, number>;
+  /** Source label of the active priority batch. */
+  priority_label?: string;
   updated_at?: string;
 }
 export interface BlessingPlanState {

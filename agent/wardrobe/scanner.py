@@ -628,6 +628,9 @@ class WardrobeScanner(InventoryScanner):
             wardrobe["last_scan"] = record
             if record["complete"]:
                 wardrobe["inventory"] = record
+                cn = (((data.get("observations") or {}).get("pearpal_notebook") or {}).get("summary") or {}).get("cloth_num")
+                if cn is not None:
+                    wardrobe["pearpal_cloth_num"] = cn
 
         write_json(self.folder / "scan.json", self.snapshot)
         self.account.update(change)
@@ -743,7 +746,8 @@ class WardrobeScanner(InventoryScanner):
         if (owned_count is not None
                 and old_state.get("complete")
                 and old_state.get("unconfirmed_count", 0) == 0
-                and len(old_scanned) == owned_count):
+                and len(old_scanned) == owned_count
+                and not any(str(item.get("source") or "").startswith("rejuvenate") for item in old_scanned)):
             reused_state = deepcopy(old_state)
             reused_state["items"] = deepcopy(old_scanned)
             reused_state["scanned_count"] = len(old_scanned)

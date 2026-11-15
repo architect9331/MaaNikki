@@ -257,6 +257,7 @@ function UnmetStarsPanel({
                 accountKey={payload.account_key}
                 materials={payload.materials}
                 sourceLabel={`${match.group} · ${match.name}（满星最少升级）`}
+                upgradeTargets={minPlan.upgradeItems.map((item) => ({ groupId: item.groupId, toLevel: item.toLevel }))}
                 onMaterialsChange={onMaterialsChange}
               />
             </div>
@@ -578,6 +579,9 @@ function OutfitView({ outfit, potentialOutfit, payload, profile, settings, match
         accountKey={payload.account_key}
         materials={payload.materials}
         sourceLabel={`${match.group} · ${match.name}`}
+        upgradeTargets={upgrades
+          .filter((piece) => Boolean(piece.item.group))
+          .map((piece) => ({ groupId: piece.item.group!, toLevel: piece.level }))}
         onMaterialsChange={onMaterialsChange}
       />
       {!!outfit.unknownCostGroups.length && <p className="mt-3 text-xs text-text-secondary">其中 {outfit.unknownCostGroups.length} 个未填等级部件已按最低等级（0 级）计算提升值与材料差额；若游戏内已强化，展开部件填入实际等级即可扣减对应消耗。</p>}
@@ -587,6 +591,7 @@ function OutfitView({ outfit, potentialOutfit, payload, profile, settings, match
 
 export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken: number; onOpenRead: () => void }) {
   const activeUid = useAccountStateStore((state) => state.data?.uid);
+  const hasRenewalScan = useAccountStateStore((state) => Boolean(state.data?.wardrobe?.renewal_scan?.complete));
   const renewalUpdatedAt = useAccountStateStore((state) => state.data?.wardrobe?.renewal_scan?.updated_at ?? '');
   const [payload, setPayload] = useState<ScoringPayload | null>(null);
   const [settings, setSettings] = useState<ScoringSettings>(emptySettings);
@@ -792,10 +797,14 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
         ? <>可用衣服 <strong className="tabular-nums text-text-primary">{profile.aligned}</strong> 件 · 已读祝福闪光 {glowKinds} 种
           {unknownCount > 0 && <> · {unknownCount} 组没填等级，按 0 级计算，可在下方「补充衣服等级」填写</>}</>
         : '读取一次衣柜后，才能按你拥有的衣服算出最高分搭配。'}>
-      <ManualReadButton targetMode="renewal" idleLabel="读取焕新" primary={!!payload.snapshot && unknownCount > 0} />
+      <ManualReadButton
+        targetMode={payload.snapshot?.complete && hasRenewalScan ? 'renewal_inc' : 'renewal'}
+        idleLabel={payload.snapshot?.complete && hasRenewalScan ? '增量同步焕新' : '读取焕新'}
+        primary={!!payload.snapshot && unknownCount > 0}
+      />
       <button type="button" onClick={onOpenRead} className={secondaryButton}>{!payload.snapshot ? '去读取衣柜' : payload.snapshot.complete ? '更新衣柜' : '继续读取'}</button>
     </StatusBar>
-    <ManualReadLogStrip modes={['renewal']} />
+    <ManualReadLogStrip modes={['renewal', 'renewal_inc']} />
     <WardrobeMatchPicker matches={payload.catalog.matches} value={matchId} onChange={(id) => { setMatchId(id); setChoice(null); }} />
     <div className="grid items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
     <aside className="space-y-3 lg:sticky lg:top-0">

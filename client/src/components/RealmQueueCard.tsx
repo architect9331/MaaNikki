@@ -31,6 +31,7 @@ import {
   doubleJihuaMode,
   doubleTypes,
   realmCollectionWorkflow,
+  realmFarmCommonMats,
   realmQueue,
   realmQueueOption,
   realmReserveBling,
@@ -186,6 +187,7 @@ function QueueRow({
   warn,
   estimate,
   computing,
+  detailOverride,
   onToggle,
   children,
 }: {
@@ -195,6 +197,7 @@ function QueueRow({
   warn: boolean;
   estimate: QueueGoalEstimate;
   computing: boolean;
+  detailOverride?: string;
   onToggle: (enabled: boolean) => void;
   children?: ReactNode;
 }) {
@@ -235,7 +238,7 @@ function QueueRow({
       <Icon className={clsx('h-4 w-4 shrink-0', entry.enabled ? 'text-accent' : 'text-text-muted')} />
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-text-primary">{REALM_GOAL_LABELS[entry.goal]}</p>
-        <p className="truncate text-[11px] text-text-secondary">{info.detail}</p>
+        <p className="truncate text-[11px] text-text-secondary">{detailOverride ?? info.detail}</p>
         <EstimatePill estimate={estimate} computing={computing} />
         {children}
         {warn && (
@@ -339,6 +342,7 @@ export function RealmQueueCard({
 
   const entries = realmQueue(values);
   const enabled = entries.filter((entry) => entry.enabled).map((entry) => entry.goal);
+  const farmCommonMats = realmFarmCommonMats(values);
   const dblEnabled = doubleEnabled(values);
   const dblTypes = dblEnabled ? doubleTypes(values) : [];
   const dblTypeLabels: Record<string, string> = { Jihua: '超级激化', Bless: '灵感迸发', Weekly: '深度突破' };
@@ -348,6 +352,13 @@ export function RealmQueueCard({
     && doubleJihuaMode(values) === 'FollowDeficit'
     && !enabled.includes('renewal')
     && !enabled.includes('crafting');
+  const dblFollowCraftingNoCommon =
+    dblEnabled
+    && dblTypes.includes('Jihua')
+    && doubleJihuaMode(values) === 'FollowDeficit'
+    && !enabled.includes('renewal')
+    && enabled.includes('crafting')
+    && !farmCommonMats;
   const glowIndex = enabled.indexOf('glow');
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -399,6 +410,12 @@ export function RealmQueueCard({
               超级激化当前设为「跟随焕新 / 制衣缺口」，但下方刷取顺序中这两项均未开启，双倍激化将跳过；如需固定刷取可改为「继承兜底设置」。
             </p>
           )}
+          {dblFollowCraftingNoCommon && (
+            <p className="flex items-center gap-1 text-text-secondary">
+              <AlertTriangle className="h-3 w-3 shrink-0 text-warning" />
+              制衣材料默认仅刷魔物晶石（不含丝线与噗灵）；如需趁激化双倍刷取丝线/噗灵，请在下方「素材激化」开启「用体力刷丝线与噗灵」。
+            </p>
+          )}
         </div>
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -414,6 +431,13 @@ export function RealmQueueCard({
                   disabled={disabled}
                   estimate={queueSummary.goals[entry.goal]}
                   computing={glowComputing}
+                  detailOverride={
+                    entry.goal === 'renewal'
+                      ? farmCommonMats
+                        ? '按「焕新」计划刷泡泡、丝线与噗灵'
+                        : '按「焕新」计划刷各类泡泡（默认不刷丝线与噗灵）'
+                      : undefined
+                  }
                   warn={entry.goal === 'glow' && glowIndex >= 0 && glowIndex < enabled.length - 1}
                   onToggle={(on) => save(entries.map((item) => (item.goal === entry.goal ? { ...item, enabled: on } : item)))}
                 >

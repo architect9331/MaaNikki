@@ -1,5 +1,16 @@
 import { useAccountStateStore, periodCompleted, periodTaskLabel, crownTargetStars, crownProgress } from '@/stores/accountStateStore';
-import { REALM_GOAL_LABELS, realmFarmOnlyEnabled, realmOptionActive, realmOptionBackup, realmOptionLabel, realmOptionSections, realmQueue } from '@/utils/nikkiOptions';
+import {
+  COLLECTION_ADVANCED_OPTIONS,
+  REALM_GOAL_LABELS,
+  realmCollectionWorkflow,
+  realmFarmOnlyEnabled,
+  realmOptionActive,
+  realmOptionBackup,
+  realmOptionLabel,
+  realmOptionSections,
+  realmQueue,
+  realmReserveBling,
+} from '@/utils/nikkiOptions';
 import { RealmCollectionWorkflow, RealmQueueCard } from './RealmQueueCard';
 import { XinghaiScoreHint, xinghaiSummary } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -1267,28 +1278,79 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
               )}
               {hasOptions && task.taskName === 'realm_challenge' && (
                 <div className="space-y-3">
-                  {realmOptionSections(taskDef.option || [], task.optionValues).map((section) => (
-                    <section key={section.id} aria-label={section.title} className="rounded-lg border border-border bg-bg-secondary/40 p-3">
-                      <div className="mb-3 border-b border-border pb-2.5">
-                        <h4 className="text-xs font-semibold text-text-primary">{section.title}</h4>
-                        <p className="mt-1 text-[11px] leading-5 text-text-secondary">{section.description}</p>
-                      </div>
-                      {section.id === 'collection' && (
+                  {realmOptionSections(taskDef.option || [], task.optionValues).map((section) => {
+                    if (section.id !== 'collection') {
+                      return (
+                        <section key={section.id} aria-label={section.title} className="rounded-lg border border-border bg-bg-secondary/40 p-3">
+                          <div className="mb-3 border-b border-border pb-2.5">
+                            <h4 className="text-xs font-semibold text-text-primary">{section.title}</h4>
+                            <p className="mt-1 text-[11px] leading-5 text-text-secondary">{section.description}</p>
+                          </div>
+                          <OptionListRenderer
+                            instanceId={instanceId}
+                            taskId={task.id}
+                            taskName={task.taskName}
+                            optionKeys={section.keys}
+                            optionValues={task.optionValues}
+                            disabled={!canEditOptions || isIncompatible}
+                            currentControllerName={currentControllerName}
+                            currentResourceName={currentResourceName}
+                          />
+                        </section>
+                      );
+                    }
+                    const primaryKeys = section.keys.filter((key) => !COLLECTION_ADVANCED_OPTIONS.has(key));
+                    const advancedKeys = section.keys.filter((key) => COLLECTION_ADVANCED_OPTIONS.has(key));
+                    const isFarmOnly = realmCollectionWorkflow(task.optionValues) === 'FarmOnly';
+                    const reserve = realmReserveBling(task.optionValues);
+                    const autoBling = task.optionValues.CollectionBling?.type !== 'switch' || task.optionValues.CollectionBling.value;
+                    const decompose = task.optionValues.CollectionDecompose?.type === 'switch' && task.optionValues.CollectionDecompose.value;
+                    const advSummary = isFarmOnly
+                      ? '只刷胚子读取与校准设置'
+                      : `保留 ${reserve > 0 ? `${(reserve / 10000).toLocaleString('zh-CN', { maximumFractionDigits: 1 })} 万` : '0'} 噗灵 · ${autoBling ? '缺噗灵自动补' : '不自动补噗灵'} · ${decompose ? '爆仓分解重复' : '不自动分解'}`;
+                    return (
+                      <section key={section.id} aria-label={section.title} className="rounded-lg border border-border bg-bg-secondary/40 p-3">
+                        <div className="mb-3 border-b border-border pb-2.5">
+                          <h4 className="text-xs font-semibold text-text-primary">{section.title}</h4>
+                          <p className="mt-1 text-[11px] leading-5 text-text-secondary">{section.description}</p>
+                        </div>
                         <RealmCollectionWorkflow instanceId={instanceId} taskId={task.id} values={task.optionValues}
                           disabled={!canEditOptions || isIncompatible} />
-                      )}
-                      <OptionListRenderer
-                        instanceId={instanceId}
-                        taskId={task.id}
-                        taskName={task.taskName}
-                        optionKeys={section.keys}
-                        optionValues={task.optionValues}
-                        disabled={!canEditOptions || isIncompatible}
-                        currentControllerName={currentControllerName}
-                        currentResourceName={currentResourceName}
-                      />
-                    </section>
-                  ))}
+                        {primaryKeys.length > 0 && (
+                          <OptionListRenderer
+                            instanceId={instanceId}
+                            taskId={task.id}
+                            taskName={task.taskName}
+                            optionKeys={primaryKeys}
+                            optionValues={task.optionValues}
+                            disabled={!canEditOptions || isIncompatible}
+                            currentControllerName={currentControllerName}
+                            currentResourceName={currentResourceName}
+                          />
+                        )}
+                        {advancedKeys.length > 0 && (
+                          <details className="mt-2 rounded-lg border border-border bg-bg-primary/60 px-3 py-2">
+                            <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-xs text-text-secondary">
+                              <span className="font-medium text-text-primary">仓库保护、分解与保留噗灵设置</span>
+                              <span className="text-[11px] text-text-muted">{advSummary}</span>
+                            </summary>
+                            <div className="mt-3 border-t border-border pt-3">
+                              <OptionListRenderer
+                                instanceId={instanceId}
+                                taskId={task.id}
+                                taskName={task.taskName}
+                                optionKeys={advancedKeys}
+                                optionValues={task.optionValues}
+                                disabled={!canEditOptions || isIncompatible}
+                                currentControllerName={currentControllerName}
+                                currentResourceName={currentResourceName}
+                              />
+                            </div>
+                          </details>
+                        )}
+                      </section>
+                    );
+                  })}
                 </div>
               )}
               {hasOptions && task.taskName !== 'realm_challenge' && (

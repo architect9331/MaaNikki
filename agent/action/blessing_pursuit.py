@@ -10,13 +10,14 @@ from task_control import TaskStopped
 from daily.runtime import Executors, parameters
 from daily.settings import ROOT
 from collection.pursuit import FiveStarPursuit
+from collection.decompose import DuplicateDecomposer, LowRarityDecomposer
 from collection.inventory_workflow import FiveStarInventory
 from collection.organize import organize_inventory
 from collection.scanner import RescanSlot
 from collection.statistics import is_enabled as stats_enabled, upload
 from collection.storage import InventoryStore
 from collection.blessing import SLOTS
-from account_state import AccountState
+from account_state import AccountState, game_day
 
 ORGANIZE_OPTIONS = {"auto": None, "always": False, "always_unlock": True}
 
@@ -196,3 +197,143 @@ class BlessingPursuitAction(CustomAction):
                         pursuit.save()
                 except (OSError, ValueError, KeyError, TypeError) as error:
                     rt.log(f"五星追全进度保存失败：{error}。")
+
+
+@agent_action("nikki.blessing_maintain")
+class BlessingMaintainAction(CustomAction):
+    """Zero-stamina warehouse organize / upgrade embryos / decompose surplus triggered from UI."""
+
+    def run(self, context, argv):
+        rt = Executors(context)
+        folder = ROOT / "logs/blessing-maintain" / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        folder.mkdir(parents=True, exist_ok=True)
+        pursuit = None
+        try:
+            options = parameters(context, argv.node_name)
+            mode = str(options.get("mode", "organize"))
+            if mode not in ("organize", "upgrade", "decompose"):
+                raise ValueError(f"未知的祝福闪光整理动作：{mode}")
+            catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+            raw_reserve = parameters(context, "MaaNikki_Pursuit_ReserveBlingOption").get("amount", 0)
+            try:
+                reserve_bling = max(0, int(str(raw_reserve or 0).strip().replace(",", "")))
+            except (ValueError, TypeError):
+                reserve_bling = 0
+
+            if mode == "organize":
+                rt.log("祝福闪光整理：正在检查头部、手部、脚部并锁定新增的五星满级颜色。")
+                result = organize_inventory(rt, catalog, allow_unlock=False, read_only=False)
+                if result["published"]:
+                    try:
+                        _, protected, _ = InventoryStore(ROOT, catalog, rt).load_organization()
+                        AccountState.for_runtime(ROOT, rt).update(
+                            lambda data: data["observations"]
+                            .setdefault("collection_history", {})
+                            .__setitem__(str(game_day()), {"owned": len(protected)})
+                        )
+                    except (OSError, ValueError, KeyError, TypeError):
+                        pass
+                if not rt.stopped:
+                    rt.main()
+                if not result["published"] and organization_issue(rt, catalog) is not None:
+                    rt.log("祝福闪光整理未完成，已保留上一份有效记录。")
+                    return False
+                _, finished = rt.finish(argv.node_name)
+                return bool(result["published"]) and finished
+
+            issue = organization_issue(rt, catalog)
+            if issue is not None:
+                rt.log("祝福闪光仓库缺少完整排序记录，先执行一次整理与锁定。")
+                result = organize_inventory(rt, catalog, allow_unlock=False, read_only=False)
+                if not result["published"] and organization_issue(rt, catalog) is not None:
+                    rt.log("仓库整理未完成且没有可用记录，暂不能执行后续操作。")
+                    if not rt.stopped:
+                        rt.main()
+                    return False
+
+            pursuit = FiveStarInventory(rt, catalog, folder)
+            pursuit.reserve_bling = reserve_bling
+            pursuit.share_statistics = stats_enabled(
+                ROOT,
+                parameters(context, "MaaNikki_Pursuit_StatsOption").get("enabled") is not False,
+            )
+            pursuit.prepare(f"manual_{mode}")
+
+            if pursuit.organization.get("decomposition_pending") or any(
+                row["rarity"] <= 4 and row["level"] == 0 and not row["locked"] and row["mutable"]
+                for rows in pursuit.organization.get("slots", {}).values()
+                for row in rows
+            ):
+                LowRarityDecomposer(pursuit).run()
+
+            if mode == "upgrade":
+                if pursuit.queued_rolls():
+                    outcome = pursuit.process_inventory()
+                    reasons = {
+                        "collection_complete": "图鉴内五星颜色已收齐",
+                        "bling_shortage": (
+                            f"当前噗灵扣除保留数（{reserve_bling}）后不足继续升级，已保存进度"
+                            if reserve_bling > 0
+                            else "升级噗灵不足，已保存进度"
+                        ),
+                        "materials_shortage": "升级材料（四星及以下素材）不足，已保存进度",
+                        "no_embryos": "当前可升级的缺色五星胚子已全部处理完成",
+                    }
+                    msg = reasons.get(outcome["status"], "仓库胚子升级阶段已完成")
+                else:
+                    rt.log("当前仓库暂无需要升级的缺色五星胚子。")
+                    msg = "仓库中暂无待升级的缺色五星胚子，已保存状态"
+                ok = pursuit.finish(msg)
+            else:
+                # DuplicateDecomposer handles 5-star unlocked surplus only when no pending 5-star embryos await upgrade.
+                if (
+                    pursuit.pending is None
+                    and not pursuit.organization.get("recovery", {}).get("slots")
+                    and not pursuit.organization.get("unfinished")
+                    and not pursuit.queued_rolls()
+                ):
+                    for _ in range(10):
+                        if rt.stopped or not DuplicateDecomposer(pursuit).run():
+                            break
+                        copies = (pursuit.report.get("duplicate_decomposition") or {}).get("copies", 0)
+                        if copies < 100:
+                            break
+                    msg = "已完成低星素材与多余五星闪光清理"
+                else:
+                    rt.log(
+                        f"已完成四星及以下清理；尚有 {pursuit.queued_rolls()} 个未升级五星胚子等待升级，已保留未分解。"
+                    )
+                    msg = "已完成四星及以下清理，待升级五星胚子已保留"
+                ok = pursuit.finish(msg)
+
+            if not rt.stopped:
+                rt.main()
+            _, finished = rt.finish(argv.node_name)
+            return bool(ok) and finished
+        except TaskStopped as error:
+            if pursuit is not None:
+                pursuit.record_interruption(error, reason="用户停止，进度已保存")
+            raise
+        except (RescanSlot, OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
+            reason = "前台变化使当前升级或列表状态失效，请重试" if isinstance(error, RescanSlot) else str(error)
+            if not rt.stopped:
+                rt.diagnostic("blessing_maintain", reason)
+            if pursuit is not None:
+                pursuit.record_interruption(error, reason=reason)
+            rt.log(f"祝福闪光仓库整理暂停：{reason}。")
+            if not rt.stopped:
+                rt.main()
+            return False
+        finally:
+            if pursuit is not None:
+                try:
+                    pursuit.log_progress("本轮结束" if pursuit.report.get("complete") else "本轮中断")
+                    pursuit.record_history()
+                    if pursuit.share_statistics:
+                        upload(pursuit.store.account, ROOT, catalog_version=pursuit.catalog["version"])
+                    if pursuit.prepared and "inventory" not in pursuit.report:
+                        pursuit.checkpoint()
+                    else:
+                        pursuit.save()
+                except (OSError, ValueError, KeyError, TypeError) as error:
+                    rt.log(f"祝福闪光维护进度保存失败：{error}。")

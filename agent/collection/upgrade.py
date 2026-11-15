@@ -172,10 +172,13 @@ class UpgradeUI:
             amount = self.integer(fields["material_count"])
             if amount is None:
                 raise RuntimeError("升级材料数量无法读取")
+            bling = self.integer(fields["bling"])
+            if bling is not None and bling >= 0:
+                self.owner.observe_bling(bling)
             if amount == 0:
                 self.return_list(generation)
                 return {"status": "materials_shortage", "facts": current}
-            bling, cost = self.integer(fields["bling"]), self.integer(fields["cost"])
+            cost = self.integer(fields["cost"])
             if bling is None or cost is None or cost <= 0:
                 raise RuntimeError("升级噗灵持有量或费用无法读取")
             reserve = 0 if once else max(0, int(getattr(self.owner, "reserve_bling", 0) or 0))

@@ -12,6 +12,7 @@ import type { PlanMode } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import { isTauri } from '@/utils/paths';
 import { BlessingForecastPanel } from './RealmForecastPanel';
+import { ManualReadButton, ManualReadLogStrip } from './ManualReadControls';
 import { Card, Segmented, Tile, Notices, secondaryButton, type Notice } from './ui/FeaturePage';
 import { PlanLayout, PlanListPanel, PlanPanel, bulkButton, planCheckbox, planField } from './CollectionPlan';
 
@@ -287,6 +288,7 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
         advice={advice}
       />
       <Notices items={notices} />
+      <ManualReadLogStrip modes={['bless_organize', 'bless_upgrade', 'bless_decompose']} />
 
       <PlanLayout
         list={
@@ -453,6 +455,18 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
                       : '全收集下次升满后开始统计'
                   }
                 />
+              </div>
+            </Card>
+            <Card title="仓库整理与清理" aside={<span className="text-xs text-text-secondary">不消耗活跃能量</span>}>
+              <div className="space-y-2.5 p-4">
+                <p className="text-xs leading-5 text-text-secondary">
+                  无需进入副本即可单独整理锁定满级新色、升级仓库中已有的五星胚子，或清理低星素材与多余未锁定闪光。
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <ManualReadButton targetMode="bless_organize" idleLabel="整理并锁定新色" compact />
+                  <ManualReadButton targetMode="bless_upgrade" idleLabel="升级已有胚子" compact />
+                  <ManualReadButton targetMode="bless_decompose" idleLabel="清理多余闪光" compact />
+                </div>
               </div>
             </Card>
           </>

@@ -18,6 +18,7 @@ import {
   addCosts,
   buildRenewalGroups,
   craftingRequirement,
+  materialGroup,
   MAX_LEVEL,
   renewalCost,
   RENEWED_LEVEL,
@@ -90,6 +91,9 @@ export interface MaterialGoalForecast {
   mode: 'all' | 'selected';
   scope?: 'all' | 'suits';
   source?: 'plan' | 'targets';
+  includeCommonMats?: boolean;
+  priorityPendingCount?: number;
+  priorityEnergy?: number;
   totals: MaterialTotals;
   /** Materials actually farmed by 幻境挑战 for this goal (for crafting, only trial crystals; for renewal, all farmable materials). */
   realmTotals: MaterialTotals;
@@ -286,6 +290,7 @@ function simulateMaterialTrend(options: {
   dailyBlingIncome: number;
   extraEnergy?: number;
   includeJihuaInPrimary: boolean;
+  includeCommonMats?: boolean;
   totalRequiredEnergy: number;
 }): {
   energy: number;
@@ -294,7 +299,17 @@ function simulateMaterialTrend(options: {
   blingSavedEnergy: number;
   trend: MaterialTrendSeries;
 } {
-  const { kind, rows, crafting, dailyEnergy, dailyBlingIncome, extraEnergy = 0, includeJihuaInPrimary, totalRequiredEnergy } = options;
+  const {
+    kind,
+    rows,
+    crafting,
+    dailyEnergy,
+    dailyBlingIncome,
+    extraEnergy = 0,
+    includeJihuaInPrimary,
+    includeCommonMats = true,
+    totalRequiredEnergy,
+  } = options;
   const safeDaily = Math.max(10, dailyEnergy);
   const mats = crafting?.materials ?? {};
 
@@ -490,7 +505,7 @@ function simulateMaterialTrend(options: {
       hadJihuaNonBling &&
       primaryItems.every((item) => (item.id !== SHINY_BUBBLE_ID && item.id !== THREAD_ID) || item.missing <= 0)
     ) {
-      recordMilestone('jihua_mat', '闪亮泡泡与丝线备齐', day, energySpent);
+      recordMilestone('jihua_mat', includeCommonMats ? '闪亮泡泡与丝线备齐' : '闪亮泡泡备齐', day, energySpent);
     }
     if (initialRemEnergy > 0 && remEnergy <= halfTarget) {
       recordMilestone('half', '材料缺口完成一半', day, energySpent);
@@ -663,6 +678,7 @@ export function computeRenewalForecast(
   dailyEnergy: number,
   dailyBlingIncome: number,
   extraEnergy = 0,
+  includeCommonMats = false,
 ): MaterialGoalForecast {
   const source = renewalSource(materials);
   const plan = materials.renewal_plan;
@@ -675,6 +691,7 @@ export function computeRenewalForecast(
       status: 'needs_wardrobe',
       mode,
       source,
+      includeCommonMats,
       totals: { rows: [], missingKinds: 0, trackedKinds: 0, energy: 0, days: 0 },
       realmTotals: { rows: [], missingKinds: 0, trackedKinds: 0, energy: 0, days: 0 },
       rawEnergy: 0,
@@ -701,6 +718,8 @@ export function computeRenewalForecast(
   }
 
   const required: Record<string, number> = {};
+  const priorityRequired: Record<string, number> = {};
+  let priorityPendingCount = 0;
   if (source === 'targets') {
     const glow = materials.glow_plan;
     if (glow && glow.enabled !== false && !glow.completed) {
@@ -713,6 +732,7 @@ export function computeRenewalForecast(
     const profile = buildOwnedProfile(payload, settings);
     const groups: RenewalGroup[] = buildRenewalGroups(payload.catalog, profile);
     const targets = plan?.targets ?? {};
+    const priorityTargets = plan?.priority_targets ?? {};
     const topLevel = (group: RenewalGroup) => (group.renewable ? RENEWED_LEVEL : MAX_LEVEL);
     for (const group of groups) {
       const wanted = mode === 'all' ? topLevel(group) : targets[group.id];
@@ -721,6 +741,14 @@ export function computeRenewalForecast(
       if ((group.level ?? 0) < target) {
         addCosts(required, renewalCost(payload.catalog, group, target));
       }
+      const prioWanted = priorityTargets[group.id];
+      if (typeof prioWanted === 'number' && prioWanted > 0) {
+        const pTarget = Math.min(prioWanted, target);
+        if ((group.level ?? 0) < pTarget) {
+          priorityPendingCount++;
+          addCosts(priorityRequired, renewalCost(payload.catalog, group, pTarget));
+        }
+      }
     }
     const snapshotKey = `${payload.snapshot.updated_at ?? ''}:${payload.snapshot.scanned_count ?? 0}`;
     if (materials.renewal_baseline_key === `${snapshotKey}|${settings.updated_at ?? ''}`) {
@@ -728,11 +756,17 @@ export function computeRenewalForecast(
         if (required[id]) required[id] = Math.max(0, required[id] - Math.max(0, Number(used)));
       }
     }
+    for (const id of Object.keys(priorityRequired)) {
+      priorityRequired[id] = Math.min(priorityRequired[id], required[id] ?? 0);
+      if (priorityRequired[id] <= 0) delete priorityRequired[id];
+    }
   }
 
   const inventory = materials.inventory ?? {};
   const totals = summarizeMaterials(required, crafting, inventory, payload?.catalog.material_names, dailyEnergy);
-  const farmableRows = totals.rows.filter((row) => row.group !== 'world');
+  const isRealmFarmed = (id: string) =>
+    source === 'targets' || includeCommonMats || (id !== BLING_ID && id !== THREAD_ID);
+  const farmableRows = totals.rows.filter((row) => row.group !== 'world' && isRealmFarmed(row.id));
   const rawEnergy = farmableRows.reduce((sum, row) => sum + row.energy, 0);
   const safeDaily = Math.max(10, dailyEnergy);
   const realmTotals: MaterialTotals = {
@@ -743,8 +777,21 @@ export function computeRenewalForecast(
     days: Math.ceil(rawEnergy / safeDaily),
   };
 
-  const fullTotals = summarizeMaterials(required, crafting, {}, payload?.catalog.material_names, dailyEnergy);
+  const fullFarmableReq = Object.fromEntries(
+    Object.entries(required).filter(([id]) => materialGroup(crafting?.materials[id]) !== 'world' && isRealmFarmed(id)),
+  );
+  const fullTotals = summarizeMaterials(fullFarmableReq, crafting, {}, payload?.catalog.material_names, dailyEnergy);
   const totalRequiredEnergy = fullTotals.energy;
+
+  const prioTotals = summarizeMaterials(
+    Object.fromEntries(
+      Object.entries(priorityRequired).filter(([id]) => materialGroup(crafting?.materials[id]) !== 'world' && isRealmFarmed(id)),
+    ),
+    crafting,
+    inventory,
+    payload?.catalog.material_names,
+    dailyEnergy,
+  );
 
   const sim = simulateMaterialTrend({
     kind: 'renewal',
@@ -754,6 +801,7 @@ export function computeRenewalForecast(
     dailyBlingIncome,
     extraEnergy,
     includeJihuaInPrimary: true,
+    includeCommonMats: source === 'targets' || includeCommonMats,
     totalRequiredEnergy,
   });
 
@@ -773,6 +821,9 @@ export function computeRenewalForecast(
     status: sim.energy === 0 ? 'done' : 'ready',
     mode,
     source,
+    includeCommonMats,
+    priorityPendingCount,
+    priorityEnergy: prioTotals.energy,
     totals,
     realmTotals,
     rawEnergy,
@@ -1143,6 +1194,19 @@ export function simulateQueueSchedule(options: {
     }
     const startDay = enabled ? (prefixSim.startDays[goal] ?? afterSim?.startDays[goal] ?? null) : null;
     const finishDay = enabled ? (prefixSim.finishDays[goal] ?? afterSim?.finishDays[goal] ?? null) : null;
+    const includeCommon = f.includeCommonMats ?? false;
+    let note: string | undefined;
+    if (goal === 'crafting' && f.energy === 0 && f.allTrackedEnergy > 0) {
+      note = '试炼晶石已齐（噗灵/丝线需自备）';
+    } else if (goal === 'renewal' && f.source !== 'targets' && !includeCommon && f.energy === 0 && f.allTrackedEnergy > 0) {
+      note = '所需泡泡已齐（丝线/噗灵默认不消耗体力）';
+    } else if (goal === 'renewal' && (f.priorityPendingCount ?? 0) > 0) {
+      note = `优先搭配计算 ${f.priorityPendingCount} 件（约 ${(f.priorityEnergy ?? 0).toLocaleString('zh-CN')} 体力）`;
+    } else if (goal === 'renewal' && f.source !== 'targets' && !includeCommon && f.allTrackedEnergy > f.rawEnergy) {
+      note = '仅计泡泡消耗（已跳过丝线与噗灵）';
+    } else if (f.blingSavedEnergy > 0) {
+      note = `日常噗灵抵扣约 ${f.blingSavedEnergy.toLocaleString('zh-CN')} 体力`;
+    }
     return {
       goal,
       enabled,
@@ -1152,12 +1216,7 @@ export function simulateQueueSchedule(options: {
       ownDays: f.days,
       queuedStartDay: startDay,
       queuedFinishDay: f.energy === 0 && enabled ? (startDay ?? prefixSim.finishDay) : finishDay,
-      note:
-        goal === 'crafting' && f.energy === 0 && f.allTrackedEnergy > 0
-          ? '试炼晶石已齐（噗灵/丝线需自备）'
-          : f.blingSavedEnergy > 0
-            ? `日常噗灵抵扣约 ${f.blingSavedEnergy.toLocaleString('zh-CN')} 体力`
-            : undefined,
+      note,
     };
   };
 
