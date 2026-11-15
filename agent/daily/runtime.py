@@ -234,7 +234,7 @@ class Runtime:
             inputs.check()
         window_only = bool(getattr(inputs, "window_only", False))
         use_window = self._use_window_input(inputs)
-        window_cursor_pos = bool(fields.pop("window_cursor_pos", True))
+        window_cursor_pos = bool(fields.pop("window_cursor_pos", False))
         if action in {"KeyDown", "KeyUp"}:
             if inputs is not None:
                 from game_keys import Binding
@@ -254,11 +254,13 @@ class Runtime:
             point = self._target_point(fields.get("target"), "界面滚动目标")
             with measure("input.action"):
                 return bool(inputs.scroll_window_point(
-                    point[0], point[1], fields.get("dx", 0), fields.get("dy", 0)))
+                    point[0], point[1], fields.get("dx", 0), fields.get("dy", 0),
+                    with_cursor_pos=window_cursor_pos))
         if action == "Swipe" and use_window:
             with measure("input.action"):
                 return bool(inputs.swipe_window_points(
-                    fields.get("begin"), fields.get("end"), fields.get("duration", 300)))
+                    fields.get("begin"), fields.get("end"), fields.get("duration", 300),
+                    with_cursor_pos=window_cursor_pos))
         if action == "Click" and ui_click:
             point = self._target_point(fields.get("target"), "界面点击目标")
             # Maa's rectangular Click target is random inside the box. UI

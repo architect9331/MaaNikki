@@ -692,8 +692,8 @@ class BackgroundInput(ForegroundInput):
         target, (coords,) = prepared
         return self._send_window_message(target, _WM_MOUSEMOVE, 0, coords[0], "后台鼠标移动")
 
-    def click_window_point(self, x, y, pause, *, with_cursor_pos=True):
-        """Send a synchronous left click to the target window after activation; briefly borrow cursor if requested."""
+    def click_window_point(self, x, y, pause, *, with_cursor_pos=False):
+        """Send a synchronous left click to the target window after activation; optionally borrow cursor."""
         prepared = self._prepare_window_points((x, y))
         if prepared is None:
             return False
@@ -703,32 +703,28 @@ class BackgroundInput(ForegroundInput):
                 wall_time.sleep(0.002)
             if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lparam, "后台鼠标移动"):
                 return False
-            wall_time.sleep(0.02 if with_cursor_pos else 0.01)
+            wall_time.sleep(0.02)
             if not self._send_window_message(target, _WM_LBUTTONDOWN, _MK_LBUTTON, lparam, "后台鼠标点击"):
                 return False
             try:
-                if with_cursor_pos:
-                    wall_time.sleep(0.05)
-                    pressed = not self.stopped()
-                else:
-                    pressed = pause(0.05)
+                wall_time.sleep(0.05)
+                pressed = not self.stopped()
             finally:
                 self._release_window_button(target, lparam, "后台鼠标点击释放")
-            if with_cursor_pos:
-                wall_time.sleep(0.03)
-                return pressed and not self.stopped()
-            return pressed
+            wall_time.sleep(0.03 if with_cursor_pos else 0.02)
+            return pressed and not self.stopped()
 
-    def scroll_window_point(self, x, y, dx, dy):
-        """Send synchronous WM_MOUSEWHEEL to the target coordinate after activation and cursor hover."""
+    def scroll_window_point(self, x, y, dx, dy, *, with_cursor_pos=False):
+        """Send synchronous WM_MOUSEWHEEL to the target coordinate after activation."""
         prepared = self._prepare_window_points((x, y))
         if prepared is None:
             return False
         target, ((lparam, screen_x, screen_y, _, _),) = prepared
         # Win32 WM_MOUSEWHEEL lParam carries screen coordinates, not client coordinates.
         screen_lparam = ((screen_y & 0xFFFF) << 16) | (screen_x & 0xFFFF)
-        with self._borrowed_cursor(screen_x, screen_y, enabled=True):
-            wall_time.sleep(0.002)
+        with self._borrowed_cursor(screen_x, screen_y, enabled=with_cursor_pos):
+            if with_cursor_pos:
+                wall_time.sleep(0.002)
             if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lparam, "后台鼠标移动"):
                 return False
             wall_time.sleep(0.04)
@@ -747,7 +743,7 @@ class BackgroundInput(ForegroundInput):
             wall_time.sleep(0.03)
         return not self.stopped()
 
-    def swipe_window_points(self, begin, end, duration_ms=300):
+    def swipe_window_points(self, begin, end, duration_ms=300, *, with_cursor_pos=False):
         """Send a synchronous bounded drag between two 1280x720 points after activation."""
         if (not isinstance(begin, (list, tuple)) or len(begin) < 2
                 or not isinstance(end, (list, tuple)) or len(end) < 2):
@@ -760,8 +756,9 @@ class BackgroundInput(ForegroundInput):
         steps = max(8, min(30, round(duration_s / 0.02)))
         last_lp = lp0
         pressed = False
-        with self._borrowed_cursor(sx0, sy0, enabled=True):
-            wall_time.sleep(0.002)
+        with self._borrowed_cursor(sx0, sy0, enabled=with_cursor_pos):
+            if with_cursor_pos:
+                wall_time.sleep(0.002)
             if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lp0, "后台拖动起点"):
                 return False
             wall_time.sleep(0.02)
@@ -776,11 +773,12 @@ class BackgroundInput(ForegroundInput):
                     ratio = step / steps
                     cx = round(cx0 + (cx1 - cx0) * ratio)
                     cy = round(cy0 + (cy1 - cy0) * ratio)
-                    sx = round(sx0 + (sx1 - sx0) * ratio)
-                    sy = round(sy0 + (sy1 - sy0) * ratio)
                     last_lp = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
-                    with self._per_monitor_dpi():
-                        self.user32.SetCursorPos(sx, sy)
+                    if with_cursor_pos:
+                        sx = round(sx0 + (sx1 - sx0) * ratio)
+                        sy = round(sy0 + (sy1 - sy0) * ratio)
+                        with self._per_monitor_dpi():
+                            self.user32.SetCursorPos(sx, sy)
                     if not self._send_window_message(
                         target, _WM_MOUSEMOVE, _MK_LBUTTON, last_lp, "后台拖动轨迹"
                     ):
