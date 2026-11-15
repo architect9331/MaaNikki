@@ -152,21 +152,44 @@ class RejuvenateModel:
         table = self.part_groups.get(part) or {}
         if cname in table:
             return list(table[cname])
-        cname_no_ascii = re.sub(r"[A-Za-z]", "", cname)
-        if cname_no_ascii and cname_no_ascii != cname and cname_no_ascii in table:
-            return list(table[cname_no_ascii])
-        if len(cname) >= 3:
-            same_len = [
-                (groups, sum(a != b for a, b in zip(cname, key)))
-                for key, groups in table.items() if len(key) == len(cname)
+
+        # Build sanitized candidates only after exact verbatim match misses
+        # (preserves real names ending in digits like 全黑信念01 or starting with style words).
+        candidates: list[str] = []
+        no_alnum = re.sub(r"[0-9A-Za-z_]", "", cname)
+        if no_alnum and no_alnum != cname:
+            candidates.append(no_alnum)
+        for base in (cname, no_alnum):
+            if not base:
+                continue
+            for pref in ("典雅", "清新", "甜美", "性感", "帅气"):
+                if base.startswith(pref) and len(base) >= len(pref) + 2:
+                    stripped = base[len(pref):]
+                    if stripped not in candidates:
+                        candidates.append(stripped)
+
+        for cand in candidates:
+            if cand in table:
+                return list(table[cand])
+
+        for cand in (cname, *candidates):
+            cjk_count = sum("\u4e00" <= ch <= "\u9fff" for ch in cand)
+            if len(cand) < 3 or cjk_count < 2:
+                continue
+            dist1 = [
+                groups for key, groups in table.items()
+                if len(key) == len(cand) and sum(a != b for a, b in zip(cand, key)) == 1
             ]
-            dist1 = [groups for groups, d in same_len if d == 1]
-            dist2 = [groups for groups, d in same_len if d == 2]
-            if len(dist1) == 1 and (len(cname) >= 4 or not dist2):
+            if len(dist1) == 1:
                 return list(dist1[0])
-            trunc1 = [groups for key, groups in table.items() if cname in key and len(key) - len(cname) == 1]
-            if len(trunc1) == 1:
-                return list(trunc1[0])
+            # Single omitted char at any position (prefix, suffix, or interior such as 晨跑第天 -> 晨跑第一天).
+            del1 = [
+                groups for key, groups in table.items()
+                if len(key) - len(cand) == 1
+                and any(key[:i] + key[i + 1:] == cand for i in range(len(key)))
+            ]
+            if len(del1) == 1:
+                return list(del1[0])
         return []
 
     def category_name(self, cid: str) -> str:
@@ -243,19 +266,19 @@ def detect_rejuv_rows(frame: np.ndarray, grid_top: int = GRID_TOP, grid_bottom: 
     ])
     bv = np.max(col_bv, axis=0)
     h_img = len(bv)
-    best_sc, best_ys = -1e9, []
-    for phase in np.linspace(0, ROW_PITCH_EXACT, 245, endpoint=False):
-        ys = []
+
+    def _eval_lattice(phase: float, pitch: float) -> tuple[float, list[int]]:
+        ys: list[int] = []
         k = 0
         while True:
-            by = int(round(-180 + phase + k * ROW_PITCH_EXACT))
+            by = int(round(-180 + phase + k * pitch))
             k += 1
             if by >= h_img - 40:
                 break
             if by + CARD_H > grid_top:
                 ys.append(by)
         if not ys:
-            continue
+            return -1e9, []
         tot = 0.0
         for by in ys:
             c0, c1 = max(grid_top + 2, by + 6), min(h_img, by + 184)
@@ -265,9 +288,19 @@ def detect_rejuv_rows(frame: np.ndarray, grid_top: int = GRID_TOP, grid_bottom: 
             g2_0, g2_1 = min(h_img, by + 190), min(h_img, by + 238)
             g2 = float(np.mean(bv[g2_0:g2_1])) if g2_1 > g2_0 + 8 else 0.0
             tot += in_card - 1.5 * g1 - 1.5 * g2
-        sc = tot / len(ys)
+        return tot / len(ys), ys
+
+    best_sc, best_ys, best_phase = -1e9, [], 0.0
+    for phase in np.linspace(0, ROW_PITCH_EXACT, 245, endpoint=False):
+        sc, ys = _eval_lattice(float(phase), ROW_PITCH_EXACT)
         if sc > best_sc:
-            best_sc, best_ys = sc, ys
+            best_sc, best_ys, best_phase = sc, ys, float(phase)
+    # Refine fractional pitch slightly so 20-row tall grids do not accumulate multi-pixel vertical drift.
+    for pitch in np.linspace(ROW_PITCH_EXACT - 0.6, ROW_PITCH_EXACT + 0.6, 13):
+        for phase in best_phase + np.linspace(-3.0, 3.0, 13):
+            sc, ys = _eval_lattice(float(phase), float(pitch))
+            if sc > best_sc:
+                best_sc, best_ys = sc, ys
     return [by for by in best_ys if by >= grid_top and by + 222 <= grid_bottom]
 
 
@@ -276,7 +309,13 @@ def is_card_present(frame: np.ndarray, bx: int, by: int) -> bool:
         return False
     body = frame[by + 16:by + 166, bx + 12:bx + 138]
     gray = cv2.cvtColor(body, cv2.COLOR_BGR2GRAY)
-    return float(np.std(gray)) >= 9.0
+    if float(np.std(gray)) < 9.0:
+        return False
+    # Reject smooth translucent 3D background patches (sky/clouds) lacking sharp card UI/text strokes.
+    ig = gray.astype(np.int16)
+    dx = np.abs(np.diff(ig, axis=1))[:-1, :]
+    dy = np.abs(np.diff(ig, axis=0))[:, :-1]
+    return float(np.mean((dx + dy) > 14)) >= 0.005
 
 
 def has_renewed_star(frame: np.ndarray, bx: int, by: int) -> bool:
@@ -292,7 +331,7 @@ def has_renewed_star(frame: np.ndarray, bx: int, by: int) -> bool:
     return int(np.sum(gray > 235)) >= 25
 
 
-def _read_single_ocr(rt, frame: np.ndarray, roi: list[int], expected: str) -> str:
+def _read_single_ocr(rt, frame: np.ndarray, roi: list[int], expected: str, *, threshold: float = 0.50) -> str:
     rx, ry, rw, rh = roi
     crop = frame[max(0, ry):min(frame.shape[0], ry + rh), max(0, rx):min(frame.shape[1], rx + rw)]
     if crop.size == 0:
@@ -302,6 +341,7 @@ def _read_single_ocr(rt, frame: np.ndarray, roi: list[int], expected: str) -> st
     res = rt.recognize("MaaNikki_Daily_OCR", {
         "roi": [0, 0, padded.shape[1], padded.shape[0]],
         "expected": expected,
+        "threshold": threshold,
     }, image=padded)
     if res and res.hit:
         items = getattr(res, "filtered_results", []) or [res.best_result]
@@ -320,16 +360,16 @@ def _batch_read_rows_ocr(
     level_by_cell: dict[tuple[int, int], int | None] = {}
     name_by_cell: dict[tuple[int, int], str] = {}
 
-    # Chunk 2 rows per band (<=470px height) so det.onnx never downscales tall 5120p crops.
+    # Chunk 2 rows per band (<=480px height) so det.onnx never downscales tall 5120p crops.
     for start in range(0, len(rows), 2):
         chunk = rows[start:start + 2]
         top_y = max(GRID_TOP, min(by for by, _ in chunk) + 114)
-        bot_y = min(frame.shape[0], max(by for by, _ in chunk) + 224)
+        bot_y = min(frame.shape[0], max(by for by, _ in chunk) + 234)
         band_roi = [FIRST_X - 10, top_y, 1080, bot_y - top_y]
         res = rt.recognize("MaaNikki_Daily_OCR", {
             "roi": band_roi,
             "expected": ".+",
-            "threshold": 0.60,
+            "threshold": 0.55,
         }, image=frame)
         items = (getattr(res, "filtered_results", []) or [res.best_result]) if (res and res.hit) else []
 
@@ -352,7 +392,8 @@ def _batch_read_rows_ocr(
                 continue
             if matched_by + 112 <= cy <= matched_by + 158:
                 lv_frags.setdefault((matched_by, col), []).append((ix, txt))
-            elif matched_by + 184 <= cy <= matched_by + 226:
+            elif matched_by + 192 <= cy <= matched_by + 232:
+                # Style tag & attribute score glyphs sit at by+178..181 (bottom ~by+189); clothing name at by+194..217.
                 name_frags.setdefault((matched_by, col), []).append((ix, txt))
 
         for by, cols in chunk:
@@ -369,21 +410,49 @@ def _batch_read_rows_ocr(
             renewed = has_renewed_star(frame, bx, by)
             lv = RENEWED_LEVEL if renewed else level_by_cell.get((by, col))
             if lv is None:
-                lv_raw = _read_single_ocr(rt, frame, [bx + 18, by + 118, 114, 36], r"(?:MAX|等级\d+|\d+)")
+                lv_raw = _read_single_ocr(rt, frame, [bx + 18, by + 118, 114, 36], r"(?:MAX|等级\d+|\d+)", threshold=0.55)
                 lv = parse_rejuv_level(lv_raw)
             nm = name_by_cell.get((by, col), "")
             if not clean_clothing_name(nm):
-                nm = _read_single_ocr(rt, frame, [bx - 4, by + 186, 158, 36], ".+")
+                nm = _read_single_ocr(rt, frame, [bx - 4, by + 193, 158, 34], ".+", threshold=0.45)
             out[(by, col)] = (nm, lv, renewed)
     return out
 
 
-def _same_rejuv_grid(first: np.ndarray | None, second: np.ndarray | None) -> bool:
+def _same_rejuv_grid(
+    first: np.ndarray | None,
+    second: np.ndarray | None,
+    occupied_rows: list[tuple[int, int]] | None = None,
+) -> bool:
     if first is None or second is None or first.shape != second.shape:
         return False
+    # Compare actual occupied card artwork bands using zero-shift normalized correlation
+    # so live translucent 3D background motion never breaks top/bottom stillness checks.
+    if occupied_rows:
+        scores: list[float] = []
+        f_gray = cv2.cvtColor(first, cv2.COLOR_BGR2GRAY)
+        s_gray = cv2.cvtColor(second, cv2.COLOR_BGR2GRAY)
+        picks = occupied_rows if len(occupied_rows) <= 3 else [
+            occupied_rows[0], occupied_rows[len(occupied_rows) // 2], occupied_rows[-1]
+        ]
+        for by, n_cols in picks:
+            y0, y1 = max(GRID_TOP + 6, by + 14), min(first.shape[0] - 20, by + 150)
+            x0, x1 = FIRST_X + 8, min(first.shape[1] - 20, FIRST_X + max(1, n_cols) * COL_PITCH - 24)
+            if y1 - y0 < 60 or x1 - x0 < 80:
+                continue
+            p1 = f_gray[y0:y1, x0:x1]
+            s_y0, s_y1 = max(0, y0 - 2), min(second.shape[0], y1 + 2)
+            p2 = s_gray[s_y0:s_y1, x0:x1]
+            if float(np.std(p1)) < 5.0 or p2.shape[0] < p1.shape[0]:
+                continue
+            sc = float(np.max(cv2.matchTemplate(p2, p1, cv2.TM_CCOEFF_NORMED)))
+            scores.append(sc)
+        if scores:
+            return float(np.median(scores)) >= 0.94
+
     y1 = max(GRID_TOP + 20, first.shape[0] - 24)
     diff = cv2.absdiff(first[GRID_TOP + 6:y1, 168:1224], second[GRID_TOP + 6:y1, 168:1224])
-    return float(np.mean(diff)) < 1.5
+    return float(np.mean(diff)) < 1.5 or float(np.mean(diff > 24)) < 0.015
 
 
 def _park_point(rt):
@@ -402,37 +471,69 @@ def _scroll_rejuv_and_park(rt, dy: int, wait_seconds: float) -> np.ndarray | Non
     return rt.capture()
 
 
+def _detect_occupied_rejuv_rows(frame: np.ndarray, row_ys: list[int]) -> list[tuple[int, list[int]]]:
+    """Return [(by, present_cols)] for rows with contiguous card occupancy before empty space."""
+    rows: list[tuple[int, list[int]]] = []
+    for by in row_ys:
+        present: list[int] = []
+        for col in range(COLS):
+            bx = FIRST_X + col * COL_PITCH
+            if not is_card_present(frame, bx, by):
+                break
+            present.append(col)
+        if not present:
+            if rows:
+                break
+            continue
+        rows.append((by, present))
+        if len(present) < COLS:
+            break
+    return rows
+
+
 def _scroll_rejuv_to_top(rt) -> np.ndarray | None:
     frame = rt.capture()
+    if frame is None:
+        return None
+    scroll_dy = 24000 if frame.shape[0] > 1200 else 14400
     for _ in range(12):
         if rt.stopped or frame is None:
             return None
-        after = _scroll_rejuv_and_park(rt, 14400, 0.28)
+        grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
+        row_ys = detect_rejuv_rows(frame, grid_top=GRID_TOP, grid_bottom=grid_bottom)
+        occ = [(by, len(cols)) for by, cols in _detect_occupied_rejuv_rows(frame, row_ys)]
+        after = _scroll_rejuv_and_park(rt, scroll_dy, 0.28)
         if after is None:
             return None
-        if _same_rejuv_grid(frame, after):
+        if _same_rejuv_grid(frame, after, occ):
             return after
         frame = after
     return frame
 
 
-def _measure_rejuv_scroll_delta(before: np.ndarray, after: np.ndarray, row_ys: list[int]) -> int | None:
-    if before is None or after is None or before.shape != after.shape or not row_ys:
+def _measure_rejuv_scroll_delta(
+    before: np.ndarray,
+    after: np.ndarray,
+    occupied_rows: list[tuple[int, int]],
+) -> int | None:
+    if before is None or after is None or before.shape != after.shape or not occupied_rows:
         return None
     grid_bottom = before.shape[0] - GRID_BOTTOM_MARGIN
-    anchors = [cy for cy in reversed(row_ys) if cy >= GRID_TOP][:3]
+    anchors = [(cy, n_cols) for cy, n_cols in reversed(occupied_rows) if cy >= GRID_TOP][:4]
     b_gray = cv2.cvtColor(before, cv2.COLOR_BGR2GRAY)
     a_gray = cv2.cvtColor(after, cv2.COLOR_BGR2GRAY)
     votes: list[int] = []
-    for cy in anchors:
-        tmpl = b_gray[cy + 16:cy + 146, FIRST_X + 10:FIRST_X + COLS * COL_PITCH - 30]
-        if tmpl.shape[0] < 100 or float(np.std(tmpl)) < 4.0:
+    for cy, n_cols in anchors:
+        x0 = FIRST_X + 10
+        x1 = min(before.shape[1] - 10, FIRST_X + max(1, n_cols) * COL_PITCH - 24)
+        tmpl = b_gray[cy + 16:cy + 146, x0:x1]
+        if tmpl.shape[0] < 100 or tmpl.shape[1] < 80 or float(np.std(tmpl)) < 4.0:
             continue
         low = max(12, GRID_TOP - 40)
         high = min(cy + 20, grid_bottom - tmpl.shape[0])
         if high < low + 8:
             continue
-        search = a_gray[low:high + tmpl.shape[0], FIRST_X + 10:FIRST_X + COLS * COL_PITCH - 30]
+        search = a_gray[low:high + tmpl.shape[0], x0:x1]
         res = cv2.matchTemplate(search, tmpl, cv2.TM_CCOEFF_NORMED).ravel()
         best_idx = int(np.argmax(res))
         if float(res[best_idx]) >= 0.86:
@@ -701,17 +802,25 @@ class RenewalScanner:
             if first_row_y is None:
                 first_row_y = row_ys[0]
 
+            occ_rows = _detect_occupied_rejuv_rows(frame, row_ys)
+            if not occ_rows:
+                complete = _page == 0
+                break
+            occ_anchors = [(by, len(cols)) for by, cols in occ_rows]
+            # A partial row or an empty lattice row cleanly inside the viewport means list end.
+            reached_list_end = (
+                len(occ_rows[-1][1]) < COLS
+                or len(occ_rows) < len(row_ys)
+            )
+
             rows_to_read: list[tuple[int, list[int]]] = []
-            for by in row_ys:
+            for by, present_cols in occ_rows:
                 row_idx = int(round((by + scroll_y - first_row_y) / ROW_PITCH_EXACT))
                 if row_idx < 0:
                     continue
                 cols_needed: list[int] = []
-                for col in range(COLS):
+                for col in present_cols:
                     if (row_idx, col) in seen_slots:
-                        continue
-                    bx = FIRST_X + col * COL_PITCH
-                    if not is_card_present(frame, bx, by):
                         continue
                     seen_slots.add((row_idx, col))
                     cols_needed.append(col)
@@ -727,6 +836,8 @@ class RenewalScanner:
                         if item is None:
                             continue
                         raw_name, lv, renewed = item
+                        if lv is None and not clean_clothing_name(raw_name):
+                            continue
                         cat_cards += 1
                         self.summary["scanned_cards"] += 1
                         if lv is None:
@@ -766,23 +877,29 @@ class RenewalScanner:
                         break
             if hit_tail:
                 break
+            if reached_list_end:
+                complete = True
+                break
 
-            step_dy = -4200 if is_tall else -480
+            step_dy = -9600 if is_tall else -480
             moved = False
             for attempt_dy in (step_dy, step_dy // 2, step_dy // 4):
                 after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.32)
                 if after is None:
                     break
-                if _same_rejuv_grid(frame, after):
+                same = _same_rejuv_grid(frame, after, occ_anchors)
+                delta = 0 if same else _measure_rejuv_scroll_delta(frame, after, occ_anchors)
+                if same or delta == 0:
                     after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.32)
                     if after is None:
                         break
-                    if _same_rejuv_grid(frame, after):
+                    same = _same_rejuv_grid(frame, after, occ_anchors)
+                    delta = 0 if same else _measure_rejuv_scroll_delta(frame, after, occ_anchors)
+                    if same or delta == 0:
                         complete = True
                         moved = True
                         break
-                delta = _measure_rejuv_scroll_delta(frame, after, row_ys)
-                if delta is not None:
+                if delta is not None and delta > 0:
                     scroll_y += delta
                     frame = after
                     moved = True
