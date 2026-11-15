@@ -1,6 +1,7 @@
 """Full tall-window Clothing Glow-Up (服装焕新) scanner for clothing levels & renewal state."""
 from __future__ import annotations
 
+from contextlib import nullcontext
 from copy import deepcopy
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -571,6 +572,7 @@ class RenewalScanner:
         }
         self.scanned_levels: dict[str, int] = {}
         self.scanned_renewed: dict[str, bool] = {}
+        self._last_scan_frame: np.ndarray | None = None
 
     def _owned_groups(self, role: dict) -> set[str]:
         snapshot = wardrobe_snapshot(role)
@@ -629,8 +631,6 @@ class RenewalScanner:
 
         if not self.rt.click_text(r"^重置$", FILTER_RESET_ROI):
             self.rt.action("Click", target=FILTER_RESET)
-            self.rt.pause(0.35)
-        else:
             self.rt.pause(0.25)
 
         frame = self.rt.capture()
@@ -638,16 +638,16 @@ class RenewalScanner:
             # Target bottom button ROI so the top modal header ("筛选") is never matched first.
             if not self.rt.click_text(r"^(筛选|确认|确定)$", FILTER_CONFIRM_ROI):
                 self.rt.action("Click", target=FILTER_CONFIRM)
-                self.rt.pause(0.35)
+                self.rt.pause(0.25)
             frame = self.rt.capture()
             if self._filter_modal_open(frame):
                 self.rt.action("Click", target=FILTER_CONFIRM)
-                self.rt.pause(0.3)
+                self.rt.pause(0.25)
                 frame = self.rt.capture()
             if self._filter_modal_open(frame):
-                self.rt.key(27, delay=0.35)  # VK_ESCAPE
+                self.rt.key(27, delay=0.25)  # VK_ESCAPE
         self.rt.action("TouchMove", target=_park_point(self.rt))
-        self.rt.pause(0.2)
+        self.rt.pause(0.15)
 
     @staticmethod
     def _sort_arrow_descending(frame: np.ndarray | None) -> tuple[bool | None, list[int]]:
@@ -735,12 +735,19 @@ class RenewalScanner:
         """Step one slot down the left category rail using [S] hotkey with click fallback."""
         if prev_frame is None or self.rt.stopped:
             return None, None, None, False
-        self.rt.key(83, delay=0.32)  # VK_S
+        self.rt.key(83, delay=0.22)  # VK_S
         after = self.rt.capture()
         if after is not None:
             cid, yc, _sc = self.model.detect_active_category(after)
             if (cid is not None and cid != prev_cid) or (yc is not None and prev_yc is not None and abs(yc - prev_yc) > 12):
                 return after, cid, yc, True
+            if self.rt.pause(0.12):
+                after_retry = self.rt.capture()
+                if after_retry is not None:
+                    cid_r, yc_r, _sc_r = self.model.detect_active_category(after_retry)
+                    if (cid_r is not None and cid_r != prev_cid) or (yc_r is not None and prev_yc is not None and abs(yc_r - prev_yc) > 12):
+                        return after_retry, cid_r, yc_r, True
+                    after = after_retry
 
         # Fallback: click the next visible slot directly below the active highlight inside clickable work area.
         if prev_yc is not None:
@@ -753,7 +760,7 @@ class RenewalScanner:
             cand_y = min(prev_frame.shape[0] - 55, safe_max_y - 12, prev_yc + 75)
             if cand_y >= safe_min_y + 12 and cand_y > prev_yc + 18:
                 self.rt.action("Click", target=[86, cand_y])
-                self.rt.pause(0.32)
+                self.rt.pause(0.25)
                 after2 = self.rt.capture()
                 if after2 is not None:
                     cid2, yc2, _sc2 = self.model.detect_active_category(after2)
@@ -769,17 +776,34 @@ class RenewalScanner:
         prev_levels: dict[str, int] | None = None,
         *,
         incremental: bool = False,
+        initial_frame: np.ndarray | None = None,
+        assume_at_top: bool = False,
+        verify_sort: bool = False,
     ) -> bool:
-        frame = _scroll_rejuv_to_top(self.rt)
+        frame = initial_frame if (assume_at_top and initial_frame is not None) else None
+        prefetched_rows: list[int] = []
+        if frame is not None:
+            prefetched_rows = detect_rejuv_rows(
+                frame,
+                grid_top=GRID_TOP,
+                grid_bottom=frame.shape[0] - GRID_BOTTOM_MARGIN,
+            )
+            if not prefetched_rows or prefetched_rows[0] > GRID_TOP + 55:
+                frame = None
+                prefetched_rows = []
         if frame is None:
-            return False
-        if incremental:
+            frame = _scroll_rejuv_to_top(self.rt)
+            if frame is None:
+                return False
+        if verify_sort:
             cur_sort = clean_clothing_name(self.rt.text(SORT_BOX_ROI, image=frame))
             if "获得时间" not in cur_sort:
                 self.ensure_sort_acquired_desc()
                 frame = _scroll_rejuv_to_top(self.rt)
+                prefetched_rows = []
                 if frame is None:
                     return False
+        self._last_scan_frame = frame
         grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
         scroll_y = 0
         first_row_y: int | None = None
@@ -795,7 +819,10 @@ class RenewalScanner:
         for _page in range(64):
             if self.rt.stopped:
                 break
-            row_ys = detect_rejuv_rows(frame, grid_top=GRID_TOP, grid_bottom=grid_bottom)
+            if _page == 0 and prefetched_rows:
+                row_ys = prefetched_rows
+            else:
+                row_ys = detect_rejuv_rows(frame, grid_top=GRID_TOP, grid_bottom=grid_bottom)
             if not row_ys:
                 complete = _page == 0
                 break
@@ -829,50 +856,58 @@ class RenewalScanner:
 
             hit_tail = False
             if rows_to_read:
-                parsed = _batch_read_rows_ocr(self.rt, frame, rows_to_read)
-                for (by, cols) in rows_to_read:
-                    for col in cols:
-                        item = parsed.get((by, col))
-                        if item is None:
-                            continue
-                        raw_name, lv, renewed = item
-                        if lv is None and not clean_clothing_name(raw_name):
-                            continue
-                        cat_cards += 1
-                        self.summary["scanned_cards"] += 1
-                        if lv is None:
-                            cat_unmatched += 1
-                            self.summary["unmatched_count"] += 1
-                            known_tail_streak = 0
-                            continue
-                        groups = self.model.lookup_groups(cid, raw_name)
-                        if not groups:
-                            cat_unmatched += 1
-                            self.summary["unmatched_count"] += 1
-                            known_tail_streak = 0
-                            if len(self.summary["unmatched_samples"]) < 20:
-                                self.summary["unmatched_samples"].append({
-                                    "part": cid, "name": raw_name, "level": lv,
-                                })
-                            continue
-                        owned_hits = [g for g in groups if g in owned_groups]
-                        targets = owned_hits if owned_hits else [groups[0]]
-                        is_renewed = lv == RENEWED_LEVEL or renewed
-                        was_known = all(g in owned_groups and prev_map.get(g) == lv for g in targets)
-                        for grp in targets:
-                            self.scanned_levels[grp] = lv
-                            self.scanned_renewed[grp] = is_renewed
-                            cat_matched += 1
-                        if is_renewed:
-                            cat_renewed += 1
-                        if incremental and was_known:
-                            known_tail_streak += 1
-                            if known_tail_streak >= self.INCREMENTAL_STOP_STREAK:
-                                complete = True
-                                hit_tail = True
-                                break
-                        else:
-                            known_tail_streak = 0
+                # In incremental mode check every 2-row OCR band immediately so tail streak stops before scanning lower rows.
+                batch_step = 2 if incremental else len(rows_to_read)
+                for start in range(0, len(rows_to_read), batch_step):
+                    if self.rt.stopped:
+                        break
+                    chunk_rows = rows_to_read[start:start + batch_step]
+                    parsed = _batch_read_rows_ocr(self.rt, frame, chunk_rows)
+                    for (by, cols) in chunk_rows:
+                        for col in cols:
+                            item = parsed.get((by, col))
+                            if item is None:
+                                continue
+                            raw_name, lv, renewed = item
+                            if lv is None and not clean_clothing_name(raw_name):
+                                continue
+                            cat_cards += 1
+                            self.summary["scanned_cards"] += 1
+                            if lv is None:
+                                cat_unmatched += 1
+                                self.summary["unmatched_count"] += 1
+                                known_tail_streak = 0
+                                continue
+                            groups = self.model.lookup_groups(cid, raw_name)
+                            if not groups:
+                                cat_unmatched += 1
+                                self.summary["unmatched_count"] += 1
+                                known_tail_streak = 0
+                                if len(self.summary["unmatched_samples"]) < 20:
+                                    self.summary["unmatched_samples"].append({
+                                        "part": cid, "name": raw_name, "level": lv,
+                                    })
+                                continue
+                            owned_hits = [g for g in groups if g in owned_groups]
+                            targets = owned_hits if owned_hits else [groups[0]]
+                            is_renewed = lv == RENEWED_LEVEL or renewed
+                            was_known = all(g in owned_groups and prev_map.get(g) == lv for g in targets)
+                            for grp in targets:
+                                self.scanned_levels[grp] = lv
+                                self.scanned_renewed[grp] = is_renewed
+                                cat_matched += 1
+                            if is_renewed:
+                                cat_renewed += 1
+                            if incremental and was_known:
+                                known_tail_streak += 1
+                                if known_tail_streak >= self.INCREMENTAL_STOP_STREAK:
+                                    complete = True
+                                    hit_tail = True
+                                    break
+                            else:
+                                known_tail_streak = 0
+                        if hit_tail:
+                            break
                     if hit_tail:
                         break
             if hit_tail:
@@ -884,13 +919,13 @@ class RenewalScanner:
             step_dy = -9600 if is_tall else -480
             moved = False
             for attempt_dy in (step_dy, step_dy // 2, step_dy // 4):
-                after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.32)
+                after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.28)
                 if after is None:
                     break
                 same = _same_rejuv_grid(frame, after, occ_anchors)
                 delta = 0 if same else _measure_rejuv_scroll_delta(frame, after, occ_anchors)
                 if same or delta == 0:
-                    after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.32)
+                    after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.28)
                     if after is None:
                         break
                     same = _same_rejuv_grid(frame, after, occ_anchors)
@@ -902,9 +937,10 @@ class RenewalScanner:
                 if delta is not None and delta > 0:
                     scroll_y += delta
                     frame = after
+                    self._last_scan_frame = after
                     moved = True
                     break
-                if _scroll_rejuv_and_park(self.rt, -attempt_dy, 0.25) is None:
+                if _scroll_rejuv_and_park(self.rt, -attempt_dy, 0.22) is None:
                     break
             if complete or not moved:
                 break
@@ -928,6 +964,58 @@ class RenewalScanner:
         wardrobe = data.setdefault("wardrobe", {})
         prev_inv = wardrobe.get("inventory")
         prev_last = wardrobe.get("last_scan")
+        game_items = self.scoring.get("game_items") or {}
+
+        # Short-circuit before deepcopying multi-MB inventory JSON when incremental scan sees zero additions.
+        if (
+            self.mode == "incremental"
+            and isinstance(prev_inv, dict)
+            and prev_inv.get("complete")
+            and isinstance(prev_inv.get("parts"), dict)
+        ):
+            inv_parts = prev_inv["parts"]
+            inv_groups: dict[str, set[str]] = {}
+            inv_ids: dict[str, set[int]] = {}
+            for pcode_k, pstate in inv_parts.items():
+                if not isinstance(pstate, dict):
+                    continue
+                gset: set[str] = set()
+                iset: set[int] = set()
+                for row in pstate.get("items") or []:
+                    if not isinstance(row, dict):
+                        continue
+                    for iid in row.get("item_ids") or []:
+                        iset.add(int(iid))
+                        meta = game_items.get(str(iid))
+                        if meta and meta.get("group"):
+                            gset.add(str(meta["group"]))
+                inv_groups[str(pcode_k)] = gset
+                inv_ids[str(pcode_k)] = iset
+            needs_merge = False
+            for grp, is_renewed in self.scanned_renewed.items():
+                meta = self.model.group_meta.get(grp)
+                if not meta:
+                    continue
+                pcode = meta["part"]
+                if grp not in inv_groups.get(pcode, ()) and meta["base_gid"] not in inv_ids.get(pcode, ()):
+                    needs_merge = True
+                    break
+                reward_gid = meta.get("reward_gid")
+                if is_renewed and reward_gid and reward_gid not in inv_ids.get(pcode, ()):
+                    needs_merge = True
+                    break
+            if not needs_merge:
+                p278_raw = inv_parts.get("278")
+                if isinstance(p278_raw, dict) and p278_raw.get("complete"):
+                    ids278 = inv_ids.get("278", set())
+                    for entry in self.wb_catalog.infer_suit_handhelds(inv_parts):
+                        iids = [int(x) for x in entry.get("item_ids") or []]
+                        if iids and not any(i in ids278 for i in iids):
+                            needs_merge = True
+                            break
+            if not needs_merge:
+                return 0, True
+
         base = deepcopy(
             prev_inv
             if isinstance(prev_inv, dict) and isinstance(prev_inv.get("parts"), dict)
@@ -953,7 +1041,6 @@ class RenewalScanner:
                 "skipped_categories": [],
             }
         parts: dict = base.setdefault("parts", {})
-        game_items = self.scoring.get("game_items") or {}
 
         # Index existing groups and item_ids per part to avoid duplicates.
         existing_groups_by_part: dict[str, set[str]] = {}
@@ -1089,19 +1176,29 @@ class RenewalScanner:
             scoring = wardrobe.get("scoring")
             if not isinstance(scoring, dict) or scoring.get("schema_version") != 1:
                 scoring = _default_scoring()
-            else:
-                scoring = deepcopy(scoring)
-            levels = scoring.setdefault("levels", {})
-            changed_levels = 0
-            for grp, lv in self.scanned_levels.items():
-                key = str(grp)
-                val = int(lv)
-                if levels.get(key) != val:
-                    levels[key] = val
-                    changed_levels += 1
-            if changed_levels > 0 or not scoring.get("updated_at"):
+                levels = scoring.setdefault("levels", {})
+                changed_levels = 0
+                for grp, lv in self.scanned_levels.items():
+                    key = str(grp)
+                    val = int(lv)
+                    if levels.get(key) != val:
+                        levels[key] = val
+                        changed_levels += 1
                 scoring["updated_at"] = now
-            wardrobe["scoring"] = scoring
+                wardrobe["scoring"] = scoring
+            else:
+                orig_levels = scoring.get("levels") or {}
+                changed_levels = sum(
+                    orig_levels.get(str(grp)) != int(lv)
+                    for grp, lv in self.scanned_levels.items()
+                )
+                if changed_levels > 0 or not scoring.get("updated_at"):
+                    scoring = deepcopy(scoring)
+                    levels = scoring.setdefault("levels", {})
+                    for grp, lv in self.scanned_levels.items():
+                        levels[str(grp)] = int(lv)
+                    scoring["updated_at"] = now
+                    wardrobe["scoring"] = scoring
 
             added, _inv_complete = self._merge_wardrobe_inventory(data, now)
             added_total[0] = added
@@ -1146,31 +1243,40 @@ class RenewalScanner:
 
         visited_cids: set[str] = set()
         expected_majors = [m["id"] for m in self.model.majors if not m.get("skip")]
+
+        def _missing_majors() -> list[str]:
+            return [
+                self.model.category_name(mid)
+                for mid in expected_majors
+                if (mid != "acc" and mid not in visited_cids)
+                or (mid == "acc" and "acc" not in visited_cids and not any(p in visited_cids for p in ACCESSORY_PARTS))
+            ]
+
+        saved_final = False
         try:
-            with tall_window(self.rt) as is_tall:
+            tall_ctx = tall_window(self.rt) if self.mode == "full" else nullcontext(False)
+            with tall_ctx as is_tall:
                 self.summary["tall_mode"] = bool(is_tall)
                 if is_tall:
-                    self.rt.log(
-                        "焕新读取：已切换超长竖屏模式，正在按获得时间快速同步新增服装与等级。"
-                        if self.mode == "incremental"
-                        else "焕新读取：已切换超长竖屏模式，正在读取各部位服装等级与焕新状态。"
-                    )
+                    self.rt.log("焕新读取：已切换超长竖屏模式，正在读取各部位服装等级与焕新状态。")
+                elif self.mode == "incremental":
+                    self.rt.log("焕新读取：正在常规窗口按获得时间快速增量同步。", detail=True)
 
                 frame, cid, yc = self._reset_rail_top()
+                prev_cid: str | None = None
+                sort_verified = False
                 for _step in range(32):
                     if self.rt.stopped or frame is None:
                         break
                     if cid == "299":
                         visited_cids.add("299")
+                        prev_cid = "299"
                         frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
                         if not moved:
                             break
                         continue
                     if cid is None or cid in visited_cids:
-                        if cid in visited_cids and (
-                            all(m in visited_cids for m in expected_majors[:-1])
-                            or cid == "299"
-                        ):
+                        if cid in visited_cids and (not _missing_majors() or cid == "299"):
                             break
                         frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
                         if not moved:
@@ -1178,6 +1284,8 @@ class RenewalScanner:
                         continue
 
                     visited_cids.add(cid)
+                    fresh_switch = prev_cid is not None and cid != prev_cid
+                    self._last_scan_frame = frame
                     self.rt.log(f"焕新读取：正在读取「{self.model.category_name(cid)}」。", detail=True)
                     self._scan_category(
                         cid,
@@ -1185,29 +1293,46 @@ class RenewalScanner:
                         owned_groups,
                         prev_levels,
                         incremental=(self.mode == "incremental"),
+                        initial_frame=frame,
+                        assume_at_top=(self.mode == "incremental" and fresh_switch),
+                        verify_sort=(self.mode == "incremental" and not sort_verified),
                     )
-                    self.save()
+                    sort_verified = True
+                    prev_cid = cid
+                    if self.mode != "incremental":
+                        self.save()
+                    if not _missing_majors():
+                        break
 
-                    frame = self.rt.capture()
-                    cid_now, yc_now, _sc = self.model.detect_active_category(frame)
-                    frame, cid, yc, moved = self._step_rail_down(frame, cid_now or cid, yc_now if yc_now is not None else yc)
+                    if self.mode == "incremental":
+                        nav_frame = self._last_scan_frame if self._last_scan_frame is not None else frame
+                        frame, cid, yc, moved = self._step_rail_down(nav_frame, cid, yc)
+                    else:
+                        frame = self.rt.capture()
+                        cid_now, yc_now, _sc = self.model.detect_active_category(frame)
+                        frame, cid, yc, moved = self._step_rail_down(
+                            frame,
+                            cid_now or cid,
+                            yc_now if yc_now is not None else yc,
+                        )
                     if not moved or (cid in visited_cids and cid == "299"):
                         break
 
-            missing_majors = [
-                self.model.category_name(mid)
-                for mid in expected_majors
-                if (mid != "acc" and mid not in visited_cids)
-                or (mid == "acc" and "acc" not in visited_cids and not any(p in visited_cids for p in ACCESSORY_PARTS))
-            ]
+            missing_majors = _missing_majors()
             parts_complete = bool(self.summary["parts"]) and all(
                 p.get("complete") for p in self.summary["parts"].values()
             )
             self.summary["complete"] = bool(not missing_majors and parts_complete)
             reason = ("未读完部位：" + "、".join(missing_majors)) if missing_majors else None
             self.save(reason)
+            saved_final = True
             record_material_history(self.account, self.crafting, self.scoring)
             return self.summary["complete"]
         finally:
+            if not saved_final and self.mode == "incremental" and (self.scanned_levels or self.summary["parts"]):
+                try:
+                    self.save("未读完部位：" + "、".join(_missing_majors()) if _missing_majors() else "读取中断")
+                except Exception:
+                    pass
             if not self.rt.stopped:
                 self.rt.main()
