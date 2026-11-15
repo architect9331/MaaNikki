@@ -1469,7 +1469,7 @@ class Executors(Runtime):
         )
         from collection.realm_goals import GOAL_LABELS
         from .gameplay import Gameplay
-        from .ui import fields
+        from .ui import expected_text, fields
 
         if card.rule.key == "energy":
             self.log("累计活跃能量条件不在朝夕中额外增加挑战次数。")
@@ -1578,11 +1578,11 @@ class Executors(Runtime):
                         else:
                             child.log("朝夕心愿补分 · 魔物试炼：所选焕新／制衣目标试炼素材已备齐，改刷默认「魔物试炼关卡」。")
                     if kind == "jihua":
-                        level_name = str((fields(clone, "MaaNikki_Jihua_Target") or {}).get("expected") or "闪亮泡泡").strip()
+                        level_name = expected_text((fields(clone, "MaaNikki_Jihua_Target") or {}).get("expected"), "闪亮泡泡")
                         mid = JIHUA_LEVEL_IDS.get(level_name)
                         meta = mat_defs.get(mid or "") if mid else None
                     else:
-                        level_name = str((fields(clone, "MaaNikki_Monster_Level") or {}).get("expected") or "").strip()
+                        level_name = expected_text((fields(clone, "MaaNikki_Monster_Level") or {}).get("expected"), "")
                         matches = [
                             (k, m) for k, m in mat_defs.items()
                             if m.get("realm") == "monster" and m.get("level") == level_name
@@ -1725,56 +1725,163 @@ class Executors(Runtime):
         roi = recognition.get("param", {}).get("roi") if isinstance(recognition, dict) else data.get("roi")
         if not roi:
             return False
-        result = self.recognize(count_node)
-        raw = getattr(result.best_result, "text", "") if result and result.hit else ""
-        if not re.fullmatch(r"\s*\d+\s*", raw):
-            self.diagnostic("realm_amount", "无法读取激化投入数量", details={"kind": kind, "raw": raw})
+
+        def read_jihua_count():
+            res = self.recognize(count_node)
+            raw_text = getattr(res.best_result, "text", "") if res and res.hit else ""
+            if re.fullmatch(r"\s*\d+\s*", raw_text):
+                val = int(raw_text)
+                if 1 <= val <= 999:
+                    return val
+            frame = self.frame()
+            if frame is not None and len(roi) == 4:
+                rx, ry, rw, rh = map(int, roi)
+                crop = frame[max(0, ry):min(frame.shape[0], ry + rh), max(0, rx):min(frame.shape[1], rx + rw)]
+                if crop.size > 0:
+                    up = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+                    padded = cv2.copyMakeBorder(up, 12, 12, 12, 12, cv2.BORDER_REPLICATE)
+                    ph, pw = padded.shape[:2]
+                    for only_rec in (True, False):
+                        res_up = self.recognize("MaaNikki_Daily_OCR", {
+                            "roi": [0, 0, pw, ph],
+                            "only_rec": only_rec,
+                            "expected": r"^\s*\d+\s*$",
+                            "threshold": 0.45,
+                        }, image=padded)
+                        txt_up = getattr(res_up.best_result, "text", "") if res_up and res_up.hit else ""
+                        if re.fullmatch(r"\s*\d+\s*", txt_up):
+                            val = int(txt_up)
+                            if 1 <= val <= 999:
+                                return val
+            return None
+
+        def read_jihua_energy():
+            # Dedicated single-row ROI below "预计获得 ... 100" so gain digits never shadow cost digits.
+            row_text = self.text([485, 408, 320, 36])
+            m_row = re.search(r"(?:消耗|投入|注入)\D{0,16}(\d+)", row_text)
+            if m_row and int(m_row.group(1)) > 0:
+                return int(m_row.group(1)), row_text
+            if "消耗" in row_text:
+                frame = self.frame()
+                if frame is not None:
+                    crop = frame[408:444, 640:805]
+                    if crop.size > 0:
+                        up = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+                        padded = cv2.copyMakeBorder(up, 12, 12, 12, 12, cv2.BORDER_REPLICATE)
+                        ph, pw = padded.shape[:2]
+                        res_cost = self.recognize("MaaNikki_Daily_OCR", {
+                            "roi": [0, 0, pw, ph],
+                            "expected": r"^\s*\d+\s*$",
+                            "threshold": 0.45,
+                        }, image=padded)
+                        txt_cost = getattr(res_cost.best_result, "text", "") if res_cost and res_cost.hit else ""
+                        m_num = re.search(r"\d+", txt_cost)
+                        if m_num and int(m_num.group(0)) > 0:
+                            return int(m_num.group(0)), f"{row_text} {txt_cost}".strip()
+            wide_text = self.text([400, 215, 480, 240])
+            m_wide = re.search(r"(?:消耗|投入|注入)\D{0,8}(\d+)\s*(?:点|活跃能量)", wide_text)
+            if not m_wide and "预计获得" not in wide_text:
+                m_wide = re.search(r"(?:消耗|投入|注入)\D{0,8}(\d+)", wide_text)
+            if m_wide and int(m_wide.group(1)) > 0:
+                return int(m_wide.group(1)), wide_text
+            return None, (row_text or wide_text)
+
+        current = read_jihua_count()
+        if current is None:
+            self.diagnostic("realm_amount", "无法读取激化投入数量", details={"kind": kind, "roi": list(roi)})
             self.log("无法读取挑战数量，请补充数量弹窗截图；本次未确认消耗。")
-            return False
-        current = int(raw)
-        if not 1 <= current <= 999:
             return False
         desired = int(desired_count) if desired_count is not None else 1
         if desired_count is None and minimum_energy:
-            text = self.text([400, 215, 470, 215])
-            match = re.search(r"(?:消耗|投入|注入)\D{0,8}(\d+)\s*(?:点|活跃能量)", text)
-            if not match or int(match.group(1)) <= 0 or int(match.group(1)) % current:
-                self.diagnostic("realm_amount", "无法读取激化活跃能量消耗", details={"kind": kind, "text": text})
+            cost, cost_text = read_jihua_energy()
+            if cost is None or cost <= 0:
+                self.diagnostic("realm_amount", "无法读取激化活跃能量消耗", details={"kind": kind, "text": cost_text})
                 self.log("无法读取本次活跃能量消耗，不自动调整挑战次数。")
                 return False
-            desired = math.ceil(minimum_energy / (int(match.group(1)) // current))
+            desired = (
+                math.ceil(minimum_energy / (cost // current))
+                if cost % current == 0
+                else math.ceil(minimum_energy * current / cost)
+            )
+        desired = max(1, min(999, desired))
+
         if current != desired:
-            result = self.recognize(count_node)
-            if not result or not result.hit or not self.action("Click", target=list(result.box)):
-                return False
-            active = self._active_inputs()
-            if self._use_window_input(active):
-                if not self.action("ClickKey", key=35):
-                    return False
-                for _ in range(max(4, len(raw.strip()) + 1)):
-                    if not self.action("ClickKey", key=8):
-                        return False
-                for _ in range(2):
-                    if not self.action("ClickKey", key=46):
-                        return False
+            minus_box = [568, 301, 22, 22]
+            plus_box = [697, 301, 22, 22]
+            input_box = list(roi)
+
+            def step_adjust(cur_val, target_val, max_passes=2):
+                val = cur_val
+                for _ in range(max_passes):
+                    diff = target_val - val
+                    if diff == 0:
+                        return val
+                    btn = plus_box if diff > 0 else minus_box
+                    steps = min(abs(diff), 45)
+                    for _click in range(steps):
+                        if not (self.action("Click", target=btn) and self.pause(0.16)):
+                            return None
+                    nxt = read_jihua_count()
+                    if nxt is None or nxt == val:
+                        return nxt
+                    val = nxt
+                    if abs(target_val - val) > 8:
+                        break
+                return val
+
+            adjusted = None
+            if abs(desired - current) <= 8:
+                adjusted = step_adjust(current, desired)
             else:
-                if not self.action("KeyDown", key=17):
+                if not self.action("Click", target=input_box):
                     return False
-                try:
-                    if not self.key(65, 0.1):
+                active = self._active_inputs()
+                if self._use_window_input(active):
+                    if not self.action("ClickKey", key=35):
                         return False
-                finally:
-                    self.release_key(17)
-            if not self.input_text(str(desired)) or not self.pause(0.3):
-                return False
-            adjusted = self.recognize(count_node)
-            if not adjusted or not adjusted.hit or getattr(adjusted.best_result, "text", "").strip() != str(desired):
+                    for _ in range(max(4, len(str(current)) + 2)):
+                        if not self.action("ClickKey", key=8):
+                            return False
+                    for _ in range(2):
+                        if not self.action("ClickKey", key=46):
+                            return False
+                else:
+                    if not self.action("KeyDown", key=17):
+                        return False
+                    try:
+                        if not self.key(65, 0.1):
+                            return False
+                    finally:
+                        self.release_key(17)
+                if not self.input_text(str(desired)):
+                    return False
+                self.action("ClickKey", key=13)
+                if not self.pause(0.25):
+                    return False
+                adjusted = read_jihua_count()
+                if adjusted is not None and adjusted != desired:
+                    if abs(desired - adjusted) <= 12:
+                        adjusted = step_adjust(adjusted, desired)
+                    elif adjusted == current and abs(desired - current) <= 45:
+                        adjusted = step_adjust(current, desired)
+
+            capped_at = None
+            if adjusted is not None and adjusted < desired:
+                if self.action("Click", target=plus_box) and self.pause(0.18):
+                    probe = read_jihua_count()
+                    if probe == adjusted:
+                        capped_at = adjusted
+            if adjusted != desired:
                 self.diagnostic(
                     "realm_amount",
-                    "激化数量未能设置为目标值",
-                    details={"kind": kind, "desired": desired},
+                    "激化投入数量达到材料上限" if capped_at is not None else "激化数量未能设置为目标值",
+                    details={"kind": kind, "desired": desired, "actual": adjusted, "capped_at": capped_at},
                 )
-                self.log("挑战数量未能设置为要求值，取消本项。")
+                self.log(
+                    f"当前所选激化材料最多仅可投入 {capped_at} 个（不足所需 {desired} 个），取消本项。"
+                    if capped_at is not None
+                    else "挑战数量未能设置为要求值，取消本项。"
+                )
                 return False
-        self.log(f"已确认本次挑战数量：{desired} 次。")
+        self.log(f"已确认本次激化投入数量：{desired} 个。")
         return True

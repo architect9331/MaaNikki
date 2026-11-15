@@ -27,6 +27,18 @@ def fields(context, node):
     return {**value, **custom} if isinstance(custom, dict) else value
 
 
+def expected_text(value, default=""):
+    """Normalize MaaFramework `expected` field (str or list[str]) into a clean string."""
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            text = str(item or "").strip()
+            if text:
+                return text
+        return default
+    text = str(value or "").strip()
+    return text or default
+
+
 @lru_cache(maxsize=4)
 def catalog(resource):
     path = Path(resource) / "image/game/catalog.json"

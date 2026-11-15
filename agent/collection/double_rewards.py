@@ -16,6 +16,7 @@ from action.weekly_challenge import TARGETS as WEEKLY_TARGETS, _record_weekly_st
 from collection.backpack import ensure_backpack_scanned, renewal_source, wardrobe_snapshot
 from collection.inventory_workflow import FiveStarInventory
 from collection.material_pursuit import (
+    effective_realm_runs,
     ensure_wardrobe_synced_for_materials,
     execute_material_run,
     goal_has_jihua_potential,
@@ -35,7 +36,7 @@ from daily import run_state
 from daily.gameplay import Gameplay
 from daily.runtime import Executors, parameters
 from daily.settings import ROOT
-from daily.ui import fields
+from daily.ui import expected_text, fields
 from task_control import TaskStopped
 
 # 720p crops for WBP_Challenge_Entrance_Item_V2.DoubleTag in RealmOverview.
@@ -517,7 +518,7 @@ def _run_double_jihua(
             break
 
         if use_default:
-            target_label = str((fields(rt.context, "MaaNikki_Jihua_Target") or {}).get("expected") or "闪亮泡泡").strip()
+            target_label = expected_text((fields(rt.context, "MaaNikki_Jihua_Target") or {}).get("expected"), "闪亮泡泡")
             mid = JIHUA_LEVEL_IDS.get(target_label)
             meta = mat_defs.get(mid or "") or {}
             base_drop = int(meta.get("drop") or 0)
@@ -529,15 +530,16 @@ def _run_double_jihua(
             use_max = runs >= max_afford
             mode_note = "未开启材料计划，自动回退默认设置" if auto_fallback else "默认设置"
             rt.log(f"限时双倍插队 · 超级激化（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * 10} 体力）。")
-            _, energy_after = execute_material_run(rt, "jihua", target_label, runs, use_max)
+            ok, energy_after = execute_material_run(rt, "jihua", target_label, runs, use_max)
             spent = max(0, energy - energy_after)
-            if spent < 10:
+            actual_runs = effective_realm_runs(spent, 10, ok, planned_runs=runs)
+            if actual_runs <= 0:
                 raise RuntimeError("超级激化双倍挑战未完成或未确认活跃能量消耗")
             any_spent = True
             if mid and base_drop > 0:
-                double_part = min(spent, rem_double_energy)
-                normal_part = max(0, spent - double_part)
-                gained = (double_part // 10) * (base_drop * 2) + (normal_part // 10) * base_drop
+                double_runs = min(actual_runs, rem_double_energy // 10)
+                normal_runs = max(0, actual_runs - double_runs)
+                gained = double_runs * (base_drop * 2) + normal_runs * base_drop
                 if gained > 0:
                     record_accrual(account, mid, gained)
                     record_material_history(account, crafting, scoring)
@@ -596,19 +598,20 @@ def _run_double_jihua(
                     f"限时双倍插队 · 超级激化（{GOAL_LABELS[goal]}）：{meta['name']} 还差 {deficit}，"
                     f"挑战「{meta['level']}」{runs} 次（消耗 {runs * 10} 体力）。"
                 )
-                _, energy_after = execute_material_run(rt, "jihua", meta["level"], runs, use_max)
+                ok, energy_after = execute_material_run(rt, "jihua", meta["level"], runs, use_max)
                 spent = max(0, energy - energy_after)
-                if spent < 10:
+                actual_runs = effective_realm_runs(spent, 10, ok, planned_runs=runs)
+                if actual_runs <= 0:
                     raise RuntimeError("超级激化双倍挑战未完成或未确认活跃能量消耗")
-                double_part = min(spent, rem_double_energy)
-                normal_part = max(0, spent - double_part)
-                gained = (double_part // 10) * (base_drop * 2) + (normal_part // 10) * base_drop
+                double_runs = min(actual_runs, rem_double_energy // 10)
+                normal_runs = max(0, actual_runs - double_runs)
+                gained = double_runs * (base_drop * 2) + normal_runs * base_drop
                 if gained > 0:
                     inventory[mid] = int(inventory.get(mid, 0)) + gained
                     record_accrual(account, mid, gained)
                     record_material_history(account, crafting, scoring)
                     rt.log(f"限时双倍插队 · 超级激化：获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
-                rem_double_energy = max(0, rem_double_energy - spent)
+                rem_double_energy = max(0, rem_double_energy - double_runs * 10)
                 energy = energy_after
                 any_spent = True
 
@@ -655,7 +658,7 @@ def _run_double_bless(
             break
 
         if bless_mode == "inherit_fallback":
-            target_label = str((fields(rt.context, "MaaNikki_Bless_Level") or {}).get("expected") or "巨蛇遗迹")
+            target_label = expected_text((fields(rt.context, "MaaNikki_Bless_Level") or {}).get("expected"), "巨蛇遗迹")
             cap = energy // 40
             runs = min(rem_runs, cap)
             if runs <= 0:
@@ -763,7 +766,7 @@ def _run_double_monster(
             break
 
         if use_default:
-            target_label = str((fields(rt.context, "MaaNikki_Monster_Level") or {}).get("expected") or "攀越").strip()
+            target_label = expected_text((fields(rt.context, "MaaNikki_Monster_Level") or {}).get("expected"), "攀越")
             cap = energy // per_run
             runs = min(rem_runs, cap)
             if runs <= 0:
@@ -771,9 +774,10 @@ def _run_double_monster(
             use_max = runs >= cap
             mode_note = "未开启材料计划，自动回退默认设置" if auto_fallback else "默认设置"
             rt.log(f"限时双倍插队 · 魔物试炼（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * per_run} 体力）。")
-            _, energy_after = execute_material_run(rt, "monster", target_label, runs, use_max)
+            ok, energy_after = execute_material_run(rt, "monster", target_label, runs, use_max)
             spent = max(0, energy - energy_after)
-            if spent < per_run:
+            total_runs = effective_realm_runs(spent, per_run, ok, planned_runs=runs)
+            if total_runs <= 0:
                 raise RuntimeError("魔物试炼双倍挑战未完成或未确认活跃能量消耗")
             any_spent = True
             matches = [
@@ -784,7 +788,6 @@ def _run_double_monster(
                 mid, meta = matches[0]
                 base_drop = int(meta.get("drop") or 0)
                 if base_drop > 0:
-                    total_runs = spent // per_run
                     double_runs = min(total_runs, rem_runs)
                     normal_runs = max(0, total_runs - double_runs)
                     gained = double_runs * (base_drop * 2) + normal_runs * base_drop
@@ -840,11 +843,11 @@ def _run_double_monster(
                     f"限时双倍插队 · 魔物试炼（{GOAL_LABELS[goal]}）：{meta['name']} 还差 {deficit}，"
                     f"挑战「{meta['level']}」{runs} 次（消耗 {runs * per_run} 体力）。"
                 )
-                _, energy_after = execute_material_run(rt, "monster", meta["level"], runs, use_max)
+                ok, energy_after = execute_material_run(rt, "monster", meta["level"], runs, use_max)
                 spent = max(0, energy - energy_after)
-                if spent < per_run:
+                total_runs = effective_realm_runs(spent, per_run, ok, planned_runs=runs)
+                if total_runs <= 0:
                     raise RuntimeError("魔物试炼双倍挑战未完成或未确认活跃能量消耗")
-                total_runs = spent // per_run
                 double_runs = min(total_runs, rem_runs)
                 normal_runs = max(0, total_runs - double_runs)
                 gained = double_runs * (base_drop * 2) + normal_runs * base_drop

@@ -34,10 +34,10 @@
   "MaaNikki_Daily_JihuaCount": {
     "recognition": "OCR",
     "roi": [
-      570,
-      280,
-      145,
-      65
+      598,
+      296,
+      90,
+      32
     ],
     "expected": "^[0-9]+$",
     "threshold": 0.8,

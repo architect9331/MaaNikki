@@ -182,6 +182,17 @@ def compute_renewal_requirements(role: dict, scoring: dict) -> dict[str, int]:
     return compute_renewal_requirements_tiered(role, scoring)[0]
 
 
+def effective_realm_runs(spent: int, per_run: int, ok: bool, *, planned_runs: int | None = None) -> int:
+    """Resolve completed realm runs from net energy delta with tolerance for <=3 natural regen ticks."""
+    if per_run <= 0:
+        return 0
+    runs = max(0, int(spent)) // per_run
+    rem = max(0, int(spent)) % per_run
+    if ok and rem >= max(1, per_run - 3) and (planned_runs is None or runs < int(planned_runs)):
+        runs += 1
+    return runs
+
+
 def execute_material_run(rt, kind: str, level_name: str, runs_to_do: int, use_max: bool) -> tuple[bool, int]:
     clone = rt.context.clone()
     child = Executors(clone)
@@ -685,7 +696,8 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
         rt.log(f"幻境挑战顺序：{GOAL_LABELS[goal]} · {meta['name']} 还差 {deficit}，挑战「{meta['level']}」{runs} 次。")
         ok, energy_after = execute_material_run(rt, kind, meta["level"], runs, use_max)
         spent = max(0, energy - energy_after)
-        gained = (spent // per_run) * per_drop
+        actual_runs = effective_realm_runs(spent, per_run, ok, planned_runs=runs)
+        gained = actual_runs * per_drop
         if gained > 0:
             inventory[mid] = int(inventory.get(mid, 0)) + gained
             record_accrual(account, mid, gained)
@@ -693,7 +705,7 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
             rt.log(f"幻境挑战顺序：已获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
         energy = energy_after
         last_kind = kind
-        if spent < per_run:
+        if actual_runs <= 0:
             raise RuntimeError(f"{GOAL_LABELS[goal]}挑战未完成或未确认活跃能量消耗")
         if not ok:
             rt.log(

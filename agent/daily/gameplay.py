@@ -772,7 +772,7 @@ class Gameplay:
                 return "error" if self.rt.stopped else "not_opened"
         if not self.rt.pause(.3):
             return "error"
-        if fixed_count is not None and not self.rt.set_amount("jihua", 0, desired_count=fixed_count):
+        if fixed_count is not None and not self.rt.set_amount("jihua", fixed_count * self.MIN_ENERGY["jihua"]):
             return "error"
         if fixed_count is None and maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
             return "error"
