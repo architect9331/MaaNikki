@@ -341,22 +341,19 @@ def sync_overlay_zorder(
     # Walk upward from game_hwnd to find the nearest foreign non-topmost window above it.
     class_buf = ctypes.create_unicode_buffer(128)
     anchor = None
-    already_placed = False
     cur = get_window(game_hwnd, 3)  # GW_HWNDPREV
     hops = 0
     while cur and hops < 48:
         hops += 1
         if int(cur) == int(hwnd):
-            already_placed = True
-        elif not (get_style(cur, -20) & 0x00000008):
+            return
+        if not (get_style(cur, -20) & 0x00000008):
             length = get_class(cur, class_buf, len(class_buf))
             if not (length > 0 and class_buf.value.startswith("MaaNikki")):
                 anchor = cur
                 break
         cur = get_window(cur, 3)
 
-    if already_placed:
-        return
     insert_after = anchor if anchor else ctypes.c_void_p(0)  # HWND_TOP within non-topmost band
     move(hwnd, insert_after, 0, 0, 0, 0, swp_flags)
 

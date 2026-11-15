@@ -47,7 +47,7 @@ class ForegroundSession:
         self.paused_seconds = 0.0
         self.generation = 0
         self.waiting = False
-        self._stop_poll_interval = 0.0
+        self._stop_poll_interval = 0.03
         self._stop_checked_at = None
         self._cached_stopping = False
         self._background_observation = False
@@ -60,6 +60,10 @@ class ForegroundSession:
         self._stage_label = ""
         self._step_text = ""
         self._observation_hud_mode = "observation"
+        self._manage_observation_hud = True
+        self._focus_lost_cache = None
+        self._exclude_cache = None
+        self._hud_mode_cache = None
         self.frame_validated = False
         self.account_uid = None
         self.account_generation = None
@@ -111,13 +115,40 @@ class ForegroundSession:
             raise TaskStopped(message) from error
         self.frame_validated = True
 
+    def _cached_context_setting(self, attr, ttl, loader):
+        """Cache per-context node parameters briefly to avoid tight-loop IPC queries."""
+        now = wall_time.monotonic()
+        cached = getattr(self, attr)
+        if cached is not None and cached[0] is self.context and 0.0 <= now - cached[1] < ttl:
+            return cached[2]
+        resolved = loader()
+        setattr(self, attr, (self.context, now, resolved))
+        return resolved
+
     def _focus_lost_mode(self):
-        try:
-            mode = node_action_params(self.context, "MaaNikki_FocusLost").get("mode")
-            return mode if mode in {"pause", "return", "background"} else "pause"
-        except Exception:
-            traceback.print_exc()
-            return "pause"
+        def load():
+            try:
+                mode = node_action_params(self.context, "MaaNikki_FocusLost").get("mode")
+                return mode if mode in {"pause", "return", "background"} else "pause"
+            except Exception:
+                traceback.print_exc()
+                return "pause"
+        return self._cached_context_setting("_focus_lost_cache", 0.25, load)
+
+    def _hud_mode_setting(self):
+        from game_hud import _read_hud_mode
+        return self._cached_context_setting("_hud_mode_cache", 0.5, lambda: _read_hud_mode(self.context))
+
+    def _exclude_from_capture_setting(self, controller):
+        if controller is None:
+            return None
+        cached = self._exclude_cache
+        if cached is not None and cached[0] is controller:
+            return cached[1]
+        from overlay_style import should_exclude_from_capture
+        resolved = should_exclude_from_capture(controller)
+        self._exclude_cache = (controller, resolved)
+        return resolved
 
     def _background_mode(self):
         return self._focus_lost_mode() == "background"
@@ -151,27 +182,39 @@ class ForegroundSession:
     def hud(self):
         return self._hud
 
-    def ensure_hud(self, hwnd=None):
+    def ensure_hud(self, hwnd=None, *, refresh=False):
         if self._tasker_key is None or self.context is None:
             return None
+        previous = self._hud
+        if (not refresh and previous is not None and previous.alive()
+                and (not hwnd or int(hwnd) == previous.game)):
+            return previous
         game_hwnd = self._resolve_hwnd(hwnd)
         if game_hwnd <= 0:
-            return self._hud
+            return previous
         from game_hud import acquire_game_hud
-        was_fresh = self._hud is None
-        hud = acquire_game_hud(self._tasker_key, game_hwnd, controller=self._controller, context=self.context)
+        ctrl = self._controller
+        hud = acquire_game_hud(
+            self._tasker_key,
+            game_hwnd,
+            controller=ctrl,
+            context=self.context,
+            exclude_from_capture=self._exclude_from_capture_setting(ctrl),
+            mode_setting=self._hud_mode_setting(),
+        )
         self._hud = hud
         if hud is not None:
-            if was_fresh:
+            if hud is not previous:
                 hud.set_paused(False)
                 hud.clear_forced()
                 hud.clear_route()
                 hud.clear_exploration_hint()
+            manage_hud = not self._background_observation or self._manage_observation_hud
             hud.set_context(
-                control_mode=self._control_mode(),
+                control_mode=self._control_mode() if manage_hud else None,
                 task_label=self._task_label or None,
                 stage_label=self._stage_label,
-                step_text=self._step_text,
+                step_text=self._step_text if manage_hud else None,
             )
         return hud
 
@@ -280,24 +323,27 @@ class ForegroundSession:
         return stopping
 
     @contextmanager
-    def background_observation(self, *, hud_mode="observation"):
+    def background_observation(self, *, hud_mode="observation", manage_hud=True):
         """Allow resident-helper captures; physical input still requires focus."""
         previous = self._background_observation
         previous_mode = self._observation_hud_mode
+        previous_manage = self._manage_observation_hud
         self._background_observation = True
         self._observation_hud_mode = hud_mode or "observation"
+        self._manage_observation_hud = bool(manage_hud)
         self._observed_foreground = None
         self.generation += 1
-        if self._hud is not None:
+        if self._hud is not None and self._manage_observation_hud:
             self._hud.set_context(control_mode=self._control_mode())
         try:
             yield
         finally:
             self._background_observation = previous
             self._observation_hud_mode = previous_mode
+            self._manage_observation_hud = previous_manage
             self._observed_foreground = None
             self.generation += 1
-            if self._hud is not None:
+            if self._hud is not None and (not self._background_observation or self._manage_observation_hud):
                 self._hud.set_context(control_mode=self._control_mode())
 
     @contextmanager
@@ -318,7 +364,7 @@ class ForegroundSession:
             self._background_observation = previous
             self._observed_foreground = None
             self.generation += 1
-            if self._hud is not None:
+            if self._hud is not None and (not self._background_observation or self._manage_observation_hud):
                 self._hud.set_context(control_mode=self._control_mode())
 
     @contextmanager
@@ -456,10 +502,11 @@ class ForegroundSession:
         bg_mode = self._background_mode()
         bg_active = self._background_observation or bg_mode
         effective_foreground = require_foreground or self._foreground_required_depth > 0
+        manage_hud = not self._background_observation or self._manage_observation_hud
         if adapter is None:
             adapter = self.ensure_adapter()
         hud = self.ensure_hud(getattr(adapter, "hwnd", 0))
-        if hud is not None:
+        if hud is not None and manage_hud:
             hud.set_context(control_mode=self._control_mode())
         if not adapter.user32.IsWindow(adapter.hwnd):
             self.window_closed()
@@ -503,7 +550,7 @@ class ForegroundSession:
                 self.generation += 1
             self._observed_foreground = foreground
             if not (require_capturable or window_only) or adapter.capturable():
-                if hud is not None:
+                if hud is not None and (manage_hud or self._foreground_required_depth > 0):
                     hud.set_paused(False)
                     if self._foreground_required_depth == 0:
                         hud.clear_forced()
@@ -628,7 +675,7 @@ def task_session(context, task_id, *, node_name=""):
     token = _ACTIVE.set(session)
     stopping = False
     try:
-        session.ensure_hud()
+        session.ensure_hud(refresh=True)
         yield session
     finally:
         try:
@@ -650,6 +697,12 @@ def task_session(context, task_id, *, node_name=""):
             session.frame_validated = False
             session._foreground_required_depth = 0
             session._foreground_pause_message = None
+            session._manage_observation_hud = True
+            session._focus_lost_cache = None
+            session._exclude_cache = None
+            session._hud_mode_cache = None
+            session._stop_checked_at = None
+            session._cached_stopping = False
             session.adapter = session._controller = session.context = None
             with _SESSIONS_LOCK:
                 _RUNNING.pop(tasker_key, None)
@@ -663,17 +716,29 @@ class TaskTime:
             session.wait()
         return wall_time.monotonic()-(session.paused_seconds if session else 0)
 
-    def sleep(self, seconds):
-        if active_session() is None:
-            return wall_time.sleep(seconds)
-        deadline = self.monotonic()+seconds
+    def sleep_for(self, seconds, *, check=None, aborted=None):
+        """Sleep for `seconds` of active time, running `check` once per wakeup tick."""
+        session = active_session()
+        if session is None:
+            if seconds > 0 and not (aborted and aborted()):
+                wall_time.sleep(seconds)
+            return
+        gate = check or session.wait
+        gate()
+        deadline = wall_time.monotonic()-session.paused_seconds+seconds
         while True:
-            if active_session().stopped():
+            if aborted and aborted():
+                return
+            if session.stopped():
                 raise TaskStopped("任务已停止。")
-            remaining = deadline-self.monotonic()
+            remaining = deadline-(wall_time.monotonic()-session.paused_seconds)
             if remaining <= 0:
                 return
             wall_time.sleep(min(.05, remaining))
+            gate()
+
+    def sleep(self, seconds):
+        self.sleep_for(seconds)
 
     def __getattr__(self, name):
         return getattr(wall_time, name)

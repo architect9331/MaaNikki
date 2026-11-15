@@ -1849,7 +1849,7 @@ class RouteMinimapOverlay:
                         break
                     translate(ctypes.byref(msg))
                     dispatch(ctypes.byref(msg))
-                self.stop.wait(1 / 30)
+                self.stop.wait(1 / 30 if visible else 0.1)
         finally:
             if hwnd:
                 bind(user, "DestroyWindow", w.BOOL, w.HWND)(hwnd)

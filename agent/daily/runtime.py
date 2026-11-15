@@ -57,6 +57,9 @@ class Runtime:
         return session.stopped() if session else self.context.tasker.stopping
 
     def background_mode(self):
+        session = active_session()
+        if session is not None and session.context is self.context:
+            return session._background_mode()
         try:
             return parameters(self.context, "MaaNikki_FocusLost").get("mode") == "background"
         except (AttributeError, RuntimeError, TypeError, ValueError):
@@ -128,15 +131,35 @@ class Runtime:
             self._stale_images.append(weakref.ref(image))
         return not any(ref() is image for ref in self._stale_images)
 
+    @staticmethod
+    def _check_inputs(inputs, session):
+        """Check input readiness while honoring non-intrusive background observation."""
+        if session is not None and session._background_observation:
+            inputs.check(require_foreground=False)
+        else:
+            inputs.check()
+
     def pause(self, seconds):
         self.invalidate_frame()
-        deadline = time.monotonic() + seconds
+        if self.stopped:
+            return False
+        session = active_session()
+
+        def check_gate():
+            if self.navigation_halted:
+                return
+            inputs = self._active_inputs()
+            if inputs is not None:
+                self._check_inputs(inputs, session)
+            elif session is not None:
+                session.wait()
+
         with measure("wait"):
-            while not self.stopped and time.monotonic() < deadline:
-                inputs = self._active_inputs()
-                if inputs is not None:
-                    inputs.check()
-                time.sleep(min(0.1, max(0, deadline - time.monotonic())))
+            if session is None:
+                if seconds > 0:
+                    wall_time.sleep(seconds)
+            else:
+                time.sleep_for(seconds, check=check_gate, aborted=lambda: self.navigation_halted)
         return not self.stopped
 
     @contextmanager
@@ -382,10 +405,11 @@ class Runtime:
         self.invalidate_frame()
         if self.stopped:
             return None
+        session = active_session()
         self.check_focus()
         inputs = self._active_inputs()
         if inputs is not None:
-            inputs.check()
+            self._check_inputs(inputs, session)
         while not self.stopped:
             if available is not None and not available():
                 return None

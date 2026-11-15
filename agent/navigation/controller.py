@@ -61,6 +61,9 @@ def _window_key_spec(user32, key: int):
 
 class ForegroundInput:
     """Bounded Maa key pulses. Stop/focus loss always releases held keys."""
+    window_only = False
+    capture_requires_foreground = False
+
     def __init__(self, controller, stopped, ready=lambda: True, bindings=None):
         self.controller = controller
         self.stopped = stopped
@@ -133,6 +136,14 @@ class ForegroundInput:
             and self.user32.GetForegroundWindow() == self.hwnd
         )
 
+    def capturable(self):
+        """Return whether the bound window exists, is unminimized, and satisfies capture requirements."""
+        return bool(
+            self.user32.IsWindow(self.hwnd)
+            and not self.user32.IsIconic(self.hwnd)
+            and (not self.capture_requires_foreground or self.foreground())
+        )
+
     def focus_details(self):
         hwnd = self.user32.GetForegroundWindow()
         text = ctypes.create_unicode_buffer(1024)
@@ -143,21 +154,26 @@ class ForegroundInput:
     def hung(self):
         return bool(self.user32.IsWindow(self.hwnd) and self.user32.IsHungAppWindow(self.hwnd))
 
+    def _wait_without_session(self, ready):
+        if not ready():
+            self.release()
+            while not ready():
+                if self.stopped():
+                    raise NavigationError("任务已停止。")
+                if not self.user32.IsWindow(self.hwnd):
+                    raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
+                time.sleep(.05)
+
     def check(self, *, require_foreground=True):
         if self.stopped():
             raise NavigationError("已停止导航。")
         from task_control import active_session
         session = active_session()
         if session is not None:
-            session.wait(self, require_foreground=True)
-        elif not self.foreground():
-            self.release()
-            while not self.foreground():
-                if self.stopped():
-                    raise NavigationError("任务已停止。")
-                if not self.user32.IsWindow(self.hwnd):
-                    raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
-                time.sleep(.05)
+            session.wait(self, require_foreground=require_foreground)
+            return
+        ready = self.foreground if require_foreground else self.capturable
+        self._wait_without_session(ready)
 
     def _post_window_key(self, key: int, *, down: bool) -> bool:
         down_msg, up_msg, flags = _window_key_spec(self.user32, key)
@@ -438,13 +454,6 @@ class BackgroundInput(ForegroundInput):
                 except Exception:
                     pass
 
-    def capturable(self):
-        return bool(
-            self.user32.IsWindow(self.hwnd)
-            and not self.user32.IsIconic(self.hwnd)
-            and (not self.capture_requires_foreground or self.foreground())
-        )
-
     def check(self, *, require_foreground=False):
         if self.stopped():
             raise NavigationError("已停止导航。")
@@ -454,14 +463,7 @@ class BackgroundInput(ForegroundInput):
             session.wait(self, require_foreground=require_foreground, require_capturable=True)
         else:
             ready = self.foreground if require_foreground else self.capturable
-            if not ready():
-                self.release()
-                while not ready():
-                    if self.stopped():
-                        raise NavigationError("任务已停止。")
-                    if not self.user32.IsWindow(self.hwnd):
-                        raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
-                    time.sleep(.05)
+            self._wait_without_session(ready)
         if not require_foreground:
             self._restore_active_keys()
 

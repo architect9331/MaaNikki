@@ -188,12 +188,20 @@ def _compact_step(text: str, *, task_label: str = "") -> str:
     return line
 
 
-def acquire_game_hud(tasker_key: int, game_hwnd: int, controller=None, context=None) -> "GameHudOverlay | None":
+def acquire_game_hud(
+    tasker_key: int,
+    game_hwnd: int,
+    controller=None,
+    context=None,
+    *,
+    exclude_from_capture: bool | None = None,
+    mode_setting: str | None = None,
+) -> "GameHudOverlay | None":
     """Return or create the per-tasker capture-excluded GameHudOverlay."""
     if _CAPTURE_INCOMPATIBLE or os.name != "nt" or not game_hwnd:
         return None
-    exclude = should_exclude_from_capture(controller)
-    mode = _read_hud_mode(context)
+    exclude = should_exclude_from_capture(controller) if exclude_from_capture is None else bool(exclude_from_capture)
+    mode = _read_hud_mode(context) if mode_setting is None else mode_setting
     with _HUD_REGISTRY_LOCK:
         existing = _HUD_BY_TASKER.get(tasker_key)
         if existing is not None:
@@ -489,13 +497,19 @@ class GameHudOverlay:
         return not self._failed and not self._stop.is_set() and self._thread.is_alive()
 
     def retain_scope(self, *, mode_setting: str | None = None) -> None:
+        changed = False
         with self._lock:
-            self._scope_active = True
-            self._idle_deadline = 0.0
-            if mode_setting in {"adaptive", "always", "reason_only"}:
+            if not self._scope_active or self._idle_deadline != 0.0:
+                self._scope_active = True
+                self._idle_deadline = 0.0
+                changed = True
+            if mode_setting in {"adaptive", "always", "reason_only"} and mode_setting != self._mode_setting:
                 self._mode_setting = mode_setting
-            self._dirty = True
-        self._wake.set()
+                changed = True
+            if changed:
+                self._dirty = True
+        if changed:
+            self._wake.set()
 
     def schedule_idle_close(self, delay: float = 0.75) -> None:
         with self._lock:
@@ -515,23 +529,37 @@ class GameHudOverlay:
         step_text: str | None = None,
         mode_setting: str | None = None,
     ) -> None:
+        changed = False
         with self._lock:
             if control_mode is not None:
-                self._control_mode = str(control_mode)
+                new_ctrl = str(control_mode)
+                if new_ctrl != self._control_mode:
+                    self._control_mode = new_ctrl
+                    changed = True
             if task_label is not None and str(task_label).strip():
                 new_task = str(task_label).strip()
                 if new_task != self._task_label:
                     self._task_label = new_task
-                    if stage_label is None:
+                    changed = True
+                    if stage_label is None and self._stage_label:
                         self._stage_label = ""
             if stage_label is not None:
-                self._stage_label = str(stage_label).strip()
+                new_stage = str(stage_label).strip()
+                if new_stage != self._stage_label:
+                    self._stage_label = new_stage
+                    changed = True
             if step_text is not None:
-                self._step_text = str(step_text).strip()
-            if mode_setting in {"adaptive", "always", "reason_only"}:
+                new_step = str(step_text).strip()
+                if new_step != self._step_text:
+                    self._step_text = new_step
+                    changed = True
+            if mode_setting in {"adaptive", "always", "reason_only"} and mode_setting != self._mode_setting:
                 self._mode_setting = mode_setting
-            self._dirty = True
-        self._wake.set()
+                changed = True
+            if changed:
+                self._dirty = True
+        if changed:
+            self._wake.set()
 
     def set_task(self, task_label: str, *, stage: str | None = None, step: str | None = None) -> None:
         self.set_context(task_label=task_label, stage_label=stage, step_text=step)
@@ -550,17 +578,28 @@ class GameHudOverlay:
         role: str = "forced",
         flash_seconds: float = 0.0,
     ) -> None:
+        new_active = bool(active)
+        clean_reason = str(reason).strip() if reason else ""
+        new_role = role or "forced"
+        changed = False
         with self._lock:
-            self._forced_active = bool(active)
-            if reason:
-                self._forced_reason = str(reason).strip()
-            self._forced_role = role or "forced"
-            if flash_seconds > 0.0 and self._forced_reason:
-                self._forced_flash_reason = self._forced_reason
+            target_reason = clean_reason or self._forced_reason
+            if (new_active, target_reason, new_role, False) != (
+                self._forced_active, self._forced_reason, self._forced_role, self._paused
+            ):
+                self._forced_active = new_active
+                self._forced_reason = target_reason
+                self._forced_role = new_role
+                self._paused = False
+                changed = True
+            if flash_seconds > 0.0 and target_reason:
+                self._forced_flash_reason = target_reason
                 self._forced_flash_until = time.monotonic() + float(flash_seconds)
-            self._paused = False
-            self._dirty = True
-        self._wake.set()
+                changed = True
+            if changed:
+                self._dirty = True
+        if changed:
+            self._wake.set()
 
     def clear_forced(
         self,
@@ -570,26 +609,37 @@ class GameHudOverlay:
         recovered_msg: str = "",
         recovered_seconds: float = 0.0,
     ) -> None:
-        now = time.monotonic()
+        clean_flash = str(flash_reason).strip() if (flash_reason and flash_seconds > 0.0) else ""
+        clean_rec = str(recovered_msg).strip() if (recovered_msg and recovered_seconds > 0.0) else ""
+        now = time.monotonic() if (clean_flash or clean_rec) else 0.0
+        changed = False
         with self._lock:
-            self._forced_active = False
-            self._forced_reason = ""
-            if flash_reason and flash_seconds > 0.0:
-                self._forced_flash_reason = str(flash_reason).strip()
+            if self._forced_active or self._forced_reason:
+                self._forced_active = False
+                self._forced_reason = ""
+                changed = True
+            if clean_flash:
+                self._forced_flash_reason = clean_flash
                 self._forced_flash_until = now + float(flash_seconds)
-            if recovered_msg and recovered_seconds > 0.0:
-                self._recovered_msg = str(recovered_msg).strip()
+                changed = True
+            if clean_rec:
+                self._recovered_msg = clean_rec
                 self._recovered_until = now + float(recovered_seconds)
-            self._dirty = True
-        self._wake.set()
+                changed = True
+            if changed:
+                self._dirty = True
+        if changed:
+            self._wake.set()
 
     def set_paused(self, paused: bool, *, reason: str = "") -> None:
+        new_paused = bool(paused)
+        clean_reason = str(reason).strip() if reason else None
         with self._lock:
-            self._paused = bool(paused)
-            if reason:
-                self._pause_reason = str(reason).strip()
-            elif not paused:
-                self._pause_reason = ""
+            new_reason = clean_reason if clean_reason is not None else ("" if not new_paused else self._pause_reason)
+            if new_paused == self._paused and new_reason == self._pause_reason:
+                return
+            self._paused = new_paused
+            self._pause_reason = new_reason
             self._dirty = True
         self._wake.set()
 
@@ -598,11 +648,19 @@ class GameHudOverlay:
             return self._control_mode == "background"
 
     def set_route(self, title: str, subtitle: str = "", *, role: str = "accent", active: bool = True) -> None:
+        new_active = bool(active and (title or subtitle))
+        new_title = str(title or "").strip()
+        new_sub = str(subtitle or "").strip()
+        new_role = role or "accent"
         with self._lock:
-            self._route_active = bool(active and (title or subtitle))
-            self._route_title = str(title or "").strip()
-            self._route_subtitle = str(subtitle or "").strip()
-            self._route_role = role or "accent"
+            if (new_active, new_title, new_sub, new_role) == (
+                self._route_active, self._route_title, self._route_subtitle, self._route_role
+            ):
+                return
+            self._route_active = new_active
+            self._route_title = new_title
+            self._route_subtitle = new_sub
+            self._route_role = new_role
             self._dirty = True
         self._wake.set()
 
@@ -626,11 +684,20 @@ class GameHudOverlay:
         role: str = "accent",
         active: bool = True,
     ) -> None:
+        new_badge = str(badge or "").strip() if active else ""
+        new_title = str(title or "").strip() if active else ""
+        new_sub = str(subtitle or "").strip() if active else ""
+        new_role = role or "accent"
         with self._lock:
-            self._exploration_badge = str(badge or "").strip() if active else ""
-            self._exploration_title = str(title or "").strip() if active else ""
-            self._exploration_subtitle = str(subtitle or "").strip() if active else ""
-            self._exploration_role = role or "accent"
+            if (new_badge, new_title, new_sub, new_role) == (
+                self._exploration_badge, self._exploration_title,
+                self._exploration_subtitle, self._exploration_role,
+            ):
+                return
+            self._exploration_badge = new_badge
+            self._exploration_title = new_title
+            self._exploration_subtitle = new_sub
+            self._exploration_role = new_role
             self._dirty = True
         self._wake.set()
 
@@ -758,6 +825,7 @@ class GameHudOverlay:
         last_layout = None
         last_pos = None
         last_z = None
+        next_z_sync = 0.0
         cfg_mtime_ns = _mxu_mtime_ns()
         next_cfg_poll = 0.0
         try:
@@ -784,6 +852,9 @@ class GameHudOverlay:
                 if is_iconic(self.game) or not get_rect(self.game, ctypes.byref(rect)) or not to_screen(self.game, ctypes.byref(origin)):
                     surface.hide()
                     last_paint_sig = None
+                    last_pos = None
+                    last_z = None
+                    next_z_sync = 0.0
                 else:
                     cw, ch = int(rect.right - rect.left), int(rect.bottom - rect.top)
                     fg = get_fg()
@@ -793,11 +864,17 @@ class GameHudOverlay:
                     if spec is None:
                         surface.hide()
                         last_paint_sig = None
+                        last_pos = None
+                        last_z = None
+                        next_z_sync = 0.0
                     else:
                         badge, title, subtitle, role, emphasized, opacity, want_top, stay_above = spec
                         if not want_top and not stay_above:
                             surface.hide()
                             last_paint_sig = None
+                            last_pos = None
+                            last_z = None
+                            next_z_sync = 0.0
                         else:
                             theme = resolve_overlay_theme()
                             sig = (badge, title, subtitle, role, emphasized, round(opacity, 2), cw, ch, theme.mode, theme.accent_name)
@@ -814,6 +891,7 @@ class GameHudOverlay:
                                 last_paint_sig, last_layout = sig, (layout, pad)
                                 last_pos = (sx_pos, sy_pos)
                                 last_z = (want_top, stay_above, fg)
+                                next_z_sync = now + 0.25
                             elif last_layout is not None:
                                 layout, pad = last_layout
                                 x_rel, y_rel = hud_top_center_anchor(cw, ch, layout["width"])
@@ -822,10 +900,11 @@ class GameHudOverlay:
                                     move_win(surface.hwnd, None, sx_pos, sy_pos, 0, 0, 0x0015)  # SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOSIZE
                                     last_pos = (sx_pos, sy_pos)
                                 z_sig = (want_top, stay_above, fg)
-                                if z_sig != last_z or not want_top:
+                                if z_sig != last_z or (not want_top and stay_above and now >= next_z_sync):
                                     sync_overlay_zorder(user, surface.hwnd, self.game,
                                                         want_topmost=want_top, stay_above_game=stay_above)
                                     last_z = z_sig
+                                    next_z_sync = now + 0.25
 
                 timeout = self._next_timeout(surface._visible)
                 if timeout <= 0.0:

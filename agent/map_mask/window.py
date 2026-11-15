@@ -205,7 +205,8 @@ class OverlayWindow:
                     selected_id = selected_key = None
                     selected_items = ()
                     was_down = dragging_outside = False
-                if reason == "visible" and not (hud_alive and not markers):
+                overlay_active = reason == "visible" and not (hud_alive and not markers)
+                if overlay_active:
                     rect, origin = w.RECT(), w.POINT()
                     checked(get_client(self.game, ctypes.byref(rect)), "读取游戏客户区")
                     checked(to_screen(self.game, ctypes.byref(origin)), "读取游戏窗口位置")
@@ -352,7 +353,7 @@ class OverlayWindow:
                         if now >= next_topmost:
                             checked(move(hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0, 0x0013), "置顶地图遮罩")
                             next_topmost = now + .25
-                if reason != "visible" or (hud_alive and not markers):
+                if not overlay_active:
                     if applied_interactive:
                         set_style(hwnd, -20, passthrough_exstyle)
                         applied_interactive = self.interactive = False
@@ -384,7 +385,7 @@ class OverlayWindow:
                     dispatch(ctypes.byref(msg))
                 previous_messages = tuple(messages[-8:])
                 self.phase = "idle"
-                self.stop.wait(1 / 60)
+                self.stop.wait(1 / 60 if overlay_active else 0.1)
         finally:
             if hwnd:
                 bind(user, "DestroyWindow", w.BOOL, w.HWND)(hwnd)

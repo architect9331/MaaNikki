@@ -49,7 +49,7 @@ class Exploration(Runtime):
     def run_assist(self):
         session = active_session()
         polling = session.coalesce_stop_queries() if session else nullcontext()
-        observation = session.background_observation() if session else nullcontext()
+        observation = session.background_observation(manage_hud=False) if session else nullcontext()
         try:
             with self.ui.cache_assets(), polling, observation:
                 return self._run_assist()
