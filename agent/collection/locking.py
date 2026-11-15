@@ -11,6 +11,7 @@ import numpy as np
 from task_control import TaskStopped
 from daily.runtime import parameters
 from daily.settings import ROOT
+from tall_window import clamp_capture_park_point, is_capture_point_safe, safe_capture_y_range
 from .card_models import CardModels, badge_roi as classifier_roi
 from .blessing import SLOTS
 from .details import HEADER
@@ -204,13 +205,17 @@ class BlessingLocker(InventoryScanner):
     def detail_frame(self, generation):
         return self.frame(generation)
 
+    def _park_point(self):
+        hwnd, cap_size = self.rt._pointer_guard_context()
+        return clamp_capture_park_point(hwnd, [900, 32], capture_size=cap_size)
+
     def clear_hover(self, generation, *, settle_card=False):
         old_box = self._hover_box
         panel = self._hover_panel
         if panel is not None and (panel[0] != old_box or panel[1] != generation):
             panel = None
         self._hover_box = None
-        if not self.rt.action("TouchMove", target=[900, 32]) or not self.rt.pause(.06):
+        if not self.rt.action("TouchMove", target=self._park_point()) or not self.rt.pause(.06):
             self.check_generation(generation)
             raise IncompleteObservation("未能关闭悬停信息")
         previous = None
@@ -248,7 +253,7 @@ class BlessingLocker(InventoryScanner):
                 previous = frame
             else:
                 previous = None
-                self.rt.action("TouchMove", target=[900, 32])
+                self.rt.action("TouchMove", target=self._park_point())
             if not self.rt.pause(.04):
                 self.check_generation(generation)
         reason = "悬停提示尚未关闭" if visible else "格子高亮尚未稳定"
@@ -273,10 +278,12 @@ class BlessingLocker(InventoryScanner):
         x, y, w, h = self.grid
         gap_x = (self.layout["first_x"] + self.layout["card_size"][0]
                  + max(2, (self.layout["column_pitch"] - self.layout["card_size"][0]) // 2))
+        hwnd, cap_size = self.rt._pointer_guard_context()
+        safe_min_y, safe_max_y = safe_capture_y_range(hwnd, cap_size[1], capture_width=cap_size[0], margin_px=8)
         target_x = min(x + w - 8, max(x + 8, gap_x))
-        target_y = min(y + h - 8, 520)
+        target_y = max(safe_min_y + 8, min(y + h - 8, safe_max_y - 8, 520))
         return (self.rt.action("Scroll", target=[target_x, target_y], dx=0, dy=amount)
-                and self.rt.action("TouchMove", target=[900, 32]) and self.rt.pause(.25))
+                and self.rt.action("TouchMove", target=self._park_point()) and self.rt.pause(.25))
 
     def scroll_amounts(self):
         # Observed 1200 wheel units move 213 px; 1800 targets about 320 px.
@@ -520,6 +527,16 @@ class BlessingLocker(InventoryScanner):
         x, y, w, h = box
         point = [round(x + w / 2), round(y + h * .45)]
         if not already_selected:
+            if self._tall_mode:
+                hwnd, cap_size = self.rt._pointer_guard_context()
+                if not is_capture_point_safe(
+                    hwnd,
+                    point,
+                    capture_size=cap_size,
+                    margin_px=6,
+                    require_work_area=True,
+                ):
+                    raise IncompleteObservation("超长竖屏下目标闪光位于安全可点击区外")
             if self._hover_box != tuple(box):
                 self._hover_box = None
                 if not self.rt.action("TouchMove", target=point) or not self.rt.pause(.15):
@@ -581,8 +598,10 @@ class BlessingLocker(InventoryScanner):
 
     def acquisition_sort(self):
         """Select acquisition order and confirm the user-supplied down arrow."""
-        if self._tall_mode and self._sort_verified:
-            return
+        if self._tall_mode:
+            if self._sort_verified:
+                return
+            raise IncompleteObservation("超长竖屏模式下排序选项位于安全可点击区外")
         dy = self.layout["sort_label"][1] - self._base_layout["sort_label"][1]
         generation = self.rt._focus_generation
         frame = self.clear_hover(generation)
@@ -668,6 +687,16 @@ class BlessingLocker(InventoryScanner):
             raise RuntimeError("解锁选项关闭，禁止提交解锁操作")
         verb = "锁定" if target == "locked" else "解锁"
         source = "unlocked" if target == "locked" else "locked"
+        if self._tall_mode:
+            hwnd, cap_size = self.rt._pointer_guard_context()
+            if not is_capture_point_safe(
+                hwnd,
+                self.layout["lock_button"],
+                capture_size=cap_size,
+                margin_px=6,
+                require_work_area=True,
+            ):
+                raise IncompleteObservation("超长竖屏下锁按钮位于安全可点击区外")
         # No stale coordinate is reused for the toggle. Stage the mouse first,
         # then recapture the page, selection and source state before one input.
         if not self.rt.action("TouchMove", target=self.layout["lock_button"]) or not self.rt.pause(.3):

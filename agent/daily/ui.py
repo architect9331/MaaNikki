@@ -176,10 +176,13 @@ class GameUI:
         self.rt.invalidate_frame()
         if main:
             return True
+        from tall_window import clamp_capture_park_point
         nav_inputs = self.rt._active_inputs()
+        hwnd, cap_size = self.rt._pointer_guard_context(nav_inputs)
+        safe_x, safe_y = clamp_capture_park_point(hwnd, [0, 0], capture_size=cap_size, margin_px=4)
         if self.rt._use_window_input(nav_inputs):
-            return nav_inputs.move_window_point(0, 0)
-        return self.rt.controller.post_touch_move(0, 0).wait().succeeded
+            return nav_inputs.move_window_point(safe_x, safe_y, capture_size=cap_size)
+        return self.rt.controller.post_touch_move(safe_x, safe_y).wait().succeeded
 
     def text(self, roi, image=None, color=None):
         if self.rt.image_current(image) is False:

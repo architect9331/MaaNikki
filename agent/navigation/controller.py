@@ -26,6 +26,16 @@ _GA_ROOTOWNER = 3
 _SMTO_ABORTIFHUNG = 0x0002
 _ERROR_TIMEOUT = 1460
 _WINDOW_SEND_TIMEOUT_MS = 2000
+_MONITOR_DEFAULTTONEAREST = 2
+
+
+class _MONITORINFO(ctypes.Structure):
+    _fields_ = [
+        ("cbSize", wintypes.DWORD),
+        ("rcMonitor", wintypes.RECT),
+        ("rcWork", wintypes.RECT),
+        ("dwFlags", wintypes.DWORD),
+    ]
 
 
 class MouseEvent(ctypes.Structure):
@@ -422,6 +432,10 @@ class BackgroundInput(ForegroundInput):
         self.user32.IsWindowVisible.restype = wintypes.BOOL
         self.user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
         self.user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+        self.user32.MonitorFromWindow.argtypes = [wintypes.HWND, wintypes.DWORD]
+        self.user32.MonitorFromWindow.restype = wintypes.HMONITOR
+        self.user32.GetMonitorInfoW.argtypes = [wintypes.HMONITOR, ctypes.POINTER(_MONITORINFO)]
+        self.user32.GetMonitorInfoW.restype = wintypes.BOOL
         self.user32.SendMessageTimeoutW.argtypes = [
             wintypes.HWND,
             wintypes.UINT,
@@ -545,10 +559,89 @@ class BackgroundInput(ForegroundInput):
         if not send_mouse(self.user32, flags, data=button-2 if button >= 3 else 0):
             raise NavigationError("鼠标动作输入失败。")
 
+    @staticmethod
+    def _effective_capture_size(
+        width: int,
+        height: int,
+        capture_size: tuple[int, int] | None = None,
+    ) -> tuple[int, int]:
+        if (
+            capture_size is not None
+            and len(capture_size) == 2
+            and capture_size[0] > 0
+            and capture_size[1] > 0
+            and abs((capture_size[0] / capture_size[1]) - (width / height)) <= 0.05
+        ):
+            return int(capture_size[0]), int(capture_size[1])
+        # Tall windows preserve client aspect while scaling the short side (width) to 1280.
+        if height > width * 1.5:
+            return 1280, max(720, round(1280 * height / width))
+        return 1280, 720
+
+    def _screen_point_clickable(
+        self,
+        screen_x: int,
+        screen_y: int,
+        *,
+        margin_px: int = 2,
+        check_work_area: bool = True,
+    ) -> bool:
+        """Verify physical screen coordinates lie within client bounds and never land on taskbar/offscreen."""
+        with self._per_monitor_dpi():
+            if not self.user32.IsWindow(self.hwnd):
+                return False
+            rc = wintypes.RECT()
+            if not self.user32.GetClientRect(self.hwnd, ctypes.byref(rc)):
+                return False
+            cw, ch = int(rc.right - rc.left), int(rc.bottom - rc.top)
+            if cw <= 0 or ch <= 0:
+                return False
+            origin = wintypes.POINT(0, 0)
+            if not self.user32.ClientToScreen(self.hwnd, ctypes.byref(origin)):
+                return False
+            c_left, c_top = int(origin.x), int(origin.y)
+            c_right, c_bottom = c_left + cw, c_top + ch
+            if not (c_left <= screen_x < c_right and c_top <= screen_y < c_bottom):
+                return False
+            hmon = self.user32.MonitorFromWindow(self.hwnd, _MONITOR_DEFAULTTONEAREST)
+            if not hmon:
+                return False
+            mi = _MONITORINFO()
+            mi.cbSize = ctypes.sizeof(_MONITORINFO)
+            if not self.user32.GetMonitorInfoW(hmon, ctypes.byref(mi)):
+                return False
+            mon, work = mi.rcMonitor, mi.rcWork
+            if not (int(mon.left) <= screen_x < int(mon.right) and int(mon.top) <= screen_y < int(mon.bottom)):
+                return False
+            if not check_work_area:
+                return True
+            mon_w = int(mon.right - mon.left)
+            mon_h = int(mon.bottom - mon.top)
+            is_oversized = ch > mon_h + 2 or cw > mon_w + 2
+            is_fullscreen_fg = (
+                not is_oversized
+                and c_left <= int(mon.left)
+                and c_top <= int(mon.top)
+                and c_right >= int(mon.right)
+                and c_bottom >= int(mon.bottom)
+                and int(self.user32.GetForegroundWindow() or 0) == int(self.hwnd)
+            )
+            if is_fullscreen_fg:
+                return True
+            pad = max(0, int(margin_px))
+            s_left = int(work.left) + pad if work.left > mon.left else int(work.left)
+            s_top = int(work.top) + pad if work.top > mon.top else int(work.top)
+            s_right = int(work.right) - pad if work.right < mon.right else int(work.right)
+            s_bottom = int(work.bottom) - pad if work.bottom < mon.bottom else int(work.bottom)
+            return s_left <= screen_x < s_right and s_top <= screen_y < s_bottom
+
     @contextmanager
     def _borrowed_cursor(self, screen_x: int, screen_y: int, *, enabled: bool = True):
         if not enabled:
-            yield
+            yield True
+            return
+        if not self._screen_point_clickable(screen_x, screen_y, margin_px=2, check_work_area=True):
+            yield False
             return
         saved = wintypes.POINT()
         restore_cursor = False
@@ -556,7 +649,7 @@ class BackgroundInput(ForegroundInput):
             restore_cursor = bool(self.user32.GetCursorPos(ctypes.byref(saved)))
             self.user32.SetCursorPos(screen_x, screen_y)
         try:
-            yield
+            yield True
         finally:
             if restore_cursor:
                 with self._per_monitor_dpi():
@@ -634,7 +727,15 @@ class BackgroundInput(ForegroundInput):
             wall_time.sleep(0.01)
         return not self.stopped()
 
-    def _window_point_coords(self, x, y, *, target=None):
+    def _window_point_coords(
+        self,
+        x,
+        y,
+        *,
+        target=None,
+        capture_size: tuple[int, int] | None = None,
+        check_work_area: bool = True,
+    ):
         if (type(x) not in (int, float) or type(y) not in (int, float)
                 or not (x == x and y == y) or not self.user32.IsWindow(self.hwnd)):
             return None
@@ -645,12 +746,15 @@ class BackgroundInput(ForegroundInput):
             width, height = rc.right - rc.left, rc.bottom - rc.top
             if width <= 0 or height <= 0:
                 return None
-            cx = max(0, min(width - 1, round(x * width / 1280)))
-            cy = max(0, min(height - 1, round(y * height / 720)))
+            cap_w, cap_h = self._effective_capture_size(width, height, capture_size)
+            cx = max(0, min(width - 1, round(x * width / cap_w)))
+            cy = max(0, min(height - 1, round(y * height / cap_h)))
             pt = wintypes.POINT(cx, cy)
             if not self.user32.ClientToScreen(self.hwnd, ctypes.byref(pt)):
                 return None
             sx, sy = int(pt.x), int(pt.y)
+            if not self._screen_point_clickable(sx, sy, margin_px=2, check_work_area=check_work_area):
+                return None
             tx, ty = cx, cy
             if target and target != self.hwnd:
                 target_pt = wintypes.POINT(sx, sy)
@@ -659,14 +763,20 @@ class BackgroundInput(ForegroundInput):
             lparam = ((ty & 0xFFFF) << 16) | (tx & 0xFFFF)
             return lparam, sx, sy, tx, ty
 
-    def _prepare_window_points(self, *points):
-        """Validate window readiness, resolve target HWND, map 1280x720 points, and send activation."""
+    def _prepare_window_points(self, *points, capture_size=None, check_work_area: bool = True):
+        """Validate window readiness, resolve target HWND, map capture points, and send activation."""
         if not self.capturable() or self.stopped():
             return None
         target = self._active_window_target()
         coords_list = []
         for pt in points:
-            coords = self._window_point_coords(pt[0], pt[1], target=target)
+            coords = self._window_point_coords(
+                pt[0],
+                pt[1],
+                target=target,
+                capture_size=capture_size,
+                check_work_area=check_work_area,
+            )
             if coords is None:
                 return None
             coords_list.append(coords)
@@ -686,21 +796,27 @@ class BackgroundInput(ForegroundInput):
                 ignore_stop=True,
             )
 
-    def move_window_point(self, x, y):
+    def move_window_point(self, x, y, *, capture_size=None):
         """Send a synchronous WM_MOUSEMOVE (with activation notice) without moving the cursor."""
-        prepared = self._prepare_window_points((x, y))
+        prepared = self._prepare_window_points((x, y), capture_size=capture_size)
         if prepared is None:
             return False
         target, (coords,) = prepared
         return self._send_window_message(target, _WM_MOUSEMOVE, 0, coords[0], "后台鼠标移动")
 
-    def click_window_point(self, x, y, pause, *, with_cursor_pos=True):
+    def click_window_point(self, x, y, pause, *, with_cursor_pos=True, capture_size=None):
         """Send a synchronous left click to the target window after activation; briefly borrow cursor if requested."""
-        prepared = self._prepare_window_points((x, y))
+        prepared = self._prepare_window_points(
+            (x, y),
+            capture_size=capture_size,
+            check_work_area=bool(with_cursor_pos),
+        )
         if prepared is None:
             return False
         target, ((lparam, screen_x, screen_y, _, _),) = prepared
-        with self._borrowed_cursor(screen_x, screen_y, enabled=with_cursor_pos):
+        with self._borrowed_cursor(screen_x, screen_y, enabled=with_cursor_pos) as cursor_ok:
+            if not cursor_ok:
+                return False
             if with_cursor_pos:
                 wall_time.sleep(0.002)
             if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lparam, "后台鼠标移动"):
@@ -721,15 +837,17 @@ class BackgroundInput(ForegroundInput):
                 return pressed and not self.stopped()
             return pressed
 
-    def scroll_window_point(self, x, y, dx, dy):
+    def scroll_window_point(self, x, y, dx, dy, *, capture_size=None):
         """Send synchronous WM_MOUSEWHEEL to the target coordinate after activation and cursor hover."""
-        prepared = self._prepare_window_points((x, y))
+        prepared = self._prepare_window_points((x, y), capture_size=capture_size)
         if prepared is None:
             return False
         target, ((lparam, screen_x, screen_y, _, _),) = prepared
         # Win32 WM_MOUSEWHEEL lParam carries screen coordinates, not client coordinates.
         screen_lparam = ((screen_y & 0xFFFF) << 16) | (screen_x & 0xFFFF)
-        with self._borrowed_cursor(screen_x, screen_y, enabled=True):
+        with self._borrowed_cursor(screen_x, screen_y, enabled=True) as cursor_ok:
+            if not cursor_ok:
+                return False
             wall_time.sleep(0.002)
             if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lparam, "后台鼠标移动"):
                 return False
@@ -749,12 +867,12 @@ class BackgroundInput(ForegroundInput):
             wall_time.sleep(0.03)
         return not self.stopped()
 
-    def swipe_window_points(self, begin, end, duration_ms=300):
-        """Send a synchronous bounded drag between two 1280x720 points after activation."""
+    def swipe_window_points(self, begin, end, duration_ms=300, *, capture_size=None):
+        """Send a synchronous bounded drag between two capture points after activation."""
         if (not isinstance(begin, (list, tuple)) or len(begin) < 2
                 or not isinstance(end, (list, tuple)) or len(end) < 2):
             return False
-        prepared = self._prepare_window_points(begin, end)
+        prepared = self._prepare_window_points(begin, end, capture_size=capture_size)
         if prepared is None:
             return False
         target, ((lp0, sx0, sy0, cx0, cy0), (_, sx1, sy1, cx1, cy1)) = prepared
@@ -762,7 +880,9 @@ class BackgroundInput(ForegroundInput):
         steps = max(8, min(30, round(duration_s / 0.02)))
         last_lp = lp0
         pressed = False
-        with self._borrowed_cursor(sx0, sy0, enabled=True):
+        with self._borrowed_cursor(sx0, sy0, enabled=True) as cursor_ok:
+            if not cursor_ok:
+                return False
             wall_time.sleep(0.002)
             if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lp0, "后台拖动起点"):
                 return False
@@ -780,6 +900,8 @@ class BackgroundInput(ForegroundInput):
                     cy = round(cy0 + (cy1 - cy0) * ratio)
                     sx = round(sx0 + (sx1 - sx0) * ratio)
                     sy = round(sy0 + (sy1 - sy0) * ratio)
+                    if not self._screen_point_clickable(sx, sy, margin_px=2, check_work_area=True):
+                        return False
                     last_lp = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
                     with self._per_monitor_dpi():
                         self.user32.SetCursorPos(sx, sy)

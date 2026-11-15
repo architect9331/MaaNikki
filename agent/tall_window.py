@@ -11,6 +11,7 @@ import ctypes
 from ctypes import wintypes
 from dataclasses import dataclass
 import json
+import math
 from pathlib import Path
 from threading import Lock
 import time
@@ -220,6 +221,11 @@ def _resolve_hwnd(rt=None, controller=None) -> int | None:
     return int(hwnd) if hwnd else None
 
 
+def window_hwnd(rt=None, controller=None) -> int | None:
+    """Return the active game window handle associated with rt/controller if available."""
+    return _resolve_hwnd(rt=rt, controller=controller)
+
+
 def _client_size(u32, hwnd: int) -> tuple[int, int] | None:
     rc = RECT()
     if not u32.GetClientRect(hwnd, ctypes.byref(rc)):
@@ -248,6 +254,172 @@ def _monitor_info(u32, hwnd: int) -> MONITORINFO | None:
     if not u32.GetMonitorInfoW(hmon, ctypes.byref(mi)):
         return None
     return mi
+
+
+def _safe_screen_bounds(
+    u32,
+    hwnd: int,
+    *,
+    margin_px: int = 6,
+    require_work_area: bool | None = None,
+) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int]] | None:
+    """Return ((c_left, c_top, c_right, c_bottom), (s_left, s_top, s_right, s_bottom)) in physical px.
+
+    Edges where rcWork is inset from rcMonitor carry a taskbar/dock band. Unless the target window is
+    an unclipped active foreground fullscreen window (or require_work_area is False), coordinates are
+    constrained inside rcWork inset by margin_px on taskbar edges and always within rcMonitor.
+    """
+    with _per_monitor_dpi(u32):
+        if not hwnd or not u32.IsWindow(hwnd):
+            return None
+        cbox = _client_screen_rect(u32, hwnd)
+        mi = _monitor_info(u32, hwnd)
+        if cbox is None or mi is None:
+            return None
+        c_left, c_top, c_right, c_bottom = cbox
+        cw = c_right - c_left
+        ch = c_bottom - c_top
+        if cw <= 0 or ch <= 0:
+            return None
+        mon = mi.rcMonitor
+        work = mi.rcWork
+        mon_w = int(mon.right - mon.left)
+        mon_h = int(mon.bottom - mon.top)
+        is_oversized = ch > mon_h + 2 or cw > mon_w + 2
+        is_fullscreen_fg = (
+            not is_oversized
+            and c_left <= int(mon.left)
+            and c_top <= int(mon.top)
+            and c_right >= int(mon.right)
+            and c_bottom >= int(mon.bottom)
+            and int(u32.GetForegroundWindow() or 0) == int(hwnd)
+        )
+        enforce_work = (not is_fullscreen_fg) if require_work_area is None else bool(require_work_area)
+        pad = max(0, int(margin_px))
+        s_left = max(int(mon.left), c_left)
+        s_top = max(int(mon.top), c_top)
+        s_right = min(int(mon.right), c_right)
+        s_bottom = min(int(mon.bottom), c_bottom)
+        if enforce_work:
+            if work.left > mon.left:
+                s_left = max(s_left, int(work.left) + pad)
+            else:
+                s_left = max(s_left, int(work.left))
+            if work.top > mon.top:
+                s_top = max(s_top, int(work.top) + pad)
+            else:
+                s_top = max(s_top, int(work.top))
+            if work.right < mon.right:
+                s_right = min(s_right, int(work.right) - pad)
+            else:
+                s_right = min(s_right, int(work.right))
+            if work.bottom < mon.bottom:
+                s_bottom = min(s_bottom, int(work.bottom) - pad)
+            else:
+                s_bottom = min(s_bottom, int(work.bottom))
+        return cbox, (s_left, s_top, s_right, s_bottom)
+
+
+def safe_capture_bounds(
+    hwnd: int | None,
+    capture_size: tuple[int, int] = (BASE_CAPTURE_WIDTH, BASE_CAPTURE_HEIGHT),
+    *,
+    margin_px: int = 6,
+    require_work_area: bool | None = None,
+) -> tuple[int, int, int, int]:
+    """Return inclusive (min_x, min_y, max_x, max_y) in capture coordinates avoiding taskbar/offscreen."""
+    cap_w = max(1, int(capture_size[0]))
+    cap_h = max(1, int(capture_size[1]))
+    fallback_max_y = min(cap_h, BASE_CAPTURE_HEIGHT) - 1 if cap_h > BASE_CAPTURE_HEIGHT else cap_h - 1
+    if not hwnd:
+        return 0, 0, cap_w - 1, max(0, fallback_max_y)
+    u32 = _user32()
+    resolved = _safe_screen_bounds(
+        u32,
+        int(hwnd),
+        margin_px=margin_px,
+        require_work_area=require_work_area,
+    )
+    if resolved is None:
+        return 0, 0, cap_w - 1, max(0, fallback_max_y)
+    (c_left, c_top, c_right, c_bottom), (s_left, s_top, s_right, s_bottom) = resolved
+    if s_right <= s_left or s_bottom <= s_top:
+        return 0, 0, -1, -1
+    scale_x = (c_right - c_left) / cap_w
+    scale_y = (c_bottom - c_top) / cap_h
+    min_x = max(0, min(cap_w - 1, math.ceil((s_left - c_left) / scale_x)))
+    max_x = max(-1, min(cap_w - 1, math.floor((s_right - 1 - c_left) / scale_x)))
+    min_y = max(0, min(cap_h - 1, math.ceil((s_top - c_top) / scale_y)))
+    max_y = max(-1, min(cap_h - 1, math.floor((s_bottom - 1 - c_top) / scale_y)))
+    return min_x, min_y, max_x, max_y
+
+
+def safe_capture_y_range(
+    hwnd: int | None,
+    capture_height: int,
+    *,
+    capture_width: int = BASE_CAPTURE_WIDTH,
+    margin_px: int = 6,
+    require_work_area: bool | None = None,
+) -> tuple[int, int]:
+    """Return inclusive (min_y, max_y) capture Y bounds strictly inside the clickable work area."""
+    _, min_y, _, max_y = safe_capture_bounds(
+        hwnd,
+        (capture_width, capture_height),
+        margin_px=margin_px,
+        require_work_area=require_work_area,
+    )
+    return min_y, max_y
+
+
+def is_capture_point_safe(
+    hwnd: int | None,
+    target,
+    *,
+    capture_size: tuple[int, int] = (BASE_CAPTURE_WIDTH, BASE_CAPTURE_HEIGHT),
+    margin_px: int = 4,
+    require_work_area: bool | None = None,
+) -> bool:
+    """Return True when capture-space point or rect center stays inside monitor & taskbar-safe bounds."""
+    if not isinstance(target, (list, tuple)) or len(target) not in (2, 4):
+        return False
+    px = float(target[0]) + (float(target[2]) / 2.0 if len(target) == 4 else 0.0)
+    py = float(target[1]) + (float(target[3]) / 2.0 if len(target) == 4 else 0.0)
+    if not (math.isfinite(px) and math.isfinite(py)):
+        return False
+    min_x, min_y, max_x, max_y = safe_capture_bounds(
+        hwnd,
+        capture_size,
+        margin_px=margin_px,
+        require_work_area=require_work_area,
+    )
+    if max_x < min_x or max_y < min_y:
+        return False
+    rx, ry = round(px), round(py)
+    return min_x <= rx <= max_x and min_y <= ry <= max_y
+
+
+def clamp_capture_park_point(
+    hwnd: int | None,
+    point,
+    *,
+    capture_size: tuple[int, int] = (BASE_CAPTURE_WIDTH, BASE_CAPTURE_HEIGHT),
+    margin_px: int = 8,
+) -> list[int]:
+    """Clamp an idle hover/park capture point into the clickable work area."""
+    px = round(float(point[0]))
+    py = round(float(point[1]))
+    min_x, min_y, max_x, max_y = safe_capture_bounds(
+        hwnd,
+        capture_size,
+        margin_px=margin_px,
+        require_work_area=True,
+    )
+    if max_x >= min_x:
+        px = max(min_x, min(max_x, px))
+    if max_y >= min_y:
+        py = max(min_y, min(max_y, py))
+    return [px, py]
 
 
 def _poll_capture(controller, stopped_fn=None):
@@ -1179,6 +1351,8 @@ def temporary_window_resize(
         nonlocal restored_frames_waited
         _restore_win32()
         rt.invalidate_frame()
+        if hasattr(rt, "set_capture_size"):
+            rt.set_capture_size(None)
         if window_modified and not restored_frames_waited and not rt.stopped:
             restored_frames_waited = True
             time.sleep(0.25)
@@ -1220,12 +1394,16 @@ def temporary_window_resize(
             allow_solid_frame=allow_solid_frame,
         )
         rt.invalidate_frame()
+        if hasattr(rt, "set_capture_size"):
+            rt.set_capture_size(None)
         if not ok:
             _restore_and_wait()
             if fail_message:
                 rt.log(fail_message, detail=True)
             yield False
             return
+        if hasattr(rt, "set_capture_size"):
+            rt.set_capture_size(target_capture_size)
         yield True
     finally:
         _restore_and_wait()
@@ -1279,7 +1457,12 @@ def tall_window(rt):
         if is_tall:
             with _SESSION_LOCK:
                 _TALL_FAILED.pop(hwnd, None)
-            rt.action("TouchMove", target=[640, 36])
+            park_pt = clamp_capture_park_point(
+                hwnd,
+                [640, 36],
+                capture_size=(TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT),
+            )
+            rt.action("TouchMove", target=park_pt)
             rt.pause(0.25)
         elif not rt.stopped:
             with _SESSION_LOCK:

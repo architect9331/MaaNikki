@@ -15,7 +15,7 @@ from account_state import AccountState
 from collection.backpack import wardrobe_snapshot, wardrobe_snapshot_key
 from collection.material_pursuit import load_catalogs, record_material_history
 from daily.settings import ROOT
-from tall_window import tall_window
+from tall_window import clamp_capture_park_point, safe_capture_y_range, tall_window, window_hwnd
 from .model import WardrobeCatalog
 from .scanner import MAKEUP_PARTS, PEAR_PAL_NEXT_PAGE, PEAR_PAL_PREV_PAGE
 
@@ -386,12 +386,17 @@ def _same_rejuv_grid(first: np.ndarray | None, second: np.ndarray | None) -> boo
     return float(np.mean(diff)) < 1.5
 
 
+def _park_point(rt):
+    hwnd, cap_size = rt._pointer_guard_context()
+    return clamp_capture_park_point(hwnd, [640, 36], capture_size=cap_size)
+
+
 def _scroll_rejuv_and_park(rt, dy: int, wait_seconds: float) -> np.ndarray | None:
     if (not rt.action("TouchMove", target=GRID_SCROLL_TARGET)
             or not rt.pause(0.1)
             or not rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=dy)
             or not rt.pause(wait_seconds)
-            or not rt.action("TouchMove", target=[640, 36])
+            or not rt.action("TouchMove", target=_park_point(rt))
             or not rt.pause(0.12)):
         return None
     return rt.capture()
@@ -540,7 +545,7 @@ class RenewalScanner:
                 frame = self.rt.capture()
             if self._filter_modal_open(frame):
                 self.rt.key(27, delay=0.35)  # VK_ESCAPE
-        self.rt.action("TouchMove", target=[640, 36])
+        self.rt.action("TouchMove", target=_park_point(self.rt))
         self.rt.pause(0.2)
 
     @staticmethod
@@ -587,7 +592,7 @@ class RenewalScanner:
             if not self.rt.click_text(r"^获得时间$", SORT_MENU_ROI):
                 self.rt.action("Click", target=[950, 96])
             self.rt.pause(0.35)
-            self.rt.action("TouchMove", target=[640, 36])
+            self.rt.action("TouchMove", target=_park_point(self.rt))
             self.rt.pause(0.3)
             frame = self.rt.capture()
             current_sort = clean_clothing_name(self.rt.text(SORT_BOX_ROI, image=frame)) if frame is not None else ""
@@ -598,7 +603,7 @@ class RenewalScanner:
         if is_desc is False:
             if not self.rt.action("Click", target=dir_pt) or not self.rt.pause(0.35):
                 raise RuntimeError("未能切换服装焕新排序方向")
-            self.rt.action("TouchMove", target=[640, 36])
+            self.rt.action("TouchMove", target=_park_point(self.rt))
             self.rt.pause(0.25)
             after = self.rt.capture()
             is_desc_after, _ = self._sort_arrow_descending(after)
@@ -636,16 +641,23 @@ class RenewalScanner:
             if (cid is not None and cid != prev_cid) or (yc is not None and prev_yc is not None and abs(yc - prev_yc) > 12):
                 return after, cid, yc, True
 
-        # Fallback: click the next visible slot directly below the active highlight, or click [S] badge.
+        # Fallback: click the next visible slot directly below the active highlight inside clickable work area.
         if prev_yc is not None:
-            cand_y = min(prev_frame.shape[0] - 55, prev_yc + 75)
-            self.rt.action("Click", target=[86, cand_y])
-            self.rt.pause(0.32)
-            after2 = self.rt.capture()
-            if after2 is not None:
-                cid2, yc2, _sc2 = self.model.detect_active_category(after2)
-                if (cid2 is not None and cid2 != prev_cid) or not _same_rejuv_grid(prev_frame, after2):
-                    return after2, cid2, yc2, True
+            safe_min_y, safe_max_y = safe_capture_y_range(
+                window_hwnd(self.rt),
+                prev_frame.shape[0],
+                capture_width=prev_frame.shape[1],
+                margin_px=8,
+            )
+            cand_y = min(prev_frame.shape[0] - 55, safe_max_y - 12, prev_yc + 75)
+            if cand_y >= safe_min_y + 12 and cand_y > prev_yc + 18:
+                self.rt.action("Click", target=[86, cand_y])
+                self.rt.pause(0.32)
+                after2 = self.rt.capture()
+                if after2 is not None:
+                    cid2, yc2, _sc2 = self.model.detect_active_category(after2)
+                    if (cid2 is not None and cid2 != prev_cid) or not _same_rejuv_grid(prev_frame, after2):
+                        return after2, cid2, yc2, True
         return after or prev_frame, prev_cid, prev_yc, False
 
     def _scan_category(

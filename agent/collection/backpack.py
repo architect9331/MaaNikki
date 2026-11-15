@@ -12,7 +12,7 @@ import numpy as np
 
 from account_state import AccountState, game_day
 from daily.settings import ROOT
-from tall_window import tall_window
+from tall_window import clamp_capture_park_point, safe_capture_y_range, tall_window, window_hwnd
 
 
 HEADER_ROI = [65, 15, 240, 48]
@@ -384,11 +384,16 @@ def _same_grid(first: np.ndarray | None, second: np.ndarray | None) -> bool:
 
 
 def _scroll_grid_and_park(rt, dy: int, wait_seconds: float) -> np.ndarray | None:
+    park_pt = clamp_capture_park_point(
+        window_hwnd(rt),
+        [640, 36],
+        capture_size=rt._pointer_guard_context()[1],
+    )
     if (not rt.action("TouchMove", target=GRID_SCROLL_TARGET)
             or not rt.pause(0.1)
             or not rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=dy)
             or not rt.pause(wait_seconds)
-            or not rt.action("TouchMove", target=[640, 36])
+            or not rt.action("TouchMove", target=park_pt)
             or not rt.pause(0.12)):
         return None
     return rt.capture()
@@ -464,13 +469,17 @@ def _scan_tab(
     tab: int,
     is_tall: bool,
     crafting_catalog: dict,
-) -> tuple[dict[str, int], dict]:
+    *,
+    target_slots: set[tuple[int, int]] | None = None,
+) -> tuple[dict[str, int], dict, set[tuple[int, int]]]:
     counts: dict[str, int] = {}
     stats = {"items": 0, "clicked": 0, "unknown": 0, "complete": False}
+    deferred_slots: set[tuple[int, int]] = set()
     frame = _scroll_to_top(rt)
     if frame is None:
-        return counts, stats
+        return counts, stats, deferred_slots
 
+    hwnd = window_hwnd(rt)
     grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
     scroll_y = 0
     first_row_y: int | None = None
@@ -480,30 +489,43 @@ def _scan_tab(
         for mid, meta in (crafting_catalog.get("materials") or {}).items()
         if str(mid) != model.bling_id
     }
+    px_per_unit: float | None = None
+    at_bottom_stuck = False
 
     for _page in range(48):
         if rt.stopped:
-            return counts, stats
+            return counts, stats, deferred_slots
         row_ys = detect_grid_rows(frame, grid_top=GRID_TOP, grid_bottom=grid_bottom)
         if not row_ys:
             # No rows visible on initial top view -> genuine empty tab.
-            stats["complete"] = _page == 0
+            stats["complete"] = _page == 0 and target_slots is None
             break
         if first_row_y is None:
             first_row_y = row_ys[0]
 
+        safe_min_y, safe_max_y = safe_capture_y_range(
+            hwnd,
+            frame.shape[0],
+            capture_width=frame.shape[1],
+            margin_px=8,
+        )
         pending_qty: list[tuple[int, int, str]] = []  # (cy, col, storage_key)
+        blocked_cy: int | None = None
+
         for cy in row_ys:
             row_idx = int(round((cy + scroll_y - first_row_y) / ROW_PITCH_EXACT))
             if row_idx < 0:
                 continue
+            row_candidates = []
             for col in range(8):
                 slot_key = (row_idx, col)
-                if slot_key in seen_slots or not is_cell_occupied(frame, cy, col):
+                if slot_key in seen_slots or slot_key in deferred_slots:
                     continue
-                seen_slots.add(slot_key)
+                if target_slots is not None and slot_key not in target_slots:
+                    continue
+                if not is_cell_occupied(frame, cy, col):
+                    continue
                 tmpl, sc, ncc, _l1, margin = model.match_cell(frame, cy, col, tab)
-                tb_id: str | None = None
                 ambiguous = tmpl is not None and len(set(tmpl.get("names") or [])) > 1
                 confident = (
                     tmpl is not None
@@ -512,8 +534,27 @@ def _scan_tab(
                     and sc >= 0.25
                     and margin >= 0.06
                 )
+                row_candidates.append((col, slot_key, tmpl, confident))
+
+            if not row_candidates:
+                continue
+
+            click_y = cy + ICON_SIZE // 2
+            row_outside_safe = click_y < safe_min_y or click_y > safe_max_y
+            needs_click = any(not confident for _, _, _, confident in row_candidates)
+            if needs_click and row_outside_safe and not at_bottom_stuck:
+                # Scroll unconfident lower rows into the safe top band before clicking so nothing touches the taskbar.
+                blocked_cy = cy
+                break
+
+            for col, slot_key, tmpl, confident in row_candidates:
+                seen_slots.add(slot_key)
+                tb_id: str | None = None
                 if confident:
                     tb_id = tmpl["item_ids"][0]
+                elif row_outside_safe:
+                    deferred_slots.add(slot_key)
+                    continue
                 else:
                     stats["clicked"] += 1
                     tb_id, cat_fallback = _resolve_clicked_item(rt, model, tab, cy, col, cat_by_norm)
@@ -537,32 +578,50 @@ def _scan_tab(
                 else:
                     stats["unknown"] += 1
 
-        step_dy = -4200 if is_tall else -960
+        if at_bottom_stuck or (target_slots is not None and not (target_slots - seen_slots - deferred_slots)):
+            stats["complete"] = stats["unknown"] == 0 and not deferred_slots
+            return counts, stats, deferred_slots
+
+        if blocked_cy is not None and is_tall:
+            desired_y = max(GRID_TOP + 80, min(safe_max_y - ICON_SIZE - 48, safe_max_y // 2))
+            want_px = max(240, blocked_cy - desired_y)
+            rate = px_per_unit if px_per_unit is not None else 0.45
+            step_dy = -max(360, min(4200, round(want_px / rate / 120.0) * 120))
+        else:
+            step_dy = -4200 if is_tall else -960
+
         moved = False
         for attempt_dy in (step_dy, step_dy // 2, step_dy // 4):
             after = _scroll_grid_and_park(rt, attempt_dy, 0.32)
             if after is None:
-                return counts, stats
+                return counts, stats, deferred_slots
             if _same_grid(frame, after):
                 # Retry once to rule out a dropped Slate scroll event before concluding end of list.
                 after = _scroll_grid_and_park(rt, attempt_dy, 0.32)
                 if after is None:
-                    return counts, stats
+                    return counts, stats, deferred_slots
                 if _same_grid(frame, after):
-                    stats["complete"] = stats["unknown"] == 0
-                    return counts, stats
+                    if blocked_cy is not None:
+                        # Tail rows are stuck below safe work area: count confident cells and defer clicks to normal view.
+                        at_bottom_stuck = True
+                        moved = True
+                        break
+                    stats["complete"] = stats["unknown"] == 0 and not deferred_slots
+                    return counts, stats, deferred_slots
             delta = _measure_scroll_delta(frame, after, row_ys)
             if delta is not None:
+                if delta > 0 and attempt_dy != 0:
+                    px_per_unit = max(0.08, min(2.0, delta / abs(attempt_dy)))
                 scroll_y += delta
                 frame = after
                 moved = True
                 break
             # Overshot overlap window -> restore cursor on grid, rewind upward, and retry smaller step.
             if _scroll_grid_and_park(rt, -attempt_dy, 0.25) is None:
-                return counts, stats
+                return counts, stats, deferred_slots
         if not moved:
             break
-    return counts, stats
+    return counts, stats, deferred_slots
 
 
 def _switch_tab(rt, *, want_growth: bool) -> bool:
@@ -610,6 +669,9 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> tuple[dict[str, int],
             found[model.bling_id] = bling
             summary["bling"] = bling
 
+        deferred1: set[tuple[int, int]] = set()
+        deferred2: set[tuple[int, int]] = set()
+        tab2_entered = False
         with tall_window(rt) as is_tall:
             summary["tall_mode"] = bool(is_tall)
             if is_tall:
@@ -618,15 +680,44 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> tuple[dict[str, int],
             if not _switch_tab(rt, want_growth=False):
                 return None
 
-            c1, s1 = _scan_tab(rt, model, 1, is_tall, crafting_catalog)
+            c1, s1, deferred1 = _scan_tab(rt, model, 1, is_tall, crafting_catalog)
             found.update(c1)
             summary["tab1"] = s1
 
             if _switch_tab(rt, want_growth=True):
-                c2, s2 = _scan_tab(rt, model, 2, is_tall, crafting_catalog)
+                tab2_entered = True
+                c2, s2, deferred2 = _scan_tab(rt, model, 2, is_tall, crafting_catalog)
                 for k, v in c2.items():
                     found[k] = found.get(k, 0) + v
                 summary["tab2"] = s2
+
+        for tab, want_growth, deferred_set, tab_key in (
+            (1, False, deferred1, "tab1"),
+            (2, True, deferred2, "tab2"),
+        ):
+            if rt.stopped or not deferred_set or (tab == 2 and not tab2_entered):
+                continue
+            rt.log("背包扫描：已恢复常规窗口，正在补充识别列表末尾待定材料。", detail=True)
+            if _switch_tab(rt, want_growth=want_growth):
+                dc, ds, rem = _scan_tab(
+                    rt,
+                    model,
+                    tab,
+                    False,
+                    crafting_catalog,
+                    target_slots=deferred_set,
+                )
+                for k, v in dc.items():
+                    found[k] = found.get(k, 0) + v
+                tab_stats = summary[tab_key]
+                tab_stats["items"] = int(tab_stats.get("items", 0)) + int(ds.get("items", 0))
+                tab_stats["clicked"] = int(tab_stats.get("clicked", 0)) + int(ds.get("clicked", 0))
+                tab_stats["unknown"] = int(tab_stats.get("unknown", 0)) + int(ds.get("unknown", 0))
+                tab_stats["complete"] = (
+                    int(tab_stats.get("unknown", 0)) == 0
+                    and bool(ds.get("complete"))
+                    and not rem
+                )
 
         summary["complete"] = bool(summary["tab1"].get("complete")) and bool(summary["tab2"].get("complete"))
         return found, summary

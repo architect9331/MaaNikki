@@ -38,6 +38,7 @@ class Runtime:
         self._focus_generation = 0
         self._stale_images = []
         self._frame_validated = False
+        self._capture_size = None
         self._evidence = None
         self._account_uid = None
         self._account_generation = None
@@ -239,6 +240,54 @@ class Runtime:
             raise ValueError(f"{label}无效。")
         return [round(value) for value in point]
 
+    def set_capture_size(self, size):
+        if size is None:
+            self._capture_size = None
+        else:
+            self._capture_size = (int(size[0]), int(size[1]))
+
+    def _pointer_guard_context(self, inputs=None):
+        hwnd = getattr(inputs, "hwnd", None)
+        if not hwnd:
+            try:
+                info = self.controller.info
+                if isinstance(info, dict):
+                    hwnd = info.get("hwnd") or info.get("handle")
+            except Exception:
+                hwnd = None
+        cap_size = self._capture_size
+        if cap_size is None:
+            from tall_window import BASE_CAPTURE_HEIGHT, BASE_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT, TALL_CAPTURE_WIDTH
+            if (TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT) in ALLOWED_FRAME_SIZES:
+                cap_size = (TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT)
+            else:
+                cap_size = (BASE_CAPTURE_WIDTH, BASE_CAPTURE_HEIGHT)
+        return hwnd, cap_size
+
+    def _validate_pointer_targets(self, action, fields, inputs=None, *, require_work_area=None):
+        from tall_window import is_capture_point_safe
+        hwnd, cap_size = self._pointer_guard_context(inputs)
+        if action in {"Click", "TouchMove", "Scroll"}:
+            candidates = [("target", fields.get("target"))]
+        elif action == "Swipe":
+            candidates = [("begin", fields.get("begin")), ("end", fields.get("end"))]
+        else:
+            return cap_size
+        for label, raw in candidates:
+            if not is_capture_point_safe(
+                hwnd,
+                raw,
+                capture_size=cap_size,
+                margin_px=4,
+                require_work_area=require_work_area,
+            ):
+                write_message(
+                    f"已拦截超出安全可点击工作区的输入：action={action}, field={label}, target={raw}, cap_size={cap_size}",
+                    None,
+                )
+                return None
+        return cap_size
+
     def action(self, action, *, ui_click=True, focus_generation=None, **fields):
         if self.stopped:
             return False
@@ -258,6 +307,11 @@ class Runtime:
         window_only = bool(getattr(inputs, "window_only", False))
         use_window = self._use_window_input(inputs)
         window_cursor_pos = bool(fields.pop("window_cursor_pos", True))
+        cap_size = None
+        if action in {"Click", "TouchMove", "Scroll", "Swipe"}:
+            cap_size = self._validate_pointer_targets(action, fields, inputs)
+            if cap_size is None:
+                return False
         if action in {"KeyDown", "KeyUp"}:
             if inputs is not None:
                 from game_keys import Binding
@@ -272,16 +326,16 @@ class Runtime:
         if action == "TouchMove" and use_window:
             point = self._target_point(fields.get("target"), "界面移动坐标")
             with measure("input.action"):
-                return bool(inputs.move_window_point(point[0], point[1]))
+                return bool(inputs.move_window_point(point[0], point[1], capture_size=cap_size))
         if action == "Scroll" and use_window:
             point = self._target_point(fields.get("target"), "界面滚动目标")
             with measure("input.action"):
                 return bool(inputs.scroll_window_point(
-                    point[0], point[1], fields.get("dx", 0), fields.get("dy", 0)))
+                    point[0], point[1], fields.get("dx", 0), fields.get("dy", 0), capture_size=cap_size))
         if action == "Swipe" and use_window:
             with measure("input.action"):
                 return bool(inputs.swipe_window_points(
-                    fields.get("begin"), fields.get("end"), fields.get("duration", 300)))
+                    fields.get("begin"), fields.get("end"), fields.get("duration", 300), capture_size=cap_size))
         if action == "Click" and ui_click:
             point = self._target_point(fields.get("target"), "界面点击目标")
             # Maa's rectangular Click target is random inside the box. UI
@@ -304,7 +358,7 @@ class Runtime:
             point = self._target_point(fields.get("target"), "界面点击目标")
             with measure("input.action"):
                 succeeded = bool(inputs.click_window_point(
-                    point[0], point[1], self.pause, with_cursor_pos=window_cursor_pos))
+                    point[0], point[1], self.pause, with_cursor_pos=window_cursor_pos, capture_size=cap_size))
             if succeeded and ui_click:
                 return self.pause(.1) and self.ui.unhover()
             return succeeded
@@ -386,6 +440,7 @@ class Runtime:
         else:
             require_game_frame(image)
         self._frame_validated = True
+        self.set_capture_size((image.shape[1], image.shape[0]))
 
     def capture_at(self, deadline, *, available, lead=.03):
         """Overlap native capture with a resident check's remaining idle time.

@@ -15,6 +15,7 @@ from .policy import capabilities, observation_fields
 from .quantity import read_count
 from .scanner import LEVEL, IncompleteObservation, RescanSlot, clean_text
 from .recovery import RecheckSlot
+from tall_window import is_capture_point_safe, window_hwnd
 
 
 def resumable_observation(method):
@@ -38,6 +39,14 @@ def resumable_observation(method):
 
 class IncompleteLookup(IncompleteObservation):
     """A read-only interval observation failed; saved identities are intact."""
+
+
+class TallSelectUnsafe(IncompleteObservation):
+    """Selection check skipped because target sits outside clickable work area during tall scan."""
+
+    def __init__(self, slot, message="超长竖屏下待核对卡片位于安全可点击区外"):
+        super().__init__(message)
+        self.slot = slot
 
 
 def signature(row):
@@ -331,6 +340,16 @@ class OrderedView:
         stats = self.o.report.setdefault("selection_stats", {"badge_reads": 0, "clicked_reads": 0})
         selected = inspect_lock and (verify_selection or state is None)
         if selected:
+            if getattr(self.o, "_tall_mode", False):
+                point = [round(box[0] + box[2] / 2), round(box[1] + box[3] * .45)]
+                if not is_capture_point_safe(
+                    window_hwnd(self.o.rt),
+                    point,
+                    capture_size=(frame.shape[1], frame.shape[0]),
+                    margin_px=6,
+                    require_work_area=True,
+                ):
+                    raise TallSelectUnsafe(self.slot)
             state = self.o.select(box, facts, self.generation, verify_details=verify_selection)
             stats["clicked_reads"] += 1
         else:

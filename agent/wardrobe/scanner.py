@@ -13,7 +13,7 @@ from account_state import AccountState
 from collection.scanner import InventoryScanner, RescanSlot
 from daily.settings import ROOT
 from file_io import write_json
-from tall_window import tall_window
+from tall_window import clamp_capture_park_point, safe_capture_y_range, tall_window
 from task_control import TaskStopped, task_time as time
 from .model import WardrobeCatalog
 from .progress import MODEL_ONLY_PARTS, ordered_prefix
@@ -289,7 +289,9 @@ class WardrobeScanner(InventoryScanner):
         frame = self.clear_search_box(frame)
         frame = self.ensure_default_sort(frame)
         frame = self.apply_owned_filter()
-        self.rt.action("TouchMove", target=[640, 36])
+        hwnd, cap_size = self.rt._pointer_guard_context()
+        park_pt = clamp_capture_park_point(hwnd, [640, 36], capture_size=cap_size)
+        self.rt.action("TouchMove", target=park_pt)
         self.rt.pause(.15)
         return frame
 
@@ -456,19 +458,26 @@ class WardrobeScanner(InventoryScanner):
             )
         return boxes
 
+    def _park_point(self):
+        hwnd, cap_size = self.rt._pointer_guard_context()
+        return clamp_capture_park_point(hwnd, [640, 36], capture_size=cap_size)
+
     def scroll_list(self, amount, frame):
         boxes = self.cards(frame)
         left = [box for box in boxes if box[0] == self.layout["first_x"]]
         x, y, w, h = min(left, key=lambda box: box[1]) if left else [
             self.layout["first_x"], self.grid[1] + 20, *self.layout["card_size"]
         ]
-        target = [round(x + w / 2), round(y + h / 2)]
+        hwnd, cap_size = self.rt._pointer_guard_context()
+        safe_min_y, safe_max_y = safe_capture_y_range(hwnd, cap_size[1], capture_width=cap_size[0], margin_px=8)
+        target_y = max(safe_min_y + 8, min(safe_max_y - 8, round(y + h / 2)))
+        target = [round(x + w / 2), target_y]
         return (
             self.rt.action("TouchMove", target=target)
             and self.rt.pause(.15)
             and self.rt.action("Scroll", target=target, dx=0, dy=amount)
             and self.rt.pause(.12)
-            and self.rt.action("TouchMove", target=[640, 36])
+            and self.rt.action("TouchMove", target=self._park_point())
             and self.rt.pause(.22)
         )
 
@@ -937,15 +946,19 @@ class WardrobeScanner(InventoryScanner):
                 or not self.rt.pause(.15)
                 or not self.rt.action("Scroll", target=point, dx=0, dy=dy)
                 or not self.rt.pause(.12)
-                or not self.rt.action("TouchMove", target=[640, 36])
+                or not self.rt.action("TouchMove", target=self._park_point())
                 or not self.rt.pause(.22)):
             raise TaskStopped()
         return self.rt.capture()
 
     def click_tab_y(self, y):
-        target_y = max(92, min(628, round(y)))
+        hwnd, cap_size = self.rt._pointer_guard_context()
+        safe_min_y, safe_max_y = safe_capture_y_range(hwnd, cap_size[1], capture_width=cap_size[0], margin_px=6)
+        min_y = max(92, safe_min_y + 4)
+        max_y = min(628, max(min_y, safe_max_y - 4))
+        target_y = max(min_y, min(max_y, round(y)))
         if (not self.rt.action("Click", target=[TAB_X, target_y])
-                or not self.rt.action("TouchMove", target=[640, 36])
+                or not self.rt.action("TouchMove", target=self._park_point())
                 or not self.rt.pause(.28)):
             raise TaskStopped()
         return self.rt.capture(), target_y
