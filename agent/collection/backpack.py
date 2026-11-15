@@ -31,6 +31,7 @@ GRID_TOP = 115
 GRID_BOTTOM_MARGIN = 80
 
 _SHIFTS = [(dy, dx) for dy in (-2, -1, 0, 1, 2) for dx in (-2, -1, 0, 1, 2)]
+_NEIGHBOR_SHIFTS = ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1))
 _VALID84 = np.ones((84, 84), dtype=np.float32)
 _VALID84[63:, 30:] = 0.0
 _VALID84[:2, :] = 0.0
@@ -39,6 +40,10 @@ _VALID84[:, :2] = 0.0
 _VALID84[:, -2:] = 0.0
 _VALID42 = _VALID84[::2, ::2]
 _VALID28 = cv2.resize(_VALID84, (28, 28), interpolation=cv2.INTER_AREA) > 0.5
+_MASK42_BOOL = _VALID42 > 0
+_MASK84_FLAT = (_VALID84 > 0).reshape(-1)
+_W84_FLAT = np.ascontiguousarray(_VALID84.reshape(-1)[_MASK84_FLAT])
+_N_V84 = float(_W84_FLAT.sum()) + 1e-6
 
 
 def current_game_day() -> str:
@@ -134,6 +139,20 @@ class BackpackModel:
                 vecs.append(v)
             self.coarse_mats[tab] = np.stack(vecs) if vecs else np.zeros((0, 28 * 28 * 3), dtype=np.float32)
 
+        n_tmpl = len(self.templates)
+        self._a42 = np.ascontiguousarray(self.a_all[:, ::2, ::2][:, _MASK42_BOOL])
+        fg42 = self.fg_all[:, ::2, ::2, :][:, _MASK42_BOOL, :]
+        self._afg42 = np.ascontiguousarray((self._a42[:, :, None] * fg42).astype(np.float32))
+        self._fg84_flat = np.ascontiguousarray(self.fg_all.reshape(n_tmpl, -1, 3)[:, _MASK84_FLAT, :])
+        self._a84_flat = np.ascontiguousarray(self.a_all.reshape(n_tmpl, -1)[:, _MASK84_FLAT])
+        self._w84_flat_t = np.ascontiguousarray(self.w_all.reshape(n_tmpl, -1)[:, _MASK84_FLAT])
+        self._ws84 = self._w84_flat_t.sum(axis=1) + 1e-6
+        fg84_m = (self._fg84_flat * self._w84_flat_t[:, :, None]).sum(axis=1) / self._ws84[:, None]
+        self._ta84_flat = np.ascontiguousarray((self._fg84_flat - fg84_m[:, None, :]) * self._w84_flat_t[:, :, None])
+        self._ta84_ss = (((self._fg84_flat - fg84_m[:, None, :]) ** 2) * self._w84_flat_t[:, :, None]).sum(axis=(1, 2))
+        self._aw84_flat = np.ascontiguousarray(self._a84_flat * _W84_FLAT[None, :])
+        self._aw84_denom = self._aw84_flat.sum(axis=1) + 1e-6
+
     def match_cell(self, frame: np.ndarray, cy: int, col: int, tab: int) -> tuple[dict | None, float, float, float, float]:
         """Return (template_meta, score, ncc, l1_fg, margin) for the occupied cell."""
         idxs = self.tab_indices.get(tab)
@@ -145,8 +164,9 @@ class BackpackModel:
         if cy - 2 < 0 or cy + ICON_SIZE + 2 > h or cx - 2 < 0 or cx + ICON_SIZE + 2 > w_img:
             return None, -1.0, -1.0, 255.0, 0.0
 
-        crop = frame[cy:cy + ICON_SIZE, cx:cx + ICON_SIZE]
-        sm = cv2.GaussianBlur(crop.astype(np.float32), (5, 5), 1.4)
+        win88 = frame[cy - 2:cy + ICON_SIZE + 2, cx - 2:cx + ICON_SIZE + 2].astype(np.float32)
+        p0 = win88[2:2 + ICON_SIZE, 2:2 + ICON_SIZE]
+        sm = cv2.GaussianBlur(p0, (5, 5), 1.4)
         sm28 = cv2.resize(sm, (28, 28), interpolation=cv2.INTER_AREA)
         m28 = sm28[_VALID28].mean(axis=0)
         v = ((sm28 - m28) * _VALID28[:, :, None]).reshape(-1)
@@ -155,56 +175,64 @@ class BackpackModel:
         k_coarse = min(36, len(idxs))
         top_idx = idxs[np.argsort(coarse)[::-1][:k_coarse]]
 
-        patches84 = np.stack([
-            frame[cy + dy:cy + dy + ICON_SIZE, cx + dx:cx + dx + ICON_SIZE].astype(np.float32)
-            for dy, dx in _SHIFTS
-        ])
-        p0 = patches84[12]
-        a = self.a_all[top_idx]
-        fg = self.fg_all[top_idx]
-        bg_mask = (a < 0.05) & (_VALID84[None] > 0)
-        bg_cnt = bg_mask.sum(axis=(1, 2))
+        # Vectorized 42x42 BLAS squared-L2 screening across all 25 +/-2px shift candidates.
+        p0_42 = p0[::2, ::2][_MASK42_BOOL]
+        a42 = self._a42[top_idx]
+        bg_mask = a42 < 0.05
+        bg_cnt = bg_mask.sum(axis=1)
+        fallback_bg = p0[4:12, 4:80].mean(axis=(0, 1))
         bg_mean = np.where(
             (bg_cnt >= 40)[:, None],
-            (p0[None] * bg_mask[:, :, :, None]).sum(axis=(1, 2)) / np.maximum(bg_cnt, 1)[:, None],
-            p0[4:12, 4:80].mean(axis=(0, 1))[None, :],
+            (p0_42[None] * bg_mask[:, :, None]).sum(axis=1) / np.maximum(bg_cnt, 1)[:, None],
+            fallback_bg[None, :],
         )
-
-        p42 = patches84[:, ::2, ::2, :]
-        comp42 = a[:, ::2, ::2, None] * fg[:, ::2, ::2, :] + (1.0 - a[:, ::2, ::2, None]) * bg_mean[:, None, None, :]
-        diff42 = np.abs(p42[None] - comp42[:, None]).mean(axis=4)
-        l1_42 = (diff42 * _VALID42[None, None]).sum(axis=(2, 3)) / (_VALID42.sum() + 1e-6)
-        bs42 = np.argmin(l1_42, axis=1)
+        comp42 = (self._afg42[top_idx] + (1.0 - a42)[:, :, None] * bg_mean[:, None, :]).reshape(k_coarse, -1)
+        p42_shifts = np.stack([
+            win88[2 + dy:2 + dy + ICON_SIZE:2, 2 + dx:2 + dx + ICON_SIZE:2][_MASK42_BOOL].reshape(-1)
+            for dy, dx in _SHIFTS
+        ])
+        c_sq = np.einsum("ij,ij->i", comp42, comp42)[:, None]
+        p_sq = np.einsum("ij,ij->i", p42_shifts, p42_shifts)[None, :]
+        d2_42 = np.maximum(0.0, c_sq + p_sq - 2.0 * (comp42 @ p42_shifts.T))
+        bs42 = np.argmin(d2_42, axis=1)
         k_fine = min(10, k_coarse)
-        top_fine = np.argsort(l1_42[np.arange(k_coarse), bs42])[:k_fine]
+        top_fine = np.argsort(d2_42[np.arange(k_coarse), bs42])[:k_fine]
+
+        shift_cache: dict[int, np.ndarray] = {}
+
+        def _get_shift(s_idx: int) -> np.ndarray:
+            cached = shift_cache.get(s_idx)
+            if cached is None:
+                dy, dx = _SHIFTS[s_idx]
+                cached = win88[2 + dy:2 + dy + ICON_SIZE, 2 + dx:2 + dx + ICON_SIZE].reshape(-1, 3)[_MASK84_FLAT]
+                shift_cache[s_idx] = cached
+            return cached
 
         final = []
         for ki in top_fine:
             ti = int(top_idx[ki])
             b_dy, b_dx = _SHIFTS[int(bs42[ki])]
-            ak, fgk, wk, bgk = self.a_all[ti], self.fg_all[ti], self.w_all[ti], bg_mean[ki]
-            ws = float(wk.sum()) + 1e-6
-            fg_m = (fgk * wk[:, :, None]).sum(axis=(0, 1)) / ws
-            ta = fgk - fg_m
-            ta_ss = float(((ta ** 2) * wk[:, :, None]).sum())
-            compk = ak[:, :, None] * fgk + (1.0 - ak[:, :, None]) * bgk[None, None, :]
-            best_k = (-999.0, 0.0, 999.0)
-            for ndy, ndx in ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)):
-                s_y = max(-2, min(2, b_dy + ndy)) + 2
-                s_x = max(-2, min(2, b_dx + ndx)) + 2
-                ps = patches84[s_y * 5 + s_x]
-                diff = np.abs(ps - compk).mean(axis=2)
-                l1_fg = float((diff * ak * _VALID84).sum() / ((ak * _VALID84).sum() + 1e-6))
-                l1_all = float((diff * _VALID84).sum() / (_VALID84.sum() + 1e-6))
-                pw_mean = (ps * wk[:, :, None]).sum(axis=(0, 1)) / ws
-                pa = ps - pw_mean
-                p_dot_t = float((pa * ta * wk[:, :, None]).sum())
-                p_ss = float(((pa ** 2) * wk[:, :, None]).sum())
-                ncc = p_dot_t / (np.sqrt(p_ss * ta_ss) + 1e-6)
-                sc = ncc - 0.015 * l1_all - 0.010 * l1_fg
-                if sc > best_k[0]:
-                    best_k = (sc, ncc, l1_fg)
-            final.append((*best_k, self.templates[ti]))
+            ak = self._a84_flat[ti]
+            wk = self._w84_flat_t[ti]
+            ws = float(self._ws84[ti])
+            tak = self._ta84_flat[ti]
+            ta_ss = float(self._ta84_ss[ti])
+            compk = ak[:, None] * self._fg84_flat[ti] + (1.0 - ak)[:, None] * bg_mean[ki][None, :]
+            ps5 = np.stack([
+                _get_shift((max(-2, min(2, b_dy + ndy)) + 2) * 5 + (max(-2, min(2, b_dx + ndx)) + 2))
+                for ndy, ndx in _NEIGHBOR_SHIFTS
+            ])
+            diff = np.abs(ps5 - compk[None]).mean(axis=2)
+            l1_fg_5 = (diff * self._aw84_flat[ti][None]).sum(axis=1) / self._aw84_denom[ti]
+            l1_all_5 = (diff * _W84_FLAT[None]).sum(axis=1) / _N_V84
+            pw_mean = (ps5 * wk[None, :, None]).sum(axis=1) / ws
+            pa = ps5 - pw_mean[:, None, :]
+            p_dot_t = (pa * tak[None]).sum(axis=(1, 2))
+            p_ss = ((pa ** 2) * wk[None, :, None]).sum(axis=(1, 2))
+            ncc_5 = p_dot_t / (np.sqrt(p_ss * ta_ss) + 1e-6)
+            sc_5 = ncc_5 - 0.015 * l1_all_5 - 0.010 * l1_fg_5
+            bi = int(np.argmax(sc_5))
+            final.append((float(sc_5[bi]), float(ncc_5[bi]), float(l1_fg_5[bi]), self.templates[ti]))
         final.sort(key=lambda x: -x[0])
         top1 = final[0]
         margin = top1[0] - (final[1][0] if len(final) > 1 else -1.0)
@@ -244,19 +272,19 @@ def detect_grid_rows(frame: np.ndarray, grid_top: int = GRID_TOP, grid_bottom: i
     cols = [slice(FIRST_X + c * COL_PITCH + 6, FIRST_X + c * COL_PITCH + 84) for c in range(8)]
     top_edge = np.mean([gy_abs[:, sl].mean(axis=1) for sl in cols], axis=0)
     interior_tex = np.mean([gx_abs[:, sl].mean(axis=1) for sl in cols], axis=0)
-    best_score, best_ys = -1e9, []
-    for phase in np.linspace(0, ROW_PITCH_EXACT, 114, endpoint=False):
-        ys = []
+
+    def _eval_lattice(phase: float, pitch: float) -> tuple[float, list[int]]:
+        ys: list[int] = []
         k = 0
         while True:
-            cy = int(round(grid_top - 30 + phase + k * ROW_PITCH_EXACT))
+            cy = int(round(grid_top - 30 + phase + k * pitch))
             k += 1
             if cy > grid_bottom - 88:
                 break
             if cy >= grid_top - 4:
                 ys.append(cy)
         if not ys:
-            continue
+            return -1e9, []
         sc = 0.0
         for cy in ys:
             te = float(np.max(top_edge[max(0, cy - 3):cy + 2]))
@@ -265,9 +293,18 @@ def detect_grid_rows(frame: np.ndarray, grid_top: int = GRID_TOP, grid_bottom: i
             gap_end = min(len(interior_tex), cy + 107)
             gap = float(np.mean(interior_tex[cy + 92:gap_end])) if gap_end > cy + 94 else 0.0
             sc += (te + be) * 4.0 + (mid - gap) * 8.0
-        sc /= len(ys)
+        return sc / len(ys), ys
+
+    best_score, best_ys, best_phase = -1e9, [], 0.0
+    for phase in np.linspace(0, ROW_PITCH_EXACT, 114, endpoint=False):
+        sc, ys = _eval_lattice(float(phase), ROW_PITCH_EXACT)
         if sc > best_score:
-            best_score, best_ys = sc, ys
+            best_score, best_ys, best_phase = sc, ys, float(phase)
+    for pitch in np.linspace(ROW_PITCH_EXACT - 0.15, ROW_PITCH_EXACT + 0.15, 11):
+        for phase in best_phase + np.linspace(-2.0, 2.0, 9):
+            sc, ys = _eval_lattice(float(phase), float(pitch))
+            if sc > best_score:
+                best_score, best_ys = sc, ys
     return [cy for cy in best_ys if cy >= grid_top and cy + 88 <= grid_bottom]
 
 
@@ -278,8 +315,32 @@ def is_cell_occupied(frame: np.ndarray, cy: int, col: int) -> bool:
     crop = frame[cy:cy + ICON_SIZE, cx:cx + ICON_SIZE]
     gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
     std = float(np.std(gray[:64, :]))
-    white_cnt = int(np.sum(gray[66:84, 34:84] > 238))
-    return std >= 5.0 or white_cnt > 0
+    # Reject translucent sky/gradient slots that have smooth background std without sharp icon strokes.
+    inner = gray[8:64, 8:76].astype(np.int16)
+    dx = np.abs(np.diff(inner, axis=1))[:-1, :]
+    dy = np.abs(np.diff(inner, axis=0))[:, :-1]
+    if std >= 4.5 and float(((dx + dy) > 18).mean()) >= 0.004:
+        return True
+    badge = gray[67:81, 34:78]
+    badge_bright = int(np.sum(badge > 215))
+    badge_sharp = int(np.sum(np.abs(np.diff(badge.astype(np.int16), axis=1)) > 30))
+    return std >= 3.5 and badge_bright >= 6 and badge_sharp >= 6
+
+
+def _pick_best_badge_qty(ocr_res) -> int | None:
+    if not ocr_res or not ocr_res.hit:
+        return None
+    items = getattr(ocr_res, "filtered_results", None) or (
+        [ocr_res.best_result] if ocr_res.best_result is not None else []
+    )
+    ranked: list[tuple[float, int]] = []
+    for item in items:
+        qty = parse_badge_quantity(getattr(item, "text", "") or "")
+        if qty is not None:
+            ranked.append((float(getattr(item, "score", 0.0) or 0.0), qty))
+    if not ranked:
+        return None
+    return max(ranked, key=lambda pair: pair[0])[1]
 
 
 def read_badge_qty_single(rt, frame: np.ndarray, col: int, cy: int) -> int | None:
@@ -295,12 +356,16 @@ def read_badge_qty_single(rt, frame: np.ndarray, col: int, cy: int) -> int | Non
     res = rt.recognize("MaaNikki_Daily_OCR", {
         "roi": [0, 0, w, h],
         "expected": r"[0-9][0-9.,kK万wW]*",
+        "threshold": 0.35,
     }, image=padded)
-    raw = getattr(res.best_result, "text", "") if (res and res.hit) else ""
-    qty = parse_badge_quantity(raw)
+    qty = _pick_best_badge_qty(res)
     if qty is None:
-        raw2 = rt.text([x0, y0, x1 - x0, y1 - y0], image=frame)
-        qty = parse_badge_quantity(raw2)
+        res2 = rt.recognize("MaaNikki_Daily_OCR", {
+            "roi": [x0, y0, x1 - x0, y1 - y0],
+            "expected": r"[0-9][0-9.,kK万wW]*",
+            "threshold": 0.35,
+        }, image=frame)
+        qty = _pick_best_badge_qty(res2)
     return qty
 
 
@@ -309,13 +374,13 @@ def batch_read_badge_qtys(rt, frame: np.ndarray, cells: list[tuple[int, int]]) -
     results: dict[tuple[int, int], int | None] = {}
     if not cells:
         return results
-    # Pack 18 cells per montage sheet (3 cols x 6 rows, 280x110px per tile -> <=680px tall).
-    tile_w, tile_h = 280, 110
+    # Pack 18 cells per dark neutral montage sheet (3 cols x 6 rows, 300x120px per tile).
+    tile_w, tile_h = 300, 120
     chunk_size = 18
     for start in range(0, len(cells), chunk_size):
         batch = cells[start:start + chunk_size]
         rows_cnt = (len(batch) + 2) // 3
-        sheet = np.full((rows_cnt * tile_h, 3 * tile_w, 3), 245, dtype=np.uint8)
+        sheet = np.full((rows_cnt * tile_h, 3 * tile_w, 3), 32, dtype=np.uint8)
         for idx, (cy, col) in enumerate(batch):
             cx = FIRST_X + col * COL_PITCH
             y0, y1 = max(0, cy + 62), min(frame.shape[0], cy + 90)
@@ -324,28 +389,37 @@ def batch_read_badge_qtys(rt, frame: np.ndarray, cells: list[tuple[int, int]]) -
             if crop.size == 0:
                 continue
             up = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+            tile = cv2.copyMakeBorder(up, 8, 8, 8, 8, cv2.BORDER_REPLICATE)
+            th, tw = min(tile.shape[0], tile_h - 8), min(tile.shape[1], tile_w - 16)
             r, c_i = divmod(idx, 3)
-            py = r * tile_h + 13
-            px = c_i * tile_w + 20
-            uh, uw = min(up.shape[0], tile_h - 20), min(up.shape[1], tile_w - 40)
-            sheet[py:py + uh, px:px + uw] = up[:uh, :uw]
+            py = r * tile_h + (tile_h - th) // 2
+            px = c_i * tile_w + (tile_w - tw) // 2
+            sheet[py:py + th, px:px + tw] = tile[:th, :tw]
         sh, sw = sheet.shape[:2]
         ocr_res = rt.recognize("MaaNikki_Daily_OCR", {
             "roi": [0, 0, sw, sh],
             "expected": r"[0-9][0-9.,kK万wW]*",
+            "threshold": 0.55,
         }, image=sheet)
-        by_tile: dict[int, list[tuple[float, str]]] = {}
+        by_tile: dict[int, list[tuple[float, float, str]]] = {}
         if ocr_res and ocr_res.hit:
             items = getattr(ocr_res, "filtered_results", []) or [ocr_res.best_result]
             for item in items:
+                txt = (getattr(item, "text", "") or "").strip()
+                if not txt or not re.search(r"\d", txt):
+                    continue
                 bx, by, bw, bh = list(item.box)
                 tcx, tcy = bx + bw / 2.0, by + bh / 2.0
                 r_idx, c_idx = int(tcy // tile_h), int(tcx // tile_w)
                 t_idx = r_idx * 3 + c_idx
                 if 0 <= t_idx < len(batch):
-                    by_tile.setdefault(t_idx, []).append((bx, getattr(item, "text", "") or ""))
+                    sc = float(getattr(item, "score", 0.0) or 0.0)
+                    by_tile.setdefault(t_idx, []).append((bx, sc, txt))
         for idx, cell_key in enumerate(batch):
-            parts = [txt for _, txt in sorted(by_tile.get(idx, []), key=lambda p: p[0])]
+            raw_parts = by_tile.get(idx, [])
+            if any(sc >= 0.80 for _, sc, _ in raw_parts):
+                raw_parts = [p for p in raw_parts if p[1] >= 0.70]
+            parts = [txt for _, _, txt in sorted(raw_parts, key=lambda p: p[0])]
             qty = parse_badge_quantity("".join(parts)) if parts else None
             if qty is None:
                 qty = read_badge_qty_single(rt, frame, cell_key[1], cell_key[0])
@@ -363,11 +437,15 @@ def read_top_bling(rt, frame: np.ndarray) -> int | None:
     res = rt.recognize("MaaNikki_Daily_OCR", {
         "roi": [0, 0, padded.shape[1], padded.shape[0]],
         "only_rec": True,
-        "expected": r"^[0-9\s]+$",
+        "expected": r"^\s*[0-9][0-9,\s|/]*$",
     }, image=padded)
     if not res or not res.hit:
         return None
-    digits = re.sub(r"\D", "", getattr(res.best_result, "text", "") or "")
+    raw = getattr(res.best_result, "text", "") or ""
+    match = re.match(r"^\s*([0-9][0-9,\s]*)", raw)
+    if not match:
+        return None
+    digits = re.sub(r"\D", "", match.group(1))
     return int(digits) if digits else None
 
 
@@ -375,12 +453,54 @@ def _grid_box(frame: np.ndarray) -> tuple[int, int]:
     return GRID_TOP + 6, max(GRID_TOP + 120, frame.shape[0] - GRID_BOTTOM_MARGIN - 6)
 
 
-def _same_grid(first: np.ndarray | None, second: np.ndarray | None) -> bool:
+def _detect_occupied_grid_rows(frame: np.ndarray, row_ys: list[int]) -> tuple[list[tuple[int, list[int]]], bool]:
+    """Return ([(cy, occupied_cols)], reached_list_end) without probing empty space past list tail."""
+    rows: list[tuple[int, list[int]]] = []
+    reached_end = False
+    for cy in row_ys:
+        occ_cols = [col for col in range(8) if is_cell_occupied(frame, cy, col)]
+        if not occ_cols:
+            if rows:
+                reached_end = True
+                break
+            continue
+        rows.append((cy, occ_cols))
+        if occ_cols[-1] < 7:
+            reached_end = True
+            break
+    return rows, reached_end
+
+
+def _same_grid(
+    first: np.ndarray | None,
+    second: np.ndarray | None,
+    occupied_rows: list[tuple[int, int]] | None = None,
+) -> bool:
     if first is None or second is None or first.shape != second.shape:
         return False
+    if occupied_rows:
+        scores: list[float] = []
+        f_gray = cv2.cvtColor(first, cv2.COLOR_BGR2GRAY)
+        s_gray = cv2.cvtColor(second, cv2.COLOR_BGR2GRAY)
+        picks = occupied_rows if len(occupied_rows) <= 3 else [
+            occupied_rows[0], occupied_rows[len(occupied_rows) // 2], occupied_rows[-1]
+        ]
+        for cy, n_cols in picks:
+            y0, y1 = max(GRID_TOP, cy + 4), min(first.shape[0] - GRID_BOTTOM_MARGIN, cy + ICON_SIZE - 4)
+            x0, x1 = FIRST_X + 4, min(first.shape[1] - 20, FIRST_X + max(1, n_cols) * COL_PITCH - 14)
+            if y1 - y0 < 40 or x1 - x0 < 60:
+                continue
+            p1 = f_gray[y0:y1, x0:x1]
+            s_y0, s_y1 = max(0, y0 - 2), min(second.shape[0], y1 + 2)
+            p2 = s_gray[s_y0:s_y1, x0:x1]
+            if float(np.std(p1)) < 4.0 or p2.shape[0] < p1.shape[0]:
+                continue
+            scores.append(float(np.max(cv2.matchTemplate(p2, p1, cv2.TM_CCOEFF_NORMED))))
+        if scores:
+            return float(np.median(scores)) >= 0.94
     y0, y1 = _grid_box(first)
     diff = cv2.absdiff(first[y0:y1, 42:806], second[y0:y1, 42:806])
-    return float(np.mean(diff)) < 1.5
+    return float(np.mean(diff)) < 1.5 or float(np.mean(diff > 24)) < 0.015
 
 
 def _scroll_grid_and_park(rt, dy: int, wait_seconds: float) -> np.ndarray | None:
@@ -401,36 +521,49 @@ def _scroll_grid_and_park(rt, dy: int, wait_seconds: float) -> np.ndarray | None
 
 def _scroll_to_top(rt) -> np.ndarray | None:
     frame = rt.capture()
+    if frame is None:
+        return None
+    scroll_dy = 24000 if frame.shape[0] > 1200 else 14400
     for _ in range(12):
         if rt.stopped or frame is None:
             return None
-        after = _scroll_grid_and_park(rt, 14400, 0.28)
+        grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
+        row_ys = detect_grid_rows(frame, grid_top=GRID_TOP, grid_bottom=grid_bottom)
+        occ_rows, _ = _detect_occupied_grid_rows(frame, row_ys)
+        occ_anchors = [(cy, len(cols)) for cy, cols in occ_rows]
+        after = _scroll_grid_and_park(rt, scroll_dy, 0.28)
         if after is None:
             return None
-        if _same_grid(frame, after):
+        if _same_grid(frame, after, occ_anchors):
             return after
         frame = after
     return frame
 
 
-def _measure_scroll_delta(before: np.ndarray, after: np.ndarray, row_ys: list[int]) -> int | None:
-    if before is None or after is None or before.shape != after.shape or not row_ys:
+def _measure_scroll_delta(
+    before: np.ndarray,
+    after: np.ndarray,
+    anchors: list[tuple[int, int]],
+) -> int | None:
+    if before is None or after is None or before.shape != after.shape or not anchors:
         return None
     grid_bottom = before.shape[0] - GRID_BOTTOM_MARGIN
-    # Anchor against the lowest complete row(s) that still have sufficient vertical room to move up.
-    anchors = [cy for cy in reversed(row_ys) if cy >= GRID_TOP + 4][:2]
+    # Anchor against the lowest occupied rows with sufficient width & vertical travel room.
+    picks = [(cy, n_cols) for cy, n_cols in reversed(anchors) if cy >= GRID_TOP + 4][:2]
     b_gray = cv2.cvtColor(before, cv2.COLOR_BGR2GRAY)
     a_gray = cv2.cvtColor(after, cv2.COLOR_BGR2GRAY)
     votes: list[int] = []
-    for cy in anchors:
-        tmpl = b_gray[cy:cy + 80, 42:800]
-        if tmpl.shape[0] < 80 or float(np.std(tmpl)) < 4.0:
+    for cy, n_cols in picks:
+        x0 = FIRST_X + 4
+        x1 = min(before.shape[1] - 10, FIRST_X + max(1, n_cols) * COL_PITCH - 14)
+        tmpl = b_gray[cy:cy + 80, x0:x1]
+        if tmpl.shape[0] < 80 or tmpl.shape[1] < 60 or float(np.std(tmpl)) < 4.0:
             continue
         low = max(GRID_TOP - 8, 0)
         high = min(cy + 4, grid_bottom - 80)
         if high < low + 10:
             continue
-        search = a_gray[low:high + 80, 42:800]
+        search = a_gray[low:high + 80, x0:x1]
         res = cv2.matchTemplate(search, tmpl, cv2.TM_CCOEFF_NORMED).ravel()
         best_idx = int(np.argmax(res))
         if float(res[best_idx]) >= 0.88:
@@ -448,19 +581,26 @@ def _resolve_clicked_item(
     cy: int,
     col: int,
     cat_by_norm: dict[str, str],
-) -> tuple[str | None, str | None]:
+    *,
+    prev_panel: np.ndarray | None = None,
+    slot_key: tuple[int, int] | None = None,
+) -> tuple[str | None, str | None, np.ndarray | None]:
     cx = FIRST_X + col * COL_PITCH
     if not rt.action("Click", target=[cx + 42, cy + 42]) or not rt.pause(0.2):
-        return None, None
+        return None, None, prev_panel
     clicked = rt.capture()
     if clicked is None:
-        return None, None
+        return None, None, prev_panel
+    cur_panel = clicked[80:280, 885:1245]
+    if slot_key != (0, 0) and prev_panel is not None and prev_panel.shape == cur_panel.shape:
+        if float(np.mean(cv2.absdiff(prev_panel, cur_panel))) < 2.0:
+            return "__EMPTY__", None, cur_panel
     title = rt.text(RIGHT_TITLE_ROI, image=clicked)
     hits = model.lookup_by_name(tab, title)
     if hits:
-        return hits[0], None
+        return hits[0], None, cur_panel
     cat_fallback = cat_by_norm.get(normalize_name(title))
-    return None, cat_fallback
+    return None, cat_fallback, cur_panel
 
 
 def _scan_tab(
@@ -503,6 +643,12 @@ def _scan_tab(
         if first_row_y is None:
             first_row_y = row_ys[0]
 
+        occ_rows, reached_list_end = _detect_occupied_grid_rows(frame, row_ys)
+        if not occ_rows:
+            stats["complete"] = _page == 0 and target_slots is None
+            break
+        occ_anchors = [(cy, max(cols) + 1) for cy, cols in occ_rows]
+
         safe_min_y, safe_max_y = safe_capture_y_range(
             hwnd,
             frame.shape[0],
@@ -511,19 +657,20 @@ def _scan_tab(
         )
         pending_qty: list[tuple[int, int, str]] = []  # (cy, col, storage_key)
         blocked_cy: int | None = None
+        cur_panel = frame[80:280, 885:1245]
+        max_visible_row = -1
 
-        for cy in row_ys:
+        for cy, present_cols in occ_rows:
             row_idx = int(round((cy + scroll_y - first_row_y) / ROW_PITCH_EXACT))
             if row_idx < 0:
                 continue
+            max_visible_row = max(max_visible_row, row_idx)
             row_candidates = []
-            for col in range(8):
+            for col in present_cols:
                 slot_key = (row_idx, col)
                 if slot_key in seen_slots or slot_key in deferred_slots:
                     continue
                 if target_slots is not None and slot_key not in target_slots:
-                    continue
-                if not is_cell_occupied(frame, cy, col):
                     continue
                 tmpl, sc, ncc, _l1, margin = model.match_cell(frame, cy, col, tab)
                 ambiguous = tmpl is not None and len(set(tmpl.get("names") or [])) > 1
@@ -557,7 +704,19 @@ def _scan_tab(
                     continue
                 else:
                     stats["clicked"] += 1
-                    tb_id, cat_fallback = _resolve_clicked_item(rt, model, tab, cy, col, cat_by_norm)
+                    tb_id, cat_fallback, cur_panel = _resolve_clicked_item(
+                        rt,
+                        model,
+                        tab,
+                        cy,
+                        col,
+                        cat_by_norm,
+                        prev_panel=cur_panel,
+                        slot_key=slot_key,
+                    )
+                    if tb_id == "__EMPTY__":
+                        stats["clicked"] = max(0, stats["clicked"] - 1)
+                        continue
                     if tb_id is None and cat_fallback is not None:
                         pending_qty.append((cy, col, cat_fallback))
                         continue
@@ -578,7 +737,12 @@ def _scan_tab(
                 else:
                     stats["unknown"] += 1
 
-        if at_bottom_stuck or (target_slots is not None and not (target_slots - seen_slots - deferred_slots)):
+        remaining_targets = (target_slots - seen_slots - deferred_slots) if target_slots is not None else set()
+        if (
+            at_bottom_stuck
+            or (reached_list_end and blocked_cy is None and not remaining_targets)
+            or (target_slots is not None and not remaining_targets)
+        ):
             stats["complete"] = stats["unknown"] == 0 and not deferred_slots
             return counts, stats, deferred_slots
 
@@ -587,6 +751,14 @@ def _scan_tab(
             want_px = max(240, blocked_cy - desired_y)
             rate = px_per_unit if px_per_unit is not None else 0.45
             step_dy = -max(360, min(4200, round(want_px / rate / 120.0) * 120))
+        elif target_slots is not None and not is_tall and remaining_targets and max_visible_row >= 0:
+            min_target_row = min(r for r, _ in remaining_targets)
+            if min_target_row > max_visible_row + 1:
+                rate = px_per_unit if px_per_unit is not None else 0.21
+                want_px = min(300.0, max(180.0, (min_target_row - max_visible_row - 1) * ROW_PITCH_EXACT))
+                step_dy = -max(960, min(1680, round(want_px / rate / 120.0) * 120))
+            else:
+                step_dy = -960
         else:
             step_dy = -4200 if is_tall else -960
 
@@ -595,12 +767,16 @@ def _scan_tab(
             after = _scroll_grid_and_park(rt, attempt_dy, 0.32)
             if after is None:
                 return counts, stats, deferred_slots
-            if _same_grid(frame, after):
+            same = _same_grid(frame, after, occ_anchors)
+            delta = 0 if same else _measure_scroll_delta(frame, after, occ_anchors)
+            if same or delta == 0:
                 # Retry once to rule out a dropped Slate scroll event before concluding end of list.
                 after = _scroll_grid_and_park(rt, attempt_dy, 0.32)
                 if after is None:
                     return counts, stats, deferred_slots
-                if _same_grid(frame, after):
+                same = _same_grid(frame, after, occ_anchors)
+                delta = 0 if same else _measure_scroll_delta(frame, after, occ_anchors)
+                if same or delta == 0:
                     if blocked_cy is not None:
                         # Tail rows are stuck below safe work area: count confident cells and defer clicks to normal view.
                         at_bottom_stuck = True
@@ -608,9 +784,8 @@ def _scan_tab(
                         break
                     stats["complete"] = stats["unknown"] == 0 and not deferred_slots
                     return counts, stats, deferred_slots
-            delta = _measure_scroll_delta(frame, after, row_ys)
-            if delta is not None:
-                if delta > 0 and attempt_dy != 0:
+            if delta is not None and delta > 0:
+                if attempt_dy != 0:
                     px_per_unit = max(0.08, min(2.0, delta / abs(attempt_dy)))
                 scroll_y += delta
                 frame = after
