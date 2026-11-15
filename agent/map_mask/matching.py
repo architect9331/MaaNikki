@@ -395,7 +395,9 @@ class MinimapMatcher:
         self._ring_size = 0.0
 
     def sample(self, frame):
-        return minimap_sample(frame, self.spec)
+        if hasattr(self.locator, "sync_minimap_center"):
+            self.locator.sync_minimap_center(frame)
+        return minimap_sample(frame, self.locator.spec)
 
     def _ensure_coarse(self):
         if self._ready:

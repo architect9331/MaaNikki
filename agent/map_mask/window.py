@@ -162,6 +162,7 @@ class OverlayWindow:
             next_topmost = next_diagnostic = 0.0
             rendered_pixels = 0
             previous_messages = ()
+            last_hud_hint = None
             selected_id = None
             selected_key = None
             selected_items = ()
@@ -186,14 +187,20 @@ class OverlayWindow:
                           "stale" if now - updated >= 1 else "visible")
                 hud = self.hud_sink
                 hud_alive = bool(hud is not None and hud.alive())
-                if reason == "visible" and hud_alive:
-                    if hint:
+                if hud_alive:
+                    if reason == "visible" and hint:
                         h_badge, h_title, h_role = split_exploration_hint(hint)
-                        hud.set_exploration_hint(h_title, badge=h_badge, role=h_role, active=True)
+                        next_hud_hint = (True, h_badge, h_title, h_role)
+                        if next_hud_hint != last_hud_hint:
+                            hud.set_exploration_hint(h_title, badge=h_badge, role=h_role, active=True)
+                            last_hud_hint = next_hud_hint
                     else:
-                        hud.clear_exploration_hint()
-                elif hud_alive:
-                    hud.clear_exploration_hint()
+                        next_hud_hint = (False, "", "", "")
+                        if next_hud_hint != last_hud_hint:
+                            hud.clear_exploration_hint()
+                            last_hud_hint = next_hud_hint
+                else:
+                    last_hud_hint = None
                 if reason != "visible" or circle is not None:
                     selected_id = selected_key = None
                     selected_items = ()
