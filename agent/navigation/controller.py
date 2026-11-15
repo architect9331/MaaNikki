@@ -13,6 +13,19 @@ from game_keys import Binding, GameKeys, MACRO_KEYS
 
 
 MAX_CAMERA_PIXELS = 8192
+_WM_ACTIVATE = 0x0006
+_WA_ACTIVE = 1
+_WM_CHAR = 0x0102
+_WM_MOUSEMOVE = 0x0200
+_WM_LBUTTONDOWN = 0x0201
+_WM_LBUTTONUP = 0x0202
+_WM_MOUSEWHEEL = 0x020A
+_WM_MOUSEHWHEEL = 0x020E
+_MK_LBUTTON = 0x0001
+_GA_ROOTOWNER = 3
+_SMTO_ABORTIFHUNG = 0x0002
+_ERROR_TIMEOUT = 1460
+_WINDOW_SEND_TIMEOUT_MS = 2000
 
 
 class MouseEvent(ctypes.Structure):
@@ -367,7 +380,7 @@ class ForegroundInput:
 
 
 class BackgroundInput(ForegroundInput):
-    """Window-targeted PostMessage input; pauses on minimize or uncapturable windows."""
+    """Window-targeted input with activation notice; pauses on minimize or uncapturable windows."""
 
     window_only = True
 
@@ -379,10 +392,30 @@ class BackgroundInput(ForegroundInput):
         self.user32.GetClientRect.restype = wintypes.BOOL
         self.user32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
         self.user32.ClientToScreen.restype = wintypes.BOOL
+        self.user32.ScreenToClient.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
+        self.user32.ScreenToClient.restype = wintypes.BOOL
         self.user32.GetCursorPos.argtypes = [ctypes.POINTER(wintypes.POINT)]
         self.user32.GetCursorPos.restype = wintypes.BOOL
         self.user32.SetCursorPos.argtypes = [ctypes.c_int, ctypes.c_int]
         self.user32.SetCursorPos.restype = wintypes.BOOL
+        self.user32.GetAncestor.argtypes = [wintypes.HWND, wintypes.UINT]
+        self.user32.GetAncestor.restype = wintypes.HWND
+        self.user32.GetLastActivePopup.argtypes = [wintypes.HWND]
+        self.user32.GetLastActivePopup.restype = wintypes.HWND
+        self.user32.IsWindowVisible.argtypes = [wintypes.HWND]
+        self.user32.IsWindowVisible.restype = wintypes.BOOL
+        self.user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+        self.user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+        self.user32.SendMessageTimeoutW.argtypes = [
+            wintypes.HWND,
+            wintypes.UINT,
+            wintypes.WPARAM,
+            wintypes.LPARAM,
+            wintypes.UINT,
+            wintypes.UINT,
+            ctypes.POINTER(ctypes.c_size_t),
+        ]
+        self.user32.SendMessageTimeoutW.restype = ctypes.c_ssize_t
         try:
             self.user32.SetThreadDpiAwarenessContext.argtypes = [wintypes.HANDLE]
             self.user32.SetThreadDpiAwarenessContext.restype = wintypes.HANDLE
@@ -527,7 +560,79 @@ class BackgroundInput(ForegroundInput):
                 with self._per_monitor_dpi():
                     self.user32.SetCursorPos(saved.x, saved.y)
 
-    def _window_point_coords(self, x, y):
+    def _active_window_target(self) -> int:
+        """Resolve an active visible same-process popup owned by the bound game window."""
+        if not self.user32.IsWindow(self.hwnd):
+            return 0
+        root = self.user32.GetAncestor(self.hwnd, _GA_ROOTOWNER)
+        if not root:
+            return self.hwnd
+        popup = self.user32.GetLastActivePopup(root)
+        if not popup or popup == self.hwnd:
+            return self.hwnd
+        if not self.user32.IsWindow(popup) or not self.user32.IsWindowVisible(popup):
+            return self.hwnd
+        base_pid = wintypes.DWORD(0)
+        popup_pid = wintypes.DWORD(0)
+        self.user32.GetWindowThreadProcessId(self.hwnd, ctypes.byref(base_pid))
+        self.user32.GetWindowThreadProcessId(popup, ctypes.byref(popup_pid))
+        if base_pid.value and popup_pid.value != base_pid.value:
+            return self.hwnd
+        return int(popup)
+
+    def _send_window_message(
+        self,
+        target: int,
+        msg: int,
+        wparam: int,
+        lparam: int,
+        error_label: str,
+        *,
+        allow_post_fallback: bool = False,
+        ignore_stop: bool = False,
+    ) -> bool:
+        """Synchronously send a Win32 message with hang protection."""
+        if not target or not self.user32.IsWindow(target):
+            return False
+        if not ignore_stop and self.stopped():
+            return False
+        result = ctypes.c_size_t(0)
+        ctypes.set_last_error(0)
+        ok = self.user32.SendMessageTimeoutW(
+            target,
+            msg,
+            wparam,
+            lparam,
+            _SMTO_ABORTIFHUNG,
+            _WINDOW_SEND_TIMEOUT_MS,
+            ctypes.byref(result),
+        )
+        if ok:
+            return True
+        err = ctypes.get_last_error()
+        # Ensure button-up release still reaches a transiently busy window so mouse state never sticks.
+        if allow_post_fallback and err in (0, _ERROR_TIMEOUT) and self.user32.IsWindow(target):
+            ctypes.set_last_error(0)
+            if self.user32.PostMessageW(target, msg, wparam, lparam):
+                return True
+            err = ctypes.get_last_error() or err
+        if self.stopped() or not self.user32.IsWindow(self.hwnd) or not self.user32.IsWindow(target):
+            return False
+        if err in (0, _ERROR_TIMEOUT):
+            return False
+        raise NavigationError(f"无法向游戏窗口发送{error_label}（错误 {err}）。")
+
+    def _activate_window(self, target: int) -> bool:
+        """Notify an inactive target window of WA_ACTIVE synchronously without stealing foreground."""
+        if not target or not self.user32.IsWindow(target):
+            return False
+        if self.user32.GetForegroundWindow() != target:
+            if not self._send_window_message(target, _WM_ACTIVATE, _WA_ACTIVE, 0, "后台激活通知"):
+                return False
+            wall_time.sleep(0.01)
+        return not self.stopped()
+
+    def _window_point_coords(self, x, y, *, target=None):
         if (type(x) not in (int, float) or type(y) not in (int, float)
                 or not (x == x and y == y) or not self.user32.IsWindow(self.hwnd)):
             return None
@@ -543,101 +648,128 @@ class BackgroundInput(ForegroundInput):
             pt = wintypes.POINT(cx, cy)
             if not self.user32.ClientToScreen(self.hwnd, ctypes.byref(pt)):
                 return None
-            lparam = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
-            return lparam, int(pt.x), int(pt.y), cx, cy
+            sx, sy = int(pt.x), int(pt.y)
+            tx, ty = cx, cy
+            if target and target != self.hwnd:
+                target_pt = wintypes.POINT(sx, sy)
+                if self.user32.ScreenToClient(target, ctypes.byref(target_pt)):
+                    tx, ty = int(target_pt.x), int(target_pt.y)
+            lparam = ((ty & 0xFFFF) << 16) | (tx & 0xFFFF)
+            return lparam, sx, sy, tx, ty
+
+    def _prepare_window_points(self, *points):
+        """Validate window readiness, resolve target HWND, map 1280x720 points, and send activation."""
+        if not self.capturable() or self.stopped():
+            return None
+        target = self._active_window_target()
+        coords_list = []
+        for pt in points:
+            coords = self._window_point_coords(pt[0], pt[1], target=target)
+            if coords is None:
+                return None
+            coords_list.append(coords)
+        if not self._activate_window(target):
+            return None
+        return target, coords_list
+
+    def _release_window_button(self, target: int, lparam: int, error_label: str) -> None:
+        if self.user32.IsWindow(target):
+            self._send_window_message(
+                target,
+                _WM_LBUTTONUP,
+                0,
+                lparam,
+                error_label,
+                allow_post_fallback=True,
+                ignore_stop=True,
+            )
 
     def move_window_point(self, x, y):
-        """Post a client-relative WM_MOUSEMOVE without moving the physical cursor."""
-        if not self.capturable() or self.stopped():
+        """Send a synchronous WM_MOUSEMOVE (with activation notice) without moving the cursor."""
+        prepared = self._prepare_window_points((x, y))
+        if prepared is None:
             return False
-        coords = self._window_point_coords(x, y)
-        if coords is None:
-            return False
-        lparam = coords[0]
-        if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lparam):
-            raise NavigationError(f"无法向游戏窗口发送后台鼠标移动（错误 {ctypes.get_last_error()}）。")
-        return True
+        target, (coords,) = prepared
+        return self._send_window_message(target, _WM_MOUSEMOVE, 0, coords[0], "后台鼠标移动")
 
     def click_window_point(self, x, y, pause, *, with_cursor_pos=True):
-        """Post a client-relative left click to the bound window; briefly borrow cursor if requested."""
-        if not self.capturable() or self.stopped():
+        """Send a synchronous left click to the target window after activation; briefly borrow cursor if requested."""
+        prepared = self._prepare_window_points((x, y))
+        if prepared is None:
             return False
-        coords = self._window_point_coords(x, y)
-        if coords is None:
-            return False
-        lparam, screen_x, screen_y, _, _ = coords
+        target, ((lparam, screen_x, screen_y, _, _),) = prepared
         with self._borrowed_cursor(screen_x, screen_y, enabled=with_cursor_pos):
-            if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lparam):
-                raise NavigationError(f"无法向游戏窗口发送后台鼠标移动（错误 {ctypes.get_last_error()}）。")
             if with_cursor_pos:
-                wall_time.sleep(.02)
-            if not self.user32.PostMessageW(self.hwnd, 0x0201, 0x0001, lparam):
-                raise NavigationError(f"无法向游戏窗口发送后台鼠标点击（错误 {ctypes.get_last_error()}）。")
+                wall_time.sleep(0.002)
+            if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lparam, "后台鼠标移动"):
+                return False
+            wall_time.sleep(0.02 if with_cursor_pos else 0.01)
+            if not self._send_window_message(target, _WM_LBUTTONDOWN, _MK_LBUTTON, lparam, "后台鼠标点击"):
+                return False
             try:
                 if with_cursor_pos:
-                    wall_time.sleep(.05)
+                    wall_time.sleep(0.05)
                     pressed = not self.stopped()
                 else:
-                    pressed = pause(.05)
+                    pressed = pause(0.05)
             finally:
-                if self.user32.IsWindow(self.hwnd):
-                    if not self.user32.PostMessageW(self.hwnd, 0x0202, 0, lparam):
-                        raise NavigationError(f"无法释放游戏窗口的后台鼠标点击（错误 {ctypes.get_last_error()}）。")
+                self._release_window_button(target, lparam, "后台鼠标点击释放")
             if with_cursor_pos:
-                wall_time.sleep(.03)
+                wall_time.sleep(0.03)
                 return pressed and not self.stopped()
             return pressed
 
     def scroll_window_point(self, x, y, dx, dy):
-        """Post WM_MOUSEWHEEL to the target coordinate while briefly borrowing cursor hover."""
-        if not self.capturable() or self.stopped():
+        """Send synchronous WM_MOUSEWHEEL to the target coordinate after activation and cursor hover."""
+        prepared = self._prepare_window_points((x, y))
+        if prepared is None:
             return False
-        coords = self._window_point_coords(x, y)
-        if coords is None:
-            return False
-        lparam, screen_x, screen_y, _, _ = coords
+        target, ((lparam, screen_x, screen_y, _, _),) = prepared
         # Win32 WM_MOUSEWHEEL lParam carries screen coordinates, not client coordinates.
         screen_lparam = ((screen_y & 0xFFFF) << 16) | (screen_x & 0xFFFF)
         with self._borrowed_cursor(screen_x, screen_y, enabled=True):
-            if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lparam):
-                raise NavigationError(f"无法向游戏窗口发送后台鼠标移动（错误 {ctypes.get_last_error()}）。")
-            wall_time.sleep(.04)
+            wall_time.sleep(0.002)
+            if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lparam, "后台鼠标移动"):
+                return False
+            wall_time.sleep(0.04)
             if dy:
                 delta_y = max(-32768, min(32767, round(dy)))
-                if not self.user32.PostMessageW(self.hwnd, 0x020A, (delta_y & 0xFFFF) << 16, screen_lparam):
-                    raise NavigationError(f"无法向游戏窗口发送后台滚轮消息（错误 {ctypes.get_last_error()}）。")
+                if not self._send_window_message(
+                    target, _WM_MOUSEWHEEL, (delta_y & 0xFFFF) << 16, screen_lparam, "后台滚轮消息"
+                ):
+                    return False
             if dx:
                 delta_x = max(-32768, min(32767, round(dx)))
-                if not self.user32.PostMessageW(self.hwnd, 0x020E, (delta_x & 0xFFFF) << 16, screen_lparam):
-                    raise NavigationError(f"无法向游戏窗口发送后台横向滚轮消息（错误 {ctypes.get_last_error()}）。")
-            wall_time.sleep(.03)
+                if not self._send_window_message(
+                    target, _WM_MOUSEHWHEEL, (delta_x & 0xFFFF) << 16, screen_lparam, "后台横向滚轮消息"
+                ):
+                    return False
+            wall_time.sleep(0.03)
         return not self.stopped()
 
     def swipe_window_points(self, begin, end, duration_ms=300):
-        """Post a bounded drag between two 1280x720 points while borrowing cursor only during the drag."""
-        if (not self.capturable() or self.stopped()
-                or not isinstance(begin, (list, tuple)) or len(begin) < 2
+        """Send a synchronous bounded drag between two 1280x720 points after activation."""
+        if (not isinstance(begin, (list, tuple)) or len(begin) < 2
                 or not isinstance(end, (list, tuple)) or len(end) < 2):
             return False
-        start_coords = self._window_point_coords(begin[0], begin[1])
-        end_coords = self._window_point_coords(end[0], end[1])
-        if start_coords is None or end_coords is None:
+        prepared = self._prepare_window_points(begin, end)
+        if prepared is None:
             return False
-        lp0, sx0, sy0, cx0, cy0 = start_coords
-        _, sx1, sy1, cx1, cy1 = end_coords
-        duration_s = max(.12, min(1.5, float(duration_ms or 300) / 1000.0))
-        steps = max(8, min(30, round(duration_s / .02)))
+        target, ((lp0, sx0, sy0, cx0, cy0), (_, sx1, sy1, cx1, cy1)) = prepared
+        duration_s = max(0.12, min(1.5, float(duration_ms or 300) / 1000.0))
+        steps = max(8, min(30, round(duration_s / 0.02)))
         last_lp = lp0
         pressed = False
         with self._borrowed_cursor(sx0, sy0, enabled=True):
-            if not self.user32.PostMessageW(self.hwnd, 0x0200, 0, lp0):
-                raise NavigationError(f"无法向游戏窗口发送后台拖动起点（错误 {ctypes.get_last_error()}）。")
-            wall_time.sleep(.02)
-            if not self.user32.PostMessageW(self.hwnd, 0x0201, 0x0001, lp0):
-                raise NavigationError(f"无法向游戏窗口发送后台拖动按下（错误 {ctypes.get_last_error()}）。")
+            wall_time.sleep(0.002)
+            if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lp0, "后台拖动起点"):
+                return False
+            wall_time.sleep(0.02)
+            if not self._send_window_message(target, _WM_LBUTTONDOWN, _MK_LBUTTON, lp0, "后台拖动按下"):
+                return False
             pressed = True
             try:
-                wall_time.sleep(.02)
+                wall_time.sleep(0.02)
                 for step in range(1, steps + 1):
                     if self.stopped() or not self.capturable():
                         return False
@@ -649,32 +781,41 @@ class BackgroundInput(ForegroundInput):
                     last_lp = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
                     with self._per_monitor_dpi():
                         self.user32.SetCursorPos(sx, sy)
-                    if not self.user32.PostMessageW(self.hwnd, 0x0200, 0x0001, last_lp):
-                        raise NavigationError(f"无法向游戏窗口发送后台拖动轨迹（错误 {ctypes.get_last_error()}）。")
+                    if not self._send_window_message(
+                        target, _WM_MOUSEMOVE, _MK_LBUTTON, last_lp, "后台拖动轨迹"
+                    ):
+                        return False
                     wall_time.sleep(duration_s / steps)
-                wall_time.sleep(.03)
+                wall_time.sleep(0.03)
                 return not self.stopped()
             finally:
-                if pressed and self.user32.IsWindow(self.hwnd):
-                    self.user32.PostMessageW(self.hwnd, 0x0202, 0, last_lp)
-                    wall_time.sleep(.02)
+                if pressed:
+                    self._release_window_button(target, last_lp, "后台拖动释放")
+                    wall_time.sleep(0.02)
 
     def input_window_text(self, content):
-        """Post UTF-16 WM_CHAR code units directly to the bound window."""
+        """Send UTF-16 WM_CHAR code units synchronously after activation."""
         if not isinstance(content, str) or not self.capturable() or self.stopped():
             return False
+        target = self._active_window_target()
+        if not self._activate_window(target):
+            return False
+        enter_down, enter_up, enter_flags = _window_key_spec(self.user32, 13)
         for ch in content:
-            if self.stopped() or not self.user32.IsWindow(self.hwnd):
+            if self.stopped() or not self.user32.IsWindow(target):
                 return False
             if ch == "\n":
-                if not self._post_window_key(13, down=True) or not self._post_window_key(13, down=False):
+                if (not self._send_window_message(target, enter_down, 13, enter_flags, "后台回车按下")
+                        or not self._send_window_message(target, enter_up, 13, enter_flags | 0xC0000000, "后台回车释放")):
                     return False
+                wall_time.sleep(0.02)
                 continue
             raw = ch.encode("utf-16-le")
             for idx in range(0, len(raw), 2):
-                code = int.from_bytes(raw[idx:idx+2], "little")
-                if not self.user32.PostMessageW(self.hwnd, 0x0102, code, 1):
-                    raise NavigationError(f"无法向游戏窗口发送后台文本（错误 {ctypes.get_last_error()}）。")
+                code = int.from_bytes(raw[idx:idx + 2], "little")
+                if not self._send_window_message(target, _WM_CHAR, code, 1, "后台文本"):
+                    return False
+                wall_time.sleep(0.02)
         return True
 
 
