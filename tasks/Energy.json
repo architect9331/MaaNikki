@@ -10,26 +10,26 @@
             "default_check": true,
             "description": "按「刷取顺序」使用活跃能量：每批挑战前选择排在最前、仍有缺口的目标（每周幻境、焕新材料、制衣材料、五星闪光），都完成后交给兜底副本。与朝夕心愿同轮运行时，请排在朝夕心愿之后。",
             "option": [
-                "WeeklyTargets",
                 "RealmQueue",
                 "DoubleEnabled",
                 "DoubleTypes",
+                "DoubleWeeklyPriority",
+                "WeeklyTargets",
                 "DoubleJihuaMode",
                 "DoubleBlessMode",
                 "MonsterTargetMode",
-                "DoubleWeeklyPriority",
                 "RealmTypes",
+                "JihuaTarget",
+                "BlessTarget",
+                "MonsterTarget",
                 "CollectionWorkflow",
                 "CollectionReserveBling",
                 "CollectionBling",
                 "CollectionDecompose",
                 "CollectionOrganize",
-                "JihuaTarget",
-                "JihuaMaterialMode",
                 "FarmThread",
                 "FarmBling",
-                "BlessTarget",
-                "MonsterTarget"
+                "JihuaMaterialMode"
             ]
         }
     ],
@@ -230,7 +230,8 @@
         },
         "JihuaTarget": {
             "type": "select",
-            "label": "素材激化目标",
+            "label": "素材激化默认奖励",
+            "description": "素材激化作为兜底副本、激化／补分策略设为「继承兜底设置」，或跟随缺口已备齐但朝夕心愿仍需激化补分时兑换此处奖励。",
             "cases": [
                 {
                     "name": "Bubble",
@@ -273,8 +274,8 @@
         },
         "JihuaMaterialMode": {
             "type": "select",
-            "label": "消耗材料选择方式",
-            "description": "选择数量最多的材料，或按指定的首选与备选顺序使用。",
+            "label": "激化消耗材料选择",
+            "description": "在素材激化界面用来兑换奖励的收集材料：可选数量最多或按首选与备选顺序；焕新备料、激化双倍、兜底激化、闪光补噗灵与朝夕心愿激化共用此设置。",
             "cases": [
                 {
                     "name": "Priority",
@@ -345,8 +346,8 @@
         },
         "BlessTarget": {
             "type": "select",
-            "label": "祝福闪光目标",
-            "description": "选择祝福闪光副本。运行前需解锁对应困难难度和快速挑战。全收集模式整理失败时，本轮改刷此副本。",
+            "label": "祝福闪光默认关卡",
+            "description": "需提前解锁对应困难难度与快速挑战。作为兜底副本、五星闪光仓库整理未完成、灵感迸发／补分策略设为「继承兜底设置」，或已收齐仍需朝夕补分时挑战此关卡。",
             "cases": [
                 {
                     "name": "Well",
@@ -479,8 +480,8 @@
         },
         "MonsterTarget": {
             "type": "select",
-            "label": "魔物试炼目标",
-            "description": "按所需制衣或焕新材料选择关卡。运行前需解锁快速挑战。",
+            "label": "魔物试炼默认关卡",
+            "description": "需提前解锁对应关卡的快速挑战。作为兜底副本、魔物试炼策略设为「继承兜底设置」，或材料已备齐但朝夕心愿仍需魔物试炼补分时挑战此关卡。",
             "cases": [
                 {
                     "name": "Energy",
@@ -790,8 +791,8 @@
         },
         "DoubleJihuaMode": {
             "type": "select",
-            "label": "素材激化策略（双倍 / 朝夕补分）",
-            "description": "同时用于超级激化双倍与朝夕心愿补分：「跟随焕新 / 制衣缺口」按「刷取顺序」优先补齐还缺的泡泡（开启下方对应开关时也含纯真丝线或噗灵），双倍无缺口时自动跳过，朝夕补分无缺口时自动改刷备用「素材激化奖励」；「继承兜底设置」始终按备用目标挑战。",
+            "label": "素材激化策略",
+            "description": "同时用于超级激化双倍与朝夕心愿补分：「跟随焕新 / 制衣缺口」按「刷取顺序」优先补齐还缺的泡泡（开启下方对应开关时也含纯真丝线或噗灵），无缺口时双倍跳过、朝夕补分改刷下方「素材激化默认奖励」；「继承兜底设置」始终使用默认奖励。",
             "cases": [
                 {
                     "name": "FollowDeficit",
@@ -806,7 +807,7 @@
                 },
                 {
                     "name": "InheritFallback",
-                    "label": "继承兜底设置（素材激化奖励）",
+                    "label": "继承兜底设置（使用默认奖励）",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
@@ -820,8 +821,8 @@
         },
         "DoubleBlessMode": {
             "type": "select",
-            "label": "祝福闪光策略（双倍 / 朝夕补分）",
-            "description": "同时用于灵感迸发双倍与朝夕心愿补分：「五星闪光追全」按缺色顺位挑战缺失五星颜色的副本，双倍已收齐时自动跳过，朝夕补分已收齐或尚未整理仓库时自动改刷备用「祝福闪光关卡」；「继承兜底设置」始终按备用关卡挑战。",
+            "label": "祝福闪光策略",
+            "description": "同时用于灵感迸发双倍与朝夕心愿补分：「五星闪光追全」按缺色顺位挑战缺失五星颜色的副本，已收齐时双倍跳过、朝夕补分改刷下方「祝福闪光默认关卡」；「继承兜底设置」始终挑战默认关卡。",
             "cases": [
                 {
                     "name": "GlowPursuit",
@@ -836,7 +837,7 @@
                 },
                 {
                     "name": "InheritFallback",
-                    "label": "继承兜底设置（祝福闪光关卡）",
+                    "label": "继承兜底设置（使用默认关卡）",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
@@ -850,8 +851,8 @@
         },
         "MonsterTargetMode": {
             "type": "select",
-            "label": "魔物试炼策略（朝夕补分）",
-            "description": "用于朝夕心愿需要挑战魔物试炼补分时选关：「跟随焕新 / 制衣缺口」按「刷取顺序」优先挑战还缺魔物试炼素材的关卡，无缺口时自动改刷备用「魔物试炼关卡」；「继承兜底设置」始终挑战备用关卡。",
+            "label": "魔物试炼策略",
+            "description": "用于朝夕心愿需要挑战魔物试炼补分时选关：「跟随焕新 / 制衣缺口」按「刷取顺序」优先挑战还缺魔物试炼晶石或泡泡的关卡，无缺口时自动改刷下方「魔物试炼默认关卡」；「继承兜底设置」始终挑战默认关卡。",
             "cases": [
                 {
                     "name": "FollowDeficit",
@@ -866,7 +867,7 @@
                 },
                 {
                     "name": "InheritFallback",
-                    "label": "继承兜底设置（魔物试炼关卡）",
+                    "label": "继承兜底设置（使用默认关卡）",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {

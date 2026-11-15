@@ -396,7 +396,7 @@ export function RealmQueueCard({
             : `已开启目标合计约 ${compactNumber(totalFiniteEnergy ?? 0)} 体力 · 预计 ${totalFiniteDays ?? 0} 天完成后转入兜底`;
 
   return (
-    <div id={REALM_QUEUE_CARD_ID} className="mb-4 space-y-2 rounded-lg border border-border bg-bg-primary p-3">
+    <div id={REALM_QUEUE_CARD_ID} className="mb-3 space-y-2 rounded-lg border border-border bg-bg-primary p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-semibold">刷取顺序</p>
         <p className="text-[11px] text-text-secondary">每批挑战前选排在最前、仍有缺口的目标；拖动调整先后</p>
@@ -409,13 +409,13 @@ export function RealmQueueCard({
               限时双倍优先插队
             </span>
             <span>
-              已启用：{dblTypes.map((item) => dblTypeLabels[item] ?? item).join('、')}（对应目标完成时跳过，不强行刷取）
+              已启用：{dblTypes.map((item) => dblTypeLabels[item] ?? item).join('、')}（跟随缺口 / 追全无缺时自动跳过）
             </span>
           </p>
           {dblFollowJihuaEmpty && (
             <p className="flex items-center gap-1 text-warning">
               <AlertTriangle className="h-3 w-3 shrink-0" />
-              素材激化当前设为「跟随焕新 / 制衣缺口」，但下方刷取顺序中这两项均未开启，双倍激化将跳过（朝夕心愿仍会自动改刷备用目标）；如需双倍也固定刷取可改为「继承兜底设置」。
+              素材激化策略当前设为「跟随焕新 / 制衣缺口」，但下方刷取顺序中这两项均未开启，双倍激化将跳过（朝夕心愿仍会自动改用默认奖励）；如需双倍也固定刷取可改为「继承兜底设置」。
             </p>
           )}
           {dblFollowCraftingNoCommon && (
@@ -466,7 +466,7 @@ export function RealmQueueCard({
           <p className="text-[11px] text-text-secondary">
             {totalFiniteDays !== null && totalFiniteDays > 0 && enabled.length > 0
               ? `以上目标完成前暂不刷兜底；约第 ${totalFiniteDays} 天清完后每日投入 ${dailyEnergy} 体力`
-              : '上面的目标都完成或未开启时，剩余活跃能量按下方「兜底副本」设置使用'}
+              : '上面的目标都完成或未开启时，剩余活跃能量按下方「兜底副本与默认目标」设置使用'}
           </p>
         </div>
       </div>

@@ -4,10 +4,9 @@ import {
   REALM_GOAL_LABELS,
   realmCollectionWorkflow,
   realmFarmOnlyEnabled,
-  realmOptionActive,
-  realmOptionBackup,
-  realmOptionLabel,
+  realmOptionPreview,
   realmOptionSections,
+  realmOptionUsageHint,
   realmQueue,
   realmReserveBling,
 } from '@/utils/nikkiOptions';
@@ -190,6 +189,7 @@ function OptionListRenderer({
   taskName,
   optionKeys,
   optionValues,
+  subheadings,
   disabled,
   currentControllerName,
   currentResourceName,
@@ -199,6 +199,7 @@ function OptionListRenderer({
   taskName: string;
   optionKeys: string[];
   optionValues: Record<string, import('@/types/interface').OptionValue>;
+  subheadings?: Record<string, string>;
   disabled: boolean;
   currentControllerName: string | undefined;
   currentResourceName: string | undefined;
@@ -323,7 +324,8 @@ function OptionListRenderer({
           : optionResourceIncompatible
             ? 'resource'
             : undefined;
-        return (
+        const subheading = subheadings?.[group.optionKey];
+        const editor = (
           <OptionEditor
             key={group.optionKey}
             instanceId={instanceId}
@@ -331,13 +333,17 @@ function OptionListRenderer({
             optionKey={group.optionKey}
             value={optionValues[group.optionKey]}
             disabled={disabled || optionIncompatible}
-            labelOverride={taskName === 'realm_challenge' ? realmOptionLabel(group.optionKey, optionValues) : undefined}
-            inactiveHint={taskName === 'realm_challenge' && !realmOptionActive(group.optionKey, optionValues)
-              ? { label: '补分备用', description: '朝夕心愿按目标策略跟随缺口或追全且当前已全部备齐（或策略设成「继承兜底设置」）时，使用此处备用设置凑分；不影响上方刷取顺序。' }
-              : undefined}
+            inactiveHint={taskName === 'realm_challenge' ? realmOptionUsageHint(group.optionKey, optionValues) : undefined}
             controllerIncompatible={optionIncompatible}
             parentIncompatibilityReason={parentIncompatibilityReason}
           />
+        );
+        if (!subheading) return editor;
+        return (
+          <div key={group.optionKey}>
+            <p className="mb-2.5 text-[11px] font-medium text-text-muted">{subheading}</p>
+            {editor}
+          </div>
         );
       })}
     </div>
@@ -661,12 +667,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
     }
 
     for (const optionKey of taskDef.option || []) {
-      if (task.taskName === 'realm_challenge' && (
-        optionKey === 'RealmQueue'
-        || optionKey === 'WeeklyTargets'
-        || optionKey === 'CollectionWorkflow'
-        || !realmOptionActive(optionKey, task.optionValues)
-      )) {
+      if (task.taskName === 'realm_challenge' && !realmOptionPreview(optionKey, task.optionValues)) {
         continue;
       }
       if (previews.length >= maxPreviews) break;
@@ -679,10 +680,9 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
       if (!optionDef) continue;
 
       // MXU 特殊任务的 label 是 i18n key，需要用 t() 翻译
-      const optionLabel = (task.taskName === 'realm_challenge' && realmOptionLabel(optionKey, task.optionValues))
-        || (isMxuOption
-          ? t(optionDef.label || optionKey)
-          : resolveI18nText(optionDef.label, langKey) || optionKey);
+      const optionLabel = isMxuOption
+        ? t(optionDef.label || optionKey)
+        : resolveI18nText(optionDef.label, langKey) || optionKey;
       const optionValue = task.optionValues[optionKey];
 
       if (optionDef.type === 'switch') {
@@ -1292,6 +1292,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                             taskName={task.taskName}
                             optionKeys={section.keys}
                             optionValues={task.optionValues}
+                            subheadings={section.subheadings}
                             disabled={!canEditOptions || isIncompatible}
                             currentControllerName={currentControllerName}
                             currentResourceName={currentResourceName}
@@ -1364,24 +1365,6 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                   currentControllerName={currentControllerName}
                   currentResourceName={currentResourceName}
                 />
-              )}
-              {task.taskName === 'realm_challenge' && (taskDef.option || []).some((key) => realmOptionBackup(key, task.optionValues)) && (
-                <details className="mt-3 rounded-lg border border-border bg-bg-secondary px-3 py-2">
-                  <summary className="cursor-pointer text-xs text-text-secondary">朝夕心愿补分备用设置（无缺口或继承兜底时使用）</summary>
-                  <div className="mt-3">
-                    <p className="mb-3 text-[11px] leading-5 text-text-secondary">当「双倍与朝夕补分策略」设为「继承兜底设置」，或跟随缺口／追全时当前已全部备齐但朝夕心愿仍需体力凑 500 分，按这里对应的目标挑战。</p>
-                    <OptionListRenderer
-                      instanceId={instanceId}
-                      taskId={task.id}
-                      taskName={task.taskName}
-                      optionKeys={(taskDef.option || []).filter((key) => realmOptionBackup(key, task.optionValues))}
-                      optionValues={task.optionValues}
-                      disabled={!canEditOptions || isIncompatible}
-                      currentControllerName={currentControllerName}
-                      currentResourceName={currentResourceName}
-                    />
-                  </div>
-                </details>
               )}
               {task.taskName === "xinghai" && <div className="mt-3"><XinghaiScoreHint values={task.optionValues} /></div>}
             </div>

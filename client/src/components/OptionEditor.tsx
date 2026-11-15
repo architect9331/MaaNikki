@@ -111,9 +111,10 @@ function AsyncIcon({
   return <img src={iconUrl} alt="" className={className} />;
 }
 
-interface OptionUsageHint {
+export interface OptionUsageHint {
   label: string;
   description: string;
+  tone?: 'accent' | 'muted';
 }
 
 interface OptionEditorProps {
@@ -189,7 +190,15 @@ function OptionLabelWithIncompatible({
       </OptionDescription>
       {inactiveHint && (
         <Tooltip content={inactiveHint.description}>
-          <span tabIndex={0} className="cursor-help rounded-lg bg-bg-primary px-1.5 py-0.5 text-[11px] text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
+          <span
+            tabIndex={0}
+            className={clsx(
+              'cursor-help rounded-lg px-1.5 py-0.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+              inactiveHint.tone === 'accent'
+                ? 'bg-accent/15 font-medium text-accent'
+                : 'bg-bg-primary text-text-muted',
+            )}
+          >
             {inactiveHint.label}
           </span>
         </Tooltip>
@@ -682,7 +691,6 @@ export function OptionEditor({
                     globalScope={globalScope}
                     controllerIncompatible={isOptionIncompatible}
                     parentIncompatibilityReason={incompatibleReasonType}
-                    inactiveHint={inactiveHint}
                   />
                 ))}
               </div>
@@ -958,7 +966,6 @@ export function OptionEditor({
                   globalScope={globalScope}
                   controllerIncompatible={isOptionIncompatible}
                   parentIncompatibilityReason={incompatibleReasonType}
-                  inactiveHint={inactiveHint}
                 />
               ))}
             </div>
