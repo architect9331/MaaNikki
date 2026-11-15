@@ -395,6 +395,206 @@ class MinigameBlingRun(Runtime):
         except ForegroundChanged:
             return None
 
+    def _should_retry_modal_in_foreground(self) -> bool:
+        inputs = self._active_inputs()
+        return bool(
+            inputs is not None
+            and getattr(inputs, "window_only", False)
+            and not inputs.foreground()
+        )
+
+    @contextmanager
+    def _temporary_modal_foreground(self, reason: str):
+        session = active_session()
+        inputs = self._active_inputs()
+        with (session.suspend_background_observation() if session is not None else nullcontext()):
+            if self.background_mode() and session is not None:
+                with self.foreground_task(reason):
+                    yield
+                return
+            if not self.background_mode() and inputs is not None and not inputs.foreground():
+                self.log(f"{reason}，等待游戏回到前台后继续操作。")
+            if session is not None:
+                session.wait(inputs, require_foreground=True)
+            yield
+
+    def _poll_modal_transition(
+        self,
+        info: dict,
+        *,
+        click_at: float,
+        poll_timeout: float,
+        poll_interval: float,
+        until,
+        still_active=None,
+        early_retry_after: float | None = None,
+    ) -> tuple[bool | None, dict]:
+        poll_deadline = time.monotonic() + poll_timeout
+        while not self.stopped and time.monotonic() < poll_deadline:
+            if not self.pause(poll_interval):
+                return None, info
+            info = self._inspect_settlement()
+            if until(info, click_at):
+                return True, info
+            if (
+                early_retry_after is not None
+                and time.monotonic() - click_at >= early_retry_after
+                and (still_active is None or still_active(info))
+            ):
+                break
+        if self.stopped:
+            return None, info
+        return False, info
+
+    def _click_modal_button(
+        self,
+        info: dict,
+        box_key: str,
+        *,
+        max_clicks: int,
+        poll_timeout: float,
+        poll_interval: float,
+        until,
+        still_active=None,
+        early_retry_after: float | None = None,
+        force_cursor_pos: bool = False,
+    ) -> tuple[bool | None, dict, float]:
+        """Click a settlement button up to ``max_clicks`` times until ``until(info, click_at)`` is True.
+
+        Stops sending clicks once ``still_active(info)`` becomes False so fade transitions
+        (e.g., transient ``continue`` frames) finish debouncing without extra clicks.
+        Returns ``(matched, latest_info, click_at)`` where ``matched`` is True on match,
+        False on exhausted retries, or None when stopped/click-failed.
+        """
+        sent_clicks = 0
+        focus_retries = 0
+        click_at = 0.0
+        while sent_clicks < max_clicks and not self.stopped:
+            if still_active is not None and not still_active(info):
+                break
+            clicked = self._click_guarded(
+                info[box_key],
+                info["generation"],
+                cursor_pos=force_cursor_pos or sent_clicks > 0,
+            )
+            if clicked is False:
+                return None, info, 0.0
+            if clicked is None:
+                info = self._inspect_settlement()
+                click_at = time.monotonic()
+                if until(info, click_at):
+                    return True, info, click_at
+                if still_active is not None and not still_active(info):
+                    matched, info = self._poll_modal_transition(
+                        info,
+                        click_at=click_at,
+                        poll_timeout=poll_timeout,
+                        poll_interval=poll_interval,
+                        until=until,
+                    )
+                    return matched, info, click_at
+                focus_retries += 1
+                if focus_retries >= 3:
+                    break
+                continue
+            sent_clicks += 1
+            # Runtime.action('Click') pauses 0.1s after MouseUp before returning.
+            click_at = time.monotonic() - 0.1
+            matched, info = self._poll_modal_transition(
+                info,
+                click_at=click_at,
+                poll_timeout=poll_timeout,
+                poll_interval=poll_interval,
+                until=until,
+                still_active=still_active,
+                early_retry_after=early_retry_after,
+            )
+            if matched is None or matched:
+                return matched, info, click_at
+        if self.stopped:
+            return None, info, 0.0
+        return False, info, click_at
+
+    def _retry_from_failure_pass(
+        self,
+        info: dict,
+        *,
+        max_clicks: int,
+        force_cursor_pos: bool = False,
+    ) -> tuple[str, dict, float]:
+        for _ in range(2):
+            if self.stopped:
+                return "stopped", info, 0.0
+
+            # Step 1: Click '重试' on '挑战失败' until '是否消耗100噗灵重试？' opens.
+            if info["state"] == "failed":
+                clear_count = 0
+
+                def _retry_step_done(cur: dict, clicked_at: float) -> bool:
+                    nonlocal clear_count
+                    if cur["state"] in ("no_bling", "cap_reached", "retry_confirm"):
+                        return True
+                    if cur["state"] == "continue":
+                        clear_count += 1
+                        return clear_count >= 2 and time.monotonic() - clicked_at >= 0.8
+                    clear_count = 0
+                    return False
+
+                done, info, click_at = self._click_modal_button(
+                    info,
+                    "retry_box",
+                    max_clicks=max_clicks,
+                    poll_timeout=2.5,
+                    poll_interval=0.25,
+                    until=_retry_step_done,
+                    still_active=lambda cur: cur["state"] == "failed",
+                    early_retry_after=1.2,
+                    force_cursor_pos=force_cursor_pos,
+                )
+                if done is None:
+                    return "stopped", info, 0.0
+                if info["state"] in ("no_bling", "cap_reached"):
+                    return info["state"], info, 0.0
+                if info["state"] == "continue" and not done:
+                    if not self.pause(0.35):
+                        return "stopped", info, 0.0
+                    info = self._inspect_settlement()
+                if info["state"] in ("no_bling", "cap_reached"):
+                    return info["state"], info, 0.0
+                if info["state"] == "continue":
+                    return "retrying", info, click_at
+                if info["state"] == "failed":
+                    return "retry_failed", info, 0.0
+
+            # Step 2: Click '好的' on '是否消耗100噗灵重试？' to enter the 3-2-1 countdown.
+            if info["state"] == "retry_confirm":
+                done, info, click_at = self._click_modal_button(
+                    info,
+                    "ok_box",
+                    max_clicks=max_clicks,
+                    poll_timeout=2.2,
+                    poll_interval=0.3,
+                    until=lambda cur, _: cur["state"] != "retry_confirm",
+                    still_active=lambda cur: cur["state"] == "retry_confirm",
+                    early_retry_after=1.2,
+                    force_cursor_pos=force_cursor_pos,
+                )
+                if done is None:
+                    return "stopped", info, 0.0
+                if info["state"] in ("no_bling", "cap_reached"):
+                    return info["state"], info, 0.0
+                if info["state"] == "continue":
+                    return "retrying", info, click_at
+                if info["state"] == "failed":
+                    continue
+                return "retry_failed", info, 0.0
+
+            if info["state"] in ("no_bling", "cap_reached"):
+                return info["state"], info, 0.0
+            return ("stopped" if self.stopped else "retrying"), info, time.monotonic()
+
+        return "retry_failed", info, 0.0
+
     def _retry_from_failure(self, info: dict | None = None) -> tuple[str, float]:
         """Click '重试' on '挑战失败' and '好的' on '是否消耗100噗灵重试？'.
 
@@ -404,102 +604,64 @@ class MinigameBlingRun(Runtime):
         if info is None:
             info = self._inspect_settlement()
 
-        for _ in range(2):
-            if self.stopped:
-                return "stopped", 0.0
+        allow_fg_fallback = self._should_retry_modal_in_foreground()
+        status, _, click_at = self._retry_from_failure_pass(
+            info,
+            max_clicks=2 if allow_fg_fallback else 3,
+        )
+        if status != "retry_failed" or self.stopped or not self._should_retry_modal_in_foreground():
+            return status, click_at
 
-            # Step 1: Click '重试' on '挑战失败' until '是否消耗100噗灵重试？' opens.
-            if info["state"] == "failed":
-                sent_clicks = 0
-                for _ in range(3):
-                    if self.stopped:
-                        return "stopped", 0.0
-                    clicked = self._click_guarded(
-                        info["retry_box"],
-                        info["generation"],
-                        cursor_pos=sent_clicks > 0,
-                    )
-                    if clicked is False:
-                        return "stopped", 0.0
-                    if clicked is None:
-                        info = self._inspect_settlement()
-                        if info["state"] != "failed":
-                            break
-                        continue
-                    sent_clicks += 1
-                    click_at = time.monotonic() - 0.1
-                    poll_deadline = time.monotonic() + 2.5
-                    clear_count = 0
-                    while not self.stopped and time.monotonic() < poll_deadline:
-                        if not self.pause(0.25):
-                            return "stopped", 0.0
-                        info = self._inspect_settlement()
-                        if info["state"] in ("no_bling", "cap_reached", "retry_confirm"):
-                            break
-                        if info["state"] == "continue":
-                            clear_count += 1
-                            if clear_count >= 2 and time.monotonic() - click_at >= 0.8:
-                                return "retrying", click_at
-                        else:
-                            clear_count = 0
-                            if time.monotonic() - click_at >= 1.2:
-                                break
-                    if info["state"] != "failed":
-                        break
-                if info["state"] in ("no_bling", "cap_reached"):
-                    return info["state"], 0.0
-                if info["state"] == "failed":
-                    return "retry_failed", 0.0
-
-            # Step 2: Click '好的' on '是否消耗100噗灵重试？' to enter the 3-2-1 countdown.
-            if info["state"] == "retry_confirm":
-                sent_clicks = 0
-                for _ in range(3):
-                    if self.stopped:
-                        return "stopped", 0.0
-                    clicked = self._click_guarded(
-                        info["ok_box"],
-                        info["generation"],
-                        cursor_pos=sent_clicks > 0,
-                    )
-                    if clicked is False:
-                        return "stopped", 0.0
-                    if clicked is None:
-                        info = self._inspect_settlement()
-                        if info["state"] == "continue":
-                            return "retrying", time.monotonic()
-                        if info["state"] != "retry_confirm":
-                            break
-                        continue
-                    sent_clicks += 1
-                    # Runtime.action('Click') pauses 0.1s after MouseUp before returning.
-                    click_at = time.monotonic() - 0.1
-                    poll_deadline = time.monotonic() + 2.2
-                    while not self.stopped and time.monotonic() < poll_deadline:
-                        if not self.pause(0.3):
-                            return "stopped", 0.0
-                        info = self._inspect_settlement()
-                        if info["state"] in ("no_bling", "cap_reached"):
-                            return info["state"], 0.0
-                        if info["state"] == "continue":
-                            return "retrying", click_at
-                        if info["state"] == "failed":
-                            break
-                        if time.monotonic() - click_at >= 1.2:
-                            break
-                    if info["state"] == "failed":
-                        break
-                if info["state"] == "failed":
-                    continue
-                if info["state"] in ("no_bling", "cap_reached"):
-                    return info["state"], 0.0
-                return "retry_failed", 0.0
-
+        with self._temporary_modal_foreground("后台点击小游戏重试弹窗未响应"):
+            info = self._inspect_settlement()
             if info["state"] in ("no_bling", "cap_reached"):
                 return info["state"], 0.0
-            return ("stopped" if self.stopped else "retrying"), time.monotonic()
+            if info["state"] == "continue":
+                return "retrying", time.monotonic()
+            status, _, click_at = self._retry_from_failure_pass(
+                info,
+                max_clicks=2,
+                force_cursor_pos=True,
+            )
+            return status, click_at
 
-        return "retry_failed", 0.0
+    def _dismiss_failure_modals(
+        self,
+        info: dict,
+        *,
+        max_clicks: int,
+        force_cursor_pos: bool = False,
+    ) -> dict | None:
+        if info["has_retry_confirm"]:
+            done, info, _ = self._click_modal_button(
+                info,
+                "cancel_box",
+                max_clicks=max_clicks,
+                poll_timeout=2.0,
+                poll_interval=0.25,
+                until=lambda cur, _: not cur["has_retry_confirm"],
+                still_active=lambda cur: cur["has_retry_confirm"],
+                early_retry_after=1.2 if force_cursor_pos else None,
+                force_cursor_pos=force_cursor_pos,
+            )
+            if done is None:
+                return None
+
+        if info["has_failed"]:
+            done, info, _ = self._click_modal_button(
+                info,
+                "exit_box",
+                max_clicks=max_clicks,
+                poll_timeout=2.5,
+                poll_interval=0.3,
+                until=lambda cur, _: not cur["has_failed"],
+                still_active=lambda cur: cur["has_failed"],
+                early_retry_after=1.2 if force_cursor_pos else None,
+                force_cursor_pos=force_cursor_pos,
+            )
+            if done is None:
+                return None
+        return info
 
     def _exit_failure_to_main(self, inputs: ForegroundInput, info: dict | None = None) -> bool:
         """Dismiss retry confirmation / '挑战失败' via '取消' -> '退出' and return to overworld."""
@@ -508,61 +670,28 @@ class MinigameBlingRun(Runtime):
         if info is None:
             info = self._inspect_settlement()
 
-        if info["has_retry_confirm"]:
-            sent_clicks = 0
-            for _ in range(3):
-                if self.stopped:
-                    return False
-                clicked = self._click_guarded(
-                    info["cancel_box"],
-                    info["generation"],
-                    cursor_pos=sent_clicks > 0,
-                )
-                if clicked is False:
-                    return False
-                if clicked is None:
-                    info = self._inspect_settlement()
-                    if not info["has_retry_confirm"]:
-                        break
-                    continue
-                sent_clicks += 1
-                deadline = time.monotonic() + 2.0
-                while not self.stopped and time.monotonic() < deadline:
-                    if not self.pause(0.25):
-                        return False
-                    info = self._inspect_settlement()
-                    if not info["has_retry_confirm"]:
-                        break
-                if not info["has_retry_confirm"]:
-                    break
+        allow_fg_fallback = self._should_retry_modal_in_foreground()
+        info = self._dismiss_failure_modals(
+            info,
+            max_clicks=2 if allow_fg_fallback else 3,
+        )
+        if info is None or self.stopped:
+            return False
 
-        if info["has_failed"]:
-            sent_clicks = 0
-            for _ in range(3):
-                if self.stopped:
-                    return False
-                clicked = self._click_guarded(
-                    info["exit_box"],
-                    info["generation"],
-                    cursor_pos=sent_clicks > 0,
-                )
-                if clicked is False:
-                    return False
-                if clicked is None:
-                    info = self._inspect_settlement()
-                    if not info["has_failed"]:
-                        break
-                    continue
-                sent_clicks += 1
-                deadline = time.monotonic() + 2.5
-                while not self.stopped and time.monotonic() < deadline:
-                    if not self.pause(0.3):
+        if (info["has_retry_confirm"] or info["has_failed"]) and self._should_retry_modal_in_foreground():
+            with self._temporary_modal_foreground("后台点击小游戏退出弹窗未响应"):
+                info = self._inspect_settlement()
+                if info["has_retry_confirm"] or info["has_failed"]:
+                    info = self._dismiss_failure_modals(
+                        info,
+                        max_clicks=2,
+                        force_cursor_pos=True,
+                    )
+                    if info is None or self.stopped:
                         return False
-                    info = self._inspect_settlement()
-                    if not info["has_failed"]:
-                        break
-                if not info["has_failed"]:
-                    break
+
+        if info["has_retry_confirm"] or info["has_failed"]:
+            return False
 
         deadline = time.monotonic() + 10.0
         last_interact = 0.0

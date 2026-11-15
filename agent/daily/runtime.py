@@ -272,6 +272,11 @@ class Runtime:
             if self._focus_generation != focus_generation:
                 from task_control import ForegroundChanged
                 raise ForegroundChanged("前台切换后已取消本次输入，等待重新核对")
+        inputs = self._active_inputs()
+        if inputs is not None:
+            inputs.check()
+        window_only = bool(getattr(inputs, "window_only", False))
+        use_window = self._use_window_input(inputs)
         if action == "Click" and use_window:
             point = self._target_point(fields.get("target"), "界面点击目标")
             with measure("input.action"):
@@ -427,7 +432,7 @@ class Runtime:
             if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES or is_clipped_game_frame(image):
                 from tall_window import ensure_16_9_window
                 adjusted = ensure_16_9_window(
-                    self.controller, context=self.context, notify=self.log
+                    self.controller, context=self.context, notify=self.log, write_log=False
                 )
                 if adjusted is not None:
                     image = adjusted

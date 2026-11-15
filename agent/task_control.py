@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from contextlib import contextmanager
 from contextvars import ContextVar
+from threading import RLock
 import time as wall_time
 import traceback
 from weakref import WeakSet
@@ -26,7 +27,8 @@ class ForegroundChanged(RuntimeError):
 
 _ACTIVE = ContextVar("foreground_task", default=None)
 REFOCUS_INTERVAL = 3
-HUNG_WINDOW_TIMEOUT = 20.0
+HUNG_WINDOW_TIMEOUT = 45.0
+_SESSIONS_LOCK = RLock()
 _SESSIONS = OrderedDict()
 _RUNNING = {}
 
@@ -293,6 +295,27 @@ class ForegroundSession:
         finally:
             self._background_observation = previous
             self._observation_hud_mode = previous_mode
+            self._observed_foreground = None
+            self.generation += 1
+            if self._hud is not None:
+                self._hud.set_context(control_mode=self._control_mode())
+
+    @contextmanager
+    def suspend_background_observation(self):
+        """Temporarily exit background_observation when a UI modal requires foreground clicks."""
+        if not self._background_observation:
+            yield
+            return
+        previous = self._background_observation
+        self._background_observation = False
+        self._observed_foreground = None
+        self.generation += 1
+        if self._hud is not None:
+            self._hud.set_context(control_mode=self._control_mode())
+        try:
+            yield
+        finally:
+            self._background_observation = previous
             self._observed_foreground = None
             self.generation += 1
             if self._hud is not None:
@@ -572,10 +595,12 @@ def task_session(context, task_id, *, node_name=""):
     handle = getattr(tasker, "_handle", None)
     handle = getattr(handle, "value", handle)
     tasker_key = handle if type(handle) is int else id(tasker)
-    if tasker_key in _RUNNING:
+    with _SESSIONS_LOCK:
+        running = _RUNNING.get(tasker_key)
+    if running is not None:
         # Native nested callbacks can arrive on another Python thread.
         # They must share their waiting parent's input gate and active clock.
-        session = _RUNNING[tasker_key]
+        session = running
         token = _ACTIVE.set(session)
         try:
             yield session
@@ -583,23 +608,24 @@ def task_session(context, task_id, *, node_name=""):
             _ACTIVE.reset(token)
         return
     key = (tasker_key, task_id)
-    session = _SESSIONS.get(key)
-    if session is None:
-        session = ForegroundSession(context)
-        _SESSIONS[key] = session
-        while len(_SESSIONS) > 16:
-            _SESSIONS.popitem(last=False)
-    else:
-        _SESSIONS.move_to_end(key)
-        session.context = context
-    session._tasker_key = tasker_key
+    with _SESSIONS_LOCK:
+        session = _SESSIONS.get(key)
+        if session is None:
+            session = ForegroundSession(context)
+            _SESSIONS[key] = session
+            while len(_SESSIONS) > 16:
+                _SESSIONS.popitem(last=False)
+        else:
+            _SESSIONS.move_to_end(key)
+            session.context = context
+        session._tasker_key = tasker_key
+        _RUNNING[tasker_key] = session
     if node_name:
         from game_hud import resolve_task_label
         resolved = resolve_task_label(node_name, session._task_label)
         if resolved:
             session.set_task_label(resolved)
     token = _ACTIVE.set(session)
-    _RUNNING[tasker_key] = session
     stopping = False
     try:
         session.ensure_hud()
@@ -610,7 +636,8 @@ def task_session(context, task_id, *, node_name=""):
                 inputs.release()
             stopping = bool(session._frame_failure or context.tasker.stopping)
             if stopping:
-                _SESSIONS.pop(key, None)
+                with _SESSIONS_LOCK:
+                    _SESSIONS.pop(key, None)
         finally:
             from game_hud import release_game_hud
             release_game_hud(tasker_key, immediate=stopping)
@@ -624,7 +651,8 @@ def task_session(context, task_id, *, node_name=""):
             session._foreground_required_depth = 0
             session._foreground_pause_message = None
             session.adapter = session._controller = session.context = None
-            _RUNNING.pop(tasker_key, None)
+            with _SESSIONS_LOCK:
+                _RUNNING.pop(tasker_key, None)
             _ACTIVE.reset(token)
 
 
