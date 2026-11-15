@@ -4,6 +4,10 @@ const REALM_MODE_TARGETS: Record<string, string> = {
   JihuaTarget: 'Jihua', JihuaMaterialMode: 'Jihua', JihuaMaterials: 'Jihua', MonsterTarget: 'Monster',
 };
 const COLLECTION_MANAGED_OPTIONS = new Set(['CollectionReserveBling', 'CollectionBling', 'CollectionDecompose']);
+const DOUBLE_OPTION_KEYS = new Set([
+  'DoubleEnabled', 'DoubleTypes', 'DoubleJihuaMode', 'DoubleBlessMode', 'DoubleWeeklyPriority',
+]);
+export const DOUBLE_REALM_TYPES = ['Jihua', 'Bless', 'Weekly'] as const;
 
 export type RealmGoal = 'weekly' | 'renewal' | 'crafting' | 'glow';
 /** Goals that farm toward a collection plan; the weekly realm has no plan. */
@@ -53,13 +57,38 @@ export function realmGoalRank(values: Record<string, OptionValue> | undefined, g
 export const realmCollectionEnabled = (values: Record<string, OptionValue>): boolean =>
   realmGoalRank(values, 'glow') !== null;
 
+export const doubleEnabled = (values?: Record<string, OptionValue>): boolean =>
+  values?.DoubleEnabled?.type === 'switch' ? values.DoubleEnabled.value : true;
+
+export function doubleTypes(values?: Record<string, OptionValue>): string[] {
+  const option = values?.DoubleTypes;
+  return option?.type === 'checkbox' ? option.caseNames : [...DOUBLE_REALM_TYPES];
+}
+
+export const doubleJihuaMode = (values?: Record<string, OptionValue>): 'FollowDeficit' | 'InheritFallback' =>
+  values?.DoubleJihuaMode?.type === 'select' && values.DoubleJihuaMode.caseName === 'InheritFallback'
+    ? 'InheritFallback'
+    : 'FollowDeficit';
+
+export const doubleBlessMode = (values?: Record<string, OptionValue>): 'GlowPursuit' | 'InheritFallback' =>
+  values?.DoubleBlessMode?.type === 'select' && values.DoubleBlessMode.caseName === 'InheritFallback'
+    ? 'InheritFallback'
+    : 'GlowPursuit';
+
+export const doubleWeeklyPriority = (values?: Record<string, OptionValue>): 'Qiggeda' | 'Juan' =>
+  values?.DoubleWeeklyPriority?.type === 'select' && values.DoubleWeeklyPriority.caseName === 'Juan'
+    ? 'Juan'
+    : 'Qiggeda';
+
 export const realmCollectionWorkflow = (values: Record<string, OptionValue>): 'Managed' | 'FarmOnly' =>
   values.CollectionWorkflow?.type === 'select' && values.CollectionWorkflow.caseName === 'FarmOnly'
     ? 'FarmOnly'
     : 'Managed';
 
 export const realmFarmOnlyEnabled = (values: Record<string, OptionValue>): boolean =>
-  realmCollectionEnabled(values) && realmCollectionWorkflow(values) === 'FarmOnly';
+  (realmCollectionEnabled(values)
+    || (doubleEnabled(values) && doubleTypes(values).includes('Bless') && doubleBlessMode(values) === 'GlowPursuit'))
+  && realmCollectionWorkflow(values) === 'FarmOnly';
 
 export function realmReserveBling(values?: Record<string, OptionValue>): number {
   const raw = values?.CollectionReserveBling?.type === 'input'
@@ -80,28 +109,68 @@ const fallbackRealm = (values: Record<string, OptionValue>) =>
 
 /** With the blessing goal queued, the blessing target also covers a failed organization. */
 export function realmOptionLabel(key: string, values: Record<string, OptionValue>): string | undefined {
+  const current = fallbackRealm(values);
+  const dbl = doubleEnabled(values);
+  const dblTypes = dbl ? doubleTypes(values) : [];
+  const dblBlessFallback = dblTypes.includes('Bless') && doubleBlessMode(values) === 'InheritFallback';
+  const dblBlessGlow = dblTypes.includes('Bless') && doubleBlessMode(values) === 'GlowPursuit';
+  const dblJihuaFallback = dblTypes.includes('Jihua') && doubleJihuaMode(values) === 'InheritFallback';
+  const collection = realmCollectionEnabled(values) || dblBlessGlow;
+
   if (key === 'BlessTarget') {
-    return realmCollectionEnabled(values)
-      ? fallbackRealm(values) === 'Bless' ? '兜底 / 闪光整理失败时刷取' : '闪光整理失败时刷取'
-      : '祝福闪光关卡';
+    if (current === 'Bless') {
+      return collection ? '兜底 / 闪光整理失败时刷取' : '祝福闪光关卡';
+    }
+    if (collection && dblBlessFallback) return '双倍与整理失败备用关卡';
+    if (collection) return '闪光整理失败时刷取';
+    if (dblBlessFallback) return '灵感迸发双倍关卡';
+    return '祝福闪光关卡';
   }
-  if (key === 'JihuaTarget') return '素材激化奖励';
+  if (key === 'JihuaTarget') {
+    if (dblJihuaFallback) return current === 'Jihua' ? '兜底 / 双倍激化奖励' : '超级激化双倍目标';
+    return '素材激化奖励';
+  }
   if (key === 'MonsterTarget') return '魔物试炼关卡';
   return undefined;
 }
 
 // Target choices remain saved while they are not used.
 export function realmOptionActive(key: string, values: Record<string, OptionValue>): boolean {
-  const collection = realmCollectionEnabled(values);
-  const farmOnly = realmFarmOnlyEnabled(values);
-  if (key === 'RealmQueue' || key === 'RealmTypes') return true;
-  if (key === 'WeeklyTargets') return realmGoalRank(values, 'weekly') !== null;
+  if (key === 'RealmQueue' || key === 'RealmTypes' || key === 'DoubleEnabled') return true;
+  const dbl = doubleEnabled(values);
+  const dblTypes = dbl ? doubleTypes(values) : [];
+  const dblJihua = dblTypes.includes('Jihua');
+  const dblBless = dblTypes.includes('Bless');
+  const dblWeekly = dblTypes.includes('Weekly');
+
+  if (key === 'DoubleTypes') return dbl;
+  if (key === 'DoubleJihuaMode') return dblJihua;
+  if (key === 'DoubleBlessMode') return dblBless;
+  if (key === 'DoubleWeeklyPriority') return dblWeekly;
+
+  const queueWeekly = realmGoalRank(values, 'weekly') !== null;
+  if (key === 'WeeklyTargets') return queueWeekly || dblWeekly;
+
+  const queueGlow = realmCollectionEnabled(values);
+  const dblBlessGlow = dblBless && doubleBlessMode(values) === 'GlowPursuit';
+  const dblBlessFallback = dblBless && doubleBlessMode(values) === 'InheritFallback';
+  const collection = queueGlow || dblBlessGlow;
+  const farmOnly = collection && realmCollectionWorkflow(values) === 'FarmOnly';
   if (key === 'CollectionWorkflow' || key === 'CollectionOrganize') return collection;
   if (COLLECTION_MANAGED_OPTIONS.has(key)) return collection && !farmOnly;
+
   const current = fallbackRealm(values);
-  if (key === 'BlessTarget') return current === 'Bless' || collection;
-  // Renewal farming also consumes the configured offering materials for bling/thread.
-  if ((key === 'JihuaMaterialMode' || key === 'JihuaMaterials') && realmGoalRank(values, 'renewal') !== null) return true;
+  if (key === 'BlessTarget') return current === 'Bless' || collection || dblBlessFallback;
+
+  const dblJihuaFallback = dblJihua && doubleJihuaMode(values) === 'InheritFallback';
+  const dblJihuaFollow = dblJihua && doubleJihuaMode(values) === 'FollowDeficit';
+  if (key === 'JihuaTarget') return current === 'Jihua' || dblJihuaFallback;
+
+  const hasMaterialNeed = realmGoalRank(values, 'renewal') !== null
+    || dblJihuaFallback
+    || (dblJihuaFollow && realmGoalRank(values, 'crafting') !== null);
+  // Renewal farming and double Jihua also consume the configured offering materials.
+  if ((key === 'JihuaMaterialMode' || key === 'JihuaMaterials') && hasMaterialNeed) return true;
   // The blessing goal's bling runs spend the configured materials.
   if ((key === 'JihuaMaterialMode' || key === 'JihuaMaterials') && collection && !farmOnly) {
     const bling = values.CollectionBling;
@@ -118,28 +187,51 @@ export function realmOptionBackup(key: string, values: Record<string, OptionValu
 /** Each option has one editor, even when several realm stages share its value. */
 export function realmOptionSections(keys: string[], values: Record<string, OptionValue>) {
   const current = fallbackRealm(values);
-  const available = keys.filter((key) => !['RealmQueue', 'WeeklyTargets', 'CollectionWorkflow'].includes(key)
-    && realmOptionActive(key, values));
+  const dbl = doubleEnabled(values);
+  const dblTypes = dbl ? doubleTypes(values) : [];
+  const dblJihuaFallback = dblTypes.includes('Jihua') && doubleJihuaMode(values) === 'InheritFallback';
+  const dblBlessGlow = dblTypes.includes('Bless') && doubleBlessMode(values) === 'GlowPursuit';
+  const dblBlessFallback = dblTypes.includes('Bless') && doubleBlessMode(values) === 'InheritFallback';
+  const queueWeekly = realmGoalRank(values, 'weekly') !== null;
+
+  const available = keys.filter((key) => {
+    if (key === 'RealmQueue' || key === 'CollectionWorkflow') return false;
+    if (key === 'WeeklyTargets') return !queueWeekly && dblTypes.includes('Weekly') && realmOptionActive(key, values);
+    return realmOptionActive(key, values);
+  });
+
+  const doubleKeys = new Set(DOUBLE_OPTION_KEYS);
+  if (!queueWeekly && dblTypes.includes('Weekly')) doubleKeys.add('WeeklyTargets');
   const collectionKeys = new Set(['CollectionReserveBling', 'CollectionBling', 'CollectionDecompose', 'CollectionOrganize']);
-  if (current !== 'Bless') collectionKeys.add('BlessTarget');
+  const collectionActive = realmCollectionEnabled(values) || dblBlessGlow;
+  if (current !== 'Bless' && collectionActive) collectionKeys.add('BlessTarget');
   const materialKeys = new Set(['JihuaMaterialMode', 'JihuaMaterials']);
+
   return [
+    {
+      id: 'double', title: '限时双倍 · 插队调度',
+      description: dbl
+        ? '检测到活动或回归双倍且对应目标仍有缺口时，优先于「刷取顺序」插队处理；目标已备齐或已收齐则自动跳过，不会强行刷取。'
+        : '关闭时始终严格按上方「刷取顺序」与「兜底副本」使用活跃能量，不自动插队双倍活动。',
+      keys: available.filter((key) => doubleKeys.has(key)),
+    },
     {
       id: 'collection', title: '五星闪光 · 收集设置',
       description: realmFarmOnlyEnabled(values)
-        ? '用于刷取顺序中的「五星闪光」。只刷胚子时不升级、不分解、不修改锁定。'
-        : '用于刷取顺序中的「五星闪光」：整理仓库、升级与收集新颜色。',
+        ? '用于「五星闪光」追全或灵感迸发双倍追全。只刷胚子时不升级、不分解、不修改锁定。'
+        : '用于「五星闪光」追全或灵感迸发双倍追全：整理仓库、升级与收集新颜色。',
       keys: available.filter((key) => collectionKeys.has(key)),
     },
     {
       id: 'fallback', title: '兜底副本 · 剩余活跃能量',
       description: '刷取顺序中的目标都完成或未开启后，才使用这里的副本与奖励设置。'
-        + (current === 'Bless' && realmCollectionEnabled(values) ? '所选关卡也用于五星闪光整理失败后的备用刷取。' : ''),
-      keys: available.filter((key) => !collectionKeys.has(key) && !materialKeys.has(key)),
+        + (current === 'Bless' && collectionActive ? '所选关卡也用于五星闪光整理失败后的备用刷取。' : '')
+        + (dblJihuaFallback || (dblBlessFallback && !collectionActive) ? '双倍策略设为「继承兜底设置」时同样使用对应关卡目标。' : ''),
+      keys: available.filter((key) => !doubleKeys.has(key) && !collectionKeys.has(key) && !materialKeys.has(key)),
     },
     {
       id: 'materials', title: '素材激化 · 共用消耗材料',
-      description: '决定拿哪些材料兑换奖励。焕新备料、五星闪光补噗灵、素材激化兜底及朝夕心愿补分都会沿用；兑换哪种奖励由各自目标决定。',
+      description: '决定拿哪些材料兑换奖励。焕新备料、双倍激化、五星闪光补噗灵、兜底及朝夕心愿补分都会沿用；兑换哪种奖励由各自目标决定。',
       keys: available.filter((key) => materialKeys.has(key)),
     },
   ].filter((section) => section.keys.length > 0);

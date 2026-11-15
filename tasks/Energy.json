@@ -12,6 +12,11 @@
             "option": [
                 "WeeklyTargets",
                 "RealmQueue",
+                "DoubleEnabled",
+                "DoubleTypes",
+                "DoubleJihuaMode",
+                "DoubleBlessMode",
+                "DoubleWeeklyPriority",
                 "RealmTypes",
                 "CollectionWorkflow",
                 "CollectionReserveBling",
@@ -709,6 +714,166 @@
                     }
                 }
             }
+        },
+        "DoubleEnabled": {
+            "type": "switch",
+            "label": "限时双倍优先插队",
+            "description": "检测到对应幻境存在双倍奖励次数（含限时活动与回归双倍）时，优先于「刷取顺序」与「兜底副本」插队挑战；所设目标已完成时自动跳过，不强行刷取。",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "label": "开启",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "enabled": true
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "label": "关闭",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "enabled": false
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "Yes"
+        },
+        "DoubleTypes": {
+            "type": "checkbox",
+            "label": "参与插队的双倍活动",
+            "description": "可单独勾选或关闭不想插队的双倍活动；即便勾选，如果对应目标已经达成也会跳过，不会强行消耗体力。",
+            "cases": [
+                {
+                    "name": "Jihua",
+                    "label": "超级激化（素材激化）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Type_Jihua": {
+                            "enabled": true
+                        }
+                    }
+                },
+                {
+                    "name": "Bless",
+                    "label": "灵感迸发（祝福闪光）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Type_Bless": {
+                            "enabled": true
+                        }
+                    }
+                },
+                {
+                    "name": "Weekly",
+                    "label": "深度突破（每周幻境）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Type_Weekly": {
+                            "enabled": true
+                        }
+                    }
+                }
+            ],
+            "default_case": [
+                "Jihua",
+                "Bless",
+                "Weekly"
+            ],
+            "min_count": 0
+        },
+        "DoubleJihuaMode": {
+            "type": "select",
+            "label": "超级激化双倍目标",
+            "description": "「跟随焕新 / 制衣缺口」严格按「刷取顺序」中已开启的焕新或制衣优先级，用双倍产量补还差的泡泡、丝线与噗灵（备齐或未开即跳过）；「继承兜底设置」按下方「素材激化奖励」刷满双倍额度。",
+            "cases": [
+                {
+                    "name": "FollowDeficit",
+                    "label": "跟随焕新 / 制衣缺口（按刷取顺序）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "jihua_mode": "follow_deficit"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "InheritFallback",
+                    "label": "继承兜底设置（素材激化奖励）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "jihua_mode": "inherit_fallback"
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "FollowDeficit"
+        },
+        "DoubleBlessMode": {
+            "type": "select",
+            "label": "灵感迸发双倍目标",
+            "description": "「五星闪光追全」仅针对剩余双倍次数刷取缺色副本（不改刷噗灵），所选范围已收齐时自动跳过；「继承兜底设置」按下方「祝福闪光关卡」刷满双倍次数。",
+            "cases": [
+                {
+                    "name": "GlowPursuit",
+                    "label": "五星闪光追全（已齐则跳过）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "bless_mode": "glow_pursuit"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "InheritFallback",
+                    "label": "继承兜底设置（祝福闪光关卡）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "bless_mode": "inherit_fallback"
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "GlowPursuit"
+        },
+        "DoubleWeeklyPriority": {
+            "type": "select",
+            "label": "深度突破双倍优先",
+            "description": "深度突破每周只有 1 次双倍加成，所有周本共用且仅生效于先挑战的 1 次；将优先把本次双倍留给已勾选周本目标中的所选项。",
+            "cases": [
+                {
+                    "name": "Qiggeda",
+                    "label": "优先奇格格达",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "weekly_priority": "Qiggeda"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Juan",
+                    "label": "优先卷卷",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "weekly_priority": "Juan"
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "Qiggeda"
         }
     }
 }

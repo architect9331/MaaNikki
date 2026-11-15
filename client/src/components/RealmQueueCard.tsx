@@ -27,6 +27,9 @@ import { getBlessingProgress } from '@/utils/blessingProgress';
 import {
   REALM_GOAL_LABELS,
   WEEKLY_TARGETS,
+  doubleEnabled,
+  doubleJihuaMode,
+  doubleTypes,
   realmCollectionWorkflow,
   realmQueue,
   realmQueueOption,
@@ -336,6 +339,15 @@ export function RealmQueueCard({
 
   const entries = realmQueue(values);
   const enabled = entries.filter((entry) => entry.enabled).map((entry) => entry.goal);
+  const dblEnabled = doubleEnabled(values);
+  const dblTypes = dblEnabled ? doubleTypes(values) : [];
+  const dblTypeLabels: Record<string, string> = { Jihua: '超级激化', Bless: '灵感迸发', Weekly: '深度突破' };
+  const dblFollowJihuaEmpty =
+    dblEnabled
+    && dblTypes.includes('Jihua')
+    && doubleJihuaMode(values) === 'FollowDeficit'
+    && !enabled.includes('renewal')
+    && !enabled.includes('crafting');
   const glowIndex = enabled.indexOf('glow');
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -370,6 +382,25 @@ export function RealmQueueCard({
         <p className="text-sm font-semibold">刷取顺序</p>
         <p className="text-[11px] text-text-secondary">每批挑战前选排在最前、仍有缺口的目标；拖动调整先后</p>
       </div>
+      {dblEnabled && dblTypes.length > 0 && (
+        <div className="space-y-1 rounded-lg border border-accent/30 bg-accent/5 px-2.5 py-1.5 text-[11px] text-text-secondary">
+          <p className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 font-medium text-accent">
+              <Sparkles className="h-3 w-3 shrink-0" />
+              限时双倍优先插队
+            </span>
+            <span>
+              已启用：{dblTypes.map((item) => dblTypeLabels[item] ?? item).join('、')}（对应目标完成时跳过，不强行刷取）
+            </span>
+          </p>
+          {dblFollowJihuaEmpty && (
+            <p className="flex items-center gap-1 text-warning">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              超级激化当前设为「跟随焕新 / 制衣缺口」，但下方刷取顺序中这两项均未开启，双倍激化将跳过；如需固定刷取可改为「继承兜底设置」。
+            </p>
+          )}
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={entries.map((entry) => entry.goal)} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">

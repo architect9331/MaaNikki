@@ -1427,27 +1427,42 @@ class Executors(Runtime):
                     if not clicked:
                         return False
                 else:
-                    # Try the + step button immediately left of Max ([733, 338, 27, 27]),
-                    # falling back to proportional slider track selection if unchanged.
                     plus_box = [698, 338, 27, 27]
-                    if not (self.action("Click", target=plus_box) and self.pause(0.2)):
-                        return False
-                    stepped, new_max = read_quick_count()
-                    if new_max is not None:
-                        max_count = new_max
-                    if stepped == current + 1:
-                        current = stepped
-                        while current < desired:
-                            if not (self.action("Click", target=plus_box) and self.pause(0.2)):
+                    if current < desired:
+                        # Try the + step button immediately left of Max ([733, 338, 27, 27]),
+                        # falling back to proportional slider track selection if unchanged.
+                        if not (self.action("Click", target=plus_box) and self.pause(0.2)):
+                            return False
+                        stepped, new_max = read_quick_count()
+                        if new_max is not None:
+                            max_count = new_max
+                        if stepped == current + 1:
+                            current = stepped
+                            while current < desired:
+                                if not (self.action("Click", target=plus_box) and self.pause(0.2)):
+                                    return False
+                                nxt, _ = read_quick_count()
+                                if nxt is None or nxt <= current:
+                                    break
+                                current = nxt
+                        elif max_count is not None and max_count > 1:
+                            track_x = round(562 + (desired - 1) / (max_count - 1) * (718 - 562))
+                            if not (self.action("Click", target=[track_x, 351]) and self.pause(0.25)):
                                 return False
-                            nxt, _ = read_quick_count()
-                            if nxt is None or nxt <= current:
-                                break
-                            current = nxt
                     elif max_count is not None and max_count > 1:
+                        # When opening count already exceeds desired, jump along the slider track
+                        # and fine-tune upward if rounding landed short of desired.
                         track_x = round(562 + (desired - 1) / (max_count - 1) * (718 - 562))
                         if not (self.action("Click", target=[track_x, 351]) and self.pause(0.25)):
                             return False
+                        slid, _ = read_quick_count()
+                        while slid is not None and slid < desired:
+                            if not (self.action("Click", target=plus_box) and self.pause(0.2)):
+                                return False
+                            nxt, _ = read_quick_count()
+                            if nxt is None or nxt <= slid:
+                                break
+                            slid = nxt
                 adjusted_cur, _ = read_quick_count()
                 if adjusted_cur != desired:
                     self.diagnostic(

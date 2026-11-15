@@ -11,7 +11,8 @@ from .decompose import DuplicateDecomposer, LowRarityDecomposer
 
 class FiveStarPursuit:
     def __init__(self, inventory, *, decompose_duplicates=False, auto_bling=True, chance_priority=True,
-                 share_statistics=False, farm_only=False, reserve_bling=0, focus_sets=None):
+                 share_statistics=False, farm_only=False, reserve_bling=0, focus_sets=None,
+                 max_farm_runs=None):
         self.inventory = inventory
         # 自选: only these blessing sets weigh realm choice and decide completion.
         self.focus_sets = set(focus_sets) if focus_sets is not None else None
@@ -21,6 +22,7 @@ class FiveStarPursuit:
         self.chance_priority = chance_priority
         self.farm_only = bool(farm_only)
         self.reserve_bling = max(0, int(reserve_bling or 0))
+        self.max_farm_runs = max(1, int(max_farm_runs)) if max_farm_runs is not None else None
         inventory.chance_priority = chance_priority
         inventory.share_statistics = share_statistics
         inventory.read_only = self.farm_only
@@ -57,9 +59,9 @@ class FiveStarPursuit:
         self.rt.log(message, ui_text=message)
         return False
 
-    def acquire(self, kind, source=None, *, alternatives=()):
+    def acquire(self, kind, source=None, *, alternatives=(), max_runs=None):
         self.inventory.report["phase"] = "realm_supply"
-        outcome = self.supply.run(kind, source, alternatives=alternatives)
+        outcome = self.supply.run(kind, source, alternatives=alternatives, max_runs=max_runs)
         self.inventory.report["supply_result"] = outcome
         self.inventory.verified.clear()
         if outcome["status"] == "reward_confirmed":
@@ -135,7 +137,7 @@ class FiveStarPursuit:
                 f"{source}（{value[source]:.2f}）" for source in sources)
                 + "。按顺位选择能快速挑战的副本，用剩余活跃能量挑战一批，然后升级。",
                 detail=True)
-        return self.acquire("bless", sources[0], alternatives=sources[1:])
+        return self.acquire("bless", sources[0], alternatives=sources[1:], max_runs=self.max_farm_runs)
 
     def _run_farm_only(self):
         stock = self.inventory
@@ -203,7 +205,16 @@ class FiveStarPursuit:
             LowRarityDecomposer(stock).run()
         # One decision per day. Existing embryos go first; only what they leave decides.
         outcome = stock.process_inventory() if stock.queued_rolls() else None
-        short = (outcome or {}).get("status") == "bling_shortage" and self.auto_bling
+        already_complete = bool(
+            outcome and outcome.get("status") == "collection_complete" and self.target_complete()
+        )
+        # Double-reward runs must not divert blessing attempts into Jihua bling.
+        short = (
+            not already_complete
+            and (outcome or {}).get("status") == "bling_shortage"
+            and self.auto_bling
+            and self.max_farm_runs is None
+        )
         bling_acquired = False
         if short:
             bling_acquired = self.spend_on_bling()
@@ -212,7 +223,7 @@ class FiveStarPursuit:
                             ui_text="素材激化未执行，改刷胚子。")
                 short = False
         embryos_acquired = False
-        if not short and "recovered_reward" not in stock.report and self.make_room():
+        if not already_complete and not short and "recovered_reward" not in stock.report and self.make_room():
             embryos_acquired = bool(self.spend_energy())
         if stock.organization.get("decomposition_pending"):
             # Clear low-rarity drops before reading acquisition order. The

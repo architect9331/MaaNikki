@@ -60,7 +60,7 @@ class RunCoordinationAction(CustomAction):
                 overrides["MaaNikki_RealmQueue"] = {
                     "next": ["MaaNikki_RealmEnergy"],
                     "custom_action_param": {
-                        **parameters(context, "MaaNikki_RealmQueue"), "after_goal": ""},
+                        **parameters(context, "MaaNikki_RealmQueue"), "after_goal": "", "double_done": False},
                     "on_error": ["MaaNikki_RealmReviewFailed"]}
                 return context.override_pipeline(overrides)
             if options.get("stage") != "settle":

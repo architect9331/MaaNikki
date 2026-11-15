@@ -675,7 +675,8 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
       const optionValue = task.optionValues[optionKey];
 
       if (optionDef.type === 'switch') {
-        const isOn = optionValue?.type === 'switch' ? optionValue.value : false;
+        const defaultOn = ['Yes', 'yes', 'Y', 'y'].includes(optionDef.default_case || optionDef.cases?.[0]?.name || '');
+        const isOn = optionValue?.type === 'switch' ? optionValue.value : defaultOn;
         previews.push({
           key: optionKey,
           label: optionLabel,

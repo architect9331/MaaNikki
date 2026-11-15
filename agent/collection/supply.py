@@ -9,9 +9,12 @@ class CollectionSupply:
     def __init__(self, runtime, journal):
         self.rt, self.journal = runtime, journal
 
-    def run(self, kind, source=None, *, alternatives=()):
+    def run(self, kind, source=None, *, alternatives=(), max_runs=None):
         if kind != "bless" or not source:
             raise ValueError("全收集只获取指定副本的祝福闪光，不自动兑换噗灵")
+        limit = None if max_runs is None else int(max_runs)
+        if limit is not None and limit < 1:
+            return {"status": "limit_reached"}
         if not self.rt.ui.calendar():
             raise RuntimeError("未能打开幻境挑战入口")
         game = Gameplay(self.rt)
@@ -20,6 +23,8 @@ class CollectionSupply:
             raise RuntimeError("无法读取当前活跃能量，未提交幻境")
         if energy < game.MIN_ENERGY[kind]:
             return {"status": "energy_exhausted"}
+        cap_runs = energy // game.MIN_ENERGY[kind]
+        capped_count = None if limit is None or limit >= cap_runs else limit
         clone = self.rt.context.clone()
         child = Executors(clone)
         game = Gameplay(child)
@@ -56,7 +61,8 @@ class CollectionSupply:
                     self.rt.log(f"五星追全实际选择 {candidate}，使用剩余活跃能量快速挑战一批。",
                                 ui_text=f"开始刷取：{candidate}。")
 
-                ok = game.realm(kind, maximize=True, allow_exhausted=True, return_page="calendar",
+                ok = game.realm(kind, maximize=(capped_count is None), fixed_count=capped_count,
+                                allow_exhausted=True, return_page="calendar",
                                 allow_unavailable=True, before_submit=before_submit)
                 if game.quick_unavailable and operation is None:
                     # Returning from realm() has restored the calendar. Verify

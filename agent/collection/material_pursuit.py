@@ -274,6 +274,66 @@ def goal_requirements(goal: str, role: dict, crafting: dict, scoring: dict) -> d
     return {}
 
 
+_JIHUA_TIEBREAK = {
+    "50361309": 0,    # 闪亮泡泡
+    "3448636403": 1,  # 纯真丝线
+    "992617511": 2,   # 噗灵
+}
+
+
+def _jihua_requirements(goal: str, role: dict, crafting: dict, scoring: dict) -> dict[str, int]:
+    """Full Jihua-farmable requirements for one goal, including crafting bling & thread."""
+    mat_defs = crafting.get("materials") or {}
+    if goal == "crafting":
+        if not wardrobe_snapshot(role):
+            return {}
+        raw = compute_crafting_requirements(role, crafting, scoring)
+    elif goal == "renewal":
+        raw = goal_requirements("renewal", role, crafting, scoring)
+    else:
+        return {}
+    return {
+        str(mid): int(count)
+        for mid, count in raw.items()
+        if int(count) > 0
+        and (mat_defs.get(str(mid)) or {}).get("realm") == "jihua"
+        and (mat_defs.get(str(mid)) or {}).get("level")
+    }
+
+
+def goal_has_jihua_potential(goal: str, role: dict, crafting: dict, scoring: dict) -> bool:
+    """Whether an enabled goal could possibly need any Jihua material before backpack subtraction."""
+    return bool(_jihua_requirements(goal, role, crafting, scoring))
+
+
+def jihua_goal_deficits(
+    goal: str,
+    role: dict,
+    inventory: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    multiplier: int = 2,
+) -> list[tuple]:
+    """Jihua-farmable shortfalls for one goal ranked by runs needed under the given drop multiplier."""
+    mat_defs = crafting.get("materials") or {}
+    scale = max(1, int(multiplier))
+    items = []
+    for mid, need in _jihua_requirements(goal, role, crafting, scoring).items():
+        meta = mat_defs.get(mid) or {}
+        base_drop = int(meta.get("drop") or 0)
+        energy = int(meta.get("energy") or 0)
+        if base_drop <= 0 or energy <= 0:
+            continue
+        deficit = int(need) - int(inventory.get(mid, 0))
+        if deficit > 0:
+            runs_needed = math.ceil(deficit / (base_drop * scale))
+            tiebreak = _JIHUA_TIEBREAK.get(mid, 9)
+            items.append((-runs_needed, tiebreak, mid, meta, deficit))
+    items.sort()
+    return items
+
+
 def goal_deficits(goal: str, role: dict, inventory: dict, crafting: dict, scoring: dict) -> list[tuple]:
     """Farmable shortfalls of a goal, largest first; trial materials before bling and thread."""
     mat_defs = crafting.get("materials") or {}

@@ -8,7 +8,9 @@ from maa.custom_action import CustomAction
 from registration import agent_action
 from task_control import TaskStopped
 from daily import run_state
+from daily.gameplay import Gameplay
 from daily.runtime import Executors, parameters
+from collection.double_rewards import DoubleRunSummary, run_double_priority
 from collection.material_pursuit import run_material_goals
 from collection.realm_goals import GOAL_LABELS, parse_realm_queue
 from .blessing_pursuit import glow_shortfall
@@ -36,12 +38,20 @@ class RealmQueueAction(CustomAction):
         node = argv.node_name
         failed = False
         last_kind = None
+        collection_used = False
         param = parameters(context, node)
+        double_summary = DoubleRunSummary()
         try:
             order = param.get("order")
             goals = parse_realm_queue(order)
             organize = parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto")
             resumed = param.get("after_goal")
+            double_done = bool(param.get("double_done"))
+            if not resumed and not double_done:
+                double_summary = run_double_priority(rt)
+                if double_summary.spent:
+                    last_kind = double_summary.last_kind
+                    collection_used = double_summary.collection_used
             if resumed in goals:
                 goals = goals[goals.index(resumed) + 1:]
             weekly_next = False
@@ -53,7 +63,9 @@ class RealmQueueAction(CustomAction):
                 labels = [GOAL_LABELS[goal] for goal in parse_realm_queue(order)]
                 rt.log("幻境挑战顺序：" + " → ".join(labels + ["兜底副本"]) + "。")
             if goals:
-                handoff, last_kind = run_material_goals(rt, goals, lambda role: glow_shortfall(rt, role, organize))
+                handoff, mat_kind = run_material_goals(rt, goals, lambda role: glow_shortfall(rt, role, organize))
+                if mat_kind is not None:
+                    last_kind = mat_kind
             else:
                 handoff = "fallback"
             if weekly_next:
@@ -61,6 +73,14 @@ class RealmQueueAction(CustomAction):
                     handoff = "weekly"
                 elif handoff == "glow":
                     rt.log("幻境挑战顺序：五星闪光排在每周幻境前，收齐所选范围后才会继续每周幻境。")
+            if (
+                handoff == "fallback"
+                and double_summary.spent
+                and double_summary.remaining_energy is not None
+            ):
+                fb = fallback_kind(context)
+                if fb and double_summary.remaining_energy < Gameplay.MIN_ENERGY[fb]:
+                    handoff = "done"
         except TaskStopped:
             raise
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
@@ -74,10 +94,13 @@ class RealmQueueAction(CustomAction):
             # The weekly node returns here; the resumed queue continues after it.
             return context.override_pipeline({node: {
                 "next": [HANDOFF_NODES["weekly"]],
-                "custom_action_param": {**param, "after_goal": "weekly"}}})
+                "custom_action_param": {**param, "after_goal": "weekly", "double_done": True}}})
         kind = "bless" if handoff == "glow" else fallback_kind(context) if handoff == "fallback" else last_kind
-        run_state.update_realm(rt, kind=kind, collection=handoff == "glow")
-        overrides = {node: {"next": [HANDOFF_NODES[handoff]]}}
+        run_state.update_realm(rt, kind=kind, collection=(handoff == "glow" or collection_used))
+        overrides = {node: {
+            "next": [HANDOFF_NODES[handoff]],
+            "custom_action_param": {**param, "double_done": True},
+        }}
         if handoff == "fallback":
             overrides["MaaNikki_RealmEnergy"] = {"focus": {"Node.Action.Starting": (
                 "刷取顺序中断，正在用剩余活跃能量挑战兜底幻境。"

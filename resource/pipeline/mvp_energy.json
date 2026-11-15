@@ -545,5 +545,31 @@
     "action": "Custom",
     "next": [],
     "custom_action": "nikki.ui_click"
+  },
+  "MaaNikki_Double_Option": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "enabled": true,
+      "jihua_mode": "follow_deficit",
+      "bless_mode": "glow_pursuit",
+      "weekly_priority": "Qiggeda"
+    }
+  },
+  "MaaNikki_Double_Type_Jihua": {
+    "enabled": false,
+    "recognition": "DirectHit",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Double_Type_Bless": {
+    "enabled": false,
+    "recognition": "DirectHit",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Double_Type_Weekly": {
+    "enabled": false,
+    "recognition": "DirectHit",
+    "action": "DoNothing"
   }
 }
