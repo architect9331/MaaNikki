@@ -470,6 +470,10 @@ class Runtime:
                 inputs.release_key(key)
 
     def hit(self, node, *, image=None):
+        if callable(node):
+            if image is not None:
+                raise TypeError("页面检查函数不能与 image 参数同时传入 hit()")
+            return bool(node())
         result = self.recognize(node, image=image)
         return bool(result and result.hit)
 

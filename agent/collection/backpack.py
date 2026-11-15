@@ -585,13 +585,14 @@ def _switch_tab(rt, *, want_growth: bool) -> bool:
 
 def scan_backpack_inventory(rt, crafting_catalog: dict) -> tuple[dict[str, int], dict] | None:
     """Open backpack, scan Bling + all Tab 1 (材料) & Tab 2 (养成材料) items using tall_window."""
-    if not rt.hit(rt.ui.feature(text="背包", roi=HEADER_ROI)):
+    if not rt.hit("MaaNikki_BackpackReady"):
         if not rt.main():
             return None
         if not rt.ui.enter_page(
             lambda: rt.key("backpack"),
-            rt.ui.feature(text="背包", roi=HEADER_ROI),
+            "MaaNikki_BackpackReady",
             source="MaaNikki_MainDetected",
+            recover=rt.ui.main,
             attempts=2,
         ):
             rt.log("背包扫描：未能打开背包界面，沿用已有材料库存记录。")
