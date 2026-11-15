@@ -84,8 +84,8 @@
     },
     {
       "path": "resource/model/backpack/catalog.json",
-      "size": 333806,
-      "sha256": "fdd942dace2b0c90ec98eaf4e01ac0e6eb7dd0987dc1df167a6255c6a30015f1",
+      "size": 318623,
+      "sha256": "be4177ca6d77b3b258a73d21afc591f11a3806e1ed195b46c4f172ef03883a24",
       "source": "MaaNikki backpack item & crafting icon catalog, update 2872"
     },
     {
@@ -96,8 +96,8 @@
     },
     {
       "path": "resource/model/rejuvenate/categories.json",
-      "size": 3158,
-      "sha256": "83cca87ebac16a1f527c651dd9718dd8c2e6ffdccf09351d1eaf47839cfe5f33",
+      "size": 3014,
+      "sha256": "dd6bfd56a95b89cdd6da2b0afe03b18855f078929ec2c1b67d1e7928aa3ef946",
       "source": "MaaNikki Clothing Glow-Up rail categories, update 2872"
     },
     {
