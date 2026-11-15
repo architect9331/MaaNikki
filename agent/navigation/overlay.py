@@ -1832,7 +1832,7 @@ class RouteMinimapOverlay:
                         if not shown(hwnd):
                             show(hwnd, 4)
                         z_sig = (focused, bg_active, fg)
-                        if z_sig != last_z or now >= next_zorder or not focused:
+                        if z_sig != last_z or now >= next_zorder:
                             sync_overlay_zorder(user, hwnd, self.game,
                                                 want_topmost=focused, stay_above_game=bg_active)
                             last_z = z_sig

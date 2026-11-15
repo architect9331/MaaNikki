@@ -543,12 +543,14 @@ class RouteActions:
         elif kind == "macro":
             macro_id = point.params["id"]
             macro_data = load_macro(self.resource, macro_id)
+            heading = (point.params or {}).get("facing_heading")
+            uses_mouse = self._macro_uses_mouse(macro_data)
+            needs_fg = uses_mouse or (heading is not None and macro_id != "starsea_fall")
             scope = (
-                self.rt.foreground_task("执行鼠标战斗或宏动作")
-                if self._macro_uses_mouse(macro_data) else nullcontext()
+                self.rt.foreground_task("执行鼠标战斗或宏动作" if uses_mouse else "调整视角并执行路线动作")
+                if needs_fg else nullcontext()
             )
             with scope:
-                heading = (point.params or {}).get("facing_heading")
                 if heading is not None and macro_id != "starsea_fall":
                     if self.navigator is None:
                         raise NavigationError("指定宏动作朝向需要路线导航器。")
@@ -556,12 +558,14 @@ class RouteActions:
                 ok = self.macro(macro_id)
         elif kind == "key":
             key_name = point.params["key"]
+            heading = (point.params or {}).get("facing_heading")
+            key_uses_mouse = self.rt.game_keys.get(key_name).kind == "mouse"
+            needs_fg = key_uses_mouse or (heading is not None and key_name == "attack")
             scope = (
-                self.rt.foreground_task("执行鼠标按键动作")
-                if self.rt.game_keys.get(key_name).kind == "mouse" else nullcontext()
+                self.rt.foreground_task("执行鼠标按键动作" if key_uses_mouse else "调整攻击朝向并执行按键动作")
+                if needs_fg else nullcontext()
             )
             with scope:
-                heading = (point.params or {}).get("facing_heading")
                 if heading is not None and key_name == "attack":
                     if self.navigator is None:
                         raise NavigationError("指定攻击朝向需要路线导航器。")

@@ -217,6 +217,9 @@ class Motion:
         # Each tick still services W's independent release deadline.
         while self.jump_state in self.JUMP_PENDING:
             self.wait(.01)
+        if self.trim_key and self.trim_until - time.monotonic() <= blocking_seconds:
+            while self.trim_key and self.until:
+                self.wait(min(.02, max(0, self.trim_until - time.monotonic())))
         if self.until and self.until-time.monotonic() <= blocking_seconds:
             while self.until:
                 self.wait(min(.02, max(0, self.until-time.monotonic())))
@@ -277,6 +280,7 @@ class Navigator:
         self.heading_state = HeadingContinuity()
         self.heading_turn_at = -math.inf
         self.heading_turn_input = 0.0
+        self.heading_ref_at = -math.inf
         self.heading_last_frame = None
         self.heading_evidence_saved = False
         self.heading_recheck_count = 0
@@ -368,7 +372,8 @@ class Navigator:
             if self.locator.previous is None or reset_continuity:
                 self.heading_state.reset()
                 self.heading_last_frame = None
-                self.heading_turn_at, self.heading_turn_input = self.pose_at, input_begin
+                self.heading_turn_at = self.heading_ref_at = self.pose_at
+                self.heading_turn_input = input_begin
             pose = self.locator.locate(frame, hint, search_radius=26, commit=commit,
                                        reset_continuity=reset_continuity,
                                        progress=self.motion.tick if self.motion else None)
@@ -396,8 +401,9 @@ class Navigator:
                     and (bool(self.motion.steer_keys & {"left", "right", "backward"})
                          or self.pose_at - self.motion.last_turn_at <= .45)
                 )
+                wasd_ref_at = self.heading_ref_at if self.heading_ref_at > -math.inf else self.heading_turn_at
                 wasd_tol = (
-                    max(18.0, min(55.0, 200.0 * max(.05, self.pose_at - self.heading_turn_at) + 12.0))
+                    max(18.0, min(55.0, 200.0 * max(.05, self.pose_at - wasd_ref_at) + 12.0))
                     if wasd_camera_active else None
                 )
                 wasd_agrees = bool(
@@ -415,8 +421,7 @@ class Navigator:
                     pose = replace(pose, heading=None)
                 else:
                     self.heading_state.accept(pose.heading)
-                    if wasd_steering:
-                        self.heading_turn_at = self.pose_at
+                    self.heading_ref_at = self.pose_at
                     self.heading_last_frame = frame
             if pose.heading is None:
                 if self.motion:
@@ -557,6 +562,7 @@ class Navigator:
                             "diagnostics": dict(diagnostics)})
                 self.inputs.hold(direction, hold_seconds, restore=False)
                 self.heading_turn_at = time.monotonic()
+                self.heading_turn_input = self.motion.forward_elapsed() if self.motion else 0.0
                 return self.stable_heading(pose, deadline=deadline)
             probe = self.camera_probe_pixels * probe_scale * (-1 if self.heading_recheck_count % 2 == 0 else 1)
             self.event({"type": "heading_visibility_probe",
@@ -633,6 +639,7 @@ class Navigator:
                 before = pose.heading
                 self.inputs.hold(side, pulse, restore=False)
                 self.heading_turn_at = time.monotonic()
+                self.heading_turn_input = self.motion.forward_elapsed() if self.motion else 0.0
                 self.pause(.16)
                 pose = self.stable_heading(pose, deadline=deadline)
                 if math.hypot(pose.x - anchor[0], pose.y - anchor[1]) > 2.2:
@@ -1114,6 +1121,9 @@ class Navigator:
             min_recovery = .55 if detour_deg == 0.0 else 1.15
             duration = max(min_recovery, min(1.35, duration))
         motion.steer(chord, duration, trim_key=trim_key, trim_seconds=trim_seconds)
+        if (set(chord) & {"left", "right", "backward"}) or (trim_key and trim_seconds > 0):
+            self.heading_turn_at = time.monotonic()
+            self.heading_turn_input = motion.forward_elapsed()
         if getattr(self.inputs, "generation", 0) != generation:
             motion.close()
             return pose, False, chord, phi
@@ -1583,20 +1593,28 @@ class Navigator:
                 coasted = turn_forward > .02 or distance(before_turn, pose) > .15
                 if coasted and abs(angle_delta(bearing, pose.heading)) > tolerance:
                     heading_rechecks = 0 if turn_forward > .02 else heading_rechecks+1
+                    # Turning time is excluded from the movement-stuck clock.
+                    # Bound this separate loop so noisy bearings cannot keep
+                    # correcting indefinitely without another forward attempt.
+                    action = (
+                        ("advance" if abs(angle_delta(bearing, pose.heading)) <= 45 else "relocalize")
+                        if heading_rechecks >= 3 else None
+                    )
                     self.event({"type": "heading_recheck", "index": index,
                                 "attempt": heading_rechecks, "target": [target.x, target.y],
                                 "bearing": bearing, "heading": pose.heading,
                                 "tolerance": tolerance, "displacement": distance(before_turn, pose),
                                 "forward_seconds": turn_forward,
-                                "recovery": heading_rechecks >= 3})
-                    # Turning time is excluded from the movement-stuck clock.
-                    # Bound this separate loop so noisy bearings cannot keep
-                    # correcting indefinitely without another forward attempt.
-                    if heading_rechecks >= 3:
-                        motion.stop()
-                        pose = replace(pose, heading=None)
+                                "recovery": action is not None,
+                                **({"action": action} if action is not None else {})})
                     last = None
-                    continue
+                    if action is not None:
+                        heading_rechecks = 0
+                    if action == "relocalize":
+                        motion.stop()
+                        scene_interrupted = True
+                    if action != "advance":
+                        continue
                 heading_rechecks = 0
                 before_move = pose
                 forward_before = motion.forward_elapsed()

@@ -57,7 +57,9 @@ class Insect(Ability):
         return self.tracking
 
     def degree(self, frame):
-        mini = minimap_crop(reference_frame(frame))
+        teleporter = getattr(self.actions, "teleporter", None)
+        spec = teleporter.locator.spec if teleporter is not None else None
+        mini = minimap_crop(reference_frame(frame), spec=spec)
         mask = cv2.inRange(cv2.cvtColor(mini, cv2.COLOR_BGR2HSV), np.array([13, 90, 160]), np.array([15, 200, 255]))
         cv2.circle(mask, (100, 100), 10, 255, -1)
         circles = cv2.HoughCircles(cv2.GaussianBlur(mask, (3, 3), 1), cv2.HOUGH_GRADIENT,
@@ -87,7 +89,7 @@ class Insect(Ability):
             return False
         scope = (
             self.rt.foreground_task("捕虫靠近与挥网")
-            if binding.kind == "mouse" and hasattr(self.rt, "foreground_task") else nullcontext()
+            if hasattr(self.rt, "foreground_task") else nullcontext()
         )
         with scope:
             navigator = create_navigator(self.rt, self.actions.teleporter, event=self.actions.event)
