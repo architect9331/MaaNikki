@@ -264,43 +264,55 @@ class _HudSurface:
         self._create()
 
     def _create(self) -> None:
-        self.user.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
-        self._proc = PROC(self._wndproc)
-        inst = bind(self.kernel, "GetModuleHandleW", w.HINSTANCE, w.LPCWSTR)(None)
-        wc = WindowClass(
-            style=0,
-            proc=self._proc,
-            extra=0,
-            window_extra=0,
-            instance=inst,
-            icon=None,
-            cursor=None,
-            background=None,
-            menu=None,
-            name=self._class_name,
-        )
-        reg = bind(self.user, "RegisterClassW", w.ATOM, ctypes.POINTER(WindowClass))
-        self._atom = checked(reg(ctypes.byref(wc)), "注册任务状态遮罩窗口类")
-        create_ex = bind(
-            self.user, "CreateWindowExW", w.HWND, w.DWORD, w.LPCWSTR, w.LPCWSTR, w.DWORD,
-            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, w.HWND, w.HMENU, w.HINSTANCE, w.LPVOID,
-        )
-        # WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE (0x080800A0)
-        self.hwnd = checked(
-            create_ex(0x080800A0, self._class_name, "MaaNikkiTaskHud", 0x80000000,
-                      0, 0, 1, 1, None, None, inst, None),
-            "创建任务状态遮罩窗口",
-        )
-        if self._exclude:
-            affinity = bind(self.user, "SetWindowDisplayAffinity", w.BOOL, w.HWND, w.DWORD)
-            affinity(self.hwnd, 0x00000011)
-        get_dc = bind(self.user, "GetDC", w.HDC, w.HWND)
-        create_dc = bind(self.gdi, "CreateCompatibleDC", w.HDC, w.HDC)
-        self._screen_dc = checked(get_dc(None), "获取屏幕 DC")
-        self._mem_dc = checked(create_dc(self._screen_dc), "创建遮罩内存 DC")
-        self._scratch_dc = checked(create_dc(self._screen_dc), "创建测量 DC")
-        self._scratch_bmp = checked(self._make_dib(1, 1)[0], "创建测量位图")
-        self._scratch_old = checked(self._select(self._scratch_dc, self._scratch_bmp), "绑定测量位图")
+        try:
+            try:
+                set_thread_dpi = bind(self.user, "SetThreadDpiAwarenessContext", w.HANDLE, w.HANDLE)
+                set_thread_dpi(ctypes.c_void_p(-4))
+            except Exception:
+                pass
+            try:
+                self.user.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+            except Exception:
+                pass
+            self._proc = PROC(self._wndproc)
+            inst = bind(self.kernel, "GetModuleHandleW", w.HINSTANCE, w.LPCWSTR)(None)
+            wc = WindowClass(
+                style=0,
+                proc=self._proc,
+                extra=0,
+                window_extra=0,
+                instance=inst,
+                icon=None,
+                cursor=None,
+                background=None,
+                menu=None,
+                name=self._class_name,
+            )
+            reg = bind(self.user, "RegisterClassW", w.ATOM, ctypes.POINTER(WindowClass))
+            self._atom = checked(reg(ctypes.byref(wc)), "注册任务状态遮罩窗口类")
+            create_ex = bind(
+                self.user, "CreateWindowExW", w.HWND, w.DWORD, w.LPCWSTR, w.LPCWSTR, w.DWORD,
+                ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, w.HWND, w.HMENU, w.HINSTANCE, w.LPVOID,
+            )
+            # WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE (0x080800A0)
+            self.hwnd = checked(
+                create_ex(0x080800A0, self._class_name, "MaaNikkiTaskHud", 0x80000000,
+                          0, 0, 1, 1, None, None, inst, None),
+                "创建任务状态遮罩窗口",
+            )
+            if self._exclude:
+                affinity = bind(self.user, "SetWindowDisplayAffinity", w.BOOL, w.HWND, w.DWORD)
+                affinity(self.hwnd, 0x00000011)
+            get_dc = bind(self.user, "GetDC", w.HDC, w.HWND)
+            create_dc = bind(self.gdi, "CreateCompatibleDC", w.HDC, w.HDC)
+            self._screen_dc = checked(get_dc(None), "获取屏幕 DC")
+            self._mem_dc = checked(create_dc(self._screen_dc), "创建遮罩内存 DC")
+            self._scratch_dc = checked(create_dc(self._screen_dc), "创建测量 DC")
+            self._scratch_bmp = checked(self._make_dib(1, 1)[0], "创建测量位图")
+            self._scratch_old = checked(self._select(self._scratch_dc, self._scratch_bmp), "绑定测量位图")
+        except Exception:
+            self.destroy()
+            raise
 
     def _make_dib(self, width: int, height: int):
         info = BitmapInfo()
@@ -398,19 +410,29 @@ class _HudSurface:
             self.hwnd = None
         if self._old and self._mem_dc:
             self._select(self._mem_dc, self._old)
+            self._old = None
         if self._scratch_old and self._scratch_dc:
             self._select(self._scratch_dc, self._scratch_old)
-        for handle in (self._bmp, self._scratch_bmp):
-            if handle:
-                self._delete(handle)
-        for dc in (self._mem_dc, self._scratch_dc):
-            if dc:
-                bind(self.gdi, "DeleteDC", w.BOOL, w.HDC)(dc)
+            self._scratch_old = None
+        if self._bmp:
+            self._delete(self._bmp)
+            self._bmp = None
+        if self._scratch_bmp:
+            self._delete(self._scratch_bmp)
+            self._scratch_bmp = None
+        if self._mem_dc:
+            bind(self.gdi, "DeleteDC", w.BOOL, w.HDC)(self._mem_dc)
+            self._mem_dc = None
+        if self._scratch_dc:
+            bind(self.gdi, "DeleteDC", w.BOOL, w.HDC)(self._scratch_dc)
+            self._scratch_dc = None
         if self._screen_dc:
             bind(self.user, "ReleaseDC", ctypes.c_int, w.HWND, w.HDC)(None, self._screen_dc)
+            self._screen_dc = None
         if self._atom:
             inst = bind(self.kernel, "GetModuleHandleW", w.HINSTANCE, w.LPCWSTR)(None)
             bind(self.user, "UnregisterClassW", w.BOOL, w.LPCWSTR, w.HINSTANCE)(self._class_name, inst)
+            self._atom = None
         self._visible = False
 
 

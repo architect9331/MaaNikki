@@ -587,8 +587,13 @@ class Gameplay:
                 and bool(self.rt.text([900, 560, 240, 100], r"激\s*化\s*材\s*料")))
 
     def jihua_stage_one(self, open_dialog, maximize, fixed_count):
-        if not self.ui.enter_page(open_dialog, "MaaNikki_Jihua_NumConfirm", attempts=2, seconds=3):
-            return "not_opened"
+        if self.ui.dismiss_tutorial() is False or self.ui.dismiss_reward() is False:
+            return "error"
+        if not self.ui.page_matches("MaaNikki_Jihua_NumConfirm"):
+            if not open_dialog():
+                return "error" if self.rt.stopped else "not_opened"
+            if not self.ui.wait_page("MaaNikki_Jihua_NumConfirm", seconds=3):
+                return "error" if self.rt.stopped else "not_opened"
         if not self.rt.pause(.3):
             return "error"
         if fixed_count is not None and not self.rt.set_amount("jihua", 0, desired_count=fixed_count):

@@ -582,11 +582,12 @@ def measure_hud_card(
     f_title_h = max(12, round(14 * s))
     f_body_h = max(11, round(12 * s))
     f_chip_h = max(10, round(11 * s))
-    f_title = checked(font_fn(-f_title_h, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建标题字体")
-    f_body = checked(font_fn(-f_body_h, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建正文字体")
-    f_chip = checked(font_fn(-f_chip_h, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建标签字体")
+    f_title = f_body = f_chip = None
     old_font = None
     try:
+        f_title = checked(font_fn(-f_title_h, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建标题字体")
+        f_body = checked(font_fn(-f_body_h, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建正文字体")
+        f_chip = checked(font_fn(-f_chip_h, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建标签字体")
         cap_w = max(180, min(client_w - round(20 * s), max_width or hud_max_width(client_w, client_h)))
         pad_l = round(14 * s)
         pad_r = round(12 * s)
@@ -660,9 +661,9 @@ def measure_hud_card(
     finally:
         if old_font:
             select_fn(dc, old_font)
-        delete_fn(f_title)
-        delete_fn(f_body)
-        delete_fn(f_chip)
+        for font_handle in (f_title, f_body, f_chip):
+            if font_handle:
+                delete_fn(font_handle)
 
 
 def draw_hud_card(
