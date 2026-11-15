@@ -118,7 +118,7 @@
   "MaaNikki_RejuvenateReady": {
     "recognition": "OCR",
     "roi": [65, 15, 200, 48],
-    "expected": "^服装焕新$",
+    "expected": "^服装[焕煥]新$",
     "action": "DoNothing"
   },
   "MaaNikki_RenewalRead": {

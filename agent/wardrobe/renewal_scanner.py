@@ -21,10 +21,13 @@ from .scanner import MAKEUP_PARTS, PEAR_PAL_NEXT_PAGE, PEAR_PAL_PREV_PAGE
 
 
 HEADER_ROI = [65, 15, 200, 48]
-FILTER_BTN = [822, 71]
-FILTER_PANEL_ROI = [200, 120, 980, 560]
-SORT_BOX_ROI = [848, 32, 300, 62]
-SORT_MENU_ROI = [820, 65, 410, 260]
+FILTER_BTN = [824, 52]
+FILTER_RESET_ROI = [450, 475, 185, 65]
+FILTER_CONFIRM_ROI = [645, 475, 185, 65]
+FILTER_RESET = [543, 512]
+FILTER_CONFIRM = [734, 512]
+SORT_BOX_ROI = [848, 34, 300, 36]
+SORT_MENU_ROI = [820, 72, 410, 250]
 SORT_DIR_ROI = [1138, 32, 68, 58]
 
 RAIL_X0 = 62
@@ -502,23 +505,41 @@ class RenewalScanner:
             source="MaaNikki_MenuReady",
         )
 
+    def _filter_modal_open(self, frame: np.ndarray | None) -> bool:
+        if frame is None:
+            return False
+        return bool(self.rt.text(FILTER_RESET_ROI, r"^重置$", image=frame))
+
     def clear_filter(self) -> None:
         if not self.rt.action("Click", target=FILTER_BTN) or not self.rt.pause(0.35):
             return
         frame = self.rt.capture()
-        if frame is None:
+        if not self._filter_modal_open(frame):
+            if not self.rt.pause(0.25):
+                return
+            frame = self.rt.capture()
+        if not self._filter_modal_open(frame):
             return
-        if self.rt.click_text("^重置$", FILTER_PANEL_ROI):
+
+        if not self.rt.click_text(r"^重置$", FILTER_RESET_ROI):
+            self.rt.action("Click", target=FILTER_RESET)
+            self.rt.pause(0.35)
+        else:
             self.rt.pause(0.25)
-        for pattern in ("^(筛选|确认|确定)$", "^重置$"):
-            if self.rt.click_text(pattern, FILTER_PANEL_ROI):
+
+        frame = self.rt.capture()
+        if self._filter_modal_open(frame):
+            # Target bottom button ROI so the top modal header ("筛选") is never matched first.
+            if not self.rt.click_text(r"^(筛选|确认|确定)$", FILTER_CONFIRM_ROI):
+                self.rt.action("Click", target=FILTER_CONFIRM)
+                self.rt.pause(0.35)
+            frame = self.rt.capture()
+            if self._filter_modal_open(frame):
+                self.rt.action("Click", target=FILTER_CONFIRM)
                 self.rt.pause(0.3)
                 frame = self.rt.capture()
-                if frame is not None and not self.rt.hit(self.rt.ui.feature(text="^重置$", roi=FILTER_PANEL_ROI), image=frame):
-                    return
-        frame = self.rt.capture()
-        if frame is not None and "重置" in self.rt.text(FILTER_PANEL_ROI, image=frame):
-            self.rt.key(27, delay=0.35)  # VK_ESCAPE
+            if self._filter_modal_open(frame):
+                self.rt.key(27, delay=0.35)  # VK_ESCAPE
         self.rt.action("TouchMove", target=[640, 36])
         self.rt.pause(0.2)
 
@@ -560,7 +581,7 @@ class RenewalScanner:
                 bx, by, bw, bh = list(res.best_result.box)
                 dropdown_pt = [bx + bw // 2, by + bh // 2]
             else:
-                dropdown_pt = [990, 56]
+                dropdown_pt = [990, 52]
             if not self.rt.action("Click", target=dropdown_pt) or not self.rt.pause(0.35):
                 raise RuntimeError("未能展开服装焕新排序菜单")
             if not self.rt.click_text(r"^获得时间$", SORT_MENU_ROI):
