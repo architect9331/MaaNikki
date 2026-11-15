@@ -33,17 +33,14 @@ GRID_BOTTOM_MARGIN = 80
 _SHIFTS = [(dy, dx) for dy in (-2, -1, 0, 1, 2) for dx in (-2, -1, 0, 1, 2)]
 _NEIGHBOR_SHIFTS = ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1))
 _VALID84 = np.ones((84, 84), dtype=np.float32)
-_VALID84[63:, 30:] = 0.0
+_VALID84[63:, 20:] = 0.0
 _VALID84[:2, :] = 0.0
 _VALID84[-2:, :] = 0.0
 _VALID84[:, :2] = 0.0
 _VALID84[:, -2:] = 0.0
-_VALID42 = _VALID84[::2, ::2]
-_VALID28 = cv2.resize(_VALID84, (28, 28), interpolation=cv2.INTER_AREA) > 0.5
-_MASK42_BOOL = _VALID42 > 0
+_MASK28 = (_VALID84[1::3, 1::3] > 0).reshape(-1)
+_MASK42_BOOL = (_VALID84[::2, ::2] > 0)
 _MASK84_FLAT = (_VALID84 > 0).reshape(-1)
-_W84_FLAT = np.ascontiguousarray(_VALID84.reshape(-1)[_MASK84_FLAT])
-_N_V84 = float(_W84_FLAT.sum()) + 1e-6
 
 
 def current_game_day() -> str:
@@ -107,9 +104,7 @@ class BackpackModel:
         bgra = np.load(directory / "icons.npz")["bgra"]
         self.a_all = bgra[:, :, :, 3].astype(np.float32) / 255.0
         self.fg_all = bgra[:, :, :, :3].astype(np.float32)
-        self.w_all = np.clip(self.a_all, 0.0, 1.0) * _VALID84[None, :, :]
         self.tab_indices: dict[int, np.ndarray] = {}
-        self.coarse_mats: dict[int, np.ndarray] = {}
         self.by_norm_tab: dict[int, dict[str, list[str]]] = {1: {}, 2: {}}
         self.by_norm_all: dict[str, list[str]] = {}
 
@@ -121,42 +116,76 @@ class BackpackModel:
             self.by_norm_tab.setdefault(tab, {}).setdefault(norm, []).append(iid)
             self.by_norm_all.setdefault(norm, []).append(iid)
 
+        n_tmpl = len(self.templates)
+        n_m28 = int(_MASK28.sum())
+        w28_all = np.zeros((n_tmpl, n_m28), dtype=np.float32)
+        ta28_all = np.zeros((n_tmpl, n_m28 * 3), dtype=np.float32)
+        ws28_all = np.zeros(n_tmpl, dtype=np.float32)
+        for i in range(n_tmpl):
+            w84 = np.clip(self.a_all[i], 0.0, 1.0) * _VALID84
+            # Alpha-weighted slight blur keeps thin icon strokes resilient across subpixel shifts.
+            num = cv2.GaussianBlur(self.fg_all[i] * w84[:, :, None], (3, 3), 0.9)
+            den = np.maximum(cv2.GaussianBlur(w84, (3, 3), 0.9)[:, :, None], 1e-4)
+            sm = np.where(w84[:, :, None] > 0.02, num / den, 0.0)
+            sm28 = sm[1::3, 1::3].reshape(-1, 3)[_MASK28]
+            w28 = np.clip(w84[1::3, 1::3].reshape(-1)[_MASK28], 0.0, 1.0)
+            ws = float(w28.sum()) + 1e-6
+            m28 = (sm28 * w28[:, None]).sum(axis=0) / ws
+            ta = (sm28 - m28) * w28[:, None]
+            ss = float(((sm28 - m28) ** 2 * w28[:, None]).sum()) + 1e-6
+            w28_all[i] = w28
+            ws28_all[i] = ws
+            ta28_all[i] = (ta / np.sqrt(ss)).reshape(-1)
+
+        self._w28_by_tab: dict[int, np.ndarray] = {}
+        self._ws28_by_tab: dict[int, np.ndarray] = {}
+        self._ta28_by_tab: dict[int, np.ndarray] = {}
         for tab in (1, 2):
             idxs = np.array([i for i, t in enumerate(self.templates) if t["tab"] == tab], dtype=np.int32)
             self.tab_indices[tab] = idxs
-            vecs = []
-            for i in idxs:
-                # Alpha-weighted Gaussian blur keeps thin leaf/twig templates invariant to +/-2px shifts.
-                num = cv2.GaussianBlur(self.fg_all[i] * self.w_all[i, :, :, None], (5, 5), 1.4)
-                den = np.maximum(cv2.GaussianBlur(self.w_all[i], (5, 5), 1.4)[:, :, None], 1e-4)
-                sm = np.where(self.w_all[i, :, :, None] > 0.02, num / den, 0.0)
-                sm28 = cv2.resize(sm, (28, 28), interpolation=cv2.INTER_AREA)
-                w28 = (cv2.resize(self.w_all[i], (28, 28), interpolation=cv2.INTER_AREA) * _VALID28).astype(np.float32)
-                ws = float(w28.sum()) + 1e-6
-                m28 = (sm28 * w28[:, :, None]).sum(axis=(0, 1)) / ws
-                v = ((sm28 - m28) * w28[:, :, None]).reshape(-1)
-                v /= (np.linalg.norm(v) + 1e-6)
-                vecs.append(v)
-            self.coarse_mats[tab] = np.stack(vecs) if vecs else np.zeros((0, 28 * 28 * 3), dtype=np.float32)
+            self._w28_by_tab[tab] = np.ascontiguousarray(w28_all[idxs])
+            self._ws28_by_tab[tab] = np.ascontiguousarray(ws28_all[idxs][:, None])
+            self._ta28_by_tab[tab] = np.ascontiguousarray(ta28_all[idxs])
 
-        n_tmpl = len(self.templates)
-        self._a42 = np.ascontiguousarray(self.a_all[:, ::2, ::2][:, _MASK42_BOOL])
+        # Stage 2: alpha-weighted 42x42 zero-mean NCC across all 25 +/-2px shift candidates.
+        a42 = self.a_all[:, ::2, ::2][:, _MASK42_BOOL]
+        self._w42_all = np.ascontiguousarray(np.clip(a42, 0.0, 1.0) ** 1.5)
         fg42 = self.fg_all[:, ::2, ::2, :][:, _MASK42_BOOL, :]
-        self._afg42 = np.ascontiguousarray((self._a42[:, :, None] * fg42).astype(np.float32))
-        self._fg84_flat = np.ascontiguousarray(self.fg_all.reshape(n_tmpl, -1, 3)[:, _MASK84_FLAT, :])
-        self._a84_flat = np.ascontiguousarray(self.a_all.reshape(n_tmpl, -1)[:, _MASK84_FLAT])
-        self._w84_flat_t = np.ascontiguousarray(self.w_all.reshape(n_tmpl, -1)[:, _MASK84_FLAT])
-        self._ws84 = self._w84_flat_t.sum(axis=1) + 1e-6
-        fg84_m = (self._fg84_flat * self._w84_flat_t[:, :, None]).sum(axis=1) / self._ws84[:, None]
-        self._ta84_flat = np.ascontiguousarray((self._fg84_flat - fg84_m[:, None, :]) * self._w84_flat_t[:, :, None])
-        self._ta84_ss = (((self._fg84_flat - fg84_m[:, None, :]) ** 2) * self._w84_flat_t[:, :, None]).sum(axis=(1, 2))
-        self._aw84_flat = np.ascontiguousarray(self._a84_flat * _W84_FLAT[None, :])
-        self._aw84_denom = self._aw84_flat.sum(axis=1) + 1e-6
+        self._ws42_all = np.ascontiguousarray(self._w42_all.sum(axis=1) + 1e-6)
+        fg42_m = (fg42 * self._w42_all[:, :, None]).sum(axis=1) / self._ws42_all[:, None]
+        ta42 = (fg42 - fg42_m[:, None, :]) * self._w42_all[:, :, None]
+        ta42_ss = ((fg42 - fg42_m[:, None, :]) ** 2 * self._w42_all[:, :, None]).sum(axis=(1, 2)) + 1e-6
+        self._ta42_flat = np.ascontiguousarray((ta42 / np.sqrt(ta42_ss)[:, None, None]).reshape(n_tmpl, -1))
+
+        # Stage 3: square alpha on 84x84 to suppress semi-transparent backdrop shadow bleed on tiny icons,
+        # paired with opponent-chroma NCC & color-residual L1 to separate same-shape color twins.
+        self._w84_flat = np.ascontiguousarray(
+            ((np.clip(self.a_all, 0.0, 1.0) ** 2).reshape(n_tmpl, -1) * _MASK84_FLAT[None, :])[:, _MASK84_FLAT]
+        )
+        fg84_flat = np.ascontiguousarray(self.fg_all.reshape(n_tmpl, -1, 3)[:, _MASK84_FLAT, :])
+        self._ws84 = np.ascontiguousarray(self._w84_flat.sum(axis=1) + 1e-6)
+        fg84_m = (fg84_flat * self._w84_flat[:, :, None]).sum(axis=1) / self._ws84[:, None]
+        ta84_diff = np.ascontiguousarray(fg84_flat - fg84_m[:, None, :])
+        self._ta84_flat = np.ascontiguousarray(ta84_diff * self._w84_flat[:, :, None])
+        self._ta84_ss = np.ascontiguousarray(((ta84_diff ** 2) * self._w84_flat[:, :, None]).sum(axis=(1, 2)) + 1e-6)
+        ta84_std = np.sqrt(self._ta84_ss / (3.0 * self._ws84)) + 1e-6
+        self._ta84_normed = np.ascontiguousarray(ta84_diff / ta84_std[:, None, None])
+        self._tc84_normed = np.ascontiguousarray(
+            (ta84_diff - ta84_diff.mean(axis=2, keepdims=True)) / ta84_std[:, None, None]
+        )
+
+        ch84_flat = np.stack([
+            fg84_flat[:, :, 2] - fg84_flat[:, :, 1],
+            fg84_flat[:, :, 0] - 0.5 * (fg84_flat[:, :, 2] + fg84_flat[:, :, 1]),
+        ], axis=2)
+        ch84_m = (ch84_flat * self._w84_flat[:, :, None]).sum(axis=1) / self._ws84[:, None]
+        ca84_diff = ch84_flat - ch84_m[:, None, :]
+        self._ca84_flat = np.ascontiguousarray(ca84_diff * self._w84_flat[:, :, None])
+        self._ca84_ss = np.ascontiguousarray(((ca84_diff ** 2) * self._w84_flat[:, :, None]).sum(axis=(1, 2)) + 1e-6)
 
     def match_cell(self, frame: np.ndarray, cy: int, col: int, tab: int) -> tuple[dict | None, float, float, float, float]:
-        """Return (template_meta, score, ncc, l1_fg, margin) for the occupied cell."""
+        """Return (template_meta, score, ncc, col_l1_scaled, margin) for the occupied cell."""
         idxs = self.tab_indices.get(tab)
-        cmat = self.coarse_mats.get(tab)
         if idxs is None or len(idxs) == 0:
             return None, -1.0, -1.0, 255.0, 0.0
         cx = FIRST_X + col * COL_PITCH
@@ -165,46 +194,56 @@ class BackpackModel:
             return None, -1.0, -1.0, 255.0, 0.0
 
         win88 = frame[cy - 2:cy + ICON_SIZE + 2, cx - 2:cx + ICON_SIZE + 2].astype(np.float32)
-        p0 = win88[2:2 + ICON_SIZE, 2:2 + ICON_SIZE]
-        sm = cv2.GaussianBlur(p0, (5, 5), 1.4)
-        sm28 = cv2.resize(sm, (28, 28), interpolation=cv2.INTER_AREA)
-        m28 = sm28[_VALID28].mean(axis=0)
-        v = ((sm28 - m28) * _VALID28[:, :, None]).reshape(-1)
-        v /= (np.linalg.norm(v) + 1e-6)
-        coarse = cmat @ v
-        k_coarse = min(36, len(idxs))
-        top_idx = idxs[np.argsort(coarse)[::-1][:k_coarse]]
 
-        # Vectorized 42x42 BLAS squared-L2 screening across all 25 +/-2px shift candidates.
-        p0_42 = p0[::2, ::2][_MASK42_BOOL]
-        a42 = self._a42[top_idx]
-        bg_mask = a42 < 0.05
-        bg_cnt = bg_mask.sum(axis=1)
-        fallback_bg = p0[4:12, 4:80].mean(axis=(0, 1))
-        bg_mean = np.where(
-            (bg_cnt >= 40)[:, None],
-            (p0_42[None] * bg_mask[:, :, None]).sum(axis=1) / np.maximum(bg_cnt, 1)[:, None],
-            fallback_bg[None, :],
-        )
-        comp42 = (self._afg42[top_idx] + (1.0 - a42)[:, :, None] * bg_mean[:, None, :]).reshape(k_coarse, -1)
-        p42_shifts = np.stack([
-            win88[2 + dy:2 + dy + ICON_SIZE:2, 2 + dx:2 + dx + ICON_SIZE:2][_MASK42_BOOL].reshape(-1)
+        # Stage 1: multi-shift alpha-weighted 28x28 NCC without estimating scalar cell background.
+        sm88 = cv2.GaussianBlur(win88, (3, 3), 0.9)
+        p28 = np.stack([
+            sm88[3 + dy:3 + dy + 84:3, 3 + dx:3 + dx + 84:3].reshape(-1, 3)[_MASK28]
             for dy, dx in _SHIFTS
         ])
-        c_sq = np.einsum("ij,ij->i", comp42, comp42)[:, None]
-        p_sq = np.einsum("ij,ij->i", p42_shifts, p42_shifts)[None, :]
-        d2_42 = np.maximum(0.0, c_sq + p_sq - 2.0 * (comp42 @ p42_shifts.T))
-        bs42 = np.argmin(d2_42, axis=1)
-        k_fine = min(10, k_coarse)
-        top_fine = np.argsort(d2_42[np.arange(k_coarse), bs42])[:k_fine]
+        p28_flat = p28.reshape(len(_SHIFTS), -1).T
+        p28_sq_sum = (p28 ** 2).sum(axis=2).T
+        w28_sub = self._w28_by_tab[tab]
+        ws28_sub = self._ws28_by_tab[tab]
+        num28 = self._ta28_by_tab[tab] @ p28_flat
+        pw28 = np.stack([
+            w28_sub @ p28[:, :, 0].T,
+            w28_sub @ p28[:, :, 1].T,
+            w28_sub @ p28[:, :, 2].T,
+        ], axis=0) / ws28_sub[None]
+        p28_wsq = (w28_sub @ p28_sq_sum) - ws28_sub * (pw28 ** 2).sum(axis=0)
+        coarse = (num28 / (np.sqrt(np.maximum(0.0, p28_wsq)) + 1e-6)).max(axis=1)
+        k_coarse = min(56, len(idxs))
+        top_idx = idxs[np.argpartition(coarse, -k_coarse)[-k_coarse:]]
 
-        shift_cache: dict[int, np.ndarray] = {}
+        # Stage 2: vectorized 42x42 foreground-weighted NCC across all 25 +/-2px shift candidates.
+        p42 = np.stack([
+            win88[2 + dy:2 + dy + ICON_SIZE:2, 2 + dx:2 + dx + ICON_SIZE:2][_MASK42_BOOL]
+            for dy, dx in _SHIFTS
+        ])
+        p42_flat = p42.reshape(25, -1).T
+        p42_sq_sum = (p42 ** 2).sum(axis=2).T
+        w42_sub = self._w42_all[top_idx]
+        ws42_sub = self._ws42_all[top_idx][:, None]
+        num42 = self._ta42_flat[top_idx] @ p42_flat
+        pw42_b = (w42_sub @ p42[:, :, 0].T) / ws42_sub
+        pw42_g = (w42_sub @ p42[:, :, 1].T) / ws42_sub
+        pw42_r = (w42_sub @ p42[:, :, 2].T) / ws42_sub
+        p42_wsq = (w42_sub @ p42_sq_sum) - ws42_sub * (pw42_b ** 2 + pw42_g ** 2 + pw42_r ** 2)
+        ncc42 = num42 / (np.sqrt(np.maximum(0.0, p42_wsq)) + 1e-6)
+        bs42 = np.argmax(ncc42, axis=1)
+        best42_sc = ncc42[np.arange(k_coarse), bs42]
+        k_fine = min(8, k_coarse)
+        top_fine = np.argpartition(best42_sc, -k_fine)[-k_fine:]
 
-        def _get_shift(s_idx: int) -> np.ndarray:
+        shift_cache: dict[int, tuple[np.ndarray, np.ndarray]] = {}
+
+        def _get_shift(s_idx: int) -> tuple[np.ndarray, np.ndarray]:
             cached = shift_cache.get(s_idx)
             if cached is None:
                 dy, dx = _SHIFTS[s_idx]
-                cached = win88[2 + dy:2 + dy + ICON_SIZE, 2 + dx:2 + dx + ICON_SIZE].reshape(-1, 3)[_MASK84_FLAT]
+                patch = win88[2 + dy:2 + dy + ICON_SIZE, 2 + dx:2 + dx + ICON_SIZE].reshape(-1, 3)[_MASK84_FLAT]
+                cached = (patch, (patch ** 2).sum(axis=1))
                 shift_cache[s_idx] = cached
             return cached
 
@@ -212,27 +251,40 @@ class BackpackModel:
         for ki in top_fine:
             ti = int(top_idx[ki])
             b_dy, b_dx = _SHIFTS[int(bs42[ki])]
-            ak = self._a84_flat[ti]
-            wk = self._w84_flat_t[ti]
+            wk = self._w84_flat[ti]
             ws = float(self._ws84[ti])
             tak = self._ta84_flat[ti]
             ta_ss = float(self._ta84_ss[ti])
-            compk = ak[:, None] * self._fg84_flat[ti] + (1.0 - ak)[:, None] * bg_mean[ki][None, :]
-            ps5 = np.stack([
-                _get_shift((max(-2, min(2, b_dy + ndy)) + 2) * 5 + (max(-2, min(2, b_dx + ndx)) + 2))
+            s_indices = [
+                (max(-2, min(2, b_dy + ndy)) + 2) * 5 + (max(-2, min(2, b_dx + ndx)) + 2)
                 for ndy, ndx in _NEIGHBOR_SHIFTS
-            ])
-            diff = np.abs(ps5 - compk[None]).mean(axis=2)
-            l1_fg_5 = (diff * self._aw84_flat[ti][None]).sum(axis=1) / self._aw84_denom[ti]
-            l1_all_5 = (diff * _W84_FLAT[None]).sum(axis=1) / _N_V84
-            pw_mean = (ps5 * wk[None, :, None]).sum(axis=1) / ws
-            pa = ps5 - pw_mean[:, None, :]
-            p_dot_t = (pa * tak[None]).sum(axis=(1, 2))
-            p_ss = ((pa ** 2) * wk[None, :, None]).sum(axis=(1, 2))
-            ncc_5 = p_dot_t / (np.sqrt(p_ss * ta_ss) + 1e-6)
-            sc_5 = ncc_5 - 0.015 * l1_all_5 - 0.010 * l1_fg_5
-            bi = int(np.argmax(sc_5))
-            final.append((float(sc_5[bi]), float(ncc_5[bi]), float(l1_fg_5[bi]), self.templates[ti]))
+            ]
+            pairs = [_get_shift(si) for si in s_indices]
+            ps5 = np.stack([x[0] for x in pairs])
+            psq5 = np.stack([x[1] for x in pairs])
+            pw_mean = np.einsum("snc,n->sc", ps5, wk) / ws
+            p_dot_t = np.einsum("snc,nc->s", ps5, tak)
+            p_wsq_tot = (psq5 @ wk) - ws * (pw_mean ** 2).sum(axis=1)
+            ncc_5 = p_dot_t / (np.sqrt(np.maximum(0.0, p_wsq_tot) * ta_ss) + 1e-6)
+            bi = int(np.argmax(ncc_5))
+            ncc_b = float(ncc_5[bi])
+            p_b = ps5[bi]
+            pa_b = p_b - pw_mean[bi][None, :]
+
+            pc_b = np.stack([p_b[:, 2] - p_b[:, 1], p_b[:, 0] - 0.5 * (p_b[:, 2] + p_b[:, 1])], axis=1)
+            pca_b = pc_b - ((pc_b * wk[:, None]).sum(axis=0) / ws)[None, :]
+            c_dot = float((pca_b * self._ca84_flat[ti]).sum())
+            c_ss = float(((pca_b ** 2) * wk[:, None]).sum())
+            cncc_b = c_dot / float(np.sqrt(c_ss * float(self._ca84_ss[ti]) + 9.0 * ws * ws))
+
+            p_std = float(np.sqrt(max(0.0, float(p_wsq_tot[bi])) / (3.0 * ws))) + 1e-6
+            l1_norm = float((np.abs(pa_b / p_std - self._ta84_normed[ti]).mean(axis=1) * wk).sum()) / ws
+            pc_diff = (pa_b - pa_b.mean(axis=1, keepdims=True)) / p_std
+            col_l1 = float((np.abs(pc_diff - self._tc84_normed[ti]).mean(axis=1) * wk).sum()) / ws
+            sc = 0.72 * ncc_b + 0.28 * cncc_b - 0.16 * col_l1 - 0.10 * l1_norm - 0.12 * float(
+                np.sqrt(max(0.0, 1.0 - min(1.0, ncc_b)))
+            )
+            final.append((sc, ncc_b, col_l1 * 30.0, self.templates[ti]))
         final.sort(key=lambda x: -x[0])
         top1 = final[0]
         margin = top1[0] - (final[1][0] if len(final) > 1 else -1.0)
@@ -677,9 +729,11 @@ def _scan_tab(
                 confident = (
                     tmpl is not None
                     and not ambiguous
-                    and ncc >= 0.62
-                    and sc >= 0.25
-                    and margin >= 0.06
+                    and (
+                        (ncc >= 0.60 and sc >= 0.25 and margin >= 0.05)
+                        or (ncc >= 0.50 and sc >= 0.22 and margin >= 0.14)
+                        or (ncc >= 0.90 and sc >= 0.80 and margin >= 0.03)
+                    )
                 )
                 row_candidates.append((col, slot_key, tmpl, confident))
 
@@ -755,8 +809,8 @@ def _scan_tab(
             min_target_row = min(r for r, _ in remaining_targets)
             if min_target_row > max_visible_row + 1:
                 rate = px_per_unit if px_per_unit is not None else 0.21
-                want_px = min(300.0, max(180.0, (min_target_row - max_visible_row - 1) * ROW_PITCH_EXACT))
-                step_dy = -max(960, min(1680, round(want_px / rate / 120.0) * 120))
+                want_px = min(390.0, max(180.0, (min_target_row - max_visible_row - 1) * ROW_PITCH_EXACT))
+                step_dy = -max(960, min(2400, round(want_px / rate / 120.0) * 120))
             else:
                 step_dy = -960
         else:
@@ -1009,7 +1063,8 @@ def ensure_backpack_scanned(rt, account: AccountState, crafting_catalog: dict) -
     mats = role.get("materials") or {}
     inv = dict(mats.get("inventory") or {})
     today = current_game_day()
-    if mats.get("backpack_scanned_day") == today and inv:
+    summary_ok = bool((mats.get("backpack_summary") or {}).get("complete", True))
+    if mats.get("backpack_scanned_day") == today and inv and summary_ok:
         return inv
     rt.log("正在打开背包核对今日材料与养成材料库存。")
     result = scan_backpack_inventory(rt, crafting_catalog)
