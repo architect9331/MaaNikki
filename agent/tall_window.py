@@ -670,9 +670,12 @@ def _apply_borderless_resolution(
     except Exception:
         pass
 
+    expected_w, expected_h = target_w, target_h
     nudged_capture = False
+    settled_streak = 0
     solid_streak = 0
     clamped_streak = 0
+    csize_mismatch_streak = 0
     off_shape = None
     off_streak = 0
     for _ in range(16):
@@ -681,7 +684,28 @@ def _apply_borderless_resolution(
         time.sleep(0.12)
         frame = _poll_capture(controller, stopped_fn)
         if frame is None:
+            settled_streak = 0
+            solid_streak = 0
             continue
+        with _per_monitor_dpi(u32):
+            csize = _client_size(u32, hwnd) if u32.IsWindow(hwnd) else None
+        tol = 2 if nudged_capture else 0
+        csize_ok = (
+            csize is not None
+            and abs(csize[0] - expected_w) <= tol
+            and abs(csize[1] - expected_h) <= tol
+        )
+        if not csize_ok:
+            settled_streak = 0
+            solid_streak = 0
+            clamped_streak = 0
+            off_shape = None
+            off_streak = 0
+            csize_mismatch_streak += 1
+            if csize_mismatch_streak >= 4:
+                break
+            continue
+        csize_mismatch_streak = 0
         if frame.shape[:2] == (cap_h, cap_w) and (not require_unclipped or not is_clipped_game_frame(frame)):
             off_shape = None
             off_streak = 0
@@ -694,24 +718,37 @@ def _apply_borderless_resolution(
                     and float(bottom_band.mean()) > 5.0
                     and float(bottom_band.std()) > 3.0
                 ):
-                    return True, frame, window_modified
-                if (
-                    float(top_band.mean()) > 8.0
-                    and float(bottom_band.mean()) < 1.0
-                    and float(bottom_band.std()) < 1.0
-                ):
-                    clamped_streak += 1
-                    if clamped_streak >= 4:
-                        break
-                else:
                     clamped_streak = 0
+                    settled_streak += 1
+                    if settled_streak >= 2:
+                        return True, frame, window_modified
+                else:
+                    settled_streak = 0
+                    if (
+                        float(top_band.mean()) > 8.0
+                        and float(bottom_band.mean()) < 1.0
+                        and float(bottom_band.std()) < 1.0
+                    ):
+                        clamped_streak += 1
+                        if clamped_streak >= 4:
+                            break
+                    else:
+                        clamped_streak = 0
             elif float(frame.mean()) > 8.0 and float(frame.std()) > 5.0:
-                return True, frame, window_modified
-            if allow_solid_frame and cap_h <= cap_w:
+                solid_streak = 0
+                settled_streak += 1
+                if settled_streak >= 2:
+                    return True, frame, window_modified
+            elif allow_solid_frame and cap_h <= cap_w:
+                settled_streak = 0
                 solid_streak += 1
                 if solid_streak >= 4:
                     return True, frame, window_modified
+            else:
+                settled_streak = 0
+                solid_streak = 0
         else:
+            settled_streak = 0
             solid_streak = 0
             clamped_streak = 0
             shape_now = frame.shape[:2]
@@ -733,6 +770,7 @@ def _apply_borderless_resolution(
                     dh = round((cap_h - shape_now[0]) * req_w / cap_w)
                     if dh:
                         req_h += dh
+                        expected_h += dh
                         with _per_monitor_dpi(u32):
                             u32.SetWindowPos(hwnd, 0, win_x, win_y, req_w, req_h, SWP_RESIZE_FLAGS)
                         time.sleep(0.20)
@@ -741,6 +779,7 @@ def _apply_borderless_resolution(
                     dw = round((cap_w - shape_now[1]) * req_h / cap_h)
                     if dw:
                         req_w += dw
+                        expected_w += dw
                         with _per_monitor_dpi(u32):
                             u32.SetWindowPos(hwnd, 0, win_x, win_y, req_w, req_h, SWP_RESIZE_FLAGS)
                         time.sleep(0.20)
@@ -884,6 +923,14 @@ def _is_already_borderless_in_monitor(
         mi = _monitor_info(u32, hwnd)
         cbox = _client_screen_rect(u32, hwnd)
         if mi is None or cbox is None:
+            return False
+        extends_past_work = (
+            cbox[0] < int(mi.rcWork.left)
+            or cbox[1] < int(mi.rcWork.top)
+            or cbox[2] > int(mi.rcWork.right)
+            or cbox[3] > int(mi.rcWork.bottom)
+        )
+        if extends_past_work and (snap.style & WS_POPUP) == 0:
             return False
         return (
             cbox[0] >= int(mi.rcMonitor.left)

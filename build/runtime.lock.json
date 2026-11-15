@@ -2,24 +2,24 @@
   "schema_version": 1,
   "platform": "windows-x86_64",
   "python_version": "3.12.10",
-  "maafw_version": "5.14.2",
+  "maafw_version": "5.16.1",
   "python": {
     "name": "python-3.12.10-embed-amd64.zip",
     "url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip",
     "sha256": "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
   },
   "maafw": {
-    "name": "MAA-win-x86_64-v5.14.2.zip",
-    "url": "https://github.com/MaaXYZ/MaaFramework/releases/download/v5.14.2/MAA-win-x86_64-v5.14.2.zip",
-    "sha256": "e279163bcdcab7c87ebe5a9dd157c47e169c78742dbdcc30d095de55ab0eaa9c"
+    "name": "MAA-win-x86_64-v5.16.1.zip",
+    "url": "https://github.com/MaaXYZ/MaaFramework/releases/download/v5.16.1/MAA-win-x86_64-v5.16.1.zip",
+    "sha256": "19588e6fda8d977496eb143cce157ce0c21890bee62aef8fdf1696930fe1286e"
   },
   "wheels": [
     {
       "package": "maafw",
-      "version": "5.14.2",
-      "name": "maafw-5.14.2-py3-none-win_amd64.whl",
-      "url": "https://files.pythonhosted.org/packages/1c/71/0b83a8c17a9f02b8fc476cbf8eca6c1690f563cd4c4b036f355700dff274/maafw-5.14.2-py3-none-win_amd64.whl",
-      "sha256": "3688dcf544a59a8529ceaab60e2c0367974ae496fdaa7c4d620105a98f0edd44"
+      "version": "5.16.1",
+      "name": "maafw-5.16.1-py3-none-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/0d/78/661b155b1acfeafd76355a2854af825278640f65267c1513405ddc93ba6b/maafw-5.16.1-py3-none-win_amd64.whl",
+      "sha256": "9efea4b3f50cab0bcea713bf4a8dc0a1e5e01136e3c84a0d22031ee6e4afb1b4"
     },
     {
       "package": "MaaAgentBinary",
