@@ -82,8 +82,6 @@ class DailyRun(Executors):
                         policy["queue_goals"],
                         inventory=self._energy_cache.get("inventory"),
                         multiplier=1,
-                        include_thread=policy["include_thread"],
-                        include_bling=policy["include_bling"],
                         wardrobe_synced=bool(self._energy_cache.get("wardrobe_synced")),
                         crafting=crafting,
                         scoring=scoring,
@@ -93,7 +91,7 @@ class DailyRun(Executors):
                     if picked:
                         has_need = True
                         goal_rank = policy["queue_goals"].index(picked[0])
-                elif kind == "jihua":
+                else:
                     has_need = kind in badges
             elif kind == "bless":
                 if policy["bless_mode"] == "glow_pursuit":

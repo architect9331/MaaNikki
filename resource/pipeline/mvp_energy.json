@@ -568,18 +568,14 @@
     "recognition": "DirectHit",
     "action": "DoNothing"
   },
-  "MaaNikki_Double_Type_Weekly": {
+  "MaaNikki_Double_Type_Monster": {
     "enabled": false,
     "recognition": "DirectHit",
     "action": "DoNothing"
   },
-  "MaaNikki_FarmCommonMatsOption": {
+  "MaaNikki_Double_Type_Weekly": {
+    "enabled": false,
     "recognition": "DirectHit",
-    "action": "Custom",
-    "custom_action": "nikki.feature_settings",
-    "custom_action_param": {
-      "thread": false,
-      "bling": false
-    }
+    "action": "DoNothing"
   }
 }

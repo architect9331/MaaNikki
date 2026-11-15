@@ -91,8 +91,6 @@ export interface MaterialGoalForecast {
   mode: 'all' | 'selected';
   scope?: 'all' | 'suits';
   source?: 'plan' | 'targets';
-  includeThreadMats?: boolean;
-  includeBlingMats?: boolean;
   priorityPendingCount?: number;
   priorityEnergy?: number;
   totals: MaterialTotals;
@@ -282,7 +280,7 @@ function sampleDayPoints(
   return { days, progressPct, cumulativeEnergy, remainingEnergy, missingUnits, secondaryMetric };
 }
 
-/** Deterministic daily simulator for crafting (monster_craft + optional jihua) and renewal (monster_glow + jihua). */
+/** Deterministic daily simulator for crafting (monster_craft + optional jihua) and renewal (bubbles/thread first, bling last). */
 function simulateMaterialTrend(options: {
   kind: 'crafting' | 'renewal';
   rows: MaterialRow[];
@@ -291,7 +289,6 @@ function simulateMaterialTrend(options: {
   dailyBlingIncome: number;
   extraEnergy?: number;
   includeJihuaInPrimary: boolean;
-  includeThreadMats?: boolean;
   totalRequiredEnergy: number;
 }): {
   energy: number;
@@ -308,7 +305,6 @@ function simulateMaterialTrend(options: {
     dailyBlingIncome,
     extraEnergy = 0,
     includeJihuaInPrimary,
-    includeThreadMats = true,
     totalRequiredEnergy,
   } = options;
   const safeDaily = Math.max(10, dailyEnergy);
@@ -335,7 +331,8 @@ function simulateMaterialTrend(options: {
         if (item) secondaryJihua.push(item);
       }
     } else {
-      const priority = row.group === 'vortex' || row.group === 'chroma' ? 0 : row.id === BLING_ID ? 2 : 1;
+      // Farm bubbles and pure thread first (whichever has the largest energy gap); farm bling last.
+      const priority = row.id === BLING_ID ? 1 : 0;
       const item = toSimItem(row, priority);
       if (item) primaryItems.push(item);
     }
@@ -346,8 +343,16 @@ function simulateMaterialTrend(options: {
     0,
   );
 
+  const itemEnergyGap = (item: SimItem) =>
+    item.missing > 0 ? Math.ceil(item.missing / item.drop) * item.energyPerRun : 0;
   const sortQueue = (items: SimItem[]) =>
-    items.sort((a, b) => a.priority - b.priority || b.missing - a.missing || a.id.localeCompare(b.id));
+    items.sort(
+      (a, b) =>
+        a.priority - b.priority
+        || itemEnergyGap(b) - itemEnergyGap(a)
+        || b.missing - a.missing
+        || a.id.localeCompare(b.id),
+    );
 
   const remainingPrimaryEnergy = (items: SimItem[]) =>
     items.reduce((sum, item) => sum + (item.missing > 0 ? Math.ceil(item.missing / item.drop) * item.energyPerRun : 0), 0);
@@ -506,7 +511,7 @@ function simulateMaterialTrend(options: {
       hadJihuaNonBling &&
       primaryItems.every((item) => (item.id !== SHINY_BUBBLE_ID && item.id !== THREAD_ID) || item.missing <= 0)
     ) {
-      recordMilestone('jihua_mat', includeThreadMats ? '闪亮泡泡与丝线备齐' : '闪亮泡泡备齐', day, energySpent);
+      recordMilestone('jihua_mat', '闪亮泡泡与丝线备齐', day, energySpent);
     }
     if (initialRemEnergy > 0 && remEnergy <= halfTarget) {
       recordMilestone('half', '材料缺口完成一半', day, energySpent);
@@ -679,8 +684,6 @@ export function computeRenewalForecast(
   dailyEnergy: number,
   dailyBlingIncome: number,
   extraEnergy = 0,
-  includeThreadMats = false,
-  includeBlingMats = false,
 ): MaterialGoalForecast {
   const source = renewalSource(materials);
   const plan = materials.renewal_plan;
@@ -693,8 +696,6 @@ export function computeRenewalForecast(
       status: 'needs_wardrobe',
       mode,
       source,
-      includeThreadMats,
-      includeBlingMats,
       totals: { rows: [], missingKinds: 0, trackedKinds: 0, energy: 0, days: 0 },
       realmTotals: { rows: [], missingKinds: 0, trackedKinds: 0, energy: 0, days: 0 },
       rawEnergy: 0,
@@ -767,10 +768,7 @@ export function computeRenewalForecast(
 
   const inventory = materials.inventory ?? {};
   const totals = summarizeMaterials(required, crafting, inventory, payload?.catalog.material_names, dailyEnergy);
-  const isRealmFarmed = (id: string) =>
-    source === 'targets'
-    || ((id !== THREAD_ID || includeThreadMats) && (id !== BLING_ID || includeBlingMats));
-  const farmableRows = totals.rows.filter((row) => row.group !== 'world' && isRealmFarmed(row.id));
+  const farmableRows = totals.rows.filter((row) => row.group !== 'world');
   const rawEnergy = farmableRows.reduce((sum, row) => sum + row.energy, 0);
   const safeDaily = Math.max(10, dailyEnergy);
   const realmTotals: MaterialTotals = {
@@ -782,14 +780,14 @@ export function computeRenewalForecast(
   };
 
   const fullFarmableReq = Object.fromEntries(
-    Object.entries(required).filter(([id]) => materialGroup(crafting?.materials[id]) !== 'world' && isRealmFarmed(id)),
+    Object.entries(required).filter(([id]) => materialGroup(crafting?.materials[id]) !== 'world'),
   );
   const fullTotals = summarizeMaterials(fullFarmableReq, crafting, {}, payload?.catalog.material_names, dailyEnergy);
   const totalRequiredEnergy = fullTotals.energy;
 
   const prioTotals = summarizeMaterials(
     Object.fromEntries(
-      Object.entries(priorityRequired).filter(([id]) => materialGroup(crafting?.materials[id]) !== 'world' && isRealmFarmed(id)),
+      Object.entries(priorityRequired).filter(([id]) => materialGroup(crafting?.materials[id]) !== 'world'),
     ),
     crafting,
     inventory,
@@ -805,7 +803,6 @@ export function computeRenewalForecast(
     dailyBlingIncome,
     extraEnergy,
     includeJihuaInPrimary: true,
-    includeThreadMats: source === 'targets' || includeThreadMats,
     totalRequiredEnergy,
   });
 
@@ -825,8 +822,6 @@ export function computeRenewalForecast(
     status: sim.energy === 0 ? 'done' : 'ready',
     mode,
     source,
-    includeThreadMats,
-    includeBlingMats,
     priorityPendingCount,
     priorityEnergy: prioTotals.energy,
     totals,
@@ -1199,20 +1194,11 @@ export function simulateQueueSchedule(options: {
     }
     const startDay = enabled ? (prefixSim.startDays[goal] ?? afterSim?.startDays[goal] ?? null) : null;
     const finishDay = enabled ? (prefixSim.finishDays[goal] ?? afterSim?.finishDays[goal] ?? null) : null;
-    const includeThread = f.includeThreadMats ?? false;
-    const includeBling = f.includeBlingMats ?? false;
-    const skippedMats = [!includeThread ? '丝线' : null, !includeBling ? '噗灵' : null].filter(Boolean) as string[];
     let note: string | undefined;
     if (goal === 'crafting' && f.energy === 0 && f.allTrackedEnergy > 0) {
       note = '试炼晶石已齐（噗灵/丝线需自备）';
-    } else if (goal === 'renewal' && f.source !== 'targets' && skippedMats.length > 0 && f.energy === 0 && f.allTrackedEnergy > 0) {
-      const farmedLabel = includeThread ? '所需泡泡与丝线已齐' : '所需泡泡已齐';
-      note = `${farmedLabel}（${skippedMats.join('/')}不消耗体力）`;
     } else if (goal === 'renewal' && (f.priorityPendingCount ?? 0) > 0) {
       note = `优先搭配计算 ${f.priorityPendingCount} 件（约 ${(f.priorityEnergy ?? 0).toLocaleString('zh-CN')} 体力）`;
-    } else if (goal === 'renewal' && f.source !== 'targets' && skippedMats.length > 0 && f.allTrackedEnergy > f.rawEnergy) {
-      const trackedLabel = includeThread ? '泡泡与丝线' : '泡泡';
-      note = `仅计${trackedLabel}消耗（已跳过${skippedMats.join('与')}）`;
     } else if (f.blingSavedEnergy > 0) {
       note = `日常噗灵抵扣约 ${f.blingSavedEnergy.toLocaleString('zh-CN')} 体力`;
     }

@@ -492,7 +492,7 @@ export function MaterialForecastPanel({
         note={
           isCrafting
             ? '按当前已读衣柜与背包库存模拟每日优先刷取缺口最大的魔物试炼晶石（40 体力 / 5 个）。大世界采集物与活动赠送未计入。'
-            : `按“优先刷取泡泡（40 体力 / 50 个），再以素材激化补闪亮泡泡、丝线与噗灵（每日日常噗灵收入 ${compactNumber(dailyBlingIncome)} 自动折抵）”模拟。`
+            : `按“优先按体力缺口刷取各类泡泡与纯真丝线，最后以素材激化补噗灵（每日日常噗灵收入 ${compactNumber(dailyBlingIncome)} 自动折抵）”模拟。`
         }
       />
     </section>

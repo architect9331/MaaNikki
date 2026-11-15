@@ -1428,13 +1428,13 @@ class Executors(Runtime):
                         child.ui.calendar()
                         return False
                     if status == "complete":
-                        child.log("朝夕心愿补分 · 祝福闪光：所选范围五星颜色已收齐，改刷备用「祝福闪光关卡」。")
+                        child.log("朝夕心愿补分 · 祝福闪光：所选范围五星颜色已收齐，改刷默认「祝福闪光关卡」。")
                     elif res.get("reason") == "no_organization":
-                        child.log("朝夕心愿补分 · 祝福闪光：尚未建立祝福闪光仓库记录，改刷备用「祝福闪光关卡」。")
+                        child.log("朝夕心愿补分 · 祝福闪光：尚未建立祝福闪光仓库记录，改刷默认「祝福闪光关卡」。")
                     else:
-                        child.log("朝夕心愿补分 · 祝福闪光：未找到可用的缺色关卡，改刷备用「祝福闪光关卡」。")
+                        child.log("朝夕心愿补分 · 祝福闪光：未找到可用的缺色关卡，改刷默认「祝福闪光关卡」。")
                 else:
-                    child.log("朝夕心愿补分 · 祝福闪光（继承兜底）：挑战备用「祝福闪光关卡」。", detail=True)
+                    child.log("朝夕心愿补分 · 祝福闪光（使用默认设置）：挑战默认「祝福闪光关卡」。", detail=True)
                 return game.realm("bless", maximize=False, return_page="calendar")
 
             if kind in ("jihua", "monster"):
@@ -1451,8 +1451,6 @@ class Executors(Runtime):
                         policy["queue_goals"],
                         inventory=inv,
                         multiplier=1,
-                        include_thread=policy["include_thread"],
-                        include_bling=policy["include_bling"],
                         wardrobe_synced=synced,
                         crafting=crafting,
                         scoring=scoring,
@@ -1487,9 +1485,9 @@ class Executors(Runtime):
                 else:
                     if policy[mode_key] == "follow_deficit":
                         if kind == "jihua":
-                            child.log("朝夕心愿补分 · 素材激化：所选焕新／制衣目标材料已备齐，改刷备用「素材激化奖励」。")
+                            child.log("朝夕心愿补分 · 素材激化：所选焕新／制衣目标材料已备齐，改刷默认「素材激化奖励」。")
                         else:
-                            child.log("朝夕心愿补分 · 魔物试炼：所选焕新／制衣目标试炼素材已备齐，改刷备用「魔物试炼关卡」。")
+                            child.log("朝夕心愿补分 · 魔物试炼：所选焕新／制衣目标试炼素材已备齐，改刷默认「魔物试炼关卡」。")
                     if kind == "jihua":
                         level_name = str((fields(clone, "MaaNikki_Jihua_Target") or {}).get("expected") or "闪亮泡泡").strip()
                         mid = JIHUA_LEVEL_IDS.get(level_name)
@@ -1528,13 +1526,7 @@ class Executors(Runtime):
                         record_accrual(account, mid, gained)
                         if isinstance(state.get("inventory"), dict):
                             state["inventory"][mid] = int(state["inventory"].get(mid, 0)) + gained
-                        record_material_history(
-                            account,
-                            crafting,
-                            scoring,
-                            include_thread=policy["include_thread"],
-                            include_bling=policy["include_bling"],
-                        )
+                        record_material_history(account, crafting, scoring)
                         child.log(
                             f"朝夕心愿补分 · {'素材激化' if kind == 'jihua' else '魔物试炼'}：获得 {meta.get('name', level_name or mid)} +{gained}。"
                         )

@@ -178,7 +178,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
           )
         }
         queueStatus={crystalShort ? `还差 ${crystalShort} 种试炼晶石（约 ${num(realmTotals.energy)} 体力）` : '试炼晶石已备齐，轮到时直接交给下一项'}
-        queueHint="默认仅按缺口刷取魔物试炼晶石；噗灵、丝线和大世界采集物请按清单准备（激化双倍仅在开启「用体力刷纯真丝线」或「用体力刷噗灵」时才为制衣刷取对应激化材料）。"
+        queueHint="平时按未制作设计图缺口刷取魔物试炼晶石；超级激化双倍（智能选择）也会顺带为制衣按缺口补纯真丝线与噗灵（先丝线、后噗灵）。"
       />
       <PlanLayout
         list={

@@ -113,8 +113,8 @@ class BlessingPursuitAction(CustomAction):
                         else:
                             rt.finish(argv.node_name)
                         return False
-                    rt.log("整理未完成且没有可用记录，本轮改用「备选副本」刷取，下次运行重新整理。",
-                           ui_text="整理未完成，本轮改刷备用副本。")
+                    rt.log("整理未完成且没有可用记录，本轮改用「默认副本」刷取，下次运行重新整理。",
+                           ui_text="整理未完成，本轮改刷默认副本。")
                     return fallback_realm(context, rt, argv.node_name)
                 if not result["published"]:
                     rt.log("本次整理未完成，继续使用上一份有效记录。")
@@ -173,8 +173,8 @@ class BlessingPursuitAction(CustomAction):
                 (pursuit is not None and pursuit.report.get("warehouse_full"))
                 or (isinstance(capacity, list) and len(capacity) == 2 and capacity[0] >= capacity[1]))
             if not rt.stopped and not farmed and not warehouse_full:
-                rt.log("本轮尚未刷取，改用「备选副本」刷取，已保存的进度下次继续。",
-                       ui_text="全收集流程未完成，本轮改刷备用副本。")
+                rt.log("本轮尚未刷取，改用「默认副本」刷取，已保存的进度下次继续。",
+                       ui_text="全收集流程未完成，本轮改刷默认副本。")
                 return fallback_realm(context, rt, argv.node_name)
             if not rt.stopped:
                 if options.get("return_page") == "calendar":

@@ -8,7 +8,7 @@
                 "daily"
             ],
             "default_check": true,
-            "description": "按「刷取顺序」使用活跃能量：每批挑战前选择排在最前、仍有缺口的目标（每周幻境、焕新材料、制衣材料、五星闪光），都完成后交给兜底副本。与朝夕心愿同轮运行时，请排在朝夕心愿之后。",
+            "description": "按「刷取顺序」使用活跃能量：每批挑战前选择排在最前、仍有缺口的目标（每周幻境、焕新材料、制衣材料、五星闪光），都完成后交给默认副本。与朝夕心愿同轮运行时，请排在朝夕心愿之后。",
             "option": [
                 "RealmQueue",
                 "DoubleEnabled",
@@ -27,8 +27,6 @@
                 "CollectionBling",
                 "CollectionDecompose",
                 "CollectionOrganize",
-                "FarmThread",
-                "FarmBling",
                 "JihuaMaterialMode"
             ]
         }
@@ -36,8 +34,8 @@
     "option": {
         "RealmTypes": {
             "type": "select",
-            "label": "兜底副本",
-            "description": "刷取顺序中的目标都完成或未开启时，剩余活跃能量的用途。",
+            "label": "默认副本",
+            "description": "刷取顺序中的目标都完成或未开启时，剩余活跃能量的默认用途。",
             "cases": [
                 {
                     "name": "Jihua",
@@ -130,7 +128,7 @@
         "CollectionBling": {
             "type": "switch",
             "label": "噗灵不足时改刷噗灵",
-            "description": "推荐开启：每次升级要 72000 噗灵，全收集时噗灵比胚子先用完。每天先升级已有胚子：噗灵不够、胚子还升不起时，当天活跃能量全部改做素材激化，消耗下方设置的材料；胚子都升完了才继续刷本。",
+            "description": "推荐开启：每次升级要 72000 噗灵，全收集时噗灵比胚子先用完。每天先升级已有胚子：噗灵不够、胚子还升不起时，当天活跃能量全部改做素材激化，消耗「默认副本 → 激化消耗材料选择」设置的材料；胚子都升完了才继续刷本。",
             "cases": [
                 {
                     "name": "Yes",
@@ -231,7 +229,7 @@
         "JihuaTarget": {
             "type": "select",
             "label": "素材激化默认奖励",
-            "description": "素材激化作为兜底副本、激化／补分策略设为「继承兜底设置」，或跟随缺口已备齐但朝夕心愿仍需激化补分时兑换此处奖励。",
+            "description": "素材激化作为默认副本、策略设为「使用默认设置」，或智能选择已备齐但朝夕心愿仍需激化补分时兑换此处奖励。",
             "cases": [
                 {
                     "name": "Bubble",
@@ -275,7 +273,7 @@
         "JihuaMaterialMode": {
             "type": "select",
             "label": "激化消耗材料选择",
-            "description": "在素材激化界面用来兑换奖励的收集材料：可选数量最多或按首选与备选顺序；焕新备料、激化双倍、兜底激化、闪光补噗灵与朝夕心愿激化共用此设置。",
+            "description": "在素材激化界面用来兑换奖励的收集材料：可选数量最多或按首选与备选顺序；焕新备料、激化双倍、默认副本、闪光补噗灵与朝夕心愿激化共用此设置。",
             "cases": [
                 {
                     "name": "Priority",
@@ -347,7 +345,7 @@
         "BlessTarget": {
             "type": "select",
             "label": "祝福闪光默认关卡",
-            "description": "需提前解锁对应困难难度与快速挑战。作为兜底副本、五星闪光仓库整理未完成、灵感迸发／补分策略设为「继承兜底设置」，或已收齐仍需朝夕补分时挑战此关卡。",
+            "description": "需提前解锁对应困难难度与快速挑战。作为默认副本、五星闪光仓库整理未完成、策略设为「使用默认设置」，或已收齐仍需朝夕补分时挑战此关卡。",
             "cases": [
                 {
                     "name": "Well",
@@ -481,7 +479,7 @@
         "MonsterTarget": {
             "type": "select",
             "label": "魔物试炼默认关卡",
-            "description": "需提前解锁对应关卡的快速挑战。作为兜底副本、魔物试炼策略设为「继承兜底设置」，或材料已备齐但朝夕心愿仍需魔物试炼补分时挑战此关卡。",
+            "description": "需提前解锁对应关卡的快速挑战。作为默认副本、策略设为「使用默认设置」，或智能选择已备齐但朝夕心愿仍需魔物试炼补分时挑战此关卡。",
             "cases": [
                 {
                     "name": "Energy",
@@ -700,7 +698,7 @@
         "RealmQueue": {
             "type": "input",
             "label": "刷取顺序",
-            "description": "按顺序排列每周幻境、焕新材料、制衣材料与五星闪光，可分别开关。每批挑战前选择排在最前、仍有缺口的目标；全部完成或未开启时，剩余活跃能量交给下方兜底副本。",
+            "description": "按顺序排列每周幻境、焕新材料、制衣材料与五星闪光，可分别开关。每批挑战前选择排在最前、仍有缺口的目标；全部完成或未开启时，剩余活跃能量交给默认副本。",
             "inputs": [
                 {
                     "name": "order",
@@ -722,7 +720,7 @@
         "DoubleEnabled": {
             "type": "switch",
             "label": "限时双倍优先插队",
-            "description": "检测到对应幻境存在双倍奖励次数（含限时活动与回归双倍）时，优先于「刷取顺序」与「兜底副本」插队挑战；所设目标已完成时自动跳过，不强行刷取。",
+            "description": "检测到对应幻境存在双倍奖励次数（含限时活动与回归双倍）时，优先于「刷取顺序」与「默认副本」插队挑战；智能选择已无缺口时自动跳过，不强行刷取。",
             "cases": [
                 {
                     "name": "Yes",
@@ -752,7 +750,7 @@
         "DoubleTypes": {
             "type": "checkbox",
             "label": "参与插队的双倍活动",
-            "description": "可单独勾选或关闭不想插队的双倍活动；即便勾选，如果对应目标已经达成也会跳过，不会强行消耗体力。",
+            "description": "可单独勾选或关闭不想插队的双倍活动；即便勾选，如果「智能选择」对应收集计划已备齐或已收齐也会自动跳过，不会强行消耗体力。",
             "cases": [
                 {
                     "name": "Jihua",
@@ -773,6 +771,15 @@
                     }
                 },
                 {
+                    "name": "Monster",
+                    "label": "魔物试炼（晶石与泡泡）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Type_Monster": {
+                            "enabled": true
+                        }
+                    }
+                },
+                {
                     "name": "Weekly",
                     "label": "深度突破（每周幻境）",
                     "pipeline_override": {
@@ -785,18 +792,19 @@
             "default_case": [
                 "Jihua",
                 "Bless",
+                "Monster",
                 "Weekly"
             ],
             "min_count": 0
         },
         "DoubleJihuaMode": {
             "type": "select",
-            "label": "素材激化策略",
-            "description": "同时用于超级激化双倍与朝夕心愿补分：「跟随焕新 / 制衣缺口」按「刷取顺序」优先补齐还缺的泡泡（开启下方对应开关时也含纯真丝线或噗灵），无缺口时双倍跳过、朝夕补分改刷下方「素材激化默认奖励」；「继承兜底设置」始终使用默认奖励。",
+            "label": "素材激化",
+            "description": "同时用于超级激化双倍与朝夕心愿补分：「智能选择（根据收集计划）」按「刷取顺序」先补还缺的闪亮泡泡与纯真丝线，再补噗灵，无缺口时双倍跳过、朝夕补分改刷默认奖励；「使用默认设置」始终兑换「素材激化默认奖励」。",
             "cases": [
                 {
                     "name": "FollowDeficit",
-                    "label": "跟随焕新 / 制衣缺口（按刷取顺序）",
+                    "label": "智能选择（根据收集计划）",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
@@ -807,7 +815,7 @@
                 },
                 {
                     "name": "InheritFallback",
-                    "label": "继承兜底设置（使用默认奖励）",
+                    "label": "使用默认设置",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
@@ -821,12 +829,12 @@
         },
         "DoubleBlessMode": {
             "type": "select",
-            "label": "祝福闪光策略",
-            "description": "同时用于灵感迸发双倍与朝夕心愿补分：「五星闪光追全」按缺色顺位挑战缺失五星颜色的副本，已收齐时双倍跳过、朝夕补分改刷下方「祝福闪光默认关卡」；「继承兜底设置」始终挑战默认关卡。",
+            "label": "祝福闪光",
+            "description": "同时用于灵感迸发双倍与朝夕心愿补分：「智能选择（根据收集计划）」按所选五星收集计划的缺色顺位挑战，收齐后双倍跳过、朝夕补分改刷默认关卡；「使用默认设置」始终挑战「祝福闪光默认关卡」。",
             "cases": [
                 {
                     "name": "GlowPursuit",
-                    "label": "五星闪光追全（按缺色顺位）",
+                    "label": "智能选择（根据收集计划）",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
@@ -837,7 +845,7 @@
                 },
                 {
                     "name": "InheritFallback",
-                    "label": "继承兜底设置（使用默认关卡）",
+                    "label": "使用默认设置",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
@@ -851,12 +859,12 @@
         },
         "MonsterTargetMode": {
             "type": "select",
-            "label": "魔物试炼策略",
-            "description": "用于朝夕心愿需要挑战魔物试炼补分时选关：「跟随焕新 / 制衣缺口」按「刷取顺序」优先挑战还缺魔物试炼晶石或泡泡的关卡，无缺口时自动改刷下方「魔物试炼默认关卡」；「继承兜底设置」始终挑战默认关卡。",
+            "label": "魔物试炼",
+            "description": "同时用于魔物试炼双倍与朝夕心愿补分：「智能选择（根据收集计划）」按「刷取顺序」优先挑战还缺的魔物试炼晶石或泡泡关卡，无缺口时双倍跳过、朝夕补分改刷默认关卡；「使用默认设置」始终挑战「魔物试炼默认关卡」。",
             "cases": [
                 {
                     "name": "FollowDeficit",
-                    "label": "跟随焕新 / 制衣缺口（按刷取顺序）",
+                    "label": "智能选择（根据收集计划）",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
@@ -867,7 +875,7 @@
                 },
                 {
                     "name": "InheritFallback",
-                    "label": "继承兜底设置（使用默认关卡）",
+                    "label": "使用默认设置",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
@@ -908,66 +916,6 @@
                 }
             ],
             "default_case": "Qiggeda"
-        },
-        "FarmThread": {
-            "type": "switch",
-            "label": "用体力刷纯真丝线",
-            "description": "关闭时，焕新备料、激化双倍（跟随缺口）与朝夕心愿（跟随缺口）跳过纯真丝线（可通过每日打怪、宝箱等积累）；开启后会按缺口对其消耗活跃能量。",
-            "cases": [
-                {
-                    "name": "Yes",
-                    "label": "开启",
-                    "pipeline_override": {
-                        "MaaNikki_FarmCommonMatsOption": {
-                            "custom_action_param": {
-                                "thread": true
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "No",
-                    "label": "关闭",
-                    "pipeline_override": {
-                        "MaaNikki_FarmCommonMatsOption": {
-                            "custom_action_param": {
-                                "thread": false
-                            }
-                        }
-                    }
-                }
-            ],
-            "default_case": "No"
-        },
-        "FarmBling": {
-            "type": "switch",
-            "label": "用体力刷噗灵",
-            "description": "关闭时，焕新备料、激化双倍（跟随缺口）与朝夕心愿（跟随缺口）跳过噗灵（可通过日常和小游戏积累）；开启后会按缺口对其消耗活跃能量。",
-            "cases": [
-                {
-                    "name": "Yes",
-                    "label": "开启",
-                    "pipeline_override": {
-                        "MaaNikki_FarmCommonMatsOption": {
-                            "custom_action_param": {
-                                "bling": true
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "No",
-                    "label": "关闭",
-                    "pipeline_override": {
-                        "MaaNikki_FarmCommonMatsOption": {
-                            "custom_action_param": {
-                                "bling": false
-                            }
-                        }
-                    }
-                }
-            ],
-            "default_case": "No"
         }
     }
 }

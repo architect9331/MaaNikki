@@ -24,15 +24,17 @@ import { useForecastAssumptionsStore } from '@/stores/forecastAssumptionsStore';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import type { QueueGoalEstimate } from '@/services/realmForecast';
 import { getBlessingProgress } from '@/utils/blessingProgress';
+import { getInterfaceLangKey } from '@/i18n';
 import {
+  DEFAULT_REALM_OPTION_KEYS,
   REALM_GOAL_LABELS,
   WEEKLY_TARGETS,
+  collectionDrawerOptionKeys,
   doubleEnabled,
   doubleJihuaMode,
   doubleTypes,
+  monsterTargetMode,
   realmCollectionWorkflow,
-  realmFarmBling,
-  realmFarmThread,
   realmQueue,
   realmQueueOption,
   realmReserveBling,
@@ -46,40 +48,52 @@ import { SwitchTrack } from './ui/SwitchTrack';
 
 export const REALM_QUEUE_CARD_ID = 'realm-queue-card';
 const GOAL_INFO: Record<RealmGoal, { icon: typeof Shirt; detail: string; tab?: CollectionTab }> = {
-  weekly: { icon: CalendarClock, detail: '本周仍有挑战次数时，依次挑战所选关卡各一次' },
-  renewal: { icon: Shirt, detail: '按「焕新」计划刷泡泡、丝线与噗灵', tab: 'renewal' },
+  weekly: { icon: CalendarClock, detail: '本周有挑战次数时，按顺序各挑战所选关卡一次' },
+  renewal: { icon: Shirt, detail: '按「焕新」计划优先补泡泡与纯真丝线，最后补噗灵', tab: 'renewal' },
   crafting: { icon: Hammer, detail: '按「制衣」计划刷魔物试炼晶石', tab: 'crafting' },
-  glow: { icon: Sparkles, detail: '按「祝福闪光」计划选本追新色，所选范围收齐后跳过', tab: 'blessing' },
+  glow: { icon: Sparkles, detail: '按「祝福闪光」缺色选本挑战，所选范围收齐后跳过', tab: 'blessing' },
 };
 const FALLBACK_LABELS: Record<string, string> = {
-  Bless: '祝福闪光幻境',
-  Jihua: '素材激化幻境',
-  Monster: '魔物试炼幻境',
+  Bless: '祝福闪光',
+  Jihua: '素材激化',
+  Monster: '魔物试炼',
 };
+const FALLBACK_TARGET_KEY: Record<string, string> = {
+  Bless: 'BlessTarget',
+  Jihua: 'JihuaTarget',
+  Monster: 'MonsterTarget',
+};
+const DRAWER_BTN_CLASS =
+  'inline-flex shrink-0 items-center gap-0.5 rounded-md border border-border bg-bg-primary px-1.5 py-0.5 text-[11px] text-text-secondary transition-colors hover:border-accent hover:text-accent';
 
-const formatEnergy = (energy: number) => `${compactNumber(energy)} 体力`;
-
-function EstimatePill({ estimate, computing }: { estimate: QueueGoalEstimate; computing: boolean }) {
+function RightEstimate({ estimate, computing }: { estimate: QueueGoalEstimate; computing: boolean }) {
   if (estimate.status === 'needs_data') {
     return (
-      <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-bg-tertiary px-1.5 py-0.5 text-[11px] text-text-muted">
-        {estimate.note ?? '待同步记录'}
-      </span>
+      <div className="flex w-[124px] shrink-0 flex-col justify-center text-right tabular-nums sm:w-[144px]">
+        <span className="truncate text-[11px] font-medium text-text-muted">{estimate.note ?? '待同步记录'}</span>
+        <span className="truncate text-[10px] text-text-muted">
+          {estimate.goal === 'weekly' ? '待读取本周次数' : '可点右侧「计划」同步'}
+        </span>
+      </div>
     );
   }
   if (estimate.status === 'computing') {
     return (
-      <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-bg-tertiary px-1.5 py-0.5 text-[11px] text-text-muted">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        正在估算体力与天数…
-      </span>
+      <div className="flex w-[124px] shrink-0 flex-col justify-center text-right tabular-nums sm:w-[144px]">
+        <span className="inline-flex items-center justify-end gap-1 text-[11px] font-medium text-text-muted">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          正在估算…
+        </span>
+        <span className="truncate text-[10px] text-text-muted">计算期望体力与天数</span>
+      </div>
     );
   }
   if (estimate.status === 'stalled') {
     return (
-      <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-warning/10 px-1.5 py-0.5 text-[11px] text-warning">
-        {estimate.note ?? '仓库已满需处理'}
-      </span>
+      <div className="flex w-[124px] shrink-0 flex-col justify-center text-right tabular-nums sm:w-[144px]">
+        <span className="truncate text-[11px] font-medium text-warning">{estimate.note ?? '仓库已满需处理'}</span>
+        <span className="truncate text-[10px] text-text-muted">请清理或开启分解</span>
+      </div>
     );
   }
 
@@ -94,50 +108,52 @@ function EstimatePill({ estimate, computing }: { estimate: QueueGoalEstimate; co
       : estimate.note;
 
   if (estimate.status === 'done' || (energy === 0 && days === 0)) {
-    const label =
+    const mainLabel =
       estimate.goal === 'weekly'
-        ? `本周已完成 · 0 体力（每周 ${estimate.weeklyPerWeek ?? 0} 体力）`
-        : estimate.goal === 'glow' && estimate.note
-          ? `${estimate.note} · 0 体力 · 0 天`
-          : '已备齐 · 0 体力 · 0 天';
+        ? '本周已完成 · 0 体力'
+        : '已备齐 · 0 体力 · 0 天';
+    const subLabel =
+      estimate.goal === 'weekly'
+        ? `每周固定 ${estimate.weeklyPerWeek ?? 0} 体力`
+        : estimate.note || (estimate.enabled ? '已完成当前目标' : '当前未开启');
     return (
-      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] tabular-nums" title={tooltip}>
-        <span className={clsx('rounded-md px-1.5 py-0.5 font-medium', estimate.enabled ? 'bg-success/10 text-success' : 'bg-bg-tertiary text-text-muted')}>
-          {estimate.enabled ? label : `未开启 · ${label}`}
+      <div className="flex w-[124px] shrink-0 flex-col justify-center text-right tabular-nums sm:w-[144px]" title={tooltip}>
+        <span className={clsx('truncate text-[11px] font-medium', estimate.enabled ? 'text-success' : 'text-text-muted')}>
+          {mainLabel}
         </span>
-        {estimate.note && estimate.goal !== 'glow' && <span className="text-text-muted">{estimate.note}</span>}
+        <span className="truncate text-[10px] text-text-muted">
+          {!estimate.enabled && estimate.goal === 'weekly' ? `未开启 · ${subLabel}` : subLabel}
+        </span>
       </div>
     );
   }
 
   const daysText = days === null ? '10 年以上' : `约 ${days} 天`;
-  const mainText = `预期 ${formatEnergy(energy)} · ${daysText}`;
+  const mainText = `${compactNumber(energy)} 体力 · ${daysText}`;
+  const subParts: string[] = [];
+  if (estimate.goal === 'weekly' && estimate.weeklyPerWeek != null) {
+    if (!estimate.enabled) subParts.push('未开启');
+    subParts.push(`每周固定 ${estimate.weeklyPerWeek} 体力`);
+  } else {
+    if (!estimate.enabled) subParts.push('未开启');
+    else if (hasQueuedDelay) subParts.push(`顺位第 ${queuedDay} 天完`);
+    else if (estimate.enabled && estimate.goal === 'glow' && queuedDay === null && days !== null) subParts.push('需等前置完');
+    if (estimate.note) subParts.push(estimate.note);
+  }
+  const subText = subParts.join(' · ') || '按当前收集计划估算';
 
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] tabular-nums" title={tooltip}>
+    <div className="flex w-[124px] shrink-0 flex-col justify-center text-right tabular-nums sm:w-[144px]" title={tooltip}>
       <span
         className={clsx(
-          'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium',
-          estimate.enabled ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted',
+          'inline-flex items-center justify-end gap-1 truncate text-[11px] font-medium',
+          estimate.enabled ? 'text-accent' : 'text-text-muted',
         )}
       >
-        {estimate.enabled ? mainText : `未开启 · 自身${mainText}`}
-        {computing && estimate.goal === 'glow' && <Loader2 className="h-3 w-3 animate-spin opacity-70" />}
+        <span className="truncate">{mainText}</span>
+        {computing && estimate.goal === 'glow' && <Loader2 className="h-3 w-3 shrink-0 animate-spin opacity-70" />}
       </span>
-      {estimate.goal === 'weekly' && estimate.weeklyPerWeek != null && (
-        <span className="text-text-muted">每周固定 {estimate.weeklyPerWeek} 体力</span>
-      )}
-      {hasQueuedDelay && (
-        <span className="rounded-md bg-bg-tertiary px-1.5 py-0.5 text-text-secondary">
-          按顺序约第 {queuedDay} 天完成
-        </span>
-      )}
-      {estimate.enabled && estimate.goal === 'glow' && queuedDay === null && days !== null && (
-        <span className="rounded-md bg-bg-tertiary px-1.5 py-0.5 text-text-secondary">
-          按顺序需等前置目标完成
-        </span>
-      )}
-      {estimate.note && estimate.goal !== 'weekly' && <span className="text-text-muted">{estimate.note}</span>}
+      <span className="truncate text-[10px] text-text-muted">{subText}</span>
     </div>
   );
 }
@@ -180,7 +196,6 @@ export function useRealmQueue() {
   };
   return { hasTask: !!task, taskEnabled: !!task?.enabled, entries, enabledGoals, rank, save, openOrderCard };
 }
-
 function QueueRow({
   entry,
   rank,
@@ -189,6 +204,9 @@ function QueueRow({
   estimate,
   computing,
   detailOverride,
+  expanded,
+  expandLabel,
+  onToggleExpand,
   onToggle,
   children,
 }: {
@@ -199,6 +217,9 @@ function QueueRow({
   estimate: QueueGoalEstimate;
   computing: boolean;
   detailOverride?: string;
+  expanded?: boolean;
+  expandLabel?: string;
+  onToggleExpand?: () => void;
   onToggle: (enabled: boolean) => void;
   children?: ReactNode;
 }) {
@@ -213,63 +234,87 @@ function QueueRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={clsx(
-        'flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs',
+        'rounded-lg border text-xs',
         entry.enabled ? 'border-accent/40 bg-accent/5' : 'border-border bg-bg-secondary',
         isDragging && 'z-10 shadow-lg',
       )}
     >
-      <button
-        type="button"
-        aria-label={`拖动调整${REALM_GOAL_LABELS[entry.goal]}的顺序`}
-        disabled={disabled}
-        className="cursor-grab touch-none rounded p-0.5 text-text-muted hover:bg-bg-hover disabled:cursor-not-allowed"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
-      <span
-        className={clsx(
-          'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
-          rank ? 'bg-accent text-on-accent' : 'bg-bg-tertiary text-text-muted',
-        )}
-      >
-        {rank ?? '–'}
-      </span>
-      <Icon className={clsx('h-4 w-4 shrink-0', entry.enabled ? 'text-accent' : 'text-text-muted')} />
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold text-text-primary">{REALM_GOAL_LABELS[entry.goal]}</p>
-        <p className="truncate text-[11px] text-text-secondary">{detailOverride ?? info.detail}</p>
-        <EstimatePill estimate={estimate} computing={computing} />
-        {children}
-        {warn && (
-          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-warning">
-            <AlertTriangle className="h-3 w-3 shrink-0" />
-            所选范围收齐前会一直刷闪光，排在后面的目标要等收齐后才会轮到
-          </p>
-        )}
-      </div>
-      {info.tab && (
+      <div className="flex min-h-[54px] items-center gap-2 px-2.5 py-2">
         <button
           type="button"
-          onClick={() => openCollectionHub(info.tab!)}
-          className="inline-flex shrink-0 items-center text-[11px] text-text-secondary hover:text-accent"
+          aria-label={`拖动调整${REALM_GOAL_LABELS[entry.goal]}的顺序`}
+          disabled={disabled}
+          className="cursor-grab touch-none rounded p-0.5 text-text-muted hover:bg-bg-hover disabled:cursor-not-allowed"
+          {...attributes}
+          {...listeners}
         >
-          查看计划
-          <ChevronRight className="h-3 w-3" />
+          <GripVertical className="h-4 w-4" />
         </button>
+        <span
+          className={clsx(
+            'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
+            rank ? 'bg-accent text-on-accent' : 'bg-bg-tertiary text-text-muted',
+          )}
+        >
+          {rank ?? '–'}
+        </span>
+        <Icon className={clsx('h-4 w-4 shrink-0', entry.enabled ? 'text-accent' : 'text-text-muted')} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="truncate font-semibold text-text-primary">{REALM_GOAL_LABELS[entry.goal]}</p>
+            {warn && (
+              <span
+                title="所选范围收齐前会一直刷闪光，排在后面的目标要等收齐后才会轮到"
+                className="inline-flex shrink-0 items-center gap-0.5 rounded bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning"
+              >
+                <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                延迟后续
+              </span>
+            )}
+          </div>
+          <p className="truncate text-[11px] leading-4 text-text-secondary">{detailOverride ?? info.detail}</p>
+        </div>
+        <RightEstimate estimate={estimate} computing={computing} />
+        <div className="flex shrink-0 items-center gap-1.5">
+          {info.tab && (
+            <button
+              type="button"
+              onClick={() => openCollectionHub(info.tab!)}
+              className="inline-flex shrink-0 items-center text-[11px] text-text-secondary hover:text-accent"
+            >
+              计划
+              <ChevronRight className="h-3 w-3" />
+            </button>
+          )}
+          {expandLabel && onToggleExpand && (
+            <button
+              type="button"
+              aria-expanded={expanded}
+              onClick={onToggleExpand}
+              className={DRAWER_BTN_CLASS}
+            >
+              {expandLabel}
+              <ChevronDown className={clsx('h-3 w-3 transition-transform', expanded && 'rotate-180')} />
+            </button>
+          )}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={entry.enabled}
+            aria-label={`开启${REALM_GOAL_LABELS[entry.goal]}`}
+            disabled={disabled}
+            onClick={() => onToggle(!entry.enabled)}
+            className="inline-flex shrink-0 items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <SwitchTrack checked={entry.enabled} />
+          </button>
+        </div>
+      </div>
+      {expanded && children && (
+        <div className="border-t border-border/70 bg-bg-primary/70 px-3 py-2.5">
+          {children}
+        </div>
       )}
-      <button
-        type="button"
-        role="switch"
-        aria-checked={entry.enabled}
-        aria-label={`开启${REALM_GOAL_LABELS[entry.goal]}`}
-        disabled={disabled}
-        onClick={() => onToggle(!entry.enabled)}
-        className="inline-flex shrink-0 items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <SwitchTrack checked={entry.enabled} />
-      </button>
     </div>
   );
 }
@@ -279,7 +324,7 @@ const WORKFLOW_MODES = [
   { id: 'FarmOnly', title: '只刷胚子', detail: '按已收集颜色与仓库胚子数算期望选本刷取，升级与管理交给自己' },
 ] as const;
 
-/** The weekly realm levels, picked inside its queue row; at least one stays selected. */
+/** The weekly realm levels, picked inside its queue row drawer; at least one stays selected. */
 function WeeklyTargetPicker({
   selected,
   disabled,
@@ -290,83 +335,102 @@ function WeeklyTargetPicker({
   onChange: (next: string[]) => void;
 }) {
   return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-1.5" role="group" aria-label="每周幻境目标">
-      {WEEKLY_TARGETS.map(({ id, label }) => {
-        const on = selected.includes(id);
-        const locked = on && selected.length <= 1;
-        return (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={on}
-            disabled={disabled || locked}
-            title={locked ? '至少保留一个目标' : undefined}
-            onClick={() =>
-              onChange(
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="每周幻境目标">
+        {WEEKLY_TARGETS.map(({ id, label }) => {
+          const on = selected.includes(id);
+          const locked = on && selected.length <= 1;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={on}
+              disabled={disabled || locked}
+              title={locked ? '至少保留一个目标' : undefined}
+              onClick={() =>
+                onChange(
+                  on
+                    ? selected.filter((item) => item !== id)
+                    : WEEKLY_TARGETS.map((t) => t.id).filter((item) => item === id || selected.includes(item)),
+                )
+              }
+              className={clsx(
+                'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] transition-colors disabled:cursor-not-allowed',
                 on
-                  ? selected.filter((item) => item !== id)
-                  : WEEKLY_TARGETS.map((t) => t.id).filter((item) => item === id || selected.includes(item)),
-              )
-            }
-            className={clsx(
-              'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] transition-colors disabled:cursor-not-allowed',
-              on
-                ? 'border-accent/50 bg-accent/10 font-medium text-accent'
-                : 'border-border text-text-secondary hover:border-accent hover:text-accent',
-              disabled && 'opacity-60',
-            )}
-          >
-            {on && <Check className="h-3 w-3" />}
-            {label}
-          </button>
-        );
-      })}
+                  ? 'border-accent/50 bg-accent/10 font-medium text-accent'
+                  : 'border-border bg-bg-primary text-text-secondary hover:border-accent hover:text-accent',
+                disabled && 'opacity-60',
+              )}
+            >
+              {on && <Check className="h-3 w-3" />}
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-text-muted">本周仍有挑战次数时按顺序各挑战一次，至少保留一个目标。</p>
     </div>
   );
 }
-
-/** 幻境挑战「刷取顺序」: ordered goals with switches, live energy/days estimates, then the fixed fallback realm. */
+/** 幻境挑战「刷取顺序」: uniform compact rows with right-aligned estimates and inline expandable drawers. */
 export function RealmQueueCard({
   instanceId,
   taskId,
   values,
   disabled,
+  renderOptions,
 }: {
   instanceId: string;
   taskId: string;
   values: Record<string, OptionValue>;
   disabled: boolean;
+  renderOptions?: (optionKeys: string[], subheadings?: Record<string, string>) => ReactNode;
 }) {
   const setTaskOptionValue = useAppStore((state) => state.setTaskOptionValue);
+  const projectInterface = useAppStore((state) => state.projectInterface);
+  const language = useAppStore((state) => state.language);
+  const resolveI18nText = useAppStore((state) => state.resolveI18nText);
+  const langKey = getInterfaceLangKey(language);
   const { dailyEnergy, setDailyEnergy } = useForecastAssumptionsStore();
   const [showTrend, setShowTrend] = useState(false);
+  const [openDrawers, setOpenDrawers] = useState<{ weekly: boolean; glow: boolean; fallback: boolean }>({
+    weekly: false,
+    glow: false,
+    fallback: false,
+  });
+  const toggleDrawer = (key: keyof typeof openDrawers) =>
+    setOpenDrawers((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const entries = realmQueue(values);
   const enabled = entries.filter((entry) => entry.enabled).map((entry) => entry.goal);
-  const farmThread = realmFarmThread(values);
-  const farmBling = realmFarmBling(values);
+  const selectedWeekly = weeklyTargets(values);
+  const weeklyLabels = WEEKLY_TARGETS.filter((item) => selectedWeekly.includes(item.id)).map((item) => item.label);
+  const weeklyDetail = weeklyLabels.length
+    ? `本周挑战：${weeklyLabels.join('、')}（有次数各挑战一次）`
+    : GOAL_INFO.weekly.detail;
+  const glowDetail =
+    realmCollectionWorkflow(values) === 'FarmOnly'
+      ? '只刷胚子 · 按已收集颜色与仓库胚子期望选本，收齐后跳过'
+      : '全流程托管 · 自动整理、选本、升级并锁定满级新颜色';
+
   const dblEnabled = doubleEnabled(values);
   const dblTypes = dblEnabled ? doubleTypes(values) : [];
-  const dblTypeLabels: Record<string, string> = { Jihua: '超级激化', Bless: '灵感迸发', Weekly: '深度突破' };
-  const dblFollowJihuaEmpty =
+  const dblTypeLabels: Record<string, string> = {
+    Jihua: '超级激化',
+    Bless: '灵感迸发',
+    Monster: '魔物试炼',
+    Weekly: '深度突破',
+  };
+  const missingPlanKinds = [
+    dblTypes.includes('Jihua') && doubleJihuaMode(values) === 'FollowDeficit' ? '超级激化' : null,
+    dblTypes.includes('Monster') && monsterTargetMode(values) === 'FollowDeficit' ? '魔物试炼' : null,
+  ].filter(Boolean) as string[];
+  const dblPlanEmpty =
     dblEnabled
-    && dblTypes.includes('Jihua')
-    && doubleJihuaMode(values) === 'FollowDeficit'
+    && missingPlanKinds.length > 0
     && !enabled.includes('renewal')
     && !enabled.includes('crafting');
-  const dblFollowCraftingNoCommon =
-    dblEnabled
-    && dblTypes.includes('Jihua')
-    && doubleJihuaMode(values) === 'FollowDeficit'
-    && !enabled.includes('renewal')
-    && enabled.includes('crafting')
-    && !farmThread
-    && !farmBling;
-  const renewalMats = ['泡泡', farmThread ? '丝线' : null, farmBling ? '噗灵' : null].filter(Boolean) as string[];
-  const renewalSkipped = [!farmThread ? '丝线' : null, !farmBling ? '噗灵' : null].filter(Boolean) as string[];
-  const renewalDetail = renewalSkipped.length
-    ? `按「焕新」计划刷${renewalMats.join('、')}（默认跳过${renewalSkipped.join('与')}）`
-    : '按「焕新」计划刷泡泡、丝线与噗灵';
+
   const glowIndex = enabled.indexOf('glow');
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -379,22 +443,48 @@ export function RealmQueueCard({
     const to = entries.findIndex((entry) => entry.goal === over.id);
     if (from >= 0 && to >= 0) save(arrayMove(entries, from, to));
   };
+
   const fallback = values.RealmTypes?.type === 'select' ? values.RealmTypes.caseName : 'Bless';
+  const targetKey = FALLBACK_TARGET_KEY[fallback];
+  const targetOptionDef = targetKey ? projectInterface?.option?.[targetKey] : undefined;
+  const targetSelectDef =
+    targetOptionDef && (targetOptionDef.type === 'select' || targetOptionDef.type === undefined)
+      ? targetOptionDef
+      : undefined;
+  const targetCaseName = targetKey
+    ? (values[targetKey]?.type === 'select' ? values[targetKey].caseName : targetSelectDef?.default_case)
+    : undefined;
+  const targetCase = targetSelectDef?.cases?.find((c) => c.name === targetCaseName) ?? targetSelectDef?.cases?.[0];
+  const targetShort = (targetCase ? resolveI18nText(targetCase.label, langKey) || targetCase.name : '')
+    .split('|', 1)[0]
+    .trim();
+  const fallbackName = FALLBACK_LABELS[fallback] ?? fallback;
+  const fallbackTitle = targetShort ? `默认副本 · ${fallbackName}（${targetShort}）` : `默认副本 · ${fallbackName}`;
 
   const { queueSummary, glowComputing } = useRealmForecast({ optionValues: values });
   const { totalFiniteEnergy, totalFiniteDays, hasUnknownEnabled, hasInfiniteOrStalled } = queueSummary;
 
   const summaryText =
     enabled.length === 0
-      ? '未开启队列目标，全部体力直接用于兜底副本'
+      ? '未开启队列目标，全部体力直接投入默认副本'
       : hasUnknownEnabled
-        ? '部分已开启目标尚无记录，可点右侧「查看计划」同步后自动计算'
+        ? '部分已开启目标尚无记录，可点右侧「计划」同步后自动计算'
         : hasInfiniteOrStalled
           ? '存在无法继续或预计超过 10 年的目标，请检查仓库分解设置'
           : totalFiniteEnergy === 0
-            ? '当前已开启目标均已就绪，剩余体力直接用于兜底副本'
-            : `已开启目标合计约 ${compactNumber(totalFiniteEnergy ?? 0)} 体力 · 预计 ${totalFiniteDays ?? 0} 天完成后转入兜底`;
+            ? '当前已开启目标均已就绪，剩余体力直接投入默认副本'
+            : `已开启目标合计约 ${compactNumber(totalFiniteEnergy ?? 0)} 体力 · 预计 ${totalFiniteDays ?? 0} 天后投入默认副本`;
 
+  const fallbackPrimaryEstimate =
+    enabled.length === 0
+      ? '当前直接投入'
+      : hasUnknownEnabled
+        ? '队列完成后接管'
+        : totalFiniteDays !== null && totalFiniteDays > 0
+          ? `约第 ${totalFiniteDays} 天后接管`
+          : totalFiniteEnergy === 0
+            ? '当前即可接管'
+            : '队列完成后接管';
   return (
     <div id={REALM_QUEUE_CARD_ID} className="mb-3 space-y-2 rounded-lg border border-border bg-bg-primary p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -409,19 +499,13 @@ export function RealmQueueCard({
               限时双倍优先插队
             </span>
             <span>
-              已启用：{dblTypes.map((item) => dblTypeLabels[item] ?? item).join('、')}（跟随缺口 / 追全无缺时自动跳过）
+              已启用：{dblTypes.map((item) => dblTypeLabels[item] ?? item).join('、')}（智能选择已备齐或已收齐时自动跳过）
             </span>
           </p>
-          {dblFollowJihuaEmpty && (
+          {dblPlanEmpty && (
             <p className="flex items-center gap-1 text-warning">
               <AlertTriangle className="h-3 w-3 shrink-0" />
-              素材激化策略当前设为「跟随焕新 / 制衣缺口」，但下方刷取顺序中这两项均未开启，双倍激化将跳过（朝夕心愿仍会自动改用默认奖励）；如需双倍也固定刷取可改为「继承兜底设置」。
-            </p>
-          )}
-          {dblFollowCraftingNoCommon && (
-            <p className="flex items-center gap-1 text-text-secondary">
-              <AlertTriangle className="h-3 w-3 shrink-0 text-warning" />
-              制衣材料默认仅刷魔物晶石（不含丝线与噗灵）；如需趁激化双倍刷取，可在下方分别开启「用体力刷纯真丝线」或「用体力刷噗灵」。
+              {missingPlanKinds.join('与')}策略当前设为「智能选择（根据收集计划）」，但刷取顺序中「焕新材料」与「制衣材料」均未开启，对应双倍将跳过；如需固定刷取可在下方改为「使用默认设置」。
             </p>
           )}
         </div>
@@ -431,6 +515,7 @@ export function RealmQueueCard({
           <div className="space-y-1.5">
             {entries.map((entry) => {
               const index = enabled.indexOf(entry.goal);
+              const drawerGoal = entry.goal === 'weekly' || entry.goal === 'glow' ? entry.goal : null;
               return (
                 <QueueRow
                   key={entry.goal}
@@ -440,17 +525,30 @@ export function RealmQueueCard({
                   estimate={queueSummary.goals[entry.goal]}
                   computing={glowComputing}
                   detailOverride={
-                    entry.goal === 'renewal' ? renewalDetail : undefined
+                    entry.goal === 'weekly'
+                      ? weeklyDetail
+                      : entry.goal === 'glow'
+                        ? glowDetail
+                        : undefined
                   }
                   warn={entry.goal === 'glow' && glowIndex >= 0 && glowIndex < enabled.length - 1}
+                  expanded={drawerGoal ? openDrawers[drawerGoal] : false}
+                  expandLabel={entry.goal === 'weekly' ? '关卡' : entry.goal === 'glow' ? '设置' : undefined}
+                  onToggleExpand={drawerGoal ? () => toggleDrawer(drawerGoal) : undefined}
                   onToggle={(on) => save(entries.map((item) => (item.goal === entry.goal ? { ...item, enabled: on } : item)))}
                 >
-                  {entry.goal === 'weekly' && entry.enabled && (
+                  {entry.goal === 'weekly' && (
                     <WeeklyTargetPicker
-                      selected={weeklyTargets(values)}
+                      selected={selectedWeekly}
                       disabled={disabled}
                       onChange={(next) => setTaskOptionValue(instanceId, taskId, 'WeeklyTargets', { type: 'checkbox', caseNames: next })}
                     />
+                  )}
+                  {entry.goal === 'glow' && (
+                    <div className="space-y-3">
+                      <RealmCollectionWorkflow instanceId={instanceId} taskId={taskId} values={values} disabled={disabled} />
+                      {renderOptions?.(collectionDrawerOptionKeys(values))}
+                    </div>
                   )}
                 </QueueRow>
               );
@@ -459,18 +557,48 @@ export function RealmQueueCard({
         </SortableContext>
       </DndContext>
 
-      <div className="flex items-center gap-2 rounded-lg border border-dashed border-border px-2.5 py-2 text-xs">
-        <Shield className="ml-6 h-4 w-4 shrink-0 text-text-muted" />
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-text-primary">兜底 · {FALLBACK_LABELS[fallback] ?? fallback}</p>
-          <p className="text-[11px] text-text-secondary">
-            {totalFiniteDays !== null && totalFiniteDays > 0 && enabled.length > 0
-              ? `以上目标完成前暂不刷兜底；约第 ${totalFiniteDays} 天清完后每日投入 ${dailyEnergy} 体力`
-              : '上面的目标都完成或未开启时，剩余活跃能量按下方「兜底副本与默认目标」设置使用'}
-          </p>
+      <div className="rounded-lg border border-dashed border-border bg-bg-secondary/40 text-xs">
+        <div className="flex min-h-[54px] items-center gap-2 px-2.5 py-2">
+          <span className="w-5 shrink-0" aria-hidden="true" />
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-bg-tertiary text-[10px] font-semibold text-text-muted">
+            默
+          </span>
+          <Shield className="h-4 w-4 shrink-0 text-text-muted" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold text-text-primary">{fallbackTitle}</p>
+            <p className="truncate text-[11px] leading-4 text-text-secondary">
+              刷取顺序完成或未开启时使用；含各幻境默认关卡与激化耗材设置
+            </p>
+          </div>
+          <div className="flex w-[124px] shrink-0 flex-col justify-center text-right tabular-nums sm:w-[144px]">
+            <span className="truncate text-[11px] font-medium text-text-secondary">{fallbackPrimaryEstimate}</span>
+            <span className="truncate text-[10px] text-text-muted">每日基准 {dailyEnergy} 体力</span>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              aria-expanded={openDrawers.fallback}
+              onClick={() => toggleDrawer('fallback')}
+              className={DRAWER_BTN_CLASS}
+            >
+              设置
+              <ChevronDown className={clsx('h-3 w-3 transition-transform', openDrawers.fallback && 'rotate-180')} />
+            </button>
+            <span className="inline-block w-9 shrink-0" aria-hidden="true" />
+          </div>
         </div>
+        {openDrawers.fallback && (
+          <div className="space-y-3 border-t border-border/70 bg-bg-primary/70 px-3 py-2.5">
+            <p className="text-[11px] leading-5 text-text-secondary">
+              「刷取顺序」中的目标都完成或未开启后，剩余活跃能量投入所选默认副本；各幻境默认目标与素材激化消耗材料均在此统一设置，方便双倍与朝夕心愿共用。
+            </p>
+            {renderOptions?.([...DEFAULT_REALM_OPTION_KEYS], {
+              JihuaTarget: '各幻境默认关卡（默认副本、双倍与朝夕共用）',
+              JihuaMaterialMode: '素材激化 · 规划与消耗材料',
+            })}
+          </div>
+        )}
       </div>
-
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-bg-secondary/60 px-2.5 py-1.5 text-[11px]">
         <span className="min-w-0 flex-1 text-text-secondary tabular-nums">{summaryText}</span>
         <div className="flex shrink-0 items-center gap-2">
@@ -525,7 +653,7 @@ export function RealmCollectionWorkflow({
   const decompose = values.CollectionDecompose?.type === 'switch' && values.CollectionDecompose.value;
 
   return (
-    <div className="mb-3 space-y-2 border-b border-border pb-3 text-xs">
+    <div className="space-y-2 border-b border-border pb-3 text-xs">
       <p className="font-medium text-text-primary">五星闪光执行方式</p>
       <div role="radiogroup" aria-label="五星闪光执行方式" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {WORKFLOW_MODES.map(({ id, title, detail }) => {

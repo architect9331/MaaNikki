@@ -1,4 +1,4 @@
-"""Maa action for the realm challenge priority queue (每周幻境 / 焕新材料 / 制衣材料 / 五星闪光 → 兜底)."""
+"""Maa action for the realm challenge priority queue (每周幻境 / 焕新材料 / 制衣材料 / 五星闪光 → 默认副本)."""
 from __future__ import annotations
 
 import traceback
@@ -61,7 +61,7 @@ class RealmQueueAction(CustomAction):
                 goals, weekly_next = goals[:index], True
             if not resumed:
                 labels = [GOAL_LABELS[goal] for goal in parse_realm_queue(order)]
-                rt.log("幻境挑战顺序：" + " → ".join(labels + ["兜底副本"]) + "。")
+                rt.log("幻境挑战顺序：" + " → ".join(labels + ["默认副本"]) + "。")
             if goals:
                 handoff, mat_kind = run_material_goals(rt, goals, lambda role: glow_shortfall(rt, role, organize))
                 if mat_kind is not None:
@@ -86,7 +86,7 @@ class RealmQueueAction(CustomAction):
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
             if not rt.stopped:
                 rt.diagnostic("realm_queue", str(error), details={"traceback": traceback.format_exc()[-3000:]})
-            rt.log(f"幻境挑战顺序中断：{error}。剩余活跃能量改用兜底副本。")
+            rt.log(f"幻境挑战顺序中断：{error}。剩余活跃能量改用默认副本。")
             handoff, failed = "fallback", True
         if rt.stopped:
             return False
@@ -103,8 +103,8 @@ class RealmQueueAction(CustomAction):
         }}
         if handoff == "fallback":
             overrides["MaaNikki_RealmEnergy"] = {"focus": {"Node.Action.Starting": (
-                "刷取顺序中断，正在用剩余活跃能量挑战兜底幻境。"
-                if failed else "刷取顺序中的目标已完成，正在用剩余活跃能量挑战兜底幻境。")}}
+                "刷取顺序中断，正在用剩余活跃能量挑战默认副本。"
+                if failed else "刷取顺序中的目标已完成，正在用剩余活跃能量挑战默认副本。")}}
         if failed:
             # The fallback still spends the energy, but settlement reports the failure.
             for name, fallback in FALLBACK_KINDS.items():

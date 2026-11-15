@@ -79,33 +79,11 @@ def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> 
 MAX_LEVEL = 10
 RENEWED_LEVEL = 11
 COSMETIC_PARTS = {"281", "282", "283", "284", "285", "286"}
-# Bubbles are spent only on clothing growth; bling and thread have other consumers.
 RENEWAL_TRACKED_KINDS = {"monster_glow"}
 RENEWAL_TRACKED_IDS = {"50361309"}
-# Common resources obtainable without stamina; excluded independently unless opted in.
+SHINY_BUBBLE_ID = "50361309"
 THREAD_ID = "3448636403"
 BLING_ID = "992617511"
-COMMON_RENEWAL_IDS = {THREAD_ID, BLING_ID}
-
-
-def farm_common_mat_flags(rt=None) -> tuple[bool, bool]:
-    """Return ``(include_thread, include_bling)`` from MaaNikki_FarmCommonMatsOption."""
-    if rt is None or getattr(rt, "context", None) is None:
-        return False, False
-    param = parameters(rt.context, "MaaNikki_FarmCommonMatsOption")
-    legacy = param.get("enabled") is True
-    include_thread = (param["thread"] is True) if "thread" in param else legacy
-    include_bling = (param["bling"] is True) if "bling" in param else legacy
-    return include_thread, include_bling
-
-
-def excluded_common_ids(*, include_thread: bool = False, include_bling: bool = False) -> set[str]:
-    excluded: set[str] = set()
-    if not include_thread:
-        excluded.add(THREAD_ID)
-    if not include_bling:
-        excluded.add(BLING_ID)
-    return excluded
 
 
 def renewal_baseline_key(role: dict) -> str:
@@ -239,16 +217,11 @@ def _goal_energy_summary(
     inventory: dict,
     crafting: dict,
     scoring: dict,
-    *,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ) -> tuple[int, int]:
     mat_defs = crafting.get("materials") or {}
     energy_total = 0
     missing_kinds = 0
-    for mid, need in goal_requirements(
-        goal, role, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-    ).items():
+    for mid, need in goal_requirements(goal, role, crafting, scoring).items():
         meta = mat_defs.get(str(mid)) or {}
         drop = int(meta.get("drop") or 0)
         energy = int(meta.get("energy") or 0)
@@ -263,9 +236,6 @@ def record_material_history(
     account: AccountState,
     crafting: dict,
     scoring: dict,
-    *,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ):
     """Record one daily point of remaining crafting/renewal energy for trend charts."""
     try:
@@ -281,25 +251,13 @@ def record_material_history(
             point = {}
             if has_renewal:
                 r_energy, r_missing = _goal_energy_summary(
-                    "renewal",
-                    data,
-                    inv,
-                    crafting,
-                    scoring,
-                    include_thread=include_thread,
-                    include_bling=include_bling,
+                    "renewal", data, inv, crafting, scoring,
                 )
                 point["renewal_energy"] = r_energy
                 point["renewal_missing"] = r_missing
             if has_wb:
                 c_energy, c_missing = _goal_energy_summary(
-                    "crafting",
-                    data,
-                    inv,
-                    crafting,
-                    scoring,
-                    include_thread=include_thread,
-                    include_bling=include_bling,
+                    "crafting", data, inv, crafting, scoring,
                 )
                 point["crafting_energy"] = c_energy
                 point["crafting_missing"] = c_missing
@@ -335,9 +293,6 @@ def goal_requirements(
     role: dict,
     crafting: dict,
     scoring: dict,
-    *,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ) -> dict[str, int]:
     """Materials a goal still needs, computed live from the wardrobe and plan data."""
     mats = role.get("materials") or {}
@@ -345,8 +300,7 @@ def goal_requirements(
         if not wardrobe_snapshot(role):
             return {}
         mat_defs = crafting.get("materials") or {}
-        # Automatic farming covers the trial crystals; bling, thread and world
-        # materials are listed in the crafting page for the player to prepare.
+        # Regular crafting farms the trial crystals; double jihua covers thread & bling when needed.
         return {mid: count for mid, count in compute_crafting_requirements(role, crafting, scoring).items()
                 if (mat_defs.get(mid) or {}).get("kind") == "monster_craft"}
     if goal == "renewal":
@@ -357,11 +311,7 @@ def goal_requirements(
             return {str(mid): int(value) for mid, value in (glow_plan.get("targets") or {}).items() if int(value) > 0}
         if not wardrobe_snapshot(role):
             return {}
-        reqs = compute_renewal_requirements(role, scoring)
-        excluded = excluded_common_ids(include_thread=include_thread, include_bling=include_bling)
-        if excluded:
-            reqs = {mid: cnt for mid, cnt in reqs.items() if str(mid) not in excluded}
-        return reqs
+        return compute_renewal_requirements(role, scoring)
     return {}
 
 
@@ -370,9 +320,6 @@ def goal_priority_requirements(
     role: dict,
     crafting: dict,
     scoring: dict,
-    *,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ) -> dict[str, int]:
     """Priority sub-requirements (e.g. from 搭配计算) that should be stocked before general goals."""
     if goal != "renewal":
@@ -381,16 +328,13 @@ def goal_priority_requirements(
     if renewal_source(mats) != "plan" or not wardrobe_snapshot(role):
         return {}
     _, prio = compute_renewal_requirements_tiered(role, scoring)
-    excluded = excluded_common_ids(include_thread=include_thread, include_bling=include_bling)
-    if excluded:
-        prio = {mid: cnt for mid, cnt in prio.items() if str(mid) not in excluded}
     return prio
 
 
 _JIHUA_TIEBREAK = {
-    "50361309": 0,    # 闪亮泡泡
-    "3448636403": 1,  # 纯真丝线
-    "992617511": 2,   # 噗灵
+    SHINY_BUBBLE_ID: 0,
+    THREAD_ID: 1,
+    BLING_ID: 2,
 }
 
 
@@ -399,36 +343,23 @@ def _jihua_requirements(
     role: dict,
     crafting: dict,
     scoring: dict,
-    *,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ) -> tuple[dict[str, int], dict[str, int]]:
     """Return (total_jihua_req, priority_jihua_req) for one goal."""
     mat_defs = crafting.get("materials") or {}
-    mats = role.get("materials") or {}
-    manual_targets = goal == "renewal" and renewal_source(mats) == "targets"
-    allow_thread = include_thread or manual_targets
-    allow_bling = include_bling or manual_targets
     if goal == "crafting":
         if not wardrobe_snapshot(role):
             return {}, {}
         raw = compute_crafting_requirements(role, crafting, scoring)
         prio_raw: dict[str, int] = {}
     elif goal == "renewal":
-        raw = goal_requirements(
-            "renewal", role, crafting, scoring, include_thread=allow_thread, include_bling=allow_bling,
-        )
-        prio_raw = goal_priority_requirements(
-            "renewal", role, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-        )
+        raw = goal_requirements("renewal", role, crafting, scoring)
+        prio_raw = goal_priority_requirements("renewal", role, crafting, scoring)
     else:
         return {}, {}
-    excluded = excluded_common_ids(include_thread=allow_thread, include_bling=allow_bling)
     total = {
         str(mid): int(count)
         for mid, count in raw.items()
         if int(count) > 0
-        and str(mid) not in excluded
         and (mat_defs.get(str(mid)) or {}).get("realm") == "jihua"
         and (mat_defs.get(str(mid)) or {}).get("level")
     }
@@ -447,24 +378,16 @@ def has_realm_material_potential(
     scoring: dict,
     *,
     realm: str,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ) -> bool:
     """Whether an enabled goal could possibly need any material from ``realm`` before backpack subtraction."""
     if realm == "jihua":
-        return bool(
-            _jihua_requirements(
-                goal, role, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-            )[0]
-        )
+        return bool(_jihua_requirements(goal, role, crafting, scoring)[0])
     mat_defs = crafting.get("materials") or {}
     return any(
         int(count) > 0
         and (mat_defs.get(str(mid)) or {}).get("realm") == realm
         and (mat_defs.get(str(mid)) or {}).get("level")
-        for mid, count in goal_requirements(
-            goal, role, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-        ).items()
+        for mid, count in goal_requirements(goal, role, crafting, scoring).items()
     )
 
 
@@ -473,14 +396,19 @@ def goal_has_jihua_potential(
     role: dict,
     crafting: dict,
     scoring: dict,
-    *,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ) -> bool:
     """Whether an enabled goal could possibly need any Jihua material before backpack subtraction."""
-    return has_realm_material_potential(
-        goal, role, crafting, scoring, realm="jihua", include_thread=include_thread, include_bling=include_bling,
-    )
+    return has_realm_material_potential(goal, role, crafting, scoring, realm="jihua")
+
+
+def goal_has_monster_potential(
+    goal: str,
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+) -> bool:
+    """Whether an enabled goal could possibly need any Monster material before backpack subtraction."""
+    return has_realm_material_potential(goal, role, crafting, scoring, realm="monster")
 
 
 def jihua_goal_deficits(
@@ -491,15 +419,11 @@ def jihua_goal_deficits(
     scoring: dict,
     *,
     multiplier: int = 2,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ) -> list[tuple]:
-    """Jihua-farmable shortfalls ranked by priority tier first, then runs needed under multiplier."""
+    """Jihua shortfalls: priority tier first, bubbles & thread by larger deficit before bling."""
     mat_defs = crafting.get("materials") or {}
     scale = max(1, int(multiplier))
-    total_reqs, prio_reqs = _jihua_requirements(
-        goal, role, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-    )
+    total_reqs, prio_reqs = _jihua_requirements(goal, role, crafting, scoring)
     items = []
     for mid, need in total_reqs.items():
         meta = mat_defs.get(mid) or {}
@@ -513,9 +437,10 @@ def jihua_goal_deficits(
             prio_deficit = max(0, int(prio_reqs.get(mid, 0)) - owned)
             eff_deficit = prio_deficit if prio_deficit > 0 else deficit
             tier = 0 if prio_deficit > 0 else 1
+            is_bling = 1 if mid == BLING_ID else 0
             runs_needed = math.ceil(eff_deficit / (base_drop * scale))
             tiebreak = _JIHUA_TIEBREAK.get(mid, 9)
-            items.append((tier, (-runs_needed, tiebreak), mid, meta, eff_deficit))
+            items.append((tier * 2 + is_bling, (-runs_needed, tiebreak, -eff_deficit), mid, meta, eff_deficit))
     items.sort()
     return items
 
@@ -526,19 +451,12 @@ def goal_deficits(
     inventory: dict,
     crafting: dict,
     scoring: dict,
-    *,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ) -> list[tuple]:
-    """Farmable shortfalls of a goal: priority tier first, trial drops before jihua, largest deficit first."""
+    """Farmable shortfalls: priority tier first, bubbles/crystals/thread by energy gap before bling."""
     mat_defs = crafting.get("materials") or {}
-    prio_reqs = goal_priority_requirements(
-        goal, role, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-    )
+    prio_reqs = goal_priority_requirements(goal, role, crafting, scoring)
     items = []
-    for mid, need in goal_requirements(
-        goal, role, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-    ).items():
+    for mid, need in goal_requirements(goal, role, crafting, scoring).items():
         meta = mat_defs.get(str(mid))
         if not meta or not meta.get("realm") or not meta.get("level"):
             continue
@@ -548,9 +466,12 @@ def goal_deficits(
             prio_deficit = max(0, int(prio_reqs.get(str(mid), 0)) - owned)
             eff_deficit = prio_deficit if prio_deficit > 0 else deficit
             tier = 0 if prio_deficit > 0 else 1
-            sub_prio = 0 if meta.get("kind") in ("monster_glow", "monster_craft") else 1
-            bucket = tier * 2 + sub_prio
-            items.append((bucket, -eff_deficit, str(mid), meta, eff_deficit))
+            is_bling = 1 if str(mid) == BLING_ID else 0
+            base_drop = max(1, int(meta.get("drop") or 1))
+            per_energy = max(1, int(meta.get("energy") or 40))
+            energy_need = math.ceil(eff_deficit / base_drop) * per_energy
+            tiebreak = _JIHUA_TIEBREAK.get(str(mid), 9)
+            items.append((tier * 2 + is_bling, (-energy_need, tiebreak, -eff_deficit), str(mid), meta, eff_deficit))
     items.sort()
     return items
 
@@ -564,20 +485,13 @@ def realm_goal_deficits(
     *,
     realm: str,
     multiplier: int = 1,
-    include_thread: bool = False,
-    include_bling: bool = False,
 ) -> list[tuple]:
     """Return unmet shortfalls for one goal restricted to ``realm`` (``jihua`` / ``monster``)."""
     if realm == "jihua":
-        return jihua_goal_deficits(
-            goal, role, inventory, crafting, scoring, multiplier=multiplier,
-            include_thread=include_thread, include_bling=include_bling,
-        )
+        return jihua_goal_deficits(goal, role, inventory, crafting, scoring, multiplier=multiplier)
     return [
         item
-        for item in goal_deficits(
-            goal, role, inventory, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-        )
+        for item in goal_deficits(goal, role, inventory, crafting, scoring)
         if (item[3] or {}).get("realm") == realm
     ]
 
@@ -590,8 +504,6 @@ def pick_realm_material_deficit(
     *,
     inventory: dict[str, int] | None = None,
     multiplier: int = 1,
-    include_thread: bool = False,
-    include_bling: bool = False,
     wardrobe_synced: bool = False,
     crafting: dict | None = None,
     scoring: dict | None = None,
@@ -620,9 +532,7 @@ def pick_realm_material_deficit(
 
     role = account.load()
     has_potential = any(
-        has_realm_material_potential(
-            goal, role, crafting, scoring, realm=realm, include_thread=include_thread, include_bling=include_bling,
-        )
+        has_realm_material_potential(goal, role, crafting, scoring, realm=realm)
         for goal in mat_goals
     )
     if not has_potential:
@@ -630,13 +540,13 @@ def pick_realm_material_deficit(
 
     if inventory is None:
         inventory = ensure_backpack_scanned(rt, account, crafting)
-        record_material_history(account, crafting, scoring, include_thread=include_thread, include_bling=include_bling)
+        record_material_history(account, crafting, scoring)
         role = account.load()
 
     for goal in mat_goals:
         deficits = realm_goal_deficits(
             goal, role, inventory, crafting, scoring,
-            realm=realm, multiplier=multiplier, include_thread=include_thread, include_bling=include_bling,
+            realm=realm, multiplier=multiplier,
         )
         if deficits:
             _, _, mid, meta, deficit = deficits[0]
@@ -713,7 +623,6 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
     """
     account = AccountState.for_runtime(ROOT, rt)
     crafting, scoring = load_catalogs()
-    include_thread, include_bling = farm_common_mat_flags(rt)
     inventory = None
     energy = None
     game = None
@@ -736,19 +645,13 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
                 wardrobe_synced = True
                 ensure_wardrobe_synced_for_materials(rt, account)
                 role = account.load()
-            reqs = goal_requirements(
-                goal, role, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-            )
+            reqs = goal_requirements(goal, role, crafting, scoring)
             if reqs:
                 if inventory is None:
                     inventory = ensure_backpack_scanned(rt, account, crafting)
-                    record_material_history(
-                        account, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-                    )
+                    record_material_history(account, crafting, scoring)
                     role = account.load()
-                deficits = goal_deficits(
-                    goal, role, inventory, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-                )
+                deficits = goal_deficits(goal, role, inventory, crafting, scoring)
             else:
                 deficits = []
             if deficits:
@@ -786,9 +689,7 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
         if gained > 0:
             inventory[mid] = int(inventory.get(mid, 0)) + gained
             record_accrual(account, mid, gained)
-            record_material_history(
-                account, crafting, scoring, include_thread=include_thread, include_bling=include_bling,
-            )
+            record_material_history(account, crafting, scoring)
             rt.log(f"幻境挑战顺序：已获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
         energy = energy_after
         last_kind = kind

@@ -37,7 +37,7 @@ function QueueChain({ goal }: { goal: RealmGoal }) {
       </span>
       <ChevronRight className="h-3 w-3 text-text-muted" aria-hidden="true" />
     </Fragment>)}
-    <span className="rounded-md border border-dashed border-border px-1.5 py-0.5 text-text-muted">兜底副本</span>
+    <span className="rounded-md border border-dashed border-border px-1.5 py-0.5 text-text-muted">默认副本</span>
   </span>;
 }
 
