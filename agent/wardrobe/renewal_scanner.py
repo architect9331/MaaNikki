@@ -363,17 +363,23 @@ def _same_rejuv_grid(first: np.ndarray | None, second: np.ndarray | None) -> boo
     return float(np.mean(diff)) < 1.5
 
 
+def _scroll_rejuv_and_park(rt, dy: int, wait_seconds: float) -> np.ndarray | None:
+    if (not rt.action("TouchMove", target=GRID_SCROLL_TARGET)
+            or not rt.pause(0.1)
+            or not rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=dy)
+            or not rt.pause(wait_seconds)
+            or not rt.action("TouchMove", target=[640, 36])
+            or not rt.pause(0.12)):
+        return None
+    return rt.capture()
+
+
 def _scroll_rejuv_to_top(rt) -> np.ndarray | None:
     frame = rt.capture()
     for _ in range(12):
         if rt.stopped or frame is None:
             return None
-        if not rt.action("TouchMove", target=GRID_SCROLL_TARGET) or not rt.pause(0.1):
-            return None
-        if not rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=14400) or not rt.pause(0.28):
-            return None
-        rt.action("TouchMove", target=[640, 36])
-        after = rt.capture()
+        after = _scroll_rejuv_and_park(rt, 14400, 0.28)
         if after is None:
             return None
         if _same_rejuv_grid(frame, after):
@@ -600,27 +606,25 @@ class RenewalScanner:
             step_dy = -4200 if is_tall else -480
             moved = False
             for attempt_dy in (step_dy, step_dy // 2, step_dy // 4):
-                if (not self.rt.action("TouchMove", target=GRID_SCROLL_TARGET)
-                        or not self.rt.pause(0.1)
-                        or not self.rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=attempt_dy)
-                        or not self.rt.pause(0.32)):
-                    break
-                self.rt.action("TouchMove", target=[640, 36])
-                after = self.rt.capture()
+                after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.32)
                 if after is None:
                     break
                 if _same_rejuv_grid(frame, after):
-                    complete = True
-                    moved = True
-                    break
+                    after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.32)
+                    if after is None:
+                        break
+                    if _same_rejuv_grid(frame, after):
+                        complete = True
+                        moved = True
+                        break
                 delta = _measure_rejuv_scroll_delta(frame, after, row_ys)
                 if delta is not None:
                     scroll_y += delta
                     frame = after
                     moved = True
                     break
-                self.rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=-attempt_dy)
-                self.rt.pause(0.25)
+                if _scroll_rejuv_and_park(self.rt, -attempt_dy, 0.25) is None:
+                    break
             if complete or not moved:
                 break
 
@@ -727,4 +731,5 @@ class RenewalScanner:
             record_material_history(self.account, self.crafting, self.scoring)
             return self.summary["complete"]
         finally:
-            self.rt.main()
+            if not self.rt.stopped:
+                self.rt.main()

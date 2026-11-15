@@ -31,13 +31,14 @@ class BlessingOrganizer(BlessingLocker):
 
     def same_ordered_cards(self, checkpoint, frame, *, shift=0, ignore_box=None):
         before = checkpoint["frame"]
+        fade = self.layout.get("bottom_fade_margin", 32)
         checked = []
         for box in checkpoint["boxes"]:
             if ignore_box is not None and list(box) == list(ignore_box):
                 continue
             x, y, w, h = box
             target_y = y - shift
-            if not self.grid[1] <= target_y <= self.grid[1] + self.grid[3] - h - 32:
+            if not self.grid[1] <= target_y <= self.grid[1] + self.grid[3] - h - fade:
                 continue
             # Compare translated patches with the existing edge matcher. The
             # level/count/lock strip must agree as well as the central artwork.
@@ -53,11 +54,14 @@ class BlessingOrganizer(BlessingLocker):
             return len({box[0] for box in checked}) == self.layout["columns"]
         return bool(checked) or ignore_box is not None and len(checkpoint["boxes"]) == 1
 
+    def _scrollbar_roi(self):
+        return [1256, self.grid[1], 14, self.grid[3] - 10]
+
     def same_ordered_view(self, checkpoint, frame, *, ignore_box=None):
         """Check every clear card plus the scroll thumb, ignoring hover lighting."""
         # Equal artwork alone cannot distinguish identical physical copies.
         return (self.same_ordered_cards(checkpoint, frame, ignore_box=ignore_box)
-                and self.same_pixels(checkpoint["frame"], frame, [1256, 72, 14, 550]))
+                and self.same_pixels(checkpoint["frame"], frame, self._scrollbar_roi()))
 
     def remember_ordered_selection(self, view):
         # Selection changes the gold backing but not acquisition order. Keep
@@ -137,7 +141,7 @@ class BlessingOrganizer(BlessingLocker):
                     "before": self.image(f"focus_{generation}_before.png", checkpoint["frame"]),
                     "after": self.image(f"focus_{generation}_after.png", frame),
                     "cards_match": self.same_ordered_cards(checkpoint, frame),
-                    "scrollbar_match": self.same_pixels(checkpoint["frame"], frame, [1256, 72, 14, 550])}
+                    "scrollbar_match": self.same_pixels(checkpoint["frame"], frame, self._scrollbar_roi())}
                 raise RuntimeError("切回后当前页条目或滚动位置改变，下次运行会重新整理")
             direction = args[0]
             delta = (self.scroll_position(checkpoint["frame"], frame) if direction > 0

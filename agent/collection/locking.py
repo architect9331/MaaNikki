@@ -148,7 +148,13 @@ class BlessingLocker(InventoryScanner):
         self.layout = deepcopy(self._base_layout)
         if self._tall_mode:
             dy = 5120 - 720
+            base_grid_h = self._base_layout["grid"][3]
             self.layout["grid"][3] += dy
+            self.layout["bottom_fade_margin"] = round(
+                self._base_layout.get("bottom_fade_margin", 32)
+                * self.layout["grid"][3]
+                / base_grid_h
+            )
             self.layout["capacity"][1] += dy
             self.layout["lock_icon"][1] += dy
             self.layout["lock_background"][1] += dy
@@ -577,13 +583,14 @@ class BlessingLocker(InventoryScanner):
         """Select acquisition order and confirm the user-supplied down arrow."""
         if self._tall_mode and self._sort_verified:
             return
+        dy = self.layout["sort_label"][1] - self._base_layout["sort_label"][1]
         generation = self.rt._focus_generation
         frame = self.clear_hover(generation)
         if not self.rt.text(self.layout["sort_label"], "获得时间", image=frame):
             # Capacity text sits beside the final option and can merge into its OCR line.
             if (not self.rt.action("Click", target=self.layout["sort_label"])
                     or not self.rt.pause(.2)
-                    or not self.rt.click_text("^获得时间$", [1055, 550, 84, 110])
+                    or not self.rt.click_text("^获得时间$", [1055, 550 + dy, 84, 110])
                     or not self.rt.pause(.3)):
                 raise RuntimeError("未能切换获得时间排序")
         reference = ROOT / "resource/image/blessing_lock/acquired_desc.png"
@@ -605,7 +612,7 @@ class BlessingLocker(InventoryScanner):
                 self._sort_verified = True
                 return
             if attempt == 0 and direction == "asc":
-                if self.rt.action("Click", target=[1237, 684]) and self.rt.pause(.3):
+                if self.rt.action("Click", target=[1237, 684 + dy]) and self.rt.pause(.3):
                     continue
             self.image("sort_direction_unknown.png", frame)
             raise RuntimeError("未确认获得时间从新到旧的排序箭头，请设为默认降序后重试")

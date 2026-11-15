@@ -293,17 +293,17 @@ class WardrobeScanner(InventoryScanner):
         self.rt.pause(.15)
         return frame
 
-    @staticmethod
-    def scroll_thumb(frame):
+    def scroll_thumb(self, frame):
         if frame is None:
             return None
-        strip = frame[130:635, 1241:1249]
+        gy, gh = self.grid[1], self.grid[3]
+        strip = frame[gy:gy + gh, 1241:1249]
         gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
         profile = gray.mean(axis=1)
         bright = np.where(profile > 205)[0]
         if len(bright) < 6:
             return None
-        return int(bright[0] + 130), int(bright[-1] + 130)
+        return int(bright[0] + gy), int(bright[-1] + gy)
 
     def at_top(self, frame):
         boxes = self.cards(frame)
@@ -312,7 +312,7 @@ class WardrobeScanner(InventoryScanner):
         if abs(min(box[1] for box in boxes) - self.layout["first_y"]) >= 4:
             return False
         thumb = self.scroll_thumb(frame)
-        return thumb is None or thumb[0] <= 144
+        return thumb is None or thumb[0] <= self.grid[1] + 14
 
     def cards(self, frame, levels=None):
         if frame is not None and self._cards_cache[0] == id(frame):

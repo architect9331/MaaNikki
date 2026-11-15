@@ -383,17 +383,23 @@ def _same_grid(first: np.ndarray | None, second: np.ndarray | None) -> bool:
     return float(np.mean(diff)) < 1.5
 
 
+def _scroll_grid_and_park(rt, dy: int, wait_seconds: float) -> np.ndarray | None:
+    if (not rt.action("TouchMove", target=GRID_SCROLL_TARGET)
+            or not rt.pause(0.1)
+            or not rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=dy)
+            or not rt.pause(wait_seconds)
+            or not rt.action("TouchMove", target=[640, 36])
+            or not rt.pause(0.12)):
+        return None
+    return rt.capture()
+
+
 def _scroll_to_top(rt) -> np.ndarray | None:
     frame = rt.capture()
     for _ in range(12):
         if rt.stopped or frame is None:
             return None
-        if not rt.action("TouchMove", target=GRID_SCROLL_TARGET) or not rt.pause(0.1):
-            return None
-        if not rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=14400) or not rt.pause(0.28):
-            return None
-        rt.action("TouchMove", target=[640, 36])
-        after = rt.capture()
+        after = _scroll_grid_and_park(rt, 14400, 0.28)
         if after is None:
             return None
         if _same_grid(frame, after):
@@ -534,27 +540,26 @@ def _scan_tab(
         step_dy = -4200 if is_tall else -960
         moved = False
         for attempt_dy in (step_dy, step_dy // 2, step_dy // 4):
-            if (not rt.action("TouchMove", target=GRID_SCROLL_TARGET)
-                    or not rt.pause(0.1)
-                    or not rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=attempt_dy)
-                    or not rt.pause(0.32)):
-                return counts, stats
-            rt.action("TouchMove", target=[640, 36])
-            after = rt.capture()
+            after = _scroll_grid_and_park(rt, attempt_dy, 0.32)
             if after is None:
                 return counts, stats
             if _same_grid(frame, after):
-                stats["complete"] = stats["unknown"] == 0
-                return counts, stats
+                # Retry once to rule out a dropped Slate scroll event before concluding end of list.
+                after = _scroll_grid_and_park(rt, attempt_dy, 0.32)
+                if after is None:
+                    return counts, stats
+                if _same_grid(frame, after):
+                    stats["complete"] = stats["unknown"] == 0
+                    return counts, stats
             delta = _measure_scroll_delta(frame, after, row_ys)
             if delta is not None:
                 scroll_y += delta
                 frame = after
                 moved = True
                 break
-            # Overshot overlap window -> rewind upward and retry smaller step.
-            rt.action("Scroll", target=GRID_SCROLL_TARGET, dx=0, dy=-attempt_dy)
-            rt.pause(0.25)
+            # Overshot overlap window -> restore cursor on grid, rewind upward, and retry smaller step.
+            if _scroll_grid_and_park(rt, -attempt_dy, 0.25) is None:
+                return counts, stats
         if not moved:
             break
     return counts, stats
@@ -625,7 +630,8 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> tuple[dict[str, int],
         summary["complete"] = bool(summary["tab1"].get("complete")) and bool(summary["tab2"].get("complete"))
         return found, summary
     finally:
-        rt.main()
+        if not rt.stopped:
+            rt.main()
 
 
 def _apply_backpack_results(
