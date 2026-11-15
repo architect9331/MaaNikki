@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import json
 import cv2
+import numpy as np
 from task_control import task_time as time
 
 from .ui import catalog, fields
@@ -15,6 +16,8 @@ class Gameplay:
     MIN_ENERGY = {"jihua": 10, "bless": 40, "monster": 40, "weekly": 60}
     PARADISE_CLAIM_LIMIT = 5
     REALM_LEVEL_ROI = [145, 90, 410, 600]
+    # Region accordion headers ("心愿原野" / "伊赞之土") have no left icon and sit at x=90..255.
+    REALM_HEADER_ROI = [65, 85, 440, 605]
     # The level list ends before the recognition ROI's right/bottom margins.
     REALM_SCROLL_ROI = [165, 105, 335, 545]
 
@@ -376,8 +379,178 @@ class Gameplay:
         catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
         InventoryStore(ROOT, catalog, self.rt).invalidate(reason, source="realm_bless")
 
+    @staticmethod
+    def _realm_chevron_state(frame, y0, y1):
+        """Classify a realm region header chevron at x=442..470 as collapsed ('v') or expanded ('^')."""
+        y0 = max(92, int(y0))
+        y1 = min(680, int(y1))
+        if y1 - y0 < 12:
+            return "unknown"
+        patch = cv2.cvtColor(frame[y0:y1, 442:470], cv2.COLOR_BGR2GRAY).astype(np.float32)
+        bg = float(np.median(np.concatenate([patch[:, :3], patch[:, -3:]], axis=1)))
+        diff = np.abs(patch - bg)
+        peak = float(diff.max())
+        if peak < 18:
+            return "unknown"
+        mask = diff >= max(15.0, peak * 0.35)
+        row_counts = mask.sum(axis=1)
+        valid = (row_counts >= 1) & (row_counts <= 20)
+        best_block, cur = [], []
+        for row_idx, ok in enumerate(valid):
+            if ok:
+                cur.append(row_idx)
+            elif cur:
+                if len(cur) > len(best_block):
+                    best_block = cur
+                cur = []
+        if len(cur) > len(best_block):
+            best_block = cur
+        if len(best_block) < 6:
+            return "unknown"
+        sub = mask[best_block[0]:best_block[-1] + 1, :]
+        third = max(2, sub.shape[0] // 3)
+
+        def _span_stats(part):
+            spans, stds = [], []
+            for row in part:
+                xs = np.where(row)[0]
+                if len(xs):
+                    spans.append(float(xs[-1] - xs[0]))
+                    stds.append(float(xs.std()))
+            return (
+                float(np.mean(spans)) if spans else 0.0,
+                float(np.mean(stds)) if stds else 0.0,
+            )
+
+        top_span, top_std = _span_stats(sub[:third])
+        bot_span, bot_std = _span_stats(sub[-third:])
+        if top_span > bot_span + 1.5 and top_std > bot_std:
+            return "collapsed"
+        if bot_span > top_span + 1.5 and bot_std > top_std:
+            return "expanded"
+        return "unknown"
+
+    def _scroll_realm_to_top(self):
+        rx, ry, rw, rh = self.REALM_SCROLL_ROI
+        frame = self.rt.capture()
+        if frame is None:
+            return None
+        before = frame[ry:ry + rh, rx:rx + rw].copy()
+        for _ in range(12):
+            if self.rt.stopped or not self.ui.scroll(self.REALM_SCROLL_ROI, 1800):
+                return None
+            frame = self.rt.capture()
+            if frame is None:
+                return None
+            current = frame[ry:ry + rh, rx:rx + rw]
+            if self.ui.scroll_unchanged(before, current):
+                return frame
+            before = current.copy()
+        return frame
+
+    def _realm_header_groups(self, frame):
+        result = self.rt.recognize(
+            "MaaNikki_Daily_OCR",
+            {"roi": self.REALM_HEADER_ROI, "expected": r"产出[：:]|心愿原野|[伊尹]赞之土"},
+            image=frame,
+        )
+        items = list(getattr(result, "filtered_results", None) or []) if result and result.hit else []
+        items.sort(key=lambda item: item.box[1])
+        groups = []
+        for item in items:
+            box = list(item.box)
+            text = re.sub(r"\s+", "", getattr(item, "text", "") or "")
+            if not text:
+                continue
+            if (groups
+                    and len(groups[-1]["items"]) == 1
+                    and "产出" not in groups[-1]["items"][0][1]
+                    and "产出" in text
+                    and 0 <= box[1] - groups[-1]["items"][0][0][1] <= 36):
+                groups[-1]["items"].append((box, text))
+            else:
+                groups.append({"items": [(box, text)]})
+        parsed = []
+        for group in groups:
+            combined = "".join(t for _, t in group["items"])
+            region_match = re.search(r"(心愿原野|[伊尹]赞之土)", combined)
+            if region_match:
+                region_key = "心愿原野" if region_match.group(1) == "心愿原野" else "伊赞之土"
+            else:
+                region_key = re.sub(r"^产出[：:]?", "", combined)
+            if not region_key:
+                continue
+            sub = next((b for b, t in group["items"] if "产出" in t), None)
+            title = next((b for b, t in group["items"] if "产出" not in t), None)
+            click_box = sub or title
+            if title is not None and sub is not None:
+                mid = (title[1] + sub[1] + sub[3]) // 2
+                y0, y1 = mid - 24, mid + 24
+            elif sub is not None:
+                y0, y1 = sub[1] - 30, sub[1] + 6
+            else:
+                y0, y1 = title[1] - 4, title[1] + 36
+            parsed.append({
+                "key": region_key,
+                "click_box": click_box,
+                "y0": y0,
+                "y1": y1,
+            })
+        return parsed
+
+    def _expand_collapsed_realm_regions(self):
+        frame = self._scroll_realm_to_top()
+        if frame is None:
+            return False
+        rx, ry, rw, rh = self.REALM_SCROLL_ROI
+        seen, expanded_any, expands = set(), False, 0
+        for _ in range(24):
+            if self.rt.stopped:
+                return expanded_any
+            headers = self._realm_header_groups(frame)
+            clicked_current = False
+            for header in headers:
+                if header["key"] in seen:
+                    continue
+                state = self._realm_chevron_state(frame, header["y0"], header["y1"])
+                if state == "expanded":
+                    seen.add(header["key"])
+                    continue
+                if state == "collapsed" and expands < 6:
+                    seen.add(header["key"])
+                    expands += 1
+                    if not self.ui.click_box(header["click_box"]) or not self.rt.pause(.45):
+                        return expanded_any
+                    expanded_any = True
+                    clicked_current = True
+                    frame = self.rt.capture()
+                    if frame is None:
+                        return expanded_any
+                    break
+            if clicked_current:
+                continue
+            before = frame[ry:ry + rh, rx:rx + rw].copy()
+            if not self.ui.scroll(self.REALM_SCROLL_ROI, -600):
+                return expanded_any
+            after = self.rt.capture()
+            if after is None:
+                return expanded_any
+            if self.ui.scroll_unchanged(before, after[ry:ry + rh, rx:rx + rw]):
+                break
+            frame = after
+        return expanded_any
+
+    def find_realm_level(self, kind, node, *, click=True):
+        """Find (and optionally click) a realm trial, expanding collapsed regions if needed."""
+        found = self.ui.find(roi=self.REALM_LEVEL_ROI, node=node, scroll_roi=self.REALM_SCROLL_ROI, click=click)
+        if found or self.rt.stopped or kind not in ("bless", "monster"):
+            return found
+        if self._expand_collapsed_realm_regions():
+            return self.ui.find(roi=self.REALM_LEVEL_ROI, node=node, scroll_roi=self.REALM_SCROLL_ROI, click=click)
+        return False
+
     def select_realm_level(self, kind, node):
-        if self.ui.find(roi=self.REALM_LEVEL_ROI, node=node, scroll_roi=self.REALM_SCROLL_ROI):
+        if self.find_realm_level(kind, node, click=True):
             return True
         if not self.rt.stopped:
             if (kind == "weekly" and self.rt.hit("MaaNikki_Weekly_PageReady")
@@ -567,8 +740,11 @@ class Gameplay:
 
     def jihua_select_target(self):
         def cost_ready():
-            return bool(self.ui.asset("ButtonJihuaSort")
-                        or self.rt.text([900, 560, 240, 100], r"激\s*化\s*材\s*料"))
+            return bool(
+                self.rt.text([900, 560, 240, 100], r"激\s*化\s*材\s*料")
+                or (not self.rt.text([740, 95, 220, 70], r"选\s*择\s*产\s*物")
+                    and self.rt.text([740, 95, 500, 430], r"预计获得|消耗材料"))
+            )
 
         target_roi = self.ui.roi("AreaJihuaTargetSelect")
         if self.ui.enter_page(

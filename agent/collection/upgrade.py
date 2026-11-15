@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import re
 
+import numpy as np
+
 from .details import COLORS
 from .locking import READY
 from .scanner import IncompleteObservation, clean_text
@@ -84,6 +86,26 @@ class UpgradeUI:
         if self.integer(fields["material_count"]) != 0:
             raise RuntimeError("未确认升级材料为空")
 
+    def _parse_preview_levels(self, raw_level, frame, current_level, maximum):
+        """Parse '等级 X » Y' even when OCR drops '»' between current and green preview levels."""
+        levels = [int(value) for value in re.findall(r"\d+", raw_level)]
+        if 1 <= len(levels) <= 2 and levels[0] == current_level and all(
+            current_level <= value <= maximum for value in levels
+        ):
+            return levels
+        x, y, w, h = self.layout["level"]
+        patch = frame[y:y + h, x:x + w].astype(np.int16)
+        b, g, r = patch[:, :, 0], patch[:, :, 1], patch[:, :, 2]
+        green = (g - r > 15) & (g > 110) & (g - b > 10)
+        xs = np.where(green)[1]
+        if len(xs) >= 10:
+            split_x = max(8, min(w - 8, int(xs.min()) - 4))
+            left_val = self.integer(clean_text(self.rt.text([x, y, split_x, h], image=frame)))
+            right_val = self.integer(clean_text(self.rt.text([x + split_x, y, w - split_x, h], image=frame)))
+            if left_val == current_level and right_val is not None and current_level <= right_val <= maximum:
+                return [left_val, right_val]
+        raise RuntimeError("升级预览等级无效，未提交升级")
+
     def full_color(self, generation, name, maximum=10):
         fields, frame = self.read(generation, ("name", "level", "maxed", "color"))
         colors = {mapped for label, mapped in COLORS.items() if label in fields["color"]}
@@ -146,10 +168,7 @@ class UpgradeUI:
             fields, frame = self.read(generation, ("name", "level", "bling", "cost", "material_count", "material_filter"))
             if fields["name"] != current["name"]:
                 raise RuntimeError("放入材料后升级对象发生变化")
-            levels = [int(value) for value in re.findall(r"\d+", fields["level"])]
-            if (not 1 <= len(levels) <= 2 or levels[0] != current["level"]
-                    or any(not current["level"] <= value <= maximum for value in levels)):
-                raise RuntimeError("升级预览等级无效，未提交升级")
+            levels = self._parse_preview_levels(fields["level"], frame, current["level"], maximum)
             amount = self.integer(fields["material_count"])
             if amount is None:
                 raise RuntimeError("升级材料数量无法读取")

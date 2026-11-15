@@ -37,8 +37,7 @@ class CollectionSupply:
                 self.check_list(child)
                 if not clone.override_pipeline({"MaaNikki_Bless_Level": {"expected": re.escape(candidate)}}):
                     raise RuntimeError("追全幻境设置未能应用")
-                found = child.ui.find(roi=game.REALM_LEVEL_ROI, node="MaaNikki_Bless_Level",
-                                      scroll_roi=game.REALM_SCROLL_ROI, click=False)
+                found = bool(game.find_realm_level(kind, "MaaNikki_Bless_Level", click=False))
                 self.check_list(child)
                 entry = {"source": candidate, "status": "found" if found else "not_found_in_list"}
                 availability.append(entry)
