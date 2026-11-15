@@ -16,12 +16,16 @@ from daily.runtime import Executors, ROOT
 from game_view import ALLOWED_FRAME_SIZES, GameFrameSizeError, is_clipped_game_frame, require_game_frame
 
 
-STARTUP_HUNG_TIMEOUT = 90.0
+STARTUP_HUNG_TIMEOUT = 180.0
+STARTUP_LOADING_HUNG_TIMEOUT = 240.0
 _WM_NULL = 0x0000
 _SMTO_BLOCK = 0x0001
 _SMTO_ABORTIFHUNG = 0x0002
 _ERROR_TIMEOUT = 1460
+_PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+_STILL_ACTIVE = 259
 _U32 = None
+_K32 = None
 
 
 def _startup_user32():
@@ -34,6 +38,8 @@ def _startup_user32():
         u32.IsWindow.restype = wintypes.BOOL
         u32.IsHungAppWindow.argtypes = [wintypes.HWND]
         u32.IsHungAppWindow.restype = wintypes.BOOL
+        u32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+        u32.GetWindowThreadProcessId.restype = wintypes.DWORD
         u32.SendMessageTimeoutW.argtypes = [
             wintypes.HWND,
             wintypes.UINT,
@@ -46,6 +52,44 @@ def _startup_user32():
         u32.SendMessageTimeoutW.restype = ctypes.c_ssize_t
         _U32 = u32
     return _U32
+
+
+def _startup_kernel32():
+    global _K32
+    if os.name != "nt":
+        return None
+    if _K32 is None:
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        k32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        k32.OpenProcess.restype = wintypes.HANDLE
+        k32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        k32.GetExitCodeProcess.restype = wintypes.BOOL
+        k32.CloseHandle.argtypes = [wintypes.HANDLE]
+        k32.CloseHandle.restype = wintypes.BOOL
+        _K32 = k32
+    return _K32
+
+
+def _is_window_process_alive(u32, hwnd) -> bool:
+    if u32 is None or not hwnd or not u32.IsWindow(hwnd):
+        return False
+    k32 = _startup_kernel32()
+    if k32 is None:
+        return True
+    pid = wintypes.DWORD(0)
+    u32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+    if not pid.value:
+        return True
+    proc = k32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+    if not proc:
+        return bool(u32.IsWindow(hwnd))
+    try:
+        code = wintypes.DWORD(0)
+        if k32.GetExitCodeProcess(proc, ctypes.byref(code)):
+            return code.value == _STILL_ACTIVE and bool(u32.IsWindow(hwnd))
+        return bool(u32.IsWindow(hwnd))
+    finally:
+        k32.CloseHandle(proc)
 
 
 def _is_window_unresponsive(u32, hwnd) -> bool:
@@ -103,7 +147,8 @@ class StartGameAction(CustomAction):
         )
         bootstrap = options.get("bootstrap") is True
         already_running = options.get("already_running") is True
-        if not 30 <= timeout <= 900:
+        min_timeout = 1 if bootstrap else 30
+        if not min_timeout <= timeout <= 900:
             self.stop_reason = "启动等待上限应在30至900秒之间。"
             runtime.log(self.stop_reason)
             context.tasker.post_stop()
@@ -120,6 +165,7 @@ class StartGameAction(CustomAction):
         orig_check_focus = runtime.check_focus
         in_hung_guard = False
         wait_entered_at = None
+        startup_state = {"loading_active": False}
 
         def _ensure_session_adapter():
             nonlocal orig_adapter_hung, startup_adapter_hung
@@ -134,6 +180,9 @@ class StartGameAction(CustomAction):
                     cur.adapter.hung = startup_adapter_hung
             return cur, cur.adapter
 
+        def _hung_budget_cap() -> float:
+            return STARTUP_LOADING_HUNG_TIMEOUT if startup_state["loading_active"] else STARTUP_HUNG_TIMEOUT
+
         def wait_startup_responsive():
             nonlocal in_hung_guard
             if in_hung_guard or u32 is None:
@@ -142,14 +191,14 @@ class StartGameAction(CustomAction):
             if cur is None or cur._background_observation or adapter is None or not adapter.hwnd:
                 return
             hwnd = adapter.hwnd
-            if not u32.IsWindow(hwnd):
+            if not _is_window_process_alive(u32, hwnd):
                 cur.window_closed()
             if not _is_window_unresponsive(u32, hwnd):
                 return
             in_hung_guard = True
             hung_begin = wall_time.monotonic()
             remaining_budget = (wall_started_at + timeout + cur.paused_seconds) - hung_begin
-            max_wait = min(STARTUP_HUNG_TIMEOUT, max(20.0, remaining_budget))
+            max_wait = min(_hung_budget_cap(), max(20.0, remaining_budget))
             try:
                 for inputs in list(cur.inputs):
                     inputs.release()
@@ -157,7 +206,7 @@ class StartGameAction(CustomAction):
                 while _is_window_unresponsive(u32, hwnd):
                     if cur.stopped() or context.tasker.stopping:
                         raise TaskStopped("任务已停止。")
-                    if not u32.IsWindow(hwnd):
+                    if not _is_window_process_alive(u32, hwnd):
                         cur.window_closed()
                     elapsed_hung = wall_time.monotonic() - hung_begin
                     if not logged_stall and elapsed_hung >= 5.0:
@@ -193,7 +242,7 @@ class StartGameAction(CustomAction):
                 remaining_budget = (
                     wall_started_at + timeout + session.paused_seconds + in_flight_pause
                 ) - hung_begin
-                max_wait = min(STARTUP_HUNG_TIMEOUT, max(20.0, remaining_budget))
+                max_wait = min(_hung_budget_cap(), max(20.0, remaining_budget))
                 try:
                     for inputs in list(session.inputs):
                         inputs.release()
@@ -201,7 +250,7 @@ class StartGameAction(CustomAction):
                     while raw_hung_fn():
                         if session.stopped() or context.tasker.stopping:
                             raise TaskStopped("任务已停止。")
-                        if not u32.IsWindow(hwnd):
+                        if not _is_window_process_alive(u32, hwnd):
                             session.window_closed()
                         elapsed_hung = wall_time.monotonic() - hung_begin
                         if not logged_stall and elapsed_hung >= 5.0:
@@ -278,14 +327,18 @@ class StartGameAction(CustomAction):
         if session is not None and session.adapter is not None and orig_adapter_hung is not None:
             session.adapter.hung = startup_adapter_hung
         try:
-            return self._run_startup_loop(context, options, runtime, timeout, bootstrap, already_running)
+            return self._run_startup_loop(
+                context, options, runtime, timeout, bootstrap, already_running, startup_state
+            )
         finally:
             if session is not None and orig_session_wait is not None:
                 session.wait = orig_session_wait
             if session is not None and session.adapter is not None and orig_adapter_hung is not None:
                 session.adapter.hung = orig_adapter_hung
 
-    def _run_startup_loop(self, context, options, runtime, timeout, bootstrap, already_running):
+    def _run_startup_loop(
+        self, context, options, runtime, timeout, bootstrap, already_running, startup_state=None
+    ):
         started_at = time.monotonic()
         deadline = started_at+timeout
         entered, logged_in, update_attempts = 0, 0, 0
@@ -410,6 +463,7 @@ class StartGameAction(CustomAction):
                     continue
                 if image is None or image.size == 0:
                     return None
+                ready_to_adjust = False
                 if (image.shape[1], image.shape[0]) not in ALLOWED_FRAME_SIZES or is_clipped_game_frame(image):
                     now_mono = time.monotonic()
                     ready_to_adjust = (
@@ -428,7 +482,10 @@ class StartGameAction(CustomAction):
                     if ready_to_adjust:
                         from tall_window import ensure_16_9_window
                         adjusted = ensure_16_9_window(
-                            runtime.controller, context=context, notify=runtime.log
+                            runtime.controller,
+                            context=context,
+                            notify=runtime.log,
+                            write_log=False,
                         )
                     else:
                         from tall_window import heal_16_9_window
@@ -444,8 +501,9 @@ class StartGameAction(CustomAction):
                     # Unreal can re-apply saved windowed dimensions right after login or
                     # clicking Enter Game, racing the first borderless resize attempt.
                     # Give active transitions a bounded retry window before failing.
+                    from tall_window import is_resolution_adjustment_blocked
                     retry_deadline = min(deadline, max(frame_deadline, mismatch_since + 6.0))
-                    if now_err >= retry_deadline:
+                    if now_err >= retry_deadline or (ready_to_adjust and is_resolution_adjustment_blocked()):
                         self.stop_reason = str(error)
                         runtime.evidence.remember_frame(image, runtime._focus_generation)
                         runtime.validate_frame(image)
@@ -493,6 +551,10 @@ class StartGameAction(CustomAction):
             if (restart or update or reward or main or enter or login
                     or account_prompt or updating or intro or loading):
                 unknown_since = None
+            if startup_state is not None:
+                startup_state["loading_active"] = bool(
+                    loading or updating or update or update_waiting
+                )
             if restart:
                 if not bootstrap or options.get("allow_restart", True) is not True:
                     # The regular batch must not continue on a window that is

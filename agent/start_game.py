@@ -7,6 +7,7 @@ import ctypes
 from ctypes import wintypes
 from datetime import datetime
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -449,7 +450,7 @@ def prepare_game(timeout, record, options=None):
     record.update(success=False, stage="enter_game")
     save_record(record)
     hwnd = game_window()
-    while hwnd and remaining >= 30:
+    while hwnd and remaining >= (1.0 if restarts == 0 else 5.0):
         preparing_at = time.monotonic()
         with startup_step(record, "focus_game"):
             if not focus_window(hwnd):
@@ -478,16 +479,17 @@ def prepare_game(timeout, record, options=None):
             if not tasker.bind(resource, controller):
                 raise RuntimeError("无法建立进入游戏的启动会话。")
         remaining -= time.monotonic()-preparing_at
-        if remaining < 30:
+        if remaining <= 0:
             break
         action = handlers["nikki.start_game"]
         record["stage"] = "enter_game"
         save_record(record)
         try:
             from tall_window import is_auto_adjust_resolution_enabled
+            action_timeout = min(900, max(1, math.ceil(remaining)))
             result = tasker.post_task("MaaNikki_StartGame", {
                 "MaaNikki_StartGame": {"custom_action_param": {
-                    "timeout": min(900, int(remaining)), "bootstrap": True,
+                    "timeout": action_timeout, "bootstrap": True,
                     "allow_restart": restarts < 3,
                     "already_running": bool(record.get("already_running")) and restarts == 0,
                 }},
@@ -509,10 +511,10 @@ def prepare_game(timeout, record, options=None):
                 record.update(success=True, stage="ready", restarts=restarts,
                               game_hwnd=hwnd, game_class="UnrealWindow")
                 return
-            if getattr(action, "window_closed", False) and restarts < 3 and remaining >= 30:
+            if getattr(action, "window_closed", False) and restarts < 3 and remaining >= 5.0:
                 prev_hwnd = hwnd
                 wait_closed_at = time.monotonic()
-                rebind_deadline = wait_closed_at + min(5.0, max(0.0, remaining - 30))
+                rebind_deadline = wait_closed_at + min(5.0, max(0.0, remaining - 2.0))
                 rebound_hwnd = None
                 while time.monotonic() < rebind_deadline:
                     candidate = game_window()
