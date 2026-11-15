@@ -20,9 +20,18 @@ from message_log import write_message
 from navigation.models import maps
 from navigation.vision import Locator
 from vision import prepared_template
+from . import EDGE_RANGE_RATIO, OUTER_RING_RATIO
 from .matching import BigMapMatcher, MinimapMatcher, minimap_hint
 from .pearpal import PearPal
 from .window import OverlayWindow
+
+
+def _kind_family(kind: str) -> str:
+    return "box" if kind.startswith("box_") else kind
+
+
+def _angle_diff(a: float, b: float) -> float:
+    return (a - b + math.pi) % (2.0 * math.pi) - math.pi
 
 
 REGIONS = {
@@ -516,17 +525,17 @@ class MapMask:
                 _save_state(last_known_map, player_seeds, bigmap_seeds, bigmap_scales)
 
     def _project(self, locator, x, y, scale, center, bounds, circle):
+        if circle:
+            return self._project_minimap(locator, x, y, scale, circle)
         cx, cy = center
         left, top, right, bottom = bounds
         candidates, hint = self.data.visible(locator.spec.id,
             (x+(left-cx)*scale, y+(top-cy)*scale, x+(right-cx)*scale, y+(bottom-cy)*scale),
             self.kinds)
         grouped = {}
-        merge_r = 0.0 if circle else 8.0
+        merge_r = 8.0
         for point in candidates:
             sx, sy = cx+(point.x-x)/scale, cy+(point.y-y)/scale
-            if circle and math.hypot(sx-cx, sy-cy) > circle[2]-6:
-                continue
             key = (round(sx), round(sy), point.kind)
             if merge_r and key not in grouped:
                 near = next((k for k in grouped
@@ -535,3 +544,90 @@ class MapMask:
                     key = near
             grouped.setdefault(key, []).append(point)
         return tuple((*key, len(items), tuple(items)) for key, items in grouped.items()), hint
+
+    def _project_minimap(self, locator, x, y, scale, circle):
+        cx, cy, r_in = circle[:3]
+        r_out = r_in * OUTER_RING_RATIO
+        r_max = r_in * EDGE_RANGE_RATIO
+        candidates, hint = self.data.visible(
+            locator.spec.id,
+            (x - r_max * scale, y - r_max * scale, x + r_max * scale, y + r_max * scale),
+            self.kinds,
+        )
+        measured = []
+        for point in candidates:
+            dx = (point.x - x) / scale
+            dy = (point.y - y) / scale
+            dist = math.hypot(dx, dy)
+            if dist <= r_max:
+                measured.append((dist, dx, dy, point))
+        measured.sort(key=lambda item: item[0])
+
+        inside = []
+        outside = []
+        for dist, dx, dy, point in measured:
+            if dist <= r_out:
+                sx_p, sy_p = cx + dx, cy + dy
+                cluster = next(
+                    (g for g in inside if g["kind"] == point.kind and math.hypot(sx_p - g["x"], sy_p - g["y"]) <= 7.0),
+                    None,
+                )
+                if cluster is not None:
+                    cluster["items"].append(point)
+                else:
+                    inside.append({"x": sx_p, "y": sy_p, "d": dist, "dx": dx, "dy": dy,
+                                   "kind": point.kind, "items": [point]})
+            else:
+                outside.append((dist, dx, dy, point))
+
+        edge = []
+        min_sector_rad = math.radians(28.0)
+        rim_near_rad = math.radians(16.0)
+        nudge_rad = math.radians(10.5)
+        family_counts = {}
+        for dist, dx, dy, point in outside:
+            fam = _kind_family(point.kind)
+            if family_counts.get(fam, 0) >= 4:
+                continue
+            ang = math.atan2(dy, dx)
+            if any(e["fam"] == fam and abs(_angle_diff(ang, e["ang"])) < min_sector_rad for e in edge):
+                continue
+            if any(g["kind"] == point.kind and g["d"] >= r_out - 12.0
+                   and abs(_angle_diff(ang, math.atan2(g["dy"], g["dx"]))) < rim_near_rad
+                   for g in inside):
+                continue
+            placed_ang = ang
+            if any(abs(_angle_diff(placed_ang, e["ang"])) < nudge_rad for e in edge):
+                best_ang = placed_ang
+                best_sep = -1.0
+                for mult in (1.0, -1.0, 1.8, -1.8):
+                    cand_ang = placed_ang + mult * nudge_rad
+                    sep = min(abs(_angle_diff(cand_ang, e["ang"])) for e in edge)
+                    if sep > best_sep:
+                        best_sep = sep
+                        best_ang = cand_ang
+                placed_ang = best_ang
+            ux, uy = math.cos(placed_ang), math.sin(placed_ang)
+            family_counts[fam] = family_counts.get(fam, 0) + 1
+            edge.append({"d": dist, "ang": placed_ang, "ux": ux, "uy": uy,
+                         "kind": point.kind, "fam": fam, "items": (point,)})
+
+        output = []
+        for item in sorted(edge, key=lambda e: -e["d"]):
+            dist_norm = round(min(1.0, max(0.0, (item["d"] - r_out) / max(1e-3, r_max - r_out))), 2)
+            rx = round(cx + item["ux"] * r_out, 1)
+            ry = round(cy + item["uy"] * r_out, 1)
+            output.append((
+                rx, ry, item["kind"], 1, item["items"],
+                (3, dist_norm, round(item["ux"], 3), round(item["uy"], 3)),
+            ))
+        for grp in sorted(inside, key=lambda g: -g["d"]):
+            dist = grp["d"]
+            zone = 1 if dist <= r_in else 2
+            dist_norm = 0.0 if zone == 1 else round(min(1.0, max(0.0, (dist - r_in) / max(1e-3, r_out - r_in))), 2)
+            ux, uy = (grp["dx"] / dist, grp["dy"] / dist) if dist > 1e-6 else (0.0, -1.0)
+            output.append((
+                round(grp["x"], 1), round(grp["y"], 1), grp["kind"], len(grp["items"]), tuple(grp["items"]),
+                (zone, dist_norm, round(ux, 3), round(uy, 3)),
+            ))
+        return tuple(output), hint

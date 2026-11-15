@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes as w
+from functools import lru_cache
+import math
 import numpy as np
 
 from overlay_style import (
@@ -19,7 +21,8 @@ from overlay_style import (
     render_top_center_banner,
     resolve_overlay_theme,
 )
-from .icons import marker_icon, ui_glyph
+from . import OUTER_RING_RATIO
+from .icons import EDGE_ANGLE_STEPS, edge_pip_icon, marker_icon, ui_glyph
 
 
 def split_exploration_hint(hint: str) -> tuple[str, str, str]:
@@ -49,6 +52,86 @@ def _wrap_lines(text, width_chars=21, max_lines=3):
             if len(lines) >= max_lines:
                 return lines
     return lines or ["暂无文字说明"]
+
+
+def _over_layer(dst: np.ndarray, bgr: tuple[int, int, int] | np.ndarray, alpha_map: np.ndarray) -> None:
+    alpha = np.clip(alpha_map, 0.0, 1.0)[..., None]
+    if not np.any(alpha > 1e-4):
+        return
+    cur = dst.astype(np.float32)
+    col = np.asarray(bgr, dtype=np.float32)
+    out_rgb = col * alpha + cur[..., :3] * (1.0 - alpha)
+    out_a = alpha * 255.0 + cur[..., 3:] * (1.0 - alpha)
+    dst[:] = np.clip(np.rint(np.concatenate([out_rgb, out_a], axis=-1)), 0, 255).astype(np.uint8)
+
+
+@lru_cache(maxsize=8)
+def _outer_ring_stamp(
+    rx: int,
+    ry: int,
+    frac_x: float,
+    frac_y: float,
+    r_in: float,
+    r_out: float,
+    sx: float,
+    sy: float,
+    s: float,
+    hud_bg_bgr: tuple[int, int, int],
+    accent_bgr: tuple[int, int, int],
+) -> np.ndarray:
+    w_box, h_box = rx * 2 + 1, ry * 2 + 1
+    stamp = np.zeros((h_box, w_box, 4), dtype=np.uint8)
+    yy, xx = np.ogrid[:h_box, :w_box]
+    dist = np.hypot((xx - (rx + frac_x)) / max(1e-3, sx), (yy - (ry + frac_y)) / max(1e-3, sy))
+    annulus = np.clip((dist - (r_in + 0.5)) / 2.0, 0.0, 1.0) * np.clip(r_out + 0.5 - dist, 0.0, 1.0)
+    _over_layer(stamp, hud_bg_bgr, annulus * 0.05)
+    px_err = np.abs(dist - r_out) * s
+    shadow_alpha = np.clip((2.2 * s - px_err) / max(1.0, 1.4 * s), 0.0, 1.0) * 0.38
+    _over_layer(stamp, (16, 15, 22), shadow_alpha)
+    ring_col = mix_bgr(accent_bgr, (245, 248, 255), 0.60)
+    core_alpha = np.clip((1.15 * s - px_err) / max(0.8, 0.75 * s), 0.0, 1.0) * 0.56
+    _over_layer(stamp, ring_col, core_alpha)
+    return stamp
+
+
+def _draw_outer_ring(pixels: np.ndarray, cx: float, cy: float, r_in: float, r_out: float,
+                     sx: float, sy: float, s: float, theme) -> None:
+    cx_px, cy_px = cx * sx, cy * sy
+    ix, iy = round(cx_px), round(cy_px)
+    rx = math.ceil(r_out * sx) + 4
+    ry = math.ceil(r_out * sy) + 4
+    stamp = _outer_ring_stamp(
+        rx, ry, round(cx_px - ix, 2), round(cy_px - iy, 2),
+        r_in, r_out, round(sx, 4), round(sy, 4), round(s, 4),
+        theme.hud_bg_bgr, theme.accent_bgr,
+    )
+    _blend_stamp(pixels, stamp, ix - rx, iy - ry)
+
+
+def _clamp_ray_to_viewport(cx: float, cy: float, px: float, py: float,
+                           pad_l: float, pad_t: float, pad_r: float, pad_b: float) -> tuple[float, float]:
+    dx, dy = px - cx, py - cy
+    t = 1.0
+    if dx < 0.0 and px < pad_l:
+        t = min(t, (pad_l - cx) / dx)
+    elif dx > 0.0 and px > pad_r:
+        t = min(t, (pad_r - cx) / dx)
+    if dy < 0.0 and py < pad_t:
+        t = min(t, (pad_t - cy) / dy)
+    elif dy > 0.0 and py > pad_b:
+        t = min(t, (pad_b - cy) / dy)
+    t = max(0.0, min(1.0, t))
+    return cx + dx * t, cy + dy * t
+
+
+def _blend_premul_stamp(pixels: np.ndarray, stamp: np.ndarray, left: int, top: int, opacity: float = 1.0) -> None:
+    if opacity >= 0.999:
+        _blend_stamp(pixels, stamp, left, top)
+        return
+    if opacity <= 0.0:
+        return
+    scaled = np.clip(np.rint(stamp.astype(np.float32) * opacity), 0, 255).astype(np.uint8)
+    _blend_stamp(pixels, scaled, left, top)
 
 
 class LayeredSurface:
@@ -116,9 +199,48 @@ class LayeredSurface:
             return handle
 
         try:
+            if circle and points:
+                cx_c, cy_c, r_in = circle[:3]
+                _draw_outer_ring(pixels, cx_c, cy_c, r_in, r_in * OUTER_RING_RATIO, sx, sy, s, theme)
             size = max(10, round((24 if circle else 38) * s))
             for entry in points:
                 x, y, kind, count = entry[:4]
+                meta = entry[5] if len(entry) >= 6 else None
+                if circle and meta is not None:
+                    zone, dist_norm, ux, uy = meta
+                    cx_c, cy_c = circle[0], circle[1]
+                    sx_safe, sy_safe = max(1e-3, sx), max(1e-3, sy)
+                    if zone == 3:
+                        u_ease = dist_norm ** 0.85
+                        icon_sz = max(10, round((17.5 - 7.5 * u_ease) * s))
+                        opacity = 0.90 - 0.64 * u_ease
+                        chev_reach = icon_sz * 0.56 + max(4.5, icon_sz * 0.44) * 1.05
+                        reach_x = max(icon_sz * 0.56, chev_reach * abs(ux) + icon_sz * 0.25) + 2.0
+                        reach_y = max(icon_sz * 0.56, chev_reach * abs(uy) + icon_sz * 0.25) + 2.0
+                        pad_l = (reach_x if ux < 0 else icon_sz * 0.56 + 2.0) / sx_safe
+                        pad_r = 1280.0 - (reach_x if ux > 0 else icon_sz * 0.56 + 2.0) / sx_safe
+                        pad_t = (reach_y if uy < 0 else icon_sz * 0.56 + 2.0) / sy_safe
+                        pad_b = 720.0 - (reach_y if uy > 0 else icon_sz * 0.56 + 2.0) / sy_safe
+                        px_720, py_720 = _clamp_ray_to_viewport(cx_c, cy_c, x, y, pad_l, pad_t, pad_r, pad_b)
+                        step = round(math.degrees(math.atan2(uy, ux)) / (360.0 / EDGE_ANGLE_STEPS)) % EDGE_ANGLE_STEPS
+                        pip, pad_off = edge_pip_icon(kind, icon_sz, step)
+                        _blend_premul_stamp(pixels, pip, round(px_720 * sx - pad_off),
+                                            round(py_720 * sy - pad_off), opacity)
+                    else:
+                        if zone == 1:
+                            icon_sz = max(10, round(24 * s))
+                            opacity = 1.0
+                        else:
+                            icon_sz = max(10, round(24 * (0.94 - 0.16 * dist_norm) * s))
+                            opacity = 0.94 - 0.22 * dist_norm
+                        pad_x = (icon_sz * 0.5 + 1.5) / sx_safe
+                        pad_y = (icon_sz * 0.5 + 1.5) / sy_safe
+                        px_720, py_720 = _clamp_ray_to_viewport(
+                            cx_c, cy_c, x, y, pad_x, pad_y, 1280.0 - pad_x, 720.0 - pad_y)
+                        icon = marker_icon(kind, icon_sz, badge=True)
+                        _blend_premul_stamp(pixels, icon, round(px_720 * sx - icon_sz / 2),
+                                            round(py_720 * sy - icon_sz / 2), opacity)
+                    continue
                 is_active = (not circle and active_key is not None
                              and (round(x), round(y), kind) == active_key)
                 icon_sz = round(size * 1.12) if is_active else size

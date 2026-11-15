@@ -335,7 +335,10 @@ class OverlayWindow:
                                         card_data["anchor"], card_data["index"], card_data["total"],
                                         card_data["hover"])
                         theme = resolve_overlay_theme()
-                        draw_coords = tuple(entry[:4] for entry in markers)
+                        draw_coords = tuple(
+                            entry[:4] + (entry[5],) if len(entry) >= 6 else entry[:4]
+                            for entry in markers
+                        )
                         content = (draw_coords, "" if hud_alive else hint, circle, active_key, card_sig,
                                    theme.mode, theme.accent_name)
                         if content != rendered:

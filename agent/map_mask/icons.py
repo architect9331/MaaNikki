@@ -214,3 +214,67 @@ def ui_glyph(kind: str, size: int, *, active: bool = False, color_bgr: tuple[int
         _blend(canvas, _poly_mask(extent, unit, inner), inner_col)
     result = cv2.resize(canvas, (size, size), interpolation=cv2.INTER_AREA)
     return np.clip(np.rint(result), 0, 255).astype(np.uint8)
+
+
+EDGE_ANGLE_STEPS = 120
+
+KIND_EDGE_COLORS = {
+    "star": (232, 168, 255),
+    "dewdrop": (255, 214, 136),
+    "chest": (120, 218, 255),
+    "box_high": (255, 168, 212),
+    "box_mid": (176, 228, 172),
+    "box_low": (224, 198, 168),
+}
+
+
+@lru_cache(maxsize=256)
+def edge_pip_icon(kind: str, size: int, angle_step: int) -> tuple[np.ndarray, int]:
+    """Build a cached premultiplied BGRA rim badge with an outward directional chevron."""
+    color_bgr = KIND_EDGE_COLORS.get(kind, (224, 212, 248))
+    ang = (angle_step % EDGE_ANGLE_STEPS) * (2.0 * math.pi / EDGE_ANGLE_STEPS)
+    ux, uy = math.cos(ang), math.sin(ang)
+    chev_len = max(4.5, size * 0.44)
+    chev_dist = size * 0.56 + chev_len * 0.35
+    pad = math.ceil(chev_dist + chev_len * 0.65 + 3)
+    full = pad * 2 + 1
+    canvas = np.zeros((full, full, 4), dtype=np.float32)
+    center = float(pad)
+    yy, xx = np.ogrid[:full, :full]
+    d_c = np.hypot(xx - center, yy - center)
+    disc_r = size * 0.54
+    rim_outer = np.clip(disc_r + 0.6 - d_c, 0.0, 1.0)
+    rim_inner = np.clip(disc_r - 0.8 - d_c, 0.0, 1.0)
+    sh_d = np.hypot(xx - center, yy - (center + 1.0))
+    sh_a = np.clip(disc_r + 1.4 - sh_d, 0.0, 1.0) * 0.38
+
+    chev_cx = center + ux * (disc_r + chev_len * 0.45)
+    chev_cy = center + uy * (disc_r + chev_len * 0.45)
+    perp_x, perp_y = -uy, ux
+    length = chev_len * 0.65
+    width = chev_len * 0.58
+    pts = np.round([
+        (chev_cx + ux * length, chev_cy + uy * length),
+        (chev_cx - ux * length * 0.55 + perp_x * width, chev_cy - uy * length * 0.55 + perp_y * width),
+        (chev_cx - ux * length * 0.12, chev_cy - uy * length * 0.12),
+        (chev_cx - ux * length * 0.55 - perp_x * width, chev_cy - uy * length * 0.55 - perp_y * width),
+    ]).astype(np.int32)
+    cmask = np.zeros((full, full), dtype=np.uint8)
+    cv2.fillPoly(cmask, [pts], 255, lineType=cv2.LINE_AA)
+    cout = cv2.dilate(cmask, np.ones((3, 3), np.uint8))
+
+    _blend(canvas, sh_a, (18, 16, 24), 0.35)
+    _blend(canvas, cout.astype(np.float32) / 255.0, (24, 24, 34), 0.72)
+    _blend(canvas, cmask.astype(np.float32) / 255.0, color_bgr, 1.0)
+    _blend(canvas, rim_outer, color_bgr, 0.88)
+    _blend(canvas, rim_inner, (36, 40, 58), 0.76)
+
+    sym_sz = max(8, round(size * 0.88))
+    sym = marker_icon(kind, sym_sz, badge=False).astype(np.float32)
+    x0 = pad - sym_sz // 2
+    y0 = pad - sym_sz // 2
+    sub = canvas[y0:y0 + sym_sz, x0:x0 + sym_sz]
+    sa = sym[..., 3:4] / 255.0
+    sub[..., :3] = sym[..., :3] + sub[..., :3] * (1.0 - sa)
+    sub[..., 3:4] = sym[..., 3:4] + sub[..., 3:4] * (1.0 - sa)
+    return np.clip(np.rint(canvas), 0, 255).astype(np.uint8), pad
