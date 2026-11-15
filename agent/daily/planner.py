@@ -98,10 +98,12 @@ def select_free(cards: list[Card], score: int) -> list[Card]:
     return ordered
 
 
-def select_energy(cards: list[Card], score: int, preferred: str) -> Card | None:
+def select_energy(cards: list[Card], score: int, preferred: str, *, rank_key=None) -> Card | None:
     candidates = [c for c in cards if c.rule and c.rule.energy and c.rule.key != "energy"]
     if score >= 500 or not candidates:
         return None
+    if rank_key is not None:
+        return min(candidates, key=rank_key)
     # Specific realm cards use the default minimum; cumulative-energy credit
     # is verified after the separately selected energy-clearing workflow.
     return min(candidates, key=lambda c: (

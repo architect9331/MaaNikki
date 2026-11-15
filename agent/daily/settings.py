@@ -39,7 +39,16 @@ def option_overrides(task: dict, definition: dict, extra_roots=()) -> dict:
 
     def merge(value):
         for node, fields in value.items():
-            result.setdefault(node, {}).update(copy.deepcopy(fields))
+            target = result.setdefault(node, {})
+            for field, item in copy.deepcopy(fields).items():
+                if (
+                    field == "custom_action_param"
+                    and isinstance(target.get(field), dict)
+                    and isinstance(item, dict)
+                ):
+                    target[field].update(item)
+                else:
+                    target[field] = item
 
     def visit(name):
         option = definitions.get(name, {})
@@ -73,7 +82,7 @@ def option_overrides(task: dict, definition: dict, extra_roots=()) -> dict:
                 visit(child)
     task_def = next((item for item in definition.get("task", []) if item.get("name") == task.get("name")),
                     definition.get("task", [{}])[0])
-    for name in [*task_def.get("option", []), *extra_roots]:
+    for name in dict.fromkeys([*task_def.get("option", []), *extra_roots]):
         visit(name)
     return result
 

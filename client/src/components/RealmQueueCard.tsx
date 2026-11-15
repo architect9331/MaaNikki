@@ -407,7 +407,7 @@ export function RealmQueueCard({
           {dblFollowJihuaEmpty && (
             <p className="flex items-center gap-1 text-warning">
               <AlertTriangle className="h-3 w-3 shrink-0" />
-              超级激化当前设为「跟随焕新 / 制衣缺口」，但下方刷取顺序中这两项均未开启，双倍激化将跳过；如需固定刷取可改为「继承兜底设置」。
+              素材激化当前设为「跟随焕新 / 制衣缺口」，但下方刷取顺序中这两项均未开启，双倍激化将跳过（朝夕心愿仍会自动改刷备用目标）；如需双倍也固定刷取可改为「继承兜底设置」。
             </p>
           )}
           {dblFollowCraftingNoCommon && (

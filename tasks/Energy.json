@@ -16,6 +16,7 @@
                 "DoubleTypes",
                 "DoubleJihuaMode",
                 "DoubleBlessMode",
+                "MonsterTargetMode",
                 "DoubleWeeklyPriority",
                 "RealmTypes",
                 "CollectionWorkflow",
@@ -788,8 +789,8 @@
         },
         "DoubleJihuaMode": {
             "type": "select",
-            "label": "超级激化双倍目标",
-            "description": "「跟随焕新 / 制衣缺口」严格按「刷取顺序」中已开启的焕新或制衣优先级，用双倍产量补还差的泡泡、丝线与噗灵（备齐或未开即跳过）；「继承兜底设置」按下方「素材激化奖励」刷满双倍额度。",
+            "label": "素材激化策略（双倍 / 朝夕补分）",
+            "description": "同时用于超级激化双倍与朝夕心愿补分：「跟随焕新 / 制衣缺口」按「刷取顺序」优先补齐还缺的泡泡（开启下方开关时也含丝线与噗灵），双倍无缺口时自动跳过，朝夕补分无缺口时自动改刷备用「素材激化奖励」；「继承兜底设置」始终按备用目标挑战。",
             "cases": [
                 {
                     "name": "FollowDeficit",
@@ -818,12 +819,12 @@
         },
         "DoubleBlessMode": {
             "type": "select",
-            "label": "灵感迸发双倍目标",
-            "description": "「五星闪光追全」仅针对剩余双倍次数刷取缺色副本（不改刷噗灵），所选范围已收齐时自动跳过；「继承兜底设置」按下方「祝福闪光关卡」刷满双倍次数。",
+            "label": "祝福闪光策略（双倍 / 朝夕补分）",
+            "description": "同时用于灵感迸发双倍与朝夕心愿补分：「五星闪光追全」按缺色顺位挑战缺失五星颜色的副本，双倍已收齐时自动跳过，朝夕补分已收齐或尚未整理仓库时自动改刷备用「祝福闪光关卡」；「继承兜底设置」始终按备用关卡挑战。",
             "cases": [
                 {
                     "name": "GlowPursuit",
-                    "label": "五星闪光追全（已齐则跳过）",
+                    "label": "五星闪光追全（按缺色顺位）",
                     "pipeline_override": {
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
@@ -845,6 +846,36 @@
                 }
             ],
             "default_case": "GlowPursuit"
+        },
+        "MonsterTargetMode": {
+            "type": "select",
+            "label": "魔物试炼策略（朝夕补分）",
+            "description": "用于朝夕心愿需要挑战魔物试炼补分时选关：「跟随焕新 / 制衣缺口」按「刷取顺序」优先挑战还缺魔物试炼素材的关卡，无缺口时自动改刷备用「魔物试炼关卡」；「继承兜底设置」始终挑战备用关卡。",
+            "cases": [
+                {
+                    "name": "FollowDeficit",
+                    "label": "跟随焕新 / 制衣缺口（按刷取顺序）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "monster_mode": "follow_deficit"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "InheritFallback",
+                    "label": "继承兜底设置（魔物试炼关卡）",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "monster_mode": "inherit_fallback"
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "FollowDeficit"
         },
         "DoubleWeeklyPriority": {
             "type": "select",

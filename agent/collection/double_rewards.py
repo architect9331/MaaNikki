@@ -77,7 +77,8 @@ class DoubleRunSummary:
     remaining_energy: int | None = None
 
 
-def _load_double_config(rt) -> dict:
+def load_realm_policy(rt) -> dict:
+    """Shared realm target policy used by double-reward priority and Zhaoxi daily energy fill."""
     context = rt.context
     opt = parameters(context, "MaaNikki_Double_Option")
     enabled = opt.get("enabled", True) is not False
@@ -86,12 +87,42 @@ def _load_double_config(rt) -> dict:
         for kind, suffix in (("jihua", "Jihua"), ("bless", "Bless"), ("weekly", "Weekly"))
         if (context.get_node_data(f"MaaNikki_Double_Type_{suffix}") or {}).get("enabled", False)
     }
+    raw_reserve = parameters(context, "MaaNikki_Pursuit_ReserveBlingOption").get("amount", 0)
+    try:
+        reserve_bling = max(0, int(str(raw_reserve or 0).strip().replace(",", "")))
+    except (ValueError, TypeError):
+        reserve_bling = 0
     return {
         "enabled": enabled,
         "types": types,
         "jihua_mode": str(opt.get("jihua_mode", "follow_deficit")),
         "bless_mode": str(opt.get("bless_mode", "glow_pursuit")),
+        "monster_mode": str(opt.get("monster_mode", "follow_deficit")),
         "weekly_priority": str(opt.get("weekly_priority", "Qiggeda")),
+        "queue_goals": parse_realm_queue(parameters(context, "MaaNikki_RealmQueue").get("order")),
+        "include_common": farm_common_mats_enabled(rt),
+        "organize": parameters(context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto"),
+        "workflow": parameters(context, "MaaNikki_Pursuit_WorkflowOption").get("mode", "managed"),
+        "reserve_bling": reserve_bling,
+        "decompose": parameters(context, "MaaNikki_Pursuit_DecomposeOption").get("enabled") is True,
+        "share_stats": stats_enabled(
+            ROOT,
+            parameters(context, "MaaNikki_Pursuit_StatsOption").get("enabled") is not False,
+        ),
+    }
+
+
+def _load_double_config(rt) -> dict:
+    return load_realm_policy(rt)
+
+
+def overview_double_badges(rt, frame: np.ndarray | None, kinds=DOUBLE_EXEC_ORDER) -> set[str]:
+    if frame is None:
+        return set()
+    return {
+        kind
+        for kind in kinds
+        if kind in OVERVIEW_BADGE_ROIS and _badge_present(rt, frame, OVERVIEW_BADGE_ROIS[kind])
     }
 
 def _crop_upscaled(frame: np.ndarray, roi: list[int], scale: float = 3.0, pad: int = 12) -> np.ndarray | None:
@@ -202,6 +233,132 @@ def _read_stage_double_quota(rt, kind: str) -> tuple[int | None, bool, int | Non
     if frame is not None and _badge_present(rt, frame, STAGE_BUTTON_DOUBLE_ROI, ocr_only=True):
         return (10 if kind == "jihua" else 1), False, energy
     return None, False, energy
+
+
+read_stage_double_quota = _read_stage_double_quota
+
+
+def run_shared_bless_collection(
+    rt,
+    account: AccountState,
+    policy: dict,
+    *,
+    max_runs: int | None,
+    full_workflow: bool,
+    organize_if_missing: bool,
+    organized_once: bool = False,
+) -> dict:
+    """Execute 5-star missing-color blessing realm runs cleanly for double or Zhaoxi supplement."""
+    catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+    workflow = policy.get("workflow", "managed")
+    farm_only = workflow == "farm_only"
+    organize = policy.get("organize", "auto")
+    if organize not in ORGANIZE_OPTIONS:
+        raise ValueError("未知祝福闪光整理选项")
+
+    issue = organization_issue(rt, catalog)
+    need_organize = ((not organized_once and organize != "auto") or issue is not None) if full_workflow else (issue is not None)
+    if need_organize:
+        if not organize_if_missing:
+            return {"status": "fallback", "reason": "no_organization", "organized_once": organized_once}
+        rt.log(
+            "限时双倍插队 · 灵感迸发：正在核对并整理全部祝福闪光。"
+            if full_workflow
+            else "朝夕心愿补分 · 祝福闪光：正在建立祝福闪光仓库整理记录。",
+            ui_text="双倍插队：整理祝福闪光仓库。" if full_workflow else "朝夕补分：整理祝福闪光仓库。",
+        )
+        org_result = organize_inventory(
+            rt,
+            catalog,
+            allow_unlock=False if farm_only else bool(ORGANIZE_OPTIONS[organize]),
+            read_only=farm_only,
+        )
+        organized_once = True
+        if not org_result["published"] and organization_issue(rt, catalog) is not None:
+            return {
+                "status": "organize_failed" if full_workflow else "fallback",
+                "reason": "organize_incomplete",
+                "organized_once": organized_once,
+            }
+
+    folder_root = "logs/blessing-pursuit" if full_workflow else "logs/daily-bless"
+    folder = ROOT / folder_root / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    folder.mkdir(parents=True, exist_ok=True)
+    pursuit = FiveStarInventory(rt, catalog, folder)
+    pursuit.reserve_bling = int(policy.get("reserve_bling", 0) or 0)
+    pursuit.share_statistics = bool(policy.get("share_stats", False))
+    try:
+        flow = FiveStarPursuit(
+            pursuit,
+            decompose_duplicates=bool(policy.get("decompose", False)),
+            auto_bling=False,
+            chance_priority=True,
+            share_statistics=pursuit.share_statistics,
+            farm_only=farm_only,
+            reserve_bling=pursuit.reserve_bling,
+            focus_sets=blessing_focus(account.load()),
+            max_farm_runs=max_runs,
+        )
+        if full_workflow:
+            if flow.target_complete():
+                return {"status": "complete", "organized_once": organized_once}
+            rt.log(f"限时双倍插队 · 灵感迸发（五星追全）：按当前缺色顺位挑战（本次双倍上限 {max_runs} 次）。")
+            flow.run()
+            spent = any(
+                op.get("kind") == "realm" and op.get("input_attempted") is not False
+                for op in pursuit.report["operations"]
+            )
+            return {
+                "status": "done",
+                "spent": spent,
+                "complete": flow.target_complete(),
+                "organized_once": organized_once,
+            }
+
+        pursuit.prepare("zhaoxi_bless")
+        if flow.target_complete():
+            pursuit.finish("本地图鉴内五星颜色已收齐，改用备用关卡")
+            return {"status": "complete", "organized_once": organized_once}
+        if not farm_only:
+            if not flow.make_room():
+                pursuit.finish("祝福闪光仓库已满，本次未刷取")
+                return {"status": "warehouse_full", "organized_once": organized_once}
+        elif pursuit.warehouse_full():
+            message = "祝福闪光仓库已满，只刷胚子模式下不自动分解，本次无法挑战祝福闪光幻境。请清理仓库或开启爆仓分解。"
+            rt.log(message)
+            pursuit.finish("祝福闪光仓库已满，今天不刷本")
+            return {"status": "warehouse_full", "organized_once": organized_once}
+
+        acquired = bool(flow.spend_energy())
+        supply = pursuit.report.get("supply_result") or {}
+        status = supply.get("status")
+        if status == "reward_confirmed" and acquired:
+            pursuit.finish("朝夕补分已完成 1 次缺色祝福闪光挑战，新增胚子待后续整理升级")
+            return {"status": "spent", "source": supply.get("source"), "organized_once": organized_once}
+        if status == "energy_exhausted":
+            pursuit.finish("活跃能量不足，本次未提交祝福闪光挑战")
+            return {"status": "energy_exhausted", "organized_once": organized_once}
+        pursuit.finish("当前缺色祝福闪光副本暂不可用")
+        return {"status": "fallback", "reason": str(status or "unavailable"), "organized_once": organized_once}
+    except RescanSlot as error:
+        pursuit.record_interruption(error, reason="焦点变化使列表状态失效")
+        raise RuntimeError("焦点变化使当前祝福闪光升级或列表状态失效") from error
+    except Exception as error:
+        pursuit.record_interruption(error, reason=str(error))
+        raise
+    finally:
+        try:
+            if full_workflow:
+                pursuit.log_progress("双倍插队结束" if pursuit.report.get("complete") else "双倍插队阶段完成")
+            pursuit.record_history()
+            if pursuit.share_statistics:
+                upload(pursuit.store.account, ROOT, catalog_version=pursuit.catalog["version"])
+            if pursuit.prepared and "inventory" not in pursuit.report:
+                pursuit.checkpoint()
+            else:
+                pursuit.save()
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
 
 def _run_double_weekly(
     rt,
@@ -483,78 +640,29 @@ def _run_double_bless(
             elif not ok:
                 raise RuntimeError("灵感迸发双倍挑战未确认完成")
         else:
-            catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
-            workflow = parameters(rt.context, "MaaNikki_Pursuit_WorkflowOption").get("mode", "managed")
-            farm_only = workflow == "farm_only"
-            raw_reserve = parameters(rt.context, "MaaNikki_Pursuit_ReserveBlingOption").get("amount", 0)
-            try:
-                reserve_bling = max(0, int(str(raw_reserve or 0).strip().replace(",", "")))
-            except (ValueError, TypeError):
-                reserve_bling = 0
-            organize = parameters(rt.context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto")
-            if organize not in ORGANIZE_OPTIONS:
-                raise ValueError("未知祝福闪光整理选项")
-            issue = organization_issue(rt, catalog)
-            if (not organized_once and organize != "auto") or issue is not None:
-                rt.log("限时双倍插队 · 灵感迸发：正在核对并整理全部祝福闪光。", ui_text="双倍插队：整理祝福闪光仓库。")
-                org_result = organize_inventory(
-                    rt,
-                    catalog,
-                    allow_unlock=False if farm_only else bool(ORGANIZE_OPTIONS[organize]),
-                    read_only=farm_only,
-                )
-                organized_once = True
-                if not org_result["published"] and organization_issue(rt, catalog) is not None:
-                    rt.log("灵感迸发双倍（五星追全）：仓库整理未完成且无可用记录，跳过本次双倍。")
-                    break
-
-            folder = ROOT / "logs/blessing-pursuit" / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            folder.mkdir(parents=True, exist_ok=True)
-            pursuit = FiveStarInventory(rt, catalog, folder)
-            try:
-                decompose = parameters(rt.context, "MaaNikki_Pursuit_DecomposeOption").get("enabled") is True
-                share = stats_enabled(ROOT, parameters(rt.context, "MaaNikki_Pursuit_StatsOption").get("enabled") is not False)
-                flow = FiveStarPursuit(
-                    pursuit,
-                    decompose_duplicates=decompose,
-                    auto_bling=False,
-                    chance_priority=True,
-                    share_statistics=share,
-                    farm_only=farm_only,
-                    reserve_bling=reserve_bling,
-                    focus_sets=blessing_focus(account.load()),
-                    max_farm_runs=rem_runs,
-                )
-                if flow.target_complete():
-                    goal_satisfied = True
-                    rt.log("灵感迸发双倍（五星追全）：所选范围五星颜色已收齐，跳过本次双倍。")
-                    break
-                rt.log(f"限时双倍插队 · 灵感迸发（五星追全）：按当前缺色顺位挑战（本次双倍上限 {rem_runs} 次）。")
-                flow.run()
-                if any(op.get("kind") == "realm" and op.get("input_attempted") is not False
-                       for op in pursuit.report["operations"]):
-                    any_spent = True
-                    collection_used = True
-                if flow.target_complete():
-                    goal_satisfied = True
-            except RescanSlot as error:
-                pursuit.record_interruption(error, reason="焦点变化使列表状态失效")
-                raise RuntimeError("焦点变化使当前祝福闪光升级或列表状态失效") from error
-            except Exception as error:
-                pursuit.record_interruption(error, reason=str(error))
-                raise
-            finally:
-                try:
-                    pursuit.log_progress("双倍插队结束" if pursuit.report.get("complete") else "双倍插队阶段完成")
-                    pursuit.record_history()
-                    if pursuit.share_statistics:
-                        upload(pursuit.store.account, ROOT, catalog_version=pursuit.catalog["version"])
-                    if pursuit.prepared and "inventory" not in pursuit.report:
-                        pursuit.checkpoint()
-                    else:
-                        pursuit.save()
-                except (OSError, ValueError, KeyError, TypeError):
-                    pass
+            res = run_shared_bless_collection(
+                rt,
+                account,
+                config,
+                max_runs=rem_runs,
+                full_workflow=True,
+                organize_if_missing=True,
+                organized_once=organized_once,
+            )
+            organized_once = bool(res.get("organized_once"))
+            status = res.get("status")
+            if status == "organize_failed":
+                rt.log("灵感迸发双倍（五星追全）：仓库整理未完成且无可用记录，跳过本次双倍。")
+                break
+            if status == "complete":
+                goal_satisfied = True
+                rt.log("灵感迸发双倍（五星追全）：所选范围五星颜色已收齐，跳过本次双倍。")
+                break
+            if res.get("spent"):
+                any_spent = True
+                collection_used = True
+            if res.get("complete"):
+                goal_satisfied = True
 
             if not rt.stopped and not rt.ui.calendar():
                 raise RuntimeError("灵感迸发双倍挑战后未能返回奇想日历")
@@ -572,18 +680,18 @@ def _run_double_bless(
 def run_double_priority(rt) -> DoubleRunSummary:
     """Detect active 2x realm events and consume eligible bonuses before the normal queue."""
     summary = DoubleRunSummary()
-    config = _load_double_config(rt)
+    config = load_realm_policy(rt)
     enabled_types = config["types"]
     if not config["enabled"] or not enabled_types:
         return summary
 
-    queue_goals = parse_realm_queue(parameters(rt.context, "MaaNikki_RealmQueue").get("order"))
-    organize = parameters(rt.context, "MaaNikki_Pursuit_OrganizeOption").get("mode", "auto")
+    queue_goals = config["queue_goals"]
+    organize = config["organize"]
     account = AccountState.for_runtime(ROOT, rt)
     role = account.load()
     crafting, scoring = load_catalogs()
 
-    include_common = farm_common_mats_enabled(rt)
+    include_common = config["include_common"]
     candidates: set[str] = set()
     if "weekly" in enabled_types and any(
         (rt.context.get_node_data(node) or {}).get("enabled", False) for node, _ in WEEKLY_TARGETS
@@ -631,10 +739,8 @@ def run_double_priority(rt) -> DoubleRunSummary:
     if not rt.ui.realm_overview():
         raise RuntimeError("未能打开幻境挑战总览检查双倍标识")
     overview = rt.capture()
-    active_kinds = [
-        kind for kind in DOUBLE_EXEC_ORDER
-        if kind in candidates and _badge_present(rt, overview, OVERVIEW_BADGE_ROIS[kind])
-    ]
+    badged = overview_double_badges(rt, overview, candidates)
+    active_kinds = [kind for kind in DOUBLE_EXEC_ORDER if kind in badged]
     if not active_kinds:
         rt.log("限时双倍插队：当前没有待刷的可参与双倍幻境，按刷取顺序继续。", detail=True)
         rt.ui.calendar()

@@ -38,6 +38,82 @@ class DailyRun(Executors):
         self.energy_exhausted = False
         self.last_energy_exhausted = False
         self.unexpected_unavailable = []
+        self._energy_cache = {"inventory": None, "wardrobe_synced": False, "double_badges": None}
+
+    def _select_unified_energy_card(self, pending, predicted, preferred, overrides):
+        if len(pending) <= 1:
+            return select_energy(pending, predicted, preferred)
+        from account_state import AccountState
+        from action.blessing_pursuit import glow_shortfall
+        from collection.double_rewards import load_realm_policy, overview_double_badges
+        from collection.material_pursuit import load_catalogs, pick_realm_material_deficit
+        from daily.gameplay import Gameplay
+
+        clone = self.context.clone()
+        if overrides:
+            clone.override_pipeline(overrides)
+        inspect_rt = Executors(clone)
+        policy = load_realm_policy(inspect_rt)
+        account = AccountState.for_runtime(ROOT, inspect_rt)
+        crafting, scoring = load_catalogs()
+
+        badges = self._energy_cache.get("double_badges")
+        if badges is None:
+            candidate_kinds = {c.rule.key for c in pending if c.rule and c.rule.key in policy["types"]}
+            if policy["enabled"] and candidate_kinds and self.ui.realm_overview():
+                badges = overview_double_badges(self, self.capture(), candidate_kinds)
+            else:
+                badges = set()
+            self._energy_cache["double_badges"] = badges
+
+        ranks = {}
+        role_cached = None
+        for card in pending:
+            kind = card.rule.key
+            has_need = False
+            goal_rank = 99
+            if kind in ("jihua", "monster"):
+                mode_key = "jihua_mode" if kind == "jihua" else "monster_mode"
+                if policy[mode_key] == "follow_deficit":
+                    picked, inv, synced, _ = pick_realm_material_deficit(
+                        inspect_rt,
+                        account,
+                        kind,
+                        policy["queue_goals"],
+                        inventory=self._energy_cache.get("inventory"),
+                        multiplier=1,
+                        include_common=policy["include_common"],
+                        wardrobe_synced=bool(self._energy_cache.get("wardrobe_synced")),
+                        crafting=crafting,
+                        scoring=scoring,
+                    )
+                    self._energy_cache["inventory"] = inv
+                    self._energy_cache["wardrobe_synced"] = synced
+                    if picked:
+                        has_need = True
+                        goal_rank = policy["queue_goals"].index(picked[0])
+                elif kind == "jihua":
+                    has_need = kind in badges
+            elif kind == "bless":
+                if policy["bless_mode"] == "glow_pursuit":
+                    if role_cached is None:
+                        role_cached = account.load()
+                    shortfall = glow_shortfall(inspect_rt, role_cached, "auto")
+                    has_need = bool(shortfall)
+                    if shortfall and "glow" in policy["queue_goals"]:
+                        goal_rank = policy["queue_goals"].index("glow")
+                else:
+                    has_need = kind in badges
+
+            double_active = kind in badges and kind in policy["types"] and has_need
+            ranks[card.slot] = (
+                not double_active,
+                goal_rank,
+                kind != preferred,
+                Gameplay.MIN_ENERGY.get(kind, 40),
+                -card.rule.score,
+            )
+        return select_energy(pending, predicted, preferred, rank_key=lambda c: ranks[c.slot])
 
     def has_unexpected_failure(self):
         if self.unexpected_unavailable:
@@ -381,21 +457,20 @@ class DailyRun(Executors):
                 # only between batches, but exhaust free alternatives before
                 # any energy supplement when predicted points were optimistic.
             if score < 500 and self.mode == "zhaoxi":
-                energy = [c for c in available if c.rule.energy and c.rule.key != "energy"
-                          and not (wait_collection and c.rule.key == "bless")]
+                energy = [c for c in available if c.rule.energy and c.rule.key != "energy"]
                 if energy:
                     preferred, overrides = realm_settings()
                     predicted = score
                     pending = list(energy)
                     while predicted < 500 and pending and not self.stopped:
-                        card = select_energy(pending, predicted, preferred)
+                        card = self._select_unified_energy_card(pending, predicted, preferred, overrides)
                         pending.remove(card)
                         session = self._active_hud_session()
                         if session is not None:
                             session.set_stage_label(card.rule.label)
                         self.log(f"不耗活跃能量任务不足，使用{card.rule.label}补分；保留其余活跃能量。")
                         self.last_energy_exhausted = False
-                        ok = self.energy(card, preferred, overrides)
+                        ok = self.energy(card, preferred, overrides, cache=self._energy_cache)
                         self.events.append({"slot": card.slot, "task": card.rule.key, "success": ok,
                                             "exhausted": bool(not ok and self.last_energy_exhausted)})
                         if ok:
@@ -494,8 +569,7 @@ class DailyRun(Executors):
             self.events.append({"type": "after_energy_review", "source_task_id": pending.source_task_id,
                                 "before_score": pending.score, "actual_score": score,
                                 "energy_remaining_before": pending.energy_remaining})
-            if (score < 500 and pending.upgrade_card and realm_ok
-                    and pending.realm_kind == "bless" and not pending.collection_mode):
+            if score < 500 and pending.upgrade_card and realm_ok:
                 # Re-read only the saved wish, as another action may already
                 # have completed it without reaching 500 total points.
                 layout = parameters(self.context, "MaaNikki_Zhaoxi_DailyLayout")

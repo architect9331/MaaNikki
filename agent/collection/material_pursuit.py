@@ -397,6 +397,27 @@ def _jihua_requirements(
     return total, prio
 
 
+def has_realm_material_potential(
+    goal: str,
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    realm: str,
+    include_common: bool = False,
+) -> bool:
+    """Whether an enabled goal could possibly need any material from ``realm`` before backpack subtraction."""
+    if realm == "jihua":
+        return bool(_jihua_requirements(goal, role, crafting, scoring, include_common=include_common)[0])
+    mat_defs = crafting.get("materials") or {}
+    return any(
+        int(count) > 0
+        and (mat_defs.get(str(mid)) or {}).get("realm") == realm
+        and (mat_defs.get(str(mid)) or {}).get("level")
+        for mid, count in goal_requirements(goal, role, crafting, scoring, include_common=include_common).items()
+    )
+
+
 def goal_has_jihua_potential(
     goal: str,
     role: dict,
@@ -406,7 +427,9 @@ def goal_has_jihua_potential(
     include_common: bool = False,
 ) -> bool:
     """Whether an enabled goal could possibly need any Jihua material before backpack subtraction."""
-    return bool(_jihua_requirements(goal, role, crafting, scoring, include_common=include_common)[0])
+    return has_realm_material_potential(
+        goal, role, crafting, scoring, realm="jihua", include_common=include_common,
+    )
 
 
 def jihua_goal_deficits(
@@ -471,6 +494,88 @@ def goal_deficits(
             items.append((bucket, -eff_deficit, str(mid), meta, eff_deficit))
     items.sort()
     return items
+
+
+def realm_goal_deficits(
+    goal: str,
+    role: dict,
+    inventory: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    realm: str,
+    multiplier: int = 1,
+    include_common: bool = False,
+) -> list[tuple]:
+    """Return unmet shortfalls for one goal restricted to ``realm`` (``jihua`` / ``monster``)."""
+    if realm == "jihua":
+        return jihua_goal_deficits(
+            goal, role, inventory, crafting, scoring, multiplier=multiplier, include_common=include_common,
+        )
+    return [
+        item
+        for item in goal_deficits(goal, role, inventory, crafting, scoring, include_common=include_common)
+        if (item[3] or {}).get("realm") == realm
+    ]
+
+
+def pick_realm_material_deficit(
+    rt,
+    account: AccountState,
+    realm: str,
+    goals: list[str],
+    *,
+    inventory: dict[str, int] | None = None,
+    multiplier: int = 1,
+    include_common: bool = False,
+    wardrobe_synced: bool = False,
+    crafting: dict | None = None,
+    scoring: dict | None = None,
+) -> tuple[tuple[str, str, dict, int] | None, dict[str, int] | None, bool, bool]:
+    """Pick the top unmet material shortfall for ``realm`` along ``goals``.
+
+    Lazily syncs wardrobe/levels when needed and scans backpack only when an
+    enabled goal actually has potential requirements in ``realm``.
+    Returns ``(picked, inventory, wardrobe_synced, has_potential)`` where
+    ``picked`` is ``(goal, mid, meta, deficit)``.
+    """
+    mat_goals = [g for g in goals if g in ("renewal", "crafting")]
+    if not mat_goals:
+        return None, inventory, wardrobe_synced, False
+    if crafting is None or scoring is None:
+        crafting, scoring = load_catalogs()
+
+    if not wardrobe_synced:
+        role_now = account.load()
+        if any(
+            g == "crafting" or (g == "renewal" and renewal_source(role_now.get("materials") or {}) == "plan")
+            for g in mat_goals
+        ):
+            wardrobe_synced = True
+            ensure_wardrobe_synced_for_materials(rt, account)
+
+    role = account.load()
+    has_potential = any(
+        has_realm_material_potential(goal, role, crafting, scoring, realm=realm, include_common=include_common)
+        for goal in mat_goals
+    )
+    if not has_potential:
+        return None, inventory, wardrobe_synced, False
+
+    if inventory is None:
+        inventory = ensure_backpack_scanned(rt, account, crafting)
+        record_material_history(account, crafting, scoring, include_common=include_common)
+        role = account.load()
+
+    for goal in mat_goals:
+        deficits = realm_goal_deficits(
+            goal, role, inventory, crafting, scoring,
+            realm=realm, multiplier=multiplier, include_common=include_common,
+        )
+        if deficits:
+            _, _, mid, meta, deficit = deficits[0]
+            return (goal, str(mid), meta, int(deficit)), inventory, wardrobe_synced, True
+    return None, inventory, wardrobe_synced, True
 
 
 def ensure_wardrobe_synced_for_materials(rt, account: AccountState) -> bool:

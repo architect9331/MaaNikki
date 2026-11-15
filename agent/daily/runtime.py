@@ -1368,8 +1368,25 @@ class Executors(Runtime):
     def save_placement_failure(self, stage):
         self.diagnostic("placement", stage)
 
-    def energy(self, card, preferred, overrides):
+    def energy(self, card, preferred, overrides, *, cache=None):
+        import re
+        from account_state import AccountState
+        from collection.double_rewards import (
+            JIHUA_LEVEL_IDS,
+            load_realm_policy,
+            read_stage_double_quota,
+            run_shared_bless_collection,
+        )
+        from collection.material_pursuit import (
+            load_catalogs,
+            pick_realm_material_deficit,
+            record_accrual,
+            record_material_history,
+        )
+        from collection.realm_goals import GOAL_LABELS
         from .gameplay import Gameplay
+        from .ui import fields
+
         if card.rule.key == "energy":
             self.log("累计活跃能量条件不在朝夕中额外增加挑战次数。")
             return False
@@ -1381,7 +1398,141 @@ class Executors(Runtime):
         # Supplement a specific realm card with its default minimum, never Max.
         child = Executors(clone)
         game = Gameplay(child)
+        policy = load_realm_policy(child)
+        account = AccountState.for_runtime(ROOT, child)
+        state = cache if cache is not None else {}
+
         try:
+            if kind == "bless":
+                if policy["bless_mode"] == "glow_pursuit":
+                    allow_init = "glow" in policy["queue_goals"] or (
+                        policy["enabled"] and "bless" in policy["types"]
+                    )
+                    res = run_shared_bless_collection(
+                        child,
+                        account,
+                        policy,
+                        max_runs=1,
+                        full_workflow=False,
+                        organize_if_missing=allow_init,
+                    )
+                    status = res.get("status")
+                    if status == "spent":
+                        child.ui.calendar()
+                        return True
+                    if status == "energy_exhausted":
+                        game.exhausted(False)
+                        child.ui.calendar()
+                        return False
+                    if status == "warehouse_full":
+                        child.ui.calendar()
+                        return False
+                    if status == "complete":
+                        child.log("朝夕心愿补分 · 祝福闪光：所选范围五星颜色已收齐，改刷备用「祝福闪光关卡」。")
+                    elif res.get("reason") == "no_organization":
+                        child.log("朝夕心愿补分 · 祝福闪光：尚未建立祝福闪光仓库记录，改刷备用「祝福闪光关卡」。")
+                    else:
+                        child.log("朝夕心愿补分 · 祝福闪光：未找到可用的缺色关卡，改刷备用「祝福闪光关卡」。")
+                else:
+                    child.log("朝夕心愿补分 · 祝福闪光（继承兜底）：挑战备用「祝福闪光关卡」。", detail=True)
+                return game.realm("bless", maximize=False, return_page="calendar")
+
+            if kind in ("jihua", "monster"):
+                mode_key = "jihua_mode" if kind == "jihua" else "monster_mode"
+                crafting, scoring = load_catalogs()
+                inv = state.get("inventory")
+                synced = bool(state.get("wardrobe_synced"))
+                picked = None
+                if policy[mode_key] == "follow_deficit":
+                    picked, inv, synced, _ = pick_realm_material_deficit(
+                        child,
+                        account,
+                        kind,
+                        policy["queue_goals"],
+                        inventory=inv,
+                        multiplier=1,
+                        include_common=policy["include_common"],
+                        wardrobe_synced=synced,
+                        crafting=crafting,
+                        scoring=scoring,
+                    )
+                    state["inventory"] = inv
+                    state["wardrobe_synced"] = synced
+
+                mid = None
+                meta = None
+                level_name = None
+                mat_defs = crafting.get("materials") or {}
+                if picked:
+                    goal, mid, meta, deficit = picked
+                    level_name = str(meta["level"])
+                    if kind == "jihua":
+                        if not clone.override_pipeline({
+                            "MaaNikki_Jihua_Target": {"expected": level_name},
+                            "MaaNikki_Jihua_TargetRetry": {"expected": level_name},
+                        }):
+                            raise RuntimeError("素材激化目标设置未能应用")
+                        child.log(
+                            f"朝夕心愿补分 · 素材激化（{GOAL_LABELS[goal]}）：{meta['name']} 还差 {deficit}，挑战「{level_name}」1 次。"
+                        )
+                    else:
+                        if not clone.override_pipeline({
+                            "MaaNikki_Monster_Level": {"expected": re.escape(level_name)},
+                        }):
+                            raise RuntimeError("魔物试炼关卡设置未能应用")
+                        child.log(
+                            f"朝夕心愿补分 · 魔物试炼（{GOAL_LABELS[goal]}）：{meta['name']} 还差 {deficit}，挑战「{level_name}」1 次。"
+                        )
+                else:
+                    if policy[mode_key] == "follow_deficit":
+                        if kind == "jihua":
+                            child.log("朝夕心愿补分 · 素材激化：所选焕新／制衣目标材料已备齐，改刷备用「素材激化奖励」。")
+                        else:
+                            child.log("朝夕心愿补分 · 魔物试炼：所选焕新／制衣目标试炼素材已备齐，改刷备用「魔物试炼关卡」。")
+                    if kind == "jihua":
+                        level_name = str((fields(clone, "MaaNikki_Jihua_Target") or {}).get("expected") or "闪亮泡泡").strip()
+                        mid = JIHUA_LEVEL_IDS.get(level_name)
+                        meta = mat_defs.get(mid or "") if mid else None
+                    else:
+                        level_name = str((fields(clone, "MaaNikki_Monster_Level") or {}).get("expected") or "").strip()
+                        matches = [
+                            (k, m) for k, m in mat_defs.items()
+                            if m.get("realm") == "monster" and m.get("level") == level_name
+                        ]
+                        if len(matches) == 1:
+                            mid, meta = matches[0]
+
+                double_rem = None
+                entered = False
+                if kind == "jihua":
+                    if not child.ui.realm("jihua"):
+                        return False
+                    entered = True
+                    double_rem, _, stage_energy = read_stage_double_quota(child, "jihua")
+                    if stage_energy is not None and stage_energy < game.MIN_ENERGY["jihua"]:
+                        game.exhausted(False, stage_energy)
+                        child.ui.calendar()
+                        return False
+
+                ok = game.realm(kind, maximize=False, entered=entered, return_page="calendar")
+                if entered and not child.stopped and not child.ui.calendar():
+                    child.log("未能返回后续步骤需要的页面，本项停止。")
+                    ok = False
+                if ok and mid:
+                    meta = meta or mat_defs.get(mid) or {}
+                    base_drop = int(meta.get("drop") or 0)
+                    if base_drop > 0:
+                        mult = 2 if (kind == "jihua" and double_rem and double_rem >= 10) else 1
+                        gained = base_drop * mult
+                        record_accrual(account, mid, gained)
+                        if isinstance(state.get("inventory"), dict):
+                            state["inventory"][mid] = int(state["inventory"].get(mid, 0)) + gained
+                        record_material_history(account, crafting, scoring, include_common=policy["include_common"])
+                        child.log(
+                            f"朝夕心愿补分 · {'素材激化' if kind == 'jihua' else '魔物试炼'}：获得 {meta.get('name', level_name or mid)} +{gained}。"
+                        )
+                return ok
+
             return game.realm(kind, maximize=False, return_page="calendar")
         finally:
             self.navigation_halted |= child.navigation_halted

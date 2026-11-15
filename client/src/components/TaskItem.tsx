@@ -333,7 +333,7 @@ function OptionListRenderer({
             disabled={disabled || optionIncompatible}
             labelOverride={taskName === 'realm_challenge' ? realmOptionLabel(group.optionKey, optionValues) : undefined}
             inactiveHint={taskName === 'realm_challenge' && !realmOptionActive(group.optionKey, optionValues)
-              ? { label: '补分备用', description: '朝夕心愿允许用活跃能量补分时，会根据当天心愿按需使用此处设置。剩余活跃能量按上方所选消耗方式处理。' }
+              ? { label: '补分备用', description: '朝夕心愿按目标策略跟随缺口或追全且当前已全部备齐（或策略设成「继承兜底设置」）时，使用此处备用设置凑分；不影响上方刷取顺序。' }
               : undefined}
             controllerIncompatible={optionIncompatible}
             parentIncompatibilityReason={parentIncompatibilityReason}
@@ -1367,9 +1367,9 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
               )}
               {task.taskName === 'realm_challenge' && (taskDef.option || []).some((key) => realmOptionBackup(key, task.optionValues)) && (
                 <details className="mt-3 rounded-lg border border-border bg-bg-secondary px-3 py-2">
-                  <summary className="cursor-pointer text-xs text-text-secondary">朝夕心愿补分备用设置</summary>
+                  <summary className="cursor-pointer text-xs text-text-secondary">朝夕心愿补分备用设置（无缺口或继承兜底时使用）</summary>
                   <div className="mt-3">
-                    <p className="mb-3 text-[11px] leading-5 text-text-secondary">仅在朝夕心愿需要对应幻境补分时使用，不改变上方刷取顺序或兜底副本。</p>
+                    <p className="mb-3 text-[11px] leading-5 text-text-secondary">当「双倍与朝夕补分策略」设为「继承兜底设置」，或跟随缺口／追全时当前已全部备齐但朝夕心愿仍需体力凑 500 分，按这里对应的目标挑战。</p>
                     <OptionListRenderer
                       instanceId={instanceId}
                       taskId={task.id}

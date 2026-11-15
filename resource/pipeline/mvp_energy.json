@@ -554,6 +554,7 @@
       "enabled": true,
       "jihua_mode": "follow_deficit",
       "bless_mode": "glow_pursuit",
+      "monster_mode": "follow_deficit",
       "weekly_priority": "Qiggeda"
     }
   },
