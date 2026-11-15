@@ -35,6 +35,7 @@ class AssistSchedule(PeriodicSchedule):
     """Wall-clock checks; fishing exclusively owns input during its session."""
     INTERVALS = {"Fishing": .3, "Clear": .3, "Dialogue": .5, "Pickup": .1, "MapMask": .05}
     COOLDOWNS = {"Fishing": 5, "Clear": .3, "Dialogue": .25, "Pickup": .02}
+    BACKGROUND_HELPERS = ("Clear", "Dialogue", "Pickup")
 
     def __init__(self, enabled, *, now=0.0):
         intervals = {name: value for name, value in self.INTERVALS.items() if enabled.get(name, False)}
@@ -78,9 +79,14 @@ class Exploration(Runtime):
             return False
         guard = ForegroundInput(self.controller, lambda: self.stopped, bindings=self.game_keys)
         binding = self.game_keys.get("interact")
+        bg_helpers = [key for key in AssistSchedule.BACKGROUND_HELPERS if enabled.get(key)]
+        can_background = binding.kind == "key" and not guard.capture_requires_foreground
+        has_bg_helper = bool(bg_helpers) and can_background
         self.log("辅助功能已启动：当前使用前台截图，切出游戏或最小化后暂停。"
                  if guard.capture_requires_foreground else
-                 "辅助功能已启动：键盘交互支持切出游戏后继续拾取、对白和跳过；鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。")
+                 ("辅助功能已启动：当前仅开启前台辅助功能（地图标记/钓鱼），切出游戏后自动暂停。"
+                  if binding.kind == "key" and not bg_helpers else
+                  "辅助功能已启动：键盘交互支持切出游戏后继续拾取、对白和跳过；鼠标交互及钓鱼仅在游戏前台执行。最小化后暂停。手动停止可结束辅助。"))
         schedule = AssistSchedule(enabled, now=time.monotonic())
         initial_resources = _resource_signature(self.ui)
         waiting_clear = False
@@ -95,8 +101,7 @@ class Exploration(Runtime):
         def available():
             return (not self.stopped and guard.user32.IsWindow(guard.hwnd)
                     and not guard.user32.IsIconic(guard.hwnd)
-                    and (not guard.capture_requires_foreground or guard.foreground())
-                    and (binding.kind == "key" or guard.foreground()))
+                    and (guard.foreground() or has_bg_helper))
 
         @measure("input.assist")
         def press():
@@ -160,15 +165,27 @@ class Exploration(Runtime):
                 foreground = guard.foreground()
                 mode = ("minimized" if guard.user32.IsIconic(guard.hwnd) else
                         "foreground" if foreground else
-                        "background" if binding.kind == "key" and not guard.capture_requires_foreground
+                        "background" if has_bg_helper
                         else "paused")
                 if mode != previous_mode:
+                    paused_detail = (
+                        "当前使用前台截图，切出游戏后辅助功能暂停；切回后继续。"
+                        if guard.capture_requires_foreground else
+                        ("交互键设置为鼠标按键，切出游戏后暂停；切回后继续。"
+                         if binding.kind != "key" else
+                         "当前仅开启前台辅助功能，切出游戏后暂停；切回后继续。")
+                    )
+                    paused_step = (
+                        "当前使用前台截图，切回游戏后继续"
+                        if guard.capture_requires_foreground else
+                        ("交互键为鼠标按键，切回游戏后继续"
+                         if binding.kind != "key" else
+                         "当前仅开启前台辅助，切回游戏后继续")
+                    )
                     self.log({"foreground": "辅助功能在游戏前台运行，键盘交互使用 PostMessage。",
                               "background": "辅助功能继续后台识别，交互键通过 PostMessage 发往游戏窗口。",
                               "minimized": "游戏已最小化，辅助功能暂停识别和输入。",
-                              "paused": ("当前使用前台截图，切出游戏后辅助功能暂停；切回后继续。"
-                                         if guard.capture_requires_foreground else
-                                         "交互键设置为鼠标按键，切出游戏后暂停；切回后继续。")}[mode],
+                              "paused": paused_detail}[mode],
                              # Alt-tabbing changes the mode constantly; the startup message explains it.
                              detail=True)
                     if hud is not None:
@@ -178,35 +195,41 @@ class Exploration(Runtime):
                                 "foreground": "前台监测中（拾取 · 对白 · 跳过）",
                                 "background": "后台监测中（按键自动交互）",
                                 "minimized": "游戏窗口已最小化，辅助已暂停",
-                                "paused": ("当前使用前台截图，切回游戏后继续"
-                                           if guard.capture_requires_foreground
-                                           else "交互键为鼠标按键，切回游戏后继续"),
+                                "paused": paused_step,
                             }[mode],
                         )
                         hud.set_paused(
                             mode in ("paused", "minimized"),
                             reason=("游戏已最小化，恢复窗口后继续探索辅助"
                                     if mode == "minimized"
-                                    else ("当前使用前台截图，切回游戏后继续"
-                                          if guard.capture_requires_foreground
-                                          else "交互键设为鼠标按键，切回游戏后继续")),
+                                    else paused_step),
                         )
                     previous_mode = mode
                 if not available():
                     if map_mask:
                         map_mask.hide()
-                    self.pause(.1)
+                    self.pause(.15)
                     continue
+                if not foreground:
+                    if map_mask:
+                        map_mask.hide()
+                    deadline = schedule.deadline(["Clear"] if waiting_clear else bg_helpers)
+                    wait_left = deadline - time.monotonic()
+                    if wait_left > 0.14:
+                        # Sleep in short bounded chunks before capturing so focus return wakes MapMask promptly.
+                        self.pause(min(0.1, wait_left - 0.04))
+                        continue
+                else:
+                    deadline = schedule.deadline(["Clear"] if waiting_clear else None)
                 # A single async Maa capture overlaps the last part of the idle
                 # period. Inputs always finish before posting the next capture.
-                deadline = schedule.deadline(["Clear"] if waiting_clear else None)
                 frame = self.capture_at(deadline, available=available)
                 if frame is None:
                     self.pause(.1)
                     continue
-                if map_mask:
+                if map_mask and guard.foreground():
                     try:
-                        map_mask.observe(frame, foreground=guard.foreground())
+                        map_mask.observe(frame, foreground=True)
                     except GameWindowClosed:
                         raise
                     except Exception as error:
@@ -221,6 +244,8 @@ class Exploration(Runtime):
                         if not any(enabled.values()):
                             return False
                         schedule = AssistSchedule(enabled, now=time.monotonic())
+                elif map_mask:
+                    map_mask.hide()
                 # A map deadline must advance even when a higher-priority helper
                 # handles this frame and exits the decision loop early.
                 now = time.monotonic()

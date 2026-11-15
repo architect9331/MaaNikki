@@ -6,6 +6,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 os.environ["MAAFW_BINARY_PATH"] = str(Path(__file__).resolve().parents[1] / "maafw")
 
+from runtime_threads import (
+    cap_loaded_maafw_opencv,
+    configure_worker_threads,
+    start_parent_exit_watchdog,
+)
+
+configure_worker_threads(2)
+
 from maa.agent.agent_server import AgentServer
 from maa.tasker import Tasker
 
@@ -41,8 +49,25 @@ def main() -> None:
     socket_id = sys.argv[-1]
 
     adopt_session_16_9_handoff()
+
+    def _cleanup_on_parent_exit() -> None:
+        try:
+            close_all_huds()
+        except Exception:
+            pass
+        try:
+            restore_session_16_9_windows()
+        except Exception:
+            pass
+        try:
+            AgentServer.shut_down()
+        except Exception:
+            pass
+
+    start_parent_exit_watchdog(_cleanup_on_parent_exit)
     try:
         AgentServer.start_up(socket_id)
+        cap_loaded_maafw_opencv(2)
         try:
             AgentServer.join()
         finally:

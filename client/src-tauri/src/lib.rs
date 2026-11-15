@@ -31,6 +31,20 @@ where
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // 必须在加载 MaaFramework / OpenCV 之前限制 OpenMP/BLAS 并行池并启用被动等待，避免唤醒风暴导致鼠标卡顿。
+    #[cfg(windows)]
+    for (key, value) in [
+        ("OMP_NUM_THREADS", "2"),
+        ("OMP_WAIT_POLICY", "PASSIVE"),
+        ("OPENBLAS_NUM_THREADS", "2"),
+        ("MKL_NUM_THREADS", "2"),
+        ("NUMEXPR_NUM_THREADS", "2"),
+    ] {
+        if std::env::var_os(key).is_none() {
+            std::env::set_var(key, value);
+        }
+    }
+
     // 日志目录：exe 目录/debug/logs（与前端日志同目录）
     let logs_dir = commands::utils::get_logs_dir();
 

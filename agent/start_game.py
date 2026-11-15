@@ -19,6 +19,9 @@ from threading import Timer
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "logs/startup" / (datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-launch.json")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from runtime_threads import configure_worker_threads
+
+configure_worker_threads(2)
 from file_io import write_json
 
 for _stream in (sys.stdout, sys.stderr):

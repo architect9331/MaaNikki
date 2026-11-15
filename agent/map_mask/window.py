@@ -43,6 +43,7 @@ class OverlayWindow:
         self.status = {"state": "starting"}
         self.phase = "starting"
         self.last_tick = time.monotonic()
+        self.wake = threading.Event()
         self.stop = threading.Event()
         self.ready = threading.Event()
         self.error = None
@@ -60,10 +61,12 @@ class OverlayWindow:
     def publish(self, points=(), hint="", circle=None):
         with self.lock:
             self.snapshot = (points, hint, circle, time.monotonic())
+        self.wake.set()
 
     def hide(self):
         with self.lock:
             self.snapshot = ((), "", None, 0.0)
+        self.wake.set()
         hud = self.hud_sink
         if hud is not None:
             hud.clear_exploration_hint()
@@ -71,6 +74,7 @@ class OverlayWindow:
     def close(self):
         self.hide()
         self.stop.set()
+        self.wake.set()
         self.thread.join(timeout=1)
 
     def diagnostic(self):
@@ -174,6 +178,7 @@ class OverlayWindow:
             applied_interactive = False
 
             while not self.stop.is_set():
+                self.wake.clear()
                 self.last_tick = time.monotonic()
                 self.phase = "snapshot"
                 with self.lock:
@@ -388,7 +393,9 @@ class OverlayWindow:
                     dispatch(ctypes.byref(msg))
                 previous_messages = tuple(messages[-8:])
                 self.phase = "idle"
-                self.stop.wait(1 / 60 if overlay_active else 0.1)
+                interactive_hover = overlay_active and (circle is None) and self.tutorial_provider is not None
+                wait_sec = 1 / 30 if interactive_hover else 0.08 if overlay_active else 0.2
+                self.wake.wait(wait_sec)
         finally:
             if hwnd:
                 bind(user, "DestroyWindow", w.BOOL, w.HWND)(hwnd)

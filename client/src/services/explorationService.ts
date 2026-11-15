@@ -241,11 +241,58 @@ export async function reserveDailyWindow(): Promise<() => void> {
 
 export function monitorExploration(): () => void {
   if (!isTauri()) return () => {};
+  let disposed = false;
   let pending = false;
-  const timer = window.setInterval(() => {
-    if (pending || !useExplorationStore.getState().enabled) return;
-    pending = true;
-    void serialize(reconcileSafely).finally(() => { pending = false; });
-  }, 1000);
-  return () => window.clearInterval(timer);
+  let rerunSoon = false;
+  let timer: number | undefined;
+
+  const scheduleNext = (delayMs?: number) => {
+    if (disposed) return;
+    if (delayMs === 0 && pending) {
+      rerunSoon = true;
+      return;
+    }
+    if (timer !== undefined) window.clearTimeout(timer);
+    const interval = delayMs ?? (active ? 3000 : 1500);
+    timer = window.setTimeout(() => {
+      if (disposed) return;
+      if (!useExplorationStore.getState().enabled) {
+        scheduleNext();
+        return;
+      }
+      if (pending) {
+        rerunSoon = true;
+        return;
+      }
+      pending = true;
+      rerunSoon = false;
+      void serialize(reconcileSafely).finally(() => {
+        pending = false;
+        const nextDelay = rerunSoon ? 0 : undefined;
+        rerunSoon = false;
+        scheduleNext(nextDelay);
+      });
+    }, interval);
+  };
+
+  let prevKey = '';
+  const signalKey = () => {
+    const s = useAppStore.getState();
+    return `${JSON.stringify(s.explorationSettings)}|${JSON.stringify(s.globalOptionValues)}|${s.instances.some((i) => i.isRunning) ? 1 : 0}`;
+  };
+  prevKey = signalKey();
+
+  const unsubscribeApp = useAppStore.subscribe(() => {
+    const nextKey = signalKey();
+    if (nextKey === prevKey) return;
+    prevKey = nextKey;
+    if (useExplorationStore.getState().enabled) scheduleNext(0);
+  });
+
+  scheduleNext();
+  return () => {
+    disposed = true;
+    if (timer !== undefined) window.clearTimeout(timer);
+    unsubscribeApp();
+  };
 }

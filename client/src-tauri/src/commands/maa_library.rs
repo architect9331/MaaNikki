@@ -49,6 +49,57 @@ fn load_failed(library: &mut LibraryState, path: Option<&Path>, error: String) -
     failure.notice.message
 }
 
+#[cfg(windows)]
+fn cap_opencv_worker_threads(maa_dll_path: &Path) {
+    use libloading::os::windows::Library as WinLibrary;
+    use std::ffi::c_int;
+    use std::sync::OnceLock;
+
+    static OPENCV_LIB: OnceLock<WinLibrary> = OnceLock::new();
+
+    let threads = std::thread::available_parallelism()
+        .map(|n| n.get().clamp(1, 2) as c_int)
+        .unwrap_or(2);
+    let opencv_path = maa_dll_path
+        .parent()
+        .map(|dir| dir.join("opencv_world4_maa.dll"));
+
+    let open_lib = || -> Option<WinLibrary> {
+        if let Ok(lib) = WinLibrary::open_already_loaded("opencv_world4_maa.dll") {
+            return Some(lib);
+        }
+        if let Some(path) = &opencv_path {
+            if path.is_file() {
+                if let Ok(lib) = unsafe { WinLibrary::new(path) } {
+                    return Some(lib);
+                }
+            }
+        }
+        None
+    };
+
+    let lib = if let Some(cached) = OPENCV_LIB.get() {
+        Some(cached)
+    } else if let Some(loaded) = open_lib() {
+        let _ = OPENCV_LIB.set(loaded);
+        OPENCV_LIB.get()
+    } else {
+        None
+    };
+
+    if let Some(lib) = lib {
+        unsafe {
+            if let Ok(set_threads) = lib.get::<unsafe extern "C" fn(c_int)>(b"cvSetNumThreads\0") {
+                set_threads(threads);
+                log::info!(
+                    "Configured opencv_world4_maa.dll worker threads to {}",
+                    threads
+                );
+            }
+        }
+    }
+}
+
 pub fn load(state: &MaaState, path: Option<PathBuf>) -> Result<String, String> {
     let mut library = state.library.lock().map_err(|e| e.to_string())?;
     if let Some(loaded) = &library.loaded {
@@ -80,6 +131,9 @@ pub fn load(state: &MaaState, path: Option<PathBuf>) -> Result<String, String> {
     if let Err(error) = maa_framework::load_library(&dll_path) {
         return Err(load_failed(&mut library, Some(&dll_path), error));
     }
+
+    #[cfg(windows)]
+    cap_opencv_worker_threads(&dll_path);
 
     // 只有动态库成功加载后才能调用 FFI，并提交可供查询的状态。
     let version = maa_framework::maa_version().to_string();

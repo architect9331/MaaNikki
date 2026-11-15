@@ -7,8 +7,8 @@ use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Component, Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::sync::{Arc, Mutex};
+use std::process::{Child, Command, Stdio};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
 
 use chrono::Local;
@@ -24,6 +24,101 @@ use super::utils::{emit_callback_event, get_logs_dir, handle_task_callback, norm
 use regex::Regex;
 use std::sync::LazyLock;
 use std::time::{Duration, Instant};
+
+#[cfg(windows)]
+fn assign_child_to_kill_job(child: &Child) {
+    use std::ffi::c_void;
+    use std::os::windows::io::AsRawHandle;
+
+    const JOB_OBJECT_EXTENDED_LIMIT_INFORMATION_CLASS: i32 = 9;
+    const JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE: u32 = 0x0000_2000;
+
+    #[repr(C)]
+    #[derive(Default)]
+    struct IoCounters {
+        read_operation_count: u64,
+        write_operation_count: u64,
+        other_operation_count: u64,
+        read_transfer_count: u64,
+        write_transfer_count: u64,
+        other_transfer_count: u64,
+    }
+
+    #[repr(C)]
+    #[derive(Default)]
+    struct JobObjectBasicLimitInformation {
+        per_process_user_time_limit: i64,
+        per_job_user_time_limit: i64,
+        limit_flags: u32,
+        minimum_working_set_size: usize,
+        maximum_working_set_size: usize,
+        active_process_limit: u32,
+        affinity: usize,
+        priority_class: u32,
+        scheduling_class: u32,
+    }
+
+    #[repr(C)]
+    #[derive(Default)]
+    struct JobObjectExtendedLimitInformation {
+        basic_limit_information: JobObjectBasicLimitInformation,
+        io_info: IoCounters,
+        process_memory_limit: usize,
+        job_memory_limit: usize,
+        peak_process_memory_used: usize,
+        peak_job_memory_used: usize,
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn CreateJobObjectW(security_attrs: *mut c_void, name: *const u16) -> *mut c_void;
+        fn SetInformationJobObject(
+            job: *mut c_void,
+            info_class: i32,
+            info: *const c_void,
+            info_len: u32,
+        ) -> i32;
+        fn AssignProcessToJobObject(job: *mut c_void, process: *mut c_void) -> i32;
+        fn CloseHandle(handle: *mut c_void) -> i32;
+    }
+
+    static AGENT_JOB: OnceLock<usize> = OnceLock::new();
+    let job = *AGENT_JOB.get_or_init(|| unsafe {
+        let h = CreateJobObjectW(std::ptr::null_mut(), std::ptr::null());
+        if h.is_null() {
+            warn!("[agent] CreateJobObjectW failed");
+            return 0;
+        }
+        let mut info = JobObjectExtendedLimitInformation::default();
+        info.basic_limit_information.limit_flags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        if SetInformationJobObject(
+            h,
+            JOB_OBJECT_EXTENDED_LIMIT_INFORMATION_CLASS,
+            &info as *const _ as *const c_void,
+            std::mem::size_of::<JobObjectExtendedLimitInformation>() as u32,
+        ) == 0
+        {
+            warn!("[agent] SetInformationJobObject failed");
+            CloseHandle(h);
+            return 0;
+        }
+        h as usize
+    });
+
+    if job != 0 {
+        unsafe {
+            if AssignProcessToJobObject(job as *mut c_void, child.as_raw_handle() as *mut c_void)
+                == 0
+            {
+                warn!(
+                    "[agent] AssignProcessToJobObject failed for pid {}: {}",
+                    child.id(),
+                    std::io::Error::last_os_error()
+                );
+            }
+        }
+    }
+}
 
 /// Agent 输出事件载荷
 #[derive(Clone, serde::Serialize)]
@@ -359,6 +454,11 @@ async fn start_single_agent(
             .current_dir(&cwd)
             .env("PYTHONIOENCODING", "utf-8")
             .env("PYTHONUTF8", "1")
+            .env("OMP_NUM_THREADS", "2")
+            .env("OMP_WAIT_POLICY", "PASSIVE")
+            .env("OPENBLAS_NUM_THREADS", "2")
+            .env("MKL_NUM_THREADS", "2")
+            .env("NUMEXPR_NUM_THREADS", "2")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
@@ -401,6 +501,9 @@ async fn start_single_agent(
             }
             msg
         })?;
+
+        #[cfg(windows)]
+        assign_child_to_kill_job(&child);
 
         // agent 日志文件路径（延迟创建：仅在有实际输出时才打开文件）
         let pid = child.id();

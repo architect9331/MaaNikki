@@ -1510,6 +1510,7 @@ class RouteMinimapOverlay:
         self.move_until: float = 0.0
         self.velocity: float = 0.0
         self.jump_start: float = 0.0
+        self.wake = threading.Event()
         self.stop = threading.Event()
         self.ready = threading.Event()
         self.thread: threading.Thread | None = None
@@ -1550,6 +1551,7 @@ class RouteMinimapOverlay:
                     "heading": (float(self.snapshot["heading"]) + float(delta_deg)) % 360.0,
                 }
                 self.updated_at = time.monotonic()
+        self.wake.set()
 
     def notify_motion(self, velocity: float, duration: float, jumping: bool):
         now = time.monotonic()
@@ -1566,6 +1568,7 @@ class RouteMinimapOverlay:
                     "jump_start": self.jump_start,
                 }
                 self.updated_at = now
+        self.wake.set()
 
     def publish_route(self, route, current_index: int, pose):
         if self.thread is None or route is None or pose is None or not getattr(pose, "position_reliable", False):
@@ -1613,6 +1616,7 @@ class RouteMinimapOverlay:
                 "role": "accent",
             }
             self.updated_at = now
+        self.wake.set()
         hud = self.hud_sink
         if hud is not None and hud.alive():
             if self.mode != "off":
@@ -1644,6 +1648,7 @@ class RouteMinimapOverlay:
                 "role": "accent",
             }
             self.updated_at = time.monotonic()
+        self.wake.set()
         hud = self.hud_sink
         if hud is not None and hud.alive():
             if self.mode != "off":
@@ -1681,6 +1686,7 @@ class RouteMinimapOverlay:
                 "title_color": title_color,
             }
             self.updated_at = time.monotonic()
+        self.wake.set()
         hud = self.hud_sink
         if hud is not None and hud.alive():
             if self.mode != "off":
@@ -1692,6 +1698,7 @@ class RouteMinimapOverlay:
         with self.lock:
             self.snapshot = None
             self.updated_at = 0.0
+        self.wake.set()
         hud = self.hud_sink
         if hud is not None:
             hud.clear_route()
@@ -1699,6 +1706,7 @@ class RouteMinimapOverlay:
     def close(self):
         self.hide()
         self.stop.set()
+        self.wake.set()
         if self.thread is not None:
             self.thread.join(timeout=0.8)
             self.thread = None
@@ -1769,8 +1777,10 @@ class RouteMinimapOverlay:
             next_cfg_poll = 0.0
 
             while not self.stop.is_set():
+                self.wake.clear()
                 with self.lock:
                     snap, updated = self.snapshot, self.updated_at
+                ar_active = False
                 now = time.monotonic()
                 if now >= next_cfg_poll:
                     next_cfg_poll = now + 0.35
@@ -1849,7 +1859,8 @@ class RouteMinimapOverlay:
                         break
                     translate(ctypes.byref(msg))
                     dispatch(ctypes.byref(msg))
-                self.stop.wait(1 / 30 if visible else 0.1)
+                wait_sec = 1 / 28 if (visible and ar_active) else 0.08 if visible else 0.2
+                self.wake.wait(wait_sec)
         finally:
             if hwnd:
                 bind(user, "DestroyWindow", w.BOOL, w.HWND)(hwnd)

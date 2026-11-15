@@ -2,7 +2,7 @@
 //!
 //! 提供实例状态和缓存数据查询功能
 
-use log::debug;
+use log::trace;
 use std::collections::HashMap;
 use std::io::Write;
 use std::sync::Arc;
@@ -35,7 +35,7 @@ pub fn maa_get_instance_state(
     state: State<Arc<MaaState>>,
     instance_id: String,
 ) -> Result<InstanceState, String> {
-    debug!(
+    trace!(
         "maa_get_instance_state called, instance_id: {}",
         instance_id
     );
@@ -83,7 +83,7 @@ pub fn get_all_states_impl(state: &MaaState) -> Result<AllInstanceStates, String
 /// 获取所有实例的状态快照（用于前端启动时恢复状态）
 #[tauri::command]
 pub fn maa_get_all_states(state: State<Arc<MaaState>>) -> Result<AllInstanceStates, String> {
-    debug!("maa_get_all_states called");
+    trace!("maa_get_all_states called");
     get_all_states_impl(&state)
 }
 
