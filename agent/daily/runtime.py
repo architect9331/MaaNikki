@@ -1457,6 +1457,7 @@ class Executors(Runtime):
         from collection.double_rewards import (
             JIHUA_LEVEL_IDS,
             load_realm_policy,
+            material_mode_uses_default,
             read_stage_double_quota,
             run_shared_bless_collection,
         )
@@ -1521,12 +1522,12 @@ class Executors(Runtime):
                 return game.realm("bless", maximize=False, return_page="calendar")
 
             if kind in ("jihua", "monster"):
-                mode_key = "jihua_mode" if kind == "jihua" else "monster_mode"
+                use_default, auto_fallback = material_mode_uses_default(policy, kind)
                 crafting, scoring = load_catalogs()
                 inv = state.get("inventory")
                 synced = bool(state.get("wardrobe_synced"))
                 picked = None
-                if policy[mode_key] == "follow_deficit":
+                if not use_default:
                     picked, inv, synced, _ = pick_realm_material_deficit(
                         child,
                         account,
@@ -1566,7 +1567,12 @@ class Executors(Runtime):
                             f"朝夕心愿补分 · 魔物试炼（{GOAL_LABELS[goal]}）：{meta['name']} 还差 {deficit}，挑战「{level_name}」1 次。"
                         )
                 else:
-                    if policy[mode_key] == "follow_deficit":
+                    if auto_fallback:
+                        if kind == "jihua":
+                            child.log("朝夕心愿补分 · 素材激化：未开启材料计划，自动回退默认「素材激化奖励」。")
+                        else:
+                            child.log("朝夕心愿补分 · 魔物试炼：未开启材料计划，自动回退默认「魔物试炼关卡」。")
+                    elif not use_default:
                         if kind == "jihua":
                             child.log("朝夕心愿补分 · 素材激化：所选焕新／制衣目标材料已备齐，改刷默认「素材激化奖励」。")
                         else:

@@ -136,6 +136,34 @@ def _load_double_config(rt) -> dict:
     return load_realm_policy(rt)
 
 
+def material_mode_uses_default(config: dict, kind: str) -> tuple[bool, bool]:
+    """Return ``(use_default, auto_fallback)`` for Jihua / Monster strategy.
+
+    Falls back to the default realm target automatically when the strategy is
+    ``follow_deficit`` but neither ``renewal`` nor ``crafting`` is enabled in
+    the queue, keeping explicit ``inherit_fallback`` distinct only for logging.
+    """
+    mode_key = "jihua_mode" if kind == "jihua" else "monster_mode"
+    if config.get(mode_key) == "inherit_fallback":
+        return True, False
+    if not any(g in ("renewal", "crafting") for g in (config.get("queue_goals") or ())):
+        return True, True
+    return False, False
+
+
+def _has_material_candidate(kind: str, config: dict, role: dict, crafting: dict, scoring: dict) -> bool:
+    use_default, _ = material_mode_uses_default(config, kind)
+    if use_default:
+        return True
+    checker = goal_has_jihua_potential if kind == "jihua" else goal_has_monster_potential
+    return any(
+        (not wardrobe_snapshot(role) and (goal == "crafting" or renewal_source(role.get("materials") or {}) == "plan"))
+        or checker(goal, role, crafting, scoring)
+        for goal in (config.get("queue_goals") or ())
+        if goal in ("renewal", "crafting")
+    )
+
+
 def overview_double_badges(rt, frame: np.ndarray | None, kinds=DOUBLE_EXEC_ORDER) -> set[str]:
     if frame is None:
         return set()
@@ -457,11 +485,8 @@ def _run_double_jihua(
     queue_goals: list[str],
     energy: int | None,
 ) -> tuple[bool, int | None]:
-    jihua_mode = config["jihua_mode"]
     jihua_goals = [goal for goal in queue_goals if goal in ("renewal", "crafting")]
-    if jihua_mode == "follow_deficit" and not jihua_goals:
-        rt.log("超级激化双倍（智能选择）：刷取顺序中未开启「焕新材料」或「制衣材料」，跳过本次双倍。")
-        return False, energy
+    use_default, auto_fallback = material_mode_uses_default(config, "jihua")
 
     any_spent = False
     goal_satisfied = False
@@ -491,7 +516,7 @@ def _run_double_jihua(
             rt.log(f"超级激化双倍：当前活跃能量 {energy} 点，不足 10 点，跳过。")
             break
 
-        if jihua_mode == "inherit_fallback":
+        if use_default:
             target_label = str((fields(rt.context, "MaaNikki_Jihua_Target") or {}).get("expected") or "闪亮泡泡").strip()
             mid = JIHUA_LEVEL_IDS.get(target_label)
             meta = mat_defs.get(mid or "") or {}
@@ -502,7 +527,8 @@ def _run_double_jihua(
             if runs <= 0:
                 break
             use_max = runs >= max_afford
-            rt.log(f"限时双倍插队 · 超级激化（默认设置）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * 10} 体力）。")
+            mode_note = "未开启材料计划，自动回退默认设置" if auto_fallback else "默认设置"
+            rt.log(f"限时双倍插队 · 超级激化（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * 10} 体力）。")
             _, energy_after = execute_material_run(rt, "jihua", target_label, runs, use_max)
             spent = max(0, energy - energy_after)
             if spent < 10:
@@ -704,11 +730,8 @@ def _run_double_monster(
     queue_goals: list[str],
     energy: int | None,
 ) -> tuple[bool, int | None]:
-    monster_mode = config["monster_mode"]
     monster_goals = [goal for goal in queue_goals if goal in ("renewal", "crafting")]
-    if monster_mode == "follow_deficit" and not monster_goals:
-        rt.log("魔物试炼双倍（智能选择）：刷取顺序中未开启「焕新材料」或「制衣材料」，跳过本次双倍。")
-        return False, energy
+    use_default, auto_fallback = material_mode_uses_default(config, "monster")
 
     any_spent = False
     goal_satisfied = False
@@ -739,14 +762,15 @@ def _run_double_monster(
             rt.log(f"魔物试炼双倍：当前活跃能量 {energy} 点，不足 {per_run} 点，跳过。")
             break
 
-        if monster_mode == "inherit_fallback":
+        if use_default:
             target_label = str((fields(rt.context, "MaaNikki_Monster_Level") or {}).get("expected") or "攀越").strip()
             cap = energy // per_run
             runs = min(rem_runs, cap)
             if runs <= 0:
                 break
             use_max = runs >= cap
-            rt.log(f"限时双倍插队 · 魔物试炼（默认设置）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * per_run} 体力）。")
+            mode_note = "未开启材料计划，自动回退默认设置" if auto_fallback else "默认设置"
+            rt.log(f"限时双倍插队 · 魔物试炼（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * per_run} 体力）。")
             _, energy_after = execute_material_run(rt, "monster", target_label, runs, use_max)
             spent = max(0, energy - energy_after)
             if spent < per_run:
@@ -860,25 +884,12 @@ def run_double_priority(rt) -> DoubleRunSummary:
         (rt.context.get_node_data(node) or {}).get("enabled", False) for node, _ in WEEKLY_TARGETS
     ):
         candidates.add("weekly")
-    if "jihua" in enabled_types:
-        if config["jihua_mode"] == "inherit_fallback" or any(
-            (not wardrobe_snapshot(role) and (goal == "crafting" or renewal_source(role.get("materials") or {}) == "plan"))
-            or goal_has_jihua_potential(goal, role, crafting, scoring)
-            for goal in queue_goals
-            if goal in ("renewal", "crafting")
-        ):
-            candidates.add("jihua")
+    for kind in ("jihua", "monster"):
+        if kind in enabled_types and _has_material_candidate(kind, config, role, crafting, scoring):
+            candidates.add(kind)
     if "bless" in enabled_types:
         if config["bless_mode"] == "inherit_fallback" or glow_shortfall(rt, role, organize):
             candidates.add("bless")
-    if "monster" in enabled_types:
-        if config["monster_mode"] == "inherit_fallback" or any(
-            (not wardrobe_snapshot(role) and (goal == "crafting" or renewal_source(role.get("materials") or {}) == "plan"))
-            or goal_has_monster_potential(goal, role, crafting, scoring)
-            for goal in queue_goals
-            if goal in ("renewal", "crafting")
-        ):
-            candidates.add("monster")
 
     if not candidates:
         rt.log("限时双倍插队：所勾选双倍活动的目标已备齐或尚未具备计算数据，跳过双倍检查。")

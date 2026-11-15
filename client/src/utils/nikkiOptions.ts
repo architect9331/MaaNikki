@@ -150,9 +150,15 @@ export function realmOptionUsageHint(
   const current = fallbackRealm(values);
   const dbl = doubleEnabled(values);
   const dblTypes = dbl ? doubleTypes(values) : [];
+  const hasMaterialPlans =
+    realmGoalRank(values, 'renewal') !== null || realmGoalRank(values, 'crafting') !== null;
   const blessFallback = doubleBlessMode(values) === 'InheritFallback';
-  const jihuaFallback = doubleJihuaMode(values) === 'InheritFallback';
-  const monsterFallback = monsterTargetMode(values) === 'InheritFallback';
+  const jihuaModeFallback = doubleJihuaMode(values) === 'InheritFallback';
+  const jihuaAutoFallback = !jihuaModeFallback && !hasMaterialPlans;
+  const jihuaFallback = jihuaModeFallback || jihuaAutoFallback;
+  const monsterModeFallback = monsterTargetMode(values) === 'InheritFallback';
+  const monsterAutoFallback = !monsterModeFallback && !hasMaterialPlans;
+  const monsterFallback = monsterModeFallback || monsterAutoFallback;
   const dblBless = dblTypes.includes('Bless');
   const dblJihua = dblTypes.includes('Jihua');
   const dblMonster = dblTypes.includes('Monster');
@@ -169,9 +175,13 @@ export function realmOptionUsageHint(
         label: dblJihuaFallback ? '默认副本 · 双倍与补分' : '默认副本',
         tone: 'accent',
         description: dblJihuaFallback
-          ? '已设为默认副本，且激化策略为「使用默认设置」：队列完成后、超级激化双倍与朝夕补分都兑换此处奖励。'
+          ? (jihuaAutoFallback
+            ? '已设为默认副本；因「焕新材料」与「制衣材料」均未开启，超级激化双倍与朝夕补分自动回退此处奖励。'
+            : '已设为默认副本，且激化策略为「使用默认设置」：队列完成后、超级激化双倍与朝夕补分都兑换此处奖励。')
           : jihuaFallback
-            ? '已设为默认副本，队列完成后直接兑换此处奖励，并同时覆盖朝夕心愿素材激化补分。'
+            ? (jihuaAutoFallback
+              ? '已设为默认副本；因未开启材料计划，朝夕心愿素材激化补分已自动回退为兑换此处奖励。'
+              : '已设为默认副本，队列完成后直接兑换此处奖励，并同时覆盖朝夕心愿素材激化补分。')
             : '已设为默认副本，队列完成后直接兑换此处奖励；智能选择已备齐但朝夕心愿仍需补分时也使用此处。',
       };
     }
@@ -179,20 +189,24 @@ export function realmOptionUsageHint(
       return {
         label: '双倍与补分',
         tone: 'accent',
-        description: '素材激化策略当前设为「使用默认设置」，超级激化双倍与朝夕心愿激化补分均直接兑换此处奖励。',
+        description: jihuaAutoFallback
+          ? '「焕新材料」与「制衣材料」均未开启，超级激化「智能选择」已自动回退为兑换此处奖励（双倍与朝夕补分共用）。'
+          : '素材激化策略当前设为「使用默认设置」，超级激化双倍与朝夕心愿激化补分均直接兑换此处奖励。',
       };
     }
     if (jihuaFallback) {
       return {
         label: '朝夕补分直用',
         tone: 'accent',
-        description: '素材激化策略当前设为「使用默认设置」，朝夕心愿需要挑战素材激化补分时直接兑换此处奖励。',
+        description: jihuaAutoFallback
+          ? '「焕新材料」与「制衣材料」均未开启，朝夕心愿激化补分已自动回退为兑换此处奖励。'
+          : '素材激化策略当前设为「使用默认设置」，朝夕心愿需要挑战素材激化补分时直接兑换此处奖励。',
       };
     }
     return {
       label: '无缺口默认',
       tone: 'muted',
-      description: '当前策略为「智能选择（根据收集计划）」；若收集目标已备齐（或未开启对应收集计划）但朝夕心愿仍需激化补分，改刷此处奖励。',
+      description: '当前策略为「智能选择（根据收集计划）」；若收集目标已备齐但朝夕心愿仍需激化补分，改刷此处奖励。',
     };
   }
 
@@ -249,9 +263,13 @@ export function realmOptionUsageHint(
         label: dblMonsterFallback ? '默认副本 · 双倍与补分' : '默认副本',
         tone: 'accent',
         description: dblMonsterFallback
-          ? '已设为默认副本，队列完成后挑战此关卡；且魔物试炼策略为「使用默认设置」，双倍与朝夕补分均直接挑战此处。'
+          ? (monsterAutoFallback
+            ? '已设为默认副本，队列完成后挑战此关卡；因「焕新材料」与「制衣材料」均未开启，双倍与朝夕补分自动回退此处。'
+            : '已设为默认副本，队列完成后挑战此关卡；且魔物试炼策略为「使用默认设置」，双倍与朝夕补分均直接挑战此处。')
           : monsterFallback
-            ? '已设为默认副本，队列完成后直接挑战此关卡；朝夕心愿魔物试炼补分也直接挑战此处。'
+            ? (monsterAutoFallback
+              ? '已设为默认副本，队列完成后挑战此关卡；因未开启材料计划，朝夕心愿魔物试炼补分自动回退此处。'
+              : '已设为默认副本，队列完成后直接挑战此关卡；朝夕心愿魔物试炼补分也直接挑战此处。')
             : '已设为默认副本，队列完成后直接挑战此关卡；晶石与泡泡已备齐仍需朝夕补分时也使用此处。',
       };
     }
@@ -259,20 +277,24 @@ export function realmOptionUsageHint(
       return {
         label: '双倍与补分',
         tone: 'accent',
-        description: '魔物试炼策略当前设为「使用默认设置」，魔物试炼双倍与朝夕心愿补分均直接挑战此关卡。',
+        description: monsterAutoFallback
+          ? '「焕新材料」与「制衣材料」均未开启，魔物试炼「智能选择」已自动回退为挑战此处默认关卡（双倍与朝夕补分共用）。'
+          : '魔物试炼策略当前设为「使用默认设置」，魔物试炼双倍与朝夕心愿补分均直接挑战此关卡。',
       };
     }
     if (monsterFallback) {
       return {
         label: '朝夕补分直用',
         tone: 'accent',
-        description: '魔物试炼策略当前设为「使用默认设置」，朝夕心愿需要魔物试炼补分时直接挑战此关卡。',
+        description: monsterAutoFallback
+          ? '「焕新材料」与「制衣材料」均未开启，朝夕心愿魔物试炼补分已自动回退为挑战此处默认关卡。'
+          : '魔物试炼策略当前设为「使用默认设置」，朝夕心愿需要魔物试炼补分时直接挑战此关卡。',
       };
     }
     return {
       label: '无缺口默认',
       tone: 'muted',
-      description: '按「智能选择（根据收集计划）」已无试炼晶石或魔物泡泡缺口（或未开启对应收集计划），但朝夕心愿仍需补分时改刷此处。',
+      description: '按「智能选择（根据收集计划）」已无试炼晶石或魔物泡泡缺口，但朝夕心愿仍需补分时改刷此处。',
     };
   }
 

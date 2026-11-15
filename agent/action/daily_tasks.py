@@ -45,7 +45,7 @@ class DailyRun(Executors):
             return select_energy(pending, predicted, preferred)
         from account_state import AccountState
         from action.blessing_pursuit import glow_shortfall
-        from collection.double_rewards import load_realm_policy, overview_double_badges
+        from collection.double_rewards import load_realm_policy, material_mode_uses_default, overview_double_badges
         from collection.material_pursuit import load_catalogs, pick_realm_material_deficit
         from daily.gameplay import Gameplay
 
@@ -73,8 +73,8 @@ class DailyRun(Executors):
             has_need = False
             goal_rank = 99
             if kind in ("jihua", "monster"):
-                mode_key = "jihua_mode" if kind == "jihua" else "monster_mode"
-                if policy[mode_key] == "follow_deficit":
+                use_default, _ = material_mode_uses_default(policy, kind)
+                if not use_default:
                     picked, inv, synced, _ = pick_realm_material_deficit(
                         inspect_rt,
                         account,

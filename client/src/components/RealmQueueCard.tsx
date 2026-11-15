@@ -7,6 +7,7 @@ import {
   ChevronRight,
   GripVertical,
   Hammer,
+  Info,
   Loader2,
   Shield,
   Sparkles,
@@ -503,9 +504,9 @@ export function RealmQueueCard({
             </span>
           </p>
           {dblPlanEmpty && (
-            <p className="flex items-center gap-1 text-warning">
-              <AlertTriangle className="h-3 w-3 shrink-0" />
-              {missingPlanKinds.join('与')}策略当前设为「智能选择（根据收集计划）」，但刷取顺序中「焕新材料」与「制衣材料」均未开启，对应双倍将跳过；如需固定刷取可在下方改为「使用默认设置」。
+            <p className="flex items-center gap-1 text-text-secondary">
+              <Info className="h-3 w-3 shrink-0 text-accent" />
+              {missingPlanKinds.join('与')}策略当前设为「智能选择（根据收集计划）」，因「焕新材料」与「制衣材料」均未开启，将自动回退为「默认副本」中的对应默认设置。
             </p>
           )}
         </div>
