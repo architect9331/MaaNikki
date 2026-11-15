@@ -28,9 +28,13 @@ HANDOFF_FILE = ROOT / "logs" / "startup" / "window_restore.json"
 
 GWL_STYLE = -16
 GWL_EXSTYLE = -20
+WS_MAXIMIZE = 0x01000000
 WS_POPUP = 0x80000000
 WS_BORDERLESS_MASK = 0x00CF0000
 WS_EX_BORDERLESS_MASK = 0x00020301
+SW_SHOWNORMAL = 1
+SW_SHOWMINIMIZED = 2
+SW_SHOWMAXIMIZED = 3
 SW_SHOWNOACTIVATE = 4
 SW_RESTORE = 9
 MONITOR_DEFAULTTONEAREST = 2
@@ -38,6 +42,13 @@ SWP_RESIZE_FLAGS = 0x4034  # SWP_NOACTIVATE | SWP_NOZORDER | SWP_FRAMECHANGED | 
 SWP_STYLE_FLAGS = 0x0037   # SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
 SWP_RECT_FLAGS = 0x0034    # SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
 DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = ctypes.c_void_p(-4)
+
+FAILED_RETRY_COOLDOWN_SECONDS = 8.0
+READJUST_SETTLE_SECONDS = 1.5
+OSCILLATION_WINDOW_SECONDS = 45.0
+MAX_RECENT_ADJUSTMENTS = 3
+MAX_FAILED_ATTEMPTS = 2
+TALL_FAILED_COOLDOWN_SECONDS = 15.0
 
 BASE_CAPTURE_WIDTH = 1280
 BASE_CAPTURE_HEIGHT = 720
@@ -114,6 +125,8 @@ def _user32():
     u32.GetWindowRect.restype = wintypes.BOOL
     u32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(RECT)]
     u32.GetClientRect.restype = wintypes.BOOL
+    u32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(POINT)]
+    u32.ClientToScreen.restype = wintypes.BOOL
     u32.MonitorFromWindow.argtypes = [wintypes.HWND, wintypes.DWORD]
     u32.MonitorFromWindow.restype = wintypes.HMONITOR
     u32.GetMonitorInfoW.argtypes = [wintypes.HMONITOR, ctypes.POINTER(MONITORINFO)]
@@ -214,6 +227,29 @@ def _client_size(u32, hwnd: int) -> tuple[int, int] | None:
     return int(rc.right - rc.left), int(rc.bottom - rc.top)
 
 
+def _client_screen_rect(u32, hwnd: int) -> tuple[int, int, int, int] | None:
+    """Return rendered client bounds in physical screen pixels (excluding DWM shadow)."""
+    csize = _client_size(u32, hwnd)
+    if csize is None or csize[0] <= 0 or csize[1] <= 0:
+        return None
+    pt = POINT(0, 0)
+    if not u32.ClientToScreen(hwnd, ctypes.byref(pt)):
+        return None
+    left, top = int(pt.x), int(pt.y)
+    return left, top, left + csize[0], top + csize[1]
+
+
+def _monitor_info(u32, hwnd: int) -> MONITORINFO | None:
+    hmon = u32.MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)
+    if not hmon:
+        return None
+    mi = MONITORINFO()
+    mi.cbSize = ctypes.sizeof(MONITORINFO)
+    if not u32.GetMonitorInfoW(hmon, ctypes.byref(mi)):
+        return None
+    return mi
+
+
 def _poll_capture(controller, stopped_fn=None):
     """Capture a transition frame directly without triggering fatal frame_size stops."""
     if controller is None or (stopped_fn is not None and stopped_fn()):
@@ -271,9 +307,18 @@ def _restore_snapshot(
             return
         u32.SetWindowLongPtrW(hwnd, GWL_STYLE, snap.style)
         u32.SetWindowLongPtrW(hwnd, GWL_EXSTYLE, snap.ex_style)
-        u32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_STYLE_FLAGS)
-        u32.SetWindowPlacement(hwnd, ctypes.byref(snap.placement))
-        if not u32.IsZoomed(hwnd):
+        show_cmd = int(snap.placement.showCmd)
+        if show_cmd in (SW_SHOWMINIMIZED, SW_SHOWMAXIMIZED):
+            u32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_STYLE_FLAGS)
+            u32.SetWindowPlacement(hwnd, ctypes.byref(snap.placement))
+            if not u32.IsZoomed(hwnd) and not u32.IsIconic(hwnd):
+                w = int(snap.rect.right - snap.rect.left)
+                h = int(snap.rect.bottom - snap.rect.top)
+                if w > 0 and h > 0:
+                    u32.SetWindowPos(
+                        hwnd, 0, int(snap.rect.left), int(snap.rect.top), w, h, SWP_RECT_FLAGS
+                    )
+        else:
             w = int(snap.rect.right - snap.rect.left)
             h = int(snap.rect.bottom - snap.rect.top)
             if w > 0 and h > 0:
@@ -285,11 +330,13 @@ def _restore_snapshot(
                     if actual is not None and actual != snap.client_size:
                         dw = snap.client_size[0] - actual[0]
                         dh = snap.client_size[1] - actual[1]
-                        if abs(dw) <= 16 and abs(dh) <= 16 and w + dw > 0 and h + dh > 0:
+                        if abs(dw) <= 32 and abs(dh) <= 64 and w + dw > 0 and h + dh > 0:
                             u32.SetWindowPos(
                                 hwnd, 0, int(snap.rect.left), int(snap.rect.top),
                                 w + dw, h + dh, SWP_RECT_FLAGS,
                             )
+            else:
+                u32.SetWindowPlacement(hwnd, ctypes.byref(snap.placement))
 
 
 def _snapshot_to_dict(snap: WindowSnapshot) -> dict:
@@ -340,21 +387,19 @@ def _snapshot_from_dict(data: dict) -> WindowSnapshot | None:
         return None
 
 
-def closest_16_9_geometry(
+def _geometry_candidates(
     u32, hwnd: int, snap: WindowSnapshot
-) -> tuple[tuple[int, int], tuple[int, int]] | None:
-    """Compute the closest physical 16:9 size and unclipped monitor position for hwnd."""
+) -> list[tuple[tuple[int, int], tuple[int, int]]]:
+    """Return prioritized borderless 16:9 (size, pos) candidates for hwnd."""
     if snap.client_size is None:
-        return None
+        return []
     cw, ch = snap.client_size
     if cw <= 0 or ch <= 0:
-        return None
+        return []
     with _per_monitor_dpi(u32):
-        hmon = u32.MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)
-        mi = MONITORINFO()
-        mi.cbSize = ctypes.sizeof(MONITORINFO)
-        if not hmon or not u32.GetMonitorInfoW(hmon, ctypes.byref(mi)):
-            return None
+        mi = _monitor_info(u32, hwnd)
+        if mi is None:
+            return []
     mon_left, mon_top = int(mi.rcMonitor.left), int(mi.rcMonitor.top)
     mon_right, mon_bottom = int(mi.rcMonitor.right), int(mi.rcMonitor.bottom)
     mon_w, mon_h = mon_right - mon_left, mon_bottom - mon_top
@@ -364,7 +409,7 @@ def closest_16_9_geometry(
 
     max_k = min(mon_w // 16, mon_h // 9)
     if max_k < 40:
-        return None
+        return []
     min_k = min(80, max_k)
     win_w = int(snap.rect.right - snap.rect.left)
     win_h = int(snap.rect.bottom - snap.rect.top)
@@ -376,18 +421,34 @@ def closest_16_9_geometry(
     else:
         k = max(min_k, min(max_k, round(ch / 9)))
 
-    target_w, target_h = 16 * k, 9 * k
     cx = (int(snap.rect.left) + int(snap.rect.right)) // 2 if win_w > 0 else (mon_left + mon_right) // 2
     cy = (int(snap.rect.top) + int(snap.rect.bottom)) // 2 if win_h > 0 else (mon_top + mon_bottom) // 2
-    win_x = cx - target_w // 2
-    win_y = cy - target_h // 2
-    if target_w <= work_w and target_h <= work_h:
-        win_x = max(work_left, min(win_x, work_right - target_w))
-        win_y = max(work_top, min(win_y, work_bottom - target_h))
-    else:
-        win_x = max(mon_left, min(win_x, mon_right - target_w))
-        win_y = max(mon_top, min(win_y, mon_bottom - target_h))
-    return (target_w, target_h), (win_x, win_y)
+
+    def _place(k_val: int) -> tuple[tuple[int, int], tuple[int, int]]:
+        tw, th = 16 * k_val, 9 * k_val
+        wx = cx - tw // 2
+        wy = cy - th // 2
+        if tw <= work_w and th <= work_h:
+            wx = max(work_left, min(wx, work_right - tw))
+            wy = max(work_top, min(wy, work_bottom - th))
+        else:
+            wx = max(mon_left, min(wx, mon_right - tw))
+            wy = max(mon_top, min(wy, mon_bottom - th))
+        return (tw, th), (wx, wy)
+
+    candidates = [_place(k)]
+    work_k = min(work_w // 16, work_h // 9)
+    if work_k >= 40 and work_k < k and (16 * k > work_w or 9 * k > work_h):
+        candidates.append(_place(work_k))
+    return candidates
+
+
+def closest_16_9_geometry(
+    u32, hwnd: int, snap: WindowSnapshot
+) -> tuple[tuple[int, int], tuple[int, int]] | None:
+    """Compute the closest physical 16:9 size and unclipped monitor position for hwnd."""
+    candidates = _geometry_candidates(u32, hwnd, snap)
+    return candidates[0] if candidates else None
 
 
 def heal_16_9_window(controller=None, *, hwnd: int | None = None):
@@ -397,6 +458,8 @@ def heal_16_9_window(controller=None, *, hwnd: int | None = None):
     u32 = _user32()
     target_hwnd = int(hwnd) if hwnd else _resolve_hwnd(controller=controller)
     if not target_hwnd:
+        return None
+    if is_resolution_adjustment_blocked(target_hwnd):
         return None
     resized = False
     with _per_monitor_dpi(u32):
@@ -426,35 +489,44 @@ def heal_16_9_window(controller=None, *, hwnd: int | None = None):
         win_w = int(wrect.right - wrect.left)
         win_h = int(wrect.bottom - wrect.top)
         work_w = work_h = 0
-        mi = None
-        hmon = u32.MonitorFromWindow(target_hwnd, MONITOR_DEFAULTTONEAREST)
-        if hmon:
-            info = MONITORINFO()
-            info.cbSize = ctypes.sizeof(MONITORINFO)
-            if u32.GetMonitorInfoW(hmon, ctypes.byref(info)):
-                mi = info
-                work_w = int(mi.rcWork.right - mi.rcWork.left)
-                work_h = int(mi.rcWork.bottom - mi.rcWork.top)
+        mi = _monitor_info(u32, target_hwnd)
+        if mi is not None:
+            work_w = int(mi.rcWork.right - mi.rcWork.left)
+            work_h = int(mi.rcWork.bottom - mi.rcWork.top)
         dw = dh = 0
         cand_dw = target_cw - cw
         cand_dh = target_ch - ch
-        if 1 <= abs(cand_dw) <= max_px and (work_w <= 0 or win_w + cand_dw <= work_w):
+        can_dw = (
+            1 <= abs(cand_dw) <= max_px
+            and (work_w <= 0 or win_w + cand_dw <= work_w)
+            and (cw < BASE_CAPTURE_WIDTH or cw + cand_dw >= BASE_CAPTURE_WIDTH)
+        )
+        can_dh = (
+            1 <= abs(cand_dh) <= max_px
+            and (work_h <= 0 or win_h + cand_dh <= work_h)
+            and (ch < BASE_CAPTURE_HEIGHT or ch + cand_dh >= BASE_CAPTURE_HEIGHT)
+        )
+        if can_dw and (not can_dh or abs(cand_dw) <= abs(cand_dh)):
             dw = cand_dw
-        elif 1 <= abs(cand_dh) <= max_px and (work_h <= 0 or win_h + cand_dh <= work_h):
+        elif can_dh:
             dh = cand_dh
         w = win_w + dw
         h = win_h + dh
         new_left = int(wrect.left)
         new_top = int(wrect.top)
-        if mi is not None and 0 < w <= work_w and 0 < h <= work_h:
+        client_box = _client_screen_rect(u32, target_hwnd)
+        if mi is not None and client_box is not None and 0 < w <= work_w and 0 < h <= work_h:
+            c_left, c_top, c_right, c_bottom = client_box
             if (
-                int(wrect.right) > int(mi.rcMonitor.right)
-                or int(wrect.bottom) > int(mi.rcMonitor.bottom)
-                or new_left < int(mi.rcMonitor.left)
-                or new_top < int(mi.rcMonitor.top)
+                c_right + dw > int(mi.rcMonitor.right)
+                or c_bottom + dh > int(mi.rcMonitor.bottom)
+                or c_left < int(mi.rcMonitor.left)
+                or c_top < int(mi.rcMonitor.top)
             ):
-                new_left = max(int(mi.rcWork.left), min(new_left, int(mi.rcWork.right) - w))
-                new_top = max(int(mi.rcWork.top), min(new_top, int(mi.rcWork.bottom) - h))
+                shifted_x = max(int(mi.rcWork.left), min(new_left, int(mi.rcWork.right) - w))
+                shifted_y = max(int(mi.rcWork.top), min(new_top, int(mi.rcWork.bottom) - h))
+                if shifted_x != new_left or shifted_y != new_top:
+                    new_left, new_top = shifted_x, shifted_y
         if (dw or dh or new_left != int(wrect.left) or new_top != int(wrect.top)) and w > 0 and h > 0:
             resized = bool(
                 u32.SetWindowPos(
@@ -503,20 +575,31 @@ def _apply_borderless_resolution(
             deadline = time.monotonic() + 1.5
             while time.monotonic() < deadline and u32.IsIconic(hwnd):
                 time.sleep(0.03)
+        borderless_style = ctypes.c_ssize_t(
+            (snap.style & ~(WS_BORDERLESS_MASK | WS_MAXIMIZE)) | WS_POPUP
+        ).value
+        borderless_ex_style = ctypes.c_ssize_t(snap.ex_style & ~WS_EX_BORDERLESS_MASK).value
+        req_w, req_h = target_w, target_h
         if u32.IsZoomed(hwnd):
             window_modified = True
             fg = int(u32.GetForegroundWindow() or 0)
-            u32.ShowWindow(hwnd, SW_RESTORE if fg == hwnd else SW_SHOWNOACTIVATE)
-            deadline = time.monotonic() + 1.5
-            while time.monotonic() < deadline and u32.IsZoomed(hwnd):
-                time.sleep(0.03)
-
-        borderless_style = ctypes.c_ssize_t((snap.style & ~WS_BORDERLESS_MASK) | WS_POPUP).value
-        borderless_ex_style = ctypes.c_ssize_t(snap.ex_style & ~WS_EX_BORDERLESS_MASK).value
-        window_modified = True
-        u32.SetWindowLongPtrW(hwnd, GWL_STYLE, borderless_style)
-        u32.SetWindowLongPtrW(hwnd, GWL_EXSTYLE, borderless_ex_style)
-        req_w, req_h = target_w, target_h
+            u32.SetWindowLongPtrW(hwnd, GWL_STYLE, borderless_style)
+            u32.SetWindowLongPtrW(hwnd, GWL_EXSTYLE, borderless_ex_style)
+            wp = WINDOWPLACEMENT()
+            wp.length = ctypes.sizeof(WINDOWPLACEMENT)
+            if u32.GetWindowPlacement(hwnd, ctypes.byref(wp)):
+                wp.showCmd = SW_SHOWNORMAL if fg == hwnd else SW_SHOWNOACTIVATE
+                wp.rcNormalPosition = RECT(win_x, win_y, win_x + req_w, win_y + req_h)
+                u32.SetWindowPlacement(hwnd, ctypes.byref(wp))
+            if u32.IsZoomed(hwnd):
+                u32.ShowWindow(hwnd, SW_RESTORE if fg == hwnd else SW_SHOWNOACTIVATE)
+                deadline = time.monotonic() + 1.5
+                while time.monotonic() < deadline and u32.IsZoomed(hwnd):
+                    time.sleep(0.03)
+        else:
+            window_modified = True
+            u32.SetWindowLongPtrW(hwnd, GWL_STYLE, borderless_style)
+            u32.SetWindowLongPtrW(hwnd, GWL_EXSTYLE, borderless_ex_style)
         if not u32.SetWindowPos(hwnd, 0, win_x, win_y, req_w, req_h, SWP_RESIZE_FLAGS):
             return False, None, window_modified
 
@@ -524,12 +607,19 @@ def _apply_borderless_resolution(
         stable_since = None
         mismatch_since = None
         last_csize = None
-        adjusted_delta = False
+        last_wsize = None
+        inset_adjustments = 0
         resized_ok = False
         while time.monotonic() < deadline:
             if (stopped_fn is not None and stopped_fn()) or not u32.IsWindow(hwnd):
                 break
             csize = _client_size(u32, hwnd)
+            wrect = RECT()
+            wsize = (
+                (int(wrect.right - wrect.left), int(wrect.bottom - wrect.top))
+                if u32.GetWindowRect(hwnd, ctypes.byref(wrect))
+                else None
+            )
             now = time.monotonic()
             if csize == (target_w, target_h):
                 mismatch_since = None
@@ -540,21 +630,30 @@ def _apply_borderless_resolution(
                     break
             else:
                 stable_since = None
-                if csize is not None and csize == last_csize:
+                if csize is not None and csize == last_csize and wsize == last_wsize:
                     if mismatch_since is None:
                         mismatch_since = now
-                    elif not adjusted_delta and now - mismatch_since >= 0.16:
+                    elif (
+                        inset_adjustments < 2
+                        and now - mismatch_since >= 0.22
+                        and wsize is not None
+                        and (wsize == (req_w, req_h) or now - mismatch_since >= 0.45)
+                    ):
                         cw, ch = csize
-                        dw = target_w - cw
-                        dh = target_h - ch
-                        if abs(dw) <= 32 and abs(dh) <= 64:
-                            adjusted_delta = True
-                            req_w += dw
-                            req_h += dh
-                            u32.SetWindowPos(hwnd, 0, win_x, win_y, req_w, req_h, SWP_RESIZE_FLAGS)
-                            mismatch_since = None
+                        nc_w = wsize[0] - cw
+                        nc_h = wsize[1] - ch
+                        if 0 <= nc_w <= 64 and 0 <= nc_h <= 64:
+                            desired_w = target_w + nc_w
+                            desired_h = target_h + nc_h
+                            if (desired_w, desired_h) != (req_w, req_h):
+                                inset_adjustments += 1
+                                req_w, req_h = desired_w, desired_h
+                                u32.SetWindowPos(hwnd, 0, win_x, win_y, req_w, req_h, SWP_RESIZE_FLAGS)
+                                mismatch_since = None
+                                last_csize = last_wsize = None
                 else:
                     last_csize = csize
+                    last_wsize = wsize
                     mismatch_since = now
             time.sleep(0.04)
 
@@ -574,6 +673,8 @@ def _apply_borderless_resolution(
     nudged_capture = False
     solid_streak = 0
     clamped_streak = 0
+    off_shape = None
+    off_streak = 0
     for _ in range(16):
         if stopped_fn is not None and stopped_fn():
             break
@@ -582,6 +683,8 @@ def _apply_borderless_resolution(
         if frame is None:
             continue
         if frame.shape[:2] == (cap_h, cap_w) and (not require_unclipped or not is_clipped_game_frame(frame)):
+            off_shape = None
+            off_streak = 0
             if cap_h > cap_w:
                 top_band = frame[: max(1, cap_w * 9 // 16), :]
                 bottom_band = frame[cap_h * 3 // 4 :, :]
@@ -611,21 +714,38 @@ def _apply_borderless_resolution(
         else:
             solid_streak = 0
             clamped_streak = 0
-        if not nudged_capture:
-            if frame.shape[1] == cap_w and 1 <= abs(frame.shape[0] - cap_h) <= 2:
-                nudged_capture = True
-                dh = round((cap_h - frame.shape[0]) * req_w / cap_w)
-                if dh:
-                    req_h += dh
-                    with _per_monitor_dpi(u32):
-                        u32.SetWindowPos(hwnd, 0, win_x, win_y, req_w, req_h, SWP_RESIZE_FLAGS)
-            elif frame.shape[0] == cap_h and 1 <= abs(frame.shape[1] - cap_w) <= 2:
-                nudged_capture = True
-                dw = round((cap_w - frame.shape[1]) * req_h / cap_h)
-                if dw:
-                    req_w += dw
-                    with _per_monitor_dpi(u32):
-                        u32.SetWindowPos(hwnd, 0, win_x, win_y, req_w, req_h, SWP_RESIZE_FLAGS)
+            shape_now = frame.shape[:2]
+            is_small_delta = (
+                (shape_now[1] == cap_w and 1 <= abs(shape_now[0] - cap_h) <= 2)
+                or (shape_now[0] == cap_h and 1 <= abs(shape_now[1] - cap_w) <= 2)
+            )
+            if is_small_delta and shape_now == off_shape:
+                off_streak += 1
+            elif is_small_delta:
+                off_shape = shape_now
+                off_streak = 1
+            else:
+                off_shape = None
+                off_streak = 0
+            if not nudged_capture and off_streak >= 3:
+                if shape_now[1] == cap_w and 1 <= abs(shape_now[0] - cap_h) <= 2:
+                    nudged_capture = True
+                    dh = round((cap_h - shape_now[0]) * req_w / cap_w)
+                    if dh:
+                        req_h += dh
+                        with _per_monitor_dpi(u32):
+                            u32.SetWindowPos(hwnd, 0, win_x, win_y, req_w, req_h, SWP_RESIZE_FLAGS)
+                        time.sleep(0.20)
+                elif shape_now[0] == cap_h and 1 <= abs(shape_now[1] - cap_w) <= 2:
+                    nudged_capture = True
+                    dw = round((cap_w - shape_now[1]) * req_h / cap_h)
+                    if dw:
+                        req_w += dw
+                        with _per_monitor_dpi(u32):
+                            u32.SetWindowPos(hwnd, 0, win_x, win_y, req_w, req_h, SWP_RESIZE_FLAGS)
+                        time.sleep(0.20)
+                off_shape = None
+                off_streak = 0
 
     return False, None, window_modified
 
@@ -633,9 +753,42 @@ def _apply_borderless_resolution(
 _SESSION_LOCK = Lock()
 _SESSION_16_9_SNAPSHOT: dict[int, WindowSnapshot] = {}
 _SESSION_NOTIFIED: set[int] = set()
-_LAST_FAILED_ATTEMPT: dict[tuple[int, tuple[int, int]], float] = {}
+_HWND_STATE: dict[int, dict] = {}
+_TALL_FAILED: dict[int, list[float]] = {}
 _ATEXIT_REGISTERED = False
-_HANDOFF_ADOPTED = False
+
+
+def _window_state(hwnd: int) -> dict:
+    return _HWND_STATE.setdefault(
+        int(hwnd),
+        {
+            "adj_times": [],
+            "fail_times": [],
+            "failed_sizes": set(),
+            "blocked": False,
+            "blocked_notified": False,
+        },
+    )
+
+
+def _emit_resolution_notice(notify, msg: str, *, write_log: bool = True) -> None:
+    if notify is None or write_log:
+        write_message(msg, msg)
+    if notify is not None:
+        try:
+            notify(msg)
+        except Exception:
+            pass
+
+
+def is_resolution_adjustment_blocked(hwnd: int | None = None) -> bool:
+    """Return True when repeated failures or engine resets tripped the anti-oscillation guard."""
+    target = int(hwnd) if hwnd else _resolve_hwnd()
+    if not target:
+        return False
+    with _SESSION_LOCK:
+        state = _HWND_STATE.get(target)
+        return bool(state and state.get("blocked"))
 
 
 def _ensure_atexit_registered():
@@ -647,11 +800,7 @@ def _ensure_atexit_registered():
 
 def adopt_session_16_9_handoff():
     """Adopt a pre-StartGame window snapshot handed off by the startup pretask."""
-    global _HANDOFF_ADOPTED
     with _SESSION_LOCK:
-        if _HANDOFF_ADOPTED:
-            return
-        _HANDOFF_ADOPTED = True
         if not HANDOFF_FILE.is_file():
             return
         try:
@@ -694,6 +843,8 @@ def persist_session_16_9_handoff():
         ]
         _SESSION_16_9_SNAPSHOT.clear()
         _SESSION_NOTIFIED.clear()
+        _HWND_STATE.clear()
+        _TALL_FAILED.clear()
     if live:
         try:
             HANDOFF_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -705,12 +856,13 @@ def persist_session_16_9_handoff():
 def restore_session_16_9_windows():
     """Restore all game windows auto-adjusted to 16:9 during the current task session."""
     with _SESSION_LOCK:
-        if not _SESSION_16_9_SNAPSHOT:
-            return
         snapshots = list(_SESSION_16_9_SNAPSHOT.values())
         _SESSION_16_9_SNAPSHOT.clear()
         _SESSION_NOTIFIED.clear()
-        _LAST_FAILED_ATTEMPT.clear()
+        _HWND_STATE.clear()
+        _TALL_FAILED.clear()
+    if not snapshots:
+        return
     u32 = _user32()
     for snap in snapshots:
         try:
@@ -719,21 +871,74 @@ def restore_session_16_9_windows():
             pass
 
 
-def ensure_16_9_window(controller=None, *, context=None, hwnd: int | None = None, notify=None):
+def _is_already_borderless_in_monitor(
+    u32, hwnd: int, snap: WindowSnapshot, target_size: tuple[int, int]
+) -> bool:
+    if (snap.style & WS_BORDERLESS_MASK) != 0 or (snap.ex_style & WS_EX_BORDERLESS_MASK) != 0:
+        return False
+    if snap.client_size != target_size:
+        return False
+    with _per_monitor_dpi(u32):
+        if u32.IsIconic(hwnd) or u32.IsZoomed(hwnd):
+            return False
+        mi = _monitor_info(u32, hwnd)
+        cbox = _client_screen_rect(u32, hwnd)
+        if mi is None or cbox is None:
+            return False
+        return (
+            cbox[0] >= int(mi.rcMonitor.left)
+            and cbox[1] >= int(mi.rcMonitor.top)
+            and cbox[2] <= int(mi.rcMonitor.right)
+            and cbox[3] <= int(mi.rcMonitor.bottom)
+        )
+
+
+def _poll_valid_16_9_frame(controller, *, stopped_fn=None, timeout: float = 0.9):
+    """Poll captures briefly for a settled unclipped 1280x720 frame."""
+    if controller is None:
+        return None
+    deadline = time.monotonic() + max(0.0, float(timeout))
+    while True:
+        if stopped_fn is not None and stopped_fn():
+            return None
+        frame = _poll_capture(controller, stopped_fn=stopped_fn)
+        if (
+            frame is not None
+            and frame.shape[:2] == (BASE_CAPTURE_HEIGHT, BASE_CAPTURE_WIDTH)
+            and not is_clipped_game_frame(frame)
+        ):
+            return frame
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return None
+        time.sleep(min(0.08, remaining))
+
+
+def ensure_16_9_window(
+    controller=None,
+    *,
+    context=None,
+    hwnd: int | None = None,
+    notify=None,
+    write_log: bool = True,
+):
     """Ensure the game window renders an unclipped 16:9 frame, adjusting resolution when enabled."""
     if (TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT) in ALLOWED_FRAME_SIZES:
         return None
-    healed = heal_16_9_window(controller, hwnd=hwnd)
+    target_hwnd = int(hwnd) if hwnd else _resolve_hwnd(controller=controller)
+    if not target_hwnd:
+        return None
+    if is_resolution_adjustment_blocked(target_hwnd):
+        return None
+    healed = heal_16_9_window(controller, hwnd=target_hwnd)
     if healed is not None:
         return healed
     if not is_auto_adjust_resolution_enabled(context):
         return None
 
-    target_hwnd = int(hwnd) if hwnd else _resolve_hwnd(controller=controller)
-    if not target_hwnd:
-        return None
     u32 = _user32()
     session = active_session()
+    stopped_fn = session.stopped if session else None
     in_bg = bool(session and (
         session._background_active() if hasattr(session, "_background_active")
         else getattr(session, "_background_observation", False)
@@ -742,20 +947,66 @@ def ensure_16_9_window(controller=None, *, context=None, hwnd: int | None = None
         if not u32.IsWindow(target_hwnd) or (in_bg and u32.IsIconic(target_hwnd)):
             return None
 
-    current_snap = _capture_snapshot(u32, target_hwnd)
-    if current_snap is None or current_snap.client_size is None:
-        return None
-    fail_key = (target_hwnd, current_snap.client_size)
-    with _SESSION_LOCK:
-        last_fail = _LAST_FAILED_ATTEMPT.get(fail_key)
-        if last_fail is not None and time.monotonic() - last_fail < 1.0:
+    adopt_session_16_9_handoff()
+    waited_settle = False
+    while True:
+        current_snap = _capture_snapshot(u32, target_hwnd)
+        if current_snap is None or current_snap.client_size is None:
             return None
 
-    adopt_session_16_9_handoff()
-    geom = closest_16_9_geometry(u32, target_hwnd, current_snap)
-    if geom is None:
-        return None
-    (target_w, target_h), (win_x, win_y) = geom
+        candidates = _geometry_candidates(u32, target_hwnd, current_snap)
+        if not candidates:
+            return None
+
+        now = time.monotonic()
+        settle_wait = 0.0
+        oscillation_warn = False
+        with _SESSION_LOCK:
+            for dead in [h for h in _HWND_STATE if h != target_hwnd and not u32.IsWindow(h)]:
+                _HWND_STATE.pop(dead, None)
+            state = _window_state(target_hwnd)
+            if state["blocked"]:
+                return None
+            state["fail_times"] = [t for t in state["fail_times"] if now - t < OSCILLATION_WINDOW_SECONDS]
+            state["adj_times"] = [t for t in state["adj_times"] if now - t < OSCILLATION_WINDOW_SECONDS]
+            if state["fail_times"] and now - state["fail_times"][-1] < FAILED_RETRY_COOLDOWN_SECONDS:
+                return None
+            already_adjusted = target_hwnd in _SESSION_16_9_SNAPSHOT
+            if already_adjusted and state["adj_times"]:
+                since_adj = now - state["adj_times"][-1]
+                if since_adj < READJUST_SETTLE_SECONDS and not waited_settle:
+                    if controller is None:
+                        return None
+                    settle_wait = READJUST_SETTLE_SECONDS - since_adj
+                elif len(state["adj_times"]) >= MAX_RECENT_ADJUSTMENTS:
+                    state["blocked"] = True
+                    if not state["blocked_notified"]:
+                        state["blocked_notified"] = True
+                        oscillation_warn = True
+            failed_sizes = set(state["failed_sizes"])
+        if settle_wait > 0.0:
+            settled = _poll_valid_16_9_frame(
+                controller,
+                stopped_fn=stopped_fn,
+                timeout=settle_wait,
+            )
+            if settled is not None:
+                return settled
+            waited_settle = True
+            continue
+        if oscillation_warn:
+            _emit_resolution_notice(
+                notify,
+                "检测到游戏窗口反复恢复原分辨率（可能处于独占全屏或受系统缩放限制），"
+                "已暂停自动调整以避免窗口跳动；请在游戏设置中使用无边框或 16:9 窗口模式。",
+                write_log=write_log,
+            )
+            return None
+        break
+
+    usable = [c for c in candidates if c[0] not in failed_sizes] or [candidates[-1]]
+    if _is_already_borderless_in_monitor(u32, target_hwnd, current_snap, usable[0][0]):
+        return _poll_valid_16_9_frame(controller, stopped_fn=stopped_fn, timeout=0.9)
 
     with _SESSION_LOCK:
         newly_recorded = target_hwnd not in _SESSION_16_9_SNAPSHOT
@@ -764,32 +1015,59 @@ def ensure_16_9_window(controller=None, *, context=None, hwnd: int | None = None
             _ensure_atexit_registered()
         baseline_snap = _SESSION_16_9_SNAPSHOT[target_hwnd]
 
-    ok, frame, modified = _apply_borderless_resolution(
-        u32,
-        target_hwnd,
-        snap=current_snap,
-        target_physical_size=(target_w, target_h),
-        target_capture_size=(BASE_CAPTURE_WIDTH, BASE_CAPTURE_HEIGHT),
-        target_short_side=BASE_CAPTURE_HEIGHT,
-        win_pos=(win_x, win_y),
-        controller=controller,
-        stopped_fn=(session.stopped if session else None),
-        require_unclipped=True,
-        allow_solid_frame=True,
-        allow_unminimize=not in_bg,
-    )
-    if not ok or (controller is not None and frame is None):
+    ok = False
+    frame = None
+    modified = False
+    target_w, target_h = usable[0][0]
+    for (cand_w, cand_h), (cand_x, cand_y) in usable:
+        ok, frame, modified = _apply_borderless_resolution(
+            u32,
+            target_hwnd,
+            snap=current_snap,
+            target_physical_size=(cand_w, cand_h),
+            target_capture_size=(BASE_CAPTURE_WIDTH, BASE_CAPTURE_HEIGHT),
+            target_short_side=BASE_CAPTURE_HEIGHT,
+            win_pos=(cand_x, cand_y),
+            controller=controller,
+            stopped_fn=stopped_fn,
+            require_unclipped=True,
+            allow_solid_frame=True,
+            allow_unminimize=not in_bg,
+        )
+        if ok and (controller is None or frame is not None):
+            target_w, target_h = cand_w, cand_h
+            break
         with _SESSION_LOCK:
-            _LAST_FAILED_ATTEMPT[fail_key] = time.monotonic()
+            _window_state(target_hwnd)["failed_sizes"].add((cand_w, cand_h))
+
+    if not ok or (controller is not None and frame is None):
+        warn_blocked = False
+        with _SESSION_LOCK:
+            state = _window_state(target_hwnd)
+            state["fail_times"].append(time.monotonic())
+            if len(state["fail_times"]) >= MAX_FAILED_ATTEMPTS:
+                state["blocked"] = True
+                if not state["blocked_notified"]:
+                    state["blocked_notified"] = True
+                    warn_blocked = True
             if newly_recorded:
                 _SESSION_16_9_SNAPSHOT.pop(target_hwnd, None)
-        if newly_recorded and modified:
+        if modified:
             _restore_snapshot(u32, current_snap, controller=controller)
+        if warn_blocked:
+            _emit_resolution_notice(
+                notify,
+                "自动调整游戏分辨率多次未生效（可能处于独占全屏或受系统缩放限制），"
+                "已暂停自动调整以避免窗口反复跳动。",
+                write_log=write_log,
+            )
         return None
 
     should_notify = False
     with _SESSION_LOCK:
-        _LAST_FAILED_ATTEMPT.pop(fail_key, None)
+        state = _window_state(target_hwnd)
+        state["fail_times"].clear()
+        state["adj_times"].append(time.monotonic())
         if target_hwnd not in _SESSION_NOTIFIED:
             _SESSION_NOTIFIED.add(target_hwnd)
             should_notify = True
@@ -806,12 +1084,7 @@ def ensure_16_9_window(controller=None, *, context=None, hwnd: int | None = None
                 f"已自动将游戏窗口从 {orig_cs[0]}×{orig_cs[1]} 调整为最相近的 16:9 分辨率"
                 f"（{target_w}×{target_h}），任务结束后将自动恢复。"
             )
-        write_message(msg, msg)
-        if notify is not None:
-            try:
-                notify(msg)
-            except Exception:
-                pass
+        _emit_resolution_notice(notify, msg, write_log=write_log)
     return frame
 
 
@@ -927,6 +1200,13 @@ def tall_window(rt):
     if not hwnd or not u32.IsWindow(hwnd):
         yield False
         return
+    now = time.monotonic()
+    with _SESSION_LOCK:
+        fails = [t for t in _TALL_FAILED.get(hwnd, ()) if now - t < 120.0]
+        _TALL_FAILED[hwnd] = fails
+        if len(fails) >= 2 or (fails and now - fails[-1] < TALL_FAILED_COOLDOWN_SECONDS):
+            yield False
+            return
     heal_16_9_window(hwnd=hwnd)
     with _per_monitor_dpi(u32):
         hmon = u32.MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)
@@ -950,6 +1230,11 @@ def tall_window(rt):
         fail_message="超长竖屏切换未生效（请确认游戏非独占全屏模式），继续使用常规窗口读取。",
     ) as is_tall:
         if is_tall:
+            with _SESSION_LOCK:
+                _TALL_FAILED.pop(hwnd, None)
             rt.action("TouchMove", target=[640, 36])
             rt.pause(0.25)
+        elif not rt.stopped:
+            with _SESSION_LOCK:
+                _TALL_FAILED.setdefault(hwnd, []).append(time.monotonic())
         yield is_tall

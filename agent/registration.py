@@ -137,14 +137,17 @@ def agent_recognition(name):
                             argv = copy(argv)
                             argv.image = captured.get()
                         generation = session.generation if session else 0
-                        if session and argv.image is not None and argv.image.size:
+                        if session and argv.image is not None and argv.image.size and not session.stopped():
                             if (
                                 (argv.image.shape[1], argv.image.shape[0]) not in ALLOWED_FRAME_SIZES
                                 or is_clipped_game_frame(argv.image)
                             ):
                                 from tall_window import ensure_16_9_window
                                 adjusted = ensure_16_9_window(
-                                    session.controller, context=context, notify=session.notify
+                                    session.controller,
+                                    context=context,
+                                    notify=session.notify,
+                                    write_log=True,
                                 )
                                 if adjusted is not None:
                                     argv = copy(argv)
