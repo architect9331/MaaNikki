@@ -47,7 +47,7 @@ OVERVIEW_BADGE_ROIS = {
 }
 
 # 720p crops for WBP_Challenge_Stage_Main_V2_PC RightTop quota banner & button DoubleTag.
-STAGE_QUOTA_ROI = [450, 12, 650, 56]
+STAGE_QUOTA_ROI = [400, 12, 708, 56]
 STAGE_ENERGY_ROI = [1100, 15, 150, 50]
 STAGE_BUTTON_DOUBLE_ROI = [680, 580, 530, 75]
 
@@ -60,16 +60,28 @@ JIHUA_LEVEL_IDS = {
 }
 
 _PRIMARY_PATTERNS = {
-    "jihua": (r"超级激化[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)", "今日点数已用完"),
-    "bless": (r"灵感迸发[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)", "今日次数已用完"),
-    "monster": (r"(?:魔物试炼|双倍|每日|限时)[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)", "今日次数已用完"),
-    "weekly": (r"深度突破[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)", "本周次数已用完"),
+    "jihua": (
+        r"(?:今日剩[余餘]?高倍活跃能量|今日剩[余餘]?超级激化(?:活跃能量)?点数?|超级激化)[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
+        r"今日点数已用完|今日高倍活跃能量已用完|高倍活跃能量已用完",
+    ),
+    "bless": (
+        r"(?:今日剩[余餘]?高倍(?:奖励)?次数|今日剩[余餘]?双倍(?:奖励)?次数|今日剩[余餘]?灵感迸发(?:奖励)?次数|今日剩[余餘]?次数|灵感迸发)[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
+        r"今日(?:高倍|双倍)?次数已用完",
+    ),
+    "monster": (
+        r"(?:今日剩[余餘]?高倍(?:奖励)?次数|今日剩[余餘]?双倍(?:奖励)?次数|今日剩[余餘]?次数|魔物试炼|双倍|每日|限时)[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
+        r"今日(?:高倍|双倍)?次数已用完",
+    ),
+    "weekly": (
+        r"(?:本周剩[余餘]?高倍(?:奖励)?次数|本周剩[余餘]?双倍(?:奖励)?次数|本周剩[余餘]?深度突破(?:奖励)?次数|本周剩[余餘]?次数|深度突破)[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
+        r"本周(?:高倍|双倍)?次数已用完",
+    ),
 }
 _WB_PATTERNS = {
-    "jihua": r"回流剩余双倍(?:活跃)?能量[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
-    "bless": r"回流剩余双倍(?:奖励)?次数[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
-    "monster": r"回流剩余双倍(?:奖励)?次数[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
-    "weekly": r"回流剩余双倍(?:奖励)?次数[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
+    "jihua": r"回流剩[余餘]?双倍(?:活跃)?能量[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
+    "bless": r"回流剩[余餘]?双倍(?:奖励)?次数[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
+    "monster": r"回流剩[余餘]?双倍(?:奖励)?次数[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
+    "weekly": r"回流剩[余餘]?双倍(?:奖励)?次数[^\d]{0,16}(\d+)\s*[/／]\s*(\d+)",
 }
 
 
@@ -185,14 +197,14 @@ def _ocr_upscaled_line(rt, frame: np.ndarray | None, roi: list[int]) -> str:
 
 def _parse_stage_double_text(kind: str, text: str) -> tuple[int | None, bool]:
     """Return (remaining_quota_for_active_tier, has_secondary_welcomeback_after)."""
-    p_regex, exhausted_kw = _PRIMARY_PATTERNS[kind]
+    p_regex, exhausted_re = _PRIMARY_PATTERNS[kind]
     p_match = re.search(p_regex, text)
     primary_rem: int | None = None
     if p_match:
         cur, cap = map(int, p_match.groups())
         if 0 <= cur <= cap and cap > 0:
             primary_rem = cur
-    elif exhausted_kw in text:
+    elif re.search(exhausted_re, text):
         primary_rem = 0
 
     wb_match = re.search(_WB_PATTERNS[kind], text)
