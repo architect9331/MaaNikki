@@ -252,6 +252,16 @@ class Navigator:
     # World-map units per second. Low displacement (wall contact, animation,
     # noisy localization) must never turn into an arbitrarily long W hold.
     MIN_PLANNING_SPEED = 6.0
+    _WASD_SECTORS = (
+        (0.0, ("forward",)),
+        (45.0, ("forward", "right")),
+        (90.0, ("right",)),
+        (135.0, ("backward", "right")),
+        (180.0, ("backward",)),
+        (-135.0, ("backward", "left")),
+        (-90.0, ("left",)),
+        (-45.0, ("forward", "left")),
+    )
 
     def __init__(self, locator: Locator, inputs, capture, stopped, pause, event=lambda value: None,
                  point_action=None, waypoint=None, walking=None, page_detector=None, point_prepare=None,
@@ -289,6 +299,12 @@ class Navigator:
         self._wasd_turn_sign = None
         self._wasd_straight = False
         self._wasd_regime = None
+        self._middle_cursor_pos = False
+        self._middle_consecutive_failures = 0
+        self._middle_disabled_until = -math.inf
+        self._last_wasd_snap_at = -math.inf
+        self._wasd_last_snapped = False
+        self._wasd_last_snap_seconds = 0.0
 
     @property
     def use_wasd_steering(self):
@@ -399,7 +415,7 @@ class Navigator:
                     wasd_steering
                     and self.motion is not None
                     and (bool(self.motion.steer_keys & {"left", "right", "backward"})
-                         or self.pose_at - self.motion.last_turn_at <= .45)
+                         or self.pose_at - self.motion.last_turn_at <= .85)
                 )
                 wasd_ref_at = self.heading_ref_at if self.heading_ref_at > -math.inf else self.heading_turn_at
                 wasd_tol = (
@@ -555,6 +571,28 @@ class Navigator:
             probe_scale = 2 if self.heading_recheck_count >= 3 else 1
             if self.use_wasd_steering:
                 direction = "left" if self.heading_recheck_count % 2 == 0 else "right"
+                if self._can_middle_align():
+                    hold_seconds = .15 if probe_scale == 1 else .22
+                    self.event({"type": "heading_visibility_probe",
+                                "attempt": self.heading_recheck_count,
+                                "key": direction, "seconds": hold_seconds,
+                                "middle_align": True,
+                                "diagnostics": dict(diagnostics)})
+                    self._hold_wasd_chord((direction,), hold_seconds)
+                    clicked = self._press_middle_align(with_cursor_pos=bool(self._middle_cursor_pos))
+                    if not clicked and not self._middle_cursor_pos:
+                        clicked = self._press_middle_align(with_cursor_pos=True)
+                        if clicked:
+                            self._middle_cursor_pos = True
+                    self.heading_state.pending = False
+                    self.heading_turn_at = time.monotonic()
+                    self.heading_turn_input = self.motion.forward_elapsed() if self.motion else 0.0
+                    if self.pause(.18) is False:
+                        raise NavigationError("已停止导航。")
+                    confirmed = self.stable_heading(pose, deadline=deadline)
+                    self.heading_ref_at = self.pose_at
+                    self.heading_turn_at = self.pose_at
+                    return confirmed
                 hold_seconds = .22 * probe_scale
                 self.event({"type": "heading_visibility_probe",
                             "attempt": self.heading_recheck_count,
@@ -610,24 +648,226 @@ class Navigator:
         uncertainty = math.degrees(math.atan2(slack, max(remaining, .01)))
         return max(spec.heading_tolerance_near, min(5.0, uncertainty))
 
+    def _can_middle_align(self):
+        """Return whether middle-click camera alignment is supported and not in cooldown."""
+        if time.monotonic() < self._middle_disabled_until:
+            return False
+        if hasattr(self.inputs, "click_window_middle"):
+            return True
+        fg = getattr(self.inputs, "foreground", None)
+        return bool(hasattr(self.inputs, "click_mouse") and callable(fg) and fg())
+
+    def _press_middle_align(self, *, with_cursor_pos: bool) -> bool:
+        """Click the middle mouse button without stealing OS focus."""
+        if hasattr(self.inputs, "click_window_middle"):
+            return bool(self.inputs.click_window_middle(self.pause, with_cursor_pos=with_cursor_pos))
+        fg = getattr(self.inputs, "foreground", None)
+        if hasattr(self.inputs, "click_mouse") and callable(fg) and fg():
+            return bool(self.inputs.click_mouse(2))
+        return False
+
+    @classmethod
+    def _nearest_wasd_sector(cls, delta: float):
+        """Pick the closest 45-degree WASD chord for relative bearing `delta`."""
+        return min(cls._WASD_SECTORS, key=lambda item: abs(angle_delta(delta, item[0])))
+
+    def _hold_wasd_chord(self, chord, seconds: float):
+        """Hold a 1- or 2-key WASD direction chord cleanly and release all movement keys afterward."""
+        if not math.isfinite(seconds) or seconds <= 0:
+            return
+        if self.motion is not None:
+            self.motion.steer(chord, seconds + 0.05)
+            try:
+                self.motion.wait(seconds)
+            finally:
+                self.motion.stop()
+            return
+        self.inputs.release()
+        if hasattr(self.inputs, "_down") and hasattr(self.inputs, "bindings"):
+            try:
+                for key in chord:
+                    self.inputs._down(self.inputs.bindings.get(key), restore=False)
+                self.pause(seconds)
+            finally:
+                self.inputs.release()
+            return
+        self.inputs.hold(chord[0], seconds, restore=False)
+
+    def _wasd_snap_camera(self, target_heading, pose, *, sector_deg=None, chord=None,
+                          pulse=None, stationary=False, deadline=None):
+        """Orient the character with WASD, then middle-click to align the camera to character facing."""
+        self.require_heading(pose)
+        before_heading = pose.heading
+        delta = angle_delta(target_heading, before_heading)
+        if sector_deg is None or chord is None:
+            sector_deg, chord = self._nearest_wasd_sector(delta)
+        if pulse is None:
+            pulse = 0.10 + 0.00083 * abs(sector_deg)
+        generation = getattr(self.inputs, "generation", 0)
+        self._hold_wasd_chord(chord, pulse)
+        if getattr(self.inputs, "generation", 0) != generation:
+            raise SceneUnavailable("游戏窗口状态已变化，重新确认位置和方向。")
+        fg = getattr(self.inputs, "foreground", None)
+        before_fg = bool(callable(fg) and fg())
+        major_snap = abs(sector_deg) >= 35.0
+        after = pose
+        snapped = False
+        for attempt in range(2):
+            use_cursor = bool(self._middle_cursor_pos)
+            clicked = self._press_middle_align(with_cursor_pos=use_cursor)
+            if not clicked:
+                if attempt == 0 and not before_fg and not use_cursor and major_snap:
+                    self._middle_cursor_pos = True
+                    continue
+                if major_snap:
+                    self._middle_consecutive_failures += 1
+                    if self._middle_consecutive_failures >= 2:
+                        self._middle_disabled_until = time.monotonic() + 20.0
+                return after, False
+            self.heading_state.pending = False
+            self.heading_turn_at = time.monotonic()
+            self.heading_turn_input = self.motion.forward_elapsed() if self.motion else 0.0
+            if self.pause(0.18) is False:
+                raise NavigationError("已停止导航。")
+            after = self.stable_heading(pose, deadline=deadline)
+            if getattr(self.inputs, "generation", 0) != generation:
+                raise SceneUnavailable("游戏窗口状态已变化，重新确认位置和方向。")
+            actual_rot = angle_delta(after.heading, before_heading)
+            err_before = abs(delta)
+            err_after = abs(angle_delta(target_heading, after.heading))
+            if major_snap:
+                rotated_enough = (
+                    err_after <= err_before - 15.0
+                    or (abs(actual_rot) >= 18.0 and (actual_rot * sector_deg > 0 or abs(sector_deg) >= 150.0))
+                )
+            else:
+                rotated_enough = abs(actual_rot) >= 3.0 or err_after <= err_before - 2.0
+            if rotated_enough:
+                snapped = True
+                break
+            if major_snap and attempt == 0 and not before_fg and not use_cursor:
+                # UnrealWindow may ignore middle-click when the physical cursor lies outside the client rect.
+                self._middle_cursor_pos = True
+                self._hold_wasd_chord(chord, min(pulse, 0.12))
+                if getattr(self.inputs, "generation", 0) != generation:
+                    raise SceneUnavailable("游戏窗口状态已变化，重新确认位置和方向。")
+                continue
+            if major_snap:
+                self._middle_consecutive_failures += 1
+                if self._middle_consecutive_failures >= 2:
+                    self._middle_disabled_until = time.monotonic() + 20.0
+            return after, False
+        if snapped:
+            if major_snap:
+                self._middle_consecutive_failures = 0
+            self.heading_ref_at = self.pose_at
+            self.heading_turn_at = self.pose_at
+            self.heading_turn_input = self.motion.forward_elapsed() if self.motion else 0.0
+            if not stationary:
+                self._last_wasd_snap_at = time.monotonic()
+            actual_rot = angle_delta(after.heading, before_heading)
+            if self.overlay:
+                self.overlay.notify_camera_turn(actual_rot)
+            self.event({
+                "type": "wasd_middle_snap",
+                "index": self.current_index,
+                "target": target_heading,
+                "before": before_heading,
+                "after": after.heading,
+                "sector": sector_deg,
+                "chord": list(chord),
+                "pulse": round(pulse, 3),
+                "rotation": round(actual_rot, 1),
+                "remaining_error": round(abs(angle_delta(target_heading, after.heading)), 1),
+                "cursor_pos": bool(self._middle_cursor_pos),
+                "stationary": stationary,
+            })
+        return after, snapped
+
     def _wasd_turn_stationary(self, target_heading, pose, *, tolerance=5):
         if self.motion:
             self.motion.stop()
         else:
             self.inputs.release()
-        tol = max(tolerance, 15.0)
         pose = self.stable_heading(pose)
         anchor = (pose.x, pose.y)
         turn_sign = None
         deadline = time.monotonic() + 15
+        arrow = self.locator.heading_diagnostics.get("player_arrow", {}).get("heading")
+        body_aligned = arrow is not None and abs(angle_delta(arrow, pose.heading)) <= 18.0
+        micro_gain = 1.0
+        prev_micro_delta = None
+        sign_flips = 0
+        micro_attempts = 0
         try:
             for _ in range(16):
                 self.inputs.check()
                 delta = angle_delta(target_heading, pose.heading)
-                if abs(delta) <= tol:
+                if abs(delta) <= tolerance:
                     return pose
                 if time.monotonic() >= deadline:
                     break
+                if self._can_middle_align():
+                    if abs(delta) > 22.5:
+                        sector_deg, chord = self._nearest_wasd_sector(delta)
+                        after, ok = self._wasd_snap_camera(
+                            target_heading,
+                            pose,
+                            sector_deg=sector_deg,
+                            chord=chord,
+                            stationary=True,
+                            deadline=deadline,
+                        )
+                        pose = after
+                        if math.hypot(pose.x - anchor[0], pose.y - anchor[1]) > 2.2:
+                            raise SceneUnavailable("原地按键转向时位置偏移过大，重新确认路线。")
+                        if ok:
+                            body_aligned = True
+                            prev_micro_delta = None
+                            if abs(angle_delta(target_heading, pose.heading)) <= tolerance:
+                                return pose
+                            continue
+                    else:
+                        if abs(delta) <= max(tolerance, 12.0) and (sign_flips >= 2 or micro_attempts >= 3):
+                            return pose
+                        if not body_aligned:
+                            self._hold_wasd_chord(("forward",), 0.12)
+                            body_aligned = True
+                        if (
+                            prev_micro_delta is not None
+                            and delta * prev_micro_delta < 0
+                            and abs(delta) + abs(prev_micro_delta) < 180
+                        ):
+                            sign_flips += 1
+                            micro_gain = max(0.35, micro_gain * 0.6)
+                        prev_micro_delta = delta
+                        micro_attempts += 1
+                        side = "right" if delta > 0 else "left"
+                        pulse = max(0.028, min(0.08, abs(delta) / 360.0 * micro_gain))
+                        after, ok = self._wasd_snap_camera(
+                            target_heading,
+                            pose,
+                            sector_deg=delta,
+                            chord=("forward", side),
+                            pulse=pulse,
+                            stationary=True,
+                            deadline=deadline,
+                        )
+                        pose = after
+                        if math.hypot(pose.x - anchor[0], pose.y - anchor[1]) > 2.2:
+                            raise SceneUnavailable("原地按键转向时位置偏移过大，重新确认路线。")
+                        if abs(angle_delta(target_heading, pose.heading)) <= tolerance:
+                            return pose
+                        if ok:
+                            continue
+                        if abs(angle_delta(target_heading, pose.heading)) <= max(tolerance, 12.0):
+                            return pose
+                        if micro_gain < 1.5:
+                            micro_gain *= 1.35
+                            continue
+                tol = max(tolerance, 15.0)
+                if abs(delta) <= tol:
+                    return pose
                 if abs(delta) >= 145.0:
                     if turn_sign is None:
                         turn_sign = 1 if delta >= 0 else -1
@@ -652,6 +892,8 @@ class Navigator:
                             "tolerance": tol})
                 if abs(angle_delta(target_heading, pose.heading)) <= tol:
                     return pose
+            if abs(angle_delta(target_heading, pose.heading)) <= max(tolerance, 15.0):
+                return pose
             raise NavigationError("WASD 未能调整至目标朝向，已停止移动。")
         except BaseException:
             self.inputs.release()
@@ -783,7 +1025,10 @@ class Navigator:
         timing = self.inputs.face_camera()
         after = self.observe((pose.x, pose.y))
         error = abs(angle_delta(heading, after.heading)) if after.heading is not None else None
-        effective_tol = max(tolerance, 15.0) if self.use_wasd_steering else tolerance
+        effective_tol = (
+            max(tolerance, 12.0 if self._can_middle_align() else 15.0)
+            if self.use_wasd_steering else tolerance
+        )
         confirmed = (getattr(self.inputs, "generation", 0) == generation
                      and error is not None and error <= effective_tol)
         self.event({"type": "character_facing", "source": "route_heading", "target": heading,
@@ -996,10 +1241,32 @@ class Navigator:
                     "measured_speed": measured, "feedback_valid": learned})
         return after, recovery
 
-    def _wasd_reset_state(self):
+    def _wasd_reset_state(self, *, reset_snap_cooldown=True):
         self._wasd_turn_sign = None
         self._wasd_straight = False
         self._wasd_regime = None
+        self._wasd_last_snapped = False
+        self._wasd_last_snap_seconds = 0.0
+        if reset_snap_cooldown:
+            self._last_wasd_snap_at = -math.inf
+
+    def _wasd_should_snap(self, abs_phi, remaining, *, recovery=False, blocked_steps=0, precise=False):
+        """Decide whether to stop briefly, orient with WASD, and middle-click align the camera."""
+        if not self._can_middle_align():
+            return False
+        if self.motion is not None and self.motion.jump_state != "idle" and not recovery and abs_phi < 75.0:
+            return False
+        since_snap = time.monotonic() - self._last_wasd_snap_at
+        if abs_phi >= 58.0:
+            return since_snap >= 0.4 or recovery
+        if abs_phi >= 32.0 and (since_snap >= 1.2 or recovery):
+            return (
+                remaining > 3.2
+                or recovery
+                or blocked_steps >= 1
+                or (precise and remaining > 1.5 and abs(abs_phi - 45.0) > 10.0)
+            )
+        return False
 
     def _wasd_steer_plan(self, bearing, pose, remaining, tolerance, *, velocity, advanced_seconds,
                          recovery=False, blocked_steps=0):
@@ -1015,51 +1282,34 @@ class Navigator:
             ("right" if self._wasd_turn_sign > 0 else "left")
             if self._wasd_turn_sign is not None else raw_side
         )
-        straight_on = max(5.0, min(9.0, max(tolerance, 5.0)))
-        straight_off = min(13.0, straight_on + 3.5)
+        straight_on = max(4.0, min(8.0, max(tolerance, 4.0)))
+        straight_off = min(11.0, straight_on + 3.0)
         trim_key = None
         trim_seconds = 0.0
         base_duration = remaining / velocity - advanced_seconds - .06
-        if remaining <= 1.8 and not recovery:
-            if abs_phi <= straight_on or (self._wasd_straight and abs_phi <= straight_off):
-                self._wasd_straight = True
-                self._wasd_regime = "straight"
-                chord = ("forward",)
-            elif abs_phi <= 22.5:
-                self._wasd_straight = False
-                self._wasd_regime = "straight"
-                chord = ("forward",)
-            elif abs_phi <= 67.5:
-                self._wasd_straight = False
-                self._wasd_regime = "diag"
-                chord = ("forward", raw_side)
-            elif abs_phi <= 112.5:
-                self._wasd_straight = False
-                self._wasd_regime = "strafe"
-                chord = (raw_side,)
-            elif abs_phi <= 157.5:
-                self._wasd_straight = False
-                self._wasd_regime = "rear_diag"
-                chord = ("backward", raw_side)
-            else:
-                self._wasd_straight = False
-                self._wasd_regime = "rear"
-                chord = ("backward",)
-            duration = base_duration
-            allow_jump = "forward" in chord and abs_phi <= 65.0
-            return phi, chord, trim_key, trim_seconds, duration, allow_jump
-
         if abs_phi <= straight_on or (self._wasd_straight and abs_phi <= straight_off):
             self._wasd_straight = True
             self._wasd_regime = "straight"
             chord = ("forward",)
             duration = base_duration
-        elif (abs_phi <= 28.0 or (self._wasd_regime == "trim" and abs_phi <= 31.0)) and remaining > 2.2:
+        elif abs_phi <= 36.0 or (self._wasd_regime == "trim" and abs_phi <= 40.0):
             self._wasd_straight = False
-            self._wasd_regime = "trim"
-            chord = ("forward",)
-            trim_key = raw_side
-            trim_seconds = max(.05, min(.18, (abs_phi / 28.0) * .15))
+            alpha_cmd = min(44.0, 1.15 * abs_phi)
+            tan_alpha = math.tan(math.radians(alpha_cmd))
+            sin45 = math.sin(math.radians(45.0))
+            duty = min(0.95, tan_alpha / (sin45 + (1.0 - sin45) * tan_alpha))
+            if duty >= 0.85 and (remaining <= 3.2 or not self._can_middle_align()):
+                self._wasd_regime = "diag"
+                chord = ("forward", raw_side)
+            else:
+                self._wasd_regime = "trim"
+                chord = ("forward",)
+                trim_key = raw_side
+                obs_cost = max(0.12, min(0.32, self.read_costs.get("observe", 0.20)))
+                ideal_trim = (duty / max(1e-3, 1.0 - duty)) * obs_cost
+                trim_seconds = max(0.035, min(0.24, ideal_trim))
+                if base_duration > 0 and base_duration < trim_seconds + obs_cost:
+                    trim_seconds = max(0.03, min(trim_seconds, base_duration * duty))
             duration = base_duration
         elif abs_phi <= 68.0 or (self._wasd_regime == "diag" and abs_phi <= 72.0):
             self._wasd_straight = False
@@ -1069,7 +1319,7 @@ class Navigator:
         elif abs_phi <= 112.0 or (self._wasd_regime == "strafe" and abs_phi <= 118.0):
             self._wasd_straight = False
             self._wasd_regime = "strafe"
-            chord = (turn_side,)
+            chord = (raw_side if remaining <= 1.8 and not recovery else turn_side,)
             duration = max(.28, min(.75, remaining / velocity)) if remaining >= 2.0 else base_duration
         else:
             self._wasd_straight = False
@@ -1082,7 +1332,7 @@ class Navigator:
                     chord = ("backward",)
                 duration = base_duration
             else:
-                # Keep turning laterally in open rear quadrants so camera yaw aligns cleanly.
+                # Fallback lateral turning when middle-click camera alignment is unavailable.
                 self._wasd_regime = "rear_turn"
                 chord = (turn_side,)
                 duration = max(.35, min(.80, remaining / velocity))
@@ -1090,10 +1340,12 @@ class Navigator:
         return phi, chord, trim_key, trim_seconds, duration, allow_jump
 
     def wasd_advance(self, pose, target, radius, speeds, *, tolerance=5.0,
-                     recovery=False, detour_deg=0.0, blocked_steps=0):
-        """Drive closed-loop multi-key WASD steering using live minimap feedback."""
+                     recovery=False, detour_deg=0.0, blocked_steps=0, precise=False):
+        """Drive closed-loop WASD steering with middle-click camera alignment and live minimap feedback."""
         motion = self.motion
         generation = getattr(self.inputs, "generation", 0)
+        self._wasd_last_snapped = False
+        self._wasd_last_snap_seconds = 0.0
         remaining = distance(pose, target)
         before_at, before_input = self.pose_at, self.pose_input
         walking = self.walking()
@@ -1108,6 +1360,40 @@ class Navigator:
         advanced_seconds = max(0, motion.forward_elapsed() - before_input)
         base_bearing = math.degrees(math.atan2(target.x - pose.x, pose.y - target.y)) % 360
         bearing = (base_bearing + detour_deg) % 360
+        initial_phi = angle_delta(bearing, pose.heading)
+        if self._wasd_should_snap(
+            abs(initial_phi),
+            remaining,
+            recovery=recovery,
+            blocked_steps=blocked_steps,
+            precise=precise,
+        ):
+            snap_started = time.monotonic()
+            sector_deg, snap_chord = self._nearest_wasd_sector(initial_phi)
+            pulse = 0.10 + 0.00083 * abs(sector_deg)
+            if remaining <= 1.8 and not recovery and abs(sector_deg) <= 90.0:
+                pulse = min(pulse, 0.15)
+            after, snapped = self._wasd_snap_camera(
+                bearing,
+                pose,
+                sector_deg=sector_deg,
+                chord=snap_chord,
+                pulse=pulse,
+                stationary=False,
+            )
+            snap_elapsed = max(0.0, time.monotonic() - snap_started)
+            if snapped:
+                self._wasd_reset_state(reset_snap_cooldown=False)
+                pose = after
+                remaining = distance(pose, target)
+                if not recovery or remaining <= radius:
+                    self._wasd_last_snapped = True
+                    self._wasd_last_snap_seconds = max(0.0, snap_elapsed - pulse)
+                    return pose, False, snap_chord, angle_delta(bearing, pose.heading)
+                before_at, before_input = self.pose_at, self.pose_input
+                advanced_seconds = max(0, motion.forward_elapsed() - before_input)
+                base_bearing = math.degrees(math.atan2(target.x - pose.x, pose.y - target.y)) % 360
+                bearing = (base_bearing + detour_deg) % 360
         phi, chord, trim_key, trim_seconds, duration, allow_jump = self._wasd_steer_plan(
             bearing, pose, remaining, tolerance,
             velocity=velocity, advanced_seconds=advanced_seconds,
@@ -1430,9 +1716,14 @@ class Navigator:
                         if target.jump != next_point.jump:
                             motion.stop()
                             self.pause(.5 if next_point.jump else .2)
-                        elif (not self.use_wasd_steering and pose.heading is not None
-                              and abs(angle_delta(next_bearing, pose.heading)) >= 45):
-                            motion.stop()
+                        elif pose.heading is not None:
+                            turn_delta = abs(angle_delta(next_bearing, pose.heading))
+                            if not self.use_wasd_steering and turn_delta >= 45:
+                                motion.stop()
+                            elif self.use_wasd_steering and self._can_middle_align() and (
+                                turn_delta >= 58 or (turn_delta >= 32 and distance(pose, next_point) > 3.2)
+                            ):
+                                motion.stop()
                     index += 1
                     self.current_index = index
                     if self.overlay and pose.position_reliable:
@@ -1513,14 +1804,32 @@ class Navigator:
                     before_move = pose
                     forward_before = motion.forward_elapsed()
                     step_began = time.monotonic()
-                    pose, recovery_done, chord, _ = self.wasd_advance(
-                        pose, target, radius, speeds, tolerance=tolerance,
-                        recovery=recovery, detour_deg=detour_deg, blocked_steps=blocked_steps,
-                    )
+                    try:
+                        pose, recovery_done, chord, _ = self.wasd_advance(
+                            pose, target, radius, speeds, tolerance=tolerance,
+                            recovery=recovery, detour_deg=detour_deg,
+                            blocked_steps=blocked_steps, precise=precise,
+                        )
+                    except HeadingUncertain:
+                        try:
+                            pose = self.recheck_heading(pose, deadline)
+                        except HeadingUncertain:
+                            pose = replace(pose, heading=None)
+                        except SceneUnavailable:
+                            scene_interrupted = True
+                        stuck_since += max(0.0, time.monotonic() - step_began
+                                           - max(0.0, motion.forward_elapsed() - forward_before))
+                        last = None
+                        continue
+                    except SceneUnavailable:
+                        scene_interrupted = True
+                        continue
                     move_input = max(0.0, motion.forward_elapsed() - forward_before)
                     move_disp = distance(before_move, pose)
                     move_speed = move_disp / move_input if move_input > 0 else 0.0
-                    if pose.heading is not None and pose.position_reliable and move_input >= .08:
+                    if pose.heading is not None and pose.position_reliable and (
+                        self._wasd_last_snapped or move_input >= .08
+                    ):
                         self.heading_recheck_count = 0
                     turning_progress = 0.0
                     if before_move.heading is not None and pose.heading is not None:
@@ -1528,6 +1837,13 @@ class Navigator:
                             abs(angle_delta(base_bearing, before_move.heading))
                             - abs(angle_delta(base_bearing, pose.heading))
                         )
+                    if self._wasd_last_snapped:
+                        if turning_progress >= 10.0 and stuck_turn_grace < 3.0:
+                            grace = min(self._wasd_last_snap_seconds, 3.0 - stuck_turn_grace)
+                            stuck_since += grace
+                            stuck_turn_grace += grace
+                        last = before_move
+                        continue
                     if (not recovery and blocked_steps == 0
                             and before_move.heading is not None
                             and abs(angle_delta(base_bearing, before_move.heading)) > 70.0

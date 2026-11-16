@@ -19,9 +19,12 @@ _WM_CHAR = 0x0102
 _WM_MOUSEMOVE = 0x0200
 _WM_LBUTTONDOWN = 0x0201
 _WM_LBUTTONUP = 0x0202
+_WM_MBUTTONDOWN = 0x0207
+_WM_MBUTTONUP = 0x0208
 _WM_MOUSEWHEEL = 0x020A
 _WM_MOUSEHWHEEL = 0x020E
 _MK_LBUTTON = 0x0001
+_MK_MBUTTON = 0x0010
 _GA_ROOTOWNER = 3
 _SMTO_ABORTIFHUNG = 0x0002
 _ERROR_TIMEOUT = 1460
@@ -784,11 +787,18 @@ class BackgroundInput(ForegroundInput):
             return None
         return target, coords_list
 
-    def _release_window_button(self, target: int, lparam: int, error_label: str) -> None:
+    def _release_window_button(
+        self,
+        target: int,
+        lparam: int,
+        error_label: str,
+        *,
+        msg: int = _WM_LBUTTONUP,
+    ) -> None:
         if self.user32.IsWindow(target):
             self._send_window_message(
                 target,
-                _WM_LBUTTONUP,
+                msg,
                 0,
                 lparam,
                 error_label,
@@ -804,8 +814,20 @@ class BackgroundInput(ForegroundInput):
         target, (coords,) = prepared
         return self._send_window_message(target, _WM_MOUSEMOVE, 0, coords[0], "后台鼠标移动")
 
-    def click_window_point(self, x, y, pause, *, with_cursor_pos=True, capture_size=None):
-        """Send a synchronous left click to the target window after activation; briefly borrow cursor if requested."""
+    def _click_window_button(
+        self,
+        x,
+        y,
+        pause,
+        *,
+        down_msg: int,
+        down_wparam: int,
+        up_msg: int,
+        label: str,
+        with_cursor_pos: bool = True,
+        capture_size: tuple[int, int] | None = None,
+    ) -> bool:
+        """Send a synchronous window-targeted mouse button click with optional cursor borrowing."""
         prepared = self._prepare_window_points(
             (x, y),
             capture_size=capture_size,
@@ -822,20 +844,79 @@ class BackgroundInput(ForegroundInput):
             if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lparam, "后台鼠标移动"):
                 return False
             wall_time.sleep(0.02 if with_cursor_pos else 0.01)
-            if not self._send_window_message(target, _WM_LBUTTONDOWN, _MK_LBUTTON, lparam, "后台鼠标点击"):
+            if not self._send_window_message(target, down_msg, down_wparam, lparam, label):
                 return False
             try:
                 if with_cursor_pos:
                     wall_time.sleep(0.05)
                     pressed = not self.stopped()
                 else:
-                    pressed = pause(0.05)
+                    pressed = (
+                        bool(pause(0.05))
+                        if pause is not None
+                        else (wall_time.sleep(0.05), not self.stopped())[1]
+                    )
             finally:
-                self._release_window_button(target, lparam, "后台鼠标点击释放")
+                self._release_window_button(target, lparam, f"{label}释放", msg=up_msg)
             if with_cursor_pos:
                 wall_time.sleep(0.03)
                 return pressed and not self.stopped()
             return pressed
+
+    def click_window_point(self, x, y, pause, *, with_cursor_pos=True, capture_size=None):
+        """Send a synchronous left click to the target window after activation; briefly borrow cursor if requested."""
+        return self._click_window_button(
+            x,
+            y,
+            pause,
+            down_msg=_WM_LBUTTONDOWN,
+            down_wparam=_MK_LBUTTON,
+            up_msg=_WM_LBUTTONUP,
+            label="后台鼠标点击",
+            with_cursor_pos=with_cursor_pos,
+            capture_size=capture_size,
+        )
+
+    def click_window_middle(self, pause=None, *, with_cursor_pos=True, capture_size=None):
+        """Send a middle-button click to center the game camera on character facing without stealing focus."""
+        if not self.capturable() or self.stopped():
+            return False
+        if self.foreground():
+            # Never warp the cursor while the 3D viewport owns foreground mouse look.
+            if 2 in self.buttons:
+                return False
+            self.buttons.add(2)
+            if not send_mouse(self.user32, 0x0020):
+                self.buttons.discard(2)
+                raise NavigationError("鼠标中键输入失败。")
+            try:
+                if pause is not None:
+                    pressed = bool(pause(0.05))
+                else:
+                    wall_time.sleep(0.05)
+                    pressed = not self.stopped()
+                return pressed and not self.stopped()
+            finally:
+                self.release_mouse(2)
+        with self._per_monitor_dpi():
+            rc = wintypes.RECT()
+            if not self.user32.GetClientRect(self.hwnd, ctypes.byref(rc)):
+                return False
+            width, height = int(rc.right - rc.left), int(rc.bottom - rc.top)
+        if width <= 0 or height <= 0:
+            return False
+        cap_w, cap_h = self._effective_capture_size(width, height, capture_size)
+        return self._click_window_button(
+            cap_w * 0.5,
+            cap_h * 0.5,
+            pause,
+            down_msg=_WM_MBUTTONDOWN,
+            down_wparam=_MK_MBUTTON,
+            up_msg=_WM_MBUTTONUP,
+            label="后台中键点击",
+            with_cursor_pos=with_cursor_pos,
+            capture_size=(cap_w, cap_h),
+        )
 
     def scroll_window_point(self, x, y, dx, dy, *, capture_size=None):
         """Send synchronous WM_MOUSEWHEEL to the target coordinate after activation and cursor hover."""
