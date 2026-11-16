@@ -191,11 +191,12 @@ pub fn run() {
                 }
             }
 
-            // 启动时异步清理 cache/old 目录（更新残留的旧文件），不阻塞应用启动
+            // 启动时异步清理 cache/old 与超出滚动配额的旧日志/冗余产物，不阻塞应用启动
             if let Ok(data_dir) = commands::get_data_dir() {
-                let old_dir = std::path::Path::new(&data_dir).join("cache").join("old");
-                if old_dir.exists() {
-                    std::thread::spawn(move || {
+                std::thread::spawn(move || {
+                    let data_path = std::path::PathBuf::from(&data_dir);
+                    let old_dir = data_path.join("cache").join("old");
+                    if old_dir.exists() {
                         let (deleted, failed) = commands::cleanup_dir_contents(&old_dir);
                         if deleted > 0 || failed > 0 {
                             if failed == 0 {
@@ -208,8 +209,16 @@ pub fn run() {
                                 );
                             }
                         }
-                    });
-                }
+                    }
+                    let cleaned = commands::storage_budget::enforce_storage_budgets(&data_path);
+                    if cleaned.deleted_files > 0 {
+                        log::info!(
+                            "Startup storage budget cleanup: {} files deleted, {} bytes freed",
+                            cleaned.deleted_files,
+                            cleaned.freed_bytes
+                        );
+                    }
+                });
             }
 
             // 启动、手动初始化和安装运行库后的重试共用加载状态。
@@ -288,6 +297,8 @@ pub fn run() {
             commands::file_ops::get_data_dir,
             commands::file_ops::clear_log_files,
             commands::file_ops::cleanup_expired_logs,
+            commands::file_ops::get_storage_usage,
+            commands::file_ops::clear_storage_cache,
             commands::file_ops::get_cwd,
             commands::file_ops::check_exe_path,
             commands::file_ops::set_executable,

@@ -213,7 +213,7 @@ class UpgradeUI:
             if level == maximum and (not once or facts["rarity"] == 5):
                 updated["color"], frame = self.full_color(generation, current["name"], maximum)
             operation["result_image"] = self.owner.image(
-                f"upgrade_result_{len(self.owner.journal['operations']):04d}.png", frame)
+                f"upgrade_result_{len(self.owner.journal['operations']):04d}.jpg", frame)
             operation["experience_after"] = xp
             self.owner.confirm_upgrade(operation, current, updated)
             if level == maximum or once:

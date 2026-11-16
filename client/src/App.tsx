@@ -174,7 +174,7 @@ function App() {
   }, []);
   const [loadingState, setLoadingState] = useState<LoadingState>('loading');
   useEffect(() => {
-    if (loadingState !== 'success' || !isTauri() || !logRetentionDays) return;
+    if (loadingState !== 'success' || !isTauri()) return;
     void cleanupExpiredLogs();
     const timer = window.setInterval(() => { void cleanupExpiredLogs(); }, 60 * 60 * 1000);
     return () => window.clearInterval(timer);

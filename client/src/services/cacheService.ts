@@ -34,6 +34,12 @@ interface CacheIndex {
 let cacheIndex: CacheIndex | null = null;
 let cacheIndexLoaded = false;
 
+/** 重置内存中的缓存索引（手动清理缓存后调用） */
+export function resetCacheIndexState(): void {
+  cacheIndex = null;
+  cacheIndexLoaded = false;
+}
+
 /**
  * 将 URL 转换为安全的文件名
  * 使用简单的 hash 算法避免文件名过长或包含非法字符

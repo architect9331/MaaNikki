@@ -195,7 +195,7 @@ class LowRarityDecomposer:
             summary["copies"] += selected["count"]
             summary["particles"] += selected["gain"]
             self.o.confirm_change(operation, capacity_after=after["capacity"], particles_after=after["particles"],
-                                  after=self.o.image(f"decompose_{summary['batches']:03d}.png", frame))
+                                  after=self.o.image(f"decompose_{summary['batches']:03d}.jpg", frame))
             self.rt.log(f"分解第 {summary['batches']} 批：{selected['count']} 件四星及以下，获得 {selected['gain']} 闪光粒子。", detail=True)
             if time.monotonic() - last_notice >= 30:
                 self.rt.log(f"正在分解四星及以下素材，已处理 {summary['copies']} 件。")
@@ -271,7 +271,7 @@ class DuplicateDecomposer(LowRarityDecomposer):
             after, frame = self.await_result(selected, five_star=True)
             summary.update(copies=selected["count"], particles=selected["gain"])
             o.confirm_change(operation, capacity_after=after["capacity"], particles_after=after["particles"],
-                             after=o.image("duplicates.png", frame))
+                             after=o.image("duplicates.jpg", frame))
         summary["complete"] = True
         # Position hints may now be stale; ordered lookups and slot rebuilds repair them.
         o.view.slot = None

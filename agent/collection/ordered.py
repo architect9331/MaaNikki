@@ -314,7 +314,7 @@ class OrderedView:
                 # The bottom fade disappears at the physical list end. Read
                 # this viewport again before coverage or absence is decided.
                 frame, cells = self.cells(at_bottom=True, seen=seen)
-                self.o.image(f"bottom_{self.slot}_{self.o.counter:05d}.png", frame)
+                self.o.image(f"bottom_{self.slot}_{self.o.counter:05d}.jpg", frame)
                 yield frame, cells, True
                 return
 

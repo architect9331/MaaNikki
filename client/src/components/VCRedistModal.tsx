@@ -97,6 +97,9 @@ export function VCRedistModal({ show, onClose }: VCRedistModalProps) {
         const version = await invoke<string>('retry_load_maa_library');
         log.info(`MaaFramework 加载成功，版本: ${version}`);
         setStatus('success');
+        void import('@tauri-apps/plugin-fs')
+          .then(({ remove }) => remove(downloadPath))
+          .catch(() => {});
       } catch (retryErr) {
         log.warn('重新加载 MaaFramework 失败:', retryErr);
         setStatus('failed');

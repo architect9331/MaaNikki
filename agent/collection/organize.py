@@ -58,7 +58,7 @@ def organize_inventory(rt, catalog, *, allow_unlock=False, read_only=False):
         if locker is not None:
             locker.report.update(complete=False, reason=reason)
             try:
-                locker.image("interrupted.png", rt.capture())
+                locker.image("interrupted.jpg", rt.capture())
             except (OSError, RuntimeError, cv2.error):
                 pass  # Saving the operation history must survive capture failure.
         rt.log(f"祝福闪光整理未完成：{reason}。操作记录：{folder}。",

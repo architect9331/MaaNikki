@@ -400,7 +400,7 @@ class FiveStarInventory(BlessingLocker):
                      "started": datetime.now().isoformat(timespec="seconds"),
                      "facts": {key: facts[key] for key in ("name", "slot", "rarity", "level", "color")}
                      if facts else None, "evidence": evidence, **details,
-                     "before": self.image(f"before_{len(self.report['operations']):04d}.png", frame)}
+                     "before": self.image(f"before_{len(self.report['operations']):04d}.jpg", frame)}
         if self.active is not None:
             operation["target_id"] = self.active["id"]
         self.report["operations"].append(operation)
@@ -475,7 +475,7 @@ class FiveStarInventory(BlessingLocker):
             if self.active is not None:
                 self.active["locked"] = True
             self.confirm_change(operation, after=self.image(
-                f"locked_{len(self.report['operations']):04d}.png", self._lock_frame))
+                f"locked_{len(self.report['operations']):04d}.jpg", self._lock_frame))
             changes = self.collection_changes()
             progress = f"（{changes['after']}/{changes['target']}）" if changes is not None else ""
             self.rt.log(f"已保护五星满级颜色：{facts['name']}·{facts['slot']}·{facts['color']}色。"

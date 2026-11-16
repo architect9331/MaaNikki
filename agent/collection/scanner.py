@@ -66,7 +66,7 @@ class InventoryScanner:
             from diagnostics import save_image
             # Card/tooltip patches carry no account corner. Full captures do.
             save_image(self.folder / filename, frame,
-                       full_frame=frame.shape[:2] == (720, 1280))
+                       full_frame=frame.shape[:2] in ((720, 1280), (5120, 1280)))
         return filename
 
     def ocr(self, roi, frame, expected=".+"):
@@ -479,7 +479,7 @@ class InventoryScanner:
                 headers = self.ocr(roi, frame, HEADER)
                 self.check_generation(generation)
                 if headers:
-                    self.image(f"tooltip_{index:04d}_stale.png", frame)
+                    self.image(f"tooltip_{index:04d}_stale.jpg", frame)
                     raise RuntimeError("旧悬停提示未关闭，已保存截图及已确认库存")
             self._tooltip_roi = None
         x, y, w, h = box
@@ -538,7 +538,7 @@ class InventoryScanner:
         evidence = evidence or {"source": "tooltip", "reads": 0, "ocr": []}
         # Keep a conservative clear region even when the tooltip OCR fails.
         self._tooltip_roi = self.detail_roi(previous) if previous is not None else roi
-        evidence["image"] = self.image(f"tooltip_{index:04d}_pending.png", frame)
+        evidence["image"] = self.image(f"tooltip_{index:04d}_pending.jpg", frame)
         evidence["reason"] = "未取得稳定的部件及等级文字"
         return None, evidence
 
@@ -656,7 +656,7 @@ class InventoryScanner:
             card_levels = [self.level(box, levels) for box in new_boxes]
             matches = self.matcher.match_batch(frame, new_boxes, levels=card_levels)
             self.check_generation(generation)
-            page_file = self.image(f"batch_{page:03d}.png", frame)
+            page_file = self.image(f"batch_{page:03d}.jpg", frame)
             added, accepted, color_accepted = 0, 0, 0
             for box, match, level in zip(new_boxes, matches, card_levels):
                 absolute = (box[0], box[1] + position)

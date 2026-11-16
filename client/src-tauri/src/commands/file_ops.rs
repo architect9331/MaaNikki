@@ -27,9 +27,7 @@ const ZIP_EOCD_BYTES: u64 = 22;
 /// 中央目录每条记录的固定字段大小（不含文件名）。
 const ZIP_CENTRAL_DIR_FIXED_BYTES: u64 = 46;
 /// 保留最近 N 次导出（含本次），多余的会在每次导出完成后清理。
-const MAX_EXPORTS_TO_KEEP: usize = 10;
-/// 需要随日志一起清空的调试产物子目录（内容由 MaaFW 的 save_on_error / save_draw 写入）。
-const DEBUG_ARTIFACT_DIRS: [&str; 2] = ["on_error", "vision"];
+const MAX_EXPORTS_TO_KEEP: usize = 5;
 /// 日志目录名（位于应用数据目录下）。
 const DEBUG_DIR: &str = "debug";
 /// 日志导出产物目录名，与 `debug/` 同级，避免下次导出把上次的产物扫进去。
@@ -586,180 +584,80 @@ pub fn get_data_dir() -> Result<String, String> {
     Ok(data_dir.to_string_lossy().to_string())
 }
 
-/// 清空目录内容，保留目录本身。返回成功删除的条目数（子目录整体计 1 条）。
-///
-/// 保留根目录只是为了不改动既有目录结构；MaaFW 写调试产物前会自建父目录，缺失也不会写入失败。
-fn clear_dir_contents(dir: &Path) -> u64 {
-    let entries = match std::fs::read_dir(dir) {
-        Ok(entries) => entries,
-        Err(e) => {
-            log::debug!("Failed to read debug dir [{}]: {}", dir.display(), e);
-            return 0;
-        }
-    };
-
-    let mut deleted = 0_u64;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let result = if path.is_dir() {
-            std::fs::remove_dir_all(&path)
-        } else {
-            std::fs::remove_file(&path)
-        };
-
-        match result {
-            Ok(()) => deleted = deleted.saturating_add(1),
-            Err(e) => log::debug!("Failed to delete debug entry [{}]: {}", path.display(), e),
-        }
-    }
-
-    deleted
-}
-
-/// 递归删除 `dir` 及其所有子目录下的 .log 文件，返回删除数量。
-/// `exclude_file_name` 匹配的文件名会被跳过（当前会话正在写入的日志）。
-/// 只删文件不回收空目录，避免改动既有目录结构。
-fn remove_log_files_recursively(dir: &Path, exclude_file_name: Option<&str>) -> u64 {
-    let entries = match std::fs::read_dir(dir) {
-        Ok(entries) => entries,
-        Err(e) => {
-            log::debug!("Failed to read log dir [{}]: {}", dir.display(), e);
-            return 0;
-        }
-    };
-
-    let mut deleted = 0_u64;
-    for entry in entries.flatten() {
-        let path = entry.path();
-
-        if path.is_dir() {
-            deleted =
-                deleted.saturating_add(remove_log_files_recursively(&path, exclude_file_name));
-            continue;
-        }
-
-        if !path.is_file() {
-            continue;
-        }
-
-        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
-            continue;
-        };
-
-        if !name.ends_with(".log") || exclude_file_name == Some(name) {
-            continue;
-        }
-
-        match std::fs::remove_file(&path) {
-            Ok(()) => deleted = deleted.saturating_add(1),
-            Err(e) => log::debug!("Failed to delete log file [{}]: {}", path.display(), e),
-        }
-    }
-
-    deleted
-}
-
-/// `clear_log_files` 的可测核心，接收具体目录而不依赖应用数据目录。
-fn clear_log_dirs(debug_dir: &Path, exports_dir: &Path, exclude_file_name: Option<&str>) -> u64 {
-    let mut deleted = remove_log_files_recursively(debug_dir, exclude_file_name);
-
-    for dir_name in DEBUG_ARTIFACT_DIRS {
-        let artifact_dir = debug_dir.join(dir_name);
-        if !artifact_dir.is_dir() {
-            continue;
-        }
-        deleted = deleted.saturating_add(clear_dir_contents(&artifact_dir));
-    }
-
-    if exports_dir.is_dir() {
-        deleted = deleted.saturating_add(clear_dir_contents(exports_dir));
-    }
-
-    deleted
-}
-
-/// 递归删除 debug 目录（含所有子目录）中的 .log 文件，清空 on_error/、vision/ 内的调试产物
-/// 以及 logs/ 任务记录与 debug_exports/ 日志导出产物（保留目录本身）。
-/// 可选择排除一个当前正在使用的日志文件。返回删除的文件与产物总数。
+/// 删除历史日志、错误截图、日志导出产物与任务记录（保留当前会话活跃日志、16:9 窗口还原记录与未完成任务保护目录）。
 #[tauri::command]
-pub fn clear_log_files(exclude_file_name: Option<String>, confirmed: bool) -> Result<u64, String> {
+pub async fn clear_log_files(
+    exclude_file_name: Option<String>,
+    confirmed: bool,
+) -> Result<super::storage_budget::StorageCleanResult, String> {
     if !confirmed {
         return Err("请在设置中确认清理日志文件".to_string());
     }
     let data_dir = get_app_data_dir()?;
-
-    let mut deleted = clear_log_dirs(
-        &data_dir.join(DEBUG_DIR),
-        &data_dir.join(DEBUG_EXPORTS_DIR),
-        exclude_file_name.as_deref(),
-    );
-    let task_logs = data_dir.join("logs");
-    if task_logs.is_dir() && !task_logs.is_symlink() {
-        deleted = deleted.saturating_add(clear_dir_contents(&task_logs));
-    }
-    Ok(deleted)
+    tauri::async_runtime::spawn_blocking(move || {
+        super::storage_budget::clear_logs_protected(&data_dir, exclude_file_name.as_deref())
+    })
+    .await
+    .map_err(|error| error.to_string())
 }
 
-fn remove_expired_logs(dir: &Path, cutoff: std::time::SystemTime, exclude: Option<&str>) -> u64 {
-    if dir.is_symlink() {
-        return 0;
-    }
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return 0;
-    };
-    let mut deleted = 0;
-    for entry in entries.flatten() {
-        let Ok(kind) = entry.file_type() else {
-            continue;
-        };
-        if kind.is_symlink() {
-            continue;
-        }
-        let path = entry.path();
-        if kind.is_dir() {
-            deleted += remove_expired_logs(&path, cutoff, exclude);
-        } else if kind.is_file() && exclude != path.file_name().and_then(|name| name.to_str()) {
-            let expired = entry
-                .metadata()
-                .and_then(|metadata| metadata.modified())
-                .is_ok_and(|modified| modified < cutoff);
-            if expired {
-                match std::fs::remove_file(&path) {
-                    Ok(()) => deleted += 1,
-                    Err(error) => log::debug!(
-                        "Failed to remove expired log [{}]: {}",
-                        path.display(),
-                        error
-                    ),
-                }
-            }
-        }
-    }
-    deleted
-}
-
-/// Retention applies to individual files; directory timestamps do not expire newer reports.
+/// 清理超过保留期（7 / 30 / 90 天）的文件，并始终执行各目录安全滚动配额控制。
 #[tauri::command]
 pub async fn cleanup_expired_logs(
     retention_days: u32,
     exclude_file_name: Option<String>,
-) -> Result<u64, String> {
-    if ![7, 30, 90].contains(&retention_days) {
-        return Err("日志保留时间应为 7、30 或 90 天".to_string());
+) -> Result<super::storage_budget::StorageCleanResult, String> {
+    if ![0, 7, 30, 90].contains(&retention_days) {
+        return Err("日志保留时间应为 0、7、30 或 90 天".to_string());
     }
     let data_dir = get_app_data_dir()?;
     tauri::async_runtime::spawn_blocking(move || {
-        let cutoff = std::time::SystemTime::now()
-            - std::time::Duration::from_secs(u64::from(retention_days) * 86400);
-        [DEBUG_DIR, "logs", DEBUG_EXPORTS_DIR]
-            .iter()
-            .map(|name| {
-                remove_expired_logs(&data_dir.join(name), cutoff, exclude_file_name.as_deref())
-            })
-            .sum()
+        let scope =
+            super::storage_budget::ProtectedScope::collect(&data_dir, exclude_file_name.as_deref());
+        let mut total = super::storage_budget::StorageCleanResult::default();
+        if retention_days > 0 {
+            let cutoff = std::time::SystemTime::now()
+                - std::time::Duration::from_secs(u64::from(retention_days) * 86400);
+            for name in [DEBUG_DIR, "logs", DEBUG_EXPORTS_DIR] {
+                let dir = data_dir.join(name);
+                let removed =
+                    super::storage_budget::remove_expired_protected(&dir, cutoff, &scope, false);
+                total.deleted_files = total.deleted_files.saturating_add(removed.deleted_files);
+                total.freed_bytes = total.freed_bytes.saturating_add(removed.freed_bytes);
+            }
+        }
+        let budgeted = super::storage_budget::enforce_storage_budgets_with_scope(&data_dir, &scope);
+        total.deleted_files = total.deleted_files.saturating_add(budgeted.deleted_files);
+        total.freed_bytes = total.freed_bytes.saturating_add(budgeted.freed_bytes);
+        total
     })
     .await
     .map_err(|error| error.to_string())
+}
+
+/// 统计数据目录各分类存储占用。
+#[tauri::command]
+pub async fn get_storage_usage() -> Result<super::storage_budget::StorageUsage, String> {
+    let data_dir = get_app_data_dir()?;
+    tauri::async_runtime::spawn_blocking(move || {
+        super::storage_budget::compute_storage_usage(&data_dir)
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+/// 清理可再生缓存（图文攻略缓存、过期下载临时文件及遗留安装包），保留内置运行库与账号配置。
+#[tauri::command]
+pub async fn clear_storage_cache(
+    confirmed: bool,
+) -> Result<super::storage_budget::StorageCleanResult, String> {
+    if !confirmed {
+        return Err("请在设置中确认清理临时缓存".to_string());
+    }
+    let data_dir = get_app_data_dir()?;
+    tauri::async_runtime::spawn_blocking(move || super::storage_budget::clear_cache_dir(&data_dir))
+        .await
+        .map_err(|error| error.to_string())
 }
 
 /// 获取当前工作目录

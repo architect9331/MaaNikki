@@ -159,7 +159,7 @@ class BlessingPursuitAction(CustomAction):
             if pursuit is not None:
                 pursuit.record_interruption(error, reason=reason)
                 try:
-                    pursuit.image("interrupted.png", rt.capture())
+                    pursuit.image("interrupted.jpg", rt.capture())
                 except (OSError, RuntimeError, cv2.error):
                     pass
             rt.log(f"五星处理暂停：{reason}。已保存操作记录：{folder}。",

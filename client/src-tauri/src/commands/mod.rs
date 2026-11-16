@@ -31,6 +31,7 @@ pub mod pearpal;
 pub mod project_patch;
 pub mod resonance;
 pub mod state;
+pub(crate) mod storage_budget;
 pub mod system;
 mod task_diagnostics;
 pub mod task_stats;

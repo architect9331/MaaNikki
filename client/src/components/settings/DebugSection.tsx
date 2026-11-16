@@ -1,18 +1,49 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bug, RefreshCw, FolderOpen, ScrollText, Network, Archive, Eraser } from 'lucide-react';
+import {
+  Bug,
+  RefreshCw,
+  FolderOpen,
+  ScrollText,
+  Network,
+  Archive,
+  Eraser,
+  HardDrive,
+  Trash2,
+} from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
 
 import { useAppStore } from '@/stores/appStore';
 import { maaService } from '@/services/maaService';
+import { resetCacheIndexState } from '@/services/cacheService';
 import { getCurrentLogFileName, loggers } from '@/utils/logger';
-import { useExplorationStore } from '@/services/explorationService';
+import type { StorageCleanResult } from '@/utils/logRetention';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { isTauri, getDebugDir, getConfigDir, openDirectory } from '@/utils/paths';
 import { useExportLogs } from '@/utils/useExportLogs';
 import { SwitchButton } from '@/components/FormControls';
 import { ExportLogsModal } from './ExportLogsModal';
+
+interface StorageCategoryUsage {
+  bytes: number;
+  files: number;
+}
+
+interface StorageUsage {
+  logs: StorageCategoryUsage;
+  artifacts: StorageCategoryUsage;
+  cleanableCache: StorageCategoryUsage;
+  configAndRuntime: StorageCategoryUsage;
+  totalDataBytes: number;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
 
 export function DebugSection() {
   const { t } = useTranslation();
@@ -31,26 +62,71 @@ export function DebugSection() {
     logRetentionDays,
     setLogRetentionDays,
   } = useAppStore();
-  const explorationEnabled = useExplorationStore((state) => state.enabled);
   const [confirmClearLogs, setConfirmClearLogs] = useState(false);
   const [clearingLogs, setClearingLogs] = useState(false);
+  const [confirmClearCache, setConfirmClearCache] = useState(false);
+  const [clearingCache, setClearingCache] = useState(false);
+  const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null);
+  const [loadingStorage, setLoadingStorage] = useState(false);
   const [pendingRetentionDays, setPendingRetentionDays] = useState<number | null>(null);
-  const logsInUse = instances.some((instance) => instance.isRunning) || explorationEnabled;
+  const logsInUse = instances.some((instance) => instance.isRunning);
+
+  const loadStorageUsage = useCallback(async () => {
+    if (!isTauri()) return;
+    setLoadingStorage(true);
+    try {
+      const usage = await invoke<StorageUsage>('get_storage_usage');
+      setStorageUsage(usage);
+    } catch (error) {
+      loggers.ui.warn('读取存储占用失败:', error);
+    } finally {
+      setLoadingStorage(false);
+    }
+  }, []);
 
   const handleClearLogFiles = async () => {
     if (clearingLogs || logsInUse) return;
     setConfirmClearLogs(false);
     setClearingLogs(true);
     try {
-      await invoke<number>('clear_log_files', {
-        excludeFileName: getCurrentLogFileName(), confirmed: true,
+      const result = await invoke<StorageCleanResult>('clear_log_files', {
+        excludeFileName: getCurrentLogFileName(),
+        confirmed: true,
       });
-      toast.success(t('debug.clearLogFilesDone'));
+      toast.success(
+        result.freedBytes > 0
+          ? t('debug.clearLogFilesDoneFreed', { size: formatBytes(result.freedBytes) })
+          : t('debug.clearLogFilesDone'),
+      );
+      void loadStorageUsage();
     } catch (error) {
       loggers.ui.error('清理日志文件失败:', error);
       toast.error(t('debug.clearLogFilesFailed'));
     } finally {
       setClearingLogs(false);
+    }
+  };
+
+  const handleClearStorageCache = async () => {
+    if (clearingCache) return;
+    setConfirmClearCache(false);
+    setClearingCache(true);
+    try {
+      const result = await invoke<StorageCleanResult>('clear_storage_cache', {
+        confirmed: true,
+      });
+      resetCacheIndexState();
+      toast.success(
+        result.freedBytes > 0
+          ? t('debug.clearCacheDoneFreed', { size: formatBytes(result.freedBytes) })
+          : t('debug.clearCacheDone'),
+      );
+      void loadStorageUsage();
+    } catch (error) {
+      loggers.ui.error('清理临时缓存失败:', error);
+      toast.error(t('debug.clearCacheFailed'));
+    } finally {
+      setClearingCache(false);
     }
   };
 
@@ -132,7 +208,14 @@ export function DebugSection() {
     };
 
     loadVersions();
-  }, []);
+    void loadStorageUsage();
+  }, [loadStorageUsage]);
+
+  useEffect(() => {
+    if (exportModal.status === 'success') {
+      void loadStorageUsage();
+    }
+  }, [exportModal.status, loadStorageUsage]);
 
   // 调试：打开配置目录
   const handleOpenConfigDir = async () => {
@@ -276,17 +359,99 @@ export function DebugSection() {
             {t('debug.exportLogs')}
           </button>
           {isTauri() && (
-            <button
-              onClick={() => setConfirmClearLogs(true)}
-              disabled={clearingLogs || logsInUse}
-              title={logsInUse ? t('debug.clearLogFilesBusy') : t('debug.clearLogFiles')}
-              className="flex items-center gap-2 px-3 py-2 text-sm bg-bg-tertiary hover:bg-bg-hover rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Eraser className="w-4 h-4" />
-              {t('debug.clearLogFiles')}
-            </button>
+            <>
+              <button
+                onClick={() => setConfirmClearLogs(true)}
+                disabled={clearingLogs || logsInUse}
+                title={logsInUse ? t('debug.clearLogFilesBusy') : t('debug.clearLogFiles')}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-bg-tertiary hover:bg-bg-hover rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Eraser className="w-4 h-4" />
+                {t('debug.clearLogFiles')}
+              </button>
+              <button
+                onClick={() => setConfirmClearCache(true)}
+                disabled={clearingCache}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-bg-tertiary hover:bg-bg-hover rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-4 h-4" />
+                {t('debug.clearCache')}
+              </button>
+            </>
           )}
         </div>
+
+        {isTauri() && (
+          <div className="pt-4 border-t border-border space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-text-primary">
+                <HardDrive className="w-4 h-4 text-accent" />
+                <span>{t('debug.storageUsageTitle')}</span>
+                {storageUsage && (
+                  <span className="text-xs font-normal text-text-muted">
+                    ({t('debug.storageTotal', { size: formatBytes(storageUsage.totalDataBytes) })})
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadStorageUsage()}
+                disabled={loadingStorage}
+                title={t('debug.storageRefresh')}
+                className="p-1.5 rounded-lg bg-bg-tertiary hover:bg-bg-hover text-text-secondary transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingStorage ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              {[
+                {
+                  key: 'logs',
+                  label: t('debug.storageLogs'),
+                  hint: storageUsage
+                    ? t('debug.storageFilesCount', { count: storageUsage.logs.files })
+                    : '-',
+                  bytes: storageUsage?.logs.bytes,
+                },
+                {
+                  key: 'artifacts',
+                  label: t('debug.storageArtifacts'),
+                  hint: storageUsage
+                    ? t('debug.storageFilesCount', { count: storageUsage.artifacts.files })
+                    : '-',
+                  bytes: storageUsage?.artifacts.bytes,
+                },
+                {
+                  key: 'cleanableCache',
+                  label: t('debug.storageCleanableCache'),
+                  hint: storageUsage
+                    ? t('debug.storageFilesCount', { count: storageUsage.cleanableCache.files })
+                    : '-',
+                  bytes: storageUsage?.cleanableCache.bytes,
+                },
+                {
+                  key: 'configAndRuntime',
+                  label: t('debug.storageConfigRuntime'),
+                  hint: t('debug.storageConfigRuntimeHint'),
+                  bytes: storageUsage?.configAndRuntime.bytes,
+                },
+              ].map((item) => (
+                <div
+                  key={item.key}
+                  className="rounded-lg bg-bg-tertiary/70 px-3 py-2 flex items-center justify-between gap-2"
+                >
+                  <div>
+                    <p className="text-text-secondary">{item.label}</p>
+                    <p className="text-text-muted mt-0.5">{item.hint}</p>
+                  </div>
+                  <span className="font-mono text-text-primary font-medium">
+                    {item.bytes !== undefined ? formatBytes(item.bytes) : '-'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {isTauri() && (
           <div className="flex items-center justify-between gap-3 pt-4 border-t border-border">
@@ -371,6 +536,17 @@ export function DebugSection() {
         confirmDisabled={clearingLogs || logsInUse}
         onConfirm={handleClearLogFiles}
         onCancel={() => setConfirmClearLogs(false)}
+      />
+      <ConfirmDialog
+        open={confirmClearCache}
+        title={t('debug.clearCache')}
+        message={t('debug.clearCacheConfirm')}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        destructive
+        confirmDisabled={clearingCache}
+        onConfirm={handleClearStorageCache}
+        onCancel={() => setConfirmClearCache(false)}
       />
       {/* 导出日志 Modal */}
       <ExportLogsModal

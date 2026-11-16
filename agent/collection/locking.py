@@ -129,19 +129,22 @@ class BlessingLocker(InventoryScanner):
             "recognition": {key: evidence[key] for key in ("source", "model_versions", "level_source",
                                                            "identity_logit_gap", "colour_logit_gap") if key in evidence},
             "card": self.image(prefix + ".png", self.region(frame, box)),
-            "badge": self.image(prefix + "_badge.png", self.region(frame, badge_roi)),
-            "lock": self.image(prefix + "_lock.png", self.region(frame, lock_roi)),
-            "classifier_patch": self.image(prefix + "_classifier.png", self.region(frame, classifier_roi(box))),
         }
+        if error is not None or row.get("catalog_unknown") or lock_recognition.get("source") == "unavailable":
+            diagnostic.update(
+                badge=self.image(prefix + "_badge.png", self.region(frame, badge_roi)),
+                lock=self.image(prefix + "_lock.png", self.region(frame, lock_roi)),
+                classifier_patch=self.image(prefix + "_classifier.png", self.region(frame, classifier_roi(box))),
+            )
         if error is not None:
-            diagnostic.update(error=error, page=self.image(prefix + "_page.png", frame),
+            diagnostic.update(error=error, page=self.image(prefix + "_page.jpg", frame),
                               quantity_failure=self.report.get("quantity_failure"))
             self.rt.diagnostic("blessing_quantity", error, image=frame, details=diagnostic)
         if evidence.get("selected_for_observation", False):
             # The card badge may be ambiguous while selected. Retain the
             # actual button frame used for its gap/background classification,
             # rather than only the earlier hover screenshot.
-            diagnostic["selected_page"] = self.image(prefix + "_selected.png", self._lock_frame)
+            diagnostic["selected_page"] = self.image(prefix + "_selected.jpg", self._lock_frame)
         write_json(self.folder / (prefix + ".json"), diagnostic)
 
     def set_tall_layout(self, enabled: bool):
@@ -480,7 +483,7 @@ class BlessingLocker(InventoryScanner):
                 return current
             previous = current
         self.counter += 1
-        self.image(f"lock_{self.counter:05d}_unknown.png", frame)
+        self.image(f"lock_{self.counter:05d}_unknown.jpg", frame)
         reason = ("锁按钮已点击，但未能确认结果，已停止且不会再次点击" if submitted
                   else "操作前无法区分锁定与解锁，未点击锁按钮")
         self.rt.diagnostic("blessing_lock_state", reason, image=frame,
@@ -633,7 +636,7 @@ class BlessingLocker(InventoryScanner):
             if attempt == 0 and direction == "asc":
                 if self.rt.action("Click", target=[1237, 684 + dy]) and self.rt.pause(.3):
                     continue
-            self.image("sort_direction_unknown.png", frame)
+            self.image("sort_direction_unknown.jpg", frame)
             raise RuntimeError("未确认获得时间从新到旧的排序箭头，请设为默认降序后重试")
 
     def unchanged(self, before, after):
@@ -713,7 +716,7 @@ class BlessingLocker(InventoryScanner):
                      "expected_state": target,
                      "status": "submitted_unconfirmed", "evidence": evidence,
                      "input_status": "prepared",
-                     "before": self.image(f"before_{len(self.report['operations']):03d}.png", current)}
+                     "before": self.image(f"before_{len(self.report['operations']):03d}.jpg", current)}
         self.pending = operation
         self.report["operations"].append(operation)
         self.save()
@@ -737,7 +740,7 @@ class BlessingLocker(InventoryScanner):
         if self.lock_state(generation, frame=self.frame(generation)) != target:
             raise RuntimeError("未确认当前选中项的锁定状态已改变，已停止且不重试")
         evidence = {"source": "selected_lock_button",
-                    "image": self.image(f"after_{len(self.report['operations']) - 1:03d}.png",
+                    "image": self.image(f"after_{len(self.report['operations']) - 1:03d}.jpg",
                                         self._lock_frame),
                     "lock_recognition": dict(self.report["lock_recognition"])}
         self.pending.update(status="confirmed", confirmation=evidence)

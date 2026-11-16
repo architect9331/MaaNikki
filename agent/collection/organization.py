@@ -138,8 +138,8 @@ class BlessingOrganizer(BlessingLocker):
             if phase != "step":
                 self.report["focus_mismatch"] = {
                     "phase": phase, "slot": view.slot, "position": view.position,
-                    "before": self.image(f"focus_{generation}_before.png", checkpoint["frame"]),
-                    "after": self.image(f"focus_{generation}_after.png", frame),
+                    "before": self.image(f"focus_{generation}_before.jpg", checkpoint["frame"]),
+                    "after": self.image(f"focus_{generation}_after.jpg", frame),
                     "cards_match": self.same_ordered_cards(checkpoint, frame),
                     "scrollbar_match": self.same_pixels(checkpoint["frame"], frame, self._scrollbar_roi())}
                 raise RuntimeError("切回后当前页条目或滚动位置改变，下次运行会重新整理")
@@ -325,7 +325,7 @@ class BlessingOrganizer(BlessingLocker):
         counts = self.capacity_values(frame)
         self.check_generation(self.organization_generation)
         if len(counts) != 1:
-            self.image("normal_capacity_unknown.png", frame)
+            self.image("normal_capacity_unknown.jpg", frame)
             raise RuntimeError("普通仓库容量未能确认，未发布完整库存")
         return counts[0]
 

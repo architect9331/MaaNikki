@@ -58,7 +58,7 @@ def save_image(path, frame, *, roi=None, full_frame=True):
     image, _ = diagnostic_image(frame, roi=roi, full_frame=full_frame)
     png = path.suffix.lower() == ".png"
     ok, encoded = cv2.imencode(".png" if png else ".jpg", image,
-        [cv2.IMWRITE_PNG_COMPRESSION, 1] if png else [cv2.IMWRITE_JPEG_QUALITY, 90])
+        [cv2.IMWRITE_PNG_COMPRESSION, 1] if png else [cv2.IMWRITE_JPEG_QUALITY, 85])
     if not ok:
         raise OSError("诊断截图编码失败。")
     path.parent.mkdir(parents=True, exist_ok=True)

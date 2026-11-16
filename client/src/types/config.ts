@@ -260,7 +260,7 @@ export const defaultConfig: MxuConfig = {
     confirmBeforeDelete: false,
     maxLogsPerInstance: DEFAULT_MAX_LOGS_PER_INSTANCE,
     autoClearLogsOnLaunch: true,
-    logRetentionDays: 0,
+    logRetentionDays: 30,
     lastLogCleanupAt: 0,
     windowSize: defaultWindowSize,
     mirrorChyan: defaultMirrorChyanSettings,

@@ -259,7 +259,7 @@ export const useAppStore = create<AppState>()(
     confirmBeforeDelete: false,
     maxLogsPerInstance: DEFAULT_MAX_LOGS_PER_INSTANCE,
     autoClearLogsOnLaunch: true,
-    logRetentionDays: 0,
+    logRetentionDays: 30,
     lastLogCleanupAt: 0,
     helpImproveSoftware: true,
     helpImproveRouteTelemetry: true,
@@ -1363,8 +1363,8 @@ export const useAppStore = create<AppState>()(
         confirmBeforeDelete: config.settings.confirmBeforeDelete ?? false,
         maxLogsPerInstance: config.settings.maxLogsPerInstance ?? DEFAULT_MAX_LOGS_PER_INSTANCE,
         autoClearLogsOnLaunch: config.settings.autoClearLogsOnLaunch ?? true,
-        logRetentionDays: [7, 30, 90].includes(config.settings.logRetentionDays ?? 0)
-          ? config.settings.logRetentionDays! : 0,
+        logRetentionDays: [0, 7, 30, 90].includes(config.settings.logRetentionDays ?? 30)
+          ? (config.settings.logRetentionDays ?? 30) : 30,
         lastLogCleanupAt: config.settings.lastLogCleanupAt ?? 0,
         // 默认开启；调试 / 开发版本强制关闭
         helpImproveSoftware: isTelemetryBlockedByBuild(get().projectInterface)
