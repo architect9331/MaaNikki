@@ -16,7 +16,7 @@ import { Segmented, secondaryButton } from './ui/FeaturePage';
  */
 
 const TONE_DOT = { ok: 'bg-success', warn: 'bg-warning', idle: 'bg-text-muted', busy: 'bg-accent animate-pulse' };
-const MODES = [['all', '全收集'], ['selected', '自选']] as const;
+const MODES = [['all', '全收集'], ['power', '战力'], ['selected', '自选']] as const;
 
 function Row({ label, children, actions }: { label: string; children: ReactNode; actions?: ReactNode }) {
   return <div className="group/option flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">

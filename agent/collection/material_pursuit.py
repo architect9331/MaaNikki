@@ -20,6 +20,7 @@ from .backpack import (
     wardrobe_snapshot,
     wardrobe_snapshot_key,
 )
+from .dominance import strictly_dominated_standalone_ids
 
 
 def load_catalogs():
@@ -50,30 +51,43 @@ def owned_score_ids(role: dict, scoring: dict) -> set[str]:
 
 
 def plan_mode(plan) -> str:
-    """Plans saved before 自选 existed have no mode and mean 全收集."""
-    return "selected" if isinstance(plan, dict) and plan.get("mode") == "selected" else "all"
+    """Normalize plan mode: ``all``, ``power`` or ``selected``."""
+    if isinstance(plan, dict) and plan.get("mode") in ("power", "selected"):
+        return plan["mode"]
+    return "all"
 
 
 def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> dict[str, int]:
     owned = owned_score_ids(role, scoring)
     materials_state = role.get("materials") or {}
     plan = materials_state.get("crafting_plan")
-    selected = plan_mode(plan) == "selected"
+    mode = plan_mode(plan)
+    selected = mode == "selected"
     picked = {str(sid) for sid in (plan.get("sketch_ids") or [])} if selected else set()
     scope = materials_state.get("crafting_scope", "all")
+    sketches = crafting.get("sketches") or []
+    dominated: set[str] = set()
+    if mode == "power":
+        available = owned | {str(sk["id"]) for sk in sketches}
+        uncrafted = [str(sk["id"]) for sk in sketches if str(sk["id"]) not in owned]
+        dominated = strictly_dominated_standalone_ids(scoring, uncrafted, available)
     totals: dict[str, int] = {}
-    for sketch in crafting.get("sketches") or []:
-        if str(sketch["id"]) in owned:
+    for sketch in sketches:
+        sid = str(sketch["id"])
+        if sid in owned:
             continue
         if selected:
-            if str(sketch["id"]) not in picked:
+            if sid not in picked:
+                continue
+        elif mode == "power":
+            if sid in dominated:
                 continue
         elif scope == "suits" and sketch.get("category") != "suit":
             continue
         for mid, cnt in (sketch.get("costs") or {}).items():
             totals[str(mid)] = totals.get(str(mid), 0) + int(cnt)
     # Crafting between two wardrobe reads is only known as an account-wide total,
-    # so it can only be deducted from the 全收集 plan.
+    # so it can only be deducted from non-selected plans.
     wb_key = wardrobe_snapshot_key(role)
     if not selected and wb_key and materials_state.get("wardrobe_baseline_key") == wb_key:
         consumed = materials_state.get("crafted_consumed") or {}
@@ -141,7 +155,7 @@ def renewal_groups(role: dict, scoring: dict) -> list[dict]:
         manual = levels.get(group["id"])
         level = RENEWED_LEVEL if group["reward"] else manual if isinstance(manual, int) and 0 <= manual <= RENEWED_LEVEL else 0
         renewable = bool(level_cost(curve, MAX_LEVEL, RENEWED_LEVEL))
-        result.append({"id": group["id"], "curve": curve, "level": level, "renewable": renewable})
+        result.append({"id": group["id"], "score_id": group["score_id"], "curve": curve, "level": level, "renewable": renewable})
     return result
 
 
@@ -149,12 +163,20 @@ def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict
     """Return (all_planned_totals, priority_targets_totals) after subtracting consumption."""
     mats = role.get("materials") or {}
     plan = mats.get("renewal_plan") or {}
-    selected = plan_mode(plan) == "selected"
+    mode = plan_mode(plan)
+    selected = mode == "selected"
     targets = plan.get("targets") or {}
     priority_targets = plan.get("priority_targets") or {}
+    groups = renewal_groups(role, scoring)
+    dominated: set[str] = set()
+    if mode == "power":
+        owned_score = {g["score_id"] for g in groups}
+        dominated = strictly_dominated_standalone_ids(scoring, owned_score, owned_score)
     totals: dict[str, int] = {}
     priority: dict[str, int] = {}
-    for group in renewal_groups(role, scoring):
+    for group in groups:
+        if mode == "power" and group["score_id"] in dominated:
+            continue
         top = RENEWED_LEVEL if group["renewable"] else MAX_LEVEL
         if selected:
             wanted = targets.get(group["id"])

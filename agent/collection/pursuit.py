@@ -12,10 +12,11 @@ from .decompose import DuplicateDecomposer, LowRarityDecomposer
 class FiveStarPursuit:
     def __init__(self, inventory, *, decompose_duplicates=False, auto_bling=True, chance_priority=True,
                  share_statistics=False, farm_only=False, skip_prefix_scan=False, reserve_bling=0,
-                 focus_sets=None, max_farm_runs=None):
+                 focus_sets=None, power_mode=False, max_farm_runs=None):
         self.inventory = inventory
         # 自选: only these blessing sets weigh realm choice and decide completion.
         self.focus_sets = set(focus_sets) if focus_sets is not None else None
+        self.power_mode = bool(power_mode)
         self.rt = inventory.rt
         self.decompose_duplicates = decompose_duplicates
         self.auto_bling = auto_bling
@@ -26,6 +27,7 @@ class FiveStarPursuit:
         self.max_farm_runs = max(1, int(max_farm_runs)) if max_farm_runs is not None else None
         inventory.chance_priority = chance_priority
         inventory.share_statistics = share_statistics
+        inventory.power_mode = self.power_mode
         inventory.read_only = self.farm_only
         inventory.reserve_bling = self.reserve_bling
         self.supply = CollectionSupply(self.rt, inventory)
@@ -107,6 +109,9 @@ class FiveStarPursuit:
 
     def target_complete(self):
         progress = self.inventory.progress()
+        if self.power_mode:
+            return all(self.inventory.part_complete(part["name"], part["slot"])
+                       for part in self.focus_parts(progress))
         if self.focus_sets is None:
             return progress["complete"]
         return all(not part["missing_colors"] for part in self.focus_parts(progress))
@@ -115,13 +120,15 @@ class FiveStarPursuit:
         stock = self.inventory
         value = Counter()
         for part in self.focus_parts(stock.progress()):
-            value[part["source"]] += (
-                stock.marginal_new_colour_chance(
+            if self.chance_priority:
+                weight = stock.marginal_new_colour_chance(
                     part["name"], part["slot"], embryos=part.get("embryos", 0)
                 )
-                if self.chance_priority
-                else len(part["missing_colors"])
-            )
+            elif self.power_mode:
+                weight = 0 if (stock.part_complete(part["name"], part["slot"]) or part.get("embryos", 0) > 0) else 1
+            else:
+                weight = len(part["missing_colors"])
+            value[part["source"]] += weight
         # Stable sorting keeps catalog order for equal values.
         sources = sorted((source for source in value if value[source]), key=lambda source: -value[source])
         if not sources:
@@ -155,8 +162,10 @@ class FiveStarPursuit:
             stock.save()
             return False
         if self.target_complete():
+            done_msg = ("本地图鉴内五星种类已收齐，请选择其他幻境；本次不消耗活跃能量"
+                        if self.power_mode else "本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量")
             stock.report.update(complete=True, phase="complete",
-                                reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量",
+                                reason=done_msg,
                                 inventory={"reused": True})
             self.rt.log(stock.report["reason"])
             stock.save()
@@ -190,7 +199,8 @@ class FiveStarPursuit:
             self.rt.log(message, ui_text=message)
             return stock.finish("祝福闪光仓库已满，今天不刷本")
         if self.target_complete():
-            return stock.finish("本地图鉴内五星颜色已收齐，可选择其他幻境")
+            return stock.finish("本地图鉴内五星种类已收齐，可选择其他幻境"
+                                if self.power_mode else "本地图鉴内五星颜色已收齐，可选择其他幻境")
         embryos_acquired = bool(self.spend_energy())
         if embryos_acquired and not self.skip_prefix_scan and stock.open():
             stock.discover_prefixes()
@@ -212,8 +222,10 @@ class FiveStarPursuit:
         stock = self.inventory
         stock.prepare("full_collection")
         if self.target_complete():
+            done_msg = ("本地图鉴内五星种类已收齐，请选择其他幻境；本次不消耗活跃能量"
+                        if self.power_mode else "本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量")
             stock.report.update(complete=True, phase="complete",
-                                reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量",
+                                reason=done_msg,
                                 inventory={"reused": True})
             self.rt.log(stock.report["reason"])
             stock.save()
@@ -224,9 +236,7 @@ class FiveStarPursuit:
             LowRarityDecomposer(stock).run()
         # One decision per day. Existing embryos go first; only what they leave decides.
         outcome = stock.process_inventory() if stock.queued_rolls() else None
-        already_complete = bool(
-            outcome and outcome.get("status") == "collection_complete" and self.target_complete()
-        )
+        already_complete = bool(outcome and self.target_complete())
         # Double-reward runs must not divert blessing attempts into Jihua bling.
         short = (
             not already_complete
@@ -264,4 +274,9 @@ class FiveStarPursuit:
             "materials_shortage": "升级材料不足，已保存进度；下次刷取后优先继续当前闪光",
             "no_embryos": "本轮可升级的缺色五星已处理，保存进度",
         }
+        if self.target_complete():
+            done_reason = ("本地图鉴内五星种类已收齐，可选择其他幻境" if self.power_mode
+                           else "所选范围五星颜色已收齐，可选择其他幻境" if self.focus_sets is not None
+                           else "本地图鉴内五星颜色已收齐，可选择其他幻境")
+            return stock.finish(done_reason)
         return stock.finish(reasons[outcome["status"]])

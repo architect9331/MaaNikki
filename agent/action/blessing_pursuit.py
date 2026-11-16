@@ -22,20 +22,29 @@ from account_state import AccountState, game_day
 ORGANIZE_OPTIONS = {"auto": None, "always": False, "always_unlock": True}
 
 
-def blessing_focus(role: dict) -> list[str] | None:
-    """Set names chosen in the 祝福闪光 自选 plan; None means 全收集."""
+def blessing_mode(role: dict) -> str:
+    """Return active 祝福闪光 plan mode: ``all``, ``power`` or ``selected``."""
     plan = (role.get("materials") or {}).get("blessing_plan")
-    if not isinstance(plan, dict) or plan.get("mode") != "selected":
+    if isinstance(plan, dict) and plan.get("mode") in ("power", "selected"):
+        return plan["mode"]
+    return "all"
+
+
+def blessing_focus(role: dict) -> list[str] | None:
+    """Set names chosen in the 祝福闪光 自选 plan; None means 全收集 or 战力."""
+    if blessing_mode(role) != "selected":
         return None
+    plan = (role.get("materials") or {}).get("blessing_plan") or {}
     return [str(name) for name in plan.get("sets") or [] if isinstance(name, str)]
 
 
 def glow_shortfall(rt, role: dict, organize_mode: str = "auto") -> bool:
-    """Whether the blessing goal still has colours to chase (or must organize first)."""
+    """Whether the blessing goal still has colours/kinds to chase (or must organize first)."""
     if organize_mode != "auto":
         return True
     catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
     targets = [item for item in catalog["sets"] if item["rarity"] == 5 and item.get("collection_target", True)]
+    mode = blessing_mode(role)
     focus = blessing_focus(role)
     if focus is not None:
         targets = [item for item in targets if item["name"] in set(focus)]
@@ -47,6 +56,12 @@ def glow_shortfall(rt, role: dict, organize_mode: str = "auto") -> bool:
         return True
     if order.get("pending_operation") is not None or (order.get("recovery") or {}).get("slots"):
         return True
+    if mode == "power":
+        return any(
+            not any((item["name"], slot, color) in protected for color in item["colors"])
+            for item in targets
+            for slot in SLOTS
+        )
     return any((item["name"], slot, color) not in protected
                for item in targets for slot in SLOTS for color in item["colors"])
 
@@ -125,10 +140,12 @@ class BlessingPursuitAction(CustomAction):
                 ROOT,
                 parameters(context, "MaaNikki_Pursuit_StatsOption").get("enabled") is not False,
             )
+            role_state = AccountState.for_runtime(ROOT, rt).load()
             flow = FiveStarPursuit(pursuit, decompose_duplicates=decompose, auto_bling=auto_bling,
                                   chance_priority=True, share_statistics=share,
                                   farm_only=farm_only, reserve_bling=reserve_bling,
-                                  focus_sets=blessing_focus(AccountState.for_runtime(ROOT, rt).load()))
+                                  focus_sets=blessing_focus(role_state),
+                                  power_mode=(blessing_mode(role_state) == "power"))
             ok = flow.run()
             if not ok and not rt.stopped:
                 rt.diagnostic("blessing_pursuit", "祝福闪光处理未完成")

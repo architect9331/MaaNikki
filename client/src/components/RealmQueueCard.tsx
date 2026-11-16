@@ -24,7 +24,8 @@ import { openCollectionHub, type CollectionTab } from '@/stores/collectionHubSto
 import { useForecastAssumptionsStore } from '@/stores/forecastAssumptionsStore';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import type { QueueGoalEstimate } from '@/services/realmForecast';
-import { getBlessingProgress } from '@/utils/blessingProgress';
+import { collectionKey, collectionSlots, getBlessingProgress } from '@/utils/blessingProgress';
+import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { getInterfaceLangKey } from '@/i18n';
 import {
   DEFAULT_REALM_OPTION_KEYS,
@@ -648,7 +649,22 @@ export function RealmCollectionWorkflow({
 }) {
   const setTaskOptionValue = useAppStore((state) => state.setTaskOptionValue);
   const account = useAccountStateStore((state) => state.data);
+  const materials = useWardrobePlanStore((state) => state.materials);
   const progress = useMemo(() => getBlessingProgress(account), [account]);
+  const isPowerBlessing = materials.blessing_plan?.mode === 'power';
+  const kindDone = useMemo(
+    () =>
+      progress.sets.reduce(
+        (sum, set) =>
+          sum +
+          collectionSlots.filter((slot) =>
+            set.colors.some((color) => progress.owned.has(collectionKey({ name: set.name, slot, color }))),
+          ).length,
+        0,
+      ),
+    [progress],
+  );
+  const kindTotal = progress.sets.length * collectionSlots.length;
   const workflow = realmCollectionWorkflow(values);
   const reserveBling = realmReserveBling(values);
   const decompose = values.CollectionDecompose?.type === 'switch' && values.CollectionDecompose.value;
@@ -683,7 +699,9 @@ export function RealmCollectionWorkflow({
       </div>
       <p className="text-text-muted">
         {progress.known
-          ? `五星闪光已收集 ${progress.owned.size} / ${progress.target} 个颜色。`
+          ? isPowerBlessing
+            ? `五星闪光已收集 ${kindDone} / ${kindTotal} 个种类（战力模式）。`
+            : `五星闪光已收集 ${progress.owned.size} / ${progress.target} 个颜色。`
           : '尚无闪光记录。第一次运行前请清除祝福闪光仓库的筛选，会先读取或整理全部闪光。'}
       </p>
       {workflow === 'Managed' && reserveBling > 0 && (

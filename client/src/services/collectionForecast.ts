@@ -11,6 +11,7 @@ export interface ForecastPart {
   normalTotal: number;
   rainbowMissing: boolean;
   embryos?: number;
+  kindOnly?: boolean;
 }
 
 export interface ForecastSchedule {
@@ -104,6 +105,7 @@ function trial(input: ForecastInput, seed: number) {
   parts.forEach((part, index) => sources.set(part.source, [...(sources.get(part.source) ?? []), index]));
   const chance = (index: number) => {
     const part = parts[index];
+    if (part.kindOnly) return part.normalMissing > 0 ? 1 : 0;
     return part.normalMissing * (1 - input.rainbow) / part.normalTotal + (part.rainbowMissing ? input.rainbow : 0);
   };
   const open = (index: number) => parts[index].normalMissing > 0 || parts[index].rainbowMissing;
@@ -111,15 +113,19 @@ function trial(input: ForecastInput, seed: number) {
   const total = parts.reduce((sum, part) => sum + part.normalMissing + Number(part.rainbowMissing), 0);
   const normalTotal = parts.reduce((sum, part) => sum + part.normalMissing, 0);
   const openParts = parts.map((_, index) => index).filter(open);
+  const isKindOnly = parts.some((part) => part.kindOnly);
 
   const partEmbryoCount = openParts.reduce((sum, index) => sum + Math.max(0, parts[index].embryos ?? 0), 0);
   let queue: number[];
   if (input.usePartEmbryos && partEmbryoCount > 0) {
     queue = [];
     for (const index of openParts) {
-      const count = Math.max(0, parts[index].embryos ?? 0);
+      const rawCount = Math.max(0, parts[index].embryos ?? 0);
+      const count = parts[index].kindOnly ? Math.min(1, rawCount) : rawCount;
       for (let i = 0; i < count; i++) queue.push(index);
     }
+  } else if (isKindOnly) {
+    queue = openParts.slice(0, Math.min(openParts.length, Math.max(0, input.embryos)));
   } else {
     // Held embryos have no recorded part here; spread them across the open parts.
     queue = Array.from({ length: firstOpen < 0 ? 0 : input.embryos }, () => openParts[Math.floor(rand() * openParts.length)]);
@@ -178,17 +184,27 @@ function trial(input: ForecastInput, seed: number) {
       }
       bling -= COST_BLING;
       const part = parts[target];
-      const roll = rand();
-      if (roll < input.rainbow) {
-        if (part.rainbowMissing) {
-          part.rainbowMissing = false;
+      if (part.kindOnly) {
+        if (part.normalMissing > 0) {
+          part.normalMissing = 0;
           done++;
+          normalDone++;
+        } else {
+          duplicates++;
+        }
+      } else {
+        const roll = rand();
+        if (roll < input.rainbow) {
+          if (part.rainbowMissing) {
+            part.rainbowMissing = false;
+            done++;
+          } else duplicates++;
+        } else if ((roll - input.rainbow) / (1 - input.rainbow) * part.normalTotal < part.normalMissing) {
+          part.normalMissing--;
+          done++;
+          normalDone++;
         } else duplicates++;
-      } else if ((roll - input.rainbow) / (1 - input.rainbow) * part.normalTotal < part.normalMissing) {
-        part.normalMissing--;
-        done++;
-        normalDone++;
-      } else duplicates++;
+      }
     }
   };
 
@@ -229,8 +245,10 @@ function trial(input: ForecastInput, seed: number) {
       } else {
         let source = '';
         let value = -1;
+        const effectiveChance = (index: number) =>
+          parts[index].kindOnly && (!open(index) || queue.includes(index)) ? 0 : chance(index);
         for (const [name, indices] of sources) {
-          const expected = indices.reduce((sum, index) => sum + chance(index), 0);
+          const expected = indices.reduce((sum, index) => sum + effectiveChance(index), 0);
           if (expected > value) {
             source = name;
             value = expected;
@@ -253,7 +271,7 @@ function trial(input: ForecastInput, seed: number) {
             energySpent += ENERGY_PER_RUN;
             particles += LOW_RARITY_PARTICLES;
             capacity++;
-            if (open(index)) queue.push(index);
+            if (open(index) && !(parts[index].kindOnly && queue.includes(index))) queue.push(index);
             else {
               particles += EMBRYO_PARTICLES;
               capacity--;
@@ -388,6 +406,27 @@ export function forecast(input: ForecastInput): ForecastResult {
 
   const blockedByCapacity = trials.filter((run) => run.stalledByCapacity).length >= TRIALS / 2;
 
+  const isKindOnly = input.parts.some((part) => part.kindOnly);
+  const milestones: ForecastMilestone[] = [
+    milestone(
+      'bling',
+      (input.reserveBling ?? 0) > 0 ? '噗灵触及保留线，要穿插刷噗灵' : '噗灵开始不够，要穿插刷噗灵',
+      (run) => run.firstBling,
+      (run) => run.firstBlingEnergy,
+    ),
+    milestone(
+      'half',
+      isKindOnly ? '缺的种类收齐一半' : '缺的颜色收齐一半',
+      (run) => run.reached[1],
+      (run) => run.reachedEnergy[1],
+    ),
+    milestone('full', '仓库第一次满', (run) => run.firstFull, (run) => run.firstFullEnergy),
+    ...(isKindOnly
+      ? []
+      : [milestone('normal', '普通色全部收齐', (run) => run.normalDay, (run) => run.normalEnergy)]),
+    milestone('all', isKindOnly ? '战力收齐完成' : '全收集完成', (run) => run.allDay, (run) => run.totalEnergy),
+  ];
+
   return {
     owned,
     total: owned + total,
@@ -398,17 +437,6 @@ export function forecast(input: ForecastInput): ForecastResult {
     resources,
     totalEnergy,
     blockedByCapacity,
-    milestones: [
-      milestone(
-        'bling',
-        (input.reserveBling ?? 0) > 0 ? '噗灵触及保留线，要穿插刷噗灵' : '噗灵开始不够，要穿插刷噗灵',
-        (run) => run.firstBling,
-        (run) => run.firstBlingEnergy,
-      ),
-      milestone('half', '缺的颜色收齐一半', (run) => run.reached[1], (run) => run.reachedEnergy[1]),
-      milestone('full', '仓库第一次满', (run) => run.firstFull, (run) => run.firstFullEnergy),
-      milestone('normal', '普通色全部收齐', (run) => run.normalDay, (run) => run.normalEnergy),
-      milestone('all', '全收集完成', (run) => run.allDay, (run) => run.totalEnergy),
-    ],
+    milestones,
   };
 }

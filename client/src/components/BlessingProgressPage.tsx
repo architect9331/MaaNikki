@@ -8,6 +8,7 @@ import { useAccountStateStore } from '@/stores/accountStateStore';
 import { collectionSlots as slots, collectionKey as keyOf } from '@/utils/blessingProgress';
 import { REALM_GOAL_LABELS } from '@/utils/nikkiOptions';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import { normalizePlanMode } from '@/services/scoring/dominance';
 import type { PlanMode } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import { isTauri } from '@/utils/paths';
@@ -54,12 +55,13 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
     if (data?.uid) void load(`${data.uid}:${data.updated_at ?? wardrobeUpdatedAt}:${refreshToken}`);
   }, [data?.uid, data?.updated_at, wardrobeUpdatedAt, refreshToken, load]);
 
-  const planMode: PlanMode = materials.blessing_plan?.mode === 'selected' ? 'selected' : 'all';
+  const planMode: PlanMode = normalizePlanMode(materials.blessing_plan?.mode);
+  const isPower = planMode === 'power';
   const chosen = useMemo(() => new Set(materials.blessing_plan?.sets ?? []), [materials.blessing_plan]);
   const [limit, setLimit] = useState(30);
   const savePlan = (mode: PlanMode, names: Set<string> = chosen) => {
     if (!payload) {
-      toast.error('请先在「我的衣柜」读取一次衣柜以确认当前账号，再保存自选计划。');
+      toast.error('请先在「我的衣柜」读取一次衣柜以确认当前账号，再保存收集计划。');
       return;
     }
     updateMaterials((previous) => ({ ...previous, blessing_plan: { mode, sets: [...names] } }));
@@ -135,21 +137,27 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
   };
 
   const has = (name: string, slot: string, color: string) => progress.owned.has(keyOf({ name, slot, color }));
+  const hasKind = (name: string, colors: string[], slot: string) => colors.some((color) => has(name, slot, color));
   const count = (name: string, colors: string[], slot?: string) =>
     (slot ? [slot] : slots).reduce((n, part) => n + colors.filter((color) => has(name, part, color)).length, 0);
-  const inScope = (name: string) => planMode === 'all' || chosen.has(name);
+  const inScope = (name: string) => planMode !== 'selected' || chosen.has(name);
+  const effectiveFilter = isPower && filter === 'rainbow' ? 'missing' : filter;
 
   const visible = sets.filter((s) => {
-    const owned = count(s.name, s.colors);
-    const total = s.colors.length * 3;
+    const owned = isPower
+      ? slots.filter((slot) => hasKind(s.name, s.colors, slot)).length
+      : count(s.name, s.colors);
+    const total = isPower ? slots.length : s.colors.length * 3;
     const onlyRainbow =
-      owned < total && slots.every((slot) => s.colors.every((color) => color === '彩' || has(s.name, slot, color)));
+      !isPower &&
+      owned < total &&
+      slots.every((slot) => s.colors.every((color) => color === '彩' || has(s.name, slot, color)));
     return (
       `${s.name} ${s.source}`.includes(search.trim()) &&
-      (filter === 'all' ||
-        (filter === 'complete' && owned === total) ||
-        (filter === 'missing' && owned < total) ||
-        (filter === 'rainbow' && onlyRainbow))
+      (effectiveFilter === 'all' ||
+        (effectiveFilter === 'complete' && owned === total) ||
+        (effectiveFilter === 'missing' && owned < total) ||
+        (effectiveFilter === 'rainbow' && onlyRainbow))
     );
   });
   const updated = snapshot?.record?.updated_at;
@@ -174,7 +182,12 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
   const listed = [...visible].sort(
     (a, b) => (missingBySource.get(b.source ?? '') ?? 0) - (missingBySource.get(a.source ?? '') ?? 0),
   );
-  const scopeLabel = planMode === 'all' ? `全收集 · ${number(sets.length)} 个套组` : `自选 · ${number(scopeSetsCount)} 个套组`;
+  const scopeLabel =
+    planMode === 'all'
+      ? `全收集 · ${number(sets.length)} 个套组`
+      : isPower
+        ? `战力 · ${number(sets.length * slots.length)} 个种类部件`
+        : `自选 · ${number(scopeSetsCount)} 个套组`;
 
   const time = (value: string) => new Date(value).toLocaleString('zh-CN', { hour12: false });
   const notices: Notice[] = [];
@@ -270,10 +283,15 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
           </>
         }
         mode={planMode}
-        onModeChange={(next) => savePlan(next)}
+        onModeChange={(next) => {
+          if (next === 'power' && filter === 'rainbow') setFilter('missing');
+          savePlan(next);
+        }}
         modeDetail={
           planMode === 'all' ? (
             '全部未收集的五星闪光颜色，按出新色概率跨套组挑选副本。'
+          ) : isPower ? (
+            '只收集每种套装头、手、脚各任意 1 个满级颜色，不追全异色；已满级的新异色仍会自动锁定，方便后续切回全收集。'
           ) : (
             <>只追勾选套组的缺色，收齐后交给顺序里的下一项，已选 {number(scopeSetsCount)} 个套组。</>
           )
@@ -281,7 +299,11 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
         queueStatus={
           <>
             {isFarmOnly ? '只刷胚子' : '全流程托管'} ·{' '}
-            {progress.known ? (remaining > 0 ? `还差 ${number(remaining)} 色` : '所选范围已收齐') : '首次运行会先整理仓库'}
+            {progress.known
+              ? remaining > 0
+                ? `还差 ${number(remaining)} ${isPower ? '种' : '色'}`
+                : '所选范围已收齐'
+              : '首次运行会先整理仓库'}
           </>
         }
         queueHint="顺序、执行方式、保留噗灵与爆仓分解都在「刷取设置」中调整。所选范围收齐前会一直刷闪光，建议把急需的材料排在前面。"
@@ -293,7 +315,7 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
       <PlanLayout
         list={
           <PlanListPanel
-            title={planMode === 'all' ? '全收集包含的套组' : '想追全哪些套组'}
+            title={planMode === 'all' ? '全收集包含的套组' : isPower ? '战力模式包含的套组（每部位 1 色）' : '想追全哪些套组'}
             mode={planMode}
             includedCount={scopeSetsCount}
             selectedCount={chosen.size}
@@ -315,17 +337,25 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
                 </label>
                 <Segmented
                   label="筛选收集状态"
-                  value={filter}
+                  value={effectiveFilter}
                   onChange={(next) => {
                     setFilter(next);
                     setLimit(30);
                   }}
-                  options={[
-                    ['missing', '未收齐'],
-                    ['rainbow', '只缺彩色'],
-                    ['complete', '已收齐'],
-                    ['all', '全部'],
-                  ]}
+                  options={
+                    isPower
+                      ? [
+                          ['missing', '未收齐'],
+                          ['complete', '已收齐'],
+                          ['all', '全部'],
+                        ]
+                      : [
+                          ['missing', '未收齐'],
+                          ['rainbow', '只缺彩色'],
+                          ['complete', '已收齐'],
+                          ['all', '全部'],
+                        ]
+                  }
                 />
               </>
             }
@@ -344,8 +374,10 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
             more={{ shown: limit, total: listed.length, onMore: () => setLimit((value) => value + 30) }}
           >
             {listed.slice(0, limit).map((set) => {
-              const owned = count(set.name, set.colors);
-              const total = set.colors.length * 3;
+              const owned = isPower
+                ? slots.filter((slot) => hasKind(set.name, set.colors, slot)).length
+                : count(set.name, set.colors);
+              const total = isPower ? slots.length : set.colors.length * 3;
               const picked = planMode === 'selected' && chosen.has(set.name);
               return (
                 <div key={set.name} className={clsx('flex items-center gap-2 px-4 py-2 text-xs', picked && 'bg-accent/5')}>
@@ -394,11 +426,11 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
         }
         summary={
           <>
-            <Card title={planMode === 'all' ? '收集进度' : '所选套组的收集进度'} aside={<span className="text-xs text-text-secondary">{scopeLabel}</span>}>
+            <Card title={planMode === 'all' ? '收集进度' : isPower ? '战力种类进度' : '所选套组的收集进度'} aside={<span className="text-xs text-text-secondary">{scopeLabel}</span>}>
               <div className="space-y-3 p-4">
                 <p className="flex items-baseline gap-2">
                   <strong className="text-3xl font-semibold tabular-nums">{progress.known ? scopeOwned : '—'}</strong>
-                  <span className="text-sm text-text-secondary tabular-nums">/ {scopeTarget || '—'} 色</span>
+                  <span className="text-sm text-text-secondary tabular-nums">/ {scopeTarget || '—'} {isPower ? '种' : '色'}</span>
                   <span className="ml-auto text-lg font-semibold tabular-nums text-accent">
                     {progress.known && scopeTarget ? Math.round((scopeOwned / scopeTarget) * 100) : '—'}%
                   </span>
@@ -491,6 +523,7 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
           done={blessing.status === 'done'}
           blockedByCapacity={Boolean((glowQueued ?? glowStandalone)?.blockedByCapacity)}
           isFarmOnly={isFarmOnly}
+          powerMode={isPower}
         />
       )}
     </div>

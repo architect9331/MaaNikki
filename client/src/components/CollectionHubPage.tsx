@@ -67,6 +67,8 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
     if (data?.uid) void loadPlans(`${data.uid}:${planRevision}:${refreshToken}`);
   }, [data?.uid, planRevision, refreshToken, loadPlans]);
   const overview = useCollectionOverview();
+  const materials = useWardrobePlanStore((state) => state.materials);
+  const blessingUnit = materials.blessing_plan?.mode === 'power' ? '种' : '色';
   // Reload the closet and planners once a read ends so new clothes show up.
   useEffect(() => {
     if (wasBusy.current && !busy) setRefreshToken((previous) => previous + 1);
@@ -130,7 +132,7 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
     <button onClick={() => void refresh().then(() => setRefreshToken((previous) => previous + 1)).catch(() => {})} disabled={loading} title="刷新收集记录" aria-label="刷新收集记录" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><RefreshCw className={clsx('h-4 w-4', loading && 'animate-spin')} /></button>
   </>}>
     <Tabs label="收集进度" value={tab} onChange={open} tabs={TABS.map(([id, icon, label, unit]) => ({
-      id, icon, label, value: figure(overview[id], unit),
+      id, icon, label, value: figure(overview[id], id === 'blessing' ? blessingUnit : unit),
       progress: overview[id]?.total ? overview[id]!.done / overview[id]!.total : null,
     }))} />
     {opened.has('closet') && <div className={clsx('space-y-4', tab !== 'closet' && 'hidden')}>

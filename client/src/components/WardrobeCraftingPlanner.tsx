@@ -3,6 +3,7 @@ import { ChevronRight, Hammer, Loader2, RotateCcw, Search } from 'lucide-react';
 import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { buildOwnedProfile } from '@/services/scoring/profile';
+import { findDominatedStandaloneItems, normalizePlanMode } from '@/services/scoring/dominance';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import type { CraftingSketch, PlanMode } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
@@ -52,7 +53,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   const { payload, settings, materials, loading, load, updateMaterials } = useWardrobePlanStore();
   const [search, setSearch] = useState('');
   const [quality, setQuality] = useState('all');
-  const [kind, setKind] = useState<'all' | 'suit' | 'piece'>('all');
+  const [kind, setKind] = useState<'all' | 'suit' | 'piece' | 'dominated'>('all');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [extraEnergy, setExtraEnergy] = useState(0);
@@ -72,22 +73,37 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
 
   const crafting = payload?.crafting_catalog;
   const scope = materials.crafting_scope ?? 'all';
-  const mode: PlanMode = materials.crafting_plan?.mode === 'selected' ? 'selected' : 'all';
+  const mode: PlanMode = normalizePlanMode(materials.crafting_plan?.mode);
   const selected = useMemo(() => new Set(materials.crafting_plan?.sketch_ids ?? []), [materials.crafting_plan]);
   const profile = useMemo(() => (payload ? buildOwnedProfile(payload, settings) : null), [payload, settings]);
   const ownedIds = useMemo(() => new Set(profile?.items.map((item) => item.id) ?? []), [profile]);
 
-  // 全收集 follows the design scope; 自选 may pick from every unmade design.
+  // 全收集 follows the design scope; 战力 keeps suits and non-dominated pieces; 自选 may pick from any unmade design.
   const allSketches = crafting?.sketches ?? [];
+  const dominatedMap = useMemo(() => {
+    if (!payload) return new Map();
+    const available = new Set([...ownedIds, ...allSketches.map((sketch) => sketch.id)]);
+    return findDominatedStandaloneItems(
+      payload.catalog,
+      allSketches.filter((sketch) => !ownedIds.has(sketch.id)).map((sketch) => sketch.id),
+      available,
+    );
+  }, [payload, ownedIds, allSketches]);
   const scoped = useMemo(() => allSketches.filter((sketch) => scope === 'all' || sketch.category === 'suit'), [allSketches, scope]);
-  const listed = mode === 'all' ? scoped : allSketches;
+  const powerSketches = useMemo(() => allSketches.filter((sketch) => !dominatedMap.has(sketch.id)), [allSketches, dominatedMap]);
+  const dominatedSketches = useMemo(
+    () => allSketches.filter((sketch) => !ownedIds.has(sketch.id) && dominatedMap.has(sketch.id)),
+    [allSketches, ownedIds, dominatedMap],
+  );
+  const listed = mode === 'all' ? scoped : mode === 'power' ? (kind === 'dominated' ? dominatedSketches : powerSketches) : allSketches;
   const groups = useMemo(() => groupSketches(listed, ownedIds), [listed, ownedIds]);
   const uncraftedScoped = useMemo(() => scoped.filter((sketch) => !ownedIds.has(sketch.id)), [scoped, ownedIds]);
+  const uncraftedPower = useMemo(() => powerSketches.filter((sketch) => !ownedIds.has(sketch.id)), [powerSketches, ownedIds]);
   const picked = useMemo(
     () => allSketches.filter((sketch) => selected.has(sketch.id) && !ownedIds.has(sketch.id)),
     [allSketches, selected, ownedIds],
   );
-  const planned = mode === 'all' ? uncraftedScoped : picked;
+  const planned = mode === 'all' ? uncraftedScoped : mode === 'power' ? uncraftedPower : picked;
 
   const { totals, realmTotals } = craftingForecast;
   const consumedTotal = Object.values(materials.crafted_consumed ?? {}).reduce((sum, value) => sum + Math.max(0, Number(value)), 0);
@@ -141,14 +157,21 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   }
 
   const q = search.trim();
+  const effectiveKind = mode !== 'power' && kind === 'dominated' ? 'all' : kind;
   const shown = groups.filter(
     (group) =>
       (quality === 'all' || String(group.quality) === quality) &&
-      (kind === 'all' || (kind === 'suit') === group.suit) &&
+      (effectiveKind === 'all' || effectiveKind === 'dominated' || (effectiveKind === 'suit') === group.suit) &&
       (!q || group.title.includes(q) || group.missing.some((sketch) => sketch.name.includes(q))),
   );
-  const madeCount = scoped.length - uncraftedScoped.length;
-  const planLabel = mode === 'all' ? `全收集 · ${num(planned.length)} 张未制作设计图` : `自选 · ${num(planned.length)} 张设计图`;
+  const activeTotal = mode === 'power' ? powerSketches.length : scoped.length;
+  const madeCount = activeTotal - planned.length;
+  const planLabel =
+    mode === 'all'
+      ? `全收集 · ${num(planned.length)} 张未制作设计图`
+      : mode === 'power'
+        ? `战力 · ${num(planned.length)} 张未制作设计图`
+        : `自选 · ${num(planned.length)} 张设计图`;
 
   return (
     <div className="space-y-4">
@@ -159,7 +182,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         basis={
           <>
             按 {formatTime(payload.snapshot.updated_at)} 的衣柜记录计算 · 已制作{' '}
-            <strong className="tabular-nums text-text-primary">{num(madeCount)}</strong> / {num(scoped.length)} 张设计图
+            <strong className="tabular-nums text-text-primary">{num(mode === 'selected' ? allSketches.length - allSketches.filter((s) => !ownedIds.has(s.id)).length : madeCount)}</strong> / {num(mode === 'selected' ? allSketches.length : activeTotal)} 张设计图
             {!payload.snapshot.complete && <span className="text-warning"> · 衣柜尚未读完，未读到的衣服会被当作没做</span>}
           </>
         }
@@ -169,10 +192,17 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
           </button>
         }
         mode={mode}
-        onModeChange={(next) => setPlan(next)}
+        onModeChange={(next) => {
+          if (next !== 'power' && kind === 'dominated') setKind('all');
+          setPlan(next);
+        }}
         modeDetail={
           mode === 'all' ? (
             <>全部未制作的设计图，共 {num(uncraftedScoped.length)} 张；做好的衣服下次读衣柜后自动移出。</>
+          ) : mode === 'power' ? (
+            <>
+              保留套装与无可替代部件，自动取消已有服装或可制图纸中存在严格上位替代的纯散件（已排除 {num(dominatedSketches.length)} 张），共 {num(uncraftedPower.length)} 张；保留全部图纸以便随时切回全收集。
+            </>
           ) : (
             <>只为勾选的套装或部件备料，已选 {num(picked.length)} 张。</>
           )
@@ -183,9 +213,9 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
       <PlanLayout
         list={
           <PlanListPanel
-            title={mode === 'all' ? '全收集包含的设计图' : '想做哪些衣服'}
+            title={mode === 'all' ? '全收集包含的设计图' : mode === 'power' ? (effectiveKind === 'dominated' ? '战力模式已排除的纯下位散件' : '战力模式包含的设计图') : '想做哪些衣服'}
             mode={mode}
-            includedCount={planned.length}
+            includedCount={effectiveKind === 'dominated' ? dominatedSketches.length : planned.length}
             selectedCount={picked.length}
             onClear={() => setPlan('selected', new Set())}
             filters={
@@ -199,10 +229,13 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                     onChange={(event) => setSearch(event.target.value)}
                   />
                 </label>
-                <select aria-label="套装或散件" className={planField} value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>
+                <select aria-label="套装或散件" className={planField} value={effectiveKind} onChange={(event) => setKind(event.target.value as typeof kind)}>
                   <option value="all">套装与散件</option>
                   <option value="suit">只看套装</option>
                   <option value="piece">只看散件</option>
+                  {mode === 'power' && dominatedSketches.length > 0 && (
+                    <option value="dominated">已排除下位散件（{dominatedSketches.length}）</option>
+                  )}
                 </select>
                 <select aria-label="星级" className={planField} value={quality} onChange={(event) => setQuality(event.target.value)}>
                   <option value="all">全部星级</option>
@@ -274,6 +307,11 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                       <span className="truncate font-medium text-text-primary">{group.title}</span>
                       {!group.suit && <span className="shrink-0 text-text-muted">· {group.missing[0].part}</span>}
                     </button>
+                    {!group.suit && dominatedMap.has(group.missing[0].id) && (
+                      <span className="shrink-0 rounded bg-bg-tertiary px-1.5 py-0.5 text-[11px] text-text-muted">
+                        已被「{dominatedMap.get(group.missing[0].id)!.dominatorName}」替代
+                      </span>
+                    )}
                     {group.suit && (
                       <span className="shrink-0 tabular-nums text-text-secondary">
                         还差 {group.missing.length} / {group.total} 件
@@ -314,7 +352,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
             headerAction={<ManualReadButton targetMode="backpack" idleLabel="更新背包" compact />}
             empty={mode === 'selected' && !picked.length ? '在左侧勾选想做的设计图，这里会算出需要、库存与还差多少。' : '不需要额外的制衣材料'}
             actions={
-              mode === 'all' && consumedTotal > 0 ? (
+              mode !== 'selected' && consumedTotal > 0 ? (
                 <button
                   type="button"
                   onClick={() => updateMaterials((previous) => ({ ...previous, crafted_consumed: {} }))}
@@ -327,7 +365,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
               ) : undefined
             }
             note={
-              mode === 'all'
+              mode !== 'selected'
                 ? '已读衣柜里有的衣服会自动排除；两次读取之间自己做了衣服时，每日背包扫描发现晶石减少会自动核销，避免重复刷。'
                 : '做好勾选的衣服后重新读取衣柜，它们会自动移出计划。噗灵、丝线与焕新共用库存，两边同时规划时请留足余量。'
             }

@@ -3,6 +3,7 @@ import { ChevronDown, Loader2, Search, Sparkles, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { buildOwnedProfile } from '@/services/scoring/profile';
+import { findDominatedStandaloneItems, normalizePlanMode } from '@/services/scoring/dominance';
 import { buildRenewalGroups, MAX_LEVEL, RENEWED_LEVEL, renewalSource, type RenewalGroup } from '@/services/scoring/materialPlanning';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import type { PlanMode, RenewalPlanState } from '@/services/scoring/types';
@@ -28,7 +29,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   const wardrobeUpdatedAt = account?.wardrobe?.inventory?.updated_at ?? account?.wardrobe?.last_scan?.updated_at ?? '';
   const { payload, settings, materials, loading, load, setLevel, updateMaterials, adoptMaterials } = useWardrobePlanStore();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<'todo' | 'below_max' | 'renewable' | 'selected' | 'priority' | 'all'>('todo');
+  const [status, setStatus] = useState<'todo' | 'below_max' | 'renewable' | 'selected' | 'priority' | 'dominated' | 'all'>('todo');
   const [quality, setQuality] = useState('all');
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [showManual, setShowManual] = useState(false);
@@ -48,27 +49,35 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   });
 
   const plan = materials.renewal_plan;
-  const mode: PlanMode = plan?.mode === 'selected' ? 'selected' : 'all';
+  const mode: PlanMode = normalizePlanMode(plan?.mode);
   const targets = useMemo(() => plan?.targets ?? {}, [plan]);
   const priorityTargets = useMemo(() => plan?.priority_targets ?? {}, [plan]);
   const hasRenewalBaseline = Boolean(payload?.snapshot?.complete && account?.wardrobe?.renewal_scan?.complete);
   const profile = useMemo(() => (payload ? buildOwnedProfile(payload, settings) : null), [payload, settings]);
   const groups = useMemo(() => (payload && profile ? buildRenewalGroups(payload.catalog, profile) : []), [payload, profile]);
-  // 全收集: every owned piece to 焕新 (or full level when it cannot be renewed).
+  const dominatedMap = useMemo(() => {
+    if (!payload) return new Map();
+    const ownedScoreIds = new Set(groups.map((group) => group.scoreId));
+    return findDominatedStandaloneItems(payload.catalog, ownedScoreIds, ownedScoreIds);
+  }, [payload, groups]);
+  const dominatedGroups = useMemo(() => groups.filter((group) => dominatedMap.has(group.scoreId)), [groups, dominatedMap]);
+  // 全收集: every owned piece to 焕新 (or full level when it cannot be renewed); 战力: skip strictly dominated standalone pieces.
   const planned = useMemo(
     () =>
       groups.flatMap((group) => {
-        const wanted = mode === 'all' ? topLevel(group) : targets[group.id];
+        if (mode === 'power' && dominatedMap.has(group.scoreId)) return [];
+        const wanted = mode === 'selected' ? targets[group.id] : topLevel(group);
         if (wanted === undefined) return [];
         const target = Math.min(wanted, topLevel(group));
         return effective(group) < target ? [{ group, target }] : [];
       }),
-    [groups, mode, targets],
+    [groups, mode, targets, dominatedMap],
   );
   const priorityKeys = Object.keys(priorityTargets);
   const priorityPending = useMemo(
     () =>
       groups.flatMap((group) => {
+        if (mode === 'power' && dominatedMap.has(group.scoreId)) return [];
         const wanted = priorityTargets[group.id];
         if (wanted === undefined) return [];
         const cap = mode === 'selected' ? targets[group.id] : topLevel(group);
@@ -76,7 +85,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
         const target = Math.min(wanted, cap, topLevel(group));
         return effective(group) < target ? [{ group, target }] : [];
       }),
-    [groups, priorityTargets, mode, targets],
+    [groups, priorityTargets, mode, targets, dominatedMap],
   );
   const pickedCount = groups.filter((group) => targets[group.id] !== undefined).length;
   const { totals, realmTotals } = renewalForecast;
@@ -92,7 +101,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
     updateMaterials((previous) => ({
       ...previous,
       renewal_plan: {
-        mode: previous.renewal_plan?.mode ?? 'all',
+        mode: normalizePlanMode(previous.renewal_plan?.mode),
         targets: previous.renewal_plan?.targets ?? {},
         source: 'plan',
         ...next,
@@ -151,28 +160,41 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   }
 
   const q = search.trim();
+  const effectiveStatus = mode !== 'power' && status === 'dominated' ? 'todo' : status;
   const shown = groups.filter((group) => {
     const level = effective(group);
+    const isDominated = dominatedMap.has(group.scoreId);
     const prioTarget = priorityTargets[group.id];
     const isPrio = prioTarget !== undefined && level < Math.min(prioTarget, topLevel(group));
+    if (effectiveStatus === 'dominated') {
+      return (
+        isDominated &&
+        (quality === 'all' || String(group.quality) === quality) &&
+        (!q || group.name.includes(q) || (group.suitName ?? '').includes(q) || group.part.includes(q))
+      );
+    }
+    if (mode === 'power' && isDominated && effectiveStatus !== 'all') return false;
     return (
       (quality === 'all' || String(group.quality) === quality) &&
-      (status === 'all' ||
-        (status === 'todo' && level < topLevel(group)) ||
-        (status === 'below_max' && level < MAX_LEVEL) ||
-        (status === 'renewable' && group.renewable && level < RENEWED_LEVEL) ||
-        (status === 'selected' && targets[group.id] !== undefined) ||
-        (status === 'priority' && isPrio)) &&
+      (effectiveStatus === 'all' ||
+        (effectiveStatus === 'todo' && level < topLevel(group)) ||
+        (effectiveStatus === 'below_max' && level < MAX_LEVEL) ||
+        (effectiveStatus === 'renewable' && group.renewable && level < RENEWED_LEVEL) ||
+        (effectiveStatus === 'selected' && targets[group.id] !== undefined) ||
+        (effectiveStatus === 'priority' && isPrio)) &&
       (!q || group.name.includes(q) || (group.suitName ?? '').includes(q) || group.part.includes(q))
     );
   });
-  const doneCount = groups.filter((group) => effective(group) >= topLevel(group)).length;
+  const activeGroups = mode === 'power' ? groups.filter((group) => !dominatedMap.has(group.scoreId)) : groups;
+  const doneCount = activeGroups.filter((group) => effective(group) >= topLevel(group)).length;
   const unknownLevels = groups.filter((group) => group.level === null && !group.inferred).length;
   const planLabel = usingTargets
     ? '手动材料目标'
     : mode === 'all'
       ? `全收集 · ${num(planned.length)} 件待养成`
-      : `自选 · ${num(planned.length)} 件待养成`;
+      : mode === 'power'
+        ? `战力 · ${num(planned.length)} 件待养成`
+        : `自选 · ${num(planned.length)} 件待养成`;
   const manualTargets = Object.values(materials.glow_plan?.targets ?? {}).filter((value) => Number(value) > 0).length;
 
   function selectShown(level: number) {
@@ -193,7 +215,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
         basis={
           <>
             按 {formatTime(payload.snapshot.updated_at)} 的衣柜记录和已填等级计算 · 已养成到顶{' '}
-            <strong className="tabular-nums text-text-primary">{num(doneCount)}</strong> / {num(groups.length)} 组
+            <strong className="tabular-nums text-text-primary">{num(doneCount)}</strong> / {num(activeGroups.length)} 组
             {account?.wardrobe?.renewal_scan?.updated_at && (
               <> · 焕新读取于 {formatTime(account.wardrobe.renewal_scan.updated_at)}</>
             )}
@@ -216,10 +238,17 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
           </>
         }
         mode={mode}
-        onModeChange={(next) => savePlan({ mode: next })}
+        onModeChange={(next) => {
+          if (next !== 'power' && status === 'dominated') setStatus('todo');
+          savePlan({ mode: next });
+        }}
         modeDetail={
           mode === 'all' ? (
             <>全部已拥有的衣服，共 {num(planned.length)} 件待养成；能焕新的按焕新、不能焕新的按满级计算，新衣服同步后自动加入。</>
+          ) : mode === 'power' ? (
+            <>
+              保留套装与无可替代部件，自动取消衣柜中已有严格上位替代的纯散件（已排除 {num(dominatedGroups.length)} 件），共 {num(planned.length)} 件待养成；新获上位款后自动排除。
+            </>
           ) : (
             <>只为勾选的衣服备料，可分别选择升到满级或焕新，已选 {num(pickedCount)} 件。</>
           )
@@ -265,9 +294,17 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
       <PlanLayout
         list={
           <PlanListPanel
-            title={mode === 'all' ? '全收集包含的衣服' : '想养成哪些衣服'}
+            title={
+              mode === 'all'
+                ? '全收集包含的衣服'
+                : mode === 'power'
+                  ? effectiveStatus === 'dominated'
+                    ? '战力模式已排除的纯下位散件'
+                    : '战力模式包含的衣服'
+                  : '想养成哪些衣服'
+            }
             mode={mode}
-            includedCount={planned.length}
+            includedCount={effectiveStatus === 'dominated' ? dominatedGroups.length : planned.length}
             selectedCount={pickedCount}
             onClear={() => savePlan({ mode: 'selected', targets: {} })}
             filters={
@@ -281,12 +318,15 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                     onChange={(event) => setSearch(event.target.value)}
                   />
                 </label>
-                <select aria-label="养成状态" className={planField} value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
+                <select aria-label="养成状态" className={planField} value={effectiveStatus} onChange={(event) => setStatus(event.target.value as typeof status)}>
                   <option value="todo">还能继续养成</option>
                   <option value="below_max">未满级</option>
                   <option value="renewable">可焕新但未焕新</option>
                   {mode === 'selected' && <option value="selected">只看已选</option>}
                   {priorityKeys.length > 0 && <option value="priority">搭配计算优先</option>}
+                  {mode === 'power' && dominatedGroups.length > 0 && (
+                    <option value="dominated">已排除下位散件（{dominatedGroups.length}）</option>
+                  )}
                   <option value="all">全部已拥有</option>
                 </select>
                 <select aria-label="星级" className={planField} value={quality} onChange={(event) => setQuality(event.target.value)}>
@@ -312,11 +352,13 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
             more={{ shown: limit, total: shown.length, onMore: () => setLimit((previous) => previous + PAGE_SIZE) }}
           >
             {shown.slice(0, limit).map((group) => {
-              const target = mode === 'all' ? topLevel(group) : targets[group.id];
+              const isDominated = dominatedMap.has(group.scoreId);
+              const excludedByPower = mode === 'power' && isDominated;
+              const target = mode !== 'selected' ? topLevel(group) : targets[group.id];
               const picked = mode === 'selected' && target !== undefined;
               const done = effective(group) >= topLevel(group);
               const prioTarget = priorityTargets[group.id];
-              const isPriority = prioTarget !== undefined && effective(group) < Math.min(prioTarget, topLevel(group));
+              const isPriority = !excludedByPower && prioTarget !== undefined && effective(group) < Math.min(prioTarget, topLevel(group));
               return (
                 <div key={group.id} className={clsx('flex items-center gap-2 px-4 py-2 text-xs', (picked || isPriority) && 'bg-accent/5')}>
                   {mode === 'selected' && (
@@ -340,6 +382,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                     <p className="truncate text-[11px] text-text-muted">
                       {group.part}
                       {group.suitName ? ` · ${group.suitName}` : ''}
+                      {excludedByPower ? ` · 已被「${dominatedMap.get(group.scoreId)!.dominatorName}」替代` : ''}
                     </p>
                   </div>
                   {group.inferred ? (
@@ -368,8 +411,8 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                       {group.renewable && <option value={RENEWED_LEVEL}>→ 焕新</option>}
                     </select>
                   ) : (
-                    <span className={clsx('w-16 shrink-0 text-right text-[11px]', done ? 'text-success' : 'text-text-muted')}>
-                      {done ? '已到顶' : mode === 'all' ? `→ ${target === RENEWED_LEVEL ? '焕新' : '满级'}` : ''}
+                    <span className={clsx('w-16 shrink-0 text-right text-[11px]', excludedByPower ? 'text-text-muted' : done ? 'text-success' : 'text-text-muted')}>
+                      {excludedByPower ? '已跳过' : done ? '已到顶' : mode !== 'selected' ? `→ ${target === RENEWED_LEVEL ? '焕新' : '满级'}` : ''}
                     </span>
                   )}
                 </div>
@@ -417,7 +460,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
               {showManual && (
                 <div className="border-t border-border p-3">
                   <p className="mb-2 text-[11px] leading-5 text-text-muted">
-                    不按衣服计算、直接指定每种材料的目标库存。保存手动目标或从搭配计算导入后，「焕新材料」改按手动目标刷取；在上方切换全收集或自选即可改回衣服计划。
+                    不按衣服计算、直接指定每种材料的目标库存。保存手动目标或从搭配计算导入后，「焕新材料」改按手动目标刷取；在上方切换全收集、战力或自选即可改回衣服计划。
                   </p>
                   <GlowPrepConfigPanel externalMaterials={materials} accountKey={payload.account_key} onChanged={adoptMaterials} />
                 </div>

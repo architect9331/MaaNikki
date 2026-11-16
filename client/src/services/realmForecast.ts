@@ -29,7 +29,8 @@ import {
   type RenewalGroup,
 } from './scoring/materialPlanning';
 import { buildOwnedProfile } from './scoring/profile';
-import type { MaterialsState, ScoringPayload, ScoringSettings } from './scoring/types';
+import { findDominatedStandaloneItems, normalizePlanMode } from './scoring/dominance';
+import type { MaterialsState, PlanMode, ScoringPayload, ScoringSettings } from './scoring/types';
 
 export const WEEKLY_ENERGY_PER_RUN = 60;
 const BLING_ID = '992617511';
@@ -88,7 +89,7 @@ export interface MaterialTrendSeries {
 export interface MaterialGoalForecast {
   kind: 'renewal' | 'crafting';
   status: 'needs_wardrobe' | 'done' | 'ready';
-  mode: 'all' | 'selected';
+  mode: PlanMode;
   scope?: 'all' | 'suits';
   source?: 'plan' | 'targets';
   priorityPendingCount?: number;
@@ -113,7 +114,7 @@ export interface MaterialGoalForecast {
 export interface BlessingContext {
   status: 'needs_blessing' | 'empty_selection' | 'done' | 'ready';
   progress: ReturnType<typeof getBlessingProgress>;
-  planMode: 'all' | 'selected';
+  planMode: PlanMode;
   isFarmOnly: boolean;
   autoBling: boolean;
   reserveBling: number;
@@ -557,7 +558,7 @@ export function computeCraftingForecast(
 ): MaterialGoalForecast {
   const crafting = payload?.crafting_catalog ?? null;
   const scope = materials.crafting_scope ?? 'all';
-  const mode = materials.crafting_plan?.mode === 'selected' ? 'selected' : 'all';
+  const mode = normalizePlanMode(materials.crafting_plan?.mode);
 
   if (!payload?.snapshot || !crafting) {
     return {
@@ -595,14 +596,24 @@ export function computeCraftingForecast(
   const selected = new Set(materials.crafting_plan?.sketch_ids ?? []);
   const allSketches = crafting.sketches ?? [];
   const scoped = allSketches.filter((sketch) => scope === 'all' || sketch.category === 'suit');
+  const dominated =
+    mode === 'power'
+      ? findDominatedStandaloneItems(
+          payload.catalog,
+          allSketches.filter((sketch) => !ownedIds.has(sketch.id)).map((sketch) => sketch.id),
+          new Set([...ownedIds, ...allSketches.map((sketch) => sketch.id)]),
+        )
+      : null;
   const planned =
     mode === 'all'
       ? scoped.filter((sketch) => !ownedIds.has(sketch.id))
-      : allSketches.filter((sketch) => selected.has(sketch.id) && !ownedIds.has(sketch.id));
+      : mode === 'power'
+        ? allSketches.filter((sketch) => !ownedIds.has(sketch.id) && !dominated?.has(sketch.id))
+        : allSketches.filter((sketch) => selected.has(sketch.id) && !ownedIds.has(sketch.id));
 
   const required = craftingRequirement(planned);
   const snapshotKey = `${payload.snapshot.updated_at ?? ''}:${payload.snapshot.scanned_count ?? 0}`;
-  if (mode === 'all' && materials.wardrobe_baseline_key === snapshotKey) {
+  if (mode !== 'selected' && materials.wardrobe_baseline_key === snapshotKey) {
     for (const [id, used] of Object.entries(materials.crafted_consumed ?? {})) {
       if (required[id]) required[id] = Math.max(0, required[id] - Math.max(0, Number(used)));
     }
@@ -687,7 +698,7 @@ export function computeRenewalForecast(
 ): MaterialGoalForecast {
   const source = renewalSource(materials);
   const plan = materials.renewal_plan;
-  const mode = plan?.mode === 'selected' ? 'selected' : 'all';
+  const mode = normalizePlanMode(plan?.mode);
   const crafting = payload?.crafting_catalog ?? null;
 
   if (source === 'plan' && !payload?.snapshot) {
@@ -735,11 +746,17 @@ export function computeRenewalForecast(
   } else if (payload?.snapshot) {
     const profile = buildOwnedProfile(payload, settings);
     const groups: RenewalGroup[] = buildRenewalGroups(payload.catalog, profile);
+    const ownedScoreIds = new Set(groups.map((group) => group.scoreId));
+    const dominated =
+      mode === 'power'
+        ? findDominatedStandaloneItems(payload.catalog, ownedScoreIds, ownedScoreIds)
+        : null;
     const targets = plan?.targets ?? {};
     const priorityTargets = plan?.priority_targets ?? {};
     const topLevel = (group: RenewalGroup) => (group.renewable ? RENEWED_LEVEL : MAX_LEVEL);
     for (const group of groups) {
-      const wanted = mode === 'all' ? topLevel(group) : targets[group.id];
+      if (mode === 'power' && dominated?.has(group.scoreId)) continue;
+      const wanted = mode === 'selected' ? targets[group.id] : topLevel(group);
       if (wanted === undefined) continue;
       const target = Math.min(wanted, topLevel(group));
       if ((group.level ?? 0) < target) {
@@ -854,9 +871,10 @@ export function buildBlessingContext(
   const rolls = account?.observations?.eureka_rolls;
   const slots = ['头部', '手部', '脚部'];
 
-  const planMode = materials.blessing_plan?.mode === 'selected' ? 'selected' : 'all';
+  const planMode = normalizePlanMode(materials.blessing_plan?.mode);
+  const isPower = planMode === 'power';
   const chosen = new Set(materials.blessing_plan?.sets ?? []);
-  const inScope = (name: string) => planMode === 'all' || chosen.has(name);
+  const inScope = (name: string) => planMode !== 'selected' || chosen.has(name);
   const scopeSets = sets.filter((s) => inScope(s.name));
 
   const isFarmOnly = optionValues?.CollectionWorkflow
@@ -872,6 +890,7 @@ export function buildBlessingContext(
     !isFarmOnly && (optionValues?.CollectionBling?.type === 'switch' ? optionValues.CollectionBling.value : true);
 
   const has = (name: string, slot: string, color: string) => progress.owned.has(`${name}/${slot}/${color}`);
+  const hasKind = (name: string, colors: string[], slot: string) => colors.some((color) => has(name, slot, color));
   const count = (name: string, colors: string[], slot?: string) =>
     (slot ? [slot] : slots).reduce((n, part) => n + colors.filter((color) => has(name, part, color)).length, 0);
 
@@ -883,20 +902,38 @@ export function buildBlessingContext(
   const rainbowOwned = sets.reduce((n, s) => n + slots.filter((slot) => has(s.name, slot, '彩')).length, 0);
   const rainbowTotal = sets.filter((s) => s.colors.includes('彩')).length * 3;
 
-  const scopeOwned = scopeSets.reduce((n, s) => n + count(s.name, s.colors), 0);
-  const scopeTarget = scopeSets.reduce((n, s) => n + s.colors.length * 3, 0);
-  const scopeComplete = scopeSets.filter((s) => count(s.name, s.colors) === s.colors.length * 3).length;
+  const scopeOwned = isPower
+    ? scopeSets.reduce((n, s) => n + slots.filter((slot) => hasKind(s.name, s.colors, slot)).length, 0)
+    : scopeSets.reduce((n, s) => n + count(s.name, s.colors), 0);
+  const scopeTarget = isPower
+    ? scopeSets.length * slots.length
+    : scopeSets.reduce((n, s) => n + s.colors.length * 3, 0);
+  const scopeComplete = isPower
+    ? scopeSets.filter((s) => slots.every((slot) => hasKind(s.name, s.colors, slot))).length
+    : scopeSets.filter((s) => count(s.name, s.colors) === s.colors.length * 3).length;
 
-  const buildParts = (targetSets: typeof sets): ForecastPart[] =>
+  const buildParts = (targetSets: typeof sets, kindOnly = false): ForecastPart[] =>
     targetSets.flatMap((s) =>
       slots.map((slot) => {
+        const rawEmbryos = partEmbryos[`${s.name}/${slot}`] ?? 0;
+        if (kindOnly) {
+          const missing = !hasKind(s.name, s.colors, slot);
+          return {
+            source: s.source ?? s.name,
+            normalTotal: 1,
+            normalMissing: missing ? 1 : 0,
+            rainbowMissing: false,
+            embryos: missing ? Math.min(1, rawEmbryos) : 0,
+            kindOnly: true,
+          };
+        }
         const normal = s.colors.filter((color) => color !== '彩');
         return {
           source: s.source ?? s.name,
           normalTotal: normal.length,
           normalMissing: normal.filter((color) => !has(s.name, slot, color)).length,
           rainbowMissing: s.colors.includes('彩') && !has(s.name, slot, '彩'),
-          embryos: partEmbryos[`${s.name}/${slot}`] ?? 0,
+          embryos: rawEmbryos,
         };
       }),
     );
@@ -907,17 +944,18 @@ export function buildBlessingContext(
     for (const part of partList) {
       const k = Math.max(0, part.embryos ?? 0);
       const q = part.normalTotal > 0 ? (1 - rainbow) / part.normalTotal : 0;
-      const marginal =
-        part.normalMissing * q * Math.pow(1 - q, k) + (part.rainbowMissing ? rainbow * Math.pow(1 - rainbow, k) : 0);
+      const marginal = part.kindOnly
+        ? (part.normalMissing > 0 && k === 0 ? 1 : 0)
+        : part.normalMissing * q * Math.pow(1 - q, k) + (part.rainbowMissing ? rainbow * Math.pow(1 - rainbow, k) : 0);
       values.set(part.source, (values.get(part.source) ?? 0) + marginal);
     }
     return values;
   };
 
-  const allParts = buildParts(sets);
-  const scopeParts = planMode === 'all' ? allParts : buildParts(scopeSets);
+  const allParts = buildParts(sets, isPower);
+  const scopeParts = planMode !== 'selected' ? allParts : buildParts(scopeSets, false);
   const missingBySource = calcMissingBySource(allParts);
-  const scopeMissingMap = planMode === 'all' ? missingBySource : calcMissingBySource(scopeParts);
+  const scopeMissingMap = planMode !== 'selected' ? missingBySource : calcMissingBySource(scopeParts);
   const scopeNext = [...scopeMissingMap].sort((a, b) => b[1] - a[1])[0];
 
   const presets: RainbowPreset[] = [];
@@ -942,9 +980,11 @@ export function buildBlessingContext(
     });
   }
 
-  const history = Object.entries(account?.observations?.collection_history ?? {})
-    .map(([day, row]) => ({ day, owned: row.owned }))
-    .sort((a, b) => a.day.localeCompare(b.day));
+  const history = isPower
+    ? []
+    : Object.entries(account?.observations?.collection_history ?? {})
+        .map(([day, row]) => ({ day, owned: row.owned }))
+        .sort((a, b) => a.day.localeCompare(b.day));
 
   const particleTotal = (resources?.particles ?? 0) + (resources?.duplicates ?? 0) * 300;
   const spendableBling = resources?.bling == null ? null : Math.max(0, resources.bling - reserveBling);

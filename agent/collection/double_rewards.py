@@ -11,7 +11,7 @@ import cv2
 import numpy as np
 
 from account_state import AccountState, period_key
-from action.blessing_pursuit import ORGANIZE_OPTIONS, blessing_focus, glow_shortfall, organization_issue
+from action.blessing_pursuit import ORGANIZE_OPTIONS, blessing_focus, blessing_mode, glow_shortfall, organization_issue
 from action.weekly_challenge import TARGETS as WEEKLY_TARGETS, _record_weekly_state, read_count as read_weekly_count
 from collection.backpack import ensure_backpack_scanned, renewal_source, wardrobe_snapshot
 from collection.inventory_workflow import FiveStarInventory
@@ -346,6 +346,7 @@ def run_shared_bless_collection(
     pursuit = FiveStarInventory(rt, catalog, folder)
     pursuit.reserve_bling = int(policy.get("reserve_bling", 0) or 0)
     pursuit.share_statistics = bool(policy.get("share_stats", False))
+    role_state = account.load()
     try:
         flow = FiveStarPursuit(
             pursuit,
@@ -356,7 +357,8 @@ def run_shared_bless_collection(
             farm_only=farm_only,
             skip_prefix_scan=skip_prefix_scan,
             reserve_bling=pursuit.reserve_bling,
-            focus_sets=blessing_focus(account.load()),
+            focus_sets=blessing_focus(role_state),
+            power_mode=(blessing_mode(role_state) == "power"),
             max_farm_runs=max_runs,
         )
         if full_workflow:

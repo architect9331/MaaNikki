@@ -517,6 +517,7 @@ export function BlessingForecastPanel({
   done,
   blockedByCapacity,
   isFarmOnly,
+  powerMode = false,
 }: {
   standalone: ForecastResult | null;
   queued: ForecastResult | null;
@@ -534,6 +535,7 @@ export function BlessingForecastPanel({
   done: boolean;
   blockedByCapacity: boolean;
   isFarmOnly: boolean;
+  powerMode?: boolean;
 }) {
   const { dailyEnergy, rainbowPreset, useQueueOrder, setRainbowPreset, setUseQueueOrder } =
     useForecastAssumptionsStore();
@@ -549,13 +551,13 @@ export function BlessingForecastPanel({
     return [
       {
         id: 'colors',
-        label: '颜色',
-        unit: ' 色',
+        label: powerMode ? '种类' : '颜色',
+        unit: powerMode ? ' 种' : ' 色',
         low: activeResult.low,
         median: activeResult.median,
         high: activeResult.high,
         top: activeResult.total || 1,
-        past: history.map((point) => ({ day: point.day, value: point.owned })),
+        past: powerMode ? [] : history.map((point) => ({ day: point.day, value: point.owned })),
       },
       {
         id: 'energy',
@@ -727,27 +729,33 @@ export function BlessingForecastPanel({
       <SharedAssumptionsBar
         extraControls={
           <>
-            <div>
-              <p className="mb-1.5 text-xs text-text-secondary">彩色概率（官方未公布）</p>
-              <div className="flex flex-wrap gap-1.5">
-                {presets.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setRainbowPreset(item.id)}
-                    aria-pressed={item.id === chosen?.id}
-                    title={item.note}
-                    className={clsx(
-                      'rounded-lg border px-2.5 py-1 text-xs tabular-nums',
-                      item.id === chosen?.id ? 'border-accent bg-accent/10 text-accent' : 'border-border hover:bg-bg-hover',
-                    )}
-                  >
-                    {item.label} {(item.rate * 100).toFixed(1)}%
-                  </button>
-                ))}
+            {powerMode ? (
+              <p className="text-xs text-text-secondary">
+                战力模式不区分颜色，任意满级色即完成对应种类，无需抽取异色或彩色。
+              </p>
+            ) : (
+              <div>
+                <p className="mb-1.5 text-xs text-text-secondary">彩色概率（官方未公布）</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {presets.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setRainbowPreset(item.id)}
+                      aria-pressed={item.id === chosen?.id}
+                      title={item.note}
+                      className={clsx(
+                        'rounded-lg border px-2.5 py-1 text-xs tabular-nums',
+                        item.id === chosen?.id ? 'border-accent bg-accent/10 text-accent' : 'border-border hover:bg-bg-hover',
+                      )}
+                    >
+                      {item.label} {(item.rate * 100).toFixed(1)}%
+                    </button>
+                  ))}
+                </div>
+                {chosen && <p className="mt-1.5 text-xs text-text-muted">{chosen.note}</p>}
               </div>
-              {chosen && <p className="mt-1.5 text-xs text-text-muted">{chosen.note}</p>}
-            </div>
+            )}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <label className="space-y-1 text-xs text-text-secondary">
                 <span>如果额外获得噗灵</span>

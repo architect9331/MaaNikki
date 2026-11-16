@@ -41,6 +41,7 @@ class FiveStarInventory(BlessingLocker):
         self.view = OrderedView(self)
         self.chance_priority = True
         self.share_statistics = False
+        self.power_mode = False
         self.reserve_bling = 0
         self._last_synced_bling = None
 
@@ -97,6 +98,8 @@ class FiveStarInventory(BlessingLocker):
         remaining colours share the rest evenly. Only the ranking depends on it,
         and that ranking is the same across the published rate range.
         """
+        if self.power_mode:
+            return 0.0 if self.part_complete(name, slot) else 1.0
         colors = self.definitions[name]["colors"]
         rainbow = self.catalog["probability"]["iridescent"]
         ordinary = (1 - rainbow) / (len(colors) - 1)
@@ -109,6 +112,8 @@ class FiveStarInventory(BlessingLocker):
         if embryos is None:
             embryos = self.part_embryo_count(name, slot)
         embryos = max(0, int(embryos))
+        if self.power_mode:
+            return 0.0 if (self.part_complete(name, slot) or embryos > 0) else 1.0
         colors = self.definitions[name]["colors"]
         rainbow = self.catalog["probability"]["iridescent"]
         ordinary = (1 - rainbow) / (len(colors) - 1)
@@ -571,7 +576,10 @@ class FiveStarInventory(BlessingLocker):
 
     def part_complete(self, name, slot):
         owned = self.owned_colors()
-        return all((name, slot, color) in owned for color in self.definitions[name]["colors"])
+        colors = self.definitions[name]["colors"]
+        if self.power_mode:
+            return any((name, slot, color) in owned for color in colors)
+        return all((name, slot, color) in owned for color in colors)
 
     def discover_slot_prefix(self, slot):
         """Connect only the new prefix to the last complete order for one slot."""

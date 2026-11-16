@@ -123,7 +123,7 @@ export interface GlowPlanState {
   targets: Record<string, number>;
   updated_at?: string;
 }
-export type PlanMode = 'all' | 'selected';
+export type PlanMode = 'all' | 'power' | 'selected';
 export interface CraftingPlanState {
   mode: PlanMode;
   sketch_ids: string[];
