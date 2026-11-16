@@ -351,6 +351,7 @@ class StartGameAction(CustomAction):
         auto_login_logged = False
         version_check_logged = False
         unknown_since = None
+        transition_grace_until = 0.0
         account_prompt_since = None
         account_prompt_hits = 0
         account_prompt_modal = False
@@ -428,12 +429,12 @@ class StartGameAction(CustomAction):
                     runtime.log(f"点击登录（{logged_in}/3）。", detail=True)
                 return runtime.click_template(node, attempts=1, wait_seconds=0, verify=False)
 
-            # Use the shared page-transition budget for each input response.
-            # Downloads and loading remain bounded by the outer startup deadline.
+            # Allow slow Unreal level/asset loads enough time for the loading screen
+            # to appear before treating the entrance transition as missing.
             return runtime.ui.enter_page(
                 click, destination, source=node,
                 attempts=3-entered if node == "MaaNikki_StartGame_Enter" else 3-logged_in,
-                seconds=min(5, max(.1, deadline-time.monotonic())))
+                seconds=min(15, max(.1, deadline-time.monotonic())))
 
         def entered_game():
             with runtime.observe():
@@ -582,6 +583,19 @@ class StartGameAction(CustomAction):
                 startup_state["loading_active"] = bool(
                     loading or updating or update or update_waiting
                 )
+            def resume_after_disappeared_entry(node):
+                nonlocal unknown_since, transition_grace_until
+                if runtime.stopped or time.monotonic() >= deadline:
+                    return False
+                with runtime.observe(fresh=True):
+                    still_visible = runtime.hit(node)
+                if not still_visible:
+                    runtime.log("入口提示已切换，继续等待游戏加载完成。", detail=True)
+                    unknown_since = None
+                    transition_grace_until = min(deadline, time.monotonic() + 20.0)
+                    return True
+                return False
+
             if restart:
                 if not bootstrap or options.get("allow_restart", True) is not True:
                     # The regular batch must not continue on a window that is
@@ -632,12 +646,16 @@ class StartGameAction(CustomAction):
             elif enter:
                 if entered >= 3:
                     return incomplete("点击进入游戏后仍停留在入口页面")
-                if not advance("MaaNikki_StartGame_Enter", entered_game):
+                if advance("MaaNikki_StartGame_Enter", entered_game):
+                    transition_grace_until = min(deadline, time.monotonic() + 15.0)
+                elif not resume_after_disappeared_entry("MaaNikki_StartGame_Enter"):
                     return incomplete()
             elif login:
                 if logged_in >= 3:
                     return incomplete("点击登录后仍停留在登录页面")
-                if not advance("MaaNikki_StartGame_Login", transition_ready):
+                if advance("MaaNikki_StartGame_Login", transition_ready):
+                    transition_grace_until = min(deadline, time.monotonic() + 15.0)
+                elif not resume_after_disappeared_entry("MaaNikki_StartGame_Login"):
                     return incomplete()
             elif account_prompt:
                 if welcome_banner or version_check:
@@ -684,6 +702,7 @@ class StartGameAction(CustomAction):
                 # Keep polling startup pages so RestartConfirm can hand the old
                 # window back to bootstrap; generic Esc recovery cannot do that.
                 if (update_waiting or (intro_logged and not entered)
+                        or time.monotonic() < transition_grace_until
                         or runtime.ui.asset("IconUILoading", threshold=.99)):
                     unknown_since = None
                 else:
