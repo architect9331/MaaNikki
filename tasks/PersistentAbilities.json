@@ -1,0 +1,120 @@
+{
+  "task": [
+    {
+      "name": "persistent_abilities",
+      "label": "开启常驻能力",
+      "entry": "MaaNikki_PersistentAbilities",
+      "group": ["daily"],
+      "default_check": false,
+      "description": "按多选清单依次切换并开启持续生效至游戏关闭的常驻能力（小姜饼人随行、化万相自动拾取、栖林沐光聚虫与流光、金鹰之眼常驻隐匿与金鹰视野）。已处于开启状态的能力自动跳过，不会重复按键关闭；当前账号未解锁的能力自动提示并跳过。",
+      "option": ["PersistentAbilities", "PersistentAbilityPlan"]
+    }
+  ],
+  "option": {
+    "PersistentAbilities": {
+      "type": "checkbox",
+      "label": "要开启的常驻能力",
+      "description": "可按已拥有的套装自由多选（切出其他能力后仍持续生效至游戏关闭）：「幸福雪未融」对应套装绽若颂愿心（召唤小姜饼人随行采集）；「化万相」对应套装万相渡浮生（自动拾取噗灵与星光）；「栖林沐光」对应套装花影心期（生息流光与吸引昆虫）；「金鹰之眼」对应套装蒙尘之罪（可分别勾选常驻隐匿与金鹰视野，开启后需保留在当前轮盘中）。",
+      "cases": [
+        {
+          "name": "Gingerbread",
+          "label": "幸福雪未融·姜饼人随行",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "abilities": {"gingerbread": true}
+              }
+            }
+          }
+        },
+        {
+          "name": "MaskAbsorb",
+          "label": "化万相·自动拾取噗灵",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "abilities": {"mask_absorb": true}
+              }
+            }
+          }
+        },
+        {
+          "name": "ForestLight",
+          "label": "栖林沐光·聚虫与流光",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "abilities": {"forest_light": true}
+              }
+            }
+          }
+        },
+        {
+          "name": "EagleInvis",
+          "label": "金鹰之眼·常驻隐匿",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "abilities": {"eagle_invis": true}
+              }
+            }
+          }
+        },
+        {
+          "name": "EagleVision",
+          "label": "金鹰之眼·金鹰视野",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "abilities": {"eagle_vision": true}
+              }
+            }
+          }
+        }
+      ],
+      "default_case": [],
+      "min_count": 1
+    },
+    "PersistentAbilityPlan": {
+      "type": "select",
+      "label": "允许修改的能力方案",
+      "default_case": "Plan3",
+      "description": "优先沿用当前能力轮盘中已有的能力；缺少所选常驻能力时，切换到该方案并优先装入五至七号槽位（避开日常任务复用的八号槽位，防止金鹰之眼等能力被后续替换失效）。",
+      "cases": [
+        {
+          "name": "Plan1",
+          "label": "自定义方案一",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "ability_plan": 1
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan2",
+          "label": "自定义方案二",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "ability_plan": 2
+              }
+            }
+          }
+        },
+        {
+          "name": "Plan3",
+          "label": "自定义方案三",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "ability_plan": 3
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

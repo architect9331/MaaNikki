@@ -88,6 +88,7 @@
     "options/GameKeys.json",
     "options/Runtime.json",
     "tasks/StartGame.json",
+    "tasks/PersistentAbilities.json",
     "tasks/Dig.json",
     "tasks/Zhaoxi.json",
     "tasks/Energy.json",

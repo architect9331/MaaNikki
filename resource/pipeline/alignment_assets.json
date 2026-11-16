@@ -320,6 +320,45 @@
     "method": 3,
     "action": "DoNothing"
   },
+  "MaaNikki_Asset_iconabilitymask": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityMask.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "method": 3,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconabilityforestlight": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityForestLight.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "method": 3,
+    "action": "DoNothing"
+  },
+  "MaaNikki_Asset_iconabilityeagleeye": {
+    "recognition": "TemplateMatch",
+    "template": "game/ui/IconAbilityEagleEye.png",
+    "roi": [
+      0,
+      0,
+      1280,
+      720
+    ],
+    "threshold": 0.75,
+    "method": 3,
+    "action": "DoNothing"
+  },
   "MaaNikki_Asset_iconclickskip": {
     "recognition": "TemplateMatch",
     "template": "game/ui/IconClickSkip.png",

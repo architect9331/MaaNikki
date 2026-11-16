@@ -228,6 +228,18 @@
       "template": "game/ui/IconAbilityGingerbread.png",
       "roi": null
     },
+    "IconAbilityMask": {
+      "template": "game/ui/IconAbilityMask.png",
+      "roi": null
+    },
+    "IconAbilityForestLight": {
+      "template": "game/ui/IconAbilityForestLight.png",
+      "roi": null
+    },
+    "IconAbilityEagleEye": {
+      "template": "game/ui/IconAbilityEagleEye.png",
+      "roi": null
+    },
     "IconClickSkip": {
       "template": "game/ui/IconClickSkip.png",
       "roi": [

@@ -1,0 +1,13 @@
+{
+  "MaaNikki_PersistentAbilities": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.persistent_abilities",
+    "custom_action_param": {
+      "ability_plan": 3,
+      "abilities": {}
+    },
+    "post_delay": 0,
+    "next": []
+  }
+}
