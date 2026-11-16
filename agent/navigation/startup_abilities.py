@@ -12,9 +12,8 @@ teleports until the game closes):
   second MouseRight press exits the loop and completes activation.
 - 金鹰之眼 (蒙尘之罪): G toggles persistent invisibility (secondary button highlight
   ring) and MouseRight toggles Eagle Vision chest/collectable highlights (main button
-  highlight ring). Must remain on the active 8-slot wheel to stay effective, so
-  missing abilities are assigned to slots 7..1 before slot 8 (which transient daily
-  tasks reuse).
+  highlight ring). Missing abilities are assigned to slots 7..1 before slot 8 so they
+  do not collide with transient daily tasks.
 
 Highlight-ring recognition rationale and limits:
 SetSlotHighlight(true) renders an additive warm-gold circular border stroke at fixed
@@ -270,6 +269,7 @@ def _configure_wheel_groups(runtime, inputs, event, groups: list[WheelGroupSpec]
         reserved = set(slot_by_group.values())
         candidates = [s for s in PREFERRED_SLOTS if s not in reserved]
         list_roi = ui.roi("AreaAbilityChange")
+        saved_on_plan = False
 
         def ability_list_open() -> bool:
             return bool(permitted_plan() and ui.asset("ButtonAbilityChangeList", method=cv2.TM_CCORR_NORMED))
@@ -317,9 +317,22 @@ def _configure_wheel_groups(runtime, inputs, event, groups: list[WheelGroupSpec]
                 raise NavigationError(f"未能点击保存按钮保存「{group.label}」能力配置。")
             if not ui.wait_page(lambda g=group, s=target_slot: permitted_plan() and _slot_matches(runtime, g, s, frame=runtime.frame())):
                 raise NavigationError(f"保存后未能确认所选方案已装备「{group.label}」。")
+            saved_on_plan = True
             slot_by_group[group.key] = target_slot
             candidates.pop(0)
             event({"type": "ability_configured", "ability": group.key, "plan": plan, "slot": target_slot})
+
+        # Switching the dropdown in the ability editor only previews that plan;
+        # click Save even when all requested abilities were already equipped on
+        # that plan tab so the game commits it to the overworld wheel.
+        if slot_by_group and not saved_on_plan:
+            sample_key, sample_slot = next(iter(slot_by_group.items()))
+            sample_group = GROUPS[sample_key]
+            if not ui.click_asset("ButtonAbilitySave"):
+                raise NavigationError(f"未能点击保存按钮启用能力方案 {plan}。")
+            if not ui.wait_page(lambda: permitted_plan() and _slot_matches(runtime, sample_group, sample_slot, frame=runtime.frame())):
+                raise NavigationError(f"保存后未能确认已启用能力方案 {plan}。")
+            event({"type": "ability_plan_applied", "plan": plan})
 
     if not runtime.main():
         raise NavigationError("完成能力轮盘检查后未能返回游戏主界面。")
@@ -504,6 +517,14 @@ def _activate_forest_light(runtime, group: WheelGroupSpec, event) -> None:
     raise NavigationError("已触发「栖林沐光」，但未能确认衍生聚虫按钮出现。")
 
 
+def _parse_plan(value, fallback: int = 3) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return fallback
+    return parsed if parsed in (1, 2, 3) else 0
+
+
 def ensure_persistent_abilities(runtime, options: dict) -> bool:
     """Configure missing wheel slots and activate all selected persistent abilities."""
     raw_abilities = options.get("abilities")
@@ -513,43 +534,62 @@ def ensure_persistent_abilities(runtime, options: dict) -> bool:
         runtime.log("未勾选需要开启的常驻能力，请先在任务选项中勾选至少一项。")
         return False
 
-    plan = options.get("ability_plan", 3)
-    try:
-        plan = int(plan)
-    except (TypeError, ValueError):
-        plan = 0
+    default_plan = _parse_plan(options.get("ability_plan", 3), fallback=0)
+    per_ability_plan = options.get("per_ability_plan") is True
+    raw_group_plans = options.get("group_plans")
+    group_plan_map = raw_group_plans if isinstance(raw_group_plans, dict) else {}
 
-    groups: list[WheelGroupSpec] = []
-    seen_groups: set[str] = set()
+    def plan_for_group(group_key: str) -> int:
+        if per_ability_plan and group_key in group_plan_map:
+            return _parse_plan(group_plan_map.get(group_key), fallback=0)
+        return default_plan if default_plan in (1, 2, 3) else 3
+
+    batches_by_plan: dict[int, list[PersistentToggleSpec]] = {}
+    plan_order: list[int] = []
     for spec in selected:
-        if spec.group_key not in seen_groups:
-            seen_groups.add(spec.group_key)
-            groups.append(GROUPS[spec.group_key])
+        target_plan = plan_for_group(spec.group_key)
+        if target_plan not in (1, 2, 3):
+            raise NavigationError(f"「{GROUPS[spec.group_key].label}」的能力方案设置无效，请选择方案一、二或三。")
+        if target_plan not in batches_by_plan:
+            batches_by_plan[target_plan] = []
+            plan_order.append(target_plan)
+        batches_by_plan[target_plan].append(spec)
 
     events: list[dict] = []
+    activated_count = 0
+    any_slot_found = False
     with runtime.input_guard() as inputs:
-        slot_by_group = _configure_wheel_groups(runtime, inputs, events.append, groups, plan)
-        activated_count = 0
-        for spec in selected:
-            if spec.group_key not in slot_by_group:
-                continue
-            group = GROUPS[spec.group_key]
-            slot = slot_by_group[spec.group_key]
-            _select_equipped_group(runtime, group, slot, events.append)
-            if spec.key == "gingerbread":
-                _activate_gingerbread(runtime, events.append)
-            elif spec.key == "forest_light":
-                _activate_forest_light(runtime, group, events.append)
-            elif spec.key in ("mask_absorb", "eagle_invis"):
-                _activate_highlighted_slot(
-                    runtime, group, spec, sub_slot=True, wait_seconds=10.0, event=events.append
-                )
-            elif spec.key == "eagle_vision":
-                _activate_highlighted_slot(
-                    runtime, group, spec, sub_slot=False, wait_seconds=12.0, event=events.append
-                )
-            activated_count += 1
+        for batch_plan in plan_order:
+            batch_specs = batches_by_plan[batch_plan]
+            batch_groups: list[WheelGroupSpec] = []
+            seen_groups: set[str] = set()
+            for spec in batch_specs:
+                if spec.group_key not in seen_groups:
+                    seen_groups.add(spec.group_key)
+                    batch_groups.append(GROUPS[spec.group_key])
+            slot_by_group = _configure_wheel_groups(runtime, inputs, events.append, batch_groups, batch_plan)
+            if slot_by_group:
+                any_slot_found = True
+            for spec in batch_specs:
+                if spec.group_key not in slot_by_group:
+                    continue
+                group = GROUPS[spec.group_key]
+                slot = slot_by_group[spec.group_key]
+                _select_equipped_group(runtime, group, slot, events.append)
+                if spec.key == "gingerbread":
+                    _activate_gingerbread(runtime, events.append)
+                elif spec.key == "forest_light":
+                    _activate_forest_light(runtime, group, events.append)
+                elif spec.key in ("mask_absorb", "eagle_invis"):
+                    _activate_highlighted_slot(
+                        runtime, group, spec, sub_slot=True, wait_seconds=10.0, event=events.append
+                    )
+                elif spec.key == "eagle_vision":
+                    _activate_highlighted_slot(
+                        runtime, group, spec, sub_slot=False, wait_seconds=12.0, event=events.append
+                    )
+                activated_count += 1
 
-    if activated_count == 0 and slot_by_group == {}:
+    if activated_count == 0 and not any_slot_found:
         runtime.log("所选常驻能力在当前账号均未识别到已解锁图标，本项结束。")
     return True

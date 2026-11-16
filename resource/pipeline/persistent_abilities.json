@@ -5,6 +5,8 @@
     "custom_action": "nikki.persistent_abilities",
     "custom_action_param": {
       "ability_plan": 3,
+      "per_ability_plan": false,
+      "group_plans": {},
       "abilities": {}
     },
     "post_delay": 0,

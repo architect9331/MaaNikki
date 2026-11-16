@@ -6,15 +6,15 @@
       "entry": "MaaNikki_PersistentAbilities",
       "group": ["daily"],
       "default_check": false,
-      "description": "按多选清单依次切换并开启持续生效至游戏关闭的常驻能力（小姜饼人随行、化万相自动拾取、栖林沐光聚虫与流光、金鹰之眼常驻隐匿与金鹰视野）。已处于开启状态的能力自动跳过，不会重复按键关闭；当前账号未解锁的能力自动提示并跳过。",
-      "option": ["PersistentAbilities", "PersistentAbilityPlan"]
+      "description": "按多选清单依次切换并开启持续生效至游戏关闭的常驻能力（小姜饼人随行、化万相自动拾取、栖林沐光聚虫与流光、金鹰之眼常驻隐匿与金鹰视野）。支持统一方案页或按能力分别指定所在方案页；已开启项自动跳过，未解锁项自动提示并跳过。",
+      "option": ["PersistentAbilities", "PersistentPerAbilityPlan"]
     }
   ],
   "option": {
     "PersistentAbilities": {
       "type": "checkbox",
       "label": "要开启的常驻能力",
-      "description": "可按已拥有的套装自由多选（切出其他能力后仍持续生效至游戏关闭）：「幸福雪未融」对应套装绽若颂愿心（召唤小姜饼人随行采集）；「化万相」对应套装万相渡浮生（自动拾取噗灵与星光）；「栖林沐光」对应套装花影心期（生息流光与吸引昆虫）；「金鹰之眼」对应套装蒙尘之罪（可分别勾选常驻隐匿与金鹰视野，开启后需保留在当前轮盘中）。",
+      "description": "可按已拥有的套装自由多选（切出其他能力后仍持续生效至游戏关闭）：「幸福雪未融」对应套装绽若颂愿心（召唤小姜饼人随行采集）；「化万相」对应套装万相渡浮生（自动拾取噗灵与星光）；「栖林沐光」对应套装花影心期（生息流光与吸引昆虫）；「金鹰之眼」对应套装蒙尘之罪（可分别勾选常驻隐匿与金鹰视野）。",
       "cases": [
         {
           "name": "Gingerbread",
@@ -75,20 +75,55 @@
       "default_case": [],
       "min_count": 1
     },
+    "PersistentPerAbilityPlan": {
+      "type": "switch",
+      "label": "按能力分别指定方案页",
+      "default_case": "No",
+      "description": "关闭时共用同一个能力方案页；开启后可为每项常驻能力分别指定存放在方案一、方案二或方案三，自动按方案页分批切换并依次开启。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "option": [
+            "PersistentPlanGingerbread",
+            "PersistentPlanMask",
+            "PersistentPlanForestLight",
+            "PersistentPlanEagleEye"
+          ],
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "per_ability_plan": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "option": ["PersistentAbilityPlan"],
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {
+                "per_ability_plan": false
+              }
+            }
+          }
+        }
+      ]
+    },
     "PersistentAbilityPlan": {
       "type": "select",
-      "label": "允许修改的能力方案",
+      "label": "统一使用的能力方案",
       "default_case": "Plan3",
-      "description": "优先沿用当前能力轮盘中已有的能力；缺少所选常驻能力时，切换到该方案并优先装入五至七号槽位（避开日常任务复用的八号槽位，防止金鹰之眼等能力被后续替换失效）。",
+      "description": "优先沿用当前能力轮盘中已有的能力；缺少所选常驻能力时，切换到该方案并优先装入五至七号槽位（避开日常任务复用的八号槽位）。",
       "cases": [
         {
           "name": "Plan1",
           "label": "自定义方案一",
           "pipeline_override": {
             "MaaNikki_PersistentAbilities": {
-              "custom_action_param": {
-                "ability_plan": 1
-              }
+              "custom_action_param": {"ability_plan": 1}
             }
           }
         },
@@ -97,9 +132,7 @@
           "label": "自定义方案二",
           "pipeline_override": {
             "MaaNikki_PersistentAbilities": {
-              "custom_action_param": {
-                "ability_plan": 2
-              }
+              "custom_action_param": {"ability_plan": 2}
             }
           }
         },
@@ -108,9 +141,147 @@
           "label": "自定义方案三",
           "pipeline_override": {
             "MaaNikki_PersistentAbilities": {
-              "custom_action_param": {
-                "ability_plan": 3
-              }
+              "custom_action_param": {"ability_plan": 3}
+            }
+          }
+        }
+      ]
+    },
+    "PersistentPlanGingerbread": {
+      "type": "select",
+      "label": "幸福雪未融 所在方案",
+      "default_case": "Plan3",
+      "description": "指定「幸福雪未融」（小姜饼人）存放或允许装入的能力方案页。",
+      "cases": [
+        {
+          "name": "Plan1",
+          "label": "自定义方案一",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"gingerbread": 1}}
+            }
+          }
+        },
+        {
+          "name": "Plan2",
+          "label": "自定义方案二",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"gingerbread": 2}}
+            }
+          }
+        },
+        {
+          "name": "Plan3",
+          "label": "自定义方案三",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"gingerbread": 3}}
+            }
+          }
+        }
+      ]
+    },
+    "PersistentPlanMask": {
+      "type": "select",
+      "label": "化万相 所在方案",
+      "default_case": "Plan3",
+      "description": "指定「化万相」（自动拾取噗灵与星光）存放或允许装入的能力方案页。",
+      "cases": [
+        {
+          "name": "Plan1",
+          "label": "自定义方案一",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"mask": 1}}
+            }
+          }
+        },
+        {
+          "name": "Plan2",
+          "label": "自定义方案二",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"mask": 2}}
+            }
+          }
+        },
+        {
+          "name": "Plan3",
+          "label": "自定义方案三",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"mask": 3}}
+            }
+          }
+        }
+      ]
+    },
+    "PersistentPlanForestLight": {
+      "type": "select",
+      "label": "栖林沐光 所在方案",
+      "default_case": "Plan3",
+      "description": "指定「栖林沐光」（聚虫与生息流光）存放或允许装入的能力方案页。",
+      "cases": [
+        {
+          "name": "Plan1",
+          "label": "自定义方案一",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"forest_light": 1}}
+            }
+          }
+        },
+        {
+          "name": "Plan2",
+          "label": "自定义方案二",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"forest_light": 2}}
+            }
+          }
+        },
+        {
+          "name": "Plan3",
+          "label": "自定义方案三",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"forest_light": 3}}
+            }
+          }
+        }
+      ]
+    },
+    "PersistentPlanEagleEye": {
+      "type": "select",
+      "label": "金鹰之眼 所在方案",
+      "default_case": "Plan3",
+      "description": "指定「金鹰之眼」（常驻隐匿与金鹰视野共用）存放或允许装入的能力方案页。",
+      "cases": [
+        {
+          "name": "Plan1",
+          "label": "自定义方案一",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"eagle_eye": 1}}
+            }
+          }
+        },
+        {
+          "name": "Plan2",
+          "label": "自定义方案二",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"eagle_eye": 2}}
+            }
+          }
+        },
+        {
+          "name": "Plan3",
+          "label": "自定义方案三",
+          "pipeline_override": {
+            "MaaNikki_PersistentAbilities": {
+              "custom_action_param": {"group_plans": {"eagle_eye": 3}}
             }
           }
         }
