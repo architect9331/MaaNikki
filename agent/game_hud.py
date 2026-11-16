@@ -787,9 +787,9 @@ class GameHudOverlay:
         compact_title = f"{header_task} · {step}" if step else header_task
         return ("自动运行", compact_title, "", "accent", False, 0.84, True, True)
 
-    def _next_timeout(self, visible: bool) -> float:
+    def _next_timeout(self, visible: bool, focused: bool = True) -> float:
         now = time.monotonic()
-        wait = 0.25 if visible else 0.35
+        wait = (0.25 if focused else 0.5) if visible else 0.5
         with self._lock:
             for ts in (self._forced_flash_until, self._recovered_until):
                 if ts > now:
@@ -848,6 +848,7 @@ class GameHudOverlay:
                 if idle_expired or not is_window(self.game):
                     break
 
+                focused_now = False
                 rect, origin = w.RECT(), w.POINT(0, 0)
                 if is_iconic(self.game) or not get_rect(self.game, ctypes.byref(rect)) or not to_screen(self.game, ctypes.byref(origin)):
                     surface.hide()
@@ -860,6 +861,7 @@ class GameHudOverlay:
                     fg = get_fg()
                     fg_game = fg == self.game
                     fg_hud = bool(surface.hwnd and fg == surface.hwnd)
+                    focused_now = fg_game or fg_hud
                     spec = self._compose(now, fg_game, fg_hud) if (cw > 0 and ch > 0) else None
                     if spec is None:
                         surface.hide()
@@ -891,7 +893,7 @@ class GameHudOverlay:
                                 last_paint_sig, last_layout = sig, (layout, pad)
                                 last_pos = (sx_pos, sy_pos)
                                 last_z = (want_top, stay_above, fg)
-                                next_z_sync = now + 0.25
+                                next_z_sync = now + 1.0
                             elif last_layout is not None:
                                 layout, pad = last_layout
                                 x_rel, y_rel = hud_top_center_anchor(cw, ch, layout["width"])
@@ -904,9 +906,9 @@ class GameHudOverlay:
                                     sync_overlay_zorder(user, surface.hwnd, self.game,
                                                         want_topmost=want_top, stay_above_game=stay_above)
                                     last_z = z_sig
-                                    next_z_sync = now + 0.25
+                                    next_z_sync = now + 1.0
 
-                timeout = self._next_timeout(surface._visible)
+                timeout = self._next_timeout(surface._visible, focused=focused_now)
                 if timeout <= 0.0:
                     break
                 self._wake.wait(timeout)

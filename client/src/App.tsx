@@ -156,11 +156,21 @@ function App() {
   useEffect(() => monitorExploration(), []);
   useEffect(() => monitorResonance(), []);
   useEffect(() => {
-    const refresh = () => void useAccountStateStore.getState().refresh().catch(() => {});
+    const refresh = () => void useAccountStateStore.getState().refresh({ silent: true }).catch(() => {});
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
     refresh();
-    const timer = window.setInterval(refresh, 10000);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') refresh();
+    }, 30000);
     window.addEventListener("focus", refresh);
-    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
   const [loadingState, setLoadingState] = useState<LoadingState>('loading');
   useEffect(() => {
@@ -1578,9 +1588,8 @@ function App() {
             clearTimeout(resizeTimeout);
           }
           resizeTimeout = setTimeout(async () => {
-            // 最大化时不保存大小
-            const isMaximized = await currentWindow.isMaximized();
-            if (isMaximized) return;
+            // 最大化或最小化时不保存大小
+            if (await currentWindow.isMaximized() || await currentWindow.isMinimized()) return;
 
             const size = await getWindowSize();
             if (size && isValidWindowSize(size.width, size.height)) {
@@ -1594,12 +1603,11 @@ function App() {
             clearTimeout(moveTimeout);
           }
           moveTimeout = setTimeout(async () => {
-            // 最大化时不保存位置
-            const isMaximized = await currentWindow.isMaximized();
-            if (isMaximized) return;
+            // 最大化或最小化时不保存位置（Windows 最小化会产生 -32000 坐标）
+            if (await currentWindow.isMaximized() || await currentWindow.isMinimized()) return;
 
             const position = await getWindowPosition();
-            if (position) {
+            if (position && position.x > -10000 && position.y > -10000) {
               setWindowPositionStore(position);
             }
           }, 500);

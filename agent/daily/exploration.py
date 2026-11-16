@@ -34,6 +34,10 @@ def _resource_signature(ui):
 class AssistSchedule(PeriodicSchedule):
     """Wall-clock checks; fishing exclusively owns input during its session."""
     INTERVALS = {"Fishing": .3, "Clear": .3, "Dialogue": .5, "Pickup": .1, "MapMask": .05}
+    # When the game is unfocused on desktop, relax helper cadence so background
+    # assistance does not saturate WGC FramePool / GPU transfer at 10 Hz.
+    BACKGROUND_INTERVALS = {"Clear": .6, "Dialogue": .8, "Pickup": .6}
+    BACKGROUND_WAIT_CLEAR_INTERVAL = .35
     COOLDOWNS = {"Fishing": 5, "Clear": .3, "Dialogue": .25, "Pickup": .02}
     BACKGROUND_HELPERS = ("Clear", "Dialogue", "Pickup")
 
@@ -91,6 +95,7 @@ class Exploration(Runtime):
         initial_resources = _resource_signature(self.ui)
         waiting_clear = False
         previous_mode = None
+        bg_next_at = 0.0
         map_mask = None
 
         def resources_replaced(error):
@@ -208,22 +213,32 @@ class Exploration(Runtime):
                 if not available():
                     if map_mask:
                         map_mask.hide()
-                    self.pause(.15)
+                    bg_next_at = 0.0
+                    self.pause(.25)
                     continue
-                if not foreground:
+                if foreground:
+                    bg_next_at = 0.0
+                    deadline = schedule.deadline(["Clear"] if waiting_clear else None)
+                else:
                     if map_mask:
                         map_mask.hide()
-                    deadline = schedule.deadline(["Clear"] if waiting_clear else bg_helpers)
+                    helpers = ["Clear"] if waiting_clear else bg_helpers
+                    bg_step = (
+                        AssistSchedule.BACKGROUND_WAIT_CLEAR_INTERVAL
+                        if waiting_clear
+                        else min(AssistSchedule.BACKGROUND_INTERVALS.get(h, .6) for h in helpers)
+                    )
+                    deadline = max(schedule.deadline(helpers), bg_next_at)
                     wait_left = deadline - time.monotonic()
                     if wait_left > 0.14:
                         # Sleep in short bounded chunks before capturing so focus return wakes MapMask promptly.
                         self.pause(min(0.1, wait_left - 0.04))
                         continue
-                else:
-                    deadline = schedule.deadline(["Clear"] if waiting_clear else None)
                 # A single async Maa capture overlaps the last part of the idle
                 # period. Inputs always finish before posting the next capture.
                 frame = self.capture_at(deadline, available=available)
+                if not foreground:
+                    bg_next_at = time.monotonic() + bg_step
                 if frame is None:
                     self.pause(.1)
                     continue

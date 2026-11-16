@@ -121,7 +121,8 @@ function GiantMeteorStatus({ compact }: { compact?: boolean }) {
 
 /** The feature entries, as a panel of tiles or as icons while the panel is collapsed. */
 export function AccountStatusActions({ compact = false }: { compact?: boolean }) {
-  const { data, error } = useAccountStateStore();
+  const data = useAccountStateStore((state) => state.data);
+  const error = useAccountStateStore((state) => state.error);
   const exploration = useExplorationStore();
   const resonance = useResonanceStore();
   const wardrobeStatus = useWardrobeStore((state) => state.status);
@@ -131,9 +132,10 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
   const loadPlans = useWardrobePlanStore((state) => state.load);
   const planError = useWardrobePlanStore((state) => state.error);
   const plansLoading = useWardrobePlanStore((state) => state.loading);
+  const planRevision = data?.plan_revision ?? wardrobe?.updated_at ?? '';
   useEffect(() => {
-    if (data?.uid) void loadPlans(`${data.uid}:${data.updated_at ?? wardrobe?.updated_at ?? ''}:0`);
-  }, [data?.uid, data?.updated_at, wardrobe?.updated_at, loadPlans]);
+    if (data?.uid) void loadPlans(`${data.uid}:${planRevision}:0`);
+  }, [data?.uid, planRevision, loadPlans]);
   const overview = useCollectionOverview();
   const collections = ([
     ['closet', '衣柜套装', '套'], ['crafting', '制衣', '张'],

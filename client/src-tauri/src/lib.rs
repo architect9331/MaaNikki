@@ -85,6 +85,17 @@ pub fn run() {
                 })
                 .timezone_strategy(TimezoneStrategy::UseLocal)
                 .level(log::LevelFilter::Debug)
+                .level_for("hyper_util", log::LevelFilter::Warn)
+                .level_for("hyper", log::LevelFilter::Warn)
+                .level_for("reqwest", log::LevelFilter::Warn)
+                .level_for("rustls", log::LevelFilter::Warn)
+                .level_for("h2", log::LevelFilter::Warn)
+                .level_for("want", log::LevelFilter::Warn)
+                .level_for("mio", log::LevelFilter::Warn)
+                .level_for("tao", log::LevelFilter::Warn)
+                .level_for("wry", log::LevelFilter::Warn)
+                .level_for("tokio_tungstenite", log::LevelFilter::Warn)
+                .level_for("tungstenite", log::LevelFilter::Warn)
                 .build(),
         )
         .setup(|app| {
@@ -227,6 +238,7 @@ pub fn run() {
             commands::resonance::resonance_history,
             commands::resonance::resonance_export,
             commands::account_state::get_account_state,
+            commands::account_state::get_account_state_if_changed,
             commands::task_stats::get_task_statistics,
             commands::user_routes::list_routes,
             commands::user_routes::save_user_route,

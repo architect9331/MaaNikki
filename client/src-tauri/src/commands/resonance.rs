@@ -8,7 +8,7 @@ use std::{
     collections::BTreeMap,
     path::PathBuf,
     sync::{Arc, Mutex},
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tauri::{Emitter, Manager, WebviewWindow};
 use tokio::sync::watch;
@@ -114,6 +114,7 @@ struct Inner {
     completed: usize,
     last_added: usize,
     last_notebook_added: usize,
+    last_progress_emit: Option<Instant>,
 }
 
 pub struct ResonanceState {
@@ -297,17 +298,32 @@ impl ResonanceState {
     }
 
     fn publish(&self, app: &tauri::AppHandle) {
+        if let Ok(mut inner) = self.inner.lock() {
+            inner.last_progress_emit = Some(Instant::now());
+        }
         let _ = app.emit_to("main", "resonance-status", self.snapshot());
     }
 
     fn progress(&self, app: &tauri::AppHandle, banner: &Banner, page: usize, completed: usize) {
-        {
+        let should_emit = {
             let mut inner = self.inner.lock().unwrap();
+            let banner_changed = inner.banner.as_deref() != Some(banner.name.as_str());
             inner.banner = Some(banner.name.clone());
             inner.page = page;
             inner.completed = completed;
+            let elapsed = inner
+                .last_progress_emit
+                .map_or(true, |last| last.elapsed() >= Duration::from_millis(1500));
+            if elapsed || (banner_changed && inner.last_progress_emit.is_none()) {
+                inner.last_progress_emit = Some(Instant::now());
+                true
+            } else {
+                false
+            }
+        };
+        if should_emit {
+            let _ = app.emit_to("main", "resonance-status", self.snapshot());
         }
-        self.publish(app);
     }
 }
 
@@ -358,6 +374,7 @@ pub fn start(app: &tauri::AppHandle) {
             completed: 0,
             last_added: 0,
             last_notebook_added: 0,
+            last_progress_emit: None,
         }),
         changed: watch::channel(0).0,
         catalog: serde_json::from_str(include_str!("../data/resonance_catalog.json"))
@@ -1201,6 +1218,8 @@ async fn synchronize(
     }
     let mut added = 0;
     let mut notebook_added = 0;
+    let mut dirty = false;
+    let mut last_commit = Instant::now();
     let mut errors: Vec<SyncError> = Vec::new();
     {
         let mut inner = state.inner.lock().unwrap();
@@ -1214,7 +1233,10 @@ async fn synchronize(
     {
         Ok(count) => {
             notebook_added = count;
-            commit_history(app, state, generation, &history, added, notebook_added)?;
+            if count > 0 {
+                commit_history(app, state, generation, &history, added, notebook_added)?;
+                last_commit = Instant::now();
+            }
         }
         Err(error) => errors.push(error),
     }
@@ -1240,6 +1262,8 @@ async fn synchronize(
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
             let mut entry = history.banners.get(&banner.id).cloned().unwrap_or_default();
+            let prev_since = entry.incremental_since;
+            let prev_gap = entry.possible_gap;
             let fetched = fetch_banner(
                 &client, authority, &end_time, banner, &entry, app, state, completed,
             )
@@ -1248,9 +1272,19 @@ async fn synchronize(
                 Ok(fetched) => {
                     let count = merge(&mut entry, fetched.pulls)?;
                     entry.incremental_since = fetched.incremental_since;
+                    let changed = count > 0
+                        || entry.incremental_since != prev_since
+                        || entry.possible_gap != prev_gap;
                     history.banners.insert(banner.id.clone(), entry);
                     added += count;
-                    commit_history(app, state, generation, &history, added, notebook_added)?;
+                    if changed {
+                        dirty = true;
+                    }
+                    if dirty && last_commit.elapsed() >= Duration::from_secs(15) {
+                        commit_history(app, state, generation, &history, added, notebook_added)?;
+                        dirty = false;
+                        last_commit = Instant::now();
+                    }
                 }
                 Err(error) => {
                     log::warn!("Resonance banner {}: {}", banner.id, error.message);
@@ -1267,6 +1301,9 @@ async fn synchronize(
         errors.push(error);
     }
     if !errors.is_empty() {
+        if dirty {
+            commit_history(app, state, generation, &history, added, notebook_added)?;
+        }
         return Err(SyncError {
             auth: errors.iter().any(|e| e.auth),
             message: format!(

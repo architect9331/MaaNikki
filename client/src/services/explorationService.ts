@@ -244,7 +244,23 @@ export function monitorExploration(): () => void {
   let disposed = false;
   let pending = false;
   let rerunSoon = false;
+  let waitStreak = 0;
   let timer: number | undefined;
+
+  const nextDelayMs = () => {
+    if (active) {
+      waitStreak = 0;
+      return 6000;
+    }
+    const status = useExplorationStore.getState().status;
+    if (status === 'waiting') {
+      const idx = Math.min(waitStreak, 2);
+      waitStreak++;
+      return [1500, 3000, 5000][idx];
+    }
+    waitStreak = 0;
+    return 2500;
+  };
 
   const scheduleNext = (delayMs?: number) => {
     if (disposed) return;
@@ -252,14 +268,18 @@ export function monitorExploration(): () => void {
       rerunSoon = true;
       return;
     }
-    if (timer !== undefined) window.clearTimeout(timer);
-    const interval = delayMs ?? (active ? 3000 : 1500);
+    if (timer !== undefined) {
+      window.clearTimeout(timer);
+      timer = undefined;
+    }
+    if (!useExplorationStore.getState().enabled) {
+      waitStreak = 0;
+      return;
+    }
+    const interval = delayMs ?? nextDelayMs();
     timer = window.setTimeout(() => {
-      if (disposed) return;
-      if (!useExplorationStore.getState().enabled) {
-        scheduleNext();
-        return;
-      }
+      timer = undefined;
+      if (disposed || !useExplorationStore.getState().enabled) return;
       if (pending) {
         rerunSoon = true;
         return;
@@ -275,24 +295,51 @@ export function monitorExploration(): () => void {
     }, interval);
   };
 
-  let prevKey = '';
-  const signalKey = () => {
-    const s = useAppStore.getState();
-    return `${JSON.stringify(s.explorationSettings)}|${JSON.stringify(s.globalOptionValues)}|${s.instances.some((i) => i.isRunning) ? 1 : 0}`;
-  };
-  prevKey = signalKey();
+  const initial = useAppStore.getState();
+  let prevSettings = initial.explorationSettings;
+  let prevGlobal = initial.globalOptionValues;
+  let prevRunning = initial.instances.some((i) => i.isRunning);
 
-  const unsubscribeApp = useAppStore.subscribe(() => {
-    const nextKey = signalKey();
-    if (nextKey === prevKey) return;
-    prevKey = nextKey;
+  const unsubscribeApp = useAppStore.subscribe((state) => {
+    const running = state.instances.some((i) => i.isRunning);
+    if (
+      state.explorationSettings === prevSettings &&
+      state.globalOptionValues === prevGlobal &&
+      running === prevRunning
+    ) {
+      return;
+    }
+    prevSettings = state.explorationSettings;
+    prevGlobal = state.globalOptionValues;
+    prevRunning = running;
+    waitStreak = 0;
     if (useExplorationStore.getState().enabled) scheduleNext(0);
   });
 
-  scheduleNext();
+  const unsubscribeExp = useExplorationStore.subscribe((state, prev) => {
+    if (state.enabled && (!prev.enabled || timer === undefined)) {
+      waitStreak = 0;
+      scheduleNext();
+    }
+  });
+
+  const wakeWaiter = () => {
+    if (document.visibilityState === 'hidden') return;
+    if (useExplorationStore.getState().enabled && !active) {
+      waitStreak = 0;
+      scheduleNext(0);
+    }
+  };
+  window.addEventListener('focus', wakeWaiter);
+  document.addEventListener('visibilitychange', wakeWaiter);
+
+  if (useExplorationStore.getState().enabled) scheduleNext();
   return () => {
     disposed = true;
     if (timer !== undefined) window.clearTimeout(timer);
     unsubscribeApp();
+    unsubscribeExp();
+    window.removeEventListener('focus', wakeWaiter);
+    document.removeEventListener('visibilitychange', wakeWaiter);
   };
 }

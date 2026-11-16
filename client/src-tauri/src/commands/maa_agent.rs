@@ -8,7 +8,7 @@ use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::thread;
 
 use chrono::Local;
@@ -133,18 +133,23 @@ struct AgentOutputBatchState {
     first_stream: Option<String>,
     has_mixed_streams: bool,
     flush_deadline: Option<Instant>,
-    flush_running: bool,
+    closed: bool,
 }
 
-pub(crate) struct AgentOutputBatcher {
+struct AgentOutputBatcherInner {
     app: tauri::AppHandle,
     instance_id: String,
     state: Mutex<AgentOutputBatchState>,
+    notify: Condvar,
+}
+
+pub(crate) struct AgentOutputBatcher {
+    inner: Arc<AgentOutputBatcherInner>,
 }
 
 impl AgentOutputBatcher {
     pub(crate) fn new(app: tauri::AppHandle, instance_id: String) -> Arc<Self> {
-        Arc::new(Self {
+        let inner = Arc::new(AgentOutputBatcherInner {
             app,
             instance_id,
             state: Mutex::new(AgentOutputBatchState {
@@ -152,65 +157,50 @@ impl AgentOutputBatcher {
                 first_stream: None,
                 has_mixed_streams: false,
                 flush_deadline: None,
-                flush_running: false,
+                closed: false,
             }),
-        })
+            notify: Condvar::new(),
+        });
+        let worker = Arc::clone(&inner);
+        thread::spawn(move || Self::flush_loop(worker));
+        Arc::new(Self { inner })
     }
 
-    pub(crate) fn enqueue(self: &Arc<Self>, stream: &str, line: &str) {
-        let should_spawn = {
-            let mut state = self.state.lock().unwrap();
-            state.lines.push(line.to_string());
-            match state.first_stream.as_ref() {
-                None => state.first_stream = Some(stream.to_string()),
-                Some(existing) if existing != stream => state.has_mixed_streams = true,
-                _ => {}
-            }
-            state.flush_deadline = Some(Instant::now() + Duration::from_millis(1));
-
-            if state.flush_running {
-                false
-            } else {
-                state.flush_running = true;
-                true
-            }
-        };
-
-        if should_spawn {
-            let batcher = Arc::clone(self);
-            thread::spawn(move || batcher.flush_loop());
+    pub(crate) fn enqueue(&self, stream: &str, line: &str) {
+        let mut state = self.inner.state.lock().unwrap();
+        if state.closed {
+            return;
+        }
+        let was_empty = state.flush_deadline.is_none();
+        state.lines.push(line.to_string());
+        match state.first_stream.as_ref() {
+            None => state.first_stream = Some(stream.to_string()),
+            Some(existing) if existing != stream => state.has_mixed_streams = true,
+            _ => {}
+        }
+        state.flush_deadline = Some(Instant::now() + Duration::from_millis(1));
+        if was_empty {
+            self.inner.notify.notify_one();
         }
     }
 
-    fn flush_loop(self: Arc<Self>) {
+    fn flush_loop(inner: Arc<AgentOutputBatcherInner>) {
         loop {
-            let deadline = {
-                let state = self.state.lock().unwrap();
-                match state.flush_deadline {
-                    Some(deadline) => deadline,
-                    None => {
-                        drop(state);
-                        self.finish_flush_loop();
-                        return;
-                    }
-                }
-            };
-
-            let now = Instant::now();
-            if deadline > now {
-                thread::sleep(deadline.duration_since(now));
-                continue;
-            }
-
             let payload = {
-                let mut state = self.state.lock().unwrap();
-                match state.flush_deadline {
-                    Some(current_deadline) if Instant::now() >= current_deadline => {
-                        if state.lines.is_empty() {
-                            state.flush_deadline = None;
-                            state.flush_running = false;
-                            None
-                        } else {
+                let mut state = inner.state.lock().unwrap();
+                loop {
+                    if let Some(deadline) = state.flush_deadline {
+                        let now = Instant::now();
+                        if deadline > now && !state.closed {
+                            let (guard, _) = inner
+                                .notify
+                                .wait_timeout(state, deadline.duration_since(now))
+                                .unwrap();
+                            state = guard;
+                            continue;
+                        }
+                        state.flush_deadline = None;
+                        if !state.lines.is_empty() {
                             let merged_line = state.lines.join("\n");
                             state.lines.clear();
                             let stream = if state.has_mixed_streams {
@@ -222,38 +212,28 @@ impl AgentOutputBatcher {
                                     .unwrap_or_else(|| "stdout".to_string())
                             };
                             state.has_mixed_streams = false;
-                            state.flush_deadline = None;
-                            Some((stream, merged_line))
+                            break Some((stream, merged_line));
                         }
                     }
-                    Some(_) => continue,
-                    None => {
-                        state.flush_running = false;
-                        None
+                    if state.closed {
+                        return;
                     }
+                    state = inner.notify.wait(state).unwrap();
                 }
             };
 
-            match payload {
-                Some((stream, merged_line)) => {
-                    emit_agent_output(&self.app, &self.instance_id, &stream, &merged_line);
-                }
-                None => {
-                    let should_exit = {
-                        let state = self.state.lock().unwrap();
-                        !state.flush_running
-                    };
-                    if should_exit {
-                        return;
-                    }
-                }
+            if let Some((stream, merged_line)) = payload {
+                emit_agent_output(&inner.app, &inner.instance_id, &stream, &merged_line);
             }
         }
     }
+}
 
-    fn finish_flush_loop(&self) {
-        let mut state = self.state.lock().unwrap();
-        state.flush_running = false;
+impl Drop for AgentOutputBatcher {
+    fn drop(&mut self) {
+        let mut state = self.inner.state.lock().unwrap();
+        state.closed = true;
+        self.inner.notify.notify_all();
     }
 }
 

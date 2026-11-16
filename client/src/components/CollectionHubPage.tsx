@@ -62,9 +62,10 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
   const wasBusy = useRef(busy);
   useEffect(() => { void refresh().catch(() => {}); }, [refresh]);
   const loadPlans = useWardrobePlanStore((state) => state.load);
+  const planRevision = data?.plan_revision ?? scan?.updated_at ?? '';
   useEffect(() => {
-    if (data?.uid) void loadPlans(`${data.uid}:${data.updated_at ?? scan?.updated_at ?? ''}:${refreshToken}`);
-  }, [data?.uid, data?.updated_at, scan?.updated_at, refreshToken, loadPlans]);
+    if (data?.uid) void loadPlans(`${data.uid}:${planRevision}:${refreshToken}`);
+  }, [data?.uid, planRevision, refreshToken, loadPlans]);
   const overview = useCollectionOverview();
   // Reload the closet and planners once a read ends so new clothes show up.
   useEffect(() => {

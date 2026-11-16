@@ -761,33 +761,40 @@ fn hashed_machine_id() -> String {
 }
 
 /// 采集主机硬件摘要（CPU / 内存 / GPU / OS）。
-fn collect_hardware() -> HardwareInfo {
-    let sys = sysinfo::System::new_all();
+fn collect_hardware() -> &'static HardwareInfo {
+    static HARDWARE: OnceLock<HardwareInfo> = OnceLock::new();
+    HARDWARE.get_or_init(|| {
+        let sys = sysinfo::System::new_with_specifics(
+            sysinfo::RefreshKind::new()
+                .with_cpu(sysinfo::CpuRefreshKind::new())
+                .with_memory(sysinfo::MemoryRefreshKind::new().with_ram()),
+        );
 
-    let cpu = sys
-        .cpus()
-        .first()
-        .map(|c| c.brand().trim().to_string())
-        .unwrap_or_default();
-    let cpu_cores = sys.cpus().len() as u32;
-    // sysinfo 返回字节
-    let memory_total_mb = sys.total_memory() / 1024 / 1024;
-    let os = format!(
-        "{} {}",
-        sysinfo::System::name().unwrap_or_default(),
-        sysinfo::System::os_version().unwrap_or_default()
-    )
-    .trim()
-    .to_string();
-    let gpu = collect_gpu();
+        let cpu = sys
+            .cpus()
+            .first()
+            .map(|c| c.brand().trim().to_string())
+            .unwrap_or_default();
+        let cpu_cores = sys.cpus().len() as u32;
+        // sysinfo 返回字节
+        let memory_total_mb = sys.total_memory() / 1024 / 1024;
+        let os = format!(
+            "{} {}",
+            sysinfo::System::name().unwrap_or_default(),
+            sysinfo::System::os_version().unwrap_or_default()
+        )
+        .trim()
+        .to_string();
+        let gpu = collect_gpu();
 
-    HardwareInfo {
-        cpu,
-        cpu_cores,
-        memory_total_mb,
-        gpu,
-        os,
-    }
+        HardwareInfo {
+            cpu,
+            cpu_cores,
+            memory_total_mb,
+            gpu,
+            os,
+        }
+    })
 }
 
 /// Windows：从注册表读取主显卡名称（DriverDesc）；其他平台暂不采集。

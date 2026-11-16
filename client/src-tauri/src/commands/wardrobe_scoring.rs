@@ -1,9 +1,26 @@
 //! Score settings share the same UID journal and lock as wardrobe scanning.
 use super::{
-    account_state::{read_json, read_role, update_role, valid_account_key},
+    account_state::{
+        account_state_revision, file_stamp, read_json, read_role, update_role, valid_account_key,
+        FileStamp,
+    },
     utils::{get_app_data_dir, get_exe_directory},
 };
 use serde_json::{json, Value};
+use std::path::PathBuf;
+use std::sync::{Mutex, OnceLock};
+
+struct CachedScoring {
+    rev: u64,
+    index_stamp: FileStamp,
+    role_path: PathBuf,
+    role_stamp: FileStamp,
+    scoring_stamp: FileStamp,
+    crafting_stamp: FileStamp,
+    value: Value,
+}
+
+static SCORING_CACHE: OnceLock<Mutex<Option<CachedScoring>>> = OnceLock::new();
 
 fn active_key() -> Result<String, String> {
     let index = read_json(&get_app_data_dir()?.join("config/accounts/index.json"))?
@@ -16,7 +33,35 @@ fn active_key() -> Result<String, String> {
 }
 
 fn load() -> Result<Value, String> {
+    let app_data = get_app_data_dir()?;
+    let exe_dir = get_exe_directory()?;
+    let index_path = app_data.join("config/accounts/index.json");
+    let scoring_path = exe_dir.join("resource/data/wardrobe_scoring.json");
+    let crafting_path = exe_dir.join("resource/data/crafting_catalog.json");
+    let rev = account_state_revision();
+    let index_stamp = file_stamp(&index_path);
+    let scoring_stamp = file_stamp(&scoring_path);
+    let crafting_stamp = file_stamp(&crafting_path);
+
+    let cache = SCORING_CACHE.get_or_init(|| Mutex::new(None));
+    if let Ok(guard) = cache.lock() {
+        if let Some(entry) = guard.as_ref() {
+            if entry.rev == rev
+                && entry.index_stamp == index_stamp
+                && entry.scoring_stamp == scoring_stamp
+                && entry.crafting_stamp == crafting_stamp
+                && file_stamp(&entry.role_path) == entry.role_stamp
+            {
+                return Ok(entry.value.clone());
+            }
+        }
+    }
+
     let key = active_key()?;
+    let role_path = app_data
+        .join("config/accounts/CN")
+        .join(format!("{}.json", &key[3..]));
+    let role_stamp = file_stamp(&role_path);
     let role = read_role(&key)?;
     let wardrobe = &role["wardrobe"];
     let mut snapshot = wardrobe
@@ -33,20 +78,29 @@ fn load() -> Result<Value, String> {
         }
     }
     let blessing = blessing_profile(&role["blessing"]);
-    let catalog = read_json(&get_exe_directory()?.join("resource/data/wardrobe_scoring.json"))?
-        .ok_or("缺少搭配计分资料，请更新资源。")?;
+    let catalog = read_json(&scoring_path)?.ok_or("缺少搭配计分资料，请更新资源。")?;
     if catalog["schema_version"] != 1 {
         return Err("搭配计分资料版本不支持。".into());
     }
-    let crafting_catalog =
-        read_json(&get_exe_directory()?.join("resource/data/crafting_catalog.json"))?
-            .unwrap_or(Value::Null);
-    Ok(json!({
+    let crafting_catalog = read_json(&crafting_path)?.unwrap_or(Value::Null);
+    let result = json!({
         "account_key": key, "uid": role["uid"], "snapshot": snapshot,
         "blessing": blessing,
         "settings": wardrobe.get("scoring"), "catalog": catalog,
         "materials": role.get("materials"), "crafting_catalog": crafting_catalog,
-    }))
+    });
+    if let Ok(mut guard) = cache.lock() {
+        *guard = Some(CachedScoring {
+            rev,
+            index_stamp,
+            role_path,
+            role_stamp,
+            scoring_stamp,
+            crafting_stamp,
+            value: result.clone(),
+        });
+    }
+    Ok(result)
 }
 
 /// Pursuit snapshots do not read lock states, so their own lock list is empty even

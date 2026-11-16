@@ -323,6 +323,7 @@ def sync_overlay_zorder(
     get_window = bind(user, "GetWindow", w.HWND, w.HWND, w.UINT)
     get_style = bind(user, "GetWindowLongPtrW", ctypes.c_ssize_t, w.HWND, ctypes.c_int)
     get_class = bind(user, "GetClassNameW", ctypes.c_int, w.HWND, w.LPWSTR, ctypes.c_int)
+    is_visible = bind(user, "IsWindowVisible", w.BOOL, w.HWND)
     move = bind(user, "SetWindowPos", w.BOOL, w.HWND, w.HWND, *([ctypes.c_int] * 4), w.UINT)
     swp_flags = 0x0013  # SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE
     is_topmost = bool(get_style(hwnd, -20) & 0x00000008)
@@ -338,22 +339,26 @@ def sync_overlay_zorder(
     if is_topmost:
         move(hwnd, ctypes.c_void_p(-2), 0, 0, 0, 0, swp_flags)
 
-    # Walk upward from game_hwnd to find the nearest foreign non-topmost window above it.
+    # Walk upward from game_hwnd to find the nearest visible foreign non-topmost
+    # window above it, ignoring hidden system/IME/tooltip windows in between so
+    # an already-positioned overlay does not re-trigger SetWindowPos on every tick.
     class_buf = ctypes.create_unicode_buffer(128)
     anchor = None
     cur = get_window(game_hwnd, 3)  # GW_HWNDPREV
     hops = 0
-    while cur and hops < 48:
+    while cur and hops < 256:
         hops += 1
         if int(cur) == int(hwnd):
             return
-        if not (get_style(cur, -20) & 0x00000008):
+        if is_visible(cur) and not (get_style(cur, -20) & 0x00000008):
             length = get_class(cur, class_buf, len(class_buf))
             if not (length > 0 and class_buf.value.startswith("MaaNikki")):
                 anchor = cur
                 break
         cur = get_window(cur, 3)
 
+    if anchor is None and int(get_window(hwnd, 3) or 0) == 0:
+        return
     insert_after = anchor if anchor else ctypes.c_void_p(0)  # HWND_TOP within non-topmost band
     move(hwnd, insert_after, 0, 0, 0, 0, swp_flags)
 

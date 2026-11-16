@@ -86,6 +86,7 @@ export interface AccountView {
   account_key?: string | null;
   uid?: string | null;
   updated_at?: string | null;
+  plan_revision?: string | null;
   observations?: {
     eureka_rolls?: { total: number; colors: Record<string, number> };
     anonymous_statistics?: { reporter?: string };
@@ -177,18 +178,57 @@ export function periodTaskLabel(task: string, completed: boolean, selected: bool
 }
 
 let pending: Promise<AccountView> | null = null;
+let lastSignature: string | null = null;
+let cachedData: AccountView | null = null;
+
+interface AccountStateDiffResponse {
+  changed: boolean;
+  signature: string;
+  data?: AccountView;
+}
+
 export const useAccountStateStore = create<{
   data: AccountView | null; error: string | null; loading: boolean;
-  refresh: () => Promise<AccountView>;
-}>((set) => ({
+  refresh: (options?: { silent?: boolean }) => Promise<AccountView>;
+}>((set, get) => ({
   data: null, error: null, loading: false,
-  refresh: () => {
+  refresh: (options) => {
+    const silent = options?.silent === true;
+    if (!silent && !get().loading) set({ loading: true });
     if (pending) return pending;
-    set({ loading: true });
-    pending = (isTauri() ? invoke<AccountView>('get_account_state') : apiGet<AccountView>('/account-state'))
-      .then((data) => { set({ data, error: null }); return data; })
-      .catch((error: unknown) => { set({ error: String(error), data: null }); throw error; })
-      .finally(() => { pending = null; set({ loading: false }); });
+    const request = isTauri()
+      ? invoke<AccountStateDiffResponse>('get_account_state_if_changed', {
+        knownSignature: lastSignature,
+      }).then((res) => {
+        if (!res.changed && cachedData) {
+          if (get().error !== null) set({ error: null });
+          return cachedData;
+        }
+        const data = res.data;
+        if (!data) {
+          throw new Error('账号状态返回为空。');
+        }
+        lastSignature = res.signature;
+        cachedData = data;
+        set({ data, error: null });
+        return data;
+      })
+      : apiGet<AccountView>('/account-state').then((data) => {
+        cachedData = data;
+        set({ data, error: null });
+        return data;
+      });
+    pending = request
+      .catch((error: unknown) => {
+        lastSignature = null;
+        cachedData = null;
+        set({ error: String(error), data: null });
+        throw error;
+      })
+      .finally(() => {
+        pending = null;
+        if (get().loading) set({ loading: false });
+      });
     return pending;
   },
 }));

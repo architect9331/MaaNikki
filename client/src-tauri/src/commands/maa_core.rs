@@ -2,10 +2,13 @@
 //!
 //! 提供 MaaFramework 初始化、版本检查、设备搜索、控制器、资源和任务管理
 
-use log::{debug, info, warn};
+use log::{debug, info, trace, warn};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicI64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
+
+use regex::Regex;
 
 use tauri::State;
 
@@ -469,59 +472,134 @@ pub async fn maa_find_adb_devices(
     find_adb_devices_impl(state.inner().clone()).await
 }
 
+static COMPILED_REGEX_CACHE: OnceLock<Mutex<HashMap<String, Option<Regex>>>> = OnceLock::new();
+static LAST_WIN32_FIND_LOG: OnceLock<Mutex<Option<(Option<String>, Option<String>, usize)>>> =
+    OnceLock::new();
+
+fn compile_cached_regex(pattern: Option<&str>) -> Option<Regex> {
+    let raw = pattern?;
+    let cache = COMPILED_REGEX_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Ok(mut guard) = cache.lock() {
+        if let Some(existing) = guard.get(raw) {
+            return existing.clone();
+        }
+        let compiled = Regex::new(raw).ok();
+        if guard.len() >= 64 {
+            guard.clear();
+        }
+        guard.insert(raw.to_string(), compiled.clone());
+        return compiled;
+    }
+    Regex::new(raw).ok()
+}
+
+#[cfg(target_os = "windows")]
+fn enumerate_win32_windows(
+    class_re: Option<&Regex>,
+    window_re: Option<&Regex>,
+) -> Result<Vec<Win32Window>, String> {
+    let mut result_windows = Vec::new();
+    winsafe::EnumWindows(|hwnd| {
+        let Ok(class_name) = hwnd.GetClassName() else {
+            return true;
+        };
+        if let Some(re) = class_re {
+            if !re.is_match(&class_name) {
+                return true;
+            }
+        }
+        let Ok(window_name) = hwnd.GetWindowText() else {
+            return true;
+        };
+        if let Some(re) = window_re {
+            if !re.is_match(&window_name) {
+                return true;
+            }
+        }
+        result_windows.push(Win32Window {
+            handle: hwnd.ptr() as usize as u64,
+            class_name,
+            window_name,
+        });
+        true
+    })
+    .map_err(|e| e.to_string())?;
+    Ok(result_windows)
+}
+
 /// 查找桌面窗口的内部实现（可从 Tauri 命令和 HTTP 处理器共享调用）
 pub async fn find_win32_windows_impl(
     state: Arc<MaaState>,
     class_regex: Option<String>,
     window_regex: Option<String>,
 ) -> Result<Vec<Win32Window>, String> {
+    #[cfg(not(target_os = "windows"))]
     super::maa_library::ensure_loaded(&state)?;
     tokio::task::spawn_blocking(move || {
-        #[cfg(target_os = "macos")]
-        ensure_macos_requirements(false)?;
+        let class_re = compile_cached_regex(class_regex.as_deref());
+        let window_re = compile_cached_regex(window_regex.as_deref());
 
-        #[cfg(target_os = "macos")]
-        let windows = catch_macos_maafw_ffi("MaaToolkitDesktopWindowFindAll", || {
-            Toolkit::find_desktop_windows()
-        })?
-        .map_err(|e| e.to_string())?;
-        #[cfg(not(target_os = "macos"))]
-        let windows = Toolkit::find_desktop_windows().map_err(|e| e.to_string())?;
+        #[cfg(target_os = "windows")]
+        let result_windows = enumerate_win32_windows(class_re.as_ref(), window_re.as_ref())?;
 
-        let class_re = class_regex.as_ref().and_then(|r| regex::Regex::new(r).ok());
-        let window_re = window_regex
-            .as_ref()
-            .and_then(|r| regex::Regex::new(r).ok());
+        #[cfg(not(target_os = "windows"))]
+        let result_windows = {
+            #[cfg(target_os = "macos")]
+            ensure_macos_requirements(false)?;
 
-        let mut result_windows = Vec::new();
+            #[cfg(target_os = "macos")]
+            let windows = catch_macos_maafw_ffi("MaaToolkitDesktopWindowFindAll", || {
+                Toolkit::find_desktop_windows()
+            })?
+            .map_err(|e| e.to_string())?;
+            #[cfg(not(target_os = "macos"))]
+            let windows = Toolkit::find_desktop_windows().map_err(|e| e.to_string())?;
 
-        for w in windows {
-            if let Some(re) = &class_re {
-                if !re.is_match(&w.class_name) {
-                    continue;
+            let mut collected = Vec::new();
+            for w in windows {
+                if let Some(re) = &class_re {
+                    if !re.is_match(&w.class_name) {
+                        continue;
+                    }
                 }
-            }
-            if let Some(re) = &window_re {
-                if !re.is_match(&w.window_name) {
-                    continue;
+                if let Some(re) = &window_re {
+                    if !re.is_match(&w.window_name) {
+                        continue;
+                    }
                 }
+                collected.push(Win32Window {
+                    handle: w.hwnd as u64,
+                    class_name: w.class_name,
+                    window_name: w.window_name,
+                });
             }
-
-            result_windows.push(Win32Window {
-                handle: w.hwnd as u64,
-                class_name: w.class_name,
-                window_name: w.window_name,
-            });
-        }
+            collected
+        };
 
         if let Ok(mut cached) = state.cached_win32_windows.lock() {
             *cached = result_windows.clone();
         }
 
-        info!(
-            "find_win32_windows_impl: {} window(s)",
-            result_windows.len()
-        );
+        let sig = (class_regex, window_regex, result_windows.len());
+        let mut changed = true;
+        if let Ok(mut prev) = LAST_WIN32_FIND_LOG.get_or_init(|| Mutex::new(None)).lock() {
+            if prev.as_ref() == Some(&sig) {
+                changed = false;
+            } else {
+                *prev = Some(sig);
+            }
+        }
+        if changed {
+            debug!(
+                "find_win32_windows_impl: {} window(s)",
+                result_windows.len()
+            );
+        } else {
+            trace!(
+                "find_win32_windows_impl: {} window(s)",
+                result_windows.len()
+            );
+        }
         Ok(result_windows)
     })
     .await
@@ -566,9 +644,10 @@ pub async fn maa_find_win32_windows(
     class_regex: Option<String>,
     window_regex: Option<String>,
 ) -> Result<Vec<Win32Window>, String> {
-    info!(
+    trace!(
         "maa_find_win32_windows called, class_regex: {:?}, window_regex: {:?}",
-        class_regex, window_regex
+        class_regex,
+        window_regex
     );
     find_win32_windows_impl(state.inner().clone(), class_regex, window_regex).await
 }

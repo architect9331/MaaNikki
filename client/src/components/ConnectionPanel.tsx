@@ -36,6 +36,7 @@ import {
   isDesktopWindowControllerType,
 } from '@/utils/controller';
 import { getInterfaceLangKey } from '@/i18n';
+import { useExplorationStore } from '@/services/explorationService';
 import {
   startGlobalCallbackListener,
   waitForCtrlResult,
@@ -433,6 +434,16 @@ export function ConnectionPanel() {
 
     // 如果该实例已经尝试过自动重连，不再重复
     if (autoReconnectAttempted.has(instanceId)) return;
+
+    // 启用桌面探索辅助时，由探索服务独占管理游戏窗口连接；
+    // 跳过任务实例在启动时的自动连接，避免重复持有第二个 Win32 FramePool 会话与加载推理上下文。
+    if (
+      isDesktopWindowController &&
+      (useAppStore.getState().explorationEnabled || useExplorationStore.getState().enabled)
+    ) {
+      autoReconnectAttempted.add(instanceId);
+      return;
+    }
 
     const savedDevice = activeInstance.savedDevice;
     const hasHistoricalDevice =

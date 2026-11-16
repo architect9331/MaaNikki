@@ -1,7 +1,83 @@
 //! UID-scoped journals shared with Python AccountState.
 use super::utils::{get_app_data_dir, get_exe_directory, write_atomic};
 use serde_json::{json, Value};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Mutex, OnceLock};
+
+pub(super) type FileStamp = (bool, u64, u128);
+
+static ACCOUNT_STATE_REV: AtomicU64 = AtomicU64::new(1);
+static ACCOUNT_STATE_CACHE: OnceLock<Mutex<Option<CachedAccountState>>> = OnceLock::new();
+
+struct CachedAccountState {
+    rev: u64,
+    index_stamp: FileStamp,
+    role_path: PathBuf,
+    role_stamp: FileStamp,
+    legacy_inv_stamp: FileStamp,
+    legacy_scan_stamp: FileStamp,
+    catalog_stamp: FileStamp,
+    rotation_stamp: FileStamp,
+    signature: String,
+    value: Value,
+}
+
+pub(super) fn account_state_revision() -> u64 {
+    ACCOUNT_STATE_REV.load(Ordering::Acquire)
+}
+
+pub(super) fn bump_account_state_revision() {
+    ACCOUNT_STATE_REV.fetch_add(1, Ordering::AcqRel);
+}
+
+pub(super) fn file_stamp(path: &Path) -> FileStamp {
+    match std::fs::metadata(path) {
+        Ok(meta) if meta.is_file() => {
+            let mtime = meta
+                .modified()
+                .ok()
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_nanos())
+                .unwrap_or(0);
+            (true, meta.len(), mtime)
+        }
+        _ => (false, 0, 0),
+    }
+}
+
+fn plan_revision(key: Option<&str>, source: Option<&Value>) -> String {
+    let mut hasher = DefaultHasher::new();
+    key.hash(&mut hasher);
+    if let Some(src) = source {
+        src["wardrobe"]["inventory"]["updated_at"]
+            .as_str()
+            .hash(&mut hasher);
+        src["wardrobe"]["last_scan"]["updated_at"]
+            .as_str()
+            .hash(&mut hasher);
+        src["wardrobe"]["renewal_scan"]["updated_at"]
+            .as_str()
+            .hash(&mut hasher);
+        src["wardrobe"]["scoring"]["updated_at"]
+            .as_str()
+            .hash(&mut hasher);
+        src["blessing"]["inventory"]["record"]["updated_at"]
+            .as_str()
+            .hash(&mut hasher);
+        src["blessing"]["last_scan"]["record"]["updated_at"]
+            .as_str()
+            .hash(&mut hasher);
+        if let Some(materials) = src.get("materials") {
+            if let Ok(raw) = serde_json::to_vec(materials) {
+                raw.hash(&mut hasher);
+            }
+        }
+    }
+    format!("{:016x}", hasher.finish())
+}
 
 pub(super) fn valid_account_key(key: &str) -> bool {
     key.strip_prefix("CN:").is_some_and(|uid| {
@@ -89,6 +165,7 @@ pub(super) fn update_role(
             let _ = write_atomic(&index_path, &index_raw);
         }
     }
+    bump_account_state_revision();
     Ok(())
 }
 
@@ -114,24 +191,86 @@ pub(super) fn account_keys() -> Result<Vec<String>, String> {
     Ok(keys)
 }
 
-fn read_account_state() -> Result<Value, String> {
+fn build_signature(
+    rev: u64,
+    index_stamp: &FileStamp,
+    role_path: &Path,
+    role_stamp: &FileStamp,
+    legacy_inv_stamp: &FileStamp,
+    legacy_scan_stamp: &FileStamp,
+    catalog_stamp: &FileStamp,
+    rotation_stamp: &FileStamp,
+) -> String {
+    let mut hasher = DefaultHasher::new();
+    rev.hash(&mut hasher);
+    index_stamp.hash(&mut hasher);
+    role_path.hash(&mut hasher);
+    role_stamp.hash(&mut hasher);
+    legacy_inv_stamp.hash(&mut hasher);
+    legacy_scan_stamp.hash(&mut hasher);
+    catalog_stamp.hash(&mut hasher);
+    rotation_stamp.hash(&mut hasher);
+    format!("v1:{:016x}", hasher.finish())
+}
+
+fn read_account_state_cached(
+    known_signature: Option<&str>,
+) -> Result<(String, Option<Value>), String> {
     let root = get_app_data_dir()?;
-    let index = read_json(&root.join("config/accounts/index.json"))?.unwrap_or(json!({}));
+    let resources = get_exe_directory()?.join("resource/data");
+    let index_path = root.join("config/accounts/index.json");
+    let legacy_inv_path = root.join("config/blessing/inventory.json");
+    let legacy_scan_path = root.join("config/blessing/last_scan.json");
+    let catalog_path = resources.join("blessing_catalog.json");
+    let rotation_path = resources.join("xinghai_rotation.json");
+
+    let rev = account_state_revision();
+    let index_stamp = file_stamp(&index_path);
+    let legacy_inv_stamp = file_stamp(&legacy_inv_path);
+    let legacy_scan_stamp = file_stamp(&legacy_scan_path);
+    let catalog_stamp = file_stamp(&catalog_path);
+    let rotation_stamp = file_stamp(&rotation_path);
+
+    let cache = ACCOUNT_STATE_CACHE.get_or_init(|| Mutex::new(None));
+    if let Ok(guard) = cache.lock() {
+        if let Some(entry) = guard.as_ref() {
+            if entry.rev == rev
+                && entry.index_stamp == index_stamp
+                && entry.legacy_inv_stamp == legacy_inv_stamp
+                && entry.legacy_scan_stamp == legacy_scan_stamp
+                && entry.catalog_stamp == catalog_stamp
+                && entry.rotation_stamp == rotation_stamp
+                && file_stamp(&entry.role_path) == entry.role_stamp
+            {
+                if known_signature == Some(entry.signature.as_str()) {
+                    return Ok((entry.signature.clone(), None));
+                }
+                return Ok((entry.signature.clone(), Some(entry.value.clone())));
+            }
+        }
+    }
+
+    let index = read_json(&index_path)?.unwrap_or(json!({}));
     let key = index["active_game_account"]
         .as_str()
         .filter(|key| valid_account_key(key));
-    if let Some(key) = key {
-        if !account_path(key)?.is_file() {
-            return Err("当前 UID 的账号存档缺失，请恢复对应 JSON。".into());
-        }
+    let role_path = match key {
+        Some(k) => account_path(k)?,
+        None => root.join("config/account_state.json"),
+    };
+    if key.is_some() && !role_path.is_file() {
+        return Err("当前 UID 的账号存档缺失，请恢复对应 JSON。".into());
     }
+    let role_stamp = file_stamp(&role_path);
+
     let account = key.map(read_role).transpose()?;
     let legacy = if account.is_none() {
-        read_json(&root.join("config/account_state.json"))?
+        read_json(&role_path)?
     } else {
         None
     };
     let source = account.as_ref().or(legacy.as_ref());
+    let plan_rev = plan_revision(key, source);
     let tasks = source.map(|v| v["tasks"].clone()).unwrap_or(json!({}));
     let observations = source
         .and_then(|v| v.get("observations"))
@@ -140,8 +279,8 @@ fn read_account_state() -> Result<Value, String> {
     let blessing = match source.and_then(|v| v.get("blessing")) {
         Some(value) => value.clone(),
         None => json!({
-            "inventory": read_json(&root.join("config/blessing/inventory.json"))?,
-            "last_scan": read_json(&root.join("config/blessing/last_scan.json"))?,
+            "inventory": read_json(&legacy_inv_path)?,
+            "last_scan": read_json(&legacy_scan_path)?,
         }),
     };
     let latest = ["inventory", "last_scan"]
@@ -197,7 +336,6 @@ fn read_account_state() -> Result<Value, String> {
         }
         record
     });
-    let resources = get_exe_directory()?.join("resource/data");
     let mut wardrobe = source
         .and_then(|v| v.get("wardrobe"))
         .cloned()
@@ -219,13 +357,47 @@ fn read_account_state() -> Result<Value, String> {
         .and_then(|v| v.get("updated_at"))
         .cloned()
         .unwrap_or(Value::Null);
-    Ok(json!({
+    let value = json!({
         "account_key": key, "uid": account.as_ref().and_then(|v| v["uid"].as_str()),
         "updated_at": updated_at,
+        "plan_revision": plan_rev,
         "tasks": tasks, "observations": observations, "blessing": summary, "wardrobe": wardrobe,
-        "catalog": read_json(&resources.join("blessing_catalog.json"))?,
-        "rotation": read_json(&resources.join("xinghai_rotation.json"))?,
-    }))
+        "catalog": read_json(&catalog_path)?,
+        "rotation": read_json(&rotation_path)?,
+    });
+    let signature = build_signature(
+        rev,
+        &index_stamp,
+        &role_path,
+        &role_stamp,
+        &legacy_inv_stamp,
+        &legacy_scan_stamp,
+        &catalog_stamp,
+        &rotation_stamp,
+    );
+    if let Ok(mut guard) = cache.lock() {
+        *guard = Some(CachedAccountState {
+            rev,
+            index_stamp,
+            role_path,
+            role_stamp,
+            legacy_inv_stamp,
+            legacy_scan_stamp,
+            catalog_stamp,
+            rotation_stamp,
+            signature: signature.clone(),
+            value: value.clone(),
+        });
+    }
+    if known_signature == Some(signature.as_str()) {
+        return Ok((signature, None));
+    }
+    Ok((signature, Some(value)))
+}
+
+fn read_account_state() -> Result<Value, String> {
+    let (_, value) = read_account_state_cached(None)?;
+    Ok(value.unwrap_or(Value::Null))
 }
 
 #[tauri::command]
@@ -233,4 +405,19 @@ pub async fn get_account_state() -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(read_account_state)
         .await
         .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn get_account_state_if_changed(
+    known_signature: Option<String>,
+) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let (signature, data) = read_account_state_cached(known_signature.as_deref())?;
+        Ok(match data {
+            Some(value) => json!({ "changed": true, "signature": signature, "data": value }),
+            None => json!({ "changed": false, "signature": signature }),
+        })
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }

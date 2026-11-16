@@ -113,12 +113,13 @@ export function useRealmForecast(options?: {
   useEffect(() => subscribeCommunity(setCommunity), []);
 
   const wardrobeUpdatedAt = account?.wardrobe?.inventory?.updated_at ?? account?.wardrobe?.last_scan?.updated_at ?? '';
+  const planRevision = account?.plan_revision ?? wardrobeUpdatedAt;
   const refreshToken = options?.refreshToken ?? 0;
   useEffect(() => {
     if (account?.uid) {
-      void load(`${account.uid}:${account.updated_at ?? wardrobeUpdatedAt}:${refreshToken}`);
+      void load(`${account.uid}:${planRevision}:${refreshToken}`);
     }
-  }, [account?.uid, account?.updated_at, wardrobeUpdatedAt, refreshToken, load]);
+  }, [account?.uid, planRevision, refreshToken, load]);
 
   const entries = useMemo(() => realmQueue(activeOptionValues), [activeOptionValues]);
   const weekly = useMemo(
