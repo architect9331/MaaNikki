@@ -83,6 +83,7 @@ def summarize_route_telemetry(
     mode: str = "",
     success: bool = False,
     stage: str = "",
+    crystal: dict | None = None,
 ) -> dict:
     points = route.points
     count = len(points)
