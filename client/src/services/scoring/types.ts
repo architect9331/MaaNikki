@@ -124,6 +124,7 @@ export interface GlowPlanState {
   updated_at?: string;
 }
 export type PlanMode = 'all' | 'power' | 'selected';
+export type RenewalScope = 'five_star' | 'five_plus_four_suits' | 'four_plus' | 'all';
 export interface CraftingPlanState {
   mode: PlanMode;
   sketch_ids: string[];
@@ -165,6 +166,7 @@ export interface MaterialsState {
   crafted_consumed?: Record<string, number>;
   crafting_scope?: 'all' | 'suits';
   crafting_plan?: CraftingPlanState | null;
+  renewal_scope?: RenewalScope;
   renewal_plan?: RenewalPlanState | null;
   blessing_plan?: BlessingPlanState | null;
   renewal_baseline_key?: string;

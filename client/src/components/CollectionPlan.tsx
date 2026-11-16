@@ -42,7 +42,7 @@ function QueueChain({ goal }: { goal: RealmGoal }) {
 }
 
 export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChange, modeDetail, selectDisabledReason,
-  queueStatus, queueHint, advice }: {
+  scopeRow, queueStatus, queueHint, advice }: {
   tone?: keyof typeof TONE_DOT;
   /** What this plan is calculated from, and how fresh that is. */
   basis: ReactNode;
@@ -54,9 +54,11 @@ export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChang
   modeDetail: ReactNode;
   /** When set, 自选 is unavailable for this kind of plan. */
   selectDisabledReason?: string;
+  /** Optional secondary stage/scope row (shown beneath 收集范围). */
+  scopeRow?: { label: string; content: ReactNode };
   queueStatus: ReactNode;
   queueHint?: ReactNode;
-  advice?: { title: ReactNode; detail?: ReactNode; warn?: boolean };
+  advice?: { label?: string; title: ReactNode; detail?: ReactNode; warn?: boolean };
 }) {
   const queue = useRealmQueue();
   const rank = queue.rank(goal);
@@ -72,6 +74,7 @@ export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChang
         : <Segmented label="收集范围" value={mode} options={MODES} onChange={onModeChange} />}
       <span className="min-w-40 flex-1 text-xs leading-5 text-text-secondary">{selectDisabledReason && mode === 'all' ? `${selectDisabledReason} ` : ''}{modeDetail}</span>
     </Row>
+    {scopeRow && <Row label={scopeRow.label}>{scopeRow.content}</Row>}
     <Row label="自动刷取" actions={
       <button type="button" onClick={queue.openOrderCard} className={secondaryButton}><Settings2 className="h-3.5 w-3.5" />刷取设置</button>
     }>
@@ -85,7 +88,7 @@ export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChang
         {queue.hasTask && !queue.taskEnabled && <span className="text-warning"> · 主界面的「幻境挑战」任务当前未勾选，不会运行</span>}
       </span>
     </Row>
-    {advice && <Row label="今日建议">
+    {advice && <Row label={advice.label ?? '今日建议'}>
       <span className={clsx('text-xs font-medium', advice.warn ? 'text-warning' : 'text-text-primary')}>{advice.title}</span>
       {advice.detail && <span className="min-w-40 flex-1 text-xs leading-5 text-text-secondary">{advice.detail}</span>}
     </Row>}

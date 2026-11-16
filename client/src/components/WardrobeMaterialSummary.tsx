@@ -9,13 +9,40 @@ const num = (value: number) => value.toLocaleString('zh-CN');
 const stockField =
   'w-20 rounded-md border border-border bg-bg-primary px-1.5 py-0.5 text-right text-xs tabular-nums outline-none focus:border-accent';
 
-function MaterialLine({ row, onStockChange }: { row: MaterialRow; onStockChange?: (id: string, value: number) => void }) {
+function MaterialLine({
+  row,
+  rank,
+  isPriorityTier,
+  onStockChange,
+}: {
+  row: MaterialRow;
+  rank?: number;
+  isPriorityTier?: boolean;
+  onStockChange?: (id: string, value: number) => void;
+}) {
   const done = row.owned !== null && row.missing === 0;
   const pct = row.owned === null ? 0 : Math.min(100, Math.round((row.owned / row.need) * 100));
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 text-xs">
+    <div className={clsx('grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 text-xs', rank === 1 && 'bg-accent/5')}>
       <div className="min-w-0">
-        <p className="truncate font-medium text-text-primary">{row.name}</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="truncate font-medium text-text-primary">{row.name}</p>
+          {rank === 1 && (
+            <span className="shrink-0 rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
+              下轮优先
+            </span>
+          )}
+          {rank !== undefined && rank > 1 && rank <= 3 && (
+            <span className="shrink-0 rounded bg-bg-tertiary px-1.5 py-0.5 text-[10px] text-text-secondary tabular-nums">
+              顺位 #{rank}
+            </span>
+          )}
+          {isPriorityTier && (
+            <span className="shrink-0 rounded bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning">
+              搭配优先
+            </span>
+          )}
+        </div>
         {row.source && (
           <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-text-muted">
             <MapPin className="h-3 w-3 shrink-0" />
@@ -64,6 +91,8 @@ export function WardrobeMaterialSummary({
   realmTotals,
   realmEnergyLabel,
   groups,
+  priorityOrder,
+  priorityNeedIds,
   onStockChange,
   headerAction,
   actions,
@@ -77,6 +106,10 @@ export function WardrobeMaterialSummary({
   realmTotals?: MaterialTotals;
   realmEnergyLabel?: string;
   groups: MaterialGroup[];
+  /** Farmable material IDs ordered by execution priority (#1 is farmed next). */
+  priorityOrder?: string[];
+  /** Material IDs actively required by Tier-0 搭配计算优先目标. */
+  priorityNeedIds?: Set<string>;
   onStockChange?: (id: string, value: number) => void;
   headerAction?: ReactNode;
   actions?: ReactNode;
@@ -86,14 +119,23 @@ export function WardrobeMaterialSummary({
   const dailyEnergy = useForecastAssumptionsStore((state) => state.dailyEnergy);
   // With a long list, what is still short matters more than what is already enough.
   const [onlyMissing, setOnlyMissing] = useState(false);
+  const rankById = new Map((priorityOrder ?? []).map((id, idx) => [id, idx + 1]));
   const enoughCount = totals.rows.filter((row) => row.owned !== null && row.missing === 0).length;
   const sections = groups
-    .map((group) => ({
-      group,
-      rows: totals.rows.filter(
+    .map((group) => {
+      const rows = totals.rows.filter(
         (row) => row.group === group && (!onlyMissing || row.owned === null || row.missing > 0),
-      ),
-    }))
+      );
+      if (rankById.size > 0) {
+        rows.sort((left, right) => {
+          const rLeft = rankById.get(left.id) ?? Number.MAX_SAFE_INTEGER;
+          const rRight = rankById.get(right.id) ?? Number.MAX_SAFE_INTEGER;
+          if (rLeft !== rRight) return rLeft - rRight;
+          return Number(right.missing > 0) - Number(left.missing > 0) || right.missing - left.missing;
+        });
+      }
+      return { group, rows };
+    })
     .filter((section) => section.rows.length);
 
   const primaryTotals = realmTotals ?? totals;
@@ -176,7 +218,13 @@ export function WardrobeMaterialSummary({
               {rows.some((row) => row.owned !== null) ? (
                 <div className="divide-y divide-border/60">
                   {rows.map((row) => (
-                    <MaterialLine key={row.id} row={row} onStockChange={onStockChange} />
+                    <MaterialLine
+                      key={row.id}
+                      row={row}
+                      rank={rankById.get(row.id)}
+                      isPriorityTier={priorityNeedIds?.has(row.id)}
+                      onStockChange={onStockChange}
+                    />
                   ))}
                 </div>
               ) : (
@@ -197,7 +245,13 @@ export function WardrobeMaterialSummary({
               </p>
               <div className="divide-y divide-border/60">
                 {rows.map((row) => (
-                  <MaterialLine key={row.id} row={row} onStockChange={onStockChange} />
+                  <MaterialLine
+                    key={row.id}
+                    row={row}
+                    rank={rankById.get(row.id)}
+                    isPriorityTier={priorityNeedIds?.has(row.id)}
+                    onStockChange={onStockChange}
+                  />
                 ))}
               </div>
             </div>

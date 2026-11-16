@@ -57,6 +57,22 @@ def plan_mode(plan) -> str:
     return "all"
 
 
+def normalize_renewal_scope(scope) -> str:
+    if scope in ("five_star", "five_plus_four_suits", "four_plus", "all"):
+        return str(scope)
+    return "all"
+
+
+def matches_renewal_scope(quality: int, in_suit: bool, scope: str) -> bool:
+    if scope == "five_star":
+        return quality == 5
+    if scope == "five_plus_four_suits":
+        return quality == 5 or (quality == 4 and in_suit)
+    if scope == "four_plus":
+        return quality >= 4
+    return True
+
+
 def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> dict[str, int]:
     owned = owned_score_ids(role, scoring)
     materials_state = role.get("materials") or {}
@@ -67,7 +83,7 @@ def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> 
     scope = materials_state.get("crafting_scope", "all")
     sketches = crafting.get("sketches") or []
     dominated: set[str] = set()
-    if mode == "power":
+    if mode == "power" and scope != "suits":
         available = owned | {str(sk["id"]) for sk in sketches}
         uncrafted = [str(sk["id"]) for sk in sketches if str(sk["id"]) not in owned]
         dominated = strictly_dominated_standalone_ids(scoring, uncrafted, available)
@@ -79,11 +95,11 @@ def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> 
         if selected:
             if sid not in picked:
                 continue
-        elif mode == "power":
-            if sid in dominated:
+        else:
+            if scope == "suits" and sketch.get("category") != "suit":
                 continue
-        elif scope == "suits" and sketch.get("category") != "suit":
-            continue
+            if mode == "power" and sid in dominated:
+                continue
         for mid, cnt in (sketch.get("costs") or {}).items():
             totals[str(mid)] = totals.get(str(mid), 0) + int(cnt)
     # Crafting between two wardrobe reads is only known as an account-wide total,
@@ -146,6 +162,7 @@ def renewal_groups(role: dict, scoring: dict) -> list[dict]:
             group = groups.setdefault(str(entry["group"]), {"id": str(entry["group"]), "score_id": None, "reward": False})
             group["score_id"] = group["score_id"] or str(entry["score_id"])
             group["reward"] = group["reward"] or bool(entry.get("glow_reward"))
+    suit_item_ids = {str(iid) for suit in (scoring.get("suits") or []) for iid in (suit.get("items") or [])}
     result = []
     for group in groups.values():
         item = items.get(group["score_id"] or "")
@@ -155,7 +172,15 @@ def renewal_groups(role: dict, scoring: dict) -> list[dict]:
         manual = levels.get(group["id"])
         level = RENEWED_LEVEL if group["reward"] else manual if isinstance(manual, int) and 0 <= manual <= RENEWED_LEVEL else 0
         renewable = bool(level_cost(curve, MAX_LEVEL, RENEWED_LEVEL))
-        result.append({"id": group["id"], "score_id": group["score_id"], "curve": curve, "level": level, "renewable": renewable})
+        result.append({
+            "id": group["id"],
+            "score_id": group["score_id"],
+            "quality": int(item.get("quality", 0)),
+            "in_suit": group["score_id"] in suit_item_ids,
+            "curve": curve,
+            "level": level,
+            "renewable": renewable,
+        })
     return result
 
 
@@ -164,6 +189,7 @@ def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict
     mats = role.get("materials") or {}
     plan = mats.get("renewal_plan") or {}
     mode = plan_mode(plan)
+    scope = normalize_renewal_scope(mats.get("renewal_scope"))
     selected = mode == "selected"
     targets = plan.get("targets") or {}
     priority_targets = plan.get("priority_targets") or {}
@@ -175,21 +201,27 @@ def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict
     totals: dict[str, int] = {}
     priority: dict[str, int] = {}
     for group in groups:
-        if mode == "power" and group["score_id"] in dominated:
-            continue
         top = RENEWED_LEVEL if group["renewable"] else MAX_LEVEL
+        base_target: int | None = None
         if selected:
             wanted = targets.get(group["id"])
-            if wanted not in (MAX_LEVEL, RENEWED_LEVEL):
-                continue
-            target = min(int(wanted), top)
+            if wanted in (MAX_LEVEL, RENEWED_LEVEL):
+                base_target = min(int(wanted), top)
         else:
-            target = top
-        for mid, cnt in level_cost(group["curve"], group["level"], target).items():
-            totals[mid] = totals.get(mid, 0) + cnt
+            if not (mode == "power" and group["score_id"] in dominated) and matches_renewal_scope(
+                group["quality"], group["in_suit"], scope
+            ):
+                base_target = top
         prio_wanted = priority_targets.get(group["id"])
+        p_target: int | None = None
         if isinstance(prio_wanted, int) and not isinstance(prio_wanted, bool) and prio_wanted > 0:
-            p_target = min(int(prio_wanted), target)
+            p_target = min(int(prio_wanted), top)
+        effective_target = max(base_target or 0, p_target or 0)
+        if effective_target <= 0:
+            continue
+        for mid, cnt in level_cost(group["curve"], group["level"], effective_target).items():
+            totals[mid] = totals.get(mid, 0) + cnt
+        if p_target is not None and p_target > 0:
             for mid, cnt in level_cost(group["curve"], group["level"], p_target).items():
                 priority[mid] = priority.get(mid, 0) + cnt
     key = renewal_baseline_key(role)

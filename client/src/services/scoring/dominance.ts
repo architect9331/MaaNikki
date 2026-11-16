@@ -1,9 +1,30 @@
-import type { PlanMode, ScoreItem, ScoringCatalog } from './types';
+import type { PlanMode, RenewalScope, ScoreItem, ScoringCatalog } from './types';
 
 export interface DominatedItemInfo {
   dominatorId: string;
   dominatorName: string;
   dominatorQuality: number;
+}
+
+export const RENEWAL_SCOPE_OPTIONS: readonly { id: RenewalScope; label: string; hint: string }[] = [
+  { id: 'five_star', label: '仅五星', hint: '先拉满五星，战力上限最高且全带焕新奖励' },
+  { id: 'five_plus_four_suits', label: '5★ + 4★套装', hint: '补充四星套装拿共鸣奖励与巅峰赛替补' },
+  { id: 'four_plus', label: '四星及以上', hint: '覆盖所有带焕新奖励的四星与五星部件' },
+  { id: 'all', label: '全部星级', hint: '包含二星与三星部件在内的全量养成' },
+];
+
+export function normalizeRenewalScope(scope?: string | null): RenewalScope {
+  if (scope === 'five_star' || scope === 'five_plus_four_suits' || scope === 'four_plus' || scope === 'all') {
+    return scope;
+  }
+  return 'all';
+}
+
+export function matchesRenewalScope(quality: number, inSuit: boolean, scope: RenewalScope): boolean {
+  if (scope === 'five_star') return quality === 5;
+  if (scope === 'five_plus_four_suits') return quality === 5 || (quality === 4 && inSuit);
+  if (scope === 'four_plus') return quality >= 4;
+  return true;
 }
 
 interface CatalogDominanceIndex {

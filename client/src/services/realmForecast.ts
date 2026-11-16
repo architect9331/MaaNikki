@@ -20,17 +20,24 @@ import {
   craftingRequirement,
   materialGroup,
   MAX_LEVEL,
+  rankFarmableDeficits,
   renewalCost,
   RENEWED_LEVEL,
   renewalSource,
   summarizeMaterials,
+  type FarmablePriorityItem,
   type MaterialRow,
   type MaterialTotals,
   type RenewalGroup,
 } from './scoring/materialPlanning';
 import { buildOwnedProfile } from './scoring/profile';
-import { findDominatedStandaloneItems, normalizePlanMode } from './scoring/dominance';
-import type { MaterialsState, PlanMode, ScoringPayload, ScoringSettings } from './scoring/types';
+import {
+  findDominatedStandaloneItems,
+  matchesRenewalScope,
+  normalizePlanMode,
+  normalizeRenewalScope,
+} from './scoring/dominance';
+import type { MaterialsState, PlanMode, RenewalScope, ScoringPayload, ScoringSettings } from './scoring/types';
 
 export const WEEKLY_ENERGY_PER_RUN = 60;
 const BLING_ID = '992617511';
@@ -91,9 +98,11 @@ export interface MaterialGoalForecast {
   status: 'needs_wardrobe' | 'done' | 'ready';
   mode: PlanMode;
   scope?: 'all' | 'suits';
+  renewalScope?: RenewalScope;
   source?: 'plan' | 'targets';
   priorityPendingCount?: number;
   priorityEnergy?: number;
+  nextTarget?: FarmablePriorityItem;
   totals: MaterialTotals;
   /** Materials actually farmed by 幻境挑战 for this goal (for crafting, only trial crystals; for renewal, all farmable materials). */
   realmTotals: MaterialTotals;
@@ -597,10 +606,10 @@ export function computeCraftingForecast(
   const allSketches = crafting.sketches ?? [];
   const scoped = allSketches.filter((sketch) => scope === 'all' || sketch.category === 'suit');
   const dominated =
-    mode === 'power'
+    mode === 'power' && scope !== 'suits'
       ? findDominatedStandaloneItems(
           payload.catalog,
-          allSketches.filter((sketch) => !ownedIds.has(sketch.id)).map((sketch) => sketch.id),
+          scoped.filter((sketch) => !ownedIds.has(sketch.id)).map((sketch) => sketch.id),
           new Set([...ownedIds, ...allSketches.map((sketch) => sketch.id)]),
         )
       : null;
@@ -608,7 +617,7 @@ export function computeCraftingForecast(
     mode === 'all'
       ? scoped.filter((sketch) => !ownedIds.has(sketch.id))
       : mode === 'power'
-        ? allSketches.filter((sketch) => !ownedIds.has(sketch.id) && !dominated?.has(sketch.id))
+        ? scoped.filter((sketch) => !ownedIds.has(sketch.id) && !dominated?.has(sketch.id))
         : allSketches.filter((sketch) => selected.has(sketch.id) && !ownedIds.has(sketch.id));
 
   const required = craftingRequirement(planned);
@@ -620,6 +629,7 @@ export function computeCraftingForecast(
   }
 
   const inventory = materials.inventory ?? {};
+  const priorityQueue = rankFarmableDeficits(required, {}, crafting, inventory, 'monster');
   const totals = summarizeMaterials(required, crafting, inventory, payload.catalog.material_names, dailyEnergy);
   const crystalRows = totals.rows.filter((row) => row.group === 'crystal');
   const crystalEnergy = crystalRows.reduce((sum, row) => sum + row.energy, 0);
@@ -671,6 +681,7 @@ export function computeCraftingForecast(
     status: sim.energy === 0 ? 'done' : 'ready',
     mode,
     scope,
+    nextTarget: priorityQueue[0],
     totals,
     realmTotals,
     rawEnergy: crystalEnergy,
@@ -699,6 +710,7 @@ export function computeRenewalForecast(
   const source = renewalSource(materials);
   const plan = materials.renewal_plan;
   const mode = normalizePlanMode(plan?.mode);
+  const renewalScope = normalizeRenewalScope(materials.renewal_scope);
   const crafting = payload?.crafting_catalog ?? null;
 
   if (source === 'plan' && !payload?.snapshot) {
@@ -706,6 +718,7 @@ export function computeRenewalForecast(
       kind: 'renewal',
       status: 'needs_wardrobe',
       mode,
+      renewalScope: mode !== 'selected' ? renewalScope : undefined,
       source,
       totals: { rows: [], missingKinds: 0, trackedKinds: 0, energy: 0, days: 0 },
       realmTotals: { rows: [], missingKinds: 0, trackedKinds: 0, energy: 0, days: 0 },
@@ -755,20 +768,29 @@ export function computeRenewalForecast(
     const priorityTargets = plan?.priority_targets ?? {};
     const topLevel = (group: RenewalGroup) => (group.renewable ? RENEWED_LEVEL : MAX_LEVEL);
     for (const group of groups) {
-      if (mode === 'power' && dominated?.has(group.scoreId)) continue;
-      const wanted = mode === 'selected' ? targets[group.id] : topLevel(group);
-      if (wanted === undefined) continue;
-      const target = Math.min(wanted, topLevel(group));
-      if ((group.level ?? 0) < target) {
-        addCosts(required, renewalCost(payload.catalog, group, target));
+      const top = topLevel(group);
+      let baseTarget: number | undefined;
+      if (mode === 'selected') {
+        const wanted = targets[group.id];
+        if (wanted !== undefined) baseTarget = Math.min(wanted, top);
+      } else if (
+        !(mode === 'power' && dominated?.has(group.scoreId)) &&
+        matchesRenewalScope(group.quality, Boolean(group.suitName), renewalScope)
+      ) {
+        baseTarget = top;
       }
       const prioWanted = priorityTargets[group.id];
-      if (typeof prioWanted === 'number' && prioWanted > 0) {
-        const pTarget = Math.min(prioWanted, target);
-        if ((group.level ?? 0) < pTarget) {
-          priorityPendingCount++;
-          addCosts(priorityRequired, renewalCost(payload.catalog, group, pTarget));
-        }
+      const pTarget =
+        typeof prioWanted === 'number' && prioWanted > 0 ? Math.min(prioWanted, top) : undefined;
+      const effectiveTarget = Math.max(baseTarget ?? 0, pTarget ?? 0);
+      if (effectiveTarget <= 0) continue;
+      const cur = group.level ?? 0;
+      if (cur < effectiveTarget) {
+        addCosts(required, renewalCost(payload.catalog, group, effectiveTarget));
+      }
+      if (pTarget !== undefined && cur < pTarget) {
+        priorityPendingCount++;
+        addCosts(priorityRequired, renewalCost(payload.catalog, group, pTarget));
       }
     }
     const snapshotKey = `${payload.snapshot.updated_at ?? ''}:${payload.snapshot.scanned_count ?? 0}`;
@@ -784,6 +806,7 @@ export function computeRenewalForecast(
   }
 
   const inventory = materials.inventory ?? {};
+  const priorityQueue = rankFarmableDeficits(required, priorityRequired, crafting, inventory);
   const totals = summarizeMaterials(required, crafting, inventory, payload?.catalog.material_names, dailyEnergy);
   const farmableRows = totals.rows.filter((row) => row.group !== 'world');
   const rawEnergy = farmableRows.reduce((sum, row) => sum + row.energy, 0);
@@ -838,9 +861,11 @@ export function computeRenewalForecast(
     kind: 'renewal',
     status: sim.energy === 0 ? 'done' : 'ready',
     mode,
+    renewalScope: source === 'plan' && mode !== 'selected' ? renewalScope : undefined,
     source,
     priorityPendingCount,
     priorityEnergy: prioTotals.energy,
+    nextTarget: priorityQueue[0],
     totals,
     realmTotals,
     rawEnergy,
@@ -1237,8 +1262,14 @@ export function simulateQueueSchedule(options: {
     let note: string | undefined;
     if (goal === 'crafting' && f.energy === 0 && f.allTrackedEnergy > 0) {
       note = '试炼晶石已齐（噗灵/丝线需自备）';
+    } else if (goal === 'crafting' && f.nextTarget) {
+      note = `下轮：${f.nextTarget.name}`;
     } else if (goal === 'renewal' && (f.priorityPendingCount ?? 0) > 0) {
-      note = `优先搭配计算 ${f.priorityPendingCount} 件（约 ${(f.priorityEnergy ?? 0).toLocaleString('zh-CN')} 体力）`;
+      note = f.nextTarget
+        ? `优先 ${f.priorityPendingCount} 件 · 下轮：${f.nextTarget.name}`
+        : `优先搭配计算 ${f.priorityPendingCount} 件（约 ${(f.priorityEnergy ?? 0).toLocaleString('zh-CN')} 体力）`;
+    } else if (goal === 'renewal' && f.nextTarget) {
+      note = `下轮：${f.nextTarget.name}`;
     } else if (f.blingSavedEnergy > 0) {
       note = `日常噗灵抵扣约 ${f.blingSavedEnergy.toLocaleString('zh-CN')} 体力`;
     }

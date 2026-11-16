@@ -1,7 +1,12 @@
 import { useMemo } from 'react';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { buildOwnedProfile } from '@/services/scoring/profile';
-import { findDominatedStandaloneItems, normalizePlanMode } from '@/services/scoring/dominance';
+import {
+  findDominatedStandaloneItems,
+  matchesRenewalScope,
+  normalizePlanMode,
+  normalizeRenewalScope,
+} from '@/services/scoring/dominance';
 import { buildRenewalGroups, MAX_LEVEL, RENEWED_LEVEL } from '@/services/scoring/materialPlanning';
 import { buildSuitEntries } from '@/services/scoring/wardrobeBrowserData';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
@@ -24,6 +29,7 @@ export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal
 
   const craftingMode = normalizePlanMode(materials.crafting_plan?.mode);
   const renewalMode = normalizePlanMode(materials.renewal_plan?.mode);
+  const renewalScope = normalizeRenewalScope(materials.renewal_scope);
   const blessingMode = normalizePlanMode(materials.blessing_plan?.mode);
 
   const profile = useMemo(() => payload?.snapshot ? buildOwnedProfile(payload, settings) : null, [payload, settings]);
@@ -36,34 +42,40 @@ export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal
     const sketches = payload?.crafting_catalog?.sketches;
     if (!sketches || !profile || !payload) return null;
     const owned = new Set(profile.items.map((item) => item.id));
-    if (craftingMode === 'power') {
+    const scoped = sketches.filter((sketch) => scope === 'all' || sketch.category === 'suit');
+    if (craftingMode === 'power' && scope !== 'suits') {
       const dominated = findDominatedStandaloneItems(
         payload.catalog,
-        sketches.filter((sketch) => !owned.has(sketch.id)).map((sketch) => sketch.id),
+        scoped.filter((sketch) => !owned.has(sketch.id)).map((sketch) => sketch.id),
         new Set([...owned, ...sketches.map((sketch) => sketch.id)]),
       );
-      const scoped = sketches.filter((sketch) => owned.has(sketch.id) || !dominated.has(sketch.id));
-      return { done: scoped.filter((sketch) => owned.has(sketch.id)).length, total: scoped.length };
+      const active = scoped.filter((sketch) => owned.has(sketch.id) || !dominated.has(sketch.id));
+      return { done: active.filter((sketch) => owned.has(sketch.id)).length, total: active.length };
     }
-    const scoped = sketches.filter((sketch) => scope === 'all' || sketch.category === 'suit');
     return { done: scoped.filter((sketch) => owned.has(sketch.id)).length, total: scoped.length };
   }, [payload, profile, scope, craftingMode]);
   const renewal = useMemo(() => {
     if (!payload || !profile) return null;
     const groups = buildRenewalGroups(payload.catalog, profile);
+    const ownedScoreIds =
+      renewalMode === 'power' ? new Set(groups.map((group) => group.scoreId)) : null;
+    const dominated =
+      ownedScoreIds
+        ? findDominatedStandaloneItems(payload.catalog, ownedScoreIds, ownedScoreIds)
+        : null;
     const active =
-      renewalMode === 'power'
-        ? (() => {
-            const ownedScoreIds = new Set(groups.map((group) => group.scoreId));
-            const dominated = findDominatedStandaloneItems(payload.catalog, ownedScoreIds, ownedScoreIds);
-            return groups.filter((group) => !dominated.has(group.scoreId));
-          })()
-        : groups;
+      renewalMode === 'selected'
+        ? groups
+        : groups.filter(
+            (group) =>
+              !(renewalMode === 'power' && dominated?.has(group.scoreId)) &&
+              matchesRenewalScope(group.quality, Boolean(group.suitName), renewalScope),
+          );
     return {
       done: active.filter((group) => (group.level ?? 0) >= (group.renewable ? RENEWED_LEVEL : MAX_LEVEL)).length,
       total: active.length,
     };
-  }, [payload, profile, renewalMode]);
+  }, [payload, profile, renewalMode, renewalScope]);
   const blessing = useMemo(() => {
     const progress = getBlessingProgress(account);
     if (!progress.known) return null;

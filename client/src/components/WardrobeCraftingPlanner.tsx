@@ -4,12 +4,13 @@ import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { buildOwnedProfile } from '@/services/scoring/profile';
 import { findDominatedStandaloneItems, normalizePlanMode } from '@/services/scoring/dominance';
+import { craftingRequirement, rankFarmableDeficits, summarizeMaterials } from '@/services/scoring/materialPlanning';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import type { CraftingSketch, PlanMode } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import { REALM_GOAL_LABELS } from '@/utils/nikkiOptions';
 import { ManualReadButton, ManualReadLogStrip } from './ManualReadControls';
-import { Segmented, secondaryButton } from './ui/FeaturePage';
+import { secondaryButton } from './ui/FeaturePage';
 import { PlanEmpty, PlanLayout, PlanListPanel, PlanPanel, bulkButton, planCheckbox, planField } from './CollectionPlan';
 import { MaterialForecastPanel } from './RealmForecastPanel';
 import { WardrobeMaterialSummary } from './WardrobeMaterialSummary';
@@ -65,7 +66,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     setLimit(PAGE_SIZE);
   }, [search, quality, kind]);
 
-  const { entries, crafting: craftingForecast, queueSummary } = useRealmForecast({
+  const { entries, crafting: craftingForecast, queueSummary, dailyEnergy } = useRealmForecast({
     extraMaterialEnergy: extraEnergy,
     refreshToken,
     neededOnlyIfGlowBefore: 'crafting',
@@ -78,7 +79,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   const profile = useMemo(() => (payload ? buildOwnedProfile(payload, settings) : null), [payload, settings]);
   const ownedIds = useMemo(() => new Set(profile?.items.map((item) => item.id) ?? []), [profile]);
 
-  // 全收集 follows the design scope; 战力 keeps suits and non-dominated pieces; 自选 may pick from any unmade design.
+  // 全收集与战力共用阶段范围（全部设计图 / 仅成套）；战力额外排除纯下位散件；自选可从全部未制设计图勾选。
   const allSketches = crafting?.sketches ?? [];
   const dominatedMap = useMemo(() => {
     if (!payload) return new Map();
@@ -90,12 +91,13 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     );
   }, [payload, ownedIds, allSketches]);
   const scoped = useMemo(() => allSketches.filter((sketch) => scope === 'all' || sketch.category === 'suit'), [allSketches, scope]);
-  const powerSketches = useMemo(() => allSketches.filter((sketch) => !dominatedMap.has(sketch.id)), [allSketches, dominatedMap]);
+  const powerSketches = useMemo(() => scoped.filter((sketch) => !dominatedMap.has(sketch.id)), [scoped, dominatedMap]);
   const dominatedSketches = useMemo(
-    () => allSketches.filter((sketch) => !ownedIds.has(sketch.id) && dominatedMap.has(sketch.id)),
-    [allSketches, ownedIds, dominatedMap],
+    () => (scope === 'suits' ? [] : allSketches.filter((sketch) => !ownedIds.has(sketch.id) && dominatedMap.has(sketch.id))),
+    [scope, allSketches, ownedIds, dominatedMap],
   );
-  const listed = mode === 'all' ? scoped : mode === 'power' ? (kind === 'dominated' ? dominatedSketches : powerSketches) : allSketches;
+  const effectiveKind = (mode !== 'power' || scope === 'suits') && kind === 'dominated' ? 'all' : kind;
+  const listed = mode === 'all' ? scoped : mode === 'power' ? (effectiveKind === 'dominated' ? dominatedSketches : powerSketches) : allSketches;
   const groups = useMemo(() => groupSketches(listed, ownedIds), [listed, ownedIds]);
   const uncraftedScoped = useMemo(() => scoped.filter((sketch) => !ownedIds.has(sketch.id)), [scoped, ownedIds]);
   const uncraftedPower = useMemo(() => powerSketches.filter((sketch) => !ownedIds.has(sketch.id)), [powerSketches, ownedIds]);
@@ -104,6 +106,48 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     [allSketches, selected, ownedIds],
   );
   const planned = mode === 'all' ? uncraftedScoped : mode === 'power' ? uncraftedPower : picked;
+
+  const { monsterQueue, jihuaQueue, scopePreviews } = useMemo(() => {
+    const inv = materials.inventory ?? {};
+    const snapshotKey = payload?.snapshot
+      ? `${payload.snapshot.updated_at ?? ''}:${payload.snapshot.scanned_count ?? 0}`
+      : '';
+    const baselineMatch = mode !== 'selected' && Boolean(snapshotKey) && materials.wardrobe_baseline_key === snapshotKey;
+    const applyConsumed = (req: Record<string, number>) => {
+      if (!baselineMatch) return req;
+      const next = { ...req };
+      for (const [id, used] of Object.entries(materials.crafted_consumed ?? {})) {
+        if (next[id]) next[id] = Math.max(0, next[id] - Math.max(0, Number(used)));
+      }
+      return next;
+    };
+    const plannedReq = applyConsumed(craftingRequirement(planned));
+    const monster = rankFarmableDeficits(plannedReq, {}, crafting, inv, 'monster');
+    const jihua = rankFarmableDeficits(plannedReq, {}, crafting, inv, 'jihua');
+
+    const safeDaily = Math.max(10, dailyEnergy);
+    const previewFor = (targetScope: 'all' | 'suits') => {
+      const items = allSketches.filter(
+        (sketch) =>
+          !ownedIds.has(sketch.id) &&
+          (targetScope === 'all' || sketch.category === 'suit') &&
+          (mode !== 'power' || targetScope === 'suits' || !dominatedMap.has(sketch.id)),
+      );
+      const req = applyConsumed(craftingRequirement(items));
+      const sum = summarizeMaterials(req, crafting, inv, payload?.catalog.material_names, safeDaily);
+      const crystalEnergy = sum.rows.filter((r) => r.group === 'crystal').reduce((acc, r) => acc + r.energy, 0);
+      const crystalDays = crystalEnergy > 0 ? Math.max(1, Math.ceil(crystalEnergy / safeDaily)) : 0;
+      return { count: items.length, crystalEnergy, crystalDays };
+    };
+    return {
+      monsterQueue: monster,
+      jihuaQueue: jihua,
+      scopePreviews: {
+        all: previewFor('all'),
+        suits: previewFor('suits'),
+      },
+    };
+  }, [planned, materials, payload, mode, crafting, allSketches, ownedIds, dominatedMap, dailyEnergy]);
 
   const { totals, realmTotals } = craftingForecast;
   const consumedTotal = Object.values(materials.crafted_consumed ?? {}).reduce((sum, value) => sum + Math.max(0, Number(value)), 0);
@@ -157,7 +201,6 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   }
 
   const q = search.trim();
-  const effectiveKind = mode !== 'power' && kind === 'dominated' ? 'all' : kind;
   const shown = groups.filter(
     (group) =>
       (quality === 'all' || String(group.quality) === quality) &&
@@ -166,12 +209,37 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   );
   const activeTotal = mode === 'power' ? powerSketches.length : scoped.length;
   const madeCount = activeTotal - planned.length;
+  const scopeLabel = scope === 'suits' ? '仅成套' : '全部设计图';
   const planLabel =
     mode === 'all'
-      ? `全收集 · ${num(planned.length)} 张未制作设计图`
+      ? `全收集（${scopeLabel}） · ${num(planned.length)} 张未制作设计图`
       : mode === 'power'
-        ? `战力 · ${num(planned.length)} 张未制作设计图`
+        ? `战力（${scopeLabel}） · ${num(planned.length)} 张未制作设计图`
         : `自选 · ${num(planned.length)} 张设计图`;
+
+  const priorityOrder = monsterQueue.map((item) => item.id);
+  const craftingAdvice = monsterQueue.length > 0
+    ? {
+        label: '刷取顺位',
+        title: `下轮刷「${monsterQueue[0].name}」（${monsterQueue[0].sourceLabel} · 还差 ${num(monsterQueue[0].energy)} 体力）`,
+        detail: [
+          monsterQueue.slice(1, 3).length
+            ? `随后：${monsterQueue.slice(1, 3).map((x, i) => `#${i + 2} ${x.name}（${num(x.energy)} 体力）`).join(' → ')}`
+            : '其余晶石均已备齐',
+          jihuaQueue.length ? `双倍激化将补 ${jihuaQueue.map((x) => x.name).join(' → ')}` : null,
+        ].filter(Boolean).join(' · '),
+      }
+    : jihuaQueue.length > 0
+      ? {
+          label: '刷取顺位',
+          title: '魔物试炼晶石已齐，主队列不再占用体力',
+          detail: `若开启超级激化双倍（智能选择），将依次补 ${jihuaQueue.map((x) => `${x.name}（还差 ${num(x.missing)}）`).join(' → ')}`,
+        }
+      : {
+          label: '刷取顺位',
+          title: '当前范围所需副本材料已全部备齐',
+          detail: planned.length > 0 ? '仅剩大世界采集物可在图鉴路线采集' : '当前范围内没有未制作的设计图',
+        };
 
   return (
     <div className="space-y-4">
@@ -200,15 +268,64 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
           mode === 'all' ? (
             <>全部未制作的设计图，共 {num(uncraftedScoped.length)} 张；做好的衣服下次读衣柜后自动移出。</>
           ) : mode === 'power' ? (
-            <>
-              保留套装与无可替代部件，自动取消已有服装或可制图纸中存在严格上位替代的纯散件（已排除 {num(dominatedSketches.length)} 张），共 {num(uncraftedPower.length)} 张；保留全部图纸以便随时切回全收集。
-            </>
+            scope === 'suits' ? (
+              <>只做套装图纸以拿齐套装加成与共鸣效果，共 {num(uncraftedPower.length)} 张（套装部件不做上位排除）。</>
+            ) : (
+              <>
+                保留套装与无可替代部件，自动取消已有服装或可制图纸中存在严格上位替代的纯散件（已排除 {num(dominatedSketches.length)} 张），共 {num(uncraftedPower.length)} 张；保留全部图纸以便随时切回全收集。
+              </>
+            )
           ) : (
             <>只为勾选的套装或部件备料，已选 {num(picked.length)} 张。</>
           )
         }
+        scopeRow={
+          mode !== 'selected'
+            ? {
+                label: '阶段范围',
+                content: (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="制衣阶段范围">
+                      {(
+                        [
+                          ['suits', '仅成套', '先做套装拿齐共鸣'] as const,
+                          ['all', '全部设计图', '包含未制作散件'] as const,
+                        ]
+                      ).map(([id, title, hint]) => {
+                        const preview = scopePreviews[id];
+                        const active = scope === id;
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            title={hint}
+                            onClick={() => updateMaterials((previous) => ({ ...previous, crafting_scope: id }))}
+                            className={clsx(
+                              'rounded-lg border px-2.5 py-1.5 text-left transition-colors',
+                              active
+                                ? 'border-accent bg-accent/10 text-text-primary'
+                                : 'border-border bg-bg-primary text-text-secondary hover:bg-bg-hover',
+                            )}
+                          >
+                            <div className={clsx('text-xs font-medium', active && 'text-accent')}>{title}</div>
+                            <div className="text-[11px] tabular-nums text-text-muted">
+                              {num(preview.count)} 张 · {preview.crystalEnergy > 0 ? `晶石约 ${preview.crystalDays} 天` : '晶石已齐'}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <span className="text-xs text-text-muted">先做套装，再按需补散件；随时切换不丢进度</span>
+                  </div>
+                ),
+              }
+            : undefined
+        }
         queueStatus={crystalShort ? `还差 ${crystalShort} 种试炼晶石（约 ${num(realmTotals.energy)} 体力）` : '试炼晶石已备齐，轮到时直接交给下一项'}
         queueHint="平时按未制作设计图缺口刷取魔物试炼晶石；超级激化双倍（智能选择）也会顺带为制衣按缺口补纯真丝线与噗灵（先丝线、后噗灵）。"
+        advice={craftingAdvice}
       />
       <PlanLayout
         list={
@@ -243,17 +360,6 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                   <option value="4">4 星</option>
                   <option value="3">3 星</option>
                 </select>
-                {mode === 'all' && (
-                  <Segmented
-                    label="全收集范围"
-                    value={scope}
-                    options={[
-                      ['all', '全部设计图'],
-                      ['suits', '仅成套'],
-                    ] as const}
-                    onChange={(next) => updateMaterials((previous) => ({ ...previous, crafting_scope: next }))}
-                  />
-                )}
               </>
             }
             bulk={
@@ -347,6 +453,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
             scope={planLabel}
             totals={totals}
             realmTotals={realmTotals}
+            priorityOrder={priorityOrder}
             groups={['crystal', 'jihua', 'world']}
             onStockChange={setStock}
             headerAction={<ManualReadButton targetMode="backpack" idleLabel="更新背包" compact />}

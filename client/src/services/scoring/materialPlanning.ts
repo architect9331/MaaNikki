@@ -143,3 +143,87 @@ export function renewalSource(materials: MaterialsState): 'plan' | 'targets' {
   if (glow && glow.enabled !== false && !glow.completed && Object.values(glow.targets ?? {}).some((value) => Number(value) > 0)) return 'targets';
   return 'plan';
 }
+
+export interface FarmablePriorityItem {
+  id: string;
+  name: string;
+  realm: 'monster' | 'jihua';
+  levelLabel: string;
+  tier: 'priority' | 'base';
+  isBling: boolean;
+  missing: number;
+  totalMissing: number;
+  runs: number;
+  energy: number;
+  sourceLabel: string;
+}
+
+const BLING_ID = '992617511';
+const SHINY_BUBBLE_ID = '50361309';
+const THREAD_ID = '3448636403';
+const JIHUA_TIEBREAK: Record<string, number> = {
+  [SHINY_BUBBLE_ID]: 0,
+  [THREAD_ID]: 1,
+  [BLING_ID]: 2,
+};
+
+/**
+ * Rank farmable deficits in the exact order executed by agent material_pursuit:
+ * Tier 0 (搭配计算优先) before Tier 1, non-bling before bling, larger energy deficit first.
+ */
+export function rankFarmableDeficits(
+  required: Record<string, number>,
+  priorityRequired: Record<string, number>,
+  crafting: CraftingCatalog | null | undefined,
+  inventory: Record<string, number>,
+  realmFilter?: 'monster' | 'jihua',
+): FarmablePriorityItem[] {
+  const matDefs = crafting?.materials ?? {};
+  const list: { sortKey: [number, number, number, number]; item: FarmablePriorityItem }[] = [];
+
+  for (const [id, rawNeed] of Object.entries(required)) {
+    const need = Math.max(0, Math.round(Number(rawNeed) || 0));
+    if (!need) continue;
+    const meta = matDefs[id];
+    if (!meta?.realm || !meta?.level) continue;
+    if (realmFilter && meta.realm !== realmFilter) continue;
+    const owned = Math.max(0, Number(inventory[id] ?? 0));
+    const totalMissing = need - owned;
+    if (totalMissing <= 0) continue;
+    const prioNeed = Math.max(0, Math.round(Number(priorityRequired[id] ?? 0) || 0));
+    const prioMissing = Math.max(0, prioNeed - owned);
+    const effDeficit = prioMissing > 0 ? prioMissing : totalMissing;
+    const tierNum = prioMissing > 0 ? 0 : 1;
+    const isBling = id === BLING_ID;
+    const drop = Math.max(1, meta.drop ?? 1);
+    const perEnergy = Math.max(1, meta.energy ?? 40);
+    const runs = Math.ceil(effDeficit / drop);
+    const energy = runs * perEnergy;
+    const tiebreak = JIHUA_TIEBREAK[id] ?? 9;
+    const source = realmSourceFor(meta);
+    list.push({
+      sortKey: [tierNum * 2 + (isBling ? 1 : 0), -energy, tiebreak, -effDeficit],
+      item: {
+        id,
+        name: meta.name,
+        realm: meta.realm,
+        levelLabel: meta.level,
+        tier: prioMissing > 0 ? 'priority' : 'base',
+        isBling,
+        missing: effDeficit,
+        totalMissing,
+        runs,
+        energy,
+        sourceLabel: source?.label ?? meta.level,
+      },
+    });
+  }
+
+  list.sort((a, b) => {
+    for (let i = 0; i < 4; i++) {
+      if (a.sortKey[i] !== b.sortKey[i]) return a.sortKey[i] - b.sortKey[i];
+    }
+    return a.item.name.localeCompare(b.item.name, 'zh-CN');
+  });
+  return list.map((entry) => entry.item);
+}

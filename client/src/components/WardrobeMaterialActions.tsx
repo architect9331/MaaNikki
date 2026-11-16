@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { toast } from 'sonner';
 import { useAppStore } from '@/stores/appStore';
 import { saveMaterialPlan } from '@/services/scoring/api';
+import { normalizePlanMode } from '@/services/scoring/dominance';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { realmGoalRank } from '@/utils/nikkiOptions';
 import { MATERIAL_REALM_TARGETS } from '@/services/scoring/heartPresets';
@@ -42,19 +43,13 @@ export function WardrobeMaterialList({ cost, catalog, accountKey, materials, sou
       for (const item of cleanTargets) {
         nextPrio[item.groupId] = Math.max(Number(nextPrio[item.groupId] ?? 0), item.toLevel);
       }
-      const planMode = prevRenewal?.mode === 'selected' ? 'selected' : 'all';
-      const nextTargets = { ...(prevRenewal?.targets ?? {}) };
-      if (planMode === 'selected') {
-        for (const [gid, lv] of Object.entries(nextPrio)) {
-          nextTargets[gid] = Math.max(Number(nextTargets[gid] ?? 0), lv);
-        }
-      }
+      const planMode = normalizePlanMode(prevRenewal?.mode);
       const nextMaterials: MaterialsState = {
         ...(base ?? {}),
         renewal_plan: {
           ...(prevRenewal ?? { mode: 'all', targets: {} }),
           mode: planMode,
-          targets: nextTargets,
+          targets: { ...(prevRenewal?.targets ?? {}) },
           source: 'plan',
           priority_targets: nextPrio,
           priority_label: mode === 'add' ? `${sourceLabel || '搭配计算'}（已累加）` : (sourceLabel || '搭配计算'),

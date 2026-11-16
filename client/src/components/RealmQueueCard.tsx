@@ -25,6 +25,7 @@ import { useForecastAssumptionsStore } from '@/stores/forecastAssumptionsStore';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import type { QueueGoalEstimate } from '@/services/realmForecast';
 import { collectionKey, collectionSlots, getBlessingProgress } from '@/utils/blessingProgress';
+import { RENEWAL_SCOPE_OPTIONS } from '@/services/scoring/dominance';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { getInterfaceLangKey } from '@/i18n';
 import {
@@ -463,7 +464,41 @@ export function RealmQueueCard({
   const fallbackName = FALLBACK_LABELS[fallback] ?? fallback;
   const fallbackTitle = targetShort ? `默认副本 · ${fallbackName}（${targetShort}）` : `默认副本 · ${fallbackName}`;
 
-  const { queueSummary, glowComputing } = useRealmForecast({ optionValues: values });
+  const { renewal, crafting, queueSummary, glowComputing } = useRealmForecast({ optionValues: values });
+  const modeLabelOf = (m: string) => (m === 'power' ? '战力' : m === 'selected' ? '自选' : '全收集');
+  const renewalScopeLabel =
+    RENEWAL_SCOPE_OPTIONS.find((item) => item.id === (renewal.renewalScope ?? 'all'))?.label ?? '全部星级';
+  const renewalDetail =
+    renewal.status === 'needs_wardrobe'
+      ? undefined
+      : [
+          renewal.source === 'targets'
+            ? '手动材料目标'
+            : renewal.mode === 'selected'
+              ? '自选'
+              : `${modeLabelOf(renewal.mode)}·${renewalScopeLabel}`,
+          (renewal.priorityPendingCount ?? 0) > 0 ? `搭配优先 ${renewal.priorityPendingCount} 件` : null,
+          renewal.nextTarget
+            ? `下轮：${renewal.nextTarget.name}（${renewal.nextTarget.sourceLabel}）`
+            : '所需副本材料已齐',
+        ]
+          .filter(Boolean)
+          .join('｜');
+  const craftingDetail =
+    crafting.status === 'needs_wardrobe'
+      ? undefined
+      : [
+          crafting.mode === 'selected'
+            ? '自选'
+            : `${modeLabelOf(crafting.mode)}·${crafting.scope === 'suits' ? '仅成套' : '全部设计图'}`,
+          crafting.nextTarget
+            ? `下轮：${crafting.nextTarget.name}（${crafting.nextTarget.sourceLabel}）`
+            : crafting.energy === 0 && crafting.allTrackedEnergy > 0
+              ? '试炼晶石已齐（丝线/噗灵自备）'
+              : '试炼晶石已齐',
+        ]
+          .filter(Boolean)
+          .join('｜');
   const { totalFiniteEnergy, totalFiniteDays, hasUnknownEnabled, hasInfiniteOrStalled } = queueSummary;
 
   const summaryText =
@@ -531,7 +566,11 @@ export function RealmQueueCard({
                       ? weeklyDetail
                       : entry.goal === 'glow'
                         ? glowDetail
-                        : undefined
+                        : entry.goal === 'renewal'
+                          ? renewalDetail
+                          : entry.goal === 'crafting'
+                            ? craftingDetail
+                            : undefined
                   }
                   warn={entry.goal === 'glow' && glowIndex >= 0 && glowIndex < enabled.length - 1}
                   expanded={drawerGoal ? openDrawers[drawerGoal] : false}
