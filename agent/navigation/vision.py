@@ -256,9 +256,9 @@ class Locator:
             return (cone, cone_mask), diagnostics
 
         if selected is not None and selected[2] >= match_floor:
-            # On high-contrast shorelines, the minimap flashlight cone can shift
-            # full-ring correlation peaks by 1-2 px on rotation; refine using only
-            # terrain outside the cone when doing so cleanly sharpens the match.
+            # On high-contrast or low-feature shorelines, the minimap flashlight cone
+            # can shift full-ring peaks or pull luma to a side ripple along the shore;
+            # prefer outside-cone terrain when it matches cleanly and keeps valid heading.
             lx, ly = initial[:2]
             cone_result, diagnostics = evaluate_outside_cone(lx, ly)
             if cone_result is not None:
@@ -268,11 +268,27 @@ class Locator:
                     agreement = float(np.hypot(cx-lx, cy-ly))
                     known_fraction = coverage(local, patch.shape, cone_mask, (cx+.5, cy+.5))
                     cone_floor = max(.65, match_floor)
-                    accepted = (
+                    near_refinement = (
                         agreement <= 4.0
-                        and known_fraction >= MIN_KNOWN_COVERAGE
                         and score >= max(cone_floor, initial[2]+.02)
-                        and peak >= max(.02, initial[3]*.75)
+                        and (
+                            peak >= max(.02, initial[3]*.75)
+                            or (score >= .92 and peak >= max(.005, initial[3]*.5))
+                        )
+                    )
+                    shoreline_override = False
+                    if (not near_refinement
+                            and score >= max(.94, initial[2]+.10)
+                            and peak >= max(.008, initial[3]*1.25)):
+                        dir2, conf2 = self.camera_heading(reference, cx+x, cy+y)
+                        shoreline_override = (
+                            dir2 is not None and conf2 >= .7
+                            and abs((dir2-diagnostics["heading"]+180) % 360-180) <= 10.0
+                        )
+                        diagnostics.update(override_heading=dir2, override_confidence=conf2)
+                    accepted = (
+                        known_fraction >= MIN_KNOWN_COVERAGE
+                        and (near_refinement or shoreline_override)
                     )
                     diagnostics.update(
                         method_agreement=agreement,
