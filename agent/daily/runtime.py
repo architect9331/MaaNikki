@@ -1372,81 +1372,99 @@ class Executors(Runtime):
         # Require the actual placement control instead of their disappearance.
         return bool(self.text([0, 500, 1210, 200], r"放置|摆放"))
 
-    def place(self):
+    def _try_place_angles(self):
         from navigation.controller import relative_camera
-        # Selecting the item / confirming a lantern can activate placement
-        # immediately. Do not move away from UI controls after these inputs.
-        with self.ui.preserve_cursor():
-            if (not self.background_mode() and not foreground_inputs()) or not self.select_item():
-                self.log("摆饰停止：未能选择摆饰。")
-                return False
-            lantern = self.hit("MaaNikki_Daily_LanternConfirm")
-            if lantern:
-                if (not self.click_template("MaaNikki_Daily_LanternConfirm")
-                        or not self.ui.find(roi=self.ui.roi("AreaDialog"), text="确认", exact=True, scroll=False)):
-                    return False
-            if not self.ui.wait_page(self.placement_ready, seconds=20):
-                self.log("摆饰停止：选中物品后未出现放置操作提示。")
-                self.save_placement_failure("placement_not_ready")
+
+        if not relative_camera(self.controller, 0, -133) or not self.pause(.3):
+            return "error"
+        recover_before = bool(self.text([0, 500, 1210, 200], r"收回|回收"))
+        for _ in range(8):
+            if not self.key("place", .3):
+                return "error"
+            deadline = time.monotonic() + 4
+            confirmations = 0
+            rejected = False
+            while not self.stopped and time.monotonic() < deadline:
+                frame = self.capture()
+                if frame is None:
+                    return "error"
+                if self.hit("MaaNikki_Daily_CantPlace", image=frame):
+                    rejected = True
+                    break
+                toast = self.text([250, 100, 780, 420], r"放置成功|已放置|不可放置|无法放置", image=frame)
+                if re.search(r"不可放置|无法放置", toast):
+                    rejected = True
+                    break
+                success = bool(re.search(r"放置成功|已放置", toast))
+                controls = "" if success else self.text([0, 500, 1210, 200], r"放置|摆放|收回|回收", image=frame)
+                preview = bool(re.search(r"放置|摆放", controls))
+                recover_ready = bool(re.search(r"收回|回收", controls))
+                returned = self.hit("MaaNikki_MainDetected", image=frame)
+                confirmed = success or returned and not preview or recover_ready and not recover_before
+                confirmations = confirmations + 1 if confirmed else 0
+                if confirmations >= 2:
+                    self.log("已确认摆饰放置完成，稍后核实任务积分。", detail=True)
+                    return "placed" if self.main() else "error"
+                if not self.pause(.3):
+                    return "error"
+            # Retry only after an explicit cannot-place response. An ambiguous
+            # submitted placement must not create another object.
+            if not rejected:
+                self.log("摆饰停止：点击后未能确认放置结果。")
+                self.save_placement_failure("placement_unconfirmed")
                 self.main()
-                return False
-        if not foreground_inputs():
-            self.log("摆饰调整视角需要前台鼠标和键盘输入，请设置为 Seize。")
-            self.main()
-            return False
-        with self.foreground_task("放置摆饰（需控制视角与鼠标放置）"):
-            if not relative_camera(self.controller, 0, -133) or not self.pause(.3):
-                return False
-            recover_before = bool(self.text([0, 500, 1210, 200], r"收回|回收"))
-            for _ in range(6):
-                if not self.key("place", .3):
+                return "error"
+            if not relative_camera(self.controller, -133, 0) or not self.pause(.3):
+                return "error"
+            deadline = time.monotonic() + 3
+            while not self.stopped and self.hit("MaaNikki_Daily_CantPlace"):
+                if time.monotonic() >= deadline or not self.pause(.3):
+                    self.log("无法放置提示未消失，本项停止，避免重复提交。")
+                    self.main()
+                    return "error"
+        return "cannot_place"
+
+    def place(self):
+        # Retry once after shifting to a fresh spot if all orientations are blocked
+        # (for instance by a nearby prop in Starsea co-op).
+        for spot in range(2):
+            # Selecting the item / confirming a lantern can activate placement
+            # immediately. Do not move away from UI controls after these inputs.
+            with self.ui.preserve_cursor():
+                if (not self.background_mode() and not foreground_inputs()) or not self.select_item():
+                    self.log("摆饰停止：未能选择摆饰。")
                     return False
-                deadline = time.monotonic()+4
-                confirmations = 0
-                rejected = False
-                while not self.stopped and time.monotonic() < deadline:
-                    frame = self.capture()
-                    if frame is None:
+                lantern = self.hit("MaaNikki_Daily_LanternConfirm")
+                if lantern:
+                    if (not self.click_template("MaaNikki_Daily_LanternConfirm")
+                            or not self.ui.find(roi=self.ui.roi("AreaDialog"), text="确认", exact=True, scroll=False)):
                         return False
-                    if self.hit("MaaNikki_Daily_CantPlace", image=frame):
-                        rejected = True
-                        break
-                    toast = self.text([250, 100, 780, 420], r"放置成功|已放置|不可放置|无法放置", image=frame)
-                    if re.search(r"不可放置|无法放置", toast):
-                        rejected = True
-                        break
-                    success = bool(re.search(r"放置成功|已放置", toast))
-                    controls = "" if success else self.text([0, 500, 1210, 200], r"放置|摆放|收回|回收", image=frame)
-                    preview = bool(re.search(r"放置|摆放", controls))
-                    recover_ready = bool(re.search(r"收回|回收", controls))
-                    returned = self.hit("MaaNikki_MainDetected", image=frame)
-                    confirmed = success or returned and not preview or recover_ready and not recover_before
-                    confirmations = confirmations+1 if confirmed else 0
-                    if confirmations >= 2:
-                        self.log("已确认摆饰放置完成，稍后核实任务积分。", detail=True)
-                        return self.main()
-                    if not self.pause(.3):
-                        return False
-                # Retry only after an explicit cannot-place response. An ambiguous
-                # submitted placement must not create another object.
-                if not rejected:
-                    self.log("摆饰停止：点击后未能确认放置结果。")
-                    self.save_placement_failure("placement_unconfirmed")
+                if not self.ui.wait_page(self.placement_ready, seconds=20):
+                    self.log("摆饰停止：选中物品后未出现放置操作提示。")
+                    self.save_placement_failure("placement_not_ready")
                     self.main()
                     return False
-                if not relative_camera(self.controller, -133, 0) or not self.pause(.3):
+            if not foreground_inputs():
+                self.log("摆饰调整视角需要前台鼠标和键盘输入，请设置为 Seize。")
+                self.main()
+                return False
+            with self.foreground_task("放置摆饰（需控制视角与鼠标放置）"):
+                outcome = self._try_place_angles()
+                if outcome == "placed":
+                    return True
+                if outcome != "cannot_place":
                     return False
-                deadline = time.monotonic()+3
-                while not self.stopped and self.hit("MaaNikki_Daily_CantPlace"):
-                    if time.monotonic() >= deadline or not self.pause(.3):
-                        self.log("无法放置提示未消失，本项停止，避免重复提交。")
-                        self.main()
+                if spot == 0:
+                    self.key("recover", .3)
+                    if not self.pause(.5) or not self.main() or not self.hold("forward", 1.4):
                         return False
-            self.log("当前朝向均无法放置摆饰，本项停止。")
-            self.save_placement_failure("cannot_place")
-            self.key("recover", .3)
-            self.main()
-            return False
+                    self.log("当前位置摆饰受阻，微调站位后重试放置。", detail=True)
+                    continue
+                self.save_placement_failure("cannot_place")
+                self.key("recover", .3)
+        self.log("当前朝向均无法放置摆饰，本项停止。")
+        self.main()
+        return False
 
     def save_placement_failure(self, stage):
         self.diagnostic("placement", stage)

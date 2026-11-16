@@ -21,15 +21,21 @@
       "jump": false
     },
     {
-      "x": 824.5,
-      "y": 1035.0,
-      "radius": 1.25,
+      "x": 824.4,
+      "y": 990.11,
+      "radius": 2.0,
       "jump": false
     },
     {
-      "x": 824.5,
-      "y": 1055.0,
-      "radius": 1.25,
+      "x": 868.0,
+      "y": 958.0,
+      "radius": 2.0,
+      "jump": false
+    },
+    {
+      "x": 896.0,
+      "y": 912.0,
+      "radius": 2.0,
       "jump": false,
       "action": "place"
     }
