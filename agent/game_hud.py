@@ -15,6 +15,7 @@ import numpy as np
 from client_config import node_action_params
 from message_log import write_message
 from overlay_style import (
+    Win32WakeEvent,
     MXU_CONFIG_FILE,
     PROC,
     ROOT_DIR,
@@ -484,7 +485,7 @@ class GameHudOverlay:
         self._scope_active = True
         self._idle_deadline = 0.0
         self._dirty = True
-        self._wake = threading.Event()
+        self._wake = Win32WakeEvent()
         self._stop = threading.Event()
         self._ready = threading.Event()
         self._surface: _HudSurface | None = None
@@ -814,6 +815,19 @@ class GameHudOverlay:
         peek = bind(user, "PeekMessageW", w.BOOL, ctypes.POINTER(w.MSG), w.HWND, w.UINT, w.UINT, w.UINT)
         trans = bind(user, "TranslateMessage", w.BOOL, ctypes.POINTER(w.MSG))
         disp = bind(user, "DispatchMessageW", ctypes.c_ssize_t, ctypes.POINTER(w.MSG))
+
+        def pump_messages() -> int:
+            started = time.monotonic()
+            drained = 0
+            for _ in range(64):
+                if self._stop.is_set() or time.monotonic() - started >= 0.01:
+                    break
+                if not peek(ctypes.byref(msg), None, 0, 0, 1):
+                    break
+                drained += 1
+                trans(ctypes.byref(msg))
+                disp(ctypes.byref(msg))
+            return drained
         is_window = bind(user, "IsWindow", w.BOOL, w.HWND)
         is_iconic = bind(user, "IsIconic", w.BOOL, w.HWND)
         get_fg = bind(user, "GetForegroundWindow", w.HWND)
@@ -830,9 +844,7 @@ class GameHudOverlay:
         next_cfg_poll = 0.0
         try:
             while not self._stop.is_set():
-                while peek(ctypes.byref(msg), None, 0, 0, 1):
-                    trans(ctypes.byref(msg))
-                    disp(ctypes.byref(msg))
+                pump_messages()
                 self._wake.clear()
                 now = time.monotonic()
                 if now >= next_cfg_poll:
@@ -911,9 +923,10 @@ class GameHudOverlay:
                 timeout = self._next_timeout(surface._visible, focused=focused_now)
                 if timeout <= 0.0:
                     break
-                self._wake.wait(timeout)
+                self._wake.wait_or_pump(timeout, pump_fn=pump_messages, stop_event=self._stop)
         finally:
             surface.destroy()
+            self._wake.close()
             if self._tasker_key is not None:
                 with _HUD_REGISTRY_LOCK:
                     if _HUD_BY_TASKER.get(self._tasker_key) is self:

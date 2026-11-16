@@ -835,3 +835,155 @@ def render_top_center_banner(
         pixels, uint32_view, dc, gdi, select_fn, delete_fn,
         x0, y0, layout, active_theme, role=role, emphasized=emphasized, opacity=opacity,
     )
+
+
+_QS_ALLINPUT = 0x04FF
+_MWMO_INPUTAVAILABLE = 0x0004
+_WAIT_OBJECT_0 = 0
+_WAIT_TIMEOUT = 0x00000102
+
+
+@lru_cache(maxsize=1)
+def _win32_wake_api():
+    import ctypes
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    user = ctypes.WinDLL("user32", use_last_error=True)
+    return {
+        "create_event": bind(
+            kernel, "CreateEventW", wintypes.HANDLE,
+            ctypes.c_void_p, wintypes.BOOL, wintypes.BOOL, wintypes.LPCWSTR,
+        ),
+        "set_event": bind(kernel, "SetEvent", wintypes.BOOL, wintypes.HANDLE),
+        "reset_event": bind(kernel, "ResetEvent", wintypes.BOOL, wintypes.HANDLE),
+        "close_handle": bind(kernel, "CloseHandle", wintypes.BOOL, wintypes.HANDLE),
+        "wait_single": bind(
+            kernel, "WaitForSingleObject", wintypes.DWORD,
+            wintypes.HANDLE, wintypes.DWORD,
+        ),
+        "msg_wait": bind(
+            user, "MsgWaitForMultipleObjectsEx", wintypes.DWORD,
+            wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE),
+            wintypes.DWORD, wintypes.DWORD, wintypes.DWORD,
+        ),
+        "queue_status": bind(user, "GetQueueStatus", wintypes.DWORD, wintypes.UINT),
+        "handle_array_type": wintypes.HANDLE * 1,
+    }
+
+
+class Win32WakeEvent:
+    """Manual-reset wake event that dispatches Win32 thread messages without polling delay."""
+
+    def __init__(self):
+        import sys
+        import threading
+
+        self._lock = threading.Lock()
+        self._handle = None
+        self._api = None
+        self._wait_handles = None
+        self._fallback = None
+        if sys.platform == "win32":
+            api = _win32_wake_api()
+            handle = api["create_event"](None, True, False, None)
+            if handle:
+                self._api = api
+                self._handle = handle
+                self._wait_handles = api["handle_array_type"](handle)
+                return
+        self._fallback = threading.Event()
+
+    def set(self):
+        with self._lock:
+            if self._fallback is not None:
+                self._fallback.set()
+            elif self._handle:
+                self._api["set_event"](self._handle)
+
+    def clear(self):
+        with self._lock:
+            if self._fallback is not None:
+                self._fallback.clear()
+            elif self._handle:
+                self._api["reset_event"](self._handle)
+
+    def is_set(self) -> bool:
+        with self._lock:
+            if self._fallback is not None:
+                return self._fallback.is_set()
+            if self._handle:
+                return self._api["wait_single"](self._handle, 0) == _WAIT_OBJECT_0
+            return False
+
+    def close(self):
+        with self._lock:
+            handle = self._handle
+            self._handle = None
+            self._wait_handles = None
+            api = self._api
+        if handle and api is not None:
+            api["close_handle"](handle)
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+    def wait_or_pump(self, timeout_sec: float, *, pump_fn, stop_event=None) -> bool:
+        """Wait until signaled, stop_event set, or timeout, pumping queued messages immediately."""
+        import time
+
+        if self._fallback is not None:
+            pump_fn()
+            return self._fallback.wait(max(0.0, timeout_sec))
+
+        handle = self._handle
+        api = self._api
+        wait_handles = self._wait_handles
+        if not handle or api is None or wait_handles is None:
+            pump_fn()
+            return False
+
+        msg_wait = api["msg_wait"]
+        wait_single = api["wait_single"]
+        queue_status = api["queue_status"]
+
+        if timeout_sec <= 0.0:
+            pump_fn()
+            return wait_single(handle, 0) == _WAIT_OBJECT_0
+
+        deadline = time.monotonic() + timeout_sec
+        stuck_spins = 0
+        while stop_event is None or not stop_event.is_set():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0.0:
+                return False
+            wait_ms = max(1, min(0x7FFFFFFF, int(math.ceil(remaining * 1000.0))))
+            res = msg_wait(1, wait_handles, wait_ms, _QS_ALLINPUT, _MWMO_INPUTAVAILABLE)
+            if res == _WAIT_OBJECT_0:
+                return True
+            if res == _WAIT_OBJECT_0 + 1:
+                drained = pump_fn()
+                if drained:
+                    stuck_spins = 0
+                elif (queue_status(_QS_ALLINPUT) >> 16) != 0:
+                    # Only throttle if Windows reports unconsumed queue bits right after PeekMessageW.
+                    # Inter-thread SendMessage (e.g. WM_NCHITTEST) clears its bit during PeekMessageW
+                    # even when PeekMessageW returns 0, so genuine high-rate cursor probes stay <1ms.
+                    stuck_spins += 1
+                    if stuck_spins >= 4:
+                        rem_ms = max(1, min(8, int((deadline - time.monotonic()) * 1000.0)))
+                        if wait_single(handle, rem_ms) == _WAIT_OBJECT_0:
+                            return True
+                        stuck_spins = 0
+                else:
+                    stuck_spins = 0
+            elif res == _WAIT_TIMEOUT:
+                return False
+            else:
+                slice_ms = min(16, wait_ms)
+                if wait_single(handle, slice_ms) == _WAIT_OBJECT_0:
+                    return True
+        return False

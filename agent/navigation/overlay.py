@@ -21,6 +21,7 @@ from overlay_style import (
     BitmapInfo,
     Blend,
     Paint,
+    Win32WakeEvent,
     WindowClass,
     _blend_rect,
     _gdi_text_extent,
@@ -1510,7 +1511,7 @@ class RouteMinimapOverlay:
         self.move_until: float = 0.0
         self.velocity: float = 0.0
         self.jump_start: float = 0.0
-        self.wake = threading.Event()
+        self.wake = Win32WakeEvent()
         self.stop = threading.Event()
         self.ready = threading.Event()
         self.thread: threading.Thread | None = None
@@ -1709,7 +1710,12 @@ class RouteMinimapOverlay:
         self.wake.set()
         if self.thread is not None:
             self.thread.join(timeout=0.8)
+            alive = self.thread.is_alive()
             self.thread = None
+            if not alive:
+                self.wake.close()
+        else:
+            self.wake.close()
 
     def _thread_main(self):
         try:
@@ -1854,13 +1860,23 @@ class RouteMinimapOverlay:
                     rendered = None
                     last_z = None
                 msg = w.MSG()
-                for _ in range(16):
-                    if self.stop.is_set() or not peek(ctypes.byref(msg), hwnd, 0, 0, 1):
-                        break
-                    translate(ctypes.byref(msg))
-                    dispatch(ctypes.byref(msg))
+
+                def pump_messages() -> int:
+                    pump_started = time.monotonic()
+                    drained = 0
+                    for _ in range(32):
+                        if self.stop.is_set() or time.monotonic() - pump_started >= 0.01:
+                            break
+                        if not peek(ctypes.byref(msg), None, 0, 0, 1):
+                            break
+                        drained += 1
+                        translate(ctypes.byref(msg))
+                        dispatch(ctypes.byref(msg))
+                    return drained
+
+                pump_messages()
                 wait_sec = 1 / 28 if (visible and ar_active) else 0.08 if visible else 0.2
-                self.wake.wait(wait_sec)
+                self.wake.wait_or_pump(wait_sec, pump_fn=pump_messages, stop_event=self.stop)
         finally:
             if hwnd:
                 bind(user, "DestroyWindow", w.BOOL, w.HWND)(hwnd)

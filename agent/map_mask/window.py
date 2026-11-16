@@ -9,7 +9,7 @@ import threading
 import time
 
 from message_log import write_message
-from overlay_style import resolve_overlay_theme
+from overlay_style import Win32WakeEvent, resolve_overlay_theme
 from .surface import LayeredSurface, bind, checked, split_exploration_hint
 
 
@@ -43,7 +43,7 @@ class OverlayWindow:
         self.status = {"state": "starting"}
         self.phase = "starting"
         self.last_tick = time.monotonic()
-        self.wake = threading.Event()
+        self.wake = Win32WakeEvent()
         self.stop = threading.Event()
         self.ready = threading.Event()
         self.error = None
@@ -380,22 +380,29 @@ class OverlayWindow:
                     last_signature, next_diagnostic = signature, now + 10
                 msg = w.MSG()
                 messages = []
-                pump_started = time.monotonic()
-                for _ in range(32):
-                    if self.stop.is_set() or time.monotonic() - pump_started >= .01:
-                        break
-                    self.phase = "peek"
-                    if not peek(ctypes.byref(msg), hwnd, 0, 0, 1):
-                        break
-                    messages.append(hex(msg.message))
-                    self.phase = f"dispatch:{hex(msg.message)}"
-                    translate(ctypes.byref(msg))
-                    dispatch(ctypes.byref(msg))
-                previous_messages = tuple(messages[-8:])
-                self.phase = "idle"
+
+                def pump_messages() -> int:
+                    pump_started = time.monotonic()
+                    drained = 0
+                    for _ in range(64):
+                        if self.stop.is_set() or time.monotonic() - pump_started >= 0.01:
+                            break
+                        self.phase = "peek"
+                        if not peek(ctypes.byref(msg), None, 0, 0, 1):
+                            break
+                        drained += 1
+                        messages.append(hex(msg.message))
+                        self.phase = f"dispatch:{hex(msg.message)}"
+                        translate(ctypes.byref(msg))
+                        dispatch(ctypes.byref(msg))
+                    self.phase = "idle"
+                    return drained
+
+                pump_messages()
                 interactive_hover = overlay_active and (circle is None) and self.tutorial_provider is not None
                 wait_sec = 1 / 30 if interactive_hover else 0.08 if overlay_active else 0.2
-                self.wake.wait(wait_sec)
+                self.wake.wait_or_pump(wait_sec, pump_fn=pump_messages, stop_event=self.stop)
+                previous_messages = tuple(messages[-8:])
         finally:
             if hwnd:
                 bind(user, "DestroyWindow", w.BOOL, w.HWND)(hwnd)
