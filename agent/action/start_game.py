@@ -6,6 +6,7 @@ import ctypes
 from ctypes import wintypes
 from datetime import datetime
 import os
+import re
 import time as wall_time
 
 from maa.custom_action import CustomAction
@@ -20,6 +21,123 @@ STARTUP_HUNG_TIMEOUT = 180.0
 STARTUP_LOADING_HUNG_TIMEOUT = 240.0
 ACCOUNT_PROMPT_HOLD_SECONDS = 8.0
 ACCOUNT_MODAL_HOLD_SECONDS = 1.5
+_STARTUP_OCR_ROI = [150, 25, 980, 690]
+_RE_WELCOME = re.compile(r"欢迎[进進]入游[戏戲]|正在[登登][录錄]")
+_RE_UPDATE_TITLE = re.compile(r"发现新版本|發現新版本")
+_RE_UPDATE_BODY = re.compile(r"资源文件.*更新|資源文件.*更新|是否更新资源|是否更新資源")
+_RE_RESTART_TEXT = re.compile(r"更新完成.*请重启|更新完成.*請重啟")
+_RE_CONFIRM_BTN = re.compile(r"^确认$|^確認$")
+_RE_ENTER = re.compile(r"点击.*进入游戏|点击.*开始游戏|[Tt]ap.*[Ee]nter|[Cc]lick.*[Ee]nter")
+_RE_LOGIN = re.compile(r"^登录$|^登錄$")
+_RE_ACCOUNT_MODAL = re.compile(
+    r"验证码登录|密码登录|获取验证码|扫码登录|游戏APP.*扫码|驗證碼登錄|密碼登錄|獲取驗證碼|掃碼登錄"
+)
+_RE_ACCOUNT_PROMPT = re.compile(r"注册\s*/\s*登录|註冊\s*/\s*登錄|" + _RE_ACCOUNT_MODAL.pattern)
+_RE_UPDATING = re.compile(
+    r"热更新|熱更新|正在更新|资源更新|資源更新|检查更新|檢查更新|正在下载|正在下載|正在校验|正在校驗|正在解压|正在解壓|着色器"
+)
+_RE_VERSION_CHECK = re.compile(r"获取资源版本|獲取資源版本|资源版本信息|資源版本信息")
+_RE_LOADING = re.compile(r"正在[进進]入奇[迹跡]大[陆陸]")
+_RE_INTRO = re.compile(
+    r"健康游戏忠告|抵制不良游戏|警告.*游戏前详阅|健康遊戲忠告|抵制不良遊戲|警告.*遊戲前詳閱|叠纸|疊紙|[Ii]nfold"
+)
+
+
+def _inspect_startup_screen(runtime, frame) -> dict:
+    """Classify a startup frame in at most one OCR pass, checking MainDetected first."""
+    state = {
+        "main": False,
+        "reward": False,
+        "restart_box": None,
+        "update_dialog": False,
+        "update_confirm_box": None,
+        "enter_box": None,
+        "login_box": None,
+        "account_prompt": False,
+        "account_modal": False,
+        "welcome_banner": False,
+        "updating": False,
+        "version_check": False,
+        "intro": False,
+        "loading": False,
+    }
+    if frame is None:
+        return state
+    if runtime.hit("MaaNikki_MainDetected", image=frame):
+        state["main"] = True
+        return state
+    if runtime.hit("MaaNikki_RewardLayer", image=frame):
+        state["reward"] = True
+        return state
+    ocr = runtime.recognize(
+        "MaaNikki_Daily_OCR",
+        {"roi": _STARTUP_OCR_ROI, "expected": ".+", "threshold": 0.4},
+        image=frame,
+    )
+    rows = (
+        (getattr(ocr, "all_results", None) or getattr(ocr, "filtered_results", None) or [getattr(ocr, "best_result", None)])
+        if ocr
+        else []
+    )
+    has_update_title = False
+    has_update_body = False
+    update_btn = None
+    has_restart_text = False
+    restart_btn = None
+    for row in rows:
+        if row is None:
+            continue
+        raw_text = str(getattr(row, "text", "") or "")
+        clean = raw_text.strip()
+        if not clean:
+            continue
+        score = getattr(row, "score", 1.0)
+        if isinstance(score, (int, float)) and score < 0.4:
+            continue
+        box = getattr(row, "box", None)
+        if not box or len(box) < 4:
+            continue
+        bx, by, bw, bh = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        cx, cy = bx + bw * 0.5, by + bh * 0.5
+        if cy <= 130 and _RE_WELCOME.search(clean):
+            state["welcome_banner"] = True
+        if 210 <= cy <= 310 and 440 <= cx <= 840 and _RE_UPDATE_TITLE.search(clean):
+            has_update_title = True
+        if 285 <= cy <= 435 and 440 <= cx <= 840 and _RE_UPDATE_BODY.search(clean):
+            has_update_body = True
+        if 415 <= cy <= 515 and _RE_CONFIRM_BTN.search(clean):
+            if 630 <= cx <= 860 and update_btn is None:
+                update_btn = [bx, by, bw, bh]
+            if 525 <= cx <= 755 and restart_btn is None:
+                restart_btn = [bx, by, bw, bh]
+        if 315 <= cy <= 405 and 455 <= cx <= 825 and _RE_RESTART_TEXT.search(clean):
+            has_restart_text = True
+        if 345 <= cy <= 710 and state["enter_box"] is None and _RE_ENTER.search(clean):
+            state["enter_box"] = [bx, by, bw, bh]
+        if 325 <= cy <= 705 and 310 <= cx <= 970 and state["login_box"] is None and _RE_LOGIN.search(clean):
+            state["login_box"] = [bx, by, bw, bh]
+        if 130 <= cy <= 680:
+            if _RE_ACCOUNT_MODAL.search(clean):
+                state["account_modal"] = True
+                state["account_prompt"] = True
+            elif _RE_ACCOUNT_PROMPT.search(clean):
+                state["account_prompt"] = True
+        if cy >= 540:
+            if _RE_UPDATING.search(clean):
+                state["updating"] = True
+            if _RE_VERSION_CHECK.search(clean):
+                state["version_check"] = True
+            if _RE_LOADING.search(clean):
+                state["loading"] = True
+        if 165 <= cy <= 625 and _RE_INTRO.search(clean):
+            state["intro"] = True
+    if has_restart_text and restart_btn is not None:
+        state["restart_box"] = restart_btn
+    if has_update_title:
+        state["update_dialog"] = True
+        if has_update_body and update_btn is not None:
+            state["update_confirm_box"] = update_btn
+    return state
 _WM_NULL = 0x0000
 _SMTO_BLOCK = 0x0001
 _SMTO_ABORTIFHUNG = 0x0002
@@ -376,81 +494,112 @@ class StartGameAction(CustomAction):
             return False
 
         def complete():
+            if bootstrap:
+                self.elapsed_seconds = time.monotonic()-started_at
+                return True
             # Read only after the ordinary HUD has been established by the
-            # startup flow. Binding also refreshes the desktop account view.
+            # startup flow. Bind directly without repeating main() confirmation.
             try:
-                for _ in range(2):
-                    if runtime.read_account_uid(runtime.frame()) is not None:
-                        break
-                    if not runtime.pause(.15) or runtime.capture() is None:
-                        break
-                runtime.account_uid()
+                from account_state import AccountState
+                uid = runtime.read_account_uid(runtime.frame())
+                if uid is None and runtime.pause(.15):
+                    uid = runtime.read_account_uid(runtime.capture())
+                if uid:
+                    AccountState.bind(ROOT, uid)
+                    runtime._account_uid = uid
+                    runtime._account_generation = runtime._focus_generation
+                    if session is not None:
+                        session.account_uid = uid
+                        session.account_generation = session.generation
             except TaskStopped:
                 raise
             except (OSError, ValueError) as error:
                 # Startup also serves tasks which do not persist role data.
                 # Account-bound tasks confirm identity at their own entrance.
                 runtime.log(f"账号识别待重试：{error}。", detail=True)
-            if bootstrap:
-                self.elapsed_seconds = time.monotonic()-started_at
-                return True
-            _, finished = runtime.finish("MaaNikki_StartGame")
-            return finished
+            from daily.run_state import next_page
+            if next_page("MaaNikki_StartGame") == "calendar":
+                _, finished = runtime.finish("MaaNikki_StartGame")
+                return finished
+            return not runtime.stopped
 
-        def transition_ready():
-            with runtime.observe():
-                if runtime.hit("MaaNikki_StartGame_RestartConfirm"):
-                    return True
-                if runtime.hit("MaaNikki_StartGame_UpdateTitle"):
-                    return runtime.hit("MaaNikki_StartGame_UpdateConfirm")
-                return (runtime.hit("MaaNikki_MainDetected")
-                        or runtime.hit("MaaNikki_RewardLayer")
-                        or runtime.ui.asset("IconUILoading", threshold=.99)
-                        or runtime.hit("MaaNikki_StartGame_Loading")
-                        or runtime.hit("MaaNikki_StartGame_Updating")
-                        or runtime.hit("MaaNikki_StartGame_VersionCheck")
-                        or runtime.hit("MaaNikki_StartGame_AccountPrompt")
-                        or runtime.hit("MaaNikki_StartGame_Enter"))
+        def confirm_main_fast():
+            if not runtime.pause(.12):
+                return False
+            frame2 = runtime.capture()
+            if frame2 is None or not runtime.hit("MaaNikki_MainDetected", image=frame2):
+                return False
+            if runtime.hit("MaaNikki_RewardLayer", image=frame2):
+                return False
+            return True
 
-        def advance(node, destination):
-            def click():
-                nonlocal entered, logged_in
-                if runtime.stopped or time.monotonic() >= deadline:
+        def click_box_and_wait_exit(box, kind):
+            nonlocal entered, logged_in, transition_grace_until, unknown_since
+            if runtime.stopped or time.monotonic() >= deadline:
+                return False
+            if kind == "enter":
+                entered += 1
+                runtime.log(f"点击进入游戏（{entered}/3）。", detail=True)
+            else:
+                logged_in += 1
+                runtime.log(f"点击登录（{logged_in}/3）。", detail=True)
+            pt = [box[0] + box[2] // 2, box[1] + box[3] // 2]
+            if not runtime.action("Click", ui_click=False, target=pt):
+                return False
+            wait_end = min(deadline, time.monotonic() + 2.6)
+            absent_streak = 0
+            while not runtime.stopped and time.monotonic() < wait_end:
+                if not runtime.pause(.2):
                     return False
-                if node == "MaaNikki_StartGame_Enter":
-                    if entered >= 3:
-                        return False
-                    entered += 1
-                    runtime.log(f"点击进入游戏（{entered}/3）。", detail=True)
-                else:
-                    if logged_in >= 3:
-                        return False
-                    logged_in += 1
-                    runtime.log(f"点击登录（{logged_in}/3）。", detail=True)
-                return runtime.click_template(node, attempts=1, wait_seconds=0, verify=False)
-
-            # Allow slow Unreal level/asset loads enough time for the loading screen
-            # to appear before treating the entrance transition as missing.
-            return runtime.ui.enter_page(
-                click, destination, source=node,
-                attempts=3-entered if node == "MaaNikki_StartGame_Enter" else 3-logged_in,
-                seconds=min(15, max(.1, deadline-time.monotonic())))
-
-        def entered_game():
-            with runtime.observe():
-                if runtime.hit("MaaNikki_StartGame_RestartConfirm"):
+                nxt = runtime.capture()
+                if nxt is None:
+                    return False
+                st = _inspect_startup_screen(runtime, nxt)
+                still_here = bool(st["enter_box"] if kind == "enter" else st["login_box"])
+                progressed = bool(
+                    st["main"]
+                    or st["reward"]
+                    or st["restart_box"]
+                    or st["update_dialog"]
+                    or st["loading"]
+                    or st["updating"]
+                    or st["version_check"]
+                    or (kind == "login" and st["enter_box"])
+                    or runtime.ui.asset("IconUILoading", image=nxt, threshold=.99)
+                )
+                if not still_here and progressed:
+                    unknown_since = None
+                    transition_grace_until = min(deadline, time.monotonic() + 25.0)
                     return True
-                if runtime.hit("MaaNikki_StartGame_UpdateTitle"):
-                    return runtime.hit("MaaNikki_StartGame_UpdateConfirm")
-                return not runtime.hit("MaaNikki_StartGame_Enter") and transition_ready()
+                if not still_here:
+                    absent_streak += 1
+                    if absent_streak >= 2:
+                        unknown_since = None
+                        transition_grace_until = min(deadline, time.monotonic() + 25.0)
+                        return True
+                else:
+                    absent_streak = 0
+            return False
 
-        def confirm_update():
+        def confirm_update(box):
             nonlocal update_attempts
             if update_attempts >= 3:
                 return False
             update_attempts += 1
-            return runtime.click_template(
-                "MaaNikki_StartGame_UpdateConfirm", attempts=1, wait_seconds=0, verify=False)
+            pt = [box[0] + box[2] // 2, box[1] + box[3] // 2]
+            if not runtime.action("Click", ui_click=False, target=pt):
+                return False
+            wait_end = min(deadline, time.monotonic() + 4.0)
+            while not runtime.stopped and time.monotonic() < wait_end:
+                if not runtime.pause(.25):
+                    return False
+                nxt = runtime.capture()
+                if nxt is None:
+                    return False
+                st = _inspect_startup_screen(runtime, nxt)
+                if not st["update_confirm_box"]:
+                    return True
+            return False
 
         # The splash or health warning can open at 16:9 or the launcher's aspect
         # ratio and transiently resize while Unreal applies saved display settings.
@@ -530,51 +679,59 @@ class StartGameAction(CustomAction):
             return None
 
         runtime.capture = capture_startup_frame
-        if runtime.capture() is None:
+        initial_frame = runtime.capture()
+        if initial_frame is None:
             return False if runtime.stopped else incomplete("未获取到游戏启动画面")
+        if not already_running and bootstrap:
+            transition_grace_until = min(deadline, started_at + 18.0)
 
+        next_frame = initial_frame
         while not runtime.stopped and time.monotonic() < deadline:
-            with runtime.observe(fresh=True):
-                restart = runtime.hit("MaaNikki_StartGame_RestartConfirm")
-                update = not restart and runtime.hit("MaaNikki_StartGame_UpdateTitle")
-                reward = not restart and not update and runtime.hit("MaaNikki_RewardLayer")
-                main = not restart and not update and runtime.hit("MaaNikki_MainDetected")
-                enter = not update and not main and runtime.hit("MaaNikki_StartGame_Enter")
-                login = not update and not main and not enter and runtime.hit("MaaNikki_StartGame_Login")
-                account_prompt = (
-                    not restart and not update and not reward and not main
-                    and not enter and not login
-                    and runtime.hit("MaaNikki_StartGame_AccountPrompt")
-                )
-                account_modal = (
-                    account_prompt
-                    and runtime.hit("MaaNikki_StartGame_AccountModal")
-                )
-                welcome_banner = (
-                    account_prompt and not account_modal
-                    and runtime.hit("MaaNikki_StartGame_WelcomeBanner")
-                )
-                updating = (
-                    not restart and not update and not reward and not main
-                    and not enter and not login and not account_prompt
-                    and runtime.hit("MaaNikki_StartGame_Updating")
-                )
-                intro = (not restart and not update and not reward and not main
-                         and not enter and not login and not account_prompt and not updating
-                         and runtime.hit("MaaNikki_StartGame_Intro"))
-                loading = (not restart and not update and not reward and not main
-                           and not enter and not login and not account_prompt and not updating
-                           and not intro and runtime.hit("MaaNikki_StartGame_Loading"))
-                version_check = (
-                    not restart and not update and not reward and not main
-                    and not enter and not login
-                    and (not account_prompt or not account_modal)
-                    and not updating and not intro and not loading
-                    and runtime.hit("MaaNikki_StartGame_VersionCheck")
-                )
+            cur_frame = next_frame if next_frame is not None else runtime.capture()
+            next_frame = None
+            if cur_frame is None:
+                return False if runtime.stopped else incomplete("未获取到游戏启动画面")
+            st = _inspect_startup_screen(runtime, cur_frame)
+            restart_box = st["restart_box"]
+            restart = restart_box is not None
+            update = not restart and st["update_dialog"]
+            update_confirm_box = st["update_confirm_box"] if update else None
+            reward = not restart and not update and st["reward"]
+            main = not restart and not update and not reward and st["main"]
+            enter_box = None if (restart or update or reward or main) else st["enter_box"]
+            enter = enter_box is not None
+            login_box = None if (restart or update or reward or main or enter) else st["login_box"]
+            login = login_box is not None
+            account_prompt = (
+                not restart and not update and not reward and not main
+                and not enter and not login and st["account_prompt"]
+            )
+            account_modal = account_prompt and st["account_modal"]
+            welcome_banner = account_prompt and not account_modal and st["welcome_banner"]
+            updating = (
+                not restart and not update and not reward and not main
+                and not enter and not login and not account_prompt and st["updating"]
+            )
+            intro = (
+                not restart and not update and not reward and not main
+                and not enter and not login and not account_prompt and not updating and st["intro"]
+            )
+            loading = (
+                not restart and not update and not reward and not main
+                and not enter and not login and not account_prompt and not updating
+                and not intro and st["loading"]
+            )
+            version_check = (
+                not restart and not update and not reward and not main
+                and not enter and not login
+                and (not account_prompt or not account_modal)
+                and not updating and not intro and not loading and st["version_check"]
+            )
             if (restart or update or reward or main or enter or login
                     or account_prompt or updating or intro or loading or version_check):
                 unknown_since = None
+            if loading or updating or version_check:
+                transition_grace_until = min(deadline, max(transition_grace_until, time.monotonic() + 20.0))
             if not account_prompt or welcome_banner or version_check:
                 account_prompt_since = None
                 account_prompt_hits = 0
@@ -583,84 +740,52 @@ class StartGameAction(CustomAction):
                 startup_state["loading_active"] = bool(
                     loading or updating or update or update_waiting
                 )
-            def resume_after_disappeared_entry(node):
-                nonlocal unknown_since, transition_grace_until
-                if runtime.stopped or time.monotonic() >= deadline:
-                    return False
-                with runtime.observe(fresh=True):
-                    still_visible = runtime.hit(node)
-                if not still_visible:
-                    runtime.log("入口提示已切换，继续等待游戏加载完成。", detail=True)
-                    unknown_since = None
-                    transition_grace_until = min(deadline, time.monotonic() + 20.0)
-                    return True
-                return False
 
             if restart:
                 if not bootstrap or options.get("allow_restart", True) is not True:
-                    # The regular batch must not continue on a window that is
-                    # about to disappear. Startup normally handles this earlier.
                     return incomplete("更新需要重启，请重新运行启动游戏任务")
                 runtime.log("资源更新完成，正在确认重启并等待新的游戏窗口。")
-                result = runtime.recognize("MaaNikki_StartGame_RestartConfirm")
-                if not result or not result.hit:
-                    continue
-                box = list(result.box)
-                point = [box[0]+box[2]//2, box[1]+box[3]//2]
-                if not runtime.action("TouchMove", target=point) or not runtime.pause(.2):
+                point = [restart_box[0]+restart_box[2]//2, restart_box[1]+restart_box[3]//2]
+                if not runtime.action("TouchMove", target=point) or not runtime.pause(.15):
                     return incomplete("未能点击更新重启确认")
-                result = runtime.recognize("MaaNikki_StartGame_RestartConfirm")
-                if not result or not result.hit:
+                recheck = _inspect_startup_screen(runtime, runtime.capture())
+                rbox = recheck["restart_box"]
+                if not rbox:
                     continue
-                box = list(result.box)
                 self.elapsed_seconds = time.monotonic()-started_at
-                # Record intent before submitting: the game can close before
-                # the click response. Do not capture, unhover or wait on it again.
                 self.restart_requested = True
                 runtime.action("Click", ui_click=False, target=[
-                    box[0]+box[2]//2, box[1]+box[3]//2])
+                    rbox[0]+rbox[2]//2, rbox[1]+rbox[3]//2])
                 return True
             elif update:
                 if not update_waiting:
                     runtime.log("检测到客户端资源更新，正在确认并等待下载完成。")
                     update_waiting = True
-                if runtime.hit("MaaNikki_StartGame_UpdateConfirm"):
+                if update_confirm_box is not None:
                     if update_attempts >= 3:
                         return incomplete("客户端资源更新确认未生效")
-                    # Wait for the known prompt to leave; download duration is
-                    # bounded by the startup deadline, with no Esc recovery.
-                    if not runtime.ui.enter_page(
-                            confirm_update,
-                            lambda: not runtime.hit("MaaNikki_StartGame_UpdateConfirm"),
-                            source="MaaNikki_StartGame_UpdateConfirm", attempts=3,
-                            seconds=min(5, max(.1, deadline-time.monotonic()))):
+                    if not confirm_update(update_confirm_box) and update_attempts >= 3:
                         return incomplete("客户端资源更新确认未生效")
             elif reward:
-                if not runtime.key("skip", .5):
+                if not runtime.key("skip", .35):
                     return incomplete()
             elif main:
-                if runtime.ui.wait_page("MaaNikki_MainDetected"):
+                if confirm_main_fast():
                     runtime.log("已进入游戏主页。" if waiting_logged
                                 else "游戏已在主页，跳过启动流程，继续后续任务。")
                     return complete()
             elif enter:
                 if entered >= 3:
                     return incomplete("点击进入游戏后仍停留在入口页面")
-                if advance("MaaNikki_StartGame_Enter", entered_game):
-                    transition_grace_until = min(deadline, time.monotonic() + 15.0)
-                elif not resume_after_disappeared_entry("MaaNikki_StartGame_Enter"):
-                    return incomplete()
+                click_box_and_wait_exit(enter_box, "enter")
+                continue
             elif login:
                 if logged_in >= 3:
                     return incomplete("点击登录后仍停留在登录页面")
-                if advance("MaaNikki_StartGame_Login", transition_ready):
-                    transition_grace_until = min(deadline, time.monotonic() + 15.0)
-                elif not resume_after_disappeared_entry("MaaNikki_StartGame_Login"):
-                    return incomplete()
+                click_box_and_wait_exit(login_box, "login")
+                continue
             elif account_prompt:
                 if welcome_banner or version_check:
-                    # Cold startup can briefly render "注册/登录" while auto-login
-                    # handshake or version fetching is already underway.
                     if not auto_login_logged:
                         runtime.log("检测到账号正在自动登录，等待进入游戏界面。", detail=True)
                         auto_login_logged = True
@@ -692,44 +817,57 @@ class StartGameAction(CustomAction):
                 if not loading_logged:
                     runtime.log("正在加载奇迹大陆，等待进入主页。", detail=True)
                     loading_logged = True
-            elif any(runtime.hit(node) for node in (
+            elif any(runtime.hit(node, image=cur_frame) for node in (
                     "MaaNikki_MenuReady", "MaaNikki_CalendarReady", "MaaNikki_Monthly_PageReady")):
                 if runtime.main():
                     return complete()
                 return incomplete()
             elif not enter and not login:
-                # A confirmed download owns its unrecognized transition frames.
-                # Keep polling startup pages so RestartConfirm can hand the old
-                # window back to bootstrap; generic Esc recovery cannot do that.
                 if (update_waiting or (intro_logged and not entered)
                         or time.monotonic() < transition_grace_until
-                        or runtime.ui.asset("IconUILoading", threshold=.99)):
+                        or runtime.ui.asset("IconUILoading", image=cur_frame, threshold=.99)):
                     unknown_since = None
                 else:
-                    # Allow a short unrecognized transition before invoking
-                    # the ordinary, bounded recovery used by other tasks.
                     now = time.monotonic()
                     unknown_since = now if unknown_since is None else unknown_since
-                    if now-unknown_since >= 3:
-                        runtime.log("当前为未知页面，正在尝试正常恢复到游戏主页。")
+                    if now-unknown_since >= 4:
+                        runtime.log("当前为未知页面，正在尝试恢复到游戏主页。")
+                        recovered_startup = False
+                        for _ in range(4):
+                            if runtime.stopped:
+                                return False
+                            probe_f = runtime.capture()
+                            if probe_f is None:
+                                break
+                            probe_st = _inspect_startup_screen(runtime, probe_f)
+                            if any(
+                                probe_st[k]
+                                for k in (
+                                    "main", "reward", "restart_box", "update_dialog",
+                                    "enter_box", "login_box", "account_prompt",
+                                    "updating", "version_check", "intro", "loading",
+                                )
+                            ):
+                                next_frame = probe_f
+                                unknown_since = None
+                                recovered_startup = True
+                                break
+                            if not runtime.key("menu", .4):
+                                break
+                        if recovered_startup:
+                            continue
                         if runtime.main():
                             runtime.log("已恢复到游戏主页，继续后续任务。")
                             return complete()
-                        # Recovery can overlap a cold-start transition. The
-                        # login/enter screen needs the startup handler, not Esc.
-                        with runtime.observe(fresh=True):
-                            startup_ready = (transition_ready()
-                                             or runtime.hit("MaaNikki_StartGame_Login")
-                                             or runtime.hit("MaaNikki_StartGame_Intro"))
-                        if startup_ready:
-                            unknown_since = None
-                            runtime.log("已识别启动页面，继续等待登录或进入游戏。", detail=True)
-                            continue
                         return incomplete("无法从未知页面恢复到游戏主页，请手动返回主页后重试")
             if not waiting_logged:
-                runtime.log("正在等待进入游戏；切出窗口会暂停，切回后继续。")
+                runtime.log(
+                    "正在后台等待进入游戏（请保持窗口不最小化）。"
+                    if runtime.background_mode()
+                    else "正在等待进入游戏；切出窗口会暂停，切回后继续。"
+                )
                 waiting_logged = True
-            if not runtime.pause(.5):
+            if not runtime.pause(.25):
                 return False
         if account_prompt_hits > 0:
             return incomplete("游戏账号未登录，请先手动完成账号登录后再运行")

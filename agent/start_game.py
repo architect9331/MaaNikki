@@ -23,6 +23,7 @@ from runtime_threads import configure_worker_threads
 
 configure_worker_threads(2)
 from file_io import write_json
+from client_config import mxu_config
 
 for _stream in (sys.stdout, sys.stderr):
     _reconfigure = getattr(_stream, "reconfigure", None)
@@ -33,6 +34,73 @@ for _stream in (sys.stdout, sys.stderr):
             pass
 
 PROGRAMS = ("InfinityNikki.exe", "X6Game.exe", "X6Game-Win64-Shipping.exe")
+
+
+def resolve_focus_lost_mode(options=None) -> str:
+    """Read the user's configured FocusLostBehavior ('pause' | 'return' | 'background')."""
+    mapping = {"Pause": "pause", "Return": "return", "Background": "background"}
+    sources = [options] if isinstance(options, dict) else []
+    try:
+        cfg = mxu_config(ROOT) or {}
+        if isinstance(cfg.get("globalOptionValues"), dict):
+            sources.append(cfg["globalOptionValues"])
+    except Exception:
+        pass
+    for src in sources:
+        opt = src.get("FocusLostBehavior")
+        if isinstance(opt, str):
+            if opt in mapping:
+                return mapping[opt]
+            if opt in {"pause", "return", "background"}:
+                return opt
+        elif isinstance(opt, dict):
+            case_name = opt.get("caseName")
+            if case_name in mapping:
+                return mapping[case_name]
+    return "pause"
+
+
+def resolve_task_hud_mode(options=None) -> str:
+    """Read the user's configured TaskHudMode ('adaptive' | 'always' | 'reason_only')."""
+    mapping = {"Adaptive": "adaptive", "Always": "always", "ReasonOnly": "reason_only"}
+    sources = [options] if isinstance(options, dict) else []
+    try:
+        cfg = mxu_config(ROOT) or {}
+        if isinstance(cfg.get("globalOptionValues"), dict):
+            sources.append(cfg["globalOptionValues"])
+    except Exception:
+        pass
+    for src in sources:
+        opt = src.get("TaskHudMode")
+        if isinstance(opt, str):
+            if opt in mapping:
+                return mapping[opt]
+            if opt in {"adaptive", "always", "reason_only"}:
+                return opt
+        elif isinstance(opt, dict):
+            case_name = opt.get("caseName")
+            if case_name in mapping:
+                return mapping[case_name]
+    return "adaptive"
+
+
+def ensure_unminimized(hwnd) -> bool:
+    """Ensure a window is not minimized without stealing foreground focus."""
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.IsWindow.argtypes = [wintypes.HWND]
+    user32.IsWindow.restype = wintypes.BOOL
+    user32.IsIconic.argtypes = [wintypes.HWND]
+    user32.IsIconic.restype = wintypes.BOOL
+    user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+    if not user32.IsWindow(hwnd):
+        return False
+    if user32.IsIconic(hwnd):
+        user32.ShowWindow(hwnd, 4)  # SW_SHOWNOACTIVATE
+        time.sleep(0.15)
+        if user32.IsIconic(hwnd):
+            user32.ShowWindow(hwnd, 9)  # SW_RESTORE fallback
+            time.sleep(0.15)
+    return bool(user32.IsWindow(hwnd) and not user32.IsIconic(hwnd))
 
 
 def save_record(record):
@@ -312,15 +380,19 @@ class LauncherRuntime:
         if not self.tasker.bind(self.resource, self.controller):
             raise RuntimeError("无法建立官方启动器识别会话。")
 
-    def button(self):
+    def button(self, *, require_foreground=True):
         from maa.pipeline import JOCR
-        if not self.windows.foreground(self.hwnd):
+        if require_foreground and not self.windows.foreground(self.hwnd):
+            return None
+        if not require_foreground and (
+            not self.windows.user32.IsWindow(self.hwnd) or self.windows.user32.IsIconic(self.hwnd)
+        ):
             return None
         captured = self.controller.post_screencap().wait()
         if not captured.succeeded:
             return None
         self.image = captured.get()
-        if self.image is None or not self.windows.foreground(self.hwnd):
+        if self.image is None or (require_foreground and not self.windows.foreground(self.hwnd)):
             return None
         height, width = self.image.shape[:2]
         # Only the lower-right game button area, excluding top-bar launcher updates.
@@ -340,15 +412,66 @@ class LauncherRuntime:
                  else "start")
         return state, recognition.box
 
-    def action(self, state, box):
+    def _background_click(self, box) -> bool:
+        if self.image is None or not self.windows.user32.IsWindow(self.hwnd) or self.windows.user32.IsIconic(self.hwnd):
+            return False
+        cap_h, cap_w = self.image.shape[:2]
+        if cap_w <= 0 or cap_h <= 0:
+            return False
+        u32 = self.windows.user32
+        u32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
+        u32.ClientToScreen.restype = wintypes.BOOL
+        u32.GetCursorPos.argtypes = [ctypes.POINTER(wintypes.POINT)]
+        u32.GetCursorPos.restype = wintypes.BOOL
+        u32.SetCursorPos.argtypes = [ctypes.c_int, ctypes.c_int]
+        u32.SetCursorPos.restype = wintypes.BOOL
+        u32.SendMessageTimeoutW.argtypes = [
+            wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM,
+            wintypes.UINT, wintypes.UINT, ctypes.POINTER(ctypes.c_size_t),
+        ]
+        u32.SendMessageTimeoutW.restype = ctypes.c_ssize_t
+        rect = wintypes.RECT()
+        if not u32.GetClientRect(self.hwnd, ctypes.byref(rect)):
+            return False
+        cw, ch = rect.right - rect.left, rect.bottom - rect.top
+        if cw <= 0 or ch <= 0:
+            return False
+        cx = max(0, min(cw - 1, round((box[0] + box[2] / 2) * cw / cap_w)))
+        cy = max(0, min(ch - 1, round((box[1] + box[3] / 2) * ch / cap_h)))
+        pt = wintypes.POINT(cx, cy)
+        if not u32.ClientToScreen(self.hwnd, ctypes.byref(pt)):
+            return False
+        lparam = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
+        res_out = ctypes.c_size_t(0)
+        saved = wintypes.POINT()
+        has_saved = bool(u32.GetCursorPos(ctypes.byref(saved)))
+        u32.SendMessageTimeoutW(self.hwnd, 0x0006, 1, 0, 0x0002, 500, ctypes.byref(res_out))
+        u32.SetCursorPos(int(pt.x), int(pt.y))
+        try:
+            time.sleep(0.01)
+            u32.SendMessageTimeoutW(self.hwnd, 0x0200, 0, lparam, 0x0002, 500, ctypes.byref(res_out))
+            time.sleep(0.02)
+            ok = u32.SendMessageTimeoutW(self.hwnd, 0x0201, 0x0001, lparam, 0x0002, 500, ctypes.byref(res_out)) != 0
+            time.sleep(0.05)
+            u32.SendMessageTimeoutW(self.hwnd, 0x0202, 0, lparam, 0x0002, 500, ctypes.byref(res_out))
+            return ok
+        finally:
+            if has_saved:
+                u32.SetCursorPos(int(saved.x), int(saved.y))
+
+    def action(self, state, box, *, background=False):
         from maa.pipeline import JClick
-        if not box or not self.windows.foreground(self.hwnd):
+        if not box:
+            return False
+        if background and not self.windows.foreground(self.hwnd):
+            return self._background_click(box)
+        if not self.windows.foreground(self.hwnd):
             return False
         point = (box[0]+box[2]//2, box[1]+box[3]//2, 1, 1)
         # Use a window-bound Maa click, and guard focus again after mouse movement.
         if not self.controller.post_touch_move(point[0], point[1]).wait().succeeded:
             return False
-        time.sleep(.2)
+        time.sleep(.15)
         if not self.windows.foreground(self.hwnd):
             return False
         current = self.button()
@@ -361,7 +484,7 @@ class LauncherRuntime:
         return self.tasker.post_action("Click", JClick(target=point)).wait().succeeded
 
 
-def launch_game(program, timeout, record):
+def launch_game(program, timeout, record, *, background=False):
     os.environ["MAAFW_BINARY_PATH"] = str(ROOT / "maafw")
     from maa.library import Library
     from maa.tasker import Tasker
@@ -389,41 +512,50 @@ def launch_game(program, timeout, record):
             return
         hwnd = windows.find()
         if hwnd and (runtime is None or runtime.hwnd != hwnd):
-            if not focus_window(hwnd):
+            ready_win = ensure_unminimized(hwnd) if background else focus_window(hwnd)
+            if not ready_win:
                 if not windows.user32.IsWindow(hwnd):
                     runtime = None
-                    time.sleep(.5)
+                    time.sleep(.25)
                     continue
-                raise RuntimeError("未能自动将官方启动器切到前台，请检查窗口状态和权限后重试。")
+                raise RuntimeError("未能准备官方启动器窗口，请检查窗口最小化状态和权限后重试。")
             try:
                 with startup_step(record, "connect_launcher"):
                     runtime = LauncherRuntime(windows, hwnd)
             except RuntimeError:
                 if not windows.user32.IsWindow(hwnd):
                     runtime = None
-                    time.sleep(.5)
+                    time.sleep(.25)
                     continue
                 raise
             record["stage"] = "launcher_button"
             save_record(record)
         now = time.monotonic()
-        foreground = bool(hwnd and windows.foreground(hwnd))
-        # Do not consume the active timeout or click when the user switches windows.
-        if not paused and (not hwnd or foreground):
+        active_ok = (
+            bool(hwnd and windows.user32.IsWindow(hwnd) and not windows.user32.IsIconic(hwnd))
+            if background
+            else bool(hwnd and windows.foreground(hwnd))
+        )
+        # Do not consume the active timeout or click when paused outside the active state.
+        if not paused and (not hwnd or active_ok):
             remaining -= now-last_tick
-        last_tick, paused = now, bool(hwnd and not foreground)
-        if runtime and hwnd and foreground:
-            button = runtime.button()
+        last_tick, paused = now, bool(hwnd and not active_ok)
+        if runtime and hwnd and active_ok:
+            button = runtime.button(require_foreground=not background)
             if button:
                 state, box = button
                 record["button"] = state
                 record["stage"] = "updating" if state == "update" else "wait_game"
                 # Update/start clicks are debounced; progress/running text is never clicked.
-                if state != "running" and now-last_click[state] >= 10:
-                    if clicks[state] < 3 and runtime.action(state, box):
-                        clicks[state] += 1
-                        last_click[state] = now
-        time.sleep(.5)
+                if state != "running" and now-last_click[state] >= 8:
+                    if clicks[state] < 3:
+                        use_bg = background and clicks[state] == 0
+                        if not use_bg and not windows.foreground(hwnd):
+                            focus_window(hwnd)
+                        if runtime.action(state, box, background=use_bg):
+                            clicks[state] += 1
+                            last_click[state] = now
+        time.sleep(.25)
     record["clicks"] = clicks
     if runtime and runtime.image is not None:
         from diagnostics import save_image
@@ -435,12 +567,36 @@ def launch_game(program, timeout, record):
     raise RuntimeError("等待官方启动器更新或启动游戏超时，请检查启动器提示；记录见 logs/startup。")
 
 
+def _connect_game_controller(hwnd, background: bool):
+    from maa.controller import Win32Controller
+    from maa.define import MaaWin32InputMethodEnum, MaaWin32ScreencapMethodEnum
+    if background:
+        try:
+            ctypes.WinDLL("combase").RoInitialize(1)
+        except Exception:
+            pass
+        methods = (
+            ("FramePool", MaaWin32ScreencapMethodEnum.FramePool),
+            ("PrintWindow", MaaWin32ScreencapMethodEnum.PrintWindow),
+            ("ScreenDC", MaaWin32ScreencapMethodEnum.ScreenDC),
+        )
+    else:
+        methods = (("ScreenDC", MaaWin32ScreencapMethodEnum.ScreenDC),)
+    for name, method in methods:
+        ctrl = Win32Controller(
+            hwnd, method,
+            MaaWin32InputMethodEnum.Seize, MaaWin32InputMethodEnum.Seize,
+        )
+        ctrl.set_screenshot_target_short_side(720)
+        if ctrl.post_connection().wait().succeeded:
+            return ctrl, name
+    raise RuntimeError("无法连接进入游戏所需的窗口。")
+
+
 def prepare_game(timeout, record, options=None):
     """Keep the batch disconnected until hot updates and restarts are complete."""
     os.environ["MAAFW_BINARY_PATH"] = str(ROOT / "maafw")
     from maa.library import Library
-    from maa.controller import Win32Controller
-    from maa.define import MaaWin32InputMethodEnum, MaaWin32ScreencapMethodEnum
     from maa.resource import Resource
     from maa.tasker import Tasker
     from registration import local_registration
@@ -448,16 +604,24 @@ def prepare_game(timeout, record, options=None):
     Library.open(ROOT / "maafw")
     Tasker.set_log_dir(str(ROOT / "logs/startup/framework"))
     Tasker.set_save_on_error(False)
+    focus_mode = resolve_focus_lost_mode(options)
+    hud_mode = resolve_task_hud_mode(options)
+    background = focus_mode == "background"
     remaining = float(record.get("remaining_seconds", timeout))
     restarts = 0
-    record.update(success=False, stage="enter_game")
+    record.update(success=False, stage="enter_game", focus_mode=focus_mode)
     save_record(record)
     hwnd = game_window()
     while hwnd and remaining >= (1.0 if restarts == 0 else 5.0):
         preparing_at = time.monotonic()
         with startup_step(record, "focus_game"):
-            if not focus_window(hwnd):
-                raise RuntimeError("未能自动将无限暖暖切到前台，请检查窗口状态和权限后重试。")
+            ready_win = ensure_unminimized(hwnd) if background else focus_window(hwnd)
+            if not ready_win:
+                raise RuntimeError(
+                    "游戏窗口处于最小化状态且无法恢复，请取消最小化后重试。"
+                    if background
+                    else "未能自动将无限暖暖切到前台，请检查窗口状态和权限后重试。"
+                )
         with startup_step(record, "load_game_resource"):
             resource = Resource()
             resource.use_cpu()
@@ -468,16 +632,9 @@ def prepare_game(timeout, record, options=None):
                 from action import gameplay as _gameplay
                 from action import game_key as _game_key
                 from recognition import ui_template as _ui_template
-        record.update(game_hwnd=hwnd, screencap="ScreenDC")
         with startup_step(record, "connect_game"):
-            # Startup pauses outside the foreground. ScreenDC avoids the
-            # FramePool initialization crash observed in the helper process.
-            controller = Win32Controller(
-                hwnd, MaaWin32ScreencapMethodEnum.ScreenDC,
-                MaaWin32InputMethodEnum.Seize, MaaWin32InputMethodEnum.Seize)
-            controller.set_screenshot_target_short_side(720)
-            if not controller.post_connection().wait().succeeded:
-                raise RuntimeError("无法连接进入游戏所需的窗口。")
+            controller, cap_name = _connect_game_controller(hwnd, background)
+            record.update(game_hwnd=hwnd, screencap=cap_name)
             tasker = Tasker()
             if not tasker.bind(resource, controller):
                 raise RuntimeError("无法建立进入游戏的启动会话。")
@@ -499,6 +656,8 @@ def prepare_game(timeout, record, options=None):
                 "MaaNikki_AutoAdjustResolution": {"custom_action_param": {
                     "value": is_auto_adjust_resolution_enabled(options=options),
                 }},
+                "MaaNikki_FocusLost": {"custom_action_param": {"mode": focus_mode}},
+                "MaaNikki_TaskHud": {"custom_action_param": {"mode": hud_mode}},
             }).wait().get()
         finally:
             # A stop requested inside a local callback can complete the task
@@ -601,7 +760,12 @@ def main():
         else:
             raw_path = (options.get("StartGameProgram") or {}).get("path")
             program = resolve_program(raw_path if isinstance(raw_path, str) else "")
-            launch_game(program, timeout, record)
+            launch_game(
+                program,
+                timeout,
+                record,
+                background=(resolve_focus_lost_mode(options) == "background"),
+            )
         prepare_game(timeout, record, options=options)
         from tall_window import persist_session_16_9_handoff
         persist_session_16_9_handoff()
