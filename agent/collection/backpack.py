@@ -1,7 +1,8 @@
 """Full tall-window backpack scanner for Tab 1 (材料), Tab 2 (养成材料), and Bling."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from contextlib import nullcontext
+from datetime import date, datetime, timezone
 from functools import lru_cache
 import json
 from pathlib import Path
@@ -43,8 +44,37 @@ _MASK42_BOOL = (_VALID84[::2, ::2] > 0)
 _MASK84_FLAT = (_VALID84 > 0).reshape(-1)
 
 
+TAB1_LEDGER_TTL_DAYS = 7
+TAB2_LEDGER_TTL_DAYS = 3
+
+
 def current_game_day() -> str:
     return game_day().isoformat()
+
+
+@lru_cache(maxsize=1)
+def catalog_tab_map() -> dict[str, int]:
+    """Return {catalog_id_or_bling_id: tab (0 for top Bling, 1 for 材料, 2 for 养成材料)}."""
+    catalog = json.loads((ROOT / "resource/model/backpack/catalog.json").read_text(encoding="utf-8"))
+    mapping: dict[str, int] = {str(catalog.get("bling_id") or "992617511"): 0}
+    for meta in (catalog.get("items") or {}).values():
+        cid = meta.get("catalog_id")
+        if cid is not None:
+            mapping[str(cid)] = int(meta.get("tab") or 1)
+    return mapping
+
+
+def required_tabs_for_mids(needed_mids: dict[str, int] | None) -> set[int]:
+    if not needed_mids:
+        return set()
+    tab_map = catalog_tab_map()
+    tabs: set[int] = set()
+    for mid, need in needed_mids.items():
+        if int(need or 0) <= 0:
+            continue
+        tab = tab_map.get(str(mid), 1)
+        tabs.add(2 if tab == 0 else tab)
+    return tabs
 
 
 def wardrobe_snapshot(role: dict) -> dict:
@@ -655,6 +685,16 @@ def _resolve_clicked_item(
     return None, cat_fallback, cur_panel
 
 
+def _finalize_tab_stats(stats: dict, deferred_slots: set) -> dict:
+    traversed = bool(stats.get("traversed")) and not deferred_slots
+    items = int(stats.get("items", 0))
+    unknown = int(stats.get("unknown", 0))
+    stats["traversed"] = traversed
+    stats["complete"] = traversed and unknown == 0
+    stats["usable"] = traversed and (unknown == 0 or (items > 0 and unknown <= max(5, int(items * 0.05))))
+    return stats
+
+
 def _scan_tab(
     rt,
     model: BackpackModel,
@@ -665,7 +705,7 @@ def _scan_tab(
     target_slots: set[tuple[int, int]] | None = None,
 ) -> tuple[dict[str, int], dict, set[tuple[int, int]]]:
     counts: dict[str, int] = {}
-    stats = {"items": 0, "clicked": 0, "unknown": 0, "complete": False}
+    stats = {"items": 0, "clicked": 0, "unknown": 0, "traversed": False, "complete": False, "usable": False}
     deferred_slots: set[tuple[int, int]] = set()
     frame = _scroll_to_top(rt)
     if frame is None:
@@ -690,14 +730,18 @@ def _scan_tab(
         row_ys = detect_grid_rows(frame, grid_top=GRID_TOP, grid_bottom=grid_bottom)
         if not row_ys:
             # No rows visible on initial top view -> genuine empty tab.
-            stats["complete"] = _page == 0 and target_slots is None
+            if _page == 0 and target_slots is None:
+                stats["traversed"] = True
+                _finalize_tab_stats(stats, deferred_slots)
             break
         if first_row_y is None:
             first_row_y = row_ys[0]
 
         occ_rows, reached_list_end = _detect_occupied_grid_rows(frame, row_ys)
         if not occ_rows:
-            stats["complete"] = _page == 0 and target_slots is None
+            if _page == 0 and target_slots is None:
+                stats["traversed"] = True
+                _finalize_tab_stats(stats, deferred_slots)
             break
         occ_anchors = [(cy, max(cols) + 1) for cy, cols in occ_rows]
 
@@ -797,7 +841,11 @@ def _scan_tab(
             or (reached_list_end and blocked_cy is None and not remaining_targets)
             or (target_slots is not None and not remaining_targets)
         ):
-            stats["complete"] = stats["unknown"] == 0 and not deferred_slots
+            if target_slots is None:
+                stats["traversed"] = (at_bottom_stuck or reached_list_end) and blocked_cy is None
+            else:
+                stats["traversed"] = not remaining_targets
+            _finalize_tab_stats(stats, deferred_slots)
             return counts, stats, deferred_slots
 
         if blocked_cy is not None and is_tall:
@@ -836,7 +884,8 @@ def _scan_tab(
                         at_bottom_stuck = True
                         moved = True
                         break
-                    stats["complete"] = stats["unknown"] == 0 and not deferred_slots
+                    stats["traversed"] = True
+                    _finalize_tab_stats(stats, deferred_slots)
                     return counts, stats, deferred_slots
             if delta is not None and delta > 0:
                 if attempt_dy != 0:
@@ -871,8 +920,16 @@ def _switch_tab(rt, *, want_growth: bool) -> bool:
     return ("养成" in header) if want_growth else ("材料" in header and "养成" not in header)
 
 
-def scan_backpack_inventory(rt, crafting_catalog: dict) -> tuple[dict[str, int], dict] | None:
-    """Open backpack, scan Bling + all Tab 1 (材料) & Tab 2 (养成材料) items using tall_window."""
+def scan_backpack_inventory(
+    rt,
+    crafting_catalog: dict,
+    *,
+    tabs: tuple[int, ...] = (1, 2),
+) -> tuple[dict[str, int], dict] | None:
+    """Open backpack and scan requested tabs (1=材料, 2=养成材料) plus top Bling."""
+    scan_tabs = tuple(t for t in (1, 2) if t in tabs)
+    if not scan_tabs:
+        return None
     if not rt.hit("MaaNikki_BackpackReady"):
         if not rt.main():
             return None
@@ -888,7 +945,7 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> tuple[dict[str, int],
 
     model = load_backpack_model()
     found: dict[str, int] = {}
-    summary: dict = {"complete": False, "tab1": {}, "tab2": {}, "tall_mode": False}
+    summary: dict = {"complete": False, "scanned_tabs": list(scan_tabs), "tab1": {}, "tab2": {}, "tall_mode": False}
     try:
         frame = rt.capture()
         if frame is None:
@@ -898,34 +955,34 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> tuple[dict[str, int],
             found[model.bling_id] = bling
             summary["bling"] = bling
 
-        deferred1: set[tuple[int, int]] = set()
-        deferred2: set[tuple[int, int]] = set()
-        tab2_entered = False
-        with tall_window(rt) as is_tall:
+        deferred_by_tab: dict[int, set[tuple[int, int]]] = {}
+        entered_tabs: set[int] = set()
+        use_tall = 1 in scan_tabs
+        tall_ctx = tall_window(rt) if use_tall else nullcontext(False)
+        with tall_ctx as is_tall:
             summary["tall_mode"] = bool(is_tall)
             if is_tall:
-                rt.log("背包扫描：已切换超长竖屏模式，正在读取材料与养成材料库存。")
+                rt.log("背包扫描：已切换超长竖屏模式，正在读取材料库存。")
 
-            if not _switch_tab(rt, want_growth=False):
-                return None
-
-            c1, s1, deferred1 = _scan_tab(rt, model, 1, is_tall, crafting_catalog)
-            found.update(c1)
-            summary["tab1"] = s1
-
-            if _switch_tab(rt, want_growth=True):
-                tab2_entered = True
-                c2, s2, deferred2 = _scan_tab(rt, model, 2, is_tall, crafting_catalog)
-                for k, v in c2.items():
+            for tab in scan_tabs:
+                want_growth = tab == 2
+                if not _switch_tab(rt, want_growth=want_growth):
+                    if tab == scan_tabs[0]:
+                        return None
+                    continue
+                entered_tabs.add(tab)
+                c_tab, s_tab, deferred_tab = _scan_tab(rt, model, tab, is_tall, crafting_catalog)
+                for k, v in c_tab.items():
                     found[k] = found.get(k, 0) + v
-                summary["tab2"] = s2
+                summary[f"tab{tab}"] = s_tab
+                deferred_by_tab[tab] = deferred_tab
 
-        for tab, want_growth, deferred_set, tab_key in (
-            (1, False, deferred1, "tab1"),
-            (2, True, deferred2, "tab2"),
-        ):
-            if rt.stopped or not deferred_set or (tab == 2 and not tab2_entered):
+        for tab in scan_tabs:
+            deferred_set = deferred_by_tab.get(tab)
+            if rt.stopped or not deferred_set or tab not in entered_tabs:
                 continue
+            want_growth = tab == 2
+            tab_key = f"tab{tab}"
             rt.log("背包扫描：已恢复常规窗口，正在补充识别列表末尾待定材料。", detail=True)
             if _switch_tab(rt, want_growth=want_growth):
                 dc, ds, rem = _scan_tab(
@@ -942,13 +999,13 @@ def scan_backpack_inventory(rt, crafting_catalog: dict) -> tuple[dict[str, int],
                 tab_stats["items"] = int(tab_stats.get("items", 0)) + int(ds.get("items", 0))
                 tab_stats["clicked"] = int(tab_stats.get("clicked", 0)) + int(ds.get("clicked", 0))
                 tab_stats["unknown"] = int(tab_stats.get("unknown", 0)) + int(ds.get("unknown", 0))
-                tab_stats["complete"] = (
-                    int(tab_stats.get("unknown", 0)) == 0
-                    and bool(ds.get("complete"))
-                    and not rem
-                )
+                tab_stats["traversed"] = bool(ds.get("traversed")) and not rem
+                _finalize_tab_stats(tab_stats, rem)
 
-        summary["complete"] = bool(summary["tab1"].get("complete")) and bool(summary["tab2"].get("complete"))
+        summary["scanned_tabs"] = sorted(entered_tabs)
+        summary["complete"] = bool(entered_tabs) and all(
+            bool((summary.get(f"tab{t}") or {}).get("complete")) for t in entered_tabs
+        )
         return found, summary
     finally:
         if not rt.stopped:
@@ -971,7 +1028,16 @@ def _apply_backpack_results(
     for meta in model.items.values():
         if meta.get("catalog_id"):
             cat_tabs[str(meta["catalog_id"])] = int(meta["tab"])
-    completed_tabs = {tab for tab, key in ((1, "tab1"), (2, "tab2")) if (summary.get(key) or {}).get("complete")}
+    scanned_tabs = {int(t) for t in (summary.get("scanned_tabs") or (1, 2)) if int(t) in (1, 2)}
+    completed_tabs = {tab for tab in scanned_tabs if (summary.get(f"tab{tab}") or {}).get("complete")}
+    zeroable_tabs = {
+        tab for tab in scanned_tabs
+        if (summary.get(f"tab{tab}") or {}).get("complete")
+        or (
+            (summary.get(f"tab{tab}") or {}).get("usable")
+            and int((summary.get(f"tab{tab}") or {}).get("unknown", 0)) == 0
+        )
+    }
     extra_keys_by_tab = {
         tab: {iid for iid, meta in model.items.items() if int(meta["tab"]) == tab and not meta.get("catalog_id")}
         for tab in (1, 2)
@@ -1000,7 +1066,7 @@ def _apply_backpack_results(
 
         final_scanned = dict(scanned)
         for cid, tab in cat_tabs.items():
-            if tab in completed_tabs:
+            if tab in zeroable_tabs:
                 final_scanned.setdefault(cid, 0)
 
         for mid, v in final_scanned.items():
@@ -1039,15 +1105,34 @@ def _apply_backpack_results(
             if not has_remaining:
                 glow_plan["completed_at"] = now
 
+        tab_scans = dict(m.get("backpack_tabs") or {})
+        for tab in scanned_tabs:
+            ts = dict(summary.get(f"tab{tab}") or {})
+            tab_scans[str(tab)] = {
+                "scanned_day": today,
+                "updated_at": now,
+                "traversed": bool(ts.get("traversed")),
+                "complete": bool(ts.get("complete")),
+                "usable": bool(ts.get("usable")),
+                "items": int(ts.get("items", 0)),
+                "unknown": int(ts.get("unknown", 0)),
+            }
+        m["backpack_tabs"] = tab_scans
+
+        prev_summary = m.get("backpack_summary") if isinstance(m.get("backpack_summary"), dict) else {}
+        merged_t1 = summary.get("tab1") if 1 in scanned_tabs else (prev_summary.get("tab1") or {})
+        merged_t2 = summary.get("tab2") if 2 in scanned_tabs else (prev_summary.get("tab2") or {})
+        merged_bling = summary.get("bling") if "bling" in summary else prev_summary.get("bling")
+
         m["backpack_scanned_day"] = today
         m["inventory_updated_at"] = now
         m["backpack_summary"] = {
             "updated_at": now,
-            "complete": bool(summary.get("complete")),
+            "complete": bool(merged_t1.get("complete")) and bool(merged_t2.get("complete")),
             "tall_mode": bool(summary.get("tall_mode")),
-            "tab1": summary.get("tab1"),
-            "tab2": summary.get("tab2"),
-            "bling": summary.get("bling"),
+            "tab1": merged_t1,
+            "tab2": merged_t2,
+            "bling": merged_bling,
             "total_tracked": len(cur),
         }
 
@@ -1058,27 +1143,148 @@ def _apply_backpack_results(
     return dict((role_after.get("materials") or {}).get("inventory") or {})
 
 
-def ensure_backpack_scanned(rt, account: AccountState, crafting_catalog: dict) -> dict[str, int]:
+def _tab_record(mats: dict, tab: int) -> dict | None:
+    tabs = mats.get("backpack_tabs")
+    if isinstance(tabs, dict) and isinstance(tabs.get(str(tab)), dict):
+        rec = dict(tabs[str(tab)])
+        if "usable" not in rec:
+            items = int(rec.get("items", 0))
+            unknown = int(rec.get("unknown", 0))
+            rec["usable"] = bool(rec.get("complete")) or (items > 0 and unknown <= max(5, int(items * 0.05)))
+        return rec
+    day = mats.get("backpack_scanned_day")
+    summary = mats.get("backpack_summary") if isinstance(mats.get("backpack_summary"), dict) else {}
+    tinfo = summary.get(f"tab{tab}") if isinstance(summary.get(f"tab{tab}"), dict) else None
+    if not day or not isinstance(tinfo, dict) or not tinfo:
+        return None
+    items = int(tinfo.get("items", 0))
+    unknown = int(tinfo.get("unknown", 0))
+    complete = bool(tinfo.get("complete"))
+    usable = complete or (items > 0 and unknown <= max(5, int(items * 0.05)))
+    return {
+        "scanned_day": str(day),
+        "updated_at": str(summary.get("updated_at") or mats.get("inventory_updated_at") or ""),
+        "traversed": complete or items > 0,
+        "complete": complete,
+        "usable": usable,
+        "items": items,
+        "unknown": unknown,
+    }
+
+
+def _tab_age_days(rec: dict | None, today_date: date) -> int:
+    if not rec:
+        return 9999
+    day_str = str(rec.get("scanned_day") or "")
+    try:
+        parsed = date.fromisoformat(day_str)
+    except ValueError:
+        return 9999
+    return max(0, (today_date - parsed).days)
+
+
+def has_backpack_baseline(role: dict, needed_tabs: set[int] | None = None) -> bool:
+    """Whether the role has usable baseline records for every tab in ``needed_tabs``."""
+    mats = role.get("materials") or {}
+    if not mats.get("inventory") and not mats.get("backpack_summary") and not mats.get("backpack_tabs"):
+        return False
+    check_tabs = needed_tabs if needed_tabs else {1, 2}
+    for tab in check_tabs:
+        rec = _tab_record(mats, tab)
+        if not rec or not rec.get("usable"):
+            return False
+    return True
+
+
+def tabs_needing_refresh(
+    role: dict,
+    crafting_catalog: dict,
+    needed_mids: dict[str, int] | None = None,
+) -> tuple[int, ...]:
+    """Choose only the backpack tabs needing refresh based on age TTL and completion proximity."""
+    mats = role.get("materials") or {}
+    inv = mats.get("inventory") or {}
+    today_date = game_day()
+
+    if needed_mids is None:
+        tabs: list[int] = []
+        for tab, ttl in ((1, TAB1_LEDGER_TTL_DAYS), (2, TAB2_LEDGER_TTL_DAYS)):
+            rec = _tab_record(mats, tab)
+            if not rec or not rec.get("usable") or _tab_age_days(rec, today_date) >= ttl:
+                tabs.append(tab)
+        return tuple(tabs)
+
+    tab_map = catalog_tab_map()
+    mat_defs = crafting_catalog.get("materials") or {}
+    refresh: set[int] = set()
+    checked_tabs: dict[int, tuple[int, bool]] = {}
+
+    for raw_mid, raw_need in needed_mids.items():
+        need = int(raw_need or 0)
+        if need <= 0:
+            continue
+        mid = str(raw_mid)
+        raw_tab = tab_map.get(mid, 1)
+        tab = 2 if raw_tab == 0 else raw_tab
+        if tab not in checked_tabs:
+            rec = _tab_record(mats, tab)
+            age = _tab_age_days(rec, today_date)
+            usable = bool(rec and rec.get("usable"))
+            checked_tabs[tab] = (age, usable)
+            ttl = TAB1_LEDGER_TTL_DAYS if tab == 1 else TAB2_LEDGER_TTL_DAYS
+            if not usable or age >= ttl:
+                refresh.add(tab)
+                continue
+        age, usable = checked_tabs[tab]
+        if tab in refresh or age <= 0:
+            continue
+        meta = mat_defs.get(mid) or {}
+        drop = max(1, int(meta.get("drop") or 1))
+        realm = meta.get("realm")
+        owned = int(inv.get(mid, 0))
+        deficit = need - owned
+        near_runs = 12 if realm == "jihua" else 4
+        surplus_runs = 6 if realm == "jihua" else 2
+        if (0 < deficit <= drop * near_runs) or (0 <= -deficit <= drop * surplus_runs):
+            refresh.add(tab)
+
+    return tuple(sorted(refresh))
+
+
+def ensure_backpack_scanned(
+    rt,
+    account: AccountState,
+    crafting_catalog: dict,
+    *,
+    needed_mids: dict[str, int] | None = None,
+    allow_init_scan: bool = True,
+) -> dict[str, int]:
     role = account.load()
     mats = role.get("materials") or {}
     inv = dict(mats.get("inventory") or {})
-    today = current_game_day()
-    summary_ok = bool((mats.get("backpack_summary") or {}).get("complete", True))
-    if mats.get("backpack_scanned_day") == today and inv and summary_ok:
+    refresh_tabs = tabs_needing_refresh(role, crafting_catalog, needed_mids)
+    if not refresh_tabs:
         return inv
-    rt.log("正在打开背包核对今日材料与养成材料库存。")
-    result = scan_backpack_inventory(rt, crafting_catalog)
+    if not allow_init_scan:
+        refresh_tabs = tuple(t for t in refresh_tabs if _tab_record(mats, t) is not None)
+        if not refresh_tabs:
+            return inv
+    if refresh_tabs == (2,):
+        rt.log("正在快速核对养成材料与噗灵库存（仅养成材料页）。")
+    else:
+        rt.log("正在打开背包核对所需材料库存。")
+    result = scan_backpack_inventory(rt, crafting_catalog, tabs=refresh_tabs)
     if not result:
         return inv
     scanned, summary = result
     updated_inv = _apply_backpack_results(rt, account, crafting_catalog, scanned, summary)
-    rt.log(f"背包材料库存核对完成：已记录 {len(scanned)} 项有库存物品（累计追踪 {len(updated_inv)} 项）。")
+    rt.log(f"背包材料库存核对完成：本次读取 {len(scanned)} 项有库存物品（累计追踪 {len(updated_inv)} 项）。")
     return updated_inv
 
 
 def rescan_backpack(rt, account: AccountState, crafting_catalog: dict) -> dict[str, int] | None:
     """Manual full backpack read returning updated inventory or None on failure."""
-    result = scan_backpack_inventory(rt, crafting_catalog)
+    result = scan_backpack_inventory(rt, crafting_catalog, tabs=(1, 2))
     if not result:
         return None
     scanned, summary = result
