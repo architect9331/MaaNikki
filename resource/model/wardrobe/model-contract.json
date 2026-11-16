@@ -2,7 +2,7 @@
   "schema_version": 1,
   "version": "wardrobe-convnext-tiny-v1+head-train.2872",
   "classes": "Part-local class_id indexes labels.json; return all item_ids in that row",
-  "label_fingerprint": "80b5eaaacfcfee9776b6e495637d75d944123c1a09287ac3aeb3293b288d5929",
+  "label_fingerprint": "e43769c162a059c8821a2ab4f5b7fb00c569c6291ffc3b299cd8735ffc78637c",
   "files": {
     "parts.json": {
       "bytes": 2644,
@@ -14,7 +14,7 @@
     },
     "labels.json": {
       "bytes": 762682,
-      "sha256": "80b5eaaacfcfee9776b6e495637d75d944123c1a09287ac3aeb3293b288d5929"
+      "sha256": "e43769c162a059c8821a2ab4f5b7fb00c569c6291ffc3b299cd8735ffc78637c"
     }
   },
   "base_version": "wardrobe-convnext-tiny-v1"
