@@ -130,11 +130,17 @@ pub fn run() {
 
             // 尽早初始化遥测，使后续启动流程中的崩溃也能上报
             commands::telemetry::init_at_startup(&app_config);
+            commands::data_update::init_on_startup();
 
             // 先注册共享状态，再启动依赖这些状态的后台任务，避免启动竞态
             app.manage(ws_broadcast.clone());
             app.manage(app_config.clone());
             commands::resonance::start(app.handle());
+            commands::data_update::start(
+                app.handle().clone(),
+                app_config.clone(),
+                maa_state.clone(),
+            );
 
             // 启动 HTTP Web 服务器（后台 tokio 任务，不阻塞 Tauri 启动）
             {
@@ -259,6 +265,8 @@ pub fn run() {
             commands::wardrobe_scoring::save_material_plan,
             commands::wardrobe_scoring::list_game_photos,
             commands::wardrobe_scoring::read_game_photo_base64,
+            commands::data_update::get_data_update_status,
+            commands::data_update::trigger_data_update_check,
             // Maa 核心命令
             commands::maa_core::maa_init,
             commands::maa_core::maa_set_resource_dir,

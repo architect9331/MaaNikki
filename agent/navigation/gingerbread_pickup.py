@@ -106,7 +106,8 @@ class MaterialNameResolver:
         self._load_dictionaries()
 
     def _load_dictionaries(self) -> None:
-        cat_path = self.root / "resource/navigation/materials_catalog_v1.json"
+        from data_paths import data_path
+        cat_path = data_path("resource/navigation/materials_catalog_v1.json", self.root)
         if cat_path.is_file():
             try:
                 raw = json.loads(cat_path.read_text(encoding="utf-8"))
@@ -439,7 +440,8 @@ class GingerbreadRouteAnalyzer:
         self.in_stride_pickups: list[dict] = []
         self._load_map_spawners()
     def _load_map_spawners(self) -> None:
-        cat_path = self.root / "resource/navigation/materials_catalog_v1.json"
+        from data_paths import data_path
+        cat_path = data_path("resource/navigation/materials_catalog_v1.json", self.root)
         if not cat_path.is_file():
             return
         try:

@@ -24,8 +24,9 @@ from .dominance import strictly_dominated_standalone_ids
 
 
 def load_catalogs():
-    crafting = json.loads((ROOT / "resource/data/crafting_catalog.json").read_text(encoding="utf-8"))
-    scoring = json.loads((ROOT / "resource/data/wardrobe_scoring.json").read_text(encoding="utf-8"))
+    from data_paths import data_path
+    crafting = json.loads(data_path("resource/data/crafting_catalog.json").read_text(encoding="utf-8"))
+    scoring = json.loads(data_path("resource/data/wardrobe_scoring.json").read_text(encoding="utf-8"))
     return crafting, scoring
 
 

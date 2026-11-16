@@ -4,7 +4,8 @@ use super::{
         account_state_revision, file_stamp, read_json, read_role, update_role, valid_account_key,
         FileStamp,
     },
-    utils::{get_app_data_dir, get_exe_directory},
+    data_update::{resolve_data_file, resolve_overlay_file},
+    utils::get_app_data_dir,
 };
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -15,8 +16,12 @@ struct CachedScoring {
     index_stamp: FileStamp,
     role_path: PathBuf,
     role_stamp: FileStamp,
+    scoring_path: PathBuf,
     scoring_stamp: FileStamp,
+    crafting_path: PathBuf,
     crafting_stamp: FileStamp,
+    sources_path: Option<PathBuf>,
+    sources_stamp: FileStamp,
     value: Value,
 }
 
@@ -34,22 +39,30 @@ fn active_key() -> Result<String, String> {
 
 fn load() -> Result<Value, String> {
     let app_data = get_app_data_dir()?;
-    let exe_dir = get_exe_directory()?;
     let index_path = app_data.join("config/accounts/index.json");
-    let scoring_path = exe_dir.join("resource/data/wardrobe_scoring.json");
-    let crafting_path = exe_dir.join("resource/data/crafting_catalog.json");
+    let scoring_path = resolve_data_file("resource/data/wardrobe_scoring.json")?;
+    let crafting_path = resolve_data_file("resource/data/crafting_catalog.json")?;
+    let sources_path = resolve_overlay_file("resource/data/item_sources.json");
     let rev = account_state_revision();
     let index_stamp = file_stamp(&index_path);
     let scoring_stamp = file_stamp(&scoring_path);
     let crafting_stamp = file_stamp(&crafting_path);
+    let sources_stamp = sources_path
+        .as_deref()
+        .map(file_stamp)
+        .unwrap_or((false, 0, 0));
 
     let cache = SCORING_CACHE.get_or_init(|| Mutex::new(None));
     if let Ok(guard) = cache.lock() {
         if let Some(entry) = guard.as_ref() {
             if entry.rev == rev
                 && entry.index_stamp == index_stamp
+                && entry.scoring_path == scoring_path
                 && entry.scoring_stamp == scoring_stamp
+                && entry.crafting_path == crafting_path
                 && entry.crafting_stamp == crafting_stamp
+                && entry.sources_path == sources_path
+                && entry.sources_stamp == sources_stamp
                 && file_stamp(&entry.role_path) == entry.role_stamp
             {
                 return Ok(entry.value.clone());
@@ -83,11 +96,16 @@ fn load() -> Result<Value, String> {
         return Err("搭配计分资料版本不支持。".into());
     }
     let crafting_catalog = read_json(&crafting_path)?.unwrap_or(Value::Null);
+    let item_sources = match &sources_path {
+        Some(path) => read_json(path)?.unwrap_or(Value::Null),
+        None => Value::Null,
+    };
     let result = json!({
         "account_key": key, "uid": role["uid"], "snapshot": snapshot,
         "blessing": blessing,
         "settings": wardrobe.get("scoring"), "catalog": catalog,
         "materials": role.get("materials"), "crafting_catalog": crafting_catalog,
+        "item_sources": item_sources,
     });
     if let Ok(mut guard) = cache.lock() {
         *guard = Some(CachedScoring {
@@ -95,8 +113,12 @@ fn load() -> Result<Value, String> {
             index_stamp,
             role_path,
             role_stamp,
+            scoring_path,
             scoring_stamp,
+            crafting_path,
             crafting_stamp,
+            sources_path,
+            sources_stamp,
             value: result.clone(),
         });
     }

@@ -442,6 +442,10 @@ async fn start_single_agent(
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
+        if let Some(overlay_dir) = super::data_update::active_slot_dir() {
+            cmd.env("PI_MAANIKKI_DATA_OVERLAY", overlay_dir);
+        }
+
         // PI v2.5.0: 仅允许注入 PI_* 环境变量，避免覆盖宿主进程关键环境。
         let mut injected_count = 0usize;
         for (key, value) in pi_envs.iter() {

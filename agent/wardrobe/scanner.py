@@ -59,8 +59,9 @@ def clean(text):
 
 class WardrobeScanner(InventoryScanner):
     def __init__(self, runtime, folder):
+        from data_paths import data_path
         self.rt, self.folder = runtime, folder
-        self.model = WardrobeCatalog(ROOT / "resource/model/wardrobe")
+        self.model = WardrobeCatalog(data_path("resource/model/wardrobe"), data_path("resource/data/wardrobe_scoring.json"))
         self.account = AccountState.for_runtime(ROOT, runtime)
         self.layout = {
             "grid": [265, 130, 950, 505],

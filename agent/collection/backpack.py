@@ -55,7 +55,8 @@ def current_game_day() -> str:
 @lru_cache(maxsize=1)
 def catalog_tab_map() -> dict[str, int]:
     """Return {catalog_id_or_bling_id: tab (0 for top Bling, 1 for 材料, 2 for 养成材料)}."""
-    catalog = json.loads((ROOT / "resource/model/backpack/catalog.json").read_text(encoding="utf-8"))
+    from data_paths import data_path
+    catalog = json.loads(data_path("resource/model/backpack/catalog.json").read_text(encoding="utf-8"))
     mapping: dict[str, int] = {str(catalog.get("bling_id") or "992617511"): 0}
     for meta in (catalog.get("items") or {}).values():
         cid = meta.get("catalog_id")
@@ -337,7 +338,8 @@ class BackpackModel:
 
 @lru_cache(maxsize=1)
 def load_backpack_model() -> BackpackModel:
-    return BackpackModel(ROOT / "resource/model/backpack")
+    from data_paths import data_path
+    return BackpackModel(data_path("resource/model/backpack"))
 
 
 def detect_grid_rows(frame: np.ndarray, grid_top: int = GRID_TOP, grid_bottom: int | None = None) -> list[int]:

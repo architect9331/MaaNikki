@@ -336,8 +336,9 @@ class PearPalMaterialCatalog:
     """Fetches and caches all open-world material spawners and 3D spire elevations."""
 
     def __init__(self, root: Path):
+        from data_paths import data_path
         self.root = root
-        self.builtin_path = root / "resource/navigation/materials_catalog_v1.json"
+        self.builtin_path = data_path("resource/navigation/materials_catalog_v1.json", root)
         self.cache_path = root / "cache/map-mask/materials_catalog_v1.json"
         self.checkpoints_path = root / "resource/navigation/checkpoints.json"
         self.catalogs: dict[str, dict] = {}

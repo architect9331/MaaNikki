@@ -95,8 +95,9 @@ class BlessingLocker(InventoryScanner):
         self.lock_groups = {}
         self._hover_box = None
         self._hover_panel = None
+        from data_paths import data_path
         self.stack_count_cache = {}
-        self.card_models = CardModels(ROOT / "resource/model", catalog)
+        self.card_models = CardModels(data_path("resource/model"), catalog)
         self._model_slot = None
         self.snapshot["scan"].update(verification_policy="page_card_models", model_cards=0, model_seconds=0.0)
 

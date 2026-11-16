@@ -244,8 +244,9 @@ class RejuvenateModel:
 
 @lru_cache(maxsize=2)
 def _load_rejuvenate_model(scoring_version: str = "") -> RejuvenateModel:
+    from data_paths import data_path
     _crafting, scoring = load_catalogs()
-    return RejuvenateModel(ROOT / "resource/model/rejuvenate", scoring)
+    return RejuvenateModel(data_path("resource/model/rejuvenate"), scoring)
 
 
 def detect_rejuv_rows(frame: np.ndarray, grid_top: int = GRID_TOP, grid_bottom: int | None = None) -> list[int]:
@@ -554,9 +555,10 @@ class RenewalScanner:
         self.rt = rt
         self.account = account or AccountState.for_runtime(ROOT, rt)
         self.mode = "incremental" if mode == "incremental" else "full"
+        from data_paths import data_path
         self.crafting, self.scoring = load_catalogs()
         self.model = _load_rejuvenate_model(str(self.scoring.get("version") or ""))
-        self.wb_catalog = WardrobeCatalog(ROOT / "resource/model/wardrobe", ROOT / "resource/data/wardrobe_scoring.json")
+        self.wb_catalog = WardrobeCatalog(data_path("resource/model/wardrobe"), data_path("resource/data/wardrobe_scoring.json"))
         self._started_at = datetime.now(timezone.utc).isoformat()
         self.summary: dict = {
             "complete": False,

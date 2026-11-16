@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import {
   Download,
   Key,
@@ -30,7 +32,16 @@ import { createProxySettings, proxySettingsForUpdateDownload } from '@/services/
 import { resolveI18nText } from '@/services/contentResolver';
 import { getInterfaceLangKey } from '@/i18n';
 import { loggers } from '@/utils/logger';
+import { isTauri } from '@/utils/paths';
 import { ReleaseNotes, DownloadProgressBar } from '../UpdateInfoCard';
+
+interface DataUpdateStatusPayload {
+  state: string;
+  activeVersion?: string | null;
+  remoteVersion?: string | null;
+  wardrobeVersion?: string | null;
+  updatedAt?: string | null;
+}
 
 export function UpdateSection() {
   const { t } = useTranslation();
@@ -65,7 +76,25 @@ export function UpdateSection() {
   const [proxyInput, setProxyInput] = useState(proxySettings?.url || '');
   const [proxyError, setProxyError] = useState(false);
   const [checkFailed, setCheckFailed] = useState(false);
+  const [dataStatus, setDataStatus] = useState<DataUpdateStatusPayload | null>(null);
   const [, setDebugLog] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!isTauri()) return;
+    let disposed = false;
+    void invoke<DataUpdateStatusPayload>('get_data_update_status')
+      .then((res) => {
+        if (!disposed) setDataStatus(res);
+      })
+      .catch(() => {});
+    const unlistenPromise = listen<DataUpdateStatusPayload>('data-update-status', (ev) => {
+      if (!disposed) setDataStatus(ev.payload);
+    });
+    return () => {
+      disposed = true;
+      void unlistenPromise.then((fn) => fn());
+    };
+  }, []);
 
   const addDebugLog = useCallback((msg: string) => {
     setDebugLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -328,6 +357,11 @@ export function UpdateSection() {
     setCheckFailed(false);
     setUpdateCheckLoading(true);
     addDebugLog(`开始检查更新... (频道: ${mirrorChyanSettings.channel})`);
+    if (isTauri()) {
+      void invoke<DataUpdateStatusPayload>('trigger_data_update_check')
+        .then((res) => setDataStatus(res))
+        .catch(() => {});
+    }
 
     try {
       const result = await checkAndPrepareDownload({
@@ -548,6 +582,19 @@ export function UpdateSection() {
               {updateInfo && !updateInfo.hasUpdate && !updateInfo.errorCode && (
                 <p className="text-xs text-center text-text-muted">
                   {t('mirrorChyan.upToDate', { version: updateInfo.versionName })}
+                </p>
+              )}
+              {dataStatus && (dataStatus.state === 'updating' || dataStatus.wardrobeVersion || dataStatus.activeVersion) && (
+                <p className="text-xs text-center text-text-muted">
+                  {dataStatus.state === 'updating'
+                    ? '游戏数据正在后台静默同步…'
+                    : `游戏数据：${
+                        dataStatus.activeVersion
+                          ? `v${dataStatus.activeVersion}`
+                          : dataStatus.remoteVersion
+                            ? `v${dataStatus.remoteVersion}（内置已是最新）`
+                            : '内置基线'
+                      }${dataStatus.wardrobeVersion ? ` · 更新至 ${dataStatus.wardrobeVersion}` : ''}`}
                 </p>
               )}
 

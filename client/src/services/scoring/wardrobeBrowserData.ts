@@ -1,8 +1,22 @@
 import itemSourcesData from './itemSources.json';
 import type { OwnedProfile, ScoreItem, ScoringPayload } from './types';
 
-export const ITEM_SOURCES: Record<string, string> = itemSourcesData.sources;
-export const SKETCH_CHESTS = itemSourcesData.chests;
+export let ITEM_SOURCES: Record<string, string> = itemSourcesData.sources;
+export let SKETCH_CHESTS = itemSourcesData.chests;
+
+export function applyHotItemSources(
+  overlay: { sources?: Record<string, string>; chests?: unknown } | null | undefined,
+): void {
+  if (overlay && overlay.sources && typeof overlay.sources === 'object') {
+    ITEM_SOURCES = overlay.sources;
+    if (overlay.chests && typeof overlay.chests === 'object') {
+      SKETCH_CHESTS = overlay.chests as typeof itemSourcesData.chests;
+    }
+  } else {
+    ITEM_SOURCES = itemSourcesData.sources;
+    SKETCH_CHESTS = itemSourcesData.chests;
+  }
+}
 
 export interface SuitPartEntry {
   id: string;

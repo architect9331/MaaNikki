@@ -19,6 +19,7 @@ pub mod utils;
 
 pub mod account_state;
 pub mod app_config;
+pub mod data_update;
 mod diagnostic_images;
 mod diagnostic_upload;
 pub mod download;

@@ -2,9 +2,14 @@ import { invoke } from '@tauri-apps/api/core';
 import { isTauri } from '@/utils/paths';
 import { apiGet, apiPut } from '@/utils/backendApi';
 import type { MaterialsState, ScoringPayload, ScoringSettings } from './types';
+import { applyHotItemSources } from './wardrobeBrowserData';
 
-export function loadScoring(): Promise<ScoringPayload> {
-  return isTauri() ? invoke<ScoringPayload>('get_wardrobe_scoring') : apiGet<ScoringPayload>('/wardrobe-scoring');
+export async function loadScoring(): Promise<ScoringPayload> {
+  const payload = isTauri()
+    ? await invoke<ScoringPayload>('get_wardrobe_scoring')
+    : await apiGet<ScoringPayload>('/wardrobe-scoring');
+  applyHotItemSources(payload.item_sources);
+  return payload;
 }
 export async function saveScoring(accountKey: string, settings: ScoringSettings) {
   if (isTauri()) await invoke('save_wardrobe_scoring', { accountKey, settings });

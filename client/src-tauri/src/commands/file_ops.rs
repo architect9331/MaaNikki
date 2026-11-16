@@ -528,6 +528,9 @@ fn collect_recent_collection_files(data_dir: &Path) -> Result<Vec<ExportEntry>, 
 }
 
 pub fn resolve_local_file_path(filename: &str) -> Result<PathBuf, String> {
+    if let Some(overlay) = super::data_update::resolve_overlay_file(filename) {
+        return Ok(overlay);
+    }
     let exe_dir = get_exe_directory()?;
     let file_path = normalize_path(&exe_dir.join(filename).to_string_lossy());
     // 防止路径穿越，确保仍在 exe 目录下

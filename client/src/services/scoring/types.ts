@@ -191,6 +191,10 @@ export interface ScoringPayload {
   catalog: ScoringCatalog;
   materials?: MaterialsState | null;
   crafting_catalog?: CraftingCatalog | null;
+  item_sources?: {
+    sources?: Record<string, string>;
+    chests?: unknown;
+  } | null;
 }
 export interface OwnedItem {
   id: string;

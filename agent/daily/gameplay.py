@@ -376,7 +376,8 @@ class Gameplay:
         # Applies to ordinary farming and daily supplementation too. Resource
         # acquisition never silently leaves an older full snapshot reusable.
         from collection.storage import InventoryStore
-        catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+        from data_paths import data_path
+        catalog = json.loads(data_path("resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
         InventoryStore(ROOT, catalog, self.rt).invalidate(reason, source="realm_bless")
 
     @staticmethod

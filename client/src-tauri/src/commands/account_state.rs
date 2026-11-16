@@ -1,5 +1,6 @@
 //! UID-scoped journals shared with Python AccountState.
-use super::utils::{get_app_data_dir, get_exe_directory, write_atomic};
+use super::data_update::{active_overlay_version, resolve_data_file};
+use super::utils::{get_app_data_dir, write_atomic};
 use serde_json::{json, Value};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -51,6 +52,7 @@ pub(super) fn file_stamp(path: &Path) -> FileStamp {
 fn plan_revision(key: Option<&str>, source: Option<&Value>) -> String {
     let mut hasher = DefaultHasher::new();
     key.hash(&mut hasher);
+    active_overlay_version().hash(&mut hasher);
     if let Some(src) = source {
         src["wardrobe"]["inventory"]["updated_at"]
             .as_str()
@@ -217,12 +219,11 @@ fn read_account_state_cached(
     known_signature: Option<&str>,
 ) -> Result<(String, Option<Value>), String> {
     let root = get_app_data_dir()?;
-    let resources = get_exe_directory()?.join("resource/data");
     let index_path = root.join("config/accounts/index.json");
     let legacy_inv_path = root.join("config/blessing/inventory.json");
     let legacy_scan_path = root.join("config/blessing/last_scan.json");
-    let catalog_path = resources.join("blessing_catalog.json");
-    let rotation_path = resources.join("xinghai_rotation.json");
+    let catalog_path = resolve_data_file("resource/data/blessing_catalog.json")?;
+    let rotation_path = resolve_data_file("resource/data/xinghai_rotation.json")?;
 
     let rev = account_state_revision();
     let index_stamp = file_stamp(&index_path);

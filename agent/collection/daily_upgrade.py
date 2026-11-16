@@ -230,9 +230,10 @@ class DailyUpgrade(FiveStarInventory):
 def upgrade_once(runtime):
     import json
 
+    from data_paths import data_path
     folder = ROOT / "logs/daily-upgrade" / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     folder.mkdir(parents=True, exist_ok=True)
-    catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+    catalog = json.loads(data_path("resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
     try:
         return DailyUpgrade(runtime, catalog, folder).run()
     except RescanSlot as error:

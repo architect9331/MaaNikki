@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use std::{
     collections::BTreeMap,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
     time::{Duration, Instant},
 };
 use tauri::{Emitter, Manager, WebviewWindow};
@@ -120,7 +120,26 @@ struct Inner {
 pub struct ResonanceState {
     inner: Mutex<Inner>,
     changed: watch::Sender<u64>,
-    catalog: Catalog,
+    catalog: RwLock<Arc<Catalog>>,
+}
+
+fn load_catalog() -> Arc<Catalog> {
+    if let Some(path) =
+        super::data_update::resolve_overlay_file("resource/data/resonance_catalog.json")
+    {
+        if let Ok(raw) = std::fs::read_to_string(&path) {
+            if let Ok(parsed) = serde_json::from_str::<Catalog>(raw.trim_start_matches('\u{feff}'))
+            {
+                if !parsed.banners.is_empty() && !parsed.items.is_empty() {
+                    return Arc::new(parsed);
+                }
+            }
+        }
+    }
+    Arc::new(
+        serde_json::from_str(include_str!("../data/resonance_catalog.json"))
+            .expect("embedded resonance catalog"),
+    )
 }
 
 fn folder() -> Result<PathBuf, String> {
@@ -283,7 +302,12 @@ fn summary(history: &History) -> AccountSummary {
 }
 
 impl ResonanceState {
+    fn current_catalog(&self) -> Arc<Catalog> {
+        self.catalog.read().unwrap().clone()
+    }
+
     fn snapshot(&self) -> Value {
+        let catalog = self.current_catalog();
         let inner = self.inner.lock().unwrap();
         json!({
             "enabled": inner.settings.enabled, "active_account": inner.settings.active_account,
@@ -291,9 +315,9 @@ impl ResonanceState {
             "error": inner.error, "auth_paused": inner.auth_paused,
             "next_sync": if inner.settings.enabled && !inner.auth_paused { Some(inner.next_sync) } else { None },
             "banner": inner.banner, "page": inner.page, "completed": inner.completed,
-            "banner_count": self.catalog.banners.len(), "last_added": inner.last_added,
+            "banner_count": catalog.banners.len(), "last_added": inner.last_added,
             "last_notebook_added": inner.last_notebook_added,
-            "catalog_updated_at": self.catalog.updated_at, "interval_minutes": INTERVAL / 60,
+            "catalog_updated_at": catalog.updated_at, "interval_minutes": INTERVAL / 60,
         })
     }
 
@@ -377,14 +401,25 @@ pub fn start(app: &tauri::AppHandle) {
             last_progress_emit: None,
         }),
         changed: watch::channel(0).0,
-        catalog: serde_json::from_str(include_str!("../data/resonance_catalog.json"))
-            .expect("embedded resonance catalog"),
+        catalog: RwLock::new(load_catalog()),
     });
     app.manage(state.clone());
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         worker(app, state).await;
     });
+}
+
+pub fn reload_catalog(app: &tauri::AppHandle) {
+    if let Some(state) = app.try_state::<Arc<ResonanceState>>() {
+        if let Ok(mut guard) = state.catalog.write() {
+            *guard = load_catalog();
+        }
+        state
+            .changed
+            .send_modify(|version| *version = version.wrapping_add(1));
+        state.publish(app);
+    }
 }
 
 pub fn login_changed(app: &tauri::AppHandle) {
@@ -477,34 +512,35 @@ pub fn resonance_history(
     account_key: String,
 ) -> Result<Value, String> {
     desktop(&window)?;
+    let catalog = state.current_catalog();
     let history = load_history(&account_key)?;
     let mut items: BTreeMap<&str, &Value> = BTreeMap::new();
     for banner in history.banners.values() {
         for (_, item) in &banner.pulls {
-            if let Some(info) = state.catalog.items.get(item) {
+            if let Some(info) = catalog.items.get(item) {
                 items.insert(item, info);
             }
         }
     }
     for banner in history.notebook.pulls.values() {
         for pull in banner.values() {
-            if let Some(info) = state.catalog.items.get(&pull.result) {
+            if let Some(info) = catalog.items.get(&pull.result) {
                 items.insert(&pull.result, info);
             }
         }
     }
     // Include all outfit parts so missing pieces have names too.
-    for outfit in state.catalog.outfits.values() {
+    for outfit in catalog.outfits.values() {
         if let Some(parts) = outfit["items"].as_array() {
             for part in parts.iter().filter_map(Value::as_str) {
-                if let Some(info) = state.catalog.items.get(part) {
+                if let Some(info) = catalog.items.get(part) {
                     items.insert(part, info);
                 }
             }
         }
     }
     Ok(
-        json!({"history": history, "banners": state.catalog.banners, "items": items, "outfits": state.catalog.outfits}),
+        json!({"history": history, "banners": catalog.banners, "items": items, "outfits": catalog.outfits}),
     )
 }
 
@@ -1256,8 +1292,9 @@ async fn synchronize(
     }
     .await;
     let end_time = Utc::now().timestamp().to_string();
+    let catalog = state.current_catalog();
     if let Ok(authority) = &authorization {
-        for (completed, banner) in state.catalog.banners.iter().enumerate() {
+        for (completed, banner) in catalog.banners.iter().enumerate() {
             if completed > 0 {
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }

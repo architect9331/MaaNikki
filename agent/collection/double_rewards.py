@@ -303,7 +303,8 @@ def run_shared_bless_collection(
     run_mode: str | None = None,
 ) -> dict:
     """Execute 5-star missing-color blessing realm runs cleanly for double or Zhaoxi supplement."""
-    catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+    from data_paths import data_path
+    catalog = json.loads(data_path("resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
     workflow = policy.get("workflow", "managed")
     farm_only = workflow == "farm_only" if farm_only_override is None else bool(farm_only_override)
     organize = policy.get("organize", "auto")

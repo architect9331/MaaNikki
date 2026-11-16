@@ -42,7 +42,8 @@ def glow_shortfall(rt, role: dict, organize_mode: str = "auto") -> bool:
     """Whether the blessing goal still has colours/kinds to chase (or must organize first)."""
     if organize_mode != "auto":
         return True
-    catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+    from data_paths import data_path
+    catalog = json.loads(data_path("resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
     targets = [item for item in catalog["sets"] if item["rarity"] == 5 and item.get("collection_target", True)]
     mode = blessing_mode(role)
     focus = blessing_focus(role)
@@ -91,8 +92,9 @@ class BlessingPursuitAction(CustomAction):
         folder.mkdir(parents=True, exist_ok=True)
         pursuit = None
         try:
+            from data_paths import data_path
             options = parameters(context, argv.node_name)
-            catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+            catalog = json.loads(data_path("resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
             workflow = parameters(context, "MaaNikki_Pursuit_WorkflowOption").get("mode", "managed")
             farm_only = workflow == "farm_only"
             raw_reserve = parameters(context, "MaaNikki_Pursuit_ReserveBlingOption").get("amount", 0)
@@ -230,7 +232,8 @@ class BlessingMaintainAction(CustomAction):
             mode = str(options.get("mode", "organize"))
             if mode not in ("organize", "upgrade", "decompose"):
                 raise ValueError(f"未知的祝福闪光整理动作：{mode}")
-            catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+            from data_paths import data_path
+            catalog = json.loads(data_path("resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
             raw_reserve = parameters(context, "MaaNikki_Pursuit_ReserveBlingOption").get("amount", 0)
             try:
                 reserve_bling = max(0, int(str(raw_reserve or 0).strip().replace(",", "")))
