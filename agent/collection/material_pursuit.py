@@ -12,7 +12,14 @@ from daily.runtime import Executors, parameters
 from daily.settings import ROOT
 from task_control import TaskStopped
 from .realm_goals import GOAL_LABELS
-from .backpack import ensure_backpack_scanned, renewal_source, wardrobe_snapshot, wardrobe_snapshot_key
+from .backpack import (
+    ensure_backpack_scanned,
+    has_backpack_baseline,
+    renewal_source,
+    required_tabs_for_mids,
+    wardrobe_snapshot,
+    wardrobe_snapshot_key,
+)
 
 
 def load_catalogs():
@@ -507,6 +514,63 @@ def realm_goal_deficits(
     ]
 
 
+def needed_material_map(
+    goals: list[str],
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    realm: str | None = None,
+) -> dict[str, int]:
+    """Sum positive material requirements across ``goals``, optionally scoped to one realm."""
+    mat_defs = crafting.get("materials") or {}
+    needed: dict[str, int] = {}
+    for goal in goals:
+        if goal not in ("renewal", "crafting"):
+            continue
+        for raw_mid, raw_cnt in goal_requirements(goal, role, crafting, scoring).items():
+            cnt = int(raw_cnt or 0)
+            if cnt <= 0:
+                continue
+            mid = str(raw_mid)
+            if realm is not None and (mat_defs.get(mid) or {}).get("realm") != realm:
+                continue
+            needed[mid] = needed.get(mid, 0) + cnt
+    return needed
+
+
+def has_wardrobe_renewal_baseline(role: dict) -> bool:
+    snap = wardrobe_snapshot(role)
+    wb = role.get("wardrobe") or {}
+    return bool(snap and snap.get("parts") and (wb.get("renewal_scan") or {}).get("complete"))
+
+
+def goal_missing_baseline(
+    goal: str,
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    realm: str | None = None,
+    allow_tab2_init: bool = False,
+) -> str | None:
+    """Return 'wardrobe' or 'backpack' if ``goal`` lacks local baseline data."""
+    if goal not in ("renewal", "crafting"):
+        return None
+    needs_wb = goal == "crafting" or renewal_source(role.get("materials") or {}) == "plan"
+    if needs_wb and not has_wardrobe_renewal_baseline(role):
+        return "wardrobe"
+    req_map = needed_material_map([goal], role, crafting, scoring, realm=realm)
+    if not req_map:
+        return None
+    tabs = required_tabs_for_mids(req_map)
+    if 1 in tabs and not has_backpack_baseline(role, {1}):
+        return "backpack"
+    if 2 in tabs and not allow_tab2_init and not has_backpack_baseline(role, {2}):
+        return "backpack"
+    return None
+
+
 def pick_realm_material_deficit(
     rt,
     account: AccountState,
@@ -518,13 +582,15 @@ def pick_realm_material_deficit(
     wardrobe_synced: bool = False,
     crafting: dict | None = None,
     scoring: dict | None = None,
+    allow_scan: bool = True,
+    allow_wardrobe_sync: bool = True,
+    allow_full_wardrobe: bool = False,
+    allow_init_backpack: bool = False,
 ) -> tuple[tuple[str, str, dict, int] | None, dict[str, int] | None, bool, bool]:
     """Pick the top unmet material shortfall for ``realm`` along ``goals``.
 
-    Lazily syncs wardrobe/levels when needed and scans backpack only when an
-    enabled goal actually has potential requirements in ``realm``.
-    Returns ``(picked, inventory, wardrobe_synced, has_potential)`` where
-    ``picked`` is ``(goal, mid, meta, deficit)``.
+    When ``allow_scan`` is False, relies strictly on existing local wardrobe and
+    backpack records without triggering any in-game scans.
     """
     mat_goals = [g for g in goals if g in ("renewal", "crafting")]
     if not mat_goals:
@@ -532,29 +598,53 @@ def pick_realm_material_deficit(
     if crafting is None or scoring is None:
         crafting, scoring = load_catalogs()
 
-    if not wardrobe_synced:
+    if allow_scan and allow_wardrobe_sync and not wardrobe_synced:
         role_now = account.load()
         if any(
             g == "crafting" or (g == "renewal" and renewal_source(role_now.get("materials") or {}) == "plan")
             for g in mat_goals
         ):
             wardrobe_synced = True
-            ensure_wardrobe_synced_for_materials(rt, account)
+            ensure_wardrobe_synced_for_materials(rt, account, allow_full=allow_full_wardrobe)
 
     role = account.load()
+    ready_goals = [
+        g for g in mat_goals
+        if goal_missing_baseline(
+            g,
+            role,
+            crafting,
+            scoring,
+            realm=realm,
+            allow_tab2_init=(allow_scan and allow_init_backpack),
+        ) is None
+    ]
+    if not ready_goals:
+        return None, inventory, wardrobe_synced, False
+
     has_potential = any(
         has_realm_material_potential(goal, role, crafting, scoring, realm=realm)
-        for goal in mat_goals
+        for goal in ready_goals
     )
     if not has_potential:
         return None, inventory, wardrobe_synced, False
 
     if inventory is None:
-        inventory = ensure_backpack_scanned(rt, account, crafting)
-        record_material_history(account, crafting, scoring)
-        role = account.load()
+        if allow_scan:
+            needed_mids = needed_material_map(ready_goals, role, crafting, scoring, realm=realm)
+            inventory = ensure_backpack_scanned(
+                rt,
+                account,
+                crafting,
+                needed_mids=needed_mids,
+                allow_init_scan=allow_init_backpack,
+            )
+            record_material_history(account, crafting, scoring)
+            role = account.load()
+        else:
+            inventory = dict((role.get("materials") or {}).get("inventory") or {})
 
-    for goal in mat_goals:
+    for goal in ready_goals:
         deficits = realm_goal_deficits(
             goal, role, inventory, crafting, scoring,
             realm=realm, multiplier=multiplier,
@@ -565,10 +655,16 @@ def pick_realm_material_deficit(
     return None, inventory, wardrobe_synced, True
 
 
-def ensure_wardrobe_synced_for_materials(rt, account: AccountState) -> bool:
+def ensure_wardrobe_synced_for_materials(
+    rt,
+    account: AccountState,
+    *,
+    allow_full: bool = False,
+    allow_incremental: bool = True,
+) -> bool:
     """Lazily sync wardrobe & renewal levels before checking renewal/crafting shortfalls.
 
-    - Runs full 服装焕新 scan once when no wardrobe or renewal baseline exists yet.
+    - Only runs full 服装焕新 scan when ``allow_full=True`` and baseline is missing.
     - Runs fast incremental 服装焕新 scan (获得时间 descending) when PearPal cloth_num changed.
     - Returns immediately with zero UI cost when baseline & cloth_num already match.
     """
@@ -581,8 +677,11 @@ def ensure_wardrobe_synced_for_materials(rt, account: AccountState) -> bool:
     recorded_cn = wb.get("pearpal_cloth_num")
 
     need_full = not has_wb or not has_renewal
+    if need_full and not allow_full:
+        return False
     need_inc = (
         not need_full
+        and allow_incremental
         and isinstance(cn, int)
         and not isinstance(cn, bool)
         and cn > 0
@@ -654,12 +753,35 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
             needs_wb = goal == "crafting" or (goal == "renewal" and renewal_source(role.get("materials") or {}) == "plan")
             if needs_wb and not wardrobe_synced:
                 wardrobe_synced = True
-                ensure_wardrobe_synced_for_materials(rt, account)
+                ensure_wardrobe_synced_for_materials(rt, account, allow_full=False)
                 role = account.load()
+            missing = goal_missing_baseline(goal, role, crafting, scoring, allow_tab2_init=True)
+            if missing is not None:
+                if goal not in finished:
+                    finished.add(goal)
+                    source_hint = "衣柜与服装焕新" if missing == "wardrobe" else "背包材料库存"
+                    rt.log(
+                        f"幻境挑战顺序：{GOAL_LABELS[goal]}尚未在「收集进度」建立{source_hint}档案，"
+                        "本次不自动全量读取，跳过该项并交给下一目标或默认副本。"
+                    )
+                continue
             reqs = goal_requirements(goal, role, crafting, scoring)
             if reqs:
                 if inventory is None:
-                    inventory = ensure_backpack_scanned(rt, account, crafting)
+                    ready_mat_goals = [
+                        g for g in goals
+                        if g in ("renewal", "crafting")
+                        and g not in finished
+                        and goal_missing_baseline(g, role, crafting, scoring, allow_tab2_init=True) is None
+                    ]
+                    needed_mids = needed_material_map(ready_mat_goals or [goal], role, crafting, scoring)
+                    inventory = ensure_backpack_scanned(
+                        rt,
+                        account,
+                        crafting,
+                        needed_mids=needed_mids,
+                        allow_init_scan=True,
+                    )
                     record_material_history(account, crafting, scoring)
                     role = account.load()
                 deficits = goal_deficits(goal, role, inventory, crafting, scoring)

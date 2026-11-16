@@ -11,8 +11,8 @@ from .decompose import DuplicateDecomposer, LowRarityDecomposer
 
 class FiveStarPursuit:
     def __init__(self, inventory, *, decompose_duplicates=False, auto_bling=True, chance_priority=True,
-                 share_statistics=False, farm_only=False, reserve_bling=0, focus_sets=None,
-                 max_farm_runs=None):
+                 share_statistics=False, farm_only=False, skip_prefix_scan=False, reserve_bling=0,
+                 focus_sets=None, max_farm_runs=None):
         self.inventory = inventory
         # 自选: only these blessing sets weigh realm choice and decide completion.
         self.focus_sets = set(focus_sets) if focus_sets is not None else None
@@ -21,6 +21,7 @@ class FiveStarPursuit:
         self.auto_bling = auto_bling
         self.chance_priority = chance_priority
         self.farm_only = bool(farm_only)
+        self.skip_prefix_scan = bool(skip_prefix_scan)
         self.reserve_bling = max(0, int(reserve_bling or 0))
         self.max_farm_runs = max(1, int(max_farm_runs)) if max_farm_runs is not None else None
         inventory.chance_priority = chance_priority
@@ -66,6 +67,11 @@ class FiveStarPursuit:
         self.inventory.verified.clear()
         if outcome["status"] == "reward_confirmed":
             self.inventory.organization["decomposition_pending"] = True
+            spent = max(0, int(outcome["energy_before"]) - int(outcome["energy_after"]))
+            runs = max(1, spent // 40)
+            self.inventory.organization["unverified_farm_runs"] = (
+                int(self.inventory.organization.get("unverified_farm_runs", 0) or 0) + runs
+            )
         self.inventory.checkpoint()
         if outcome["status"] == "reward_confirmed":
             spent = outcome["energy_before"] - outcome["energy_after"]
@@ -139,9 +145,15 @@ class FiveStarPursuit:
                 detail=True)
         return self.acquire("bless", sources[0], alternatives=sources[1:], max_runs=self.max_farm_runs)
 
-    def _run_farm_only(self):
+    def _run_farm_only(self, *, mode="farm_only"):
         stock = self.inventory
-        stock.prepare("farm_only")
+        stock.prepare(mode, recover=not self.skip_prefix_scan)
+        if self.skip_prefix_scan and (
+            stock.pending is not None or (stock.organization.get("recovery") or {}).get("slots")
+        ):
+            stock.report.update(phase="recovery_pending", reason="存在待核对仓库恢复状态，日常跳过扫描改走默认")
+            stock.save()
+            return False
         if self.target_complete():
             stock.report.update(complete=True, phase="complete",
                                 reason="本地图鉴内五星颜色已收齐，请选择其他幻境；本次不消耗活跃能量",
@@ -149,43 +161,50 @@ class FiveStarPursuit:
             self.rt.log(stock.report["reason"])
             stock.save()
             return True
-        prev_cap = (stock.organization.get("capacity") or [None])[0]
-        full = stock.warehouse_full()
-        curr_cap = (stock.organization.get("capacity") or [None])[0]
-        if stock.open():
-            if type(prev_cap) is int and type(curr_cap) is int and curr_cap < prev_cap:
-                self.rt.log("检测到仓库数量减少（可能已手动升级或分解），正在核对含待升级胚子的部位。")
-                for slot in ("头部", "手部", "脚部"):
-                    if any(row.get("rarity") == 5 and not row.get("maximum") and not row.get("locked")
-                           for row in stock.organization["slots"].get(slot, [])):
-                        if slot not in stock.report.get("recovered_slots", []):
-                            stock.rebuild_slot(slot)
-                    else:
-                        stock.discover_prefixes()
-                        break
-            else:
-                stock.discover_prefixes()
-            stock.organization["decomposition_pending"] = False
-            stock.checkpoint()
+        if self.skip_prefix_scan:
+            full = False if stock.has_estimated_room(self.max_farm_runs or 1) else stock.warehouse_full()
+        else:
+            prev_cap = (stock.organization.get("capacity") or [None])[0]
+            full = stock.warehouse_full()
+            curr_cap = (stock.organization.get("capacity") or [None])[0]
+            if stock.open():
+                if type(prev_cap) is int and type(curr_cap) is int and curr_cap < prev_cap:
+                    self.rt.log("检测到仓库数量减少（可能已手动升级或分解），正在核对含待升级胚子的部位。")
+                    for slot in ("头部", "手部", "脚部"):
+                        if any(row.get("rarity") == 5 and not row.get("maximum") and not row.get("locked")
+                               for row in stock.organization["slots"].get(slot, [])):
+                            if slot not in stock.report.get("recovered_slots", []):
+                                stock.rebuild_slot(slot)
+                        else:
+                            stock.discover_prefixes()
+                            break
+                else:
+                    stock.discover_prefixes()
+                stock.organization["decomposition_pending"] = False
+                stock.checkpoint()
         if full:
-            message = "祝福闪光仓库已满，只刷胚子模式下不自动分解或升级，今天不刷本。请手动整理仓库后再运行。"
+            message = ("祝福闪光仓库已满，只刷胚子模式下不自动分解或升级，今天不刷本。请清理仓库后再运行。"
+                       if not self.skip_prefix_scan
+                       else "祝福闪光仓库已满，本次不刷取，等待后续全收集或手动清理后处理。")
             stock.report["warehouse_full"] = True
             self.rt.log(message, ui_text=message)
             return stock.finish("祝福闪光仓库已满，今天不刷本")
         if self.target_complete():
             return stock.finish("本地图鉴内五星颜色已收齐，可选择其他幻境")
         embryos_acquired = bool(self.spend_energy())
-        if embryos_acquired and stock.open():
+        if embryos_acquired and not self.skip_prefix_scan and stock.open():
             stock.discover_prefixes()
             stock.warehouse_full()
             stock.organization["decomposition_pending"] = False
             stock.checkpoint()
         stock.batch_result("farm_only_complete", embryos_acquired=embryos_acquired)
-        return stock.finish(
-            "本轮胚子刷取已完成并更新仓库记录，升级与锁定请自行安排"
-            if embryos_acquired
-            else "活跃能量不足，已更新仓库胚子记录"
-        )
+        if self.skip_prefix_scan:
+            msg = ("已完成本次快速刷取胚子，新增胚子留待五星闪光全收集时统一处理"
+                   if embryos_acquired else "本次未提交祝福闪光挑战")
+        else:
+            msg = ("本轮胚子刷取已完成并更新仓库记录，升级与锁定请自行安排"
+                   if embryos_acquired else "活跃能量不足，已更新仓库胚子记录")
+        return stock.finish(msg)
 
     def run(self):
         if self.farm_only:

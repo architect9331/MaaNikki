@@ -1462,6 +1462,7 @@ class Executors(Runtime):
             run_shared_bless_collection,
         )
         from collection.material_pursuit import (
+            goal_missing_baseline,
             load_catalogs,
             pick_realm_material_deficit,
             record_accrual,
@@ -1489,16 +1490,17 @@ class Executors(Runtime):
         try:
             if kind == "bless":
                 if policy["bless_mode"] == "glow_pursuit":
-                    allow_init = "glow" in policy["queue_goals"] or (
-                        policy["enabled"] and "bless" in policy["types"]
-                    )
                     res = run_shared_bless_collection(
                         child,
                         account,
                         policy,
                         max_runs=1,
                         full_workflow=False,
-                        organize_if_missing=allow_init,
+                        organize_if_missing=False,
+                        farm_only_override=True,
+                        skip_prefix_scan=True,
+                        allow_always_organize=False,
+                        run_mode="zhaoxi_bless",
                     )
                     status = res.get("status")
                     if status == "spent":
@@ -1514,7 +1516,7 @@ class Executors(Runtime):
                     if status == "complete":
                         child.log("朝夕心愿补分 · 祝福闪光：所选范围五星颜色已收齐，改刷默认「祝福闪光关卡」。")
                     elif res.get("reason") == "no_organization":
-                        child.log("朝夕心愿补分 · 祝福闪光：尚未建立祝福闪光仓库记录，改刷默认「祝福闪光关卡」。")
+                        child.log("朝夕心愿补分 · 祝福闪光：尚未建立祝福闪光仓库记录，改刷默认「祝福闪光关卡」（不中断全仓扫描）。")
                     else:
                         child.log("朝夕心愿补分 · 祝福闪光：未找到可用的缺色关卡，改刷默认「祝福闪光关卡」。")
                 else:
@@ -1527,20 +1529,30 @@ class Executors(Runtime):
                 inv = state.get("inventory")
                 synced = bool(state.get("wardrobe_synced"))
                 picked = None
+                missing_baseline = False
                 if not use_default:
-                    picked, inv, synced, _ = pick_realm_material_deficit(
-                        child,
-                        account,
-                        kind,
-                        policy["queue_goals"],
-                        inventory=inv,
-                        multiplier=1,
-                        wardrobe_synced=synced,
-                        crafting=crafting,
-                        scoring=scoring,
-                    )
-                    state["inventory"] = inv
-                    state["wardrobe_synced"] = synced
+                    role_now = account.load()
+                    ready_goals = [
+                        g for g in policy["queue_goals"]
+                        if goal_missing_baseline(g, role_now, crafting, scoring, realm=kind, allow_tab2_init=False) is None
+                    ]
+                    if not ready_goals:
+                        missing_baseline = True
+                    else:
+                        picked, inv, synced, _ = pick_realm_material_deficit(
+                            child,
+                            account,
+                            kind,
+                            ready_goals,
+                            inventory=inv,
+                            multiplier=1,
+                            wardrobe_synced=True,
+                            crafting=crafting,
+                            scoring=scoring,
+                            allow_scan=False,
+                        )
+                        state["inventory"] = inv
+                        state["wardrobe_synced"] = synced
 
                 mid = None
                 meta = None
@@ -1572,6 +1584,11 @@ class Executors(Runtime):
                             child.log("朝夕心愿补分 · 素材激化：未开启材料计划，自动回退默认「素材激化奖励」。")
                         else:
                             child.log("朝夕心愿补分 · 魔物试炼：未开启材料计划，自动回退默认「魔物试炼关卡」。")
+                    elif missing_baseline:
+                        if kind == "jihua":
+                            child.log("朝夕心愿补分 · 素材激化：尚未建立本地衣柜或背包记录，改用默认「素材激化奖励」（不中断扫描）。")
+                        else:
+                            child.log("朝夕心愿补分 · 魔物试炼：尚未建立本地衣柜或背包记录，改用默认「魔物试炼关卡」（不中断扫描）。")
                     elif not use_default:
                         if kind == "jihua":
                             child.log("朝夕心愿补分 · 素材激化：所选焕新／制衣目标材料已备齐，改刷默认「素材激化奖励」。")

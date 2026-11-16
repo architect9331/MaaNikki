@@ -46,7 +46,7 @@ class DailyRun(Executors):
         from account_state import AccountState
         from action.blessing_pursuit import glow_shortfall
         from collection.double_rewards import load_realm_policy, material_mode_uses_default, overview_double_badges
-        from collection.material_pursuit import load_catalogs, pick_realm_material_deficit
+        from collection.material_pursuit import goal_missing_baseline, load_catalogs, pick_realm_material_deficit
         from daily.gameplay import Gameplay
 
         clone = self.context.clone()
@@ -75,22 +75,32 @@ class DailyRun(Executors):
             if kind in ("jihua", "monster"):
                 use_default, _ = material_mode_uses_default(policy, kind)
                 if not use_default:
-                    picked, inv, synced, _ = pick_realm_material_deficit(
-                        inspect_rt,
-                        account,
-                        kind,
-                        policy["queue_goals"],
-                        inventory=self._energy_cache.get("inventory"),
-                        multiplier=1,
-                        wardrobe_synced=bool(self._energy_cache.get("wardrobe_synced")),
-                        crafting=crafting,
-                        scoring=scoring,
-                    )
-                    self._energy_cache["inventory"] = inv
-                    self._energy_cache["wardrobe_synced"] = synced
-                    if picked:
-                        has_need = True
-                        goal_rank = policy["queue_goals"].index(picked[0])
+                    if role_cached is None:
+                        role_cached = account.load()
+                    ready_goals = [
+                        g for g in policy["queue_goals"]
+                        if goal_missing_baseline(g, role_cached, crafting, scoring, realm=kind, allow_tab2_init=False) is None
+                    ]
+                    if not ready_goals:
+                        has_need = kind in badges
+                    else:
+                        picked, inv, synced, _ = pick_realm_material_deficit(
+                            inspect_rt,
+                            account,
+                            kind,
+                            ready_goals,
+                            inventory=self._energy_cache.get("inventory"),
+                            multiplier=1,
+                            wardrobe_synced=True,
+                            crafting=crafting,
+                            scoring=scoring,
+                            allow_scan=False,
+                        )
+                        self._energy_cache["inventory"] = inv
+                        self._energy_cache["wardrobe_synced"] = synced
+                        if picked:
+                            has_need = True
+                            goal_rank = policy["queue_goals"].index(picked[0])
                 else:
                     has_need = kind in badges
             elif kind == "bless":

@@ -522,7 +522,23 @@ class FiveStarInventory(BlessingLocker):
             return False
         if self.organization is not None:
             self.organization["capacity"] = list(counts[0])
+            self.organization["unverified_farm_runs"] = 0
         return counts[0][0] >= counts[0][1]
+
+    def has_estimated_room(self, expected_runs=1):
+        """Whether saved capacity allows fast farming without opening the blessing warehouse."""
+        order = self.organization
+        if not isinstance(order, dict) or order.get("pending_operation") is not None:
+            return False
+        cap = order.get("capacity")
+        if not (isinstance(cap, list) and len(cap) == 2):
+            return False
+        used, limit = cap
+        if type(used) is not int or type(limit) is not int or limit <= 0:
+            return False
+        unverified = max(0, int(order.get("unverified_farm_runs", 0) or 0))
+        reserve = max(30, max(1, int(expected_runs or 1)) * 6)
+        return used + unverified * 5 + reserve <= limit
 
     def _sync_bling_inventory(self, balance):
         if type(balance) is not int or balance < 0 or balance == self._last_synced_bling:
@@ -557,30 +573,34 @@ class FiveStarInventory(BlessingLocker):
         owned = self.owned_colors()
         return all((name, slot, color) in owned for color in self.definitions[name]["colors"])
 
+    def discover_slot_prefix(self, slot):
+        """Connect only the new prefix to the last complete order for one slot."""
+        old = self.organization["slots"][slot]
+        try:
+            prefix, cut = self.view.scan(slot, old=old, quantities=self.read_only)
+        except RecheckSlot:
+            self.rebuild_slot(slot)
+            return
+        rows, next_priority = merge_prefix(old, prefix, cut, self.organization["next_priority"])
+        # Saved locked keepers must survive the observed replacement.
+        old_keys = {self.key(row) for row in old[:cut] if row["locked"] and row["maximum"]}
+        new_keys = {self.key(row) for row in prefix if row["locked"] and row["maximum"]}
+        if not old_keys <= new_keys:
+            self.rebuild_slot(slot)
+            return
+        unfinished = self.organization["unfinished"]
+        if unfinished and any(row["id"] == unfinished for row in old) and not any(
+                row["id"] == unfinished for row in rows):
+            self.rebuild_slot(slot)
+            return
+        self.organization["slots"][slot] = rows
+        self.organization["next_priority"] = next_priority
+        self.checkpoint()
+
     def discover_prefixes(self):
         """Connect only the new prefix to the last complete order, once per slot."""
         for slot in SLOTS:
-            old = self.organization["slots"][slot]
-            try:
-                prefix, cut = self.view.scan(slot, old=old, quantities=self.read_only)
-            except RecheckSlot:
-                self.rebuild_slot(slot)
-                continue
-            rows, next_priority = merge_prefix(old, prefix, cut, self.organization["next_priority"])
-            # Saved locked keepers must survive the observed replacement.
-            old_keys = {self.key(row) for row in old[:cut] if row["locked"] and row["maximum"]}
-            new_keys = {self.key(row) for row in prefix if row["locked"] and row["maximum"]}
-            if not old_keys <= new_keys:
-                self.rebuild_slot(slot)
-                continue
-            unfinished = self.organization["unfinished"]
-            if unfinished and any(row["id"] == unfinished for row in old) and not any(
-                    row["id"] == unfinished for row in rows):
-                self.rebuild_slot(slot)
-                continue
-            self.organization["slots"][slot] = rows
-            self.organization["next_priority"] = next_priority
-            self.checkpoint()
+            self.discover_slot_prefix(slot)
 
     def reconcile_pearpal_drift(self):
         """Flag slots where Pear-Pal compendium has unlocked 5-star colors missing locally."""
@@ -716,7 +736,7 @@ class FiveStarInventory(BlessingLocker):
         self.checkpoint()
         return result
 
-    def prepare(self, mode):
+    def prepare(self, mode, *, recover=True):
         if self.prepared:
             raise RuntimeError("同一整理会话不能重复初始化")
         self.report["mode"] = mode
@@ -732,13 +752,14 @@ class FiveStarInventory(BlessingLocker):
         self.pending = deepcopy(self.organization.get("pending_operation"))
         self.prepared = True
         self.report["startup"] = {"mode": "ordered_json", "keepers": len(protected), **origin}
-        if origin.get("recovery") in ("confirmed_legacy_lookup", "unsubmitted_observation"):
-            self.rt.log(f"已核对上次操作记录，恢复 {len(protected)} 个已收藏颜色及待处理进度。")
-        elif origin.get("recovery") == "pending_reward":
-            self.rt.log(f"上次刷取结果待核对，保留 {len(protected)} 个已收藏颜色，本次先处理仓库。")
-        elif origin.get("recovery") == "pending_operation":
-            self.rt.log(f"保留 {len(protected)} 个已收藏颜色，正在核对上次操作。")
-        self.rt.log(f"已读取完整获得时间基准及 {len(protected)} 个五星收藏；仅核对新增区域和待处理位置附近。", detail=True)
+        if recover:
+            if origin.get("recovery") in ("confirmed_legacy_lookup", "unsubmitted_observation"):
+                self.rt.log(f"已核对上次操作记录，恢复 {len(protected)} 个已收藏颜色及待处理进度。")
+            elif origin.get("recovery") == "pending_reward":
+                self.rt.log(f"上次刷取结果待核对，保留 {len(protected)} 个已收藏颜色，本次先处理仓库。")
+            elif origin.get("recovery") == "pending_operation":
+                self.rt.log(f"保留 {len(protected)} 个已收藏颜色，正在核对上次操作。")
+            self.rt.log(f"已读取完整获得时间基准及 {len(protected)} 个五星收藏；仅核对新增区域和待处理位置附近。", detail=True)
         if self.read_only and isinstance(self.organization.get("recovery"), dict):
             recovery = self.organization["recovery"]
             reasons = recovery.get("reasons", {})
@@ -748,12 +769,14 @@ class FiveStarInventory(BlessingLocker):
                     reasons.pop(slot, None)
             if not recovery.get("slots"):
                 self.organization.pop("recovery", None)
-        self.reconcile_pearpal_drift()
-        self.log_progress("开始处理")
+        if recover:
+            self.reconcile_pearpal_drift()
+            self.log_progress("开始处理")
         self.save()
         if not self.read_only:
             self.ensure_known_materials()
-        self.recover_inventory()
+        if recover:
+            self.recover_inventory()
 
     def finish(self, reason):
         if (not self.prepared or self.pending is not None or not self.organization.get("complete")

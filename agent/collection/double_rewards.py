@@ -17,12 +17,13 @@ from collection.backpack import ensure_backpack_scanned, renewal_source, wardrob
 from collection.inventory_workflow import FiveStarInventory
 from collection.material_pursuit import (
     effective_realm_runs,
-    ensure_wardrobe_synced_for_materials,
     execute_material_run,
     goal_has_jihua_potential,
     goal_has_monster_potential,
+    goal_missing_baseline,
     jihua_goal_deficits,
     load_catalogs,
+    needed_material_map,
     realm_goal_deficits,
     record_accrual,
     record_material_history,
@@ -296,17 +297,25 @@ def run_shared_bless_collection(
     full_workflow: bool,
     organize_if_missing: bool,
     organized_once: bool = False,
+    farm_only_override: bool | None = None,
+    skip_prefix_scan: bool = False,
+    allow_always_organize: bool = True,
+    run_mode: str | None = None,
 ) -> dict:
     """Execute 5-star missing-color blessing realm runs cleanly for double or Zhaoxi supplement."""
     catalog = json.loads((ROOT / "resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
     workflow = policy.get("workflow", "managed")
-    farm_only = workflow == "farm_only"
+    farm_only = workflow == "farm_only" if farm_only_override is None else bool(farm_only_override)
     organize = policy.get("organize", "auto")
     if organize not in ORGANIZE_OPTIONS:
         raise ValueError("未知祝福闪光整理选项")
 
     issue = organization_issue(rt, catalog)
-    need_organize = ((not organized_once and organize != "auto") or issue is not None) if full_workflow else (issue is not None)
+    need_organize = (
+        ((not organized_once and allow_always_organize and organize != "auto") or issue is not None)
+        if full_workflow
+        else (issue is not None)
+    )
     if need_organize:
         if not organize_if_missing:
             return {"status": "fallback", "reason": "no_organization", "organized_once": organized_once}
@@ -330,7 +339,8 @@ def run_shared_bless_collection(
                 "organized_once": organized_once,
             }
 
-    folder_root = "logs/blessing-pursuit" if full_workflow else "logs/daily-bless"
+    effective_mode = run_mode or ("double_bless" if farm_only else "zhaoxi_bless")
+    folder_root = "logs/blessing-pursuit" if (full_workflow or effective_mode == "double_bless") else "logs/daily-bless"
     folder = ROOT / folder_root / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     folder.mkdir(parents=True, exist_ok=True)
     pursuit = FiveStarInventory(rt, catalog, folder)
@@ -344,6 +354,7 @@ def run_shared_bless_collection(
             chance_priority=True,
             share_statistics=pursuit.share_statistics,
             farm_only=farm_only,
+            skip_prefix_scan=skip_prefix_scan,
             reserve_bling=pursuit.reserve_bling,
             focus_sets=blessing_focus(account.load()),
             max_farm_runs=max_runs,
@@ -364,18 +375,41 @@ def run_shared_bless_collection(
                 "organized_once": organized_once,
             }
 
-        pursuit.prepare("zhaoxi_bless")
+        if farm_only:
+            if effective_mode == "double_bless":
+                rt.log(f"限时双倍插队 · 灵感迸发（仅刷胚子）：按已有记录的缺色顺位挑战（上限 {max_runs} 次，升级与锁定留待全收集统一处理）。")
+            flow._run_farm_only(mode=effective_mode)
+            if pursuit.report.get("phase") == "complete":
+                return {"status": "complete", "organized_once": organized_once}
+            if pursuit.report.get("phase") == "recovery_pending":
+                return {"status": "fallback", "reason": "recovery_pending", "organized_once": organized_once}
+            if pursuit.report.get("warehouse_full"):
+                return {"status": "warehouse_full", "organized_once": organized_once}
+            supply = pursuit.report.get("supply_result") or {}
+            status = supply.get("status")
+            if status == "reward_confirmed":
+                return {
+                    "status": "spent",
+                    "spent": True,
+                    "complete": flow.target_complete(),
+                    "source": supply.get("source"),
+                    "organized_once": organized_once,
+                }
+            if status == "energy_exhausted":
+                return {"status": "energy_exhausted", "spent": False, "organized_once": organized_once}
+            return {
+                "status": "fallback",
+                "spent": False,
+                "reason": str(status or "unavailable"),
+                "organized_once": organized_once,
+            }
+
+        pursuit.prepare(effective_mode)
         if flow.target_complete():
             pursuit.finish("当前收集范围的五星颜色已收齐，改用默认关卡")
             return {"status": "complete", "organized_once": organized_once}
-        if not farm_only:
-            if not flow.make_room():
-                pursuit.finish("祝福闪光仓库已满，本次未刷取")
-                return {"status": "warehouse_full", "organized_once": organized_once}
-        elif pursuit.warehouse_full():
-            message = "祝福闪光仓库已满，只刷胚子模式下不自动分解，本次无法挑战祝福闪光幻境。请清理仓库或开启爆仓分解。"
-            rt.log(message)
-            pursuit.finish("祝福闪光仓库已满，今天不刷本")
+        if not flow.make_room():
+            pursuit.finish("祝福闪光仓库已满，本次未刷取")
             return {"status": "warehouse_full", "organized_once": organized_once}
 
         acquired = bool(flow.spend_energy())
@@ -495,6 +529,33 @@ def _run_double_jihua(
     wardrobe_synced = False
     mat_defs = crafting.get("materials") or {}
 
+    def _run_default_jihua(rem_double: int, cur_energy: int, mode_note: str) -> tuple[bool, int]:
+        target_label = expected_text((fields(rt.context, "MaaNikki_Jihua_Target") or {}).get("expected"), "闪亮泡泡")
+        mid = JIHUA_LEVEL_IDS.get(target_label)
+        meta = mat_defs.get(mid or "") or {}
+        base_drop = int(meta.get("drop") or 0)
+        max_afford = cur_energy // 10
+        max_double = rem_double // 10
+        runs = min(max_afford, max_double)
+        if runs <= 0:
+            return False, cur_energy
+        use_max = runs >= max_afford
+        rt.log(f"限时双倍插队 · 超级激化（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * 10} 体力）。")
+        ok, energy_after = execute_material_run(rt, "jihua", target_label, runs, use_max)
+        spent = max(0, cur_energy - energy_after)
+        actual_runs = effective_realm_runs(spent, 10, ok, planned_runs=runs)
+        if actual_runs <= 0:
+            raise RuntimeError("超级激化双倍挑战未完成或未确认活跃能量消耗")
+        if mid and base_drop > 0:
+            double_runs = min(actual_runs, rem_double // 10)
+            normal_runs = max(0, actual_runs - double_runs)
+            gained = double_runs * (base_drop * 2) + normal_runs * base_drop
+            if gained > 0:
+                record_accrual(account, mid, gained)
+                record_material_history(account, crafting, scoring)
+                rt.log(f"限时双倍插队 · 超级激化：获得 {meta.get('name', target_label)} +{gained}。")
+        return True, energy_after
+
     for pass_idx in range(2):
         if rt.stopped:
             break
@@ -517,56 +578,44 @@ def _run_double_jihua(
             rt.log(f"超级激化双倍：当前活跃能量 {energy} 点，不足 10 点，跳过。")
             break
 
-        if use_default:
-            target_label = expected_text((fields(rt.context, "MaaNikki_Jihua_Target") or {}).get("expected"), "闪亮泡泡")
-            mid = JIHUA_LEVEL_IDS.get(target_label)
-            meta = mat_defs.get(mid or "") or {}
-            base_drop = int(meta.get("drop") or 0)
-            max_afford = energy // 10
-            max_double = rem_double_energy // 10
-            runs = min(max_afford, max_double)
-            if runs <= 0:
-                break
-            use_max = runs >= max_afford
-            mode_note = "未开启材料计划，自动回退默认设置" if auto_fallback else "默认设置"
-            rt.log(f"限时双倍插队 · 超级激化（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * 10} 体力）。")
-            ok, energy_after = execute_material_run(rt, "jihua", target_label, runs, use_max)
-            spent = max(0, energy - energy_after)
-            actual_runs = effective_realm_runs(spent, 10, ok, planned_runs=runs)
-            if actual_runs <= 0:
-                raise RuntimeError("超级激化双倍挑战未完成或未确认活跃能量消耗")
-            any_spent = True
-            if mid and base_drop > 0:
-                double_runs = min(actual_runs, rem_double_energy // 10)
-                normal_runs = max(0, actual_runs - double_runs)
-                gained = double_runs * (base_drop * 2) + normal_runs * base_drop
-                if gained > 0:
-                    record_accrual(account, mid, gained)
-                    record_material_history(account, crafting, scoring)
-                    rt.log(f"限时双倍插队 · 超级激化：获得 {meta.get('name', target_label)} +{gained}。")
-            energy = energy_after
-        else:
-            if not wardrobe_synced:
-                wardrobe_synced = True
-                role_now = account.load()
-                if any(
-                    g == "crafting" or (g == "renewal" and renewal_source(role_now.get("materials") or {}) == "plan")
-                    for g in jihua_goals
-                ):
-                    ensure_wardrobe_synced_for_materials(rt, account)
+        ready_goals: list[str] = []
+        effective_default = use_default
+        mode_note = "未开启材料计划，自动回退默认设置" if auto_fallback else "默认设置"
+        if not effective_default:
             role_check = account.load()
+            ready_goals = [
+                g for g in jihua_goals
+                if goal_missing_baseline(g, role_check, crafting, scoring, realm="jihua", allow_tab2_init=False) is None
+            ]
+            if not ready_goals:
+                effective_default = True
+                mode_note = "尚未建立衣柜或背包记录，改用默认设置"
+
+        if effective_default:
+            spent_now, energy = _run_default_jihua(rem_double_energy, energy, mode_note)
+            if not spent_now:
+                break
+            any_spent = True
+        else:
             has_any_potential = any(
                 goal_has_jihua_potential(goal, role_check, crafting, scoring)
-                for goal in jihua_goals
+                for goal in ready_goals
             )
             if inventory is None and has_any_potential:
-                inventory = ensure_backpack_scanned(rt, account, crafting)
+                needed_mids = needed_material_map(ready_goals, role_check, crafting, scoring, realm="jihua")
+                inventory = ensure_backpack_scanned(
+                    rt,
+                    account,
+                    crafting,
+                    needed_mids=needed_mids,
+                    allow_init_scan=False,
+                )
                 record_material_history(account, crafting, scoring)
             finished: set[str] = set()
             while rem_double_energy >= 10 and energy >= 10 and not rt.stopped:
                 role = account.load()
                 picked = None
-                for goal in jihua_goals:
+                for goal in ready_goals:
                     deficits = (
                         jihua_goal_deficits(goal, role, inventory or {}, crafting, scoring, multiplier=2)
                         if has_any_potential
@@ -631,9 +680,37 @@ def _run_double_bless(
 ) -> tuple[bool, int | None, bool]:
     bless_mode = config["bless_mode"]
     any_spent = False
-    collection_used = False
     organized_once = False
     goal_satisfied = False
+
+    def _run_default_bless(rem_runs: int, cur_energy: int, *, mode_note: str) -> tuple[bool, int]:
+        target_label = expected_text((fields(rt.context, "MaaNikki_Bless_Level") or {}).get("expected"), "巨蛇遗迹")
+        cap = cur_energy // 40
+        runs = min(rem_runs, cap)
+        if runs <= 0:
+            return False, cur_energy
+        capped = None if runs >= cap else runs
+        rt.log(f"限时双倍插队 · 灵感迸发（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * 40} 体力）。")
+        clone = rt.context.clone()
+        child = Executors(clone)
+        try:
+            ok = Gameplay(child).realm(
+                "bless",
+                maximize=(capped is None),
+                fixed_count=capped,
+                allow_exhausted=True,
+                return_page="calendar",
+            )
+        finally:
+            rt.navigation_halted |= child.navigation_halted
+        if not rt.stopped and not rt.ui.calendar():
+            raise RuntimeError("灵感迸发双倍挑战后未能返回奇想日历")
+        energy_after = Gameplay(rt).read_energy()
+        if energy_after is not None and energy_after < cur_energy:
+            return True, energy_after
+        if not ok:
+            raise RuntimeError("灵感迸发双倍挑战未确认完成")
+        return False, (energy_after if energy_after is not None else cur_energy)
 
     for pass_idx in range(2):
         if rt.stopped:
@@ -658,70 +735,62 @@ def _run_double_bless(
             break
 
         if bless_mode == "inherit_fallback":
-            target_label = expected_text((fields(rt.context, "MaaNikki_Bless_Level") or {}).get("expected"), "巨蛇遗迹")
-            cap = energy // 40
-            runs = min(rem_runs, cap)
-            if runs <= 0:
-                break
-            capped = None if runs >= cap else runs
-            rt.log(f"限时双倍插队 · 灵感迸发（默认设置）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * 40} 体力）。")
-            clone = rt.context.clone()
-            child = Executors(clone)
-            try:
-                ok = Gameplay(child).realm(
-                    "bless",
-                    maximize=(capped is None),
-                    fixed_count=capped,
-                    allow_exhausted=True,
-                    return_page="calendar",
-                )
-            finally:
-                rt.navigation_halted |= child.navigation_halted
-            if not rt.stopped and not rt.ui.calendar():
-                raise RuntimeError("灵感迸发双倍挑战后未能返回奇想日历")
-            energy_after = Gameplay(rt).read_energy()
-            if energy_after is not None and energy_after < energy:
-                any_spent = True
-                energy = energy_after
-            elif not ok:
-                raise RuntimeError("灵感迸发双倍挑战未确认完成")
+            spent_now, energy = _run_default_bless(rem_runs, energy, mode_note="默认设置")
+            any_spent |= spent_now
         else:
+            # Double priority only burns the bonus quota on embryos without scanning prefixes or upgrading.
             res = run_shared_bless_collection(
                 rt,
                 account,
                 config,
                 max_runs=rem_runs,
-                full_workflow=True,
-                organize_if_missing=True,
+                full_workflow=False,
+                organize_if_missing=False,
                 organized_once=organized_once,
+                farm_only_override=True,
+                skip_prefix_scan=True,
+                allow_always_organize=False,
+                run_mode="double_bless",
             )
             organized_once = bool(res.get("organized_once"))
             status = res.get("status")
-            if status == "organize_failed":
-                rt.log("灵感迸发双倍（智能选择）：仓库整理未完成且无可用记录，跳过本次双倍。")
-                break
             if status == "complete":
                 goal_satisfied = True
                 rt.log("灵感迸发双倍（智能选择）：所选范围五星颜色已收齐，跳过本次双倍。")
                 break
-            if res.get("spent"):
-                any_spent = True
-                collection_used = True
-            if res.get("complete"):
-                goal_satisfied = True
+            if status == "warehouse_full":
+                rt.log("灵感迸发双倍：祝福闪光仓库已满，本次不刷取，待后续全收集清理后再处理。")
+                break
+            if status == "fallback":
+                reason = res.get("reason")
+                if reason == "no_organization":
+                    note = "尚未建立祝福闪光仓库记录，不自动全仓整理"
+                elif reason == "recovery_pending":
+                    note = "存在待核对仓库恢复状态，不中断扫描，改用默认关卡"
+                else:
+                    note = "无可用缺色关卡，改用默认关卡"
+                if not rt.stopped and not rt.ui.calendar():
+                    raise RuntimeError("灵感迸发双倍回退默认前未能返回奇想日历")
+                spent_now, energy = _run_default_bless(rem_runs, energy, mode_note=note)
+                any_spent |= spent_now
+            else:
+                if res.get("spent"):
+                    any_spent = True
+                if res.get("complete"):
+                    goal_satisfied = True
 
-            if not rt.stopped and not rt.ui.calendar():
-                raise RuntimeError("灵感迸发双倍挑战后未能返回奇想日历")
-            refreshed = Gameplay(rt).read_energy()
-            if refreshed is not None:
-                energy = refreshed
+                if not rt.stopped and not rt.ui.calendar():
+                    raise RuntimeError("灵感迸发双倍挑战后未能返回奇想日历")
+                refreshed = Gameplay(rt).read_energy()
+                if refreshed is not None:
+                    energy = refreshed
 
         if goal_satisfied or not has_wb or (energy is not None and energy < 40):
             break
 
     if not rt.stopped and not rt.ui.calendar():
         raise RuntimeError("灵感迸发双倍处理后未能返回奇想日历")
-    return any_spent, energy, collection_used
+    return any_spent, energy, False
 
 
 def _run_double_monster(
@@ -742,6 +811,36 @@ def _run_double_monster(
     wardrobe_synced = False
     mat_defs = crafting.get("materials") or {}
     per_run = Gameplay.MIN_ENERGY["monster"]
+
+    def _run_default_monster(rem: int, cur_energy: int, mode_note: str) -> tuple[bool, int]:
+        target_label = expected_text((fields(rt.context, "MaaNikki_Monster_Level") or {}).get("expected"), "攀越")
+        cap = cur_energy // per_run
+        runs = min(rem, cap)
+        if runs <= 0:
+            return False, cur_energy
+        use_max = runs >= cap
+        rt.log(f"限时双倍插队 · 魔物试炼（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * per_run} 体力）。")
+        ok, energy_after = execute_material_run(rt, "monster", target_label, runs, use_max)
+        spent = max(0, cur_energy - energy_after)
+        total_runs = effective_realm_runs(spent, per_run, ok, planned_runs=runs)
+        if total_runs <= 0:
+            raise RuntimeError("魔物试炼双倍挑战未完成或未确认活跃能量消耗")
+        matches = [
+            (k, m) for k, m in mat_defs.items()
+            if m.get("realm") == "monster" and m.get("level") == target_label
+        ]
+        if len(matches) == 1:
+            mid, meta = matches[0]
+            base_drop = int(meta.get("drop") or 0)
+            if base_drop > 0:
+                double_runs = min(total_runs, rem)
+                normal_runs = max(0, total_runs - double_runs)
+                gained = double_runs * (base_drop * 2) + normal_runs * base_drop
+                if gained > 0:
+                    record_accrual(account, mid, gained)
+                    record_material_history(account, crafting, scoring)
+                    rt.log(f"限时双倍插队 · 魔物试炼：获得 {meta.get('name', target_label)} +{gained}。")
+        return True, energy_after
 
     for pass_idx in range(2):
         if rt.stopped:
@@ -765,58 +864,43 @@ def _run_double_monster(
             rt.log(f"魔物试炼双倍：当前活跃能量 {energy} 点，不足 {per_run} 点，跳过。")
             break
 
-        if use_default:
-            target_label = expected_text((fields(rt.context, "MaaNikki_Monster_Level") or {}).get("expected"), "攀越")
-            cap = energy // per_run
-            runs = min(rem_runs, cap)
-            if runs <= 0:
-                break
-            use_max = runs >= cap
-            mode_note = "未开启材料计划，自动回退默认设置" if auto_fallback else "默认设置"
-            rt.log(f"限时双倍插队 · 魔物试炼（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * per_run} 体力）。")
-            ok, energy_after = execute_material_run(rt, "monster", target_label, runs, use_max)
-            spent = max(0, energy - energy_after)
-            total_runs = effective_realm_runs(spent, per_run, ok, planned_runs=runs)
-            if total_runs <= 0:
-                raise RuntimeError("魔物试炼双倍挑战未完成或未确认活跃能量消耗")
-            any_spent = True
-            matches = [
-                (k, m) for k, m in mat_defs.items()
-                if m.get("realm") == "monster" and m.get("level") == target_label
-            ]
-            if len(matches) == 1:
-                mid, meta = matches[0]
-                base_drop = int(meta.get("drop") or 0)
-                if base_drop > 0:
-                    double_runs = min(total_runs, rem_runs)
-                    normal_runs = max(0, total_runs - double_runs)
-                    gained = double_runs * (base_drop * 2) + normal_runs * base_drop
-                    if gained > 0:
-                        record_accrual(account, mid, gained)
-                        record_material_history(account, crafting, scoring)
-                        rt.log(f"限时双倍插队 · 魔物试炼：获得 {meta.get('name', target_label)} +{gained}。")
-            energy = energy_after
-        else:
-            if not wardrobe_synced:
-                wardrobe_synced = True
-                role_now = account.load()
-                if any(
-                    g == "crafting" or (g == "renewal" and renewal_source(role_now.get("materials") or {}) == "plan")
-                    for g in monster_goals
-                ):
-                    ensure_wardrobe_synced_for_materials(rt, account)
+        ready_goals: list[str] = []
+        effective_default = use_default
+        mode_note = "未开启材料计划，自动回退默认设置" if auto_fallback else "默认设置"
+        if not effective_default:
             role_check = account.load()
+            ready_goals = [
+                g for g in monster_goals
+                if goal_missing_baseline(g, role_check, crafting, scoring, realm="monster", allow_tab2_init=False) is None
+            ]
+            if not ready_goals:
+                effective_default = True
+                mode_note = "尚未建立衣柜或背包记录，改用默认设置"
+
+        if effective_default:
+            spent_now, energy = _run_default_monster(rem_runs, energy, mode_note)
+            if not spent_now:
+                break
+            any_spent = True
+        else:
             has_any_potential = any(
                 goal_has_monster_potential(goal, role_check, crafting, scoring)
-                for goal in monster_goals
+                for goal in ready_goals
             )
             if inventory is None and has_any_potential:
-                inventory = ensure_backpack_scanned(rt, account, crafting)
+                needed_mids = needed_material_map(ready_goals, role_check, crafting, scoring, realm="monster")
+                inventory = ensure_backpack_scanned(
+                    rt,
+                    account,
+                    crafting,
+                    needed_mids=needed_mids,
+                    allow_init_scan=False,
+                )
                 record_material_history(account, crafting, scoring)
             while rem_runs > 0 and energy >= per_run and not rt.stopped:
                 role = account.load()
                 picked = None
-                for goal in monster_goals:
+                for goal in ready_goals:
                     deficits = (
                         realm_goal_deficits(goal, role, inventory or {}, crafting, scoring, realm="monster", multiplier=2)
                         if has_any_potential
@@ -891,7 +975,7 @@ def run_double_priority(rt) -> DoubleRunSummary:
         if kind in enabled_types and _has_material_candidate(kind, config, role, crafting, scoring):
             candidates.add(kind)
     if "bless" in enabled_types:
-        if config["bless_mode"] == "inherit_fallback" or glow_shortfall(rt, role, organize):
+        if config["bless_mode"] == "inherit_fallback" or glow_shortfall(rt, role, "auto"):
             candidates.add("bless")
 
     if not candidates:

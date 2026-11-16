@@ -41,14 +41,21 @@ class DailyUpgrade(FiveStarInventory):
         self.confirm_change(operation, result=new)
         self.verified.clear()
 
-    def ordered_candidate(self):
-        self.discover_prefixes()
-        candidates = [row for rows in self.organization["slots"].values() for row in rows
-                      if not row["maximum"] and row["mutable"] and not row.get("catalog_unknown")]
-        candidates.sort(key=lambda row: (-row["rarity"],
-                                         row["id"] != self.organization["unfinished"],
-                                         row["priority"]))
-        for target in candidates:
+    def _candidates(self, *, slot=None):
+        items = []
+        slots_to_check = [slot] if slot is not None else list(SLOTS)
+        unfinished = self.organization.get("unfinished")
+        for s in slots_to_check:
+            for row in self.organization["slots"].get(s, []):
+                if not row["maximum"] and row["mutable"] and not row.get("catalog_unknown"):
+                    items.append(row)
+        items.sort(key=lambda row: (-row["rarity"], row["id"] != unfinished, row["priority"]))
+        return items
+
+    def _locate_slot_candidates(self, slot, *, min_rarity=None):
+        for target in self._candidates(slot=slot):
+            if min_rarity is not None and target["rarity"] < min_rarity:
+                continue
             rows = self.organization["slots"][target["slot"]]
             try:
                 found = self.view.locate(target, rows, exact_lock=target["locked"], quantities=True)
@@ -56,7 +63,7 @@ class DailyUpgrade(FiveStarInventory):
                 if target["slot"] in self.report.get("recovered_slots", []):
                     raise
                 self.rebuild_slot(target["slot"])
-                return self.ordered_candidate()
+                return self._locate_slot_candidates(slot, min_rarity=min_rarity)
             if found is not None:
                 if found[2]["copies_before"] > 1 and target["id"] != self.organization["unfinished"]:
                     active = deepcopy(target)
@@ -70,9 +77,43 @@ class DailyUpgrade(FiveStarInventory):
                 if target["slot"] in self.report.get("recovered_slots", []):
                     raise RecheckSlot(target["slot"], "上次未完成对象仍待核对，保留进度")
                 self.rebuild_slot(target["slot"])
-                return self.ordered_candidate()
+                return self._locate_slot_candidates(slot, min_rarity=min_rarity)
             rows.remove(target)
             self.checkpoint()
+        return None
+
+    def ordered_candidate(self):
+        # Fast path: use cached 5-star candidates in place without scanning all 3 slot prefixes upfront.
+        self.ensure_known_materials()
+        cached = self._candidates()
+        if cached and cached[0]["rarity"] == 5:
+            seen_slots = []
+            for item in cached:
+                if item["rarity"] == 5 and item["slot"] not in seen_slots:
+                    seen_slots.append(item["slot"])
+            for slot in seen_slots:
+                res = self._locate_slot_candidates(slot, min_rarity=5)
+                if res is not None:
+                    return res
+
+        # Otherwise scan prefixes lazily one slot at a time and stop at the first 5-star candidate.
+        scanned_slots = set()
+        for slot in SLOTS:
+            self.discover_slot_prefix(slot)
+            self.ensure_known_materials()
+            scanned_slots.add(slot)
+            res = self._locate_slot_candidates(slot, min_rarity=5)
+            if res is not None:
+                return res
+
+        # Fall back to lower rarities only when no 5-star embryo exists in any slot.
+        for slot in SLOTS:
+            if slot not in scanned_slots:
+                self.discover_slot_prefix(slot)
+                self.ensure_known_materials()
+            res = self._locate_slot_candidates(slot)
+            if res is not None:
+                return res
         return None
 
     def live_candidate(self):

@@ -87,7 +87,11 @@ class LowRarityDecomposer:
             if current is not None and current == previous:
                 if self.o.organization is not None:
                     limit = (self.o.organization.get("capacity") or [0, 1000])[1]
-                    self.o.organization.update(particles=current["particles"], capacity=[current["capacity"], limit])
+                    self.o.organization.update(
+                        particles=current["particles"],
+                        capacity=[current["capacity"], limit],
+                        unverified_farm_runs=0,
+                    )
                 return current, frame
             previous = current
             if not self.rt.pause(.2):
