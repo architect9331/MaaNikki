@@ -78,8 +78,8 @@
     },
     {
       "path": "resource/model/wardrobe/model-contract.json",
-      "size": 748,
-      "sha256": "42f5d7ea0479c1b73f5c8b88cd91ce6c6a85ce87a4a76b4091cf9ac2e11b3266",
+      "size": 727,
+      "sha256": "7e0e0c70c6a1441ba60132d306af39b67bc812f407c15a465d68752aa116beb4",
       "source": "MaaNikki wardrobe catalog metadata, 2026-11-02, update 2872"
     },
     {
