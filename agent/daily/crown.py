@@ -97,35 +97,84 @@ class Crown(Runtime):
         # Use the arena's existing 60-second transition budget. A missing
         # dialogue option is an unknown state, not evidence of completion.
         deadline, dialogue_seen = time.monotonic()+60, False
+        leave_requested, leave_clicks, last_leave_at = False, 0, 0.0
         roi = self.ui.roi("AreaDialogSelection")
+        dialog_roi = self.ui.roi("AreaDialog")
+
+        def option_box(expected):
+            result = self.recognize("MaaNikki_Daily_OCR", {"roi": roi, "expected": expected})
+            return list(result.box) if result and result.hit else None
+
+        def click_choice(box):
+            self.require(self.action("Click", target=box), "未能选择继续挑战")
+            return "challenge"
 
         def world_ready():
             with self.observe():
                 return (not self.hit("MaaNikki_RewardOverlayReady")
                         and not self.dialogue_visible()
-                        and not self.text(roi, r"继续挑战|开始挑战")
+                        and not self.text(roi, r"继续挑战|开始挑战|离开赛场")
                         and self.hit("MaaNikki_MainDetected"))
+
+        def leave_confirm_box():
+            box = self.asset("ButtonDungeonQuitOK", threshold=.75, method=cv2.TM_CCOEFF_NORMED)
+            if box:
+                return box
+            if not self.text(dialog_roi, r"离开|退出"):
+                return None
+            confirm = self.recognize("MaaNikki_Daily_OCR", {
+                "roi": dialog_roi, "expected": r"^(?:确认|确定)$"})
+            return list(confirm.box) if confirm and confirm.hit else None
 
         while not self.stopped and time.monotonic() < deadline:
             with self.observe(fresh=True):
                 reward = bool(self.hit("MaaNikki_RewardOverlayReady") or self.asset("IconClickSkip"))
-                choice = None if reward else self.recognize("MaaNikki_Daily_OCR", {
-                    "roi": roi, "expected": "继续挑战|开始挑战"})
-                choice = choice if choice and choice.hit else None
+                choice = None if reward else option_box("继续挑战|开始挑战")
                 dialogue = not (reward or choice) and self.dialogue_visible()
-                settled = not (reward or choice or dialogue)
+                confirm_box = (leave_confirm_box()
+                               if leave_requested and not (reward or choice or dialogue)
+                               else None)
+                leave = (None if (reward or choice or dialogue or confirm_box)
+                         else option_box("离开赛场"))
+                rechallenge = bool(leave and not (dialogue_seen or result_dismissed)
+                                   and option_box(r"重新挑战"))
+                settled = not (reward or choice or leave or confirm_box or dialogue)
                 summit = settled and self.hit("MaaNikki_Crown_SummitReady")
-                world = (settled and (dialogue_seen or result_dismissed)
+                world = (settled and (dialogue_seen or result_dismissed or leave_requested)
                          and self.hit("MaaNikki_MainDetected"))
-                if choice:
-                    self.require(self.action("Click", target=list(choice.box)), "未能选择继续挑战")
-                    return "challenge"
             if reward:
                 self.require(self.reward_popup(), "未能关闭本关挑战奖励")
                 result_dismissed = True
+            elif choice:
+                return click_choice(choice)
             elif dialogue:
                 dialogue_seen = True
                 self.require(self.key("skip", .5), "未能继续赛场对话")
+            elif confirm_box:
+                self.require(self.action("Click", target=confirm_box), "未能确认离开赛场")
+                deadline = max(deadline, time.monotonic()+30)
+            elif (leave and (dialogue_seen or result_dismissed or rechallenge)
+                  and leave_clicks < 2 and time.monotonic()-last_leave_at >= 2.0):
+                # Confirm on a stabilized frame so an unfinished choice list cannot
+                # trigger an early exit when 继续挑战/开始挑战 is still fading in.
+                if not self.pause(.4):
+                    break
+                with self.observe(fresh=True):
+                    if self.hit("MaaNikki_RewardOverlayReady") or self.asset("IconClickSkip"):
+                        continue
+                    recheck_choice = option_box("继续挑战|开始挑战")
+                    recheck_leave = (None if (recheck_choice or self.dialogue_visible())
+                                     else option_box("离开赛场"))
+                if recheck_choice:
+                    return click_choice(recheck_choice)
+                if recheck_leave:
+                    if not leave_requested:
+                        self.log("本轮赛场挑战已无下一关选项，选择离开赛场领取嘉奖。", detail=True)
+                        deadline = max(deadline, time.monotonic()+30)
+                    leave_requested = True
+                    leave_clicks += 1
+                    last_leave_at = time.monotonic()
+                    self.require(self.action("Click", target=recheck_leave), "未能选择离开赛场")
             elif summit and self.ui.wait_page("MaaNikki_Crown_SummitReady"):
                 return "rewards"
             elif world and self.ui.wait_page(world_ready, seconds=2):
