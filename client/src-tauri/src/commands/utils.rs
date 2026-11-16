@@ -8,10 +8,49 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 
+fn details_have_focus(parsed: &serde_json::Value, message: &str) -> bool {
+    match parsed.get("focus") {
+        Some(serde_json::Value::Object(map)) => map.get(message).is_some_and(|v| !v.is_null()),
+        Some(v) if !v.is_null() => true,
+        _ => false,
+    }
+}
+
+/// 过滤前端与 WebSocket 均未消费的高频节点与非连接控制器动作回调，降低 IPC 负载
+fn should_emit_callback_to_clients(message: &str, details: &str) -> bool {
+    if message.starts_with("Node.") {
+        if !details.contains("\"focus\"") {
+            return false;
+        }
+        return serde_json::from_str::<serde_json::Value>(details)
+            .map(|v| details_have_focus(&v, message))
+            .unwrap_or(false);
+    }
+
+    if message.starts_with("Controller.Action.") {
+        let Ok(parsed) = serde_json::from_str::<serde_json::Value>(details) else {
+            return true;
+        };
+        if details_have_focus(&parsed, message) {
+            return true;
+        }
+        return match parsed.get("action").and_then(|v| v.as_str()) {
+            Some(action) => action.eq_ignore_ascii_case("connect"),
+            None => true,
+        };
+    }
+
+    true
+}
+
 /// 发送回调事件到前端（Tauri WebView + WebSocket 浏览器客户端）
 pub fn emit_callback_event<S: Into<String>>(app: &AppHandle, message: S, details: S) {
     let message = message.into();
     let details = details.into();
+
+    if !should_emit_callback_to_clients(&message, &details) {
+        return;
+    }
 
     // 广播到所有 WebSocket 客户端
     if let Some(ws) = app.try_state::<Arc<WsBroadcast>>() {
@@ -121,6 +160,7 @@ pub fn handle_task_callback(
                     e
                 );
             }
+            super::maa_core::schedule_release_idle_desktop_controller(app, maa_state, instance_id);
         }
         return;
     }
@@ -197,6 +237,7 @@ pub fn handle_task_callback(
                 e
             );
         }
+        super::maa_core::schedule_release_idle_desktop_controller(app, maa_state, instance_id);
     }
 }
 

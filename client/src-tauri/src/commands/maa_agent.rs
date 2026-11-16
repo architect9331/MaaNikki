@@ -616,8 +616,9 @@ pub async fn start_tasks_impl(
     info!("cwd: {}, tcp_compat_mode: {}", cwd, tcp_compat_mode);
 
     let reconnect_config = {
-        let instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
-        instances.get(&instance_id).and_then(|inst| {
+        let mut instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
+        instances.get_mut(&instance_id).and_then(|inst| {
+            inst.start_generation = inst.start_generation.wrapping_add(1);
             if inst.controller_stopped {
                 inst.controller_config.clone()
             } else {
@@ -1037,6 +1038,10 @@ pub async fn start_tasks_impl(
         debug!("[start_tasks] TaskRunState updated");
     }
 
+    if reset_state && task_ids_ret.is_empty() {
+        super::maa_core::schedule_release_idle_desktop_controller(&app, maa_state, &instance_id);
+    }
+
     // 通知所有客户端：任务已启动，需刷新运行时状态
     super::utils::emit_state_changed(&app, &instance_id, "task-started");
 
@@ -1150,6 +1155,12 @@ pub fn stop_agent_impl(maa_state: &Arc<MaaState>, instance_id: &str) -> Result<(
 
 /// 停止所有 Agent 并断开连接 — Tauri invoke 入口，委托给 stop_agent_impl
 #[tauri::command]
-pub fn maa_stop_agent(state: State<'_, Arc<MaaState>>, instance_id: String) -> Result<(), String> {
-    stop_agent_impl(&state, &instance_id)
+pub fn maa_stop_agent(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<MaaState>>,
+    instance_id: String,
+) -> Result<(), String> {
+    stop_agent_impl(&state, &instance_id)?;
+    super::maa_core::schedule_release_idle_desktop_controller(&app, &state, &instance_id);
+    Ok(())
 }

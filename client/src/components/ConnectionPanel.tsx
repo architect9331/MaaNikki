@@ -296,11 +296,26 @@ export function ConnectionPanel() {
     allResources.find((r) => r.name === currentResourceName) || compatibleResources[0];
 
   // 当设备和资源都准备好时自动折叠
+  const prevResourceLoadedRef = useRef(false);
+
+  // 资源加载完成后自动折叠：已连接实例始终折叠；桌面窗口若已配置历史窗口，启动阶段也不因按需延迟连接而展开
   useEffect(() => {
-    if (isConnected && isResourceLoaded) {
+    const hasConfiguredDesktopWindow =
+      isDesktopWindowController && Boolean(activeInstance?.savedDevice?.windowName);
+    if (
+      isResourceLoaded &&
+      (isConnected || (hasConfiguredDesktopWindow && !prevResourceLoadedRef.current))
+    ) {
       setConnectionPanelExpanded(false);
     }
-  }, [isConnected, isResourceLoaded, setConnectionPanelExpanded]);
+    prevResourceLoadedRef.current = isResourceLoaded;
+  }, [
+    isConnected,
+    isResourceLoaded,
+    isDesktopWindowController,
+    activeInstance?.savedDevice?.windowName,
+    setConnectionPanelExpanded,
+  ]);
 
   // 当实例切换时，重置和恢复状态
   useEffect(() => {
@@ -365,8 +380,10 @@ export function ConnectionPanel() {
       setPlaycoverAddress('127.0.0.1:1717');
     }
 
-    // 如果已连接但未展开，自动折叠
-    if (isInstanceConnected && isInstanceResourceLoaded) {
+    // 如果已连接且已加载资源，或桌面窗口已保存历史配置且资源已加载，保持折叠
+    const hasConfiguredDesktopWindow =
+      isDesktopWindowController && Boolean(savedDevice?.windowName);
+    if ((isInstanceConnected || hasConfiguredDesktopWindow) && isInstanceResourceLoaded) {
       setConnectionPanelExpanded(false);
     } else {
       setConnectionPanelExpanded(true);
@@ -457,7 +474,11 @@ export function ConnectionPanel() {
             (savedDevice.wlrSocketPath && linuxNeeds?.needWlrSocket))) ||
         (controllerType === 'PlayCover' && savedDevice.playcoverAddress));
 
-    if (hasHistoricalDevice && needsDeviceSearch) {
+    if (hasHistoricalDevice && isDesktopWindowController) {
+      // 桌面窗口采用启动按需连接：启动阶段仅探测窗口与进程路径，不提前拉起 FramePool 会话
+      autoReconnectAttempted.add(instanceId);
+      void discoverDesktopWindows(false);
+    } else if (hasHistoricalDevice && needsDeviceSearch) {
       // 标记该实例已尝试过自动重连
       autoReconnectAttempted.add(instanceId);
       // 触发搜索并自动连接（handleSearch 内部已有匹配+自动连接逻辑）
@@ -478,6 +499,60 @@ export function ConnectionPanel() {
       // 未初始化，使用默认路径初始化（exe 目录下的 maafw）
       await maaService.init();
       return true;
+    }
+  };
+
+  // 探测桌面窗口列表，按需决定仅选中还是立即自动连接
+  const discoverDesktopWindows = async (autoConnect: boolean) => {
+    try {
+      const windows = await maaService.findWin32Windows(
+        desktopWindowClassRegex,
+        desktopWindowTitleRegex,
+      );
+      setCachedWin32Windows(windows);
+      if (!isActiveInstance(instanceId)) return;
+
+      const savedDevice = activeInstance?.savedDevice;
+      let autoSelected: Win32Window | null = null;
+      if (savedDevice?.windowName) {
+        const matched = windows.filter((w) => w.window_name === savedDevice.windowName);
+        if (matched.length === 1) {
+          autoSelected = matched[0];
+        } else if (matched.length === 0 && windows.length === 1) {
+          autoSelected = windows[0];
+        }
+      } else if (windows.length > 0 && autoConnect) {
+        // 没有保存窗口时在用户主动搜索时自动选择第一个
+        autoSelected = windows[0];
+        if (instanceId) {
+          addLog(instanceId, {
+            type: 'info',
+            message: t('taskList.autoConnect.autoSelectedWindow', {
+              name: autoSelected.window_name || autoSelected.class_name,
+            }),
+          });
+        }
+      }
+
+      if (autoSelected) {
+        if (autoConnect) {
+          handleSelectWindow(autoSelected);
+        } else {
+          setSelectedWindow(autoSelected);
+          if (
+            (controllerType === 'Win32' || controllerType === 'Gamepad') &&
+            !savedDevice?.connectedProgramPath
+          ) {
+            void fetchAndStoreProcessPath(autoSelected.handle);
+          }
+        }
+      } else if (windows.length > 0 && autoConnect) {
+        // 有保存窗口但匹配失败，显示下拉框让用户选择
+        setShowDeviceDropdown(true);
+      }
+    } catch {
+      if (!autoConnect) return;
+      throw new Error(t('controller.searchFailed'));
     }
   };
 
@@ -530,42 +605,7 @@ export function ConnectionPanel() {
           setShowDeviceDropdown(true);
         }
       } else if (isDesktopWindowController) {
-        const windows = await maaService.findWin32Windows(
-          desktopWindowClassRegex,
-          desktopWindowTitleRegex,
-        );
-        setCachedWin32Windows(windows);
-        if (!isActiveInstance(instanceId)) return;
-
-        // 自动连接策略（与 Adb 一致）
-        let autoSelected: Win32Window | null = null;
-        if (savedDevice?.windowName) {
-          const matched = windows.filter((w) => w.window_name === savedDevice.windowName);
-          if (matched.length === 1) {
-            autoSelected = matched[0];
-          } else if (matched.length === 0 && windows.length === 1) {
-            autoSelected = windows[0];
-          }
-        } else if (windows.length > 0) {
-          // 没有保存窗口时自动选择第一个
-          autoSelected = windows[0];
-          // 给出首次自动匹配提示
-          if (instanceId) {
-            addLog(instanceId, {
-              type: 'info',
-              message: t('taskList.autoConnect.autoSelectedWindow', {
-                name: autoSelected.window_name || autoSelected.class_name,
-              }),
-            });
-          }
-        }
-
-        if (autoSelected) {
-          handleSelectWindow(autoSelected);
-        } else if (windows.length > 0) {
-          // 有保存窗口但匹配失败，显示下拉框让用户选择
-          setShowDeviceDropdown(true);
-        }
+        await discoverDesktopWindows(true);
       } else if (controllerType === 'WlRoots') {
         const sockets = await maaService.findWlrootsSockets();
         setCachedWlrootsSockets(sockets);
@@ -1039,6 +1079,21 @@ export function ConnectionPanel() {
       updateSavedDevice(instanceId, { connectedProgramPath: programPath });
     } catch {
       // best-effort, 静默忽略
+    }
+  };
+
+  // 主动断开控制器连接（释放桌面窗口截图会话，保留资源与设备配置）
+  const handleDisconnect = async () => {
+    if (isRunning || isConnecting) return;
+    try {
+      setDeviceError(null);
+      await maaService.disconnectController(instanceId);
+      if (!isActiveInstance(instanceId)) return;
+      setIsConnected(false);
+    } catch (err) {
+      if (isActiveInstance(instanceId)) {
+        setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
+      }
     }
   };
 
@@ -1884,6 +1939,23 @@ export function ConnectionPanel() {
                     <RefreshCw className="w-3.5 h-3.5 text-text-secondary" />
                   )}
                 </button>
+
+                {isConnected && (
+                  <button
+                    onClick={handleDisconnect}
+                    disabled={isConnecting || isRunning}
+                    className={clsx(
+                      'flex items-center justify-center px-3 py-1.5 rounded-lg border transition-colors',
+                      'bg-bg-tertiary border-border',
+                      isConnecting || isRunning
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:bg-bg-hover hover:border-warning text-text-secondary hover:text-warning',
+                    )}
+                    title={t('controller.disconnect')}
+                  >
+                    <WifiOff className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             )}
 

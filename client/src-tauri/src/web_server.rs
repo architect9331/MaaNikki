@@ -25,10 +25,11 @@ use crate::commands::{
     app_config::AppConfigState,
     maa_agent::{start_tasks_impl, stop_agent_impl},
     maa_core::{
-        connect_controller_impl, destroy_instance_impl, find_adb_devices_impl,
-        find_gamescope_instances_impl, find_win32_windows_impl, find_wlroots_sockets_impl,
-        get_cached_image_impl, load_resource_impl, override_pipeline_impl, post_click_impl,
-        post_screencap_impl, run_task_impl, stop_task_impl,
+        connect_controller_impl, destroy_instance_impl, disconnect_controller_impl,
+        find_adb_devices_impl, find_gamescope_instances_impl, find_win32_windows_impl,
+        find_wlroots_sockets_impl, get_cached_image_impl, load_resource_impl,
+        override_pipeline_impl, post_click_impl, post_screencap_impl, run_task_impl,
+        schedule_release_idle_desktop_controller, stop_task_impl,
     },
     types::{AgentConfig, ControllerConfig, ControllerInfo, MaaState, TaskConfig},
     utils::{emit_callback_event, emit_config_changed, emit_state_changed},
@@ -241,6 +242,10 @@ pub async fn start_web_server(
         .route(
             "/maa/instances/:id/connect",
             axum::routing::post(handle_connect_controller),
+        )
+        .route(
+            "/maa/instances/:id/disconnect",
+            axum::routing::post(handle_disconnect_controller),
         )
         .route(
             "/maa/instances/:id/resource/load",
@@ -940,6 +945,11 @@ async fn handle_stop_task(
     match stop_task_impl(&state.maa_state, &instance_id) {
         Ok(()) => {
             emit_state_changed(&state.app_handle, &instance_id, "task-stopped");
+            schedule_release_idle_desktop_controller(
+                &state.app_handle,
+                &state.maa_state,
+                &instance_id,
+            );
             Json(serde_json::json!({ "ok": true })).into_response()
         }
         Err(e) => (
@@ -980,13 +990,34 @@ async fn handle_override_pipeline(
 }
 
 /// POST /api/maa/instances/:id/agent/stop
+async fn handle_disconnect_controller(
+    State(state): State<WebState>,
+    axum::extract::Path(instance_id): axum::extract::Path<String>,
+) -> impl IntoResponse {
+    match disconnect_controller_impl(&state.app_handle, &state.maa_state, &instance_id) {
+        Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
+    }
+}
+
 /// 停止 Agent 并断开连接，与 Tauri invoke `maa_stop_agent` 使用同一套实现
 async fn handle_stop_agent(
     State(state): State<WebState>,
     axum::extract::Path(instance_id): axum::extract::Path<String>,
 ) -> impl IntoResponse {
     match stop_agent_impl(&state.maa_state, &instance_id) {
-        Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
+        Ok(()) => {
+            schedule_release_idle_desktop_controller(
+                &state.app_handle,
+                &state.maa_state,
+                &instance_id,
+            );
+            Json(serde_json::json!({ "ok": true })).into_response()
+        }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e })),

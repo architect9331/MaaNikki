@@ -331,6 +331,7 @@ fn update_instance_controller(
         let instance = instances.get_mut(instance_id).ok_or("Instance not found")?;
 
         let old_config = instance.controller_config.clone();
+        instance.start_generation = instance.start_generation.wrapping_add(1);
         instance.controller = Some(controller);
         instance.controller_config = Some(new_config.clone());
         instance.controller_stopped = false;
@@ -1392,6 +1393,7 @@ pub fn run_task_impl(
 ) -> Result<i64, String> {
     let mut instances = state.instances.lock().map_err(|e| e.to_string())?;
     let instance = instances.get_mut(instance_id).ok_or("Instance not found")?;
+    instance.start_generation = instance.start_generation.wrapping_add(1);
 
     let resource = instance.resource.as_ref().ok_or("Resource not loaded")?;
     let controller = instance
@@ -1531,6 +1533,202 @@ pub fn maa_get_task_status(
     Ok(result)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DesktopReleaseOutcome {
+    Released,
+    StillRunning,
+    NothingToRelease,
+    Aborted,
+}
+
+/// 判断是否为桌面窗口控制器（Win32 / MacOS / Gamepad）
+pub fn is_desktop_window_controller(config: &ControllerConfig) -> bool {
+    matches!(
+        config,
+        ControllerConfig::Win32 { .. }
+            | ControllerConfig::MacOS { .. }
+            | ControllerConfig::Gamepad { .. }
+    )
+}
+
+fn try_release_controller_handles(
+    app: &tauri::AppHandle,
+    state: &Arc<MaaState>,
+    instance_id: &str,
+    only_if_desktop: bool,
+    expected_generation: Option<u64>,
+) -> Result<DesktopReleaseOutcome, String> {
+    let (dropped_tasker, dropped_controller, exact_key) = {
+        let mut instances = state.instances.lock().map_err(|e| e.to_string())?;
+        let Some(instance) = instances.get_mut(instance_id) else {
+            return if expected_generation.is_some() {
+                Ok(DesktopReleaseOutcome::Aborted)
+            } else {
+                Err("Instance not found".to_string())
+            };
+        };
+
+        if let Some(expected_gen) = expected_generation {
+            if instance.start_generation != expected_gen {
+                return Ok(DesktopReleaseOutcome::Aborted);
+            }
+        }
+
+        if only_if_desktop
+            && !instance
+                .controller_config
+                .as_ref()
+                .is_some_and(is_desktop_window_controller)
+        {
+            return Ok(DesktopReleaseOutcome::NothingToRelease);
+        }
+
+        if instance.tasker.as_ref().is_some_and(|t| t.running()) {
+            return if expected_generation.is_some() {
+                Ok(DesktopReleaseOutcome::StillRunning)
+            } else {
+                Err("Task is currently running".to_string())
+            };
+        }
+
+        if instance.controller.is_none() && instance.tasker.is_none() {
+            return Ok(DesktopReleaseOutcome::NothingToRelease);
+        }
+
+        if expected_generation.is_none() {
+            // 手动断开时递增代数，中止仍在等待中的延迟释放任务
+            instance.start_generation = instance.start_generation.wrapping_add(1);
+        }
+
+        let dropped_tasker = instance.tasker.take();
+        let dropped_controller = instance.controller.take();
+        instance.controller_stopped = true;
+        instance.stop_in_progress = false;
+        instance.stop_started_at = None;
+        let exact_key = instance
+            .controller_config
+            .clone()
+            .map(|cfg| (instance_id.to_string(), cfg));
+        (dropped_tasker, dropped_controller, exact_key)
+    };
+
+    let mut pooled_controllers = Vec::new();
+    if let Ok(mut pool) = state.controller_pool.lock() {
+        if let Some(key) = exact_key {
+            if let Some(ctrl) = pool.remove(&key) {
+                pooled_controllers.push(ctrl);
+            }
+        }
+        let keys: Vec<_> = pool
+            .keys()
+            .filter(|(id, cfg)| {
+                id == instance_id && (!only_if_desktop || is_desktop_window_controller(cfg))
+            })
+            .cloned()
+            .collect();
+        for key in keys {
+            if let Some(ctrl) = pool.remove(&key) {
+                pooled_controllers.push(ctrl);
+            }
+        }
+    }
+
+    // 在锁外释放 Tasker 与 Controller，防止回调线程等待产生死锁
+    drop(dropped_tasker);
+    drop(dropped_controller);
+    drop(pooled_controllers);
+
+    info!(
+        "[ControllerRelease] Released {} controller for instance {}",
+        if only_if_desktop {
+            "idle desktop"
+        } else {
+            "instance"
+        },
+        instance_id
+    );
+    super::utils::emit_state_changed(app, instance_id, "disconnected");
+
+    Ok(DesktopReleaseOutcome::Released)
+}
+
+/// 异步释放空闲的桌面窗口控制器，保留已加载资源供下次启动自动重连
+pub fn schedule_release_idle_desktop_controller(
+    app: &tauri::AppHandle,
+    state: &Arc<MaaState>,
+    instance_id: &str,
+) {
+    let target_gen = {
+        let Ok(instances) = state.instances.lock() else {
+            return;
+        };
+        let Some(instance) = instances.get(instance_id) else {
+            return;
+        };
+        if instance.controller.is_none() && instance.tasker.is_none() {
+            return;
+        }
+        if !instance
+            .controller_config
+            .as_ref()
+            .is_some_and(is_desktop_window_controller)
+        {
+            return;
+        }
+        instance.start_generation
+    };
+
+    let app_clone = app.clone();
+    let state_clone = Arc::clone(state);
+    let instance_id_owned = instance_id.to_string();
+    let _ = std::thread::Builder::new()
+        .name(format!("release-ctrl-{}", instance_id))
+        .spawn(move || {
+            let deadline = Instant::now() + Duration::from_secs(5);
+            let mut wait_ms = 10u64;
+            loop {
+                match try_release_controller_handles(
+                    &app_clone,
+                    &state_clone,
+                    &instance_id_owned,
+                    true,
+                    Some(target_gen),
+                ) {
+                    Ok(DesktopReleaseOutcome::StillRunning) => {
+                        if Instant::now() >= deadline {
+                            debug!(
+                                "[ControllerRelease] Timed out waiting for tasker stop on instance {}",
+                                instance_id_owned
+                            );
+                            break;
+                        }
+                        std::thread::sleep(Duration::from_millis(wait_ms));
+                        wait_ms = (wait_ms * 2).min(50);
+                    }
+                    Ok(_) | Err(_) => break,
+                }
+            }
+        });
+}
+
+/// 断开实例当前控制器连接（保留已加载资源与设备配置）
+pub fn disconnect_controller_impl(
+    app: &tauri::AppHandle,
+    state: &Arc<MaaState>,
+    instance_id: &str,
+) -> Result<(), String> {
+    try_release_controller_handles(app, state, instance_id, false, None).map(|_| ())
+}
+
+#[tauri::command]
+pub fn maa_disconnect_controller(
+    app: tauri::AppHandle,
+    state: State<Arc<MaaState>>,
+    instance_id: String,
+) -> Result<(), String> {
+    disconnect_controller_impl(&app, &state, &instance_id)
+}
+
 /// 停止任务
 /// 停止任务的内部实现（可从 Tauri 命令和 HTTP 处理器共享调用）
 pub fn stop_task_impl(state: &MaaState, instance_id: &str) -> Result<(), String> {
@@ -1604,6 +1802,7 @@ pub fn maa_stop_task(
     let result = stop_task_impl(&state, &instance_id);
     if result.is_ok() {
         super::utils::emit_state_changed(&app, &instance_id, "task-stopped");
+        schedule_release_idle_desktop_controller(&app, &state, &instance_id);
     }
     result
 }

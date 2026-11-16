@@ -1152,6 +1152,27 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
             return failStart(t('taskList.autoConnect.connectFailed'));
           }
 
+          if (
+            (controllerType === 'Win32' || controllerType === 'Gamepad') &&
+            'handle' in config &&
+            typeof config.handle === 'number'
+          ) {
+            const currentInst = useAppStore.getState().instances.find((i) => i.id === targetId);
+            if (!currentInst?.savedDevice?.connectedProgramPath) {
+              void maaService
+                .getProcessPathFromHwnd(config.handle)
+                .then((programPath) => {
+                  if (!programPath) return;
+                  const latest = useAppStore.getState().instances.find((i) => i.id === targetId);
+                  useAppStore.getState().setInstanceSavedDevice(targetId, {
+                    ...latest?.savedDevice,
+                    connectedProgramPath: programPath,
+                  });
+                })
+                .catch(() => {});
+            }
+          }
+
           if (shouldDelayAfterAdbConnected) {
             const delaySec = useAppStore.getState().preActionConnectDelaySec ?? 5;
             if (delaySec > 0) {

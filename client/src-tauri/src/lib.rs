@@ -271,6 +271,7 @@ pub fn run() {
             commands::maa_core::maa_create_instance,
             commands::maa_core::maa_destroy_instance,
             commands::maa_core::maa_connect_controller,
+            commands::maa_core::maa_disconnect_controller,
             commands::maa_core::maa_get_connection_status,
             commands::maa_core::maa_load_resource,
             commands::maa_core::maa_is_resource_loaded,

@@ -334,6 +334,21 @@ export const maaService = {
   },
 
   /**
+   * 主动断开控制器连接（保留已加载资源与设备配置）
+   * @param instanceId 实例 ID
+   */
+  async disconnectController(instanceId: string): Promise<void> {
+    log.info('断开控制器连接, 实例:', instanceId);
+    if (!isTauri()) {
+      await apiPost(`/maa/instances/${instanceId}/disconnect`, {});
+      log.info('断开控制器连接成功 (HTTP):', instanceId);
+      return;
+    }
+    await invoke('maa_disconnect_controller', { instanceId });
+    log.info('断开控制器连接成功:', instanceId);
+  },
+
+  /**
    * 加载资源（异步，通过回调通知完成状态）
    * @param instanceId 实例 ID
    * @param paths 资源路径列表
