@@ -6,8 +6,8 @@
       "entry": "MaaNikki_MinigameBling",
       "group": ["daily", "periodic"],
       "default_check": false,
-      "description": "前往花愿镇心愿花街左上方「穿梭大冒险」小游戏，自动对话与操控自行车完成挑战并连续再次挑战，稳定拿满每日 16 万大世界噗灵上限。",
-      "option": ["MinigameBlingTarget", "MinigameBlingStartMode", "MinigameBlingBackground"]
+      "description": "前往花愿镇心愿花街左上方「穿梭大冒险」小游戏，自动对话并穿过激光门完成挑战与连续再次挑战，稳定拿满每日 16 万大世界噗灵上限。",
+      "option": ["MinigameBlingTarget", "MinigameBlingCameraAssist", "MinigameBlingStartMode", "MinigameBlingBackground"]
     }
   ],
   "option": {
@@ -68,6 +68,36 @@
             "MaaNikki_MinigameBling": {
               "custom_action_param": {
                 "rounds": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MinigameBlingCameraAssist": {
+      "type": "select",
+      "label": "视角水平辅助",
+      "default_case": "Enabled",
+      "description": "请与游戏内「设置 → 控制 → 视角水平辅助」开关保持一致：开启时使用默认顺滑跟转走法，关闭时使用定角补转走法（两种走法均全程纯键盘操作，支持后台运行）。",
+      "cases": [
+        {
+          "name": "Enabled",
+          "label": "已开启视角水平辅助（默认）",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "camera_assist": true
+              }
+            }
+          }
+        },
+        {
+          "name": "Disabled",
+          "label": "已关闭视角水平辅助",
+          "pipeline_override": {
+            "MaaNikki_MinigameBling": {
+              "custom_action_param": {
+                "camera_assist": false
               }
             }
           }

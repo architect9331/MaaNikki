@@ -49,6 +49,7 @@
     "custom_action": "nikki.minigame_bling",
     "custom_action_param": {
       "rounds": 267,
+      "camera_assist": true,
       "navigate": true,
       "route": "minigame_shuttle_adventure",
       "background": true

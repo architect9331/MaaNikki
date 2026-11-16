@@ -1,7 +1,7 @@
 """Automated 'Shuttle Adventure' (穿梭大冒险) mini-game loop for daily 160k Bling farming.
 
 Uses the terrain-aware route from Wishfield Street (心愿花街) to reach the NPC at
-(10152.80, 10054.80) when not already nearby, then executes the Whimcycle hoop
+(10152.80, 10054.80) when not already nearby, then executes the laser-gate
 course and settlement replay loop while monitoring for the daily Bling cap.
 """
 from __future__ import annotations
@@ -12,6 +12,7 @@ import math
 import re
 
 import cv2
+import numpy as np
 from file_io import write_json
 from task_control import ForegroundChanged, active_session, task_time as time
 
@@ -44,10 +45,29 @@ FAIL_EXIT_BOX = [488, 432, 56, 30]
 FAIL_RETRY_BOX = [714, 432, 56, 30]
 CONFIRM_CANCEL_BOX = [526, 439, 49, 26]
 CONFIRM_OK_BOX = [703, 439, 48, 25]
+COURSE_TIMER_ROI = [555, 22, 170, 50]
+MIN_START_WAIT_SECONDS = 2.8
 RETRY_START_WAIT_SECONDS = 5.0
+MAX_START_WAIT_SECONDS = 8.0
+START_POLL_INTERVAL_SECONDS = 0.04
+COURSE_STRAIGHT_SECONDS = 4.5
+# Pure-keyboard W + D steering tracks calibrated against 101060001 6-gate geometry:
+# - Camera horizontal assist ON (default): camera smoothly follows velocity at ~4.37 deg/s during W+D.
+# - Camera horizontal assist OFF: camera yaw stays fixed at Yaw0, requiring wider W+D diagonal offsets.
+COURSE_TURNS_CAMERA_ASSIST_ON: tuple[tuple[float, float], ...] = (
+    (1.2, 0.65),
+    (1.1, 1.1),
+    (0.5, 3.2),
+)
+COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[float, float], ...] = (
+    (1.8, 0.8),
+    (1.8, 1.4),
+    (1.2, 1.6),
+)
 MAX_CONSECUTIVE_FAILURES = 6
 
 _CAP_RE = re.compile(r"已达.*上限|今日.*上限|获取上限|达到上限|无法获得更多")
+_COURSE_TIMER_RE = re.compile(r"(\d{2})\s*[:：.]?\s*(\d{2})(?:\s*[.:：]\s*(\d{1,3}))?")
 _NO_BLING_RE = re.compile(r"噗灵不足|余额不足")
 _FAIL_BANNER_RE = re.compile(r"挑战失败")
 _RETRY_CONFIRM_RE = re.compile(r"消耗.*噗灵.*重试|是否.*重试")
@@ -96,7 +116,7 @@ REPLAY_SEQUENCE: tuple[tuple[str, float] | float, ...] = (
 
 
 class MinigameBlingRun(Runtime):
-    """Executes the Shuttle Adventure bicycle mini-game loop until target rounds or daily cap."""
+    """Executes the Shuttle Adventure laser-gate mini-game loop until target rounds or daily cap."""
 
     def _already_near_npc(self, max_radius_px: float = NEAR_NPC_RADIUS_PX) -> bool:
         try:
@@ -256,25 +276,132 @@ class MinigameBlingRun(Runtime):
                 inputs.hold(key_name, float(dur), restore=False)
         return not self.stopped
 
-    def _play_course(self, inputs: ForegroundInput, *, retry_started_at: float | None = None) -> bool:
+    @staticmethod
+    def _has_course_timer_pregate(frame) -> bool:
+        """Fast pixel pre-gate for the top-center 00:00.xxx timer capsule on 16:9 frames."""
+        if frame is None or getattr(frame, "ndim", 0) != 3:
+            return False
+        h, w = frame.shape[:2]
+        if w <= 0 or h <= 0:
+            return False
+        sx, sy = w / 1280.0, h / 720.0
+        x0, y0 = int(round(578 * sx)), int(round(36 * sy))
+        x1, y1 = int(round(702 * sx)), int(round(56 * sy))
+        strip = frame[y0:y1, x0:x1]
+        if strip.size == 0:
+            return False
+        b, g, r = strip[:, :, 0], strip[:, :, 1], strip[:, :, 2]
+        min_c = np.minimum(np.minimum(r, g), b)
+        max_c = np.maximum(np.maximum(r, g), b)
+        white_mask = (min_c >= 200) & ((max_c.astype(np.int16) - min_c.astype(np.int16)) <= 35)
+        white_ratio = float(np.mean(white_mask))
+        if not (0.06 <= white_ratio <= 0.55):
+            return False
+        cols = np.where(np.any(white_mask, axis=0))[0]
+        span_px = int(cols[-1] - cols[0] + 1) if len(cols) >= 2 else 0
+        if span_px < max(12, int(round(45 * sx))):
+            return False
+        outer = frame[int(round(26 * sy)):int(round(64 * sy)), int(round(558 * sx)):int(round(722 * sx))]
+        if outer.size == 0:
+            return False
+        outer_luma = float(np.mean(outer))
+        return 25.0 <= outer_luma <= 195.0
+
+    def _detect_course_timer(self, frame) -> float | None:
+        """Return parsed elapsed timer seconds when a newly started round's 00:0x timer is visible."""
+        if not self._has_course_timer_pregate(frame):
+            return None
+        result = self.recognize("MaaNikki_Daily_OCR", {"roi": COURSE_TIMER_ROI}, image=frame)
+        if not result or not result.hit:
+            return None
+        rows = (
+            getattr(result, "filtered_results", None)
+            or getattr(result, "all_results", None)
+            or ([result.best_result] if getattr(result, "best_result", None) is not None else [])
+        )
+        for row in rows:
+            if row is None:
+                continue
+            score = getattr(row, "score", None)
+            if isinstance(score, (int, float)) and score < 0.40:
+                continue
+            txt = str(getattr(row, "text", "") or "").strip()
+            if not txt:
+                continue
+            txt_norm = txt.translate(str.maketrans({"O": "0", "o": "0", "D": "0"}))
+            match = _COURSE_TIMER_RE.search(txt_norm)
+            if not match:
+                continue
+            mins = int(match.group(1))
+            secs = int(match.group(2))
+            if mins == 0 and secs <= 4:
+                frac_raw = match.group(3)
+                frac = int(frac_raw) / (10 ** len(frac_raw)) if frac_raw else 0.0
+                return secs + frac
+        return None
+
+    def _wait_for_course_start(self, inputs: ForegroundInput, trigger_at: float) -> tuple[str, float]:
+        """Wait until the 3-2-1 countdown ends and the top-center 00:00 timer appears."""
+        min_wait = MIN_START_WAIT_SECONDS - (time.monotonic() - trigger_at)
+        if min_wait > 0:
+            inputs.wait(min_wait, restore=False)
+        deadline = trigger_at + MAX_START_WAIT_SECONDS
+        while not self.stopped:
+            now = time.monotonic()
+            if now >= deadline:
+                return "timeout_fallback", now - trigger_at
+            frame = self.capture()
+            if self.stopped:
+                return "stopped", time.monotonic() - trigger_at
+            if frame is None:
+                fallback_rem = max(0.0, (trigger_at + RETRY_START_WAIT_SECONDS) - time.monotonic())
+                if fallback_rem > 0:
+                    inputs.wait(fallback_rem, restore=False)
+                return "no_frame_fallback", time.monotonic() - trigger_at
+            if self._detect_course_timer(frame) is not None:
+                return "timer_aligned", time.monotonic() - trigger_at
+            rem = deadline - time.monotonic()
+            if rem <= 0:
+                break
+            if not self.pause(min(START_POLL_INTERVAL_SECONDS, rem)):
+                return "stopped", time.monotonic() - trigger_at
+        return ("stopped" if self.stopped else "timeout_fallback"), time.monotonic() - trigger_at
+
+    def _play_course(
+        self,
+        inputs: ForegroundInput,
+        *,
+        camera_assist: bool = True,
+        retry_started_at: float | None = None,
+        stats: dict | None = None,
+    ) -> bool:
         if self.stopped:
             return False
         if retry_started_at is None:
             inputs.hold("interact", 0.2, restore=False)
-            inputs.wait(RETRY_START_WAIT_SECONDS, restore=False)
+            trigger_at = time.monotonic()
         else:
-            remaining = max(
-                0.0,
-                min(RETRY_START_WAIT_SECONDS, RETRY_START_WAIT_SECONDS - (time.monotonic() - retry_started_at)),
-            )
-            if remaining > 0:
-                inputs.wait(remaining, restore=False)
+            trigger_at = retry_started_at
+        align_mode, start_wait_s = self._wait_for_course_start(inputs, trigger_at)
+        if align_mode == "stopped" or self.stopped:
+            return False
+        if stats is not None:
+            if align_mode == "timer_aligned":
+                stats["timer_aligned_rounds"] = stats.get("timer_aligned_rounds", 0) + 1
+            else:
+                stats["fallback_start_rounds"] = stats.get("fallback_start_rounds", 0) + 1
+        self.log(
+            f"起跑对齐：{align_mode}，等待 {start_wait_s:.2f} 秒"
+            f"（走法：{'开启水平辅助' if camera_assist else '关闭水平辅助'}）。",
+            detail=True,
+        )
+        turns = COURSE_TURNS_CAMERA_ASSIST_ON if camera_assist else COURSE_TURNS_CAMERA_ASSIST_OFF
         fwd = self.game_keys.get("forward")
         right = self.game_keys.get("right")
         try:
             inputs._down(fwd)
-            inputs.wait(4.5)
-            for hold_d, wait_after in ((1.2, 0.65), (1.1, 1.1), (0.5, 3.2)):
+            inputs.wait(COURSE_STRAIGHT_SECONDS)
+            for hold_d, wait_after in turns:
                 if self.stopped:
                     return False
                 inputs._down(right)
@@ -722,7 +849,8 @@ class MinigameBlingRun(Runtime):
         """Execute bounded retry on '挑战失败'; returns (action, retry_started_at)."""
         if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
             self.log(
-                f"连续 {consecutive_failures} 次挑战失败，已停止重试并退出小游戏，请检查移动键位或画面帧率。"
+                f"连续 {consecutive_failures} 次挑战失败，已停止重试并退出小游戏，"
+                "请确认任务的「视角水平辅助」选项与游戏内「设置 → 控制 → 视角水平辅助」一致，并检查移动键位与画面帧率。"
             )
             self._exit_failure_to_main(inputs, info)
             return "too_many_failures", None
@@ -880,12 +1008,17 @@ class MinigameBlingRun(Runtime):
         inputs: ForegroundInput,
         *,
         max_rounds: int,
+        camera_assist: bool,
         retry_started_at: float | None,
         stats: dict,
         started_at: float,
     ) -> bool:
         consecutive_failures = 0
-        self.log(f"开始「穿梭大冒险」自动刷噗灵（目标 {max_rounds} 局，预计耗时约 {int(max_rounds * 31.2 // 60)} 分钟）…")
+        assist_label = "已开启视角水平辅助" if camera_assist else "已关闭视角水平辅助"
+        self.log(
+            f"开始「穿梭大冒险」自动刷噗灵（目标 {max_rounds} 局，走法：{assist_label}，"
+            f"预计耗时约 {int(max_rounds * 31.2 // 60)} 分钟）…"
+        )
         if retry_started_at is None:
             if not self._run_sequence(inputs, INIT_SEQUENCE):
                 stats["stop_reason"] = "stopped"
@@ -915,7 +1048,12 @@ class MinigameBlingRun(Runtime):
 
             current_retry_start = retry_started_at
             retry_started_at = None
-            if not self._play_course(inputs, retry_started_at=current_retry_start):
+            if not self._play_course(
+                inputs,
+                camera_assist=camera_assist,
+                retry_started_at=current_retry_start,
+                stats=stats,
+            ):
                 stats["stop_reason"] = "stopped"
                 break
             inputs.wait(5.0, restore=False)
@@ -1011,6 +1149,11 @@ class MinigameBlingRun(Runtime):
             max_rounds = max(1, min(500, int(settings.get("rounds", 267))))
         except (TypeError, ValueError):
             max_rounds = 267
+        raw_assist = settings.get("camera_assist", True)
+        if isinstance(raw_assist, str):
+            camera_assist = raw_assist.strip().lower() not in {"0", "false", "no", "off", "disabled"}
+        else:
+            camera_assist = bool(raw_assist)
         navigate = bool(settings.get("navigate", True))
         route_name = str(settings.get("route") or DEFAULT_ROUTE).strip()
         global_background = self.background_mode()
@@ -1023,6 +1166,9 @@ class MinigameBlingRun(Runtime):
         stats = {
             "completed_rounds": 0,
             "failed_rounds": 0,
+            "timer_aligned_rounds": 0,
+            "fallback_start_rounds": 0,
+            "camera_assist": camera_assist,
             "stop_reason": "completed",
         }
         started_at = time.monotonic()
@@ -1047,6 +1193,7 @@ class MinigameBlingRun(Runtime):
                     return self._run_challenge_loop(
                         fg_inputs,
                         max_rounds=max_rounds,
+                        camera_assist=camera_assist,
                         retry_started_at=retry_started_at,
                         stats=stats,
                         started_at=started_at,
@@ -1088,6 +1235,7 @@ class MinigameBlingRun(Runtime):
                         return self._run_challenge_loop(
                             bg_inputs,
                             max_rounds=max_rounds,
+                            camera_assist=camera_assist,
                             retry_started_at=retry_started_at,
                             stats=stats,
                             started_at=started_at,
@@ -1107,6 +1255,7 @@ class MinigameBlingRun(Runtime):
                     return self._run_challenge_loop(
                         bg_inputs,
                         max_rounds=max_rounds,
+                        camera_assist=camera_assist,
                         retry_started_at=None,
                         stats=stats,
                         started_at=started_at,
@@ -1131,6 +1280,9 @@ class MinigameBlingRun(Runtime):
                 write_json(folder / f"{stamp}.json", {
                     "completed_rounds": stats["completed_rounds"],
                     "failed_rounds": stats["failed_rounds"],
+                    "timer_aligned_rounds": stats["timer_aligned_rounds"],
+                    "fallback_start_rounds": stats["fallback_start_rounds"],
+                    "camera_assist": stats["camera_assist"],
                     "target_rounds": max_rounds,
                     "navigate": navigate,
                     "background": allow_background,
