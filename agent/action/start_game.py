@@ -18,6 +18,8 @@ from game_view import ALLOWED_FRAME_SIZES, GameFrameSizeError, is_clipped_game_f
 
 STARTUP_HUNG_TIMEOUT = 180.0
 STARTUP_LOADING_HUNG_TIMEOUT = 240.0
+ACCOUNT_PROMPT_HOLD_SECONDS = 8.0
+ACCOUNT_MODAL_HOLD_SECONDS = 1.5
 _WM_NULL = 0x0000
 _SMTO_BLOCK = 0x0001
 _SMTO_ABORTIFHUNG = 0x0002
@@ -346,7 +348,12 @@ class StartGameAction(CustomAction):
         waiting_logged = False
         intro_logged = False
         loading_logged = False
+        auto_login_logged = False
+        version_check_logged = False
         unknown_since = None
+        account_prompt_since = None
+        account_prompt_hits = 0
+        account_prompt_modal = False
 
         def incomplete(reason="尚未完成进入游戏"):
             self.stop_reason = reason
@@ -400,6 +407,7 @@ class StartGameAction(CustomAction):
                         or runtime.ui.asset("IconUILoading", threshold=.99)
                         or runtime.hit("MaaNikki_StartGame_Loading")
                         or runtime.hit("MaaNikki_StartGame_Updating")
+                        or runtime.hit("MaaNikki_StartGame_VersionCheck")
                         or runtime.hit("MaaNikki_StartGame_AccountPrompt")
                         or runtime.hit("MaaNikki_StartGame_Enter"))
 
@@ -537,6 +545,14 @@ class StartGameAction(CustomAction):
                     and not enter and not login
                     and runtime.hit("MaaNikki_StartGame_AccountPrompt")
                 )
+                account_modal = (
+                    account_prompt
+                    and runtime.hit("MaaNikki_StartGame_AccountModal")
+                )
+                welcome_banner = (
+                    account_prompt and not account_modal
+                    and runtime.hit("MaaNikki_StartGame_WelcomeBanner")
+                )
                 updating = (
                     not restart and not update and not reward and not main
                     and not enter and not login and not account_prompt
@@ -548,9 +564,20 @@ class StartGameAction(CustomAction):
                 loading = (not restart and not update and not reward and not main
                            and not enter and not login and not account_prompt and not updating
                            and not intro and runtime.hit("MaaNikki_StartGame_Loading"))
+                version_check = (
+                    not restart and not update and not reward and not main
+                    and not enter and not login
+                    and (not account_prompt or not account_modal)
+                    and not updating and not intro and not loading
+                    and runtime.hit("MaaNikki_StartGame_VersionCheck")
+                )
             if (restart or update or reward or main or enter or login
-                    or account_prompt or updating or intro or loading):
+                    or account_prompt or updating or intro or loading or version_check):
                 unknown_since = None
+            if not account_prompt or welcome_banner or version_check:
+                account_prompt_since = None
+                account_prompt_hits = 0
+                account_prompt_modal = False
             if startup_state is not None:
                 startup_state["loading_active"] = bool(
                     loading or updating or update or update_waiting
@@ -613,11 +640,32 @@ class StartGameAction(CustomAction):
                 if not advance("MaaNikki_StartGame_Login", transition_ready):
                     return incomplete()
             elif account_prompt:
-                return incomplete("游戏账号未登录，请先手动完成账号登录后再运行")
+                if welcome_banner or version_check:
+                    # Cold startup can briefly render "注册/登录" while auto-login
+                    # handshake or version fetching is already underway.
+                    if not auto_login_logged:
+                        runtime.log("检测到账号正在自动登录，等待进入游戏界面。", detail=True)
+                        auto_login_logged = True
+                else:
+                    now = time.monotonic()
+                    if account_prompt_since is None or (account_modal and not account_prompt_modal):
+                        account_prompt_since = now
+                        account_prompt_hits = 0
+                        account_prompt_modal = account_modal
+                    account_prompt_hits += 1
+                    min_hits = 2 if account_modal else 3
+                    base_hold = ACCOUNT_MODAL_HOLD_SECONDS if account_modal else ACCOUNT_PROMPT_HOLD_SECONDS
+                    required_hold = min(base_hold, max(1.0, (deadline - started_at) * 0.25))
+                    if account_prompt_hits >= min_hits and now - account_prompt_since >= required_hold:
+                        return incomplete("游戏账号未登录，请先手动完成账号登录后再运行")
             elif updating:
                 if not update_waiting:
                     runtime.log("检测到客户端正在热更新或校验资源，等待更新完成。")
                     update_waiting = True
+            elif version_check:
+                if not version_check_logged:
+                    runtime.log("正在获取资源版本信息，等待登录状态完成。", detail=True)
+                    version_check_logged = True
             elif intro:
                 if not intro_logged:
                     runtime.log("正在播放健康提示或光敏警告，等待启动画面结束。", detail=True)
@@ -664,4 +712,6 @@ class StartGameAction(CustomAction):
                 waiting_logged = True
             if not runtime.pause(.5):
                 return False
+        if account_prompt_hits > 0:
+            return incomplete("游戏账号未登录，请先手动完成账号登录后再运行")
         return incomplete("进入游戏主页超时，请检查登录或更新提示")
