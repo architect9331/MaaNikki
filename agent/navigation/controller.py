@@ -933,12 +933,16 @@ class BackgroundInput(ForegroundInput):
                 wall_time.sleep(0.002)
             if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lparam, "后台鼠标移动"):
                 return False
-            wall_time.sleep(0.02 if with_cursor_pos else 0.01)
+            # Unfocused UE5 windows throttle background frames (~20-30 FPS = 33-50ms); match
+            # capture_parked's 80ms hover settle so Slate arms the button hitbox before DOWN.
+            wall_time.sleep(0.08 if with_cursor_pos else 0.01)
+            if with_cursor_pos and hasattr(cursor_ok, "renew"):
+                cursor_ok.renew(350)
             if not self._send_window_message(target, down_msg, down_wparam, lparam, label):
                 return False
             try:
                 if with_cursor_pos:
-                    wall_time.sleep(0.05)
+                    wall_time.sleep(0.06)
                     pressed = not self.stopped()
                 else:
                     pressed = (
