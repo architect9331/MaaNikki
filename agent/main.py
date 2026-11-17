@@ -31,6 +31,7 @@ from action import route_test as _route_test
 from action import route_studio as _route_studio
 from action import subtask_test as _subtask_test
 from action import start_game as _start_game
+from action import close_game as _close_game
 from recognition import ui_template as _ui_template
 from recognition import crown as _crown
 from tall_window import adopt_session_16_9_handoff, restore_session_16_9_windows

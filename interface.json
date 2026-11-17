@@ -68,6 +68,11 @@
       "default_expand": true
     },
     {
+      "name": "posttask",
+      "label": "后置任务",
+      "default_expand": true
+    },
+    {
       "name": "developer",
       "label": "开发者工具",
       "default_expand": true
@@ -104,6 +109,7 @@
     "tasks/OpenWorldCollect.json",
     "tasks/MinigameBling.json",
     "tasks/CustomRoute.json",
+    "tasks/CloseGame.json",
     "tasks/RouteTest.json",
     "tasks/SubtaskTest.json",
     "tasks/Presets.json"
