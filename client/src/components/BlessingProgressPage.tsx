@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { collectionShareImage } from '@/utils/collectionShareImage';
-import { useAccountStateStore } from '@/stores/accountStateStore';
+import { useAccountStateStore, type CollectionKey } from '@/stores/accountStateStore';
 import { collectionSlots as slots, collectionKey as keyOf } from '@/utils/blessingProgress';
 import { REALM_GOAL_LABELS } from '@/utils/nikkiOptions';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
@@ -126,9 +126,21 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
     if (!isTauri() || syncingPearpal) return;
     setSyncingPearpal(true);
     try {
-      await invoke('pearpal_sync_notebook');
+      const synced = await invoke<{ uid?: string; five_star_colors?: CollectionKey[] }>('pearpal_sync_notebook');
       await refresh();
-      toast.success('已同步美鸭梨手账祝福闪光图鉴并完成核对');
+      const currentUid = useAccountStateStore.getState().data?.uid;
+      if (synced?.uid && currentUid && synced.uid !== currentUid) {
+        toast.warning(
+          `已同步美鸭梨账号（UID ${synced.uid}），但当前页面显示的是游戏账号 UID ${currentUid}；请切换美鸭梨账号以核对当前角色`,
+        );
+      } else {
+        const unlockedCount = Array.isArray(synced?.five_star_colors) ? synced.five_star_colors.length : 0;
+        toast.success(
+          unlockedCount > 0
+            ? `已同步美鸭梨手账祝福闪光图鉴（已解锁 ${unlockedCount} 色）并完成核对`
+            : '已同步美鸭梨手账：当前角色暂未解锁五星祝福闪光图鉴',
+        );
+      }
     } catch (reason) {
       toast.error(String(reason));
     } finally {
@@ -249,13 +261,21 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
         goal="glow"
         tone={error || uncertain || rewardPending ? 'warn' : progress.known ? 'ok' : 'idle'}
         basis={
-          updated ? (
+          progress.localKnown && updated ? (
             <>
               闪光记录更新于 {time(updated)} · 已收集 <strong className="tabular-nums text-text-primary">{number(progress.owned.size)}</strong> /{' '}
               {number(target)} 色
             </>
           ) : pearpalCheck.updatedAt ? (
-            `按美鸭梨手账 ${time(pearpalCheck.updatedAt)} 的图鉴显示`
+            <>
+              按美鸭梨手账 {time(pearpalCheck.updatedAt)} 的图鉴显示 · 已收集{' '}
+              <strong className="tabular-nums text-text-primary">{number(progress.owned.size)}</strong> / {number(target)} 色
+            </>
+          ) : updated ? (
+            <>
+              闪光记录更新于 {time(updated)} · 已收集 <strong className="tabular-nums text-text-primary">{number(progress.owned.size)}</strong> /{' '}
+              {number(target)} 色
+            </>
           ) : (
             '尚无收集记录'
           )

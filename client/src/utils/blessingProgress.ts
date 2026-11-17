@@ -51,8 +51,13 @@ export function getBlessingProgress(data: AccountView | null) {
 
   const pearpalOwned = new Set<string>();
   const pearpalNotebook = data?.observations?.pearpal_notebook;
-  if (pearpalNotebook?.five_star_colors && target > 0) {
-    for (const row of pearpalNotebook.five_star_colors) {
+  const pearpalRows = pearpalNotebook
+    ? (pearpalNotebook.schema_version ?? 1) >= 2
+      ? pearpalNotebook.five_star_colors
+      : [...(pearpalNotebook.five_star_colors ?? []), ...(pearpalNotebook.four_star_colors ?? [])]
+    : undefined;
+  if (pearpalRows && target > 0) {
+    for (const row of pearpalRows) {
       if (isValidKey(row)) {
         pearpalOwned.add(collectionKey(row));
       }
@@ -82,7 +87,10 @@ export function getBlessingProgress(data: AccountView | null) {
     sets, target, owned, known, localKnown,
     partEmbryos,
     pearpalCheck: {
-      synced: Boolean(pearpalNotebook?.updated_at && pearpalNotebook?.five_star_colors),
+      synced: Boolean(
+        pearpalNotebook?.updated_at &&
+          (pearpalNotebook?.five_star_colors || pearpalNotebook?.four_star_colors),
+      ),
       updatedAt: pearpalNotebook?.updated_at,
       pearpalCount: pearpalOwned.size,
       pearpalOnlyCount,

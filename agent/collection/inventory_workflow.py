@@ -51,10 +51,20 @@ class FiveStarInventory(BlessingLocker):
             notebook = self.store.account.load().get("observations", {}).get("pearpal_notebook")
         except (OSError, ValueError, KeyError, TypeError):
             return set()
-        if not isinstance(notebook, dict) or not isinstance(notebook.get("five_star_colors"), list):
+        if not isinstance(notebook, dict):
+            return set()
+        rows = notebook.get("five_star_colors")
+        if (notebook.get("schema_version") or 1) < 2:
+            legacy_rows = []
+            if isinstance(rows, list):
+                legacy_rows.extend(rows)
+            if isinstance(notebook.get("four_star_colors"), list):
+                legacy_rows.extend(notebook["four_star_colors"])
+            rows = legacy_rows
+        if not isinstance(rows, list):
             return set()
         result = set()
-        for entry in notebook["five_star_colors"]:
+        for entry in rows:
             if not isinstance(entry, dict):
                 continue
             name, part_slot, color = entry.get("name"), entry.get("slot"), entry.get("color")

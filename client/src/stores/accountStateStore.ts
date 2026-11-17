@@ -39,6 +39,8 @@ export interface BlessingSnapshot {
   protection?: { complete?: boolean; keepers?: CollectionKey[] };
 }
 export interface PearpalNotebookObservation {
+  schema_version?: number;
+  uid?: string;
   updated_at?: string;
   five_star_colors?: CollectionKey[];
   four_star_colors?: CollectionKey[];
