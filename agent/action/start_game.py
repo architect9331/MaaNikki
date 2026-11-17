@@ -508,6 +508,7 @@ class StartGameAction(CustomAction):
                     AccountState.bind(ROOT, uid)
                     runtime._account_uid = uid
                     runtime._account_generation = runtime._focus_generation
+                    session = active_session()
                     if session is not None:
                         session.account_uid = uid
                         session.account_generation = session.generation
