@@ -172,7 +172,7 @@ export function useRealmForecast(options?: {
       blessing.presets[0],
     [blessing.presets, rainbowPreset],
   );
-  const rainbowRate = chosenPreset?.rate ?? 0.05;
+  const rainbowRate = chosenPreset?.rate ?? 0.045;
 
   const glowNeededForCaller = useMemo(() => {
     if (options?.skipGlowWorker) return false;

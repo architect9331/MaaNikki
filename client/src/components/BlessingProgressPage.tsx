@@ -503,7 +503,7 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
                   value={rolls?.total ? `${rolls.colors['彩'] ?? 0} 次` : '—'}
                   detail={
                     rolls?.total
-                      ? `升满 ${number(rolls.total)} 次，按 ${((probability?.iridescent ?? 0.05) * 100).toFixed(1)}% 约应出 ${(rolls.total * (probability?.iridescent ?? 0.05)).toFixed(1)} 次`
+                      ? `升满 ${number(rolls.total)} 次，按 ${((probability?.iridescent ?? 0.045) * 100).toFixed(1)}% 约应出 ${(rolls.total * (probability?.iridescent ?? 0.045)).toFixed(1)} 次`
                       : '全收集下次升满后开始统计'
                   }
                 />

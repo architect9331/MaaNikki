@@ -965,7 +965,7 @@ export function buildBlessingContext(
 
   const calcMissingBySource = (partList: ForecastPart[]) => {
     const values = new Map<string, number>();
-    const rainbow = probability?.iridescent ?? 0.05;
+    const rainbow = probability?.iridescent ?? 0.045;
     for (const part of partList) {
       const k = Math.max(0, part.embryos ?? 0);
       const q = part.normalTotal > 0 ? (1 - rainbow) / part.normalTotal : 0;
@@ -984,8 +984,8 @@ export function buildBlessingContext(
   const scopeNext = [...scopeMissingMap].sort((a, b) => b[1] - a[1])[0];
 
   const presets: RainbowPreset[] = [];
-  const catalogRate = probability?.iridescent ?? 0.05;
-  presets.push({ id: 'catalog', label: '基准', rate: catalogRate, note: '综合 MaaNikki 用户上报与社区统计的 5% 基准估算值。' });
+  const catalogRate = probability?.iridescent ?? 0.045;
+  presets.push({ id: 'catalog', label: '基准', rate: catalogRate, note: '综合 MaaNikki 用户统计与社区参考的 4.5% 基准估算值。' });
   if (community) {
     presets.push({
       id: 'community',
@@ -994,8 +994,8 @@ export function buildBlessingContext(
       note: `MaaNikki 用户匿名上报，共 ${community.samples.toLocaleString('zh-CN')} 次升满。`,
     });
   }
-  presets.push({ id: 'low', label: '偏低', rate: probability?.scenarios?.[0] ?? 0.0367, note: '统计数据置信区间的下沿。' });
-  presets.push({ id: 'high', label: '偏高', rate: probability?.scenarios?.[2] ?? 0.0623, note: '统计数据置信区间的上沿。' });
+  presets.push({ id: 'low', label: '偏低', rate: probability?.scenarios?.[0] ?? 0.0374, note: '统计数据置信区间的下沿。' });
+  presets.push({ id: 'high', label: '偏高', rate: probability?.scenarios?.[2] ?? 0.0536, note: '统计数据置信区间的上沿。' });
   if (rolls?.total) {
     presets.push({
       id: 'own',
