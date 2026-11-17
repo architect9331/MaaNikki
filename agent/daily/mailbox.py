@@ -14,6 +14,7 @@ class Mailbox:
 
     def __init__(self, runtime):
         self.rt, self.ui = runtime, runtime.ui
+        self._ready_state = None
 
     def fail(self, reason):
         if not self.rt.stopped:
@@ -46,7 +47,11 @@ class Mailbox:
         return state, list(button.box), image
 
     def button_ready(self):
-        return self.button_state()[0] != "unknown"
+        state, _, _ = self.button_state()
+        if state != "unknown":
+            self._ready_state = state
+            return True
+        return False
 
     def empty(self):
         return self.button_state()[0] == "empty"
@@ -57,9 +62,10 @@ class Mailbox:
                     and self.ui.click_box(box))
 
     def claim(self):
+        self._ready_state = None
         if not self.ui.wait_page(self.button_ready):
             return self.fail("未能确认领取全部按钮状态")
-        state, _, _ = self.button_state()
+        state = self._ready_state or self.button_state()[0]
         if state == "empty":
             if not self.ui.wait_page(self.empty):
                 return self.fail("未能确认邮箱已无可领取附件")
