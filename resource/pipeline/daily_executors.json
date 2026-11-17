@@ -39,7 +39,7 @@
       90,
       32
     ],
-    "expected": "^[0-9]+$",
+    "expected": "^[0-9]+(?:\\.0+)?(?:[kK][gG])?$",
     "threshold": 0.8,
     "action": "DoNothing",
     "attach": {}

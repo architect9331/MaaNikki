@@ -1766,13 +1766,26 @@ class Executors(Runtime):
         if not roi:
             return False
 
+        is_kg_unit = False
+
+        def _parse_jihua_units(raw_str):
+            nonlocal is_kg_unit
+            m = re.fullmatch(r"\s*(\d+)(?:\.0+)?\s*([kK][gG])?\s*", raw_str or "")
+            if not m:
+                return None
+            val = int(m.group(1))
+            if not (1 <= val <= 999):
+                return None
+            if m.group(2) or "." in (raw_str or ""):
+                is_kg_unit = True
+            return val
+
         def read_jihua_count():
             res = self.recognize(count_node)
             raw_text = getattr(res.best_result, "text", "") if res and res.hit else ""
-            if re.fullmatch(r"\s*\d+\s*", raw_text):
-                val = int(raw_text)
-                if 1 <= val <= 999:
-                    return val
+            val = _parse_jihua_units(raw_text)
+            if val is not None:
+                return val
             frame = self.frame()
             if frame is not None and len(roi) == 4:
                 rx, ry, rw, rh = map(int, roi)
@@ -1785,14 +1798,13 @@ class Executors(Runtime):
                         res_up = self.recognize("MaaNikki_Daily_OCR", {
                             "roi": [0, 0, pw, ph],
                             "only_rec": only_rec,
-                            "expected": r"^\s*\d+\s*$",
+                            "expected": r"^\s*\d+(?:\.0+)?\s*(?:[kK][gG])?\s*$",
                             "threshold": 0.45,
                         }, image=padded)
                         txt_up = getattr(res_up.best_result, "text", "") if res_up and res_up.hit else ""
-                        if re.fullmatch(r"\s*\d+\s*", txt_up):
-                            val = int(txt_up)
-                            if 1 <= val <= 999:
-                                return val
+                        val = _parse_jihua_units(txt_up)
+                        if val is not None:
+                            return val
             return None
 
         def read_jihua_energy():
@@ -1845,6 +1857,7 @@ class Executors(Runtime):
             )
         desired = max(1, min(999, desired))
 
+        unit_suffix = ".0kg" if is_kg_unit else " 个"
         if current != desired:
             minus_box = [568, 301, 22, 22]
             plus_box = [697, 301, 22, 22]
@@ -1865,12 +1878,12 @@ class Executors(Runtime):
                     if nxt is None or nxt == val:
                         return nxt
                     val = nxt
-                    if abs(target_val - val) > 8:
+                    if abs(target_val - val) > (45 if is_kg_unit else 8):
                         break
                 return val
 
             adjusted = None
-            if abs(desired - current) <= 8:
+            if abs(desired - current) <= (45 if is_kg_unit else 8):
                 adjusted = step_adjust(current, desired)
             else:
                 if not self.action("Click", target=input_box):
@@ -1918,10 +1931,10 @@ class Executors(Runtime):
                     details={"kind": kind, "desired": desired, "actual": adjusted, "capped_at": capped_at},
                 )
                 self.log(
-                    f"当前所选激化材料最多仅可投入 {capped_at} 个（不足所需 {desired} 个），取消本项。"
+                    f"当前所选激化材料最多仅可投入 {capped_at}{unit_suffix}（不足所需 {desired}{unit_suffix}），取消本项。"
                     if capped_at is not None
                     else "挑战数量未能设置为要求值，取消本项。"
                 )
                 return False
-        self.log(f"已确认本次激化投入数量：{desired} 个。")
+        self.log(f"已确认本次激化投入数量：{desired}{unit_suffix}。")
         return True
