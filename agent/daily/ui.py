@@ -420,22 +420,59 @@ class GameUI:
                     return False
         return False
 
+    def _locate_menu_entry(self, node, roi, *, ready=None):
+        """Ensure Pear-Pal is open and scroll or page until `node` is visible."""
+        if not self.menu():
+            return False
+        if self.rt.hit(node):
+            return True
+        # Only the feature grid scrolls. Keep the profile, bottom toolbar
+        # and page dots outside both recognition and scrolling comparisons.
+        if self.find(node=node, roi=roi, scroll_roi=[70, 130, 660, 460],
+                     click=False, paged=True):
+            return True
+        # Pear-Pal paginates horizontally via < / > arrows when mouse wheel
+        # scrolling is ignored or when focus shifts return to another page.
+        for arrow in ([55, 345], [55, 345], [711, 345], [711, 345]):
+            if self.rt.hit(node):
+                return True
+            if not self.rt.action("Click", target=arrow) or not self.rt.pause(.45):
+                return False
+            frame = self.rt.capture()
+            if not self.rt.hit("MaaNikki_MenuReady", image=frame):
+                return bool(ready and self.page_matches(ready))
+        return bool(self.rt.hit(node))
+
     def find_menu_entry(self, *, node, scroll=False):
         """Open a verified Esc entrance, optionally searching its left-hand pages."""
         from .runtime import parameters
-        ready = parameters(self.rt.context, node).get("ready")
+        param = parameters(self.rt.context, node)
+        ready = param.get("ready")
         if ready and self.page_matches(ready) and self.wait_page(ready):
             return True
         if not self.menu():
             return False
-        if scroll:
-            # Only the feature grid scrolls. Keep the profile, bottom toolbar
-            # and page dots outside both recognition and scrolling comparisons.
-            roi = fields(self.rt.context, node).get("roi", [70, 130, 660, 460])
-            if not self.find(node=node, roi=roi, scroll_roi=[70, 130, 660, 460],
-                             click=False, paged=True):
+        if not scroll:
+            return self.rt.click_template(node)
+        roi = fields(self.rt.context, node).get("roi", [70, 130, 660, 460])
+        source = param.get("source")
+        def locate_and_click():
+            if not self._locate_menu_entry(node, roi, ready=ready):
                 return False
-        return self.rt.click_template(node)
+            if ready and self.page_matches(ready):
+                return True
+            if ready:
+                return self.rt.click_template(node, attempts=1, wait_seconds=0, verify=False)
+            return self.rt.click_template(node)
+        if not ready:
+            return locate_and_click()
+        return self.enter_page(
+            locate_and_click,
+            ready,
+            source=source,
+            recover=self.menu if source == "MaaNikki_MenuReady" else None,
+            attempts=3,
+        )
 
     def find(self, *, roi, text=None, pattern=None, node=None, asset=None, scale=1, threshold=.75,
              color=None, method=None, exact=False, scroll=True, click=True, scroll_roi=None, paged=False):
