@@ -639,7 +639,10 @@ class Runtime:
         if observed is None:
             if not self.main():
                 raise ValueError("未能打开游戏主界面确认 UID")
-            observed = self.read_account_uid(self.capture())
+            for attempt in range(4):
+                observed = self.read_account_uid(self.capture())
+                if observed is not None or attempt == 3 or not self.pause(.25):
+                    break
         if observed is None:
             self._frame_incomplete = True
             raise ValueError("未能识别左下角 UID，请确认游戏画面完整")
