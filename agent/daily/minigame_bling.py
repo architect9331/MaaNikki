@@ -308,7 +308,7 @@ class MinigameBlingRun(Runtime):
         return 25.0 <= outer_luma <= 195.0
 
     def _detect_course_timer(self, frame) -> float | None:
-        """Return parsed elapsed timer seconds when a newly started round's 00:0x timer is visible."""
+        """Return parsed countdown seconds when a newly started round's 00:25.000 timer appears."""
         if not self._has_course_timer_pregate(frame):
             return None
         result = self.recognize("MaaNikki_Daily_OCR", {"roi": COURSE_TIMER_ROI}, image=frame)
@@ -334,14 +334,16 @@ class MinigameBlingRun(Runtime):
                 continue
             mins = int(match.group(1))
             secs = int(match.group(2))
-            if mins == 0 and secs <= 4:
-                frac_raw = match.group(3)
-                frac = int(frac_raw) / (10 ** len(frac_raw)) if frac_raw else 0.0
-                return secs + frac
+            frac_raw = match.group(3)
+            frac = int(frac_raw) / (10 ** len(frac_raw)) if frac_raw else 0.0
+            remaining = secs + frac
+            # Shuttle Adventure starts at 00:25.000 and counts down; reject unrelated low timestamps.
+            if mins == 0 and 15.0 <= remaining <= 25.05:
+                return remaining
         return None
 
     def _wait_for_course_start(self, inputs: ForegroundInput, trigger_at: float) -> tuple[str, float]:
-        """Wait until the 3-2-1 countdown ends and the top-center 00:00 timer appears."""
+        """Wait until the 3-2-1 countdown ends and the top-center 00:25.000 timer appears."""
         min_wait = MIN_START_WAIT_SECONDS - (time.monotonic() - trigger_at)
         if min_wait > 0:
             inputs.wait(min_wait, restore=False)
@@ -504,7 +506,7 @@ class MinigameBlingRun(Runtime):
             info["state"] = "failed"
         return info
 
-    def _click_guarded(self, box: list[int], generation: int, *, cursor_pos: bool = False) -> bool | None:
+    def _click_guarded(self, box: list[int], generation: int, *, cursor_pos: bool = True) -> bool | None:
         """Click a settlement button without warping the cursor on scene entry.
 
         Returns True when clicked, False when stopped/failed, or None when foreground changed.
@@ -584,7 +586,7 @@ class MinigameBlingRun(Runtime):
         until,
         still_active=None,
         early_retry_after: float | None = None,
-        force_cursor_pos: bool = False,
+        force_cursor_pos: bool = True,
     ) -> tuple[bool | None, dict, float]:
         """Click a settlement button up to ``max_clicks`` times until ``until(info, click_at)`` is True.
 
@@ -647,7 +649,7 @@ class MinigameBlingRun(Runtime):
         info: dict,
         *,
         max_clicks: int,
-        force_cursor_pos: bool = False,
+        force_cursor_pos: bool = True,
     ) -> tuple[str, dict, float]:
         for _ in range(2):
             if self.stopped:
@@ -757,7 +759,7 @@ class MinigameBlingRun(Runtime):
         info: dict,
         *,
         max_clicks: int,
-        force_cursor_pos: bool = False,
+        force_cursor_pos: bool = True,
     ) -> dict | None:
         if info["has_retry_confirm"]:
             done, info, _ = self._click_modal_button(
@@ -820,8 +822,10 @@ class MinigameBlingRun(Runtime):
         if info["has_retry_confirm"] or info["has_failed"]:
             return False
 
+        # After clicking '退出', never spam blind interact keys while the overworld fades in,
+        # which can re-talk to Qimiya and re-enter the minigame right before main() presses ESC.
         deadline = time.monotonic() + 10.0
-        last_interact = 0.0
+        last_dialogue_check = 0.0
         while not self.stopped and time.monotonic() < deadline:
             frame = self.capture()
             if frame is None:
@@ -829,9 +833,13 @@ class MinigameBlingRun(Runtime):
             if self.hit("MaaNikki_MainDetected", image=frame):
                 return self.main()
             now = time.monotonic()
-            if now - last_interact >= 1.0:
-                inputs.hold("interact", 0.2, restore=False)
-                last_interact = time.monotonic()
+            if (
+                not self.ui.asset("IconUILoading", image=frame, threshold=.99, method=cv2.TM_CCORR_NORMED)
+                and now - last_dialogue_check >= 1.0
+            ):
+                if not self._dismiss_npc_dialogue(inputs):
+                    return False
+                last_dialogue_check = time.monotonic()
             if not self.pause(0.35):
                 return False
         return self.main()
