@@ -20,6 +20,7 @@ import i18n from '@/i18n';
 import { apiDelete, apiGet, apiPost, apiPut, getApiBase } from '@/utils/backendApi';
 import * as wsService from '@/services/wsService';
 import { useAppStore } from '@/stores/appStore';
+import { isUpdateInstalledPendingRestart } from '@/services/updateService';
 import { isDeveloperTask, ROUTE_TEST_ENTRY } from '@/utils/developerTasks';
 
 const log = loggers.maa;
@@ -398,6 +399,9 @@ export const maaService = {
     pipelineOverride: string = '{}',
     selectedTaskId?: string,
   ): Promise<number> {
+    if (isUpdateInstalledPendingRestart()) {
+      throw new Error('软件更新已安装完成，请先重启客户端后再运行任务。');
+    }
     const { projectInterface } = useAppStore.getState();
     if (entry === ROUTE_TEST_ENTRY || isDeveloperTask(projectInterface?.task.find((def) => def.entry === entry))) {
       throw new Error('开发者任务请在停止当前任务后，通过任务列表启动。');
@@ -529,6 +533,9 @@ export const maaService = {
     controllerInfo?: ControllerTelemetryInfo,
     logRedactSecrets?: string[],
   ): Promise<number[]> {
+    if (isUpdateInstalledPendingRestart()) {
+      throw new Error('软件更新已安装完成，请先重启客户端后再运行任务。');
+    }
     const { devMode, projectInterface, helpImproveRouteTelemetry, helpImproveBlessingStats } = useAppStore.getState();
     const hasDeveloperTask = tasks.some((task) => task.entry === ROUTE_TEST_ENTRY ||
       isDeveloperTask(projectInterface?.task.find((def) => def.entry === task.entry)));

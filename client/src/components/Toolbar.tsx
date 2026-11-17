@@ -71,6 +71,7 @@ import {
   type AutoConnectPhase,
 } from '@/services/taskStartService';
 import { reserveDailyWindow } from '@/services/explorationService';
+import { isUpdateInstalledPendingRestart } from '@/services/updateService';
 import { wardrobeBusy } from '@/services/wardrobeService';
 import { fishingBusy } from '@/services/fishingService';
 import { isTaskSelectedForRun, filterTasksForRun } from '@/utils/taskRunFilter';
@@ -391,6 +392,9 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         return false;
       };
 
+      if (isUpdateInstalledPendingRestart()) {
+        return failStart('软件更新已安装完成，请先重启客户端后再运行任务。');
+      }
       if (wardrobeBusy()) return failStart('衣柜正在读取，请先停止衣柜读取。');
       if (fishingBusy()) return failStart('正在钓鱼，请先停止钓鱼。');
 

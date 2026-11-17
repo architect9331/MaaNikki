@@ -51,10 +51,16 @@ export function InstallConfirmModal() {
   // 判断是否为"刚更新完成"模式
   const isJustUpdatedMode = !!justUpdatedInfo;
 
+  // 用于追踪是否已触发自动安装，避免重复执行
+  const autoInstallTriggered = useRef(false);
+  // 用于追踪是否已触发自动重启，避免重复执行
+  const autoRestartTriggered = useRef(false);
+
   // 开始安装
   const handleInstall = useCallback(async () => {
     if (!downloadSavePath || !basePath || !updateInfo) return;
 
+    autoInstallTriggered.current = true;
     setInstallStatus('installing');
     setInstallError(null);
     setInstallStage('');
@@ -142,11 +148,6 @@ export function InstallConfirmModal() {
     openUpdateSettings();
     setShowInstallConfirmModal(false); // 否则弹窗会盖住设置页
   }, [openUpdateSettings, setShowInstallConfirmModal]);
-
-  // 用于追踪是否已触发自动安装，避免重复执行
-  const autoInstallTriggered = useRef(false);
-  // 用于追踪是否已触发自动重启，避免重复执行
-  const autoRestartTriggered = useRef(false);
 
   // 当模态框打开且 installStatus 为 'installing' 时自动开始安装
   useEffect(() => {

@@ -183,7 +183,11 @@ fn apply(extract: &Path, target: &Path, new_version: &str) -> Result<(), String>
             return Err(format!("增量文件校验失败：{name}"));
         }
         let destination = checked_join(target, name)?;
-        if added.contains(name) && destination.is_file() && !deleted.contains(name) {
+        if added.contains(name)
+            && destination.is_file()
+            && !deleted.contains(name)
+            && hash_file(&destination).ok().as_ref() != Some(&patch.target_files[name])
+        {
             return Err(format!("新增文件与本地文件冲突：{name}"));
         }
     }

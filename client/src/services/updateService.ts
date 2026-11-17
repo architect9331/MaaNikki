@@ -24,8 +24,14 @@ let isDownloading = false;
 // 下载是否被用户主动取消
 let downloadCancelled = false;
 let downloadGeneration = 0;
-// 安装互斥锁，防止并发 installUpdate 导致目录竞争
-let isInstalling = false;
+// 安装流程单飞 Promise，防止并发 installUpdate 导致目录竞争或误报失败
+let installingPromise: Promise<boolean> | null = null;
+// 原地解压/补丁更新是否已在磁盘生效且等待客户端重启
+let updateInstalledPendingRestart = false;
+
+export function isUpdateInstalledPendingRestart(): boolean {
+  return updateInstalledPendingRestart;
+}
 
 /**
  * 将文件移动到 cache/old 文件夹（调用 Rust 端统一实现）
@@ -1038,17 +1044,14 @@ export function isExecutableInstaller(filePath: string): boolean {
  * 7. 如果失败，尝试兜底：创建 v版本号 文件夹
  */
 export async function installUpdate(options: InstallUpdateOptions): Promise<boolean> {
-  if (isInstalling) {
-    log.warn('installUpdate: 已有安装正在进行，跳过重复调用');
-    return false;
+  if (installingPromise) {
+    log.warn('installUpdate: 已有安装正在进行，复用当前安装流程');
+    return installingPromise;
   }
-  isInstalling = true;
-
-  try {
-    return await installUpdatePackage(options);
-  } finally {
-    isInstalling = false;
-  }
+  installingPromise = installUpdatePackage(options).finally(() => {
+    installingPromise = null;
+  });
+  return installingPromise;
 }
 
 async function installUpdatePackage(options: InstallUpdateOptions): Promise<boolean> {
@@ -1151,6 +1154,7 @@ async function installUpdatePackage(options: InstallUpdateOptions): Promise<bool
       log.warn('清理更新残留产物失败（忽略）:', e);
     });
 
+    updateInstalledPendingRestart = true;
     log.info('更新安装完成');
     onProgress?.('done');
 
