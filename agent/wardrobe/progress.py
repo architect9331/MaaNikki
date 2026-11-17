@@ -14,7 +14,19 @@ def ordered_prefix(state, layout):
     Old snapshots stored pixel positions. Convert those without inventing
     missing rows/cells; an interrupted page-gap report resumes before its gap.
     """
-    items = state.get("items", [])
+    raw_items = state.get("items", [])
+    if not raw_items:
+        return []
+    if any(str(item.get("source") or "").startswith("rejuvenate") for item in raw_items):
+        return []
+    items = [
+        item for item in raw_items
+        if not (
+            item.get("source") == "compendium_suit_inferred"
+            and type(item.get("slot")) is not int
+            and not (isinstance(item.get("position"), (list, tuple)) and len(item["position"]) >= 2)
+        )
+    ]
     if not items:
         return []
     if all(type(item.get("slot")) is int for item in items):
@@ -25,6 +37,8 @@ def ordered_prefix(state, layout):
                 break
             prefix.append(deepcopy(item))
         return prefix
+    if not all(isinstance(item.get("position"), (list, tuple)) and len(item["position"]) >= 2 for item in items):
+        return []
     ordered = sorted(items, key=lambda item: (item["position"][1], item["position"][0]))
     rows = []
     for item in ordered:

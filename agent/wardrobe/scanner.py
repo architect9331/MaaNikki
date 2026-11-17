@@ -749,15 +749,19 @@ class WardrobeScanner(InventoryScanner):
                     actual_part, header, owned_count, total_count = self.category_info(frame)
 
         old_state = self._previous.get(part, {})
-        old_items = ordered_prefix(old_state, self.layout)
+        has_rejuvenate = any(
+            str(item.get("source") or "").startswith("rejuvenate")
+            for item in (old_state.get("items") or [])
+        )
+        old_items = [] if has_rejuvenate else ordered_prefix(old_state, self.layout)
         old_scanned = [
             item for item in old_items if item.get("source") != "compendium_suit_inferred"
         ]
         if (owned_count is not None
+                and not has_rejuvenate
                 and old_state.get("complete")
                 and old_state.get("unconfirmed_count", 0) == 0
-                and len(old_scanned) == owned_count
-                and not any(str(item.get("source") or "").startswith("rejuvenate") for item in old_scanned)):
+                and len(old_scanned) == owned_count):
             reused_state = deepcopy(old_state)
             reused_state["items"] = deepcopy(old_scanned)
             reused_state["scanned_count"] = len(old_scanned)
