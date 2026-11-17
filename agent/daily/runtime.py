@@ -93,7 +93,8 @@ class Runtime:
         """Grab and auto-refocus game foreground until this mouse-dependent phase finishes."""
         session = active_session()
         if not self.background_mode() or session is None:
-            yield
+            with (session.foreground_required() if session is not None else nullcontext()):
+                yield
             return
         outermost = session._foreground_required_depth == 0
         inputs = self._active_inputs()
@@ -930,7 +931,11 @@ class Runtime:
                 if attempt == 0:
                     self.log(
                         "正在后台沿路线自动寻路（WASD 控向）；最小化窗口后暂停，恢复后自动继续。"
-                        if bg else "正在沿路线前往任务位置；切出游戏会暂停，切回后自动继续。",
+                        if bg else (
+                            "正在沿路线前往任务位置（WASD 全向寻路）；切出游戏会暂停，切回后自动继续。"
+                            if navigator.wasd_mode
+                            else "正在沿路线前往任务位置（鼠标转视角寻路）；切出游戏会暂停，切回后自动继续。"
+                        ),
                         detail=True,
                     )
                 stage = "route_execution"

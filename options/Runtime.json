@@ -1,6 +1,7 @@
 {
   "global_option": [
     "AutoAdjustResolution",
+    "NavigationSteeringMode",
     "FocusLostBehavior",
     "RouteOverlayMode",
     "TaskHudMode"
@@ -11,6 +12,7 @@
       "label": "运行行为",
       "option": [
         "AutoAdjustResolution",
+        "NavigationSteeringMode",
         "FocusLostBehavior",
         "RouteOverlayMode",
         "TaskHudMode"
@@ -43,6 +45,36 @@
             "MaaNikki_AutoAdjustResolution": {
               "custom_action_param": {
                 "value": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "NavigationSteeringMode": {
+      "type": "select",
+      "label": "自动寻路转向方式",
+      "default_case": "Wasd",
+      "description": "跑图任务、大世界材料采集与路线试跑时的移动控向方式。全向按键寻路：默认按小地图视角实时闭环控制 WASD 全向行进，赶路全程不按 Alt、不标定也不占用鼠标，过弯无需停步，游戏内开启或关闭镜头水平辅助均可直接使用（仅在采星、钓鱼、捕虫、定点朝向攻击等需精确瞄准的动作时才调用视角对准）。鼠标转视角寻路：通过移动鼠标旋转镜头对准前方，仅在前台运行时生效（后台运行模式下仍自动使用全向按键寻路）。注：「小游戏刷噗灵」挑战阶段无小地图，固定使用任务内专属的双套纯键盘走法，请在该任务选项中保持「视角水平辅助」与游戏内一致。",
+      "cases": [
+        {
+          "name": "Wasd",
+          "label": "全向按键寻路（推荐，免转视角更流畅）",
+          "pipeline_override": {
+            "MaaNikki_NavigationSteering": {
+              "custom_action_param": {
+                "mode": "wasd"
+              }
+            }
+          }
+        },
+        {
+          "name": "Camera",
+          "label": "鼠标转视角寻路（仅前台运行生效）",
+          "pipeline_override": {
+            "MaaNikki_NavigationSteering": {
+              "custom_action_param": {
+                "mode": "camera"
               }
             }
           }

@@ -15,6 +15,14 @@
       "mode": "pause"
     }
   },
+  "MaaNikki_NavigationSteering": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "mode": "wasd"
+    }
+  },
   "MaaNikki_RouteOverlay": {
     "recognition": "DirectHit",
     "action": "Custom",

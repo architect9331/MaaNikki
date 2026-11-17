@@ -92,7 +92,7 @@ class Insect(Ability):
             if hasattr(self.rt, "foreground_task") else nullcontext()
         )
         with scope:
-            navigator = create_navigator(self.rt, self.actions.teleporter, event=self.actions.event)
+            navigator = create_navigator(self.rt, self.actions.teleporter, event=self.actions.event, wasd_mode=False)
             route_navigator = self.actions.navigator
             if route_navigator is not None:
                 navigator.current_index = route_navigator.current_index

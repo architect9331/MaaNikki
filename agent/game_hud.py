@@ -95,6 +95,7 @@ _GENERIC_HELPER_NODES = {
     "MaaNikki_ReturnMainSecond",
     "MaaNikki_ReturnMainThird",
     "MaaNikki_FocusLost",
+    "MaaNikki_NavigationSteering",
     "MaaNikki_RouteOverlay",
     "MaaNikki_TaskHud",
     "MaaNikki_AutoAdjustResolution",

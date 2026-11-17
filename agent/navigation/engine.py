@@ -347,6 +347,7 @@ class Navigator:
         self._middle_consecutive_failures = 0
         self._middle_disabled_until = -math.inf
         self._last_wasd_snap_at = -math.inf
+        self._cursor_released = False
 
     @property
     def use_wasd_steering(self):
@@ -531,6 +532,13 @@ class Navigator:
                 raise HeadingUncertain("小地图方向需要重新确认。")
             raise SceneUnavailable("小地图位置或主界面需要重新确认。")
 
+    def _ensure_cursor_released(self):
+        if self._cursor_released or getattr(self.inputs, "window_only", False):
+            return
+        if not self.inputs.controller.post_click_key(18).wait().succeeded:
+            raise NavigationError("未能解除游戏光标模式，尚未开始移动。")
+        self._cursor_released = True
+
     def camera(self, pixels):
         from .controller import MAX_CAMERA_PIXELS, relative_camera
         # Send the calibrated displacement, then verify the actual heading.
@@ -540,8 +548,10 @@ class Navigator:
         self.inputs.check()
         if getattr(self.inputs, "generation", 0) != generation:
             raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
-        if part and not relative_camera(self.inputs.controller, part, 0):
-            raise NavigationError("转动镜头失败。")
+        if part:
+            self._ensure_cursor_released()
+            if not relative_camera(self.inputs.controller, part, 0):
+                raise NavigationError("转动镜头失败。")
         if part:
             self.heading_state.command(part, self.turn_ratio)
             self.heading_turn_at = time.monotonic()
@@ -946,6 +956,12 @@ class Navigator:
                 if abs(actual_rot) < 1.5:
                     no_assist_pulses += 1
                     if no_assist_pulses >= 2:
+                        if (
+                            not getattr(self.inputs, "window_only", False)
+                            and callable(getattr(self.inputs, "foreground", None))
+                            and self.inputs.foreground()
+                        ):
+                            return self.turn(target_heading, pose, stationary=True, tolerance=tolerance, _allow_wasd=False)
                         raise NavigationError("后台对齐动作朝向需要鼠标中键重置视角，当前镜头水平辅助已关闭或未响应。")
                 else:
                     no_assist_pulses = 0
@@ -956,8 +972,8 @@ class Navigator:
             self.inputs.release()
             raise
 
-    def turn(self, target_heading, pose, *, stationary=False, tolerance=5):
-        if self.use_wasd_steering:
+    def turn(self, target_heading, pose, *, stationary=False, tolerance=5, _allow_wasd=True):
+        if _allow_wasd and self.use_wasd_steering:
             return self._wasd_turn_stationary(target_heading, pose, tolerance=tolerance)
         generation = getattr(self.inputs, "generation", 0)
         previous_delta = None
@@ -1535,6 +1551,7 @@ class Navigator:
                     "heading_tolerance_near": spec.heading_tolerance_near,
                     "heading_position_slack": spec.heading_position_slack})
         self._wasd_reset_state()
+        self._cursor_released = False
         pose = self.observe((origin.x, origin.y))
         motion = Motion(self.inputs, self.event)
         self.motion = motion
@@ -1563,8 +1580,7 @@ class Navigator:
         try:
             self.inputs.check()
             if not self.use_wasd_steering:
-                if not self.inputs.controller.post_click_key(18).wait().succeeded:
-                    raise NavigationError("未能解除游戏光标模式，尚未开始移动。")
+                self._ensure_cursor_released()
             while index < len(route.points):
                 self.current_index = index
                 if self.stopped() or time.monotonic() >= deadline:
@@ -1574,6 +1590,7 @@ class Navigator:
                 if current_generation != generation:
                     generation = current_generation
                     self._wasd_reset_state()
+                    self._cursor_released = False
                     self.locator.reset()
                     pose = self.observe((last_good.x, last_good.y))
                     last_good = stuck_anchor = pose
@@ -1635,6 +1652,7 @@ class Navigator:
                         last_good = pose
                         stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         self._wasd_reset_state()
+                        self._cursor_released = False
                         best_distance = distance(pose, target)
                         map_checked = False
                         last = None
@@ -1757,6 +1775,7 @@ class Navigator:
                         pose = self.observe((target.x, target.y))
                         stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         self._wasd_reset_state()
+                        self._cursor_released = False
                         if self.route_branch:
                             replacement = self.route_branch(route, index)
                             if replacement is not None:
