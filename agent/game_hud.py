@@ -312,7 +312,10 @@ class _HudSurface:
             )
             if self._exclude:
                 affinity = bind(self.user, "SetWindowDisplayAffinity", w.BOOL, w.HWND, w.DWORD)
-                affinity(self.hwnd, 0x00000011)
+                if not affinity(self.hwnd, 0x00000011):
+                    global _CAPTURE_INCOMPATIBLE
+                    _CAPTURE_INCOMPATIBLE = True
+                    raise OSError("当前系统不支持截图排除状态遮罩窗口")
             get_dc = bind(self.user, "GetDC", w.HDC, w.HWND)
             create_dc = bind(self.gdi, "CreateCompatibleDC", w.HDC, w.HDC)
             self._screen_dc = checked(get_dc(None), "获取屏幕 DC")
@@ -807,7 +810,12 @@ class GameHudOverlay:
             surface = _HudSurface(exclude_from_capture=self.exclude_from_capture)
         except Exception:
             self._failed = True
+            self._wake.close()
             self._ready.set()
+            if self._tasker_key is not None:
+                with _HUD_REGISTRY_LOCK:
+                    if _HUD_BY_TASKER.get(self._tasker_key) is self:
+                        _HUD_BY_TASKER.pop(self._tasker_key, None)
             return
         self._surface = surface
         self._ready.set()
