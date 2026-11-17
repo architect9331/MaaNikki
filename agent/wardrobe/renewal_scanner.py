@@ -818,7 +818,8 @@ class RenewalScanner:
         complete = False
         prev_map = prev_levels or {}
 
-        for _page in range(64):
+        max_pages = 64 if is_tall else 400
+        for _page in range(max_pages):
             if self.rt.stopped:
                 break
             if _page == 0 and prefetched_rows:
@@ -918,7 +919,7 @@ class RenewalScanner:
                 complete = True
                 break
 
-            step_dy = -9600 if is_tall else -480
+            step_dy = -9600 if is_tall else -720
             moved = False
             for attempt_dy in (step_dy, step_dy // 2, step_dy // 4):
                 after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.28)
@@ -1321,11 +1322,19 @@ class RenewalScanner:
                         break
 
             missing_majors = _missing_majors()
-            parts_complete = bool(self.summary["parts"]) and all(
-                p.get("complete") for p in self.summary["parts"].values()
-            )
+            incomplete_parts = [
+                str(p.get("name") or cid)
+                for cid, p in self.summary["parts"].items()
+                if isinstance(p, dict) and not p.get("complete")
+            ]
+            parts_complete = bool(self.summary["parts"]) and not incomplete_parts
             self.summary["complete"] = bool(not missing_majors and parts_complete)
-            reason = ("未读完部位：" + "、".join(missing_majors)) if missing_majors else None
+            reasons = []
+            if missing_majors:
+                reasons.append("未读完部位：" + "、".join(missing_majors))
+            if incomplete_parts:
+                reasons.append("未到底部部位：" + "、".join(incomplete_parts))
+            reason = "；".join(reasons) if reasons else None
             self.save(reason)
             saved_final = True
             record_material_history(self.account, self.crafting, self.scoring)
