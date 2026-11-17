@@ -28,7 +28,7 @@ class Crown(Runtime):
             raise RuntimeError(message)
         return result
 
-    def asset(self, name):
+    def asset(self, name, **overrides):
         options = {"threshold": .98}
         if name in ("IconSkipDialog", "IconTalkFeature", "IconClickSkip", "IconSkip"):
             options["gray"] = (210, 255)
@@ -43,6 +43,7 @@ class Crown(Runtime):
             options.update(threshold=.8, color=([20, 20, 180], [30, 100, 255]))
         elif name in ("ButtonMiraCrownShop", "ButtonMiraCrownAward"):
             options.update(threshold=.9, color=([0, 0, 190], [40, 40, 255]))
+        options.update(overrides)
         return self.ui.asset(name, **options)
 
     def wait_asset(self, name, attempts=3, click=False):
