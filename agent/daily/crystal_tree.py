@@ -47,33 +47,48 @@ class CrystalTree(Starsea):
         return values
 
     def open_panel(self, teleporter, route):
-        # The tree is inside the recorded lap. Nearby map icons may be grouped
-        # with Unbound Hub, so both known map positions can open the same list.
+        # At maximum zoom, Starwish Crystal Tree (~48 px east of Unbound Hub at 720p)
+        # is a distinct marker rather than grouped into Unbound Hub; wait for region
+        # switch and zoom animation to settle before centering and clicking the tree.
         ring = route.points[1:]
         tree = (sum(p.x for p in ring) / len(ring), sum(p.y for p in ring) / len(ring))
-        for position in (tree, (HUB["x"], HUB["y"])):
+        select_roi = self.rt.ui.roi("AreaBigMapTeleporterSelect")
+
+        def prepare_zoomed_map():
             if not self.rt.main() or not self.rt.ui.open_map(self.events.append):
-                raise NavigationError("未能打开星忆晶树地图。")
-            teleporter.deadline = time.monotonic() + 45
+                return False
+            teleporter.deadline = time.monotonic() + 60
             teleporter.region(HUB)
+            if not self.rt.pause(.5):
+                return False
             teleporter.zoom()
-            target = teleporter.center(*position, allow_visible=True)
+            return bool(self.rt.pause(.35))
 
-            def selection_visible():
-                return self.panel_visible() or bool(self.rt.ui.find(
-                    roi=self.rt.ui.roi("AreaBigMapTeleporterSelect"),
-                    text="星忆晶树", exact=True, scroll=False, click=False))
+        def find_tree_entry(click=False):
+            return (self.rt.ui.find(roi=select_roi, text="星忆晶树", exact=True,
+                                    color=([0, 0, 220], [180, 15, 255]),
+                                    scroll=False, click=click)
+                    or self.rt.ui.find(roi=select_roi, text="星忆晶树", exact=True,
+                                       scroll=False, click=click))
 
-            if not self.rt.ui.enter_page(
-                    lambda: self.rt.action("Click", target=target), selection_visible,
-                    source="MaaNikki_Navigation_MapFeature", attempts=1, seconds=3):
-                continue
+        def selection_visible():
+            return self.panel_visible() or bool(find_tree_entry(click=False))
+
+        def click_tree():
+            target = teleporter.center(*tree, allow_visible=True)
+            return self.rt.action("Click", target=target)
+
+        if not prepare_zoomed_map():
+            raise NavigationError("未能打开星忆晶树地图。")
+        if self.rt.ui.enter_page(
+                click_tree, selection_visible,
+                source="MaaNikki_Navigation_MapFeature",
+                recover=prepare_zoomed_map, attempts=3, seconds=4):
             if self.panel_visible():
                 return
             if self.rt.ui.enter_page(
-                    lambda: self.rt.ui.find(roi=self.rt.ui.roi("AreaBigMapTeleporterSelect"),
-                                           text="星忆晶树", exact=True, scroll=False),
-                    self.panel_visible, source=selection_visible, attempts=1, seconds=5):
+                    lambda: bool(find_tree_entry(click=True)),
+                    self.panel_visible, source=selection_visible, attempts=2, seconds=5):
                 return
         raise NavigationError("未能打开星忆晶树详情，未继续摇铃或收集。")
 
