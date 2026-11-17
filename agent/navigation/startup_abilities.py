@@ -385,6 +385,7 @@ def _activate_gingerbread(runtime, event) -> None:
     for attempt in (1, 2, 3):
         if not runtime.key("ability_derive_1", 0.3):
             raise NavigationError("未能按下「能力衍生功能1」，请检查按键设置。")
+        # Wait past the ~3.8-4.5s bell summon animation before treating "in" as swallowed.
         state, badges = observe_gingerbread(runtime, centre, 8.0, want="out", abort_on_steady="in")
         event({"type": "persistent_ability", "ability": "gingerbread", "phase": "summon", "attempt": attempt, "state": state})
         if state == "out":

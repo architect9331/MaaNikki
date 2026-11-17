@@ -153,13 +153,13 @@ def main_centre(runtime):
     return round(x + w / 2), round(y + h / 2)
 
 
-def observe(runtime, centre, seconds, *, want=None, abort_on_steady=None, steady_seconds=2.2):
+def observe(runtime, centre, seconds, *, want=None, abort_on_steady=None, steady_seconds=5.8):
     """Return a state only after CONFIRM_FRAMES consecutive frames agree.
 
     With ``want`` set, keep watching until that state is confirmed or time runs out;
     if ``abort_on_steady`` is set and the state never leaves ``abort_on_steady`` after
-    ``steady_seconds`` (e.g. a summon key pressed during ability-switch cooldown),
-    return early so the caller can retry without waiting the full summon budget."""
+    ``steady_seconds`` (exceeding the ~3.8-4.5s summon bell animation so a post-switch
+    swallowed keypress can be retried safely without interrupting a live summon), return early."""
     from task_control import task_time as time
     started = time.monotonic()
     deadline = started + seconds
@@ -222,9 +222,9 @@ def ensure_companion(runtime, inputs, event, plan, actions=None):
             raise NavigationError("已停止，尚未召唤小姜饼人。")
         if not runtime.key(SUMMON_KEY, .3):
             raise NavigationError("未能按下「能力衍生功能1」，请在按键设置中确认该按键。")
-        # The summoning bell animation takes ~3.8-4.5s before the split left/right
-        # badges appear, plus 3 frames (~0.75s) to confirm. Allow 8s once transition
-        # starts while exiting in 2.2s if post-switch cooldown swallowed the key.
+        # The summoning bell animation keeps the HUD badge "in" for ~3.8-4.5s before
+        # splitting to left/right badges (+ ~0.75s to confirm). Allow 8s total while
+        # only aborting after steady_seconds (5.8s) if cooldown swallowed the keypress.
         state, badges = observe(runtime, centre, 8.0, want="out", abort_on_steady="in")
         event({"type": "gingerbread_companion", "phase": "summon", "attempt": attempt,
                "state": state, "badges": [[round(x, 1), round(y, 1)] for x, y in badges]})
