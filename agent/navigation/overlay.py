@@ -1315,28 +1315,6 @@ class MinimapHudSurface:
                 font_scale=f_scale,
             )
 
-        # 4. Off-Screen AR Turn Indicator when current target is outside camera horizontal FOV
-        tgt_idx = eff_cur_idx
-        if math.hypot(float(points[tgt_idx][0]) - cur_x, float(points[tgt_idx][1]) - cur_y) * 0.90 < 0.85 and tgt_idx + 1 < len(points):
-            tgt_idx += 1
-        tgt = points[tgt_idx]
-        tx_w, ty_w = float(tgt[0]), float(tgt[1])
-        dist_tgt_m = math.hypot(tx_w - cur_x, ty_w - cur_y) * 0.90
-        if dist_tgt_m >= 0.8:
-            tgt_bearing = math.degrees(math.atan2(tx_w - cur_x, cur_y - ty_w)) % 360.0
-            ang_err = (tgt_bearing - heading_deg + 180.0) % 360.0 - 180.0
-            if abs(ang_err) > 27.0:
-                is_right = ang_err > 0
-                turn_txt = f"右转 {abs(ang_err):.0f}° · {dist_tgt_m:.1f}m >>>" if is_right else f"<<< 左转 {abs(ang_err):.0f}° · {dist_tgt_m:.1f}m"
-                tw, th = self._measure_text_pill(turn_txt, font_px=12, font_scale=1.0)
-                ix0 = (self.width - tw - round(28 * self.sx)) if is_right else round(28 * self.sx)
-                iy0 = round(self.height * 0.52)
-                self._draw_text_pill(
-                    pixels, ix0, iy0, ix0 + tw, iy0 + th, turn_txt,
-                    bg_bgr=theme.hud_bg_bgr, border_bgr=theme.warning_bgr,
-                    title_color=bgr_to_colorref(theme.warning_bgr), font_scale=1.0,
-                )
-
     def draw(self, snapshot: dict, now: float | None = None) -> int:
         if now is None:
             now = time.monotonic()
