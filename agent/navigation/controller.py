@@ -841,13 +841,68 @@ class BackgroundInput(ForegroundInput):
                 ignore_stop=True,
             )
 
-    def move_window_point(self, x, y, *, capture_size=None):
-        """Send a synchronous WM_MOUSEMOVE (with activation notice) without moving the cursor."""
-        prepared = self._prepare_window_points((x, y), capture_size=capture_size)
+    def _move_window_point_with_cursor(
+        self,
+        x,
+        y,
+        *,
+        capture_size=None,
+        with_cursor_pos: bool = True,
+        settle_s: float = 0.02,
+        lease_ms: int = 450,
+        action_fn=None,
+    ):
+        """Send WM_MOUSEMOVE at (x, y); optionally hold the borrowed cursor while running ``action_fn``."""
+        prepared = self._prepare_window_points(
+            (x, y),
+            capture_size=capture_size,
+            check_work_area=bool(with_cursor_pos),
+        )
         if prepared is None:
-            return False
-        target, (coords,) = prepared
-        return self._send_window_message(target, _WM_MOUSEMOVE, 0, coords[0], "后台鼠标移动")
+            return (False, None) if action_fn is not None else False
+        target, ((lparam, screen_x, screen_y, _, _),) = prepared
+        with self._borrowed_cursor(
+            screen_x,
+            screen_y,
+            enabled=with_cursor_pos,
+            lease_ms=lease_ms,
+        ) as cursor_ok:
+            if not cursor_ok:
+                return (False, None) if action_fn is not None else False
+            if with_cursor_pos:
+                wall_time.sleep(0.002)
+            if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lparam, "后台鼠标移动"):
+                return (False, None) if action_fn is not None else False
+            if with_cursor_pos and settle_s > 0:
+                wall_time.sleep(float(settle_s))
+            if self.stopped():
+                return (False, None) if action_fn is not None else False
+            if action_fn is not None:
+                return True, action_fn()
+        return not self.stopped()
+
+    def move_window_point(self, x, y, *, capture_size=None, with_cursor_pos: bool = True, settle_s: float = 0.02):
+        """Send a synchronous WM_MOUSEMOVE (borrowing the OS cursor briefly by default for UE5 hover)."""
+        return self._move_window_point_with_cursor(
+            x,
+            y,
+            capture_size=capture_size,
+            with_cursor_pos=with_cursor_pos,
+            settle_s=settle_s,
+        )
+
+    def run_with_window_point(self, x, y, fn, *, capture_size=None, settle_s: float = 0.08, lease_ms: int = 450):
+        """Keep the cursor parked at (x, y) while ``fn()`` runs, then restore it via cursor borrow."""
+        ok, result = self._move_window_point_with_cursor(
+            x,
+            y,
+            capture_size=capture_size,
+            with_cursor_pos=True,
+            settle_s=settle_s,
+            lease_ms=lease_ms,
+            action_fn=fn,
+        )
+        return result if ok else None
 
     def _click_window_button(
         self,

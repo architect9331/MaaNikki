@@ -76,20 +76,27 @@ class LowRarityDecomposer:
             raise IncompleteObservation("分解截图尺寸无效")
         return frame
 
-    def _park_hover(self, attempt=0):
+    def _park_point(self, attempt=0):
         # Alternate top-bar park points outside the grid so Unreal re-evaluates
         # hover state after page animations or background cursor restoration.
         base = [900, 32] if attempt % 2 == 0 else [860, 32]
         if hasattr(self.rt, "_pointer_guard_context"):
             from tall_window import clamp_capture_park_point
             hwnd, cap_size = self.rt._pointer_guard_context()
-            park = clamp_capture_park_point(hwnd, base, capture_size=cap_size)
-        else:
-            park = base
+            return clamp_capture_park_point(hwnd, base, capture_size=cap_size)
+        return base
+
+    def _park_hover(self, attempt=0):
+        park = self._park_point(attempt)
         if hasattr(self.rt, "action") and self.rt.action("TouchMove", target=park):
             return True
         ui = getattr(self.rt, "ui", None)
         return bool(ui and ui.unhover())
+
+    def _capture_frame(self, attempt=0, *, park=False):
+        if park and hasattr(self.rt, "capture_parked"):
+            return self.rt.capture_parked(self._park_point(attempt))
+        return self.rt.capture()
 
     def read(self):
         self._park_hover(0)
@@ -97,10 +104,11 @@ class LowRarityDecomposer:
             raise IncompleteObservation("分解材料数量、容量或粒子信息未稳定，未继续提交")
         previous = None
         prev_gen = None
+        hold_park = False
         for attempt in range(16):
             self.rt.check_focus()
             gen = self.rt._focus_generation
-            frame = self.rt.capture()
+            frame = self._capture_frame(attempt, park=hold_park)
             if frame is None or frame.shape[:2] != (720, 1280):
                 if not self.rt.pause(.2):
                     break
@@ -132,6 +140,7 @@ class LowRarityDecomposer:
                     )
                 return current, frame
             if current is None:
+                hold_park = True
                 self._park_hover(attempt + 1)
             previous = current
             prev_gen = gen
@@ -185,10 +194,13 @@ class LowRarityDecomposer:
         confirmed_dialog = False
         dismissed_reward = False
         previous = None
+        hold_park = False
+        attempt = 0
         while time.monotonic() < deadline:
             self.rt.check_focus()
             gen = self.rt._focus_generation
-            frame = self.rt.capture()
+            frame = self._capture_frame(attempt, park=hold_park)
+            attempt += 1
             if frame is None or frame.shape[:2] != (720, 1280) or self.rt._focus_generation != gen:
                 if not self.rt.pause(.2):
                     break
@@ -226,6 +238,9 @@ class LowRarityDecomposer:
                 if self.rt._focus_generation != gen:
                     previous = None
                     continue
+                if ready and ready.hit and current is None and not hold_park:
+                    hold_park = True
+                    self._park_hover(attempt)
                 if (current is not None and current == previous and current["count"] == 0
                         and current["capacity"] == before["capacity"] - before["count"]
                         and current["particles"] == before["particles"] + before["gain"]):

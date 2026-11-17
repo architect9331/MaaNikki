@@ -327,7 +327,8 @@ class Runtime:
         if action == "TouchMove" and use_window:
             point = self._target_point(fields.get("target"), "界面移动坐标")
             with measure("input.action"):
-                return bool(inputs.move_window_point(point[0], point[1], capture_size=cap_size))
+                return bool(inputs.move_window_point(
+                    point[0], point[1], capture_size=cap_size, with_cursor_pos=window_cursor_pos))
         if action == "Scroll" and use_window:
             point = self._target_point(fields.get("target"), "界面滚动目标")
             with measure("input.action"):
@@ -341,7 +342,9 @@ class Runtime:
             point = self._target_point(fields.get("target"), "界面点击目标")
             # Maa's rectangular Click target is random inside the box. UI
             # icons can have dead edges, and Seize must settle after moving.
-            if (not self.action("TouchMove", target=point, focus_generation=focus_generation)
+            # When using window input, click_window_point borrows the cursor itself.
+            if (not self.action("TouchMove", target=point, focus_generation=focus_generation,
+                                window_cursor_pos=window_cursor_pos and not use_window)
                     or not self.pause(.3)):
                 return False
             fields = {**fields, "target": point}
@@ -425,6 +428,50 @@ class Runtime:
 
     def capture(self):
         return self._capture()
+
+    def capture_parked(self, park_point, *, settle_s: float = 0.08):
+        """Capture one frame while temporarily holding the cursor at ``park_point`` in window-input mode."""
+        self.invalidate_frame()
+        if self.stopped:
+            return None
+        session = active_session()
+        self.check_focus()
+        inputs = self._active_inputs()
+        if inputs is not None:
+            self._check_inputs(inputs, session)
+        hwnd, cap_size = self._pointer_guard_context(inputs)
+        if self._use_window_input(inputs) and hasattr(inputs, "run_with_window_point"):
+            from tall_window import clamp_capture_park_point
+            park = clamp_capture_park_point(hwnd, park_point, capture_size=cap_size)
+            generation = self._focus_generation
+
+            def _capture_once():
+                with measure("capture"):
+                    with measure("capture.post"):
+                        result = self.controller.post_screencap()
+                    with measure("capture.wait"):
+                        result.wait()
+                    if self.stopped:
+                        return None
+                    with measure("capture.transfer"):
+                        return result.get() if result.succeeded else None
+
+            image = inputs.run_with_window_point(
+                park[0],
+                park[1],
+                _capture_once,
+                capture_size=cap_size,
+                settle_s=settle_s,
+            )
+            self.check_focus()
+            if (image is not None and image.size > 0
+                    and generation == self._focus_generation
+                    and (image.shape[1], image.shape[0]) in ALLOWED_FRAME_SIZES
+                    and not is_clipped_game_frame(image)):
+                self.evidence.remember_frame(image, self._focus_generation)
+                self.validate_frame(image)
+                return image
+        return self.capture()
 
     def ensure_frame(self):
         """Reuse an existing geometry check; capture only before the first input."""

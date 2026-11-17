@@ -170,9 +170,10 @@ class BlessingLocker(InventoryScanner):
         self.grid = self.layout["grid"]
         self._ordered_scroll_step = self.layout["scroll_step"]
 
-    def frame(self, generation):
+    def frame(self, generation, *, capture_fn=None):
+        grab = self.rt.capture if capture_fn is None else capture_fn
         for attempt in range(6):
-            frame = self.rt.capture()
+            frame = grab()
             self.check_generation(generation)
             if (frame is not None
                     and frame.shape[:2] in ((720, 1280), (5120, 1280))
@@ -223,8 +224,14 @@ class BlessingLocker(InventoryScanner):
             self.check_generation(generation)
             raise IncompleteObservation("未能关闭悬停信息")
         previous = None
+        hold_park = False
         for _ in range(8 if settle_card else 6):
-            frame = self.frame(generation)
+            capture_fn = (
+                (lambda: self.rt.capture_parked(self._park_point()))
+                if hold_park and hasattr(self.rt, "capture_parked")
+                else None
+            )
+            frame = self.frame(generation, capture_fn=capture_fn)
             visible = False
             candidates = ([self.detail_roi(panel[2]) if panel is not None else self.header_region(frame, old_box)]
                           if old_box is not None else
@@ -257,6 +264,7 @@ class BlessingLocker(InventoryScanner):
                 previous = frame
             else:
                 previous = None
+                hold_park = True
                 self.rt.action("TouchMove", target=self._park_point())
             if not self.rt.pause(.04):
                 self.check_generation(generation)
