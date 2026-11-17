@@ -240,7 +240,7 @@
   },
   "MaaNikki_Daily_PhotoModeTab": {
     "recognition": "TemplateMatch",
-    "roi": [560, 18, 90, 52],
+    "roi": [520, 18, 150, 52],
     "template": "game/daily/camera_mode_tab.png",
     "threshold": 0.85,
     "action": "DoNothing"
