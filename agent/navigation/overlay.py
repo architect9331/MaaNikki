@@ -622,6 +622,30 @@ class _TerrainSampler:
         return zs, tail_zs
 
 
+# Unpacked 3C jump + float vertical profile (DA_PlayerJumpStageConfig_Nikki_DoubleJump_V3 +
+# Curve_JumpGravityCurve_Nikki_Jump_V3: JumpZVelocity=10.0m/s, 0.30s hold + 0.10s gap ->
+# 2.148m apex at t=0.395s, then Float stage FloatGravity=0.1 capped at MaxZVelocity=-1.0m/s).
+_JUMP_V3_ASCENT_M = (0.000, 0.453, 0.816, 1.129, 1.419, 1.694, 1.938, 2.101, 2.148)
+_JUMP_V3_APEX_S = 0.40
+_JUMP_V3_APEX_M = 2.148
+_FLOAT_MAX_AIRTIME_S = 3.05
+
+
+def _nikki_jump_float_height_m(dt: float) -> float:
+    """Evaluate Nikki's unpacked Jump_V3 ascent + Floating descent offset above takeoff (meters)."""
+    if dt <= 0.0 or dt >= _FLOAT_MAX_AIRTIME_S:
+        return 0.0
+    if dt <= _JUMP_V3_APEX_S:
+        pos = (dt / _JUMP_V3_APEX_S) * (len(_JUMP_V3_ASCENT_M) - 1)
+        idx = min(len(_JUMP_V3_ASCENT_M) - 2, int(pos))
+        frac = pos - idx
+        return _JUMP_V3_ASCENT_M[idx] + (_JUMP_V3_ASCENT_M[idx + 1] - _JUMP_V3_ASCENT_M[idx]) * frac
+    s = dt - _JUMP_V3_APEX_S
+    if s <= 0.95:
+        return max(0.0, _JUMP_V3_APEX_M - 0.07 * s - 0.49 * s * s)
+    return max(0.0, 1.639 - 1.00 * (s - 0.95))
+
+
 def _premul(bgr: tuple[int, int, int], alpha: float) -> tuple[int, int, int, int]:
     a = max(0.0, min(1.0, float(alpha)))
     return (
@@ -792,6 +816,7 @@ class MinimapHudSurface:
         cur_x: float,
         cur_y: float,
         heading_deg: float,
+        move_heading_deg: float | None,
         jump_start: float,
         points: tuple,
         current_index: int,
@@ -835,23 +860,24 @@ class MinimapHudSurface:
         self._char_surface_z = char_surface_z
 
         char_feet_z = char_surface_z
-        if jump_start > 0.0 and jump_start != self._last_jump_start:
+        if jump_start <= 0.0:
+            self._last_jump_start = 0.0
+        elif jump_start != self._last_jump_start:
             self._last_jump_start = jump_start
             self._jump_takeoff_z = char_surface_z
         dt_jmp = now - jump_start if jump_start > 0.0 else -1.0
-        if 0.0 < dt_jmp < 1.25:
-            if dt_jmp <= 0.42:
-                arc_h = 1.65 * math.sin(0.5 * math.pi * (dt_jmp / 0.42))
-            else:
-                u_j = (dt_jmp - 0.42) / 0.83
-                arc_h = 1.65 * max(0.0, 1.0 - u_j * u_j)
-            char_feet_z = max(char_surface_z, self._jump_takeoff_z + arc_h)
+        if 0.0 < dt_jmp < _FLOAT_MAX_AIRTIME_S:
+            arc_h = _nikki_jump_float_height_m(dt_jmp)
+            if arc_h > 0.0:
+                char_feet_z = max(char_surface_z, self._jump_takeoff_z + arc_h)
 
         dz_dx_m, dz_dy_m = sampler.sample_footing_slope(cur_x, cur_y, char_surface_z) if sampler else (0.0, 0.0)
 
         rad = math.radians(heading_deg)
         fwd_x, fwd_y = math.sin(rad), -math.cos(rad)
         right_x, right_y = math.cos(rad), math.sin(rad)
+        m_rad = math.radians(move_heading_deg if move_heading_deg is not None else heading_deg)
+        move_fx, move_fy = math.sin(m_rad), -math.cos(m_rad)
 
         # Unpacked 3C follow camera (CBPD_CameraConfigBase + CameraSlopeFollowPitchCurve + ArmlengthFixedByPitch_Normal):
         # - BirthRotation.Pitch = -18.0 deg (AirLandPitch = -18.0 deg), flat-ground PitchSync band [-18.0, -15.0] deg
@@ -914,13 +940,14 @@ class MinimapHudSurface:
                 if d_cur_m < 0.35 or (
                     not act_pt
                     and d_cur_m <= max(1.25, cur_rad * 1.35)
-                    and (wx_pt - cur_x) * fwd_x + (wy_pt - cur_y) * fwd_y < -0.15
+                    and (wx_pt - cur_x) * move_fx + (wy_pt - cur_y) * move_fy < -0.15
                 ):
                     skipped_cur = True
                     continue
             raw_chain.append((wx_pt, wy_pt, jmp_pt, act_pt))
 
         dense_2d: list[tuple[float, float, bool, str]] = []
+        jump_spans: list[tuple[int, int, float]] = []
         tail_wps: list[tuple[float, float, bool]] = []
         max_dist_m = 44.0
         acc_chain_m = 0.0
@@ -933,9 +960,10 @@ class MinimapHudSurface:
             if acc_chain_m >= max_dist_m:
                 tail_wps.append((x1, y1, jmp1))
                 continue
-            step_m = 0.38 if (jmp1 or acc_chain_m < 16.0) else 0.65
+            step_m = 0.36 if (jmp1 or acc_chain_m < 16.0) else 0.65
             n_sub = max(2, int(math.ceil(seg_len_m / step_m)))
             include_end = (i == len(raw_chain) - 2) or (acc_chain_m + seg_len_m >= max_dist_m)
+            span_start = len(dense_2d)
             for s_i in range(n_sub + (1 if include_end else 0)):
                 t = s_i / n_sub
                 seg_d = acc_chain_m + seg_len_m * t
@@ -943,6 +971,9 @@ class MinimapHudSurface:
                     tail_wps.append((x1, y1, jmp1))
                     break
                 dense_2d.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, jmp1, act1))
+            span_end = len(dense_2d) - 1 if include_end else min(len(dense_2d), span_start + n_sub)
+            if jmp1 and span_end > span_start and seg_len_m >= 0.65:
+                jump_spans.append((span_start, span_end, seg_len_m))
             acc_chain_m += seg_len_m
 
         if len(dense_2d) >= 5:
@@ -961,28 +992,77 @@ class MinimapHudSurface:
             solved_zs = [char_surface_z] * len(dense_2d)
             tail_zs = [char_surface_z] * len(tail_wps)
 
+        # Synthesize expected 3D airborne trajectory over jump segments from unpacked 3C
+        # Jump_V3 ascent (2.15m apex in ~2.1m run) + Float glide (-1.0m/s sink over live
+        # 3.9..5.9m/s suit float speed, adapting automatically to Bubble vs Paper Crane).
+        live_float_mps = max(3.90, min(5.95, float(snapshot.get("velocity") or 0.0) * 0.90))
+        glide_drop_per_m = 1.00 / live_float_mps
+        traj_zs = list(solved_zs)
+        for s0, s1_raw, seg_len_m in jump_spans:
+            s1 = min(len(traj_zs) - 1, s1_raw)
+            if s1 <= s0 + 1:
+                continue
+            z_takeoff = char_feet_z if (s0 == 0 and char_feet_z > char_surface_z + 0.08) else solved_zs[s0]
+            z_land = solved_zs[s1]
+            obstacle_top = max(solved_zs[s0 : s1 + 1])
+            natural_apex = z_takeoff + min(_JUMP_V3_APEX_M, max(1.15, seg_len_m * 0.48))
+            z_peak = min(z_takeoff + 3.15, max(natural_apex, z_land + 0.35, obstacle_top + 0.30))
+            rise_m = max(0.0, z_peak - z_takeoff)
+            d_asc = min(2.15, max(0.75, seg_len_m * 0.40))
+            seg_cum = [0.0]
+            for k in range(s0 + 1, s1 + 1):
+                seg_cum.append(seg_cum[-1] + math.hypot(dense_2d[k][0] - dense_2d[k - 1][0], dense_2d[k][1] - dense_2d[k - 1][1]) * 0.90)
+            tot_d = max(0.25, seg_cum[-1])
+            d_asc = min(d_asc, tot_d * 0.52)
+            for idx_k, k in enumerate(range(s0, s1 + 1)):
+                d_k = seg_cum[idx_k]
+                if d_k <= 1e-4:
+                    z_arc = z_takeoff
+                elif idx_k == s1 - s0:
+                    z_arc = z_land
+                elif d_k <= d_asc:
+                    u_asc = d_k / max(0.05, d_asc)
+                    unit_h = _nikki_jump_float_height_m(u_asc * _JUMP_V3_APEX_S) / _JUMP_V3_APEX_M
+                    z_arc = z_takeoff + rise_m * unit_h
+                else:
+                    rem_d = max(0.05, tot_d - d_asc)
+                    v_gl = min(1.0, (d_k - d_asc) / rem_d)
+                    z_glide = max(z_land, z_peak - glide_drop_per_m * (d_k - d_asc))
+                    blend = v_gl ** 2.2
+                    z_arc = (1.0 - blend) * z_glide + blend * z_land
+                traj_zs[k] = max(solved_zs[k], z_arc)
+
         # Subdivide steep vertical climbs/drops (>= 0.55m) so wall faces clip cleanly and carry upward 3D chevrons
-        pts_3d: list[tuple[float, float, float, bool, str]] = []
+        pts_3d: list[tuple[float, float, float, float, bool, str]] = []
         for i in range(len(dense_2d)):
             wx, wy, sj, sa = dense_2d[i]
-            wz = solved_zs[i]
-            pts_3d.append((wx, wy, wz, sj, sa))
+            wz = traj_zs[i]
+            gz = solved_zs[i]
+            pts_3d.append((wx, wy, wz, gz, sj, sa))
             if i + 1 < len(dense_2d):
                 wx2, wy2, sj2, sa2 = dense_2d[i + 1]
-                wz2 = solved_zs[i + 1]
+                wz2 = traj_zs[i + 1]
+                gz2 = solved_zs[i + 1]
                 dz_step = abs(wz2 - wz)
                 if dz_step >= 0.55:
                     n_vert = max(2, min(14, int(math.ceil(dz_step / 0.42))))
                     for v_i in range(1, n_vert):
                         ut = v_i / n_vert
-                        pts_3d.append((wx + (wx2 - wx) * ut, wy + (wy2 - wy) * ut, wz + (wz2 - wz) * ut, sj2, sa2))
+                        pts_3d.append((
+                            wx + (wx2 - wx) * ut,
+                            wy + (wy2 - wy) * ut,
+                            wz + (wz2 - wz) * ut,
+                            gz + (gz2 - gz) * ut,
+                            sj2,
+                            sa2,
+                        ))
 
-        samples_3d = []  # (wx, wy, wz, hx, hy, tx_m, ty_m, tz_m, cum_xy_m, cum_3d_m, is_jump, act)
+        samples_3d = []  # (wx, wy, wz, gz, hx, hy, tx_m, ty_m, tz_m, cum_xy_m, cum_3d_m, is_jump, act)
         cum_xy_m = 0.0
         cum_3d_m = 0.0
         last_hx, last_hy = fwd_x, fwd_y
         for i in range(len(pts_3d)):
-            wx, wy, wz, seg_jump, seg_act = pts_3d[i]
+            wx, wy, wz, gz, seg_jump, seg_act = pts_3d[i]
             if i > 0:
                 ds_xy = math.hypot(wx - pts_3d[i - 1][0], wy - pts_3d[i - 1][1]) * 0.90
                 ds_z = wz - pts_3d[i - 1][2]
@@ -1000,7 +1080,7 @@ class MinimapHudSurface:
                 last_hx, last_hy = dx_m_t / h_len, dy_m_t / h_len
             t3_len = max(1e-5, math.hypot(h_len, dz_w))
             tx_m, ty_m, tz_m = dx_m_t / t3_len, dy_m_t / t3_len, dz_w / t3_len
-            samples_3d.append((wx, wy, wz, last_hx, last_hy, tx_m, ty_m, tz_m, cum_xy_m, cum_3d_m, seg_jump, seg_act))
+            samples_3d.append((wx, wy, wz, gz, last_hx, last_hy, tx_m, ty_m, tz_m, cum_xy_m, cum_3d_m, seg_jump, seg_act))
 
         min_bx, min_by = self.width, self.height
         max_bx, max_by = 0, 0
@@ -1012,10 +1092,12 @@ class MinimapHudSurface:
             max_bx = max(max_bx, min(self.width, x1 + pad))
             max_by = max(max_by, min(self.height, y1 + pad))
 
-        # 1. Project & draw 3D perspective surface/wall ribbon + glowing edge rails
+        # 1. Project & draw 3D perspective surface/wall/jump-arc ribbon + subtle ground drop-stems
         half_w_m = 0.42
         proj_ribbon = []
-        for wx, wy, wz, hx, hy, tx_m, ty_m, tz_m, d_xy_m, d_3d_m, seg_jump, seg_act in samples_3d:
+        last_stem_xy = -10.0
+        stem_w = max(1, round(1.3 * self.s))
+        for wx, wy, wz, gz, hx, hy, tx_m, ty_m, tz_m, d_xy_m, d_3d_m, seg_jump, seg_act in samples_3d:
             # Horizontal cross-ribbon vector keeps ribbon level across slopes and vertical wall climbs
             nx_m, ny_m = -hy * half_w_m, hx * half_w_m
             p_left = project_3d(wx, wy, wz + 0.06, -nx_m, -ny_m)
@@ -1023,6 +1105,23 @@ class MinimapHudSurface:
             p_right = project_3d(wx, wy, wz + 0.06, nx_m, ny_m)
             if p_left and p_ctr and p_right:
                 proj_ribbon.append((p_left, p_ctr, p_right, d_xy_m, d_3d_m, seg_jump, seg_act))
+                if seg_jump and (wz - gz) >= 0.28 and (d_xy_m - last_stem_xy) >= 1.25 and d_xy_m <= 36.0:
+                    p_gnd = project_3d(wx, wy, gz + 0.06, 0.0, 0.0)
+                    if p_gnd and (
+                        max(p_ctr[0], p_gnd[0]) >= 0 and min(p_ctr[0], p_gnd[0]) < self.width
+                        and max(p_ctr[1], p_gnd[1]) >= 0 and min(p_ctr[1], p_gnd[1]) < self.height
+                    ):
+                        last_stem_xy = d_xy_m
+                        s_fade = max(0.14, min(0.85, 1.0 - d_xy_m / 38.0))
+                        cv2.line(pixels, (p_gnd[0], p_gnd[1]), (p_ctr[0], p_ctr[1]),
+                                 _premul(theme.warning_bgr, s_fade * 0.34), stem_w, cv2.LINE_AA)
+                        if 0 <= p_gnd[0] < self.width and 0 <= p_gnd[1] < self.height:
+                            cv2.circle(pixels, (p_gnd[0], p_gnd[1]), max(2, round(2.2 * self.s)),
+                                       _premul(theme.warning_bgr, s_fade * 0.46), -1, cv2.LINE_AA)
+                        mark_dirty(
+                            min(p_ctr[0], p_gnd[0]), min(p_ctr[1], p_gnd[1]),
+                            max(p_ctr[0], p_gnd[0]), max(p_ctr[1], p_gnd[1]), pad=6,
+                        )
 
         rail_w = max(2, round(2.2 * self.s))
         # Draw from far to near so closer translucent segments and wall faces layer cleanly
@@ -1065,8 +1164,8 @@ class MinimapHudSurface:
             phase_m = (now * 4.2) % chev_spacing_m
             chev_w = max(2, round(2.6 * self.s))
             for idx in range(len(samples_3d) - 1):
-                wx0, wy0, wz0, hx0, hy0, tx0, ty0, tz0, d0_xy, d0_3d, jmp0, _ = samples_3d[idx]
-                wx1, wy1, wz1, _, _, _, _, _, d1_xy, d1_3d, _, _ = samples_3d[idx + 1]
+                wx0, wy0, wz0, _, hx0, hy0, tx0, ty0, tz0, d0_xy, d0_3d, jmp0, _ = samples_3d[idx]
+                wx1, wy1, wz1, _, _, _, _, _, _, d1_xy, d1_3d, _, _ = samples_3d[idx + 1]
                 if d1_3d <= d0_3d:
                     continue
                 k = math.ceil((max(0.95, d0_3d) - phase_m) / chev_spacing_m)
@@ -1270,16 +1369,18 @@ class MinimapHudSurface:
         if pose is not None and len(pose) == 2:
             px_world, py_world = float(pose[0]), float(pose[1])
             heading = snapshot.get("heading")
-            # Dead-reckon forward movement and track 3D jump takeoff state at 30 FPS between observations
+            move_heading = snapshot.get("move_heading")
+            pose_time = float(snapshot.get("pose_time") or now)
+            move_until = float(snapshot.get("move_until") or 0.0)
+            vel = float(snapshot.get("velocity") or 0.0)
+            eff_move_h = float(move_heading) if move_heading is not None else (float(heading) if heading is not None else None)
+            if eff_move_h is not None and move_until > pose_time and now > pose_time and vel > 0.1:
+                dt_move = min(now - pose_time, move_until - pose_time, 0.85)
+                rad_m = math.radians(eff_move_h)
+                px_world += math.sin(rad_m) * vel * dt_move
+                py_world -= math.cos(rad_m) * vel * dt_move
+            # Render 3D AR trajectory and jump state at 30 FPS between observations
             if snapshot.get("ar_active") and heading is not None:
-                pose_time = float(snapshot.get("pose_time") or now)
-                move_until = float(snapshot.get("move_until") or 0.0)
-                vel = float(snapshot.get("velocity") or 0.0)
-                if move_until > pose_time and now > pose_time and vel > 0.1:
-                    dt_move = min(now - pose_time, move_until - pose_time, 0.85)
-                    rad_h = math.radians(float(heading))
-                    px_world += math.sin(rad_h) * vel * dt_move
-                    py_world -= math.cos(rad_h) * vel * dt_move
                 jump_start = float(snapshot.get("jump_start") or 0.0)
 
                 h_val = float(heading)
@@ -1297,6 +1398,7 @@ class MinimapHudSurface:
                     px_world,
                     py_world,
                     h_val,
+                    eff_move_h if (move_until > now and vel > 0.1) else None,
                     jump_start,
                     points,
                     current_index,
@@ -1467,17 +1569,22 @@ def _read_live_overlay_mode(fallback: str = "full", *, prefer_global: bool = Fal
     return fallback
 
 
-def resolve_route_overlay_mode(context=None) -> str:
+def resolve_route_overlay_config(context=None) -> tuple[str, bool]:
+    """Return (mode, is_task_override) from pipeline override or live config."""
     if context is not None:
         try:
             from client_config import node_action_params
             params = node_action_params(context, "MaaNikki_RouteOverlay")
             raw = str(params.get("mode") or "").strip()
             if raw in _CASE_TO_MODE:
-                return _CASE_TO_MODE[raw]
+                return _CASE_TO_MODE[raw], bool(params.get("task_override"))
         except Exception:
             pass
-    return _read_live_overlay_mode("full")
+    return _read_live_overlay_mode("full"), False
+
+
+def resolve_route_overlay_mode(context=None) -> str:
+    return resolve_route_overlay_config(context)[0]
 
 
 _CAPTURE_INCOMPATIBLE = False
@@ -1493,12 +1600,14 @@ class RouteMinimapOverlay:
         *,
         exclude_from_capture: bool = True,
         initial_mode: str | None = None,
+        task_override: bool = False,
         hud_sink=None,
         allow_background: bool = False,
     ):
         self.game = int(game_hwnd or 0)
         self.spec = spec
         self.exclude_from_capture = exclude_from_capture
+        self.task_override = bool(task_override)
         self.hud_sink = hud_sink
         self.allow_background = bool(allow_background)
         self.mode = "off" if _CAPTURE_INCOMPATIBLE else (
@@ -1508,9 +1617,11 @@ class RouteMinimapOverlay:
         self.snapshot: dict | None = None
         self.updated_at = 0.0
         self.last_heading: float | None = None
+        self.move_heading: float | None = None
         self.move_until: float = 0.0
         self.velocity: float = 0.0
         self.jump_start: float = 0.0
+        self._window_shown: bool = False
         self.wake = Win32WakeEvent()
         self.stop = threading.Event()
         self.ready = threading.Event()
@@ -1525,6 +1636,15 @@ class RouteMinimapOverlay:
 
     def set_background_mode(self, enabled: bool) -> None:
         self.allow_background = bool(enabled)
+
+    def is_presenting(self) -> bool:
+        """Return True only when a capture-excluded overlay window is actively visible."""
+        return bool(
+            self.exclude_from_capture
+            and self.thread is not None
+            and self._window_shown
+            and self.mode != "off"
+        )
 
     def disable_for_capture(self):
         global _CAPTURE_INCOMPATIBLE
@@ -1554,18 +1674,34 @@ class RouteMinimapOverlay:
                 self.updated_at = time.monotonic()
         self.wake.set()
 
-    def notify_motion(self, velocity: float, duration: float, jumping: bool):
+    def notify_motion(
+        self,
+        velocity: float,
+        duration: float,
+        jumping: bool,
+        *,
+        move_heading: float | None = None,
+        new_jump: bool = False,
+        cancel_jump: bool = False,
+    ):
         now = time.monotonic()
         with self.lock:
             self.velocity = max(0.0, float(velocity))
             self.move_until = now + max(0.0, float(duration))
-            if jumping and now - self.jump_start > 0.35:
+            if move_heading is not None and math.isfinite(float(move_heading)):
+                self.move_heading = float(move_heading) % 360.0
+            elif duration <= 0.0:
+                self.move_heading = None
+            if cancel_jump:
+                self.jump_start = 0.0
+            elif new_jump or (jumping and (self.jump_start <= 0.0 or now - self.jump_start >= _FLOAT_MAX_AIRTIME_S)):
                 self.jump_start = now
             if self.snapshot is not None:
                 self.snapshot = {
                     **self.snapshot,
                     "velocity": self.velocity,
                     "move_until": self.move_until,
+                    "move_heading": self.move_heading,
                     "jump_start": self.jump_start,
                 }
                 self.updated_at = now
@@ -1605,6 +1741,7 @@ class RouteMinimapOverlay:
                 "pose": (round(float(pose.x), 2), round(float(pose.y), 2)),
                 "pose_time": now,
                 "heading": eff_heading,
+                "move_heading": self.move_heading,
                 "ar_active": eff_heading is not None,
                 "velocity": self.velocity,
                 "move_until": self.move_until,
@@ -1793,7 +1930,8 @@ class RouteMinimapOverlay:
                     cur_mtime = _mxu_mtime_ns()
                     if cur_mtime != self._cfg_mtime_ns:
                         self._cfg_mtime_ns = cur_mtime
-                        self.mode = _read_live_overlay_mode(self.mode, prefer_global=True)
+                        if not self.task_override:
+                            self.mode = _read_live_overlay_mode(self.mode, prefer_global=True)
                 mode = self.mode
                 hud = self.hud_sink
                 hud_alive = bool(hud is not None and hud.alive())
@@ -1842,11 +1980,14 @@ class RouteMinimapOverlay:
                         )
                         if sig != rendered:
                             surface.draw(draw_snap, now)
-                        if sig != rendered or next_geom != geometry or not shown(hwnd):
+                        was_shown = bool(shown(hwnd))
+                        if sig != rendered or next_geom != geometry or not was_shown:
                             surface.present(hwnd, origin)
                             rendered, geometry = sig, next_geom
-                        if not shown(hwnd):
+                        if not was_shown:
                             show(hwnd, 4)
+                            last_z = None
+                        self._window_shown = True
                         z_sig = (focused, bg_active, fg)
                         if z_sig != last_z or now >= next_zorder:
                             sync_overlay_zorder(user, hwnd, self.game,
@@ -1857,6 +1998,7 @@ class RouteMinimapOverlay:
                         visible = False
                 if not visible and shown(hwnd):
                     show(hwnd, 0)
+                    self._window_shown = False
                     rendered = None
                     last_z = None
                 msg = w.MSG()
@@ -1878,6 +2020,7 @@ class RouteMinimapOverlay:
                 wait_sec = 1 / 28 if (visible and ar_active) else 0.08 if visible else 0.2
                 self.wake.wait_or_pump(wait_sec, pump_fn=pump_messages, stop_event=self.stop)
         finally:
+            self._window_shown = False
             if hwnd:
                 bind(user, "DestroyWindow", w.BOOL, w.HWND)(hwnd)
             if surface:

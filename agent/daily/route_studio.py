@@ -148,9 +148,24 @@ class RouteRecorder(Runtime):
             hud = session.ensure_hud(getattr(inputs, "hwnd", 0)) if session is not None else None
             focus_game(self, inputs)
             locator = Locator(spec)
-            overlay_mode = resolve_route_overlay_mode(getattr(self, "context", None))
+            from navigation.overlay import resolve_route_overlay_config
+            from overlay_style import should_exclude_from_capture
+            overlay_mode, task_override = resolve_route_overlay_config(getattr(self, "context", None))
+            exclude_capture = (
+                session._exclude_from_capture_setting(self.controller)
+                if session is not None
+                else should_exclude_from_capture(self.controller)
+            )
             overlay = (
-                RouteMinimapOverlay(inputs.hwnd, spec, initial_mode=overlay_mode, hud_sink=hud)
+                RouteMinimapOverlay(
+                    inputs.hwnd,
+                    spec,
+                    exclude_from_capture=True if exclude_capture is None else bool(exclude_capture),
+                    initial_mode=overlay_mode,
+                    task_override=task_override,
+                    hud_sink=hud,
+                    allow_background=bool(session is not None and session._background_mode()),
+                )
                 if getattr(inputs, "hwnd", 0) else None
             )
             watched = {virtual_key(self.game_keys.get("jump")): "jump",

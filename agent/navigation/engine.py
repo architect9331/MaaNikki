@@ -345,12 +345,19 @@ class Navigator:
         input_begin = self.motion.forward_elapsed() if self.motion else 0
         frame = self.capture()
         if (frame is not None and self.overlay is not None
-                and getattr(self.overlay, "thread", None) is not None
+                and getattr(self.overlay, "is_presenting", lambda: False)()
                 and int(frame.max()) == 0):
-            self.overlay.disable_for_capture()
+            # Verify whether the WDA_EXCLUDEFROMCAPTURE window caused the black
+            # capture rather than permanently killing the overlay on teleport fades.
+            self.overlay.hide()
             self.pause(0.08)
             begin = time.monotonic()
-            frame = self.capture()
+            retry = self.capture()
+            if retry is not None and int(retry.max()) > 0:
+                self.overlay.disable_for_capture()
+                frame = retry
+            elif retry is not None:
+                frame = retry
         # A screenshot describes capture time, not the later OCR completion.
         # Midpoint is an estimate because Maa does not expose a frame timestamp.
         self.pose_at = (begin+time.monotonic())/2

@@ -1,23 +1,34 @@
 """Runtime wiring shared by daily routes, route trials and local approaches."""
 from __future__ import annotations
 
+from overlay_style import should_exclude_from_capture
 from task_control import active_session
 from .engine import Navigator
-from .overlay import RouteMinimapOverlay, resolve_route_overlay_mode
+from .overlay import RouteMinimapOverlay, resolve_route_overlay_config
 
 
 def create_navigator(runtime, teleporter, *, actions=None, event=lambda value: None):
     """Bind page checks, walking state and independent recovery in one place."""
     hwnd = getattr(teleporter.inputs, "hwnd", 0) or runtime.controller.info.get("hwnd", 0)
-    overlay_mode = resolve_route_overlay_mode(getattr(runtime, "context", None))
+    overlay_mode, task_override = resolve_route_overlay_config(getattr(runtime, "context", None))
     session = active_session()
     hud = session.ensure_hud(hwnd) if (session is not None and hwnd) else None
-    allow_bg = bool(session is not None and session._control_mode() == "background")
+    allow_bg = bool(
+        (session is not None and (session._background_mode() or session._control_mode() == "background"))
+        or getattr(teleporter.inputs, "window_only", False)
+    )
+    exclude_capture = (
+        session._exclude_from_capture_setting(runtime.controller)
+        if session is not None
+        else should_exclude_from_capture(runtime.controller)
+    )
     overlay = (
         RouteMinimapOverlay(
             hwnd,
             teleporter.locator.spec,
+            exclude_from_capture=True if exclude_capture is None else bool(exclude_capture),
             initial_mode=overlay_mode,
+            task_override=task_override,
             hud_sink=hud,
             allow_background=allow_bg,
         )

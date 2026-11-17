@@ -331,9 +331,41 @@ def sync_overlay_zorder(
     if want_topmost:
         if not is_topmost:
             move(hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0, swp_flags)
+            return
+        # Even when WS_EX_TOPMOST is already set, a borderless/fullscreen game
+        # re-activating can place game_hwnd above hwnd within the topmost band.
+        cur = get_window(hwnd, 3)  # GW_HWNDPREV (walk upward from hwnd)
+        hops = 0
+        while cur and hops < 64:
+            hops += 1
+            if int(cur) == int(game_hwnd):
+                move(hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0, swp_flags)
+                return
+            cur = get_window(cur, 3)
         return
 
     if not stay_above_game:
+        return
+
+    game_topmost = bool(get_style(game_hwnd, -20) & 0x00000008)
+    class_buf = ctypes.create_unicode_buffer(128)
+    if game_topmost:
+        if not is_topmost:
+            move(hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0, swp_flags)
+        anchor = None
+        cur = get_window(game_hwnd, 3)  # GW_HWNDPREV
+        hops = 0
+        while cur and hops < 128:
+            hops += 1
+            if int(cur) == int(hwnd):
+                return
+            if is_visible(cur) and (get_style(cur, -20) & 0x00000008):
+                length = get_class(cur, class_buf, len(class_buf))
+                if not (length > 0 and class_buf.value.startswith("MaaNikki")):
+                    anchor = cur
+                    break
+            cur = get_window(cur, 3)
+        move(hwnd, anchor if anchor else ctypes.c_void_p(-1), 0, 0, 0, 0, swp_flags)
         return
 
     if is_topmost:
@@ -342,7 +374,6 @@ def sync_overlay_zorder(
     # Walk upward from game_hwnd to find the nearest visible foreign non-topmost
     # window above it, ignoring hidden system/IME/tooltip windows in between so
     # an already-positioned overlay does not re-trigger SetWindowPos on every tick.
-    class_buf = ctypes.create_unicode_buffer(128)
     anchor = None
     cur = get_window(game_hwnd, 3)  # GW_HWNDPREV
     hops = 0
