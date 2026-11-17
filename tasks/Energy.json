@@ -474,7 +474,7 @@
                     }
                 }
             ],
-            "default_case": "Snake"
+            "default_case": "Well"
         },
         "MonsterTarget": {
             "type": "select",

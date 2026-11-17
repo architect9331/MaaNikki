@@ -687,7 +687,7 @@ def _run_double_bless(
     goal_satisfied = False
 
     def _run_default_bless(rem_runs: int, cur_energy: int, *, mode_note: str) -> tuple[bool, int]:
-        target_label = expected_text((fields(rt.context, "MaaNikki_Bless_Level") or {}).get("expected"), "巨蛇遗迹")
+        target_label = expected_text((fields(rt.context, "MaaNikki_Bless_Level") or {}).get("expected"), "福鸣之井")
         cap = cur_energy // 40
         runs = min(rem_runs, cap)
         if runs <= 0:
