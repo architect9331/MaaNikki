@@ -44,26 +44,22 @@ FAIL_EXIT_BOX = [488, 432, 56, 30]
 FAIL_RETRY_BOX = [714, 432, 56, 30]
 CONFIRM_CANCEL_BOX = [526, 439, 49, 26]
 CONFIRM_OK_BOX = [703, 439, 48, 25]
-RETRY_START_WAIT_SECONDS = 5.0
-COURSE_STRAIGHT_SECONDS = 4.5
-COURSE_STRAIGHT_CAMERA_ASSIST_OFF_SECONDS = 3.95
-# Pure-keyboard W + D steering tracks for 101060001:
-# Gate bounds alone do not validate laser clearance. Preserve the original
-# trigger-relative input timing: countdown, first hold and turns were calibrated
-# together; a visible timer is not a calibration of travel or laser phase.
-# - Camera horizontal assist ON (default): camera smoothly follows velocity at ~4.37 deg/s during W+D.
-# - Camera horizontal assist OFF: camera yaw stays fixed at Yaw0 (165.94 deg) on the ~5.82 m/s uphill
-#   slope, so W+D (+45 deg) must start earlier (3.95s) to stay inside the left laser-free corridor of
-#   moving laser gates G4 (vertical 6s sweep) and G5 (36-deg diagonal 7s sweep) while centering G6/END.
-COURSE_TURNS_CAMERA_ASSIST_ON: tuple[tuple[float, float], ...] = (
-    (1.2, 0.65),
-    (1.1, 1.1),
-    (0.5, 3.2),
+# Both tracks wait past the ~5.4-5.7s countdown unlock jitter so key holds
+# execute undistorted against G1-G6 moving lasers while still finishing
+# under the 15s hard-clear threshold (~11.5-13.4s).
+COURSE_START_WAIT_CAMERA_ASSIST_ON = 8.07
+COURSE_START_WAIT_CAMERA_ASSIST_OFF = 7.03
+COURSE_STRAIGHT_CAMERA_ASSIST_ON = 3.50
+COURSE_STRAIGHT_CAMERA_ASSIST_OFF = 0.0
+COURSE_TURNS_CAMERA_ASSIST_ON: tuple[tuple[str, float, float], ...] = (
+    ("right", 1.46, 1.56),
+    ("right", 1.57, 0.92),
+    ("left", 0.79, 1.80),
 )
-COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[float, float], ...] = (
-    (0.95, 1.05),
-    (1.75, 0.5),
-    (0.95, 2.8),
+COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[str, float, float], ...] = (
+    ("left", 0.38, 2.58),
+    ("right", 2.18, 1.37),
+    ("right", 1.86, 2.80),
 )
 MAX_CONSECUTIVE_FAILURES = 6
 
@@ -290,37 +286,51 @@ class MinigameBlingRun(Runtime):
             trigger_at = time.monotonic()
         else:
             trigger_at = retry_started_at
-        # Keep the entry/retry wait and movement durations as one calibrated
-        # sequence. Waiting for timer OCR here shifted movement relative to the
-        # moving lasers and made the old hold durations a different route.
-        remaining = max(0.0, min(
-            RETRY_START_WAIT_SECONDS,
-            RETRY_START_WAIT_SECONDS - (time.monotonic() - trigger_at),
-        ))
-        if remaining > 0:
-            inputs.wait(remaining, restore=False)
+        start_wait = (
+            COURSE_START_WAIT_CAMERA_ASSIST_ON
+            if camera_assist
+            else COURSE_START_WAIT_CAMERA_ASSIST_OFF
+        )
+        # Slice waits to <= 4s to respect ForegroundInput.wait's 8s per-call cap.
+        while not self.stopped:
+            remaining = min(
+                start_wait,
+                max(0.0, start_wait - (time.monotonic() - trigger_at)),
+            )
+            if remaining <= 1e-6:
+                break
+            inputs.wait(min(4.0, remaining), restore=False)
         if self.stopped:
             return False
         straight_seconds = (
-            COURSE_STRAIGHT_SECONDS if camera_assist else COURSE_STRAIGHT_CAMERA_ASSIST_OFF_SECONDS
+            COURSE_STRAIGHT_CAMERA_ASSIST_ON
+            if camera_assist
+            else COURSE_STRAIGHT_CAMERA_ASSIST_OFF
         )
         turns = COURSE_TURNS_CAMERA_ASSIST_ON if camera_assist else COURSE_TURNS_CAMERA_ASSIST_OFF
         fwd = self.game_keys.get("forward")
-        right = self.game_keys.get("right")
+        steer_keys = {
+            "left": self.game_keys.get("left"),
+            "right": self.game_keys.get("right"),
+        }
         try:
             inputs._down(fwd)
-            inputs.wait(straight_seconds)
-            for hold_d, wait_after in turns:
+            if straight_seconds > 0:
+                inputs.wait(straight_seconds)
+            for steer_name, hold_steer, wait_after in turns:
                 if self.stopped:
                     return False
-                inputs._down(right)
+                steer_key = steer_keys[steer_name]
+                inputs._down(steer_key)
                 try:
-                    inputs.wait(hold_d)
+                    inputs.wait(hold_steer)
                 finally:
-                    inputs._up(right)
-                inputs.wait(wait_after)
+                    inputs._up(steer_key)
+                if wait_after > 0:
+                    inputs.wait(wait_after)
         finally:
-            inputs._up(right)
+            for steer_key in steer_keys.values():
+                inputs._up(steer_key)
             inputs._up(fwd)
             inputs.release()
         return not self.stopped
