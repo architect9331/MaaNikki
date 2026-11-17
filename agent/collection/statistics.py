@@ -92,6 +92,8 @@ TASK_KEY_ALIASES = {
     "RouteTest": "RT",
     "start_game": "SG",
     "StartGame": "SG",
+    "persistent_abilities": "PA",
+    "PersistentAbilities": "PA",
     "exploration": "EXP",
     "Exploration": "EXP",
     "Energy": "EN",
