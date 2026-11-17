@@ -46,21 +46,24 @@ CONFIRM_CANCEL_BOX = [526, 439, 49, 26]
 CONFIRM_OK_BOX = [703, 439, 48, 25]
 RETRY_START_WAIT_SECONDS = 5.0
 COURSE_STRAIGHT_SECONDS = 4.5
+COURSE_STRAIGHT_CAMERA_ASSIST_OFF_SECONDS = 3.95
 # Pure-keyboard W + D steering tracks for 101060001:
 # Gate bounds alone do not validate laser clearance. Preserve the original
 # trigger-relative input timing: countdown, first hold and turns were calibrated
 # together; a visible timer is not a calibration of travel or laser phase.
 # - Camera horizontal assist ON (default): camera smoothly follows velocity at ~4.37 deg/s during W+D.
-# - Camera horizontal assist OFF: camera yaw stays fixed at Yaw0, requiring wider W+D diagonal offsets.
+# - Camera horizontal assist OFF: camera yaw stays fixed at Yaw0 (165.94 deg) on the ~5.82 m/s uphill
+#   slope, so W+D (+45 deg) must start earlier (3.95s) to stay inside the left laser-free corridor of
+#   moving laser gates G4 (vertical 6s sweep) and G5 (36-deg diagonal 7s sweep) while centering G6/END.
 COURSE_TURNS_CAMERA_ASSIST_ON: tuple[tuple[float, float], ...] = (
     (1.2, 0.65),
     (1.1, 1.1),
     (0.5, 3.2),
 )
 COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[float, float], ...] = (
-    (1.8, 0.8),
-    (1.8, 1.4),
-    (1.2, 1.6),
+    (0.95, 1.05),
+    (1.75, 0.5),
+    (0.95, 2.8),
 )
 MAX_CONSECUTIVE_FAILURES = 6
 
@@ -298,12 +301,15 @@ class MinigameBlingRun(Runtime):
             inputs.wait(remaining, restore=False)
         if self.stopped:
             return False
+        straight_seconds = (
+            COURSE_STRAIGHT_SECONDS if camera_assist else COURSE_STRAIGHT_CAMERA_ASSIST_OFF_SECONDS
+        )
         turns = COURSE_TURNS_CAMERA_ASSIST_ON if camera_assist else COURSE_TURNS_CAMERA_ASSIST_OFF
         fwd = self.game_keys.get("forward")
         right = self.game_keys.get("right")
         try:
             inputs._down(fwd)
-            inputs.wait(COURSE_STRAIGHT_SECONDS)
+            inputs.wait(straight_seconds)
             for hold_d, wait_after in turns:
                 if self.stopped:
                     return False
