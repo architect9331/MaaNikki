@@ -1,0 +1,12 @@
+{
+  "MaaNikki_CloseGame": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.close_game",
+    "custom_action_param": {"force_on_timeout": false, "close_launcher": false},
+    "target": [0, 0, 1, 1],
+    "pre_delay": 0,
+    "post_delay": 0,
+    "next": []
+  }
+}
