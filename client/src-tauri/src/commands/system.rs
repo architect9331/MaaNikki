@@ -650,6 +650,9 @@ pub async fn run_pretask(
     let mut cmd = super::utils::build_launch_command(&resolved_program, &args, false);
     cmd.env("PYTHONIOENCODING", "utf-8");
     cmd.env("PYTHONUTF8", "1");
+    if let Some(guard_channel) = crate::mouse_guard::ensure_server_channel() {
+        cmd.env("MAANIKKI_MOUSE_GUARD_CHANNEL", guard_channel);
+    }
     cmd.stderr(std::process::Stdio::piped());
     #[cfg(windows)]
     {

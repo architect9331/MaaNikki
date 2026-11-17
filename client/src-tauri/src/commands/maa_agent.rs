@@ -446,6 +446,10 @@ async fn start_single_agent(
             cmd.env("PI_MAANIKKI_DATA_OVERLAY", overlay_dir);
         }
 
+        if let Some(guard_channel) = crate::mouse_guard::ensure_server_channel() {
+            cmd.env("MAANIKKI_MOUSE_GUARD_CHANNEL", guard_channel);
+        }
+
         // PI v2.5.0: 仅允许注入 PI_* 环境变量，避免覆盖宿主进程关键环境。
         let mut injected_count = 0usize;
         for (key, value) in pi_envs.iter() {

@@ -581,43 +581,43 @@ class BackgroundInput(ForegroundInput):
             return 1280, max(720, round(1280 * height / width))
         return 1280, 720
 
-    def _screen_point_clickable(
+    def _clickable_screen_bounds(
         self,
-        screen_x: int,
-        screen_y: int,
         *,
         margin_px: int = 2,
         check_work_area: bool = True,
-    ) -> bool:
-        """Verify physical screen coordinates lie within client bounds and never land on taskbar/offscreen."""
+    ) -> tuple[int, int, int, int] | None:
+        """Compute physical screen bounds inside client area and away from taskbar/offscreen edges."""
         with self._per_monitor_dpi():
             if not self.user32.IsWindow(self.hwnd):
-                return False
+                return None
             rc = wintypes.RECT()
             if not self.user32.GetClientRect(self.hwnd, ctypes.byref(rc)):
-                return False
+                return None
             cw, ch = int(rc.right - rc.left), int(rc.bottom - rc.top)
             if cw <= 0 or ch <= 0:
-                return False
+                return None
             origin = wintypes.POINT(0, 0)
             if not self.user32.ClientToScreen(self.hwnd, ctypes.byref(origin)):
-                return False
+                return None
             c_left, c_top = int(origin.x), int(origin.y)
             c_right, c_bottom = c_left + cw, c_top + ch
-            if not (c_left <= screen_x < c_right and c_top <= screen_y < c_bottom):
-                return False
             hmon = self.user32.MonitorFromWindow(self.hwnd, _MONITOR_DEFAULTTONEAREST)
             if not hmon:
-                return False
+                return None
             mi = _MONITORINFO()
             mi.cbSize = ctypes.sizeof(_MONITORINFO)
             if not self.user32.GetMonitorInfoW(hmon, ctypes.byref(mi)):
-                return False
+                return None
             mon, work = mi.rcMonitor, mi.rcWork
-            if not (int(mon.left) <= screen_x < int(mon.right) and int(mon.top) <= screen_y < int(mon.bottom)):
-                return False
+            left = max(c_left, int(mon.left))
+            top = max(c_top, int(mon.top))
+            right = min(c_right, int(mon.right))
+            bottom = min(c_bottom, int(mon.bottom))
+            if left >= right or top >= bottom:
+                return None
             if not check_work_area:
-                return True
+                return left, top, right, bottom
             mon_w = int(mon.right - mon.left)
             mon_h = int(mon.bottom - mon.top)
             is_oversized = ch > mon_h + 2 or cw > mon_w + 2
@@ -630,33 +630,68 @@ class BackgroundInput(ForegroundInput):
                 and int(self.user32.GetForegroundWindow() or 0) == int(self.hwnd)
             )
             if is_fullscreen_fg:
-                return True
+                return left, top, right, bottom
             pad = max(0, int(margin_px))
             s_left = int(work.left) + pad if work.left > mon.left else int(work.left)
             s_top = int(work.top) + pad if work.top > mon.top else int(work.top)
             s_right = int(work.right) - pad if work.right < mon.right else int(work.right)
             s_bottom = int(work.bottom) - pad if work.bottom < mon.bottom else int(work.bottom)
-            return s_left <= screen_x < s_right and s_top <= screen_y < s_bottom
+            left = max(left, s_left)
+            top = max(top, s_top)
+            right = min(right, s_right)
+            bottom = min(bottom, s_bottom)
+            if left >= right or top >= bottom:
+                return None
+            return left, top, right, bottom
+
+    def _screen_point_clickable(
+        self,
+        screen_x: int,
+        screen_y: int,
+        *,
+        margin_px: int = 2,
+        check_work_area: bool = True,
+    ) -> bool:
+        """Verify physical screen coordinates lie within client bounds and never land on taskbar/offscreen."""
+        bounds = self._clickable_screen_bounds(
+            margin_px=margin_px,
+            check_work_area=check_work_area,
+        )
+        if bounds is None:
+            return False
+        left, top, right, bottom = bounds
+        return left <= screen_x < right and top <= screen_y < bottom
 
     @contextmanager
-    def _borrowed_cursor(self, screen_x: int, screen_y: int, *, enabled: bool = True):
-        if not enabled:
-            yield True
-            return
-        if not self._screen_point_clickable(screen_x, screen_y, margin_px=2, check_work_area=True):
-            yield False
-            return
-        saved = wintypes.POINT()
-        restore_cursor = False
-        with self._per_monitor_dpi():
-            restore_cursor = bool(self.user32.GetCursorPos(ctypes.byref(saved)))
-            self.user32.SetCursorPos(screen_x, screen_y)
-        try:
-            yield True
-        finally:
-            if restore_cursor:
-                with self._per_monitor_dpi():
-                    self.user32.SetCursorPos(saved.x, saved.y)
+    def _borrowed_cursor(
+        self,
+        screen_x: int,
+        screen_y: int,
+        *,
+        enabled: bool = True,
+        lease_ms: int = 450,
+    ):
+        from mouse_guard import guarded_borrowed_cursor
+
+        clip_rect = (
+            self._clickable_screen_bounds(margin_px=2, check_work_area=True)
+            if enabled
+            else None
+        )
+        with guarded_borrowed_cursor(
+            screen_x,
+            screen_y,
+            enabled=enabled,
+            clickable_check=lambda sx, sy: self._screen_point_clickable(
+                sx, sy, margin_px=2, check_work_area=True
+            ),
+            per_monitor_dpi=self._per_monitor_dpi,
+            stopped=self.stopped,
+            ready=self.capturable,
+            lease_ms=lease_ms,
+            clip_rect=clip_rect,
+        ) as lease:
+            yield lease
 
     def _active_window_target(self) -> int:
         """Resolve an active visible same-process popup owned by the bound game window."""
@@ -961,8 +996,8 @@ class BackgroundInput(ForegroundInput):
         steps = max(8, min(30, round(duration_s / 0.02)))
         last_lp = lp0
         pressed = False
-        with self._borrowed_cursor(sx0, sy0, enabled=True) as cursor_ok:
-            if not cursor_ok:
+        with self._borrowed_cursor(sx0, sy0, enabled=True, lease_ms=450) as cursor_lease:
+            if not cursor_lease:
                 return False
             wall_time.sleep(0.002)
             if not self._send_window_message(target, _WM_MOUSEMOVE, 0, lp0, "后台拖动起点"):
@@ -984,6 +1019,7 @@ class BackgroundInput(ForegroundInput):
                     if not self._screen_point_clickable(sx, sy, margin_px=2, check_work_area=True):
                         return False
                     last_lp = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
+                    cursor_lease.renew(350)
                     with self._per_monitor_dpi():
                         self.user32.SetCursorPos(sx, sy)
                     if not self._send_window_message(

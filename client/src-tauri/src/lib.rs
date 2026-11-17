@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod mouse_guard;
 mod mxu_actions;
 pub mod screenshot_service;
 mod tray;
@@ -395,8 +396,9 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app_handle, event| {
-            // 退出前收尾遥测（结束 Session 与悬挂 Transaction 并 flush）
+            // 退出前收尾遥测（结束 Session 与悬挂 Transaction 并 flush）并卸载鼠标守护线程
             if matches!(event, tauri::RunEvent::Exit) {
+                mouse_guard::shutdown_server();
                 commands::telemetry::on_app_exit();
             }
         });

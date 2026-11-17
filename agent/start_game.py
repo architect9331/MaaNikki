@@ -421,10 +421,6 @@ class LauncherRuntime:
         u32 = self.windows.user32
         u32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
         u32.ClientToScreen.restype = wintypes.BOOL
-        u32.GetCursorPos.argtypes = [ctypes.POINTER(wintypes.POINT)]
-        u32.GetCursorPos.restype = wintypes.BOOL
-        u32.SetCursorPos.argtypes = [ctypes.c_int, ctypes.c_int]
-        u32.SetCursorPos.restype = wintypes.BOOL
         u32.SendMessageTimeoutW.argtypes = [
             wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM,
             wintypes.UINT, wintypes.UINT, ctypes.POINTER(ctypes.c_size_t),
@@ -443,11 +439,21 @@ class LauncherRuntime:
             return False
         lparam = ((cy & 0xFFFF) << 16) | (cx & 0xFFFF)
         res_out = ctypes.c_size_t(0)
-        saved = wintypes.POINT()
-        has_saved = bool(u32.GetCursorPos(ctypes.byref(saved)))
         u32.SendMessageTimeoutW(self.hwnd, 0x0006, 1, 0, 0x0002, 500, ctypes.byref(res_out))
-        u32.SetCursorPos(int(pt.x), int(pt.y))
-        try:
+
+        from mouse_guard import guarded_borrowed_cursor
+
+        sx, sy = int(pt.x), int(pt.y)
+        with guarded_borrowed_cursor(
+            sx,
+            sy,
+            enabled=True,
+            ready=lambda: bool(u32.IsWindow(self.hwnd) and not u32.IsIconic(self.hwnd)),
+            lease_ms=450,
+            clip_rect=(sx, sy, sx + 1, sy + 1),
+        ) as lease:
+            if not lease:
+                return False
             time.sleep(0.01)
             u32.SendMessageTimeoutW(self.hwnd, 0x0200, 0, lparam, 0x0002, 500, ctypes.byref(res_out))
             time.sleep(0.02)
@@ -455,9 +461,6 @@ class LauncherRuntime:
             time.sleep(0.05)
             u32.SendMessageTimeoutW(self.hwnd, 0x0202, 0, lparam, 0x0002, 500, ctypes.byref(res_out))
             return ok
-        finally:
-            if has_saved:
-                u32.SetCursorPos(int(saved.x), int(saved.y))
 
     def action(self, state, box, *, background=False):
         from maa.pipeline import JClick

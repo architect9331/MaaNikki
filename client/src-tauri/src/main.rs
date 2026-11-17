@@ -5,6 +5,11 @@
 mod webview2;
 
 fn main() {
+    #[cfg(target_os = "windows")]
+    if let Some(code) = mxu_lib::mouse_guard::maybe_run_cli() {
+        std::process::exit(code);
+    }
+
     let _cli = mxu_lib::commands::system::init_cli();
 
     #[cfg(target_os = "windows")]
