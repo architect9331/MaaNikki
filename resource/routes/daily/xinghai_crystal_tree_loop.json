@@ -3,64 +3,64 @@
   "map": "starsea",
   "points": [
     {
-      "jump": false,
+      "x": 853.15,
+      "y": 1010.25,
       "radius": 1.4,
-      "x": 853.02,
-      "y": 1009.85
+      "jump": false
     },
     {
-      "jump": false,
+      "x": 856.5,
+      "y": 1009.65,
       "radius": 1.4,
-      "x": 856.68,
-      "y": 1008.87
+      "jump": false
     },
     {
-      "jump": false,
-      "radius": 1.4,
       "x": 860.12,
-      "y": 1010.48
+      "y": 1010.48,
+      "radius": 1.4,
+      "jump": false
     },
     {
-      "jump": false,
-      "radius": 1.4,
       "x": 861.73,
-      "y": 1013.92
+      "y": 1013.92,
+      "radius": 1.4,
+      "jump": false
     },
     {
-      "jump": false,
-      "radius": 1.4,
       "x": 860.75,
-      "y": 1017.58
+      "y": 1017.58,
+      "radius": 1.4,
+      "jump": false
     },
     {
-      "jump": false,
-      "radius": 1.4,
       "x": 857.64,
-      "y": 1019.76
+      "y": 1019.76,
+      "radius": 1.4,
+      "jump": false
     },
     {
-      "jump": false,
-      "radius": 1.4,
       "x": 853.85,
-      "y": 1019.43
+      "y": 1019.43,
+      "radius": 1.4,
+      "jump": false
     },
     {
-      "jump": false,
-      "radius": 1.4,
       "x": 851.17,
-      "y": 1016.75
+      "y": 1016.75,
+      "radius": 1.4,
+      "jump": false
     },
     {
-      "jump": false,
-      "radius": 1.4,
       "x": 850.84,
-      "y": 1012.96
+      "y": 1012.96,
+      "radius": 1.4,
+      "jump": false
     },
     {
-      "jump": false,
+      "x": 853.15,
+      "y": 1010.25,
       "radius": 1.4,
-      "x": 853.02,
-      "y": 1009.85
+      "jump": false
     }
   ],
   "schema_version": 3,
