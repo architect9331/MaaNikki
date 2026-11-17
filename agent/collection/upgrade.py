@@ -73,8 +73,14 @@ class UpgradeUI:
 
     def return_list(self, generation):
         self.owner.check_generation(generation)
-        if not self.rt.ui.enter_page(lambda: self.rt.key(27, 0), READY,
-                                     source=self.upgrade_ready, attempts=1):
+        # Returning via Esc is non-destructive and preserves selection. Allow a
+        # short ready recheck and bounded retries when post-level-up UI settles.
+        if not self.rt.ui.enter_page(
+                lambda: self.rt.key(27, 0),
+                READY,
+                source=self.upgrade_ready,
+                recover=lambda: self.rt.ui.wait_page(self.upgrade_ready, seconds=2),
+                attempts=3):
             raise IncompleteObservation("升级页面未能返回祝福闪光列表")
         self.owner.check_generation(generation)
 

@@ -122,19 +122,23 @@ class BlessingPursuitAction(CustomAction):
                     read_only=farm_only,
                 )
                 if not result["published"] and organization_issue(rt, catalog) is not None:
+                    reason = result.get("reason")
+                    suffix = f"（{reason}）" if reason else ""
                     if result.get("warehouse_full"):
-                        rt.log("整理未完成且祝福闪光仓库已满，本轮无法刷取祝福闪光副本，下次运行重新整理。",
+                        rt.log(f"整理未完成且祝福闪光仓库已满{suffix}，本轮无法刷取祝福闪光副本，下次运行重新整理。",
                                ui_text="整理未完成且仓库已满，本轮不刷祝福闪光副本。")
                         if options.get("return_page") == "calendar":
                             rt.ui.calendar()
                         else:
                             rt.finish(argv.node_name)
                         return False
-                    rt.log("整理未完成且没有可用记录，本轮改用「默认副本」刷取，下次运行重新整理。",
+                    rt.log(f"整理未完成且没有可用记录{suffix}，本轮改用「默认副本」刷取，下次运行重新整理。",
                            ui_text="整理未完成，本轮改刷默认副本。")
                     return fallback_realm(context, rt, argv.node_name)
                 if not result["published"]:
-                    rt.log("本次整理未完成，继续使用上一份有效记录。")
+                    reason = result.get("reason")
+                    suffix = f"（{reason}）" if reason else ""
+                    rt.log(f"本次整理未完成{suffix}，继续使用上一份有效记录。")
             pursuit = FiveStarInventory(rt, catalog, folder)
             decompose = parameters(context, "MaaNikki_Pursuit_DecomposeOption").get("enabled") is True
             auto_bling = parameters(context, "MaaNikki_Pursuit_BlingOption").get("enabled") is not False
@@ -255,8 +259,17 @@ class BlessingMaintainAction(CustomAction):
                         pass
                 if not rt.stopped:
                     rt.main()
-                if not result["published"] and organization_issue(rt, catalog) is not None:
-                    rt.log("祝福闪光整理未完成，已保留上一份有效记录。")
+                if not result["published"]:
+                    reason = result.get("reason")
+                    suffix = f"（{reason}）" if reason else ""
+                    if organization_issue(rt, catalog) is not None:
+                        rt.log(
+                            f"祝福闪光整理未完成且仓库已满{suffix}，缺少可用仓库记录。"
+                            if result.get("warehouse_full")
+                            else f"祝福闪光整理未完成{suffix}，缺少可用仓库记录。"
+                        )
+                    else:
+                        rt.log(f"祝福闪光整理未完成{suffix}，已保留上一份有效记录。")
                     return False
                 _, finished = rt.finish(argv.node_name)
                 return bool(result["published"]) and finished

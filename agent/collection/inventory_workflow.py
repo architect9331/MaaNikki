@@ -294,8 +294,13 @@ class FiveStarInventory(BlessingLocker):
                                          source=RESULT, attempts=3):
                 return False
         if upgrade.upgrade_ready():
-            return self.rt.ui.enter_page(lambda: self.rt.key(27, 0), READY,
-                                         source=upgrade.upgrade_ready, attempts=1)
+            return self.rt.ui.enter_page(
+                lambda: self.rt.key(27, 0),
+                READY,
+                source=upgrade.upgrade_ready,
+                recover=lambda: self.rt.ui.wait_page(upgrade.upgrade_ready, seconds=2),
+                attempts=3,
+            )
         decompose = "MaaNikki_Blessing_DecomposeReady"
         if self.rt.hit(decompose):
             # Esc also safely cancels a still-open confirmation. Recheck the
