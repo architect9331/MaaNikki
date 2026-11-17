@@ -490,10 +490,30 @@ class RouteTest(Runtime):
         try:
             consecutive_empty_routes = 0
             session_total_picked = 0
+            locked_regions: set[str] = set()
+            needs_refocus = True
             for index, (model, spec, title) in enumerate(prepared, 1):
                 if self.stopped:
                     summary["stopped"] = True
                     break
+                tp = model.document.get("teleport") if isinstance(model.document.get("teleport"), dict) else {}
+                target_region = tp.get("region") if isinstance(tp.get("region"), str) else ""
+                if target_region and target_region in locked_regions:
+                    summary["routes"].append({
+                        "index": index,
+                        "route": model.id,
+                        "title": title,
+                        "directory": None,
+                        "active_seconds": 0.0,
+                        "success": False,
+                        "skipped_locked": True,
+                        "stage": "region",
+                        "error_type": "NavigationError",
+                        "error": f"地图区域「{target_region}」尚未解锁。",
+                    })
+                    write_json(directory / "result.json", summary)
+                    self.log(f"{collection_title} {index}/{len(prepared)}：{title}，地图区域「{target_region}」尚未解锁，直接跳过。")
+                    continue
                 self.log(f"{collection_title} {index}/{len(prepared)}：{title}。")
                 runner = type(self)(self.context)
                 runner.collection_entry = {"collection": source["id"], "index": index,
@@ -508,9 +528,16 @@ class RouteTest(Runtime):
                         if k in settings}),
                 }
                 ok = runner.run_single(child_run_settings, prepared=(model, spec),
-                                       directory=child, refocus=index == 1,
+                                       directory=child, refocus=needs_refocus,
                                        force_teleport=bool(model.document.get("teleport")))
+                needs_refocus = False
                 details = runner.last_result or {"success": False, "error": "执行结果未保存"}
+                err_text = str(details.get("error") or "")
+                locked_match = re.search(r"地图区域「(.+?)」尚未解锁", err_text)
+                if not ok and (locked_match or err_text == "传送点尚未解锁。"):
+                    details["skipped_locked"] = True
+                    if locked_match:
+                        locked_regions.add(locked_match.group(1))
                 gb_info = details.get("gingerbread") if isinstance(details.get("gingerbread"), dict) else None
                 if gb_info is not None:
                     picked_now = int(gb_info.get("total_picked") or 0)
@@ -530,7 +557,12 @@ class RouteTest(Runtime):
                                           "active_seconds": round(time.monotonic()-started, 3),
                                           **details})
                 write_json(directory / "result.json", summary)
-                self.log(f"{collection_title} {index}/{len(prepared)}：{title}，"+("完成。" if ok else "中断，已记录现场。"))
+                route_outcome = (
+                    "完成。" if ok
+                    else "对应区域或传送点尚未解锁，本次跳过。" if details.get("skipped_locked")
+                    else "中断，已记录现场。"
+                )
+                self.log(f"{collection_title} {index}/{len(prepared)}：{title}，{route_outcome}")
                 if runner.navigation_halted:
                     self.navigation_halted = True
                 if self.stopped or details.get("stopped") or runner.navigation_halted:
@@ -567,8 +599,18 @@ class RouteTest(Runtime):
         finally:
             summary["completed"] = len(summary["routes"])
             summary["passed"] = sum(bool(item["success"]) for item in summary["routes"])
-            summary["success"] = (summary["completed"] == summary["planned"]
-                                  and summary["passed"] == summary["planned"])
+            summary["skipped_locked"] = sum(bool(item.get("skipped_locked")) for item in summary["routes"])
+            summary["success"] = (
+                summary["completed"] == summary["planned"]
+                and (
+                    summary["passed"] == summary["planned"]
+                    or (
+                        not self.dev_only
+                        and summary["passed"] > 0
+                        and summary["passed"] + summary["skipped_locked"] == summary["planned"]
+                    )
+                )
+            )
             summary["finished_at"] = datetime.now().astimezone().isoformat()
             gb_list = [item["gingerbread"] for item in summary["routes"] if isinstance(item.get("gingerbread"), dict)]
             if gb_list:
@@ -603,9 +645,12 @@ class RouteTest(Runtime):
                     f"（原设偏短 {short_wps} 处，保守富余 {long_wps} 处）。明细：{top_items_str}"
                 )
             write_json(directory / "result.json", summary)
-            self.log(f"{collection_title}结束：完成 {summary['passed']}/{summary['planned']} 条。"
-                     +"日志："+str(directory),
-                     ui_text=f"{collection_title}结束：完成 {summary['passed']}/{summary['planned']} 条。")
+            skip_note = (
+                f"（另有 {summary['skipped_locked']} 条因区域或传送点尚未解锁跳过）"
+                if summary["skipped_locked"] else ""
+            )
+            finish_ui = f"{collection_title}结束：完成 {summary['passed']}/{summary['planned']} 条{skip_note}。"
+            self.log(finish_ui + "日志：" + str(directory), ui_text=finish_ui)
         return summary["success"]
 
     def run_single(self, settings, *, prepared, directory=None, refocus=True, force_teleport=False):
