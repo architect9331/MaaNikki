@@ -153,21 +153,41 @@ def main_centre(runtime):
     return round(x + w / 2), round(y + h / 2)
 
 
-def observe(runtime, centre, seconds, *, want=None):
+def observe(runtime, centre, seconds, *, want=None, abort_on_steady=None, steady_seconds=2.2):
     """Return a state only after CONFIRM_FRAMES consecutive frames agree.
 
     With ``want`` set, keep watching until that state is confirmed or time runs out;
-    otherwise report the state the latest frames agree on (or "unknown")."""
+    if ``abort_on_steady`` is set and the state never leaves ``abort_on_steady`` after
+    ``steady_seconds`` (e.g. a summon key pressed during ability-switch cooldown),
+    return early so the caller can retry without waiting the full summon budget."""
     from task_control import task_time as time
-    deadline = time.monotonic() + seconds
+    started = time.monotonic()
+    deadline = started + seconds
+    grace_extended = False
+    saw_change = False
     last, streak, badges = None, 0, []
     while not runtime.stopped:
         state, badges = companion_state(runtime.capture(), centre)
         streak = streak + 1 if state == last else 1
         last = state
+        if abort_on_steady is not None and state != abort_on_steady:
+            saw_change = True
         if state != "unknown" and streak >= CONFIRM_FRAMES and (want is None or state == want):
             break
-        if time.monotonic() >= deadline or not runtime.pause(.25):
+        now = time.monotonic()
+        if (abort_on_steady is not None
+                and not saw_change
+                and state == abort_on_steady
+                and streak >= CONFIRM_FRAMES
+                and now - started >= steady_seconds):
+            break
+        if now >= deadline:
+            if not grace_extended and want is not None and state == want and streak < CONFIRM_FRAMES:
+                grace_extended = True
+                deadline = now + 1.0
+            else:
+                break
+        if not runtime.pause(.25):
             break
     confirmed = last if last and last != "unknown" and streak >= CONFIRM_FRAMES else "unknown"
     return confirmed, badges
@@ -197,12 +217,15 @@ def ensure_companion(runtime, inputs, event, plan, actions=None):
         return True
     if state != "in":
         raise NavigationError("右下角未能确认小姜饼人的召唤按钮，请确认能力按钮未被遮挡后重试。")
-    for attempt in (1, 2):
+    for attempt in (1, 2, 3):
         if runtime.stopped:
             raise NavigationError("已停止，尚未召唤小姜饼人。")
         if not runtime.key(SUMMON_KEY, .3):
             raise NavigationError("未能按下「能力衍生功能1」，请在按键设置中确认该按键。")
-        state, badges = observe(runtime, centre, 4, want="out")
+        # The summoning bell animation takes ~3.8-4.5s before the split left/right
+        # badges appear, plus 3 frames (~0.75s) to confirm. Allow 8s once transition
+        # starts while exiting in 2.2s if post-switch cooldown swallowed the key.
+        state, badges = observe(runtime, centre, 8.0, want="out", abort_on_steady="in")
         event({"type": "gingerbread_companion", "phase": "summon", "attempt": attempt,
                "state": state, "badges": [[round(x, 1), round(y, 1)] for x, y in badges]})
         if state == "out":
