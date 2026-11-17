@@ -16,8 +16,9 @@ from .statistics import queue_change
 from .ordered import OrderedView, merge_prefix
 from .policy import UnregisteredMaterials
 from .protection import pending_reward
-from .scanner import IncompleteObservation
+from .scanner import IncompleteObservation, RescanSlot
 from .recovery import RecheckSlot, operation_scope
+from task_control import ForegroundChanged
 
 
 class FiveStarInventory(BlessingLocker):
@@ -329,7 +330,18 @@ class FiveStarInventory(BlessingLocker):
         self.rt.log(f"正在恢复{slot}进度。")
         old = self.organization["slots"][slot]
         unfinished = next((row for row in old if row["id"] == self.organization["unfinished"]), None)
-        observed, _ = self.view.scan(slot, quantities=self.read_only)
+        observed = None
+        for attempt in range(3):
+            try:
+                observed, _ = self.view.scan(slot, quantities=self.read_only)
+                break
+            except (RescanSlot, ForegroundChanged):
+                if self.pending is not None or self.rt.stopped or attempt >= 2:
+                    raise
+                self.rt.check_focus()
+                if not self.open_recovery():
+                    raise IncompleteObservation("恢复部位进度时未能打开祝福闪光列表")
+                self.view.slot = None
         # scan() reaches the physical end and checks every intervening cell.
         # No keeper is removed on an incomplete observation.
         rows, priority = merge_prefix(old, observed, len(old), self.organization["next_priority"])
@@ -483,11 +495,18 @@ class FiveStarInventory(BlessingLocker):
             # Match the proven inventory locking path: stage the hover, then
             # issue one raw Runtime click without its extra hover/unhover cycle.
             self._hover_box = None
-            if not self.rt.action("TouchMove", target=self.layout["lock_button"]) or not self.rt.pause(.3):
-                raise RuntimeError("未能准备新颜色锁定")
-            self.check_generation(generation)
-            self.submit_change(operation)
-            if not self.rt.action("Click", target=self.layout["lock_button"], ui_click=False):
+            try:
+                if not self.rt.action("TouchMove", target=self.layout["lock_button"], focus_generation=generation) or not self.rt.pause(.3):
+                    raise RuntimeError("未能准备新颜色锁定")
+                self.check_generation(generation)
+                self.submit_change(operation)
+                clicked = self.rt.action("Click", target=self.layout["lock_button"], ui_click=False,
+                                         focus_generation=generation)
+            except (RescanSlot, ForegroundChanged):
+                if operation.get("input_attempted") is False:
+                    self.reconcile_change("cancelled_before_input")
+                raise
+            if not clicked:
                 raise RuntimeError("新颜色锁定提交不确定，已停止且不重试")
             if not self.rt.pause(.4) or self.lock_state(generation, frame=self.frame(generation)) != "locked":
                 raise RuntimeError("新颜色锁定结果未确认，已停止且不重试")
@@ -599,11 +618,20 @@ class FiveStarInventory(BlessingLocker):
     def discover_slot_prefix(self, slot):
         """Connect only the new prefix to the last complete order for one slot."""
         old = self.organization["slots"][slot]
-        try:
-            prefix, cut = self.view.scan(slot, old=old, quantities=self.read_only)
-        except RecheckSlot:
-            self.rebuild_slot(slot)
-            return
+        for attempt in range(3):
+            try:
+                prefix, cut = self.view.scan(slot, old=old, quantities=self.read_only)
+                break
+            except RecheckSlot:
+                self.rebuild_slot(slot)
+                return
+            except (RescanSlot, ForegroundChanged):
+                if self.pending is not None or self.rt.stopped or attempt >= 2:
+                    raise
+                self.rt.check_focus()
+                if not self.open_recovery():
+                    raise IncompleteObservation("扫描新增前缀时未能恢复祝福闪光列表")
+                self.view.slot = None
         rows, next_priority = merge_prefix(old, prefix, cut, self.organization["next_priority"])
         # Saved locked keepers must survive the observed replacement.
         old_keys = {self.key(row) for row in old[:cut] if row["locked"] and row["maximum"]}
@@ -693,6 +721,7 @@ class FiveStarInventory(BlessingLocker):
         self.discover_prefixes()
         self.ensure_known_materials()
         self.rt.log("开始处理五星胚子。")
+        focus_retries = 0
         for _ in range(1000):
             target = self.next_target()
             if target is None:
@@ -702,43 +731,63 @@ class FiveStarInventory(BlessingLocker):
                 self.organization["unfinished"] = None
                 self.checkpoint()
                 continue
+            prev_unfinished = self.organization["unfinished"]
+            split_inserted = False
             try:
-                found = self.view.locate(target, rows, quantities=True)
-            except RecheckSlot:
-                if target["slot"] in self.report.get("recovered_slots", []):
-                    raise
-                self.rebuild_slot(target["slot"])
-                continue
-            if found is None:
-                if target["id"] == self.organization["unfinished"]:
+                try:
+                    found = self.view.locate(target, rows, quantities=True)
+                except RecheckSlot:
                     if target["slot"] in self.report.get("recovered_slots", []):
-                        raise RecheckSlot(target["slot"], "未完成对象仍待核对，保留进度")
+                        raise
                     self.rebuild_slot(target["slot"])
                     continue
-                # Both immutable boundaries were seen: a fed/merged old
-                # candidate is absent. No warehouse-wide lookup is needed.
-                rows.remove(target)
+                if found is None:
+                    if target["id"] == self.organization["unfinished"]:
+                        if target["slot"] in self.report.get("recovered_slots", []):
+                            raise RecheckSlot(target["slot"], "未完成对象仍待核对，保留进度")
+                        self.rebuild_slot(target["slot"])
+                        continue
+                    # Both immutable boundaries were seen: a fed/merged old
+                    # candidate is absent. No warehouse-wide lookup is needed.
+                    rows.remove(target)
+                    self.checkpoint()
+                    continue
+                if (target["id"] != self.organization["unfinished"]
+                        and found[2]["copies_before"] > 1):
+                    # Preserve a remainder only for a freshly observed stack.
+                    # A single copy becomes the active item itself.
+                    self.active = deepcopy(target)
+                    self.active["id"] = uuid4().hex
+                    rows.insert(rows.index(target), self.active)
+                    split_inserted = True
+                else:
+                    self.active = target
+                # Upgrade/lock can split or merge at another acquisition
+                # position. A later ordered scan establishes its true order.
+                self.active["anchor_eligible"] = False
+                self.organization["unfinished"] = self.active["id"]
                 self.checkpoint()
+                if self.active["maximum"]:
+                    self.protect_selected(found[1], found[3])
+                    result = {"status": "upgraded", "facts": found[1]}
+                else:
+                    result = UpgradeUI(self).run(*found)
+            except (RescanSlot, ForegroundChanged):
+                if self.pending is not None or self.rt.stopped or focus_retries >= 6:
+                    raise
+                focus_retries += 1
+                if split_inserted and self.active is not None and self.active is not target:
+                    if self.active["level"] == target["level"] and self.active in rows:
+                        rows.remove(self.active)
+                    self.organization["unfinished"] = prev_unfinished
+                self.active = None
+                self.checkpoint()
+                self.rt.check_focus()
+                if not self.open_recovery():
+                    raise IncompleteObservation("切回后未能恢复祝福闪光列表")
+                self.view.slot = None
+                self.rt.log("祝福闪光：窗口焦点恢复后继续处理当前胚子队列。", detail=True)
                 continue
-            if (target["id"] != self.organization["unfinished"]
-                    and found[2]["copies_before"] > 1):
-                # Preserve a remainder only for a freshly observed stack.
-                # A single copy becomes the active item itself.
-                self.active = deepcopy(target)
-                self.active["id"] = uuid4().hex
-                rows.insert(rows.index(target), self.active)
-            else:
-                self.active = target
-            # Upgrade/lock can split or merge at another acquisition
-            # position. A later ordered scan establishes its true order.
-            self.active["anchor_eligible"] = False
-            self.organization["unfinished"] = self.active["id"]
-            self.checkpoint()
-            if self.active["maximum"]:
-                self.protect_selected(found[1], found[3])
-                result = {"status": "upgraded", "facts": found[1]}
-            else:
-                result = UpgradeUI(self).run(*found)
             if result["status"] != "upgraded":
                 if result["status"] == "bling_shortage":
                     self.observe_bling(result["bling"])

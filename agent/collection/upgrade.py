@@ -5,9 +5,10 @@ import re
 
 import numpy as np
 
+from task_control import ForegroundChanged
 from .details import COLORS
 from .locking import READY
-from .scanner import IncompleteObservation, clean_text
+from .scanner import LEVEL, IncompleteObservation, RescanSlot, clean_text
 
 
 UPGRADE = "MaaNikki_Pursuit_UpgradeReady"
@@ -71,8 +72,8 @@ class UpgradeUI:
         current, total = map(int, match.groups())
         return current if 0 <= current <= total and total > 0 else None
 
-    def return_list(self, generation):
-        self.owner.check_generation(generation)
+    def return_list(self, generation=None):
+        self.rt.check_focus()
         # Returning via Esc is non-destructive and preserves selection. Allow a
         # short ready recheck and bounded retries when post-level-up UI settles.
         if not self.rt.ui.enter_page(
@@ -82,7 +83,7 @@ class UpgradeUI:
                 recover=lambda: self.rt.ui.wait_page(self.upgrade_ready, seconds=2),
                 attempts=3):
             raise IncompleteObservation("升级页面未能返回祝福闪光列表")
-        self.owner.check_generation(generation)
+        self.rt.check_focus()
 
     def clear(self, generation):
         self.owner.check_generation(generation)
@@ -123,6 +124,60 @@ class UpgradeUI:
             raise RuntimeError("满级页颜色不在当前图鉴中")
         return color, frame
 
+    def _recover_upgrade_page(self, current, *, step=0, evidence=None, maximum=10):
+        self.rt.check_focus()
+        if self.rt.hit(RESULT):
+            if not self.rt.ui.enter_page(
+                    lambda: self.rt.key(70, 0), self.upgrade_ready, source=RESULT, attempts=3):
+                raise IncompleteObservation("切回后未能关闭升级完成界面，已保存进度")
+        if not self.rt.ui.wait_page(self.upgrade_ready, seconds=3):
+            raise IncompleteObservation("切回后未确认祝福闪光升级页面，已保存进度")
+        new_gen = self.rt._focus_generation
+        chk, _ = self.read(new_gen, ("name", "level", "maxed", "material_count"))
+        if chk["name"] != current["name"]:
+            raise IncompleteObservation("切回后升级对象或等级已变化，已保存进度")
+        if self.owner.pending is None:
+            mat_count = self.integer(chk["material_count"])
+            if mat_count is None or mat_count > 0:
+                self.clear(new_gen)
+                chk, _ = self.read(new_gen, ("name", "level", "maxed", "material_count"))
+        chk_level = self.integer(chk["level"])
+        level_ok = (
+            chk_level is not None and (
+                chk_level == current["level"]
+                or (
+                    step == 0
+                    and isinstance(evidence, dict)
+                    and evidence.get("level_source") == "numeral_model"
+                    and 0 <= chk_level < maximum
+                    and "等级已满" not in chk["maxed"]
+                )
+            )
+        )
+        if chk["name"] != current["name"] or not level_ok:
+            raise IncompleteObservation("切回后升级对象或等级已变化，已保存进度")
+        return new_gen
+
+    def _recover_selection_after_upgrade(self, facts, list_gen):
+        frame = self.owner.frame(list_gen)
+        levels = self.owner.ocr(self.owner.grid, frame, LEVEL)
+        for box in self.owner.cards(frame, levels):
+            if not self.owner.selected(frame, box):
+                continue
+            rechecked, = self.owner.recognize_cards(frame, [box], facts["slot"], purpose="selected_recheck")
+            matched = rechecked["model_facts"]
+            if (matched["name"] == facts["name"]
+                    and matched["slot"] == facts["slot"]
+                    and matched["rarity"] == facts["rarity"]
+                    and matched["color"] == facts["color"]
+                    and self.owner.is_maximum(matched)):
+                self.owner.protect_selected(facts, list_gen)
+                return
+        if getattr(self.owner, "prepared", False):
+            self.owner.rebuild_slot(facts["slot"])
+            return
+        self.owner.protect_selected(facts, list_gen)
+
     def run(self, box, facts, evidence, generation, *, once=False):
         self.owner.ensure_known_materials()
         maximum = self.owner.catalog["upgrade_costs"][str(facts["rarity"])]["max_level"]
@@ -135,98 +190,146 @@ class UpgradeUI:
                 self.upgrade_ready, source=READY, attempts=1):
             raise IncompleteObservation("未确认祝福闪光升级页面")
         current = dict(facts)
+        page_gen = self.rt._focus_generation
+        focus_switched = page_gen != generation
         # Each auto-fill may stop at an intermediate level. Keep this selection
         # until maxed or short of resources; never infer colour from the overlay.
         for step in range(100):
             # A fresh upgrade page, or a confirmed completed upgrade, starts
             # with no selected materials. Only clear a nonempty rejected batch.
-            fields, frame = self.read(generation)
-            page_level = self.integer(fields["level"])
-            if (
-                step == 0
-                and fields["name"] == current["name"]
-                and page_level is not None
-                and page_level != current["level"]
-                and 0 <= page_level < maximum
-                and "等级已满" not in fields["maxed"]
-                and isinstance(evidence, dict)
-                and evidence.get("level_source") == "numeral_model"
-            ):
-                current["level"] = page_level
-                if getattr(self.owner, "active", None) is not None:
-                    self.owner.active["level"] = page_level
-            if fields["name"] != current["name"] or page_level != current["level"]:
-                raise RuntimeError("升级页名称或当前等级与选中闪光不一致")
-            old_xp = self.experience(fields["xp"])
-            if not re.fullmatch(FILTER, self.text("material_filter", frame)):
-                if (not self.rt.action("Click", target=self.layout["material_filter"])
-                        or not self.rt.click_text("^" + FILTER + "$", self.layout["filter_choices"])):
-                    raise RuntimeError("未能选择五星及以下升级素材")
-            frame = self.frame(generation)
-            if not re.fullmatch(FILTER, self.text("material_filter", frame)):
-                raise RuntimeError("升级素材星级未确认，未一键放入")
-            # The page, target and filter are already verified. Small button
-            # text is not a reliable OCR gate; verify the resulting count below.
-            self.owner.check_generation(generation)
-            if (not self.rt.action("Click", target=self.layout["auto_fill"])
-                    or not self.rt.pause(.5)):
-                raise RuntimeError("未能一键放入升级素材")
-            fields, frame = self.read(generation, ("name", "level", "bling", "cost", "material_count", "material_filter"))
-            if fields["name"] != current["name"]:
-                raise RuntimeError("放入材料后升级对象发生变化")
-            levels = self._parse_preview_levels(fields["level"], frame, current["level"], maximum)
-            amount = self.integer(fields["material_count"])
-            if amount is None:
-                raise RuntimeError("升级材料数量无法读取")
-            bling = self.integer(fields["bling"])
-            if bling is not None and bling >= 0:
-                self.owner.observe_bling(bling)
-            if amount == 0:
-                self.return_list(generation)
-                return {"status": "materials_shortage", "facts": current}
-            cost = self.integer(fields["cost"])
-            if bling is None or cost is None or cost <= 0:
-                raise RuntimeError("升级噗灵持有量或费用无法读取")
-            reserve = 0 if once else max(0, int(getattr(self.owner, "reserve_bling", 0) or 0))
-            if bling < cost + reserve:
-                self.clear(generation)
-                self.return_list(generation)
-                return {"status": "bling_shortage", "bling": bling, "cost": cost,
-                        "reserve_bling": reserve, "facts": current}
-            if not re.fullmatch(FILTER, fields["material_filter"]):
-                raise RuntimeError("提交前升级素材选项发生变化")
-            self.owner.check_generation(generation)
-            operation = self.owner.begin_change("upgrade", current, evidence, frame,
-                                                preview_level=levels[-1], cost=cost, bling_before=bling,
-                                                material_rarity_max=5, experience_before=old_xp)
-            self.owner.check_generation(generation)
-            self.owner.submit_change(operation)
-            if not self.rt.action("Click", target=self.layout["submit"]):
-                raise RuntimeError("升级提交结果不确定，已停止且不重试")
-            if not self.rt.ui.wait_page(RESULT, seconds=20):
-                raise RuntimeError("未确认升级完成界面，已停止且不重试")
-            self.owner.check_generation(generation)
-            if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), self.upgrade_ready,
-                                         source=RESULT, attempts=3):
-                raise RuntimeError("未能关闭升级完成界面")
-            fields, frame = self.read(generation)
-            level, xp = self.integer(fields["level"]), self.experience(fields["xp"])
-            if (fields["name"] != current["name"] or level is None
-                    or not current["level"] <= level <= maximum
-                    or level == current["level"] and (xp is None or old_xp is None or xp <= old_xp)):
-                raise RuntimeError("升级后未确认同一对象的等级或经验增长，停止且不重试")
-            updated = {**current, "level": level, "color": None}
-            if level == maximum and (not once or facts["rarity"] == 5):
-                updated["color"], frame = self.full_color(generation, current["name"], maximum)
+            prepared = None
+            for focus_try in range(4):
+                try:
+                    fields, frame = self.read(page_gen)
+                    page_level = self.integer(fields["level"])
+                    if (
+                        step == 0
+                        and fields["name"] == current["name"]
+                        and page_level is not None
+                        and page_level != current["level"]
+                        and 0 <= page_level < maximum
+                        and "等级已满" not in fields["maxed"]
+                        and isinstance(evidence, dict)
+                        and evidence.get("level_source") == "numeral_model"
+                    ):
+                        current["level"] = page_level
+                        if getattr(self.owner, "active", None) is not None:
+                            self.owner.active["level"] = page_level
+                    if fields["name"] != current["name"] or page_level != current["level"]:
+                        raise RuntimeError("升级页名称或当前等级与选中闪光不一致")
+                    old_xp = self.experience(fields["xp"])
+                    if not re.fullmatch(FILTER, self.text("material_filter", frame)):
+                        if (not self.rt.action("Click", target=self.layout["material_filter"])
+                                or not self.rt.click_text("^" + FILTER + "$", self.layout["filter_choices"])):
+                            raise RuntimeError("未能选择五星及以下升级素材")
+                    frame = self.frame(page_gen)
+                    if not re.fullmatch(FILTER, self.text("material_filter", frame)):
+                        raise RuntimeError("升级素材星级未确认，未一键放入")
+                    # The page, target and filter are already verified. Small button
+                    # text is not a reliable OCR gate; verify the resulting count below.
+                    self.owner.check_generation(page_gen)
+                    if (not self.rt.action("Click", target=self.layout["auto_fill"])
+                            or not self.rt.pause(.5)):
+                        raise RuntimeError("未能一键放入升级素材")
+                    fields, frame = self.read(page_gen, ("name", "level", "bling", "cost", "material_count", "material_filter"))
+                    if fields["name"] != current["name"]:
+                        raise RuntimeError("放入材料后升级对象发生变化")
+                    levels = self._parse_preview_levels(fields["level"], frame, current["level"], maximum)
+                    amount = self.integer(fields["material_count"])
+                    if amount is None:
+                        raise RuntimeError("升级材料数量无法读取")
+                    bling = self.integer(fields["bling"])
+                    if bling is not None and bling >= 0:
+                        self.owner.observe_bling(bling)
+                    if amount == 0:
+                        self.return_list()
+                        return {"status": "materials_shortage", "facts": current}
+                    cost = self.integer(fields["cost"])
+                    if bling is None or cost is None or cost <= 0:
+                        raise RuntimeError("升级噗灵持有量或费用无法读取")
+                    reserve = 0 if once else max(0, int(getattr(self.owner, "reserve_bling", 0) or 0))
+                    if bling < cost + reserve:
+                        self.clear(page_gen)
+                        self.return_list()
+                        return {"status": "bling_shortage", "bling": bling, "cost": cost,
+                                "reserve_bling": reserve, "facts": current}
+                    if not re.fullmatch(FILTER, fields["material_filter"]):
+                        raise RuntimeError("提交前升级素材选项发生变化")
+                    self.owner.check_generation(page_gen)
+                    operation = self.owner.begin_change("upgrade", current, evidence, frame,
+                                                        preview_level=levels[-1], cost=cost, bling_before=bling,
+                                                        material_rarity_max=5, experience_before=old_xp)
+                    try:
+                        self.owner.check_generation(page_gen)
+                        self.owner.submit_change(operation)
+                        clicked = self.rt.action("Click", target=self.layout["submit"], focus_generation=page_gen)
+                    except (RescanSlot, ForegroundChanged):
+                        self.owner.reconcile_change("cancelled_before_input")
+                        raise
+                    if not clicked:
+                        raise RuntimeError("升级提交结果不确定，已停止且不重试")
+                    prepared = (operation, old_xp)
+                    break
+                except (RescanSlot, ForegroundChanged):
+                    if self.owner.pending is not None or self.rt.stopped or focus_try >= 3:
+                        raise
+                    focus_switched = True
+                    page_gen = self._recover_upgrade_page(
+                        current, step=step, evidence=evidence, maximum=maximum
+                    )
+            if prepared is None:
+                raise IncompleteObservation("切回后升级准备未完成，已保存进度")
+            operation, old_xp = prepared
+
+            updated = None
+            for post_try in range(4):
+                try:
+                    if not self.upgrade_ready():
+                        if not self.rt.ui.wait_page(RESULT, seconds=20):
+                            if not self.upgrade_ready():
+                                raise RuntimeError("未确认升级完成界面，已停止且不重试")
+                        self.rt.check_focus()
+                        page_gen = self.rt._focus_generation
+                        if page_gen != generation:
+                            focus_switched = True
+                        if self.rt.hit(RESULT):
+                            if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), self.upgrade_ready,
+                                                         source=RESULT, attempts=3):
+                                raise RuntimeError("未能关闭升级完成界面")
+                    fields, frame = self.read(page_gen)
+                    level, xp = self.integer(fields["level"]), self.experience(fields["xp"])
+                    if (fields["name"] != current["name"] or level is None
+                            or not current["level"] <= level <= maximum
+                            or level == current["level"] and (xp is None or old_xp is None or xp <= old_xp)):
+                        raise RuntimeError("升级后未确认同一对象的等级或经验增长，停止且不重试")
+                    updated = {**current, "level": level, "color": None}
+                    if level == maximum and (not once or facts["rarity"] == 5):
+                        updated["color"], frame = self.full_color(page_gen, current["name"], maximum)
+                    break
+                except (RescanSlot, ForegroundChanged):
+                    if self.rt.stopped or post_try >= 3:
+                        raise
+                    focus_switched = True
+                    self.rt.check_focus()
+                    page_gen = self.rt._focus_generation
+            if updated is None:
+                raise RuntimeError("切回后未能确认升级结果，已停止且不重试")
+
             operation["result_image"] = self.owner.image(
                 f"upgrade_result_{len(self.owner.journal['operations']):04d}.jpg", frame)
             operation["experience_after"] = xp
             self.owner.confirm_upgrade(operation, current, updated)
             if level == maximum or once:
-                self.return_list(generation)
-                # Esc preserves the selected item even after its cell moved.
+                self.return_list()
+                list_gen = self.rt._focus_generation
+                if list_gen != page_gen:
+                    focus_switched = True
+                # Esc preserves the selected item when focus was uninterrupted.
                 if level == maximum and facts["rarity"] == 5:
-                    self.owner.protect_selected(updated, generation)
+                    if focus_switched:
+                        self._recover_selection_after_upgrade(updated, list_gen)
+                    else:
+                        self.owner.protect_selected(updated, list_gen)
                 return {"status": "upgraded", "facts": updated}
             current = updated
         raise RuntimeError("同一闪光连续升级次数超过上限，已保存进度")

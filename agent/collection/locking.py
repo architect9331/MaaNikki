@@ -17,7 +17,7 @@ from .blessing import SLOTS
 from .details import HEADER
 from file_io import write_json
 from .policy import capabilities
-from .scanner import IncompleteObservation, InventoryScanner, clean_text
+from .scanner import IncompleteObservation, InventoryScanner, RescanSlot, clean_text
 
 
 READY = "MaaNikki_Blessing_InventoryReady"
@@ -600,6 +600,17 @@ class BlessingLocker(InventoryScanner):
                         break
         return ready
 
+    def _get_acquired_desc_template(self):
+        template = getattr(self, "_acquired_desc_template", None)
+        if template is not None:
+            return template
+        reference = ROOT / "resource/image/blessing_lock/acquired_desc.png"
+        template = cv2.imdecode(np.fromfile(str(reference), np.uint8), cv2.IMREAD_GRAYSCALE)
+        if template is None:
+            raise RuntimeError("获得时间排序方向资源缺失")
+        self._acquired_desc_template = template
+        return template
+
     def acquisition_sort(self):
         """Select acquisition order and confirm the user-supplied down arrow."""
         if self._tall_mode:
@@ -616,11 +627,7 @@ class BlessingLocker(InventoryScanner):
                     or not self.rt.click_text("^获得时间$", [1055, 550 + dy, 84, 110])
                     or not self.rt.pause(.3)):
                 raise RuntimeError("未能切换获得时间排序")
-        reference = ROOT / "resource/image/blessing_lock/acquired_desc.png"
-        template = cv2.imdecode(np.fromfile(str(reference), np.uint8), cv2.IMREAD_GRAYSCALE)
-        if template is None:
-            raise RuntimeError("获得时间排序方向资源缺失")
-        self._acquired_desc_template = template
+        template = self._get_acquired_desc_template()
         for attempt in range(2):
             frame = self.clear_hover(generation)
             if not self.rt.text(self.layout["sort_label"], "获得时间", image=frame):
@@ -747,3 +754,179 @@ class BlessingLocker(InventoryScanner):
         self.pending.update(status="confirmed", confirmation=evidence)
         self.save()
         self.pending = None
+
+    def same_ordered_cards(self, checkpoint, frame, *, shift=0, ignore_box=None):
+        before = checkpoint["frame"]
+        fade = self.layout.get("bottom_fade_margin", 32)
+        checked = []
+        for box in checkpoint["boxes"]:
+            if ignore_box is not None and list(box) == list(ignore_box):
+                continue
+            x, y, w, h = box
+            target_y = y - shift
+            if not self.grid[1] <= target_y <= self.grid[1] + self.grid[3] - h - fade:
+                continue
+            selection_changed = self.selected(before, box) != self.selected(frame, [x, target_y, w, h])
+            for dx, dy, width, height in ((12, 22, w - 24, h - 52), (5, h - 29, w - 10, 23)):
+                old = self.region(before, [x + dx, y + dy, width, height])
+                new = self.region(frame, [x + dx, target_y + dy, width, height])
+                threshold = .90 if dy == 22 and selection_changed else .97
+                if not self.same_structure(old, new, [0, 0, width, height], threshold=threshold):
+                    return False
+            checked.append(box)
+        if shift:
+            return len({box[0] for box in checked}) == self.layout["columns"]
+        return bool(checked) or ignore_box is not None and len(checkpoint["boxes"]) == 1
+
+    def _scrollbar_roi(self):
+        return [1256, self.grid[1], 14, self.grid[3] - 10]
+
+    def _same_scrollbar_thumb(self, first, second):
+        if first is None or second is None or first.shape != second.shape:
+            return False
+        roi = self._scrollbar_roi()
+        c1, c2 = self.region(first, roi), self.region(second, roi)
+        if not c1.size or c1.shape != c2.shape:
+            return False
+        # Opaque white thumb has luma ~248-254 while translucent track over 3D scene stays ~40-65.
+        b1 = np.flatnonzero(cv2.cvtColor(c1, cv2.COLOR_BGR2GRAY).max(axis=1) >= 180)
+        b2 = np.flatnonzero(cv2.cvtColor(c2, cv2.COLOR_BGR2GRAY).max(axis=1) >= 180)
+        if len(b1) == 0 and len(b2) == 0:
+            return True
+        if (len(b1) == 0) != (len(b2) == 0):
+            return False
+        return abs(int(b1[0]) - int(b2[0])) <= 3 and abs(int(b1[-1]) - int(b2[-1])) <= 3
+
+    def same_ordered_view(self, checkpoint, frame, *, ignore_box=None):
+        """Check every clear card plus the scroll thumb, ignoring translucent track animation."""
+        return (self.same_ordered_cards(checkpoint, frame, ignore_box=ignore_box)
+                and self._same_scrollbar_thumb(checkpoint["frame"], frame))
+
+    def remember_ordered_selection(self, view):
+        checkpoint = view._focus_checkpoint
+        if checkpoint is not None:
+            frame = self.clear_hover(view.generation, settle_card=True)
+            view.remember_view(frame, checkpoint["boxes"])
+
+    def _abort_or_rescan_focus(self, message):
+        if self.pending is not None:
+            raise RuntimeError(message)
+        raise RescanSlot(message)
+
+    def resumed_scene(self, view, *, slot=None, require_checkpoint=True, check_initial_capacity=False):
+        checkpoint = view._focus_checkpoint
+        target_slot = view.slot if slot is None else slot
+        if require_checkpoint and (checkpoint is None or checkpoint["slot"] != target_slot):
+            self._abort_or_rescan_focus("切回后缺少当前页参照")
+        self.rt.check_focus()
+        generation = self.rt._focus_generation
+        if not self.rt.action("TouchMove", target=self._park_point()) or not self.rt.pause(.2):
+            if self.rt.stopped:
+                raise TaskStopped("用户停止祝福闪光读取")
+            if self.rt._focus_generation != generation:
+                raise RescanSlot("恢复期间焦点再次变化")
+            raise RuntimeError("前台恢复被中断")
+        if self.rt._focus_generation != generation:
+            raise RescanSlot("恢复期间焦点再次变化")
+        first = self.rt.capture()
+        frame = first
+        for _ in range(3):
+            if not self.rt.pause(.12):
+                if self.rt.stopped:
+                    raise TaskStopped("用户停止祝福闪光读取")
+                if self.rt._focus_generation != generation:
+                    raise RescanSlot("恢复期间焦点再次变化")
+                raise RuntimeError("前台恢复被中断")
+            frame = self.rt.capture()
+            if frame is not None and first is not None and frame.shape == first.shape:
+                grid_roi = self._base_layout["grid"] if self._tall_mode else self.grid
+                if self.same_structure(first, frame, grid_roi, threshold=.985):
+                    break
+            first = frame
+        if self.rt._focus_generation != generation:
+            raise RescanSlot("恢复核对期间焦点再次变化")
+        if (frame is None or frame.shape[:2] not in ((720, 1280), (5120, 1280))
+                or not (self.rt.text([930, 15, 330, 52], target_slot, image=frame)
+                        if require_checkpoint else self.ready(frame))
+                or (require_checkpoint and (
+                    not self.rt.text(self.layout["sort_label"], "获得时间", image=frame)
+                    or self.sort_direction(frame, self._get_acquired_desc_template()) != "desc"))):
+            self._abort_or_rescan_focus("切回后列表页面、部位或排序变化")
+        if check_initial_capacity and getattr(self, "initial_capacity", None) is not None:
+            if self.capacity_values(frame) != [self.initial_capacity]:
+                self._abort_or_rescan_focus("切回后仓库容量发生变化")
+        if self.rt._focus_generation != generation:
+            raise RescanSlot("恢复核对期间焦点再次变化")
+        return checkpoint, frame, generation
+
+    def accept_ordered_focus(self, view, frame, generation, phase, *, delta=0):
+        self.check_generation(generation)
+        view.generation = generation
+        if hasattr(self, "organization_generation"):
+            self.organization_generation = generation
+        self._hover_box = None
+        self._hover_panel = None
+        self._page_frame = self._ready_frame = frame
+        self._ready_generation = generation
+        self.verified.clear()
+        view._page_frame, view._page_cells = None, []
+        self.report.setdefault("focus_recoveries", []).append({
+            "time": datetime.now().isoformat(timespec="seconds"), "slot": view.slot,
+            "phase": phase, "position": view.position, "delta": delta, "generation": generation})
+        self.rt.log("窗口焦点恢复后已核对当前列表，继续处理。", detail=True)
+
+    def recover_ordered_focus(self, view, phase, args):
+        if view._recovering_focus:
+            raise RescanSlot("局部核对期间再次发生焦点切换")
+        view._recovering_focus = True
+        try:
+            return self._recover_ordered_focus(view, phase, args)
+        finally:
+            view._recovering_focus = False
+
+    def _recover_ordered_focus(self, view, phase, args):
+        check_cap = bool(
+            getattr(self, "baseline_store", None) is not None
+            and getattr(self, "initial_capacity", None) is not None
+        )
+        if phase == "enter":
+            target_slot = args[0] if args else view.slot
+            _, frame, generation = self.resumed_scene(
+                view, slot=target_slot, require_checkpoint=False, check_initial_capacity=check_cap)
+            view.slot, view.position = None, 0
+            view._focus_checkpoint = None
+            view._slot_header = None
+            self.accept_ordered_focus(view, frame, generation, phase, delta=0)
+            return 0
+        checkpoint, frame, generation = self.resumed_scene(view, check_initial_capacity=check_cap)
+        delta = 0
+        if not self.same_ordered_view(checkpoint, frame):
+            if phase != "step":
+                self.report["focus_mismatch"] = {
+                    "phase": phase, "slot": view.slot, "position": view.position,
+                    "before": self.image(f"focus_{generation}_before.jpg", checkpoint["frame"]),
+                    "after": self.image(f"focus_{generation}_after.jpg", frame),
+                    "cards_match": self.same_ordered_cards(checkpoint, frame),
+                    "scrollbar_match": self._same_scrollbar_thumb(checkpoint["frame"], frame)}
+                self._abort_or_rescan_focus("切回后当前页条目或滚动位置改变，重新核对该部位")
+            direction = args[0]
+            delta = (self.scroll_position(checkpoint["frame"], frame) if direction > 0
+                     else self.scroll_position(frame, checkpoint["frame"]))
+            if (delta is None or delta <= 2
+                    or not self.same_ordered_cards(checkpoint, frame, shift=direction * delta)):
+                self._abort_or_rescan_focus("切回后翻页位移未能确认，重新核对该部位")
+        if phase == "step":
+            direction = args[0]
+            view.position = max(0, checkpoint["position"] + direction * delta)
+            boxes = [[x, y - direction * delta, w, h] for x, y, w, h in checkpoint["boxes"]
+                     if self.grid[1] <= y - direction * delta
+                     and y - direction * delta + h <= self.grid[1] + self.grid[3]]
+        else:
+            boxes = checkpoint["boxes"]
+        self.accept_ordered_focus(view, frame, generation, phase, delta=delta)
+        view.remember_view(frame, boxes)
+        if phase not in ("step", "cells"):
+            view.cells()
+            if phase == "select_target":
+                args[3]["selected_for_observation"] = False
+        return delta

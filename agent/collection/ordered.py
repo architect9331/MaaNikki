@@ -19,21 +19,27 @@ from tall_window import is_capture_point_safe, window_hwnd
 
 
 def resumable_observation(method):
-    """Only organization opts into a bounded retry of a read/selection."""
+    """Allow bounded in-place focus recovery; bubble up to slot rescan if view changed."""
     @wraps(method)
     def run(self, *args, **kwargs):
-        for attempt in range(2):
+        for attempt in range(6):
             try:
                 return method(self, *args, **kwargs)
             except (RescanSlot, RuntimeError):
                 recover = getattr(self.o, "recover_ordered_focus", None)
-                if (attempt or self._recovering_focus or self.o.rt.stopped or recover is None
+                if (attempt >= 5 or self._recovering_focus or self.o.rt.stopped or recover is None
                         or self.generation == self.o.rt._focus_generation):
                     raise
-                result = recover(self, method.__name__, args)
+                gen_before = self.o.rt._focus_generation
+                try:
+                    result = recover(self, method.__name__, args)
+                except RescanSlot:
+                    if self.o.rt._focus_generation == gen_before:
+                        raise
+                    continue
                 if method.__name__ == "step":
                     return result
-        raise RuntimeError("前台恢复次数超过上限")
+        raise RescanSlot("窗口频繁切换超出单步恢复上限")
     return run
 
 

@@ -6,6 +6,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from daily.settings import ROOT
+from task_control import ForegroundChanged
 from .blessing import SLOTS
 from .inventory_workflow import FiveStarInventory
 from .policy import capabilities
@@ -176,18 +177,40 @@ class DailyUpgrade(FiveStarInventory):
                 self.prepare("daily_upgrade")
             if not self.open():
                 raise IncompleteObservation("未能打开祝福闪光列表")
-            selected = self.ordered_candidate() if self.prepared else self.live_candidate()
-            if selected is None:
-                self.report.update(complete=True, phase="complete", reason="没有未满级的普通祝福闪光")
-                self.rt.log("朝夕心愿：没有可升级的祝福闪光。")
-                return {"status": "no_candidate"}
-            self.active, found = selected
-            self.active["anchor_eligible"] = False
-            if self.prepared and self.active["rarity"] == 5 and not self.active["locked"]:
-                self.organization["unfinished"] = self.active["id"]
-            self.checkpoint()
-            self.rt.log(f"朝夕心愿：升级{self.active['rarity']}星 {self.active['name']}·{self.active['slot']}。")
-            result = UpgradeUI(self).run(*found, once=True)
+            result = None
+            for focus_try in range(4):
+                self.split_original = None
+                try:
+                    selected = self.ordered_candidate() if self.prepared else self.live_candidate()
+                    if selected is None:
+                        self.report.update(complete=True, phase="complete", reason="没有未满级的普通祝福闪光")
+                        self.rt.log("朝夕心愿：没有可升级的祝福闪光。")
+                        return {"status": "no_candidate"}
+                    self.active, found = selected
+                    self.active["anchor_eligible"] = False
+                    if self.prepared and self.active["rarity"] == 5 and not self.active["locked"]:
+                        self.organization["unfinished"] = self.active["id"]
+                    self.checkpoint()
+                    self.rt.log(f"朝夕心愿：升级{self.active['rarity']}星 {self.active['name']}·{self.active['slot']}。")
+                    result = UpgradeUI(self).run(*found, once=True)
+                    break
+                except (RescanSlot, ForegroundChanged):
+                    if self.pending is not None or self.rt.stopped or focus_try >= 3:
+                        raise
+                    if self.prepared and self.split_original is not None and self.active is not None:
+                        rows = self.organization["slots"][self.active["slot"]]
+                        if self.active in rows:
+                            rows.remove(self.active)
+                        self.active = self.split_original
+                        if self.active["rarity"] == 5 and not self.active["locked"]:
+                            self.organization["unfinished"] = self.active["id"]
+                    elif self.prepared:
+                        self.active = None
+                    self.split_original = None
+                    self.rt.check_focus()
+                    if not self.open_recovery():
+                        raise IncompleteObservation("切回后未能恢复祝福闪光列表")
+                    self.view.slot = None
             if self.prepared:
                 if result["status"] != "upgraded" and self.split_original is not None:
                     # A rejected fill has not split the physical stack.

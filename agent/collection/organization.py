@@ -12,6 +12,10 @@ from .policy import normalize_scope, observation_fields, reconcile_exclusions
 from .scanner import RescanSlot, clean_text
 
 
+class _RestartOrganization(Exception):
+    """Raised when warehouse capacity changes across focus switches before locking."""
+
+
 class BlessingOrganizer(BlessingLocker):
     def save(self):
         super().save()
@@ -29,142 +33,6 @@ class BlessingOrganizer(BlessingLocker):
             self._baseline_slots = changed
             self._baseline_operations = len(self.report["operations"])
 
-    def same_ordered_cards(self, checkpoint, frame, *, shift=0, ignore_box=None):
-        before = checkpoint["frame"]
-        fade = self.layout.get("bottom_fade_margin", 32)
-        checked = []
-        for box in checkpoint["boxes"]:
-            if ignore_box is not None and list(box) == list(ignore_box):
-                continue
-            x, y, w, h = box
-            target_y = y - shift
-            if not self.grid[1] <= target_y <= self.grid[1] + self.grid[3] - h - fade:
-                continue
-            # Compare translated patches with the existing edge matcher. The
-            # level/count/lock strip must agree as well as the central artwork.
-            selection_changed = self.selected(before, box) != self.selected(frame, [x, target_y, w, h])
-            for dx, dy, width, height in ((12, 22, w - 24, h - 52), (5, h - 29, w - 10, 23)):
-                old = self.region(before, [x + dx, y + dy, width, height])
-                new = self.region(frame, [x + dx, target_y + dy, width, height])
-                threshold = .90 if dy == 22 and selection_changed else .97
-                if not self.same_structure(old, new, [0, 0, width, height], threshold=threshold):
-                    return False
-            checked.append(box)
-        if shift:
-            return len({box[0] for box in checked}) == self.layout["columns"]
-        return bool(checked) or ignore_box is not None and len(checkpoint["boxes"]) == 1
-
-    def _scrollbar_roi(self):
-        return [1256, self.grid[1], 14, self.grid[3] - 10]
-
-    def same_ordered_view(self, checkpoint, frame, *, ignore_box=None):
-        """Check every clear card plus the scroll thumb, ignoring hover lighting."""
-        # Equal artwork alone cannot distinguish identical physical copies.
-        return (self.same_ordered_cards(checkpoint, frame, ignore_box=ignore_box)
-                and self.same_pixels(checkpoint["frame"], frame, self._scrollbar_roi()))
-
-    def remember_ordered_selection(self, view):
-        # Selection changes the gold backing but not acquisition order. Keep
-        # the reference current after our own confirmed selection, before the
-        # next tooltip observation can be interrupted by a focus switch.
-        checkpoint = view._focus_checkpoint
-        if checkpoint is not None:
-            frame = self.clear_hover(view.generation, settle_card=True)
-            view.remember_view(frame, checkpoint["boxes"])
-
-    def resumed_scene(self, view, *, slot=None, require_checkpoint=True):
-        checkpoint = view._focus_checkpoint
-        target_slot = view.slot if slot is None else slot
-        if require_checkpoint and (checkpoint is None or checkpoint["slot"] != target_slot):
-            raise RuntimeError("切回后缺少当前页参照，下次运行会重新整理")
-        generation = self.rt._focus_generation
-        if not self.rt.action("TouchMove", target=[900, 32]) or not self.rt.pause(.2):
-            raise RuntimeError("前台恢复被中断")
-        first = self.rt.capture()
-        if not self.rt.pause(.12):
-            raise RuntimeError("前台恢复被中断")
-        frame = self.rt.capture()
-        if (frame is None or frame.shape[:2] not in ((720, 1280), (5120, 1280))
-                or not self.unchanged(first, frame)
-                or not (self.rt.text([930, 15, 330, 52], target_slot, image=frame)
-                        if require_checkpoint else self.ready(frame))
-                or (require_checkpoint and (
-                    not self.rt.text(self.layout["sort_label"], "获得时间", image=frame)
-                    or self.sort_direction(frame, self._acquired_desc_template) != "desc"))):
-            raise RuntimeError("切回后列表页面、部位或排序未能确认，下次运行会重新整理")
-        labels = self.ocr(self.layout["capacity"], frame)
-        capacities = [re.search(r"(\d+)[/／](\d+)", clean_text(item.text)) for item in labels
-                      if float(getattr(item, "score", 0)) >= .90]
-        capacities = [(int(match[1]), int(match[2])) for match in capacities if match]
-        if capacities != [self.initial_capacity] or self.rt._focus_generation != generation:
-            raise RuntimeError("切回后仓库容量或前台状态发生变化，下次运行会重新整理")
-        return checkpoint, frame, generation
-
-    def accept_ordered_focus(self, view, frame, generation, phase, *, delta=0):
-        self.check_generation(generation)
-        view.generation = self.organization_generation = generation
-        self._hover_box = None
-        self._hover_panel = None
-        self._page_frame = self._ready_frame = frame
-        self._ready_generation = generation
-        self.verified.clear()
-        view._page_frame, view._page_cells = None, []
-        self.report.setdefault("focus_recoveries", []).append({
-            "time": datetime.now().isoformat(timespec="seconds"), "slot": view.slot,
-            "phase": phase, "position": view.position, "delta": delta, "generation": generation})
-        self.rt.log("已核对当前列表，继续读取祝福闪光仓库。")
-
-    def recover_ordered_focus(self, view, phase, args):
-        if view._recovering_focus:
-            raise RuntimeError("局部核对期间再次发生前台切换，下次运行会重新整理")
-        view._recovering_focus = True
-        try:
-            return self._recover_ordered_focus(view, phase, args)
-        finally:
-            view._recovering_focus = False
-
-    def _recover_ordered_focus(self, view, phase, args):
-        if phase == "enter":
-            target_slot = args[0] if args else view.slot
-            _, frame, generation = self.resumed_scene(view, slot=target_slot, require_checkpoint=False)
-            view.slot, view.position = None, 0
-            view._focus_checkpoint = None
-            view._slot_header = None
-            self.accept_ordered_focus(view, frame, generation, phase, delta=0)
-            return 0
-        checkpoint, frame, generation = self.resumed_scene(view)
-        delta = 0
-        if not self.same_ordered_view(checkpoint, frame):
-            if phase != "step":
-                self.report["focus_mismatch"] = {
-                    "phase": phase, "slot": view.slot, "position": view.position,
-                    "before": self.image(f"focus_{generation}_before.jpg", checkpoint["frame"]),
-                    "after": self.image(f"focus_{generation}_after.jpg", frame),
-                    "cards_match": self.same_ordered_cards(checkpoint, frame),
-                    "scrollbar_match": self.same_pixels(checkpoint["frame"], frame, self._scrollbar_roi())}
-                raise RuntimeError("切回后当前页条目或滚动位置改变，下次运行会重新整理")
-            direction = args[0]
-            delta = (self.scroll_position(checkpoint["frame"], frame) if direction > 0
-                     else self.scroll_position(frame, checkpoint["frame"]))
-            if (delta is None or delta <= 2
-                    or not self.same_ordered_cards(checkpoint, frame, shift=direction * delta)):
-                raise RuntimeError("切回后翻页位移未能确认，下次运行会重新整理")
-        if phase == "step":
-            direction = args[0]
-            view.position = max(0, checkpoint["position"] + direction * delta)
-            boxes = [[x, y - direction * delta, w, h] for x, y, w, h in checkpoint["boxes"]
-                     if self.grid[1] <= y - direction * delta
-                     and y - direction * delta + h <= self.grid[1] + self.grid[3]]
-        else:
-            boxes = checkpoint["boxes"]
-        self.accept_ordered_focus(view, frame, generation, phase, delta=delta)
-        view.remember_view(frame, boxes)
-        if phase not in ("step", "cells"):
-            view.cells()
-            if phase == "select_target":
-                args[3]["selected_for_observation"] = False
-        return delta
-
     def apply_organized_lock(self, view, row, rows, box, facts, evidence, generation, target):
         for attempt in range(2):
             try:
@@ -178,7 +46,10 @@ class BlessingOrganizer(BlessingLocker):
                     raise
                 operation = self.pending
                 if operation is not None and operation.get("input_status") == "succeeded":
-                    checkpoint, frame, resumed = self.resumed_scene(view)
+                    try:
+                        checkpoint, frame, resumed = self.resumed_scene(view, check_initial_capacity=True)
+                    except RescanSlot as rescan_err:
+                        raise RuntimeError("切回后锁定操作页面发生变化，已保留操作记录，下次运行会重新整理") from rescan_err
                     if (not self.selected(frame, box)
                             or not self.same_ordered_view(checkpoint, frame, ignore_box=box)):
                         raise RuntimeError("切回后锁定操作影响了列表位置，已保留操作记录，下次运行会重新整理") from error
@@ -198,7 +69,7 @@ class BlessingOrganizer(BlessingLocker):
                 self.recover_ordered_focus(view, "locate", ())
                 found = view.locate(row, rows, exact_lock=row["locked"])
                 if found is None:
-                    raise RuntimeError("切回后整理对象未能重新确认") from error
+                    self._abort_or_rescan_focus("切回后整理对象未能重新确认")
                 box, facts, evidence, generation = found
 
     def _finalize_slot(self, slot, rows, maximum, ordered):
@@ -266,18 +137,63 @@ class BlessingOrganizer(BlessingLocker):
             rows, _ = view.scan(slot, quantities=True)
         self._finalize_slot(slot, rows, maximum, ordered)
 
-    def run(self):
+    def _ensure_inventory_ready(self):
+        self.rt.check_focus()
+        frame = self.rt.capture()
+        if frame is not None and frame.shape[:2] == (720, 1280) and self.ready(frame):
+            self.organization_generation = self.rt._focus_generation
+            return
         if not self.open():
             raise RuntimeError("未能打开祝福闪光库存")
+        self.rt.check_focus()
+        self.organization_generation = self.rt._focus_generation
+
+    def _run_normal_slot(self, view, slot, ordered, *, operations_only=None):
+        rows_cache, maximum_cache, ops_cache = (operations_only if operations_only is not None else (None, None, None))
+        for attempt in range(4):
+            try:
+                self._ensure_inventory_ready()
+                if self.read_capacity() != self.initial_capacity:
+                    raise _RestartOrganization("切回后仓库容量发生变化，重新开始整理")
+                view.slot = None
+                view.enter(slot)
+                if ops_cache is not None and attempt == 0:
+                    rows, maximum, operations = rows_cache, maximum_cache, ops_cache
+                else:
+                    rows, _ = view.scan(slot, quantities=True)
+                    maximum, operations = self._plan_slot_operations(rows)
+                self._run_slot_operations(view, slot, rows, maximum, operations, ordered)
+                return
+            except RescanSlot:
+                if self.pending is not None or self.rt.stopped or attempt >= 3:
+                    raise
+                self.rt.log(f"祝福闪光整理：窗口焦点恢复后重新核对{slot}。", detail=True)
+
+    def _run_once(self):
+        self.lock_groups = {}
+        if not self.open():
+            raise RuntimeError("未能打开祝福闪光库存")
+        self.rt.check_focus()
         self.organization_generation = self.rt._focus_generation
         self.initial_capacity = self.read_capacity()
         self.snapshot["scan"].update(view="normal_inventory", workflow="blessing_lock",
                                      reported_capacity=self.initial_capacity[0])
         ordered = {}
         view = OrderedView(self)
-        if not self.set_slot(SLOTS[0]):
-            raise RuntimeError("未确认" + SLOTS[0] + "列表")
-        self.acquisition_sort()
+        for attempt in range(3):
+            try:
+                self.rt.check_focus()
+                self.organization_generation = self.rt._focus_generation
+                if not self.set_slot(SLOTS[0]):
+                    raise RuntimeError("未确认" + SLOTS[0] + "列表")
+                self.acquisition_sort()
+                break
+            except RescanSlot:
+                if self.pending is not None or self.rt.stopped or attempt >= 2:
+                    raise
+                self._ensure_inventory_ready()
+                if self.read_capacity() != self.initial_capacity:
+                    raise _RestartOrganization("切回后仓库容量发生变化，重新开始整理")
 
         pending_lock_slots = []
         deferred_normal_slots = []
@@ -286,48 +202,88 @@ class BlessingOrganizer(BlessingLocker):
                 self.set_tall_layout(True)
                 self.rt.log("祝福闪光整理：已切换超长竖屏模式（单屏 42 行），扫描结束后将自动恢复游戏窗口。")
             try:
-                for slot in SLOTS:
-                    self.check_generation(self.organization_generation)
-                    try:
-                        rows, _ = view.scan(slot, quantities=True)
-                    except TallSelectUnsafe:
-                        deferred_normal_slots.append(slot)
-                        self.rt.log(f"祝福闪光整理：{slot}含任务栏安全区外待核对条目，将在常规窗口下继续读取。", detail=True)
-                        continue
-                    maximum, operations = self._plan_slot_operations(rows)
-                    if operations and is_tall:
-                        pending_lock_slots.append((slot, rows, maximum, operations))
-                    else:
-                        self._run_slot_operations(view, slot, rows, maximum, operations, ordered)
+                for slot_idx, slot in enumerate(SLOTS):
+                    slot_done = False
+                    for attempt in range(3):
+                        self.rt.check_focus()
+                        self.organization_generation = self.rt._focus_generation
+                        try:
+                            rows, _ = view.scan(slot, quantities=True)
+                            maximum, operations = self._plan_slot_operations(rows)
+                            if operations and is_tall:
+                                pending_lock_slots.append((slot, rows, maximum, operations))
+                            else:
+                                self._run_slot_operations(view, slot, rows, maximum, operations, ordered)
+                            slot_done = True
+                            break
+                        except TallSelectUnsafe:
+                            if slot not in deferred_normal_slots:
+                                deferred_normal_slots.append(slot)
+                            self.rt.log(f"祝福闪光整理：{slot}含任务栏安全区外待核对条目，将在常规窗口下继续读取。", detail=True)
+                            slot_done = True
+                            break
+                        except RescanSlot:
+                            if self.pending is not None or self.rt.stopped:
+                                raise
+                            if is_tall:
+                                frame = self.rt.capture()
+                                if frame is None or frame.shape[:2] != (5120, 1280) or not self.ready(frame):
+                                    for rem_slot in SLOTS[slot_idx:]:
+                                        if rem_slot not in deferred_normal_slots:
+                                            deferred_normal_slots.append(rem_slot)
+                                    self.rt.log("祝福闪光整理：超长竖屏期间窗口切换，恢复常规窗口后继续剩余部位。", detail=True)
+                                    slot_done = False
+                                    break
+                            view.slot = None
+                            if attempt < 2:
+                                self.rt.log(f"祝福闪光整理：窗口焦点恢复后重新核对{slot}。", detail=True)
+                            else:
+                                raise
+                    if not slot_done:
+                        break
             finally:
                 self.set_tall_layout(False)
 
         for slot in deferred_normal_slots:
-            self.check_generation(self.organization_generation)
-            view.slot = None
-            view.enter(slot)
-            rows, _ = view.scan(slot, quantities=True)
-            maximum, operations = self._plan_slot_operations(rows)
-            self._run_slot_operations(view, slot, rows, maximum, operations, ordered)
+            self._run_normal_slot(view, slot, ordered)
 
         for slot, rows, maximum, operations in pending_lock_slots:
-            self.check_generation(self.organization_generation)
-            view.slot = None
-            view.enter(slot)
-            self._run_slot_operations(view, slot, rows, maximum, operations, ordered)
+            if slot in ordered:
+                continue
+            self._run_normal_slot(view, slot, ordered, operations_only=(rows, maximum, operations))
         self.organization = baseline(ordered)
         self.report.update(complete=False, locking_complete=True, phase="organized",
                            reason="三个部位已整理，等待普通仓库数量与容量核对")
         self.save()
 
+    def run(self):
+        for restart in range(3):
+            try:
+                self._run_once()
+                return
+            except _RestartOrganization:
+                if self.pending is not None or self.rt.stopped or restart >= 2:
+                    raise RuntimeError("切回后仓库容量多次变化，请稍后重新整理")
+                self.rt.log("祝福闪光整理：切回后检测到仓库数量变化，重新核对整份仓库。")
+
     def read_capacity(self):
-        frame = self.clear_hover(self.organization_generation)
-        counts = self.capacity_values(frame)
-        self.check_generation(self.organization_generation)
-        if len(counts) != 1:
-            self.image("normal_capacity_unknown.jpg", frame)
-            raise RuntimeError("普通仓库容量未能确认，未发布完整库存")
-        return counts[0]
+        for attempt in range(4):
+            try:
+                self.rt.check_focus()
+                gen = self.rt._focus_generation
+                frame = self.clear_hover(gen)
+                counts = self.capacity_values(frame)
+                self.check_generation(gen)
+                self.organization_generation = gen
+                if len(counts) != 1:
+                    self.image("normal_capacity_unknown.jpg", frame)
+                    raise RuntimeError("普通仓库容量未能确认，未发布完整库存")
+                return counts[0]
+            except RescanSlot:
+                if self.pending is not None or self.rt.stopped or attempt >= 3:
+                    raise
+                if not self.open():
+                    raise RuntimeError("切回后未能恢复祝福闪光库存页面")
 
     def capture_inventory(self):
         """Publish the final normal-page audit; no second decomposition scan."""

@@ -751,6 +751,26 @@ class Runtime:
         ):
             return
         if observed is None and (image is None or generation != self._focus_generation):
+            for _ in range(3):
+                if self.stopped or not self.pause(.25):
+                    break
+                image = self.capture()
+                observed = self.read_account_uid(image)
+                if observed is not None:
+                    if self._account_uid is not None and observed != self._account_uid:
+                        if (
+                            len(observed) == len(self._account_uid)
+                            and sum(l != r for l, r in zip(observed, self._account_uid)) == 1
+                        ):
+                            self.evidence.observe("account_uid", method="bound_uid_reuse", differing_digits=1)
+                            observed = self._account_uid
+                        else:
+                            self._account_mismatch = True
+                            if session:
+                                session.account_mismatch = True
+                            raise ValueError("游戏账号已切换，本次处理记录仍保留在原 UID，请重新运行任务")
+                    break
+        if observed is None and (image is None or generation != self._focus_generation):
             raise ValueError("切回游戏后未能确认 UID，本次账号记录暂未更新")
         if observed is not None:
             self._account_generation = self._focus_generation
