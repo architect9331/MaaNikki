@@ -239,7 +239,7 @@
     {
       "x": 1137.44,
       "y": 852.61,
-      "radius": 2.8,
+      "radius": 2.2,
       "jump": false,
       "action": "wait",
       "params": {

@@ -17,13 +17,13 @@
     {
       "x": 1543.85,
       "y": 1130.65,
-      "radius": 1.0,
+      "radius": 1.8,
       "jump": false
     },
     {
       "x": 1543.807,
       "y": 1129.567,
-      "radius": 1.0,
+      "radius": 1.25,
       "jump": false,
       "action": "photo"
     }

@@ -18,19 +18,19 @@
     {
       "x": 11336.403,
       "y": 9570.897,
-      "radius": 1.0,
+      "radius": 1.8,
       "jump": false
     },
     {
       "x": 11338.003,
       "y": 9570.647,
-      "radius": 0.8,
+      "radius": 1.1,
       "jump": false
     },
     {
       "x": 11340.35,
       "y": 9572.75,
-      "radius": 1.15,
+      "radius": 1.35,
       "jump": false,
       "action": "collect"
     },
@@ -43,42 +43,42 @@
     {
       "x": 11345.15,
       "y": 9565.2,
-      "radius": 1.15,
+      "radius": 1.35,
       "jump": false,
       "action": "collect"
     },
     {
       "x": 11348.85,
       "y": 9567.75,
-      "radius": 1.15,
+      "radius": 1.35,
       "jump": false,
       "action": "collect"
     },
     {
       "x": 11351.5,
       "y": 9573.65,
-      "radius": 1.25,
+      "radius": 1.35,
       "jump": false,
       "action": "collect"
     },
     {
       "x": 11362.45,
       "y": 9565.0,
-      "radius": 1.25,
+      "radius": 1.35,
       "jump": false,
       "action": "collect"
     },
     {
       "x": 11366.35,
       "y": 9556.75,
-      "radius": 1.2,
+      "radius": 1.35,
       "jump": false,
       "action": "collect"
     },
     {
       "x": 11371.153,
       "y": 9560.547,
-      "radius": 1.0,
+      "radius": 1.35,
       "jump": false,
       "action": "collect"
     },
@@ -91,7 +91,7 @@
     {
       "x": 11377.253,
       "y": 9570.147,
-      "radius": 1.0,
+      "radius": 1.35,
       "jump": false,
       "action": "collect"
     },
@@ -104,7 +104,7 @@
     {
       "x": 11394.453,
       "y": 9554.047,
-      "radius": 1.0,
+      "radius": 1.35,
       "jump": false,
       "action": "collect"
     },

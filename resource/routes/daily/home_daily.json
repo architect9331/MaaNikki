@@ -20,25 +20,9 @@
   },
   "points": [
     {
-      "x": 1046.8,
-      "y": 719.8,
-      "radius": 1.35,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "家园码头",
-          "province": "家园",
-          "region": "家园",
-          "x": 1047.0,
-          "y": 721.85
-        }
-      }
-    },
-    {
       "x": 1051.7,
       "y": 716.35,
-      "radius": 0.8,
+      "radius": 1.0,
       "jump": false
     },
     {
@@ -54,7 +38,7 @@
     {
       "x": 1054.28,
       "y": 716.54,
-      "radius": 0.8,
+      "radius": 1.0,
       "jump": false
     },
     {
@@ -72,7 +56,7 @@
     {
       "x": 1057.7,
       "y": 747.55,
-      "radius": 0.8,
+      "radius": 1.0,
       "jump": false
     },
     {
@@ -88,7 +72,7 @@
     {
       "x": 1061.45,
       "y": 745.1,
-      "radius": 0.8,
+      "radius": 1.0,
       "jump": false
     },
     {

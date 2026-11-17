@@ -17,13 +17,13 @@
     {
       "x": 834.45,
       "y": 1016.75,
-      "radius": 1.0,
+      "radius": 1.8,
       "jump": false
     },
     {
       "x": 855.993,
       "y": 1003.632,
-      "radius": 0.65,
+      "radius": 1.0,
       "jump": false,
       "action": "music"
     }

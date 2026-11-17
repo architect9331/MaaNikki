@@ -15,9 +15,9 @@
   },
   "points": [
     {
-      "x": 1433.8,
-      "y": 995.0,
-      "radius": 1.0,
+      "x": 1434.2,
+      "y": 995.8,
+      "radius": 1.8,
       "jump": false
     },
     {
@@ -71,7 +71,7 @@
     {
       "x": 1590.175,
       "y": 945.125,
-      "radius": 0.4,
+      "radius": 0.75,
       "jump": false,
       "action": "macro",
       "params": {
@@ -87,7 +87,7 @@
     {
       "x": 1595.375,
       "y": 943.675,
-      "radius": 0.4,
+      "radius": 0.75,
       "jump": false,
       "action": "macro",
       "params": {
@@ -103,7 +103,7 @@
     {
       "x": 1600.675,
       "y": 943.725,
-      "radius": 0.4,
+      "radius": 0.75,
       "jump": false,
       "action": "macro",
       "params": {
@@ -119,7 +119,7 @@
     {
       "x": 1605.425,
       "y": 946.875,
-      "radius": 0.4,
+      "radius": 0.75,
       "jump": false,
       "action": "macro",
       "params": {

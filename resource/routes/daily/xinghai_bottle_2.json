@@ -18,13 +18,13 @@
     {
       "x": 1543.85,
       "y": 1130.65,
-      "radius": 1.0,
+      "radius": 1.8,
       "jump": false
     },
     {
       "x": 1559.333,
       "y": 1126.925,
-      "radius": 0.55,
+      "radius": 0.85,
       "jump": false,
       "action": "bottle",
       "params": {
@@ -39,7 +39,7 @@
     {
       "x": 1560.633,
       "y": 1135.917,
-      "radius": 0.55,
+      "radius": 0.85,
       "jump": false,
       "action": "bottle",
       "params": {
@@ -66,7 +66,7 @@
     {
       "x": 1568.667,
       "y": 1131.608,
-      "radius": 0.55,
+      "radius": 0.85,
       "jump": false,
       "action": "bottle",
       "params": {
@@ -81,7 +81,7 @@
     {
       "x": 1574.15,
       "y": 1122.342,
-      "radius": 0.55,
+      "radius": 0.85,
       "jump": false,
       "action": "bottle",
       "params": {
