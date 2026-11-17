@@ -76,10 +76,28 @@ class LowRarityDecomposer:
             raise IncompleteObservation("分解截图尺寸无效")
         return frame
 
+    def _park_hover(self, attempt=0):
+        # Alternate top-bar park points outside the grid so Unreal re-evaluates
+        # hover state after page animations or background cursor restoration.
+        base = [900, 32] if attempt % 2 == 0 else [860, 32]
+        if hasattr(self.rt, "_pointer_guard_context"):
+            from tall_window import clamp_capture_park_point
+            hwnd, cap_size = self.rt._pointer_guard_context()
+            park = clamp_capture_park_point(hwnd, base, capture_size=cap_size)
+        else:
+            park = base
+        if hasattr(self.rt, "action") and self.rt.action("TouchMove", target=park):
+            return True
+        ui = getattr(self.rt, "ui", None)
+        return bool(ui and ui.unhover())
+
     def read(self):
+        self._park_hover(0)
+        if not self.rt.pause(.06):
+            raise IncompleteObservation("分解材料数量、容量或粒子信息未稳定，未继续提交")
         previous = None
         prev_gen = None
-        for _ in range(16):
+        for attempt in range(16):
             self.rt.check_focus()
             gen = self.rt._focus_generation
             frame = self.rt.capture()
@@ -91,6 +109,7 @@ class LowRarityDecomposer:
                 continue
             ready = self.rt.recognize(READY, image=frame)
             if self.rt._focus_generation != gen:
+                self._park_hover(attempt + 1)
                 previous = None
                 prev_gen = None
                 continue
@@ -98,6 +117,7 @@ class LowRarityDecomposer:
                 raise IncompleteObservation("未确认祝福闪光分解页面")
             current = self.values(frame)
             if self.rt._focus_generation != gen:
+                self._park_hover(attempt + 1)
                 previous = None
                 prev_gen = None
                 continue
@@ -111,6 +131,8 @@ class LowRarityDecomposer:
                         unverified_farm_runs=0,
                     )
                 return current, frame
+            if current is None:
+                self._park_hover(attempt + 1)
             previous = current
             prev_gen = gen
             if not self.rt.pause(.2):
