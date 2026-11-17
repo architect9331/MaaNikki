@@ -708,6 +708,10 @@ class Runtime:
         generation = (getattr(session, "account_generation", None) if session else self._account_generation)
         if self._account_mismatch or getattr(session, "account_mismatch", False):
             raise ValueError("游戏 UID 已变化，请重新运行任务")
+        # Bind session UID onto fresh sub-task runtimes before comparing OCR reads.
+        expected = self._account_uid or (getattr(session, "account_uid", None) if session else None)
+        if expected is not None and self._account_uid is None:
+            self._account_uid = expected
         # Stop still publishes the interrupted journal for its already-bound
         # owner, without requesting new game captures after cancellation.
         if self.stopped and generation == self._focus_generation:
@@ -741,7 +745,7 @@ class Runtime:
                             and sum(l != r for l, r in zip(retry_uid, self._account_uid)) == 1):
                         observed = self._account_uid
                         break
-        if observed is not None and observed != self._account_uid:
+        if observed is not None and self._account_uid is not None and observed != self._account_uid:
             self._account_mismatch = True
             if session:
                 session.account_mismatch = True
@@ -776,6 +780,10 @@ class Runtime:
         if observed is None and (image is None or generation != self._focus_generation):
             raise ValueError("切回游戏后未能确认 UID，本次账号记录暂未更新")
         if observed is not None:
+            if self._account_uid is None:
+                self._account_uid = observed
+                if session and getattr(session, "account_uid", None) is None:
+                    session.account_uid = observed
             self._account_generation = self._focus_generation
             if session:
                 session.account_generation = session.generation
