@@ -822,6 +822,7 @@ class MinimapHudSurface:
         current_index: int,
         map_id: str,
         now: float,
+        velocity: float = 0.0,
         theme=None,
     ):
         if current_index < 0 or current_index >= len(points):
@@ -995,7 +996,7 @@ class MinimapHudSurface:
         # Synthesize expected 3D airborne trajectory over jump segments from unpacked 3C
         # Jump_V3 ascent (2.15m apex in ~2.1m run) + Float glide (-1.0m/s sink over live
         # 3.9..5.9m/s suit float speed, adapting automatically to Bubble vs Paper Crane).
-        live_float_mps = max(3.90, min(5.95, float(snapshot.get("velocity") or 0.0) * 0.90))
+        live_float_mps = max(3.90, min(5.95, float(velocity or 0.0) * 0.90))
         glide_drop_per_m = 1.00 / live_float_mps
         traj_zs = list(solved_zs)
         for s0, s1_raw, seg_len_m in jump_spans:
@@ -1404,6 +1405,7 @@ class MinimapHudSurface:
                     current_index,
                     str(snapshot.get("map_id") or ""),
                     now,
+                    velocity=vel,
                     theme=theme,
                 )
 
