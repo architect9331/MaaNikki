@@ -475,7 +475,7 @@ class GameUI:
         )
 
     def find(self, *, roi, text=None, pattern=None, node=None, asset=None, scale=1, threshold=.75,
-             color=None, method=None, exact=False, scroll=True, click=True, scroll_roi=None, paged=False):
+             color=None, method=None, variants=None, exact=False, scroll=True, click=True, scroll_roi=None, paged=False):
         """Search current view, then top to bottom; optionally return the box without clicking."""
         if node:
             definition = fields(self.rt.context, node)
@@ -498,8 +498,13 @@ class GameUI:
                 return False
             raw_image = image
             if asset:
-                box = self.asset(asset, image=image, roi=roi, scale=scale, threshold=threshold,
-                                 color=color, method=method)
+                candidates = variants or ((scale, color, threshold),)
+                box = None
+                for cand_scale, cand_color, cand_threshold in candidates:
+                    box = self.asset(asset, image=image, roi=roi, scale=cand_scale,
+                                     threshold=cand_threshold, color=cand_color, method=method)
+                    if box:
+                        break
             else:
                 if node:
                     result = self.rt.recognize(node, {"roi": roi}, image=image)

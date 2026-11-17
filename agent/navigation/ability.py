@@ -12,13 +12,60 @@ WHITE = ([0, 0, 230], [180, 60, 255])
 # 720p HUD button strokes are 1-2 px wide over a translucent circle; preserve
 # anti-aliased white edges that dip below V=230 without admitting coloured backgrounds.
 HUD_WHITE = ([0, 0, 200], [180, 60, 255])
-# List thumbnails are smaller than wheel icons, in both list layouts.
+# Grouped-list thumbnails sit at 5/8 wheel size (WHITE), while 2-column grid
+# thumbnails render slightly smaller (~0.61) with softer anti-aliased strokes.
 LIST_ICON_SCALE = 5/8
+GRID_ICON_SCALE = 0.61
+LIST_ICON_THRESHOLD = 0.78
 # Keep wheel scrolling and end-of-list comparison inside the curved list body
 # rather than the bottom-right corner above the outfit-switch button.
 LIST_SCROLL_ROI = [980, 150, 160, 320]
 SLOTS = ((1063, 257), (1205, 433), (1199, 640), (1048, 829),
          (641, 829), (498, 640), (485, 433), (610, 257))
+
+
+def open_slot_ability_list(runtime, target_slot, permitted_plan, list_roi):
+    """Select ``target_slot`` and wait until the right-hand ability list settles."""
+    ui = runtime.ui
+    x, y = SLOTS[target_slot - 1]
+    click_pt = [round(x * 2 / 3), round(y * 2 / 3)]
+
+    def ability_list_open():
+        return bool(
+            permitted_plan()
+            and ui.asset("ButtonAbilityChangeList", method=cv2.TM_CCORR_NORMED)
+        )
+
+    # Opening the ability page or switching to an empty plan leaves slot 1 focused
+    # with the right-hand list already open; click the requested slot explicitly so
+    # transient assignments target that slot rather than overwriting slot 1.
+    if ability_list_open():
+        if not runtime.action("Click", target=click_pt) or not runtime.pause(0.35):
+            return False
+    if not ability_list_open():
+        if not ui.enter_page(
+            lambda: runtime.action("Click", target=click_pt),
+            ability_list_open,
+            source=permitted_plan,
+        ):
+            return False
+    return bool(ui.wait_page(ability_list_open, roi=list_roi, stable=True))
+
+
+def find_ability_in_list(runtime, icon, list_roi, *, primary_color=WHITE, fallback_color=HUD_WHITE):
+    """Scroll the right-hand ability list once, matching grouped-list and grid layouts."""
+    variants = [(LIST_ICON_SCALE, primary_color, LIST_ICON_THRESHOLD)]
+    if (GRID_ICON_SCALE, fallback_color) != (LIST_ICON_SCALE, primary_color) and fallback_color is not None:
+        variants.append((GRID_ICON_SCALE, fallback_color, LIST_ICON_THRESHOLD))
+    return bool(
+        runtime.ui.find(
+            roi=list_roi,
+            scroll_roi=LIST_SCROLL_ROI,
+            asset=icon,
+            variants=variants,
+            method=cv2.TM_CCORR_NORMED,
+        )
+    )
 
 
 def ability_matches(runtime, node):
@@ -87,28 +134,15 @@ class Ability:
             slot = self.find_slot(fresh=True)
             if slot is None:
                 slot = 8
-                x, y = SLOTS[slot-1]
-                def ability_list_open():
-                    return bool(permitted_plan()
-                                and self.ui.asset("ButtonAbilityChangeList",
-                                                  method=cv2.TM_CCORR_NORMED))
                 list_roi = self.ui.roi("AreaAbilityChange")
-                # Save and the plan header are already visible before choosing a
-                # slot. Require the right-hand ability list toggle and a settled
-                # panel before searching or scrolling the list.
-                if (not self.ui.enter_page(
-                        lambda: self.rt.action("Click", target=[round(x*2/3), round(y*2/3)]),
-                        ability_list_open, source=permitted_plan)
-                        or not self.ui.wait_page(ability_list_open, roi=list_roi, stable=True)):
+                if not open_slot_ability_list(self.rt, slot, permitted_plan, list_roi):
                     return False
                 self.actions.event({"type": "ability_slot_requested", "ability": self.ability_id,
                                     "plan": plan, "slot": slot})
                 # The text is a category heading in the grouped list. Choose
                 # the actual icon at the list thumbnail size in either layout.
                 # Do not infer the layout from OCR word counts or a swap button.
-                if not self.ui.find(roi=list_roi, scroll_roi=LIST_SCROLL_ROI, asset=self.icon,
-                                    scale=LIST_ICON_SCALE, color=WHITE, threshold=.78,
-                                    method=cv2.TM_CCORR_NORMED):
+                if not find_ability_in_list(self.rt, self.icon, list_roi):
                     raise NavigationError(f"能力列表中未能识别{self.label}图标，请确认已解锁该能力。")
                 configured_slot = None
                 def configured():

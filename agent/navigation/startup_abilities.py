@@ -35,7 +35,14 @@ import numpy as np
 from task_control import task_time as time
 from vision import read_image
 
-from .ability import Ability, HUD_WHITE, LIST_ICON_SCALE, LIST_SCROLL_ROI, SLOTS, WHITE
+from .ability import (
+    Ability,
+    HUD_WHITE,
+    SLOTS,
+    WHITE,
+    find_ability_in_list,
+    open_slot_ability_list,
+)
 from .gingerbread_companion import (
     BADGE_DY,
     CONFIRM_FRAMES,
@@ -271,41 +278,21 @@ def _configure_wheel_groups(runtime, inputs, event, groups: list[WheelGroupSpec]
         list_roi = ui.roi("AreaAbilityChange")
         saved_on_plan = False
 
-        def ability_list_open() -> bool:
-            return bool(permitted_plan() and ui.asset("ButtonAbilityChangeList", method=cv2.TM_CCORR_NORMED))
-
         for group in groups:
             if group.key in slot_by_group:
                 continue
             if not candidates:
                 raise NavigationError("能力轮盘已无可用槽位，无法继续装入常驻能力。")
             target_slot = candidates[0]
-            sx, sy = SLOTS[target_slot - 1]
-            click_pt = [round(sx * 2 / 3), round(sy * 2 / 3)]
-            if ability_list_open():
-                if not runtime.action("Click", target=click_pt) or not runtime.pause(0.35):
-                    raise NavigationError(f"未能点击能力槽位 {target_slot}。")
-                opened = ui.wait_page(ability_list_open, roi=list_roi, stable=True)
-            else:
-                opened = (
-                    ui.enter_page(
-                        lambda pt=click_pt: runtime.action("Click", target=pt),
-                        ability_list_open,
-                        source=permitted_plan,
-                    )
-                    and ui.wait_page(ability_list_open, roi=list_roi, stable=True)
-                )
-            if not opened:
+            if not open_slot_ability_list(runtime, target_slot, permitted_plan, list_roi):
                 raise NavigationError(f"未能打开能力槽位 {target_slot} 的更换列表。")
             event({"type": "ability_slot_requested", "ability": group.key, "plan": plan, "slot": target_slot})
-            if not ui.find(
-                roi=list_roi,
-                scroll_roi=LIST_SCROLL_ROI,
-                asset=group.icon,
-                scale=LIST_ICON_SCALE,
-                color=group.wheel_color,
-                threshold=0.78,
-                method=cv2.TM_CCORR_NORMED,
+            if not find_ability_in_list(
+                runtime,
+                group.icon,
+                list_roi,
+                primary_color=group.wheel_color,
+                fallback_color=group.hud_color,
             ):
                 runtime.log(f"能力列表中未识别到「{group.label}」（套装：{group.suit}），当前账号可能尚未解锁，已跳过。")
                 event({"type": "ability_missing_skipped", "ability": group.key, "suit": group.suit})
