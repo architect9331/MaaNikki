@@ -85,8 +85,8 @@
   ],
   "task": [],
   "import": [
-    "options/GameKeys.json",
     "options/Runtime.json",
+    "options/GameKeys.json",
     "tasks/StartGame.json",
     "tasks/PersistentAbilities.json",
     "tasks/Dig.json",

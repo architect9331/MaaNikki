@@ -16,7 +16,7 @@
                 "GameKeysAbilities",
                 "GameKeysActions"
             ],
-            "default_expand": true
+            "default_expand": false
         }
     ],
     "option": {

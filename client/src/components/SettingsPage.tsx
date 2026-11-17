@@ -267,10 +267,11 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
 
   // 目录索引配置
   const tocItems = useMemo(() => {
-    const items = [{ id: 'appearance', icon: Paintbrush, labelKey: 'settings.appearance' }];
+    const items = [];
     if (settingsSections.length > 0) {
       items.push({ id: 'task-settings', icon: LayoutGrid, labelKey: 'settings.taskSettings' });
     }
+    items.push({ id: 'appearance', icon: Paintbrush, labelKey: 'settings.appearance' });
     items.push({ id: 'general', icon: Settings2, labelKey: 'settings.general' });
     items.push({ id: 'hotkeys', icon: Keyboard, labelKey: 'settings.hotkeys' });
     items.push({ id: 'ai-assistant', icon: Bot, labelKey: 'settings.aiAssistant' });
@@ -286,8 +287,21 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
   }, [projectInterface?.mirrorchyan_rid, projectInterface?.github, settingsSections.length]);
 
   // 当前高亮的 section
-  const [activeSection, setActiveSection] = useState('appearance');
+  const [activeSection, setActiveSection] = useState(
+    settingsSections.length > 0 ? 'task-settings' : 'appearance',
+  );
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (
+      settingsSections.length > 0 &&
+      activeSection === 'appearance' &&
+      !settingsTargetSection &&
+      (scrollContainerRef.current?.scrollTop ?? 0) < 20
+    ) {
+      setActiveSection('task-settings');
+    }
+  }, [settingsSections.length, activeSection, settingsTargetSection]);
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -464,13 +478,6 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
         {/* 右侧设置内容 */}
         <div className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
           <div className="max-w-3xl mx-auto p-6 space-y-8">
-            {/* 外观设置 */}
-            <AppearanceSection
-              onOpenCreateAccentModal={openCreateAccentModal}
-              onOpenEditAccentModal={openEditAccentModal}
-              onDeleteAccent={handleDeleteAccent}
-            />
-
             {/* 任务设置（来自 interface.settings） */}
             {settingsSections.length > 0 && (
               <section id="section-task-settings" className="space-y-4 scroll-mt-6">
@@ -491,6 +498,13 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
                 </div>
               </section>
             )}
+
+            {/* 外观设置 */}
+            <AppearanceSection
+              onOpenCreateAccentModal={openCreateAccentModal}
+              onOpenEditAccentModal={openEditAccentModal}
+              onDeleteAccent={handleDeleteAccent}
+            />
 
             {/* 通用设置 */}
             <GeneralSection />
