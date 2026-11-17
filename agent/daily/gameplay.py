@@ -473,12 +473,9 @@ class Gameplay:
                 groups.append({"items": [(box, text)]})
         parsed = []
         for group in groups:
-            combined = "".join(t for _, t in group["items"])
-            region_match = re.search(r"(心愿原野|[伊尹]赞之土)", combined)
-            if region_match:
-                region_key = "心愿原野" if region_match.group(1) == "心愿原野" else "伊赞之土"
-            else:
-                region_key = re.sub(r"^产出[：:]?", "", combined)
+            combined = "".join(t for _, t in group["items"]).replace("尹赞之土", "伊赞之土")
+            match = re.search(r"产出[：:]?(.+)$", combined)
+            region_key = match.group(1) if match else re.sub(r"产出[：:]?", "", combined)
             if not region_key:
                 continue
             sub = next((b for b, t in group["items"] if "产出" in t), None)
@@ -504,30 +501,36 @@ class Gameplay:
         if frame is None:
             return False
         rx, ry, rw, rh = self.REALM_SCROLL_ROI
-        seen, expanded_any, expands = set(), False, 0
+        stalled, expanded_any, expands = set(), False, 0
         for _ in range(24):
             if self.rt.stopped:
                 return expanded_any
             headers = self._realm_header_groups(frame)
             clicked_current = False
             for header in headers:
-                if header["key"] in seen:
+                if header["key"] in stalled:
                     continue
                 state = self._realm_chevron_state(frame, header["y0"], header["y1"])
-                if state == "expanded":
-                    seen.add(header["key"])
+                if state != "collapsed" or expands >= 10:
                     continue
-                if state == "collapsed" and expands < 6:
-                    seen.add(header["key"])
-                    expands += 1
-                    if not self.ui.click_box(header["click_box"]) or not self.rt.pause(.45):
-                        return expanded_any
-                    expanded_any = True
-                    clicked_current = True
-                    frame = self.rt.capture()
-                    if frame is None:
-                        return expanded_any
-                    break
+                expands += 1
+                if not self.ui.click_box(header["click_box"]) or not self.rt.pause(.45):
+                    return expanded_any
+                expanded_any = True
+                clicked_current = True
+                frame = self.rt.capture()
+                if frame is None:
+                    return expanded_any
+                after_headers = self._realm_header_groups(frame)
+                still_collapsed = any(
+                    item["key"] == header["key"]
+                    and abs(item["y0"] - header["y0"]) <= 28
+                    and self._realm_chevron_state(frame, item["y0"], item["y1"]) == "collapsed"
+                    for item in after_headers
+                )
+                if still_collapsed:
+                    stalled.add(header["key"])
+                break
             if clicked_current:
                 continue
             before = frame[ry:ry + rh, rx:rx + rw].copy()
