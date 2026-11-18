@@ -1,8 +1,14 @@
-function clean(value, limit = 160, showLinks = false) {
+export function clean(value, limit = 160, showLinks = false) {
   let text = String(value ?? '').replaceAll('\0', '');
   if (!showLinks) text = text.replace(/https?:\/\/\S+|www\.\S+/g, '[链接]');
   text = text.replace(/\s+/g, ' ').trim();
   return limit === null ? text : text.slice(0, limit);
+}
+
+export function sanitizeUrls(text) {
+  return String(text ?? '')
+    .replace(/https?:\/\/([a-zA-Z0-9.-]+)/g, (_, host) => host.replace(/\./g, '·'))
+    .replace(/\b([a-zA-Z0-9-]+\.(?:cn|com|top|org|net|io))\b/gi, m => m.replace(/\./g, '·'));
 }
 
 function releaseNotes(body, showLinks) {
