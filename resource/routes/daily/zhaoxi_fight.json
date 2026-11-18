@@ -2,7 +2,7 @@
   "schema_version": 3,
   "id": "zhaoxi_fight",
   "map": "miraland",
-  "start_radius": 9,
+  "start_radius": 15,
   "timeout": 240,
   "capacity": 13,
   "material": "",
