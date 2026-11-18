@@ -3,8 +3,9 @@ import clsx from 'clsx';
 import { primaryButton, secondaryButton } from '@/components/ui/FeaturePage';
 import { discardRecording, stopRouteSession, useRouteStudioStore } from '@/services/routeStudioService';
 import type { Checkpoint, RouteDocument } from '@/services/routeDocument';
+import { useAppStore } from '@/stores/appStore';
 import type { MapInfo } from './RouteMapCanvas';
-import { HOTKEY_LEGEND, STATE_TEXT } from './routeEditorShared';
+import { HOTKEY_LEGEND, formatGameKeyLabel, recordingStateText } from './routeEditorShared';
 
 const card = 'rounded-2xl border border-border bg-bg-secondary/95 shadow-lg backdrop-blur';
 
@@ -31,6 +32,15 @@ export function RouteSessionBar({
   onStartTeleport: (checkpoint?: Checkpoint) => void;
 }) {
   const { status, recording, finished, trial } = useRouteStudioStore();
+  const mapKey = useAppStore((state) => {
+    const saved = state.globalOptionValues.GameKeysPages;
+    const raw = saved?.type === 'input' ? saved.values?.map : undefined;
+    const opt = state.projectInterface?.option?.GameKeysPages;
+    const fallback = opt?.type === 'input'
+      ? opt.inputs.find((item) => item.name === 'map')?.default
+      : undefined;
+    return formatGameKeyLabel(raw, formatGameKeyLabel(fallback, 'M'));
+  });
   const editable = Boolean(route && !readOnly);
 
   if (status === 'recording' || (status === 'starting' && recording)) {
@@ -39,7 +49,7 @@ export function RouteSessionBar({
         <span className={clsx('h-2.5 w-2.5 animate-pulse rounded-full',
           recording?.state === 'recording' ? 'bg-error' : recording?.state === 'calibrated' ? 'bg-[#3f9d6a]' : 'bg-warning')} />
         <div className="min-w-48">
-          <p className="text-sm font-medium" role="status">{STATE_TEXT[recording?.state ?? 'starting']}</p>
+          <p className="text-sm font-medium" role="status">{recordingStateText(recording?.state, mapKey)}</p>
           <p className="text-xs tabular-nums text-text-muted">{recording?.message || `${recording?.samples.length ?? 0} 个采样 · ${recording?.events.length ?? 0} 个标记`}</p>
         </div>
         <button onClick={stopRouteSession} className={primaryButton}><Square className="h-3.5 w-3.5" />结束录制</button>
@@ -88,7 +98,7 @@ export function RouteSessionBar({
       className="rounded-lg border border-border bg-bg-primary px-2 py-1.5 text-xs outline-none">
       {maps.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
     </select>
-    {segment ? <span className="px-1 text-xs text-text-secondary">续录片段（开始后请按 M 打开大地图定位起点）</span>
+    {segment ? <span className="px-1 text-xs text-text-secondary">续录片段（开始后请按 {mapKey} 打开大地图定位起点）</span>
       : <select aria-label="录制起点传送点" value={(route ? route.teleport?.name : recordTeleport?.name) ?? ''} disabled={readOnly}
         onChange={(event) => onStartTeleport(known.find((item) => item.name === event.target.value))}
         className="max-w-56 rounded-lg border border-border bg-bg-primary px-2 py-1.5 text-xs outline-none">

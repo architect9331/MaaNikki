@@ -52,6 +52,37 @@ SPECIAL = {"ESC": 27, "ESCAPE": 27, "SPACE": 32, "ENTER": 13, "RETURN": 13,
 MOUSE = {"MOUSELEFT": 0, "MOUSERIGHT": 1, "MOUSEMIDDLE": 2,
          "MOUSEX1": 3, "MOUSEX2": 4, "THUMB1": 3, "THUMB2": 4,
          "左键": 0, "右键": 1, "中键": 2, "侧键1": 3, "侧键2": 4}
+KEY_LABELS = {
+    "ESC": "Esc", "ESCAPE": "Esc", "SPACE": "Space", "ENTER": "Enter", "RETURN": "Enter",
+    "BACKSPACE": "Backspace", "TAB": "Tab", "SHIFT": "Shift", "CTRL": "Ctrl", "CONTROL": "Ctrl",
+    "ALT": "Alt", "CAPSLOCK": "CapsLock", "UP": "Up", "DOWN": "Down", "LEFT": "Left", "RIGHT": "Right",
+    "INSERT": "Insert", "DELETE": "Delete", "HOME": "Home", "END": "End",
+    "PAGEUP": "PageUp", "PAGEDOWN": "PageDown",
+    "LSHIFT": "LShift", "RSHIFT": "RShift", "LCTRL": "LCtrl", "RCTRL": "RCtrl",
+    "LALT": "LAlt", "RALT": "RAlt", "WIN": "Win", "META": "Win", "LWIN": "LWin", "RWIN": "RWin",
+    "APPS": "Apps", "PAUSE": "Pause", "PRINTSCREEN": "PrintScreen", "NUMLOCK": "NumLock",
+    "SCROLLLOCK": "ScrollLock", "BACKQUOTE": "Backquote", "MINUS": "Minus", "EQUAL": "Equal",
+    "BRACKETLEFT": "BracketLeft", "BRACKETRIGHT": "BracketRight", "BACKSLASH": "Backslash",
+    "SEMICOLON": "Semicolon", "QUOTE": "Quote", "COMMA": "Comma", "PERIOD": "Period", "SLASH": "Slash",
+    "NUMPADADD": "NumpadAdd", "NUMPADSUBTRACT": "NumpadSubtract",
+    "NUMPADMULTIPLY": "NumpadMultiply", "NUMPADDIVIDE": "NumpadDivide", "NUMPADDECIMAL": "NumpadDecimal",
+    "MOUSELEFT": "鼠标左键", "MOUSERIGHT": "鼠标右键", "MOUSEMIDDLE": "鼠标中键",
+    "MOUSEX1": "鼠标侧键1", "MOUSEX2": "鼠标侧键2", "THUMB1": "鼠标侧键1", "THUMB2": "鼠标侧键2",
+    "左键": "鼠标左键", "右键": "鼠标右键", "中键": "鼠标中键", "侧键1": "鼠标侧键1", "侧键2": "鼠标侧键2",
+}
+
+
+def format_key_label(value: str) -> str:
+    """Return a readable key label for player-facing prompts."""
+    text = str(value or "").strip()
+    upper = text.upper()
+    if upper in KEY_LABELS:
+        return KEY_LABELS[upper]
+    if re.fullmatch(r"[A-Z0-9]", upper) or re.fullmatch(r"F([1-9]|1[0-9]|2[0-4])", upper):
+        return upper
+    if re.fullmatch(r"NUMPAD[0-9]", upper):
+        return f"Numpad{upper[-1]}"
+    return text
 
 
 @dataclass(frozen=True)
@@ -87,31 +118,45 @@ class GameKeys:
         self.values = values or {}
         self.cache = {}
 
-    def get(self, name):
+    def _resolve(self, name):
         if name not in DEFAULTS:
             raise ValueError("未登记的游戏动作。")
         if name == "skip" and "skip" not in self.values:
             # The game has no separate skip row; skip and reward-continue prompts follow interact.
-            return self.get("interact")
-        if name not in self.cache:
-            saved = self.values.get(name)
-            value = (
-                saved
-                if saved is not None and (not isinstance(saved, str) or saved.strip())
-                else DEFAULTS[name][0]
-            )
-            if name in FIXED:
-                # Not configurable in the game; a stale saved value cannot apply.
-                value = DEFAULTS[name][0]
-            elif self.context is not None:
-                override = node_action_params(self.context, node_name(name)).get("value")
-                if override is not None and (not isinstance(override, str) or override.strip()):
-                    value = override
+            return self._resolve("interact")
+        saved = self.values.get(name)
+        value = (
+            saved
+            if saved is not None and (not isinstance(saved, str) or saved.strip())
+            else DEFAULTS[name][0]
+        )
+        if name in FIXED:
+            # Not configurable in the game; a stale saved value cannot apply.
+            value = DEFAULTS[name][0]
+        elif self.context is not None:
+            override = node_action_params(self.context, node_name(name)).get("value")
+            if override is not None and (not isinstance(override, str) or override.strip()):
+                value = override
+        return value
+
+    def get(self, name):
+        value = self._resolve(name)
+        key = "interact" if (name == "skip" and "skip" not in self.values) else name
+        if key not in self.cache:
             try:
-                self.cache[name] = parse_key(value)
+                self.cache[key] = parse_key(value)
             except ValueError as error:
-                raise ValueError(f"游戏键位“{DEFAULTS[name][1]}”：{error}") from error
-        return self.cache[name]
+                raise ValueError(f"游戏键位“{DEFAULTS[key][1]}”：{error}") from error
+        return self.cache[key]
+
+    def label(self, name):
+        """Return the configured display key name for `name`, falling back cleanly on invalid input."""
+        value = self._resolve(name)
+        try:
+            parse_key(value)
+            return format_key_label(value)
+        except ValueError:
+            return format_key_label(DEFAULTS[name][0])
 
     def movement(self):
         keys = [self.get(name) for name in ("forward", "left", "backward", "right")]

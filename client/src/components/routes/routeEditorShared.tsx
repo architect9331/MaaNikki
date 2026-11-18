@@ -49,6 +49,34 @@ export const ACTION_HOTKEYS: Record<string, string> = Object.fromEntries(
   ACTIONS.map((item, index) => [String(index), item.id]),
 );
 
+const KEY_LABELS: Record<string, string> = {
+  ESC: 'Esc', ESCAPE: 'Esc', SPACE: 'Space', ENTER: 'Enter', RETURN: 'Enter',
+  BACKSPACE: 'Backspace', TAB: 'Tab', SHIFT: 'Shift', CTRL: 'Ctrl', CONTROL: 'Ctrl',
+  ALT: 'Alt', CAPSLOCK: 'CapsLock', UP: 'Up', DOWN: 'Down', LEFT: 'Left', RIGHT: 'Right',
+  INSERT: 'Insert', DELETE: 'Delete', HOME: 'Home', END: 'End', PAGEUP: 'PageUp', PAGEDOWN: 'PageDown',
+  LSHIFT: 'LShift', RSHIFT: 'RShift', LCTRL: 'LCtrl', RCTRL: 'RCtrl', LALT: 'LAlt', RALT: 'RAlt',
+  WIN: 'Win', META: 'Win', LWIN: 'LWin', RWIN: 'RWin', APPS: 'Apps',
+  PAUSE: 'Pause', PRINTSCREEN: 'PrintScreen', NUMLOCK: 'NumLock', SCROLLLOCK: 'ScrollLock',
+  BACKQUOTE: 'Backquote', MINUS: 'Minus', EQUAL: 'Equal', BRACKETLEFT: 'BracketLeft',
+  BRACKETRIGHT: 'BracketRight', BACKSLASH: 'Backslash', SEMICOLON: 'Semicolon', QUOTE: 'Quote',
+  COMMA: 'Comma', PERIOD: 'Period', SLASH: 'Slash',
+  NUMPADADD: 'NumpadAdd', NUMPADSUBTRACT: 'NumpadSubtract', NUMPADMULTIPLY: 'NumpadMultiply',
+  NUMPADDIVIDE: 'NumpadDivide', NUMPADDECIMAL: 'NumpadDecimal',
+  MOUSELEFT: '鼠标左键', MOUSERIGHT: '鼠标右键', MOUSEMIDDLE: '鼠标中键',
+  MOUSEX1: '鼠标侧键1', MOUSEX2: '鼠标侧键2', THUMB1: '鼠标侧键1', THUMB2: '鼠标侧键2',
+  左键: '鼠标左键', 右键: '鼠标右键', 中键: '鼠标中键', 侧键1: '鼠标侧键1', 侧键2: '鼠标侧键2',
+};
+
+export function formatGameKeyLabel(raw?: string, fallback = 'M'): string {
+  const trimmed = (raw ?? '').trim();
+  if (!trimmed) return fallback;
+  const upper = trimmed.toUpperCase();
+  if (upper in KEY_LABELS) return KEY_LABELS[upper];
+  if (/^[A-Z0-9]$/.test(upper) || /^F([1-9]|1[0-9]|2[0-4])$/.test(upper)) return upper;
+  if (/^NUMPAD[0-9]$/.test(upper)) return `Numpad${upper.slice(-1)}`;
+  return trimmed;
+}
+
 export const STATE_TEXT: Record<string, string> = {
   starting: '正在准备定位…',
   calibrating: '请按 M 打开大地图定位起点',
@@ -60,6 +88,13 @@ export const STATE_TEXT: Record<string, string> = {
   finished: '录制结束',
   failed: '录制失败',
 };
+
+export function recordingStateText(state: string | undefined, mapKey = 'M'): string {
+  const key = state ?? 'starting';
+  if (key === 'calibrating') return `请按 ${mapKey} 打开大地图定位起点`;
+  if (key === 'calibrated') return `大地图已定位，请按 ${mapKey} 返回游戏`;
+  return STATE_TEXT[key] ?? '';
+}
 
 export const OUTCOME_BADGE: Record<string, { label: string; cls: string }> = {
   turnback: { label: '折返', cls: 'bg-warning/15 text-warning' },

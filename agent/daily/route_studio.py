@@ -266,6 +266,8 @@ class RouteRecorder(Runtime):
         require_bigmap = bool(settings.get("require_bigmap"))
         minimap_matcher = MinimapMatcher(locator)
         bigmap_matcher = BigMapMatcher(locator)
+        map_key = self.game_keys.label("map")
+        return_hint = "Esc" if map_key == "Esc" else f"{map_key} 或 Esc"
         last, lost_since, gap = None, None, True
         calibrated_seed = None
         prev_bigmap_center = None
@@ -311,12 +313,12 @@ class RouteRecorder(Runtime):
                                 self.log(f"大地图定位成功：({calibrated_seed[0]}, {calibrated_seed[1]})，请返回大世界。", detail=True)
                             if overlay:
                                 overlay.publish_status(
-                                    "大地图定位成功！请按 M 返回游戏",
+                                    f"大地图定位成功！请按 {map_key} 返回游戏",
                                     f"已锁定坐标 ({calibrated_seed[0]:.0f}, {calibrated_seed[1]:.0f})，返回大世界即开始录制",
                                     border_bgr=(110, 215, 95),
                                     title_color=0xC8F7C5,
                                 )
-                            self.status("calibrated", "大地图定位成功！请按 M 或 Esc 返回大世界开始录制。")
+                            self.status("calibrated", f"大地图定位成功！请按 {return_hint} 返回大世界开始录制。")
                         else:
                             prev_bigmap_center = center
                             if overlay:
@@ -373,18 +375,18 @@ class RouteRecorder(Runtime):
                         self.log(f"已确认起点传送点：{tp_name}", detail=True)
                     else:
                         tp_title = configured_tp.get("name") or "流转之柱"
-                        msg = f"未检测到起点「{tp_title}」，请先传送或按 M 打开大地图定位起点。"
-                        sub = f"请按 M 打开大地图定位，或先传送至「{tp_title}」"
+                        msg = f"未检测到起点「{tp_title}」，请先传送或按 {map_key} 打开大地图定位起点。"
+                        sub = f"请按 {map_key} 打开大地图定位，或先传送至「{tp_title}」"
                         if overlay:
-                            overlay.publish_status("请按 M 打开大地图定位起点", sub, border_bgr=(70, 185, 255))
+                            overlay.publish_status(f"请按 {map_key} 打开大地图定位起点", sub, border_bgr=(70, 185, 255))
                         self.status("calibrating", msg)
                         self.pause(.15)
                         continue
                 else:
-                    msg = "起点未设传送点，请按 M 打开大地图（勿拖动）完成起点定位后再开始移动。"
+                    msg = f"起点未设传送点，请按 {map_key} 打开大地图（勿拖动）完成起点定位后再开始移动。"
                     sub = "起点非传送点，打开大地图确认位置后自动开录"
                     if overlay:
-                        overlay.publish_status("请按 M 打开大地图定位起点", sub, border_bgr=(70, 185, 255))
+                        overlay.publish_status(f"请按 {map_key} 打开大地图定位起点", sub, border_bgr=(70, 185, 255))
                     self.status("calibrating", msg)
                     self.pause(.15)
                     continue
@@ -415,8 +417,8 @@ class RouteRecorder(Runtime):
                         calibrated_seed = (round(pose.x, 2), round(pose.y, 2))
                 if pose is None:
                     if overlay:
-                        overlay.publish_status("请按 M 打开大地图重新定位", "传送或跟丢后打开大地图即可恢复定位", border_bgr=(70, 185, 255))
-                    self.status("lost", f"小地图定位不上，请按 M 打开大地图重新定位。")
+                        overlay.publish_status(f"请按 {map_key} 打开大地图重新定位", "传送或跟丢后打开大地图即可恢复定位", border_bgr=(70, 185, 255))
+                    self.status("lost", f"小地图定位不上，请按 {map_key} 打开大地图重新定位。")
                     self.pause(.15)
                     continue
             else:
@@ -437,8 +439,8 @@ class RouteRecorder(Runtime):
                 if now - lost_since >= LOST_RESET_SECONDS:
                     calibrated_seed = None
                 if overlay:
-                    overlay.publish_status("小地图定位不上", "可按 M 打开大地图重新定位", border_bgr=(70, 140, 245))
-                self.status("lost", f"小地图定位不上，可按 M 打开大地图重新定位。")
+                    overlay.publish_status("小地图定位不上", f"可按 {map_key} 打开大地图重新定位", border_bgr=(70, 140, 245))
+                self.status("lost", f"小地图定位不上，可按 {map_key} 打开大地图重新定位。")
                 self.pause(.1)
                 continue
             lost_since = None
