@@ -172,6 +172,11 @@ class MinigameBlingRun(Runtime):
             if self.hit("MaaNikki_MainDetected", image=frame):
                 return True
 
+            skip_text = self.text(DIALOGUE_SKIP_ROI, _DIALOGUE_SKIP_RE.pattern, image=frame)
+            has_skip = bool(skip_text and "跳过全部" not in skip_text)
+            has_mode = bool(self.text(DIALOGUE_MODE_ROI, _DIALOGUE_MODE_RE.pattern, image=frame))
+            in_dialogue_hud = has_skip or has_mode
+
             # Prefer clicking an explicit exit choice when dialogue options are open;
             # never press 'interact' while choice rows are present.
             choices = self.recognize("MaaNikki_Daily_OCR", {"roi": DIALOGUE_CHOICE_ROI}, image=frame)
@@ -196,12 +201,22 @@ class MinigameBlingRun(Runtime):
                     choice_rows.append((txt, box))
                     if exit_box is None and _DIALOGUE_EXIT_RE.search(txt):
                         exit_box = box
-            choice_menu_visible = bool(
+            has_explicit_pair = bool(
                 exit_box is not None
-                or len(choice_rows) >= 2
-                or any(_DIALOGUE_OPTION_RE.search(txt) for txt, _ in choice_rows)
+                and any(_DIALOGUE_OPTION_RE.search(txt) for txt, _ in choice_rows)
             )
-            if exit_box is not None:
+            choice_menu_visible = bool(
+                has_explicit_pair
+                or (
+                    in_dialogue_hud
+                    and (
+                        exit_box is not None
+                        or len(choice_rows) >= 2
+                        or any(_DIALOGUE_OPTION_RE.search(txt) for txt, _ in choice_rows)
+                    )
+                )
+            )
+            if choice_menu_visible and exit_box is not None:
                 progressed = True
                 unmatched_choice_frames = 0
                 mode_only_frames = 0
@@ -234,11 +249,9 @@ class MinigameBlingRun(Runtime):
             unmatched_choice_frames = 0
             choice_clicks = 0
 
-            has_skip = bool(self.text(DIALOGUE_SKIP_ROI, _DIALOGUE_SKIP_RE.pattern, image=frame))
-            has_mode = bool(not has_skip and self.text(DIALOGUE_MODE_ROI, _DIALOGUE_MODE_RE.pattern, image=frame))
-            if has_skip or has_mode:
+            if in_dialogue_hud:
                 progressed = True
-                if has_mode and mode_only_frames == 0:
+                if has_mode and not has_skip and mode_only_frames == 0:
                     # Wait one frame when '跳过' is absent so newly fading-in
                     # choice rows can be read before any 'interact' press.
                     mode_only_frames += 1
@@ -879,9 +892,10 @@ class MinigameBlingRun(Runtime):
 
         if retry_started_at is None:
             if not self._dismiss_npc_dialogue(inputs):
-                stats["stop_reason"] = "dialogue_exit_failed"
-                self.log("未能退出当前对话界面，无法开始小游戏。")
-                return {"action": "stop", "success": False}
+                if not (navigate and self.main()):
+                    stats["stop_reason"] = "dialogue_exit_failed"
+                    self.log("未能退出当前对话界面，无法开始小游戏。")
+                    return {"action": "stop", "success": False}
 
         need_route = False
         if navigate and retry_started_at is None:
