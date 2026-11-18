@@ -14,7 +14,7 @@ from daily.settings import ROOT
 from tall_window import clamp_capture_park_point, is_capture_point_safe, safe_capture_y_range
 from .card_models import CardModels, badge_roi as classifier_roi
 from .blessing import SLOTS
-from .details import HEADER
+from .details import COLOR_OCR_THRESHOLD, HEADER, tooltip_facts
 from file_io import write_json
 from .policy import capabilities
 from .scanner import FocusRetryBudget, IncompleteObservation, InventoryScanner, RescanSlot, clean_text
@@ -354,10 +354,143 @@ class BlessingLocker(InventoryScanner):
         return dict(facts), dict(match["model_evidence"])
 
     def read_details(self, box, generation, index):
-        """Recheck a selected card directly; no pointer move or tooltip wait."""
-        frame = self.frame(generation)
+        """Recheck a selected card directly after its selection animation settles."""
+        frame = self._settle_selected_card(self.frame(generation), box, generation)
         result, = self.recognize_cards(frame, [box], self._model_slot, purpose="selected_recheck")
         return self.confirm_copy(frame, box, result, result["model_facts"]["level"], generation, index)
+
+    def _settle_selected_card(self, frame, box, generation):
+        """Wait for the post-click flash/scale transition on a selected card to settle."""
+        previous = frame
+        with self.rt.ui.preserve_cursor():
+            for _ in range(6):
+                if not self.rt.pause(.05):
+                    self.check_generation(generation)
+                    break
+                current = self.frame(generation)
+                if not self.selected(current, box):
+                    previous = None
+                    continue
+                if previous is not None and self.same_structure(previous, current, box, threshold=.997):
+                    return current
+                previous = current
+        if previous is None:
+            raise IncompleteObservation("目标格子的选中高亮尚未稳定，保留进度")
+        return previous
+
+    def _read_selected_tooltip(self, box, generation, *, retry_hover=True):
+        """Re-hover a selected card in 720p mode to read its authoritative tooltip text."""
+        if self._tall_mode:
+            return None, None
+        baseline = self.clear_hover(generation)
+        if not retry_hover and not self.rt.pause(.08):
+            self.check_generation(generation)
+            return None, baseline
+        x, y, w, h = box
+        point = [round(x + w / 2), round(y + h * .45)]
+        if not self.rt.action("TouchMove", target=point):
+            self.check_generation(generation)
+            return None, baseline
+        self._hover_box = tuple(box)
+        self._page_frame = baseline
+
+        def usable(parsed):
+            return parsed is not None and (
+                parsed.get("color") is not None
+                or not capabilities(self.catalog, parsed["name"], observed=parsed)["lock_mutable"]
+                or not self.is_maximum(parsed)
+            )
+
+        previous_frame, previous_roi = None, None
+        previous_facts, previous_strict = None, False
+        facts_frame, facts_roi = None, None
+        reads = 0
+        hold_point = False
+        roi = None
+        frame = baseline
+        for attempt in range(16):
+            if not self.rt.pause(.12 if attempt == 0 else .04):
+                self.check_generation(generation)
+                break
+            capture_fn = (
+                (lambda: self.rt.capture_parked(point, settle_s=.12 if roi is None else .06))
+                if hold_point and hasattr(self.rt, "capture_parked")
+                else None
+            )
+            frame = self.frame(generation, capture_fn=capture_fn)
+            if not self.selected(frame, box):
+                return None, frame
+            roi = self.header_region(frame, box)
+            if roi is None or not self.tooltip_visible(frame, roi):
+                if attempt >= 3 and self.rt._seamless_background():
+                    hold_point = True
+                previous_frame, previous_roi = None, None
+                previous_facts, previous_strict = None, False
+                facts_frame, facts_roi = None, None
+                continue
+            if (usable(previous_facts) and not previous_facts.get("catalog_unknown")
+                    and previous_strict and facts_roi == roi
+                    and self.same_fields(facts_frame, frame, previous_facts)):
+                self._hover_panel = (tuple(box), generation, previous_facts, frame)
+                return previous_facts, frame
+            settled = (previous_frame is not None and previous_roi == roi
+                       and self.tooltip_stable(previous_frame, frame, roi))
+            if not settled and attempt < 8:
+                previous_frame, previous_roi = frame, roi
+                continue
+            results = self.ocr(roi, frame)
+            reads += 1
+            strict, _ = tooltip_facts(results, self.catalog, threshold=.90)
+            parsed = strict
+            if not usable(parsed):
+                parsed, _ = tooltip_facts(
+                    results, self.catalog, threshold=.85, color_threshold=COLOR_OCR_THRESHOLD
+                )
+            self.check_generation(generation)
+            if usable(parsed) and not parsed.get("catalog_unknown"):
+                if usable(strict) and settled and self.same_fields(previous_frame, frame, parsed):
+                    self._hover_panel = (tuple(box), generation, parsed, frame)
+                    return parsed, frame
+                if (usable(previous_facts) and self.key(parsed) == self.key(previous_facts)
+                        and parsed["level"] == previous_facts["level"]
+                        and parsed["rarity"] == previous_facts["rarity"]
+                        and facts_roi == roi
+                        and self.same_fields(facts_frame, frame, previous_facts)
+                        and self.same_fields(facts_frame, frame, parsed)):
+                    self._hover_panel = (tuple(box), generation, parsed, frame)
+                    return parsed, frame
+            previous_facts = parsed
+            previous_strict = usable(strict)
+            facts_frame, facts_roi = frame, roi
+            previous_frame, previous_roi = frame, roi
+            if reads >= 3:
+                break
+        if reads == 0 and retry_hover:
+            return self._read_selected_tooltip(box, generation, retry_hover=False)
+        return None, frame
+
+    def verify_selected_card(self, frame, box, facts, generation, *, slot=None, settle=True):
+        """Verify a selected card via settled icon models, falling back to its hover tooltip."""
+        target_slot = self._model_slot if slot is None else slot
+        if settle:
+            frame = self._settle_selected_card(frame, box, generation)
+        selected, = self.recognize_cards(frame, [box], target_slot, purpose="selected_recheck")
+        if self.same_card_facts(selected["model_facts"], facts):
+            return True, frame
+        tooltip, latest = self._read_selected_tooltip(box, generation)
+        if latest is not None:
+            frame = latest
+        if tooltip is not None:
+            self.report.setdefault("selected_tooltip_fallbacks", []).append({
+                "slot": target_slot,
+                "box": list(box),
+                "expected": [facts["name"], facts["slot"], facts.get("color"), facts["level"]],
+                "model": [selected["model_facts"]["name"], selected["model_facts"]["slot"],
+                          selected["model_facts"].get("color"), selected["model_facts"]["level"]],
+                "tooltip": [tooltip["name"], tooltip["slot"], tooltip.get("color"), tooltip["level"]],
+            })
+            return self.same_card_facts(tooltip, facts), frame
+        return False, frame
 
     def same_card_facts(self, actual, expected):
         # Upgrades always continue to the maximum indicator. Intermediate
@@ -567,8 +700,8 @@ class BlessingLocker(InventoryScanner):
                     raise IncompleteObservation("目标格子的选中高亮尚未确认，保留进度")
             frame = self.frame(generation)
         if verify_details:
-            selected, = self.recognize_cards(frame, [box], self._model_slot, purpose="selected_recheck")
-            if not self.same_card_facts(selected["model_facts"], facts):
+            matched, frame = self.verify_selected_card(frame, box, facts, generation)
+            if not matched:
                 raise RuntimeError("选中后闪光信息发生变化，未操作锁按钮")
         # The lock button is outside the card tooltip. Keep the pointer here;
         # both its state and the selection are read from fresh captures.
@@ -729,6 +862,7 @@ class BlessingLocker(InventoryScanner):
         if self.lock_state(generation, frame=current) != source:
             raise RuntimeError(f"{verb}前状态改变，未再次点击")
         self._hover_box = None
+        self._hover_panel = None
         self.check_generation(generation)
         if self.rt._focus_generation != click_generation:
             raise ForegroundChanged("切窗后已重新核对目标，取消本次锁定点击")

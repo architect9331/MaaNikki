@@ -168,13 +168,10 @@ class UpgradeUI:
         for box in self.owner.cards(frame, levels):
             if not self.owner.selected(frame, box):
                 continue
-            rechecked, = self.owner.recognize_cards(frame, [box], facts["slot"], purpose="selected_recheck")
-            matched = rechecked["model_facts"]
-            if (matched["name"] == facts["name"]
-                    and matched["slot"] == facts["slot"]
-                    and matched["rarity"] == facts["rarity"]
-                    and matched["color"] == facts["color"]
-                    and self.owner.is_maximum(matched)):
+            matched, _ = self.owner.verify_selected_card(
+                frame, box, facts, list_gen, slot=facts["slot"]
+            )
+            if matched:
                 self.owner.protect_selected(facts, list_gen)
                 return
         if getattr(self.owner, "prepared", False):
