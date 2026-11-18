@@ -171,6 +171,7 @@ class OrderedView:
         if direction > 0:
             after, delta = self.o.advance(before, self.generation)
         else:
+            self.o._last_failed_scroll_after = None
             after, delta = None, None
             # Reverse the two frames to reuse the verified downward matcher.
             amounts = self.o.scroll_amounts()
@@ -180,23 +181,58 @@ class OrderedView:
                     break
                 after = self.o.frame(self.generation)
                 delta = 0 if self.o.unchanged(before, after) else self.o.scroll_position(after, before)
+                if delta is None:
+                    settled = self.o._settle_scroll_capture(after, self.generation)
+                    if settled is None:
+                        after = None
+                        break
+                    if settled is not after:
+                        after = settled
+                        self.o._scroll_diagnostics = {}
+                        delta = (
+                            0 if self.o.unchanged(before, after) else self.o.scroll_position(after, before)
+                        )
                 self.o.record_scroll(before, after, amount, delta, "ordered_up")
                 if delta is not None:
                     break
+                self.o._last_failed_scroll_after = after
                 if attempt == len(amounts) - 1 or not self.o.scroll_list(-amount):
                     break
                 restored = self.o.frame(self.generation)
                 if not self.o.unchanged(before, restored):
-                    break
+                    settled_restore = self.o._settle_scroll_capture(restored, self.generation)
+                    if settled_restore is None or not self.o.unchanged(before, settled_restore):
+                        break
         if after is None or delta is None:
             scrolls = self.o.snapshot["scan"]["scrolls"]
             # The scanner's local before/after files are outside Sentry's
             # attachment selection. Publish the terminal pair at the existing
             # failure boundary, including rejected candidate scores.
             if not self.o.rt.stopped and len(scrolls) > scroll_index:
-                details = {"slot": self.slot, "position": self.position, "direction": direction,
-                           "scroll": scrolls[-1]}
-                current = after if after is not None else self.o.rt.evidence.frame
+                attempt_scrolls = scrolls[scroll_index:]
+                failed_forward = next(
+                    (
+                        item
+                        for item in attempt_scrolls
+                        if item.get("phase") in ("down", "ordered_up") and item.get("delta") is None
+                    ),
+                    attempt_scrolls[-1],
+                )
+                details = {
+                    "slot": self.slot,
+                    "position": self.position,
+                    "direction": direction,
+                    "scroll": failed_forward,
+                    "attempts": attempt_scrolls,
+                }
+                failed_after = getattr(self.o, "_last_failed_scroll_after", None)
+                current = (
+                    after
+                    if after is not None
+                    else failed_after
+                    if failed_after is not None
+                    else self.o.rt.evidence.frame
+                )
                 self.o.rt.diagnostic("blessing_scroll_before", "列表位移未确认：滚动前画面",
                                      image=before, details=details)
                 if current is not None and current is not before:

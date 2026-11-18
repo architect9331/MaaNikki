@@ -628,7 +628,24 @@ class InventoryScanner:
             previous = current
         return None
 
+    def _settle_scroll_capture(self, frame, generation, *, max_polls=3, interval=.12):
+        """Wait briefly for a delayed or still-animating wheel scroll to settle."""
+        previous = frame
+        for _ in range(max_polls):
+            if not self.rt.pause(interval):
+                self.check_generation(generation)
+                break
+            current = self.rt.capture()
+            self.check_generation(generation)
+            if current is None or not self.ready(current):
+                return None
+            if self.unchanged(previous, current):
+                return current
+            previous = current
+        return previous
+
     def advance(self, before, generation):
+        self._last_failed_scroll_after = None
         amounts = self.scroll_amounts()
         for attempt, amount in enumerate(amounts):
             self._scroll_diagnostics = {}
@@ -642,9 +659,21 @@ class InventoryScanner:
                 self.record_scroll(before, after, -amount, 0, "down")
                 return after, 0
             delta = self.scroll_position(before, after)
+            if delta is None:
+                settled = self._settle_scroll_capture(after, generation)
+                if settled is None:
+                    return None, None
+                if settled is not after:
+                    after = settled
+                    self._scroll_diagnostics = {}
+                    if self.unchanged(before, after):
+                        self.record_scroll(before, after, -amount, 0, "down")
+                        return after, 0
+                    delta = self.scroll_position(before, after)
             self.record_scroll(before, after, -amount, delta, "down")
             if delta is not None:
                 return after, delta
+            self._last_failed_scroll_after = after
             # Undo an ambiguous large scroll before retrying a smaller step.
             # Never advance across an unseen gap or silently deduplicate copies.
             if attempt == len(amounts) - 1:
@@ -658,6 +687,16 @@ class InventoryScanner:
                 return None, None
             self._scroll_diagnostics = {}
             restored_delta = 0 if self.unchanged(before, restored) else self.scroll_position(before, restored)
+            if restored_delta != 0:
+                settled_restore = self._settle_scroll_capture(restored, generation)
+                if settled_restore is None:
+                    return None, None
+                if settled_restore is not restored:
+                    restored = settled_restore
+                    self._scroll_diagnostics = {}
+                    restored_delta = (
+                        0 if self.unchanged(before, restored) else self.scroll_position(before, restored)
+                    )
             self.record_scroll(before, restored, amount, restored_delta, "restore")
             if restored_delta != 0:
                 return None, None
