@@ -58,6 +58,7 @@ class GameUI:
     # Confirmed parent relationships allow Esc without returning to the world.
     PAGE_PARENTS = {
         "MaaNikki_MenuReady": "MaaNikki_MainDetected",
+        "MaaNikki_GameKeys_SettingsReady": "MaaNikki_MenuReady",
         "MaaNikki_Mailbox_PageReady": "MaaNikki_MenuReady",
         "MaaNikki_CompendiumReady": "MaaNikki_MenuReady",
         "MaaNikki_Compendium_ClothesReady": "MaaNikki_CompendiumReady",

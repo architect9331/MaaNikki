@@ -54,6 +54,7 @@ const TASK_FALLBACK_LABELS: Record<string, string> = {
   home: '家园日常',
   monthly_pass: '奇迹之旅与月卡',
   mailbox: '邮箱领取',
+  redeem_codes: '兑换码领取',
   weekly_free_gifts: '商城免费礼包',
   monthly_crystal_exchange: '每月之约兑换',
   crown: '奇迹之冠巅峰赛',

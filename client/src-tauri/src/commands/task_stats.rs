@@ -102,6 +102,7 @@ fn manual_time_profile(task_name: &str) -> (u64, u64) {
         "dig" => (60, 20),
         "monthly_pass" => (35, 15),
         "mailbox" => (35, 15),
+        "redeem_codes" => (45, 15),
         "weekly_free_gifts" => (50, 20),
         "monthly_crystal_exchange" => (50, 20),
         "crown" => (360, 90),

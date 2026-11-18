@@ -1,0 +1,98 @@
+{
+  "MaaNikki_RedeemCodes": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {"kind": "redeem_codes"},
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_RedeemCodes_Online": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {"value": true},
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_RedeemCodes_Extra": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.daily_config",
+    "custom_action_param": {"value": ""},
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Redeem_FunctionTab": {
+    "recognition": "OCR",
+    "roi": [300, 10, 740, 65],
+    "expected": "^功能$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "source": "MaaNikki_GameKeys_SettingsReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Redeem_OtherTab": {
+    "recognition": "OCR",
+    "roi": [300, 10, 740, 65],
+    "expected": "^其他$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Redeem_OtherReady",
+      "source": "MaaNikki_GameKeys_SettingsReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Redeem_OtherRow": {
+    "recognition": "OCR",
+    "roi": [210, 460, 180, 52],
+    "expected": "^兑换码$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Redeem_OtherReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_GameKeys_SettingsReady", "MaaNikki_Redeem_OtherRow"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Redeem_OpenModal": {
+    "recognition": "OCR",
+    "roi": [720, 460, 180, 52],
+    "expected": "使用",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_Redeem_ModalReady",
+      "source": "MaaNikki_Redeem_OtherReady"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Redeem_ModalTitle": {
+    "recognition": "OCR",
+    "roi": [520, 212, 240, 64],
+    "expected": "^兑换奖励$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Redeem_ModalPlaceholder": {
+    "recognition": "OCR",
+    "roi": [430, 318, 370, 50],
+    "expected": "输入兑换码",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Redeem_ModalUse": {
+    "recognition": "OCR",
+    "roi": [540, 440, 200, 56],
+    "expected": "^使用$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Redeem_ModalReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Redeem_ModalTitle", "MaaNikki_Redeem_ModalUse"],
+    "action": "DoNothing"
+  }
+}

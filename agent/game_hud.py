@@ -67,6 +67,8 @@ NODE_PREFIX_LABELS = (
     ("MaaNikki_MonthlyCrystal", "每月五抽兑换"),
     ("MaaNikki_Monthly", "奇迹之旅"),
     ("MaaNikki_Mailbox", "邮箱领取"),
+    ("MaaNikki_RedeemCodes", "兑换码领取"),
+    ("MaaNikki_Redeem", "兑换码领取"),
     ("MaaNikki_WeeklyFreeGifts", "每周免费礼包"),
     ("MaaNikki_Shop", "商店免费礼包"),
     ("MaaNikki_Pursuit", "祝福闪光收集"),

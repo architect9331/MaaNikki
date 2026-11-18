@@ -1,0 +1,67 @@
+{
+  "task": [
+    {
+      "name": "redeem_codes",
+      "label": "兑换码领取",
+      "entry": "MaaNikki_RedeemCodes",
+      "group": ["daily"],
+      "default_check": true,
+      "description": "自动同步公开有效兑换码并打开设置依次输入兑换，已领取或已失效记录会按角色自动跳过。",
+      "option": ["RedeemCodesOnline", "RedeemCodesExtra"]
+    }
+  ],
+  "option": {
+    "RedeemCodesOnline": {
+      "type": "switch",
+      "label": "自动同步公开兑换码",
+      "description": "开启后联网获取最新的有效国服兑换码；关闭时仅使用内置清单与上方手动补充的兑换码。",
+      "cases": [
+        {
+          "name": "Yes",
+          "label": "开启",
+          "pipeline_override": {
+            "MaaNikki_RedeemCodes_Online": {
+              "custom_action_param": {
+                "value": true
+              }
+            }
+          }
+        },
+        {
+          "name": "No",
+          "label": "关闭",
+          "pipeline_override": {
+            "MaaNikki_RedeemCodes_Online": {
+              "custom_action_param": {
+                "value": false
+              }
+            }
+          }
+        }
+      ],
+      "default_case": "Yes"
+    },
+    "RedeemCodesExtra": {
+      "type": "input",
+      "layout": "inline",
+      "label": "补充兑换码",
+      "inputs": [
+        {
+          "name": "Text",
+          "label": "兑换码",
+          "default": "",
+          "pipeline_type": "string",
+          "verify": "^.{0,120}$"
+        }
+      ],
+      "pipeline_override": {
+        "MaaNikki_RedeemCodes_Extra": {
+          "custom_action_param": {
+            "value": "{Text}"
+          }
+        }
+      },
+      "description": "可选填写额外兑换码（多个可用空格、逗号或分号分隔）。"
+    }
+  }
+}

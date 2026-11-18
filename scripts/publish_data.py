@@ -35,6 +35,7 @@ CATALOG_FILES: tuple[tuple[str, str], ...] = (
     ("client/src-tauri/src/data/resonance_catalog.json", "resource/data/resonance_catalog.json"),
     ("client/src/services/scoring/itemSources.json", "resource/data/item_sources.json"),
     ("resource/navigation/materials_catalog_v1.json", "resource/navigation/materials_catalog_v1.json"),
+    ("resource/data/redeem_codes.json", "resource/data/redeem_codes.json"),
     ("resource/model/wardrobe/labels.json", "resource/model/wardrobe/labels.json"),
     ("resource/model/wardrobe/parts.json", "resource/model/wardrobe/parts.json"),
     ("resource/model/wardrobe/coverage.json", "resource/model/wardrobe/coverage.json"),
@@ -114,11 +115,14 @@ def verify_local_data() -> dict:
     rc = read_json(ROOT / "client/src-tauri/src/data/resonance_catalog.json")
     isrc = read_json(ROOT / "client/src/services/scoring/itemSources.json")
     mc = read_json(ROOT / "resource/navigation/materials_catalog_v1.json")
+    rdc = read_json(ROOT / "resource/data/redeem_codes.json")
 
     if not ws.get("items") or not ws.get("game_items") or not ws.get("suits") or not ws.get("matches"):
         raise ValueError("wardrobe_scoring.json is missing required non-empty tables")
     if not bc.get("sets") or not cc.get("sketches") or not xr.get("tasks") or not mc:
         raise ValueError("One or more auxiliary game catalogs are empty")
+    if not isinstance(rdc, dict) or not isinstance(rdc.get("codes"), list):
+        raise ValueError("redeem_codes.json is missing a valid codes list")
     if not rc.get("banners") or not rc.get("outfits") or not rc.get("items"):
         raise ValueError("resonance_catalog.json is missing banners, outfits, or items")
     if not isrc.get("sources"):

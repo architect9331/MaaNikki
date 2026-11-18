@@ -102,6 +102,7 @@
     "tasks/Home.json",
     "tasks/MonthlyPass.json",
     "tasks/Mailbox.json",
+    "tasks/RedeemCodes.json",
     "tasks/WeeklyFreeGifts.json",
     "tasks/MonthlyCrystalExchange.json",
     "tasks/Crown.json",

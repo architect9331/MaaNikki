@@ -10,6 +10,7 @@ const HINTS: Record<string, string> = {
   home: '请确认家园已解锁，并在任务选项中设置可用的采星能力方案。',
   monthly_pass: '请确认奇迹之旅入口可用。',
   mailbox: '请确认邮箱页面能正常打开。',
+  redeem_codes: '请确认美鸭梨与设置页面能正常打开。',
   weekly_free_gifts: '请确认商城页面能正常打开。',
   monthly_crystal_exchange: '请确认静谧水滴足够兑换。',
   crown: '请确认奇迹之冠已解锁且本期赛事正在开放。',

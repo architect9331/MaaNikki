@@ -21,6 +21,7 @@ OUTCOMES = {
     "monthly_crystal_exchange": {"exchanged", "already_exchanged", "sold_out"},
     "crown": {"completed"},
 }
+REDEEM_OUTCOMES = {"redeemed", "already_used", "expired"}
 
 
 def game_day(now=None):
@@ -146,6 +147,17 @@ class AccountState:
                 or not isinstance(data.get("migration", {}), dict)):
             raise ValueError("UID 账号存档格式无效")
         for task, record in data["tasks"].items():
+            if task == "redeem_codes":
+                if not isinstance(record, dict) or not isinstance(record.get("items"), dict):
+                    raise ValueError("账号兑换码记录格式无效")
+                for code, receipt in record["items"].items():
+                    if (not isinstance(code, str) or not code or len(code) > 40
+                            or not isinstance(receipt, dict)
+                            or receipt.get("outcome") not in REDEEM_OUTCOMES
+                            or not isinstance(receipt.get("confirmed_at"), str)
+                            or datetime.fromisoformat(receipt["confirmed_at"]).tzinfo is None):
+                        raise ValueError("账号兑换码缺少有效的处理凭据")
+                continue
             if task not in PERIOD_TASKS:
                 continue
             if (not isinstance(record, dict) or not isinstance(record.get("period"), str)
@@ -267,4 +279,31 @@ class AccountState:
             record["items"][item] = {"outcome": outcome,
                                       "confirmed_at": datetime.now(timezone.utc).isoformat()}
             data["tasks"][task] = record
+        self.update(change)
+
+    def redeemed_codes(self):
+        record = self.load()["tasks"].get("redeem_codes", {})
+        items = record.get("items", {})
+        return {code: receipt.get("outcome") for code, receipt in items.items()}
+
+    def record_redeem_code(self, code, outcome, *, detail=""):
+        clean = str(code or "").strip()
+        if not clean or len(clean) > 40 or any(ch.isspace() for ch in clean):
+            raise ValueError("兑换码格式无效")
+        if outcome not in REDEEM_OUTCOMES:
+            raise ValueError("兑换码处理结果无效")
+
+        def change(data):
+            record = data["tasks"].get("redeem_codes")
+            if not isinstance(record, dict) or not isinstance(record.get("items"), dict):
+                record = {"items": {}}
+            entry = {
+                "outcome": outcome,
+                "confirmed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            if detail:
+                entry["detail"] = str(detail)[:120]
+            record["items"][clean] = entry
+            data["tasks"]["redeem_codes"] = record
+
         self.update(change)

@@ -10,7 +10,7 @@ const SETUP_VERSION = 1;
 
 const TASK_GROUPS = [
   { id: 'daily', title: '每日任务', detail: '挖掘、朝夕心愿、星光结晶、星海拾光、家园和奇迹之旅',
-    tasks: ['dig', 'zhaoxi', 'starlight_crystals', 'xinghai', 'home', 'monthly_pass', 'mailbox'] },
+    tasks: ['dig', 'zhaoxi', 'starlight_crystals', 'xinghai', 'home', 'monthly_pass', 'mailbox', 'redeem_codes'] },
   { id: 'realm', title: '幻境挑战', detail: '每周幻境和活跃能量', tasks: ['realm_challenge'] },
   { id: 'shop', title: '商城', detail: '每周免费礼包和每月五抽兑换', tasks: ['weekly_free_gifts', 'monthly_crystal_exchange'] },
   { id: 'crown', title: '奇迹之冠巅峰赛', detail: '用游戏推荐搭配挑战已解锁关卡', tasks: ['crown'] },

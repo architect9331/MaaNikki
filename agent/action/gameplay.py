@@ -51,6 +51,9 @@ class GameplayAction(CustomAction):
             if kind == "mailbox":
                 from daily.mailbox import Mailbox
                 return Mailbox(runtime).run()
+            if kind == "redeem_codes":
+                from daily.redeem_codes import RedeemCodes
+                return RedeemCodes(runtime).run()
             if kind == "home":
                 from daily.home import Home
                 return Home(runtime).run()

@@ -1076,6 +1076,23 @@ function App() {
           if (optedOut) state.setHelpImproveBlessingStats(false);
           useAppStore.setState({ nikkiPresetVersion: 8 });
         }
+
+        // Add redeem codes once to the saved daily page right after mailbox.
+        const redeemTask = pi?.name === 'MaaNikki' && pi.task.find((task) => task.name === 'redeem_codes');
+        if (redeemTask && useAppStore.getState().nikkiPresetVersion < 9) {
+          for (const instance of useAppStore.getState().instances) {
+            if (instance.name !== '全套日常' && instance.name !== '日常') continue;
+            if (instance.selectedTasks.some((task) => task.taskName === 'redeem_codes')) continue;
+            const anchorIndex = instance.selectedTasks.findIndex((task) => task.taskName === 'mailbox');
+            const fallbackIndex = instance.selectedTasks.findIndex((task) => task.taskName === 'monthly_pass');
+            const insertAfter = anchorIndex >= 0 ? anchorIndex : fallbackIndex;
+            if (insertAfter < 0) continue;
+            const tailIndex = instance.selectedTasks.length;
+            useAppStore.getState().addTaskToInstance(instance.id, redeemTask);
+            useAppStore.getState().reorderTasks(instance.id, tailIndex, insertAfter + 1);
+          }
+          useAppStore.setState({ nikkiPresetVersion: 9 });
+        }
       }, 0);
 
       // 检查是否为开机自启动，若配置了自动执行的实例则激活并启动任务
