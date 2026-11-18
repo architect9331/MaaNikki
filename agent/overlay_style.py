@@ -299,16 +299,9 @@ def _build_theme(mode: str, accent_name: str, custom_colors: dict | None = None)
 
 
 def should_exclude_from_capture(controller) -> bool:
-    """Return True unless Maa is using window-bound Background/PrintWindow capture."""
-    try:
-        from maa.define import MaaWin32ScreencapMethodEnum
-        info = getattr(controller, "info", None)
-        method = info.get("screencap_method", 0) if isinstance(info, dict) else 0
-        background = int(MaaWin32ScreencapMethodEnum.Background)
-        window_capture = type(method) is int and method > 0 and not (method & ~background)
-        return not window_capture
-    except Exception:
-        return True
+    """Always exclude MaaNikki overlays from capture so fallback screen/DXGI captures never occlude UI or minimap."""
+    _ = controller
+    return True
 
 
 def sync_overlay_zorder(
