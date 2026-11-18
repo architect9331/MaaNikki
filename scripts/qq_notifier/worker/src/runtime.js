@@ -3,6 +3,7 @@ import {
   formatActivitiesReply,
   formatRedeemCodesReply,
   getFeedsContextSummary,
+  listPublicRedeemCodes,
   syncActivities,
   syncRedeemCodes,
 } from './feeds.js';
@@ -657,6 +658,11 @@ export default {
     try {
       const url = new URL(request.url);
       if (request.method === 'GET' && url.pathname === '/health') return Response.json({ ok: true, service: 'maanikki-qq-notifier', assistant: true, feeds: true });
+      if (request.method === 'GET' && url.pathname === '/v1/redeem-codes') {
+        return Response.json(await listPublicRedeemCodes(env), {
+          headers: { 'cache-control': 'public, max-age=300, s-maxage=300', 'access-control-allow-origin': '*' },
+        });
+      }
       if (request.method === 'GET' && url.pathname === '/admin/status') {
         return env.ADMIN_TOKEN && equalSecret(request.headers.get('authorization') || '', `Bearer ${env.ADMIN_TOKEN}`)
           ? await status(env) : new Response('Unauthorized', { status: 401 });

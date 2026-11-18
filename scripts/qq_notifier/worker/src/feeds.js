@@ -367,6 +367,39 @@ async function fetchOfficialNewsCodes(env, lastNewsId, seedOnly) {
   return { maxNewsId, entries };
 }
 
+async function fetchBiliWikiCodes() {
+  const url = 'https://wiki.biligame.com/wxnn/api.php?action=parse&page=%E5%85%91%E6%8D%A2%E7%A0%81%E5%90%88%E9%9B%86&prop=wikitext&format=json';
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'MaaNikki-QQBot/1.0', Accept: 'application/json' },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`BiliWiki HTTP ${res.status}`);
+  const data = await res.json();
+  const wikitext = String(data?.parse?.wikitext?.['*'] ?? '');
+  if (!wikitext) return [];
+  const entries = [];
+  const blockRe = /\{\{#subobject:[^|}]*\|([^}]+)\}\}/g;
+  let match;
+  while ((match = blockRe.exec(wikitext)) !== null) {
+    const cleanedBlock = match[1].replace(/\[\[(?:[^|\]]+\|)?([^\]]+)\]\]/g, '$1');
+    const fields = {};
+    for (const part of cleanedBlock.split('|')) {
+      const idx = part.indexOf('=');
+      if (idx <= 0) continue;
+      fields[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
+    }
+    if (fields['平台'] !== '国服') continue;
+    const code = String(fields['兑换码'] || '').trim();
+    if (!isValidRedeemCode(code)) continue;
+    const rawReward = String(fields['奖励'] || '').replace(/\s+/g, '').trim();
+    const rawExp = String(fields['期限'] || '').trim();
+    const expMs = rawExp ? parseChinaTimeMs(rawExp.replace(/\//g, '-')) : null;
+    const expiresAt = expMs !== null ? Math.floor(expMs / 1000) : null;
+    entries.push({ code, reward: rawReward || null, expiresAt });
+  }
+  return entries;
+}
+
 export async function syncRedeemCodes(env, enqueueFn) {
   const nowSec = seconds();
   const ready = await env.DB.prepare("SELECT 1 AS ok FROM runtime_state WHERE key='redeem-baseline-ready'").first();
@@ -391,22 +424,42 @@ export async function syncRedeemCodes(env, enqueueFn) {
     newsError = err;
   }
 
-  if (tgError && newsError) throw tgError;
+  let wikiEntries = [];
+  let wikiError = null;
+  try {
+    wikiEntries = await fetchBiliWikiCodes();
+  } catch (err) {
+    wikiError = err;
+  }
+
+  if (tgError && newsError && wikiError) throw tgError;
 
   const maxTgId = tgPosts.reduce((m, p) => Math.max(m, p.postId), lastTgId);
+  const wikiByCode = new Map(wikiEntries.map(w => [w.code.toLowerCase(), w]));
 
   if (!ready) {
     const stmts = [];
     const seenSeed = new Set();
     for (const post of tgPosts) {
       for (const code of post.codes) {
-        if (seenSeed.has(code)) continue;
-        seenSeed.add(code);
+        const key = code.toLowerCase();
+        if (seenSeed.has(key)) continue;
+        seenSeed.add(key);
+        const wiki = wikiByCode.get(key);
         stmts.push(
-          env.DB.prepare('INSERT OR IGNORE INTO redeem_codes(code,source,published_at,created,announced) VALUES(?,?,?,?,1)')
-            .bind(code, `tg:${post.postId}`, post.publishedAt, nowSec),
+          env.DB.prepare('INSERT OR IGNORE INTO redeem_codes(code,source,published_at,created,announced,expires_at,reward) VALUES(?,?,?,?,1,?,?)')
+            .bind(code, `tg:${post.postId}`, post.publishedAt, nowSec, wiki?.expiresAt ?? null, wiki?.reward ?? null),
         );
       }
+    }
+    for (const w of wikiEntries) {
+      const key = w.code.toLowerCase();
+      if (seenSeed.has(key)) continue;
+      seenSeed.add(key);
+      stmts.push(
+        env.DB.prepare('INSERT OR IGNORE INTO redeem_codes(code,source,published_at,created,announced,expires_at,reward) VALUES(?,?,?,?,1,?,?)')
+          .bind(w.code, 'biliwiki', nowSec, nowSec, w.expiresAt, w.reward),
+      );
     }
     stmts.push(
       env.DB.prepare("INSERT INTO runtime_state(key,value,expires_at) VALUES('redeem-tg-last-id',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,expires_at=excluded.expires_at")
@@ -433,24 +486,48 @@ export async function syncRedeemCodes(env, enqueueFn) {
   const candidates = [];
   for (const post of unseenTgPosts) {
     for (const code of post.codes) {
-      candidates.push({ code, source: `tg:${post.postId}`, publishedAt: post.publishedAt });
+      const wiki = wikiByCode.get(code.toLowerCase());
+      candidates.push({ code, source: `tg:${post.postId}`, publishedAt: post.publishedAt, expiresAt: wiki?.expiresAt ?? null, reward: wiki?.reward ?? null });
     }
   }
   for (const entry of newsResult.entries) {
-    candidates.push(entry);
+    const wiki = wikiByCode.get(entry.code.toLowerCase());
+    candidates.push({ ...entry, expiresAt: wiki?.expiresAt ?? null, reward: wiki?.reward ?? null });
+  }
+  for (const w of wikiEntries) {
+    if (w.expiresAt === null || w.expiresAt > nowSec) {
+      candidates.push({ code: w.code, source: 'biliwiki', publishedAt: nowSec, expiresAt: w.expiresAt, reward: w.reward });
+    }
   }
 
-  const existingRows = await env.DB.prepare('SELECT code FROM redeem_codes').all();
-  const known = new Set((existingRows.results || []).map(r => r.code.toLowerCase()));
+  const existingRows = await env.DB.prepare('SELECT code, expires_at, reward FROM redeem_codes').all();
+  const knownMap = new Map((existingRows.results || []).map(r => [r.code.toLowerCase(), r]));
   const freshEntries = [];
+  const enrichStmts = [];
+  for (const w of wikiEntries) {
+    const prev = knownMap.get(w.code.toLowerCase());
+    if (prev && ((w.expiresAt !== null && prev.expires_at !== w.expiresAt) || (w.reward && prev.reward !== w.reward))) {
+      enrichStmts.push(
+        env.DB.prepare('UPDATE redeem_codes SET expires_at=COALESCE(?,expires_at), reward=COALESCE(?,reward) WHERE code=?')
+          .bind(w.expiresAt, w.reward, prev.code),
+      );
+    } else if (!prev && w.expiresAt !== null && w.expiresAt <= nowSec) {
+      // Silently archive already-expired historical BiliWiki codes without notifying.
+      knownMap.set(w.code.toLowerCase(), { code: w.code });
+      enrichStmts.push(
+        env.DB.prepare('INSERT OR IGNORE INTO redeem_codes(code,source,published_at,created,announced,expires_at,reward) VALUES(?,?,?,?,1,?,?)')
+          .bind(w.code, 'biliwiki', w.expiresAt, nowSec, w.expiresAt, w.reward),
+      );
+    }
+  }
   for (const c of candidates) {
     const key = c.code.toLowerCase();
-    if (known.has(key)) continue;
-    known.add(key);
+    if (knownMap.has(key)) continue;
+    knownMap.set(key, { code: c.code });
     freshEntries.push(c);
   }
 
-  const stateUpdates = [];
+  const stateUpdates = [...enrichStmts];
   if (maxTgId > lastTgId) {
     stateUpdates.push(
       env.DB.prepare("INSERT INTO runtime_state(key,value,expires_at) VALUES('redeem-tg-last-id',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,expires_at=excluded.expires_at")
@@ -467,12 +544,12 @@ export async function syncRedeemCodes(env, enqueueFn) {
   let enqueued = 0;
   if (freshEntries.length) {
     const insertStmts = freshEntries.map(e =>
-      env.DB.prepare('INSERT OR IGNORE INTO redeem_codes(code,source,published_at,created,announced) VALUES(?,?,?,?,1)')
-        .bind(e.code, e.source, e.publishedAt, nowSec),
+      env.DB.prepare('INSERT OR IGNORE INTO redeem_codes(code,source,published_at,created,announced,expires_at,reward) VALUES(?,?,?,?,1,?,?)')
+        .bind(e.code, e.source, e.publishedAt, nowSec, e.expiresAt ?? null, e.reward ?? null),
     );
     const lines = [
       '【无限暖暖 · 新兑换码】',
-      ...freshEntries.map(e => `• ${e.code}`),
+      ...freshEntries.map(e => `• ${e.code}${e.reward ? `（${e.reward}）` : ''}`),
       '兑换方式：游戏内左上角「美鸭梨 → 设置 → 其他 → 兑换码」输入领取，注意时效及时兑换。',
     ];
     const eventKey = `redeem:${freshEntries.map(e => e.code).join(',')}`;
@@ -482,7 +559,7 @@ export async function syncRedeemCodes(env, enqueueFn) {
     await env.DB.batch(stateUpdates);
   }
 
-  return { seeded: false, tgMax: maxTgId, newsMax: newsResult.maxNewsId, newCodes: freshEntries.length, enqueued, deferSeconds: 0 };
+  return { seeded: false, tgMax: maxTgId, newsMax: newsResult.maxNewsId, wikiCount: wikiEntries.length, newCodes: freshEntries.length, enqueued, deferSeconds: 0 };
 }
 
 export async function formatActivitiesReply(env) {
@@ -524,23 +601,51 @@ export async function formatActivitiesReply(env) {
 }
 
 export async function formatRedeemCodesReply(env) {
-  const rows = await env.DB.prepare('SELECT code, published_at FROM redeem_codes ORDER BY published_at DESC, created DESC LIMIT 6')
-    .all().catch(() => ({ results: [] }));
-  const list = rows.results || [];
+  const nowSec = seconds();
+  const rows = await env.DB.prepare(
+    'SELECT code, published_at, expires_at, reward FROM redeem_codes ' +
+    'WHERE expires_at IS NULL OR expires_at>? ORDER BY published_at DESC, created DESC LIMIT 8',
+  ).bind(nowSec).all().catch(() => ({ results: [] }));
+  let list = rows.results || [];
+  let showingExpiredFallback = false;
+  if (!list.length) {
+    const fallback = await env.DB.prepare('SELECT code, published_at, expires_at, reward FROM redeem_codes ORDER BY published_at DESC, created DESC LIMIT 6')
+      .all().catch(() => ({ results: [] }));
+    list = fallback.results || [];
+    showingExpiredFallback = true;
+  }
   if (!list.length) {
     return '暂未收录近期兑换码；监控服务运行中，官微或官网发布新兑换码后会第一时间在本群推送。';
   }
-  const nowSec = seconds();
   const newestAt = Number(list[0]?.published_at || 0);
-  const lines = ['【无限暖暖 · 近期兑换码记录】'];
-  for (const r of list) {
-    lines.push(`• ${r.code}（${formatChinaDate(Number(r.published_at) * 1000)}）`);
+  const lines = [showingExpiredFallback ? '【无限暖暖 · 近期兑换码记录】' : '【无限暖暖 · 当前可用及近期兑换码】'];
+  for (const r of list.slice(0, 6)) {
+    const expText = r.expires_at ? `，截止 ${formatChinaDate(Number(r.expires_at) * 1000)}` : `，${formatChinaDate(Number(r.published_at) * 1000)}`;
+    const rewardText = r.reward ? `｜${r.reward}` : '';
+    lines.push(`• ${r.code}（${expText.replace(/^，/, '')}${rewardText}）`);
   }
-  if (newestAt && nowSec - newestAt > 21 * 86400) {
+  if (showingExpiredFallback || (newestAt && nowSec - newestAt > 21 * 86400 && !list.some(r => r.expires_at && Number(r.expires_at) > nowSec))) {
     lines.push('注：近期官微暂无新码，部分早期兑换码可能已过期；有新码发布时本群会自动推送。');
   }
   lines.push('兑换方式：游戏内左上角「美鸭梨 → 设置 → 其他 → 兑换码」。');
   return finalizeOutbound(lines.join('\n'), env);
+}
+
+export async function listPublicRedeemCodes(env) {
+  const rows = await env.DB.prepare(
+    'SELECT code, source, published_at, expires_at, reward FROM redeem_codes ORDER BY published_at DESC, created DESC LIMIT 40',
+  ).all().catch(() => ({ results: [] }));
+  return {
+    schema_version: 1,
+    updated_at: seconds(),
+    codes: (rows.results || []).map(r => ({
+      code: r.code,
+      source: r.source,
+      published_at: Number(r.published_at || 0),
+      expires_at: r.expires_at !== null && r.expires_at !== undefined ? Number(r.expires_at) : null,
+      reward: r.reward || null,
+    })),
+  };
 }
 
 export async function getFeedsContextSummary(env) {
@@ -564,10 +669,13 @@ export async function getFeedsContextSummary(env) {
     }
   } catch {}
   try {
-    const rows = await env.DB.prepare('SELECT code, published_at FROM redeem_codes ORDER BY published_at DESC, created DESC LIMIT 4').all();
+    const nowSec = seconds();
+    const rows = await env.DB.prepare(
+      'SELECT code, published_at, expires_at FROM redeem_codes WHERE expires_at IS NULL OR expires_at>? ORDER BY published_at DESC, created DESC LIMIT 4',
+    ).bind(nowSec).all();
     const list = rows.results || [];
     if (list.length) {
-      parts.push('【近期兑换码记录】\n' + list.map(r => `${r.code} (${formatChinaDate(Number(r.published_at) * 1000)})`).join('、'));
+      parts.push('【有效及近期兑换码】\n' + list.map(r => `${r.code} (${r.expires_at ? '截止' + formatChinaDate(Number(r.expires_at) * 1000) : formatChinaDate(Number(r.published_at) * 1000)})`).join('、'));
     }
   } catch {}
   return parts.join('\n\n').slice(0, 500);

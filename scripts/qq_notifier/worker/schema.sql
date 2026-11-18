@@ -48,5 +48,7 @@ CREATE TABLE IF NOT EXISTS redeem_codes (
   source TEXT NOT NULL,
   published_at INTEGER NOT NULL,
   created INTEGER NOT NULL,
-  announced INTEGER NOT NULL DEFAULT 0
+  announced INTEGER NOT NULL DEFAULT 0,
+  expires_at INTEGER,
+  reward TEXT
 );
