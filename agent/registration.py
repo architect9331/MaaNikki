@@ -127,15 +127,16 @@ def agent_recognition(name):
             try:
                 with task_session(context, task_id, node_name=argv.node_name) as session:
                     while True:
-                        generation = session.generation if session else 0
+                        pause_generation = session.pause_generation if session else 0
                         if session:
                             session.wait()
-                        if session and generation != session.generation:
+                        if session and pause_generation != session.pause_generation:
                             captured = session.controller.post_screencap().wait()
                             if not captured.succeeded:
                                 return None
                             argv = copy(argv)
                             argv.image = captured.get()
+                        pause_generation = session.pause_generation if session else 0
                         generation = session.generation if session else 0
                         if session and argv.image is not None and argv.image.size and not session.stopped():
                             if (
@@ -167,7 +168,7 @@ def agent_recognition(name):
                             raise
                         if session:
                             session.wait()
-                        if not session or generation == session.generation:
+                        if not session or pause_generation == session.pause_generation:
                             return result
                         captured = session.controller.post_screencap().wait()
                         if not captured.succeeded:

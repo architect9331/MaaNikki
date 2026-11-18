@@ -8,7 +8,7 @@ import numpy as np
 from task_control import ForegroundChanged
 from .details import COLORS
 from .locking import READY
-from .scanner import LEVEL, IncompleteObservation, RescanSlot, clean_text
+from .scanner import LEVEL, FocusRetryBudget, IncompleteObservation, RescanSlot, clean_text
 
 
 UPGRADE = "MaaNikki_Pursuit_UpgradeReady"
@@ -20,6 +20,7 @@ class UpgradeUI:
     def __init__(self, owner):
         self.owner, self.rt = owner, owner.rt
         self.layout = owner.upgrade_layout
+        self._last_read_focus_gen = None
 
     def upgrade_ready(self):
         # The fixed right-hand panel is present at every upgrade level. The
@@ -49,10 +50,13 @@ class UpgradeUI:
     def read(self, generation, keys=("name", "level", "xp", "maxed")):
         previous = None
         for _ in range(8):
+            self.rt.check_focus()
+            focus_gen = self.rt._focus_generation
             frame = self.frame(generation)
             fields = {key: self.text(key, frame) for key in keys}
             self.owner.check_generation(generation)
             if fields == previous:
+                self._last_read_focus_gen = focus_gen
                 return fields, frame
             previous = fields
             if not self.rt.pause(.2):
@@ -132,7 +136,7 @@ class UpgradeUI:
                 raise IncompleteObservation("切回后未能关闭升级完成界面，已保存进度")
         if not self.rt.ui.wait_page(self.upgrade_ready, seconds=3):
             raise IncompleteObservation("切回后未确认祝福闪光升级页面，已保存进度")
-        new_gen = self.rt._focus_generation
+        new_gen = self.owner.current_generation()
         chk, _ = self.read(new_gen, ("name", "level", "maxed", "material_count"))
         if chk["name"] != current["name"]:
             raise IncompleteObservation("切回后升级对象或等级已变化，已保存进度")
@@ -190,7 +194,7 @@ class UpgradeUI:
                 self.upgrade_ready, source=READY, attempts=1):
             raise IncompleteObservation("未确认祝福闪光升级页面")
         current = dict(facts)
-        page_gen = self.rt._focus_generation
+        page_gen = self.owner.current_generation()
         focus_switched = page_gen != generation
         # Each auto-fill may stop at an intermediate level. Keep this selection
         # until maxed or short of resources; never infer colour from the overlay.
@@ -198,7 +202,9 @@ class UpgradeUI:
             # A fresh upgrade page, or a confirmed completed upgrade, starts
             # with no selected materials. Only clear a nonempty rejected batch.
             prepared = None
-            for focus_try in range(4):
+            pre_budget = FocusRetryBudget(self.rt, max_stalled=4)
+            while True:
+                pre_budget.begin()
                 try:
                     fields, frame = self.read(page_gen)
                     page_level = self.integer(fields["level"])
@@ -232,6 +238,7 @@ class UpgradeUI:
                             or not self.rt.pause(.5)):
                         raise RuntimeError("未能一键放入升级素材")
                     fields, frame = self.read(page_gen, ("name", "level", "bling", "cost", "material_count", "material_filter"))
+                    submit_focus_gen = self._last_read_focus_gen
                     if fields["name"] != current["name"]:
                         raise RuntimeError("放入材料后升级对象发生变化")
                     levels = self._parse_preview_levels(fields["level"], frame, current["level"], maximum)
@@ -256,22 +263,25 @@ class UpgradeUI:
                     if not re.fullmatch(FILTER, fields["material_filter"]):
                         raise RuntimeError("提交前升级素材选项发生变化")
                     self.owner.check_generation(page_gen)
+                    self.rt.check_focus()
+                    if submit_focus_gen is None or self.rt._focus_generation != submit_focus_gen:
+                        raise ForegroundChanged("提交前焦点变化，重新核对升级预览")
                     operation = self.owner.begin_change("upgrade", current, evidence, frame,
                                                         preview_level=levels[-1], cost=cost, bling_before=bling,
                                                         material_rarity_max=5, experience_before=old_xp)
                     try:
                         self.owner.check_generation(page_gen)
                         self.owner.submit_change(operation)
-                        clicked = self.rt.action("Click", target=self.layout["submit"], focus_generation=page_gen)
+                        clicked = self.rt.action("Click", target=self.layout["submit"], focus_generation=submit_focus_gen)
                     except (RescanSlot, ForegroundChanged):
                         self.owner.reconcile_change("cancelled_before_input")
                         raise
                     if not clicked:
                         raise RuntimeError("升级提交结果不确定，已停止且不重试")
-                    prepared = (operation, old_xp, levels[-1])
+                    prepared = (operation, old_xp, levels[-1], submit_focus_gen)
                     break
                 except (RescanSlot, ForegroundChanged):
-                    if self.owner.pending is not None or self.rt.stopped or focus_try >= 3:
+                    if self.owner._has_live_pending() or self.rt.stopped or not pre_budget.advance():
                         raise
                     focus_switched = True
                     page_gen = self._recover_upgrade_page(
@@ -279,13 +289,16 @@ class UpgradeUI:
                     )
             if prepared is None:
                 raise IncompleteObservation("切回后升级准备未完成，已保存进度")
-            operation, old_xp, preview_level = prepared
+            operation, old_xp, preview_level, submit_focus_gen = prepared
 
             updated = None
             expect_result_modal = preview_level > current["level"]
-            for post_try in range(4):
+            post_budget = FocusRetryBudget(self.rt, max_stalled=4)
+            first_post = True
+            while True:
+                post_budget.begin()
                 try:
-                    if expect_result_modal and post_try == 0 and not focus_switched:
+                    if expect_result_modal and first_post and not focus_switched:
                         if not self.rt.ui.wait_page(RESULT, seconds=20):
                             if not self.upgrade_ready():
                                 raise RuntimeError("未确认升级完成界面，已停止且不重试")
@@ -316,8 +329,8 @@ class UpgradeUI:
                         if not self.rt.ui.wait_page(RESULT, seconds=20):
                             if not self.upgrade_ready():
                                 raise RuntimeError("未确认升级完成界面，已停止且不重试")
-                    self.rt.check_focus()
-                    page_gen = self.rt._focus_generation
+                    first_post = False
+                    page_gen = self.owner.current_generation()
                     if page_gen != generation:
                         focus_switched = True
                     if self.rt.hit(RESULT):
@@ -335,19 +348,19 @@ class UpgradeUI:
                         updated["color"], frame = self.full_color(page_gen, current["name"], maximum)
                     break
                 except IncompleteObservation:
-                    if self.rt.stopped or post_try >= 3 or not self.rt.hit(RESULT):
+                    first_post = False
+                    if self.rt.stopped or not post_budget.advance(stalled=True) or not self.rt.hit(RESULT):
                         raise
-                    self.rt.check_focus()
-                    page_gen = self.rt._focus_generation
+                    page_gen = self.owner.current_generation()
                     if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), self.upgrade_ready,
                                                  source=RESULT, attempts=4):
                         raise RuntimeError("未能关闭升级完成界面")
                 except (RescanSlot, ForegroundChanged):
-                    if self.rt.stopped or post_try >= 3:
+                    first_post = False
+                    if self.rt.stopped or not post_budget.advance():
                         raise
                     focus_switched = True
-                    self.rt.check_focus()
-                    page_gen = self.rt._focus_generation
+                    page_gen = self.owner.current_generation()
             if updated is None:
                 raise RuntimeError("切回后未能确认升级结果，已停止且不重试")
 
@@ -357,15 +370,25 @@ class UpgradeUI:
             self.owner.confirm_upgrade(operation, current, updated)
             if level == maximum or once:
                 self.return_list()
-                list_gen = self.rt._focus_generation
-                if list_gen != page_gen:
+                list_gen = self.owner.current_generation()
+                if self.rt._focus_generation != submit_focus_gen or list_gen != page_gen:
                     focus_switched = True
                 # Esc preserves the selected item when focus was uninterrupted.
                 if level == maximum and facts["rarity"] == 5:
-                    if focus_switched:
-                        self._recover_selection_after_upgrade(updated, list_gen)
-                    else:
-                        self.owner.protect_selected(updated, list_gen)
+                    protect_budget = FocusRetryBudget(self.rt, max_stalled=1)
+                    while True:
+                        protect_budget.begin()
+                        try:
+                            if focus_switched:
+                                self._recover_selection_after_upgrade(updated, list_gen)
+                            else:
+                                self.owner.protect_selected(updated, list_gen)
+                            break
+                        except (RescanSlot, ForegroundChanged):
+                            if self.owner._has_live_pending() or self.rt.stopped or not protect_budget.advance():
+                                raise
+                            focus_switched = True
+                            list_gen = self.owner.current_generation()
                 return {"status": "upgraded", "facts": updated}
             current = updated
         raise RuntimeError("同一闪光连续升级次数超过上限，已保存进度")

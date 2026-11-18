@@ -46,6 +46,7 @@ class ForegroundSession:
         self.started = False
         self.paused_seconds = 0.0
         self.generation = 0
+        self.pause_generation = 0
         self.waiting = False
         self._stop_poll_interval = 0.03
         self._stop_checked_at = None
@@ -322,6 +323,11 @@ class ForegroundSession:
         count("control.stop_queries")
         return stopping
 
+    def bump_generation(self, *, paused=True):
+        self.generation += 1
+        if paused:
+            self.pause_generation += 1
+
     @contextmanager
     def background_observation(self, *, hud_mode="observation", manage_hud=True):
         """Allow resident-helper captures; physical input still requires focus."""
@@ -332,7 +338,7 @@ class ForegroundSession:
         self._observation_hud_mode = hud_mode or "observation"
         self._manage_observation_hud = bool(manage_hud)
         self._observed_foreground = None
-        self.generation += 1
+        self.bump_generation(paused=True)
         if self._hud is not None and self._manage_observation_hud:
             self._hud.set_context(control_mode=self._control_mode())
         try:
@@ -342,7 +348,7 @@ class ForegroundSession:
             self._observation_hud_mode = previous_mode
             self._manage_observation_hud = previous_manage
             self._observed_foreground = None
-            self.generation += 1
+            self.bump_generation(paused=True)
             if self._hud is not None and (not self._background_observation or self._manage_observation_hud):
                 self._hud.set_context(control_mode=self._control_mode())
 
@@ -355,7 +361,7 @@ class ForegroundSession:
         previous = self._background_observation
         self._background_observation = False
         self._observed_foreground = None
-        self.generation += 1
+        self.bump_generation(paused=True)
         if self._hud is not None:
             self._hud.set_context(control_mode=self._control_mode())
         try:
@@ -363,7 +369,7 @@ class ForegroundSession:
         finally:
             self._background_observation = previous
             self._observed_foreground = None
-            self.generation += 1
+            self.bump_generation(paused=True)
             if self._hud is not None and (not self._background_observation or self._manage_observation_hud):
                 self._hud.set_context(control_mode=self._control_mode())
 
@@ -484,7 +490,7 @@ class ForegroundSession:
                         refocused_at = now
                         self._bring_to_foreground(adapter)
                 wall_time.sleep(.05)
-            self.generation += 1
+            self.bump_generation(paused=True)
             if self._background_active():
                 self._observed_foreground = adapter.foreground()
             self.notify(resume_message)
@@ -532,7 +538,7 @@ class ForegroundSession:
                     if wall_time.monotonic()-hung_begin >= HUNG_WINDOW_TIMEOUT:
                         self.window_hung()
                     wall_time.sleep(.1)
-                self.generation += 1
+                self.bump_generation(paused=True)
             finally:
                 self.paused_seconds += wall_time.monotonic()-hung_begin
                 self.waiting = False
@@ -547,7 +553,7 @@ class ForegroundSession:
                     # when the window remains capturable; release physical inputs.
                     if not (getattr(inputs, "window_only", False) and inputs.capturable()):
                         inputs.release()
-                self.generation += 1
+                self.bump_generation(paused=False)
             self._observed_foreground = foreground
             if not (require_capturable or window_only) or adapter.capturable():
                 if hud is not None and (manage_hud or self._foreground_required_depth > 0):

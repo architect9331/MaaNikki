@@ -566,7 +566,7 @@ class WardrobeScanner(InventoryScanner):
 
     def top(self):
         before = self.rt.capture()
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
         if self.at_top(before):
             return before
         for _ in range(25):
@@ -734,7 +734,7 @@ class WardrobeScanner(InventoryScanner):
 
     def read_part(self, part):
         self.current_part = part
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
         frame = self.rt.capture()
         actual_part, header, owned_count, total_count = self.category_info(frame)
         if actual_part != part:

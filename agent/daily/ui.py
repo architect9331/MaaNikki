@@ -285,17 +285,34 @@ class GameUI:
                                color=([0, 0, 210], [180, 50, 255])))
 
     def click_asset(self, name, attempts=3, **kwargs):
-        for index in range(attempts):
-            box = self.asset(name, **kwargs)
+        from task_control import ForegroundChanged
+        misses = 0
+        provided_image = kwargs.get("image")
+        while not self.rt.stopped and misses < attempts:
+            if provided_image is None:
+                self.rt.check_focus()
+                focus_gen = self.rt._focus_generation
+                frame = self.rt.frame()
+                if frame is None:
+                    break
+                box = self.asset(name, **{**kwargs, "image": frame})
+            else:
+                focus_gen = None
+                box = self.asset(name, **kwargs)
             if box:
-                return self.click_box(box) and self.rt.pause(.3)
-            if index+1 < attempts and not self.rt.pause(1):
+                try:
+                    return self.click_box(box, focus_generation=focus_gen) and self.rt.pause(.3)
+                except ForegroundChanged:
+                    self.rt.invalidate_frame()
+                    continue
+            misses += 1
+            if misses < attempts and not self.rt.pause(1):
                 break
         return False
 
-    def click_box(self, box):
+    def click_box(self, box, *, focus_generation=None):
         """All UI clicks share Runtime's centering, hover and release timing."""
-        return self.rt.action("Click", target=box)
+        return self.rt.action("Click", target=box, focus_generation=focus_generation)
 
     def wait_text(self, text, roi, attempts=3):
         return self.wait_page(text=text, roi=roi, seconds=attempts)
@@ -494,16 +511,27 @@ class GameUI:
         # Recognition can include a margin outside the actual scrollable list.
         # Keep scrolling and end-of-list comparison inside that list.
         scroll_roi = roi if scroll_roi is None else scroll_roi
+        from task_control import ForegroundChanged
         reset = False
         next_image = None
-        for _ in range(80 if scroll else 1):
+        next_gen = None
+        scroll_steps = 0
+        max_steps = 80 if scroll else 1
+        while scroll_steps < max_steps:
             if self.rt.stopped:
                 return False
             if next_image is None and node not in self.REWARD_TARGET_PAGES:
                 if self.dismiss_reward() is False:
                     return False
-            image = self.rt.capture() if next_image is None else next_image
+            self.rt.check_focus()
+            if next_image is None:
+                frame_gen = self.rt._focus_generation
+                image = self.rt.capture()
+            else:
+                frame_gen = next_gen
+                image = next_image
             next_image = None
+            next_gen = None
             if image is None:
                 return False
             raw_image = image
@@ -531,11 +559,15 @@ class GameUI:
             if box:
                 if not click:
                     return box
-                if node:
-                    from .runtime import parameters
-                    if parameters(self.rt.context, node).get("ready"):
-                        return self.rt.click_template(node)
-                return self.click_box(box)
+                try:
+                    if node:
+                        from .runtime import parameters
+                        if parameters(self.rt.context, node).get("ready"):
+                            return self.rt.click_template(node)
+                    return self.click_box(box, focus_generation=frame_gen)
+                except ForegroundChanged:
+                    self.rt.invalidate_frame()
+                    continue
             if not scroll:
                 return False
             x, y, w, h = scroll_roi
@@ -544,6 +576,8 @@ class GameUI:
                 for _ in range(12):
                     if not self.scroll(scroll_roi, 1800, paged=paged):
                         return False
+                    self.rt.check_focus()
+                    next_gen = self.rt._focus_generation
                     frame = self.rt.capture()
                     if frame is None:
                         return False
@@ -556,9 +590,12 @@ class GameUI:
                     before = current.copy()
                 next_image = frame
                 reset = True
+                scroll_steps += 1
                 continue
             if not self.scroll(scroll_roi, -600, paged=paged):
                 return False
+            self.rt.check_focus()
+            next_gen = self.rt._focus_generation
             frame = self.rt.capture()
             if frame is None:
                 return False
@@ -571,6 +608,7 @@ class GameUI:
                 # absence: the comparison must not discard a matching entry.
                 scroll = False
             next_image = frame
+            scroll_steps += 1
         return False
 
     def skip_reward(self, *, node="MaaNikki_RewardLayer"):

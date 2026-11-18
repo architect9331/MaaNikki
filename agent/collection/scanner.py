@@ -30,6 +30,44 @@ class RescanSlot(Exception):
     """Restart traversal when a foreground pause invalidates list positions."""
 
 
+class FocusRetryBudget:
+    """Retry focus-related interruptions unboundedly while bounding stalled non-focus errors."""
+
+    def __init__(self, rt, max_stalled=4):
+        self.rt = rt
+        self.max_stalled = max_stalled
+        self.stalled = 0
+        self.focus_retries = 0
+        self.before_focus = None
+        self.before_pause = None
+
+    def begin(self, *, focus_generation=None, pause_generation=None):
+        self.rt.check_focus()
+        self.before_focus = (
+            self.rt._focus_generation if focus_generation is None else focus_generation
+        )
+        self.before_pause = (
+            self.rt._pause_generation if pause_generation is None else pause_generation
+        )
+
+    def progressed(self):
+        self.rt.check_focus()
+        return (
+            self.before_focus is not None and self.rt._focus_generation != self.before_focus
+        ) or (
+            self.before_pause is not None and self.rt._pause_generation != self.before_pause
+        )
+
+    def advance(self, *, stalled=False):
+        if self.rt.stopped:
+            return False
+        if not stalled and self.progressed():
+            self.focus_retries += 1
+            return True
+        self.stalled += 1
+        return self.stalled < self.max_stalled
+
+
 class IncompleteObservation(RuntimeError):
     """A read was inconclusive without changing or contradicting the inventory."""
 
@@ -103,15 +141,16 @@ class InventoryScanner:
         return " ".join(getattr(item, "text", "") for item in self.ocr(roi, frame))
 
     def ready(self, frame):
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
         self.check_generation(generation)
-        if frame is self._ready_frame and generation == self._ready_generation:
+        focus_generation = self.rt._focus_generation
+        if frame is self._ready_frame and focus_generation == self._ready_generation:
             return True
         result = self.rt.recognize("MaaNikki_Blessing_DecomposeReady", image=frame)
         self.check_generation(generation)
         matched = bool(result and result.hit)
         if matched:
-            self._ready_frame, self._ready_generation = frame, generation
+            self._ready_frame, self._ready_generation = frame, focus_generation
         return matched
 
     def open(self):
@@ -336,9 +375,14 @@ class InventoryScanner:
             event["after"] = self.image(prefix + "_after.jpg", after)
         events.append(event)
 
-    def check_generation(self, generation):
+    def current_generation(self, *, focus_sensitive=False):
         self.rt.check_focus()
-        if self.rt._focus_generation != generation:
+        if focus_sensitive:
+            return self.rt._focus_generation
+        return self.rt.observation_generation()
+
+    def check_generation(self, generation, *, focus_sensitive=False):
+        if self.current_generation(focus_sensitive=focus_sensitive) != generation:
             raise RescanSlot()
 
     @staticmethod
@@ -566,7 +610,7 @@ class InventoryScanner:
         previous = self.rt.capture()
         if previous is None:
             return None
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
         for _ in range(60):
             if not self.scroll_list(1800):
                 return None
@@ -632,7 +676,7 @@ class InventoryScanner:
         frame = self.top()
         if frame is None:
             return False, "未确认列表顶部"
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
         position, seen = 0, []
         for page in range(150):
             self.check_generation(generation)
@@ -721,7 +765,7 @@ class InventoryScanner:
         traversed, reason = False, "未开始扫描"
         while not self.rt.stopped:
             try:
-                generation = self.rt._focus_generation
+                generation = self.current_generation()
                 frame = self.rt.capture()
                 if frame is None or not self.ready(frame):
                     reason = "未确认分解库存页面"

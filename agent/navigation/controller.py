@@ -217,6 +217,12 @@ class ForegroundInput:
         session = active_session()
         return session.generation if session else 0
 
+    @property
+    def pause_generation(self):
+        from task_control import active_session
+        session = active_session()
+        return session.pause_generation if session else 0
+
     def release(self):
         # Maa Seize's key_up can refocus the game. Direct ups on focus loss avoid
         # stealing focus while still preventing globally stuck movement keys.
@@ -487,15 +493,16 @@ class BackgroundInput(ForegroundInput):
     def _restore_active_keys(self):
         if not self._restore_keys or self.generation == self._synced_generation:
             return
-        self._synced_generation = self.generation
         # Give UnrealWindow a moment to drain focus-transition state resets
         # before re-posting sustained movement keys.
         wall_time.sleep(.05)
         if self.stopped() or not self.capturable():
             return
+        target_gen = self.generation
         for key in list(self._restore_keys):
             if not self._post_window_key(key, down=True):
                 raise NavigationError(f"恢复游戏窗口后台按键失败（错误 {ctypes.get_last_error()}）。")
+        self._synced_generation = target_gen
 
     def release_key(self, key):
         self._restore_keys.discard(key)

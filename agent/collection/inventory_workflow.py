@@ -16,7 +16,7 @@ from .statistics import queue_change
 from .ordered import OrderedView, merge_prefix
 from .policy import UnregisteredMaterials
 from .protection import pending_reward
-from .scanner import IncompleteObservation, RescanSlot
+from .scanner import FocusRetryBudget, IncompleteObservation, RescanSlot
 from .recovery import RecheckSlot, operation_scope
 from task_control import ForegroundChanged
 
@@ -45,6 +45,7 @@ class FiveStarInventory(BlessingLocker):
         self.power_mode = False
         self.reserve_bling = 0
         self._last_synced_bling = None
+        self._live_pending = False
 
     def pearpal_five_star_colors(self, slot=None):
         """Return valid 5-star (name, slot, color) tuples from Pear-Pal notebook."""
@@ -313,12 +314,14 @@ class FiveStarInventory(BlessingLocker):
     def reconcile_change(self, outcome):
         """Archive an uncertain operation without inventing its item/XP delta."""
         if self.pending is None:
+            self._live_pending = False
             return
         operation = deepcopy(self.pending)
         operation.update(status="reconciled", outcome=outcome,
                          reconciled=datetime.now().isoformat(timespec="seconds"))
         self.report.setdefault("recovered_operations", []).append(operation)
         self.pending = None
+        self._live_pending = False
         self.checkpoint()
 
     def rebuild_slot(self, slot):
@@ -331,12 +334,14 @@ class FiveStarInventory(BlessingLocker):
         old = self.organization["slots"][slot]
         unfinished = next((row for row in old if row["id"] == self.organization["unfinished"]), None)
         observed = None
-        for attempt in range(3):
+        budget = FocusRetryBudget(self.rt, max_stalled=3)
+        while True:
+            budget.begin()
             try:
                 observed, _ = self.view.scan(slot, quantities=self.read_only)
                 break
             except (RescanSlot, ForegroundChanged):
-                if self.pending is not None or self.rt.stopped or attempt >= 2:
+                if self._has_live_pending() or self.rt.stopped or not budget.advance():
                     raise
                 self.rt.check_focus()
                 if not self.open_recovery():
@@ -445,11 +450,13 @@ class FiveStarInventory(BlessingLocker):
         if self.pending is not operation:
             raise RuntimeError("操作记录与当前待提交项不一致")
         operation["input_attempted"] = True
+        self._live_pending = True
         self.checkpoint()
 
     def confirm_change(self, operation, **details):
         operation.update(status="confirmed", confirmed=datetime.now().isoformat(timespec="seconds"), **details)
         self.pending = None
+        self._live_pending = False
         self.checkpoint()
 
     def confirm_upgrade(self, operation, old, new):
@@ -488,6 +495,8 @@ class FiveStarInventory(BlessingLocker):
             return False
         if facts["rarity"] != 5 or facts["level"] != 10 or facts["color"] is None:
             raise RuntimeError("不能将未确认的五星满级颜色记为收藏")
+        self.rt.check_focus()
+        click_generation = self.rt._focus_generation
         state = self.lock_state(generation, frame=self.frame(generation))
         changed = state == "unlocked"
         if changed:
@@ -496,20 +505,37 @@ class FiveStarInventory(BlessingLocker):
             # issue one raw Runtime click without its extra hover/unhover cycle.
             self._hover_box = None
             try:
-                if not self.rt.action("TouchMove", target=self.layout["lock_button"], focus_generation=generation) or not self.rt.pause(.3):
+                if (not self.rt.action("TouchMove", target=self.layout["lock_button"], focus_generation=click_generation)
+                        or not self.rt.pause(.3)):
                     raise RuntimeError("未能准备新颜色锁定")
                 self.check_generation(generation)
-                self.submit_change(operation)
-                clicked = self.rt.action("Click", target=self.layout["lock_button"], ui_click=False,
-                                         focus_generation=generation)
+                if self.rt._focus_generation != click_generation:
+                    raise ForegroundChanged("切窗后已重新核对目标，取消本次锁定点击")
             except (RescanSlot, ForegroundChanged):
-                if operation.get("input_attempted") is False:
-                    self.reconcile_change("cancelled_before_input")
+                self.reconcile_change("cancelled_before_input")
+                raise
+            self.submit_change(operation)
+            try:
+                clicked = self.rt.action("Click", target=self.layout["lock_button"], ui_click=False,
+                                         focus_generation=click_generation)
+            except (RescanSlot, ForegroundChanged):
+                self.reconcile_change("cancelled_before_input")
                 raise
             if not clicked:
                 raise RuntimeError("新颜色锁定提交不确定，已停止且不重试")
-            if not self.rt.pause(.4) or self.lock_state(generation, frame=self.frame(generation)) != "locked":
+            if not self.rt.pause(.4):
                 raise RuntimeError("新颜色锁定结果未确认，已停止且不重试")
+            confirm_budget = FocusRetryBudget(self.rt, max_stalled=1)
+            while True:
+                confirm_budget.begin()
+                try:
+                    confirm_gen = self.current_generation()
+                    if self.lock_state(confirm_gen, frame=self.frame(confirm_gen)) != "locked":
+                        raise RuntimeError("新颜色锁定结果未确认，已停止且不重试")
+                    break
+                except (RescanSlot, IncompleteObservation):
+                    if not confirm_budget.advance():
+                        raise
             self.protected.add(key)
             if self.active is not None:
                 self.active["locked"] = True
@@ -618,7 +644,9 @@ class FiveStarInventory(BlessingLocker):
     def discover_slot_prefix(self, slot):
         """Connect only the new prefix to the last complete order for one slot."""
         old = self.organization["slots"][slot]
-        for attempt in range(3):
+        budget = FocusRetryBudget(self.rt, max_stalled=3)
+        while True:
+            budget.begin()
             try:
                 prefix, cut = self.view.scan(slot, old=old, quantities=self.read_only)
                 break
@@ -626,7 +654,7 @@ class FiveStarInventory(BlessingLocker):
                 self.rebuild_slot(slot)
                 return
             except (RescanSlot, ForegroundChanged):
-                if self.pending is not None or self.rt.stopped or attempt >= 2:
+                if self._has_live_pending() or self.rt.stopped or not budget.advance():
                     raise
                 self.rt.check_focus()
                 if not self.open_recovery():
@@ -721,8 +749,10 @@ class FiveStarInventory(BlessingLocker):
         self.discover_prefixes()
         self.ensure_known_materials()
         self.rt.log("开始处理五星胚子。")
-        focus_retries = 0
-        for _ in range(1000):
+        completed_steps = 0
+        focus_budget = FocusRetryBudget(self.rt, max_stalled=3)
+        while completed_steps < 1000:
+            focus_budget.begin()
             target = self.next_target()
             if target is None:
                 return self.batch_result("collection_complete" if self.progress()["complete"] else "no_embryos")
@@ -730,6 +760,7 @@ class FiveStarInventory(BlessingLocker):
             if target["locked"] and target["maximum"]:
                 self.organization["unfinished"] = None
                 self.checkpoint()
+                completed_steps += 1
                 continue
             prev_unfinished = self.organization["unfinished"]
             split_inserted = False
@@ -740,17 +771,20 @@ class FiveStarInventory(BlessingLocker):
                     if target["slot"] in self.report.get("recovered_slots", []):
                         raise
                     self.rebuild_slot(target["slot"])
+                    completed_steps += 1
                     continue
                 if found is None:
                     if target["id"] == self.organization["unfinished"]:
                         if target["slot"] in self.report.get("recovered_slots", []):
                             raise RecheckSlot(target["slot"], "未完成对象仍待核对，保留进度")
                         self.rebuild_slot(target["slot"])
+                        completed_steps += 1
                         continue
                     # Both immutable boundaries were seen: a fed/merged old
                     # candidate is absent. No warehouse-wide lookup is needed.
                     rows.remove(target)
                     self.checkpoint()
+                    completed_steps += 1
                     continue
                 if (target["id"] != self.organization["unfinished"]
                         and found[2]["copies_before"] > 1):
@@ -773,9 +807,8 @@ class FiveStarInventory(BlessingLocker):
                 else:
                     result = UpgradeUI(self).run(*found)
             except (RescanSlot, ForegroundChanged):
-                if self.pending is not None or self.rt.stopped or focus_retries >= 6:
+                if self._has_live_pending() or self.rt.stopped or not focus_budget.advance():
                     raise
-                focus_retries += 1
                 if split_inserted and self.active is not None and self.active is not target:
                     if self.active["level"] == target["level"] and self.active in rows:
                         rows.remove(self.active)
@@ -786,8 +819,11 @@ class FiveStarInventory(BlessingLocker):
                 if not self.open_recovery():
                     raise IncompleteObservation("切回后未能恢复祝福闪光列表")
                 self.view.slot = None
-                self.rt.log("祝福闪光：窗口焦点恢复后继续处理当前胚子队列。", detail=True)
+                if focus_budget.focus_retries <= 3 or focus_budget.focus_retries % 10 == 0:
+                    self.rt.log("祝福闪光：窗口焦点恢复后继续处理当前胚子队列。", detail=True)
                 continue
+            completed_steps += 1
+            focus_budget.stalled = 0
             if result["status"] != "upgraded":
                 if result["status"] == "bling_shortage":
                     self.observe_bling(result["bling"])

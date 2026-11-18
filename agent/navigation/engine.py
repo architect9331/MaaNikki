@@ -26,6 +26,10 @@ def angle_delta(target, current):
     return (target-current+180) % 360-180
 
 
+def _pause_generation(inputs):
+    return getattr(inputs, "pause_generation", getattr(inputs, "generation", 0))
+
+
 def crossed_waypoint(target, start, end, radius, pass_radius):
     """Use a wider pass margin only after crossing the target's closest point."""
     if start is None:
@@ -65,10 +69,11 @@ class Motion:
         self.jump_state = "idle"
         self.jump_at = 0
         self.float_entered_at = 0.0
+        self.float_canceled_at = 0.0
         self.forward_started = None
         self.forward_seconds = 0
         self.last_stop = None
-        self.generation = getattr(inputs, "generation", 0)
+        self.generation = _pause_generation(inputs)
 
     def _apply_keys(self, wanted_keys, now=None):
         now = time.monotonic() if now is None else now
@@ -167,18 +172,21 @@ class Motion:
         self.jump_state, self.jump_at = state, now
         if state == "air":
             self.float_entered_at = now
+        elif state in {"first", "second_hold"}:
+            self.float_canceled_at = 0.0
 
-    def jump(self, wanted, walking, *, reason="route", walking_reliable=True):
+    def jump(self, wanted, walking, *, reason="route", walking_reliable=True, allow_air_jump=True):
         if not wanted:
             if self.jump_state == "idle":
                 return False
+            prev_state = self.jump_state
             # Cancel a queued second jump before tick can submit it.
             self.inputs.key_up("jump")
             now = time.monotonic()
             airborne = (not walking) if walking_reliable else (
                 self.float_entered_at > 0 and now - self.float_entered_at < 2.15
             )
-            cancel_float = self.jump_state == "air" and airborne
+            cancel_float = prev_state == "air" and airborne
             float_age = now - self.float_entered_at if self.float_entered_at > 0 else 99.0
             self.jump_transition("idle", reason, walking=walking,
                                  walking_reliable=walking_reliable, cancel_float=cancel_float)
@@ -195,10 +203,15 @@ class Motion:
                     self.inputs.key_up("jump")
                     self.event({"type": "jump_cancel_input", "reason": reason,
                                 "held_seconds": time.monotonic()-pressed_at})
+                self.float_canceled_at = time.monotonic()
+            elif prev_state in {"second_hold", "air"} or (
+                prev_state in {"first", "second_wait"} and walking_reliable and not walking
+            ):
+                self.float_canceled_at = now
             return False
         self.tick()
         now = time.monotonic()
-        ground_ready = walking or not walking_reliable
+        ground_ready = walking or not walking_reliable or not allow_air_jump
         rejump_ready = (
             (walking and now - self.jump_at > .2)
             if walking_reliable
@@ -218,7 +231,7 @@ class Motion:
 
     def tick(self):
         self.inputs.check()
-        generation = getattr(self.inputs, "generation", 0)
+        generation = _pause_generation(self.inputs)
         if generation != self.generation:
             self.generation = generation
             # A key-down RPC may itself have waited for focus restoration.
@@ -276,7 +289,10 @@ class Motion:
         self.lead_until = 0.0
         self.steer_keys.clear()
         if self.jump_state != "idle":
+            prev_state = self.jump_state
             self.jump_transition("idle", "motion_close")
+            if prev_state in {"second_hold", "air"}:
+                self.float_canceled_at = time.monotonic()
         if self.forward_started is not None:
             self.forward_seconds += time.monotonic()-self.forward_started
         self.forward_started = None
@@ -321,6 +337,7 @@ class Navigator:
         self.camera_probe_pixels = self.CAMERA_PROBE_PIXELS
         self.motion = None
         self.walking_reliable = False
+        self._segment_from_air = False
         self.next_skip_check = 0
         self.next_toast_check = 0
         self.relocalize = relocalize
@@ -561,7 +578,9 @@ class Navigator:
         return part
 
     def stable_heading(self, pose, *, deadline=None):
-        generation = getattr(self.inputs, "generation", 0)
+        gen_fn = ((lambda: _pause_generation(self.inputs))
+                  if self.use_wasd_steering else (lambda: getattr(self.inputs, "generation", 0)))
+        generation = gen_fn()
         deadline = min(deadline, time.monotonic()+2) if deadline is not None else time.monotonic()+2
         stable_since = None
         origin = None
@@ -571,7 +590,7 @@ class Navigator:
             if self.stopped() or self.pause(.04) is False:
                 raise NavigationError("已停止导航。")
             pose = self.observe((pose.x, pose.y), verify_heading=False)
-            if getattr(self.inputs, "generation", 0) != generation:
+            if gen_fn() != generation:
                 raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
             if not pose.position_reliable:
                 raise SceneUnavailable("小地图位置或主界面需要重新确认。")
@@ -762,9 +781,9 @@ class Navigator:
             sector_deg, chord = self._nearest_wasd_sector(delta)
         if pulse is None:
             pulse = 0.10 + 0.00083 * abs(sector_deg)
-        generation = getattr(self.inputs, "generation", 0)
+        generation = _pause_generation(self.inputs)
         self._hold_wasd_chord(chord, pulse)
-        if getattr(self.inputs, "generation", 0) != generation:
+        if _pause_generation(self.inputs) != generation:
             raise SceneUnavailable("游戏窗口状态已变化，重新确认位置和方向。")
         fg = getattr(self.inputs, "foreground", None)
         before_fg = bool(callable(fg) and fg())
@@ -789,7 +808,7 @@ class Navigator:
             if self.pause(0.18) is False:
                 raise NavigationError("已停止导航。")
             after = self.stable_heading(pose, deadline=deadline)
-            if getattr(self.inputs, "generation", 0) != generation:
+            if _pause_generation(self.inputs) != generation:
                 raise SceneUnavailable("游戏窗口状态已变化，重新确认位置和方向。")
             actual_rot = angle_delta(after.heading, before_heading)
             err_before = abs(delta)
@@ -808,7 +827,7 @@ class Navigator:
                 # UnrealWindow may ignore middle-click when the physical cursor lies outside the client rect.
                 self._middle_cursor_pos = True
                 self._hold_wasd_chord(chord, min(pulse, 0.12))
-                if getattr(self.inputs, "generation", 0) != generation:
+                if _pause_generation(self.inputs) != generation:
                     raise SceneUnavailable("游戏窗口状态已变化，重新确认位置和方向。")
                 continue
             if major_snap:
@@ -1082,7 +1101,9 @@ class Navigator:
         if type(heading) not in (int, float) or not math.isfinite(heading) or not 0 <= heading < 360:
             raise NavigationError("动作朝向须为 0–360 度范围内的有效角度（不含 360）。")
         self.inputs.check()
-        generation = getattr(self.inputs, "generation", 0)
+        gen_fn = ((lambda: _pause_generation(self.inputs))
+                  if self.use_wasd_steering else (lambda: getattr(self.inputs, "generation", 0)))
+        generation = gen_fn()
         if self.motion:
             self.motion.stop()
             self.motion.jump(False, self.walking(), reason="point_facing",
@@ -1096,7 +1117,7 @@ class Navigator:
             raise NavigationError("缺少已确认的位置，未调整动作朝向。")
         pose = self.observe((previous.x, previous.y))
         pose = self.turn(heading, pose, stationary=True, tolerance=tolerance)
-        if getattr(self.inputs, "generation", 0) != generation:
+        if gen_fn() != generation:
             raise SceneUnavailable("游戏已恢复前台，重新确认位置和方向。")
         timing = self.inputs.face_camera()
         after = self.observe((pose.x, pose.y))
@@ -1105,7 +1126,7 @@ class Navigator:
             max(tolerance, 12.0 if self._can_middle_align() else 15.0)
             if self.use_wasd_steering else tolerance
         )
-        confirmed = (getattr(self.inputs, "generation", 0) == generation
+        confirmed = (gen_fn() == generation
                      and error is not None and error <= effective_tol)
         self.event({"type": "character_facing", "source": "route_heading", "target": heading,
                     "camera_heading": after.heading, "camera_error": error,
@@ -1278,9 +1299,62 @@ class Navigator:
             return 0.0
         return min(0.15, max(0.07, turn_deg / 540.0 + 0.03))
 
+    def _float_landed(self, timeout=.80):
+        motion = self.motion
+        if motion is None or motion.float_canceled_at <= 0:
+            return True
+        if not self.walking_reliable:
+            return time.monotonic() - motion.float_canceled_at >= min(.35, timeout)
+        if time.monotonic() - motion.float_canceled_at >= timeout:
+            motion.float_canceled_at = 0.0
+            return True
+        if self.walking():
+            motion.float_canceled_at = 0.0
+            return True
+        return False
+
+    def _wait_for_landing(self, timeout=.80, *, generation=None, pause_generation=None, deadline=None):
+        motion = self.motion
+        if motion is None or motion.float_canceled_at <= 0:
+            return True
+        for _ in range(12):
+            if self._float_landed(timeout):
+                motion.float_canceled_at = 0.0
+                return True
+            if self.stopped() or (deadline is not None and time.monotonic() >= deadline):
+                raise NavigationError("导航已停止或超时。")
+            if generation is not None and getattr(self.inputs, "generation", 0) != generation:
+                return False
+            if pause_generation is not None and _pause_generation(self.inputs) != pause_generation:
+                return False
+            self.pause(.08)
+        motion.float_canceled_at = 0.0
+        return True
+
+    def _finish_step_motion(self, recovery, duration, generation, *, max_recovery_wait=1.15):
+        motion = self.motion
+        if recovery:
+            self.pause(min(max_recovery_wait, duration + .20))
+            motion.stop()
+            motion.jump(False, self.walking(), reason="unstuck_complete",
+                        walking_reliable=self.walking_reliable)
+            if self.overlay:
+                self.overlay.notify_motion(0.0, 0.0, False, cancel_jump=True)
+            if motion.float_canceled_at > 0:
+                self._wait_for_landing(.70, generation=generation)
+            self._segment_from_air = False
+        elif motion.jump_state in motion.JUMP_PENDING:
+            # Preserve the original full-height jump and second jump timing.
+            # The independent forward deadline can release W during this wait.
+            while motion.jump_state in motion.JUMP_PENDING:
+                self.pause(.01)
+        else:
+            self.pause(.01)
+
     def advance(self, pose, target, radius, speeds, *, recovery=False, detour_deg=0.0, need_stop=False):
         """Update continuous forward travel using capture-aligned feedback."""
         motion = self.motion
+        pause_generation = _pause_generation(self.inputs)
         generation = getattr(self.inputs, "generation", 0)
         remaining = distance(pose, target)
         before_at, before_input = self.pose_at, self.pose_input
@@ -1293,7 +1367,7 @@ class Navigator:
         samples = speeds[mode]
         velocity = self._planning_speed(mode, samples)
         self.inputs.check()
-        if getattr(self.inputs, "generation", 0) != generation:
+        if _pause_generation(self.inputs) != pause_generation:
             motion.close()
             return pose, False
         # Recognition may have completed well after this pose was captured.
@@ -1320,32 +1394,20 @@ class Navigator:
         self._last_move_at = time.monotonic()
         if align_lead > 0:
             self.pause(align_lead)
-        if getattr(self.inputs, "generation", 0) != generation:
+        if _pause_generation(self.inputs) != pause_generation:
             motion.close()
             return pose, False
         started_jump = motion.jump(
             jumping, walking, reason="unstuck" if recovery else "segment",
             walking_reliable=self.walking_reliable,
+            allow_air_jump=(not recovery and self._segment_from_air),
         )
         if self.overlay:
             self.overlay.notify_motion(
                 velocity, duration, jumping,
                 move_heading=bearing, new_jump=started_jump, cancel_jump=not jumping,
             )
-        if recovery:
-            self.pause(min(1.15, duration + .20))
-            motion.stop()
-            motion.jump(False, self.walking(), reason="unstuck_complete",
-                        walking_reliable=self.walking_reliable)
-            if self.overlay:
-                self.overlay.notify_motion(0.0, 0.0, False, cancel_jump=True)
-        elif motion.jump_state in motion.JUMP_PENDING:
-            # Preserve the original full-height jump and second jump timing.
-            # The independent forward deadline can release W during this wait.
-            while motion.jump_state in motion.JUMP_PENDING:
-                self.pause(.01)
-        else:
-            self.pause(.01)
+        self._finish_step_motion(recovery, duration, generation, max_recovery_wait=1.15)
         observed_at = time.monotonic()
         after = self.observe((pose.x, pose.y))
         observation_seconds = time.monotonic()-observed_at
@@ -1423,6 +1485,7 @@ class Navigator:
                      recovery=False, detour_deg=0.0, need_stop=False):
         """Drive unified 360-degree closed-loop WASD steering with live minimap cone feedback."""
         motion = self.motion
+        pause_generation = _pause_generation(self.inputs)
         generation = getattr(self.inputs, "generation", 0)
         remaining = distance(pose, target)
         before_at, before_input = self.pose_at, self.pose_input
@@ -1432,7 +1495,7 @@ class Navigator:
         samples = speeds[mode]
         velocity = self._planning_speed(mode, samples)
         self.inputs.check()
-        if getattr(self.inputs, "generation", 0) != generation:
+        if _pause_generation(self.inputs) != pause_generation:
             motion.close()
             return pose, False, (), 0.0
         advanced_seconds = max(0, motion.forward_elapsed() - before_input)
@@ -1462,7 +1525,7 @@ class Navigator:
             self.heading_turn_input = motion.forward_elapsed()
         if align_lead > 0:
             self.pause(align_lead)
-        if getattr(self.inputs, "generation", 0) != generation:
+        if _pause_generation(self.inputs) != pause_generation:
             motion.close()
             return pose, False, base_keys, phi
         started_jump = False
@@ -1470,6 +1533,7 @@ class Navigator:
             started_jump = motion.jump(
                 True, walking, reason="unstuck" if recovery else "segment",
                 walking_reliable=self.walking_reliable,
+                allow_air_jump=(not recovery and self._segment_from_air),
             )
         elif motion.jump_state != "idle":
             motion.jump(False, walking, reason="segment",
@@ -1479,18 +1543,7 @@ class Navigator:
                 velocity, duration, jumping,
                 move_heading=bearing, new_jump=started_jump, cancel_jump=not jumping,
             )
-        if recovery:
-            self.pause(min(1.05, duration + .20))
-            motion.stop()
-            motion.jump(False, self.walking(), reason="unstuck_complete",
-                        walking_reliable=self.walking_reliable)
-            if self.overlay:
-                self.overlay.notify_motion(0.0, 0.0, False, cancel_jump=True)
-        elif motion.jump_state in motion.JUMP_PENDING:
-            while motion.jump_state in motion.JUMP_PENDING:
-                self.pause(.01)
-        else:
-            self.pause(.01)
+        self._finish_step_motion(recovery, duration, generation, max_recovery_wait=1.05)
         observed_at = time.monotonic()
         after = self.observe((pose.x, pose.y))
         observation_seconds = time.monotonic() - observed_at
@@ -1572,11 +1625,12 @@ class Navigator:
         last_good = pose
         scene_interrupted, scene_retries = False, 0
         self.heading_recheck_count = 0
+        self._segment_from_air = False
         heading_rechecks = 0
         rejoin = None
         map_checked = False
         turnback_since = None
-        generation = getattr(self.inputs, "generation", 0)
+        generation = _pause_generation(self.inputs)
         try:
             self.inputs.check()
             if not self.use_wasd_steering:
@@ -1586,7 +1640,7 @@ class Navigator:
                 if self.stopped() or time.monotonic() >= deadline:
                     raise NavigationError("导航已停止或超时。")
                 motion.tick()
-                current_generation = getattr(self.inputs, "generation", 0)
+                current_generation = _pause_generation(self.inputs)
                 if current_generation != generation:
                     generation = current_generation
                     self._wasd_reset_state()
@@ -1600,6 +1654,7 @@ class Navigator:
                     last = None
                     speeds = self._initial_speeds()
                     self.heading_recheck_count = 0
+                    self._segment_from_air = False
                     scene_interrupted = False
                     heading_rechecks = 0
                     continue
@@ -1634,12 +1689,13 @@ class Navigator:
                     self._wasd_reset_state()
                     best_distance = distance(pose, rejoin or route.points[index])
                     scene_interrupted, last = False, None
+                    self._segment_from_air = False
                     heading_rechecks = 0
                     speeds = self._initial_speeds()
                     continue
                 # A guarded page read may have reached the release deadline.
                 # Refresh the old moving frame before arrival/stuck decisions.
-                if getattr(self.inputs, "generation", 0) != generation:
+                if _pause_generation(self.inputs) != generation:
                     continue
                 if not motion.until and motion.forward_elapsed()-self.pose_input > .02:
                     last, pose = pose, self.observe((pose.x, pose.y))
@@ -1653,13 +1709,15 @@ class Navigator:
                         stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         self._wasd_reset_state()
                         self._cursor_released = False
+                        self._segment_from_air = False
+                        motion.float_canceled_at = 0.0
                         best_distance = distance(pose, target)
                         map_checked = False
                         last = None
                         heading_rechecks = 0
                         speeds = self._initial_speeds()
                     prepared_index = index
-                    if pose.heading is None or getattr(self.inputs, "generation", 0) != generation:
+                    if pose.heading is None or _pause_generation(self.inputs) != generation:
                         continue
                 if rejoin is None and index == 0 and distance(pose, origin) > route.start_radius:
                     raise NavigationError("当前位置不在路线起点附近，未开始移动，请先传送或手动到达起点。")
@@ -1697,31 +1755,38 @@ class Navigator:
                             1.0 if broad_wait
                             else (0.8 if is_wait else max(.15, min(.4, radius*.25)))
                         )
-                        # Wait up to ~0.36s while still inside accept_radius so normal
-                        # deceleration does not emit false turnbacks mid-brake.
+                        # Wait up to ~0.36s while still inside accept_radius (or up to ~0.84s
+                        # after canceling Float) so landing completes before exit or dwell.
                         prev_pose = pose
-                        for _ in range(3):
+                        settle_steps = 7 if motion.float_canceled_at > 0 else 3
+                        landed = True
+                        for _ in range(settle_steps):
                             self.pause(.12)
                             confirmed = self.observe((prev_pose.x, prev_pose.y))
                             step_drift = distance(prev_pose, confirmed)
                             settled = step_drift <= settle_tol
+                            landed = self._float_landed(.80)
                             if (confirmed.heading is None or distance(confirmed, target) > accept_radius
-                                    or settled or getattr(self.inputs, "generation", 0) != generation):
+                                    or (settled and landed) or _pause_generation(self.inputs) != generation):
                                 break
                             prev_pose = confirmed
+                        settled = settled and landed
+                        if settled:
+                            motion.float_canceled_at = 0.0
+                            self._segment_from_air = False
                         self.event({"type": "arrival_check", "index": index,
                                     "target": [target.x, target.y], "radius": radius,
                                     "accept_radius": accept_radius,
                                     "before_stop": [arrival_pose.x, arrival_pose.y],
                                     "after_stop": [confirmed.x, confirmed.y],
                                     "drift": distance(arrival_pose, confirmed),
-                                    "step_drift": step_drift, "settled": settled,
+                                    "step_drift": step_drift, "settled": settled, "landed": landed,
                                     "remaining": distance(confirmed, target), "stop": motion.last_stop})
                         pose = confirmed
                         last = None
                         if (pose.heading is None or distance(pose, target) > accept_radius or not settled
-                                or getattr(self.inputs, "generation", 0) != generation):
-                            if getattr(self.inputs, "generation", 0) == generation and (
+                                or _pause_generation(self.inputs) != generation):
+                            if _pause_generation(self.inputs) == generation and (
                                     distance(pose, target) > accept_radius or not settled):
                                 if turnback_since is None:
                                     turnback_since = time.monotonic()
@@ -1742,6 +1807,7 @@ class Navigator:
                         turnback_since = None
                         stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         self._wasd_reset_state()
+                        self._segment_from_air = False
                         blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, route.points[index])
                         self.event({"type": "route_rejoined", "index": index, **pose.dict()})
@@ -1776,6 +1842,8 @@ class Navigator:
                         stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         self._wasd_reset_state()
                         self._cursor_released = False
+                        self._segment_from_air = False
+                        motion.float_canceled_at = 0.0
                         if self.route_branch:
                             replacement = self.route_branch(route, index)
                             if replacement is not None:
@@ -1783,9 +1851,10 @@ class Navigator:
                                             "destination": replacement.id, "index": index})
                                 route = replacement
                                 self.active_route = route
-                    elif index+1 < len(route.points) and motion.until:
+                    elif index+1 < len(route.points):
                         next_point = route.points[index+1]
                         next_bearing = math.degrees(math.atan2(next_point.x-pose.x, pose.y-next_point.y)) % 360
+                        had_motion = bool(motion.until or motion.steer_keys)
                         if target.jump != next_point.jump:
                             motion.stop()
                             if not next_point.jump:
@@ -1793,16 +1862,30 @@ class Navigator:
                                             walking_reliable=self.walking_reliable)
                                 if self.overlay:
                                     self.overlay.notify_motion(0.0, 0.0, False, cancel_jump=True)
-                            self.pause(.22 if next_point.jump else .2)
-                        elif not self.use_wasd_steering and pose.heading is not None:
-                            if abs(angle_delta(next_bearing, pose.heading)) >= 45:
+                                waited = motion.float_canceled_at > 0
+                                self._wait_for_landing(.80, pause_generation=generation, deadline=deadline)
+                                self._segment_from_air = False
+                                if had_motion and not waited:
+                                    self.pause(.2)
+                            else:
+                                self._segment_from_air = False
+                                if had_motion:
+                                    self.pause(.22)
+                        else:
+                            if had_motion and not self.use_wasd_steering and pose.heading is not None:
+                                if abs(angle_delta(next_bearing, pose.heading)) >= 45:
+                                    motion.stop()
+                            elif (had_motion and self.use_wasd_steering and target.jump and next_point.jump
+                                  and self._last_move_bearing is not None
+                                  and abs(angle_delta(next_bearing, self._last_move_bearing)) >= 55):
+                                # Slow-banking floating suits (e.g. Paper Crane / Witch at 120 deg/s)
+                                # shed sideways momentum briefly before sharp mid-air corners.
                                 motion.stop()
-                        elif (self.use_wasd_steering and target.jump and next_point.jump
-                              and self._last_move_bearing is not None
-                              and abs(angle_delta(next_bearing, self._last_move_bearing)) >= 55):
-                            # Slow-banking floating suits (e.g. Paper Crane / Witch at 120 deg/s)
-                            # shed sideways momentum briefly before sharp mid-air corners.
-                            motion.stop()
+                            self._segment_from_air = bool(
+                                target.jump
+                                and motion.float_canceled_at <= 0
+                                and (motion.jump_state != "idle" or (crossed and self.walking_reliable and not self.walking()))
+                            )
                     index += 1
                     self.current_index = index
                     if self.overlay and pose.position_reliable:
@@ -1813,6 +1896,13 @@ class Navigator:
                         blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, route.points[index])
                         map_checked = False
+                    last = None
+                    continue
+                if target.jump and motion.jump_state == "idle" and motion.float_canceled_at > 0 and not self._float_landed(.80):
+                    if not self._wait_for_landing(.80, pause_generation=generation, deadline=deadline):
+                        continue
+                    self._segment_from_air = False
+                    pose = self.observe((pose.x, pose.y))
                     last = None
                     continue
                 remaining_distance = distance(pose, target)
@@ -1954,7 +2044,7 @@ class Navigator:
                                 "tolerance": round(tolerance, 2)})
                 if self.stopped() or time.monotonic() >= deadline:
                     raise NavigationError("导航已停止或超时。")
-                if getattr(self.inputs, "generation", 0) != generation:
+                if _pause_generation(self.inputs) != generation:
                     continue
                 if (distance(pose, target) <= radius or not precise
                         and crossed_waypoint(target, before_turn, pose, radius, pass_radius)):

@@ -13,22 +13,27 @@ from task_control import task_time as time
 from .blessing import SLOTS
 from .policy import capabilities, observation_fields
 from .quantity import read_count
-from .scanner import LEVEL, IncompleteObservation, RescanSlot, clean_text
+from .scanner import LEVEL, FocusRetryBudget, IncompleteObservation, RescanSlot, clean_text
 from .recovery import RecheckSlot
 from tall_window import is_capture_point_safe, window_hwnd
 
 
 def resumable_observation(method):
-    """Allow bounded in-place focus recovery; bubble up to slot rescan if view changed."""
+    """Allow unbounded in-place focus recovery while bounding stalled failures."""
     @wraps(method)
     def run(self, *args, **kwargs):
-        for attempt in range(6):
+        budget = FocusRetryBudget(self.o.rt, max_stalled=6)
+        while True:
+            obs_gen = self.o.current_generation()
+            budget.begin(pause_generation=self.o.rt._pause_generation)
             try:
                 return method(self, *args, **kwargs)
             except (RescanSlot, RuntimeError):
                 recover = getattr(self.o, "recover_ordered_focus", None)
-                if (attempt >= 5 or self._recovering_focus or self.o.rt.stopped or recover is None
-                        or self.generation == self.o.rt._focus_generation):
+                if (self._recovering_focus or self.o.rt.stopped or recover is None
+                        or (self.generation == obs_gen and not budget.progressed())):
+                    raise
+                if not budget.advance():
                     raise
                 gen_before = self.o.rt._focus_generation
                 try:
@@ -39,7 +44,6 @@ def resumable_observation(method):
                     continue
                 if method.__name__ == "step":
                     return result
-        raise RescanSlot("窗口频繁切换超出单步恢复上限")
     return run
 
 
@@ -110,7 +114,7 @@ class OrderedView:
         if not self.o.set_slot(slot):
             raise RuntimeError("未确认" + slot + "列表")
         self.o.acquisition_sort()
-        self.generation = self.o.rt._focus_generation
+        self.generation = self.o.current_generation()
         top_frame = self.o.top()
         if top_frame is None:
             raise RuntimeError("未确认获得时间列表顶部")
@@ -233,14 +237,15 @@ class OrderedView:
         frame = self.o.clear_hover(self.generation)
         header_roi = [930, 15, 330, 52]
         cached = self._slot_header
+        focus_gen = self.o.rt._focus_generation
         # Wheel input changes the list, not the title. Reuse a verified title
         # only while its pixels retain the existing page-cache tolerance and
-        # the foreground generation is unchanged. Changed titles need OCR.
-        if (cached is None or cached[0] != self.generation
+        # the focus generation is unchanged. Changed titles need OCR.
+        if (cached is None or cached[0] != focus_gen
                 or not self.o.same_structure(frame, cached[1], header_roi, threshold=.997)):
             if not self.o.rt.text(header_roi, self.slot, image=frame):
                 raise RuntimeError("获得时间列表部位变化")
-            self._slot_header = (self.generation, frame)
+            self._slot_header = (focus_gen, frame)
         self.o.check_generation(self.generation)
         roi = list(self.o.grid)
         if not at_bottom:

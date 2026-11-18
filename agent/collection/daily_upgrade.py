@@ -10,7 +10,7 @@ from task_control import ForegroundChanged
 from .blessing import SLOTS
 from .inventory_workflow import FiveStarInventory
 from .policy import capabilities
-from .scanner import IncompleteObservation, RescanSlot
+from .scanner import FocusRetryBudget, IncompleteObservation, RescanSlot
 from .statistics import is_enabled as stats_enabled, upload
 from .upgrade import UpgradeUI
 from .recovery import RecheckSlot
@@ -178,7 +178,9 @@ class DailyUpgrade(FiveStarInventory):
             if not self.open():
                 raise IncompleteObservation("未能打开祝福闪光列表")
             result = None
-            for focus_try in range(4):
+            budget = FocusRetryBudget(self.rt, max_stalled=4)
+            while True:
+                budget.begin()
                 self.split_original = None
                 try:
                     selected = self.ordered_candidate() if self.prepared else self.live_candidate()
@@ -195,7 +197,7 @@ class DailyUpgrade(FiveStarInventory):
                     result = UpgradeUI(self).run(*found, once=True)
                     break
                 except (RescanSlot, ForegroundChanged):
-                    if self.pending is not None or self.rt.stopped or focus_try >= 3:
+                    if self._has_live_pending() or self.rt.stopped or not budget.advance():
                         raise
                     if self.prepared and self.split_original is not None and self.active is not None:
                         rows = self.organization["slots"][self.active["slot"]]

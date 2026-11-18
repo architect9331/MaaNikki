@@ -337,7 +337,7 @@ class StartGameAction(CustomAction):
                             cur.window_hung()
                         break
                     wall_time.sleep(.2)
-                cur.generation += 1
+                cur.bump_generation(paused=True)
                 runtime.invalidate_frame()
             finally:
                 in_hung_guard = False
@@ -379,7 +379,7 @@ class StartGameAction(CustomAction):
                         if elapsed_hung >= max_wait:
                             session.window_hung()
                         wall_time.sleep(.2)
-                    session.generation += 1
+                    session.bump_generation(paused=True)
                     runtime.invalidate_frame()
                     return False
                 finally:
@@ -508,10 +508,12 @@ class StartGameAction(CustomAction):
                     AccountState.bind(ROOT, uid)
                     runtime._account_uid = uid
                     runtime._account_generation = runtime._focus_generation
+                    runtime._account_pause_generation = runtime._pause_generation
                     session = active_session()
                     if session is not None:
                         session.account_uid = uid
                         session.account_generation = session.generation
+                        session.account_pause_generation = session.pause_generation
             except TaskStopped:
                 raise
             except (OSError, ValueError) as error:

@@ -36,12 +36,14 @@ class Runtime:
         self.game_keys = GameKeys(context)
         self._observations = []
         self._focus_generation = 0
+        self._pause_generation = 0
         self._stale_images = []
         self._frame_validated = False
         self._capture_size = None
         self._evidence = None
         self._account_uid = None
         self._account_generation = None
+        self._account_pause_generation = None
         self._account_mismatch = False
         self._frame_incomplete = False
         self._pending_route_telemetry = None
@@ -113,11 +115,26 @@ class Runtime:
                 if outermost and not self.stopped:
                     self.log("前台鼠标操作阶段已结束，恢复后台运行模式。", detail=not was_background)
 
+    def _seamless_background(self):
+        session = active_session()
+        if session is None or not session._background_active() or session._foreground_required_depth > 0:
+            return False
+        inputs = self._active_inputs()
+        if inputs is not None:
+            return bool(getattr(inputs, "window_only", False) and inputs.capturable())
+        return bool(session._background_observation)
+
+    def observation_generation(self):
+        return self._pause_generation if self._seamless_background() else self._focus_generation
+
     def check_focus(self):
         session = active_session()
         if session is None or self.stopped:
             return False
         session.wait(self.navigation_inputs)
+        pause_generation = getattr(session, "pause_generation", session.generation)
+        if self._pause_generation != pause_generation:
+            self._pause_generation = pause_generation
         resumed = self._focus_generation != session.generation
         if resumed:
             self._focus_generation = session.generation
@@ -125,11 +142,12 @@ class Runtime:
         return resumed
 
     def image_current(self, image):
+        before_obs = self.observation_generation()
         resumed = self.check_focus()
         if image is None:
             return True
         self._stale_images = [ref for ref in self._stale_images if ref() is not None]
-        if resumed:
+        if resumed and (self.observation_generation() != before_obs or not self._seamless_background()):
             self._stale_images.append(weakref.ref(image))
         return not any(ref() is image for ref in self._stale_images)
 
@@ -289,6 +307,31 @@ class Runtime:
                 return None
         return cap_size
 
+    def _dispatch_window_action(self, inputs, action, fields, *, cap_size, window_cursor_pos):
+        if action == "Click":
+            point = self._target_point(fields.get("target"), "界面点击目标")
+            with measure("input.action"):
+                succeeded = bool(inputs.click_window_point(
+                    point[0], point[1], self.pause, with_cursor_pos=window_cursor_pos, capture_size=cap_size))
+            if succeeded and fields.get("_ui_click", True):
+                return self.pause(.1) and self.ui.unhover()
+            return succeeded
+        if action == "TouchMove":
+            point = self._target_point(fields.get("target"), "界面移动坐标")
+            with measure("input.action"):
+                return bool(inputs.move_window_point(
+                    point[0], point[1], capture_size=cap_size, with_cursor_pos=window_cursor_pos))
+        if action == "Scroll":
+            point = self._target_point(fields.get("target"), "界面滚动目标")
+            with measure("input.action"):
+                return bool(inputs.scroll_window_point(
+                    point[0], point[1], fields.get("dx", 0), fields.get("dy", 0), capture_size=cap_size))
+        if action == "Swipe":
+            with measure("input.action"):
+                return bool(inputs.swipe_window_points(
+                    fields.get("begin"), fields.get("end"), fields.get("duration", 300), capture_size=cap_size))
+        return None
+
     def action(self, action, *, ui_click=True, focus_generation=None, **fields):
         if self.stopped:
             return False
@@ -324,20 +367,11 @@ class Runtime:
         if action == "ClickKey" and window_only:
             with measure("input.action"):
                 return bool(inputs.click_window_key(fields["key"], self.pause))
-        if action == "TouchMove" and use_window:
-            point = self._target_point(fields.get("target"), "界面移动坐标")
-            with measure("input.action"):
-                return bool(inputs.move_window_point(
-                    point[0], point[1], capture_size=cap_size, with_cursor_pos=window_cursor_pos))
-        if action == "Scroll" and use_window:
-            point = self._target_point(fields.get("target"), "界面滚动目标")
-            with measure("input.action"):
-                return bool(inputs.scroll_window_point(
-                    point[0], point[1], fields.get("dx", 0), fields.get("dy", 0), capture_size=cap_size))
-        if action == "Swipe" and use_window:
-            with measure("input.action"):
-                return bool(inputs.swipe_window_points(
-                    fields.get("begin"), fields.get("end"), fields.get("duration", 300), capture_size=cap_size))
+        if action in {"TouchMove", "Scroll", "Swipe"} and use_window:
+            dispatched = self._dispatch_window_action(
+                inputs, action, fields, cap_size=cap_size, window_cursor_pos=window_cursor_pos)
+            if dispatched is not None:
+                return dispatched
         if action == "Click" and ui_click:
             point = self._target_point(fields.get("target"), "界面点击目标")
             # Maa's rectangular Click target is random inside the box. UI
@@ -358,14 +392,12 @@ class Runtime:
             inputs.check()
         window_only = bool(getattr(inputs, "window_only", False))
         use_window = self._use_window_input(inputs)
-        if action == "Click" and use_window:
-            point = self._target_point(fields.get("target"), "界面点击目标")
-            with measure("input.action"):
-                succeeded = bool(inputs.click_window_point(
-                    point[0], point[1], self.pause, with_cursor_pos=window_cursor_pos, capture_size=cap_size))
-            if succeeded and ui_click:
-                return self.pause(.1) and self.ui.unhover()
-            return succeeded
+        if use_window:
+            window_fields = {**fields, "_ui_click": ui_click} if action == "Click" else fields
+            dispatched = self._dispatch_window_action(
+                inputs, action, window_fields, cap_size=cap_size, window_cursor_pos=window_cursor_pos)
+            if dispatched is not None:
+                return dispatched
         if window_only and not inputs.foreground():
             # Never dispatch fallback Seize actions when the game is unfocused.
             inputs.check(require_foreground=True)
@@ -443,7 +475,6 @@ class Runtime:
         if self._use_window_input(inputs) and hasattr(inputs, "run_with_window_point"):
             from tall_window import clamp_capture_park_point
             park = clamp_capture_park_point(hwnd, park_point, capture_size=cap_size)
-            generation = self._focus_generation
 
             def _capture_once():
                 with measure("capture"):
@@ -456,21 +487,30 @@ class Runtime:
                     with measure("capture.transfer"):
                         return result.get() if result.succeeded else None
 
-            image = inputs.run_with_window_point(
-                park[0],
-                park[1],
-                _capture_once,
-                capture_size=cap_size,
-                settle_s=settle_s,
-            )
-            self.check_focus()
-            if (image is not None and image.size > 0
-                    and generation == self._focus_generation
-                    and (image.shape[1], image.shape[0]) in ALLOWED_FRAME_SIZES
-                    and not is_clipped_game_frame(image)):
-                self.evidence.remember_frame(image, self._focus_generation)
-                self.validate_frame(image)
-                return image
+            deadline = wall_time.monotonic() + 3.0
+            while not self.stopped:
+                generation = self._focus_generation
+                image = inputs.run_with_window_point(
+                    park[0],
+                    park[1],
+                    _capture_once,
+                    capture_size=cap_size,
+                    settle_s=settle_s,
+                )
+                self.check_focus()
+                if (image is not None and image.size > 0
+                        and (generation == self._focus_generation
+                             or (self._seamless_background() and not inputs.foreground()))
+                        and (image.shape[1], image.shape[0]) in ALLOWED_FRAME_SIZES
+                        and not is_clipped_game_frame(image)):
+                    self.evidence.remember_frame(image, self._focus_generation)
+                    self.validate_frame(image)
+                    return image
+                if generation == self._focus_generation or wall_time.monotonic() >= deadline:
+                    break
+                inputs = self._active_inputs()
+                if not self._use_window_input(inputs) or not hasattr(inputs, "run_with_window_point"):
+                    break
         return self.capture()
 
     def ensure_frame(self):
@@ -517,7 +557,7 @@ class Runtime:
             if available is not None and not available():
                 return None
             self.check_focus()
-            generation = self._focus_generation
+            obs_gen = self.observation_generation()
             with measure("capture"):
                 with measure("capture.post"):
                     result = self.controller.post_screencap()
@@ -540,13 +580,13 @@ class Runtime:
                 if self.stopped or available is not None and not available():
                     return None
                 self.check_focus()
-                if expired or generation != self._focus_generation:
+                if expired or obs_gen != self.observation_generation():
                     count("capture.discarded")
                     continue
                 with measure("capture.transfer"):
                     image = result.get() if result.succeeded else None
             self.check_focus()
-            if generation != self._focus_generation:
+            if obs_gen != self.observation_generation():
                 count("capture.discarded")
                 continue
             if image is None or image.size == 0:
@@ -570,6 +610,7 @@ class Runtime:
     def recognize(self, node, fields=None, image=None):
         if not self.image_current(image):
             return None
+        before_obs = self.observation_generation()
         image = self.frame() if image is None else image
         if image is None or image.size == 0:
             return None
@@ -583,7 +624,8 @@ class Runtime:
                 results=[{key: getattr(row, key, None) for key in ("text", "score", "box")}
                          for row in rows[:6] if row is not None],
                 detail=getattr(result, "detail", None))
-        if self.check_focus():
+        self.check_focus()
+        if self.observation_generation() != before_obs:
             self._stale_images.append(weakref.ref(image))
             return None
         return result
@@ -626,15 +668,33 @@ class Runtime:
         return " ".join(getattr(item, "text", "") for item in results)
 
     def click_text(self, words, roi=None):
+        from task_control import ForegroundChanged
         fields = {"expected": words, "roi": roi or [0, 0, 1280, 720]}
-        result = None
-        for _ in range(2):
+        misses = 0
+        while not self.stopped and misses < 2:
+            self.check_focus()
             before = self._focus_generation
-            result = self.recognize("MaaNikki_Daily_OCR", fields)
-            if result is not None or self.stopped or self._focus_generation == before:
+            frame = self.frame()
+            if frame is None:
                 break
-            self.invalidate_frame()
-        return bool(result and result.hit and self.ui.click_box(list(result.box)) and self.pause(0.5))
+            result = self.recognize("MaaNikki_Daily_OCR", fields, image=frame)
+            if self.stopped:
+                break
+            if result is None:
+                if self._focus_generation == before:
+                    misses += 1
+                self.invalidate_frame()
+                continue
+            if not result.hit:
+                if self._focus_generation != before:
+                    self.invalidate_frame()
+                    continue
+                return False
+            try:
+                return bool(self.ui.click_box(list(result.box), focus_generation=before) and self.pause(0.5))
+            except ForegroundChanged:
+                self.invalidate_frame()
+        return False
 
     def click_template(self, node, attempts=3, wait_seconds=None, *, ready=None, verify=True):
         config = parameters(self.context, node)
@@ -653,13 +713,35 @@ class Runtime:
             wait_seconds = delay / 1000 if type(delay) in (int, float) else .5
         if not math.isfinite(wait_seconds) or not 0 <= wait_seconds <= 60:
             raise ValueError("按钮等待时间无效。")
-        for index in range(attempts):
-            result = self.recognize(node)
-            if result and result.hit:
+        from task_control import ForegroundChanged
+        misses = 0
+        while not self.stopped and misses < attempts:
+            self.check_focus()
+            before = self._focus_generation
+            frame = self.frame()
+            result = self.recognize(node, image=frame) if frame is not None else None
+            if self.stopped:
+                break
+            if result is None:
+                if self._focus_generation == before:
+                    misses += 1
+                    if misses < attempts and not self.pause(1):
+                        break
+                self.invalidate_frame()
+                continue
+            if result.hit:
                 target = config.get("target", True)
                 box = list(result.box) if target is True else target
-                return self.action("Click", target=box) and self.pause(wait_seconds)
-            if index+1 < attempts and not self.pause(1):
+                try:
+                    return self.action("Click", target=box, focus_generation=before) and self.pause(wait_seconds)
+                except ForegroundChanged:
+                    self.invalidate_frame()
+                    continue
+            if self._focus_generation != before:
+                self.invalidate_frame()
+                continue
+            misses += 1
+            if misses < attempts and not self.pause(1):
                 break
         return False
 
@@ -696,9 +778,11 @@ class Runtime:
         AccountState.bind(ROOT, observed)
         self._account_uid = observed
         self._account_generation = self._focus_generation
+        self._account_pause_generation = self._pause_generation
         if session:
             session.account_uid = observed
             session.account_generation = session.generation
+            session.account_pause_generation = session.pause_generation
         return observed
 
     def read_account_uid(self, image):
@@ -709,7 +793,7 @@ class Runtime:
             or not self.image_current(image)
         ):
             return None
-        generation = self._focus_generation
+        generation = self.observation_generation()
         from .ui import fields
         node = "MaaNikki_Asset_AccountUid"
         # This fixed footer crop contains only the UID digits, excluding the
@@ -726,7 +810,7 @@ class Runtime:
         result = self.recognize(node, {
             "roi": [0, 0, w*3, h*3], "only_rec": True,
             "expected": r"^[0-9\s]+$"}, image=crop)
-        if self._focus_generation != generation:
+        if self.observation_generation() != generation:
             return None
         candidates = self.account_uid_candidates(result)
         return next(iter(candidates)) if len(candidates) == 1 else None
@@ -753,6 +837,9 @@ class Runtime:
         """Recheck visible identity before saving; hidden UID keeps only this task's binding."""
         session = active_session()
         generation = (getattr(session, "account_generation", None) if session else self._account_generation)
+        pause_generation = (
+            getattr(session, "account_pause_generation", None) if session else self._account_pause_generation
+        )
         if self._account_mismatch or getattr(session, "account_mismatch", False):
             raise ValueError("游戏 UID 已变化，请重新运行任务")
         # Bind session UID onto fresh sub-task runtimes before comparing OCR reads.
@@ -804,6 +891,11 @@ class Runtime:
             and image.shape[:2] == (TALL_CAPTURE_HEIGHT, TALL_CAPTURE_WIDTH)
         ):
             return
+        paused_since_bind = (
+            not self._seamless_background()
+            or pause_generation is None
+            or pause_generation != self._pause_generation
+        )
         if observed is None and (image is None or generation != self._focus_generation):
             for _ in range(3):
                 if self.stopped or not self.pause(.25):
@@ -824,7 +916,7 @@ class Runtime:
                                 session.account_mismatch = True
                             raise ValueError("游戏账号已切换，本次处理记录仍保留在原 UID，请重新运行任务")
                     break
-        if observed is None and (image is None or generation != self._focus_generation):
+        if observed is None and paused_since_bind and (image is None or generation != self._focus_generation):
             raise ValueError("切回游戏后未能确认 UID，本次账号记录暂未更新")
         if observed is not None:
             if self._account_uid is None:
@@ -832,8 +924,10 @@ class Runtime:
                 if session and getattr(session, "account_uid", None) is None:
                     session.account_uid = observed
             self._account_generation = self._focus_generation
+            self._account_pause_generation = self._pause_generation
             if session:
                 session.account_generation = session.generation
+                session.account_pause_generation = session.pause_generation
 
     def finish(self, entry):
         """Leave a verified page suited to the next submitted task."""

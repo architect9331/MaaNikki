@@ -9,7 +9,7 @@ from .blessing import SLOTS, summarize_scan
 from .locking import BlessingLocker
 from .ordered import OrderedView, TallSelectUnsafe, baseline, signature
 from .policy import normalize_scope, observation_fields, reconcile_exclusions
-from .scanner import RescanSlot, clean_text
+from .scanner import FocusRetryBudget, RescanSlot, clean_text
 
 
 class _RestartOrganization(Exception):
@@ -34,7 +34,9 @@ class BlessingOrganizer(BlessingLocker):
             self._baseline_operations = len(self.report["operations"])
 
     def apply_organized_lock(self, view, row, rows, box, facts, evidence, generation, target):
-        for attempt in range(2):
+        budget = FocusRetryBudget(self.rt, max_stalled=1)
+        while True:
+            budget.begin()
             try:
                 self.change_lock(box, facts, evidence, generation,
                                  target="locked" if target else "unlocked",
@@ -42,25 +44,44 @@ class BlessingOrganizer(BlessingLocker):
                 self.confirm_selected_lock(generation)
                 return
             except (RescanSlot, RuntimeError) as error:
-                if attempt or self.rt.stopped or self.rt._focus_generation == generation:
+                if self.rt.stopped:
                     raise
                 operation = self.pending
                 if operation is not None and operation.get("input_status") == "succeeded":
-                    try:
-                        checkpoint, frame, resumed = self.resumed_scene(view, check_initial_capacity=True)
-                    except RescanSlot as rescan_err:
-                        raise RuntimeError("切回后锁定操作页面发生变化，已保留操作记录，下次运行会重新整理") from rescan_err
-                    if (not self.selected(frame, box)
-                            or not self.same_ordered_view(checkpoint, frame, ignore_box=box)):
-                        raise RuntimeError("切回后锁定操作影响了列表位置，已保留操作记录，下次运行会重新整理") from error
-                    self.accept_ordered_focus(view, frame, resumed, "confirm_lock")
-                    self.counter += 1
-                    actual, _ = self.read_details(box, resumed, self.counter)
-                    if not self.same_card_facts(actual, facts):
-                        raise RuntimeError("切回后选中闪光与操作记录不一致") from error
-                    self.confirm_selected_lock(resumed)
-                    view.remember_view(self.clear_hover(resumed), checkpoint["boxes"])
-                    return
+                    confirm_budget = FocusRetryBudget(self.rt, max_stalled=1)
+                    while True:
+                        confirm_budget.begin()
+                        try:
+                            checkpoint, frame, resumed = self.resumed_scene(
+                                view, check_initial_capacity=True
+                            )
+                        except RescanSlot as rescan_err:
+                            if not confirm_budget.advance():
+                                raise RuntimeError(
+                                    "切回后锁定操作页面发生变化，已保留操作记录，下次运行会重新整理"
+                                ) from rescan_err
+                            continue
+                        if (not self.selected(frame, box)
+                                or not self.same_ordered_view(checkpoint, frame, ignore_box=box)):
+                            raise RuntimeError(
+                                "切回后锁定操作影响了列表位置，已保留操作记录，下次运行会重新整理"
+                            ) from error
+                        try:
+                            self.accept_ordered_focus(view, frame, resumed, "confirm_lock")
+                            self.counter += 1
+                            actual, _ = self.read_details(box, resumed, self.counter)
+                            if not self.same_card_facts(actual, facts):
+                                raise RuntimeError("切回后选中闪光与操作记录不一致") from error
+                            self.confirm_selected_lock(resumed)
+                            view.remember_view(self.clear_hover(resumed), checkpoint["boxes"])
+                            return
+                        except (RescanSlot, ForegroundChanged) as confirm_err:
+                            if not confirm_budget.advance():
+                                raise RuntimeError(
+                                    "切回后锁定结果未能确认，已保留操作记录，下次运行会重新整理"
+                                ) from confirm_err
+                if not budget.advance():
+                    raise
                 if operation is not None:
                     if not isinstance(error, ForegroundChanged) or operation.get("input_status") != "prepared":
                         raise
@@ -141,31 +162,36 @@ class BlessingOrganizer(BlessingLocker):
         self.rt.check_focus()
         frame = self.rt.capture()
         if frame is not None and frame.shape[:2] == (720, 1280) and self.ready(frame):
-            self.organization_generation = self.rt._focus_generation
+            self.organization_generation = self.current_generation()
             return
         if not self.open():
             raise RuntimeError("未能打开祝福闪光库存")
         self.rt.check_focus()
-        self.organization_generation = self.rt._focus_generation
+        self.organization_generation = self.current_generation()
 
     def _run_normal_slot(self, view, slot, ordered, *, operations_only=None):
         rows_cache, maximum_cache, ops_cache = (operations_only if operations_only is not None else (None, None, None))
-        for attempt in range(4):
+        budget = FocusRetryBudget(self.rt, max_stalled=4)
+        first_attempt = True
+        while True:
+            budget.begin()
             try:
                 self._ensure_inventory_ready()
                 if self.read_capacity() != self.initial_capacity:
                     raise _RestartOrganization("切回后仓库容量发生变化，重新开始整理")
                 view.slot = None
                 view.enter(slot)
-                if ops_cache is not None and attempt == 0:
+                if ops_cache is not None and first_attempt:
                     rows, maximum, operations = rows_cache, maximum_cache, ops_cache
                 else:
                     rows, _ = view.scan(slot, quantities=True)
                     maximum, operations = self._plan_slot_operations(rows)
+                first_attempt = False
                 self._run_slot_operations(view, slot, rows, maximum, operations, ordered)
                 return
             except RescanSlot:
-                if self.pending is not None or self.rt.stopped or attempt >= 3:
+                first_attempt = False
+                if self._has_live_pending() or self.rt.stopped or not budget.advance():
                     raise
                 self.rt.log(f"祝福闪光整理：窗口焦点恢复后重新核对{slot}。", detail=True)
 
@@ -174,22 +200,24 @@ class BlessingOrganizer(BlessingLocker):
         if not self.open():
             raise RuntimeError("未能打开祝福闪光库存")
         self.rt.check_focus()
-        self.organization_generation = self.rt._focus_generation
+        self.organization_generation = self.current_generation()
         self.initial_capacity = self.read_capacity()
         self.snapshot["scan"].update(view="normal_inventory", workflow="blessing_lock",
                                      reported_capacity=self.initial_capacity[0])
         ordered = {}
         view = OrderedView(self)
-        for attempt in range(3):
+        init_budget = FocusRetryBudget(self.rt, max_stalled=3)
+        while True:
+            init_budget.begin()
             try:
                 self.rt.check_focus()
-                self.organization_generation = self.rt._focus_generation
+                self.organization_generation = self.current_generation()
                 if not self.set_slot(SLOTS[0]):
                     raise RuntimeError("未确认" + SLOTS[0] + "列表")
                 self.acquisition_sort()
                 break
             except RescanSlot:
-                if self.pending is not None or self.rt.stopped or attempt >= 2:
+                if self._has_live_pending() or self.rt.stopped or not init_budget.advance():
                     raise
                 self._ensure_inventory_ready()
                 if self.read_capacity() != self.initial_capacity:
@@ -204,9 +232,10 @@ class BlessingOrganizer(BlessingLocker):
             try:
                 for slot_idx, slot in enumerate(SLOTS):
                     slot_done = False
-                    for attempt in range(3):
-                        self.rt.check_focus()
-                        self.organization_generation = self.rt._focus_generation
+                    slot_budget = FocusRetryBudget(self.rt, max_stalled=3)
+                    while True:
+                        slot_budget.begin()
+                        self.organization_generation = self.current_generation()
                         try:
                             rows, _ = view.scan(slot, quantities=True)
                             maximum, operations = self._plan_slot_operations(rows)
@@ -223,7 +252,7 @@ class BlessingOrganizer(BlessingLocker):
                             slot_done = True
                             break
                         except RescanSlot:
-                            if self.pending is not None or self.rt.stopped:
+                            if self._has_live_pending() or self.rt.stopped:
                                 raise
                             if is_tall:
                                 frame = self.rt.capture()
@@ -235,10 +264,9 @@ class BlessingOrganizer(BlessingLocker):
                                     slot_done = False
                                     break
                             view.slot = None
-                            if attempt < 2:
-                                self.rt.log(f"祝福闪光整理：窗口焦点恢复后重新核对{slot}。", detail=True)
-                            else:
+                            if not slot_budget.advance():
                                 raise
+                            self.rt.log(f"祝福闪光整理：窗口焦点恢复后重新核对{slot}。", detail=True)
                     if not slot_done:
                         break
             finally:
@@ -267,10 +295,11 @@ class BlessingOrganizer(BlessingLocker):
                 self.rt.log("祝福闪光整理：切回后检测到仓库数量变化，重新核对整份仓库。")
 
     def read_capacity(self):
-        for attempt in range(4):
+        budget = FocusRetryBudget(self.rt, max_stalled=4)
+        while True:
+            budget.begin()
             try:
-                self.rt.check_focus()
-                gen = self.rt._focus_generation
+                gen = self.current_generation()
                 frame = self.clear_hover(gen)
                 counts = self.capacity_values(frame)
                 self.check_generation(gen)
@@ -280,7 +309,7 @@ class BlessingOrganizer(BlessingLocker):
                     raise RuntimeError("普通仓库容量未能确认，未发布完整库存")
                 return counts[0]
             except RescanSlot:
-                if self.pending is not None or self.rt.stopped or attempt >= 3:
+                if self._has_live_pending() or self.rt.stopped or not budget.advance():
                     raise
                 if not self.open():
                     raise RuntimeError("切回后未能恢复祝福闪光库存页面")

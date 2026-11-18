@@ -527,7 +527,8 @@ class MinigameBlingRun(Runtime):
         False on exhausted retries, or None when stopped/click-failed.
         """
         sent_clicks = 0
-        focus_retries = 0
+        stalled_focus_retries = 0
+        last_focus_gen = info["generation"]
         click_at = 0.0
         while sent_clicks < max_clicks and not self.stopped:
             if still_active is not None and not still_active(info):
@@ -553,9 +554,13 @@ class MinigameBlingRun(Runtime):
                         until=until,
                     )
                     return matched, info, click_at
-                focus_retries += 1
-                if focus_retries >= 3:
-                    break
+                if info["generation"] == last_focus_gen:
+                    stalled_focus_retries += 1
+                    if stalled_focus_retries >= 3:
+                        break
+                else:
+                    last_focus_gen = info["generation"]
+                    stalled_focus_retries = 0
                 continue
             sent_clicks += 1
             # Runtime.action('Click') pauses 0.1s after MouseUp before returning.

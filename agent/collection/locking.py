@@ -8,7 +8,7 @@ import re
 import cv2
 import numpy as np
 
-from task_control import TaskStopped
+from task_control import ForegroundChanged, TaskStopped
 from daily.runtime import parameters
 from daily.settings import ROOT
 from tall_window import clamp_capture_park_point, is_capture_point_safe, safe_capture_y_range
@@ -17,7 +17,7 @@ from .blessing import SLOTS
 from .details import HEADER
 from file_io import write_json
 from .policy import capabilities
-from .scanner import IncompleteObservation, InventoryScanner, RescanSlot, clean_text
+from .scanner import FocusRetryBudget, IncompleteObservation, InventoryScanner, RescanSlot, clean_text
 
 
 READY = "MaaNikki_Blessing_InventoryReady"
@@ -187,22 +187,23 @@ class BlessingLocker(InventoryScanner):
         raise IncompleteObservation("未确认祝福闪光普通库存页（需要 16:9 窗口）")
 
     def ready(self, frame):
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
         self.check_generation(generation)
-        if (generation == self._ready_generation
+        focus_generation = self.rt._focus_generation
+        if (focus_generation == self._ready_generation
                 and self.same_structure(frame, self._ready_frame, [930, 15, 340, 52], threshold=.997)):
             return True
         result = self.rt.recognize(READY, image=frame)
         self.check_generation(generation)
         matched = bool(result and result.hit)
         if matched:
-            self._ready_frame, self._ready_generation = frame, generation
+            self._ready_frame, self._ready_generation = frame, focus_generation
         return matched
 
-    def check_generation(self, generation):
+    def check_generation(self, generation, *, focus_sensitive=False):
         if self.rt.stopped:
             raise TaskStopped("用户停止祝福闪光仓库读取")
-        super().check_generation(generation)
+        super().check_generation(generation, focus_sensitive=focus_sensitive)
 
     def open(self):
         return self.rt.ui.find_menu_entry(node="MaaNikki_Blessing_Entrance", scroll=True)
@@ -330,7 +331,7 @@ class BlessingLocker(InventoryScanner):
         return [left, top, 328, min(126, 720 - top)]
 
     def recognize_cards(self, frame, boxes, slot, *, purpose="page"):
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
         self.check_generation(generation)
         matches = self.card_models.match_batch(frame, boxes, slot)
         self.check_generation(generation)
@@ -596,7 +597,7 @@ class BlessingLocker(InventoryScanner):
             self._model_slot = slot
             self._ordered_scroll_step = self.layout["scroll_step"]
             if self._tall_mode:
-                generation = self.rt._focus_generation
+                generation = self.current_generation()
                 prev_count = -1
                 for _ in range(6):
                     frame = self.frame(generation)
@@ -626,7 +627,7 @@ class BlessingLocker(InventoryScanner):
                 return
             raise IncompleteObservation("超长竖屏模式下排序选项位于安全可点击区外")
         dy = self.layout["sort_label"][1] - self._base_layout["sort_label"][1]
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
         frame = self.clear_hover(generation)
         if not self.rt.text(self.layout["sort_label"], "获得时间", image=frame):
             # Capacity text sits beside the final option and can merge into its OCR line.
@@ -675,7 +676,7 @@ class BlessingLocker(InventoryScanner):
         )
 
     def top(self):
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
         self.clear_hover(generation)
         return super().top()
 
@@ -720,6 +721,8 @@ class BlessingLocker(InventoryScanner):
         # then recapture the page, selection and source state before one input.
         if not self.rt.action("TouchMove", target=self.layout["lock_button"]) or not self.rt.pause(.3):
             raise RuntimeError(f"未能准备{verb}操作")
+        self.rt.check_focus()
+        click_generation = self.rt._focus_generation
         current = self.frame(generation)
         if not self.selected(current, box):
             raise RuntimeError(f"{verb}前目标选中状态丢失")
@@ -727,6 +730,8 @@ class BlessingLocker(InventoryScanner):
             raise RuntimeError(f"{verb}前状态改变，未再次点击")
         self._hover_box = None
         self.check_generation(generation)
+        if self.rt._focus_generation != click_generation:
+            raise ForegroundChanged("切窗后已重新核对目标，取消本次锁定点击")
         operation = {"key": list(self.key(facts)), "level": facts["level"],
                      "kind": "lock" if target == "locked" else "unlock", "reason": reason,
                      "expected_state": target,
@@ -738,7 +743,7 @@ class BlessingLocker(InventoryScanner):
         self.save()
         # The lock toggle is submitted once even if delivery/verification fails.
         if not self.rt.action("Click", target=self.layout["lock_button"], ui_click=False,
-                              focus_generation=generation):
+                              focus_generation=click_generation):
             operation["input_status"] = "uncertain"
             raise RuntimeError(f"{verb}输入结果不确定，停止且不重试，请检查当前物品")
         operation["input_status"] = "succeeded"
@@ -816,8 +821,11 @@ class BlessingLocker(InventoryScanner):
             frame = self.clear_hover(view.generation, settle_card=True)
             view.remember_view(frame, checkpoint["boxes"])
 
+    def _has_live_pending(self):
+        return self.pending is not None and getattr(self, "_live_pending", True)
+
     def _abort_or_rescan_focus(self, message):
-        if self.pending is not None:
+        if self._has_live_pending():
             raise RuntimeError(message)
         raise RescanSlot(message)
 
@@ -827,31 +835,39 @@ class BlessingLocker(InventoryScanner):
         if require_checkpoint and (checkpoint is None or checkpoint["slot"] != target_slot):
             self._abort_or_rescan_focus("切回后缺少当前页参照")
         self.rt.check_focus()
-        generation = self.rt._focus_generation
+        generation = self.current_generation()
+        focus_generation = self.rt._focus_generation
         if not self.rt.action("TouchMove", target=self._park_point()) or not self.rt.pause(.2):
             if self.rt.stopped:
                 raise TaskStopped("用户停止祝福闪光读取")
-            if self.rt._focus_generation != generation:
+            if self.current_generation() != generation:
                 raise RescanSlot("恢复期间焦点再次变化")
             raise RuntimeError("前台恢复被中断")
-        if self.rt._focus_generation != generation:
+        if self.current_generation() != generation:
             raise RescanSlot("恢复期间焦点再次变化")
-        first = self.rt.capture()
+        first = (
+            self.rt.capture_parked(self._park_point())
+            if self.rt._seamless_background() and hasattr(self.rt, "capture_parked")
+            else self.rt.capture()
+        )
         frame = first
-        for _ in range(3):
-            if not self.rt.pause(.12):
-                if self.rt.stopped:
-                    raise TaskStopped("用户停止祝福闪光读取")
-                if self.rt._focus_generation != generation:
-                    raise RescanSlot("恢复期间焦点再次变化")
-                raise RuntimeError("前台恢复被中断")
-            frame = self.rt.capture()
-            if frame is not None and first is not None and frame.shape == first.shape:
-                grid_roi = self._base_layout["grid"] if self._tall_mode else self.grid
-                if self.same_structure(first, frame, grid_roi, threshold=.985):
-                    break
-            first = frame
-        if self.rt._focus_generation != generation:
+        if not (require_checkpoint and first is not None
+                and first.shape[:2] in ((720, 1280), (5120, 1280))
+                and self.same_ordered_view(checkpoint, first)):
+            for _ in range(3):
+                if not self.rt.pause(.12):
+                    if self.rt.stopped:
+                        raise TaskStopped("用户停止祝福闪光读取")
+                    if self.current_generation() != generation:
+                        raise RescanSlot("恢复期间焦点再次变化")
+                    raise RuntimeError("前台恢复被中断")
+                frame = self.rt.capture()
+                if frame is not None and first is not None and frame.shape == first.shape:
+                    grid_roi = self._base_layout["grid"] if self._tall_mode else self.grid
+                    if self.same_structure(first, frame, grid_roi, threshold=.985):
+                        break
+                first = frame
+        if self.current_generation() != generation:
             raise RescanSlot("恢复核对期间焦点再次变化")
         if (frame is None or frame.shape[:2] not in ((720, 1280), (5120, 1280))
                 or not (self.rt.text([930, 15, 330, 52], target_slot, image=frame)
@@ -859,11 +875,15 @@ class BlessingLocker(InventoryScanner):
                 or (require_checkpoint and (
                     not self.rt.text(self.layout["sort_label"], "获得时间", image=frame)
                     or self.sort_direction(frame, self._get_acquired_desc_template()) != "desc"))):
+            if self.current_generation() != generation or self.rt._focus_generation != focus_generation:
+                raise RescanSlot("恢复核对期间焦点再次变化")
             self._abort_or_rescan_focus("切回后列表页面、部位或排序变化")
         if check_initial_capacity and getattr(self, "initial_capacity", None) is not None:
             if self.capacity_values(frame) != [self.initial_capacity]:
+                if self.current_generation() != generation or self.rt._focus_generation != focus_generation:
+                    raise RescanSlot("恢复核对期间焦点再次变化")
                 self._abort_or_rescan_focus("切回后仓库容量发生变化")
-        if self.rt._focus_generation != generation:
+        if self.current_generation() != generation:
             raise RescanSlot("恢复核对期间焦点再次变化")
         return checkpoint, frame, generation
 
@@ -875,7 +895,7 @@ class BlessingLocker(InventoryScanner):
         self._hover_box = None
         self._hover_panel = None
         self._page_frame = self._ready_frame = frame
-        self._ready_generation = generation
+        self._ready_generation = self.rt._focus_generation
         self.verified.clear()
         view._page_frame, view._page_cells = None, []
         self.report.setdefault("focus_recoveries", []).append({

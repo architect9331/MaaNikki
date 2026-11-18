@@ -6,7 +6,7 @@ from daily.runtime import parameters
 from daily.settings import ROOT
 from adventure_report import try_record_adventure_entry
 from task_control import ForegroundChanged, task_time as time
-from .scanner import IncompleteObservation, RescanSlot, clean_text
+from .scanner import FocusRetryBudget, IncompleteObservation, RescanSlot, clean_text
 
 
 READY = "MaaNikki_Blessing_DecomposeReady"
@@ -44,6 +44,7 @@ class LowRarityDecomposer:
         if any(field not in loaded for field in required):
             self.rt.log("运行中的分解布局配置未完整加载，已读取本地资源补齐。", detail=True)
         self.generation = None
+        self._last_read_focus_gen = None
 
     def text(self, field, frame):
         value = clean_text(self.rt.text(self.layout[field], image=frame))
@@ -99,6 +100,26 @@ class LowRarityDecomposer:
             return self.rt.capture_parked(self._park_point(attempt))
         return self.rt.capture()
 
+    def _prepare_auto_fill(self, filter_regex, state):
+        budget = FocusRetryBudget(self.rt, max_stalled=4)
+        while True:
+            budget.begin()
+            try:
+                if state is None:
+                    state = self._ensure_open_and_filter(filter_regex)
+                self.click("auto_fill")
+                selected, frame = self.read()
+                if not re.fullmatch(filter_regex, selected["filter"]):
+                    raise RuntimeError("一键放入后分解星级筛选改变")
+                if any(selected[key] != state[key] for key in ("capacity", "particles")):
+                    raise RuntimeError("放入分解材料期间容量或粒子发生变化，未提交分解")
+                self.o.check_generation(self.generation)
+                return selected, frame
+            except (RescanSlot, ForegroundChanged):
+                if self.o._has_live_pending() or self.rt.stopped or not budget.advance():
+                    raise
+                state = None
+
     def read(self):
         self._park_hover(0)
         if not self.rt.pause(.06):
@@ -107,8 +128,8 @@ class LowRarityDecomposer:
         prev_gen = None
         hold_park = False
         for attempt in range(16):
-            self.rt.check_focus()
-            gen = self.rt._focus_generation
+            gen = self.o.current_generation()
+            focus_gen = self.rt._focus_generation
             frame = self._capture_frame(attempt, park=hold_park)
             if frame is None or frame.shape[:2] != (720, 1280):
                 if not self.rt.pause(.2):
@@ -117,7 +138,7 @@ class LowRarityDecomposer:
                 prev_gen = None
                 continue
             ready = self.rt.recognize(READY, image=frame)
-            if self.rt._focus_generation != gen:
+            if self.o.current_generation() != gen:
                 self._park_hover(attempt + 1)
                 previous = None
                 prev_gen = None
@@ -125,13 +146,14 @@ class LowRarityDecomposer:
             if not ready or not ready.hit:
                 raise IncompleteObservation("未确认祝福闪光分解页面")
             current = self.values(frame)
-            if self.rt._focus_generation != gen:
+            if self.o.current_generation() != gen:
                 self._park_hover(attempt + 1)
                 previous = None
                 prev_gen = None
                 continue
             if current is not None and current == previous and prev_gen == gen:
                 self.generation = gen
+                self._last_read_focus_gen = focus_gen
                 if self.o.organization is not None:
                     limit = (self.o.organization.get("capacity") or [0, 1000])[1]
                     self.o.organization.update(
@@ -163,7 +185,9 @@ class LowRarityDecomposer:
             self.o.check_generation(self.generation)
 
     def _ensure_open_and_filter(self, filter_regex):
-        for attempt in range(4):
+        budget = FocusRetryBudget(self.rt, max_stalled=4)
+        while True:
+            budget.begin()
             try:
                 self.rt.check_focus()
                 frame = self.rt.capture()
@@ -186,9 +210,8 @@ class LowRarityDecomposer:
                     raise RuntimeError("分解筛选或空材料状态未确认")
                 return state
             except (RescanSlot, ForegroundChanged):
-                if self.o.pending is not None or self.rt.stopped or attempt >= 3:
+                if self.o._has_live_pending() or self.rt.stopped or not budget.advance():
                     raise
-        raise IncompleteObservation("切回后未能恢复分解页面状态")
 
     def await_result(self, before, *, five_star=False):
         deadline = time.monotonic() + 20
@@ -198,11 +221,11 @@ class LowRarityDecomposer:
         hold_park = False
         attempt = 0
         while time.monotonic() < deadline:
-            self.rt.check_focus()
-            gen = self.rt._focus_generation
+            gen = self.o.current_generation()
+            focus_gen = self.rt._focus_generation
             frame = self._capture_frame(attempt, park=hold_park)
             attempt += 1
-            if frame is None or frame.shape[:2] != (720, 1280) or self.rt._focus_generation != gen:
+            if frame is None or frame.shape[:2] != (720, 1280) or self.o.current_generation() != gen:
                 if not self.rt.pause(.2):
                     break
                 previous = None
@@ -219,7 +242,7 @@ class LowRarityDecomposer:
                 if not result or not result.hit:
                     raise RuntimeError("分解确认弹窗按钮未识别，已停止")
                 try:
-                    clicked = self.rt.action("Click", target=list(result.box), focus_generation=gen)
+                    clicked = self.rt.action("Click", target=list(result.box), focus_generation=focus_gen)
                 except ForegroundChanged:
                     previous = None
                     continue
@@ -227,7 +250,7 @@ class LowRarityDecomposer:
                     raise RuntimeError("分解确认提交不确定，已停止且不重试")
                 confirmed_dialog = True
             elif not dismissed_reward and self.rt.hit("MaaNikki_RewardLayer"):
-                if self.rt._focus_generation != gen:
+                if self.o.current_generation() != gen:
                     previous = None
                     continue
                 dismissed_reward = True
@@ -236,7 +259,7 @@ class LowRarityDecomposer:
             else:
                 ready = self.rt.recognize(READY, image=frame)
                 current = self.values(frame) if ready and ready.hit else None
-                if self.rt._focus_generation != gen:
+                if self.o.current_generation() != gen:
                     previous = None
                     continue
                 if ready and ready.hit and current is None and not hold_park:
@@ -262,24 +285,11 @@ class LowRarityDecomposer:
         last_notice = time.monotonic()
         state = self._ensure_open_and_filter(FILTER)
         try:
-            for _ in range(101):
-                selected = frame = None
-                for focus_try in range(4):
-                    try:
-                        if state is None:
-                            state = self._ensure_open_and_filter(FILTER)
-                        self.click("auto_fill")
-                        selected, frame = self.read()
-                        if not re.fullmatch(FILTER, selected["filter"]):
-                            raise RuntimeError("一键放入后分解星级筛选改变")
-                        if any(selected[key] != state[key] for key in ("capacity", "particles")):
-                            raise RuntimeError("放入分解材料期间容量或粒子发生变化，未提交分解")
-                        self.o.check_generation(self.generation)
-                        break
-                    except (RescanSlot, ForegroundChanged):
-                        if self.o.pending is not None or self.rt.stopped or focus_try >= 3:
-                            raise
-                        state = None
+            submit_budget = FocusRetryBudget(self.rt, max_stalled=4)
+            batches_done = 0
+            while batches_done < 101:
+                submit_budget.begin()
+                selected, frame = self._prepare_auto_fill(FILTER, state)
                 if selected["count"] == 0:
                     self.finish_queue()
                     summary["complete"] = True
@@ -293,23 +303,33 @@ class LowRarityDecomposer:
                     return
                 if selected["gain"] is None or selected["gain"] <= 0:
                     raise RuntimeError("预计分解粒子数量无法确认")
+                submit_focus_gen = self._last_read_focus_gen
                 operation = self.o.begin_change("decompose", None, {"source": "four_star_auto_fill"}, frame,
                                                 rarity_max=4, **selected)
                 try:
                     self.o.check_generation(self.generation)
-                except RescanSlot:
+                    self.rt.check_focus()
+                    if submit_focus_gen is None or self.rt._focus_generation != submit_focus_gen:
+                        raise ForegroundChanged("提交分解前焦点变化，重新核对")
+                except (RescanSlot, ForegroundChanged):
                     self.o.reconcile_change("cancelled_before_input")
+                    if not submit_budget.advance():
+                        raise
                     state = None
                     continue
                 self.o.submit_change(operation)
                 try:
-                    self.click("submit", focus_generation=self.generation, require_same_focus=False)  # Never retry a destructive submission.
+                    self.click("submit", focus_generation=submit_focus_gen, require_same_focus=False)  # Never retry a destructive submission.
                 except (RescanSlot, ForegroundChanged):
                     self.o.reconcile_change("cancelled_before_input")
+                    if not submit_budget.advance():
+                        raise
                     state = None
                     continue
                 after, frame = self.await_result(selected)
                 state = after
+                batches_done += 1
+                submit_budget.stalled = 0
                 summary["batches"] += 1
                 summary["copies"] += selected["count"]
                 summary["particles"] += selected["gain"]
@@ -370,47 +390,35 @@ class DuplicateDecomposer(LowRarityDecomposer):
         o.ensure_known_materials()
         o.report["phase"] = "decompose_five_star_duplicates"
         self.rt.log("仓库已满，正在分解一批未锁定的五星及以下闪光。", ui_text="仓库已满，正在分解一批闪光。")
-        selected = frame = None
-        for focus_try in range(4):
-            try:
-                state = self._ensure_open_and_filter(FIVE_STAR_FILTER)
-                self.click("auto_fill")
-                selected, frame = self.read()
-                if not re.fullmatch(FIVE_STAR_FILTER, selected["filter"]):
-                    raise RuntimeError("一键放入后分解星级筛选改变")
-                if any(selected[key] != state[key] for key in ("capacity", "particles")):
-                    raise RuntimeError("放入分解材料期间容量或粒子发生变化，未提交分解")
-                self.o.check_generation(self.generation)
-                break
-            except (RescanSlot, ForegroundChanged):
-                if o.pending is not None or self.rt.stopped or focus_try >= 3:
-                    raise
+        selected, frame = self._prepare_auto_fill(FIVE_STAR_FILTER, None)
         if selected["count"]:
             if selected["gain"] is None or selected["gain"] <= 0:
                 raise RuntimeError("预计分解粒子数量无法确认")
-            for _submit_try in range(2):
+            submit_budget = FocusRetryBudget(self.rt, max_stalled=2)
+            while selected["count"]:
+                submit_budget.begin()
+                submit_focus_gen = self._last_read_focus_gen
                 operation = o.begin_change("decompose", None, {"source": "five_star_auto_fill"}, frame,
                                            rarity_max=5, **selected)
                 try:
                     self.o.check_generation(self.generation)
-                except RescanSlot:
+                    self.rt.check_focus()
+                    if submit_focus_gen is None or self.rt._focus_generation != submit_focus_gen:
+                        raise ForegroundChanged("提交分解前焦点变化，重新核对")
+                except (RescanSlot, ForegroundChanged):
                     o.reconcile_change("cancelled_before_input")
-                    state = self._ensure_open_and_filter(FIVE_STAR_FILTER)
-                    self.click("auto_fill")
-                    selected, frame = self.read()
-                    if not selected["count"]:
-                        break
+                    if not submit_budget.advance():
+                        raise
+                    selected, frame = self._prepare_auto_fill(FIVE_STAR_FILTER, None)
                     continue
                 o.submit_change(operation)
                 try:
-                    self.click("submit", focus_generation=self.generation, require_same_focus=False)  # Never retry a destructive submission.
+                    self.click("submit", focus_generation=submit_focus_gen, require_same_focus=False)  # Never retry a destructive submission.
                 except (RescanSlot, ForegroundChanged):
                     o.reconcile_change("cancelled_before_input")
-                    state = self._ensure_open_and_filter(FIVE_STAR_FILTER)
-                    self.click("auto_fill")
-                    selected, frame = self.read()
-                    if not selected["count"]:
-                        break
+                    if not submit_budget.advance():
+                        raise
+                    selected, frame = self._prepare_auto_fill(FIVE_STAR_FILTER, None)
                     continue
                 after, frame = self.await_result(selected, five_star=True)
                 summary.update(copies=selected["count"], particles=selected["gain"])
