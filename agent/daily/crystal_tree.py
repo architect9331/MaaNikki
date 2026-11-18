@@ -103,10 +103,12 @@ class CrystalTree(Starsea):
             if state is None:
                 return False
             if after_bell is not None:
-                # At most 40 can fall per bell. Passive pickups can reduce the
-                # combined count, but a bell cannot create extra stored crystals.
+                # At most 40 can fall per bell. When ready == 0 before ringing,
+                # stored crystals must condense; when ready > 0, ringing shakes
+                # canopy crystals to the ground even if stored stays unchanged.
                 moved = after_bell["stored"] - state["stored"]
-                return (0 < moved <= 40
+                min_moved = 1 if after_bell["ready"] == 0 else 0
+                return (min_moved <= moved <= 40
                         and sum(state.values()) <= sum(after_bell.values()))
             return True
 
@@ -152,23 +154,29 @@ class CrystalTree(Starsea):
                 latest_state = state
                 if sum(state.values()) > sum(before.values()):
                     raise NavigationError("星忆晶树数量前后不一致，未继续收集。")
+                # approach already completed one full ground lap around the tree;
+                # any remaining ready crystals are hanging in the high canopy
+                # (Fall_Ring = 1) or newly condensed onto the tree.
+                need_bell = state["ready"] > 0
+                shaken = False
                 condensed_retry = False
-                if before["ready"] and sum(state.values()) >= sum(before.values()):
-                    if state["stored"] < before["stored"]:
-                        condensed_retry = True
-                        self.rt.log("绕树期间有存储结晶新落地，再绕树一圈确认收取。")
-                    else:
-                        raise NavigationError("绕树后未确认结晶减少，未重复跑圈或摇铃。")
                 while sum(state.values()) > 0:
                     if self.rt.stopped:
                         return False
-                    if state["ready"] == 0:
+                    if state["ready"] == 0 or need_bell:
                         condensed_retry = False
-                        self.rt.log("落地结晶已收完，长按摇铃取出下一批（每次最多 40 个）。")
+                        if state["ready"] == 0:
+                            self.rt.log("落地结晶已收完，长按摇铃取出下一批（每次最多 40 个）。")
+                        else:
+                            self.rt.log("树冠仍有待收获结晶，长按摇铃震落后继续绕树收取。")
                         if not self.ring(at_hub=True):
                             return False
                         state = self.observe_counts(teleporter, approach, after_bell=state)
                         latest_state = state
+                        need_bell = False
+                        shaken = True
+                        if sum(state.values()) == 0:
+                            break
                         # A crystal can be picked up immediately at the bell
                         # location. Re-check storage rather than run an empty lap.
                         if state["ready"] == 0:
@@ -180,13 +188,22 @@ class CrystalTree(Starsea):
                     latest_state = state
                     if sum(state.values()) > sum(before.values()):
                         raise NavigationError("星忆晶树数量前后不一致，未继续收集。")
-                    if sum(state.values()) >= sum(before.values()):
-                        if state["stored"] < before["stored"] and not condensed_retry:
-                            condensed_retry = True
+                    if sum(state.values()) < sum(before.values()):
+                        condensed_retry = False
+                        if state["stored"] < before["stored"]:
+                            shaken = False
+                        continue
+                    if state["ready"] > 0 and not shaken:
+                        need_bell = True
+                        continue
+                    if state["stored"] < before["stored"] and not condensed_retry:
+                        condensed_retry = True
+                        if state["ready"] > 0:
+                            need_bell = True
+                        else:
                             self.rt.log("绕树期间有存储结晶新落地，再绕树一圈确认收取。")
-                            continue
-                        raise NavigationError("绕树后未确认结晶减少，停止收集以避免重复空跑。")
-                    condensed_retry = False
+                        continue
+                    raise NavigationError("绕树后未确认结晶减少，停止收集以避免重复空跑。")
                 self.rt.log("星忆晶树存储与待收获结晶均已取完。")
                 return True
         except TaskStopped:
