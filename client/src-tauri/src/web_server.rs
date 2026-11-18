@@ -211,6 +211,10 @@ pub async fn start_web_server(
         .route("/account-state", get(handle_get_account_state))
         .route("/adventure-report", get(handle_get_adventure_report))
         .route(
+            "/pearpal/map-resources",
+            get(handle_get_pearpal_map_resources),
+        )
+        .route(
             "/wardrobe-scoring",
             get(handle_get_wardrobe_scoring).put(handle_save_wardrobe_scoring),
         )
@@ -1319,6 +1323,23 @@ async fn handle_get_adventure_report(
         .await
         .map(Json)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))
+}
+
+#[derive(serde::Deserialize)]
+struct MapResourcesQuery {
+    #[serde(rename = "forceRefresh")]
+    force_refresh: Option<bool>,
+}
+
+async fn handle_get_pearpal_map_resources(
+    Query(query): Query<MapResourcesQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    crate::commands::pearpal_map_resources::get_map_resources_impl(
+        query.force_refresh.unwrap_or(false),
+    )
+    .await
+    .map(Json)
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))
 }
 
 async fn handle_get_wardrobe_scoring() -> Result<Json<serde_json::Value>, (StatusCode, String)> {

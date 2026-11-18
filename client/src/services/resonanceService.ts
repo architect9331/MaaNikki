@@ -35,6 +35,16 @@ const initial: ResonanceStatus = {
   error: null, auth_paused: false, next_sync: null, banner: null, page: 0,
   completed: 0, banner_count: 0, last_added: 0, last_notebook_added: 0, catalog_updated_at: '', interval_minutes: 30,
 };
+export type ResonanceView = 'outfits' | 'records' | 'map_resources';
+
+export const useResonanceViewStore = create<{
+  view: ResonanceView;
+  setView: (view: ResonanceView) => void;
+}>((set) => ({
+  view: 'outfits',
+  setView: (view) => set({ view }),
+}));
+
 export const useResonanceStore = create<{
   status: ResonanceStatus; ready: boolean; changing: boolean; connectionError: string | null;
 }>(() => ({ status: initial, ready: false, changing: false, connectionError: null }));

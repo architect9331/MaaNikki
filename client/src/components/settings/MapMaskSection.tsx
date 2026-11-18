@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Card, primaryButton, secondaryButton } from '@/components/ui/FeaturePage';
+import { useResonanceViewStore } from '@/services/resonanceService';
+import { useAppStore } from '@/stores/appStore';
 import { invoke } from '@tauri-apps/api/core';
 import { isTauri } from '@/utils/windowUtils';
 
@@ -70,10 +72,22 @@ export function MapMaskSection() {
         {(error || (status.has_login && status.error)) && (
           <p role="status" className="text-xs text-error">{error || status.error}</p>
         )}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button type="button" className={primaryButton} disabled={busy} onClick={() => void run('pearpal_open_login')}>
             {status.has_login ? '重新登录' : '登录美鸭梨'}
           </button>
+          {status.has_login && status.authenticated && (
+            <button
+              type="button"
+              className={secondaryButton}
+              onClick={() => {
+                useResonanceViewStore.getState().setView('map_resources');
+                useAppStore.getState().setCurrentPage('resonance');
+              }}
+            >
+              查看可挖抽数
+            </button>
+          )}
           {status.has_login && (
             <button type="button" className={secondaryButton} disabled={busy} onClick={() => void run('pearpal_logout')}>退出登录</button>
           )}

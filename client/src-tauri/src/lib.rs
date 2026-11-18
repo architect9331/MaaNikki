@@ -247,6 +247,7 @@ pub fn run() {
             commands::pearpal::pearpal_open_login,
             commands::pearpal::pearpal_complete_login,
             commands::pearpal::pearpal_logout,
+            commands::pearpal_map_resources::pearpal_map_resources,
             commands::resonance::resonance_status,
             commands::resonance::resonance_set_enabled,
             commands::resonance::resonance_sync,

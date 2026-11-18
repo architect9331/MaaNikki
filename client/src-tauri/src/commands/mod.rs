@@ -30,6 +30,7 @@ pub mod maa_agent;
 pub mod maa_core;
 pub mod maa_library;
 pub mod pearpal;
+pub mod pearpal_map_resources;
 pub mod project_patch;
 pub mod resonance;
 pub mod state;

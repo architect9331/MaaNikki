@@ -4,9 +4,10 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { toast } from 'sonner';
 import clsx from 'clsx';
-import { refreshResonance, resonanceLabel, type ResonanceHistory, useResonanceStore } from '@/services/resonanceService';
+import { refreshResonance, resonanceLabel, type ResonanceHistory, useResonanceStore, useResonanceViewStore } from '@/services/resonanceService';
 import { activeBanners, collectionOutfits, historyRows, resonanceSummary } from '@/services/resonanceData';
 import { isTauri } from '@/utils/paths';
+import { MapResourcesPanel } from './MapResourcesPanel';
 import { ResonanceControl } from './ResonanceControl';
 import { FeaturePage, primaryButton, secondaryButton, Segmented, StatusBar } from './ui/FeaturePage';
 
@@ -30,7 +31,8 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
   const [banner, setBanner] = useState('all');
   const [rarity, setRarity] = useState('all');
   const [search, setSearch] = useState('');
-  const [view, setView] = useState<'records' | 'outfits'>('outfits');
+  const view = useResonanceViewStore((s) => s.view);
+  const setView = useResonanceViewStore((s) => s.setView);
   const [completion, setCompletion] = useState('all');
   const [page, setPage] = useState(0);
   const [hoverBar, setHoverBar] = useState<{ pulls: number; count: number } | null>(null);
@@ -175,14 +177,19 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
 
         <section className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Segmented label="记录视图" value={view} onChange={setView} options={[['outfits', '套装收藏'], ['records', '逐条记录']] as const} />
-            <select value={banner} onChange={(event) => setBanner(event.target.value)} aria-label="卡池" className={clsx(selectStyle, '!py-1.5 max-w-44')}><option value="all">全部卡池</option>{knownBanners.map((id) => <option key={id} value={id}>{banners.get(id)?.name || '共鸣 ' + id}</option>)}</select>
-            <select value={rarity} onChange={(event) => setRarity(event.target.value)} aria-label="星级" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部星级</option><option value="5">五星</option><option value="4">四星</option>{view === 'records' && <option value="3">三星</option>}</select>
-            {view === 'outfits' && <select value={completion} onChange={(event) => setCompletion(event.target.value)} aria-label="套装进度" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部进度</option><option value="incomplete">尚未集齐</option><option value="complete">已集齐</option></select>}
-            <label className="flex min-w-36 flex-1 items-center gap-2 rounded-lg border border-border bg-bg-secondary px-3 focus-within:border-accent"><Search className="h-3.5 w-3.5 text-text-muted" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={view === 'outfits' ? '搜索套装或部件' : '搜索物品或卡池'} aria-label="搜索记录" className="min-w-0 flex-1 bg-transparent py-1.5 text-xs outline-none" /></label>
+            <Segmented label="记录视图" value={view} onChange={setView} options={[['outfits', '套装收藏'], ['records', '逐条记录'], ['map_resources', '大地图资源']] as const} />
+            {view !== 'map_resources' && <>
+              <select value={banner} onChange={(event) => setBanner(event.target.value)} aria-label="卡池" className={clsx(selectStyle, '!py-1.5 max-w-44')}><option value="all">全部卡池</option>{knownBanners.map((id) => <option key={id} value={id}>{banners.get(id)?.name || '共鸣 ' + id}</option>)}</select>
+              <select value={rarity} onChange={(event) => setRarity(event.target.value)} aria-label="星级" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部星级</option><option value="5">五星</option><option value="4">四星</option>{view === 'records' && <option value="3">三星</option>}</select>
+              {view === 'outfits' && <select value={completion} onChange={(event) => setCompletion(event.target.value)} aria-label="套装进度" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部进度</option><option value="incomplete">尚未集齐</option><option value="complete">已集齐</option></select>}
+              <label className="flex min-w-36 flex-1 items-center gap-2 rounded-lg border border-border bg-bg-secondary px-3 focus-within:border-accent"><Search className="h-3.5 w-3.5 text-text-muted" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={view === 'outfits' ? '搜索套装或部件' : '搜索物品或卡池'} aria-label="搜索记录" className="min-w-0 flex-1 bg-transparent py-1.5 text-xs outline-none" /></label>
+            </>}
           </div>
-          {possibleGap && view === 'records' && <p className="rounded-lg bg-warning/5 px-3 py-2 text-xs text-warning">部分卡池的历史记录可能存在间隔。</p>}
-          {loading && !current ? <div className="flex items-center justify-center gap-2 p-16 text-sm text-text-muted"><Loader2 className="h-4 w-4 animate-spin" />正在读取记录</div>
+          {view === 'map_resources'
+            ? <MapResourcesPanel onLogin={isTauri() ? () => void run('pearpal_open_login') : undefined} />
+            : <>
+              {possibleGap && view === 'records' && <p className="rounded-lg bg-warning/5 px-3 py-2 text-xs text-warning">部分卡池的历史记录可能存在间隔。</p>}
+              {loading && !current ? <div className="flex items-center justify-center gap-2 p-16 text-sm text-text-muted"><Loader2 className="h-4 w-4 animate-spin" />正在读取记录</div>
             : !count ? <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-bg-secondary px-4 py-16 text-text-muted"><BookOpen className="h-8 w-8 opacity-40" /><p className="text-sm">{current ? '暂无符合条件的记录' : '登录美鸭梨，开始保存你的共鸣收藏'}</p></div>
             : view === 'outfits' ? <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-2">{outfits.slice(currentPage * size, currentPage * size + size).map((outfit) => {
               const full = outfit.obtained === outfit.items.length;
@@ -210,7 +217,8 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
               </article>;
             })}</div>
             : <div className="overflow-auto rounded-xl border border-border bg-bg-secondary"><table className="w-full text-xs"><thead className="text-left text-text-muted"><tr><th className="px-4 py-2.5 font-normal">抽取时间</th><th className="px-4 py-2.5 font-normal">共鸣结果</th><th className="px-4 py-2.5 font-normal">所属卡池</th></tr></thead><tbody>{rows.slice(currentPage * size, currentPage * size + size).map((row) => <tr key={row.key} className={clsx('border-t border-border/60 hover:bg-bg-hover/50', row.rarity === 5 && 'bg-warning/5')}><td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-text-secondary">{pullTime(row.time)}</td><td className="px-4 py-2.5"><span className={clsx('mr-2 text-[11px] tabular-nums', row.rarity === 5 ? 'font-semibold text-warning' : row.rarity === 4 ? 'text-accent' : 'text-text-muted')}>{row.rarity || '—'}★</span><span title={row.item} className={clsx(row.rarity === 5 && 'font-medium')}>{row.name}</span></td><td className="px-4 py-2.5 text-text-secondary">{banners.get(row.bannerId)?.name || '共鸣 ' + row.bannerId}</td></tr>)}</tbody></table></div>}
-          {count > size && <div className="flex items-center gap-3 text-xs text-text-secondary"><span className="mr-auto">{count} {view === 'records' ? '条记录' : '套'} · {currentPage + 1}/{pages} 页</span><button disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)} className="rounded-lg border border-border px-2.5 py-1 hover:bg-bg-hover disabled:opacity-30">上一页</button><button disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)} className="rounded-lg border border-border px-2.5 py-1 hover:bg-bg-hover disabled:opacity-30">下一页</button></div>}
+              {count > size && <div className="flex items-center gap-3 text-xs text-text-secondary"><span className="mr-auto">{count} {view === 'records' ? '条记录' : '套'} · {currentPage + 1}/{pages} 页</span><button disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)} className="rounded-lg border border-border px-2.5 py-1 hover:bg-bg-hover disabled:opacity-30">上一页</button><button disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)} className="rounded-lg border border-border px-2.5 py-1 hover:bg-bg-hover disabled:opacity-30">下一页</button></div>}
+            </>}
         </section>
         <p className="px-1 text-[11px] leading-5 text-text-muted">套装和抽数来自美鸭梨手账，逐条记录来自游戏内共鸣历史。卡池最后一件四星之后的抽数看不到，所以累计和“距上次五星”都是下限。本地存档：config/accounts/CN/{current?.history.uid || '<UID>'}.json · 目录更新：{status.catalog_updated_at || '—'}</p>
   </FeaturePage>;
