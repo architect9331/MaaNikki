@@ -34,6 +34,10 @@ CREATE INDEX IF NOT EXISTS idx_group_messages_group_created
   ON group_messages(group_id, created DESC);
 CREATE INDEX IF NOT EXISTS idx_group_messages_idx
   ON group_messages(group_id, msg_idx);
+CREATE INDEX IF NOT EXISTS idx_group_messages_msg_id
+  ON group_messages(group_id, msg_id);
+CREATE INDEX IF NOT EXISTS idx_events_kind_created
+  ON events(kind, created DESC);
 CREATE TABLE IF NOT EXISTS group_assistant_state (
   group_id TEXT PRIMARY KEY,
   muted_until INTEGER NOT NULL DEFAULT 0,

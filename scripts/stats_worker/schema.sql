@@ -21,3 +21,10 @@ CREATE TABLE IF NOT EXISTS reporter_preferences (
   category TEXT NOT NULL, value TEXT NOT NULL,
   PRIMARY KEY (reporter, category, value)
 );
+CREATE INDEX IF NOT EXISTS idx_reporters_excluded ON reporters(excluded);
+CREATE INDEX IF NOT EXISTS idx_bling_runs_reporter ON bling_runs(reporter);
+CREATE TABLE IF NOT EXISTS summary_cache (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  payload TEXT NOT NULL,
+  expires_at INTEGER NOT NULL
+);

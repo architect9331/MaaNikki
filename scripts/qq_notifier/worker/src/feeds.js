@@ -95,7 +95,7 @@ export async function fetchSraSnapshot(env) {
   if (!data || typeof data !== 'object' || !Array.isArray(data.activities)) {
     throw new Error('Invalid SRA payload');
   }
-  const normalized = {
+  const core = {
     version: String(data.version ?? '').trim(),
     versionName: String(data.versionName ?? '').trim(),
     startTime: String(data.startTime ?? '').trim(),
@@ -107,12 +107,30 @@ export async function fetchSraSnapshot(env) {
       startTime: String(a?.startTime ?? '').trim(),
       endTime: String(a?.endTime ?? '').trim(),
     })).filter(a => a.name),
-    fetchedAt: seconds(),
   };
+  const nowSec = seconds();
+  const prev = await env.DB.prepare("SELECT value, expires_at FROM runtime_state WHERE key='sra-activity-cache'")
+    .first().catch(() => null);
+  if (prev?.value && Number(prev.expires_at) > nowSec + 5 * 86400) {
+    try {
+      const parsedPrev = JSON.parse(prev.value);
+      const prevCore = {
+        version: parsedPrev.version ?? '',
+        versionName: parsedPrev.versionName ?? '',
+        startTime: parsedPrev.startTime ?? '',
+        endTime: parsedPrev.endTime ?? '',
+        activities: Array.isArray(parsedPrev.activities) ? parsedPrev.activities : [],
+      };
+      if (JSON.stringify(prevCore) === JSON.stringify(core)) {
+        return { ...core, fetchedAt: parsedPrev.fetchedAt ?? nowSec };
+      }
+    } catch {}
+  }
+  const normalized = { ...core, fetchedAt: nowSec };
   await env.DB.prepare(
     "INSERT INTO runtime_state(key,value,expires_at) VALUES('sra-activity-cache',?,?) " +
     'ON CONFLICT(key) DO UPDATE SET value=excluded.value,expires_at=excluded.expires_at',
-  ).bind(JSON.stringify(normalized), seconds() + 7 * 86400).run();
+  ).bind(JSON.stringify(normalized), nowSec + 7 * 86400).run();
   return normalized;
 }
 
@@ -559,7 +577,17 @@ export async function syncRedeemCodes(env, enqueueFn) {
     await env.DB.batch(stateUpdates);
   }
 
-  return { seeded: false, tgMax: maxTgId, newsMax: newsResult.maxNewsId, wikiCount: wikiEntries.length, newCodes: freshEntries.length, enqueued, deferSeconds: 0 };
+  return {
+    seeded: false,
+    tgMax: maxTgId,
+    newsMax: newsResult.maxNewsId,
+    wikiCount: wikiEntries.length,
+    newCodes: freshEntries.length,
+    enriched: enrichStmts.length,
+    changed: freshEntries.length > 0 || enrichStmts.length > 0,
+    enqueued,
+    deferSeconds: 0,
+  };
 }
 
 export async function formatActivitiesReply(env) {

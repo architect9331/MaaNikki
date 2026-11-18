@@ -12,6 +12,53 @@ import { HELP_TEXT, KNOWLEDGE_PROMPT, WELCOME_TEXT } from './knowledge.js';
 
 const seconds = () => Math.floor(Date.now() / 1000);
 const fatalGroupCodes = new Set([40034101, 40034105, 40054003, 40054002]);
+const REDEEM_TTL_SEC = 300;
+const MEM_REDEEM_TTL_SEC = 60;
+const REDEEM_CACHE_URL = 'https://qqbot.maanikki.cn/__cache/v1/redeem-codes';
+const REDEEM_HEADERS = {
+  'Content-Type': 'application/json; charset=utf-8',
+  'cache-control': `public, max-age=${REDEEM_TTL_SEC}, s-maxage=${REDEEM_TTL_SEC}`,
+  'access-control-allow-origin': '*',
+};
+
+let memNextFeedPoll = 0;
+let memRedeemCodes = { payload: '', expiresAt: 0 };
+
+async function invalidateRedeemCodesCache() {
+  memRedeemCodes = { payload: '', expiresAt: 0 };
+  try {
+    const cache = caches?.default;
+    if (cache) await cache.delete(new Request(REDEEM_CACHE_URL, { method: 'GET' }));
+  } catch {}
+}
+
+async function handlePublicRedeemCodes(env, ctx) {
+  const now = seconds();
+  if (memRedeemCodes.payload && memRedeemCodes.expiresAt > now) {
+    return new Response(memRedeemCodes.payload, { headers: REDEEM_HEADERS });
+  }
+  const cacheKey = new Request(REDEEM_CACHE_URL, { method: 'GET' });
+  let edgeCache = null;
+  try {
+    edgeCache = caches?.default ?? null;
+    if (edgeCache) {
+      const hit = await edgeCache.match(cacheKey);
+      if (hit) {
+        const body = await hit.text();
+        memRedeemCodes = { payload: body, expiresAt: now + MEM_REDEEM_TTL_SEC };
+        return new Response(body, { headers: REDEEM_HEADERS });
+      }
+    }
+  } catch {}
+  const payload = JSON.stringify(await listPublicRedeemCodes(env));
+  memRedeemCodes = { payload, expiresAt: seconds() + MEM_REDEEM_TTL_SEC };
+  if (edgeCache) {
+    const putPromise = edgeCache.put(cacheKey, new Response(payload, { headers: REDEEM_HEADERS })).catch(() => {});
+    if (ctx?.waitUntil) ctx.waitUntil(putPromise);
+    else await putPromise;
+  }
+  return new Response(payload, { headers: REDEEM_HEADERS });
+}
 
 function equalSecret(actual, expected) {
   const left = Buffer.from(actual);
@@ -91,6 +138,10 @@ async function enqueue(env, key, kind, parts, groupId = null, replyMsgId = null,
 
 async function dispatch(env) {
   if (env.DELIVERY_ENABLED !== 'true') return;
+  const hasDue = await env.DB.prepare(
+    'SELECT 1 AS ok FROM notifications n JOIN subscriptions s ON s.group_id=n.group_id WHERE n.sent=0 AND n.attempts<12 AND n.due<=? AND s.enabled=1 LIMIT 1',
+  ).bind(seconds()).first();
+  if (!hasDue) return;
   const started = Date.now();
   const lease = crypto.randomUUID();
   const acquired = await env.DB.prepare(`INSERT INTO runtime_state(key,value,expires_at) VALUES('delivery-lock',?,?)
@@ -576,8 +627,12 @@ async function qqWebhook(request, env, ctx) {
 
 async function pollExternalFeeds(env) {
   const now = seconds();
+  if (now < memNextFeedPoll) return;
   const nextPoll = await env.DB.prepare("SELECT expires_at FROM runtime_state WHERE key='next-feed-poll'").first().catch(() => null);
-  if (nextPoll && nextPoll.expires_at > now) return;
+  if (nextPoll && nextPoll.expires_at > now) {
+    memNextFeedPoll = nextPoll.expires_at;
+    return;
+  }
 
   const lease = crypto.randomUUID();
   const acquired = await env.DB.prepare(`INSERT INTO runtime_state(key,value,expires_at) VALUES('feed-poll-lock',?,?)
@@ -601,15 +656,20 @@ async function pollExternalFeeds(env) {
       console.warn(JSON.stringify({ event: 'redeem_sync_failed', error: redeemStatus.error }));
     }
 
+    if (redeemStatus?.changed) await invalidateRedeemCodesCache();
+
     const deferSec = Number(redeemStatus?.deferSeconds || 0);
     const interval = deferSec > 0 ? deferSec : 600;
-    const summary = JSON.stringify({ at: seconds(), activity: actStatus, redeem: redeemStatus });
+    const finishedAt = seconds();
+    const nextAllowedAt = finishedAt + interval;
+    const summary = JSON.stringify({ at: finishedAt, activity: actStatus, redeem: redeemStatus });
     await env.DB.batch([
       env.DB.prepare("INSERT INTO runtime_state(key,value,expires_at) VALUES('next-feed-poll','',?) ON CONFLICT(key) DO UPDATE SET expires_at=excluded.expires_at")
-        .bind(seconds() + interval),
+        .bind(nextAllowedAt),
       env.DB.prepare("INSERT INTO runtime_state(key,value,expires_at) VALUES('last-feed-sync',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,expires_at=excluded.expires_at")
-        .bind(summary, seconds() + 7 * 86400),
+        .bind(summary, finishedAt + 7 * 86400),
     ]);
+    memNextFeedPoll = nextAllowedAt;
   } finally {
     await env.DB.prepare("DELETE FROM runtime_state WHERE key='feed-poll-lock' AND value=?").bind(lease).run();
   }
@@ -659,9 +719,7 @@ export default {
       const url = new URL(request.url);
       if (request.method === 'GET' && url.pathname === '/health') return Response.json({ ok: true, service: 'maanikki-qq-notifier', assistant: true, feeds: true });
       if (request.method === 'GET' && url.pathname === '/v1/redeem-codes') {
-        return Response.json(await listPublicRedeemCodes(env), {
-          headers: { 'cache-control': 'public, max-age=300, s-maxage=300', 'access-control-allow-origin': '*' },
-        });
+        return await handlePublicRedeemCodes(env, ctx);
       }
       if (request.method === 'GET' && url.pathname === '/admin/status') {
         return env.ADMIN_TOKEN && equalSecret(request.headers.get('authorization') || '', `Bearer ${env.ADMIN_TOKEN}`)
