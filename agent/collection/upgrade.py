@@ -128,11 +128,27 @@ class UpgradeUI:
             raise RuntimeError("满级页颜色不在当前图鉴中")
         return color, frame
 
+    def dismiss_result(self, *, attempts=4):
+        if self.rt.ui.enter_page(
+            lambda: self.rt.key("interact", 0),
+            self.upgrade_ready,
+            source=RESULT,
+            attempts=attempts,
+        ):
+            return True
+        if not self.rt.stopped and self.rt.hit(RESULT):
+            return self.rt.ui.enter_page(
+                lambda: self.rt.action("Click", target=[640, 660]),
+                self.upgrade_ready,
+                source=RESULT,
+                attempts=2,
+            )
+        return self.upgrade_ready()
+
     def _recover_upgrade_page(self, current, *, step=0, evidence=None, maximum=10):
         self.rt.check_focus()
         if self.rt.hit(RESULT):
-            if not self.rt.ui.enter_page(
-                    lambda: self.rt.key(70, 0), self.upgrade_ready, source=RESULT, attempts=3):
+            if not self.dismiss_result(attempts=3):
                 raise IncompleteObservation("切回后未能关闭升级完成界面，已保存进度")
         if not self.rt.ui.wait_page(self.upgrade_ready, seconds=3):
             raise IncompleteObservation("切回后未确认祝福闪光升级页面，已保存进度")
@@ -331,8 +347,7 @@ class UpgradeUI:
                     if page_gen != generation:
                         focus_switched = True
                     if self.rt.hit(RESULT):
-                        if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), self.upgrade_ready,
-                                                     source=RESULT, attempts=4):
+                        if not self.dismiss_result(attempts=4):
                             raise RuntimeError("未能关闭升级完成界面")
                     fields, frame = self.read(page_gen)
                     level, xp = self.integer(fields["level"]), self.experience(fields["xp"])
@@ -349,8 +364,7 @@ class UpgradeUI:
                     if self.rt.stopped or not post_budget.advance(stalled=True) or not self.rt.hit(RESULT):
                         raise
                     page_gen = self.owner.current_generation()
-                    if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), self.upgrade_ready,
-                                                 source=RESULT, attempts=4):
+                    if not self.dismiss_result(attempts=4):
                         raise RuntimeError("未能关闭升级完成界面")
                 except (RescanSlot, ForegroundChanged):
                     first_post = False

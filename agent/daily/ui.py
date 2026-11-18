@@ -390,7 +390,8 @@ class GameUI:
             if self.rt.hit("MaaNikki_MainDetected"):
                 return False
             matched = (self.page_matches("MaaNikki_RewardOverlayReady")
-                       or bool(include_title and self.rt.hit("MaaNikki_Monthly_ParadiseReward")))
+                       or bool(include_title and self.rt.hit("MaaNikki_Monthly_ParadiseReward"))
+                       or bool(allow_upgrade_result and self.rt.hit("MaaNikki_Pursuit_UpgradeResult")))
             if not matched:
                 return False
             if allow_upgrade_result:
@@ -409,10 +410,19 @@ class GameUI:
         try:
             # Overworld rewards queue up and pop up back-to-back once any UI
             # page opens; a press during fade-in only fast-forwards the reveal.
-            for _ in range(20):
+            for attempt in range(20):
                 if self.rt.stopped or time.monotonic() >= deadline:
                     return False
-                if not self.rt.key("skip", .25):
+                use_blank_click = (
+                    allow_upgrade_result
+                    and attempt >= 2
+                    and attempt % 2 == 1
+                    and self.rt.hit("MaaNikki_Pursuit_UpgradeResult")
+                )
+                if use_blank_click:
+                    if not (self.rt.action("Click", target=[640, 660]) and self.rt.pause(.25)):
+                        return False
+                elif not self.rt.key("skip", .25):
                     return False
                 clear = 0
                 check_deadline = min(deadline, time.monotonic()+2.5)
@@ -982,7 +992,7 @@ class GameUI:
                     continue
                 if self.rt.hit("MaaNikki_Home_StarCollectReady"):
                     page = "star_collect"
-                elif self.rt.hit("MaaNikki_RewardOverlayReady"):
+                elif self.rt.hit("MaaNikki_RewardOverlayReady") or self.rt.hit("MaaNikki_Pursuit_UpgradeResult"):
                     page = "reward_overlay"
                 elif self.rt.hit("MaaNikki_Bless_Cancel"):
                     page = "realm_confirm"
