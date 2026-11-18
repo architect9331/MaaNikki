@@ -47,11 +47,11 @@
     {
       "x": 1586.65,
       "y": 1154.0,
-      "radius": 1.85,
+      "radius": 1.5,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 0.9
+        "seconds": 1.1
       }
     },
     {
@@ -213,21 +213,21 @@
     {
       "x": 1611.75,
       "y": 1216.2,
-      "radius": 1.9,
+      "radius": 1.5,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 0.9
+        "seconds": 1.1
       }
     },
     {
       "x": 1606.35,
       "y": 1226.65,
-      "radius": 1.9,
+      "radius": 1.5,
       "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 0.9
+        "seconds": 1.1
       }
     },
     {

@@ -126,13 +126,13 @@
       "x": 1269.56,
       "y": 891.06,
       "radius": 1.2,
-      "jump": true
+      "jump": false
     },
     {
       "x": 1273.5,
       "y": 885.4,
       "radius": 1.2,
-      "jump": true
+      "jump": false
     },
     {
       "x": 1278.6,
@@ -245,6 +245,12 @@
       "params": {
         "seconds": 1.8
       }
+    },
+    {
+      "x": 1136.9,
+      "y": 847.8,
+      "radius": 1.2,
+      "jump": false
     },
     {
       "x": 1136.25,

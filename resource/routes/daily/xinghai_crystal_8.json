@@ -196,13 +196,33 @@
       "x": 1200.8,
       "y": 787.45,
       "radius": 1.2,
-      "jump": true
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 0.7
+      }
     },
     {
-      "x": 1197.45,
-      "y": 783.6,
+      "x": 1198.8,
+      "y": 784.8,
+      "radius": 1.15,
+      "jump": false
+    },
+    {
+      "x": 1197.9,
+      "y": 783.3,
       "radius": 1.2,
-      "jump": true
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 0.7
+      }
+    },
+    {
+      "x": 1196.8,
+      "y": 783.6,
+      "radius": 1.15,
+      "jump": false
     },
     {
       "x": 1194.1,
