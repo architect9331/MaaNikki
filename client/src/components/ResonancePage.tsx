@@ -18,6 +18,24 @@ function pullTime(value: string) {
   if (/^\d+$/.test(value)) return timeLabel(Number(value) / (value.length > 10 ? 1000 : 1));
   return value;
 }
+function activeBannerCopy(item: ReturnType<typeof activeBanners>[number]) {
+  const since = item.since > 0 ? ` · 距上次五星至少 ${item.since} 抽` : '';
+  if (!item.total) {
+    return { headline: '套装目录待更新', detail: `当前目录暂未收录该卡池套装${since}` };
+  }
+  if (!item.missing) {
+    const progress = item.pulls > 0
+      ? `共 ${item.total} 件 · ${item.pulls} 抽起`
+      : item.bannerPulls > 0 ? `共 ${item.total} 件 · 已抽 ${item.bannerPulls} 次` : `共 ${item.total} 件 · 均已获得`;
+    return { headline: '已全部集齐', detail: `${progress}${since}` };
+  }
+  const need = `${item.hasOwnAverage ? '按你的平均，' : ''}约需 ${item.need} 抽`;
+  if (!item.hasPulled && !item.obtained) {
+    return { headline: '尚未抽取', detail: `共 ${item.total} 件 · ${need}` };
+  }
+  const pulledNote = !item.pulls && item.bannerPulls > 0 ? `已抽 ${item.bannerPulls} 次 · ` : '';
+  return { headline: `还差 ${item.missing} 件`, detail: `${pulledNote}${need}${since}` };
+}
 const selectStyle = 'max-w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs outline-none focus:border-accent';
 
 export function ResonancePage({ onClose }: { onClose: () => void }) {
@@ -53,7 +71,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
 
   useEffect(() => { void refreshHistory(); return () => { revision.current++; }; }, [refreshHistory]);
   useEffect(() => { setPage(0); }, [accountKey, banner, rarity, search, view, completion]);
-  useEffect(() => { setBanner('all'); setRarity('all'); }, [accountKey, view]);
+  useEffect(() => { setBanner('all'); setRarity('all'); }, [accountKey]);
   useEffect(() => {
     if (!isTauri()) return;
     let disposed = false;
@@ -71,12 +89,17 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
   // Keep a previous account's response out of the newly selected account view.
   const current = data?.history.account_key === accountKey ? data : null;
   const banners = useMemo(() => new Map(current?.banners.map((item) => [item.id, item]) ?? []), [current]);
+  const active = useMemo(() => current ? activeBanners(current) : [], [current]);
   const knownBanners = useMemo(() => {
     if (!current) return [];
-    return (view === 'records'
+    const ids = view === 'records'
       ? Object.entries(current.history.banners).filter(([, entry]) => entry.pulls.length).map(([id]) => id)
-      : Object.keys(current.history.notebook.pulls)).sort((a, b) => Number(b) - Number(a));
-  }, [current, view]);
+      : [...new Set([
+          ...Object.entries(current.history.notebook.pulls).filter(([, pool]) => Object.keys(pool || {}).length).map(([id]) => id),
+          ...active.map((item) => item.id),
+        ])];
+    return ids.sort((a, b) => Number(b) - Number(a));
+  }, [current, view, active]);
   const allOutfits = useMemo(() => current ? collectionOutfits(current, 'all') : [], [current]);
   const outfits = useMemo(() => current ? collectionOutfits(current, banner).filter((outfit) =>
     (rarity === 'all' || String(outfit.rarity) === rarity)
@@ -88,7 +111,6 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
     && (row.name + ' ' + row.item + ' ' + (banners.get(row.bannerId)?.name || row.bannerId)).includes(search.trim())) : [],
   [current, banner, rarity, search, banners]);
   const summary = useMemo(() => current ? resonanceSummary(current) : null, [current]);
-  const active = useMemo(() => current ? activeBanners(current, allOutfits) : [], [current, allOutfits]);
   const distribution = summary?.distribution ?? [];
   const peak = Math.max(1, ...distribution.map((bar) => bar.count));
   const completeOutfits = allOutfits.filter((outfit) => outfit.obtained === outfit.items.length).length;
@@ -167,17 +189,20 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
 
         {!!active.length && <section aria-label="当前卡池">
           <h2 className="mb-2 text-sm font-semibold">当前卡池</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{active.map((item) => <button key={item.id} onClick={() => { setView('outfits'); setBanner(item.id); }}
-            className="rounded-xl border border-border bg-bg-secondary p-4 text-left transition-colors hover:border-accent/60">
-            <div className="flex items-baseline gap-2"><h3 className="min-w-0 flex-1 truncate text-sm font-medium">{item.name}</h3><span className="shrink-0 text-xs tabular-nums text-text-muted">剩 {item.left} 天</span></div>
-            <p className="mt-2 text-xl font-semibold tabular-nums">{item.missing ? `还差 ${item.missing} 件` : '已全部集齐'}</p>
-            <p className="mt-0.5 text-xs leading-5 text-text-secondary">{item.missing ? `按你的平均，约需 ${item.need} 抽` : '这期可以省下了'}{item.since > 0 && ` · 距上次五星至少 ${item.since} 抽`}</p>
-          </button>)}</div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{active.map((item) => {
+            const copy = activeBannerCopy(item);
+            return <button key={item.id} onClick={() => { setView('outfits'); setBanner(item.id); setRarity('all'); setCompletion('all'); setSearch(''); }}
+              className="rounded-xl border border-border bg-bg-secondary p-4 text-left transition-colors hover:border-accent/60">
+              <div className="flex items-baseline gap-2"><h3 className="min-w-0 flex-1 truncate text-sm font-medium">{item.name}</h3><span className="shrink-0 text-xs tabular-nums text-text-muted">剩 {item.left} 天</span></div>
+              <p className="mt-2 text-xl font-semibold tabular-nums">{copy.headline}</p>
+              <p className="mt-0.5 text-xs leading-5 text-text-secondary">{copy.detail}</p>
+            </button>;
+          })}</div>
         </section>}
 
         <section className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Segmented label="记录视图" value={view} onChange={setView} options={[['outfits', '套装收藏'], ['records', '逐条记录'], ['map_resources', '大地图资源']] as const} />
+            <Segmented label="记录视图" value={view} onChange={(next) => { setView(next); setBanner('all'); setRarity('all'); }} options={[['outfits', '套装收藏'], ['records', '逐条记录'], ['map_resources', '大地图资源']] as const} />
             {view !== 'map_resources' && <>
               <select value={banner} onChange={(event) => setBanner(event.target.value)} aria-label="卡池" className={clsx(selectStyle, '!py-1.5 max-w-44')}><option value="all">全部卡池</option>{knownBanners.map((id) => <option key={id} value={id}>{banners.get(id)?.name || '共鸣 ' + id}</option>)}</select>
               <select value={rarity} onChange={(event) => setRarity(event.target.value)} aria-label="星级" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部星级</option><option value="5">五星</option><option value="4">四星</option>{view === 'records' && <option value="3">三星</option>}</select>
