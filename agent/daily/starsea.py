@@ -9,6 +9,7 @@ from datetime import datetime
 import cv2
 from vision import prepared_template
 from .settings import ROOT
+from adventure_report import try_record_adventure_entry
 from navigation.models import NavigationError, Point, load_route, maps
 from navigation.geometry import route_distance
 from navigation.vision import Locator
@@ -670,6 +671,23 @@ class Starsea:
                     for key in ("star_soul", "starlight_crystal", "starlight_dust")
                     if key in before_counts and key in after_counts
                 }
+                gained_items = {
+                    label: deltas[key]
+                    for key, label, _, _ in COLLECTION_STATISTICS
+                    if deltas.get(key, 0) > 0
+                }
+                if gained_items:
+                    try_record_adventure_entry(
+                        ROOT,
+                        self.rt,
+                        category="starsea",
+                        task="crystals",
+                        title="星光结晶跑图收集",
+                        detail="、".join(f"{k} +{v}" for k, v in gained_items.items()),
+                        runs=1,
+                        items=gained_items,
+                        status="completed" if nav_ok else "partial",
+                    )
                 crystal_info = {
                     "selected_route": name,
                     "marker_count": self.crystal_marker_count,

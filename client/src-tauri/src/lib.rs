@@ -255,6 +255,7 @@ pub fn run() {
             commands::resonance::resonance_export,
             commands::account_state::get_account_state,
             commands::account_state::get_account_state_if_changed,
+            commands::adventure_report::get_adventure_report,
             commands::task_stats::get_task_statistics,
             commands::user_routes::list_routes,
             commands::user_routes::save_user_route,

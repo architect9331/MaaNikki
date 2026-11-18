@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from .shop import ShopWorkflow
+from .settings import ROOT
+from adventure_report import try_record_adventure_entry
 
 
 class MonthlyExchange(ShopWorkflow):
@@ -14,6 +16,10 @@ class MonthlyExchange(ShopWorkflow):
         "共鸣水晶": "MaaNikki_Shop_ResonanceTitle",
     }
     LIST_ROI = [285, 120, 930, 550]
+
+    def __init__(self, runtime):
+        super().__init__(runtime)
+        self.newly_exchanged: list[str] = []
 
     def open(self):
         if not self.open_shop() or not self.ui.find(
@@ -58,10 +64,12 @@ class MonthlyExchange(ShopWorkflow):
             if not sold or not sold.hit:
                 return self.fail(f"{name}已兑换部分数量，剩余额度尚未完成")
         self.confirm(name, "exchanged")
+        self.newly_exchanged.append(name)
         self.rt.log(f"{self.LABEL}：已按最大数量兑换{name}。")
         return True
 
     def scan(self):
+        self.newly_exchanged = []
         for name in self.ITEMS:
             if name in self.completed:
                 continue
@@ -84,5 +92,15 @@ class MonthlyExchange(ShopWorkflow):
                 continue
             if not self.rt.image_current(image) or not self.exchange(name, box):
                 return False
+        if self.newly_exchanged:
+            try_record_adventure_entry(
+                ROOT,
+                self.rt,
+                category="daily",
+                task="monthly_exchange",
+                title="每月五抽兑换",
+                detail=f"已兑换：{'、'.join(self.newly_exchanged)}",
+                runs=len(self.newly_exchanged),
+            )
         self.rt.log("每月五抽兑换检查完成。")
         return not self.rt.stopped

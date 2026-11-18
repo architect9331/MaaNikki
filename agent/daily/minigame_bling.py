@@ -19,6 +19,7 @@ from .route_test import RouteTest
 from .runtime import RESOURCE, Runtime
 from .settings import ROOT, foreground_inputs as inputs_allowed
 from .startup import focus_game
+from adventure_report import try_record_adventure_entry
 from navigation.controller import BackgroundInput, ForegroundInput
 from navigation.models import GameWindowClosed, NavigationError, maps
 from navigation.vision import Locator
@@ -1208,5 +1209,22 @@ class MinigameBlingRun(Runtime):
                     "background": allow_background,
                     "stop_reason": stats["stop_reason"],
                 })
+                wins = int(stats["completed_rounds"] or 0)
+                losses = int(stats["failed_rounds"] or 0)
+                if wins > 0 or losses > 0:
+                    est_bling = max(0, wins * 600 - losses * 100)
+                    detail = f"成功 {wins} 局" + (f" · 失败 {losses} 局" if losses else "")
+                    try_record_adventure_entry(
+                        ROOT,
+                        self,
+                        category="minigame",
+                        task="minigame_bling",
+                        title="穿梭大冒险刷噗灵",
+                        detail=detail,
+                        runs=wins + losses,
+                        items={"噗灵": est_bling} if est_bling > 0 else {},
+                        meta={"completed_rounds": wins, "failed_rounds": losses},
+                        status="completed" if stats.get("stop_reason") in (None, "completed", "cap_reached") else "partial",
+                    )
             except Exception:
                 pass

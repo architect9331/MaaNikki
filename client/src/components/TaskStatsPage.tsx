@@ -17,6 +17,8 @@ import { useAppStore } from '@/stores/appStore';
 import { getBlessingProgress } from '@/utils/blessingProgress';
 import { getInterfaceLangKey } from '@/i18n';
 import { isTauri } from '@/utils/paths';
+import { AdventureReportPanel } from './AdventureReportPanel';
+import { Segmented } from './ui/FeaturePage';
 
 interface TaskStatRecord {
   runs: number;
@@ -108,6 +110,7 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
   const language = useAppStore((state) => state.language);
   const langKey = getInterfaceLangKey(language);
 
+  const [activeTab, setActiveTab] = useState<'daily' | 'memorial'>('daily');
   const [stats, setStats] = useState<TaskStatisticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -210,19 +213,37 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
             <ArrowLeft className="h-5 w-5 text-text-secondary" />
           </button>
           <BarChart3 className="h-5 w-5 text-accent" />
-          <h1 className="text-base font-semibold text-text-primary">MAA 运行任务统计与纪念</h1>
+          <h1 className="text-base font-semibold text-text-primary">冒险日报与运行统计</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => void loadStats()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-bg-primary px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-hover"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          <span>刷新</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <Segmented
+            label="统计视图"
+            value={activeTab}
+            onChange={setActiveTab}
+            options={[
+              ['daily', '冒险日报'],
+              ['memorial', '运行纪念'],
+            ] as const}
+          />
+          {activeTab === 'memorial' && (
+            <button
+              type="button"
+              onClick={() => void loadStats()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-bg-primary px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-hover"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>刷新</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
+        {activeTab === 'daily' ? (
+          <div className="mx-auto max-w-5xl">
+            <AdventureReportPanel />
+          </div>
+        ) : (
         <div className="mx-auto max-w-5xl space-y-5">
           {/* 纪念概览卡片 */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -423,6 +444,7 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

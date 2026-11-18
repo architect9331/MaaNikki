@@ -220,6 +220,7 @@ pub fn handle_task_callback(
     } else {
         super::task_stats::on_task_finished(app, instance_id, task_id, is_succeeded);
         super::telemetry::on_task_finished(instance_id, task_id, is_succeeded);
+        let _ = app.emit("adventure-report-changed", ());
     }
     if all_done {
         super::telemetry::on_run_finished(instance_id);

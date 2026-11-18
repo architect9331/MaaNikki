@@ -10,8 +10,9 @@ from navigation.session import create_navigator
 from navigation.teleport import Teleporter
 from navigation.vision import Locator
 from task_control import TaskStopped, task_time as time
-from .settings import foreground_inputs
+from .settings import ROOT, foreground_inputs
 from .starsea import HUB, Starsea
+from adventure_report import try_record_adventure_entry
 
 
 class CrystalTree(Starsea):
@@ -126,6 +127,8 @@ class CrystalTree(Starsea):
             raise TaskStopped("星忆晶树收集已停止")
 
     def collect(self):
+        initial_total = None
+        latest_state = None
         try:
             if not self.rt.background_mode() and not foreground_inputs():
                 raise NavigationError("星忆晶树收集需要前台鼠标和键盘输入，请设置为 Seize。")
@@ -138,12 +141,15 @@ class CrystalTree(Starsea):
                                         self.events.append, inputs)
                 teleporter.transport(HUB)
                 before = self.observe_counts(teleporter, approach)
-                if not sum(before.values()):
+                initial_total = sum(before.values())
+                latest_state = before
+                if not initial_total:
                     self.rt.log("星忆晶树没有存储或待收获的结晶，本次跳过。")
                     return True
                 self.rt.log("正在前往星忆晶树，先收取已经落地的结晶。")
                 self.follow(teleporter, approach)
                 state = self.observe_counts(teleporter, approach)
+                latest_state = state
                 if sum(state.values()) > sum(before.values()):
                     raise NavigationError("星忆晶树数量前后不一致，未继续收集。")
                 condensed_retry = False
@@ -162,6 +168,7 @@ class CrystalTree(Starsea):
                         if not self.ring(at_hub=True):
                             return False
                         state = self.observe_counts(teleporter, approach, after_bell=state)
+                        latest_state = state
                         # A crystal can be picked up immediately at the bell
                         # location. Re-check storage rather than run an empty lap.
                         if state["ready"] == 0:
@@ -170,6 +177,7 @@ class CrystalTree(Starsea):
                     self.rt.log("正在绕树收集落地结晶。")
                     self.follow(teleporter, loop)
                     state = self.observe_counts(teleporter, approach)
+                    latest_state = state
                     if sum(state.values()) > sum(before.values()):
                         raise NavigationError("星忆晶树数量前后不一致，未继续收集。")
                     if sum(state.values()) >= sum(before.values()):
@@ -190,4 +198,18 @@ class CrystalTree(Starsea):
                 self.rt.diagnostic("crystal_tree", str(error), details={"events": self.events[-12:]})
             return False
         finally:
+            if initial_total is not None and latest_state is not None:
+                collected = max(0, initial_total - sum(latest_state.values()))
+                if collected > 0:
+                    try_record_adventure_entry(
+                        ROOT,
+                        self.rt,
+                        category="starsea",
+                        task="crystal_tree",
+                        title="星忆晶树收取",
+                        detail=f"获取星光结晶 ×{collected}",
+                        runs=1,
+                        items={"星光结晶": collected},
+                        status="completed" if sum(latest_state.values()) == 0 else "partial",
+                    )
             self.report("crystal_tree")

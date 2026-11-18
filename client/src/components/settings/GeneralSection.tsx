@@ -458,9 +458,9 @@ export function GeneralSection() {
             <div className="flex items-center gap-3">
               <BarChart3 className="w-5 h-5 text-accent" />
               <div>
-                <span className="font-medium text-text-primary">MAA 运行任务统计与纪念</span>
+                <span className="font-medium text-text-primary">冒险日报与运行统计</span>
                 <p className="text-xs text-text-muted mt-0.5">
-                  查看累计为你节省的时间、各任务执行次数排行以及闪光收集与奇迹大陆探索里程碑
+                  查看每日活跃能量消耗、材料与噗灵产出日历柱状图，以及累计节省时间与收集里程碑
                 </p>
               </div>
             </div>

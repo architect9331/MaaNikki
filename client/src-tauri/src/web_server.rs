@@ -9,7 +9,7 @@ use std::sync::{Arc, OnceLock};
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        State,
+        Query, State,
     },
     http::{header, HeaderMap, Method, StatusCode},
     response::IntoResponse,
@@ -209,6 +209,7 @@ pub async fn start_web_server(
         // 配置 & 接口
         .route("/interface", get(handle_get_interface))
         .route("/account-state", get(handle_get_account_state))
+        .route("/adventure-report", get(handle_get_adventure_report))
         .route(
             "/wardrobe-scoring",
             get(handle_get_wardrobe_scoring).put(handle_save_wardrobe_scoring),
@@ -1300,6 +1301,21 @@ async fn handle_restart_as_admin(State(state): State<WebState>) -> impl IntoResp
 
 async fn handle_get_account_state() -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     crate::commands::account_state::get_account_state()
+        .await
+        .map(Json)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))
+}
+
+#[derive(serde::Deserialize)]
+struct AdventureReportQuery {
+    #[serde(rename = "accountKey")]
+    account_key: Option<String>,
+}
+
+async fn handle_get_adventure_report(
+    Query(query): Query<AdventureReportQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    crate::commands::adventure_report::get_adventure_report(query.account_key)
         .await
         .map(Json)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))

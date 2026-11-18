@@ -538,12 +538,12 @@ export function TabBar() {
       <div className="flex shrink-0 items-center gap-1.5 px-3">
         {/* 功能入口平时在右侧面板；面板收起时显示为图标 */}
         {rightPanelCollapsed && !isMobile && <AccountStatusActions compact />}
-        {/* 运行任务统计入口（右上角小图标左侧） */}
+        {/* 冒险日报与运行统计入口（右上角小图标左侧） */}
         <button
           onClick={() => setCurrentPage('statistics')}
           className="p-2 rounded-lg hover:bg-bg-hover transition-colors text-text-secondary"
-          title="MAA 运行任务统计与纪念"
-          aria-label="MAA 运行任务统计与纪念"
+          title="冒险日报与运行统计"
+          aria-label="冒险日报与运行统计"
         >
           <BarChart3 className="w-5 h-5" />
         </button>

@@ -7,8 +7,9 @@ import cv2
 import numpy as np
 from task_control import task_time as time
 
-from .ui import catalog, fields
+from .ui import catalog, expected_text, fields
 from .settings import ROOT
+from adventure_report import lookup_monster_drop, normalize_item_name, try_record_adventure_entry
 
 
 class Gameplay:
@@ -26,6 +27,7 @@ class Gameplay:
         self.energy_exhausted = False
         self.jihua_exhausted = False
         self.quick_unavailable = False
+        self._last_jihua_quote = None
 
     def read_energy(self):
         """Read only on the confirmed calendar; an OCR miss is not zero."""
@@ -162,7 +164,8 @@ class Gameplay:
                     self.rt.diagnostic("dig", "choice_button_unconfirmed", details={"choice": choice})
                 self.rt.log(f"未确认挖掘收取界面的“{label}”按钮，本项停止。")
                 return False
-            self.observe_dig_targets()
+            dig_targets = self._read_dig_target_names()
+            self.observe_dig_targets(found=dig_targets)
             self.rt.log(f"挖掘收取方式：{label}。", detail=True)
             # Submit choice after modal reveal stabilizes. If '再次挖掘' was
             # ignored while the modal remained open, retry once on that modal.
@@ -185,6 +188,15 @@ class Gameplay:
                 self.rt.log("挖掘操作后未确认返回挖掘页面，本项未完成。")
                 return False
             self.rt.log("已收取奖励并再次挖掘。" if repeat else "已收取挖掘奖励。")
+            try_record_adventure_entry(
+                ROOT,
+                self.rt,
+                category="dig",
+                task="dig",
+                title="美鸭梨挖掘收获",
+                detail=("目标：" + "、".join(dig_targets)) if dig_targets else "已收取本轮挖掘奖励",
+                runs=1,
+            )
             return True
 
         returned = False
@@ -223,14 +235,8 @@ class Gameplay:
             pass
         return None
 
-    def observe_dig_targets(self):
+    def _read_dig_target_names(self):
         try:
-            from collection import statistics
-            if not statistics.is_task_stats_enabled(ROOT):
-                return
-            account = self._stats_account()
-            if account is None:
-                return
             raw_text = self.rt.text([180, 110, 920, 460]) or ""
             materials = catalog(self.ui.resource).get("materials", {})
             dig_names = sorted(
@@ -244,6 +250,20 @@ class Gameplay:
                 if name in remaining:
                     found.append(name)
                     remaining = remaining.replace(name, " ")
+            return found
+        except Exception:
+            return []
+
+    def observe_dig_targets(self, found=None):
+        try:
+            from collection import statistics
+            if not statistics.is_task_stats_enabled(ROOT):
+                return
+            account = self._stats_account()
+            if account is None:
+                return
+            if found is None:
+                found = self._read_dig_target_names()
             statistics.sync_task_stats(account, ROOT, extra_dig_targets=found)
             statistics.upload(account, ROOT)
         except Exception:
@@ -269,7 +289,7 @@ class Gameplay:
 
     def realm(self, kind, maximize=True, entered=False, weekly_node=None, allow_exhausted=False,
               return_page="main", fixed_count=None, *, allow_unavailable=False, before_submit=None,
-              record_bling_stats=True):
+              record_bling_stats=True, record_report=True, report_prefix=None, report_task=None):
         if kind == "bless":
             self.rt.account_uid()
         if fixed_count is not None and (type(fixed_count) is not int or not 1 <= fixed_count <= 999):
@@ -277,23 +297,33 @@ class Gameplay:
         self.energy_exhausted = False
         self.jihua_exhausted = False
         self.quick_unavailable = False
+        self._last_jihua_quote = None
         self.level_missing = False
         self.weekly_quota_used = False
         prefix = {"jihua": "Jihua", "bless": "Bless", "monster": "Monster", "weekly": "Weekly"}[kind]
         cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
+        energy_before = None
 
         def steps():
+            nonlocal energy_before
             if not entered and not self.rt.hit(f"MaaNikki_{prefix}_PageReady"):
                 if not self.ui.calendar():
                     return False
                 energy = self.read_energy()
+                energy_before = energy
                 if energy is not None and energy < self.MIN_ENERGY[kind]:
                     return self.exhausted(allow_exhausted, energy)
             if not entered and not self.ui.realm(kind):
                 return False
             if kind == "jihua":
-                return self.jihua(maximize, allow_exhausted, fixed_count=fixed_count,
-                                  record_bling_stats=record_bling_stats)
+                ok = self.jihua(maximize, allow_exhausted, fixed_count=fixed_count,
+                                record_bling_stats=record_bling_stats)
+                if ok and record_report and not self.energy_exhausted and not self.jihua_exhausted:
+                    self._record_realm_report(
+                        kind, None, maximize=maximize, fixed_count=fixed_count,
+                        energy_before=energy_before, report_prefix=report_prefix, report_task=report_task,
+                    )
+                return ok
             node = weekly_node if kind == "weekly" else f"MaaNikki_{prefix}_Level"
             if not self.select_realm_level(kind, node):
                 return False
@@ -306,6 +336,8 @@ class Gameplay:
                     self.realm_level_diagnostic(kind, node)
                     return False
                 remaining, energy = self.weekly_state()
+                if energy is not None:
+                    energy_before = energy
                 if remaining == 0:
                     self.weekly_quota_used = True
                     self.rt.log("当前每周幻境的奖励次数已用完，跳过。")
@@ -355,6 +387,11 @@ class Gameplay:
                                                 cancel if self.rt.hit(cancel) else None)
             if result and kind == "bless":
                 self.invalidate_blessing_inventory("已确认祝福闪光挑战奖励，新增库存数量待复核")
+            if result and record_report and not self.energy_exhausted and not self.weekly_quota_used:
+                self._record_realm_report(
+                    kind, node, maximize=maximize, fixed_count=fixed_count,
+                    energy_before=energy_before, report_prefix=report_prefix, report_task=report_task,
+                )
             self.rt.log("挑战奖励已领取。" if result else "挑战奖励领取结果待确认，请检查游戏画面。",
                         detail=bool(result and before_submit is not None))
             return result
@@ -573,14 +610,70 @@ class Gameplay:
             "roi": definition.get("roi", self.REALM_LEVEL_ROI),
             "scroll_roi": self.REALM_SCROLL_ROI})
 
-    def _read_jihua_bling_quote(self):
-        """Read (energy, gain) from the staged Jihua screen before final confirmation."""
+    def _record_realm_report(self, kind, node, *, maximize, fixed_count, energy_before,
+                             report_prefix=None, report_task=None):
+        per_run = self.MIN_ENERGY[kind]
+        prefix_text = report_prefix or ""
+        task_name = report_task or kind
+        items = {}
+        if kind == "jihua":
+            quote = self._last_jihua_quote
+            if quote is not None:
+                target_name, energy_spent, gain = quote
+                runs = max(1, energy_spent // per_run)
+                items = {target_name: gain} if gain > 0 else {}
+                level_label = target_name
+            else:
+                runs = fixed_count if fixed_count is not None else (
+                    max(1, energy_before // per_run) if maximize and energy_before is not None else 1
+                )
+                energy_spent = runs * per_run
+                level_label = normalize_item_name(
+                    expected_text((fields(self.rt.context, "MaaNikki_Jihua_Target") or {}).get("expected"), "激化目标")
+                )
+            title = f"{prefix_text}素材激化 · {level_label}"
+        else:
+            fallback_label = {"bless": "祝福闪光", "monster": "魔物试炼", "weekly": "每周幻境"}[kind]
+            realm_title = {"bless": "祝福闪光", "monster": "魔物试炼", "weekly": "心之突破"}[kind]
+            level_label = expected_text(
+                (fields(self.rt.context, node) or {}).get("expected") if node else None,
+                fallback_label,
+            )
+            if kind == "weekly":
+                runs = 1
+            elif fixed_count is not None:
+                runs = fixed_count
+            elif maximize and energy_before is not None and energy_before >= per_run:
+                runs = energy_before // per_run
+            else:
+                runs = 1
+            energy_spent = runs * per_run
+            if kind == "monster":
+                drop_info = lookup_monster_drop(ROOT, level_label)
+                if drop_info is not None:
+                    _, mat_name, drop_qty = drop_info
+                    items = {mat_name: runs * drop_qty}
+            title = f"{prefix_text}{realm_title} · {level_label}"
+        try_record_adventure_entry(
+            ROOT,
+            self.rt,
+            category="realm",
+            task=task_name,
+            title=title,
+            detail=f"消耗 {energy_spent} 活跃能量 · {runs} 次",
+            energy_spent=energy_spent,
+            runs=runs,
+            items=items,
+        )
+
+    def _read_jihua_quote(self):
+        """Read (target_name, energy, gain) from the staged Jihua screen before final confirmation."""
         try:
             frame = self.rt.frame()
             if frame is None:
                 return None
-            target = re.sub(r"\s+", "", self.rt.text([920, 170, 165, 45], image=frame) or "")
-            if target != "噗灵":
+            target = normalize_item_name(re.sub(r"\s+", "", self.rt.text([920, 170, 165, 45], image=frame) or ""))
+            if not target:
                 return None
             gain_raw = re.sub(r"[,，\s]+", "", self.rt.text([930, 306, 160, 38], image=frame) or "")
             if not re.fullmatch(r"\d+", gain_raw):
@@ -595,10 +688,17 @@ class Gameplay:
                 return None
             energy = int(energy_match.group(1))
             if 10 <= energy <= 10000 and 1 <= gain <= 100_000_000:
-                return energy, gain
+                return target, energy, gain
         except Exception:
             pass
         return None
+
+    def _read_jihua_bling_quote(self):
+        """Read (energy, gain) from the staged Jihua screen before final confirmation."""
+        quote = self._read_jihua_quote()
+        if quote is None or quote[0] != "噗灵":
+            return None
+        return quote[1], quote[2]
 
     def _record_jihua_bling_stats(self, energy: int, gain: int):
         try:
@@ -615,6 +715,7 @@ class Gameplay:
 
     def jihua(self, maximize, allow_exhausted=False, fixed_count=None, *, record_bling_stats=True):
         submitted = False
+        self._last_jihua_quote = None
 
         def enter():
             nonlocal submitted
@@ -638,7 +739,9 @@ class Gameplay:
                                 "当前无可继续激化的材料或已达今日激化上限，本项未执行，不计入心愿完成。")
                     return bool(allow_exhausted)
                 return self.confirm_unavailable("jihua", allow_exhausted)
-            bling_quote = self._read_jihua_bling_quote() if record_bling_stats else None
+            quote = self._read_jihua_quote()
+            self._last_jihua_quote = quote
+            bling_quote = (quote[1], quote[2]) if (record_bling_stats and quote and quote[0] == "噗灵") else None
             if not self.rt.click_template("MaaNikki_Jihua_FinalConfirm"):
                 return self.confirm_unavailable("jihua", allow_exhausted)
             rewarded = self.jihua_reward()

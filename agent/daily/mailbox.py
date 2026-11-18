@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import cv2
+from daily.settings import ROOT
+from adventure_report import try_record_adventure_entry
 
 
 class Mailbox:
@@ -81,6 +83,15 @@ class Mailbox:
         if not self.ui.wait_page(self.empty):
             return self.fail("领取后未能确认全部附件已领取")
         self.rt.log("邮箱附件已全部领取。")
+        try_record_adventure_entry(
+            ROOT,
+            self.rt,
+            category="daily",
+            task="mailbox",
+            title="邮箱领取",
+            detail="已领取全部邮件附件",
+            runs=1,
+        )
         return True
 
     def run(self):

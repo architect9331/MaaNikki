@@ -15,6 +15,7 @@ from daily.planner import bell_notice, classify, select_energy, select_free
 from daily.runtime import Executors, parameters
 from daily.settings import ROOT, realm_settings
 from daily import run_state
+from adventure_report import try_record_adventure_entry
 
 
 class DailyRun(Executors):
@@ -400,6 +401,19 @@ class DailyRun(Executors):
         }
         write_json(directory / f"{self.mode}-latest.json", report)
         write_json(directory / f"{self.mode}-{stamp.strftime('%Y%m%d-%H%M%S-%f')}.json", report)
+        if score is not None:
+            reward_hint = " · 已领奖" if self.rewards_ok else ""
+            try_record_adventure_entry(
+                ROOT,
+                self,
+                category="daily",
+                task=self.mode,
+                title=self.title,
+                detail=f"积分 {score}/500{reward_hint}",
+                runs=1,
+                meta={"score": int(score), "rewards_ok": bool(self.rewards_ok)},
+                status="completed" if score == 500 else "partial",
+            )
 
     def run_daily(self):
         score = None

@@ -7,6 +7,7 @@ import math
 import re
 
 from account_state import AccountState, game_day
+from adventure_report import try_record_adventure_entry
 from daily.gameplay import Gameplay
 from daily.runtime import Executors, parameters
 from daily.settings import ROOT
@@ -255,7 +256,15 @@ def effective_realm_runs(spent: int, per_run: int, ok: bool, *, planned_runs: in
     return runs
 
 
-def execute_material_run(rt, kind: str, level_name: str, runs_to_do: int, use_max: bool) -> tuple[bool, int]:
+def execute_material_run(
+    rt,
+    kind: str,
+    level_name: str,
+    runs_to_do: int,
+    use_max: bool,
+    *,
+    record_report: bool = False,
+) -> tuple[bool, int]:
     clone = rt.context.clone()
     child = Executors(clone)
     game = Gameplay(child)
@@ -273,6 +282,7 @@ def execute_material_run(rt, kind: str, level_name: str, runs_to_do: int, use_ma
             fixed_count=None if use_max else runs_to_do,
             allow_exhausted=True,
             return_page="calendar",
+            record_report=record_report,
         )
     finally:
         rt.navigation_halted |= child.navigation_halted
@@ -875,6 +885,19 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
         spent = max(0, energy - energy_after)
         actual_runs = effective_realm_runs(spent, per_run, ok, planned_runs=runs)
         gained = actual_runs * per_drop
+        if actual_runs > 0 or spent > 0:
+            realm_label = "素材激化" if kind == "jihua" else "魔物试炼"
+            try_record_adventure_entry(
+                ROOT,
+                rt,
+                category="realm",
+                task="realm_material",
+                title=f"{realm_label} · {meta['level']}",
+                detail=f"{GOAL_LABELS[goal]}筹备：消耗 {spent} 活跃能量 · {actual_runs} 次",
+                energy_spent=spent,
+                runs=actual_runs,
+                items={meta["name"]: gained} if gained > 0 else {},
+            )
         if gained > 0:
             inventory[mid] = int(inventory.get(mid, 0)) + gained
             record_accrual(account, mid, gained)

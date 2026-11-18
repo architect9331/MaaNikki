@@ -25,6 +25,7 @@ from navigation.models import NavigationError, maps, parse_route
 from navigation.telemetry import record_route_telemetry
 from navigation.teleport import Teleporter
 from navigation.vision import Locator
+from adventure_report import try_record_adventure_entry
 
 
 NAVIGATION_ACTIONS = {"", "teleport", "wait"}
@@ -783,6 +784,31 @@ class RouteTest(Runtime):
                     save_gingerbread_telemetry(ROOT, gb_summary, self.directory)
                     result["gingerbread"] = gb_summary
                     self.log(f"【姜饼人实测推断】{gb_summary['overall_diagnosis']}")
+            if not self.dev_only:
+                route_title = str(model.document.get("title") or model.id)
+                gb = result.get("gingerbread")
+                if isinstance(gb, dict) and gb.get("picked_by_name") and int(gb.get("total_picked", 0)) > 0:
+                    try_record_adventure_entry(
+                        ROOT,
+                        self,
+                        category="open_world",
+                        task=self.telemetry_mode(mode),
+                        title=f"{self.label} · {route_title}",
+                        detail=f"实测拾取 {gb['total_picked']} 个材料",
+                        runs=1,
+                        items=dict(gb["picked_by_name"]),
+                        status="completed" if result.get("success") else "partial",
+                    )
+                elif result.get("success") and actions is not None and getattr(actions, "count", 0) > 0:
+                    try_record_adventure_entry(
+                        ROOT,
+                        self,
+                        category="open_world",
+                        task=self.telemetry_mode(mode),
+                        title=f"{self.label} · {route_title}",
+                        detail=f"完成 {actions.count} 次采集/交互",
+                        runs=1,
+                    )
             if active_route is not None and not self.stopped:
                 telemetry = record_route_telemetry(
                     ROOT, active_route, self.telemetry_events,

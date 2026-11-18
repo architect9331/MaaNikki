@@ -4,6 +4,7 @@ import re
 
 from daily.runtime import parameters
 from daily.settings import ROOT
+from adventure_report import try_record_adventure_entry
 from task_control import ForegroundChanged, task_time as time
 from .scanner import IncompleteObservation, RescanSlot, clean_text
 
@@ -260,64 +261,78 @@ class LowRarityDecomposer:
         self.rt.log("正在分解四星及以下素材。")
         last_notice = time.monotonic()
         state = self._ensure_open_and_filter(FILTER)
-        for _ in range(101):
-            selected = frame = None
-            for focus_try in range(4):
+        try:
+            for _ in range(101):
+                selected = frame = None
+                for focus_try in range(4):
+                    try:
+                        if state is None:
+                            state = self._ensure_open_and_filter(FILTER)
+                        self.click("auto_fill")
+                        selected, frame = self.read()
+                        if not re.fullmatch(FILTER, selected["filter"]):
+                            raise RuntimeError("一键放入后分解星级筛选改变")
+                        if any(selected[key] != state[key] for key in ("capacity", "particles")):
+                            raise RuntimeError("放入分解材料期间容量或粒子发生变化，未提交分解")
+                        self.o.check_generation(self.generation)
+                        break
+                    except (RescanSlot, ForegroundChanged):
+                        if self.o.pending is not None or self.rt.stopped or focus_try >= 3:
+                            raise
+                        state = None
+                if selected["count"] == 0:
+                    self.finish_queue()
+                    summary["complete"] = True
+                    self.o.organization["decomposition_pending"] = False
+                    self.o.checkpoint()
+                    self.rt.log(f"四星及以下清理完成：共分解 {summary['copies']} 件，获得 {summary['particles']} 闪光粒子。")
+                    self.rt.check_focus()
+                    if not self.rt.ui.enter_page(lambda: self.rt.key(27, 0),
+                            "MaaNikki_Blessing_InventoryReady", source=READY, attempts=3):
+                        raise IncompleteObservation("分解结束未能返回祝福闪光列表")
+                    return
+                if selected["gain"] is None or selected["gain"] <= 0:
+                    raise RuntimeError("预计分解粒子数量无法确认")
+                operation = self.o.begin_change("decompose", None, {"source": "four_star_auto_fill"}, frame,
+                                                rarity_max=4, **selected)
                 try:
-                    if state is None:
-                        state = self._ensure_open_and_filter(FILTER)
-                    self.click("auto_fill")
-                    selected, frame = self.read()
-                    if not re.fullmatch(FILTER, selected["filter"]):
-                        raise RuntimeError("一键放入后分解星级筛选改变")
-                    if any(selected[key] != state[key] for key in ("capacity", "particles")):
-                        raise RuntimeError("放入分解材料期间容量或粒子发生变化，未提交分解")
                     self.o.check_generation(self.generation)
-                    break
-                except (RescanSlot, ForegroundChanged):
-                    if self.o.pending is not None or self.rt.stopped or focus_try >= 3:
-                        raise
+                except RescanSlot:
+                    self.o.reconcile_change("cancelled_before_input")
                     state = None
-            if selected["count"] == 0:
-                self.finish_queue()
-                summary["complete"] = True
-                self.o.organization["decomposition_pending"] = False
-                self.o.checkpoint()
-                self.rt.log(f"四星及以下清理完成：共分解 {summary['copies']} 件，获得 {summary['particles']} 闪光粒子。")
-                self.rt.check_focus()
-                if not self.rt.ui.enter_page(lambda: self.rt.key(27, 0),
-                        "MaaNikki_Blessing_InventoryReady", source=READY, attempts=3):
-                    raise IncompleteObservation("分解结束未能返回祝福闪光列表")
-                return
-            if selected["gain"] is None or selected["gain"] <= 0:
-                raise RuntimeError("预计分解粒子数量无法确认")
-            operation = self.o.begin_change("decompose", None, {"source": "four_star_auto_fill"}, frame,
-                                            rarity_max=4, **selected)
-            try:
-                self.o.check_generation(self.generation)
-            except RescanSlot:
-                self.o.reconcile_change("cancelled_before_input")
-                state = None
-                continue
-            self.o.submit_change(operation)
-            try:
-                self.click("submit", focus_generation=self.generation, require_same_focus=False)  # Never retry a destructive submission.
-            except (RescanSlot, ForegroundChanged):
-                self.o.reconcile_change("cancelled_before_input")
-                state = None
-                continue
-            after, frame = self.await_result(selected)
-            state = after
-            summary["batches"] += 1
-            summary["copies"] += selected["count"]
-            summary["particles"] += selected["gain"]
-            self.o.confirm_change(operation, capacity_after=after["capacity"], particles_after=after["particles"],
-                                  after=self.o.image(f"decompose_{summary['batches']:03d}.jpg", frame))
-            self.rt.log(f"分解第 {summary['batches']} 批：{selected['count']} 件四星及以下，获得 {selected['gain']} 闪光粒子。", detail=True)
-            if time.monotonic() - last_notice >= 30:
-                self.rt.log(f"正在分解四星及以下素材，已处理 {summary['copies']} 件。")
-                last_notice = time.monotonic()
-        raise RuntimeError("分解批次超过上限，已停止")
+                    continue
+                self.o.submit_change(operation)
+                try:
+                    self.click("submit", focus_generation=self.generation, require_same_focus=False)  # Never retry a destructive submission.
+                except (RescanSlot, ForegroundChanged):
+                    self.o.reconcile_change("cancelled_before_input")
+                    state = None
+                    continue
+                after, frame = self.await_result(selected)
+                state = after
+                summary["batches"] += 1
+                summary["copies"] += selected["count"]
+                summary["particles"] += selected["gain"]
+                self.o.confirm_change(operation, capacity_after=after["capacity"], particles_after=after["particles"],
+                                      after=self.o.image(f"decompose_{summary['batches']:03d}.jpg", frame))
+                self.rt.log(f"分解第 {summary['batches']} 批：{selected['count']} 件四星及以下，获得 {selected['gain']} 闪光粒子。", detail=True)
+                if time.monotonic() - last_notice >= 30:
+                    self.rt.log(f"正在分解四星及以下素材，已处理 {summary['copies']} 件。")
+                    last_notice = time.monotonic()
+            raise RuntimeError("分解批次超过上限，已停止")
+        finally:
+            if summary["copies"] > 0 or summary["particles"] > 0:
+                try_record_adventure_entry(
+                    ROOT,
+                    self.rt,
+                    category="blessing",
+                    task="decompose",
+                    title="四星及以下闪光分解",
+                    detail=f"分解 {summary['copies']} 件",
+                    runs=summary["copies"],
+                    items={"闪光粒子": summary["particles"]} if summary["particles"] > 0 else {},
+                    status="completed" if summary["complete"] else "partial",
+                )
 
     def finish_queue(self):
         # Remove exhausted level-zero stacks from the old position hints.
@@ -408,6 +423,17 @@ class DuplicateDecomposer(LowRarityDecomposer):
         o.verified.clear()
         o.checkpoint()
         self.rt.log(f"重复闪光分解完成：分解 {summary['copies']} 件，获得 {summary['particles']} 闪光粒子。")
+        if summary["copies"] > 0 or summary["particles"] > 0:
+            try_record_adventure_entry(
+                ROOT,
+                self.rt,
+                category="blessing",
+                task="decompose",
+                title="重复五星闪光分解",
+                detail=f"分解 {summary['copies']} 件",
+                runs=summary["copies"],
+                items={"闪光粒子": summary["particles"]} if summary["particles"] > 0 else {},
+            )
         self.rt.check_focus()
         if not self.rt.ui.enter_page(lambda: self.rt.key(27, 0), "MaaNikki_Blessing_InventoryReady",
                                      source=READY, attempts=3):

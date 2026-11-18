@@ -11,6 +11,7 @@ import cv2
 import numpy as np
 
 from account_state import AccountState, period_key
+from adventure_report import try_record_adventure_entry
 from action.blessing_pursuit import ORGANIZE_OPTIONS, blessing_focus, blessing_mode, glow_shortfall, organization_issue
 from action.weekly_challenge import TARGETS as WEEKLY_TARGETS, _record_weekly_state, read_count as read_weekly_count
 from collection.backpack import ensure_backpack_scanned, renewal_source, wardrobe_snapshot
@@ -486,7 +487,15 @@ def _run_double_weekly(
         if energy is not None and energy < game.MIN_ENERGY["weekly"]:
             break
         rt.log(f"限时双倍插队 · 深度突破：按优先设置尝试挑战「{label}」。")
-        ok = game.realm("weekly", maximize=False, entered=True, weekly_node=node, allow_exhausted=True)
+        ok = game.realm(
+            "weekly",
+            maximize=False,
+            entered=True,
+            weekly_node=node,
+            allow_exhausted=True,
+            report_prefix="限时双倍 · ",
+            report_task="double_weekly",
+        )
         if not ok and game.level_missing:
             rt.log(f"深度突破双倍：未找到「{label}」，尝试下一个已勾选目标。")
             continue
@@ -549,6 +558,7 @@ def _run_double_jihua(
         actual_runs = effective_realm_runs(spent, 10, ok, planned_runs=runs)
         if actual_runs <= 0:
             raise RuntimeError("超级激化双倍挑战未完成或未确认活跃能量消耗")
+        gained = 0
         if mid and base_drop > 0:
             double_runs = min(actual_runs, rem_double // 10)
             normal_runs = max(0, actual_runs - double_runs)
@@ -557,6 +567,18 @@ def _run_double_jihua(
                 record_accrual(account, mid, gained)
                 record_material_history(account, crafting, scoring)
                 rt.log(f"限时双倍插队 · 超级激化：获得 {meta.get('name', target_label)} +{gained}。")
+        item_name = meta.get("name") or target_label
+        try_record_adventure_entry(
+            ROOT,
+            rt,
+            category="realm",
+            task="double_jihua",
+            title=f"限时双倍 · 素材激化（{target_label}）",
+            detail=f"消耗 {spent} 活跃能量 · {actual_runs} 次",
+            energy_spent=spent,
+            runs=actual_runs,
+            items={item_name: gained} if gained > 0 else {},
+        )
         return True, energy_after
 
     for pass_idx in range(2):
@@ -658,6 +680,17 @@ def _run_double_jihua(
                 double_runs = min(actual_runs, rem_double_energy // 10)
                 normal_runs = max(0, actual_runs - double_runs)
                 gained = double_runs * (base_drop * 2) + normal_runs * base_drop
+                try_record_adventure_entry(
+                    ROOT,
+                    rt,
+                    category="realm",
+                    task="double_jihua",
+                    title=f"限时双倍 · 素材激化（{meta['level']}）",
+                    detail=f"{GOAL_LABELS[goal]}筹备：消耗 {spent} 活跃能量 · {actual_runs} 次",
+                    energy_spent=spent,
+                    runs=actual_runs,
+                    items={meta["name"]: gained} if gained > 0 else {},
+                )
                 if gained > 0:
                     inventory[mid] = int(inventory.get(mid, 0)) + gained
                     record_accrual(account, mid, gained)
@@ -703,6 +736,7 @@ def _run_double_bless(
                 fixed_count=capped,
                 allow_exhausted=True,
                 return_page="calendar",
+                record_report=False,
             )
         finally:
             rt.navigation_halted |= child.navigation_halted
@@ -710,6 +744,18 @@ def _run_double_bless(
             raise RuntimeError("灵感迸发双倍挑战后未能返回奇想日历")
         energy_after = Gameplay(rt).read_energy()
         if energy_after is not None and energy_after < cur_energy:
+            spent_energy = cur_energy - energy_after
+            actual_runs = max(1, spent_energy // 40)
+            try_record_adventure_entry(
+                ROOT,
+                rt,
+                category="realm",
+                task="double_bless",
+                title=f"限时双倍 · 祝福闪光（{target_label}）",
+                detail=f"消耗 {spent_energy} 活跃能量 · {actual_runs} 次",
+                energy_spent=spent_energy,
+                runs=actual_runs,
+            )
             return True, energy_after
         if not ok:
             raise RuntimeError("灵感迸发双倍挑战未确认完成")
@@ -843,6 +889,22 @@ def _run_double_monster(
                     record_accrual(account, mid, gained)
                     record_material_history(account, crafting, scoring)
                     rt.log(f"限时双倍插队 · 魔物试炼：获得 {meta.get('name', target_label)} +{gained}。")
+            else:
+                gained = 0
+        else:
+            gained = 0
+            meta = {}
+        try_record_adventure_entry(
+            ROOT,
+            rt,
+            category="realm",
+            task="double_monster",
+            title=f"限时双倍 · 魔物试炼（{target_label}）",
+            detail=f"消耗 {spent} 活跃能量 · {total_runs} 次",
+            energy_spent=spent,
+            runs=total_runs,
+            items={meta["name"]: gained} if meta.get("name") and gained > 0 else {},
+        )
         return True, energy_after
 
     for pass_idx in range(2):
@@ -938,6 +1000,17 @@ def _run_double_monster(
                 double_runs = min(total_runs, rem_runs)
                 normal_runs = max(0, total_runs - double_runs)
                 gained = double_runs * (base_drop * 2) + normal_runs * base_drop
+                try_record_adventure_entry(
+                    ROOT,
+                    rt,
+                    category="realm",
+                    task="double_monster",
+                    title=f"限时双倍 · 魔物试炼（{meta['level']}）",
+                    detail=f"{GOAL_LABELS[goal]}筹备：消耗 {spent} 活跃能量 · {total_runs} 次",
+                    energy_spent=spent,
+                    runs=total_runs,
+                    items={meta["name"]: gained} if gained > 0 else {},
+                )
                 if gained > 0:
                     inventory[mid] = int(inventory.get(mid, 0)) + gained
                     record_accrual(account, mid, gained)

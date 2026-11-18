@@ -7,6 +7,8 @@ import cv2
 
 from account_state import period_key
 from .runtime import Runtime, parameters
+from .settings import ROOT
+from adventure_report import try_record_adventure_entry
 
 
 def parse_progress(raw):
@@ -502,4 +504,15 @@ class Crown(Runtime):
             self.require(self.main(), "挑战后未能返回主界面")
             final, total = self.read_progress(account)
             self.log(f"巅峰赛本期星数：{current} → {final}/{total} 星，完成目标 {target} 星。")
+            try_record_adventure_entry(
+                ROOT,
+                self,
+                category="crown",
+                task="crown",
+                title="奇迹之冠巅峰赛",
+                detail=f"本期进度 {final}/{total} 星（本次推进 {current} → {final}）",
+                runs=1,
+                meta={"stars": final, "total": total},
+                upsert_key="crown_daily",
+            )
             return not self.stopped

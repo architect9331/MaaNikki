@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 from account_state import AccountState, game_day
 from .settings import ROOT
+from adventure_report import try_record_adventure_entry
 
 
 class Home:
@@ -25,6 +26,8 @@ class Home:
         outcome, text = "unconfirmed", ""
         if not self.rt.main() or not self.ui.open_map():
             self.save_meteor(outcome, day, text)
+            if result:
+                self._record_home_report(result, outcome, day)
             return False
         # The notice area is empty on ordinary days. Confirm the map on each
         # frame and inspect twice before recording that no notice was found.
@@ -43,6 +46,8 @@ class Home:
                 return False
             outcome = "not_found"
         self.save_meteor(outcome, day, text)
+        if result or outcome in ("found", "not_found"):
+            self._record_home_report(result, outcome, day)
         if outcome == "found":
             self.rt.log("今日有巨陨星！")
         elif outcome == "not_found":
@@ -59,3 +64,23 @@ class Home:
             self.account.record_giant_meteor(outcome, day=day, text=text)
         except (OSError, ValueError) as error:
             self.rt.log(f"巨陨星检测结果未能保存：{error}")
+
+    def _record_home_report(self, result, outcome, day):
+        meteor_note = (
+            "今日发现巨陨星" if outcome == "found"
+            else "今日未发现巨陨星" if outcome == "not_found"
+            else "巨陨星待确认"
+        )
+        try_record_adventure_entry(
+            ROOT,
+            self.rt,
+            category="daily",
+            task="home",
+            title="家园日常",
+            detail=meteor_note,
+            runs=1,
+            meta={"meteor": outcome},
+            status="completed" if result else "partial",
+            upsert_key="home_daily",
+            day=day,
+        )

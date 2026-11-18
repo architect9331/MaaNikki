@@ -3,6 +3,8 @@ import re
 
 from daily.gameplay import Gameplay
 from daily.runtime import Executors
+from daily.settings import ROOT
+from adventure_report import try_record_adventure_entry
 
 
 class CollectionSupply:
@@ -62,7 +64,8 @@ class CollectionSupply:
 
                 ok = game.realm(kind, maximize=(capped_count is None), fixed_count=capped_count,
                                 allow_exhausted=True, return_page="calendar",
-                                allow_unavailable=True, before_submit=before_submit)
+                                allow_unavailable=True, before_submit=before_submit,
+                                record_report=False)
                 if game.quick_unavailable and operation is None:
                     # Returning from realm() has restored the calendar. Verify
                     # no energy was consumed before allowing a different realm.
@@ -96,6 +99,17 @@ class CollectionSupply:
                 self.journal.confirm_change(operation, energy_after=remaining)
                 entry["status"] = "reward_confirmed"
                 self.journal.save()
+                spent_energy = max(0, energy - remaining)
+                try_record_adventure_entry(
+                    ROOT,
+                    self.rt,
+                    category="realm",
+                    task="bless",
+                    title=f"祝福闪光 · {candidate}",
+                    detail=f"消耗 {spent_energy} 活跃能量 · {max(1, spent_energy // 40)} 次",
+                    energy_spent=spent_energy,
+                    runs=max(1, spent_energy // 40),
+                )
                 return {"status": "reward_confirmed", "kind": kind, "source": candidate,
                         "energy_before": energy, "energy_after": remaining}
             if not child.ui.calendar():
@@ -118,12 +132,13 @@ class CollectionSupply:
             return {"status": "energy_exhausted"}
         clone = self.rt.context.clone()
         child = Executors(clone)
+        child_game = Gameplay(child)
         try:
             if not clone.override_pipeline({"MaaNikki_Jihua_Target": {"expected": "噗灵"},
                                             "MaaNikki_Jihua_TargetRetry": {"expected": "噗灵"}}):
                 raise RuntimeError("素材激化目标设置未能应用")
-            ok = Gameplay(child).realm("jihua", maximize=True, allow_exhausted=True, return_page="calendar",
-                                       record_bling_stats=False)
+            ok = child_game.realm("jihua", maximize=True, allow_exhausted=True, return_page="calendar",
+                                  record_bling_stats=False, record_report=False)
         finally:
             self.rt.navigation_halted |= child.navigation_halted
         if self.rt.stopped or not self.rt.ui.calendar():
@@ -131,6 +146,21 @@ class CollectionSupply:
         after = Gameplay(self.rt).read_energy()
         if after is None:
             raise RuntimeError("素材激化后无法核对活跃能量")
+        if after < before:
+            spent_energy = before - after
+            quote = getattr(child_game, "_last_jihua_quote", None)
+            bling_gain = quote[2] if (quote and quote[0] == "噗灵" and quote[2] > 0) else 0
+            try_record_adventure_entry(
+                ROOT,
+                self.rt,
+                category="realm",
+                task="jihua",
+                title="素材激化 · 噗灵",
+                detail=f"消耗 {spent_energy} 活跃能量 · {max(1, spent_energy // 10)} 次",
+                energy_spent=spent_energy,
+                runs=max(1, spent_energy // 10),
+                items={"噗灵": bling_gain} if bling_gain > 0 else {},
+            )
         return {"status": "bling_confirmed" if after < before else "not_spent", "ok": ok,
                 "energy_before": before, "energy_after": after}
 
