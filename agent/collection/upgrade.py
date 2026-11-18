@@ -268,7 +268,7 @@ class UpgradeUI:
                         raise
                     if not clicked:
                         raise RuntimeError("升级提交结果不确定，已停止且不重试")
-                    prepared = (operation, old_xp)
+                    prepared = (operation, old_xp, levels[-1])
                     break
                 except (RescanSlot, ForegroundChanged):
                     if self.owner.pending is not None or self.rt.stopped or focus_try >= 3:
@@ -279,23 +279,51 @@ class UpgradeUI:
                     )
             if prepared is None:
                 raise IncompleteObservation("切回后升级准备未完成，已保存进度")
-            operation, old_xp = prepared
+            operation, old_xp, preview_level = prepared
 
             updated = None
+            expect_result_modal = preview_level > current["level"]
             for post_try in range(4):
                 try:
-                    if not self.upgrade_ready():
+                    if expect_result_modal and post_try == 0 and not focus_switched:
                         if not self.rt.ui.wait_page(RESULT, seconds=20):
                             if not self.upgrade_ready():
                                 raise RuntimeError("未确认升级完成界面，已停止且不重试")
-                        self.rt.check_focus()
-                        page_gen = self.rt._focus_generation
-                        if page_gen != generation:
-                            focus_switched = True
-                        if self.rt.hit(RESULT):
-                            if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), self.upgrade_ready,
-                                                         source=RESULT, attempts=3):
-                                raise RuntimeError("未能关闭升级完成界面")
+                    elif not expect_result_modal:
+                        def _xp_settled():
+                            if self.rt.hit(RESULT):
+                                return True
+                            if not self.upgrade_ready():
+                                return False
+                            snap = self.rt.frame()
+                            if snap is None:
+                                return False
+                            cur_lv = self.integer(self.text("level", snap))
+                            cur_xp = self.experience(self.text("xp", snap))
+                            return bool(
+                                (cur_lv is not None and cur_lv > current["level"])
+                                or (
+                                    cur_lv == current["level"]
+                                    and cur_xp is not None
+                                    and old_xp is not None
+                                    and cur_xp > old_xp
+                                )
+                            )
+                        if not self.rt.ui.wait_page(_xp_settled, seconds=10):
+                            if not self.upgrade_ready():
+                                raise RuntimeError("未确认升级完成界面，已停止且不重试")
+                    elif not self.upgrade_ready():
+                        if not self.rt.ui.wait_page(RESULT, seconds=20):
+                            if not self.upgrade_ready():
+                                raise RuntimeError("未确认升级完成界面，已停止且不重试")
+                    self.rt.check_focus()
+                    page_gen = self.rt._focus_generation
+                    if page_gen != generation:
+                        focus_switched = True
+                    if self.rt.hit(RESULT):
+                        if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), self.upgrade_ready,
+                                                     source=RESULT, attempts=4):
+                            raise RuntimeError("未能关闭升级完成界面")
                     fields, frame = self.read(page_gen)
                     level, xp = self.integer(fields["level"]), self.experience(fields["xp"])
                     if (fields["name"] != current["name"] or level is None
@@ -306,6 +334,14 @@ class UpgradeUI:
                     if level == maximum and (not once or facts["rarity"] == 5):
                         updated["color"], frame = self.full_color(page_gen, current["name"], maximum)
                     break
+                except IncompleteObservation:
+                    if self.rt.stopped or post_try >= 3 or not self.rt.hit(RESULT):
+                        raise
+                    self.rt.check_focus()
+                    page_gen = self.rt._focus_generation
+                    if not self.rt.ui.enter_page(lambda: self.rt.key(70, 0), self.upgrade_ready,
+                                                 source=RESULT, attempts=4):
+                        raise RuntimeError("未能关闭升级完成界面")
                 except (RescanSlot, ForegroundChanged):
                     if self.rt.stopped or post_try >= 3:
                         raise

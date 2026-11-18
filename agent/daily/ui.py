@@ -367,18 +367,25 @@ class GameUI:
                                  source="MaaNikki_MainDetected", recover=self.main)
         return opened and self.dismiss_reward() is not False
 
-    def reward_overlay_visible(self, *, include_title=False):
+    def reward_overlay_visible(self, *, include_title=False, allow_upgrade_result=False):
         with self.rt.observe():
             # Overworld HUD never coexists with the modal reward overlay.
             if self.rt.hit("MaaNikki_MainDetected"):
                 return False
             matched = (self.page_matches("MaaNikki_RewardOverlayReady")
                        or bool(include_title and self.rt.hit("MaaNikki_Monthly_ParadiseReward")))
-            return bool(matched and not self.rt.hit("MaaNikki_Pursuit_UpgradeResultStats"))
+            if not matched:
+                return False
+            if allow_upgrade_result:
+                return True
+            return not self.rt.hit("MaaNikki_Pursuit_UpgradeResultStats")
 
-    def dismiss_reward(self, *, include_title=False):
+    def dismiss_reward(self, *, include_title=False, allow_upgrade_result=False):
         """Close one or more queued reward popups covering the active UI page."""
-        if self._dismissing_reward or not self.reward_overlay_visible(include_title=include_title):
+        if self._dismissing_reward or not self.reward_overlay_visible(
+            include_title=include_title,
+            allow_upgrade_result=allow_upgrade_result,
+        ):
             return None
         self._dismissing_reward = True
         deadline = time.monotonic()+15
@@ -394,7 +401,10 @@ class GameUI:
                 check_deadline = min(deadline, time.monotonic()+2.5)
                 while not self.rt.stopped and time.monotonic() < check_deadline:
                     with self.rt.observe(fresh=True):
-                        visible = self.reward_overlay_visible(include_title=True)
+                        visible = self.reward_overlay_visible(
+                            include_title=True,
+                            allow_upgrade_result=allow_upgrade_result,
+                        )
                     if visible:
                         break
                     clear += 1
@@ -904,7 +914,7 @@ class GameUI:
         self.revived = False
         # Reward layers can leave underlying page features visible. Close the
         # confirmed overlay before accepting the world or sending Esc.
-        if self.dismiss_reward() is False:
+        if self.dismiss_reward(allow_upgrade_result=True) is False:
             return False
         if self.dismiss_realm_confirm() is False:
             return False
@@ -985,7 +995,7 @@ class GameUI:
                         and self.click_asset("ButtonDungeonQuitOK", attempts=1)):
                     return False
             elif page == "reward_overlay":
-                if self.dismiss_reward() is not True:
+                if self.dismiss_reward(allow_upgrade_result=True) is not True:
                     return False
             elif page == "realm_confirm":
                 if self.dismiss_realm_confirm() is not True:
