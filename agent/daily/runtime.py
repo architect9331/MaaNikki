@@ -1840,7 +1840,9 @@ class Executors(Runtime):
             self.last_energy_exhausted = exhausted
             self.energy_exhausted = getattr(self, "energy_exhausted", False) or exhausted
 
-    def set_amount(self, kind, minimum_energy, *, desired_count=None):
+    def set_amount(self, kind, minimum_energy, *, desired_count=None, allow_partial_cap=False):
+        self._last_jihua_capped = False
+        self._last_jihua_staged_energy = 0
         if kind != "jihua":
             def read_quick_count():
                 res = self.recognize("MaaNikki_Daily_QuickCount")
@@ -2016,6 +2018,7 @@ class Executors(Runtime):
             self.log("无法读取挑战数量，请补充数量弹窗截图；本次未确认消耗。")
             return False
         desired = int(desired_count) if desired_count is not None else 1
+        cost = None
         if desired_count is None and minimum_energy:
             cost, cost_text = read_jihua_energy()
             if cost is None or cost <= 0:
@@ -2097,6 +2100,12 @@ class Executors(Runtime):
                     if probe == adjusted:
                         capped_at = adjusted
             if adjusted != desired:
+                if allow_partial_cap and capped_at is not None and 1 <= capped_at < desired:
+                    self._last_jihua_capped = True
+                    if cost is not None and current > 0:
+                        self._last_jihua_staged_energy = max(1, round(capped_at * cost / current))
+                    self.log(f"当前所选激化材料已达持有上限，本次先投入 {capped_at}{unit_suffix}。")
+                    return True
                 self.diagnostic(
                     "realm_amount",
                     "激化投入数量达到材料上限" if capped_at is not None else "激化数量未能设置为目标值",
@@ -2108,5 +2117,7 @@ class Executors(Runtime):
                     else "挑战数量未能设置为要求值，取消本项。"
                 )
                 return False
+        if cost is not None and current > 0:
+            self._last_jihua_staged_energy = max(1, round(desired * cost / current))
         self.log(f"已确认本次激化投入数量：{desired}{unit_suffix}。")
         return True

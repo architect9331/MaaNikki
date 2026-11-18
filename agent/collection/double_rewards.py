@@ -541,7 +541,7 @@ def _run_double_jihua(
     wardrobe_synced = False
     mat_defs = crafting.get("materials") or {}
 
-    def _run_default_jihua(rem_double: int, cur_energy: int, mode_note: str) -> tuple[bool, int]:
+    def _run_default_jihua(rem_double: int, cur_energy: int, mode_note: str) -> tuple[bool, int, bool]:
         target_label = expected_text((fields(rt.context, "MaaNikki_Jihua_Target") or {}).get("expected"), "闪亮泡泡")
         mid = JIHUA_LEVEL_IDS.get(target_label)
         meta = mat_defs.get(mid or "") or {}
@@ -550,13 +550,16 @@ def _run_double_jihua(
         max_double = rem_double // 10
         runs = min(max_afford, max_double)
         if runs <= 0:
-            return False, cur_energy
+            return False, cur_energy, True
         use_max = runs >= max_afford
         rt.log(f"限时双倍插队 · 超级激化（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * 10} 体力）。")
-        ok, energy_after = execute_material_run(rt, "jihua", target_label, runs, use_max)
+        ok, energy_after, run_flags = execute_material_run(rt, "jihua", target_label, runs, use_max)
         spent = max(0, cur_energy - energy_after)
         actual_runs = effective_realm_runs(spent, 10, ok, planned_runs=runs)
         if actual_runs <= 0:
+            if ok and (run_flags["jihua_exhausted"] or run_flags["energy_exhausted"]):
+                rt.log("超级激化双倍：当前无可继续激化的材料、活跃能量不足或已达今日上限，跳过。")
+                return False, energy_after, True
             raise RuntimeError("超级激化双倍挑战未完成或未确认活跃能量消耗")
         gained = 0
         if mid and base_drop > 0:
@@ -579,7 +582,12 @@ def _run_double_jihua(
             runs=actual_runs,
             items={item_name: gained} if gained > 0 else {},
         )
-        return True, energy_after
+        stop_further = bool(
+            run_flags["jihua_material_capped"]
+            or run_flags["jihua_exhausted"]
+            or run_flags["energy_exhausted"]
+        )
+        return True, energy_after, stop_further
 
     for pass_idx in range(2):
         if rt.stopped:
@@ -617,10 +625,14 @@ def _run_double_jihua(
                 mode_note = "尚未建立衣柜或背包记录，改用默认设置"
 
         if effective_default:
-            spent_now, energy = _run_default_jihua(rem_double_energy, energy, mode_note)
+            spent_now, energy, stop_jihua = _run_default_jihua(rem_double_energy, energy, mode_note)
             if not spent_now:
+                if stop_jihua:
+                    goal_satisfied = True
                 break
             any_spent = True
+            if stop_jihua:
+                goal_satisfied = True
         else:
             has_any_potential = any(
                 goal_has_jihua_potential(goal, role_check, crafting, scoring)
@@ -672,10 +684,15 @@ def _run_double_jihua(
                     f"限时双倍插队 · 超级激化（{GOAL_LABELS[goal]}）：{meta['name']} 还差 {deficit}，"
                     f"挑战「{meta['level']}」{runs} 次（消耗 {runs * 10} 体力）。"
                 )
-                ok, energy_after = execute_material_run(rt, "jihua", meta["level"], runs, use_max)
+                ok, energy_after, run_flags = execute_material_run(rt, "jihua", meta["level"], runs, use_max)
                 spent = max(0, energy - energy_after)
                 actual_runs = effective_realm_runs(spent, 10, ok, planned_runs=runs)
                 if actual_runs <= 0:
+                    if ok and (run_flags["jihua_exhausted"] or run_flags["energy_exhausted"]):
+                        goal_satisfied = True
+                        energy = energy_after
+                        rt.log("超级激化双倍：当前无可继续激化的材料、活跃能量不足或已达今日上限，停止继续双倍激化。")
+                        break
                     raise RuntimeError("超级激化双倍挑战未完成或未确认活跃能量消耗")
                 double_runs = min(actual_runs, rem_double_energy // 10)
                 normal_runs = max(0, actual_runs - double_runs)
@@ -699,6 +716,14 @@ def _run_double_jihua(
                 rem_double_energy = max(0, rem_double_energy - double_runs * 10)
                 energy = energy_after
                 any_spent = True
+                if (
+                    run_flags["jihua_material_capped"]
+                    or run_flags["jihua_exhausted"]
+                    or run_flags["energy_exhausted"]
+                ):
+                    goal_satisfied = True
+                    rt.log("超级激化双倍：可用激化材料已达持有上限，停止继续双倍激化。")
+                    break
 
         if goal_satisfied or not has_wb or (energy is not None and energy < 10):
             break
@@ -869,10 +894,12 @@ def _run_double_monster(
             return False, cur_energy
         use_max = runs >= cap
         rt.log(f"限时双倍插队 · 魔物试炼（{mode_note}）：目标「{target_label}」，挑战 {runs} 次（消耗 {runs * per_run} 体力）。")
-        ok, energy_after = execute_material_run(rt, "monster", target_label, runs, use_max)
+        ok, energy_after, run_flags = execute_material_run(rt, "monster", target_label, runs, use_max)
         spent = max(0, cur_energy - energy_after)
         total_runs = effective_realm_runs(spent, per_run, ok, planned_runs=runs)
         if total_runs <= 0:
+            if ok and run_flags["energy_exhausted"]:
+                return False, energy_after
             raise RuntimeError("魔物试炼双倍挑战未完成或未确认活跃能量消耗")
         matches = [
             (k, m) for k, m in mat_defs.items()
@@ -992,10 +1019,13 @@ def _run_double_monster(
                     f"限时双倍插队 · 魔物试炼（{GOAL_LABELS[goal]}）：{meta['name']} 还差 {deficit}，"
                     f"挑战「{meta['level']}」{runs} 次（消耗 {runs * per_run} 体力）。"
                 )
-                ok, energy_after = execute_material_run(rt, "monster", meta["level"], runs, use_max)
+                ok, energy_after, run_flags = execute_material_run(rt, "monster", meta["level"], runs, use_max)
                 spent = max(0, energy - energy_after)
                 total_runs = effective_realm_runs(spent, per_run, ok, planned_runs=runs)
                 if total_runs <= 0:
+                    if ok and run_flags["energy_exhausted"]:
+                        energy = energy_after
+                        break
                     raise RuntimeError("魔物试炼双倍挑战未完成或未确认活跃能量消耗")
                 double_runs = min(total_runs, rem_runs)
                 normal_runs = max(0, total_runs - double_runs)

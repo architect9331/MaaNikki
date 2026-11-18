@@ -264,7 +264,7 @@ def execute_material_run(
     use_max: bool,
     *,
     record_report: bool = False,
-) -> tuple[bool, int]:
+) -> tuple[bool, int, dict[str, bool]]:
     clone = rt.context.clone()
     child = Executors(clone)
     game = Gameplay(child)
@@ -291,7 +291,12 @@ def execute_material_run(
     energy_after = Gameplay(rt).read_energy()
     if energy_after is None:
         raise RuntimeError("幻境挑战后无法核对剩余活跃能量")
-    return ok, energy_after
+    flags = {
+        "energy_exhausted": bool(game.energy_exhausted),
+        "jihua_exhausted": bool(game.jihua_exhausted),
+        "jihua_material_capped": bool(getattr(game, "jihua_material_capped", False)),
+    }
+    return ok, energy_after, flags
 
 
 def _goal_energy_summary(
@@ -803,6 +808,8 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
     game = None
     last_kind = None
     wardrobe_synced = False
+    jihua_blocked = False
+    jihua_blocked_goals: set[str] = set()
     finished: set[str] = set()
     while not rt.stopped:
         role = account.load()
@@ -831,6 +838,7 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
                     )
                 continue
             reqs = goal_requirements(goal, role, crafting, scoring)
+            all_deficits = []
             if reqs:
                 if inventory is None:
                     ready_mat_goals = [
@@ -849,12 +857,22 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
                     )
                     record_material_history(account, crafting, scoring)
                     role = account.load()
-                deficits = goal_deficits(goal, role, inventory, crafting, scoring)
+                all_deficits = goal_deficits(goal, role, inventory, crafting, scoring)
+                deficits = (
+                    [d for d in all_deficits if (d[3] or {}).get("realm") != "jihua"]
+                    if jihua_blocked
+                    else all_deficits
+                )
             else:
                 deficits = []
             if deficits:
                 picked = (goal, deficits[0])
                 break
+            if all_deficits and jihua_blocked:
+                if goal not in jihua_blocked_goals:
+                    jihua_blocked_goals.add(goal)
+                    rt.log(f"幻境挑战顺序：{GOAL_LABELS[goal]}剩余缺口均为素材激化项，因激化材料不足或达今日上限，先交给下一项。")
+                continue
             if goal not in finished:
                 finished.add(goal)
                 rt.log(f"幻境挑战顺序：{GOAL_LABELS[goal]}已备齐，交给下一项。")
@@ -881,7 +899,7 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
         runs = min(runs_needed, max_runs)
         use_max = runs_needed >= max_runs
         rt.log(f"幻境挑战顺序：{GOAL_LABELS[goal]} · {meta['name']} 还差 {deficit}，挑战「{meta['level']}」{runs} 次。")
-        ok, energy_after = execute_material_run(rt, kind, meta["level"], runs, use_max)
+        ok, energy_after, run_flags = execute_material_run(rt, kind, meta["level"], runs, use_max)
         spent = max(0, energy - energy_after)
         actual_runs = effective_realm_runs(spent, per_run, ok, planned_runs=runs)
         gained = actual_runs * per_drop
@@ -904,9 +922,17 @@ def run_material_goals(rt, goals: list[str], glow_shortfall) -> tuple[str, str |
             record_material_history(account, crafting, scoring)
             rt.log(f"幻境挑战顺序：已获得 {meta['name']} +{gained}（当前库存 {inventory[mid]}）。")
         energy = energy_after
-        last_kind = kind
         if actual_runs <= 0:
+            if ok and run_flags["energy_exhausted"]:
+                return "done", last_kind
+            if kind == "jihua" and ok and run_flags["jihua_exhausted"]:
+                jihua_blocked = True
+                rt.log("幻境挑战顺序：当前无可继续激化的材料或已达今日上限，跳过剩余素材激化并继续后续目标。")
+                continue
             raise RuntimeError(f"{GOAL_LABELS[goal]}挑战未完成或未确认活跃能量消耗")
+        last_kind = kind
+        if kind == "jihua" and (run_flags["jihua_material_capped"] or run_flags["jihua_exhausted"]):
+            jihua_blocked = True
         if not ok:
             rt.log(
                 f"幻境挑战顺序：结算提示确认超时，但已返回奇想日历并核实消耗 {spent} 点活跃能量。",

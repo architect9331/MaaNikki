@@ -26,6 +26,7 @@ class Gameplay:
         self.rt, self.ui = runtime, runtime.ui
         self.energy_exhausted = False
         self.jihua_exhausted = False
+        self.jihua_material_capped = False
         self.quick_unavailable = False
         self._last_jihua_quote = None
 
@@ -296,6 +297,7 @@ class Gameplay:
             raise ValueError("固定挑战数量必须是 1～999 的整数")
         self.energy_exhausted = False
         self.jihua_exhausted = False
+        self.jihua_material_capped = False
         self.quick_unavailable = False
         self._last_jihua_quote = None
         self.level_missing = False
@@ -716,6 +718,7 @@ class Gameplay:
     def jihua(self, maximize, allow_exhausted=False, fixed_count=None, *, record_bling_stats=True):
         submitted = False
         self._last_jihua_quote = None
+        self.jihua_material_capped = False
 
         def enter():
             nonlocal submitted
@@ -869,28 +872,40 @@ class Gameplay:
         return (not self.rt.hit("MaaNikki_Jihua_FinalConfirm")
                 and bool(self.rt.text([900, 560, 240, 100], r"激\s*化\s*材\s*料")))
 
-    def jihua_stage_one(self, open_dialog, maximize, fixed_count):
+    def jihua_stage_one(self, open_dialog, maximize, target_energy):
         if self.ui.dismiss_tutorial() is False or self.ui.dismiss_reward() is False:
-            return "error"
+            return "error", 0
         if not self.ui.page_matches("MaaNikki_Jihua_NumConfirm"):
             if not open_dialog():
-                return "error" if self.rt.stopped else "not_opened"
+                return ("error" if self.rt.stopped else "not_opened"), 0
             if not self.ui.wait_page("MaaNikki_Jihua_NumConfirm", seconds=3):
-                return "error" if self.rt.stopped else "not_opened"
+                return ("error" if self.rt.stopped else "not_opened"), 0
         if not self.rt.pause(.3):
-            return "error"
-        if fixed_count is not None and not self.rt.set_amount("jihua", fixed_count * self.MIN_ENERGY["jihua"]):
-            return "error"
-        if fixed_count is None and maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
-            return "error"
+            return "error", 0
+        staged_energy = 0
+        capped = False
+        if target_energy is not None:
+            if not self.rt.set_amount("jihua", target_energy, allow_partial_cap=True):
+                return "error", 0
+            staged_energy = int(getattr(self.rt, "_last_jihua_staged_energy", 0) or 0)
+            capped = bool(getattr(self.rt, "_last_jihua_capped", False))
+        elif maximize and not self.rt.click_template("MaaNikki_Jihua_NumMax", wait_seconds=.2):
+            return "error", 0
         if not self.rt.click_template("MaaNikki_Jihua_NumConfirm"):
-            return "error"
-        if self.rt.wait_hit("MaaNikki_Jihua_FinalConfirm", 1.0):
-            return "ready"
-        return "insufficient"
+            return "error", 0
+        has_final = self.rt.wait_hit("MaaNikki_Jihua_FinalConfirm", 1.0)
+        if target_energy is not None and capped:
+            rem = max(0, target_energy - staged_energy)
+            if has_final and rem < self.MIN_ENERGY["jihua"]:
+                return "ready", staged_energy
+            return "partial", staged_energy
+        if has_final:
+            return "ready", staged_energy
+        return "insufficient", staged_energy
 
     def jihua_stage_materials(self, maximize, fixed_count):
         most = (self.rt.context.get_node_data("MaaNikki_Jihua_MaterialMostOpen") or {}).get("enabled", False)
+        rem_energy = fixed_count * self.MIN_ENERGY["jihua"] if fixed_count is not None else None
         attempted_any = False
         if most:
             first_roi = self.ui.roi("AreaJihuaFirstMaterial")
@@ -898,12 +913,13 @@ class Gameplay:
                     and self.ui.find(roi=[60, 585, 75, 85], text="数量", scroll=False)
                     and self.ui.click_asset("ButtonJihuaSort")
                     and self.ui.stable()):
-                slots = 1 if fixed_count is not None else 5
-                for col in range(slots):
+                for col in range(5):
+                    if rem_energy is not None and rem_energy < self.MIN_ENERGY["jihua"]:
+                        break
                     cell_roi = [first_roi[0] + col * 105, first_roi[1], first_roi[2], first_roi[3]]
-                    state = self.jihua_stage_one(
+                    state, used_energy = self.jihua_stage_one(
                         lambda target=cell_roi: self.rt.action("Click", target=target),
-                        maximize, fixed_count)
+                        maximize, rem_energy)
                     if state == "ready":
                         return True
                     if state == "error":
@@ -911,6 +927,13 @@ class Gameplay:
                     if state == "not_opened":
                         break
                     attempted_any = True
+                    if rem_energy is not None and used_energy > 0:
+                        rem_energy = max(0, rem_energy - used_energy)
+                        if rem_energy < self.MIN_ENERGY["jihua"] and self.rt.hit("MaaNikki_Jihua_FinalConfirm"):
+                            return True
+                if self.rt.hit("MaaNikki_Jihua_FinalConfirm"):
+                    self.jihua_material_capped = True
+                    return True
             self.rt.log("未能按数量投入足够激化材料，尝试已设置的首选和备选材料。" if attempted_any
                         else "未能按数量选择材料，尝试已设置的首选和备选材料。")
         options = fields(self.rt.context, "MaaNikki_Jihua_Material").get("expected", [])
@@ -921,27 +944,34 @@ class Gameplay:
         metadata = catalog(self.ui.resource)["materials"]
         cost_roi = self.ui.roi("AreaJihuaCostSelect")
         for label in options:
+            if rem_energy is not None and rem_energy < self.MIN_ENERGY["jihua"]:
+                break
             label = {"小棉菊": "小绵菊"}.get(label, label)
             item = metadata.get(label)
             if not item or not item.get("jihua"):
                 self.rt.log(f"{label}不能作为激化材料，尝试备选。")
                 continue
-            state = self.jihua_stage_one(
+            state, used_energy = self.jihua_stage_one(
                 lambda asset=item["game_img"]: self.ui.find(
                     roi=cost_roi, asset=asset, scale=.5*2/3, threshold=.7),
-                maximize, fixed_count)
+                maximize, rem_energy)
             if state == "ready":
                 return True
             if state == "error":
                 return None
-            if state == "insufficient":
+            if state in ("insufficient", "partial"):
                 attempted_any = True
-                if fixed_count is not None:
-                    break
+                if rem_energy is not None and used_energy > 0:
+                    rem_energy = max(0, rem_energy - used_energy)
+                    if rem_energy < self.MIN_ENERGY["jihua"] and self.rt.hit("MaaNikki_Jihua_FinalConfirm"):
+                        return True
+        if self.rt.hit("MaaNikki_Jihua_FinalConfirm"):
+            self.jihua_material_capped = True
+            return True
         if attempted_any:
             return False
         self.rt.log("未找到可用的激化材料。")
-        return None
+        return False if not self.rt.stopped and self.jihua_table_idle() else None
 
     def monthly_diagnostic(self, kind, stage, reason=None):
         """Retain the unfamiliar reward layer before ordinary page recovery."""
