@@ -513,6 +513,45 @@ def _scroll_rejuv_to_top(rt) -> np.ndarray | None:
     return frame
 
 
+def _is_card_artwork_present(frame: np.ndarray, bx: int, by: int, grid_bottom: int) -> bool:
+    y1 = min(frame.shape[0], grid_bottom, by + 146)
+    if (
+        by < GRID_TOP
+        or y1 - (by + 16) < 72
+        or bx < 0
+        or bx + CARD_W > frame.shape[1]
+    ):
+        return False
+    body = frame[by + 16:y1, bx + 12:bx + 138]
+    gray = cv2.cvtColor(body, cv2.COLOR_BGR2GRAY)
+    if float(np.std(gray)) < 9.0:
+        return False
+    ig = gray.astype(np.int16)
+    dx = np.abs(np.diff(ig, axis=1))[:-1, :]
+    dy = np.abs(np.diff(ig, axis=0))[:, :-1]
+    return float(np.mean((dx + dy) > 14)) >= 0.005
+
+
+def _build_scroll_anchors(
+    frame: np.ndarray,
+    occ_rows: list[tuple[int, list[int]]],
+    grid_bottom: int,
+) -> list[tuple[int, int]]:
+    anchors = [(by, len(cols)) for by, cols in occ_rows]
+    if occ_rows and len(occ_rows[-1][1]) == COLS:
+        next_by = int(round(occ_rows[-1][0] + ROW_PITCH_EXACT))
+        if next_by + 96 <= min(frame.shape[0], grid_bottom):
+            extra_cols = 0
+            for col in range(COLS):
+                bx = FIRST_X + col * COL_PITCH
+                if not _is_card_artwork_present(frame, bx, next_by, grid_bottom):
+                    break
+                extra_cols += 1
+            if extra_cols > 0:
+                anchors.append((next_by, extra_cols))
+    return anchors
+
+
 def _measure_rejuv_scroll_delta(
     before: np.ndarray,
     after: np.ndarray,
@@ -528,18 +567,25 @@ def _measure_rejuv_scroll_delta(
     for cy, n_cols in anchors:
         x0 = FIRST_X + 10
         x1 = min(before.shape[1] - 10, FIRST_X + max(1, n_cols) * COL_PITCH - 24)
-        tmpl = b_gray[cy + 16:cy + 146, x0:x1]
-        if tmpl.shape[0] < 100 or tmpl.shape[1] < 80 or float(np.std(tmpl)) < 4.0:
-            continue
-        low = max(12, GRID_TOP - 40)
-        high = min(cy + 20, grid_bottom - tmpl.shape[0])
-        if high < low + 8:
-            continue
-        search = a_gray[low:high + tmpl.shape[0], x0:x1]
-        res = cv2.matchTemplate(search, tmpl, cv2.TM_CCOEFF_NORMED).ravel()
-        best_idx = int(np.argmax(res))
-        if float(res[best_idx]) >= 0.86:
-            votes.append((cy + 16) - (low + best_idx))
+        bands = [(cy + 16, min(grid_bottom, cy + 146))]
+        if cy + 186 <= grid_bottom:
+            bands.append((cy + 86, cy + 186))
+        for t0, t1 in bands:
+            if t1 - t0 < 72:
+                continue
+            tmpl = b_gray[t0:t1, x0:x1]
+            if tmpl.shape[1] < 80 or float(np.std(tmpl)) < 4.0:
+                continue
+            low = GRID_TOP
+            high = min(t0 + 12, grid_bottom - tmpl.shape[0])
+            if high < low + 8:
+                continue
+            search = a_gray[low:high + tmpl.shape[0], x0:x1]
+            res = cv2.matchTemplate(search, tmpl, cv2.TM_CCOEFF_NORMED).ravel()
+            best_idx = int(np.argmax(res))
+            if float(res[best_idx]) >= 0.86:
+                votes.append(t0 - (low + best_idx))
+                break
     if not votes:
         return None
     delta = int(round(float(np.median(votes))))
@@ -836,7 +882,7 @@ class RenewalScanner:
             if not occ_rows:
                 complete = _page == 0
                 break
-            occ_anchors = [(by, len(cols)) for by, cols in occ_rows]
+            occ_anchors = _build_scroll_anchors(frame, occ_rows, grid_bottom)
             # A partial row or an empty lattice row cleanly inside the viewport means list end.
             reached_list_end = (
                 len(occ_rows[-1][1]) < COLS
@@ -919,7 +965,7 @@ class RenewalScanner:
                 complete = True
                 break
 
-            step_dy = -9600 if is_tall else -720
+            step_dy = -9600 if is_tall else -480
             moved = False
             for attempt_dy in (step_dy, step_dy // 2, step_dy // 4):
                 after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.28)
@@ -943,8 +989,16 @@ class RenewalScanner:
                     self._last_scan_frame = after
                     moved = True
                     break
-                if _scroll_rejuv_and_park(self.rt, -attempt_dy, 0.22) is None:
+                undo = _scroll_rejuv_and_park(self.rt, -attempt_dy, 0.28)
+                if undo is None:
                     break
+                frame = undo
+                self._last_scan_frame = undo
+                undo_rows = detect_rejuv_rows(frame, grid_top=GRID_TOP, grid_bottom=grid_bottom)
+                if undo_rows:
+                    undo_occ = _detect_occupied_rejuv_rows(frame, undo_rows)
+                    if undo_occ:
+                        occ_anchors = _build_scroll_anchors(frame, undo_occ, grid_bottom)
             if complete or not moved:
                 break
 
