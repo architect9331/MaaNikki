@@ -693,10 +693,31 @@ class BlessingLocker(InventoryScanner):
         frame = self.frame(generation)
         if not self.selected(frame, box):
             # Click delivery and the selection animation are asynchronous.
-            # Keep the pointer in place and observe the same target until its
-            # existing highlight predicate passes; never submit another click.
+            # Keep the pointer in place while waiting; if a non-destructive
+            # selection click was swallowed after scrolling (leaving the card
+            # merely hovered and unselected), re-stage hover and retry once.
             with self.rt.ui.preserve_cursor():
-                if not self.rt.ui.wait_page(lambda: self.selected(self.frame(generation), box)):
+                wait_seconds = 5 if already_selected else 1.5
+                confirmed = self.rt.ui.wait_page(
+                    lambda: self.selected(self.frame(generation), box),
+                    seconds=wait_seconds,
+                )
+                if not confirmed and not already_selected:
+                    self.check_generation(generation)
+                    retry_frame = self.frame(generation)
+                    if not self.selected(retry_frame, box):
+                        self._hover_box = None
+                        if (not self.rt.action("TouchMove", target=point)
+                                or not self.rt.pause(.3)
+                                or not self.rt.action("Click", target=point, ui_click=False)
+                                or not self.rt.pause(.2)):
+                            raise RuntimeError("未能选中目标闪光")
+                        self._hover_box = tuple(box)
+                        confirmed = self.rt.ui.wait_page(
+                            lambda: self.selected(self.frame(generation), box),
+                            seconds=3.5,
+                        )
+                if not confirmed:
                     raise IncompleteObservation("目标格子的选中高亮尚未确认，保留进度")
             frame = self.frame(generation)
         if verify_details:
