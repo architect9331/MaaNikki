@@ -50,7 +50,7 @@
   },
   "MaaNikki_Redeem_OtherRow": {
     "recognition": "OCR",
-    "roi": [210, 460, 180, 52],
+    "roi": [200, 120, 220, 500],
     "expected": "^兑换码$",
     "action": "DoNothing"
   },
@@ -61,7 +61,7 @@
   },
   "MaaNikki_Redeem_OpenModal": {
     "recognition": "OCR",
-    "roi": [720, 460, 180, 52],
+    "roi": [680, 120, 260, 500],
     "expected": "使用",
     "action": "Custom",
     "custom_action": "nikki.ui_click",

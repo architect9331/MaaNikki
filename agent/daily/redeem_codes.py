@@ -362,16 +362,56 @@ class RedeemCodes:
                 return False
             if self._other_ready():
                 return True
-            if not self.rt.key("E", 0.35):
+            if not self.rt.key(ord("E"), 0.35):
                 return False
         return self._other_ready() or self.fail("未能切换到设置的「其他」页")
+
+    def _find_aligned_use_box(self):
+        frame = self.rt.capture()
+        if frame is None:
+            return None
+        row_res = self.rt.recognize("MaaNikki_Redeem_OtherRow", image=frame)
+        btn_res = self.rt.recognize("MaaNikki_Redeem_OpenModal", image=frame)
+        row_items = (
+            list(getattr(row_res, "filtered_results", None) or [])
+            or ([row_res.best_result] if row_res and row_res.hit and row_res.best_result else [])
+        )
+        btn_items = (
+            list(getattr(btn_res, "filtered_results", None) or [])
+            or ([btn_res.best_result] if btn_res and btn_res.hit and btn_res.best_result else [])
+        )
+        row_ys = [
+            item.box[1] + item.box[3] / 2
+            for item in row_items
+            if getattr(item, "box", None)
+        ]
+        for btn in btn_items:
+            box = getattr(btn, "box", None)
+            if not box:
+                continue
+            btn_cy = box[1] + box[3] / 2
+            if any(abs(btn_cy - row_cy) <= 28 for row_cy in row_ys):
+                return list(box)
+        return None
+
+    def _click_open_modal(self) -> bool:
+        target = self._find_aligned_use_box()
+        if target is not None:
+            return bool(
+                self.ui.enter_page(
+                    lambda: self.rt.action("Click", target=self._find_aligned_use_box() or target),
+                    "MaaNikki_Redeem_ModalReady",
+                    source=self._other_ready,
+                )
+            )
+        return bool(self.rt.click_template("MaaNikki_Redeem_OpenModal"))
 
     def _open_modal(self) -> bool:
         if self._modal_ready():
             return True
         if not self._open_other_tab():
             return False
-        if not self.rt.click_template("MaaNikki_Redeem_OpenModal"):
+        if not self._click_open_modal():
             return self.fail("未能打开兑换奖励弹窗")
         return True
 
@@ -384,7 +424,7 @@ class RedeemCodes:
         if not (self.rt.action("Click", target=MODAL_CLOSE_TARGET)
                 and self.ui.wait_page(self._other_ready, seconds=4)):
             return self.fail("未能重置兑换码输入框")
-        if not self.rt.click_template("MaaNikki_Redeem_OpenModal"):
+        if not self._click_open_modal():
             return self.fail("未能重新打开兑换奖励弹窗")
         return True
 
