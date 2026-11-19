@@ -10,6 +10,7 @@ from .vision import Locator
 from .matching import luma, match_map
 
 POINT_DETAIL_DELAY = .5
+LOCKED_SPIRE_LABEL = "未解锁的流转之柱"
 
 
 def terrain_pan(dx, dy):
@@ -34,8 +35,19 @@ class Teleporter:
         self.last_frame = None
         self.last_pose = None
         self.last_selection_frame = None
+        self.last_clicked_target = None
         self.map_diagnostics = []
         self.home_region_name = None
+
+    def candidate_panel_roi(self):
+        """Return candidate popup bounds anchored on the last clicked map coordinate."""
+        if isinstance(self.last_clicked_target, (list, tuple)) and len(self.last_clicked_target) >= 2:
+            tx, ty = int(self.last_clicked_target[0]), int(self.last_clicked_target[1])
+            x0, y0 = max(0, tx - 24), max(0, ty - 48)
+            x1, y1 = min(1280, tx + 300), min(720, ty + 220)
+            if x1 > x0 and y1 > y0:
+                return [x0, y0, x1 - x0, y1 - y0]
+        return self.rt.ui.roi("AreaBigMapTeleporterSelect")
 
     def check(self, browse=False):
         if self.inputs:
@@ -509,7 +521,8 @@ class Teleporter:
 
     def confirm_transport(self, checkpoint):
         button = self.rt.ui.roi("AreaBigMapTeleportButton")
-        panel = self.rt.ui.roi("AreaBigMapTeleporterSelect")
+        panel = self.candidate_panel_roi()
+        fixed_panel = self.rt.ui.roi("AreaBigMapTeleporterSelect")
         observations = 0
         text = ""
         def detail_ready():
@@ -521,27 +534,40 @@ class Teleporter:
             observations += 1
             self.event({"type": "teleport_button_observed", "attempt": observations, "text": text, "roi": button})
             return text in ("传送", "追踪")
+        def locked_popup_visible():
+            return bool(
+                self.rt.text(panel, LOCKED_SPIRE_LABEL)
+                or (panel != fixed_panel and self.rt.text(fixed_panel, LOCKED_SPIRE_LABEL))
+            )
         def find_entry(click=False):
             self.check()
             # Strict white filtering isolates list rows from bright map art, but
             # semi-transparent row backgrounds can erode thin leading strokes
             # (e.g. "星实之树" -> "4实之树"). Fall back to raw exact OCR, matching
             # selection_visible() on the same candidate panel.
-            return (self.rt.ui.find(roi=panel, text=checkpoint["name"], exact=True,
-                                    color=([0, 0, 220], [180, 15, 255]),
-                                    scroll=False, click=click)
-                    or self.rt.ui.find(roi=panel, text=checkpoint["name"], exact=True,
-                                       scroll=False, click=click))
+            for roi in (panel, fixed_panel) if panel != fixed_panel else (panel,):
+                hit = (self.rt.ui.find(roi=roi, text=checkpoint["name"], exact=True,
+                                        color=([0, 0, 220], [180, 15, 255]),
+                                        scroll=False, click=click)
+                       or self.rt.ui.find(roi=roi, text=checkpoint["name"], exact=True,
+                                          scroll=False, click=click))
+                if hit:
+                    return hit
+            return None
         def select_entry():
             clicked = bool(find_entry(click=True))
             self.event({"type": "teleport_list_selected", "name": checkpoint["name"], "clicked": clicked})
             return clicked and self.rt.pause(POINT_DETAIL_DELAY)
         try:
+            if not detail_ready() and not find_entry(click=False) and locked_popup_visible():
+                raise NavigationError("传送点尚未解锁。")
             # Overlapping markers open a candidate list first. Only retry that
             # safe selection while the named entry is still visible; wait for
             # its detail button instead of reading the list's previous frame.
             if not self.rt.ui.enter_page(select_entry, detail_ready,
                     source=find_entry, attempts=2, seconds=4):
+                if locked_popup_visible():
+                    raise NavigationError("传送点尚未解锁。")
                 raise NavigationError("选中点位后未找到传送按钮。")
             if text == "追踪":
                 raise NavigationError("传送点尚未解锁。")
@@ -558,6 +584,7 @@ class Teleporter:
     def transport(self, checkpoint, *, on_map_ready=None, reuse_map=False):
         """Prepare the map; an explicit False from its precheck skips transport."""
         self.deadline = time.monotonic()+120
+        self.last_clicked_target = None
         self.check()
         # Confirm the handed-off page before any recovery that may close it.
         # A short feature miss should wait on this map rather than reopen it.
@@ -578,9 +605,13 @@ class Teleporter:
                             "checkpoint": checkpoint["name"]})
                 return False
         def selection_visible():
+            pattern = f"{re.escape(checkpoint['name'])}|{LOCKED_SPIRE_LABEL}"
+            panel = self.candidate_panel_roi()
+            fixed_panel = self.rt.ui.roi("AreaBigMapTeleporterSelect")
             return (normalized(self.rt.ui.text(self.rt.ui.roi("AreaBigMapTeleportButton")))
-                    in ("传送", "追踪") or bool(self.rt.text(
-                        self.rt.ui.roi("AreaBigMapTeleporterSelect"), re.escape(checkpoint["name"]))))
+                    in ("传送", "追踪")
+                    or bool(self.rt.text(panel, pattern))
+                    or (panel != fixed_panel and bool(self.rt.text(fixed_panel, pattern))))
         need_restore = False
         def restore_map():
             nonlocal need_restore
@@ -603,6 +634,7 @@ class Teleporter:
                 need_restore = True
                 return False
             self.event({"type": "checkpoint_click", "name": checkpoint["name"], "target": target})
+            self.last_clicked_target = list(target)
             return self.rt.action("Click", target=target)
         if not self.rt.ui.enter_page(select_checkpoint, selection_visible,
                 source="MaaNikki_Navigation_MapFeature", recover=restore_map):

@@ -558,6 +558,15 @@ class RouteTest(Runtime):
                                           "active_seconds": round(time.monotonic()-started, 3),
                                           **details})
                 write_json(directory / "result.json", summary)
+                if not ok and any(token in err_text for token in (
+                    "未能识别幸福雪未融图标",
+                    "小姜饼人能力方案设置无效",
+                    "幸福雪未融能力方案设置无效",
+                )):
+                    summary["stopped_reason"] = err_text
+                    write_json(directory / "result.json", summary)
+                    self.log(f"{collection_title}已停止：{err_text}")
+                    break
                 route_outcome = (
                     "完成。" if ok
                     else "对应区域或传送点尚未解锁，本次跳过。" if details.get("skipped_locked")
