@@ -277,9 +277,21 @@ class Locator:
                         )
                     )
                     shoreline_override = False
-                    if (not near_refinement
-                            and score >= max(.94, initial[2]+.10)
-                            and peak >= max(.008, initial[3]*1.25)):
+                    strong_shoreline_cone = (
+                        score >= max(.94, initial[2]+.10)
+                        and peak >= max(.008, initial[3]*1.25)
+                    )
+                    # Near the 1.0 correlation ceiling on smooth straight beaches,
+                    # an additive +0.10 margin is unreachable once luma exceeds 0.90
+                    # and along-shore prominence stays low (~0.002) for both methods.
+                    # Accept outside-cone when masking the cone cuts residual error
+                    # by at least 4x into near-exact fit while keeping peak parity.
+                    near_perfect_cone = (
+                        score >= .98
+                        and (1.0-score) <= (1.0-initial[2])*.25
+                        and peak >= max(.0015, initial[3]*.75)
+                    )
+                    if not near_refinement and (strong_shoreline_cone or near_perfect_cone):
                         dir2, conf2 = self.camera_heading(reference, cx+x, cy+y)
                         shoreline_override = (
                             dir2 is not None and conf2 >= .7
