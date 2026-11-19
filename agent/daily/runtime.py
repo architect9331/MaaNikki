@@ -46,6 +46,7 @@ class Runtime:
         self._account_pause_generation = None
         self._account_mismatch = False
         self._frame_incomplete = False
+        self._work_area_warned = False
         self._pending_route_telemetry = None
         if session is not None:
             session.ensure_hud()
@@ -284,7 +285,13 @@ class Runtime:
         return hwnd, cap_size
 
     def _validate_pointer_targets(self, action, fields, inputs=None, *, require_work_area=None):
-        from tall_window import is_capture_point_safe
+        from tall_window import (
+            BASE_CAPTURE_HEIGHT,
+            BASE_CAPTURE_WIDTH,
+            ensure_16_9_window,
+            is_auto_adjust_resolution_enabled,
+            is_capture_point_safe,
+        )
         hwnd, cap_size = self._pointer_guard_context(inputs)
         if action in {"Click", "TouchMove", "Scroll"}:
             candidates = [("target", fields.get("target"))]
@@ -292,18 +299,46 @@ class Runtime:
             candidates = [("begin", fields.get("begin")), ("end", fields.get("end"))]
         else:
             return cap_size
+        tried_adjust = False
         for label, raw in candidates:
-            if not is_capture_point_safe(
+            safe = is_capture_point_safe(
                 hwnd,
                 raw,
                 capture_size=cap_size,
                 margin_px=4,
                 require_work_area=require_work_area,
+            )
+            if (
+                not safe
+                and not tried_adjust
+                and cap_size == (BASE_CAPTURE_WIDTH, BASE_CAPTURE_HEIGHT)
+                and is_auto_adjust_resolution_enabled(self.context)
             ):
+                tried_adjust = True
+                ensure_16_9_window(
+                    self.controller,
+                    context=self.context,
+                    hwnd=hwnd,
+                    notify=self.log,
+                    write_log=False,
+                )
+                self.invalidate_frame()
+                hwnd, cap_size = self._pointer_guard_context(inputs)
+                safe = is_capture_point_safe(
+                    hwnd,
+                    raw,
+                    capture_size=cap_size,
+                    margin_px=4,
+                    require_work_area=require_work_area,
+                )
+            if not safe:
                 write_message(
                     f"已拦截超出安全可点击工作区的输入：action={action}, field={label}, target={raw}, cap_size={cap_size}",
                     None,
                 )
+                if not self._work_area_warned:
+                    self._work_area_warned = True
+                    self.log("游戏窗口部分区域被系统任务栏遮挡或超出屏幕可用边界，已拦截边缘点击以避免误触桌面；请将游戏窗口移至屏幕可用区域内，或在设置中开启自动调整游戏窗口。")
                 return None
         return cap_size
 

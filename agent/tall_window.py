@@ -623,7 +623,7 @@ def closest_16_9_geometry(
     return candidates[0] if candidates else None
 
 
-def heal_16_9_window(controller=None, *, hwnd: int | None = None):
+def heal_16_9_window(controller=None, *, hwnd: int | None = None, context=None):
     """Repair a windowed 16:9 game window whose physical client size is off by border/DPI rounding."""
     if (TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT) in ALLOWED_FRAME_SIZES:
         return None
@@ -689,12 +689,34 @@ def heal_16_9_window(controller=None, *, hwnd: int | None = None):
         client_box = _client_screen_rect(u32, target_hwnd)
         if mi is not None and client_box is not None and 0 < w <= work_w and 0 < h <= work_h:
             c_left, c_top, c_right, c_bottom = client_box
-            if (
+            mon_w = int(mi.rcMonitor.right - mi.rcMonitor.left)
+            mon_h = int(mi.rcMonitor.bottom - mi.rcMonitor.top)
+            is_fullscreen_fg = (
+                (c_right - c_left) <= mon_w + 2
+                and (c_bottom - c_top) <= mon_h + 2
+                and c_left <= int(mi.rcMonitor.left)
+                and c_top <= int(mi.rcMonitor.top)
+                and c_right >= int(mi.rcMonitor.right)
+                and c_bottom >= int(mi.rcMonitor.bottom)
+                and int(u32.GetForegroundWindow() or 0) == int(target_hwnd)
+            )
+            past_monitor = (
                 c_right + dw > int(mi.rcMonitor.right)
                 or c_bottom + dh > int(mi.rcMonitor.bottom)
                 or c_left < int(mi.rcMonitor.left)
                 or c_top < int(mi.rcMonitor.top)
-            ):
+            )
+            past_work = (
+                not is_fullscreen_fg
+                and (dw or dh or is_auto_adjust_resolution_enabled(context))
+                and (
+                    c_right + dw > int(mi.rcWork.right)
+                    or c_bottom + dh > int(mi.rcWork.bottom)
+                    or c_left < int(mi.rcWork.left)
+                    or c_top < int(mi.rcWork.top)
+                )
+            )
+            if past_monitor or past_work:
                 shifted_x = max(int(mi.rcWork.left), min(new_left, int(mi.rcWork.right) - w))
                 shifted_y = max(int(mi.rcWork.top), min(new_top, int(mi.rcWork.bottom) - h))
                 if shifted_x != new_left or shifted_y != new_top:
@@ -1149,7 +1171,7 @@ def ensure_16_9_window(
         return None
     if is_resolution_adjustment_blocked(target_hwnd):
         return None
-    healed = heal_16_9_window(controller, hwnd=target_hwnd)
+    healed = heal_16_9_window(controller, hwnd=target_hwnd, context=context)
     if healed is not None:
         return healed
     if not is_auto_adjust_resolution_enabled(context):
