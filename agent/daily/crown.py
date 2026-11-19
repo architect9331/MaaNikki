@@ -45,6 +45,8 @@ class Crown(Runtime):
             options.update(threshold=.8, color=([20, 20, 180], [30, 100, 255]))
         elif name in ("ButtonMiraCrownShop", "ButtonMiraCrownAward"):
             options.update(threshold=.9, color=([0, 0, 190], [40, 40, 255]))
+        elif name == "ButtonMiraCrownStartChallenge":
+            options.update(threshold=.88, method=cv2.TM_CCOEFF_NORMED)
         options.update(overrides)
         return self.ui.asset(name, **options)
 
