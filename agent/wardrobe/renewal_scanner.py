@@ -814,7 +814,7 @@ class RenewalScanner:
                     cid2, yc2, _sc2 = self.model.detect_active_category(after2)
                     if (cid2 is not None and cid2 != prev_cid) or not _same_rejuv_grid(prev_frame, after2):
                         return after2, cid2, yc2, True
-        return after or prev_frame, prev_cid, prev_yc, False
+        return (after if after is not None else prev_frame), prev_cid, prev_yc, False
 
     def _scan_category(
         self,
