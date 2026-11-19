@@ -7,9 +7,10 @@ teleports until the game closes):
 - 化万相 (万相渡浮生): G toggles Bling/Starlight auto-absorb; active when the single
   centre secondary button shows the warm-gold SetSlotHighlight border ring.
 - 栖林沐光 (花影心期): MouseRight activates Forest Light & insect attraction; active
-  when the centre G secondary button is present (absent before activation). When the
-  performance animation setting is on, the first press enters a looping pose and a
-  second MouseRight press exits the loop and completes activation.
+  when the centre G secondary button is present (absent before activation). Pressing it
+  enters a looping pose (either hiding the HUD when cinematic performance animation is
+  enabled, or keeping the overworld HUD visible with G still absent when off); a second
+  MouseRight press after LoopStart completes activation.
 - 金鹰之眼 (蒙尘之罪): G toggles persistent invisibility (secondary button highlight
   ring) and MouseRight toggles Eagle Vision chest/collectable highlights (main button
   highlight ring). Missing abilities are assigned to slots 7..1 before slot 8 so they
@@ -467,8 +468,9 @@ def _activate_forest_light(runtime, group: WheelGroupSpec, event) -> None:
     pressed_at = time.monotonic()
     last_exit_press = 0.0
     exit_presses = 0
-    deadline = pressed_at + 15.0
+    deadline = pressed_at + 18.0
     streak = 0
+    inactive_streak = 0
     while not runtime.stopped and time.monotonic() < deadline:
         frame = runtime.capture()
         if frame is None:
@@ -477,19 +479,37 @@ def _activate_forest_light(runtime, group: WheelGroupSpec, event) -> None:
             st, meta = classify(frame)
             if st == "active":
                 streak += 1
+                inactive_streak = 0
                 if streak >= CONFIRM_FRAMES:
                     event({"type": "persistent_ability", "ability": "forest_light", "phase": "activate", "state": "active", "exit_presses": exit_presses})
                     runtime.log("已开启「栖林沐光·生息流光与聚虫」。")
                     return
             else:
                 streak = 0
+                inactive_streak = inactive_streak + 1 if st == "inactive" else 0
+                now = time.monotonic()
+                # With cinematic performance off, Forest Light still enters an overworld
+                # looping pose where MainDetected and the flower icon remain visible while
+                # the G badge stays absent until a second MouseRight exits LoopStart.
+                if (
+                    st == "inactive"
+                    and inactive_streak >= 6
+                    and exit_presses < 2
+                    and now - pressed_at >= 4.2
+                    and now - last_exit_press >= 5.0
+                ):
+                    runtime.key("ability_use", 0.25)
+                    last_exit_press = time.monotonic()
+                    exit_presses += 1
+                    inactive_streak = 0
         else:
             streak = 0
+            inactive_streak = 0
             now = time.monotonic()
-            # When the performance animation setting is enabled, the first MouseRight
-            # enters a looping pose; once LoopStart enables slot input (~2.2s), a
-            # second MouseRight exits the loop and completes activation.
-            if exit_presses < 3 and now - pressed_at >= 2.3 and now - last_exit_press >= 2.3:
+            # When the cinematic performance animation is enabled, the first MouseRight
+            # hides the HUD during the pose; once LoopStart enables slot input (~2.2s),
+            # a second MouseRight exits the loop and completes activation.
+            if exit_presses < 3 and now - pressed_at >= 2.3 and now - last_exit_press >= 2.5:
                 runtime.key("ability_use", 0.25)
                 last_exit_press = time.monotonic()
                 exit_presses += 1
