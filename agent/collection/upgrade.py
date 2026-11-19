@@ -349,6 +349,18 @@ class UpgradeUI:
                     if self.rt.hit(RESULT):
                         if not self.dismiss_result(attempts=4):
                             raise RuntimeError("未能关闭升级完成界面")
+                    if not self.upgrade_ready():
+                        # Max-level (10) upgrades play a brief dimmed "(10)"
+                        # transition after the result overlay closes; wait for
+                        # the underlying upgrade panel to brighten before reading.
+                        if not self.rt.ui.wait_page(
+                            lambda: self.upgrade_ready() or self.rt.hit(RESULT),
+                            seconds=5,
+                        ):
+                            raise IncompleteObservation("升级结果弹层尚未关闭，未读取底下升级页")
+                        if self.rt.hit(RESULT):
+                            if not self.dismiss_result(attempts=4):
+                                raise RuntimeError("未能关闭升级完成界面")
                     fields, frame = self.read(page_gen)
                     level, xp = self.integer(fields["level"]), self.experience(fields["xp"])
                     if (fields["name"] != current["name"] or level is None
@@ -361,11 +373,21 @@ class UpgradeUI:
                     break
                 except IncompleteObservation:
                     first_post = False
-                    if self.rt.stopped or not post_budget.advance(stalled=True) or not self.rt.hit(RESULT):
+                    if self.rt.stopped or not post_budget.advance(stalled=True):
                         raise
-                    page_gen = self.owner.current_generation()
-                    if not self.dismiss_result(attempts=4):
-                        raise RuntimeError("未能关闭升级完成界面")
+                    if self.rt.hit(RESULT):
+                        page_gen = self.owner.current_generation()
+                        if not self.dismiss_result(attempts=4):
+                            raise RuntimeError("未能关闭升级完成界面")
+                    elif not self.upgrade_ready() and self.rt.ui.wait_page(
+                        lambda: self.upgrade_ready() or self.rt.hit(RESULT),
+                        seconds=5,
+                    ):
+                        page_gen = self.owner.current_generation()
+                        if self.rt.hit(RESULT) and not self.dismiss_result(attempts=4):
+                            raise RuntimeError("未能关闭升级完成界面")
+                    else:
+                        raise
                 except (RescanSlot, ForegroundChanged):
                     first_post = False
                     if self.rt.stopped or not post_budget.advance():
