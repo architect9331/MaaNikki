@@ -1243,10 +1243,15 @@ class GameUI:
         return self.monthly_intro_start()
 
     def monthly_intro_start(self):
-        """Resolve multi-stage version intros for both direct and Paradise entrances."""
-        deadline = time.monotonic() + 25
-        skips = 0
-        while not self.rt.stopped and time.monotonic() < deadline and skips < 8:
+        """Resolve the version intro via 3s long-press skip for direct and Paradise entrances."""
+        def settled():
+            with self.rt.observe():
+                return (self.page_matches("MaaNikki_Monthly_Start")
+                        or self.page_matches("MaaNikki_Monthly_PageReady"))
+
+        for attempt in range(2):
+            if self.rt.stopped:
+                return False
             with self.rt.observe(fresh=True):
                 if (self.page_matches("MaaNikki_Monthly_PageReady")
                         and self.wait_page("MaaNikki_Monthly_PageReady")):
@@ -1254,15 +1259,13 @@ class GameUI:
                 if (self.page_matches("MaaNikki_Monthly_Start")
                         and self.wait_page("MaaNikki_Monthly_Start")):
                     return True
-                if self.rt.hit("MaaNikki_Monthly_IntroSkip"):
-                    if skips == 0:
-                        self.rt.log("正在跳过奇迹之旅开场动画。", detail=True)
-                    if not self.rt.hold("skip", 3):
-                        return False
-                    skips += 1
-                    if not self.rt.pause(.4):
-                        return False
-                    continue
-            if not self.rt.pause(.4):
+                can_skip = self.rt.hit("MaaNikki_Monthly_IntroSkip")
+            if not can_skip:
+                break
+            if attempt == 0:
+                self.rt.log("正在长按跳过奇迹之旅开场动画。", detail=True)
+            if not self.rt.hold("skip", 3):
                 return False
-        return False
+            if self.wait_page(settled, seconds=5):
+                return True
+        return self.wait_page(settled, seconds=5)
