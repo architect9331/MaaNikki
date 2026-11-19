@@ -14,6 +14,9 @@ from .models import MINIMAP_POSITION_SCORE, MapSpec, NavigationError
 
 
 MIN_HEADING_CONFIDENCE = .3
+# Maps with `position_score_floor: null` allow pale low-contrast plains (~0.25-0.50),
+# but must still reject post-teleport fade or noise frames with <=0.15 correlation.
+MIN_UNFLOORED_POSITION_SCORE = .15
 
 
 def _detect_dark_border_shift(frame):
@@ -378,6 +381,7 @@ class Locator:
         candidate = [px, py]
         elapsed = time.monotonic()-self.position_time
         unreliable = (selected is None or not np.isfinite(score)
+                      or score < MIN_UNFLOORED_POSITION_SCORE
                       or (floor is not None and score < floor and not consensus_accepted))
         rejected = bool(self.previous and not reset_continuity and elapsed <= 20
                         and np.hypot(px-self.previous.x, py-self.previous.y) >= 50*elapsed+.5)
