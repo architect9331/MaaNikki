@@ -204,7 +204,7 @@
     "post_delay": 0,
     "next": []
   },
-  "MaaNikki_Monthly_IntroSkip": {
+  "MaaNikki_Monthly_IntroSkipIcon": {
     "enabled": true,
     "recognition": "Custom",
     "custom_recognition": "nikki.ui_template",
@@ -228,6 +228,27 @@
         0.73
       ]
     },
+    "action": "DoNothing"
+  },
+  "MaaNikki_Monthly_IntroSkipText": {
+    "enabled": true,
+    "recognition": "OCR",
+    "roi": [
+      1060,
+      640,
+      220,
+      80
+    ],
+    "expected": "跳过",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Monthly_IntroSkip": {
+    "enabled": true,
+    "recognition": "Or",
+    "any_of": [
+      "MaaNikki_Monthly_IntroSkipIcon",
+      "MaaNikki_Monthly_IntroSkipText"
+    ],
     "action": "Custom",
     "post_delay": 700,
     "next": [],

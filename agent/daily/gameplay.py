@@ -1295,9 +1295,11 @@ class Gameplay:
                         switched = self.rt.click_template(
                             f"MaaNikki_Monthly_To{target}", ready="MaaNikki_Monthly_TravelOpened")
                         if switched and not self.ui.page_matches("MaaNikki_Monthly_TravelReady"):
-                            switched = (self.ui.monthly_intro_start()
-                                        and self.rt.click_template(
-                                            "MaaNikki_Monthly_Start", ready="MaaNikki_Monthly_TravelReady"))
+                            switched = self.ui.monthly_intro_start() and (
+                                (self.ui.page_matches("MaaNikki_Monthly_TravelReady")
+                                 and self.ui.wait_page("MaaNikki_Monthly_TravelReady"))
+                                or self.rt.click_template(
+                                    "MaaNikki_Monthly_Start", ready="MaaNikki_Monthly_TravelReady"))
                     if not switched:
                         self.monthly_diagnostic(kind, "switch_unconfirmed", f"未能切换到{target_label}")
                         return False

@@ -1207,6 +1207,8 @@ class GameUI:
             return True
         if not self.monthly_start():
             return self.wait_page(destination)
+        if self.page_matches(destination):
+            return self.wait_page(destination)
         return self.rt.click_template("MaaNikki_Monthly_Start")
 
     def monthly_start(self):
@@ -1241,9 +1243,26 @@ class GameUI:
         return self.monthly_intro_start()
 
     def monthly_intro_start(self):
-        """Resolve the version intro for both direct and Paradise entrances."""
-        if self.rt.hit("MaaNikki_Monthly_IntroSkip"):
-            self.rt.log("正在跳过奇迹之旅开场动画。", detail=True)
-            if not self.rt.hold("skip", 3):
+        """Resolve multi-stage version intros for both direct and Paradise entrances."""
+        deadline = time.monotonic() + 25
+        skips = 0
+        while not self.rt.stopped and time.monotonic() < deadline and skips < 8:
+            with self.rt.observe(fresh=True):
+                if (self.page_matches("MaaNikki_Monthly_PageReady")
+                        and self.wait_page("MaaNikki_Monthly_PageReady")):
+                    return True
+                if (self.page_matches("MaaNikki_Monthly_Start")
+                        and self.wait_page("MaaNikki_Monthly_Start")):
+                    return True
+                if self.rt.hit("MaaNikki_Monthly_IntroSkip"):
+                    if skips == 0:
+                        self.rt.log("正在跳过奇迹之旅开场动画。", detail=True)
+                    if not self.rt.hold("skip", 3):
+                        return False
+                    skips += 1
+                    if not self.rt.pause(.4):
+                        return False
+                    continue
+            if not self.rt.pause(.4):
                 return False
-        return self.wait_page("MaaNikki_Monthly_Start")
+        return False
