@@ -1382,10 +1382,19 @@ class Executors(Runtime):
     def _wait_world_prompt(self, prompt):
         if self.ui.wait_text(prompt, INTERACTION_ROI, attempts=3):
             return True
-        for _ in range(2):
+        adjustments = (
+            (("forward", .18),),
+            (("backward", .30), ("forward", .08)),
+            (("right", .28), ("left", .08)),
+            (("left", .52), ("right", .08)),
+        )
+        for steps in adjustments:
             if self.stopped or not self.ui.page_matches("MaaNikki_MainDetected"):
                 return False
-            if not self.hold("forward", .3) or not self.pause(.2):
+            for key_name, seconds in steps:
+                if not self.hold(key_name, seconds) or not self.pause(.12):
+                    return False
+            if not self.pause(.15):
                 return False
             if self.ui.wait_text(prompt, INTERACTION_ROI, attempts=2):
                 return True
