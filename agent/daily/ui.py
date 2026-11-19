@@ -725,8 +725,13 @@ class GameUI:
                         remaining = max(.6, deadline-time.monotonic())
                         if not self.stable(.98, seconds=remaining, roi=roi):
                             return False
-                        return not self.rt.stopped and self.page_matches(page)
-                    return True
+                        if self.rt.stopped:
+                            return False
+                        if self.page_matches(page):
+                            return True
+                        confirmations = 0
+                    else:
+                        return True
             else:
                 confirmations = 0
             if time.monotonic() >= deadline and confirmations == 0:
