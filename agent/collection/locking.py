@@ -362,13 +362,16 @@ class BlessingLocker(InventoryScanner):
     def _settle_selected_card(self, frame, box, generation):
         """Wait for the post-click flash/scale transition on a selected card to settle."""
         previous = frame
+        check_selected = (
+            self.unhovered_selected if self._hover_box is None else self.selected
+        )
         with self.rt.ui.preserve_cursor():
             for _ in range(6):
                 if not self.rt.pause(.05):
                     self.check_generation(generation)
                     break
                 current = self.frame(generation)
-                if not self.selected(current, box):
+                if not check_selected(current, box):
                     previous = None
                     continue
                 if previous is not None and self.same_structure(previous, current, box, threshold=.997):
@@ -418,7 +421,7 @@ class BlessingLocker(InventoryScanner):
                 else None
             )
             frame = self.frame(generation, capture_fn=capture_fn)
-            if not self.selected(frame, box):
+            if not (self.selected(frame, box) or self._selection_border(frame, box)):
                 return None, frame
             roi = self.header_region(frame, box)
             if roi is None or not self.tooltip_visible(frame, roi):
@@ -635,35 +638,98 @@ class BlessingLocker(InventoryScanner):
             raise IncompleteObservation(reason)
         raise RuntimeError(reason)
 
-    def selected(self, frame, box):
+    def _selection_border(self, frame, box):
         x, y, w, h = box
         # Selected cards expand their opaque gold border 3-4 px outside the
-        # nominal unselected cell box, while hovered unselected cards draw a
-        # similar outer border around a dark translucent body. Require both
-        # side borders and the opaque warm-gold card background inside the
-        # side margins (excluding central artwork and bottom level/badge strip).
+        # nominal unselected cell box. Over cool lavender/purple backgrounds,
+        # the translucent outer rim can shift slightly toward rose-gold (H 8-11)
+        # while unselected unhovered cards stay near zero (< 0.01).
         x0, x1 = max(0, x - 4), min(frame.shape[1], x + w + 3)
-        crop = frame[y + 5:y + h - 8, x0:x1]
+        y0, y1 = max(0, y + 5), min(frame.shape[0], y + h - 8)
+        crop = frame[y0:y1, x0:x1]
+        if crop.shape[0] < 8 or crop.shape[1] < 8:
+            return False
         hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
-        gold = ((hsv[:, :, 0] >= 12) & (hsv[:, :, 0] <= 42)
+        gold = ((hsv[:, :, 0] >= 8) & (hsv[:, :, 0] <= 42)
                 & (hsv[:, :, 1] >= 25) & (hsv[:, :, 2] >= 120))
         width = gold.shape[1]
-        if width < 8:
-            return False
         left = max(float(gold[:, i:i + 4].mean()) for i in range(min(5, width - 3)))
         # Nominal cell width w=95 extends 2 px past the unhovered right edge;
         # after clear_hover() shrinks the selected card back from its hovered
         # outer frame, the 4 px inner gold strip sits at [x+w-6 : x+w-2] (i=5).
         right = max(float(gold[:, width - 4 - i:width - i].mean()) for i in range(min(6, width - 3)))
-        if left <= .45 or right <= .45:
+        return bool(left > .45 and right > .45)
+
+    def selected(self, frame, box):
+        x, y, w, h = box
+        # Hovered unselected cards draw a similar outer gold border around a
+        # dark translucent body. While the pointer may still hover this card,
+        # require both side borders and the opaque warm-gold card background
+        # inside the side margins (excluding central artwork and bottom strip).
+        if not self._selection_border(frame, box):
             return False
         inner = cv2.cvtColor(frame[y + 10:y + h - 28, x:x + w], cv2.COLOR_BGR2HSV)
         if inner.shape[0] < 8 or inner.shape[1] < 24:
             return False
-        fill = ((inner[:, :, 0] >= 10) & (inner[:, :, 0] <= 38)
+        fill = ((inner[:, :, 0] >= 8) & (inner[:, :, 0] <= 38)
                 & (inner[:, :, 1] >= 40) & (inner[:, :, 2] >= 175))
         margins = np.concatenate([fill[:, 5:13], fill[:, w - 15:w - 7]], axis=1)
         return bool(float(margins.mean()) > .55)
+
+    def unhovered_selected(self, frame, box):
+        """Confirm selection after the pointer has been moved off the card grid.
+
+        When the pointer is parked away from the grid, hovered-only unselected
+        cards lose their gold border completely, whereas a selected card keeps
+        its gold frame (and may either reveal its opaque cream-gold fill or
+        retain a warm translucent glow with full top+side gold borders while no
+        sibling card holds opaque selection).
+        """
+        if self.selected(frame, box):
+            return True
+        if not self._selection_border(frame, box):
+            return False
+        x, y, w, h = box
+        ty0, ty1 = max(0, y - 4), min(frame.shape[0], y + 4)
+        tx0, tx1 = max(0, x + 5), min(frame.shape[1], x + w - 5)
+        top_crop = frame[ty0:ty1, tx0:tx1]
+        if top_crop.shape[0] < 4 or top_crop.shape[1] < 16:
+            return False
+        top_hsv = cv2.cvtColor(top_crop, cv2.COLOR_BGR2HSV)
+        top_gold = ((top_hsv[:, :, 0] >= 8) & (top_hsv[:, :, 0] <= 42)
+                    & (top_hsv[:, :, 1] >= 25) & (top_hsv[:, :, 2] >= 120))
+        top_score = max(float(top_gold[i:i + 4, :].mean()) for i in range(top_gold.shape[0] - 3))
+        if top_score <= .45:
+            return False
+        inner_bgr = frame[y + 10:y + h - 28, x:x + w]
+        if inner_bgr.shape[0] < 8 or inner_bgr.shape[1] < 24:
+            return False
+        margins_bgr = np.concatenate([inner_bgr[:, 5:13], inner_bgr[:, w - 15:w - 7]], axis=1).astype(np.float32)
+        margins_hsv = cv2.cvtColor(
+            np.concatenate([inner_bgr[:, 5:13], inner_bgr[:, w - 15:w - 7]], axis=1),
+            cv2.COLOR_BGR2HSV,
+        )
+        if float((margins_bgr[:, :, 2] - margins_bgr[:, :, 0]).mean()) < 2.0 or float(margins_hsv[:, :, 2].mean()) < 90.0:
+            return False
+        # Reject if any sibling card in the visible grid holds opaque selection.
+        first_x = self.layout["first_x"]
+        col_pitch = self.layout["column_pitch"]
+        row_pitch = self.layout["row_pitch"]
+        grid_top = self.grid[1]
+        grid_bottom = self.grid[1] + self.grid[3]
+        row_y = y
+        while row_y - row_pitch >= grid_top - 6:
+            row_y -= row_pitch
+        while row_y + h <= grid_bottom + 6:
+            if row_y >= 5 and row_y + h <= frame.shape[0] - 5:
+                for col in range(self.layout["columns"]):
+                    sib = [round(first_x + col * col_pitch), row_y, w, h]
+                    if abs(sib[0] - x) < 10 and abs(sib[1] - y) < 10:
+                        continue
+                    if self.selected(frame, sib):
+                        return False
+            row_y += row_pitch
+        return True
 
     def select(self, box, facts, generation, *, verify_details=True, already_selected=False):
         self.check_generation(generation)
@@ -692,34 +758,42 @@ class BlessingLocker(InventoryScanner):
                 raise RuntimeError("未能选中目标闪光")
         frame = self.frame(generation)
         if not self.selected(frame, box):
-            # Click delivery and the selection animation are asynchronous.
-            # Keep the pointer in place while waiting; if a non-destructive
-            # selection click was swallowed after scrolling (leaving the card
-            # merely hovered and unselected), re-stage hover and retry once.
+            # Click delivery and the selection animation are asynchronous, and
+            # keeping the pointer on the clicked card can occasionally mask the
+            # opaque selected fill under the translucent hover style. Wait
+            # briefly with the cursor in place, then clear hover to distinguish
+            # an active selection from a swallowed click before retrying once.
+            confirmed = False
             with self.rt.ui.preserve_cursor():
-                wait_seconds = 5 if already_selected else 1.5
+                wait_seconds = 5 if already_selected else 1.2
                 confirmed = self.rt.ui.wait_page(
                     lambda: self.selected(self.frame(generation), box),
                     seconds=wait_seconds,
                 )
-                if not confirmed and not already_selected:
-                    self.check_generation(generation)
-                    retry_frame = self.frame(generation)
-                    if not self.selected(retry_frame, box):
-                        self._hover_box = None
-                        if (not self.rt.action("TouchMove", target=point)
-                                or not self.rt.pause(.3)
-                                or not self.rt.action("Click", target=point, ui_click=False)
-                                or not self.rt.pause(.2)):
-                            raise RuntimeError("未能选中目标闪光")
-                        self._hover_box = tuple(box)
-                        confirmed = self.rt.ui.wait_page(
-                            lambda: self.selected(self.frame(generation), box),
-                            seconds=3.5,
-                        )
+            if not confirmed:
+                frame = self.clear_hover(generation, settle_card=True)
+                confirmed = self.unhovered_selected(frame, box)
+            if not confirmed and not already_selected:
+                self.check_generation(generation)
+                self._hover_box = None
+                if (not self.rt.action("TouchMove", target=point)
+                        or not self.rt.pause(.3)
+                        or not self.rt.action("Click", target=point, ui_click=False)
+                        or not self.rt.pause(.2)):
+                    raise RuntimeError("未能选中目标闪光")
+                self._hover_box = tuple(box)
+                with self.rt.ui.preserve_cursor():
+                    confirmed = self.rt.ui.wait_page(
+                        lambda: self.selected(self.frame(generation), box),
+                        seconds=2.5,
+                    )
                 if not confirmed:
-                    raise IncompleteObservation("目标格子的选中高亮尚未确认，保留进度")
-            frame = self.frame(generation)
+                    frame = self.clear_hover(generation, settle_card=True)
+                    confirmed = self.unhovered_selected(frame, box)
+            if not confirmed:
+                raise IncompleteObservation("目标格子的选中高亮尚未确认，保留进度")
+            if self._hover_box is not None:
+                frame = self.frame(generation)
         if verify_details:
             matched, frame = self.verify_selected_card(frame, box, facts, generation)
             if not matched:
@@ -878,7 +952,7 @@ class BlessingLocker(InventoryScanner):
         self.rt.check_focus()
         click_generation = self.rt._focus_generation
         current = self.frame(generation)
-        if not self.selected(current, box):
+        if not self.unhovered_selected(current, box):
             raise RuntimeError(f"{verb}前目标选中状态丢失")
         if self.lock_state(generation, frame=current) != source:
             raise RuntimeError(f"{verb}前状态改变，未再次点击")
