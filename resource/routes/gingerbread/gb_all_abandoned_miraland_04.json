@@ -1,49 +1,107 @@
 {
   "schema_version": 3,
   "id": "gb_all_abandoned_miraland_04",
-  "title": "【全材料·石树田无人区】石树田无人区·麦田旁（6个/57秒）",
+  "title": "【全材料·石树田无人区】石树田无人区·乘风磨坊入口（10个/114秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 170,
+  "timeout": 296,
   "teleport": {
-    "name": "麦田旁",
+    "name": "乘风磨坊入口",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 8758.97,
-    "y": 10201.562
+    "x": 7767.721,
+    "y": 9965.897
   },
   "material": "全材料·石树田无人区",
   "count_materials": [
-    "蓝珀鸟羽",
-    "花香羊毛",
-    "珠链蝶"
+    "发卡蚱蜢",
+    "长袜羊毛",
+    "兔尾绒团"
   ],
-  "capacity": 6,
+  "capacity": 10,
   "points": [
     {
-      "x": 8758.97,
-      "y": 10201.56,
+      "x": 7767.72,
+      "y": 9965.9,
       "radius": 8.5,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 12.3
+      }
     },
     {
-      "x": 8755.38,
-      "y": 10203.56,
+      "x": 7768.47,
+      "y": 9967.56,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8744.38,
-      "y": 10203.44,
-      "radius": 3.2,
+      "x": 7783.47,
+      "y": 9982.56,
+      "radius": 2.8,
       "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7768.47,
+      "y": 9991.56,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7732.47,
+      "y": 9991.56,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7696.47,
+      "y": 9991.56,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7660.47,
+      "y": 9985.56,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7645.47,
+      "y": 9967.56,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7645.47,
+      "y": 9940.56,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7634.47,
+      "y": 9926.56,
+      "radius": 3.2,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 38.1
+        "seconds": 48.0
       }
     }
   ]

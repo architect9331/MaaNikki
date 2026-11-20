@@ -19,7 +19,7 @@
     },
     {
       "route": "gb_all_breezy_miraland_01",
-      "title": "【全材料·微风绿野】微风绿野·遗迹山坡（21个/111秒）"
+      "title": "【全材料·微风绿野】微风绿野·遗迹山坡（15个/77秒）"
     },
     {
       "route": "gb_all_breezy_miraland_02",
@@ -27,11 +27,11 @@
     },
     {
       "route": "gb_all_breezy_miraland_03",
-      "title": "【全材料·微风绿野】微风绿野·废弃疯愿之子营地前哨站（11个/62秒）"
+      "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（13个/75秒）"
     },
     {
       "route": "gb_all_breezy_miraland_04",
-      "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（13个/75秒）"
+      "title": "【全材料·微风绿野】微风绿野·悠悠垂钓协会花愿镇分部（10个/59秒）"
     },
     {
       "route": "gb_all_stonewoods_miraland_01",
@@ -47,19 +47,19 @@
     },
     {
       "route": "gb_all_abandoned_miraland_01",
-      "title": "【全材料·石树田无人区】石树田无人区·乘风磨坊中层（16个/82秒）"
+      "title": "【全材料·石树田无人区】石树田无人区·星空钓场旁（小道）（23个/139秒）"
     },
     {
       "route": "gb_all_abandoned_miraland_02",
-      "title": "【全材料·石树田无人区】石树田无人区·星空钓场旁（小道）（21个/125秒）"
-    },
-    {
-      "route": "gb_all_abandoned_miraland_03",
       "title": "【全材料·石树田无人区】石树田无人区·丰饶古村村口（9个/78秒）"
     },
     {
-      "route": "gb_all_abandoned_miraland_04",
+      "route": "gb_all_abandoned_miraland_03",
       "title": "【全材料·石树田无人区】石树田无人区·麦田旁（6个/57秒）"
+    },
+    {
+      "route": "gb_all_abandoned_miraland_04",
+      "title": "【全材料·石树田无人区】石树田无人区·乘风磨坊入口（10个/114秒）"
     },
     {
       "route": "gb_all_wishing_miraland_01",
@@ -75,7 +75,7 @@
     },
     {
       "route": "gb_all_wishing_miraland_04",
-      "title": "【全材料·祈愿树林】祈愿树林·愿望质检中心前（19个/109秒）"
+      "title": "【全材料·祈愿树林】祈愿树林·愿望质检中心前（19个/123秒）"
     }
   ]
 }

@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_01",
-  "title": "【全材料·埋骨地】埋骨地·蓝池东侧修习所渡口（58个/135秒）",
+  "title": "【全材料·埋骨地】埋骨地·蓝池东侧修习所渡口（59个/135秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 342,
+  "timeout": 343,
   "teleport": {
     "name": "蓝池东侧修习所渡口",
     "province": "伊赞之土",
@@ -18,14 +18,14 @@
     "金灵毛球",
     "大叶鹿绒",
     "茸芽鹿绒",
-    "蓝鳞晶",
     "龙棘瑚",
+    "蓝鳞晶",
     "蜉幽幽",
     "珠链蝶",
     "钓鱼点",
     "革袋甲"
   ],
-  "capacity": 58,
+  "capacity": 59,
   "points": [
     {
       "x": 7649.96,
@@ -36,7 +36,7 @@
       "params": {}
     },
     {
-      "x": 7660.96,
+      "x": 7663.96,
       "y": 4964.35,
       "radius": 3.2,
       "jump": false,
@@ -46,8 +46,16 @@
       }
     },
     {
+      "x": 7669.96,
+      "y": 4946.35,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
       "x": 7675.96,
-      "y": 4937.35,
+      "y": 4940.35,
       "radius": 3.2,
       "jump": true,
       "action": "wait",
@@ -56,26 +64,42 @@
       }
     },
     {
-      "x": 7687.96,
-      "y": 4913.35,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 4.8
-      }
-    },
-    {
-      "x": 7687.96,
-      "y": 4892.35,
+      "x": 7675.96,
+      "y": 4934.35,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7672.96,
-      "y": 4877.35,
+      "x": 7681.96,
+      "y": 4925.35,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7687.96,
+      "y": 4910.35,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 4.8
+      }
+    },
+    {
+      "x": 7684.96,
+      "y": 4889.35,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7666.96,
+      "y": 4874.35,
       "radius": 2.8,
       "jump": false,
       "action": "",

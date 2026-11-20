@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_wishing_miraland_04",
-  "title": "【全材料·祈愿树林】祈愿树林·愿望质检中心前（19个/109秒）",
+  "title": "【全材料·祈愿树林】祈愿树林·愿望质检中心前（19个/123秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 284,
+  "timeout": 316,
   "teleport": {
     "name": "愿望质检中心前",
     "province": "心愿原野",
@@ -16,8 +16,8 @@
   "count_materials": [
     "满满果",
     "兔尾绒团",
-    "纽扣松果",
     "珠链蝶",
+    "纽扣松果",
     "珠花贝壳",
     "兔兔妆粉",
     "芭蕾豆娘"
@@ -44,33 +44,35 @@
     },
     {
       "x": 11502.92,
-      "y": 9348.53,
+      "y": 9351.53,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 9.0
+        "seconds": 8.9
       }
     },
     {
-      "x": 11517.92,
-      "y": 9345.53,
+      "x": 11514.92,
+      "y": 9351.53,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11529.92,
-      "y": 9330.53,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
+      "x": 11526.92,
+      "y": 9336.53,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 8.7
+      }
     },
     {
-      "x": 11535.92,
-      "y": 9321.53,
+      "x": 11532.92,
+      "y": 9324.53,
       "radius": 2.8,
       "jump": true,
       "action": "",
@@ -78,7 +80,7 @@
     },
     {
       "x": 11541.92,
-      "y": 9315.53,
+      "y": 9318.53,
       "radius": 2.8,
       "jump": true,
       "action": "",
@@ -88,7 +90,7 @@
       "x": 11542.33,
       "y": 9310.53,
       "radius": 3.2,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
         "seconds": 39.4

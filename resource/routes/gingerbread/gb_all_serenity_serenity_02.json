@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_serenity_serenity_02",
-  "title": "【全材料·无忧岛】无忧岛·守望之地（18个/93秒）",
+  "title": "【全材料·无忧岛】无忧岛·守望之地（18个/95秒）",
   "map": "serenity",
   "start_radius": 12,
-  "timeout": 250,
+  "timeout": 254,
   "teleport": {
     "name": "守望之地",
     "province": "心愿原野",
@@ -41,7 +41,15 @@
       "params": {}
     },
     {
-      "x": 800.59,
+      "x": 806.59,
+      "y": 510.79,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 815.59,
       "y": 516.79,
       "radius": 2.8,
       "jump": false,
@@ -49,34 +57,18 @@
       "params": {}
     },
     {
-      "x": 803.59,
+      "x": 815.59,
       "y": 522.79,
       "radius": 2.8,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 812.59,
-      "y": 528.79,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 806.59,
+      "x": 809.59,
       "y": 537.79,
       "radius": 2.8,
       "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 800.59,
-      "y": 534.79,
-      "radius": 2.8,
-      "jump": true,
       "action": "",
       "params": {}
     },

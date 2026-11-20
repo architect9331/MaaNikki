@@ -1,0 +1,64 @@
+{
+  "schema_version": 3,
+  "id": "gb_cat_insect_miraland_08",
+  "title": "【全昆虫速刷】磐城·糖坊上层（42个/225秒）",
+  "map": "miraland",
+  "start_radius": 12,
+  "timeout": 541,
+  "teleport": {
+    "name": "糖坊上层",
+    "province": "伊赞之土",
+    "region": "磐城",
+    "x": 3595.861,
+    "y": 3649.48
+  },
+  "material": "全昆虫速刷",
+  "count_materials": [
+    "珠链蝶",
+    "探险家蜜蜂",
+    "小野菊"
+  ],
+  "capacity": 42,
+  "points": [
+    {
+      "x": 3595.86,
+      "y": 3649.48,
+      "radius": 8.5,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 29.6
+      }
+    },
+    {
+      "x": 3662.67,
+      "y": 3555.57,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 65.0
+      }
+    },
+    {
+      "x": 3775.1,
+      "y": 3552.51,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 25.2
+      }
+    },
+    {
+      "x": 3730.01,
+      "y": 3632.58,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 25.8
+      }
+    }
+  ]
+}

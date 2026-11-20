@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_02",
-  "title": "【全材料·埋骨地】埋骨地·大拉姆居落迎厅入口（140个/402秒）",
+  "title": "【全材料·埋骨地】埋骨地·大拉姆居落迎厅入口（139个/401秒）",
   "map": "miraland",
   "start_radius": 12,
   "timeout": 900,
@@ -19,10 +19,9 @@
     "风舞花",
     "蓝珀鸟羽",
     "满满果",
-    "木夹跳甲",
-    "名流鸦羽"
+    "木夹跳甲"
   ],
-  "capacity": 140,
+  "capacity": 139,
   "points": [
     {
       "x": 6985.2,
@@ -167,8 +166,8 @@
       "params": {}
     },
     {
-      "x": 6883.42,
-      "y": 4580.03,
+      "x": 6889.42,
+      "y": 4589.03,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
@@ -177,18 +176,34 @@
       }
     },
     {
-      "x": 6865.42,
-      "y": 4613.03,
+      "x": 6871.42,
+      "y": 4604.03,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 38.6
+        "seconds": 38.7
       }
     },
     {
-      "x": 6862.42,
-      "y": 4628.03,
+      "x": 6868.42,
+      "y": 4616.03,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6874.42,
+      "y": 4622.03,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6877.42,
+      "y": 4643.03,
       "radius": 2.8,
       "jump": false,
       "action": "",

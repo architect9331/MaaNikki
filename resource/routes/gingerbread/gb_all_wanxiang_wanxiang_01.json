@@ -1,76 +1,80 @@
 {
   "schema_version": 3,
   "id": "gb_all_wanxiang_wanxiang_01",
-  "title": "【全材料·万相境】万相境·火锅坊（15个/80秒）",
+  "title": "【全材料·万相境】万相境·彩靥城集市（7个/44秒）",
   "map": "wanxiang",
   "start_radius": 12,
-  "timeout": 221,
+  "timeout": 142,
   "teleport": {
-    "name": "火锅坊",
+    "name": "彩靥城集市",
     "province": "伊赞之土",
     "region": "万相境",
-    "x": 1399.524,
-    "y": 1108.824
+    "x": 1447.756,
+    "y": 983.204
   },
   "material": "全材料·万相境",
   "count_materials": [
-    "满满果",
     "荷包草",
-    "蓝珀鸟羽",
     "小绵菊"
   ],
-  "capacity": 15,
+  "capacity": 7,
   "points": [
     {
-      "x": 1399.52,
-      "y": 1108.82,
+      "x": 1447.76,
+      "y": 983.2,
       "radius": 8.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1397.06,
-      "y": 1105.15,
+      "x": 1449.76,
+      "y": 985.2,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 1385.06,
-      "y": 1099.15,
+      "x": 1455.76,
+      "y": 991.2,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1461.76,
+      "y": 991.2,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1467.76,
+      "y": 997.2,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1488.76,
+      "y": 1000.2,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 1498.99,
+      "y": 1003.05,
       "radius": 3.2,
-      "jump": true,
+      "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 14.6
-      }
-    },
-    {
-      "x": 1382.06,
-      "y": 1087.15,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1397.06,
-      "y": 1069.15,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 1398.06,
-      "y": 1067.15,
-      "radius": 3.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 35.4
+        "seconds": 19.1
       }
     }
   ]

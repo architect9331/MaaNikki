@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_cat_plant_serenity_04",
-  "title": "【全植物速刷】无忧岛·守望之地（14个/55秒）",
+  "title": "【全植物速刷】无忧岛·守望之地（14个/57秒）",
   "map": "serenity",
   "start_radius": 12,
-  "timeout": 167,
+  "timeout": 171,
   "teleport": {
     "name": "守望之地",
     "province": "心愿原野",
@@ -36,7 +36,15 @@
       "params": {}
     },
     {
-      "x": 800.59,
+      "x": 806.59,
+      "y": 510.79,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 815.59,
       "y": 516.79,
       "radius": 2.8,
       "jump": false,
@@ -44,23 +52,15 @@
       "params": {}
     },
     {
-      "x": 803.59,
+      "x": 815.59,
       "y": 522.79,
       "radius": 2.8,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 812.59,
-      "y": 528.79,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 806.59,
+      "x": 809.59,
       "y": 537.79,
       "radius": 2.8,
       "jump": false,

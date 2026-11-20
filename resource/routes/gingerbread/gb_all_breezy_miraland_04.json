@@ -1,51 +1,81 @@
 {
   "schema_version": 3,
   "id": "gb_all_breezy_miraland_04",
-  "title": "【全材料·微风绿野】微风绿野·河畔山地林间道（13个/75秒）",
+  "title": "【全材料·微风绿野】微风绿野·悠悠垂钓协会花愿镇分部（10个/59秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 210,
+  "timeout": 174,
   "teleport": {
-    "name": "河畔山地林间道",
+    "name": "悠悠垂钓协会花愿镇分部",
     "province": "心愿原野",
     "region": "微风绿野",
-    "x": 10608.939,
-    "y": 11286.416
+    "x": 10278.224,
+    "y": 10210.305
   },
   "material": "全材料·微风绿野",
   "count_materials": [
     "小绵菊",
-    "纽扣松果",
-    "发卡蚱蜢"
+    "美食家蜜蜂",
+    "汪汪毛线"
   ],
-  "capacity": 13,
+  "capacity": 10,
   "points": [
     {
-      "x": 10608.94,
-      "y": 11286.42,
+      "x": 10278.22,
+      "y": 10210.31,
       "radius": 8.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 17.9
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 10588.76,
-      "y": 11282.42,
+      "x": 10274.22,
+      "y": 10206.27,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10274.22,
+      "y": 10191.27,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10556.76,
-      "y": 11286.76,
+      "x": 10286.22,
+      "y": 10188.27,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10289.22,
+      "y": 10191.27,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10289.22,
+      "y": 10194.27,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10279.82,
+      "y": 10198.27,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 27.6
+        "seconds": 35.0
       }
     }
   ]

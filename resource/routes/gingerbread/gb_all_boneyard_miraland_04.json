@@ -1,86 +1,134 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_04",
-  "title": "【全材料·埋骨地】埋骨地·龙埙遗所（38个/125秒）",
+  "title": "【全材料·埋骨地】埋骨地·古息坡道（40个/163秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 321,
+  "timeout": 404,
   "teleport": {
-    "name": "龙埙遗所",
+    "name": "古息坡道",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 8586.154,
-    "y": 5376.194
+    "x": 6883.245,
+    "y": 4762.082
   },
   "material": "全材料·埋骨地",
   "count_materials": [
+    "羽巾绒",
     "大叶鹿绒",
     "茸芽鹿绒",
     "金灵毛球",
-    "探险家蜜蜂",
-    "羽巾绒",
-    "小野菊",
-    "风舞花",
-    "埙音甲",
-    "满满果"
+    "珠链蝶",
+    "钓鱼点",
+    "小星扇贝",
+    "珍蛛",
+    "风舞花"
   ],
-  "capacity": 38,
+  "capacity": 40,
   "points": [
     {
-      "x": 8586.15,
-      "y": 5376.19,
+      "x": 6883.24,
+      "y": 4762.08,
       "radius": 8.5,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.0
+        "seconds": 17.3
       }
     },
     {
-      "x": 8594.15,
-      "y": 5384.19,
+      "x": 6888.21,
+      "y": 4758.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8630.15,
-      "y": 5384.19,
+      "x": 6900.21,
+      "y": 4758.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8666.15,
-      "y": 5387.19,
+      "x": 6924.21,
+      "y": 4767.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6924.21,
+      "y": 4770.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6921.21,
+      "y": 4773.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6888.21,
+      "y": 4776.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6864.21,
+      "y": 4776.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6843.21,
+      "y": 4773.08,
       "radius": 3.2,
-      "jump": false,
+      "jump": true,
       "action": "wait",
       "params": {
-        "seconds": 9.2
+        "seconds": 24.4
       }
     },
     {
-      "x": 8681.15,
-      "y": 5393.19,
+      "x": 6834.21,
+      "y": 4782.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8681.15,
-      "y": 5405.19,
+      "x": 6828.21,
+      "y": 4788.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8676.86,
-      "y": 5407.41,
+      "x": 6792.21,
+      "y": 4791.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6793.21,
+      "y": 4802.94,
       "radius": 3.2,
       "jump": false,
       "action": "wait",

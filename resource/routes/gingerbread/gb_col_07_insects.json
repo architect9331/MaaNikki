@@ -26,16 +26,16 @@
       "title": "【全昆虫速刷】埋骨地·疗愈地（58个/289秒）"
     },
     {
-      "route": "gb_cat_insect_danqing_06",
-      "title": "【全昆虫速刷】丹青屿·村边畦田（39个/203秒）"
-    },
-    {
-      "route": "gb_cat_insect_serenity_07",
+      "route": "gb_cat_insect_serenity_06",
       "title": "【全昆虫速刷】无忧岛·守望之地（10个/51秒）"
     },
     {
-      "route": "gb_cat_insect_serenity_08",
+      "route": "gb_cat_insect_serenity_07",
       "title": "【全昆虫速刷】无忧岛·布露村村口（22个/118秒）"
+    },
+    {
+      "route": "gb_cat_insect_miraland_08",
+      "title": "【全昆虫速刷】磐城·糖坊上层（42个/225秒）"
     }
   ]
 }

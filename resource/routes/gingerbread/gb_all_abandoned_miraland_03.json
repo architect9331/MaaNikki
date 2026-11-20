@@ -1,76 +1,49 @@
 {
   "schema_version": 3,
   "id": "gb_all_abandoned_miraland_03",
-  "title": "【全材料·石树田无人区】石树田无人区·丰饶古村村口（9个/78秒）",
+  "title": "【全材料·石树田无人区】石树田无人区·麦田旁（6个/57秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 216,
+  "timeout": 170,
   "teleport": {
-    "name": "丰饶古村村口",
+    "name": "麦田旁",
     "province": "心愿原野",
     "region": "石树田无人区",
-    "x": 9154.968,
-    "y": 9131.621
+    "x": 8758.97,
+    "y": 10201.562
   },
   "material": "全材料·石树田无人区",
   "count_materials": [
-    "小绵菊",
-    "名流鸦羽",
-    "满满果",
-    "织衣蛛"
+    "蓝珀鸟羽",
+    "花香羊毛",
+    "珠链蝶"
   ],
-  "capacity": 9,
+  "capacity": 6,
   "points": [
     {
-      "x": 9154.97,
-      "y": 9131.62,
+      "x": 8758.97,
+      "y": 10201.56,
       "radius": 8.5,
       "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 13.5
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 9156.97,
-      "y": 9130.62,
+      "x": 8755.38,
+      "y": 10203.56,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9168.97,
-      "y": 9139.62,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9204.97,
-      "y": 9142.62,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9240.97,
-      "y": 9136.62,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9244.16,
-      "y": 9133.33,
+      "x": 8744.38,
+      "y": 10203.44,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 28.7
+        "seconds": 38.1
       }
     }
   ]

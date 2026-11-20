@@ -1,10 +1,10 @@
 {
   "schema_version": 3,
   "id": "gb_all_danqing_danqing_01",
-  "title": "【全材料·丹青屿】丹青屿·村边畦田（27个/151秒）",
+  "title": "【全材料·丹青屿】丹青屿·村边畦田（31个/165秒）",
   "map": "danqing",
   "start_radius": 12,
-  "timeout": 377,
+  "timeout": 408,
   "teleport": {
     "name": "村边畦田",
     "province": "心愿原野",
@@ -16,12 +16,13 @@
   "count_materials": [
     "珠链蝶",
     "小绵菊",
-    "满满果",
     "荷包草",
+    "满满果",
     "玉簪蚱蜢",
-    "织衣蛛"
+    "织衣蛛",
+    "蓝珀鸟羽"
   ],
-  "capacity": 27,
+  "capacity": 31,
   "points": [
     {
       "x": 1598.13,
@@ -98,28 +99,36 @@
       "params": {}
     },
     {
-      "x": 1679.13,
-      "y": 1264.18,
-      "radius": 3.2,
+      "x": 1667.13,
+      "y": 1276.18,
+      "radius": 2.8,
       "jump": true,
-      "action": "wait",
-      "params": {
-        "seconds": 9.2
-      }
+      "action": "",
+      "params": {}
     },
     {
-      "x": 1707.13,
-      "y": 1240.18,
+      "x": 1695.13,
+      "y": 1268.18,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 7.0
+        "seconds": 18.2
       }
     },
     {
-      "x": 1731.13,
-      "y": 1212.18,
+      "x": 1719.13,
+      "y": 1240.18,
+      "radius": 3.2,
+      "jump": true,
+      "action": "wait",
+      "params": {
+        "seconds": 11.1
+      }
+    },
+    {
+      "x": 1735.13,
+      "y": 1232.18,
       "radius": 2.8,
       "jump": false,
       "action": "",

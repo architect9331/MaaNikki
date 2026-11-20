@@ -4,7 +4,7 @@
   "title": "【纱裙鱼】石树田无人区·星空钓场旁（小道）（3个/112秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 291,
+  "timeout": 292,
   "teleport": {
     "name": "星空钓场旁（小道）",
     "province": "心愿原野",
@@ -34,15 +34,31 @@
     },
     {
       "x": 7827.44,
-      "y": 9380.89,
+      "y": 9374.89,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7842.44,
-      "y": 9380.89,
+      "x": 7824.44,
+      "y": 9377.89,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7830.44,
+      "y": 9383.89,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7845.44,
+      "y": 9374.89,
       "radius": 2.8,
       "jump": false,
       "action": "",

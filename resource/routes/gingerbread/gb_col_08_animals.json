@@ -7,35 +7,35 @@
   "routes": [
     {
       "route": "gb_cat_animal_miraland_01",
-      "title": "【全动物清洁】埋骨地·龙巢山飞瀑崖顶（32个/98秒）"
-    },
-    {
-      "route": "gb_cat_animal_miraland_02",
       "title": "【全动物清洁】埋骨地·古息坡道（35个/128秒）"
     },
     {
-      "route": "gb_cat_animal_serenity_03",
-      "title": "【全动物清洁】无忧岛·守望之地（10个/49秒）"
-    },
-    {
-      "route": "gb_cat_animal_serenity_04",
+      "route": "gb_cat_animal_serenity_02",
       "title": "【全动物清洁】无忧岛·咚咚小屋聚落（8个/38秒）"
     },
     {
-      "route": "gb_cat_animal_miraland_05",
+      "route": "gb_cat_animal_miraland_03",
       "title": "【全动物清洁】埋骨地·疗愈地（30个/163秒）"
     },
     {
-      "route": "gb_cat_animal_serenity_06",
+      "route": "gb_cat_animal_serenity_04",
+      "title": "【全动物清洁】无忧岛·守望之地（10个/53秒）"
+    },
+    {
+      "route": "gb_cat_animal_serenity_05",
       "title": "【全动物清洁】无忧岛·布露村村口（14个/87秒）"
     },
     {
-      "route": "gb_cat_animal_miraland_07",
+      "route": "gb_cat_animal_miraland_06",
       "title": "【全动物清洁】花愿镇·镇长宅邸前（16个/105秒）"
     },
     {
-      "route": "gb_cat_animal_miraland_08",
+      "route": "gb_cat_animal_miraland_07",
       "title": "【全动物清洁】巨木之森·巨矛前驿站（21个/138秒）"
+    },
+    {
+      "route": "gb_cat_animal_serenity_08",
+      "title": "【全动物清洁】无忧岛·布蜜蜜花园（10个/64秒）"
     }
   ]
 }

@@ -132,6 +132,8 @@ EXCLUDED_INDOOR_SPIRES = frozenset({
     "幽荧潭水洞窟",
     "巨人密殿遗迹",
     "幽灵列车入口",
+    "乘风磨坊中层",
+    "火锅坊",
 })
 
 # Verified unmodeled static prop footprints (map_id -> list of (x_min, y_min, x_max, y_max) in map px)
@@ -147,10 +149,19 @@ UNMODELED_OBSTACLE_BOXES: dict[str, tuple[tuple[float, float, float, float], ...
         # Giant Tree ancient shade ruins multi-root ledges
         (3720.0, 9218.0, 3727.0, 9227.0),
         (3751.0, 9134.5, 3758.5, 9145.0),
+        # Giant Tree Graveyard (巨人墓园) overhanging fallen giant tree trunk
+        (2915.0, 8574.0, 2935.0, 8588.0),
+        # Dragon Nest Waterfall Cliff (龙巢山飞瀑崖顶) deep river channel feeding waterfall
+        (8035.0, 5165.0, 8145.0, 5198.0),
+        (8095.0, 5135.0, 8175.0, 5175.0),
     ),
     "serenity": (
         # Serenity Island wooden hut cliff ledge between Watchtower and Thuddy Squash Settlement
         (801.5, 528.0, 807.5, 533.5),
+    ),
+    "wanxiang": (
+        # Hotpot Workshop (火锅坊) courtyard wall & XiaoYushi proximity auto-dialogue zone
+        (1378.0, 1096.0, 1400.0, 1107.0),
     ),
 }
 

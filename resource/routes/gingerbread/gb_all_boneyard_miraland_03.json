@@ -1,79 +1,96 @@
 {
   "schema_version": 3,
   "id": "gb_all_boneyard_miraland_03",
-  "title": "【全材料·埋骨地】埋骨地·龙巢山飞瀑崖顶（34个/98秒）",
+  "title": "【全材料·埋骨地】埋骨地·龙埙遗所（46个/170秒）",
   "map": "miraland",
   "start_radius": 12,
-  "timeout": 260,
+  "timeout": 418,
   "teleport": {
-    "name": "龙巢山飞瀑崖顶",
+    "name": "龙埙遗所",
     "province": "伊赞之土",
     "region": "埋骨地",
-    "x": 8063.15,
-    "y": 5243.188
+    "x": 8586.154,
+    "y": 5376.194
   },
   "material": "全材料·埋骨地",
   "count_materials": [
-    "金灵毛球",
+    "探险家蜜蜂",
     "大叶鹿绒",
     "茸芽鹿绒",
+    "金灵毛球",
+    "风舞花",
     "羽巾绒",
-    "钓鱼点",
-    "风舞花"
+    "小野菊",
+    "满满果",
+    "埙音甲"
   ],
-  "capacity": 34,
+  "capacity": 46,
   "points": [
     {
-      "x": 8063.15,
-      "y": 5243.19,
+      "x": 8586.15,
+      "y": 5376.19,
       "radius": 8.5,
       "jump": false,
-      "action": "",
-      "params": {}
+      "action": "wait",
+      "params": {
+        "seconds": 7.0
+      }
     },
     {
-      "x": 8068.09,
-      "y": 5237.36,
+      "x": 8600.15,
+      "y": 5393.19,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8062.09,
-      "y": 5201.36,
+      "x": 8636.15,
+      "y": 5399.19,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 38.0
+      }
+    },
+    {
+      "x": 8654.15,
+      "y": 5393.19,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8047.09,
-      "y": 5168.36,
+      "x": 8666.15,
+      "y": 5387.19,
+      "radius": 3.2,
+      "jump": false,
+      "action": "wait",
+      "params": {
+        "seconds": 9.2
+      }
+    },
+    {
+      "x": 8681.15,
+      "y": 5393.19,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8032.09,
-      "y": 5162.36,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 8038.09,
-      "y": 5153.36,
+      "x": 8681.15,
+      "y": 5405.19,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8042.09,
-      "y": 5154.36,
+      "x": 8676.86,
+      "y": 5407.41,
       "radius": 3.2,
       "jump": false,
       "action": "wait",
