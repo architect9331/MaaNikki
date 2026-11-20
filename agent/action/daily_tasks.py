@@ -229,7 +229,7 @@ class DailyRun(Executors):
         x, y, w, h = fields(self.context, node)["roi"]
         previous = None
         crop = None
-        for attempt in range(3):
+        for attempt in range(5):
             image = self.capture()
             if image is None:
                 return None
@@ -251,7 +251,7 @@ class DailyRun(Executors):
             if value is not None and previous == value:
                 return value
             previous = value
-            if attempt < 2 and not self.pause(.4):
+            if attempt < 4 and not self.pause(.4):
                 break
         if crop is not None:
             if not self.stopped:
