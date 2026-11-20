@@ -288,6 +288,122 @@ def resolve_program(value):
     raise ValueError("未找到官方启动器，请在启动游戏任务中选择 launcher.exe。")
 
 
+LAUNCHER_MODAL_ROI_REL = (0.32, 0.20, 0.38, 0.60)
+LAUNCHER_CLICK_COOLDOWN = {
+    "start": 8.0,
+    "update": 8.0,
+    "launcher_update_prompt": 5.0,
+    "launcher_update_restart": 5.0,
+}
+LAUNCHER_RESTART_EXIT_GRACE = 12.0
+MAX_LAUNCHER_RESTARTS = 3
+MAX_LAUNCHER_CONNECT_RETRIES = 6
+
+_LAUNCHER_MODAL_PUNCT_RE = re.compile(r"[\s,，。.:：!！?？;；\-—_()（）\[\]【】]+")
+_LAUNCHER_MODAL_ERROR_RE = re.compile(r"(失败|失敗|错误|錯誤|异常|異常|无法|無法|failed|error)")
+_LAUNCHER_RESTART_CONTEXT_RE = re.compile(
+    r"(版本升级成功|版本升級成功|升级成功|升級成功|更新成功|更新完成|"
+    r"即将重启|即將重啟|即将重新启动|即將重新啟動|重启客户端|重啟客戶端|重启启动器|重啟啟動器|"
+    r"upgradesuccess|updatesuccess|updatecomplete|restartclient|restartlauncher|abouttorestart|willrestart)"
+)
+_LAUNCHER_RESTART_BUTTON_RE = re.compile(
+    r"^(确定|確定|确认|確認|立即重启|立即重啟|重启|重啟|ok|confirm|restart|restartnow)$"
+)
+_LAUNCHER_PROMPT_CONTEXT_RE = re.compile(
+    r"(有新版本|发现新版本|發現新版本|检测到新版本|檢測到新版本|版本更新说明|版本更新說明|当前版本|當前版本|"
+    r"软件更新|軟體更新|启动器更新|啟動器更新|客户端更新|客戶端更新|"
+    r"newversion|updateavailable|softwareupdate|launcherupdate)"
+)
+_LAUNCHER_PROMPT_BUTTON_RE = re.compile(
+    r"^(立即更新|立即升级|立即升級|马上更新|馬上更新|现在更新|現在更新|开始更新|開始更新|updatenow)$"
+)
+_LAUNCHER_UPDATE_HEADER_RE = re.compile(
+    r"(软件更新|軟體更新|启动器更新|啟動器更新|客户端更新|客戶端更新|softwareupdate|launcherupdate)"
+)
+_LAUNCHER_UPDATING_ACTIVE_RE = re.compile(
+    r"(正在更新|更新中|正在下载|正在下載|下载中|下載中|正在安装|正在安裝|安装中|安裝中|"
+    r"正在解压|正在解壓|解压中|解壓中|正在校验|正在校驗|updating|downloading|installing|extracting)"
+)
+_LAUNCHER_UPDATING_CUE_RE = re.compile(r"(请稍候|請稍候|请稍等|請稍等|pleasewait)")
+_LAUNCHER_PERCENT_RE = re.compile(r"^\d{1,3}%$")
+
+
+def _normalize_modal_text(text: str) -> str:
+    return _LAUNCHER_MODAL_PUNCT_RE.sub("", text).lower()
+
+
+def classify_launcher_modal(items, *, min_score: float = 0.6):
+    """Classify center launcher self-update modals from OCR results.
+
+    Returns ``(state, box)`` for:
+    - ``("launcher_update_restart", confirm_box)``: upgrade succeeded / restart prompt
+    - ``("launcher_update_prompt", update_box)``: new launcher version prompt
+    - ``("launcher_updating", None)``: launcher self-update in progress (wait only)
+    or ``None`` when no launcher self-update modal is present.
+    """
+    parsed = []
+    for item in items or ():
+        if isinstance(item, tuple):
+            text, box, score = item
+        else:
+            text = getattr(item, "text", "")
+            box = getattr(item, "box", None)
+            score = getattr(item, "score", 1.0)
+        if not text or not box or len(box) < 4:
+            continue
+        if score is not None and float(score) < min_score:
+            continue
+        compact = _normalize_modal_text(str(text))
+        if not compact:
+            continue
+        box_tuple = tuple(int(v) for v in box[:4])
+        cy = box_tuple[1] + box_tuple[3] / 2.0
+        cx = box_tuple[0] + box_tuple[2] / 2.0
+        parsed.append((compact, box_tuple, cx, cy))
+
+    if not parsed:
+        return None
+
+    has_error = any(_LAUNCHER_MODAL_ERROR_RE.search(c) for c, _, _, _ in parsed)
+
+    # Priority 1: Upgrade succeeded / restart required modal ("版本升级成功,即将重启客户端" + "确定").
+    restart_ctx = [cy for c, _, _, cy in parsed if _LAUNCHER_RESTART_CONTEXT_RE.search(c)]
+    if restart_ctx and not has_error:
+        min_ctx_cy = min(restart_ctx)
+        confirm_btns = [
+            (cy, cx, box)
+            for c, box, cx, cy in parsed
+            if _LAUNCHER_RESTART_BUTTON_RE.fullmatch(c) and cy > min_ctx_cy
+        ]
+        if confirm_btns:
+            return "launcher_update_restart", max(confirm_btns)[2]
+        # Never fall through to click Start Game behind a restart-pending modal.
+        return "launcher_updating", None
+
+    # Priority 2: New launcher version modal ("有新版本" + "立即更新", never clicking "退出").
+    prompt_ctx = [cy for c, _, _, cy in parsed if _LAUNCHER_PROMPT_CONTEXT_RE.search(c)]
+    if prompt_ctx:
+        min_ctx_cy = min(prompt_ctx)
+        update_btns = [
+            (cy, cx, box)
+            for c, box, cx, cy in parsed
+            if _LAUNCHER_PROMPT_BUTTON_RE.fullmatch(c) and cy > min_ctx_cy
+        ]
+        if update_btns:
+            return "launcher_update_prompt", max(update_btns)[2]
+
+    # Priority 3: Self-update progress modal ("软件更新" + "正在更新中，请稍候" + "%").
+    if not has_error:
+        has_header = any(_LAUNCHER_UPDATE_HEADER_RE.search(c) for c, _, _, _ in parsed)
+        has_active = any(_LAUNCHER_UPDATING_ACTIVE_RE.search(c) for c, _, _, _ in parsed)
+        has_cue = any(_LAUNCHER_UPDATING_CUE_RE.search(c) for c, _, _, _ in parsed)
+        has_percent = any(_LAUNCHER_PERCENT_RE.fullmatch(c) for c, _, _, _ in parsed)
+        if (has_active and (has_header or has_cue or has_percent)) or (has_header and (has_cue or has_percent)):
+            return "launcher_updating", None
+
+    return None
+
+
 class LauncherWindows:
     def __init__(self, folder):
         self.folder = folder.resolve()
@@ -296,6 +412,8 @@ class LauncherWindows:
         self.callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
         self.user32.EnumWindows.argtypes = [self.callback_type, wintypes.LPARAM]
         self.user32.EnumWindows.restype = wintypes.BOOL
+        self.user32.IsWindow.argtypes = [wintypes.HWND]
+        self.user32.IsWindow.restype = wintypes.BOOL
         self.user32.IsWindowVisible.argtypes = [wintypes.HWND]
         self.user32.IsWindowVisible.restype = wintypes.BOOL
         self.user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
@@ -380,6 +498,30 @@ class LauncherRuntime:
         if not self.tasker.bind(self.resource, self.controller):
             raise RuntimeError("无法建立官方启动器识别会话。")
 
+    def close(self):
+        tasker = getattr(self, "tasker", None)
+        if tasker is not None:
+            try:
+                tasker.post_stop().wait()
+            except Exception:
+                pass
+        self.tasker = None
+        self.controller = None
+        self.resource = None
+
+    def _detect_modal(self, width: int, height: int):
+        from maa.pipeline import JOCR
+        rx, ry, rw, rh = LAUNCHER_MODAL_ROI_REL
+        modal_roi = (int(width * rx), int(height * ry), int(width * rw), int(height * rh))
+        job = self.tasker.post_recognition("OCR", JOCR(roi=modal_roi, threshold=.5), self.image)
+        detail = job.wait().get()
+        if not detail or not detail.nodes:
+            return None
+        recognition = detail.nodes[-1].recognition
+        if not recognition or not recognition.all_results:
+            return None
+        return classify_launcher_modal(recognition.all_results)
+
     def button(self, *, require_foreground=True):
         from maa.pipeline import JOCR
         if require_foreground and not self.windows.foreground(self.hwnd):
@@ -395,6 +537,11 @@ class LauncherRuntime:
         if self.image is None or (require_foreground and not self.windows.foreground(self.hwnd)):
             return None
         height, width = self.image.shape[:2]
+        # Check center self-update modals first because Start/Update Game remains
+        # visible in the lower-right corner behind modal overlays.
+        modal = self._detect_modal(width, height)
+        if modal is not None:
+            return modal
         # Only the lower-right game button area, excluding top-bar launcher updates.
         roi = (width//2, height*3//4, width-width//2, height-height*3//4)
         job = self.tasker.post_recognition("OCR", JOCR(
@@ -501,72 +648,200 @@ def launch_game(program, timeout, record, *, background=False):
     record["stage"] = "wait_launcher"
     save_record(record)
     runtime, remaining = None, float(timeout)
+    last_image = None
     last_tick = time.monotonic()
-    last_click = {"start": -float("inf"), "update": -float("inf")}
-    clicks = {"start": 0, "update": 0}
+    clicks = {key: 0 for key in LAUNCHER_CLICK_COOLDOWN}
+    attempt_clicks = {key: 0 for key in LAUNCHER_CLICK_COOLDOWN}
+    last_click = {key: -float("inf") for key in LAUNCHER_CLICK_COOLDOWN}
     paused = False
-    while remaining > 0:
-        game_hwnd = game_window()
-        if game_hwnd:
-            record.update(success=True, stage="game_window", clicks=clicks,
-                          game_hwnd=game_hwnd, game_class="UnrealWindow",
-                          remaining_seconds=max(0, remaining))
+    restarting_from_hwnd = None
+    restart_clicked_at = None
+    restart_window_disappeared = False
+    saw_launcher_updating = False
+    updating_window_disappeared = False
+    launcher_restarts = 0
+    connect_hwnd = None
+    connect_failures = 0
+
+    def drop_runtime():
+        nonlocal runtime, last_image
+        if runtime is not None:
+            if runtime.image is not None:
+                last_image = runtime.image
+            runtime.close()
+            runtime = None
+
+    def set_stage(stage: str):
+        if record.get("stage") != stage:
+            record["stage"] = stage
             save_record(record)
-            return
-        hwnd = windows.find()
-        if hwnd and (runtime is None or runtime.hwnd != hwnd):
-            ready_win = ensure_unminimized(hwnd) if background else focus_window(hwnd)
-            if not ready_win:
-                if not windows.user32.IsWindow(hwnd):
-                    runtime = None
-                    time.sleep(.25)
-                    continue
-                raise RuntimeError("未能准备官方启动器窗口，请检查窗口最小化状态和权限后重试。")
-            try:
-                with startup_step(record, "connect_launcher"):
-                    runtime = LauncherRuntime(windows, hwnd)
-            except RuntimeError:
-                if not windows.user32.IsWindow(hwnd):
-                    runtime = None
-                    time.sleep(.25)
-                    continue
-                raise
-            record["stage"] = "launcher_button"
-            save_record(record)
+
+    def reset_attempt_budgets():
+        for key in attempt_clicks:
+            attempt_clicks[key] = 0
+            last_click[key] = -float("inf")
+
+    def consume_elapsed(active: bool):
+        nonlocal remaining, last_tick, paused
         now = time.monotonic()
-        active_ok = (
-            bool(hwnd and windows.user32.IsWindow(hwnd) and not windows.user32.IsIconic(hwnd))
-            if background
-            else bool(hwnd and windows.foreground(hwnd))
-        )
         # Do not consume the active timeout or click when paused outside the active state.
-        if not paused and (not hwnd or active_ok):
-            remaining -= now-last_tick
-        last_tick, paused = now, bool(hwnd and not active_ok)
-        if runtime and hwnd and active_ok:
-            button = runtime.button(require_foreground=not background)
-            if button:
-                state, box = button
-                record["button"] = state
-                record["stage"] = "updating" if state == "update" else "wait_game"
-                # Update/start clicks are debounced; progress/running text is never clicked.
-                if state != "running" and now-last_click[state] >= 8:
-                    if clicks[state] < 3:
-                        use_bg = background and clicks[state] == 0
-                        if not use_bg and not windows.foreground(hwnd):
-                            focus_window(hwnd)
-                        if runtime.action(state, box, background=use_bg):
-                            clicks[state] += 1
-                            last_click[state] = now
-        time.sleep(.25)
+        if not paused and active:
+            remaining -= now - last_tick
+        last_tick = now
+        return now
+
+    try:
+        while remaining > 0:
+            game_hwnd = game_window()
+            if game_hwnd:
+                record.update(success=True, stage="game_window", clicks=clicks,
+                              launcher_restarts=launcher_restarts,
+                              game_hwnd=game_hwnd, game_class="UnrealWindow",
+                              remaining_seconds=max(0, remaining))
+                save_record(record)
+                return
+            hwnd = windows.find()
+            if runtime is not None and (
+                not hwnd or hwnd != runtime.hwnd or not windows.user32.IsWindow(runtime.hwnd)
+            ):
+                # Old launcher window closed or switched (e.g. self-update restart);
+                # drop the session immediately so even a recycled HWND reattaches cleanly.
+                drop_runtime()
+            if restarting_from_hwnd is not None and (
+                not hwnd or not windows.user32.IsWindow(restarting_from_hwnd)
+            ):
+                restart_window_disappeared = True
+                set_stage("launcher_restarting")
+            elif saw_launcher_updating and not hwnd:
+                updating_window_disappeared = True
+                set_stage("launcher_restarting")
+            if hwnd and runtime is None:
+                ready_win = ensure_unminimized(hwnd) if background else focus_window(hwnd)
+                if not ready_win:
+                    if not windows.user32.IsWindow(hwnd):
+                        drop_runtime()
+                        consume_elapsed(True)
+                        time.sleep(.25)
+                        continue
+                    raise RuntimeError("未能准备官方启动器窗口，请检查窗口最小化状态和权限后重试。")
+                if connect_hwnd != hwnd:
+                    connect_hwnd = hwnd
+                    connect_failures = 0
+                try:
+                    with startup_step(record, "connect_launcher"):
+                        runtime = LauncherRuntime(windows, hwnd)
+                    connect_failures = 0
+                except RuntimeError:
+                    if not windows.user32.IsWindow(hwnd):
+                        drop_runtime()
+                        consume_elapsed(True)
+                        time.sleep(.25)
+                        continue
+                    connect_failures += 1
+                    if connect_failures < MAX_LAUNCHER_CONNECT_RETRIES:
+                        drop_runtime()
+                        consume_elapsed(True)
+                        time.sleep(.5)
+                        continue
+                    raise
+                if restarting_from_hwnd is not None and (
+                    restart_window_disappeared or hwnd != restarting_from_hwnd
+                ):
+                    launcher_restarts += 1
+                    record["launcher_restarts"] = launcher_restarts
+                    restarting_from_hwnd = None
+                    restart_clicked_at = None
+                    restart_window_disappeared = False
+                    saw_launcher_updating = False
+                    updating_window_disappeared = False
+                    reset_attempt_budgets()
+                elif updating_window_disappeared:
+                    # Launcher closed and relaunched on its own while updating.
+                    launcher_restarts += 1
+                    record["launcher_restarts"] = launcher_restarts
+                    saw_launcher_updating = False
+                    updating_window_disappeared = False
+                    reset_attempt_budgets()
+                record["stage"] = (
+                    "launcher_restarting" if restarting_from_hwnd is not None else "launcher_button"
+                )
+                save_record(record)
+            active_ok = (
+                bool(hwnd and windows.user32.IsWindow(hwnd) and not windows.user32.IsIconic(hwnd))
+                if background
+                else bool(hwnd and windows.foreground(hwnd))
+            )
+            now = consume_elapsed(not hwnd or active_ok)
+            paused = bool(hwnd and not active_ok)
+            if runtime and hwnd and active_ok:
+                button = runtime.button(require_foreground=not background)
+                if runtime.image is not None:
+                    last_image = runtime.image
+                if button:
+                    state, box = button
+                    record["button"] = state
+                    if state == "launcher_updating":
+                        saw_launcher_updating = True
+                        set_stage("launcher_updating")
+                    elif state == "launcher_update_restart":
+                        if launcher_restarts >= MAX_LAUNCHER_RESTARTS:
+                            raise RuntimeError("官方启动器多次更新重启后仍未恢复正常，请手动检查启动器。")
+                        saw_launcher_updating = True
+                        set_stage("launcher_restarting")
+                    elif state == "launcher_update_prompt":
+                        saw_launcher_updating = True
+                        set_stage("launcher_updating")
+                    elif restarting_from_hwnd == hwnd and not restart_window_disappeared:
+                        # After clicking 确定, the modal may disappear slightly before the old
+                        # launcher process exits. Suppress clicks on the underlying Start/Update
+                        # button during this short grace window so it can finish restarting.
+                        if restart_clicked_at is not None and now - restart_clicked_at < LAUNCHER_RESTART_EXIT_GRACE:
+                            set_stage("launcher_restarting")
+                            time.sleep(.25)
+                            continue
+                        restarting_from_hwnd = None
+                        restart_clicked_at = None
+                        saw_launcher_updating = False
+                        updating_window_disappeared = False
+                        reset_attempt_budgets()
+                        set_stage("updating" if state == "update" else "wait_game")
+                    else:
+                        set_stage("updating" if state == "update" else "wait_game")
+
+                    # Clickable states are debounced; progress/running states are never clicked.
+                    cooldown = LAUNCHER_CLICK_COOLDOWN.get(state)
+                    if cooldown is not None and now - last_click[state] >= cooldown:
+                        if attempt_clicks[state] < 3:
+                            use_bg = background and attempt_clicks[state] == 0
+                            if not use_bg and not windows.foreground(hwnd):
+                                focus_window(hwnd)
+                            clicked = runtime.action(state, box, background=use_bg)
+                            if clicked or (
+                                state == "launcher_update_restart"
+                                and not windows.user32.IsWindow(hwnd)
+                            ):
+                                clicks[state] += 1
+                                attempt_clicks[state] += 1
+                                last_click[state] = now
+                                if state == "launcher_update_restart":
+                                    restarting_from_hwnd = hwnd
+                                    restart_clicked_at = now
+                                    restart_window_disappeared = not windows.user32.IsWindow(hwnd)
+                                    set_stage("launcher_restarting")
+            time.sleep(.25)
+    finally:
+        drop_runtime()
     record["clicks"] = clicks
-    if runtime and runtime.image is not None:
+    record["launcher_restarts"] = launcher_restarts
+    if last_image is not None:
         from diagnostics import save_image
         folder = ROOT / "logs/startup"
         folder.mkdir(parents=True, exist_ok=True)
         name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")+"-launcher.png"
-        save_image(folder / name, runtime.image, full_frame=False)
+        save_image(folder / name, last_image, full_frame=False)
         record["screenshot"] = "logs/startup/"+name
+    if restarting_from_hwnd is not None:
+        raise RuntimeError("等待官方启动器更新重启超时，请检查启动器状态；记录见 logs/startup。")
     raise RuntimeError("等待官方启动器更新或启动游戏超时，请检查启动器提示；记录见 logs/startup。")
 
 
