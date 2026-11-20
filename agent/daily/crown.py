@@ -83,13 +83,42 @@ class Crown(Runtime):
                 return False
         return False
 
+    SCORE_DETAIL_TITLE_ROI = [520, 88, 240, 62]
+    SCORE_DETAIL_EXIT_ROI = [520, 515, 240, 78]
+
+    def score_detail_exit_box(self):
+        """Detect the failed-stage 评分详情 modal sitting over the result overlay."""
+        with self.observe():
+            if not self.text(self.SCORE_DETAIL_TITLE_ROI, r"评分详情"):
+                return None
+            result = self.recognize("MaaNikki_Daily_OCR", {
+                "roi": self.SCORE_DETAIL_EXIT_ROI, "expected": r"^退出$"})
+            return list(result.box) if result and result.hit else None
+
+    def dismiss_score_detail(self):
+        exit_box = self.score_detail_exit_box()
+        if not exit_box:
+            return False
+        if not self.action("Click", target=exit_box):
+            return False
+        return bool(self.ui.wait_page(lambda: not self.score_detail_exit_box(), seconds=5, allow_reward=True))
+
     def reward_popup(self):
         def visible():
             with self.observe():
-                return bool(self.hit("MaaNikki_RewardOverlayReady") or self.asset("IconClickSkip"))
+                return bool(
+                    self.score_detail_exit_box()
+                    or self.hit("MaaNikki_RewardOverlayReady")
+                    or self.asset("IconClickSkip")
+                )
 
         if not self.ui.wait_page(visible, seconds=3, allow_reward=True):
             return False
+        if self.score_detail_exit_box():
+            if not self.dismiss_score_detail():
+                return False
+            if not self.ui.wait_page(visible, seconds=2, allow_reward=True):
+                return True
         if self.hit("MaaNikki_RewardOverlayReady"):
             # A challenge reward returns to arena dialogue, while an entry
             # reward returns to the lobby. Confirm dismissal, not its parent.
@@ -133,7 +162,8 @@ class Crown(Runtime):
 
         while not self.stopped and time.monotonic() < deadline:
             with self.observe(fresh=True):
-                reward = bool(self.hit("MaaNikki_RewardOverlayReady") or self.asset("IconClickSkip"))
+                score_detail = bool(self.score_detail_exit_box())
+                reward = score_detail or bool(self.hit("MaaNikki_RewardOverlayReady") or self.asset("IconClickSkip"))
                 choice = None if reward else option_box("继续挑战|开始挑战")
                 dialogue = not (reward or choice) and self.dialogue_visible()
                 confirm_box = (leave_confirm_box()
