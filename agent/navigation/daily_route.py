@@ -253,7 +253,7 @@ class RouteActions:
 
     def macro(self, name):
         value = load_macro(self.resource, name)
-        if not self.rt.hit("MaaNikki_MainDetected"):
+        if not self.rt.ui.wait_page("MaaNikki_MainDetected", seconds=2):
             raise NavigationError("宏动作要求处于可移动主界面。")
         self.event({"type": "macro", "id": name})
         semantic = {"jump", "falling"} if name == "starsea_fall" else {"attack"}
