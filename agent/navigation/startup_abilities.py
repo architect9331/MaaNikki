@@ -533,7 +533,7 @@ def _parse_plan(value, fallback: int = 3) -> int:
     return parsed if parsed in (1, 2, 3) else 0
 
 
-def ensure_persistent_abilities(runtime, options: dict) -> bool:
+def ensure_persistent_abilities(runtime, options: dict, *, events: list[dict] | None = None) -> bool:
     """Configure missing wheel slots and activate all selected persistent abilities."""
     raw_abilities = options.get("abilities")
     enabled_map = raw_abilities if isinstance(raw_abilities, dict) else {}
@@ -563,7 +563,8 @@ def ensure_persistent_abilities(runtime, options: dict) -> bool:
             plan_order.append(target_plan)
         batches_by_plan[target_plan].append(spec)
 
-    events: list[dict] = []
+    if events is None:
+        events = []
     activated_count = 0
     any_slot_found = False
     with runtime.input_guard() as inputs:

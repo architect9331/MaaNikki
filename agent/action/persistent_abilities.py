@@ -15,8 +15,9 @@ class PersistentAbilitiesAction(CustomAction):
     def run(self, context, argv):
         runtime = Executors(context)
         options = parameters(context, argv.node_name)
+        events: list[dict] = []
         try:
-            if not ensure_persistent_abilities(runtime, options):
+            if not ensure_persistent_abilities(runtime, options, events=events):
                 return False
             _, finished = runtime.finish(argv.node_name)
             return finished
@@ -25,6 +26,11 @@ class PersistentAbilitiesAction(CustomAction):
         except NavigationError as error:
             if not runtime.stopped:
                 image = runtime.capture()
-                runtime.diagnostic("persistent_abilities", str(error), image=image, details={"options": options})
+                runtime.diagnostic(
+                    "persistent_abilities",
+                    str(error),
+                    image=image,
+                    details={"options": options, "events": events[-24:]},
+                )
                 runtime.log(str(error))
             return False
