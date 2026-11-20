@@ -39,15 +39,22 @@ class Teleporter:
         self.map_diagnostics = []
         self.home_region_name = None
 
+    def fixed_panel_roi(self):
+        """Return the fixed overlapping-marker list region, widened for long checkpoint names."""
+        x, y, w, h = self.rt.ui.roi("AreaBigMapTeleporterSelect")
+        width = min(1240 - x, max(w, 380))
+        height = min(620 - y, max(h, 220))
+        return [x, y, width, height]
+
     def candidate_panel_roi(self):
         """Return candidate popup bounds anchored on the last clicked map coordinate."""
         if isinstance(self.last_clicked_target, (list, tuple)) and len(self.last_clicked_target) >= 2:
             tx, ty = int(self.last_clicked_target[0]), int(self.last_clicked_target[1])
-            x0, y0 = max(0, tx - 24), max(0, ty - 48)
-            x1, y1 = min(1280, tx + 300), min(720, ty + 220)
+            x0, y0 = max(0, tx - 24), max(140, ty - 200)
+            x1, y1 = min(1240, max(tx + 420, 1220)), min(620, ty + 220)
             if x1 > x0 and y1 > y0:
                 return [x0, y0, x1 - x0, y1 - y0]
-        return self.rt.ui.roi("AreaBigMapTeleporterSelect")
+        return self.fixed_panel_roi()
 
     def check(self, browse=False):
         if self.inputs:
@@ -312,7 +319,7 @@ class Teleporter:
             raise NavigationError("未能放大地图，请确认没有点位详情遮挡缩放按钮。")
         self.exit_layer_view()
 
-    def map_pose(self, frame):
+    def map_pose(self, frame, *, expected=None):
         self.map_diagnostics = []
         require_game_frame(frame)
         scale = self.locator.spec.bigmap_scale*.25
@@ -339,12 +346,39 @@ class Teleporter:
                 refined = self.refine_player_pose(frame, unmasked)
                 if refined is not unmasked and refined[2] >= .6 and refined[3] >= .01:
                     pose = refined
+        if pose[2] < .6 and expected is not None:
+            # When panning across open ocean with bright boat-route overlays,
+            # global peak matching can jump to a distant low-score ripple. Check
+            # a bounded coarse neighborhood around the drag-predicted viewport
+            # center and require disjoint full-scale terrain tile consensus.
+            cx, cy = expected[0]*.25, expected[1]*.25
+            ph, pw = patch.shape[:2]
+            pad_c = 90
+            x0 = max(0, math.floor(cx-pw/2-pad_c))
+            y0 = max(0, math.floor(cy-ph/2-pad_c))
+            x1 = min(self.locator.coarse.shape[1], math.ceil(cx+pw/2+pad_c))
+            y1 = min(self.locator.coarse.shape[0], math.ceil(cy+ph/2+pad_c))
+            if x1-x0 >= pw and y1-y0 >= ph:
+                try:
+                    lx, ly, lscore, ldetail = match_map(
+                        self.locator.coarse[y0:y1, x0:x1], patch, kernel=9)
+                except NavigationError:
+                    lx = ly = lscore = ldetail = float("nan")
+                if all(math.isfinite(v) for v in (lx, ly, lscore, ldetail)) and lscore >= .20 and ldetail >= .01:
+                    local_pose = (lx+x0)*4, (ly+y0)*4, lscore, ldetail
+                    self.map_diagnostics.append({"method": "post_pan_local_peak",
+                                                 "expected": [expected[0], expected[1]],
+                                                 "x": local_pose[0], "y": local_pose[1],
+                                                 "score": lscore, "local_peak": ldetail})
+                    refined = self.refine_player_pose(frame, local_pose)
+                    if refined is not local_pose and refined[2] >= .6 and refined[3] >= .01:
+                        pose = refined
         return pose, 1
 
-    def locate_map(self):
+    def locate_map(self, *, expected=None):
         self.check()
         self.last_frame = self.rt.capture()
-        pose, _ = self.map_pose(self.last_frame)
+        pose, _ = self.map_pose(self.last_frame, expected=expected)
         self.last_pose = pose
         self.event({"type": "bigmap_pose", "x": pose[0], "y": pose[1],
                     "score": pose[2], "local_peak": pose[3], "windows": self.map_diagnostics})
@@ -360,35 +394,36 @@ class Teleporter:
         scale = self.locator.spec.bigmap_scale
         candidates = []
         # These disjoint tiles avoid the player marker, map labels near the
-        # center and fixed corner controls. Missing terrain can spoil one tile
+        # center and fixed corner controls (including the top-right region card
+        # and bottom-right filter bar). Missing terrain can spoil one tile
         # without discarding a match supported by two others.
-        for top in (160, 400):
-            for left in (260, 500, 740):
-                width, height = 240, 200
-                patch = cv2.resize(luma(frame[top:top+height, left:left+width]),
-                                   None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-                dx, dy = (left+width/2-640)*scale, (top+height/2-360)*scale
-                cx, cy = pose[0]+dx, pose[1]+dy
-                x0 = max(0, math.floor(cx-patch.shape[1]/2-12))
-                y0 = max(0, math.floor(cy-patch.shape[0]/2-12))
-                x1 = min(self.locator.spec.width, math.ceil(cx+patch.shape[1]/2+12))
-                y1 = min(self.locator.spec.height, math.ceil(cy+patch.shape[0]/2+12))
-                try:
-                    x, y, score, peak = match_map(
-                        self.locator.map[y0:y1, x0:x1], patch, minimum_score=.35)
-                except NavigationError:
-                    continue
-                center = x+x0-dx, y+y0-dy
-                # Locked Home Island expansion plots overlay a dark tint and
-                # dashed border on valid terrain, lowering normalized score
-                # while keeping a sharp local correlation peak.
-                accepted = (((score >= .60 and peak >= .008) or (score >= .35 and peak >= .04))
-                            and math.hypot(center[0]-pose[0], center[1]-pose[1]) <= 6)
-                self.map_diagnostics.append({"method": "player_terrain_tile",
-                    "roi": [left, top, width, height], "x": center[0], "y": center[1],
-                    "score": score, "local_peak": peak, "accepted": accepted})
-                if accepted:
-                    candidates.append((*center, score, peak))
+        tiles = [(left, top, 240, 200) for top in (160, 400) for left in (260, 500, 740)]
+        tiles.append((980, 240, 240, 200))
+        for left, top, width, height in tiles:
+            patch = cv2.resize(luma(frame[top:top+height, left:left+width]),
+                               None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+            dx, dy = (left+width/2-640)*scale, (top+height/2-360)*scale
+            cx, cy = pose[0]+dx, pose[1]+dy
+            x0 = max(0, math.floor(cx-patch.shape[1]/2-12))
+            y0 = max(0, math.floor(cy-patch.shape[0]/2-12))
+            x1 = min(self.locator.spec.width, math.ceil(cx+patch.shape[1]/2+12))
+            y1 = min(self.locator.spec.height, math.ceil(cy+patch.shape[0]/2+12))
+            try:
+                x, y, score, peak = match_map(
+                    self.locator.map[y0:y1, x0:x1], patch, minimum_score=.35)
+            except NavigationError:
+                continue
+            center = x+x0-dx, y+y0-dy
+            # Locked Home Island expansion plots overlay a dark tint and
+            # dashed border on valid terrain, lowering normalized score
+            # while keeping a sharp local correlation peak.
+            accepted = (((score >= .60 and peak >= .008) or (score >= .35 and peak >= .04))
+                        and math.hypot(center[0]-pose[0], center[1]-pose[1]) <= 6)
+            self.map_diagnostics.append({"method": "player_terrain_tile",
+                "roi": [left, top, width, height], "x": center[0], "y": center[1],
+                "score": score, "local_peak": peak, "accepted": accepted})
+            if accepted:
+                candidates.append((*center, score, peak))
         best_cluster = []
         for anchor in candidates:
             neighbors = sorted(
@@ -494,10 +529,12 @@ class Teleporter:
 
     def center(self, x, y, force=False, *, allow_visible=False):
         panned = False
+        expected = None
         for _ in range(10):
             self.check()
-            px, py = self.locate_map()
-            dx, dy = (x-px)/self.locator.spec.bigmap_scale, (y-py)/self.locator.spec.bigmap_scale
+            px, py = self.locate_map(expected=expected)
+            scale = self.locator.spec.bigmap_scale
+            dx, dy = (x-px)/scale, (y-py)/scale
             target = [round(640+dx), round(360+dy)]
             # A crystal-map handoff or a prior pan can already place the
             # checkpoint inside the safe central area, avoiding an extra short
@@ -506,12 +543,13 @@ class Teleporter:
                 if self.last_pose[2] >= .6 and self.last_pose[3] >= .01:
                     self.event({"type": "checkpoint_visible", "target": target})
                     return target
-            if math.hypot(dx, dy) < (20/2/self.locator.spec.bigmap_scale if force else 200*2/3):
+            if math.hypot(dx, dy) < (20/2/scale if force else 200*2/3):
                 return target
             begin, end = terrain_pan(dx, dy)
             self.event({"type": "map_pan", "begin": begin, "end": end})
             if not self.rt.action("Swipe", begin=begin, end=end, duration=300):
                 raise NavigationError("地图拖动失败。")
+            expected = (px-(end[0]-begin[0])*scale, py-(end[1]-begin[1])*scale)
             panned = True
             if not self.rt.pause(.15):
                 raise NavigationError("地图传送已停止。")
@@ -522,7 +560,7 @@ class Teleporter:
     def confirm_transport(self, checkpoint):
         button = self.rt.ui.roi("AreaBigMapTeleportButton")
         panel = self.candidate_panel_roi()
-        fixed_panel = self.rt.ui.roi("AreaBigMapTeleporterSelect")
+        fixed_panel = self.fixed_panel_roi()
         observations = 0
         text = ""
         def detail_ready():
@@ -607,7 +645,7 @@ class Teleporter:
         def selection_visible():
             pattern = f"{re.escape(checkpoint['name'])}|{LOCKED_SPIRE_LABEL}"
             panel = self.candidate_panel_roi()
-            fixed_panel = self.rt.ui.roi("AreaBigMapTeleporterSelect")
+            fixed_panel = self.fixed_panel_roi()
             return (normalized(self.rt.ui.text(self.rt.ui.roi("AreaBigMapTeleportButton")))
                     in ("传送", "追踪")
                     or bool(self.rt.text(panel, pattern))
