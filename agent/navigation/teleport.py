@@ -36,6 +36,7 @@ class Teleporter:
         self.last_pose = None
         self.last_selection_frame = None
         self.last_clicked_target = None
+        self._pre_click_frame = None
         self.map_diagnostics = []
         self.home_region_name = None
 
@@ -557,6 +558,46 @@ class Teleporter:
             self.rt.ui.stable(threshold=.995, seconds=1.5, roi=[300, 120, 650, 480])
         raise NavigationError("多次拖动地图后仍未能将目标传送点移入视野。")
 
+    def _candidate_text_changed(self, frame, hit):
+        """Reject static baked map area labels (e.g. 繁星之滨) that existed before clicking."""
+        if self._pre_click_frame is None or frame is None or not hit:
+            return True
+        if self._pre_click_frame.shape != frame.shape:
+            return True
+        bx, by, bw, bh = [int(v) for v in hit]
+        x0 = max(0, bx - 6)
+        y0 = max(0, by - 6)
+        x1 = min(frame.shape[1], bx + bw + 6)
+        y1 = min(frame.shape[0], by + bh + 6)
+        if x1 - x0 < 8 or y1 - y0 < 8:
+            return True
+        before = self._pre_click_frame[y0:y1, x0:x1]
+        after = frame[y0:y1, x0:x1]
+        # A newly opened candidate list row renders a translucent dark banner
+        # over the map terrain; a baked map label at the same pixel position
+        # remains visually identical before and after the click.
+        return self.rt.ui.similarity(before, after) < .96
+
+    def _find_candidate_entry(self, name, *, click=False):
+        """Find a freshly appeared candidate list entry, ignoring static map labels."""
+        panel = self.candidate_panel_roi()
+        fixed_panel = self.fixed_panel_roi()
+        for roi in (panel, fixed_panel) if panel != fixed_panel else (panel,):
+            # Strict white filtering isolates list rows from bright map art, but
+            # semi-transparent row backgrounds can erode thin leading strokes
+            # (e.g. "星实之树" -> "4实之树"). Fall back to raw exact OCR.
+            hit = (self.rt.ui.find(roi=roi, text=name, exact=True,
+                                    color=([0, 0, 220], [180, 15, 255]),
+                                    scroll=False, click=False)
+                   or self.rt.ui.find(roi=roi, text=name, exact=True,
+                                      scroll=False, click=False))
+            if hit and self._candidate_text_changed(self.rt.frame(), hit):
+                if click:
+                    if not self.rt.action("Click", target=hit):
+                        return None
+                return hit
+        return None
+
     def confirm_transport(self, checkpoint):
         button = self.rt.ui.roi("AreaBigMapTeleportButton")
         panel = self.candidate_panel_roi()
@@ -579,19 +620,7 @@ class Teleporter:
             )
         def find_entry(click=False):
             self.check()
-            # Strict white filtering isolates list rows from bright map art, but
-            # semi-transparent row backgrounds can erode thin leading strokes
-            # (e.g. "星实之树" -> "4实之树"). Fall back to raw exact OCR, matching
-            # selection_visible() on the same candidate panel.
-            for roi in (panel, fixed_panel) if panel != fixed_panel else (panel,):
-                hit = (self.rt.ui.find(roi=roi, text=checkpoint["name"], exact=True,
-                                        color=([0, 0, 220], [180, 15, 255]),
-                                        scroll=False, click=click)
-                       or self.rt.ui.find(roi=roi, text=checkpoint["name"], exact=True,
-                                          scroll=False, click=click))
-                if hit:
-                    return hit
-            return None
+            return self._find_candidate_entry(checkpoint["name"], click=click)
         def select_entry():
             clicked = bool(find_entry(click=True))
             self.event({"type": "teleport_list_selected", "name": checkpoint["name"], "clicked": clicked})
@@ -623,6 +652,7 @@ class Teleporter:
         """Prepare the map; an explicit False from its precheck skips transport."""
         self.deadline = time.monotonic()+120
         self.last_clicked_target = None
+        self._pre_click_frame = None
         self.check()
         # Confirm the handed-off page before any recovery that may close it.
         # A short feature miss should wait on this map rather than reopen it.
@@ -643,17 +673,25 @@ class Teleporter:
                             "checkpoint": checkpoint["name"]})
                 return False
         def selection_visible():
-            pattern = f"{re.escape(checkpoint['name'])}|{LOCKED_SPIRE_LABEL}"
+            if normalized(self.rt.ui.text(self.rt.ui.roi("AreaBigMapTeleportButton"))) in ("传送", "追踪"):
+                return True
+            # Never match candidate popup text before clicking a map marker:
+            # baked map area labels (e.g. 繁星之滨) sit inside the widened
+            # fixed panel ROI even before any marker is clicked.
+            if self.last_clicked_target is None:
+                return False
+            if self._find_candidate_entry(checkpoint["name"], click=False):
+                return True
             panel = self.candidate_panel_roi()
             fixed_panel = self.fixed_panel_roi()
-            return (normalized(self.rt.ui.text(self.rt.ui.roi("AreaBigMapTeleportButton")))
-                    in ("传送", "追踪")
-                    or bool(self.rt.text(panel, pattern))
-                    or (panel != fixed_panel and bool(self.rt.text(fixed_panel, pattern))))
+            return bool(self.rt.text(panel, LOCKED_SPIRE_LABEL)
+                        or (panel != fixed_panel and self.rt.text(fixed_panel, LOCKED_SPIRE_LABEL)))
         need_restore = False
         def restore_map():
             nonlocal need_restore
             need_restore = False
+            self.last_clicked_target = None
+            self._pre_click_frame = None
             if not self.rt.main() or not self.rt.ui.open_map(self.event):
                 return False
             self.region(checkpoint)
@@ -671,6 +709,7 @@ class Teleporter:
                 self.event({"type": "checkpoint_center_failed", "name": checkpoint["name"], "reason": str(error)})
                 need_restore = True
                 return False
+            self._pre_click_frame = self.rt.capture()
             self.event({"type": "checkpoint_click", "name": checkpoint["name"], "target": target})
             self.last_clicked_target = list(target)
             return self.rt.action("Click", target=target)
