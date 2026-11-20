@@ -1442,7 +1442,7 @@ class Navigator:
             self._last_wasd_snap_at = -math.inf
 
     def _wasd_steer_plan(self, bearing, pose, remaining, tolerance, *, velocity,
-                         advanced_seconds, brake_lead=.06):
+                         advanced_seconds, brake_lead=.06, extra_cycle=0.0):
         """Synthesize any 360-degree relative bearing from adjacent 45-degree WASD chords."""
         phi = angle_delta(bearing, pose.heading)
         best_idx = min(
@@ -1469,10 +1469,18 @@ class Navigator:
             c45 = math.sqrt(0.5)
             weight = min(0.54, tan_d / (c45 + (1.0 - c45) * tan_d))
             obs_cost = max(0.12, min(0.32, self.read_costs.get("observe", 0.20)))
-            ideal_lead = (weight / max(0.10, 1.0 - weight)) * obs_cost
-            lead_seconds = max(0.03, min(0.28, ideal_lead))
-            if base_duration > 0 and base_duration < lead_seconds + obs_cost:
-                lead_seconds = min(lead_seconds, base_duration * weight)
+            if extra_cycle > 0.0:
+                # Takeoff blocks during align_lead + JUMP_PENDING (~0.48s) before observe();
+                # size lead_seconds to the full cycle so the jump trajectory stays centered on bearing.
+                cycle = obs_cost + extra_cycle
+                lead_seconds = max(0.03, min(0.45, weight * cycle))
+                if base_duration > 0 and base_duration < cycle:
+                    lead_seconds = min(lead_seconds, base_duration * weight)
+            else:
+                ideal_lead = (weight / max(0.10, 1.0 - weight)) * obs_cost
+                lead_seconds = max(0.03, min(0.28, ideal_lead))
+                if base_duration > 0 and base_duration < lead_seconds + obs_cost:
+                    lead_seconds = min(lead_seconds, base_duration * weight)
             if lead_seconds >= 0.025 and (base_duration <= 0 or base_duration > 0.06):
                 lead_keys = adj_keys
                 self._wasd_regime = "blend"
@@ -1502,9 +1510,20 @@ class Navigator:
         base_bearing = math.degrees(math.atan2(target.x - pose.x, pose.y - target.y)) % 360
         bearing = (base_bearing + detour_deg) % 360
         brake_lead = self._air_brake_lead(jumping, velocity, need_stop=need_stop)
+        align_lead = self._pre_jump_align_seconds(bearing, walking, remaining, radius) if jumping else 0.0
+        starting_ground_jump = (
+            jumping
+            and motion.jump_state == "idle"
+            and (walking or not self.walking_reliable or recovery or not self._segment_from_air)
+        )
+        jump_cycle = (
+            align_lead + motion.JUMP_HOLD + motion.JUMP_GAP + motion.FLOAT_PRESS
+            if starting_ground_jump else 0.0
+        )
         phi, base_keys, lead_keys, lead_seconds, duration = self._wasd_steer_plan(
             bearing, pose, remaining, tolerance,
-            velocity=velocity, advanced_seconds=advanced_seconds, brake_lead=brake_lead,
+            velocity=velocity, advanced_seconds=advanced_seconds,
+            brake_lead=brake_lead, extra_cycle=jump_cycle,
         )
         if duration <= 0 and advanced_seconds > 0:
             motion.stop()
@@ -1513,7 +1532,6 @@ class Navigator:
         if recovery:
             min_recovery = .48 if detour_deg == 0.0 else .82
             duration = max(min_recovery, min(.95, duration))
-        align_lead = self._pre_jump_align_seconds(bearing, walking, remaining, radius) if jumping else 0.0
         if align_lead > 0 and duration < align_lead + .06:
             duration = align_lead + .06
         motion.steer(base_keys, duration, lead_keys=lead_keys, lead_seconds=lead_seconds)
