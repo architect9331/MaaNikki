@@ -56,6 +56,9 @@ class WeeklyShop(ShopWorkflow):
     LABEL = "每周免费礼包"
     LIST_ROI = [285, 60, 930, 625]
     SCROLL_ROI = [300, 70, 910, 610]
+    # Keep wheel events well inside the scrollable grid so the bottom-right
+    # return-to-top floating button (~[1159..1236, 583..652]) never swallows them.
+    SCROLL_INPUT_ROI = [300, 120, 720, 400]
     GIFTS = {"虹迹赠礼", "芳馨赠礼", "星实置业之礼"}
 
     def open(self):
@@ -70,7 +73,7 @@ class WeeklyShop(ShopWorkflow):
         x, y, w, h = self.SCROLL_ROI
         image = self.rt.capture()
         for _ in range(12):
-            if image is None or not self.ui.scroll(self.SCROLL_ROI, 1800):
+            if image is None or not self.ui.scroll(self.SCROLL_INPUT_ROI, 1800):
                 return None
             following = self.rt.capture()
             if following is None:
@@ -157,7 +160,7 @@ class WeeklyShop(ShopWorkflow):
             if claimed:
                 image = self.rt.capture()
             else:
-                if not self.ui.scroll(self.SCROLL_ROI, -480):
+                if not self.ui.scroll(self.SCROLL_INPUT_ROI, -480):
                     return False
                 following = self.rt.capture()
                 if following is None:
