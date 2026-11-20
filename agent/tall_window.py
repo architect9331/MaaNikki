@@ -737,6 +737,63 @@ def heal_16_9_window(controller=None, *, hwnd: int | None = None, context=None):
     return None
 
 
+def is_vertically_stretched_tall_frame(frame, reference_16_9=None) -> bool:
+    """Detect a 16:9 swapchain frame stretched vertically into a 1:4 tall capture.
+
+    Some display/driver configurations resize the Win32 window to 1440x5760
+    without recreating the Unreal swapchain at 1:4, causing Windows/DXGI to
+    stretch the existing 16:9 frame ~7.11x vertically. When that happens:
+    1. Squeezing the tall frame back to 1280x720 closely matches the pre-resize
+       16:9 reference while the unstretched top 80 px header no longer matches.
+    2. Even without a reference, 7.11x vertical smearing suppresses vertical
+       gradient energy so mean(|dx|) / mean(|dy|) in the top 720 px jumps to
+       ~3.8-4.3 (vs ~0.89-1.32 on genuine 1:1 tall captures).
+    """
+    if frame is None or getattr(frame, "ndim", 0) < 2:
+        return False
+    h, w = int(frame.shape[0]), int(frame.shape[1])
+    if h <= w * 2 or w < 320:
+        return False
+    import cv2
+    import numpy as np
+
+    if (
+        reference_16_9 is not None
+        and getattr(reference_16_9, "ndim", 0) >= 2
+        and reference_16_9.shape[:2] == (BASE_CAPTURE_HEIGHT, BASE_CAPTURE_WIDTH)
+    ):
+        ref_gray = cv2.cvtColor(reference_16_9, cv2.COLOR_BGR2GRAY)
+        ref_small = cv2.resize(ref_gray, (320, 180), interpolation=cv2.INTER_AREA)
+        sq_small = cv2.resize(
+            cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (320, 180), interpolation=cv2.INTER_AREA
+        )
+        if float(ref_small.std()) > 5.0 and float(sq_small.std()) > 5.0:
+            sq_corr = float(cv2.matchTemplate(ref_small, sq_small, cv2.TM_CCOEFF_NORMED)[0, 0])
+            ref_top = cv2.resize(ref_gray[:80, :], (320, 20), interpolation=cv2.INTER_AREA)
+            frm_top = cv2.resize(
+                cv2.cvtColor(frame[:80, :], cv2.COLOR_BGR2GRAY), (320, 20), interpolation=cv2.INTER_AREA
+            )
+            top_corr = (
+                float(cv2.matchTemplate(ref_top, frm_top, cv2.TM_CCOEFF_NORMED)[0, 0])
+                if float(ref_top.std()) > 3.0 and float(frm_top.std()) > 3.0
+                else 0.0
+            )
+            if sq_corr >= 0.72 and top_corr < 0.45:
+                return True
+
+    full_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    top_gray = full_gray[: min(h, BASE_CAPTURE_HEIGHT), :]
+    dx_top = float(np.abs(np.diff(top_gray, axis=1)).mean())
+    dy_top = float(np.abs(np.diff(top_gray, axis=0)).mean())
+    dx_full = float(np.abs(np.diff(full_gray, axis=1)).mean())
+    dy_full = float(np.abs(np.diff(full_gray, axis=0)).mean())
+    return (
+        dx_full >= 1.5
+        and (dx_top / max(dy_top, 1e-6)) >= 2.4
+        and (dx_full / max(dy_full, 1e-6)) >= 2.4
+    )
+
+
 def _apply_borderless_resolution(
     u32,
     hwnd: int,
@@ -751,6 +808,7 @@ def _apply_borderless_resolution(
     require_unclipped: bool = True,
     allow_solid_frame: bool = False,
     allow_unminimize: bool = True,
+    reference_16_9=None,
 ):
     """Switch hwnd to a borderless target physical size and verify MaaFramework capture size."""
     target_w, target_h = int(target_physical_size[0]), int(target_physical_size[1])
@@ -869,6 +927,7 @@ def _apply_borderless_resolution(
     settled_streak = 0
     solid_streak = 0
     clamped_streak = 0
+    stretched_streak = 0
     csize_mismatch_streak = 0
     off_shape = None
     off_streak = 0
@@ -893,6 +952,7 @@ def _apply_borderless_resolution(
             settled_streak = 0
             solid_streak = 0
             clamped_streak = 0
+            stretched_streak = 0
             off_shape = None
             off_streak = 0
             csize_mismatch_streak += 1
@@ -913,11 +973,19 @@ def _apply_borderless_resolution(
                     and float(bottom_band.std()) > 3.0
                 ):
                     clamped_streak = 0
-                    settled_streak += 1
-                    if settled_streak >= 2:
-                        return True, frame, window_modified
+                    if is_vertically_stretched_tall_frame(frame, reference_16_9):
+                        settled_streak = 0
+                        stretched_streak += 1
+                        if stretched_streak >= 6:
+                            break
+                    else:
+                        stretched_streak = 0
+                        settled_streak += 1
+                        if settled_streak >= 2:
+                            return True, frame, window_modified
                 else:
                     settled_streak = 0
+                    stretched_streak = 0
                     if (
                         float(top_band.mean()) > 8.0
                         and float(bottom_band.mean()) < 1.0
@@ -945,6 +1013,7 @@ def _apply_borderless_resolution(
             settled_streak = 0
             solid_streak = 0
             clamped_streak = 0
+            stretched_streak = 0
             shape_now = frame.shape[:2]
             is_small_delta = (
                 (shape_now[1] == cap_w and 1 <= abs(shape_now[0] - cap_h) <= 2)
@@ -1402,6 +1471,11 @@ def temporary_window_resize(
 
     atexit.register(_restore_win32)
     try:
+        reference_16_9 = None
+        if target_capture_size[1] > target_capture_size[0] * 2 and rt.controller is not None:
+            cand_ref = _poll_capture(rt.controller, lambda: bool(rt.stopped))
+            if cand_ref is not None and cand_ref.shape[:2] == (BASE_CAPTURE_HEIGHT, BASE_CAPTURE_WIDTH):
+                reference_16_9 = cand_ref
         ok, _, window_modified = _apply_borderless_resolution(
             u32,
             hwnd,
@@ -1414,6 +1488,7 @@ def temporary_window_resize(
             stopped_fn=lambda: bool(rt.stopped),
             require_unclipped=require_unclipped,
             allow_solid_frame=allow_solid_frame,
+            reference_16_9=reference_16_9,
         )
         rt.invalidate_frame()
         if hasattr(rt, "set_capture_size"):

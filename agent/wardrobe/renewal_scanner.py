@@ -212,34 +212,48 @@ class RejuvenateModel:
         if len(glow_rows) < 6:
             return None, None, -1.0
 
-        # Pick the strongest contiguous warm highlight block.
+        # Evaluate contiguous warm highlight blocks, preferring icon-sized bands
+        # so a large warm background region below the rail in tall mode cannot
+        # shadow the real selected left-rail slot.
         breaks = np.where(np.diff(glow_rows) > 8)[0]
-        segments = np.split(glow_rows, breaks + 1)
-        best_seg = max(segments, key=len)
-        yc = int(round(float(np.median(best_seg))))
+        segments = [seg for seg in np.split(glow_rows, breaks + 1) if len(seg) >= 6]
+        if not segments:
+            return None, None, -1.0
+        segments.sort(key=lambda seg: (len(seg) > 120, -len(seg)))
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
-        best_by_cid: dict[str, float] = {}
-        for y0 in range(max(0, yc - 38), min(h - RAIL_SIZE, yc - 20), 2):
-            for x0 in range(max(0, RAIL_X0 - 2), min(w - RAIL_SIZE, RAIL_X0 + 3)):
-                patch = gray[y0:y0 + RAIL_SIZE, x0:x0 + RAIL_SIZE]
-                p = patch - float(patch.mean())
-                denom = float(np.sqrt((p ** 2).sum()))
-                if denom < 1e-6:
-                    continue
-                pn = p / denom
-                for cid, tmpl in self.templates:
-                    sc = float((pn * tmpl).sum())
-                    if sc > best_by_cid.get(cid, -1.0):
-                        best_by_cid[cid] = sc
-        if not best_by_cid:
-            return None, yc, -1.0
-        ranked = sorted(best_by_cid.items(), key=lambda kv: -kv[1])
-        top1_id, top1_sc = ranked[0]
-        top2_sc = ranked[1][1] if len(ranked) > 1 else -1.0
-        if top1_sc < 0.62 or (top1_sc - top2_sc) < 0.06:
-            return None, yc, top1_sc
-        return top1_id, yc, top1_sc
+        best_match: tuple[str, int, float] | None = None
+        fallback_yc = int(round(float(np.median(segments[0]))))
+        fallback_sc = -1.0
+        for seg in segments[:6]:
+            yc = int(round(float(np.median(seg))))
+            best_by_cid: dict[str, float] = {}
+            for y0 in range(max(0, yc - 38), min(h - RAIL_SIZE, yc - 20), 2):
+                for x0 in range(max(0, RAIL_X0 - 2), min(w - RAIL_SIZE, RAIL_X0 + 3)):
+                    patch = gray[y0:y0 + RAIL_SIZE, x0:x0 + RAIL_SIZE]
+                    p = patch - float(patch.mean())
+                    denom = float(np.sqrt((p ** 2).sum()))
+                    if denom < 1e-6:
+                        continue
+                    pn = p / denom
+                    for cid, tmpl in self.templates:
+                        sc = float((pn * tmpl).sum())
+                        if sc > best_by_cid.get(cid, -1.0):
+                            best_by_cid[cid] = sc
+            if not best_by_cid:
+                continue
+            ranked = sorted(best_by_cid.items(), key=lambda kv: -kv[1])
+            top1_id, top1_sc = ranked[0]
+            top2_sc = ranked[1][1] if len(ranked) > 1 else -1.0
+            if top1_sc > fallback_sc:
+                fallback_sc = top1_sc
+                fallback_yc = yc
+            if top1_sc >= 0.62 and (top1_sc - top2_sc) >= 0.06:
+                if best_match is None or top1_sc > best_match[2]:
+                    best_match = (top1_id, yc, top1_sc)
+        if best_match is not None:
+            return best_match
+        return None, fallback_yc, fallback_sc
 
 
 @lru_cache(maxsize=2)
@@ -1219,12 +1233,12 @@ class RenewalScanner:
         return added, bool(base["complete"])
 
     def save(self, reason: str | None = None) -> None:
+        if reason is not None:
+            self.summary["reason"] = reason
         if not self.scanned_levels and not self.summary["parts"] and not self.summary.get("complete"):
             return
         now = datetime.now(timezone.utc).isoformat()
         self.summary["updated_at"] = now
-        if reason is not None:
-            self.summary["reason"] = reason
 
         added_total = [0]
 
