@@ -364,7 +364,6 @@ class Navigator:
         self._middle_consecutive_failures = 0
         self._middle_disabled_until = -math.inf
         self._last_wasd_snap_at = -math.inf
-        self._jump_snap_index: int | None = None
         self._cursor_released = False
 
     @property
@@ -749,159 +748,6 @@ class Navigator:
     def _nearest_wasd_sector(cls, delta: float):
         """Pick the closest 45-degree WASD chord for relative bearing `delta`."""
         return min(cls._WASD_SECTORS, key=lambda item: abs(angle_delta(delta, item[0])))
-
-    @classmethod
-    def _wasd_sector_error(cls, bearing: float, heading: float):
-        """Return (phi, sector_deg, chord, abs_err) relative to the nearest 45-degree WASD chord."""
-        phi = angle_delta(bearing, heading)
-        sector_deg, chord = cls._nearest_wasd_sector(phi)
-        return phi, sector_deg, chord, abs(angle_delta(phi, sector_deg))
-
-    def _align_wasd_jump_camera(self, jump_bearing: float, pose, deadline: float, *,
-                                index_for_log: int | None = None, settle_motion: bool = False):
-        """Best-effort ground camera align so a long WASD jump flies on a pure 45-degree chord.
-
-        Rotating the camera by at most 22.5 degrees places `jump_bearing` directly onto one of
-        the 8 pure WASD chords, avoiding the ~8-11% cosine and airborne key-switching speed loss
-        of PWM direction blending without moving more than a few centimeters on the ground.
-        """
-        if not self.use_wasd_steering or not self._can_middle_align() or pose.heading is None:
-            return pose
-        _, _, _, initial_err = self._wasd_sector_error(jump_bearing, pose.heading)
-        if initial_err <= 5.0:
-            return pose
-        had_motion = bool(self.motion is not None and (self.motion.until or self.motion.steer_keys))
-        recently_moving = settle_motion or had_motion or (time.monotonic() - self._last_move_at < 0.40)
-        if self.motion is not None:
-            self.motion.stop()
-        else:
-            self.inputs.release()
-        generation = _pause_generation(self.inputs)
-        if recently_moving:
-            if self.pause(0.25) is False:
-                raise NavigationError("已停止导航。")
-            pose = self.observe((pose.x, pose.y))
-            if _pause_generation(self.inputs) != generation:
-                raise SceneUnavailable("游戏窗口状态已变化，重新确认位置和方向。")
-            if pose.heading is None:
-                return pose
-        anchor = (pose.x, pose.y)
-        before_heading = pose.heading
-        arrow = self.locator.heading_diagnostics.get("player_arrow", {}).get("heading")
-        if arrow is not None:
-            known_actor_yaw = float(arrow)
-        elif self._last_move_bearing is not None and time.monotonic() - self._last_move_at <= 2.5:
-            known_actor_yaw = float(self._last_move_bearing)
-        else:
-            known_actor_yaw = None
-
-        def press_and_confirm(cur_pose):
-            fg = getattr(self.inputs, "foreground", None)
-            before_fg = bool(callable(fg) and fg())
-            after = cur_pose
-            for attempt in range(2):
-                use_cursor = bool(self._middle_cursor_pos)
-                clicked = self._press_middle_align(with_cursor_pos=use_cursor)
-                if not clicked:
-                    if attempt == 0 and not before_fg and not use_cursor:
-                        self._middle_cursor_pos = True
-                        continue
-                    self._middle_consecutive_failures += 1
-                    if self._middle_consecutive_failures >= 2:
-                        self._middle_disabled_until = time.monotonic() + 20.0
-                    return after, 0.0, False
-                self.heading_state.pending = False
-                self.heading_turn_at = time.monotonic()
-                self.heading_turn_input = self.motion.forward_elapsed() if self.motion else 0.0
-                if self.pause(0.18) is False:
-                    raise NavigationError("已停止导航。")
-                try:
-                    after = self.stable_heading(cur_pose, deadline=min(deadline, time.monotonic() + 1.5))
-                except HeadingUncertain:
-                    return cur_pose, 0.0, False
-                if _pause_generation(self.inputs) != generation:
-                    raise SceneUnavailable("游戏窗口状态已变化，重新确认位置和方向。")
-                rot = angle_delta(after.heading, cur_pose.heading)
-                if abs(rot) >= 2.5:
-                    self._middle_consecutive_failures = 0
-                    self.heading_ref_at = self.pose_at
-                    self.heading_turn_at = self.pose_at
-                    self.heading_turn_input = self.motion.forward_elapsed() if self.motion else 0.0
-                    if self.overlay:
-                        self.overlay.notify_camera_turn(rot)
-                    return after, rot, True
-                if attempt == 0 and not before_fg and not use_cursor:
-                    self._middle_cursor_pos = True
-                    continue
-                return after, rot, False
-            return after, 0.0, False
-
-        snaps = 0
-        micro_gain = 1.0
-        did_zero_sync = False
-        for _ in range(3):
-            if pose.heading is None or time.monotonic() >= deadline or not self._can_middle_align():
-                break
-            _, _, _, err = self._wasd_sector_error(jump_bearing, pose.heading)
-            if err <= 3.2:
-                break
-            if math.hypot(pose.x - anchor[0], pose.y - anchor[1]) > 0.8:
-                break
-            if known_actor_yaw is None and not did_zero_sync:
-                did_zero_sync = True
-                after, _, ok = press_and_confirm(pose)
-                pose = after
-                if pose.heading is None:
-                    break
-                known_actor_yaw = pose.heading
-                if ok:
-                    snaps += 1
-                continue
-            target_cam = min(
-                ((jump_bearing + 45.0 * k) % 360.0 for k in range(8)),
-                key=lambda angle: abs(angle_delta(angle, known_actor_yaw)),
-            )
-            delta = angle_delta(target_cam, known_actor_yaw)
-            if abs(delta) <= 3.0:
-                after, _, ok = press_and_confirm(pose)
-                pose = after
-                if ok:
-                    snaps += 1
-                    known_actor_yaw = pose.heading
-                break
-            nudge_world = (known_actor_yaw + (45.0 if delta > 0 else -45.0)) % 360.0
-            _, chord = self._nearest_wasd_sector(angle_delta(nudge_world, pose.heading))
-            pulse = max(0.022, min(0.058, abs(delta) / 500.0 * micro_gain))
-            self._hold_wasd_chord(chord, pulse)
-            if _pause_generation(self.inputs) != generation:
-                raise SceneUnavailable("游戏窗口状态已变化，重新确认位置和方向。")
-            after, _, ok = press_and_confirm(pose)
-            pose = after
-            if not ok:
-                self._middle_consecutive_failures += 1
-                if self._middle_consecutive_failures >= 2:
-                    self._middle_disabled_until = time.monotonic() + 20.0
-                break
-            snaps += 1
-            known_actor_yaw = pose.heading
-            micro_gain = 0.65
-
-        after_err = (
-            self._wasd_sector_error(jump_bearing, pose.heading)[3]
-            if pose.heading is not None else None
-        )
-        self.event({
-            "type": "wasd_jump_camera_align",
-            "index": self.current_index if index_for_log is None else index_for_log,
-            "jump_bearing": round(jump_bearing, 1),
-            "before_heading": round(before_heading, 1),
-            "after_heading": round(pose.heading, 1) if pose.heading is not None else None,
-            "before_sector_err": round(initial_err, 1),
-            "after_sector_err": round(after_err, 1) if after_err is not None else None,
-            "snaps": snaps,
-            "displacement": round(math.hypot(pose.x - anchor[0], pose.y - anchor[1]), 3),
-        })
-        return pose
 
     def _hold_wasd_chord(self, chord, seconds: float):
         """Hold a 1- or 2-key WASD direction chord cleanly and release all movement keys afterward."""
@@ -1784,7 +1630,6 @@ class Navigator:
                     "heading_tolerance_near": spec.heading_tolerance_near,
                     "heading_position_slack": spec.heading_position_slack})
         self._wasd_reset_state()
-        self._jump_snap_index = None
         self._cursor_released = False
         pose = self.observe((origin.x, origin.y))
         motion = Motion(self.inputs, self.event)
@@ -1825,7 +1670,6 @@ class Navigator:
                 if current_generation != generation:
                     generation = current_generation
                     self._wasd_reset_state()
-                    self._jump_snap_index = None
                     self._cursor_released = False
                     self.locator.reset()
                     pose = self.observe((last_good.x, last_good.y))
@@ -1869,7 +1713,6 @@ class Navigator:
                     last_good = stuck_anchor = pose
                     stuck_since, detour_hold_until = time.monotonic(), 0.0
                     self._wasd_reset_state()
-                    self._jump_snap_index = None
                     best_distance = distance(pose, rejoin or route.points[index])
                     scene_interrupted, last = False, None
                     self._segment_from_air = False
@@ -1891,7 +1734,6 @@ class Navigator:
                         last_good = pose
                         stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         self._wasd_reset_state()
-                        self._jump_snap_index = None
                         self._cursor_released = False
                         self._segment_from_air = False
                         motion.float_canceled_at = 0.0
@@ -2036,7 +1878,6 @@ class Navigator:
                                             "destination": replacement.id, "index": index})
                                 route = replacement
                                 self.active_route = route
-                                self._jump_snap_index = None
                     elif index+1 < len(route.points):
                         next_point = route.points[index+1]
                         next_bearing = math.degrees(math.atan2(next_point.x-pose.x, pose.y-next_point.y)) % 360
@@ -2092,43 +1933,11 @@ class Navigator:
                         stuck_anchor, stuck_since, detour_hold_until = pose, time.monotonic(), 0.0
                         self._wasd_reset_state(
                             reset_snap_cooldown=False,
-                            preserve_move_bearing=aligned_runup,
+                            preserve_move_bearing=not target.action,
                         )
                         blocked_steps, unstuck_attempts = 0, 0
                         best_distance = distance(pose, route.points[index])
                         map_checked = False
-                        # Pre-align camera safely inland before a ground runway leading into a long
-                        # WASD jump so the runway and takeoff run at 100% pure single-chord speed.
-                        if (
-                            self.use_wasd_steering
-                            and self._can_middle_align()
-                            and pose.heading is not None
-                            and index + 1 < len(route.points)
-                            and not route.points[index].jump
-                            and not route.points[index].action
-                            and route.points[index + 1].jump
-                            and distance(route.points[index], route.points[index + 1]) >= 6.0
-                            and self._jump_snap_index != index + 1
-                        ):
-                            jump_start = route.points[index]
-                            jump_end = route.points[index + 1]
-                            jump_brg = math.degrees(
-                                math.atan2(jump_end.x - jump_start.x, jump_start.y - jump_end.y)
-                            ) % 360
-                            if self._wasd_sector_error(jump_brg, pose.heading)[3] > 5.0:
-                                self._jump_snap_index = index + 1
-                                try:
-                                    pose = self._align_wasd_jump_camera(
-                                        jump_brg, pose, deadline,
-                                        index_for_log=index + 1,
-                                        settle_motion=not target.action,
-                                    )
-                                except SceneUnavailable:
-                                    scene_interrupted = True
-                                else:
-                                    last_good = stuck_anchor = pose
-                                    stuck_since = time.monotonic()
-                                    best_distance = distance(pose, route.points[index])
                     last = None
                     continue
                 if target.jump and motion.jump_state == "idle" and motion.float_canceled_at > 0 and not self._float_landed(.80):
@@ -2219,41 +2028,9 @@ class Navigator:
                             "pose": [round(pose.x, 3), round(pose.y, 3)],
                         })
                 if self.use_wasd_steering:
-                    # Stationary pre-jump camera align (e.g. after a wait/corner) so long
-                    # WASD jumps fly on a pure 45-degree chord instead of PWM blending.
-                    if (
-                        target.jump
-                        and not recovery
-                        and motion.jump_state == "idle"
-                        and not motion.until
-                        and remaining_distance >= 6.0
-                        and pose.heading is not None
-                        and self._can_middle_align()
-                        and self._jump_snap_index != index
-                    ):
-                        self._jump_snap_index = index
-                        if self._wasd_sector_error(bearing, pose.heading)[3] > 5.0:
-                            align_began = time.monotonic()
-                            try:
-                                pose = self._align_wasd_jump_camera(
-                                    bearing, pose, deadline, index_for_log=index
-                                )
-                            except SceneUnavailable:
-                                scene_interrupted = True
-                                last = None
-                                continue
-                            stuck_since += max(0.0, time.monotonic() - align_began)
-                            if pose.heading is None or _pause_generation(self.inputs) != generation:
-                                last = None
-                                continue
-                            remaining_distance = distance(pose, target)
-                            base_bearing = math.degrees(
-                                math.atan2(target.x - pose.x, pose.y - target.y)
-                            ) % 360
-                            bearing = (base_bearing + detour_deg) % 360
-                            tolerance = self.travel_tolerance(remaining_distance, radius)
                     heading_rechecks = 0
                     before_move = pose
+                    pose_input_before = self.pose_input
                     forward_before = motion.forward_elapsed()
                     step_began = time.monotonic()
                     try:
@@ -2277,7 +2054,7 @@ class Navigator:
                     except SceneUnavailable:
                         scene_interrupted = True
                         continue
-                    move_input = max(0.0, motion.forward_elapsed() - forward_before)
+                    move_input = max(0.0, self.pose_input - pose_input_before)
                     move_disp = distance(before_move, pose)
                     move_speed = move_disp / move_input if move_input > 0 else 0.0
                     if pose.heading is not None and pose.position_reliable and move_input >= .08:
@@ -2360,13 +2137,13 @@ class Navigator:
                         continue
                 heading_rechecks = 0
                 before_move = pose
-                forward_before = motion.forward_elapsed()
+                pose_input_before = self.pose_input
                 pose, recovery_done = self.advance(
                     pose, target, radius, speeds, recovery=recovery,
                     detour_deg=detour_deg, need_stop=need_stop,
                     brake_lead_override=0.0 if runup_to_jump else None,
                 )
-                move_input = max(0.0, motion.forward_elapsed()-forward_before)
+                move_input = max(0.0, self.pose_input - pose_input_before)
                 move_disp = distance(before_move, pose)
                 move_speed = move_disp/move_input if move_input > 0 else 0.0
                 if (pose.heading is not None and pose.position_reliable
