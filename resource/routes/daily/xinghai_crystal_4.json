@@ -21,20 +21,16 @@
       "jump": false
     },
     {
-      "x": 1027.8,
-      "y": 700.65,
+      "x": 1028.0,
+      "y": 699.6,
       "radius": 1.15,
       "jump": false
     },
     {
-      "x": 1030.1,
-      "y": 701.3,
+      "x": 1032.2,
+      "y": 703.3,
       "radius": 1.15,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 1.0
-      }
+      "jump": false
     },
     {
       "x": 1044.2,
@@ -43,64 +39,68 @@
       "jump": true
     },
     {
-      "x": 1049.25,
-      "y": 719.5,
+      "x": 1049.0,
+      "y": 719.2,
       "radius": 1.2,
       "jump": false,
       "action": "wait",
       "params": {
-        "seconds": 1.1
+        "seconds": 0.7
       }
     },
     {
-      "x": 1059.65,
-      "y": 726.4,
-      "radius": 1.25,
-      "jump": true
-    },
-    {
-      "x": 1061.9,
-      "y": 728.4,
-      "radius": 1.25,
+      "x": 1051.0,
+      "y": 720.6,
+      "radius": 1.0,
       "jump": false
     },
     {
-      "x": 1063.5,
-      "y": 727.5,
-      "radius": 1.2,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 0.9
-      }
-    },
-    {
-      "x": 1074.9,
-      "y": 713.25,
+      "x": 1060.2,
+      "y": 726.8,
       "radius": 1.25,
       "jump": true
     },
     {
-      "x": 1078.8,
-      "y": 709.8,
+      "x": 1061.6,
+      "y": 729.4,
       "radius": 1.15,
-      "jump": false,
-      "action": "wait",
-      "params": {
-        "seconds": 0.8
-      }
+      "jump": false
     },
     {
-      "x": 1092.0,
+      "x": 1064.5,
+      "y": 726.5,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1075.0,
+      "y": 715.5,
+      "radius": 1.25,
+      "jump": true
+    },
+    {
+      "x": 1074.8,
+      "y": 712.4,
+      "radius": 1.15,
+      "jump": false
+    },
+    {
+      "x": 1078.8,
+      "y": 710.4,
+      "radius": 1.0,
+      "jump": false
+    },
+    {
+      "x": 1092.2,
       "y": 703.5,
-      "radius": 1.45,
+      "radius": 1.2,
       "jump": true
     },
     {
       "x": 1095.5,
       "y": 702.0,
       "radius": 1.25,
-      "jump": false
+      "jump": true
     },
     {
       "x": 1100.2,
