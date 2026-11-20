@@ -105,7 +105,22 @@ def camera_heading(reference, map_image, spec, x, y, *, terrain=None):
         # Keep the seam between recorded and live brightness out of derivatives.
         gradient_valid |= cv2.erode(fill.astype(np.uint8), kernel)
         live_pixels = int(fill.sum())
-    cone = np.clip((255-aligned.astype(float))/(255-observed.astype(float)+.1)*64, 0, 255).astype(np.uint8)
+    ratio = (255.0 - aligned.astype(np.float32)) / (255.0 - observed.astype(np.float32) + 0.1)
+    # Nighttime, dark-water, or multi-layer minimap shading can darken observed
+    # terrain relative to the reference map, scaling non-cone ratios below 1.0
+    # and attenuating cone-edge Scharr gradients. Because the 90-degree view
+    # cone covers only 25% of the circle, the 40th percentile across the valid
+    # evaluation annulus (0.2R..0.7R) tracks the non-cone background ratio.
+    obs_h, obs_w = observed.shape
+    obs_yy, obs_xx = np.indices((obs_h, obs_w), dtype=np.float32)
+    obs_r = np.hypot(obs_xx - obs_w / 2.0, obs_yy - obs_h / 2.0)
+    annulus = valid & (obs_r >= 20.0) & (obs_r <= 72.0)
+    bg_gain = 1.0
+    if int(annulus.sum()) >= 400:
+        base_ratio = float(np.percentile(ratio[annulus], 40))
+        if 0.35 <= base_ratio < 0.92:
+            bg_gain = min(2.0, 1.0 / base_ratio)
+    cone = np.clip(ratio * (64.0 * bg_gain), 0, 255).astype(np.uint8)
     cone[~valid] = 64
     cone = cv2.GaussianBlur(cone, (3, 3), 0)
     d = 204
@@ -207,7 +222,7 @@ def camera_heading(reference, map_image, spec, x, y, *, terrain=None):
     confidence = (1-float(accepted[1]["strength"])/accepted[0]["strength"]
                   if len(accepted) > 1 else 1.0 if accepted else 0.0)
     diagnostics = {"method": "cone_boundaries", "heading": heading, "confidence": confidence,
-                   "live_background_pixels": live_pixels,
+                   "live_background_pixels": live_pixels, "bg_gain": round(bg_gain, 3),
                    "edge_support": best["edge_support"] if best else [0, 0],
                    "edges_supported": bool(accepted), "candidates": candidates[:6],
                    "selected": best, "coverage_floor": coverage_floor}

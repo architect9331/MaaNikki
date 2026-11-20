@@ -333,21 +333,21 @@ class Locator:
                             if edge is not None else float("inf")
                         )
                         known_fraction = coverage(local, patch.shape, cone_mask, (cx+.5, cy+.5))
-                        # Dense checkpoint/building icons or translucent colored
-                        # quest-zone circles (which compound with the camera cone
-                        # tint) can cap full-ring normalized luma scores around
+                        # Dense checkpoint/building icons, multi-layer floor shading,
+                        # or translucent colored quest-zone circles (which compound
+                        # with the camera cone tint) can cap normalized scores around
                         # 0.35-0.54 even at the true sub-pixel pose; accept when
-                        # luma, Sobel terrain edges, and outside-cone all peak
-                        # within 1.5 px with sharp local prominence.
+                        # luma, terrain edges, and outside-cone all peak within
+                        # 1.5 px with sharp local prominence.
                         triple_consensus = (
                             agreement <= 1.5
                             and edge_agreement <= 1.5
-                            and score >= max(.48, match_floor-.07)
+                            and score >= max(.45, match_floor-.10)
                             and peak >= .05
                             and initial[2] >= .35
-                            and initial[3] >= .05
+                            and initial[3] >= .045
                             and edge is not None
-                            and edge[2] >= .45
+                            and edge[2] >= .40
                             and edge[3] >= .06
                         )
                         accepted = (
