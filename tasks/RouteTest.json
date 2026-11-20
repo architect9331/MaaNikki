@@ -13,7 +13,7 @@
     "RouteTestFile": {
       "type": "input",
       "label": "路线文件",
-      "description": "单条路线位于 resource/routes/daily/；星海合集为 resource/routes/collections/starsea_all.json。记录保存到 logs/navigation/。",
+      "description": "单条路线位于 resource/routes/daily/；星海合集位于 resource/routes/collections/（如 starsea_crystals.json、starsea_all.json）。记录保存到 logs/navigation/。",
       "inputs": [{"name": "file", "label": "路线 JSON", "default": "", "input_type": "file"}],
       "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"route": "", "file": "{file}"}}}
     },
@@ -28,6 +28,12 @@
           "description": "执行移动、跳跃、传送和等待，跳过采集、拍照等任务动作。",
           "option": ["RouteTestFile"],
           "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"mode": "movement"}}}
+        },
+        {
+          "name": "starsea_crystals",
+          "label": "星海结晶全路线（1–8）",
+          "description": "按顺序自动传送并逐条测试星海全部 8 条星光结晶路线，单条中断后自动恢复并继续后续路线。",
+          "pipeline_override": {"MaaNikki_RouteTest": {"custom_action_param": {"mode": "movement", "route": "", "file": "resource/routes/collections/starsea_crystals.json"}}}
         },
         {
           "name": "map_compare",

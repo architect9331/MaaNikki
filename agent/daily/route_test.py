@@ -110,6 +110,7 @@ def read_test_document(resource: Path, settings: dict):
         if not path.is_file() and path.suffix.lower() == ".json":
             for candidate in (
                 ROOT / "config/routes" / path.name,
+                resource / "routes/collections" / path.name,
                 resource / "routes/gingerbread" / path.name,
                 resource / "routes/daily" / path.name,
             ):
@@ -120,6 +121,8 @@ def read_test_document(resource: Path, settings: dict):
         if not isinstance(name, str) or not re.fullmatch(r"[a-zA-Z0-9_-]+", name):
             raise NavigationError("请先选择要运行的路线。")
         path = resource / "routes" / "daily" / (name+".json")
+        if not path.is_file():
+            path = resource / "routes" / "collections" / (name+".json")
         if not path.is_file():
             path = resource / "routes" / "gingerbread" / (name+".json")
         if not path.is_file():

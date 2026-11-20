@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "route_collection",
+  "id": "starsea_crystals",
+  "title": "星海星光结晶合集",
+  "map": "starsea",
+  "continue_on_failure": true,
+  "routes": [
+    {"route": "xinghai_crystal_1", "title": "结晶路线 1"},
+    {"route": "xinghai_crystal_2", "title": "结晶路线 2"},
+    {"route": "xinghai_crystal_3", "title": "结晶路线 3"},
+    {"route": "xinghai_crystal_4", "title": "结晶路线 4"},
+    {"route": "xinghai_crystal_5", "title": "结晶路线 5"},
+    {"route": "xinghai_crystal_6", "title": "结晶路线 6"},
+    {"route": "xinghai_crystal_7", "title": "结晶路线 7"},
+    {"route": "xinghai_crystal_8", "title": "结晶路线 8"}
+  ]
+}
