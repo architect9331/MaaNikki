@@ -63,6 +63,9 @@ COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[str, float, float], ...] = (
     ("right", 1.86, 2.80),
 )
 MAX_CONSECUTIVE_FAILURES = 6
+MAX_CONSECUTIVE_OVERWORLD_RETURNS = 3
+AT_NPC_VERIFY_RADIUS_PX = 15.0
+AT_NPC_VERIFY_MIN_SCORE = 0.45
 
 _CAP_RE = re.compile(r"已达.*上限|今日.*上限|获取上限|达到上限|无法获得更多")
 _NO_BLING_RE = re.compile(r"噗灵不足|余额不足")
@@ -115,22 +118,45 @@ REPLAY_SEQUENCE: tuple[tuple[str, float] | float, ...] = (
 class MinigameBlingRun(Runtime):
     """Executes the Shuttle Adventure laser-gate mini-game loop until target rounds or daily cap."""
 
-    def _already_near_npc(self, max_radius_px: float = NEAR_NPC_RADIUS_PX) -> bool:
+    def _already_near_npc(
+        self,
+        max_radius_px: float = NEAR_NPC_RADIUS_PX,
+        *,
+        min_score: float = 0.52,
+        frame=None,
+    ) -> bool:
         try:
             spec = maps(RESOURCE).get("miraland")
-            if spec is None or not self.hit("MaaNikki_MainDetected"):
+            if spec is None:
                 return False
-            frame = self.capture()
             if frame is None:
+                if not self.hit("MaaNikki_MainDetected"):
+                    return False
+                frame = self.capture()
+                if frame is None:
+                    return False
+            elif not self.hit("MaaNikki_MainDetected", image=frame):
                 return False
             locator = Locator(spec)
-            pose = locator.locate(frame, hint=(NPC_X, NPC_Y), search_radius=45.0)
-            if pose and pose.position and pose.position_score >= 0.52:
-                px, py = pose.position
-                if math.hypot(px - NPC_X, py - NPC_Y) <= max_radius_px:
+            pose = locator.locate(frame, hint=(NPC_X, NPC_Y), search_radius=45.0, commit=False)
+            if pose and pose.position_reliable and pose.score >= min_score:
+                if math.hypot(pose.x - NPC_X, pose.y - NPC_Y) <= max_radius_px:
                     return True
         except Exception:
             return False
+        return False
+
+    def _verify_near_npc(self, *, attempts: int = 2) -> bool:
+        for attempt in range(attempts):
+            if self.stopped:
+                return False
+            if self._already_near_npc(
+                max_radius_px=AT_NPC_VERIFY_RADIUS_PX,
+                min_score=AT_NPC_VERIFY_MIN_SCORE,
+            ):
+                return True
+            if attempt + 1 < attempts and not self.pause(0.25):
+                return False
         return False
 
     def _can_interact_with_npc(self) -> bool:
@@ -903,16 +929,24 @@ class MinigameBlingRun(Runtime):
                     return {"action": "stop", "success": False}
 
         need_route = False
-        if navigate and retry_started_at is None:
+        if retry_started_at is None:
             if not self.main():
                 if not (self._dismiss_npc_dialogue(inputs) and self.main()):
                     stats["stop_reason"] = "main_unavailable"
-                    self.log("未能确认大世界主界面，无法前往小游戏 NPC。")
+                    self.log("未能确认大世界主界面，无法开始小游戏。")
                     return {"action": "stop", "success": False}
-            if self._already_near_npc():
-                self.log("检测到已位于「穿梭大冒险」NPC 附近，直接开始挑战。")
-            else:
-                need_route = True
+            if navigate:
+                if self._already_near_npc():
+                    self.log("检测到已位于「穿梭大冒险」NPC 附近，直接开始挑战。")
+                else:
+                    need_route = True
+            elif not self._verify_near_npc():
+                stats["stop_reason"] = "not_near_npc"
+                self.log(
+                    "未检测到角色位于花愿镇「穿梭大冒险」NPC 附近，已停止任务；"
+                    "请将「起点方式」改为自动传送并前往 NPC，或手动到达 NPC 旁后再试。"
+                )
+                return {"action": "stop", "success": False}
 
         return {
             "action": "continue",
@@ -959,6 +993,7 @@ class MinigameBlingRun(Runtime):
         started_at: float,
     ) -> bool:
         consecutive_failures = 0
+        consecutive_overworld_returns = 0
         assist_label = "已开启视角水平辅助" if camera_assist else "已关闭视角水平辅助"
         self.log(
             f"开始「穿梭大冒险」自动刷噗灵（目标 {max_rounds} 局，走法：{assist_label}，"
@@ -1006,6 +1041,7 @@ class MinigameBlingRun(Runtime):
             if info["state"] in ("failed", "retry_confirm"):
                 stats["failed_rounds"] += 1
                 consecutive_failures += 1
+                consecutive_overworld_returns = 0
                 outcome, retry_started_at = self._handle_failure_retry(
                     inputs, info, target_round, max_rounds, consecutive_failures
                 )
@@ -1020,6 +1056,7 @@ class MinigameBlingRun(Runtime):
             if info["state"] == "cap_reached":
                 stats["completed_rounds"] += 1
                 consecutive_failures = 0
+                consecutive_overworld_returns = 0
                 stats["stop_reason"] = "daily_cap_reached"
                 self.log(f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。")
                 break
@@ -1029,8 +1066,35 @@ class MinigameBlingRun(Runtime):
                 self._exit_failure_to_main(inputs, info)
                 return False
 
+            if info["state"] == "continue" and self._is_main_detected(info):
+                consecutive_overworld_returns += 1
+                near_npc = self._already_near_npc(
+                    max_radius_px=AT_NPC_VERIFY_RADIUS_PX,
+                    min_score=AT_NPC_VERIFY_MIN_SCORE,
+                    frame=info["frame"],
+                )
+                if not near_npc:
+                    stats["stop_reason"] = "not_near_npc"
+                    self.log("检测到当前停留在非「穿梭大冒险」NPC 附近的大世界，未计入完成局数，任务停止。")
+                    return False
+                if consecutive_overworld_returns >= MAX_CONSECUTIVE_OVERWORLD_RETURNS:
+                    stats["stop_reason"] = "not_in_minigame"
+                    self.log(
+                        f"连续 {consecutive_overworld_returns} 轮未能进入小游戏挑战（仍停留在主界面），已停止任务以避免空跑。"
+                    )
+                    return False
+                self.log(
+                    f"本轮未确认进入小游戏结算（仍处于大世界，{consecutive_overworld_returns}/{MAX_CONSECUTIVE_OVERWORLD_RETURNS}），"
+                    "不计入完成局数，正在重新与 NPC 对话…"
+                )
+                if not self._run_sequence(inputs, INIT_SEQUENCE):
+                    stats["stop_reason"] = "stopped"
+                    break
+                continue
+
             stats["completed_rounds"] += 1
             consecutive_failures = 0
+            returned_to_overworld = False
             if stats["completed_rounds"] < max_rounds:
                 if not self._run_sequence(inputs, REPLAY_SEQUENCE):
                     stats["stop_reason"] = "stopped"
@@ -1049,6 +1113,7 @@ class MinigameBlingRun(Runtime):
                     stats["completed_rounds"] = max(0, stats["completed_rounds"] - 1)
                     stats["failed_rounds"] += 1
                     consecutive_failures += 1
+                    consecutive_overworld_returns = 0
                     outcome, retry_started_at = self._handle_failure_retry(
                         inputs,
                         post_info,
@@ -1065,10 +1130,33 @@ class MinigameBlingRun(Runtime):
                         break
                     return False
                 if post_info["state"] == "continue" and self._is_main_detected(post_info):
+                    returned_to_overworld = True
+                    consecutive_overworld_returns += 1
+                    near_npc = self._already_near_npc(
+                        max_radius_px=AT_NPC_VERIFY_RADIUS_PX,
+                        min_score=AT_NPC_VERIFY_MIN_SCORE,
+                        frame=post_info["frame"],
+                    )
+                    if not near_npc:
+                        stats["completed_rounds"] = max(0, stats["completed_rounds"] - 1)
+                        stats["stop_reason"] = "not_near_npc"
+                        self.log(
+                            "检测到返回大世界且不在花愿镇「穿梭大冒险」NPC 附近，已撤销本轮计数并停止任务。"
+                        )
+                        return False
+                    if consecutive_overworld_returns >= MAX_CONSECUTIVE_OVERWORLD_RETURNS:
+                        stats["completed_rounds"] = max(0, stats["completed_rounds"] - 1)
+                        stats["stop_reason"] = "repeated_overworld_return"
+                        self.log(
+                            f"连续 {consecutive_overworld_returns} 轮在结算后退回大世界且未能保持连刷，已停止任务以避免空跑。"
+                        )
+                        return False
                     self.log("检测到返回大世界，正在重新与 NPC 对话继续挑战…")
                     if not self._run_sequence(inputs, INIT_SEQUENCE):
                         stats["stop_reason"] = "stopped"
                         break
+            if not returned_to_overworld:
+                consecutive_overworld_returns = 0
             elapsed = time.monotonic() - round_start
             self.log(f"第 {stats['completed_rounds']}/{max_rounds} 局完成，耗时 {elapsed:.1f} 秒。", detail=True)
 
