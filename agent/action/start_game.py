@@ -14,6 +14,7 @@ from client_config import parse_custom_param
 from registration import agent_action
 from task_control import GameWindowClosed, TaskStopped, active_session, task_time as time
 from daily.runtime import Executors, ROOT
+from daily.ui import find_expired_notice_confirm_box
 from game_view import ALLOWED_FRAME_SIZES, GameFrameSizeError, is_clipped_game_frame, require_game_frame
 
 
@@ -51,6 +52,7 @@ def _inspect_startup_screen(runtime, frame) -> dict:
         "restart_box": None,
         "update_dialog": False,
         "update_confirm_box": None,
+        "notice_confirm_box": None,
         "enter_box": None,
         "login_box": None,
         "account_prompt": False,
@@ -137,6 +139,8 @@ def _inspect_startup_screen(runtime, frame) -> dict:
         state["update_dialog"] = True
         if has_update_body and update_btn is not None:
             state["update_confirm_box"] = update_btn
+    if state["restart_box"] is None and not state["update_dialog"]:
+        state["notice_confirm_box"] = find_expired_notice_confirm_box(rows)
     return state
 _WM_NULL = 0x0000
 _SMTO_BLOCK = 0x0001
@@ -461,8 +465,9 @@ class StartGameAction(CustomAction):
     ):
         started_at = time.monotonic()
         deadline = started_at+timeout
-        entered, logged_in, update_attempts = 0, 0, 0
+        entered, logged_in, update_attempts, notice_attempts = 0, 0, 0, 0
         update_waiting = False
+        notice_logged = False
         waiting_logged = False
         intro_logged = False
         loading_logged = False
@@ -604,6 +609,29 @@ class StartGameAction(CustomAction):
                     return True
             return False
 
+        def dismiss_notice(box):
+            nonlocal notice_attempts, notice_logged, unknown_since
+            if notice_attempts >= 5:
+                return False
+            notice_attempts += 1
+            if not notice_logged:
+                runtime.log("检测到道具过期提示弹窗，正在点击确认关闭。")
+                notice_logged = True
+            if not runtime.ui.click_box(box):
+                return False
+            wait_end = min(deadline, time.monotonic() + 3.5)
+            while not runtime.stopped and time.monotonic() < wait_end:
+                if not runtime.pause(.25):
+                    return False
+                nxt = runtime.capture()
+                if nxt is None:
+                    return False
+                st = _inspect_startup_screen(runtime, nxt)
+                if not st["notice_confirm_box"]:
+                    unknown_since = None
+                    return True
+            return False
+
         # The splash or health warning can open at 16:9 or the launcher's aspect
         # ratio and transiently resize while Unreal applies saved display settings.
         # Guard captures across this initial window; when attaching to an already
@@ -699,38 +727,40 @@ class StartGameAction(CustomAction):
             restart = restart_box is not None
             update = not restart and st["update_dialog"]
             update_confirm_box = st["update_confirm_box"] if update else None
-            reward = not restart and not update and st["reward"]
-            main = not restart and not update and not reward and st["main"]
-            enter_box = None if (restart or update or reward or main) else st["enter_box"]
+            notice_confirm_box = None if (restart or update) else st["notice_confirm_box"]
+            notice = notice_confirm_box is not None
+            reward = not restart and not update and not notice and st["reward"]
+            main = not restart and not update and not notice and not reward and st["main"]
+            enter_box = None if (restart or update or notice or reward or main) else st["enter_box"]
             enter = enter_box is not None
-            login_box = None if (restart or update or reward or main or enter) else st["login_box"]
+            login_box = None if (restart or update or notice or reward or main or enter) else st["login_box"]
             login = login_box is not None
             account_prompt = (
-                not restart and not update and not reward and not main
+                not restart and not update and not notice and not reward and not main
                 and not enter and not login and st["account_prompt"]
             )
             account_modal = account_prompt and st["account_modal"]
             welcome_banner = account_prompt and not account_modal and st["welcome_banner"]
             updating = (
-                not restart and not update and not reward and not main
+                not restart and not update and not notice and not reward and not main
                 and not enter and not login and not account_prompt and st["updating"]
             )
             intro = (
-                not restart and not update and not reward and not main
+                not restart and not update and not notice and not reward and not main
                 and not enter and not login and not account_prompt and not updating and st["intro"]
             )
             loading = (
-                not restart and not update and not reward and not main
+                not restart and not update and not notice and not reward and not main
                 and not enter and not login and not account_prompt and not updating
                 and not intro and st["loading"]
             )
             version_check = (
-                not restart and not update and not reward and not main
+                not restart and not update and not notice and not reward and not main
                 and not enter and not login
                 and (not account_prompt or not account_modal)
                 and not updating and not intro and not loading and st["version_check"]
             )
-            if (restart or update or reward or main or enter or login
+            if (restart or update or notice or reward or main or enter or login
                     or account_prompt or updating or intro or loading or version_check):
                 unknown_since = None
             if loading or updating or version_check:
@@ -769,6 +799,12 @@ class StartGameAction(CustomAction):
                         return incomplete("客户端资源更新确认未生效")
                     if not confirm_update(update_confirm_box) and update_attempts >= 3:
                         return incomplete("客户端资源更新确认未生效")
+            elif notice:
+                if notice_attempts >= 5:
+                    return incomplete("道具过期提示弹窗确认未生效")
+                if not dismiss_notice(notice_confirm_box) and notice_attempts >= 5:
+                    return incomplete("道具过期提示弹窗确认未生效")
+                continue
             elif reward:
                 if not runtime.key("skip", .35):
                     return incomplete()
@@ -847,6 +883,7 @@ class StartGameAction(CustomAction):
                                 probe_st[k]
                                 for k in (
                                     "main", "reward", "restart_box", "update_dialog",
+                                    "notice_confirm_box",
                                     "enter_box", "login_box", "account_prompt",
                                     "updating", "version_check", "intro", "loading",
                                 )

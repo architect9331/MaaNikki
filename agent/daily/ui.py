@@ -17,6 +17,59 @@ from performance import count, measure
 from vision import prepared_template
 
 
+EXPIRED_NOTICE_ROI = [420, 175, 440, 385]
+_RE_NOTICE_TITLE = re.compile(r"^提示$")
+_RE_EXPIRED_NOTICE_BODY = re.compile(
+    r"以下道具已[过過]期|道具已[过過]期或即[将將][过過]期|已[过過]期或即[将將][过過]期"
+)
+_RE_NOTICE_CONFIRM = re.compile(r"^确认$|^確認$")
+_RE_NOTICE_CANCEL = re.compile(r"^取消$")
+
+
+def find_expired_notice_confirm_box(rows):
+    """Locate the centered Confirm button on the item-expiry notice modal.
+
+    Requires all three geometric and semantic anchors together:
+    - Centered "提示" header (y in [170, 300], x in [440, 840])
+    - Expiring-item notice body (y in [235, 355], x in [420, 860])
+    - Centered single-button "确认" (y in [415, 560], x in [525, 755]) with no
+      sibling "取消" button on the same row.
+
+    This guarantees two-button purchase/quit/update dialogs and update-restart
+    prompts are never matched.
+    """
+    has_title = False
+    has_body = False
+    has_cancel = False
+    confirm_box = None
+    for row in rows or ():
+        if row is None:
+            continue
+        clean = str(getattr(row, "text", "") or "").strip()
+        if not clean:
+            continue
+        score = getattr(row, "score", 1.0)
+        if isinstance(score, (int, float)) and score < 0.4:
+            continue
+        box = getattr(row, "box", None)
+        if not box or len(box) < 4:
+            continue
+        bx, by, bw, bh = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        cx, cy = bx + bw * 0.5, by + bh * 0.5
+        if 170 <= cy <= 300 and 440 <= cx <= 840 and _RE_NOTICE_TITLE.search(clean):
+            has_title = True
+        if 235 <= cy <= 355 and 420 <= cx <= 860 and _RE_EXPIRED_NOTICE_BODY.search(clean):
+            has_body = True
+        if 415 <= cy <= 560:
+            if 380 <= cx <= 900 and _RE_NOTICE_CANCEL.search(clean):
+                has_cancel = True
+            if 525 <= cx <= 755 and confirm_box is None and _RE_NOTICE_CONFIRM.search(clean):
+                confirm_box = [bx, by, bw, bh]
+    if has_title and has_body and confirm_box is not None and not has_cancel:
+        return confirm_box
+    return None
+
+
 def fields(context, node):
     data = context.get_node_data(node) or {}
     recognition = data.get("recognition", {})
@@ -87,6 +140,7 @@ class GameUI:
         self.rt, self.resource = runtime, resource
         self._preserve_cursor = False
         self._dismissing_reward = False
+        self._dismissing_notice = False
         self._asset_definitions = self._asset_paths = None
         self._tutorial = None
         self.monthly_paradise_unavailable = False
@@ -457,6 +511,65 @@ class GameUI:
                 if self.rt.stopped or not self.rt.hit(cancel):
                     return False
         return False
+
+    def expired_notice_confirm_box(self, *, frame=None):
+        """Return the Confirm button box of an item-expiry notice modal, if visible."""
+        with self.rt.observe():
+            image = self.rt.frame() if frame is None else frame
+            if image is None or self.rt.hit("MaaNikki_MainDetected", image=image):
+                return None
+            ocr = self.rt.recognize(
+                "MaaNikki_Daily_OCR",
+                {"roi": EXPIRED_NOTICE_ROI, "expected": ".+", "threshold": 0.4},
+                image=image,
+            )
+        if not ocr:
+            return None
+        rows = (
+            getattr(ocr, "all_results", None)
+            or getattr(ocr, "filtered_results", None)
+            or [getattr(ocr, "best_result", None)]
+        )
+        return find_expired_notice_confirm_box(rows)
+
+    def dismiss_expired_notice(self, *, box=None):
+        """Dismiss the item-expiry notice modal by clicking its centered Confirm button."""
+        if self._dismissing_notice:
+            return None
+        target = box if box is not None else self.expired_notice_confirm_box()
+        if target is None:
+            return None
+        self._dismissing_notice = True
+        self.rt.log("检测到道具过期提示弹窗，正在点击确认关闭。")
+        try:
+            for attempt in range(3):
+                if self.rt.stopped:
+                    return False
+                if attempt > 0:
+                    with self.rt.observe(fresh=True):
+                        target = self.expired_notice_confirm_box()
+                    if target is None:
+                        return True
+                if not self.click_box(target):
+                    return False
+                clear = 0
+                check_deadline = time.monotonic() + 2.5
+                while not self.rt.stopped and time.monotonic() < check_deadline:
+                    with self.rt.observe(fresh=True):
+                        if self.rt.hit("MaaNikki_MainDetected"):
+                            return True
+                        still_open = self.expired_notice_confirm_box() is not None
+                    if still_open:
+                        clear = 0
+                    else:
+                        clear += 1
+                        if clear >= 2:
+                            return True
+                    if not self.rt.pause(.25):
+                        return False
+            return False
+        finally:
+            self._dismissing_notice = False
 
     def _locate_menu_entry(self, node, roi, *, ready=None):
         """Ensure Pear-Pal is open and scroll or page until `node` is visible."""
@@ -1015,7 +1128,8 @@ class GameUI:
                 elif self.asset("IconUILoading", threshold=.99, method=cv2.TM_CCORR_NORMED):
                     page = "loading"
                 else:
-                    page = "unknown"
+                    expired_notice_box = self.expired_notice_confirm_box()
+                    page = "expired_notice" if expired_notice_box is not None else "unknown"
             if page == "star_collect":
                 return self.leave_star_collect()
             elif page == "main":
@@ -1056,6 +1170,9 @@ class GameUI:
                     return False
             elif page == "reward":
                 if not self.rt.key("skip", .5):
+                    return False
+            elif page == "expired_notice":
+                if self.dismiss_expired_notice(box=expired_notice_box) is not True:
                     return False
             else:
                 if self.page_matches("MaaNikki_MainDetected"):
