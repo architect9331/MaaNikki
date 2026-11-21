@@ -24,6 +24,9 @@ _RE_EXPIRED_NOTICE_BODY = re.compile(
 )
 _RE_NOTICE_CONFIRM = re.compile(r"^确认$|^確認$")
 _RE_NOTICE_CANCEL = re.compile(r"^取消$")
+BLESSING_DECOMPOSE_TUTORIAL_ROI = [670, 190, 320, 130]
+BLESSING_DECOMPOSE_TUTORIAL_TARGET = [1040, 245]
+_RE_DECOMPOSE_TUTORIAL = re.compile(r"分解后预计获得|闪光粒子数量|将在此显示")
 
 
 def find_expired_notice_confirm_box(rows):
@@ -67,6 +70,25 @@ def find_expired_notice_confirm_box(rows):
                 confirm_box = [bx, by, bw, bh]
     if has_title and has_body and confirm_box is not None and not has_cancel:
         return confirm_box
+    return None
+
+
+def find_blessing_decompose_tutorial_target(rows):
+    """Locate the spotlight cutout click target on the first-time decompose tutorial."""
+    parts = []
+    for row in rows or ():
+        if row is None:
+            continue
+        clean = str(getattr(row, "text", "") or "").strip()
+        if not clean:
+            continue
+        score = getattr(row, "score", 1.0)
+        if isinstance(score, (int, float)) and score < 0.45:
+            continue
+        parts.append(clean)
+    joined = "".join(parts)
+    if joined and _RE_DECOMPOSE_TUTORIAL.search(joined):
+        return list(BLESSING_DECOMPOSE_TUTORIAL_TARGET)
     return None
 
 
@@ -141,6 +163,7 @@ class GameUI:
         self._preserve_cursor = False
         self._dismissing_reward = False
         self._dismissing_notice = False
+        self._dismissing_decompose_tutorial = False
         self._asset_definitions = self._asset_paths = None
         self._tutorial = None
         self.monthly_paradise_unavailable = False
@@ -570,6 +593,67 @@ class GameUI:
             return False
         finally:
             self._dismissing_notice = False
+
+    def blessing_decompose_tutorial_target(self, *, frame=None):
+        """Return the spotlight click target for the first-time decompose tutorial, if visible."""
+        with self.rt.observe():
+            image = self.rt.frame() if frame is None else frame
+            if image is None or self.rt.hit("MaaNikki_MainDetected", image=image):
+                return None
+            if not self.rt.hit("MaaNikki_Blessing_DecomposeReady", image=image):
+                return None
+            ocr = self.rt.recognize(
+                "MaaNikki_Daily_OCR",
+                {"roi": BLESSING_DECOMPOSE_TUTORIAL_ROI, "expected": ".+", "threshold": 0.4},
+                image=image,
+            )
+        if not ocr:
+            return None
+        rows = (
+            getattr(ocr, "all_results", None)
+            or getattr(ocr, "filtered_results", None)
+            or [getattr(ocr, "best_result", None)]
+        )
+        return find_blessing_decompose_tutorial_target(rows)
+
+    def dismiss_blessing_decompose_tutorial(self, *, target=None):
+        """Dismiss the first-time blessing decomposition spotlight tutorial by clicking its preview card."""
+        if self._dismissing_decompose_tutorial:
+            return None
+        resolved = target if target is not None else self.blessing_decompose_tutorial_target()
+        if resolved is None:
+            return None
+        self._dismissing_decompose_tutorial = True
+        self.rt.log("检测到祝福闪光分解引导提示，正在点击关闭。")
+        try:
+            for attempt in range(4):
+                if self.rt.stopped:
+                    return False
+                if attempt > 0:
+                    with self.rt.observe(fresh=True):
+                        resolved = self.blessing_decompose_tutorial_target()
+                    if resolved is None:
+                        return True
+                if not self.rt.action("Click", target=resolved):
+                    return False
+                clear = 0
+                check_deadline = time.monotonic() + 2.0
+                while not self.rt.stopped and time.monotonic() < check_deadline:
+                    with self.rt.observe(fresh=True):
+                        if self.rt.hit("MaaNikki_MainDetected"):
+                            return True
+                        still_open = self.blessing_decompose_tutorial_target() is not None
+                    if still_open:
+                        clear = 0
+                    else:
+                        clear += 1
+                        if clear >= 2:
+                            return True
+                    if not self.rt.pause(.25):
+                        return False
+            return False
+        finally:
+            self._dismissing_decompose_tutorial = False
 
     def _locate_menu_entry(self, node, roi, *, ready=None):
         """Ensure Pear-Pal is open and scroll or page until `node` is visible."""
@@ -1129,7 +1213,15 @@ class GameUI:
                     page = "loading"
                 else:
                     expired_notice_box = self.expired_notice_confirm_box()
-                    page = "expired_notice" if expired_notice_box is not None else "unknown"
+                    if expired_notice_box is not None:
+                        page = "expired_notice"
+                    else:
+                        decompose_tutorial_target = self.blessing_decompose_tutorial_target()
+                        page = (
+                            "decompose_tutorial"
+                            if decompose_tutorial_target is not None
+                            else "unknown"
+                        )
             if page == "star_collect":
                 return self.leave_star_collect()
             elif page == "main":
@@ -1173,6 +1265,9 @@ class GameUI:
                     return False
             elif page == "expired_notice":
                 if self.dismiss_expired_notice(box=expired_notice_box) is not True:
+                    return False
+            elif page == "decompose_tutorial":
+                if self.dismiss_blessing_decompose_tutorial(target=decompose_tutorial_target) is not True:
                     return False
             else:
                 if self.page_matches("MaaNikki_MainDetected"):

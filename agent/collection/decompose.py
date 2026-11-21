@@ -121,6 +121,8 @@ class LowRarityDecomposer:
                 state = None
 
     def read(self):
+        if self.rt.ui.dismiss_blessing_decompose_tutorial() is False:
+            raise IncompleteObservation("祝福闪光分解引导提示未能关闭")
         self._park_hover(0)
         if not self.rt.pause(.06):
             raise IncompleteObservation("分解材料数量、容量或粒子信息未稳定，未继续提交")
@@ -163,6 +165,8 @@ class LowRarityDecomposer:
                     )
                 return current, frame
             if current is None:
+                if self.rt.ui.dismiss_blessing_decompose_tutorial() is False:
+                    raise IncompleteObservation("祝福闪光分解引导提示未能关闭")
                 hold_park = True
                 self._park_hover(attempt + 1)
             previous = current
@@ -195,6 +199,8 @@ class LowRarityDecomposer:
                 if not (ready and ready.hit):
                     if not self.o.open() or not self.rt.click_template("MaaNikki_Blessing_DecomposeEntrance"):
                         raise IncompleteObservation("未能打开祝福闪光分解页面")
+                if self.rt.ui.dismiss_blessing_decompose_tutorial() is False:
+                    raise IncompleteObservation("祝福闪光分解引导提示未能关闭")
                 state, _ = self.read()
                 if state["count"]:
                     self.click("clear")
