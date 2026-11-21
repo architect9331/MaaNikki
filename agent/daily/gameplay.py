@@ -141,7 +141,7 @@ class Gameplay:
             if not self.ui.find_menu_entry(node="MaaNikki_Dig_Open"):
                 self.rt.log("未找到美鸭梨挖掘入口。")
                 return False
-            if not self.rt.click_template("MaaNikki_Dig_Gather", attempts=1):
+            if not self.rt.hit("MaaNikki_Dig_Gather"):
                 raw = self.ui.text(self.ui.roi("AreaDigingNumText"))
                 count = re.search(r"(\d+)\s*[/／]", raw)
                 if count is None:
@@ -160,7 +160,16 @@ class Gameplay:
             # These buttons are mutually exclusive choices in the same dialog.
             choice = "MaaNikki_Dig_Again" if repeat else "MaaNikki_Dig_GatherConfirm"
             label = "再次挖掘" if repeat else "确认收获"
-            if not self.ui.wait_page(choice, stable=True):
+            if (
+                not self.ui.enter_page(
+                    lambda: self.rt.click_template("MaaNikki_Dig_Gather", attempts=1),
+                    choice,
+                    source="MaaNikki_Dig_Gather",
+                    attempts=3,
+                    seconds=4,
+                )
+                or not self.ui.wait_page(choice, stable=True, seconds=2)
+            ):
                 if not self.rt.stopped:
                     self.rt.diagnostic("dig", "choice_button_unconfirmed", details={"choice": choice})
                 self.rt.log(f"未确认挖掘收取界面的“{label}”按钮，本项停止。")
