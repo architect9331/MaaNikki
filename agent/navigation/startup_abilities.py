@@ -18,13 +18,17 @@ teleports until the game closes):
 
 Highlight-ring recognition rationale and limits:
 SetSlotHighlight(true) renders an additive warm-gold circular border stroke at fixed
-720p radii (27.9 px on 60x60 AreaAbilityButton, 19.2 px on 40x40 AreaSubAbilityButton).
-World surfaces behind translucent HUD buttons vary smoothly across the 4 px step across
-the border or cover only part of the circle, whereas the UI highlight forms a 4-quadrant
-concentric brightness ridge above both the button's inner dark disc and the surrounding
-ring, with warm gold chroma (10 <= H <= 42, S >= 30, R > B + 15). Decisions require
-CONFIRM_FRAMES consecutive agreeing frames on the settled main HUD; non-default HUD
-scales fail closed rather than toggling an already-active ability off.
+720p radii (27.9 px on 60x60 AreaAbilityButton, 19.2 px on 40x40 AreaSubAbilityButton),
+adding roughly (+68, +62, +46) RGB over the scene. World surfaces behind translucent
+HUD buttons vary smoothly across the 4 px step across the border or cover only part of
+the circle, whereas over cool-blue nighttime ground additive blending mixes toward pale
+neutral white/ivory on raw pixel chroma. Measuring the 4-quadrant concentric brightness
+ridge alongside background-subtracted warmth shift (dR - dB relative to the mean of
+inner and outer rings, with absolute warm-gold chroma as a channel-clipped bright-surface
+fallback) cancels ambient tint while rejecting neutral borders and flat backgrounds.
+Decisions require CONFIRM_FRAMES consecutive agreeing frames on the settled main HUD;
+non-default HUD scales and multi-quadrant severely clipped white skies fail closed rather
+than toggling an already-active ability off.
 """
 from __future__ import annotations
 
@@ -134,7 +138,7 @@ def hud_ability_matches(runtime, group: WheelGroupSpec, frame=None) -> bool:
 
 
 def slot_highlighted(frame, roi: list[int] | tuple[int, int, int, int], radius: float) -> tuple[bool, dict]:
-    """Detect the 4-quadrant warm-gold SetSlotHighlight ring around a HUD ability button."""
+    """Detect the 4-quadrant additive warm-gold SetSlotHighlight ring around a HUD ability button."""
     if frame is None:
         return False, {}
     x0, y0, w, h = roi
@@ -158,14 +162,21 @@ def slot_highlighted(frame, roi: list[int] | tuple[int, int, int, int], radius: 
     bgr = patch.astype(np.float32)
     v, s, h_ch = hsv[:, :, 2], hsv[:, :, 1], hsv[:, :, 0]
     quads = ((dx < 0) & (dy <= 0), (dx >= 0) & (dy <= 0), (dx < 0) & (dy > 0), (dx >= 0) & (dy > 0))
-    dv_in, ridges, golds = [], [], []
+    dv_in, ridges, golds, drs, drbs = [], [], [], [], []
     for q in quads:
         rm, im, om = ring & q, inner & q, outer & q
         if int(rm.sum()) < 4 or int(im.sum()) < 4:
             return False, {}
+        has_out = int(om.sum()) >= 4
         dv_in.append(float(v[rm].mean() - v[im].mean()))
-        ref = 0.5 * (v[im].mean() + v[om].mean()) if int(om.sum()) >= 4 else float(v[im].mean())
-        ridges.append(float(v[rm].mean() - ref))
+        ref_v = 0.5 * (v[im].mean() + v[om].mean()) if has_out else float(v[im].mean())
+        ridges.append(float(v[rm].mean() - ref_v))
+        ref_r = 0.5 * (bgr[:, :, 2][im].mean() + bgr[:, :, 2][om].mean()) if has_out else float(bgr[:, :, 2][im].mean())
+        ref_b = 0.5 * (bgr[:, :, 0][im].mean() + bgr[:, :, 0][om].mean()) if has_out else float(bgr[:, :, 0][im].mean())
+        dr = float(bgr[:, :, 2][rm].mean() - ref_r)
+        db = float(bgr[:, :, 0][rm].mean() - ref_b)
+        drs.append(dr)
+        drbs.append(dr - db)
         warm = (
             (h_ch[rm] >= 10)
             & (h_ch[rm] <= 42)
@@ -177,18 +188,26 @@ def slot_highlighted(frame, roi: list[int] | tuple[int, int, int, int], radius: 
     mean_in, min_in = float(np.mean(dv_in)), float(np.min(dv_in))
     mean_ridge, min_ridge = float(np.mean(ridges)), float(np.min(ridges))
     mean_gold = float(np.mean(golds))
+    mean_dr = float(np.mean(drs))
+    mean_drb = float(np.mean(drbs))
+    second_drb = float(sorted(drbs)[1])
+    warm_ok = (mean_drb >= 9.0 and second_drb >= 4.0) or mean_gold >= 0.45
     active = (
-        mean_in >= 35.0
-        and min_in >= 22.0
-        and mean_ridge >= 20.0
-        and min_ridge >= 10.0
-        and mean_gold >= 0.45
+        mean_in >= 30.0
+        and min_in >= 0.0
+        and mean_ridge >= 24.0
+        and min_ridge >= 12.0
+        and mean_dr >= 24.0
+        and warm_ok
     )
     return active, {
         "dv_in": round(mean_in, 1),
         "min_in": round(min_in, 1),
         "ridge": round(mean_ridge, 1),
         "min_ridge": round(min_ridge, 1),
+        "dr": round(mean_dr, 1),
+        "drb": round(mean_drb, 1),
+        "drb2": round(second_drb, 1),
         "gold": round(mean_gold, 2),
     }
 
