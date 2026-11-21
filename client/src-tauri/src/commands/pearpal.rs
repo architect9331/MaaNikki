@@ -33,6 +33,67 @@ pub(super) fn credentials() -> Result<Value, String> {
     result
 }
 
+pub(super) fn merge_status(patch: Value) -> bool {
+    let Ok(_guard) = LOGIN_WRITE.lock() else {
+        return false;
+    };
+    let Ok(folder) = directory() else {
+        return false;
+    };
+    if !folder.join("login.dat").is_file() {
+        return false;
+    }
+    let status_path = folder.join("status.json");
+    let mut map = std::fs::read(&status_path)
+        .ok()
+        .and_then(|raw| serde_json::from_slice::<Value>(&raw).ok())
+        .and_then(|value| value.as_object().cloned())
+        .unwrap_or_default();
+    if let Some(entries) = patch.as_object() {
+        for (key, value) in entries {
+            if key == "uid"
+                && value.as_str().map_or(true, str::is_empty)
+                && map
+                    .get("uid")
+                    .and_then(Value::as_str)
+                    .is_some_and(|existing| !existing.is_empty())
+            {
+                continue;
+            }
+            map.insert(key.clone(), value.clone());
+        }
+    }
+    super::utils::write_atomic(&status_path, Value::Object(map).to_string()).is_ok()
+}
+
+async fn fetch_role_uid(client: &reqwest::Client, token: &str, openid: &str) -> Option<String> {
+    let info: Value = client
+        .post("https://myl-api.nuanpaper.com/v1/strategy/user/info/get")
+        .timeout(std::time::Duration::from_secs(8))
+        .json(&json!({ "client_id": 1106, "token": token, "openid": openid }))
+        .send()
+        .await
+        .ok()?
+        .error_for_status()
+        .ok()?
+        .json()
+        .await
+        .ok()?;
+    if info["code"].as_i64() != Some(0) {
+        return None;
+    }
+    let uid = match &info["data"]["role"]["uid"] {
+        Value::String(uid) => uid.clone(),
+        Value::Number(uid) => uid.to_string(),
+        _ => return None,
+    };
+    if !uid.is_empty() && uid.bytes().all(|c| c.is_ascii_digit()) {
+        Some(uid)
+    } else {
+        None
+    }
+}
+
 #[cfg(windows)]
 mod dpapi {
     use std::ffi::c_void;
@@ -160,12 +221,20 @@ pub fn pearpal_status(window: WebviewWindow) -> Result<Value, String> {
 pub async fn pearpal_open_login(
     app: tauri::AppHandle,
     window: WebviewWindow,
+    switch_account: Option<bool>,
 ) -> Result<(), String> {
     desktop(&window)?;
     if !cfg!(windows) {
         return Err("地图标记首版支持 Windows。".into());
     }
+    let clear_session = switch_account.unwrap_or(false);
+    let map_url: tauri::Url = "https://myl.nuanpaper.com/tools/map".parse().unwrap();
     if let Some(login) = app.get_webview_window("pearpal-login") {
+        if clear_session {
+            let _ = login.clear_all_browsing_data();
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            let _ = login.navigate(map_url);
+        }
         let _ = login.show();
         let _ = login.set_focus();
         return Ok(());
@@ -173,38 +242,69 @@ pub async fn pearpal_open_login(
     let data = super::utils::get_app_data_dir()?.join("cache/pearpal-webview");
     std::fs::create_dir_all(&data).map_err(|_| "无法创建美鸭梨登录目录。")?;
     LOGIN_GENERATION.fetch_add(1, Ordering::SeqCst);
-    let script = r#"
-(() => {
+    let script = format!(
+        r#"
+(() => {{
   if (location.hostname !== 'myl.nuanpaper.com' || window.top !== window) return;
+  if ({clear_session} && !sessionStorage.getItem('__maanikki_switch_cleared')) {{
+    sessionStorage.setItem('__maanikki_switch_cleared', '1');
+    localStorage.removeItem('momoToken');
+    localStorage.removeItem('momoNid');
+  }}
   let busy = false;
-  const timer = setInterval(async () => {
+  let lastFailed = '';
+  const timer = setInterval(async () => {{
     if (busy || !window.__TAURI_INTERNALS__) return;
     const momoToken = localStorage.getItem('momoToken');
     const momoNid = localStorage.getItem('momoNid');
     if (!momoToken || !momoNid) return;
+    const pair = momoToken + '\0' + momoNid;
+    if (pair === lastFailed) return;
     busy = true;
-    try {
-      await window.__TAURI_INTERNALS__.invoke('pearpal_complete_login', { momoToken, momoNid });
+    try {{
+      await window.__TAURI_INTERNALS__.invoke('pearpal_complete_login', {{ momoToken, momoNid }});
       clearInterval(timer);
-    } catch {
+    }} catch {{
+      lastFailed = pair;
       busy = false;
+    }}
+  }}, 1000);
+}})();
+"#
+    );
+    if clear_session {
+        let login = WebviewWindowBuilder::new(
+            &app,
+            "pearpal-login",
+            WebviewUrl::External("about:blank".parse().unwrap()),
+        )
+        .title("美鸭梨登录")
+        .inner_size(1100.0, 760.0)
+        .min_inner_size(800.0, 600.0)
+        .visible(false)
+        .data_directory(data)
+        .initialization_script(script)
+        .on_navigation(|url| url.scheme() == "https" || url.as_str() == "about:blank")
+        .build()
+        .map_err(|_| "美鸭梨登录窗口创建失败。")?;
+        let _ = login.clear_all_browsing_data();
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        login
+            .navigate(map_url)
+            .map_err(|_| "美鸭梨登录页面加载失败。")?;
+        let _ = login.show();
+        let _ = login.set_focus();
+    } else {
+        WebviewWindowBuilder::new(&app, "pearpal-login", WebviewUrl::External(map_url))
+            .title("美鸭梨登录")
+            .inner_size(1100.0, 760.0)
+            .min_inner_size(800.0, 600.0)
+            .data_directory(data)
+            .initialization_script(script)
+            .on_navigation(|url| url.scheme() == "https")
+            .build()
+            .map_err(|_| "美鸭梨登录窗口创建失败。")?;
     }
-  }, 1000);
-})();
-"#;
-    WebviewWindowBuilder::new(
-        &app,
-        "pearpal-login",
-        WebviewUrl::External("https://myl.nuanpaper.com/tools/map".parse().unwrap()),
-    )
-    .title("美鸭梨登录")
-    .inner_size(1100.0, 760.0)
-    .min_inner_size(800.0, 600.0)
-    .data_directory(data)
-    .initialization_script(script)
-    .on_navigation(|url| url.scheme() == "https")
-    .build()
-    .map_err(|_| "美鸭梨登录窗口创建失败。")?;
     Ok(())
 }
 
@@ -280,6 +380,7 @@ pub async fn pearpal_complete_login(
         );
         return Err("登录已过期，请在美鸭梨页面重新登录。".into());
     }
+    let role_uid = fetch_role_uid(&client, token, &openid).await;
     let encrypted = protect(&serde_json::to_vec(&account).map_err(|_| "无法保存登录信息。")?)?;
     let _guard = LOGIN_WRITE.lock().map_err(|_| "无法保存登录信息。")?;
     if generation != LOGIN_GENERATION.load(Ordering::SeqCst)
@@ -290,12 +391,16 @@ pub async fn pearpal_complete_login(
     let folder = directory()?;
     super::utils::write_atomic(&folder.join("login.dat"), &encrypted)
         .map_err(|_| "无法保存登录信息。")?;
-    let status = json!({
+    let mut status = json!({
         "authenticated": true, "error": "",
         "star_collected": response["data"]["star"].as_array().map(Vec::len),
         "dewdrop_collected": response["data"]["dewdrop"].as_array().map(Vec::len),
         "box_collected": response["data"]["box"].as_array().map(Vec::len),
+        "updated_at": chrono::Utc::now().timestamp(),
     });
+    if let Some(uid) = role_uid {
+        status["uid"] = json!(uid);
+    }
     let _ = super::utils::write_atomic(&folder.join("status.json"), status.to_string());
     drop(_guard);
     super::resonance::login_changed(&app);

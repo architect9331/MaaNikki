@@ -6,6 +6,7 @@ import { WardrobePage } from '@/components/WardrobePage';
 import { TaskStatsPage } from '@/components/TaskStatsPage';
 import { RouteEditorPage } from '@/components/routes/RouteEditorPage';
 import { monitorResonance } from '@/services/resonanceService';
+import { monitorPearpal } from '@/services/pearpalService';
 import { explorationOwnsWindow, initializeExploration, monitorExploration, useExplorationStore } from '@/services/explorationService';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import {
@@ -95,6 +96,7 @@ import { LoadingScreen } from './components/app';
 import { ConnectionLostOverlay } from './components/app/ConnectionLostOverlay';
 import { WebUIBetaBanner } from './components/app/WebUIBetaBanner';
 import { AccountStatusActions } from './components/AccountStatusActions';
+import { PearpalAccountModal } from './components/PearpalAccount';
 import { useRunResultNotifier } from '@/utils/useRunResultNotifier';
 
 /** Keep in step with SETUP_VERSION in FirstRunSetup, which stays lazily loaded. */
@@ -155,6 +157,7 @@ function App() {
   const logRetentionDays = useAppStore((state) => state.logRetentionDays);
   useEffect(() => monitorExploration(), []);
   useEffect(() => monitorResonance(), []);
+  useEffect(() => monitorPearpal(), []);
   useEffect(() => {
     const refresh = () => void useAccountStateStore.getState().refresh({ silent: true }).catch(() => {});
     const onVisibility = () => {
@@ -1941,13 +1944,16 @@ function App() {
   }, []);
 
   const toaster = (
-    <Toaster
-      theme={resolveThemeMode(theme)}
-      position="bottom-center"
-      toastOptions={{
-        className: '!bg-bg-secondary !text-text-primary !border-border',
-      }}
-    />
+    <>
+      <Toaster
+        theme={resolveThemeMode(theme)}
+        position="bottom-center"
+        toastOptions={{
+          className: '!bg-bg-secondary !text-text-primary !border-border',
+        }}
+      />
+      <PearpalAccountModal />
+    </>
   );
 
   if (currentPage === 'wardrobe') {

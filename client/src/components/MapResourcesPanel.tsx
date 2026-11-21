@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
+import { openPearpalLogin, refreshPearpalStatus } from '@/services/pearpalService';
 import { apiGet } from '@/utils/backendApi';
 import { isTauri } from '@/utils/paths';
 import { Card, primaryButton, secondaryButton, Stat } from './ui/FeaturePage';
@@ -135,6 +136,9 @@ export function MapResourcesPanel({ onLogin }: { onLogin?: () => void }) {
         : await apiGet<MapResourcesData>(`/pearpal/map-resources?forceRefresh=${forceRefresh}`);
       setData(res);
       setError('');
+      if (isTauri() && res.has_login && !res.authenticated) {
+        void refreshPearpalStatus({ silent: true });
+      }
     } catch (err) {
       setError(String(err));
     } finally {
@@ -178,6 +182,11 @@ export function MapResourcesPanel({ onLogin }: { onLogin?: () => void }) {
   }
 
   if (!data?.authenticated) {
+    const loginHandler =
+      onLogin ??
+      (isTauri()
+        ? () => void openPearpalLogin({ switchAccount: Boolean(data?.has_login) })
+        : undefined);
     return (
       <Card icon={Compass} title="大地图剩余可挖抽卡资源">
         <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
@@ -190,8 +199,8 @@ export function MapResourcesPanel({ onLogin }: { onLogin?: () => void }) {
               {data?.error || '系统将基于美鸭梨大地图的实时收集进度，为你统计各世界未开宝箱钻石与奇想星/灵感露珠里程碑估抽。'}
             </p>
           </div>
-          {onLogin && isTauri() && (
-            <button type="button" onClick={onLogin} className={primaryButton}>
+          {loginHandler && isTauri() && (
+            <button type="button" onClick={loginHandler} className={primaryButton}>
               {data?.has_login ? '重新登录美鸭梨' : '登录美鸭梨'}
             </button>
           )}

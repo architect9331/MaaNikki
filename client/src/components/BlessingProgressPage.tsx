@@ -11,8 +11,10 @@ import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { normalizePlanMode } from '@/services/scoring/dominance';
 import type { PlanMode } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
+import { getPearpalLoginState, openPearpalLogin, refreshPearpalStatus, usePearpalStore } from '@/services/pearpalService';
 import { isTauri } from '@/utils/paths';
 import { BlessingForecastPanel } from './RealmForecastPanel';
+import { PearPalIcon } from './PearpalAccount';
 import { ManualReadButton, ManualReadLogStrip } from './ManualReadControls';
 import { Card, Segmented, Tile, Notices, secondaryButton, type Notice } from './ui/FeaturePage';
 import { PlanLayout, PlanListPanel, PlanPanel, bulkButton, planCheckbox, planField } from './CollectionPlan';
@@ -78,6 +80,12 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('missing');
   const [syncingPearpal, setSyncingPearpal] = useState(false);
+  const pearpalStatus = usePearpalStore((s) => s.status);
+  const pearpalBusy = usePearpalStore((s) => s.busy);
+  const pearpalState = getPearpalLoginState(pearpalStatus);
+  const pearpalUidMismatch = Boolean(
+    pearpalState === 'logged_in' && pearpalStatus.uid && data?.uid && pearpalStatus.uid !== data.uid,
+  );
   const [extraBling, setExtraBling] = useState(0);
   const [extraParticles, setExtraParticles] = useState(0);
 
@@ -128,6 +136,7 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
     try {
       const synced = await invoke<{ uid?: string; five_star_colors?: CollectionKey[] }>('pearpal_sync_notebook');
       await refresh();
+      void refreshPearpalStatus({ silent: true });
       const currentUid = useAccountStateStore.getState().data?.uid;
       if (synced?.uid && currentUid && synced.uid !== currentUid) {
         toast.warning(
@@ -142,7 +151,18 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
         );
       }
     } catch (reason) {
-      toast.error(String(reason));
+      const msg = String(reason);
+      if (/登录|过期/.test(msg)) {
+        void refreshPearpalStatus({ silent: true });
+        toast.error(msg, {
+          action: {
+            label: '去登录',
+            onClick: () => void openPearpalLogin({ switchAccount: pearpalStatus.has_login }),
+          },
+        });
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setSyncingPearpal(false);
     }
@@ -207,9 +227,38 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
   else if (!progress.known)
     notices.push({
       tone: 'info',
-      text: loading
-        ? '正在读取本地记录…'
-        : '尚无完整的五星收藏记录。把五星闪光加入幻境挑战并运行一次，会先自动整理；也可以点「美鸭梨核对」预览图鉴已解锁的颜色。',
+      text: loading ? (
+        '正在读取本地记录…'
+      ) : (
+        <>
+          尚无完整的五星收藏记录。把五星闪光加入幻境挑战并运行一次，会先自动整理；也可以点「美鸭梨核对」预览图鉴已解锁的颜色。
+          {isTauri() && pearpalState !== 'logged_in' && (
+            <button
+              type="button"
+              onClick={() => void openPearpalLogin({ switchAccount: pearpalState === 'expired' })}
+              className="ml-1 inline-flex items-center font-medium text-accent underline-offset-2 hover:underline"
+            >
+              {pearpalState === 'expired' ? '重新登录美鸭梨' : '立即登录美鸭梨'}
+            </button>
+          )}
+        </>
+      ),
+    });
+  if (pearpalUidMismatch)
+    notices.push({
+      tone: 'warn',
+      text: (
+        <>
+          当前登录的美鸭梨账号（UID {pearpalStatus.uid}）与本页角色（UID {data?.uid}）不一致。
+          <button
+            type="button"
+            onClick={() => void openPearpalLogin({ switchAccount: true })}
+            className="ml-1 font-medium underline underline-offset-2 hover:opacity-80"
+          >
+            切换美鸭梨账号
+          </button>
+        </>
+      ),
     });
   if (!error && progress.known && !progress.localKnown && pearpalCheck.synced)
     notices.push({
@@ -283,16 +332,37 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
         actions={
           <>
             {isTauri() && (
-              <button
-                type="button"
-                onClick={() => void syncPearpal()}
-                disabled={syncingPearpal || loading}
-                className={secondaryButton}
-                title="从美鸭梨奇想手账获取图鉴已解锁颜色，核对本地记录有没有遗漏"
-              >
-                <RefreshCw className={clsx('h-3.5 w-3.5', syncingPearpal && 'animate-spin')} />
-                美鸭梨核对
-              </button>
+              pearpalState === 'logged_in' ? (
+                <button
+                  type="button"
+                  onClick={() => void syncPearpal()}
+                  disabled={syncingPearpal || loading}
+                  className={secondaryButton}
+                  title="从美鸭梨奇想手账获取图鉴已解锁颜色，核对本地记录有没有遗漏"
+                >
+                  <RefreshCw className={clsx('h-3.5 w-3.5', syncingPearpal && 'animate-spin')} />
+                  美鸭梨核对
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void openPearpalLogin({ switchAccount: pearpalState === 'expired' })}
+                  disabled={pearpalBusy}
+                  className={
+                    pearpalState === 'expired'
+                      ? clsx(secondaryButton, 'border-warning/40 text-warning hover:bg-warning/10')
+                      : secondaryButton
+                  }
+                  title={
+                    pearpalState === 'expired'
+                      ? '美鸭梨登录已过期，重新登录后可核对图鉴'
+                      : '登录美鸭梨国服账号后，可一键核对祝福闪光图鉴'
+                  }
+                >
+                  <PearPalIcon className="h-3.5 w-3.5" />
+                  {pearpalState === 'expired' ? '重新登录美鸭梨' : '登录美鸭梨'}
+                </button>
+              )
             )}
             {progress.known && (
               <button type="button" onClick={() => void copyShareImage()} className={secondaryButton} title="复制分享图（不含 UID）">

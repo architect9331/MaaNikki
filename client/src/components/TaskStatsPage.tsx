@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import clsx from 'clsx';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Award,
@@ -14,11 +16,13 @@ import {
 } from 'lucide-react';
 import { useAccountStateStore, crownProgress } from '@/stores/accountStateStore';
 import { useAppStore } from '@/stores/appStore';
+import { getPearpalLoginState, openPearpalLogin, refreshPearpalStatus, usePearpalStore } from '@/services/pearpalService';
 import { getBlessingProgress } from '@/utils/blessingProgress';
 import { getInterfaceLangKey } from '@/i18n';
 import { isTauri } from '@/utils/paths';
 import { AdventureReportPanel } from './AdventureReportPanel';
-import { Segmented } from './ui/FeaturePage';
+import { PearpalStatusPill } from './PearpalAccount';
+import { secondaryButton, Segmented } from './ui/FeaturePage';
 
 interface TaskStatRecord {
   runs: number;
@@ -114,6 +118,38 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
   const [activeTab, setActiveTab] = useState<'daily' | 'memorial'>('daily');
   const [stats, setStats] = useState<TaskStatisticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncingPearpal, setSyncingPearpal] = useState(false);
+  const pearpalStatus = usePearpalStore((s) => s.status);
+  const pearpalBusy = usePearpalStore((s) => s.busy);
+  const pearpalState = getPearpalLoginState(pearpalStatus);
+
+  const syncPearpalNotebook = async () => {
+    if (!isTauri() || syncingPearpal) return;
+    setSyncingPearpal(true);
+    try {
+      await invoke('pearpal_sync_notebook');
+      await Promise.all([
+        useAccountStateStore.getState().refresh().catch(() => {}),
+        refreshPearpalStatus({ silent: true }),
+      ]);
+      toast.success('已同步美鸭梨手账数据');
+    } catch (reason) {
+      const msg = String(reason);
+      if (/登录|过期/.test(msg)) {
+        void refreshPearpalStatus({ silent: true });
+        toast.error(msg, {
+          action: {
+            label: '去登录',
+            onClick: () => void openPearpalLogin({ switchAccount: pearpalStatus.has_login }),
+          },
+        });
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setSyncingPearpal(false);
+    }
+  };
 
   const loadStats = useCallback(async () => {
     if (!isTauri()) {
@@ -217,6 +253,7 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
           <h1 className="text-base font-semibold text-text-primary">冒险日报与运行统计</h1>
         </div>
         <div className="flex items-center gap-2">
+          <PearpalStatusPill />
           <Segmented
             label="统计视图"
             value={activeTab}
@@ -309,8 +346,8 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* 美鸭梨手账纪念横幅（如已同步） */}
-          {pearpalSummary && (
+          {/* 美鸭梨手账纪念横幅 */}
+          {pearpalSummary ? (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-bg-secondary px-4 py-3 text-xs text-text-secondary">
               <div className="flex items-center gap-2">
                 <Compass className="h-4 w-4 text-accent" />
@@ -323,6 +360,64 @@ export function TaskStatsPage({ onClose }: { onClose: () => void }) {
                 {pearpalSummary.box_num != null && <span>开启宝箱：{pearpalSummary.box_num} 个</span>}
                 {pearpalSummary.achievement_num != null && <span>达成成就：{pearpalSummary.achievement_num} 项</span>}
               </div>
+              {isTauri() && (
+                pearpalState === 'logged_in' ? (
+                  <button
+                    type="button"
+                    disabled={syncingPearpal}
+                    onClick={() => void syncPearpalNotebook()}
+                    className={secondaryButton}
+                  >
+                    <RefreshCw className={clsx('h-3.5 w-3.5', syncingPearpal && 'animate-spin')} />
+                    同步手账
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={pearpalBusy}
+                    onClick={() => void openPearpalLogin({ switchAccount: pearpalState === 'expired' })}
+                    className={secondaryButton}
+                  >
+                    {pearpalState === 'expired' ? '重新登录' : '登录美鸭梨'}
+                  </button>
+                )
+              )}
+            </div>
+          ) : isTauri() && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-bg-secondary px-4 py-3 text-xs text-text-secondary">
+              <div className="flex items-center gap-2">
+                <Compass className="h-4 w-4 text-accent" />
+                <div>
+                  <span className="font-medium text-text-primary">美鸭梨大世界探索纪念</span>
+                  <span className="ml-2 text-text-muted">
+                    {pearpalState === 'logged_in'
+                      ? '已登录美鸭梨，同步手账后可在此展示游历天数、服装数、宝箱与成就纪念'
+                      : pearpalState === 'expired'
+                        ? '美鸭梨登录已过期，重新登录后可同步游历天数、服装与宝箱等手账纪念'
+                        : '登录美鸭梨国服账号后，可同步游历天数、收集服装、宝箱与成就等探索纪念'}
+                  </span>
+                </div>
+              </div>
+              {pearpalState === 'logged_in' ? (
+                <button
+                  type="button"
+                  disabled={syncingPearpal}
+                  onClick={() => void syncPearpalNotebook()}
+                  className={secondaryButton}
+                >
+                  <RefreshCw className={clsx('h-3.5 w-3.5', syncingPearpal && 'animate-spin')} />
+                  同步手账数据
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={pearpalBusy}
+                  onClick={() => void openPearpalLogin({ switchAccount: pearpalState === 'expired' })}
+                  className={secondaryButton}
+                >
+                  {pearpalState === 'expired' ? '重新登录美鸭梨' : '登录美鸭梨'}
+                </button>
+              )}
             </div>
           )}
 

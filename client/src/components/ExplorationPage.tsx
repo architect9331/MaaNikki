@@ -1,12 +1,15 @@
-import { Compass, Fish, Hand, Loader2, MapPin, Play, Square } from 'lucide-react';
+import { AlertCircle, Compass, Fish, Hand, Loader2, MapPin, Play, Square } from 'lucide-react';
+import clsx from 'clsx';
 import { useAppStore } from '@/stores/appStore';
 import { EXPLORATION_INSTANCE_ID, explorationFeatures } from '@/types/exploration';
 import { explorationStatusLabels, setExplorationEnabled, useExplorationStore } from '@/services/explorationService';
+import { getPearpalLoginState, openPearpalLogin, usePearpalStore } from '@/services/pearpalService';
 import { isTauri } from '@/utils/paths';
 import { startFishing, stopFishing, useFishingStore } from '@/services/fishingService';
 import { OptionEditor } from './OptionEditor';
 import { Card, FeaturePage, primaryButton, secondaryButton, StatusBar } from './ui/FeaturePage';
 import { MapMaskSection } from './settings/MapMaskSection';
+import { PearpalStatusPill } from './PearpalAccount';
 import { LogsPanel } from './LogsPanel';
 import { SwitchTrack } from './ui/SwitchTrack';
 
@@ -39,7 +42,17 @@ function FishingCard() {
 
 export function ExplorationPage({ onClose }: { onClose: () => void }) {
   const { enabled, status, error } = useExplorationStore();
-  return <FeaturePage icon={Compass} title="辅助功能" onBack={onClose}>
+  const explorationSettings = useAppStore((state) => state.explorationSettings);
+  const pearpalStatus = usePearpalStore((state) => state.status);
+  const pearpalBusy = usePearpalStore((state) => state.busy);
+  const pearpalState = getPearpalLoginState(pearpalStatus);
+  const mapMarkerEnabled =
+    explorationSettings.AssistMapStar ||
+    explorationSettings.AssistMapDewdrop ||
+    explorationSettings.AssistMapChest ||
+    explorationSettings.AssistMapBox;
+
+  return <FeaturePage icon={Compass} title="辅助功能" onBack={onClose} actions={<PearpalStatusPill />}>
     <StatusBar tone={status === 'error' ? 'warn' : status === 'running' ? 'ok' : status === 'off' ? 'idle' : 'busy'} title={explorationStatusLabels[status]}
       detail={error || '日常运行时自动暂停，结束后继续。设置自动保存，软件启动后手动开启辅助。'}>
       <label className="flex cursor-pointer items-center gap-2 text-xs text-text-secondary">
@@ -57,7 +70,38 @@ export function ExplorationPage({ onClose }: { onClose: () => void }) {
       </div>
       <div className="space-y-4">
         <FishingCard />
-        <Card icon={MapPin} title="地图标记"><FeatureRows features={explorationFeatures.slice(4)} /></Card>
+        <Card icon={MapPin} title="地图标记">
+          {isTauri() && pearpalState !== 'logged_in' && (
+            <div
+              className={clsx(
+                'flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5 text-xs',
+                pearpalState === 'expired' || mapMarkerEnabled
+                  ? 'bg-warning/10 text-warning'
+                  : 'bg-bg-primary/70 text-text-secondary',
+              )}
+            >
+              <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>
+                  {pearpalState === 'expired'
+                    ? '美鸭梨登录已过期，重新登录后地图标记才能同步最新进度'
+                    : mapMarkerEnabled
+                      ? '已开启地图标记，登录美鸭梨账号后即可在游戏中显示标点'
+                      : '开启地图标记前需要先登录美鸭梨国服账号'}
+                </span>
+              </span>
+              <button
+                type="button"
+                disabled={pearpalBusy}
+                onClick={() => void openPearpalLogin({ switchAccount: pearpalState === 'expired' })}
+                className={primaryButton}
+              >
+                {pearpalState === 'expired' ? '重新登录' : '登录美鸭梨'}
+              </button>
+            </div>
+          )}
+          <FeatureRows features={explorationFeatures.slice(4)} />
+        </Card>
         <MapMaskSection />
       </div>
     </div>

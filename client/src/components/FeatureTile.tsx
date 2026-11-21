@@ -16,10 +16,11 @@ export interface FeatureTileToggle {
  * the icon-only form shown in the top bar while the side panel is collapsed, so
  * their switch moves to the feature's own page.
  */
-export function FeatureTile({ icon: Icon, title, status, tooltip, onClick, warn, busy, toggle, compact, className }: {
+export function FeatureTile({ icon: Icon, title, status, statusTone, tooltip, onClick, warn, busy, toggle, compact, className }: {
   icon: ComponentType<{ className?: string }>;
   title: string;
   status: string;
+  statusTone?: 'ok' | 'warn' | 'idle';
   tooltip?: ReactNode;
   onClick: () => void;
   warn?: boolean;
@@ -28,6 +29,15 @@ export function FeatureTile({ icon: Icon, title, status, tooltip, onClick, warn,
   compact?: boolean;
   className?: string;
 }) {
+  const effectiveTone = statusTone ?? (warn ? 'warn' : undefined);
+  const dotClass =
+    effectiveTone === 'ok'
+      ? 'bg-success'
+      : effectiveTone === 'warn'
+        ? 'bg-warning'
+        : effectiveTone === 'idle'
+          ? 'bg-text-muted/70'
+          : null;
   const icon = busy
     ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden="true" />
     : <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />;
@@ -38,10 +48,17 @@ export function FeatureTile({ icon: Icon, title, status, tooltip, onClick, warn,
       <button type="button" onClick={onClick} aria-label={`${title}：${status}`}
         className={clsx('relative flex shrink-0 items-center rounded-lg p-2 text-accent-secondary transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent', className)}>
         {icon}
-        {warn && <span aria-hidden="true" className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-warning ring-2 ring-bg-secondary" />}
+        {dotClass && <span aria-hidden="true" className={clsx('absolute right-1 top-1 h-1.5 w-1.5 rounded-full ring-2 ring-bg-secondary', dotClass)} />}
       </button>
     </Tooltip>;
   }
+
+  const statusColor =
+    effectiveTone === 'ok'
+      ? 'text-success'
+      : effectiveTone === 'warn'
+        ? 'text-warning'
+        : 'text-text-muted';
 
   return <div className={clsx('relative min-w-0 rounded-xl border border-border bg-bg-secondary transition-colors hover:bg-bg-hover', className)}>
     <Tooltip side="bottom" content={hint}>
@@ -50,7 +67,10 @@ export function FeatureTile({ icon: Icon, title, status, tooltip, onClick, warn,
         <span className="text-accent-secondary">{icon}</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-text-primary">{title}</span>
-          <span className={clsx('block truncate text-xs tabular-nums', warn ? 'text-warning' : 'text-text-muted')}>{status}</span>
+          <span className={clsx('flex items-center gap-1.5 text-xs tabular-nums', statusColor)}>
+            {statusTone && <span aria-hidden="true" className={clsx('h-1.5 w-1.5 shrink-0 rounded-full', dotClass)} />}
+            <span className="truncate">{status}</span>
+          </span>
         </span>
       </button>
     </Tooltip>

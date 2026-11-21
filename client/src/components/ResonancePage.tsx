@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, BookOpen, Download, Loader2, RefreshCw, Search } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { refreshResonance, resonanceLabel, type ResonanceHistory, useResonanceStore, useResonanceViewStore } from '@/services/resonanceService';
+import { getPearpalLoginState, openPearpalLogin, usePearpalStore } from '@/services/pearpalService';
 import { activeBanners, collectionOutfits, historyRows, resonanceSummary } from '@/services/resonanceData';
 import { isTauri } from '@/utils/paths';
 import { MapResourcesPanel } from './MapResourcesPanel';
+import { PearpalStatusPill } from './PearpalAccount';
 import { ResonanceControl } from './ResonanceControl';
 import { FeaturePage, primaryButton, secondaryButton, Segmented, StatusBar } from './ui/FeaturePage';
 
@@ -45,7 +46,9 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [action, setAction] = useState(false);
-  const [login, setLogin] = useState(false);
+  const pearpalStatus = usePearpalStore((s) => s.status);
+  const pearpalBusy = usePearpalStore((s) => s.busy);
+  const pearpalState = getPearpalLoginState(pearpalStatus);
   const [banner, setBanner] = useState('all');
   const [rarity, setRarity] = useState('all');
   const [search, setSearch] = useState('');
@@ -72,19 +75,6 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
   useEffect(() => { void refreshHistory(); return () => { revision.current++; }; }, [refreshHistory]);
   useEffect(() => { setPage(0); }, [accountKey, banner, rarity, search, view, completion]);
   useEffect(() => { setBanner('all'); setRarity('all'); }, [accountKey]);
-  useEffect(() => {
-    if (!isTauri()) return;
-    let disposed = false;
-    const update = async () => {
-      try {
-        const result = await invoke<{ has_login: boolean }>('pearpal_status');
-        if (!disposed) setLogin(result.has_login);
-      } catch { /* Login actions report connection errors. */ }
-    };
-    void update();
-    const subscription = listen('pearpal-login-changed', () => { void update(); void refreshResonance(); });
-    return () => { disposed = true; void subscription.then((unlisten) => unlisten()).catch(() => {}); };
-  }, []);
 
   // Keep a previous account's response out of the newly selected account view.
   const current = data?.history.account_key === accountKey ? data : null;
@@ -120,7 +110,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
   const pages = Math.max(1, Math.ceil(count / size));
   const currentPage = Math.min(page, pages - 1);
 
-  async function run(command: 'pearpal_open_login' | 'resonance_sync') {
+  async function run(command: 'resonance_sync') {
     setAction(true);
     try { await invoke(command); await refreshResonance(); }
     catch (reason) { toast.error(String(reason)); }
@@ -144,6 +134,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
 
   const best = [...distribution].sort((a, b) => b.count - a.count)[0];
   return <FeaturePage icon={BookOpen} title="共鸣记录" onBack={onClose} actions={<>
+      <PearpalStatusPill />
       <select value={accountKey} onChange={(event) => setSelected(event.target.value)} aria-label="记录账号" className={clsx(selectStyle, '!py-1.5')}>
         {!status.accounts.length && <option value="">尚无账号记录</option>}
         {status.accounts.map((item) => <option key={item.key} value={item.key}>UID {item.uid}</option>)}
@@ -154,8 +145,26 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
           detail={status.busy ? status.banner ? status.banner + (status.page ? ' · 第 ' + status.page + ' 页' : '') : '正在验证美鸭梨账号'
             : '最近同步 ' + timeLabel(account?.last_success) + (status.enabled && !!status.next_sync && !status.auth_paused ? ' · 下次 ' + timeLabel(status.next_sync) : '')}>
           <ResonanceControl />
-          <button disabled={!isTauri() || action} onClick={() => void run('pearpal_open_login')} className={secondaryButton}>{login ? '切换美鸭梨账号' : '登录美鸭梨'}</button>
-          <button disabled={!isTauri() || action || status.busy} onClick={() => void run('resonance_sync')} className={primaryButton}><RefreshCw className={clsx('h-3.5 w-3.5', status.busy && 'animate-spin')} />立即同步</button>
+          <button
+            disabled={!isTauri() || action || pearpalBusy}
+            onClick={() => void openPearpalLogin({ switchAccount: pearpalState !== 'logged_out' })}
+            className={
+              pearpalState === 'logged_out'
+                ? primaryButton
+                : pearpalState === 'expired'
+                  ? clsx(secondaryButton, 'border-warning/50 bg-warning/10 font-medium text-warning hover:bg-warning/20')
+                  : secondaryButton
+            }
+          >
+            {pearpalState === 'logged_in' ? '切换美鸭梨账号' : pearpalState === 'expired' ? '重新登录美鸭梨' : '登录美鸭梨'}
+          </button>
+          <button
+            disabled={!isTauri() || action || status.busy}
+            onClick={() => void run('resonance_sync')}
+            className={pearpalState === 'logged_in' ? primaryButton : secondaryButton}
+          >
+            <RefreshCw className={clsx('h-3.5 w-3.5', status.busy && 'animate-spin')} />立即同步
+          </button>
         </StatusBar>
         {(status.error || connectionError || error) && <p role="alert" className="flex items-center gap-2 rounded-xl border border-error/25 bg-error/5 p-3 text-sm text-error"><AlertCircle className="h-4 w-4 shrink-0" />{connectionError || error || status.error}</p>}
 
@@ -211,11 +220,44 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
             </>}
           </div>
           {view === 'map_resources'
-            ? <MapResourcesPanel onLogin={isTauri() ? () => void run('pearpal_open_login') : undefined} />
+            ? <MapResourcesPanel onLogin={isTauri() ? () => void openPearpalLogin({ switchAccount: pearpalState !== 'logged_out' }) : undefined} />
             : <>
               {possibleGap && view === 'records' && <p className="rounded-lg bg-warning/5 px-3 py-2 text-xs text-warning">部分卡池的历史记录可能存在间隔。</p>}
               {loading && !current ? <div className="flex items-center justify-center gap-2 p-16 text-sm text-text-muted"><Loader2 className="h-4 w-4 animate-spin" />正在读取记录</div>
-            : !count ? <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-bg-secondary px-4 py-16 text-text-muted"><BookOpen className="h-8 w-8 opacity-40" /><p className="text-sm">{current ? '暂无符合条件的记录' : '登录美鸭梨，开始保存你的共鸣收藏'}</p></div>
+            : !count ? <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-bg-secondary px-4 py-16 text-text-muted">
+                <BookOpen className="h-8 w-8 opacity-40" />
+                <p className="text-sm">
+                  {current
+                    ? '暂无符合条件的记录'
+                    : pearpalState === 'expired'
+                      ? '美鸭梨登录已过期，重新登录后可继续同步共鸣收藏'
+                      : pearpalState === 'logged_in'
+                        ? '已登录美鸭梨，点击下方按钮立即同步你的共鸣记录'
+                        : '登录美鸭梨，开始保存你的共鸣收藏'}
+                </p>
+                {!current && isTauri() && (
+                  pearpalState === 'logged_in' ? (
+                    <button
+                      type="button"
+                      disabled={action || status.busy}
+                      onClick={() => void run('resonance_sync')}
+                      className={primaryButton}
+                    >
+                      <RefreshCw className={clsx('h-3.5 w-3.5', status.busy && 'animate-spin')} />
+                      立即同步共鸣记录
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={pearpalBusy}
+                      onClick={() => void openPearpalLogin({ switchAccount: pearpalState === 'expired' })}
+                      className={primaryButton}
+                    >
+                      {pearpalState === 'expired' ? '重新登录美鸭梨' : '登录美鸭梨'}
+                    </button>
+                  )
+                )}
+              </div>
             : view === 'outfits' ? <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-2">{outfits.slice(currentPage * size, currentPage * size + size).map((outfit) => {
               const full = outfit.obtained === outfit.items.length;
               const low = Math.min(...outfit.parts.flatMap((part) => part.pity));

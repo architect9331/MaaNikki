@@ -23,6 +23,7 @@ import { BlessingProgressPanel } from './BlessingProgressPage';
 import { useCollectionHubStore, type CollectionTab } from '@/stores/collectionHubStore';
 import { WardrobeCraftingPlanner } from './WardrobeCraftingPlanner';
 import { WardrobeRenewalPlanner } from './WardrobeRenewalPlanner';
+import { PearpalStatusPill } from './PearpalAccount';
 
 type Tab = CollectionTab;
 // Each tab carries its own progress, so the page reads as an overview before any tab is opened.
@@ -128,6 +129,7 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
     : '推荐先从「服装焕新」读取：可一次同步衣柜拥有情况与全部服装等级，支持按获得时间快速增量更新。';
 
   return <FeaturePage icon={LibraryBig} title="收集进度" onBack={onClose} actions={<>
+    <PearpalStatusPill />
     {data?.uid && <span className="text-xs tabular-nums text-text-muted">UID {data.uid}</span>}
     <button onClick={() => void refresh().then(() => setRefreshToken((previous) => previous + 1)).catch(() => {})} disabled={loading} title="刷新收集记录" aria-label="刷新收集记录" className="rounded-lg p-2 hover:bg-bg-hover disabled:opacity-40"><RefreshCw className={clsx('h-4 w-4', loading && 'animate-spin')} /></button>
   </>}>

@@ -6,6 +6,7 @@ use std::time::{Duration, SystemTime};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use tauri::Emitter;
 
 use super::utils::{get_app_data_dir, write_atomic};
 
@@ -653,6 +654,11 @@ pub async fn get_map_resources_impl(force_refresh: bool) -> Result<Value, String
         .map_err(|_| "美鸭梨用户数据格式无效。".to_string())?;
 
     if user_res["code"] != 0 || !user_res["data"]["star"].is_array() {
+        super::pearpal::merge_status(json!({
+            "authenticated": false,
+            "error": "美鸭梨登录已过期，请重新登录。",
+            "updated_at": Utc::now().timestamp(),
+        }));
         return Ok(json!({
             "authenticated": false,
             "has_login": true,
@@ -670,18 +676,14 @@ pub async fn get_map_resources_impl(force_refresh: bool) -> Result<Value, String
     };
     let box_set = parse_id_set(box_val);
 
-    if let Ok(app_dir) = get_app_data_dir() {
-        let status_path = app_dir.join("config/map-mask/status.json");
-        let status_doc = json!({
-            "authenticated": true,
-            "error": "",
-            "star_collected": star_set.len(),
-            "dewdrop_collected": dew_set.len(),
-            "box_collected": box_set.len(),
-            "updated_at": Utc::now().timestamp(),
-        });
-        let _ = write_atomic(&status_path, status_doc.to_string());
-    }
+    super::pearpal::merge_status(json!({
+        "authenticated": true,
+        "error": "",
+        "star_collected": star_set.len(),
+        "dewdrop_collected": dew_set.len(),
+        "box_collected": box_set.len(),
+        "updated_at": Utc::now().timestamp(),
+    }));
 
     let cache = load_or_refresh_public_cache(&client, force_refresh).await?;
     let mut group_buckets: HashMap<String, BucketCounts> = HashMap::new();
@@ -837,6 +839,15 @@ pub async fn get_map_resources_impl(force_refresh: bool) -> Result<Value, String
 }
 
 #[tauri::command]
-pub async fn pearpal_map_resources(force_refresh: Option<bool>) -> Result<Value, String> {
-    get_map_resources_impl(force_refresh.unwrap_or(false)).await
+pub async fn pearpal_map_resources(
+    app: tauri::AppHandle,
+    force_refresh: Option<bool>,
+) -> Result<Value, String> {
+    let result = get_map_resources_impl(force_refresh.unwrap_or(false)).await?;
+    if result["has_login"].as_bool() == Some(true)
+        && result["authenticated"].as_bool() == Some(false)
+    {
+        let _ = app.emit_to("main", "pearpal-login-changed", false);
+    }
+    Ok(result)
 }

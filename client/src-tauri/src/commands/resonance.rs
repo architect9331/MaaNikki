@@ -544,6 +544,19 @@ pub fn resonance_history(
     )
 }
 
+fn map_sync_error(app: &tauri::AppHandle, err: SyncError) -> String {
+    if err.auth
+        && super::pearpal::merge_status(json!({
+            "authenticated": false,
+            "error": err.message,
+            "updated_at": Utc::now().timestamp(),
+        }))
+    {
+        let _ = app.emit_to("main", "pearpal-login-changed", false);
+    }
+    err.message
+}
+
 #[tauri::command]
 pub async fn pearpal_sync_notebook(
     app: tauri::AppHandle,
@@ -569,8 +582,8 @@ pub async fn pearpal_sync_notebook(
             .json(&json!({"client_id": 1106, "token": token, "openid": openid})),
     )
     .await
-    .map_err(|e| e.message)?;
-    require_success(&info, "美鸭梨账号获取").map_err(|e| e.message)?;
+    .map_err(|e| map_sync_error(&app, e))?;
+    require_success(&info, "美鸭梨账号获取").map_err(|e| map_sync_error(&app, e))?;
     let uid = match &info["data"]["role"]["uid"] {
         Value::String(uid) => uid.clone(),
         Value::Number(uid) => uid.to_string(),
@@ -582,6 +595,11 @@ pub async fn pearpal_sync_notebook(
     {
         return Err("请登录美鸭梨国服角色。".into());
     }
+    super::pearpal::merge_status(json!({
+        "uid": uid,
+        "authenticated": true,
+        "error": "",
+    }));
     let account_key = format!("CN:{uid}");
     let role = super::account_state::read_role(&account_key)?;
     let mut history = if role["resonance"].is_object() {
@@ -599,12 +617,12 @@ pub async fn pearpal_sync_notebook(
     };
     let rows = match fetch_notebook_response(&client, token, openid)
         .await
-        .map_err(|e| e.message)
+        .map_err(|e| map_sync_error(&app, e))
     {
         Ok(response) => {
             save_pearpal_notebook_observations(&client, &account_key, &response, Some(&app), true)
                 .await
-                .map_err(|e| e.message)?;
+                .map_err(|e| map_sync_error(&app, e))?;
             parse_notebook_pulls(&response).ok()
         }
         Err(err) => return Err(err),
@@ -1244,6 +1262,7 @@ async fn worker(app: tauri::AppHandle, state: Arc<ResonanceState>) {
                 } => None,
             };
             let mut message = None;
+            let mut auth_expired_msg = None;
             {
                 let mut inner = state.inner.lock().unwrap();
                 inner.busy = false;
@@ -1269,6 +1288,7 @@ async fn worker(app: tauri::AppHandle, state: Arc<ResonanceState>) {
                             inner.next_sync = Utc::now().timestamp()
                                 + (60_i64 * 2_i64.pow(inner.failures.min(6) - 1)).min(INTERVAL);
                             if error.auth {
+                                auth_expired_msg = Some(error.message.clone());
                                 message = Some(error.message);
                             }
                         }
@@ -1290,6 +1310,15 @@ async fn worker(app: tauri::AppHandle, state: Arc<ResonanceState>) {
                         Some(reason) => format!("{added}{reason}"),
                         None => added,
                     });
+                }
+            }
+            if let Some(err_msg) = auth_expired_msg {
+                if super::pearpal::merge_status(json!({
+                    "authenticated": false,
+                    "error": err_msg,
+                    "updated_at": Utc::now().timestamp(),
+                })) {
+                    let _ = app.emit_to("main", "pearpal-login-changed", false);
                 }
             }
             state.publish(&app);
@@ -1340,6 +1369,7 @@ async fn synchronize(
     {
         return Err(failure("请登录美鸭梨国服角色。"));
     }
+    super::pearpal::merge_status(json!({ "uid": uid }));
     let account_key = format!("CN:{uid}");
     let role = super::account_state::read_role(&account_key)?;
     let mut history = if role["resonance"].is_object() {

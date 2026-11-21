@@ -475,6 +475,19 @@ class PearPal:
             write_json(self.cache, {"schema_version": CACHE_SCHEMA,
                                     "points": [asdict(p) for p in points.values()]})
         return list(points.values())
+    def _write_status(self, payload: dict):
+        if not self.login.is_file():
+            return
+        status_path = self.directory / "status.json"
+        if "uid" not in payload and status_path.is_file():
+            try:
+                existing = json.loads(status_path.read_text(encoding="utf-8"))
+                if isinstance(existing, dict) and isinstance(existing.get("uid"), str) and existing["uid"]:
+                    payload = {**payload, "uid": existing["uid"]}
+            except (OSError, json.JSONDecodeError):
+                pass
+        write_json(status_path, payload)
+
     def _run(self):
         public, revision, failures = None, None, 0
         while not self.stop.is_set():
@@ -516,7 +529,7 @@ class PearPal:
                 now = time.time()
                 with self.lock:
                     self.points, self.ready, self.message = index, True, ""
-                write_json(self.directory / "status.json", {
+                self._write_status({
                     "updated_at": now, "authenticated": True,
                     "star_collected": len(awarded["star"]), "dewdrop_collected": len(awarded["dewdrop"]),
                     "box_collected": len(box_awarded),
@@ -534,7 +547,7 @@ class PearPal:
                 if failures == 1:
                     write_message("地图标记：" + message, None)
                 try:
-                    write_json(self.directory / "status.json", {
+                    self._write_status({
                         "authenticated": False, "error": message, "updated_at": time.time()})
                 except OSError:
                     pass

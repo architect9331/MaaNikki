@@ -12,6 +12,7 @@ import { isTauri } from '@/utils/paths';
 import { useAppStore } from '@/stores/appStore';
 import { ModalPortal, useModalFocusTrap } from './ui/Modal';
 import { FeatureTile } from './FeatureTile';
+import { PearpalAccountTile } from './PearpalAccount';
 import { Tooltip } from './ui/Tooltip';
 
 function MeteorIcon({ className }: { className?: string }) {
@@ -199,8 +200,9 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
     <GiantMeteorStatus compact={compact} />
     <FeatureTile icon={Route} title="路线编辑器" compact={compact} status="录制和编辑路线"
       tooltip={<div className="space-y-1"><p className="font-medium">路线编辑器</p><p className="text-text-secondary">走一遍就能录下路线，再加上采集、钓鱼等动作。</p></div>}
-      className={compact ? undefined : 'col-span-full'}
+      className={compact || isTauri() ? undefined : 'col-span-full'}
       onClick={() => open('routes')} />
+    <PearpalAccountTile compact={compact} />
   </>;
   return compact
     ? <>{tiles}</>

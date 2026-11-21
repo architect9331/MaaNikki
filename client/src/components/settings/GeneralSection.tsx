@@ -24,6 +24,7 @@ import { defaultAddTaskPanelHeight, defaultWindowSize } from '@/types/config';
 import { isTauri } from '@/utils/paths';
 import { SwitchButton } from '@/components/FormControls';
 import { DesktopOnlyWrapper } from '@/components/ui/DesktopOnlyWrapper';
+import { PearpalAccountCard } from '@/components/PearpalAccount';
 
 export function GeneralSection() {
   const { t } = useTranslation();
@@ -166,6 +167,8 @@ export function GeneralSection() {
         <Settings2 className="w-4 h-4" />
         {t('settings.general')}
       </h2>
+
+      {isTauri() && <PearpalAccountCard variant="settings" />}
 
       {/* 自动化启动设置组 */}
       <DesktopOnlyWrapper>
