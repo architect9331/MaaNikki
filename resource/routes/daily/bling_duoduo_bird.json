@@ -1,0 +1,2276 @@
+{
+  "schema_version": 3,
+  "id": "bling_duoduo_bird",
+  "title": "伊赞之土 · 夺夺鸟",
+  "map": "miraland",
+  "start_radius": 15,
+  "timeout": 900,
+  "teleport": {
+    "name": "巨兽堡垒断桥旁",
+    "province": "伊赞之土",
+    "region": "巨木之森",
+    "x": 3631.213,
+    "y": 9021.011
+  },
+  "points": [
+    {
+      "x": 3631.21,
+      "y": 9021.01,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3612.18,
+      "y": 9033.1,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3615.18,
+      "y": 9054.1,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3621.18,
+      "y": 9057.1,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3621.18,
+      "y": 9066.1,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3609.18,
+      "y": 9096.1,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3618.18,
+      "y": 9108.1,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3619.18,
+      "y": 9126.07,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 195.0,
+        "spawn_x": 3617.74,
+        "spawn_y": 9131.43,
+        "spawn_z": -217.22,
+        "tag": "GiantWoods",
+        "spawner_id": "50509"
+      }
+    },
+    {
+      "x": 3600.18,
+      "y": 9123.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3596.18,
+      "y": 9119.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3588.18,
+      "y": 9115.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3568.18,
+      "y": 9115.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3544.18,
+      "y": 9099.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3516.18,
+      "y": 9123.7,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3488.18,
+      "y": 9135.7,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3476.18,
+      "y": 9115.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3464.18,
+      "y": 9079.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3452.18,
+      "y": 9059.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3444.18,
+      "y": 9051.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3432.18,
+      "y": 9035.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3424.18,
+      "y": 9031.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3400.18,
+      "y": 9031.7,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3392.18,
+      "y": 9031.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3380.18,
+      "y": 9027.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3372.18,
+      "y": 9043.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3388.18,
+      "y": 9059.7,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3392.18,
+      "y": 9055.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3396.18,
+      "y": 9059.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3407.18,
+      "y": 9062.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 120.0,
+        "spawn_x": 3411.99,
+        "spawn_y": 9065.48,
+        "spawn_z": -217.08,
+        "tag": "GiantWoods",
+        "spawner_id": "50506"
+      }
+    },
+    {
+      "x": 3394.18,
+      "y": 9058.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3376.18,
+      "y": 9052.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3376.18,
+      "y": 9031.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3382.18,
+      "y": 9028.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3394.18,
+      "y": 9031.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3409.18,
+      "y": 9028.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3409.18,
+      "y": 9019.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3406.18,
+      "y": 8983.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3418.18,
+      "y": 8965.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3436.18,
+      "y": 8941.77,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3439.8,
+      "y": 8933.77,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 195.0,
+        "spawn_x": 3438.36,
+        "spawn_y": 8939.13,
+        "spawn_z": -219.52,
+        "tag": "GiantWoods",
+        "spawner_id": "50507"
+      }
+    },
+    {
+      "x": 3704.48,
+      "y": 9230.44,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "古木荫地附近遗迹",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 3704.478,
+          "y": 9230.438
+        }
+      }
+    },
+    {
+      "x": 3710.86,
+      "y": 9241.01,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3719.86,
+      "y": 9232.01,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3716.86,
+      "y": 9223.01,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3716.86,
+      "y": 9217.01,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3722.86,
+      "y": 9211.01,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3734.86,
+      "y": 9211.01,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3767.86,
+      "y": 9196.01,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3777.22,
+      "y": 9194.01,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 90.0,
+        "spawn_x": 3782.77,
+        "spawn_y": 9194.01,
+        "spawn_z": -217.98,
+        "tag": "GiantWoods",
+        "spawner_id": "50512"
+      }
+    },
+    {
+      "x": 3704.48,
+      "y": 9230.44,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "古木荫地附近遗迹",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 3704.478,
+          "y": 9230.438
+        }
+      }
+    },
+    {
+      "x": 3698.86,
+      "y": 9264.35,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3674.86,
+      "y": 9288.35,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3677.86,
+      "y": 9294.35,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3671.86,
+      "y": 9306.35,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3689.86,
+      "y": 9321.35,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3692.86,
+      "y": 9324.35,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3716.86,
+      "y": 9324.35,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3731.38,
+      "y": 9320.71,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 90.0,
+        "spawn_x": 3739.38,
+        "spawn_y": 9320.71,
+        "spawn_z": -217.48,
+        "tag": "GiantWoods",
+        "spawner_id": "50511"
+      }
+    },
+    {
+      "x": 3510.03,
+      "y": 9419.99,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "探险大营地",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 3510.035,
+          "y": 9419.993
+        }
+      }
+    },
+    {
+      "x": 3501.62,
+      "y": 9404.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3521.62,
+      "y": 9372.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3509.62,
+      "y": 9344.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3505.62,
+      "y": 9340.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3501.62,
+      "y": 9332.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3489.62,
+      "y": 9332.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3485.62,
+      "y": 9340.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3477.62,
+      "y": 9360.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3469.62,
+      "y": 9364.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3449.62,
+      "y": 9348.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3441.62,
+      "y": 9344.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3433.62,
+      "y": 9336.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3433.62,
+      "y": 9312.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3417.62,
+      "y": 9300.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3409.62,
+      "y": 9304.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3405.62,
+      "y": 9304.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3393.62,
+      "y": 9296.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3389.62,
+      "y": 9284.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3393.62,
+      "y": 9280.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3381.62,
+      "y": 9268.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3373.62,
+      "y": 9268.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3369.62,
+      "y": 9264.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3361.62,
+      "y": 9260.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3357.62,
+      "y": 9264.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3349.62,
+      "y": 9268.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3345.62,
+      "y": 9264.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3345.62,
+      "y": 9256.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3341.62,
+      "y": 9252.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3337.62,
+      "y": 9244.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3353.62,
+      "y": 9212.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3365.62,
+      "y": 9204.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3365.62,
+      "y": 9200.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3361.62,
+      "y": 9196.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3357.62,
+      "y": 9192.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3353.62,
+      "y": 9188.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3348.62,
+      "y": 9183.49,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 270.0,
+        "spawn_x": 3343.07,
+        "spawn_y": 9183.49,
+        "spawn_z": -211.33,
+        "tag": "GiantWoods",
+        "spawner_id": "50505"
+      }
+    },
+    {
+      "x": 3996.95,
+      "y": 8847.27,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "深林小径",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 3996.951,
+          "y": 8847.273
+        }
+      }
+    },
+    {
+      "x": 4005.49,
+      "y": 8839.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4005.49,
+      "y": 8835.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4001.49,
+      "y": 8823.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4005.49,
+      "y": 8811.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4005.49,
+      "y": 8803.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4001.49,
+      "y": 8799.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4013.49,
+      "y": 8783.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4017.49,
+      "y": 8779.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4021.49,
+      "y": 8775.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4029.49,
+      "y": 8767.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4033.49,
+      "y": 8763.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4045.49,
+      "y": 8755.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4061.49,
+      "y": 8751.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4081.49,
+      "y": 8739.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4101.49,
+      "y": 8735.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4105.49,
+      "y": 8735.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4109.49,
+      "y": 8739.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4121.49,
+      "y": 8739.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4125.49,
+      "y": 8735.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4129.49,
+      "y": 8731.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4133.49,
+      "y": 8727.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4137.49,
+      "y": 8723.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4137.49,
+      "y": 8711.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4129.49,
+      "y": 8695.38,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4105.49,
+      "y": 8695.38,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4101.43,
+      "y": 8698.38,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 225.0,
+        "spawn_x": 4097.51,
+        "spawn_y": 8702.3,
+        "spawn_z": -213.04,
+        "tag": "GiantWoods",
+        "spawner_id": "58114"
+      }
+    },
+    {
+      "x": 4595.56,
+      "y": 8814.47,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "壳壳岛西侧对岸码头",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 4595.558,
+          "y": 8814.467
+        }
+      }
+    },
+    {
+      "x": 4602.64,
+      "y": 8791.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4614.64,
+      "y": 8759.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4638.64,
+      "y": 8731.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4658.64,
+      "y": 8699.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4678.64,
+      "y": 8667.18,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4674.64,
+      "y": 8647.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4670.64,
+      "y": 8643.18,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4658.64,
+      "y": 8643.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4646.64,
+      "y": 8631.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4642.64,
+      "y": 8627.18,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4650.64,
+      "y": 8611.18,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 4658.04,
+      "y": 8598.18,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 345.0,
+        "spawn_x": 4656.6,
+        "spawn_y": 8592.82,
+        "spawn_z": -205.07,
+        "tag": "GiantWoods",
+        "spawner_id": "58975"
+      }
+    },
+    {
+      "x": 5027.66,
+      "y": 9080.29,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "壳壳岛东南侧对岸码头",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 5027.659,
+          "y": 9080.291
+        }
+      }
+    },
+    {
+      "x": 5034.04,
+      "y": 9096.2,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5028.04,
+      "y": 9108.2,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5043.04,
+      "y": 9123.2,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5055.04,
+      "y": 9141.2,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5058.04,
+      "y": 9153.2,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5079.04,
+      "y": 9177.2,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5078.11,
+      "y": 9181.67,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 165.0,
+        "spawn_x": 5079.55,
+        "spawn_y": 9187.03,
+        "spawn_z": -204.7,
+        "tag": "GiantWoods",
+        "spawner_id": "55080"
+      }
+    },
+    {
+      "x": 5199.3,
+      "y": 9097.88,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "卢米菈的小屋",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 5199.301,
+          "y": 9097.884
+        }
+      }
+    },
+    {
+      "x": 5214.39,
+      "y": 9093.62,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5250.39,
+      "y": 9090.62,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5286.39,
+      "y": 9078.62,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5322.39,
+      "y": 9072.62,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5330.17,
+      "y": 9085.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 209.9,
+        "spawn_x": 5327.4,
+        "spawn_y": 9090.43,
+        "spawn_z": -209.46,
+        "tag": "GiantWoods",
+        "spawner_id": "55078"
+      }
+    },
+    {
+      "x": 5153.24,
+      "y": 8668.33,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "母菇林地",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 5153.24,
+          "y": 8668.327
+        }
+      }
+    },
+    {
+      "x": 5130.34,
+      "y": 8658.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5094.34,
+      "y": 8658.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5070.34,
+      "y": 8682.33,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5058.34,
+      "y": 8685.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5052.34,
+      "y": 8706.33,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5050.34,
+      "y": 8723.62,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 209.9,
+        "spawn_x": 5047.57,
+        "spawn_y": 8728.43,
+        "spawn_z": -204.66,
+        "tag": "GiantWoods",
+        "spawner_id": "58976"
+      }
+    },
+    {
+      "x": 5405.99,
+      "y": 8261.83,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "帕克亚火山口探险家营地",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 5405.991,
+          "y": 8261.83
+        }
+      }
+    },
+    {
+      "x": 5406.99,
+      "y": 8296.83,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5409.99,
+      "y": 8311.83,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5430.99,
+      "y": 8323.83,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5451.99,
+      "y": 8320.83,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5459.84,
+      "y": 8311.72,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 270.0,
+        "spawn_x": 5454.29,
+        "spawn_y": 8311.72,
+        "spawn_z": -161.93,
+        "tag": "GiantWoods",
+        "spawner_id": "58977"
+      }
+    },
+    {
+      "x": 5673.74,
+      "y": 8683.87,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "林地小屋",
+          "province": "伊赞之土",
+          "region": "巨木之森",
+          "x": 5673.737,
+          "y": 8683.871
+        }
+      }
+    },
+    {
+      "x": 5634.52,
+      "y": 8681.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5610.52,
+      "y": 8708.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5592.52,
+      "y": 8735.25,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5556.52,
+      "y": 8738.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 5539.52,
+      "y": 8743.05,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 255.0,
+        "spawn_x": 5534.16,
+        "spawn_y": 8744.49,
+        "spawn_z": -190.01,
+        "tag": "GiantWoods",
+        "spawner_id": "55077"
+      }
+    },
+    {
+      "x": 6883.24,
+      "y": 4762.08,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "古息坡道",
+          "province": "伊赞之土",
+          "region": "埋骨地",
+          "x": 6883.245,
+          "y": 4762.082
+        }
+      }
+    },
+    {
+      "x": 6898.81,
+      "y": 4757.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6901.81,
+      "y": 4766.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6901.81,
+      "y": 4769.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6901.81,
+      "y": 4772.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6883.81,
+      "y": 4778.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6862.81,
+      "y": 4775.25,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6841.81,
+      "y": 4772.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6835.81,
+      "y": 4778.25,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6829.81,
+      "y": 4781.25,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6808.81,
+      "y": 4763.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6808.81,
+      "y": 4739.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6790.81,
+      "y": 4727.25,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 6782.81,
+      "y": 4728.25,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 315.0,
+        "spawn_x": 6778.89,
+        "spawn_y": 4724.33,
+        "spawn_z": -151.9,
+        "tag": "RestingGrounds",
+        "spawner_id": "89941"
+      }
+    },
+    {
+      "x": 7649.96,
+      "y": 4981.8,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "蓝池东侧修习所渡口",
+          "province": "伊赞之土",
+          "region": "埋骨地",
+          "x": 7649.962,
+          "y": 4981.8
+        }
+      }
+    },
+    {
+      "x": 7629.68,
+      "y": 4977.8,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7614.68,
+      "y": 4986.8,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7605.68,
+      "y": 5004.8,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7611.68,
+      "y": 5031.8,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7629.68,
+      "y": 5052.8,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7626.68,
+      "y": 5055.8,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7621.68,
+      "y": 5057.7,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 90.0,
+        "spawn_x": 7627.23,
+        "spawn_y": 5057.7,
+        "spawn_z": -184.86,
+        "tag": "RestingGrounds",
+        "spawner_id": "91724"
+      }
+    },
+    {
+      "x": 7635.79,
+      "y": 5062.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7643.79,
+      "y": 5070.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7627.79,
+      "y": 5102.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7619.79,
+      "y": 5110.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7583.79,
+      "y": 5106.7,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7547.79,
+      "y": 5102.7,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7523.79,
+      "y": 5114.7,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7519.79,
+      "y": 5150.7,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7515.79,
+      "y": 5162.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7487.79,
+      "y": 5186.7,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7467.79,
+      "y": 5182.7,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7470.79,
+      "y": 5175.28,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 45.0,
+        "spawn_x": 7474.71,
+        "spawn_y": 5171.36,
+        "spawn_z": -177.81,
+        "tag": "RestingGrounds",
+        "spawner_id": "91725"
+      }
+    },
+    {
+      "x": 7649.96,
+      "y": 4981.8,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "蓝池东侧修习所渡口",
+          "province": "伊赞之土",
+          "region": "埋骨地",
+          "x": 7649.962,
+          "y": 4981.8
+        }
+      }
+    },
+    {
+      "x": 7621.45,
+      "y": 4970.98,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7589.45,
+      "y": 4954.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7565.45,
+      "y": 4926.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7541.45,
+      "y": 4902.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7517.45,
+      "y": 4878.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7481.45,
+      "y": 4866.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7445.45,
+      "y": 4858.98,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7417.45,
+      "y": 4842.98,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7393.45,
+      "y": 4818.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7389.45,
+      "y": 4782.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7389.45,
+      "y": 4754.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7397.45,
+      "y": 4750.98,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7401.45,
+      "y": 4746.98,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7409.45,
+      "y": 4746.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7421.45,
+      "y": 4758.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7425.45,
+      "y": 4762.98,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7436.45,
+      "y": 4777.98,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 29.9,
+        "spawn_x": 7439.22,
+        "spawn_y": 4773.17,
+        "spawn_z": -170.37,
+        "tag": "RestingGrounds",
+        "spawner_id": "91726"
+      }
+    },
+    {
+      "x": 8586.15,
+      "y": 5376.19,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "龙埙遗所",
+          "province": "伊赞之土",
+          "region": "埋骨地",
+          "x": 8586.154,
+          "y": 5376.194
+        }
+      }
+    },
+    {
+      "x": 8557.61,
+      "y": 5348.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8529.61,
+      "y": 5324.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8493.61,
+      "y": 5336.19,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8469.61,
+      "y": 5332.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8457.61,
+      "y": 5332.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8437.61,
+      "y": 5324.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8421.61,
+      "y": 5348.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8409.61,
+      "y": 5364.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8413.61,
+      "y": 5384.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8417.61,
+      "y": 5416.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8429.61,
+      "y": 5436.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8433.61,
+      "y": 5456.19,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8421.61,
+      "y": 5476.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8413.61,
+      "y": 5480.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8409.61,
+      "y": 5480.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8405.61,
+      "y": 5480.19,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8392.61,
+      "y": 5497.78,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 299.9,
+        "spawn_x": 8387.8,
+        "spawn_y": 5495.01,
+        "spawn_z": -160.44,
+        "tag": "RestingGrounds",
+        "spawner_id": "93409"
+      }
+    },
+    {
+      "x": 3470.99,
+      "y": 3011.12,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "金庭后门",
+          "province": "伊赞之土",
+          "region": "磐城",
+          "x": 3470.988,
+          "y": 3011.116
+        }
+      }
+    },
+    {
+      "x": 3504.99,
+      "y": 2996.15,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3532.99,
+      "y": 2972.15,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3568.99,
+      "y": 2972.15,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3604.99,
+      "y": 2968.15,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3640.99,
+      "y": 2964.15,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3672.99,
+      "y": 2948.15,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 3684.77,
+      "y": 2943.15,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "duoduo_bird",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 45.0,
+        "spawn_x": 3688.69,
+        "spawn_y": 2939.23,
+        "spawn_z": 339.8,
+        "tag": "GiantsCity",
+        "spawner_id": "108186"
+      }
+    }
+  ]
+}

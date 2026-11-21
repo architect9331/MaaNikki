@@ -1,0 +1,664 @@
+{
+  "schema_version": 3,
+  "id": "bling_greedy_pouch_guaranteed",
+  "title": "奇迹大陆 · 必刷贪心钱袋",
+  "map": "miraland",
+  "start_radius": 15,
+  "timeout": 900,
+  "teleport": {
+    "name": "愿望梦境仓库天台",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10322.092,
+    "y": 9684.375
+  },
+  "points": [
+    {
+      "x": 10322.09,
+      "y": 9684.38,
+      "radius": 8.5,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10326.17,
+      "y": 9654.43,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10320.17,
+      "y": 9648.43,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10320.17,
+      "y": 9630.43,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10300.17,
+      "y": 9610.43,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 105.0,
+        "spawn_x": 10305.53,
+        "spawn_y": 9611.87,
+        "spawn_z": -111.56,
+        "tag": "Florawish",
+        "spawner_id": "21773"
+      }
+    },
+    {
+      "x": 10441.0,
+      "y": 9711.54,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "秘密基地",
+          "province": "心愿原野",
+          "region": "花愿镇",
+          "x": 10441.002,
+          "y": 9711.539
+        }
+      }
+    },
+    {
+      "x": 10456.09,
+      "y": 9703.92,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10476.09,
+      "y": 9727.92,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10496.09,
+      "y": 9739.92,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10500.09,
+      "y": 9743.92,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10520.09,
+      "y": 9747.92,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10556.09,
+      "y": 9751.92,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10584.09,
+      "y": 9755.92,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10600.09,
+      "y": 9743.92,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10610.13,
+      "y": 9742.57,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 315.0,
+        "spawn_x": 10606.21,
+        "spawn_y": 9738.65,
+        "spawn_z": -145.03,
+        "tag": "Florawish",
+        "spawner_id": "21776"
+      }
+    },
+    {
+      "x": 10728.75,
+      "y": 10052.91,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "织裙街",
+          "province": "心愿原野",
+          "region": "花愿镇",
+          "x": 10728.751,
+          "y": 10052.912
+        }
+      }
+    },
+    {
+      "x": 10707.42,
+      "y": 10031.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10692.42,
+      "y": 9998.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10662.42,
+      "y": 9977.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10662.42,
+      "y": 9941.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10662.42,
+      "y": 9905.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10674.42,
+      "y": 9902.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10678.42,
+      "y": 9909.08,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 195.0,
+        "spawn_x": 10676.98,
+        "spawn_y": 9914.44,
+        "spawn_z": -204.03,
+        "tag": "Florawish",
+        "spawner_id": "21775"
+      }
+    },
+    {
+      "x": 9342.04,
+      "y": 10401.19,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "紫穗草花田",
+          "province": "心愿原野",
+          "region": "小石树田村",
+          "x": 9342.041,
+          "y": 10401.192
+        }
+      }
+    },
+    {
+      "x": 9340.88,
+      "y": 10416.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9316.88,
+      "y": 10443.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9313.88,
+      "y": 10464.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9301.88,
+      "y": 10479.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9280.88,
+      "y": 10485.57,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9259.88,
+      "y": 10482.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9254.88,
+      "y": 10473.81,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 119.9,
+        "spawn_x": 9259.69,
+        "spawn_y": 10476.58,
+        "spawn_z": -196.41,
+        "tag": "Stonewoods",
+        "spawner_id": "21894"
+      }
+    },
+    {
+      "x": 9389.05,
+      "y": 10562.46,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "村居岔路",
+          "province": "心愿原野",
+          "region": "小石树田村",
+          "x": 9389.052,
+          "y": 10562.456
+        }
+      }
+    },
+    {
+      "x": 9350.2,
+      "y": 10573.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9323.2,
+      "y": 10579.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9302.2,
+      "y": 10570.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9266.2,
+      "y": 10570.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9251.2,
+      "y": 10579.99,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9252.2,
+      "y": 10615.02,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 180.0,
+        "spawn_x": 9252.2,
+        "spawn_y": 10620.57,
+        "spawn_z": -214.9,
+        "tag": "Stonewoods",
+        "spawner_id": "21895"
+      }
+    },
+    {
+      "x": 8697.6,
+      "y": 9008.74,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "水龙卷观测站",
+          "province": "心愿原野",
+          "region": "石树田无人区",
+          "x": 8697.597,
+          "y": 9008.739
+        }
+      }
+    },
+    {
+      "x": 8699.41,
+      "y": 9007.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8723.41,
+      "y": 9004.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8738.41,
+      "y": 8989.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8741.41,
+      "y": 8977.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8735.41,
+      "y": 8956.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8729.41,
+      "y": 8953.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8705.41,
+      "y": 8953.74,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8687.41,
+      "y": 8956.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8663.41,
+      "y": 8980.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8633.41,
+      "y": 9001.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8600.41,
+      "y": 9016.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 8580.41,
+      "y": 9026.93,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 60.1,
+        "spawn_x": 8585.22,
+        "spawn_y": 9024.16,
+        "spawn_z": -160.1,
+        "tag": "Stonewoods",
+        "spawner_id": "21897"
+      }
+    },
+    {
+      "x": 7828.44,
+      "y": 9367.48,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "星空钓场旁（小道）",
+          "province": "心愿原野",
+          "region": "石树田无人区",
+          "x": 7828.444,
+          "y": 9367.482
+        }
+      }
+    },
+    {
+      "x": 7827.24,
+      "y": 9367.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7827.24,
+      "y": 9373.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7824.24,
+      "y": 9379.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7827.24,
+      "y": 9385.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7845.24,
+      "y": 9376.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7845.24,
+      "y": 9352.61,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7842.24,
+      "y": 9343.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7809.24,
+      "y": 9331.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7779.24,
+      "y": 9313.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7758.24,
+      "y": 9295.61,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7737.24,
+      "y": 9286.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7716.24,
+      "y": 9271.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7704.24,
+      "y": 9274.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7698.24,
+      "y": 9283.61,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7699.24,
+      "y": 9296.61,
+      "radius": 2.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 45.0,
+        "spawn_x": 7703.16,
+        "spawn_y": 9292.69,
+        "spawn_z": -148.83,
+        "tag": "Stonewoods",
+        "spawner_id": "21892"
+      }
+    }
+  ]
+}

@@ -56,5 +56,20 @@
     },
     "post_delay": 0,
     "next": []
+  },
+  "MaaNikki_BlingCombat": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.bling_combat",
+    "custom_action_param": {
+      "target_mode": "greedy_pouch_guaranteed",
+      "ensure_fan_absorb": true,
+      "fan_ability_plan": 3,
+      "goddess_blackhole_enabled": true,
+      "goddess_windmill_enabled": true,
+      "goddess_slot": 0
+    },
+    "post_delay": 0,
+    "next": []
   }
 }
