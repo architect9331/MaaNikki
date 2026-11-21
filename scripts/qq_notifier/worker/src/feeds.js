@@ -6,8 +6,17 @@ const DAY_MS = 24 * HOUR_MS;
 const FOREVER = 9999999999;
 
 export function parseChinaTimeMs(raw) {
-  const s = String(raw ?? '').trim().replace(' ', 'T');
+  let s = String(raw ?? '').trim();
   if (!s) return null;
+  s = s.replace(
+    /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[T\s/-]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
+    (_, y, m, d, hh, mm, ss) => {
+      const date = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      if (hh === undefined) return `${date}T23:59:59`;
+      const time = `${hh.padStart(2, '0')}:${mm}${ss !== undefined ? `:${ss}` : ''}`;
+      return `${date}T${time}`;
+    },
+  );
   const hasZone = /Z$|[+-]\d{2}:?\d{2}$/i.test(s);
   const normalized = hasZone ? s : `${s}+08:00`;
   const ms = Date.parse(normalized);
@@ -260,13 +269,17 @@ const CODE_STOPWORDS = new Set([
   '美鸭梨', '设置', '其他', '输入', '暂无', 'none', 'null', 'false', 'true',
 ]);
 
+const TG_PROMO_POST_RE = /(?:官网|下载|网页|超话|签到|联名|应援车|打卡|跳转|预约|活动进行中|关注官方|微博|直播间|攻略)/;
+
 export function isValidRedeemCode(raw) {
   const s = String(raw ?? '').trim().replace(/^[「『【"'`(<]+|[」』】"'`)>,。，！!；;：:\s]+$/g, '');
   if (s.length < 4 || s.length > 24) return false;
   if (CODE_STOPWORDS.has(s.toLowerCase())) return false;
-  if (!/^[A-Za-z0-9\u4e00-\u9fff]+$/.test(s)) return false;
-  if (/^\d+$/.test(s)) return false;
-  if (/(?:购买|联名|应援车|打卡|话题|活动|领取|直播间|关注|微博|攻略|前瞻|测试|预约|官网|跳转)/.test(s)) return false;
+  if (!/^[A-Za-z0-9\u4e00-\u9fff.]+$/.test(s)) return false;
+  if (/^[\d.]+$/.test(s)) return false;
+  if (s.includes('.') && /(?<!\d)\.|\.(?!\d)/.test(s)) return false;
+  if (/\d{4}年|\d{1,2}月\d{1,2}日|\d{1,2}点\d{0,2}分/.test(s)) return false;
+  if (/(?:购买|联名|应援车|打卡|话题|活动|领取|直播间|关注|微博|攻略|前瞻|测试|预约|官网|跳转|下载|网页|前往|进行中|将于|失效|过期|截止|有效期|生效时间|使用方式|点击|打开|输入|邮件|签到|超话|维护|停服|公告|长图|详情|链接|扫码)/.test(s)) return false;
   return true;
 }
 
@@ -290,99 +303,19 @@ async function fetchTelegramChannelPosts(env) {
     const publishedAt = dtMatch ? Math.floor(Date.parse(dtMatch[1]) / 1000) : seconds();
     const textMatch = part.match(/class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/);
     if (!textMatch) continue;
-    const rawLines = decodeHtmlEntities(
+    const fullText = decodeHtmlEntities(
       textMatch[1].replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, ''),
-    ).split(/\r?\n/);
+    );
     const codes = [];
-    for (const line of rawLines) {
-      const cleaned = line.trim();
-      if (isValidRedeemCode(cleaned)) codes.push(cleaned);
+    if (!TG_PROMO_POST_RE.test(fullText)) {
+      for (const line of fullText.split(/\r?\n/)) {
+        const cleaned = line.trim();
+        if (isValidRedeemCode(cleaned)) codes.push(cleaned);
+      }
     }
     posts.push({ postId, publishedAt: Number.isFinite(publishedAt) ? publishedAt : seconds(), codes });
   }
   return posts;
-}
-
-async function extractCodesFromArticleWithLLM(env, plainText) {
-  const apiKey = String(env.LLM_API_KEY || '').trim();
-  const bases = String(env.LLM_API_BASE || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (!apiKey || !bases.length) return [];
-  const model = env.LLM_MODEL || 'gpt-6.1-sol';
-  const prompt = '请从以下《无限暖暖》官方公告文本中提取可直接兑换游戏道具的兑换码（多个兑换码用英文逗号分隔）；仅输出真实兑换码本身，忽略「美鸭梨→设置→其他→兑换码」等操作说明、直播预告或周边随附码；如果没有具体兑换码，请只输出 NONE：\n' + plainText.slice(0, 1800);
-  for (const base of bases) {
-    try {
-      const res = await fetch(`${base.replace(/\/+$/, '')}/chat/completions`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          temperature: 0,
-          max_tokens: 80,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-        signal: AbortSignal.timeout(10_000),
-      });
-      if (!res.ok) continue;
-      const data = await res.json();
-      const raw = String(data?.choices?.[0]?.message?.content ?? '').trim();
-      if (!raw || /^none$/i.test(raw)) return [];
-      return raw.split(/[,，\n\s]+/).map(s => s.trim()).filter(isValidRedeemCode);
-    } catch {}
-  }
-  return [];
-}
-
-function extractCodesFromOfficialText(plainText) {
-  const found = [];
-  const pattern = /(?:兑换码|礼包码|福利码)[：:\s「『【"'`]*([A-Za-z0-9\u4e00-\u9fff]{4,24})/g;
-  let match;
-  while ((match = pattern.exec(plainText)) !== null) {
-    if (isValidRedeemCode(match[1])) found.push(match[1]);
-  }
-  return [...new Set(found)];
-}
-
-async function fetchOfficialNewsCodes(env, lastNewsId, seedOnly) {
-  const listUrl = String(env.OFFICIAL_NEWS_API || 'https://infinitynikki.nuanpaper.com/api/news?offset=0&limit=6').trim();
-  const res = await fetch(listUrl, {
-    headers: { 'User-Agent': 'MaaNikki-QQBot/1.0', Accept: 'application/json' },
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!res.ok) throw new Error(`Official news HTTP ${res.status}`);
-  const json = await res.json();
-  const rows = Array.isArray(json?.data?.data) ? json.data.data : [];
-  let maxNewsId = lastNewsId;
-  for (const row of rows) {
-    const id = Number(row?.id || 0);
-    if (id > maxNewsId) maxNewsId = id;
-  }
-  if (seedOnly || lastNewsId <= 0) {
-    return { maxNewsId, entries: [] };
-  }
-  const fresh = rows.filter(r => Number(r?.id || 0) > lastNewsId).slice(0, 3);
-  const entries = [];
-  for (const item of fresh) {
-    const id = Number(item.id);
-    try {
-      const pageRes = await fetch(`https://infinitynikki.nuanpaper.com/news/${id}`, {
-        headers: { 'User-Agent': 'MaaNikki-QQBot/1.0' },
-        signal: AbortSignal.timeout(8_000),
-      });
-      if (!pageRes.ok) continue;
-      const html = await pageRes.text();
-      const plain = decodeHtmlEntities(html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ');
-      if (!/(?:兑换码|礼包码|福利码)/.test(plain)) continue;
-      let codes = extractCodesFromOfficialText(plain);
-      if (!codes.length && !/其他\s*[→>-]\s*兑换码/.test(plain)) {
-        codes = await extractCodesFromArticleWithLLM(env, plain);
-      }
-      const pubSec = item.publish_time ? Math.floor(Date.parse(item.publish_time) / 1000) : seconds();
-      for (const code of codes) {
-        entries.push({ code, source: `official-news:${id}`, publishedAt: Number.isFinite(pubSec) ? pubSec : seconds() });
-      }
-    } catch {}
-  }
-  return { maxNewsId, entries };
 }
 
 async function fetchBiliWikiCodes() {
@@ -411,7 +344,7 @@ async function fetchBiliWikiCodes() {
     if (!isValidRedeemCode(code)) continue;
     const rawReward = String(fields['奖励'] || '').replace(/\s+/g, '').trim();
     const rawExp = String(fields['期限'] || '').trim();
-    const expMs = rawExp ? parseChinaTimeMs(rawExp.replace(/\//g, '-')) : null;
+    const expMs = rawExp ? parseChinaTimeMs(rawExp) : null;
     const expiresAt = expMs !== null ? Math.floor(expMs / 1000) : null;
     entries.push({ code, reward: rawReward || null, expiresAt });
   }
@@ -422,9 +355,7 @@ export async function syncRedeemCodes(env, enqueueFn) {
   const nowSec = seconds();
   const ready = await env.DB.prepare("SELECT 1 AS ok FROM runtime_state WHERE key='redeem-baseline-ready'").first();
   const tgLastRow = await env.DB.prepare("SELECT value FROM runtime_state WHERE key='redeem-tg-last-id'").first();
-  const newsLastRow = await env.DB.prepare("SELECT value FROM runtime_state WHERE key='redeem-news-last-id'").first();
   const lastTgId = Number.parseInt(tgLastRow?.value || '0', 10) || 0;
-  const lastNewsId = Number.parseInt(newsLastRow?.value || '0', 10) || 0;
 
   let tgPosts = [];
   let tgError = null;
@@ -432,14 +363,6 @@ export async function syncRedeemCodes(env, enqueueFn) {
     tgPosts = await fetchTelegramChannelPosts(env);
   } catch (err) {
     tgError = err;
-  }
-
-  let newsResult = { maxNewsId: lastNewsId, entries: [] };
-  let newsError = null;
-  try {
-    newsResult = await fetchOfficialNewsCodes(env, lastNewsId, !ready);
-  } catch (err) {
-    newsError = err;
   }
 
   let wikiEntries = [];
@@ -450,7 +373,7 @@ export async function syncRedeemCodes(env, enqueueFn) {
     wikiError = err;
   }
 
-  if (tgError && newsError && wikiError) throw tgError;
+  if (tgError && wikiError) throw wikiError || tgError;
 
   const maxTgId = tgPosts.reduce((m, p) => Math.max(m, p.postId), lastTgId);
   const wikiByCode = new Map(wikiEntries.map(w => [w.code.toLowerCase(), w]));
@@ -482,13 +405,11 @@ export async function syncRedeemCodes(env, enqueueFn) {
     stmts.push(
       env.DB.prepare("INSERT INTO runtime_state(key,value,expires_at) VALUES('redeem-tg-last-id',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,expires_at=excluded.expires_at")
         .bind(String(maxTgId), FOREVER),
-      env.DB.prepare("INSERT INTO runtime_state(key,value,expires_at) VALUES('redeem-news-last-id',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,expires_at=excluded.expires_at")
-        .bind(String(newsResult.maxNewsId), FOREVER),
       env.DB.prepare("INSERT INTO runtime_state(key,value,expires_at) VALUES('redeem-baseline-ready',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,expires_at=excluded.expires_at")
         .bind(String(nowSec), FOREVER),
     );
     await env.DB.batch(stmts);
-    return { seeded: true, tgMax: maxTgId, newsMax: newsResult.maxNewsId, codesCount: seenSeed.size, enqueued: 0, deferSeconds: 0 };
+    return { seeded: true, tgMax: maxTgId, codesCount: seenSeed.size, enqueued: 0, deferSeconds: 0 };
   }
 
   // Defer 2 minutes if a brand-new Telegram code post just landed (<120s),
@@ -507,10 +428,6 @@ export async function syncRedeemCodes(env, enqueueFn) {
       const wiki = wikiByCode.get(code.toLowerCase());
       candidates.push({ code, source: `tg:${post.postId}`, publishedAt: post.publishedAt, expiresAt: wiki?.expiresAt ?? null, reward: wiki?.reward ?? null });
     }
-  }
-  for (const entry of newsResult.entries) {
-    const wiki = wikiByCode.get(entry.code.toLowerCase());
-    candidates.push({ ...entry, expiresAt: wiki?.expiresAt ?? null, reward: wiki?.reward ?? null });
   }
   for (const w of wikiEntries) {
     if (w.expiresAt === null || w.expiresAt > nowSec) {
@@ -552,12 +469,6 @@ export async function syncRedeemCodes(env, enqueueFn) {
         .bind(String(maxTgId), FOREVER),
     );
   }
-  if (newsResult.maxNewsId > lastNewsId) {
-    stateUpdates.push(
-      env.DB.prepare("INSERT INTO runtime_state(key,value,expires_at) VALUES('redeem-news-last-id',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,expires_at=excluded.expires_at")
-        .bind(String(newsResult.maxNewsId), FOREVER),
-    );
-  }
 
   let enqueued = 0;
   if (freshEntries.length) {
@@ -580,7 +491,6 @@ export async function syncRedeemCodes(env, enqueueFn) {
   return {
     seeded: false,
     tgMax: maxTgId,
-    newsMax: newsResult.maxNewsId,
     wikiCount: wikiEntries.length,
     newCodes: freshEntries.length,
     enriched: enrichStmts.length,
@@ -643,7 +553,7 @@ export async function formatRedeemCodesReply(env) {
     showingExpiredFallback = true;
   }
   if (!list.length) {
-    return '暂未收录近期兑换码；监控服务运行中，官微或官网发布新兑换码后会第一时间在本群推送。';
+    return '暂未收录近期兑换码；监控服务运行中，收录到新兑换码后会第一时间在本群推送。';
   }
   const newestAt = Number(list[0]?.published_at || 0);
   const lines = [showingExpiredFallback ? '【无限暖暖 · 近期兑换码记录】' : '【无限暖暖 · 当前可用及近期兑换码】'];
@@ -653,7 +563,7 @@ export async function formatRedeemCodesReply(env) {
     lines.push(`• ${r.code}（${expText.replace(/^，/, '')}${rewardText}）`);
   }
   if (showingExpiredFallback || (newestAt && nowSec - newestAt > 21 * 86400 && !list.some(r => r.expires_at && Number(r.expires_at) > nowSec))) {
-    lines.push('注：近期官微暂无新码，部分早期兑换码可能已过期；有新码发布时本群会自动推送。');
+    lines.push('注：近期暂无新码，部分早期兑换码可能已过期；有新码发布时本群会自动推送。');
   }
   lines.push('兑换方式：游戏内左上角「美鸭梨 → 设置 → 其他 → 兑换码」。');
   return finalizeOutbound(lines.join('\n'), env);

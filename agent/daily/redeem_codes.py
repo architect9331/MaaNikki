@@ -37,7 +37,7 @@ USE_COOLDOWN_SECONDS = 3.2
 
 _CF_UNICODETEXT = 13
 _GMEM_MOVEABLE = 0x0002
-_CODE_TOKEN_RE = re.compile(r"^[A-Za-z0-9\u4e00-\u9fff]{3,32}$")
+_CODE_TOKEN_RE = re.compile(r"^[A-Za-z0-9\u4e00-\u9fff.]{3,32}$")
 _SUBOBJECT_RE = re.compile(r"\{\{#subobject:[^|}]*\|([^}]+)\}\}")
 
 _COOLDOWN_RE = re.compile(r"频繁|稍后|冷却|太快|间隔|请勿重复")
@@ -50,12 +50,27 @@ def _parse_expiry(value) -> datetime | None:
         return None
     if isinstance(value, (int, float)):
         return datetime.fromtimestamp(float(value), tz=timezone.utc).astimezone(GAME_TIMEZONE)
-    text = str(value).strip().replace("/", "-").replace(" ", "T")
+    text = str(value).strip()
     if not text:
         return None
-    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
-        text += "T23:59:59+08:00"
-    elif not re.search(r"(?:Z|[+-]\d{2}:?\d{2})$", text, re.IGNORECASE):
+    m = re.fullmatch(
+        r"(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[T\s/-]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?(.*)",
+        text,
+    )
+    if m:
+        y, mo, d, hh, mm, ss, rest = m.groups()
+        date_part = f"{y}-{int(mo):02d}-{int(d):02d}"
+        if hh is None:
+            time_part = "23:59:59"
+        else:
+            sec = f":{ss}" if ss is not None else ":00"
+            time_part = f"{int(hh):02d}:{mm}{sec}"
+        text = f"{date_part}T{time_part}{rest.strip()}"
+    else:
+        text = text.replace("/", "-").replace(" ", "T")
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+            text += "T23:59:59+08:00"
+    if not re.search(r"(?:Z|[+-]\d{2}:?\d{2})$", text, re.IGNORECASE):
         text += "+08:00"
     try:
         dt = datetime.fromisoformat(text)
@@ -153,7 +168,12 @@ def parse_extra_codes(raw: str) -> list[str]:
     result: list[str] = []
     for tok in tokens:
         cleaned = tok.strip().strip("「」『』【】\"'`<>()")
-        if cleaned and _CODE_TOKEN_RE.fullmatch(cleaned) and not cleaned.isdigit():
+        if (
+            cleaned
+            and _CODE_TOKEN_RE.fullmatch(cleaned)
+            and not re.fullmatch(r"[\d.]+", cleaned)
+            and not re.search(r"(?<!\d)\.|\.(?!\d)", cleaned)
+        ):
             result.append(cleaned)
     return result
 

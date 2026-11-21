@@ -16,7 +16,6 @@ export default defineConfig({
       LLM_MODEL: bindings.text('gpt-6.1-sol'),
       SRA_ACTIVITY_URL: bindings.text('https://starrailassistant.top/api/v1/activity/infinitynikki.json'),
       REDEEM_TG_CHANNEL: bindings.text('infinity_nikki_weibo_code'),
-      OFFICIAL_NEWS_API: bindings.text('https://infinitynikki.nuanpaper.com/api/news?offset=0&limit=6'),
       QQ_APP_ID: bindings.secret(),
       QQ_APP_SECRET: bindings.secret(),
       GITHUB_WEBHOOK_SECRET: bindings.secret(),
