@@ -70,7 +70,7 @@ def create_navigator(runtime, teleporter, *, actions=None, event=lambda value: N
         point_prepare=actions.prepare_point if actions else None,
         route_branch=actions.branch_route if actions and actions.executor == "home" else None,
         walking=runtime.ui.walking, relocalize=teleporter.player_location,
-        scene_recovery=lambda: runtime.ui.revive(event),
+        scene_recovery=lambda: runtime.ui.recover_world_scene(event),
         page_detector=lambda frame: bool(
             (result := runtime.recognize("MaaNikki_MainDetected", image=frame)) and result.hit),
         overlay=overlay,

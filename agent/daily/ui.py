@@ -27,6 +27,8 @@ _RE_NOTICE_CANCEL = re.compile(r"^取消$")
 BLESSING_DECOMPOSE_TUTORIAL_ROI = [670, 190, 320, 130]
 BLESSING_DECOMPOSE_TUTORIAL_TARGET = [1040, 245]
 _RE_DECOMPOSE_TUTORIAL = re.compile(r"分解后预计获得|闪光粒子数量|将在此显示")
+SAFE_AREA_MODAL_ROI = [360, 200, 560, 320]
+_RE_SAFE_AREA_BODY = re.compile(r"是否返回安全[区區]域")
 
 
 def find_expired_notice_confirm_box(rows):
@@ -89,6 +91,43 @@ def find_blessing_decompose_tutorial_target(rows):
     joined = "".join(parts)
     if joined and _RE_DECOMPOSE_TUTORIAL.search(joined):
         return list(BLESSING_DECOMPOSE_TUTORIAL_TARGET)
+    return None
+
+
+def find_safe_area_confirm_box(rows):
+    """Locate the right-hand Confirm button on the safe-area return modal.
+
+    Requires all three geometric and semantic anchors together:
+    - Centered prompt body matching "是否返回安全区域" (y in [240, 395], x in [400, 880])
+    - Left "取消" button (y in [415, 505], x in [440, 640])
+    - Right "确认" button (y in [415, 505], x in [640, 840])
+    """
+    has_body = False
+    has_cancel = False
+    confirm_box = None
+    for row in rows or ():
+        if row is None:
+            continue
+        clean = str(getattr(row, "text", "") or "").strip()
+        if not clean:
+            continue
+        score = getattr(row, "score", 1.0)
+        if isinstance(score, (int, float)) and score < 0.4:
+            continue
+        box = getattr(row, "box", None)
+        if not box or len(box) < 4:
+            continue
+        bx, by, bw, bh = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        cx, cy = bx + bw * 0.5, by + bh * 0.5
+        if 240 <= cy <= 395 and 400 <= cx <= 880 and _RE_SAFE_AREA_BODY.search(clean):
+            has_body = True
+        if 415 <= cy <= 505:
+            if 440 <= cx <= 640 and _RE_NOTICE_CANCEL.search(clean):
+                has_cancel = True
+            if 640 <= cx <= 840 and confirm_box is None and _RE_NOTICE_CONFIRM.search(clean):
+                confirm_box = [bx, by, bw, bh]
+    if has_body and has_cancel and confirm_box is not None:
+        return confirm_box
     return None
 
 
@@ -655,6 +694,123 @@ class GameUI:
         finally:
             self._dismissing_decompose_tutorial = False
 
+    def safe_area_confirm_box(self, *, frame=None):
+        """Return the Confirm button box of the safe-area return modal, if visible."""
+        with self.rt.observe():
+            image = self.rt.frame() if frame is None else frame
+            if image is None or self.rt.hit("MaaNikki_MainDetected", image=image):
+                return None
+            ocr = self.rt.recognize(
+                "MaaNikki_Daily_OCR",
+                {"roi": SAFE_AREA_MODAL_ROI, "expected": ".+", "threshold": 0.4},
+                image=image,
+            )
+        if not ocr:
+            return None
+        rows = (
+            getattr(ocr, "all_results", None)
+            or getattr(ocr, "filtered_results", None)
+            or [getattr(ocr, "best_result", None)]
+        )
+        return find_safe_area_confirm_box(rows)
+
+    def dismiss_safe_area_return(self, *, box=None, event=lambda value: None):
+        """Confirm the safe-area return modal and wait for main world recovery."""
+        if self.rt.stopped:
+            return None
+        target = box if box is not None else self.safe_area_confirm_box()
+        if target is None:
+            return None
+        if self.rt.navigation_inputs:
+            self.rt.navigation_inputs.release()
+        self.rt.log("检测到返回安全区域提示弹窗，正在点击确认返回。")
+        if box is None:
+            # Recheck after releasing inputs so a disappearing modal is not clicked late.
+            target = self.safe_area_confirm_box()
+            if target is None:
+                return None
+        self.revived = True
+        deadline = time.monotonic() + 15
+        loading_remaining = 60.0
+        clicks, last_click_at, need_click = 0, 0.0, True
+        restored = False
+        pending_box = target
+        while not self.rt.stopped and time.monotonic() < deadline:
+            observed_at = time.monotonic()
+            if pending_box is not None:
+                clicked = bool(self.click_box(pending_box))
+                pending_box = None
+                clicks += 1
+                last_click_at = time.monotonic()
+                need_click = False
+                if not clicked:
+                    break
+                continue
+            with self.rt.observe(fresh=True):
+                reward_overlay = self.page_matches("MaaNikki_RewardOverlayReady")
+                skip_prompt = not reward_overlay and self.rt.hit("MaaNikki_Energy_SkipReward")
+                main_ready = not reward_overlay and not skip_prompt and self.page_matches("MaaNikki_MainDetected")
+                loading = (
+                    not reward_overlay
+                    and not skip_prompt
+                    and not main_ready
+                    and self.asset("IconUILoading", threshold=.99, method=cv2.TM_CCORR_NORMED)
+                )
+                confirm_box = (
+                    None
+                    if (reward_overlay or skip_prompt or main_ready or loading)
+                    else self.safe_area_confirm_box()
+                )
+            if reward_overlay:
+                if self.dismiss_reward() is not True:
+                    break
+                need_click = True
+                continue
+            if skip_prompt:
+                if not self.rt.key("skip", .5):
+                    break
+                need_click = True
+                continue
+            if main_ready:
+                remaining = min(2.0, max(.5, deadline - time.monotonic()))
+                if self.wait_page("MaaNikki_MainDetected", seconds=remaining):
+                    if self.dismiss_reward() is False:
+                        break
+                    if self.page_matches("MaaNikki_MainDetected"):
+                        restored = True
+                        break
+                continue
+            if loading:
+                if loading_remaining <= 0:
+                    break
+                if not self.rt.pause(min(.5, loading_remaining)):
+                    break
+                elapsed = time.monotonic() - observed_at
+                loading_remaining -= elapsed
+                deadline += elapsed
+                continue
+            if confirm_box is not None and clicks < 3 and (need_click or time.monotonic() - last_click_at >= 1.5):
+                clicked = bool(self.click_box(confirm_box))
+                clicks += 1
+                last_click_at = time.monotonic()
+                need_click = False
+                if not clicked:
+                    break
+                continue
+            if not self.rt.pause(.25):
+                break
+        event({"type": "safe_area_return", "success": restored, "attempts": clicks})
+        if not restored and not self.rt.stopped:
+            self.rt.diagnostic("safe_area_return", "未能确认返回安全区域并回到主界面。")
+        return restored
+
+    def recover_world_scene(self, event=lambda value: None):
+        """Recover from death or safe-area return prompts back to the main world."""
+        revived = self.revive(event)
+        if revived is not None:
+            return revived
+        return self.dismiss_safe_area_return(event=event)
+
     def _locate_menu_entry(self, node, roi, *, ready=None):
         """Ensure Pear-Pal is open and scroll or page until `node` is visible."""
         if not self.menu():
@@ -1212,16 +1368,20 @@ class GameUI:
                 elif self.asset("IconUILoading", threshold=.99, method=cv2.TM_CCORR_NORMED):
                     page = "loading"
                 else:
-                    expired_notice_box = self.expired_notice_confirm_box()
-                    if expired_notice_box is not None:
-                        page = "expired_notice"
+                    safe_area_box = self.safe_area_confirm_box()
+                    if safe_area_box is not None:
+                        page = "safe_area_return"
                     else:
-                        decompose_tutorial_target = self.blessing_decompose_tutorial_target()
-                        page = (
-                            "decompose_tutorial"
-                            if decompose_tutorial_target is not None
-                            else "unknown"
-                        )
+                        expired_notice_box = self.expired_notice_confirm_box()
+                        if expired_notice_box is not None:
+                            page = "expired_notice"
+                        else:
+                            decompose_tutorial_target = self.blessing_decompose_tutorial_target()
+                            page = (
+                                "decompose_tutorial"
+                                if decompose_tutorial_target is not None
+                                else "unknown"
+                            )
             if page == "star_collect":
                 return self.leave_star_collect()
             elif page == "main":
@@ -1265,6 +1425,9 @@ class GameUI:
                     return False
             elif page == "expired_notice":
                 if self.dismiss_expired_notice(box=expired_notice_box) is not True:
+                    return False
+            elif page == "safe_area_return":
+                if self.dismiss_safe_area_return(box=safe_area_box, event=event) is not True:
                     return False
             elif page == "decompose_tutorial":
                 if self.dismiss_blessing_decompose_tutorial(target=decompose_tutorial_target) is not True:

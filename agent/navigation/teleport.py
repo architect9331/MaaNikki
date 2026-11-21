@@ -71,7 +71,8 @@ class Teleporter:
             self.event({"type": "map_reward_dismissed"})
         # Map browsing and selected-point details have different page features.
         if browse and not self.rt.hit("MaaNikki_Navigation_MapFeature"):
-            raise NavigationError("未能确认地图浏览页面。")
+            if not self.rt.ui.wait_page("MaaNikki_Navigation_MapFeature", seconds=2.0):
+                raise NavigationError("未能确认地图浏览页面。")
 
     def region_name(self, expected=None, *, image=None):
         """Read the small map header without discarding its antialiased strokes."""
