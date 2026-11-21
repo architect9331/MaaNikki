@@ -21,7 +21,7 @@ from .settings import ROOT, foreground_inputs as inputs_allowed
 from .startup import focus_game
 from navigation.controller import BackgroundInput, ForegroundInput
 from navigation.session import create_navigator
-from navigation.models import NavigationError, maps, parse_route
+from navigation.models import NavigationError, NavigationMapMismatchError, maps, parse_route
 from navigation.telemetry import record_route_telemetry
 from navigation.teleport import Teleporter
 from navigation.vision import Locator
@@ -765,8 +765,23 @@ class RouteTest(Runtime):
                 teleporter.prepare(model)
             self.prepare_route(settings, actions, inputs)
             self.phase("follow", "正在检查第 1 点并沿路线行走。")
-            navigator = create_navigator(self, teleporter, actions=actions, event=self.event)
-            pose = navigator.follow(model)
+            map_mismatch_retries = 2 if model.document.get("teleport") else 0
+            mismatch_attempts = 0
+            while True:
+                navigator = create_navigator(self, teleporter, actions=actions, event=self.event)
+                try:
+                    pose = navigator.follow(model)
+                    break
+                except NavigationMapMismatchError as error:
+                    if self.stopped or not map_mismatch_retries:
+                        raise
+                    mismatch_attempts += 1
+                    teleporter.retry_after_map_mismatch(
+                        model.document["teleport"],
+                        error,
+                        retry=mismatch_attempts,
+                        max_retries=map_mismatch_retries,
+                    )
             success = actions.complete() if mode == "home" else True
             result.update(success=success, final=pose.dict())
             if not success:

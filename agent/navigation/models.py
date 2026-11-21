@@ -17,6 +17,16 @@ class NavigationStuckError(NavigationError):
     """Movement made no progress for the route's stuck timeout."""
 
 
+class NavigationMapMismatchError(NavigationError):
+    """Big-map relocalization found the player on a different map than the route."""
+
+    def __init__(self, message, *, actual_header="", expected_map="", expected_title=""):
+        super().__init__(message)
+        self.actual_header = actual_header
+        self.expected_map = expected_map
+        self.expected_title = expected_title
+
+
 MINIMAP_POSITION_SCORE = .55
 # Coordinates use pixel edges, shared by native sampling and reference crops.
 # Paired player-centered maps place the minimap arrow pivot at (181, 124) in 1080p.

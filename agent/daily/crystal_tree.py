@@ -5,7 +5,7 @@ import re
 
 import cv2
 
-from navigation.models import NavigationError, load_route, maps
+from navigation.models import NavigationError, NavigationMapMismatchError, load_route, maps
 from navigation.session import create_navigator
 from navigation.teleport import Teleporter
 from navigation.vision import Locator
@@ -124,7 +124,23 @@ class CrystalTree(Starsea):
 
     def follow(self, teleporter, route):
         teleporter.prepare(route)
-        create_navigator(self.rt, teleporter, event=self.events.append).follow(route)
+        checkpoint = route.document.get("teleport")
+        map_mismatch_retries = 2 if checkpoint else 0
+        mismatch_attempts = 0
+        while True:
+            try:
+                create_navigator(self.rt, teleporter, event=self.events.append).follow(route)
+                break
+            except NavigationMapMismatchError as error:
+                if self.rt.stopped or not map_mismatch_retries:
+                    raise
+                mismatch_attempts += 1
+                teleporter.retry_after_map_mismatch(
+                    checkpoint,
+                    error,
+                    retry=mismatch_attempts,
+                    max_retries=map_mismatch_retries,
+                )
         if self.rt.stopped:
             raise TaskStopped("星忆晶树收集已停止")
 

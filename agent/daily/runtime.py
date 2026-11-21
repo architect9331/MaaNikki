@@ -1056,7 +1056,7 @@ class Runtime:
             return False
         from navigation.controller import BackgroundInput, ForegroundInput
         from navigation.session import create_navigator
-        from navigation.models import NavigationError, NavigationStuckError, maps, parse_route
+        from navigation.models import NavigationError, NavigationMapMismatchError, NavigationStuckError, maps, parse_route
         from navigation.telemetry import record_route_telemetry, summarize_route_telemetry
         from navigation.vision import Locator
         from navigation.teleport import Teleporter
@@ -1128,14 +1128,24 @@ class Runtime:
                     raise NavigationError("捕虫能力配置未完成，本项尚未开始。")
             crystal_retries = (3 if actions and actions.executor == "crystal"
                                and model.map_id == "starsea" and route.get("teleport") else 0)
-            for attempt in range(crystal_retries+1):
+            map_mismatch_retries = 2 if route.get("teleport") else 0
+            crystal_attempts = 0
+            mismatch_attempts = 0
+            logged_start = False
+
+            def set_teleport_stage():
+                nonlocal stage
+                stage = "teleport"
+
+            while True:
                 # Each attempt gets fresh calibration, stuck/recovery state and
                 # its own route time budget.
                 navigator = create_navigator(self, teleporter, actions=actions, event=events.append)
                 if crystal_retries:
-                    events.append({"type": "crystal_route_attempt", "attempt": attempt+1,
+                    events.append({"type": "crystal_route_attempt", "attempt": crystal_attempts+1,
                                    "max_attempts": crystal_retries+1})
-                if attempt == 0:
+                if not logged_start:
+                    logged_start = True
                     self.log(
                         "正在后台沿路线自动寻路（WASD 控向）；最小化窗口后暂停，恢复后自动继续。"
                         if bg else (
@@ -1149,16 +1159,28 @@ class Runtime:
                 try:
                     navigator.follow(model)
                     break
+                except NavigationMapMismatchError as error:
+                    if self.stopped or not map_mismatch_retries:
+                        raise
+                    mismatch_attempts += 1
+                    teleporter.retry_after_map_mismatch(
+                        route["teleport"],
+                        error,
+                        retry=mismatch_attempts,
+                        max_retries=map_mismatch_retries,
+                        on_transport=set_teleport_stage,
+                    )
                 except NavigationStuckError as error:
                     if self.stopped or not crystal_retries:
                         raise
-                    if attempt >= crystal_retries:
+                    if crystal_attempts >= crystal_retries:
                         raise NavigationStuckError(
                             f"星光结晶路线已重试 {crystal_retries} 次，仍卡住，本轮停止。") from error
-                    events.append({"type": "crystal_route_retry", "retry": attempt+1,
+                    crystal_attempts += 1
+                    events.append({"type": "crystal_route_retry", "retry": crystal_attempts,
                                    "max_retries": crystal_retries, "reason": str(error),
                                    "pose": locator.previous.dict() if locator.previous else None})
-                    self.log(f"星光结晶路线卡住，返回起点重试（{attempt+1}/{crystal_retries}）。")
+                    self.log(f"星光结晶路线卡住，返回起点重试（{crystal_attempts}/{crystal_retries}）。")
                     # Bypass prepare's nearby shortcut: a lower island can have
                     # the same minimap position as the intended route start.
                     inputs.release()
@@ -1202,13 +1224,19 @@ class Runtime:
             # cleanup can replace it. Crops exclude account information.
             selection_view = (stage == 'teleport' and teleporter is not None
                               and teleporter.last_selection_frame is not None)
-            frame = ((teleporter.last_selection_frame if selection_view else teleporter.last_frame)
-                     if stage == 'teleport' and teleporter else (locator.last_frame if locator else None))
+            map_view = (
+                (stage == 'teleport' or isinstance(error, NavigationMapMismatchError))
+                and teleporter is not None and teleporter.last_frame is not None
+            )
+            frame = (
+                teleporter.last_selection_frame if selection_view
+                else teleporter.last_frame if map_view
+                else (locator.last_frame if locator else None)
+            )
             if frame is not None and frame.shape[:2] == (720, 1280):
                 try:
                     folder = ROOT / 'logs' / 'navigation'
                     folder.mkdir(parents=True, exist_ok=True)
-                    map_view = stage == 'teleport' and teleporter is not None and teleporter.last_frame is not None
                     roi = ([830, 105, 440, 600] if selection_view else
                            [240, 180, 590, 365] if map_view else [54, 14, 134, 134])
                     filename = datetime.now().strftime('%Y%m%d-%H%M%S-%f')+'-'+(

@@ -5,7 +5,7 @@ import re
 from task_control import task_time as time
 import cv2
 from game_view import require_game_frame
-from .models import NavigationError
+from .models import NavigationError, NavigationMapMismatchError
 from .vision import Locator
 from .matching import luma, match_map
 
@@ -486,6 +486,8 @@ class Teleporter:
                     break
             self._check_map_mismatch()
             raise NavigationError("大地图角色位置未能稳定匹配，未继续移动。")
+        except NavigationMapMismatchError:
+            raise
         except NavigationError as error:
             if not self.rt.stopped:
                 self.rt.ui.map_failure(0, str(error), self.event, stage="relocalization")
@@ -525,9 +527,45 @@ class Teleporter:
         if mismatch:
             self.event({"type": "map_mismatch", "actual_header": header,
                         "expected_map": spec_id, "expected_title": spec_title})
-            raise NavigationError(
-                f"当前所在地图（{header}）与路线所属地图（{spec_title}）不一致，请先前往对应地图或为路线设置传送点。"
+            self.rt.evidence.observe("map_mismatch", actual_header=header,
+                                     expected_map=spec_id, expected_title=spec_title)
+            raise NavigationMapMismatchError(
+                f"当前所在地图（{header}）与路线所属地图（{spec_title}）不一致，请先前往对应地图或为路线设置传送点。",
+                actual_header=header,
+                expected_map=spec_id,
+                expected_title=spec_title,
             )
+
+    def retry_after_map_mismatch(self, checkpoint, error, *, retry, max_retries, on_transport=None):
+        """Reset cached map state and retry teleporting to `checkpoint` after a map mismatch."""
+        actual = error.actual_header or "其他地图"
+        expected = error.expected_title or self.locator.spec.title
+        if retry > max_retries:
+            raise NavigationMapMismatchError(
+                f"多次重新传送后仍位于{actual}，与路线所属地图（{expected}）不一致，本轮停止。",
+                actual_header=error.actual_header,
+                expected_map=error.expected_map,
+                expected_title=error.expected_title,
+            ) from error
+        self.event({
+            "type": "map_mismatch_retry",
+            "retry": retry,
+            "max_retries": max_retries,
+            "actual_header": error.actual_header,
+            "expected_map": error.expected_map,
+            "expected_title": error.expected_title,
+        })
+        self.rt.log(
+            f"当前仍在{actual}，与目标地图（{expected}）不一致，重新尝试传送（{retry}/{max_retries}）。"
+        )
+        if self.inputs:
+            self.inputs.release()
+            self.inputs.check()
+        self.home_region_name = None
+        self.locator.reset()
+        if on_transport is not None:
+            on_transport()
+        self.transport(checkpoint)
 
     def center(self, x, y, force=False, *, allow_visible=False):
         panned = False
