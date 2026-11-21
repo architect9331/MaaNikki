@@ -160,6 +160,7 @@ class CrystalTree(Starsea):
                 need_bell = state["ready"] > 0
                 shaken = False
                 condensed_retry = False
+                skipped_unchanged = False
                 while sum(state.values()) > 0:
                     if self.rt.stopped:
                         return False
@@ -203,8 +204,14 @@ class CrystalTree(Starsea):
                         else:
                             self.rt.log("绕树期间有存储结晶新落地，再绕树一圈确认收取。")
                         continue
-                    raise NavigationError("绕树后未确认结晶减少，停止收集以避免重复空跑。")
-                self.rt.log("星忆晶树存储与待收获结晶均已取完。")
+                    skipped_unchanged = True
+                    self.events.append({"type": "tree_skipped_unchanged", **state})
+                    self.rt.log(
+                        f"星忆晶树绕树后未确认结晶继续减少（当前存储 {state['stored']}/120，待收获 {state['ready']}/40），跳过剩余结晶。"
+                    )
+                    break
+                if not skipped_unchanged:
+                    self.rt.log("星忆晶树存储与待收获结晶均已取完。")
                 return True
         except TaskStopped:
             raise
