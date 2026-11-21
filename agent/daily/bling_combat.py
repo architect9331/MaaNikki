@@ -74,7 +74,6 @@ class BlingPointActions:
     def __init__(
         self,
         rt: Runtime,
-        navigator_ref: list,
         teleporter: Teleporter,
         inputs,
         *,
@@ -83,9 +82,10 @@ class BlingPointActions:
         event=lambda value: None,
     ):
         self.rt = rt
-        self._nav_ref = navigator_ref
         self.teleporter = teleporter
         self.inputs = inputs
+        self.navigator: Navigator | None = None
+        self.motion = None
         self.blackhole_enabled = blackhole_enabled
         self.windmill_enabled = windmill_enabled
         self.event = event
@@ -100,10 +100,6 @@ class BlingPointActions:
             "windmills": 0,
             "light_bursts": 0,
         }
-
-    @property
-    def navigator(self) -> Navigator | None:
-        return self._nav_ref[0] if self._nav_ref else None
 
     def prepare_point(self, point, pose) -> bool:
         if point.action != "teleport":
@@ -296,9 +292,8 @@ class BlingCombatRun(Runtime):
                 self.pause(0.35)
 
             teleporter = Teleporter(self, locator, lambda ev: None, inputs)
-            nav_ref: list[Navigator] = []
             actions = BlingPointActions(
-                self, nav_ref, teleporter, inputs,
+                self, teleporter, inputs,
                 blackhole_enabled=blackhole_enabled,
                 windmill_enabled=windmill_enabled,
             )
@@ -319,7 +314,6 @@ class BlingCombatRun(Runtime):
                 try:
                     teleporter.prepare(leg_model)
                     nav = create_navigator(self, teleporter, actions=actions, event=lambda ev: None)
-                    nav_ref[:] = [nav]
                     nav.follow(leg_model)
                     summary["legs_completed"] += 1
                 except NavigationError as error:
