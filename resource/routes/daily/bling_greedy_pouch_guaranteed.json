@@ -22,39 +22,42 @@
       "params": {}
     },
     {
-      "x": 10326.17,
-      "y": 9654.43,
+      "x": 10327.59,
+      "y": 9656.52,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10320.17,
-      "y": 9648.43,
+      "x": 10321.59,
+      "y": 9650.52,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10320.17,
-      "y": 9630.43,
+      "x": 10291.59,
+      "y": 9644.52,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10300.17,
-      "y": 9610.43,
-      "radius": 2.5,
+      "x": 10286.59,
+      "y": 9624.52,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
-        "facing_heading": 105.0,
+        "facing_heading": 56.3,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10305.53,
         "spawn_y": 9611.87,
         "spawn_z": -111.56,
@@ -119,8 +122,8 @@
       "params": {}
     },
     {
-      "x": 10556.09,
-      "y": 9751.92,
+      "x": 10552.09,
+      "y": 9763.92,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -128,7 +131,7 @@
     },
     {
       "x": 10584.09,
-      "y": 9755.92,
+      "y": 9775.92,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -136,22 +139,25 @@
     },
     {
       "x": 10600.09,
-      "y": 9743.92,
+      "y": 9775.92,
       "radius": 2.8,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 10610.13,
-      "y": 9742.57,
-      "radius": 2.5,
+      "x": 10625.15,
+      "y": 9751.3,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
-        "facing_heading": 315.0,
+        "facing_heading": 303.7,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10606.21,
         "spawn_y": 9738.65,
         "spawn_z": -145.03,
@@ -176,63 +182,66 @@
       }
     },
     {
-      "x": 10707.42,
-      "y": 10031.08,
+      "x": 10709.4,
+      "y": 10030.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10692.42,
-      "y": 9998.08,
+      "x": 10691.4,
+      "y": 10000.74,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10661.4,
+      "y": 9979.74,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10661.4,
+      "y": 9943.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10662.42,
-      "y": 9977.08,
+      "x": 10664.4,
+      "y": 9916.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10662.42,
-      "y": 9941.08,
+      "x": 10682.4,
+      "y": 9916.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10662.42,
-      "y": 9905.08,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10674.42,
-      "y": 9902.08,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10678.42,
-      "y": 9909.08,
-      "radius": 2.5,
+      "x": 10686.4,
+      "y": 9920.74,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
-        "facing_heading": 195.0,
+        "facing_heading": 303.8,
+        "standoff_m": 10.2,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
         "spawn_x": 10676.98,
         "spawn_y": 9914.44,
         "spawn_z": -204.03,
@@ -257,31 +266,31 @@
       }
     },
     {
-      "x": 9340.88,
-      "y": 10416.57,
+      "x": 9343.11,
+      "y": 10407.57,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9316.88,
-      "y": 10443.57,
+      "x": 9322.11,
+      "y": 10437.57,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9313.88,
-      "y": 10464.57,
+      "x": 9313.11,
+      "y": 10458.57,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9301.88,
+      "x": 9304.11,
       "y": 10479.57,
       "radius": 2.8,
       "jump": false,
@@ -289,7 +298,7 @@
       "params": {}
     },
     {
-      "x": 9280.88,
+      "x": 9280.11,
       "y": 10485.57,
       "radius": 2.8,
       "jump": true,
@@ -297,23 +306,18 @@
       "params": {}
     },
     {
-      "x": 9259.88,
-      "y": 10482.57,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9254.88,
-      "y": 10473.81,
-      "radius": 2.5,
+      "x": 9269.11,
+      "y": 10482.88,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
-        "facing_heading": 119.9,
+        "facing_heading": 303.8,
+        "standoff_m": 10.2,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
         "spawn_x": 9259.69,
         "spawn_y": 10476.58,
         "spawn_z": -196.41,
@@ -379,14 +383,17 @@
     },
     {
       "x": 9252.2,
-      "y": 10615.02,
-      "radius": 2.5,
+      "y": 10605.57,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
         "facing_heading": 180.0,
+        "standoff_m": 13.5,
+        "standoff_tier": "mid_attack_range",
+        "corridor_clear": true,
         "spawn_x": 9252.2,
         "spawn_y": 10620.57,
         "spawn_z": -214.9,
@@ -411,7 +418,7 @@
       }
     },
     {
-      "x": 8699.41,
+      "x": 8701.98,
       "y": 9007.74,
       "radius": 2.8,
       "jump": false,
@@ -419,7 +426,7 @@
       "params": {}
     },
     {
-      "x": 8723.41,
+      "x": 8722.98,
       "y": 9004.74,
       "radius": 2.8,
       "jump": false,
@@ -427,31 +434,31 @@
       "params": {}
     },
     {
-      "x": 8738.41,
-      "y": 8989.74,
+      "x": 8740.98,
+      "y": 8986.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8741.41,
-      "y": 8977.74,
+      "x": 8743.98,
+      "y": 8971.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8735.41,
+      "x": 8734.98,
       "y": 8956.74,
       "radius": 2.8,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 8729.41,
+      "x": 8728.98,
       "y": 8953.74,
       "radius": 2.8,
       "jump": false,
@@ -459,7 +466,7 @@
       "params": {}
     },
     {
-      "x": 8705.41,
+      "x": 8704.98,
       "y": 8953.74,
       "radius": 2.8,
       "jump": true,
@@ -467,7 +474,7 @@
       "params": {}
     },
     {
-      "x": 8687.41,
+      "x": 8689.98,
       "y": 8956.74,
       "radius": 2.8,
       "jump": false,
@@ -475,7 +482,7 @@
       "params": {}
     },
     {
-      "x": 8663.41,
+      "x": 8665.98,
       "y": 8980.74,
       "radius": 2.8,
       "jump": false,
@@ -483,7 +490,7 @@
       "params": {}
     },
     {
-      "x": 8633.41,
+      "x": 8635.98,
       "y": 9001.74,
       "radius": 2.8,
       "jump": false,
@@ -491,23 +498,26 @@
       "params": {}
     },
     {
-      "x": 8600.41,
-      "y": 9016.74,
+      "x": 8611.98,
+      "y": 9025.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8580.41,
-      "y": 9026.93,
-      "radius": 2.5,
+      "x": 8606.98,
+      "y": 9033.17,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
-        "facing_heading": 60.1,
+        "facing_heading": 292.5,
+        "standoff_m": 21.2,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 8585.22,
         "spawn_y": 9024.16,
         "spawn_z": -160.1,
@@ -532,127 +542,130 @@
       }
     },
     {
-      "x": 7827.24,
-      "y": 9367.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7827.24,
-      "y": 9373.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7824.24,
-      "y": 9379.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7827.24,
-      "y": 9385.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7845.24,
-      "y": 9376.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7845.24,
-      "y": 9352.61,
+      "x": 7816.77,
+      "y": 9369.08,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 7842.24,
-      "y": 9343.61,
+      "x": 7810.77,
+      "y": 9375.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7809.24,
-      "y": 9331.61,
+      "x": 7813.77,
+      "y": 9381.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7779.24,
-      "y": 9313.61,
+      "x": 7831.77,
+      "y": 9384.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7758.24,
-      "y": 9295.61,
+      "x": 7846.77,
+      "y": 9375.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7843.77,
+      "y": 9354.08,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 7737.24,
-      "y": 9286.61,
+      "x": 7843.77,
+      "y": 9345.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7716.24,
-      "y": 9271.61,
+      "x": 7807.77,
+      "y": 9333.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7704.24,
-      "y": 9274.61,
+      "x": 7780.77,
+      "y": 9312.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7698.24,
-      "y": 9283.61,
+      "x": 7756.77,
+      "y": 9294.08,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7735.77,
+      "y": 9285.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7699.24,
-      "y": 9296.61,
-      "radius": 2.5,
+      "x": 7717.77,
+      "y": 9270.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7702.77,
+      "y": 9276.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7693.77,
+      "y": 9291.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7691.77,
+      "y": 9304.08,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
         "facing_heading": 45.0,
+        "standoff_m": 14.5,
+        "standoff_tier": "mid_attack_range",
+        "corridor_clear": true,
         "spawn_x": 7703.16,
         "spawn_y": 9292.69,
         "spawn_z": -148.83,

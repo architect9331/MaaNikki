@@ -4,7 +4,7 @@
   "title": "奇迹大陆 · 全贪心钱袋点位",
   "map": "miraland",
   "start_radius": 15,
-  "timeout": 1200,
+  "timeout": 900,
   "teleport": {
     "name": "织裙街",
     "province": "心愿原野",
@@ -22,23 +22,18 @@
       "params": {}
     },
     {
-      "x": 10743.29,
-      "y": 10085.45,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10755.69,
-      "y": 10102.38,
-      "radius": 2.5,
+      "x": 10741.6,
+      "y": 10088.8,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 195.0,
+        "facing_heading": 146.3,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10754.25,
         "spawn_y": 10107.74,
         "spawn_z": -243.39,
@@ -47,79 +42,82 @@
       }
     },
     {
-      "x": 10735.42,
-      "y": 10074.08,
+      "x": 10727.4,
+      "y": 10053.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10715.42,
-      "y": 10042.08,
+      "x": 10703.4,
+      "y": 10025.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10695.42,
-      "y": 10010.08,
+      "x": 10691.4,
+      "y": 9997.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10659.4,
+      "y": 9977.74,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 10691.42,
-      "y": 9998.08,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10659.42,
-      "y": 9978.08,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10659.42,
-      "y": 9942.08,
+      "x": 10659.4,
+      "y": 9941.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10659.42,
-      "y": 9906.08,
+      "x": 10663.4,
+      "y": 9917.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10671.42,
-      "y": 9902.08,
+      "x": 10675.4,
+      "y": 9917.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10678.42,
-      "y": 9909.08,
-      "radius": 2.5,
+      "x": 10679.4,
+      "y": 9913.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10686.4,
+      "y": 9920.74,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
-        "facing_heading": 195.0,
+        "facing_heading": 303.8,
+        "standoff_m": 10.2,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
         "spawn_x": 10676.98,
         "spawn_y": 9914.44,
         "spawn_z": -204.03,
@@ -144,39 +142,18 @@
       }
     },
     {
-      "x": 10931.96,
-      "y": 10135.32,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10928.96,
-      "y": 10144.32,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10928.96,
-      "y": 10165.32,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10929.96,
-      "y": 10167.15,
-      "radius": 2.5,
+      "x": 10928.52,
+      "y": 10136.46,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 345.0,
+        "facing_heading": 180.0,
+        "standoff_m": 22.8,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10928.52,
         "spawn_y": 10161.79,
         "spawn_z": -230.64,
@@ -241,8 +218,8 @@
       "params": {}
     },
     {
-      "x": 10556.09,
-      "y": 9751.92,
+      "x": 10552.09,
+      "y": 9763.92,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -250,7 +227,7 @@
     },
     {
       "x": 10584.09,
-      "y": 9755.92,
+      "y": 9775.92,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -258,22 +235,25 @@
     },
     {
       "x": 10600.09,
-      "y": 9743.92,
+      "y": 9775.92,
       "radius": 2.8,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 10610.13,
-      "y": 9742.57,
-      "radius": 2.5,
+      "x": 10625.15,
+      "y": 9751.3,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
-        "facing_heading": 315.0,
+        "facing_heading": 303.7,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10606.21,
         "spawn_y": 9738.65,
         "spawn_z": -145.03,
@@ -298,39 +278,42 @@
       }
     },
     {
-      "x": 10326.17,
-      "y": 9654.43,
+      "x": 10327.59,
+      "y": 9656.52,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10320.17,
-      "y": 9648.43,
+      "x": 10321.59,
+      "y": 9650.52,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10320.17,
-      "y": 9630.43,
+      "x": 10291.59,
+      "y": 9644.52,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10300.17,
-      "y": 9610.43,
-      "radius": 2.5,
+      "x": 10286.59,
+      "y": 9624.52,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
-        "facing_heading": 105.0,
+        "facing_heading": 56.3,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10305.53,
         "spawn_y": 9611.87,
         "spawn_z": -111.56,
@@ -403,15 +386,18 @@
       "params": {}
     },
     {
-      "x": 10363.8,
-      "y": 10527.4,
-      "radius": 2.5,
+      "x": 10345.38,
+      "y": 10527.92,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 45.0,
+        "facing_heading": 78.8,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10367.72,
         "spawn_y": 10523.48,
         "spawn_z": -241.85,
@@ -492,31 +478,26 @@
       "params": {}
     },
     {
-      "x": 9976.61,
-      "y": 10779.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
       "x": 9979.61,
-      "y": 10779.81,
+      "y": 10773.81,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9984.56,
-      "y": 10779.42,
-      "radius": 2.5,
+      "x": 9986.88,
+      "y": 10771.91,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 210.0,
+        "facing_heading": 202.5,
+        "standoff_m": 12.0,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
         "spawn_x": 9981.78,
         "spawn_y": 10784.23,
         "spawn_z": -239.75,
@@ -525,337 +506,114 @@
       }
     },
     {
-      "x": 9977.8,
-      "y": 10781.42,
+      "x": 9975.88,
+      "y": 10774.76,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9956.8,
-      "y": 10772.42,
+      "x": 9971.88,
+      "y": 10778.76,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9944.8,
-      "y": 10763.42,
+      "x": 9971.88,
+      "y": 10790.76,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9983.88,
+      "y": 10798.76,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10003.88,
+      "y": 10798.76,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10015.88,
+      "y": 10782.76,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10051.88,
+      "y": 10786.76,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10087.88,
+      "y": 10794.76,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10103.88,
+      "y": 10782.76,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10115.88,
+      "y": 10766.76,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10135.88,
+      "y": 10758.76,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10159.88,
+      "y": 10742.76,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 9911.8,
-      "y": 10778.42,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9875.8,
-      "y": 10790.42,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9857.8,
-      "y": 10823.42,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9842.8,
-      "y": 10826.42,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9839.8,
-      "y": 10826.42,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9833.8,
-      "y": 10820.42,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9840.8,
-      "y": 10802.2,
-      "radius": 2.5,
+      "x": 10160.89,
+      "y": 10737.76,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 75.0,
-        "spawn_x": 9846.79,
-        "spawn_y": 10800.6,
-        "spawn_z": -240.07,
-        "tag": "BreezyMeadow",
-        "spawner_id": "21916"
-      }
-    },
-    {
-      "x": 9971.07,
-      "y": 10637.35,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "绿野活动支援中心",
-          "province": "心愿原野",
-          "region": "微风绿野",
-          "x": 9971.072,
-          "y": 10637.347
-        }
-      }
-    },
-    {
-      "x": 9980.72,
-      "y": 10611.73,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9964.72,
-      "y": 10579.73,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9944.72,
-      "y": 10547.73,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9936.72,
-      "y": 10519.73,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9924.72,
-      "y": 10487.73,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9920.72,
-      "y": 10483.73,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9924.72,
-      "y": 10463.73,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9924.72,
-      "y": 10451.73,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9912.72,
-      "y": 10447.73,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9908.72,
-      "y": 10455.73,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9907.72,
-      "y": 10466.73,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 165.0,
-        "spawn_x": 9909.16,
-        "spawn_y": 10472.09,
-        "spawn_z": -201.72,
-        "tag": "BreezyMeadow",
-        "spawner_id": "21870"
-      }
-    },
-    {
-      "x": 9971.07,
-      "y": 10637.35,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "绿野活动支援中心",
-          "province": "心愿原野",
-          "region": "微风绿野",
-          "x": 9971.072,
-          "y": 10637.347
-        }
-      }
-    },
-    {
-      "x": 9979.61,
-      "y": 10634.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9983.61,
-      "y": 10638.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10003.61,
-      "y": 10650.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10039.61,
-      "y": 10642.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10047.61,
-      "y": 10638.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10055.61,
-      "y": 10638.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10083.61,
-      "y": 10646.81,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10095.61,
-      "y": 10646.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10119.61,
-      "y": 10670.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10151.61,
-      "y": 10690.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10171.61,
-      "y": 10694.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10179.61,
-      "y": 10702.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10175.61,
-      "y": 10706.81,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10181.21,
-      "y": 10723.39,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 165.0,
+        "facing_heading": 67.5,
+        "standoff_m": 21.2,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10182.65,
         "spawn_y": 10728.75,
         "spawn_z": -243.88,
@@ -864,334 +622,135 @@
       }
     },
     {
-      "x": 9675.94,
-      "y": 10849.74,
+      "x": 9971.07,
+      "y": 10637.35,
       "radius": 10.0,
       "jump": false,
       "action": "teleport",
       "params": {
         "checkpoint": {
-          "name": "小石树田村入口",
+          "name": "绿野活动支援中心",
           "province": "心愿原野",
-          "region": "小石树田村",
-          "x": 9675.936,
-          "y": 10849.739
+          "region": "微风绿野",
+          "x": 9971.072,
+          "y": 10637.347
         }
       }
     },
     {
-      "x": 9661.4,
-      "y": 10859.2,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9657.4,
-      "y": 10895.2,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9677.4,
-      "y": 10927.2,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9685.4,
-      "y": 10943.2,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9713.4,
-      "y": 10951.2,
+      "x": 9978.16,
+      "y": 10612.65,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 9729.4,
-      "y": 10947.2,
+      "x": 9962.16,
+      "y": 10580.65,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9761.4,
-      "y": 10935.2,
+      "x": 9946.16,
+      "y": 10548.65,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9781.4,
-      "y": 10939.2,
+      "x": 9934.16,
+      "y": 10512.65,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9789.4,
-      "y": 10939.2,
+      "x": 9930.16,
+      "y": 10492.65,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 9809.4,
-      "y": 10931.2,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9825.4,
-      "y": 10927.2,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9841.4,
-      "y": 10923.2,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9857.4,
-      "y": 10935.2,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9861.4,
-      "y": 10939.2,
+      "x": 9926.16,
+      "y": 10488.65,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 9897.4,
-      "y": 10951.2,
+      "x": 9922.16,
+      "y": 10484.65,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9909.4,
-      "y": 10963.2,
+      "x": 9922.16,
+      "y": 10460.65,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9926.16,
+      "y": 10452.65,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9922.16,
+      "y": 10448.65,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 9921.4,
-      "y": 10963.2,
+      "x": 9914.16,
+      "y": 10448.65,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9910.16,
+      "y": 10452.65,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9925.4,
-      "y": 10959.2,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9924.38,
-      "y": 10955.1,
-      "radius": 2.5,
+      "x": 9909.16,
+      "y": 10459.65,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 315.0,
-        "spawn_x": 9920.0,
-        "spawn_y": 10950.72,
-        "spawn_z": -207.75,
-        "tag": "BreezyMeadow",
-        "spawner_id": "21873"
-      }
-    },
-    {
-      "x": 9389.05,
-      "y": 10562.46,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "村居岔路",
-          "province": "心愿原野",
-          "region": "小石树田村",
-          "x": 9389.052,
-          "y": 10562.456
-        }
-      }
-    },
-    {
-      "x": 9350.2,
-      "y": 10573.99,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9323.2,
-      "y": 10579.99,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9302.2,
-      "y": 10570.99,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9266.2,
-      "y": 10570.99,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9251.2,
-      "y": 10579.99,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9252.2,
-      "y": 10615.02,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "guaranteed",
         "facing_heading": 180.0,
-        "spawn_x": 9252.2,
-        "spawn_y": 10620.57,
-        "spawn_z": -214.9,
-        "tag": "Stonewoods",
-        "spawner_id": "21895"
-      }
-    },
-    {
-      "x": 9342.04,
-      "y": 10401.19,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "紫穗草花田",
-          "province": "心愿原野",
-          "region": "小石树田村",
-          "x": 9342.041,
-          "y": 10401.192
-        }
-      }
-    },
-    {
-      "x": 9340.88,
-      "y": 10416.57,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9316.88,
-      "y": 10443.57,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9313.88,
-      "y": 10464.57,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9301.88,
-      "y": 10479.57,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9280.88,
-      "y": 10485.57,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9259.88,
-      "y": 10482.57,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9254.88,
-      "y": 10473.81,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "guaranteed",
-        "facing_heading": 119.9,
-        "spawn_x": 9259.69,
-        "spawn_y": 10476.58,
-        "spawn_z": -196.41,
-        "tag": "Stonewoods",
-        "spawner_id": "21894"
+        "standoff_m": 11.2,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
+        "spawn_x": 9909.16,
+        "spawn_y": 10472.09,
+        "spawn_z": -201.72,
+        "tag": "BreezyMeadow",
+        "spawner_id": "21870"
       }
     },
     {
@@ -1211,87 +770,58 @@
       }
     },
     {
-      "x": 10399.25,
-      "y": 10870.26,
+      "x": 10397.82,
+      "y": 10868.26,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 10363.25,
-      "y": 10882.26,
+      "x": 10364.82,
+      "y": 10883.26,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10343.25,
-      "y": 10906.26,
+      "x": 10343.82,
+      "y": 10907.26,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10339.25,
-      "y": 10926.26,
+      "x": 10331.82,
+      "y": 10940.26,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10310.82,
+      "y": 10964.26,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 10319.25,
-      "y": 10954.26,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10315.25,
-      "y": 10958.26,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10307.25,
-      "y": 10958.26,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10303.25,
-      "y": 10954.26,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10295.25,
-      "y": 10962.26,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10294.25,
-      "y": 10967.19,
-      "radius": 2.5,
+      "x": 10311.82,
+      "y": 10966.2,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 105.0,
+        "facing_heading": 258.7,
+        "standoff_m": 11.2,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
         "spawn_x": 10299.61,
         "spawn_y": 10968.63,
         "spawn_z": -229.26,
@@ -1300,103 +830,98 @@
       }
     },
     {
-      "x": 10307.25,
-      "y": 10967.17,
+      "x": 10320.82,
+      "y": 10956.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10319.25,
-      "y": 10955.17,
+      "x": 10356.82,
+      "y": 10952.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10355.25,
-      "y": 10951.17,
+      "x": 10392.82,
+      "y": 10948.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10391.25,
-      "y": 10947.17,
+      "x": 10424.82,
+      "y": 10952.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10423.25,
-      "y": 10951.17,
+      "x": 10428.82,
+      "y": 10948.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10435.25,
-      "y": 10947.17,
+      "x": 10440.82,
+      "y": 10948.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10447.25,
-      "y": 10951.17,
+      "x": 10468.82,
+      "y": 10952.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10467.25,
-      "y": 10951.17,
+      "x": 10496.82,
+      "y": 10968.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10495.25,
-      "y": 10967.17,
+      "x": 10532.82,
+      "y": 10968.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10531.25,
-      "y": 10967.17,
+      "x": 10568.82,
+      "y": 10968.61,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10567.25,
-      "y": 10967.17,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10602.58,
-      "y": 10962.17,
-      "radius": 2.5,
+      "x": 10585.16,
+      "y": 10963.61,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 105.0,
+        "facing_heading": 90.0,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10607.94,
         "spawn_y": 10963.61,
         "spawn_z": -238.03,
@@ -1421,111 +946,98 @@
       }
     },
     {
-      "x": 10593.66,
-      "y": 11293.64,
+      "x": 10587.08,
+      "y": 11295.08,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 10561.66,
-      "y": 11289.64,
+      "x": 10571.08,
+      "y": 11291.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10537.66,
-      "y": 11293.64,
+      "x": 10535.08,
+      "y": 11295.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10529.66,
-      "y": 11293.64,
+      "x": 10503.08,
+      "y": 11275.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10501.66,
-      "y": 11269.64,
+      "x": 10479.08,
+      "y": 11259.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10477.66,
-      "y": 11257.64,
+      "x": 10463.08,
+      "y": 11255.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10457.66,
-      "y": 11253.64,
+      "x": 10443.08,
+      "y": 11243.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10429.66,
-      "y": 11229.64,
+      "x": 10419.08,
+      "y": 11231.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10417.66,
-      "y": 11229.64,
+      "x": 10411.08,
+      "y": 11223.08,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 10413.66,
-      "y": 11225.64,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10409.66,
-      "y": 11205.64,
+      "x": 10411.08,
+      "y": 11207.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10401.66,
-      "y": 11197.64,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 10392.66,
-      "y": 11200.64,
-      "radius": 2.5,
+      "x": 10410.08,
+      "y": 11202.08,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 255.0,
+        "facing_heading": 270.0,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10387.3,
         "spawn_y": 11202.08,
         "spawn_z": -199.98,
@@ -1606,15 +1118,18 @@
       "params": {}
     },
     {
-      "x": 10713.6,
-      "y": 11573.66,
-      "radius": 2.5,
+      "x": 10707.22,
+      "y": 11554.17,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 195.0,
+        "facing_heading": 168.8,
+        "standoff_m": 22.8,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 10712.16,
         "spawn_y": 11579.02,
         "spawn_z": -182.56,
@@ -1640,7 +1155,7 @@
     },
     {
       "x": 10788.53,
-      "y": 11924.07,
+      "y": 11924.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1648,7 +1163,7 @@
     },
     {
       "x": 10804.53,
-      "y": 11892.07,
+      "y": 11892.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1656,7 +1171,7 @@
     },
     {
       "x": 10808.53,
-      "y": 11856.07,
+      "y": 11856.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1664,7 +1179,7 @@
     },
     {
       "x": 10812.53,
-      "y": 11820.07,
+      "y": 11820.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1672,7 +1187,7 @@
     },
     {
       "x": 10812.53,
-      "y": 11792.07,
+      "y": 11792.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1680,7 +1195,7 @@
     },
     {
       "x": 10828.53,
-      "y": 11768.07,
+      "y": 11768.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1688,7 +1203,7 @@
     },
     {
       "x": 10852.53,
-      "y": 11768.07,
+      "y": 11768.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1696,7 +1211,7 @@
     },
     {
       "x": 10864.53,
-      "y": 11772.07,
+      "y": 11772.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1704,7 +1219,7 @@
     },
     {
       "x": 10900.53,
-      "y": 11768.07,
+      "y": 11768.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1712,7 +1227,7 @@
     },
     {
       "x": 10936.53,
-      "y": 11764.07,
+      "y": 11764.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1720,22 +1235,25 @@
     },
     {
       "x": 10972.53,
-      "y": 11772.07,
+      "y": 11772.23,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11003.39,
-      "y": 11787.07,
-      "radius": 2.5,
+      "x": 10981.67,
+      "y": 11779.23,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 210.0,
+        "facing_heading": 123.7,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 11000.61,
         "spawn_y": 11791.88,
         "spawn_z": -196.74,
@@ -1760,7 +1278,7 @@
       }
     },
     {
-      "x": 10085.08,
+      "x": 10085.37,
       "y": 11420.97,
       "radius": 2.8,
       "jump": true,
@@ -1768,7 +1286,7 @@
       "params": {}
     },
     {
-      "x": 10076.08,
+      "x": 10076.37,
       "y": 11429.97,
       "radius": 2.8,
       "jump": false,
@@ -1776,7 +1294,7 @@
       "params": {}
     },
     {
-      "x": 10073.08,
+      "x": 10073.37,
       "y": 11429.97,
       "radius": 2.8,
       "jump": false,
@@ -1784,7 +1302,7 @@
       "params": {}
     },
     {
-      "x": 10070.08,
+      "x": 10070.37,
       "y": 11432.97,
       "radius": 2.8,
       "jump": false,
@@ -1792,7 +1310,7 @@
       "params": {}
     },
     {
-      "x": 10064.08,
+      "x": 10064.37,
       "y": 11444.97,
       "radius": 2.8,
       "jump": true,
@@ -1800,7 +1318,7 @@
       "params": {}
     },
     {
-      "x": 10028.08,
+      "x": 10028.37,
       "y": 11447.97,
       "radius": 2.8,
       "jump": false,
@@ -1808,7 +1326,7 @@
       "params": {}
     },
     {
-      "x": 9992.08,
+      "x": 9992.37,
       "y": 11447.97,
       "radius": 2.8,
       "jump": false,
@@ -1816,7 +1334,7 @@
       "params": {}
     },
     {
-      "x": 9971.08,
+      "x": 9971.37,
       "y": 11453.97,
       "radius": 2.8,
       "jump": true,
@@ -1824,7 +1342,7 @@
       "params": {}
     },
     {
-      "x": 9968.08,
+      "x": 9968.37,
       "y": 11456.97,
       "radius": 2.8,
       "jump": true,
@@ -1832,15 +1350,34 @@
       "params": {}
     },
     {
-      "x": 9936.08,
-      "y": 11472.8,
-      "radius": 2.5,
+      "x": 9959.37,
+      "y": 11468.97,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9956.37,
+      "y": 11471.97,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9954.37,
+      "y": 11470.97,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 240.1,
+        "facing_heading": 258.7,
+        "standoff_m": 21.2,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 9931.27,
         "spawn_y": 11475.57,
         "spawn_z": -115.37,
@@ -1866,7 +1403,7 @@
     },
     {
       "x": 9416.35,
-      "y": 11720.17,
+      "y": 11719.29,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1874,31 +1411,23 @@
     },
     {
       "x": 9419.35,
-      "y": 11717.17,
+      "y": 11716.29,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9422.35,
-      "y": 11696.17,
+      "x": 9428.35,
+      "y": 11695.29,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9440.35,
-      "y": 11666.17,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 9464.35,
-      "y": 11642.17,
+      "x": 9452.35,
+      "y": 11671.29,
       "radius": 2.8,
       "jump": false,
       "action": "",
@@ -1906,27 +1435,190 @@
     },
     {
       "x": 9476.35,
-      "y": 11612.17,
+      "y": 11647.29,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 9494.98,
-      "y": 11598.17,
-      "radius": 2.5,
+      "x": 9491.35,
+      "y": 11617.29,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9490.18,
+      "y": 11615.29,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 45.0,
+        "facing_heading": 22.5,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 9498.9,
         "spawn_y": 11594.25,
         "spawn_z": -87.87,
         "tag": "BreezyMeadow",
         "spawner_id": "21878"
+      }
+    },
+    {
+      "x": 9389.05,
+      "y": 10562.46,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "村居岔路",
+          "province": "心愿原野",
+          "region": "小石树田村",
+          "x": 9389.052,
+          "y": 10562.456
+        }
+      }
+    },
+    {
+      "x": 9350.2,
+      "y": 10573.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9323.2,
+      "y": 10579.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9302.2,
+      "y": 10570.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9266.2,
+      "y": 10570.99,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9251.2,
+      "y": 10579.99,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9252.2,
+      "y": 10605.57,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 180.0,
+        "standoff_m": 13.5,
+        "standoff_tier": "mid_attack_range",
+        "corridor_clear": true,
+        "spawn_x": 9252.2,
+        "spawn_y": 10620.57,
+        "spawn_z": -214.9,
+        "tag": "Stonewoods",
+        "spawner_id": "21895"
+      }
+    },
+    {
+      "x": 9342.04,
+      "y": 10401.19,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "紫穗草花田",
+          "province": "心愿原野",
+          "region": "小石树田村",
+          "x": 9342.041,
+          "y": 10401.192
+        }
+      }
+    },
+    {
+      "x": 9343.11,
+      "y": 10407.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9322.11,
+      "y": 10437.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9313.11,
+      "y": 10458.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9304.11,
+      "y": 10479.57,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9280.11,
+      "y": 10485.57,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 9269.11,
+      "y": 10482.88,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "guaranteed",
+        "facing_heading": 303.8,
+        "standoff_m": 10.2,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
+        "spawn_x": 9259.69,
+        "spawn_y": 10476.58,
+        "spawn_z": -196.41,
+        "tag": "Stonewoods",
+        "spawner_id": "21894"
       }
     },
     {
@@ -1946,7 +1638,7 @@
       }
     },
     {
-      "x": 8699.41,
+      "x": 8701.98,
       "y": 9007.74,
       "radius": 2.8,
       "jump": false,
@@ -1954,7 +1646,7 @@
       "params": {}
     },
     {
-      "x": 8723.41,
+      "x": 8722.98,
       "y": 9004.74,
       "radius": 2.8,
       "jump": false,
@@ -1962,31 +1654,31 @@
       "params": {}
     },
     {
-      "x": 8738.41,
-      "y": 8989.74,
+      "x": 8740.98,
+      "y": 8986.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8741.41,
-      "y": 8977.74,
+      "x": 8743.98,
+      "y": 8971.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8735.41,
+      "x": 8734.98,
       "y": 8956.74,
       "radius": 2.8,
-      "jump": false,
+      "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 8729.41,
+      "x": 8728.98,
       "y": 8953.74,
       "radius": 2.8,
       "jump": false,
@@ -1994,7 +1686,7 @@
       "params": {}
     },
     {
-      "x": 8705.41,
+      "x": 8704.98,
       "y": 8953.74,
       "radius": 2.8,
       "jump": true,
@@ -2002,7 +1694,7 @@
       "params": {}
     },
     {
-      "x": 8687.41,
+      "x": 8689.98,
       "y": 8956.74,
       "radius": 2.8,
       "jump": false,
@@ -2010,7 +1702,7 @@
       "params": {}
     },
     {
-      "x": 8663.41,
+      "x": 8665.98,
       "y": 8980.74,
       "radius": 2.8,
       "jump": false,
@@ -2018,7 +1710,7 @@
       "params": {}
     },
     {
-      "x": 8633.41,
+      "x": 8635.98,
       "y": 9001.74,
       "radius": 2.8,
       "jump": false,
@@ -2026,23 +1718,26 @@
       "params": {}
     },
     {
-      "x": 8600.41,
-      "y": 9016.74,
+      "x": 8611.98,
+      "y": 9025.74,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 8580.41,
-      "y": 9026.93,
-      "radius": 2.5,
+      "x": 8606.98,
+      "y": 9033.17,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
-        "facing_heading": 60.1,
+        "facing_heading": 292.5,
+        "standoff_m": 21.2,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 8585.22,
         "spawn_y": 9024.16,
         "spawn_z": -160.1,
@@ -2067,205 +1762,135 @@
       }
     },
     {
-      "x": 7827.24,
-      "y": 9367.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7827.24,
-      "y": 9373.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7824.24,
-      "y": 9379.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7827.24,
-      "y": 9385.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7845.24,
-      "y": 9376.61,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 7845.24,
-      "y": 9352.61,
+      "x": 7816.77,
+      "y": 9369.08,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 7842.24,
-      "y": 9343.61,
+      "x": 7810.77,
+      "y": 9375.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7809.24,
-      "y": 9331.61,
+      "x": 7813.77,
+      "y": 9381.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7779.24,
-      "y": 9313.61,
+      "x": 7831.77,
+      "y": 9384.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7758.24,
-      "y": 9295.61,
+      "x": 7846.77,
+      "y": 9375.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7843.77,
+      "y": 9354.08,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 7737.24,
-      "y": 9286.61,
+      "x": 7843.77,
+      "y": 9345.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7716.24,
-      "y": 9271.61,
+      "x": 7807.77,
+      "y": 9333.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7704.24,
-      "y": 9274.61,
+      "x": 7780.77,
+      "y": 9312.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7698.24,
-      "y": 9283.61,
+      "x": 7756.77,
+      "y": 9294.08,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7735.77,
+      "y": 9285.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 7699.24,
-      "y": 9296.61,
-      "radius": 2.5,
+      "x": 7717.77,
+      "y": 9270.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7702.77,
+      "y": 9276.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7693.77,
+      "y": 9291.08,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 7691.77,
+      "y": 9304.08,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "guaranteed",
         "facing_heading": 45.0,
+        "standoff_m": 14.5,
+        "standoff_tier": "mid_attack_range",
+        "corridor_clear": true,
         "spawn_x": 7703.16,
         "spawn_y": 9292.69,
         "spawn_z": -148.83,
         "tag": "Stonewoods",
         "spawner_id": "21892"
-      }
-    },
-    {
-      "x": 11461.92,
-      "y": 9344.46,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "愿望质检中心前",
-          "province": "心愿原野",
-          "region": "祈愿树林",
-          "x": 11461.917,
-          "y": 9344.459
-        }
-      }
-    },
-    {
-      "x": 11440.25,
-      "y": 9312.69,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11428.25,
-      "y": 9282.69,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11404.25,
-      "y": 9273.69,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11404.25,
-      "y": 9267.69,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11401.25,
-      "y": 9264.69,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11399.25,
-      "y": 9259.69,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 255.0,
-        "spawn_x": 11393.26,
-        "spawn_y": 9261.29,
-        "spawn_z": -197.45,
-        "tag": "WishingWoods",
-        "spawner_id": "21899"
       }
     },
     {
@@ -2293,23 +1918,26 @@
       "params": {}
     },
     {
-      "x": 11489.07,
-      "y": 9227.95,
+      "x": 11477.07,
+      "y": 9212.95,
       "radius": 2.8,
-      "jump": true,
+      "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11491.4,
-      "y": 9230.42,
-      "radius": 2.5,
+      "x": 11481.24,
+      "y": 9214.74,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 195.0,
+        "facing_heading": 157.5,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 11489.96,
         "spawn_y": 9235.78,
         "spawn_z": -199.24,
@@ -2318,63 +1946,50 @@
       }
     },
     {
-      "x": 11478.4,
-      "y": 9214.98,
+      "x": 11474.24,
+      "y": 9210.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11472.4,
-      "y": 9205.98,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11469.4,
-      "y": 9193.98,
+      "x": 11465.24,
+      "y": 9189.08,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 11460.4,
-      "y": 9181.98,
+      "x": 11462.24,
+      "y": 9180.08,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 11478.4,
-      "y": 9148.98,
+      "x": 11477.24,
+      "y": 9147.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11490.4,
-      "y": 9130.98,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11502.23,
-      "y": 9131.98,
-      "radius": 2.5,
+      "x": 11483.29,
+      "y": 9139.08,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 0.0,
+        "facing_heading": 56.3,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
         "spawn_x": 11502.23,
         "spawn_y": 9126.43,
         "spawn_z": -197.88,
@@ -2383,68 +1998,867 @@
       }
     },
     {
-      "x": 11488.83,
-      "y": 9130.98,
+      "x": 11460.69,
+      "y": 9165.08,
       "radius": 2.8,
       "jump": true,
       "action": "",
       "params": {}
     },
     {
-      "x": 11467.83,
-      "y": 9160.98,
+      "x": 11424.69,
+      "y": 9165.08,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11403.69,
+      "y": 9165.08,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11400.69,
+      "y": 9162.08,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11391.69,
+      "y": 9168.08,
       "radius": 2.8,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 11431.83,
-      "y": 9166.98,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11407.83,
-      "y": 9166.98,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11404.83,
-      "y": 9163.98,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11398.83,
-      "y": 9160.98,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11393.83,
-      "y": 9164.74,
-      "radius": 2.5,
+      "x": 11389.69,
+      "y": 9170.28,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 29.9,
+        "facing_heading": 33.7,
+        "standoff_m": 11.2,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
         "spawn_x": 11396.6,
         "spawn_y": 9159.93,
         "spawn_z": -189.95,
         "tag": "WishingWoods",
         "spawner_id": "21898"
+      }
+    },
+    {
+      "x": 11846.96,
+      "y": 9216.1,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "古铸剑遗址入口",
+          "province": "心愿原野",
+          "region": "祈愿树林",
+          "x": 11846.959,
+          "y": 9216.097
+        }
+      }
+    },
+    {
+      "x": 11842.96,
+      "y": 9214.07,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11854.96,
+      "y": 9208.07,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11869.96,
+      "y": 9202.07,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11884.96,
+      "y": 9202.07,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11908.96,
+      "y": 9184.07,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11944.96,
+      "y": 9190.07,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 11950.04,
+      "y": 9191.07,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "random",
+        "facing_heading": 78.8,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
+        "spawn_x": 11972.38,
+        "spawn_y": 9186.63,
+        "spawn_z": -212.15,
+        "tag": "WishingWoods",
+        "spawner_id": "21906"
+      }
+    },
+    {
+      "x": 12166.38,
+      "y": 9190.78,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "花谷瀑布",
+          "province": "心愿原野",
+          "region": "祈愿树林",
+          "x": 12166.382,
+          "y": 9190.78
+        }
+      }
+    },
+    {
+      "x": 12165.38,
+      "y": 9159.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12156.38,
+      "y": 9123.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12171.38,
+      "y": 9090.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12177.38,
+      "y": 9069.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12168.38,
+      "y": 9060.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12165.38,
+      "y": 9057.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12168.38,
+      "y": 9054.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12171.38,
+      "y": 9036.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12177.38,
+      "y": 9030.74,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12207.38,
+      "y": 9024.74,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12211.39,
+      "y": 9028.74,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "random",
+        "facing_heading": 337.5,
+        "standoff_m": 14.5,
+        "standoff_tier": "mid_attack_range",
+        "corridor_clear": true,
+        "spawn_x": 12205.22,
+        "spawn_y": 9013.86,
+        "spawn_z": -187.84,
+        "tag": "WishingWoods",
+        "spawner_id": "21905"
+      }
+    },
+    {
+      "x": 12197.06,
+      "y": 8994.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12191.06,
+      "y": 8976.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12179.06,
+      "y": 8961.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12176.06,
+      "y": 8952.49,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12164.06,
+      "y": 8952.49,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12162.06,
+      "y": 8953.49,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "random",
+        "facing_heading": 303.8,
+        "standoff_m": 16.5,
+        "standoff_tier": "mid_attack_range",
+        "corridor_clear": true,
+        "spawn_x": 12146.82,
+        "spawn_y": 8943.3,
+        "spawn_z": -186.52,
+        "tag": "WishingWoods",
+        "spawner_id": "21904"
+      }
+    },
+    {
+      "x": 12311.19,
+      "y": 9200.47,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "心愿庆典管理处",
+          "province": "心愿原野",
+          "region": "祈愿树林",
+          "x": 12311.192,
+          "y": 9200.472
+        }
+      }
+    },
+    {
+      "x": 12294.66,
+      "y": 9193.11,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12294.66,
+      "y": 9169.11,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12306.66,
+      "y": 9157.11,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12306.66,
+      "y": 9151.11,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12333.66,
+      "y": 9130.11,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12363.66,
+      "y": 9145.11,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12372.66,
+      "y": 9154.11,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12372.66,
+      "y": 9178.11,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12375.66,
+      "y": 9181.11,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12378.39,
+      "y": 9179.11,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "random",
+        "facing_heading": 157.5,
+        "standoff_m": 8.2,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
+        "spawn_x": 12381.88,
+        "spawn_y": 9187.53,
+        "spawn_z": -185.35,
+        "tag": "WishingWoods",
+        "spawner_id": "21909"
+      }
+    },
+    {
+      "x": 12311.61,
+      "y": 9450.76,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "金蔷薇花谷",
+          "province": "心愿原野",
+          "region": "祈愿树林",
+          "x": 12311.612,
+          "y": 9450.761
+        }
+      }
+    },
+    {
+      "x": 12350.33,
+      "y": 9474.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12368.33,
+      "y": 9480.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12381.55,
+      "y": 9495.15,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "random",
+        "facing_heading": 157.5,
+        "standoff_m": 20.5,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
+        "spawn_x": 12390.27,
+        "spawn_y": 9516.19,
+        "spawn_z": -233.45,
+        "tag": "WishingWoods",
+        "spawner_id": "21911"
+      }
+    },
+    {
+      "x": 12370.25,
+      "y": 9482.4,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12366.25,
+      "y": 9446.4,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12346.25,
+      "y": 9414.4,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12322.25,
+      "y": 9386.4,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12322.25,
+      "y": 9350.4,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12330.25,
+      "y": 9318.4,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12326.25,
+      "y": 9306.4,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12334.25,
+      "y": 9282.4,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12341.25,
+      "y": 9281.4,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "random",
+        "facing_heading": 112.5,
+        "standoff_m": 14.5,
+        "standoff_tier": "mid_attack_range",
+        "corridor_clear": true,
+        "spawn_x": 12356.13,
+        "spawn_y": 9287.57,
+        "spawn_z": -205.37,
+        "tag": "WishingWoods",
+        "spawner_id": "21908"
+      }
+    },
+    {
+      "x": 12329.84,
+      "y": 9283.01,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12299.84,
+      "y": 9262.01,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12297.84,
+      "y": 9263.01,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "random",
+        "facing_heading": 292.5,
+        "standoff_m": 21.2,
+        "standoff_tier": "out_of_front_sight",
+        "corridor_clear": true,
+        "spawn_x": 12276.08,
+        "spawn_y": 9254.0,
+        "spawn_z": -208.47,
+        "tag": "WishingWoods",
+        "spawner_id": "21912"
+      }
+    },
+    {
+      "x": 12311.61,
+      "y": 9450.76,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "金蔷薇花谷",
+          "province": "心愿原野",
+          "region": "祈愿树林",
+          "x": 12311.612,
+          "y": 9450.761
+        }
+      }
+    },
+    {
+      "x": 12316.31,
+      "y": 9466.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12304.31,
+      "y": 9494.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12296.31,
+      "y": 9498.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12260.31,
+      "y": 9494.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12232.31,
+      "y": 9490.48,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12196.31,
+      "y": 9494.48,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12160.31,
+      "y": 9498.48,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12128.31,
+      "y": 9502.48,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12092.31,
+      "y": 9510.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12072.31,
+      "y": 9482.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12068.31,
+      "y": 9478.48,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12052.31,
+      "y": 9478.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12036.31,
+      "y": 9486.48,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12027.31,
+      "y": 9488.36,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "random",
+        "facing_heading": 315.0,
+        "standoff_m": 12.0,
+        "standoff_tier": "close_blackhole_range",
+        "corridor_clear": true,
+        "spawn_x": 12017.88,
+        "spawn_y": 9478.93,
+        "spawn_z": -225.25,
+        "tag": "WishingWoods",
+        "spawner_id": "21915"
+      }
+    },
+    {
+      "x": 12415.74,
+      "y": 9585.43,
+      "radius": 10.0,
+      "jump": false,
+      "action": "teleport",
+      "params": {
+        "checkpoint": {
+          "name": "星没之地",
+          "province": "心愿原野",
+          "region": "祈愿树林",
+          "x": 12415.738,
+          "y": 9585.43
+        }
+      }
+    },
+    {
+      "x": 12432.24,
+      "y": 9582.64,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12429.24,
+      "y": 9567.64,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12420.24,
+      "y": 9540.64,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12426.24,
+      "y": 9534.64,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12432.24,
+      "y": 9519.64,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12444.24,
+      "y": 9501.64,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12462.24,
+      "y": 9498.64,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12468.24,
+      "y": 9492.64,
+      "radius": 2.8,
+      "jump": true,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12471.24,
+      "y": 9480.64,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12489.24,
+      "y": 9471.64,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12492.24,
+      "y": 9468.64,
+      "radius": 2.8,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 12496.17,
+      "y": 9466.64,
+      "radius": 1.5,
+      "jump": false,
+      "action": "bling_combat",
+      "params": {
+        "monster_type": "greedy_pouch",
+        "spawn_mode": "random",
+        "facing_heading": 303.7,
+        "standoff_m": 14.5,
+        "standoff_tier": "mid_attack_range",
+        "corridor_clear": true,
+        "spawn_x": 12482.77,
+        "spawn_y": 9457.69,
+        "spawn_z": -205.47,
+        "tag": "WishingWoods",
+        "spawner_id": "21910"
       }
     },
     {
@@ -2576,813 +2990,23 @@
       "params": {}
     },
     {
-      "x": 11656.25,
-      "y": 8926.64,
-      "radius": 2.5,
+      "x": 11647.34,
+      "y": 8935.88,
+      "radius": 1.5,
       "jump": false,
       "action": "bling_combat",
       "params": {
         "monster_type": "greedy_pouch",
         "spawn_mode": "random",
-        "facing_heading": 135.0,
+        "facing_heading": 67.5,
+        "standoff_m": 12.5,
+        "standoff_tier": "mid_attack_range",
+        "corridor_clear": true,
         "spawn_x": 11660.17,
         "spawn_y": 8930.56,
         "spawn_z": -192.76,
         "tag": "WishingWoods",
         "spawner_id": "21902"
-      }
-    },
-    {
-      "x": 11959.3,
-      "y": 9084.29,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "巨树居民区",
-          "province": "心愿原野",
-          "region": "祈愿树林",
-          "x": 11959.301,
-          "y": 9084.286
-        }
-      }
-    },
-    {
-      "x": 11961.3,
-      "y": 9086.29,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11982.3,
-      "y": 9116.29,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11991.3,
-      "y": 9146.29,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12003.3,
-      "y": 9179.29,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11988.3,
-      "y": 9185.29,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 11968.46,
-      "y": 9182.71,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 135.0,
-        "spawn_x": 11972.38,
-        "spawn_y": 9186.63,
-        "spawn_z": -212.15,
-        "tag": "WishingWoods",
-        "spawner_id": "21906"
-      }
-    },
-    {
-      "x": 12166.38,
-      "y": 9190.78,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "花谷瀑布",
-          "province": "心愿原野",
-          "region": "祈愿树林",
-          "x": 12166.382,
-          "y": 9190.78
-        }
-      }
-    },
-    {
-      "x": 12167.38,
-      "y": 9166.05,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12155.38,
-      "y": 9130.05,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12163.38,
-      "y": 9102.05,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12175.38,
-      "y": 9082.05,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12175.38,
-      "y": 9066.05,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12163.38,
-      "y": 9058.05,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12167.38,
-      "y": 9054.05,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12171.38,
-      "y": 9038.05,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12179.38,
-      "y": 9030.05,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12199.38,
-      "y": 9026.05,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12203.38,
-      "y": 9022.05,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12202.44,
-      "y": 9009.05,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 150.0,
-        "spawn_x": 12205.22,
-        "spawn_y": 9013.86,
-        "spawn_z": -187.84,
-        "tag": "WishingWoods",
-        "spawner_id": "21905"
-      }
-    },
-    {
-      "x": 12191.74,
-      "y": 8976.22,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12182.74,
-      "y": 8967.22,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12176.74,
-      "y": 8952.22,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12155.74,
-      "y": 8949.22,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12150.74,
-      "y": 8947.22,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 315.0,
-        "spawn_x": 12146.82,
-        "spawn_y": 8943.3,
-        "spawn_z": -186.52,
-        "tag": "WishingWoods",
-        "spawner_id": "21904"
-      }
-    },
-    {
-      "x": 12311.19,
-      "y": 9200.47,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "心愿庆典管理处",
-          "province": "心愿原野",
-          "region": "祈愿树林",
-          "x": 12311.192,
-          "y": 9200.472
-        }
-      }
-    },
-    {
-      "x": 12291.66,
-      "y": 9190.72,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12294.66,
-      "y": 9169.72,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12306.66,
-      "y": 9157.72,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12306.66,
-      "y": 9151.72,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12333.66,
-      "y": 9130.72,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12363.66,
-      "y": 9145.72,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12372.66,
-      "y": 9154.72,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12372.66,
-      "y": 9178.72,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12375.66,
-      "y": 9181.72,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12379.1,
-      "y": 9182.72,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 150.0,
-        "spawn_x": 12381.88,
-        "spawn_y": 9187.53,
-        "spawn_z": -185.35,
-        "tag": "WishingWoods",
-        "spawner_id": "21909"
-      }
-    },
-    {
-      "x": 12311.61,
-      "y": 9450.76,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "金蔷薇花谷",
-          "province": "心愿原野",
-          "region": "祈愿树林",
-          "x": 12311.612,
-          "y": 9450.761
-        }
-      }
-    },
-    {
-      "x": 12323.33,
-      "y": 9456.65,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12327.33,
-      "y": 9452.65,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12327.33,
-      "y": 9416.65,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12319.33,
-      "y": 9380.65,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12323.33,
-      "y": 9344.65,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12327.33,
-      "y": 9316.65,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12327.33,
-      "y": 9288.65,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12339.33,
-      "y": 9284.65,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12347.33,
-      "y": 9288.65,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12352.21,
-      "y": 9283.65,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 135.0,
-        "spawn_x": 12356.13,
-        "spawn_y": 9287.57,
-        "spawn_z": -205.37,
-        "tag": "WishingWoods",
-        "spawner_id": "21908"
-      }
-    },
-    {
-      "x": 12348.27,
-      "y": 9286.23,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12324.27,
-      "y": 9280.23,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12300.27,
-      "y": 9262.23,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12285.27,
-      "y": 9259.23,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12282.27,
-      "y": 9256.23,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12271.27,
-      "y": 9251.23,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 119.9,
-        "spawn_x": 12276.08,
-        "spawn_y": 9254.0,
-        "spawn_z": -208.47,
-        "tag": "WishingWoods",
-        "spawner_id": "21912"
-      }
-    },
-    {
-      "x": 12311.61,
-      "y": 9450.76,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "金蔷薇花谷",
-          "province": "心愿原野",
-          "region": "祈愿树林",
-          "x": 12311.612,
-          "y": 9450.761
-        }
-      }
-    },
-    {
-      "x": 12316.32,
-      "y": 9466.48,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12304.32,
-      "y": 9494.48,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12296.32,
-      "y": 9498.48,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12260.32,
-      "y": 9494.48,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12232.32,
-      "y": 9490.48,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12196.32,
-      "y": 9494.48,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12160.32,
-      "y": 9498.48,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12128.32,
-      "y": 9502.48,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12092.32,
-      "y": 9510.48,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12072.32,
-      "y": 9482.48,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12068.32,
-      "y": 9478.48,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12052.32,
-      "y": 9478.48,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12036.32,
-      "y": 9486.48,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12028.32,
-      "y": 9490.48,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12020.32,
-      "y": 9478.48,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12019.32,
-      "y": 9473.57,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 195.0,
-        "spawn_x": 12017.88,
-        "spawn_y": 9478.93,
-        "spawn_z": -225.25,
-        "tag": "WishingWoods",
-        "spawner_id": "21915"
-      }
-    },
-    {
-      "x": 12415.74,
-      "y": 9585.43,
-      "radius": 10.0,
-      "jump": false,
-      "action": "teleport",
-      "params": {
-        "checkpoint": {
-          "name": "星没之地",
-          "province": "心愿原野",
-          "region": "祈愿树林",
-          "x": 12415.738,
-          "y": 9585.43
-        }
-      }
-    },
-    {
-      "x": 12431.5,
-      "y": 9583.0,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12428.5,
-      "y": 9568.0,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12407.5,
-      "y": 9538.0,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12398.5,
-      "y": 9517.0,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12387.5,
-      "y": 9521.0,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 29.9,
-        "spawn_x": 12390.27,
-        "spawn_y": 9516.19,
-        "spawn_z": -233.45,
-        "tag": "WishingWoods",
-        "spawner_id": "21911"
-      }
-    },
-    {
-      "x": 12416.5,
-      "y": 9503.25,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12425.5,
-      "y": 9500.25,
-      "radius": 2.8,
-      "jump": true,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12461.5,
-      "y": 9500.25,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12470.5,
-      "y": 9479.25,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12482.5,
-      "y": 9464.25,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12482.5,
-      "y": 9461.25,
-      "radius": 2.8,
-      "jump": false,
-      "action": "",
-      "params": {}
-    },
-    {
-      "x": 12477.41,
-      "y": 9456.25,
-      "radius": 2.5,
-      "jump": false,
-      "action": "bling_combat",
-      "params": {
-        "monster_type": "greedy_pouch",
-        "spawn_mode": "random",
-        "facing_heading": 105.0,
-        "spawn_x": 12482.77,
-        "spawn_y": 9457.69,
-        "spawn_z": -205.47,
-        "tag": "WishingWoods",
-        "spawner_id": "21910"
       }
     }
   ]
