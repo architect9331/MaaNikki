@@ -208,25 +208,37 @@ class RejuvenateModel:
             return None, None, -1.0
         r = strip[:, :, 2].astype(np.int32)
         b = strip[:, :, 0].astype(np.int32)
-        glow_rows = np.where(((r > 145) & ((r - b) > 22)).sum(axis=1) >= 8)[0] + RAIL_TOP_Y
-        if len(glow_rows) < 6:
+        glow_rows = np.where(((r > 145) & ((r - b) > 22)).sum(axis=1) >= 20)[0] + RAIL_TOP_Y
+        if len(glow_rows) < 16:
             return None, None, -1.0
 
-        # Evaluate contiguous warm highlight blocks, preferring icon-sized bands
-        # so a large warm background region below the rail in tall mode cannot
-        # shadow the real selected left-rail slot.
+        # Evaluate contiguous warm highlight blocks by golden box fill coverage,
+        # rejecting faint background bleed behind unselected icons and large
+        # tall-mode background bands below the rail.
         breaks = np.where(np.diff(glow_rows) > 8)[0]
-        segments = [seg for seg in np.split(glow_rows, breaks + 1) if len(seg) >= 6]
-        if not segments:
+        candidates: list[tuple[np.ndarray, int, float, float]] = []
+        for seg in np.split(glow_rows, breaks + 1):
+            if len(seg) < 16:
+                continue
+            yc = int(round(float(np.median(seg))))
+            box = frame[max(0, yc - 34):min(h, yc + 34), RAIL_GLOW_X0:RAIL_GLOW_X1]
+            if box.size == 0:
+                continue
+            box_r = box[:, :, 2].astype(np.int32)
+            box_b = box[:, :, 0].astype(np.int32)
+            warm_frac = float(((box_r > 145) & ((box_r - box_b) > 22)).mean())
+            if warm_frac < 0.25:
+                continue
+            bright_warm = float(((box_r > 180) & ((box_r - box_b) > 30)).mean())
+            candidates.append((seg, yc, warm_frac, bright_warm))
+        if not candidates:
             return None, None, -1.0
-        segments.sort(key=lambda seg: (len(seg) > 120, -len(seg)))
+        candidates.sort(key=lambda item: (len(item[0]) > 120, -item[2], -item[3], -len(item[0])))
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
-        best_match: tuple[str, int, float] | None = None
-        fallback_yc = int(round(float(np.median(segments[0]))))
+        fallback_yc = candidates[0][1]
         fallback_sc = -1.0
-        for seg in segments[:6]:
-            yc = int(round(float(np.median(seg))))
+        for _seg, yc, _wf, _bw in candidates[:6]:
             best_by_cid: dict[str, float] = {}
             for y0 in range(max(0, yc - 38), min(h - RAIL_SIZE, yc - 20), 2):
                 for x0 in range(max(0, RAIL_X0 - 2), min(w - RAIL_SIZE, RAIL_X0 + 3)):
@@ -249,10 +261,7 @@ class RejuvenateModel:
                 fallback_sc = top1_sc
                 fallback_yc = yc
             if top1_sc >= 0.62 and (top1_sc - top2_sc) >= 0.06:
-                if best_match is None or top1_sc > best_match[2]:
-                    best_match = (top1_id, yc, top1_sc)
-        if best_match is not None:
-            return best_match
+                return top1_id, yc, top1_sc
         return None, fallback_yc, fallback_sc
 
 
