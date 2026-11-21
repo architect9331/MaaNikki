@@ -56,6 +56,9 @@ MODEL_FILES: tuple[tuple[str, str], ...] = (
     ("resource/model/backpack/icons.npz", "resource/model/backpack/icons.npz"),
 )
 
+SUIT_THUMBS_LOCAL = ROOT / ".local/data-assets/suit_thumbs.zip"
+SUIT_THUMB_ENTRY_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}\.webp$")
+
 STAT_LABELS: tuple[tuple[str, str], ...] = (
     ("clothes_groups", "服装评分归并组"),
     ("game_items", "游戏服装单品条目"),
@@ -67,6 +70,7 @@ STAT_LABELS: tuple[tuple[str, str], ...] = (
     ("blessing_sets", "祝福闪光套装"),
     ("crafting_sketches", "设计图配方"),
     ("item_sources", "服装获取途径条目"),
+    ("suit_thumbs", "套装预览图"),
 )
 
 
@@ -91,6 +95,37 @@ def run_gh(*args: str, input_bytes: bytes | None = None, allow_not_found: bool =
             return None
         last_err = stderr or f"exit code {proc.returncode}"
     raise RuntimeError(f"gh {' '.join(args[:4])} failed: {last_err}")
+
+
+def inspect_suit_thumbs(ws_suits: list[dict]) -> dict | None:
+    """Validate optional packed suit thumbnail bundle under `.local/data-assets/`."""
+    if not SUIT_THUMBS_LOCAL.is_file() or SUIT_THUMBS_LOCAL.stat().st_size == 0:
+        return None
+    seen: set[str] = set()
+    with zipfile.ZipFile(SUIT_THUMBS_LOCAL, "r") as archive:
+        for info in archive.infolist():
+            if info.is_dir():
+                continue
+            if not SUIT_THUMB_ENTRY_RE.fullmatch(info.filename):
+                raise ValueError(f"Invalid suit thumbnail entry name: {info.filename}")
+            if info.file_size <= 0:
+                raise ValueError(f"Empty suit thumbnail entry: {info.filename}")
+            seen.add(info.filename.removesuffix(".webp"))
+    if not seen:
+        raise ValueError(f"Suit thumbnail archive contains no entries: {SUIT_THUMBS_LOCAL}")
+    suit_ids = {str(s["id"]) for s in ws_suits}
+    missing = sorted(suit_ids - seen)
+    if missing:
+        print(
+            f"[提示] 套装预览图包缺少 {len(missing)} 套（共 {len(suit_ids)} 套）：{missing[:5]}",
+            file=sys.stderr,
+        )
+    return {
+        "path": SUIT_THUMBS_LOCAL,
+        "size": SUIT_THUMBS_LOCAL.stat().st_size,
+        "sha256": sha256(SUIT_THUMBS_LOCAL),
+        "count": len(seen),
+    }
 
 
 def verify_local_data() -> dict:
@@ -150,6 +185,8 @@ def verify_local_data() -> dict:
     finally:
         sys.path.pop(0)
 
+    thumb_info = inspect_suit_thumbs(ws["suits"])
+
     return {
         "wardrobe_version": str(ws.get("version", "")),
         "blessing_version": str(bc.get("version", "")),
@@ -164,6 +201,7 @@ def verify_local_data() -> dict:
         "blessing_sets": len(bc["sets"]),
         "crafting_sketches": len(cc["sketches"]),
         "item_sources": len(isrc["sources"]),
+        "suit_thumbs": thumb_info["count"] if thumb_info else 0,
     }
 
 
@@ -218,6 +256,7 @@ def inspect_changes(
     stats: dict,
     catalog_files: dict[str, dict],
     model_files: dict[str, dict],
+    suit_thumbs: dict | None,
     previous: dict | None,
     *,
     allow_shrink: bool = False,
@@ -227,10 +266,13 @@ def inspect_changes(
             f"- 初始游戏数据基线（衣柜数据版本 `{stats['wardrobe_version']}`，共鸣数据更新至 `{stats['resonance_updated_at']}`）",
             f"- 收录服装单品 {stats['game_items']} 件（{stats['suits']} 套）、共鸣卡池 {stats['resonance_banners']} 期、奇迹之冠 {stats['pinnacle_matches']} 关、祝福闪光 {stats['blessing_sets']} 套、设计图 {stats['crafting_sketches']} 张",
         ]
+        if suit_thumbs:
+            lines.append(f"- 收录套装预览图 {suit_thumbs['count']} 套")
         return {
             "is_initial": True,
             "catalog_changed": sorted(catalog_files.keys()),
             "models_changed": sorted(model_files.keys()),
+            "suit_thumbs_changed": bool(suit_thumbs),
             "stat_deltas": {},
             "notes": "\n".join(lines),
         }
@@ -238,8 +280,17 @@ def inspect_changes(
     prev_bundles = previous.get("bundles", {})
     prev_catalog = prev_bundles.get("catalog", {}).get("files", {})
     prev_models = prev_bundles.get("models", {}).get("files", {})
+    prev_thumbs = prev_bundles.get("suit_thumbs")
     cat_diff = diff_files(catalog_files, prev_catalog)
     mod_diff = diff_files(model_files, prev_models)
+    suit_thumbs_changed = bool(
+        suit_thumbs
+        and (
+            not prev_thumbs
+            or prev_thumbs.get("sha256") != suit_thumbs["sha256"]
+            or prev_thumbs.get("size") != suit_thumbs["size"]
+        )
+    )
 
     prev_stats = previous.get("stats", {})
     shrunk: list[str] = []
@@ -248,6 +299,8 @@ def inspect_changes(
     for key, label in STAT_LABELS:
         old_val = int(prev_stats.get(key, 0))
         new_val = int(stats.get(key, 0))
+        if key == "suit_thumbs" and new_val == 0 and suit_thumbs is None:
+            continue
         if new_val < old_val:
             shrunk.append(f"{label} ({old_val} -> {new_val})")
         if new_val != old_val:
@@ -271,11 +324,16 @@ def inspect_changes(
         lines.append(f"- 识别模型包同步更新（{len(mod_diff)} 项）：" + "、".join(f"`{p}`" for p in mod_diff))
     else:
         lines.append(f"- 识别模型与图标库无变动（继续复用 `{prev_bundles.get('models', {}).get('tag', '')}`）")
+    if suit_thumbs_changed and suit_thumbs:
+        lines.append(f"- 套装预览图包同步更新（共 {suit_thumbs['count']} 套）")
+    elif prev_thumbs:
+        lines.append(f"- 套装预览图包无变动（继续复用 `{prev_thumbs.get('tag', '')}`）")
 
     return {
         "is_initial": False,
         "catalog_changed": cat_diff,
         "models_changed": mod_diff,
+        "suit_thumbs_changed": suit_thumbs_changed,
         "stat_deltas": deltas,
         "notes": "\n".join(lines) if lines else "- 例行数据校验与元数据更新",
     }
@@ -297,9 +355,11 @@ def build_candidate(
     if previous and resolved_version == previous.get("version"):
         raise ValueError(f"Version v{resolved_version} is already the latest remote manifest version")
 
+    ws = read_json(ROOT / "resource/data/wardrobe_scoring.json")
+    suit_thumbs = inspect_suit_thumbs(ws["suits"])
     catalog_files = collect_bundle_files(CATALOG_FILES)
     model_files = collect_bundle_files(MODEL_FILES)
-    diff = inspect_changes(stats, catalog_files, model_files, previous, allow_shrink=allow_shrink)
+    diff = inspect_changes(stats, catalog_files, model_files, suit_thumbs, previous, allow_shrink=allow_shrink)
 
     tag = f"v{resolved_version}"
     stage = ROOT / ".build" / "data-release" / tag
@@ -342,6 +402,27 @@ def build_candidate(
             "files": model_files,
         }
 
+    bundles: dict[str, dict] = {
+        "catalog": catalog_bundle,
+        "models": models_bundle,
+    }
+    prev_thumbs_bundle = (previous or {}).get("bundles", {}).get("suit_thumbs")
+    if suit_thumbs and (diff["is_initial"] or diff["suit_thumbs_changed"] or not prev_thumbs_bundle):
+        thumbs_name = f"{ASSET_PREFIX}-{tag}-suit-thumbs.zip"
+        thumbs_zip = stage / thumbs_name
+        shutil.copy2(suit_thumbs["path"], thumbs_zip)
+        bundles["suit_thumbs"] = {
+            "tag": tag,
+            "asset": thumbs_name,
+            "size": suit_thumbs["size"],
+            "sha256": suit_thumbs["sha256"],
+            "count": suit_thumbs["count"],
+            "files": {},
+        }
+        upload_paths.append(thumbs_zip)
+    elif prev_thumbs_bundle:
+        bundles["suit_thumbs"] = prev_thumbs_bundle
+
     published_at = datetime.now(BEIJING_TZ).isoformat(timespec="seconds")
     manifest = {
         "schema_version": 1,
@@ -350,10 +431,7 @@ def build_candidate(
         "published_at": published_at,
         "repository": repo,
         "stats": stats,
-        "bundles": {
-            "catalog": catalog_bundle,
-            "models": models_bundle,
-        },
+        "bundles": bundles,
     }
     manifest_name = f"{ASSET_PREFIX}-{tag}-manifest.json"
     manifest_path = stage / manifest_name
@@ -391,15 +469,17 @@ def build_candidate(
 def print_status(repo: str = DATA_REPO, *, allow_shrink: bool = False) -> None:
     stats = verify_local_data()
     previous, _ = fetch_latest_remote_manifest(repo)
+    ws = read_json(ROOT / "resource/data/wardrobe_scoring.json")
+    suit_thumbs = inspect_suit_thumbs(ws["suits"])
     catalog_files = collect_bundle_files(CATALOG_FILES)
     model_files = collect_bundle_files(MODEL_FILES)
-    diff = inspect_changes(stats, catalog_files, model_files, previous, allow_shrink=allow_shrink)
+    diff = inspect_changes(stats, catalog_files, model_files, suit_thumbs, previous, allow_shrink=allow_shrink)
 
     if previous is None:
         print(f"[远端状态] {repo} 尚未发布任何数据包（将创建首个基线 v0.1.0）")
     else:
         print(f"[远端状态] 最新已发布版本：{previous.get('tag')}（发布于 {previous.get('published_at')}）")
-        if not diff["catalog_changed"] and not diff["models_changed"]:
+        if not diff["catalog_changed"] and not diff["models_changed"] and not diff["suit_thumbs_changed"]:
             print("[本地对比] 本地所有游戏目录与识别模型文件与线上完全一致，无需重复发布。")
             return
     print("[变更摘要]")
@@ -408,7 +488,13 @@ def print_status(repo: str = DATA_REPO, *, allow_shrink: bool = False) -> None:
 
 def publish_candidate(candidate: dict, *, repo: str = DATA_REPO, assume_yes: bool = False, force: bool = False) -> None:
     diff = candidate["diff"]
-    if not diff["is_initial"] and not diff["catalog_changed"] and not diff["models_changed"] and not force:
+    if (
+        not diff["is_initial"]
+        and not diff["catalog_changed"]
+        and not diff["models_changed"]
+        and not diff["suit_thumbs_changed"]
+        and not force
+    ):
         print("本地游戏数据与线上最新版本完全一致，已跳过发布（如需强制重发可传 --force）。")
         return
 

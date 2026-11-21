@@ -1,19 +1,24 @@
 //! Silent background hot-updater and dual-layer overlay resolver for game data.
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex, OnceLock, RwLock,
+};
 use std::time::Duration;
 
+use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
+use chrono::Utc;
 use log::{debug, info, warn};
 use reqwest::header::{ACCEPT, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, State};
 use tokio::sync::Notify;
 
-use super::account_state::{bump_account_state_revision, read_json};
+use super::account_state::{bump_account_state_revision, file_stamp, read_json, FileStamp};
 use super::app_config::AppConfigState;
 use super::types::MaaState;
 use super::update_mirrors;
@@ -66,6 +71,9 @@ struct BundleSpec {
     asset: String,
     size: u64,
     sha256: String,
+    #[serde(default)]
+    count: Option<usize>,
+    #[serde(default)]
     files: BTreeMap<String, FileSpec>,
 }
 
@@ -91,6 +99,33 @@ struct ActiveOverlayRecord {
     game_items: usize,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct SuitThumbsMeta {
+    schema_version: u32,
+    tag: String,
+    asset: String,
+    size: u64,
+    sha256: String,
+    count: usize,
+    updated_at: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SuitThumbsStatus {
+    pub state: String,
+    pub available: bool,
+    pub count: usize,
+    pub version: Option<String>,
+    pub error: Option<String>,
+}
+
+struct SuitThumbArchiveIndex {
+    path: PathBuf,
+    stamp: FileStamp,
+    entries: HashMap<String, usize>,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DataUpdateStatus {
@@ -104,6 +139,21 @@ pub struct DataUpdateStatus {
 static ACTIVE_OVERLAY: OnceLock<RwLock<Option<(ActiveOverlayRecord, PathBuf)>>> = OnceLock::new();
 static STATUS_STATE: OnceLock<RwLock<DataUpdateStatus>> = OnceLock::new();
 static CHECK_NOTIFY: OnceLock<Notify> = OnceLock::new();
+static SUIT_THUMBS_STATUS: OnceLock<RwLock<SuitThumbsStatus>> = OnceLock::new();
+static SUIT_THUMBS_SYNCING: AtomicBool = AtomicBool::new(false);
+static SUIT_THUMBS_INDEX: OnceLock<Mutex<Option<SuitThumbArchiveIndex>>> = OnceLock::new();
+
+fn suit_thumbs_status_cell() -> &'static RwLock<SuitThumbsStatus> {
+    SUIT_THUMBS_STATUS.get_or_init(|| {
+        RwLock::new(SuitThumbsStatus {
+            state: "idle".into(),
+            available: false,
+            count: 0,
+            version: None,
+            error: None,
+        })
+    })
+}
 
 fn overlay_cell() -> &'static RwLock<Option<(ActiveOverlayRecord, PathBuf)>> {
     ACTIVE_OVERLAY.get_or_init(|| RwLock::new(None))
@@ -198,6 +248,7 @@ fn slot_complete(slot_dir: &Path) -> bool {
 }
 
 pub fn init_on_startup() {
+    init_suit_thumbs_status();
     let Ok(app_data) = get_app_data_dir() else {
         return;
     };
@@ -310,6 +361,21 @@ fn mirror_urls(raw_github_url: &str) -> Vec<(String, bool)> {
     list
 }
 
+fn validate_bundle_header(kind: &str, bundle: &BundleSpec) -> Result<(), String> {
+    if !safe_slot_name(&bundle.tag)
+        || !bundle.tag.starts_with('v')
+        || !bundle.asset.starts_with("MaaNikki-data-")
+        || !bundle.asset.ends_with(".zip")
+        || bundle.asset.contains('/')
+        || bundle.size == 0
+        || bundle.size > MAX_BUNDLE_BYTES
+        || !valid_hex64(&bundle.sha256)
+    {
+        return Err(format!("数据分包 {kind} 元数据无效"));
+    }
+    Ok(())
+}
+
 fn validate_manifest(manifest: &DataManifest) -> Result<(), String> {
     if manifest.schema_version != 1 {
         return Err(format!(
@@ -325,22 +391,15 @@ fn validate_manifest(manifest: &DataManifest) -> Result<(), String> {
             .bundles
             .get(kind)
             .ok_or_else(|| format!("数据清单缺少 {kind} 分包"))?;
-        if !safe_slot_name(&bundle.tag)
-            || !bundle.tag.starts_with('v')
-            || !bundle.asset.starts_with("MaaNikki-data-")
-            || !bundle.asset.ends_with(".zip")
-            || bundle.asset.contains('/')
-            || bundle.size == 0
-            || bundle.size > MAX_BUNDLE_BYTES
-            || !valid_hex64(&bundle.sha256)
-        {
-            return Err(format!("数据分包 {kind} 元数据无效"));
-        }
+        validate_bundle_header(kind, bundle)?;
         for (rel, spec) in &bundle.files {
             if canonical_rel_path(rel).is_none() || spec.size == 0 || !valid_hex64(&spec.sha256) {
                 return Err(format!("数据分包 {kind} 包含未授权或无效条目: {rel}"));
             }
         }
+    }
+    if let Some(bundle) = manifest.bundles.get("suit_thumbs") {
+        validate_bundle_header("suit_thumbs", bundle)?;
     }
     Ok(())
 }
@@ -701,24 +760,394 @@ fn update_status(app: &AppHandle, mutate: impl FnOnce(&mut DataUpdateStatus)) {
     }
 }
 
-async fn run_check_once(
+const MAX_THUMB_BYTES: u64 = 2 * 1024 * 1024;
+const MAX_THUMB_BATCH: usize = 64;
+
+fn valid_suit_thumb_key(key: &str) -> bool {
+    !key.is_empty()
+        && key.len() <= 32
+        && key
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+}
+
+fn suit_thumbs_media_paths(app_data: &Path) -> (PathBuf, PathBuf) {
+    let dir = app_data.join("data_overlay").join("media");
+    (dir.join("suit_thumbs.zip"), dir.join("suit_thumbs.json"))
+}
+
+fn resolve_suit_thumbs_zip() -> Option<PathBuf> {
+    if let Ok(app_data) = get_app_data_dir() {
+        let candidate = suit_thumbs_media_paths(&app_data).0;
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    if let Ok(exe_dir) = get_exe_directory() {
+        let fallback = exe_dir.join("resource/data/suit_thumbs.zip");
+        if fallback.is_file() {
+            return Some(fallback);
+        }
+    }
+    None
+}
+
+fn validate_suit_thumbs_zip(path: &Path) -> Result<usize, String> {
+    let file = std::fs::File::open(path).map_err(|e| format!("无法打开预览图包: {e}"))?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("无法解析预览图包: {e}"))?;
+    let mut count = 0usize;
+    for i in 0..archive.len() {
+        let entry = archive.by_index(i).map_err(|e| e.to_string())?;
+        if entry.is_dir() {
+            continue;
+        }
+        if entry.is_symlink() {
+            return Err("预览图包包含不允许的符号链接".into());
+        }
+        let valid_name = entry
+            .name()
+            .strip_suffix(".webp")
+            .is_some_and(valid_suit_thumb_key);
+        if !valid_name {
+            return Err(format!("预览图包包含无效条目: {}", entry.name()));
+        }
+        if entry.size() == 0 || entry.size() > MAX_THUMB_BYTES {
+            return Err(format!("预览图条目体积异常: {}", entry.name()));
+        }
+        count += 1;
+    }
+    if count == 0 {
+        return Err("预览图包为空".into());
+    }
+    Ok(count)
+}
+
+fn update_suit_thumbs_status(
+    app: Option<&AppHandle>,
+    mutate: impl FnOnce(&mut SuitThumbsStatus),
+) -> SuitThumbsStatus {
+    let snapshot = if let Ok(mut guard) = suit_thumbs_status_cell().write() {
+        mutate(&mut guard);
+        guard.clone()
+    } else {
+        get_suit_thumbs_status()
+    };
+    if let Some(handle) = app {
+        let _ = handle.emit("suit-thumbs-status", snapshot.clone());
+    }
+    snapshot
+}
+
+fn invalidate_suit_thumb_index() {
+    let cell = SUIT_THUMBS_INDEX.get_or_init(|| Mutex::new(None));
+    if let Ok(mut guard) = cell.lock() {
+        *guard = None;
+    }
+}
+
+fn init_suit_thumbs_status() {
+    let Some(zip_path) = resolve_suit_thumbs_zip() else {
+        return;
+    };
+    let meta = zip_path
+        .with_extension("json")
+        .is_file()
+        .then(|| std::fs::read_to_string(zip_path.with_extension("json")).ok())
+        .flatten()
+        .and_then(|raw| serde_json::from_str::<SuitThumbsMeta>(&raw).ok());
+
+    let disk_size = std::fs::metadata(&zip_path).map(|m| m.len()).unwrap_or(0);
+    let count = match meta.as_ref().filter(|m| m.size == disk_size && m.count > 0) {
+        Some(m) => m.count,
+        None => match validate_suit_thumbs_zip(&zip_path) {
+            Ok(n) => n,
+            Err(err) => {
+                warn!("[data-update] Ignoring invalid local suit_thumbs.zip: {err}");
+                return;
+            }
+        },
+    };
+    let version = meta
+        .map(|m| m.tag)
+        .or_else(|| Some(format!("local-{disk_size}")));
+    update_suit_thumbs_status(None, |st| {
+        st.state = "ready".into();
+        st.available = true;
+        st.count = count;
+        st.version = version;
+        st.error = None;
+    });
+}
+
+fn lookup_suit_thumb_indices(path: &Path, keys: &[String]) -> Result<Vec<(String, usize)>, String> {
+    let stamp = file_stamp(path);
+    let cell = SUIT_THUMBS_INDEX.get_or_init(|| Mutex::new(None));
+    let mut guard = cell.lock().map_err(|_| "无法锁定预览图索引".to_string())?;
+    let needs_rebuild = guard
+        .as_ref()
+        .is_none_or(|idx| idx.path != path || idx.stamp != stamp);
+    if needs_rebuild {
+        let file = std::fs::File::open(path).map_err(|e| format!("无法打开预览图包: {e}"))?;
+        let mut archive =
+            zip::ZipArchive::new(file).map_err(|e| format!("无法解析预览图包: {e}"))?;
+        let mut entries = HashMap::with_capacity(archive.len());
+        for i in 0..archive.len() {
+            let entry = archive.by_index(i).map_err(|e| e.to_string())?;
+            if entry.is_dir() || entry.is_symlink() {
+                continue;
+            }
+            if let Some(stem) = entry.name().strip_suffix(".webp") {
+                if valid_suit_thumb_key(stem) {
+                    entries.insert(stem.to_owned(), i);
+                }
+            }
+        }
+        *guard = Some(SuitThumbArchiveIndex {
+            path: path.to_path_buf(),
+            stamp,
+            entries,
+        });
+    }
+    let idx = guard.as_ref().expect("index initialized");
+    Ok(keys
+        .iter()
+        .filter_map(|k| idx.entries.get(k).map(|&pos| (k.clone(), pos)))
+        .collect())
+}
+
+fn read_suit_thumbs_entries(keys: &[String]) -> Result<Vec<(String, Vec<u8>)>, String> {
+    let valid_keys: Vec<String> = keys
+        .iter()
+        .filter(|k| valid_suit_thumb_key(k))
+        .cloned()
+        .collect();
+    if valid_keys.is_empty() {
+        return Ok(Vec::new());
+    }
+    let Some(zip_path) = resolve_suit_thumbs_zip() else {
+        return Ok(Vec::new());
+    };
+    let matches = lookup_suit_thumb_indices(&zip_path, &valid_keys)?;
+    if matches.is_empty() {
+        return Ok(Vec::new());
+    }
+    let file = std::fs::File::open(&zip_path).map_err(|e| format!("无法读取预览图包: {e}"))?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("无法解析预览图包: {e}"))?;
+    let mut out = Vec::with_capacity(matches.len());
+    for (key, index) in matches {
+        let entry = archive.by_index(index).map_err(|e| e.to_string())?;
+        if entry.size() > MAX_THUMB_BYTES {
+            continue;
+        }
+        let mut buf = Vec::with_capacity(entry.size() as usize);
+        entry
+            .take(MAX_THUMB_BYTES + 1)
+            .read_to_end(&mut buf)
+            .map_err(|e| e.to_string())?;
+        if (buf.len() as u64) <= MAX_THUMB_BYTES && !buf.is_empty() {
+            out.push((key, buf));
+        }
+    }
+    Ok(out)
+}
+
+pub fn read_suit_thumb_webp(key: &str) -> Result<Option<Vec<u8>>, String> {
+    if !valid_suit_thumb_key(key) {
+        return Err("无效的套装预览图编号".into());
+    }
+    let mut rows = read_suit_thumbs_entries(&[key.to_owned()])?;
+    Ok(rows.pop().map(|(_, bytes)| bytes))
+}
+
+fn atomic_replace_file(src: &Path, dest: &Path) -> Result<(), String> {
+    let backup = dest.with_extension("zip.bak");
+    let _ = std::fs::remove_file(&backup);
+    let had_dest = dest.is_file();
+    if had_dest {
+        std::fs::rename(dest, &backup).map_err(|e| format!("备份旧预览图包失败: {e}"))?;
+    }
+    if let Err(err) = std::fs::rename(src, dest) {
+        if had_dest {
+            let _ = std::fs::rename(&backup, dest);
+        }
+        return Err(format!("更新预览图包失败: {err}"));
+    }
+    if had_dest {
+        let _ = std::fs::remove_file(&backup);
+    }
+    Ok(())
+}
+
+async fn sync_suit_thumbs_from_manifest(
     app: &AppHandle,
-    app_config: &AppConfigState,
+    manifest: &DataManifest,
+    app_data: &Path,
+    proxy_url: Option<&str>,
+) {
+    struct SyncReset;
+    impl Drop for SyncReset {
+        fn drop(&mut self) {
+            SUIT_THUMBS_SYNCING.store(false, Ordering::Release);
+        }
+    }
+
+    if SUIT_THUMBS_SYNCING
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_err()
+    {
+        return;
+    }
+    let _reset = SyncReset;
+
+    let Some(bundle) = manifest.bundles.get("suit_thumbs") else {
+        return;
+    };
+
+    let (media_zip, meta_path) = suit_thumbs_media_paths(app_data);
+    let want_hash = bundle.sha256.to_ascii_lowercase();
+
+    if media_zip.is_file() {
+        let zip_check = media_zip.clone();
+        if let Ok(Ok((sz, digest))) =
+            tokio::task::spawn_blocking(move || sha256_file(&zip_check)).await
+        {
+            if sz == bundle.size && digest == want_hash {
+                let count = bundle.count.unwrap_or_else(|| {
+                    std::fs::read_to_string(&meta_path)
+                        .ok()
+                        .and_then(|s| serde_json::from_str::<SuitThumbsMeta>(&s).ok())
+                        .map(|m| m.count)
+                        .unwrap_or(0)
+                });
+                let count = if count > 0 {
+                    count
+                } else {
+                    let z = media_zip.clone();
+                    tokio::task::spawn_blocking(move || validate_suit_thumbs_zip(&z))
+                        .await
+                        .ok()
+                        .and_then(Result::ok)
+                        .unwrap_or(0)
+                };
+                if count > 0 {
+                    let meta = SuitThumbsMeta {
+                        schema_version: 1,
+                        tag: bundle.tag.clone(),
+                        asset: bundle.asset.clone(),
+                        size: bundle.size,
+                        sha256: want_hash,
+                        count,
+                        updated_at: Utc::now().to_rfc3339(),
+                    };
+                    if let Ok(bytes) = serde_json::to_vec_pretty(&meta) {
+                        let _ = write_atomic(&meta_path, &bytes);
+                    }
+                    update_suit_thumbs_status(Some(app), |st| {
+                        st.state = "ready".into();
+                        st.available = true;
+                        st.count = count;
+                        st.version = Some(bundle.tag.clone());
+                        st.error = None;
+                    });
+                    return;
+                }
+            }
+        }
+    }
+
+    let had_local = resolve_suit_thumbs_zip().is_some();
+    update_suit_thumbs_status(Some(app), |st| {
+        st.state = "downloading".into();
+        st.available = had_local;
+        st.error = None;
+    });
+
+    let dl_zip = app_data.join("data_overlay/downloads").join(&bundle.asset);
+    if let Err(err) = download_bundle_archive(bundle, &dl_zip, proxy_url).await {
+        warn!("[data-update] Failed to download suit_thumbs: {err}");
+        let available_now = resolve_suit_thumbs_zip().is_some();
+        update_suit_thumbs_status(Some(app), |st| {
+            st.state = "error".into();
+            st.available = available_now;
+            st.error = Some(err);
+        });
+        return;
+    }
+
+    let part_zip = media_zip.with_extension("zip.part");
+    let dl_for_copy = dl_zip.clone();
+    let part_for_copy = part_zip.clone();
+    let media_for_replace = media_zip.clone();
+    let install_res = tokio::task::spawn_blocking(move || -> Result<usize, String> {
+        if let Some(parent) = part_for_copy.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        std::fs::copy(&dl_for_copy, &part_for_copy)
+            .map_err(|e| format!("复制预览图包失败: {e}"))?;
+        let count = validate_suit_thumbs_zip(&part_for_copy)?;
+        atomic_replace_file(&part_for_copy, &media_for_replace)?;
+        Ok(count)
+    })
+    .await
+    .map_err(|e| e.to_string())
+    .and_then(|res| res);
+
+    match install_res {
+        Ok(count) => {
+            invalidate_suit_thumb_index();
+            let _ = std::fs::remove_file(&dl_zip);
+            let meta = SuitThumbsMeta {
+                schema_version: 1,
+                tag: bundle.tag.clone(),
+                asset: bundle.asset.clone(),
+                size: bundle.size,
+                sha256: want_hash,
+                count,
+                updated_at: Utc::now().to_rfc3339(),
+            };
+            if let Ok(bytes) = serde_json::to_vec_pretty(&meta) {
+                let _ = write_atomic(&meta_path, &bytes);
+            }
+            info!(
+                "[data-update] Cached {} suit thumbnails ({})",
+                count, bundle.tag
+            );
+            update_suit_thumbs_status(Some(app), |st| {
+                st.state = "ready".into();
+                st.available = true;
+                st.count = count;
+                st.version = Some(bundle.tag.clone());
+                st.error = None;
+            });
+        }
+        Err(err) => {
+            let _ = std::fs::remove_file(&part_zip);
+            warn!("[data-update] Failed to install suit_thumbs: {err}");
+            let available_now = resolve_suit_thumbs_zip().is_some();
+            update_suit_thumbs_status(Some(app), |st| {
+                st.state = "error".into();
+                st.available = available_now;
+                st.error = Some(err);
+            });
+        }
+    }
+}
+
+async fn run_catalog_and_models_sync(
+    app: &AppHandle,
+    manifest: &DataManifest,
+    app_data: &Path,
+    exe_dir: &Path,
+    proxy_url: Option<&str>,
     maa_state: &MaaState,
 ) -> Result<(), String> {
-    let app_data = get_app_data_dir()?;
-    let exe_dir = get_exe_directory()?;
-    let (github_pat, proxy_url) = read_network_settings(app_config);
-
-    update_status(app, |st| st.state = "checking".into());
-    let manifest = fetch_manifest(github_pat.as_deref(), proxy_url.as_deref()).await?;
     let remote_wardrobe_ver = manifest.stats["wardrobe_version"]
         .as_str()
         .unwrap_or("")
         .to_string();
     let remote_game_items = manifest.stats["game_items"].as_u64().unwrap_or(0) as usize;
 
-    let (builtin_ver, builtin_items) = builtin_wardrobe_metrics(&exe_dir);
+    let (builtin_ver, builtin_items) = builtin_wardrobe_metrics(exe_dir);
     if (!builtin_ver.is_empty()
         && !remote_wardrobe_ver.is_empty()
         && builtin_ver > remote_wardrobe_ver)
@@ -740,11 +1169,11 @@ async fn run_check_once(
     let need_catalog = catalog_bundle
         .files
         .iter()
-        .any(|(rel, spec)| local_matching_source(rel, spec, &exe_dir).is_none());
+        .any(|(rel, spec)| local_matching_source(rel, spec, exe_dir).is_none());
     let need_models = models_bundle
         .files
         .iter()
-        .any(|(rel, spec)| local_matching_source(rel, spec, &exe_dir).is_none());
+        .any(|(rel, spec)| local_matching_source(rel, spec, exe_dir).is_none());
 
     if !need_catalog && !need_models {
         update_status(app, |st| {
@@ -776,7 +1205,7 @@ async fn run_check_once(
 
     if need_catalog {
         let zip_path = dl_dir.join(&catalog_bundle.asset);
-        download_bundle_archive(catalog_bundle, &zip_path, proxy_url.as_deref()).await?;
+        download_bundle_archive(catalog_bundle, &zip_path, proxy_url).await?;
         let cb = catalog_bundle.clone();
         let sd = stage_dir.clone();
         tokio::task::spawn_blocking(move || extract_verified_bundle(&zip_path, &cb, &sd))
@@ -785,7 +1214,7 @@ async fn run_check_once(
     } else {
         let cb = catalog_bundle.clone();
         let sd = stage_dir.clone();
-        let ed = exe_dir.clone();
+        let ed = exe_dir.to_path_buf();
         tokio::task::spawn_blocking(move || populate_local_bundle(&cb, &sd, &ed))
             .await
             .map_err(|e| e.to_string())??;
@@ -793,7 +1222,7 @@ async fn run_check_once(
 
     if need_models {
         let zip_path = dl_dir.join(&models_bundle.asset);
-        download_bundle_archive(models_bundle, &zip_path, proxy_url.as_deref()).await?;
+        download_bundle_archive(models_bundle, &zip_path, proxy_url).await?;
         let mb = models_bundle.clone();
         let sd = stage_dir.clone();
         tokio::task::spawn_blocking(move || extract_verified_bundle(&zip_path, &mb, &sd))
@@ -802,7 +1231,7 @@ async fn run_check_once(
     } else {
         let mb = models_bundle.clone();
         let sd = stage_dir.clone();
-        let ed = exe_dir.clone();
+        let ed = exe_dir.to_path_buf();
         tokio::task::spawn_blocking(move || populate_local_bundle(&mb, &sd, &ed))
             .await
             .map_err(|e| e.to_string())??;
@@ -848,13 +1277,39 @@ async fn run_check_once(
     update_status(app, |st| {
         st.state = "up_to_date".into();
         st.active_version = Some(record.version);
-        st.remote_version = Some(manifest.version);
+        st.remote_version = Some(manifest.version.clone());
         if !remote_wardrobe_ver.is_empty() {
             st.wardrobe_version = Some(remote_wardrobe_ver);
         }
         st.updated_at = Some(record.published_at);
     });
     info!("[data-update] Activated hot-update {}", manifest.tag);
+    Ok(())
+}
+
+async fn run_check_once(
+    app: &AppHandle,
+    app_config: &AppConfigState,
+    maa_state: &MaaState,
+) -> Result<(), String> {
+    let app_data = get_app_data_dir()?;
+    let exe_dir = get_exe_directory()?;
+    let (github_pat, proxy_url) = read_network_settings(app_config);
+
+    update_status(app, |st| st.state = "checking".into());
+    let manifest = fetch_manifest(github_pat.as_deref(), proxy_url.as_deref()).await?;
+
+    run_catalog_and_models_sync(
+        app,
+        &manifest,
+        &app_data,
+        &exe_dir,
+        proxy_url.as_deref(),
+        maa_state,
+    )
+    .await?;
+
+    sync_suit_thumbs_from_manifest(app, &manifest, &app_data, proxy_url.as_deref()).await;
     Ok(())
 }
 
@@ -895,4 +1350,75 @@ pub fn trigger_data_update_check() -> DataUpdateStatus {
         notify.notify_one();
     }
     get_data_update_status()
+}
+
+#[tauri::command]
+pub fn get_suit_thumbs_status() -> SuitThumbsStatus {
+    suit_thumbs_status_cell()
+        .read()
+        .map(|g| g.clone())
+        .unwrap_or(SuitThumbsStatus {
+            state: "idle".into(),
+            available: false,
+            count: 0,
+            version: None,
+            error: None,
+        })
+}
+
+pub async fn sync_suit_thumbs_impl(
+    app: &AppHandle,
+    app_config: &AppConfigState,
+) -> Result<SuitThumbsStatus, String> {
+    if SUIT_THUMBS_SYNCING.load(Ordering::Acquire) {
+        return Ok(get_suit_thumbs_status());
+    }
+    let app_data = get_app_data_dir()?;
+    let (github_pat, proxy_url) = read_network_settings(app_config);
+    let manifest = match fetch_manifest(github_pat.as_deref(), proxy_url.as_deref()).await {
+        Ok(m) => m,
+        Err(err) => {
+            let available_now = resolve_suit_thumbs_zip().is_some();
+            return Ok(update_suit_thumbs_status(Some(app), |st| {
+                st.state = "error".into();
+                st.available = available_now;
+                st.error = Some(err);
+            }));
+        }
+    };
+    sync_suit_thumbs_from_manifest(app, &manifest, &app_data, proxy_url.as_deref()).await;
+    Ok(get_suit_thumbs_status())
+}
+
+#[tauri::command]
+pub async fn sync_suit_thumbs(
+    app: AppHandle,
+    app_config: State<'_, Arc<AppConfigState>>,
+) -> Result<SuitThumbsStatus, String> {
+    sync_suit_thumbs_impl(&app, &app_config).await
+}
+
+#[tauri::command]
+pub async fn get_suit_thumbs_batch(keys: Vec<String>) -> Result<BTreeMap<String, String>, String> {
+    let limited: Vec<String> = keys
+        .into_iter()
+        .filter(|k| valid_suit_thumb_key(k))
+        .take(MAX_THUMB_BATCH)
+        .collect();
+    if limited.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    tokio::task::spawn_blocking(move || {
+        let entries = read_suit_thumbs_entries(&limited)?;
+        let mut map = BTreeMap::new();
+        for (key, bytes) in entries {
+            map.insert(
+                key,
+                format!("data:image/webp;base64,{}", BASE64_STANDARD.encode(&bytes)),
+            );
+        }
+        Ok(map)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }

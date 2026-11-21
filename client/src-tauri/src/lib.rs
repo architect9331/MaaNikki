@@ -270,6 +270,9 @@ pub fn run() {
             commands::wardrobe_scoring::read_game_photo_base64,
             commands::data_update::get_data_update_status,
             commands::data_update::trigger_data_update_check,
+            commands::data_update::get_suit_thumbs_status,
+            commands::data_update::sync_suit_thumbs,
+            commands::data_update::get_suit_thumbs_batch,
             // Maa 核心命令
             commands::maa_core::maa_init,
             commands::maa_core::maa_set_resource_dir,

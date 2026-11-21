@@ -67,7 +67,15 @@ export interface ScoringCatalog {
   items: Record<string, ScoreItem>;
   game_items: Record<string, GameItem>;
   matches: Record<string, Match>;
-  suits: { id: string; items: number[]; name: string }[];
+  suits: {
+    id: string;
+    items: number[];
+    name: string;
+    suit_id?: number;
+    release_order?: number;
+    release_season?: string;
+    release_date?: string;
+  }[];
   curves: { ratios: number[]; costs: Record<string, number>[] }[];
   material_names: Record<string, string>;
   part_names: Record<string, string>;

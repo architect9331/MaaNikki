@@ -1,29 +1,58 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Loader2, Search } from 'lucide-react';
+import {
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  Check,
+  Loader2,
+  RefreshCw,
+  Search,
+  Shirt,
+} from 'lucide-react';
 import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { tagLabel } from '@/services/scoring/diagnostics';
 import { buildOwnedProfile } from '@/services/scoring/profile';
+import { useSuitThumbMap, useSuitThumbsStatus } from '@/services/scoring/suitThumbs';
 import { ATTRIBUTES, type Match, type OutfitResult } from '@/services/scoring/types';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
-import { buildPieceEntries, buildSuitEntries, type SuitBrowserEntry } from '@/services/scoring/wardrobeBrowserData';
+import {
+  buildPieceEntries,
+  buildSuitEntries,
+  sortSuitEntries,
+  type SuitBrowserEntry,
+  type SuitSortBy,
+  type SuitSortOrder,
+} from '@/services/scoring/wardrobeBrowserData';
 import { Segmented, Tile } from './ui/FeaturePage';
-import { ImageIcon, WardrobePhotoCardModal } from './WardrobePhotoCardModal';
+import { WardrobePhotoCardModal } from './WardrobePhotoCardModal';
+import { LevelBadgeInput, suitBackdropClass, WardrobeSuitDetailModal } from './WardrobeSuitDetailModal';
 
 const field = 'rounded-lg border border-border bg-bg-primary px-3 py-1.5 text-xs outline-none focus:border-accent';
 const card = 'rounded-xl border border-border bg-bg-secondary p-4';
-const PAGE_SIZE = 36;
+const SUIT_PAGE_SIZE = 24;
+const PIECE_PAGE_SIZE = 36;
+const SORT_STORAGE_KEY = 'maanikki_wardrobe_suit_sort';
 
-function LevelBadgeInput({ value, inferred, onChange }: { value: number | null; inferred?: string | null; onChange: (level: number | null) => void }) {
-  if (inferred) return <span className="shrink-0 rounded-lg bg-accent/10 px-2 py-0.5 text-[11px] text-accent">已焕新</span>;
-  return <input aria-label="共享等级 0-11，留空按 0 级计" type="number" min="0" max="11" placeholder="0" value={value ?? ''}
-    className={clsx(field, '!w-14 shrink-0 !px-1.5 !py-0.5 text-center tabular-nums')}
-    onChange={(e) => {
-      const raw = e.target.value;
-      const lv = Number(raw);
-      if (raw === '') onChange(null);
-      else if (Number.isInteger(lv) && lv >= 0 && lv <= 11) onChange(lv);
-    }} />;
+function readStoredSort(): { by: SuitSortBy; dir: SuitSortOrder } {
+  try {
+    const raw = localStorage.getItem(SORT_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { by?: unknown; dir?: unknown };
+      const by: SuitSortBy = parsed.by === 'release' ? 'release' : 'quality';
+      const dir: SuitSortOrder = parsed.dir === 'asc' ? 'asc' : 'desc';
+      return { by, dir };
+    }
+  } catch {
+    // Ignore storage read failures.
+  }
+  return { by: 'quality', dir: 'desc' };
+}
+
+function suitSubtitle(suit: SuitBrowserEntry, catalog: Parameters<typeof tagLabel>[0]): string {
+  if (suit.releaseSeason) return suit.releaseSeason;
+  if (suit.releaseDate) return suit.releaseDate.slice(0, 7);
+  if (suit.tags.length > 0) return tagLabel(catalog, suit.tags[0]);
+  return '';
 }
 
 export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
@@ -36,25 +65,35 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   const [tagFilter, setTagFilter] = useState('all');
   const [partFilter, setPartFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [initialSort] = useState(readStoredSort);
+  const [sortBy, setSortBy] = useState<SuitSortBy>(initialSort.by);
+  const [releaseDir, setReleaseDir] = useState<SuitSortOrder>(initialSort.dir);
+  const [limit, setLimit] = useState(SUIT_PAGE_SIZE);
+  const [selectedSuitId, setSelectedSuitId] = useState<string | null>(null);
   const [sharingSuit, setSharingSuit] = useState<SuitBrowserEntry | null>(null);
+  const { status: thumbStatus, retrying: retryingThumbs, retrySync } = useSuitThumbsStatus();
 
   useEffect(() => { void load(`${activeUid ?? ''}:${refreshToken}`); }, [activeUid, refreshToken, load]);
 
-  useEffect(() => { setLimit(PAGE_SIZE); }, [view, statusFilter, qualityFilter, majorFilter, tagFilter, partFilter, search]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({ by: sortBy, dir: releaseDir }));
+    } catch {
+      // Ignore storage write failures.
+    }
+  }, [sortBy, releaseDir]);
 
-  const profile = useMemo(() => payload ? buildOwnedProfile(payload, settings) : null, [payload, settings]);
-  const suits = useMemo(() => payload && profile ? buildSuitEntries(payload, profile) : [], [payload, profile]);
-  const pieces = useMemo(() => payload && profile ? buildPieceEntries(payload, profile) : [], [payload, profile]);
+  useEffect(() => {
+    setLimit(view === 'suits' ? SUIT_PAGE_SIZE : PIECE_PAGE_SIZE);
+  }, [view, statusFilter, qualityFilter, majorFilter, tagFilter, partFilter, search, sortBy, releaseDir]);
 
-  const updateLevel = setLevel;
-
-  if (loading && !payload) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary"><Loader2 className="h-4 w-4 animate-spin" />正在加载衣柜图鉴</div>;
-  if (!payload || !profile) return <p className={clsx(card, 'text-sm text-text-secondary')}>暂时无法加载衣柜记录，读取衣柜后点右上角刷新。</p>;
+  const profile = useMemo(() => (payload ? buildOwnedProfile(payload, settings) : null), [payload, settings]);
+  const suits = useMemo(() => (payload && profile ? buildSuitEntries(payload, profile) : []), [payload, profile]);
+  const pieces = useMemo(() => (payload && profile ? buildPieceEntries(payload, profile) : []), [payload, profile]);
+  const sortedSuits = useMemo(() => sortSuitEntries(suits, sortBy, releaseDir), [suits, sortBy, releaseDir]);
 
   const q = search.trim();
-  const tagEntries = Object.entries(payload.catalog.tag_names ?? {}).sort((a, b) => Number(a[0]) - Number(b[0]));
-  const filteredSuits = suits.filter((s) =>
+  const filteredSuits = useMemo(() => sortedSuits.filter((s) =>
     (qualityFilter === 'all' || String(s.quality) === qualityFilter)
     && (majorFilter === 'all' || String(s.major) === majorFilter)
     && (tagFilter === 'all' || s.tags.includes(Number(tagFilter)))
@@ -63,8 +102,32 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
       || statusFilter === 'incomplete' && !s.complete && s.obtainedCount > 0
       || statusFilter === 'near' && (s.missingCount === 1 || s.missingCount === 2)
       || statusFilter === 'unowned' && s.obtainedCount === 0)
-    && (!q || s.name.includes(q) || s.parts.some((p) => p.name.includes(q))));
+    && (!q || s.name.includes(q) || (s.releaseSeason ?? '').includes(q) || s.parts.some((p) => p.name.includes(q)))),
+  [sortedSuits, qualityFilter, majorFilter, tagFilter, statusFilter, q]);
 
+  const visibleSuits = useMemo(
+    () => (view === 'suits' ? filteredSuits.slice(0, limit) : []),
+    [view, filteredSuits, limit],
+  );
+  const visibleSuitKeys = useMemo(() => visibleSuits.map((s) => s.id), [visibleSuits]);
+  const thumbMap = useSuitThumbMap(visibleSuitKeys, thumbStatus);
+  const selectedSuit = useMemo(
+    () => (selectedSuitId ? suits.find((s) => s.id === selectedSuitId) ?? null : null),
+    [suits, selectedSuitId],
+  );
+
+  if (loading && !payload) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+        <Loader2 className="h-4 w-4 animate-spin" />正在加载衣柜图鉴
+      </div>
+    );
+  }
+  if (!payload || !profile) {
+    return <p className={clsx(card, 'text-sm text-text-secondary')}>暂时无法加载衣柜记录，读取衣柜后点右上角刷新。</p>;
+  }
+
+  const tagEntries = Object.entries(payload.catalog.tag_names ?? {}).sort((a, b) => Number(a[0]) - Number(b[0]));
   const filteredPieces = pieces.filter((p) => {
     const lv = p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? null) : null;
     return (qualityFilter === 'all' || String(p.quality) === qualityFilter)
@@ -83,6 +146,8 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   const completeSuitsCount = suits.filter((s) => s.complete).length;
   const ownedPiecesCount = pieces.filter((p) => p.owned).length;
   const refreshedGroupsCount = profile.groups.filter((g) => g.level === 11).length;
+  const pageStep = view === 'suits' ? SUIT_PAGE_SIZE : PIECE_PAGE_SIZE;
+  const totalCount = view === 'suits' ? filteredSuits.length : filteredPieces.length;
 
   return <div className="space-y-4">
     <section className={clsx(card, 'space-y-3')}>
@@ -120,60 +185,121 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
           </select>
         )}
         <label className="flex min-w-44 flex-1 items-center gap-1.5"><Search className="h-3.5 w-3.5 text-text-muted" />
-          <input className={clsx(field, 'w-full')} placeholder="搜索套装或部件名称" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className={clsx(field, 'w-full')} placeholder={view === 'suits' ? '搜索套装、版本或部件名称' : '搜索套装或部件名称'} value={search} onChange={(e) => setSearch(e.target.value)} />
         </label>
       </div>
+      {view === 'suits' && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-text-secondary">排序</span>
+            <Segmented
+              label="排序方式"
+              value={sortBy}
+              options={[['quality', '星级优先'], ['release', '发布时间']] as const}
+              onChange={setSortBy}
+            />
+            {sortBy === 'release' && (
+              <button
+                type="button"
+                onClick={() => setReleaseDir((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-bg-primary px-2.5 py-1 text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+                title="切换发布时间先后顺序"
+              >
+                {releaseDir === 'desc'
+                  ? <><ArrowDownWideNarrow className="h-3.5 w-3.5 text-accent" />最新在前</>
+                  : <><ArrowUpNarrowWide className="h-3.5 w-3.5 text-accent" />最早在前</>}
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-text-muted">
+            {(thumbStatus?.state === 'downloading' || retryingThumbs) && (
+              <span className="inline-flex items-center gap-1 text-accent">
+                <Loader2 className="h-3 w-3 animate-spin" />正在缓存套装预览图…
+              </span>
+            )}
+            {thumbStatus?.state === 'error' && !thumbStatus.available && !retryingThumbs && (
+              <button
+                type="button"
+                onClick={() => void retrySync()}
+                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-warning hover:bg-bg-hover"
+                title={thumbStatus.error ?? '重试拉取套装预览图'}
+              >
+                <RefreshCw className="h-3 w-3" />预览图未缓存 · 点击重试
+              </button>
+            )}
+            <span>显示 {Math.min(limit, totalCount)} / {totalCount} 套</span>
+          </div>
+        </div>
+      )}
     </section>
 
     {view === 'suits' ? (
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {filteredSuits.slice(0, limit).map((suit) => (
-          <details key={suit.id} className={clsx(card, 'group !p-3.5')}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{suit.quality}★ · {ATTRIBUTES[suit.major] ?? '综合'}</span>
-                  <strong className="truncate text-sm">{suit.name}</strong>
-                  {suit.tags.map((t) => (
-                    <span key={t} className="rounded bg-bg-primary px-1.5 py-0.2 text-[10px] text-text-muted">
-                      {tagLabel(payload.catalog, t)}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
-                  <div className={clsx('h-full rounded-full', suit.complete ? 'bg-success' : 'bg-accent')} style={{ width: `${suit.obtainedCount / suit.totalCount * 100}%` }} />
-                </div>
-              </div>
-              <span className={clsx('shrink-0 text-xs font-semibold tabular-nums', suit.complete ? 'text-success' : 'text-text-secondary')}>
-                {suit.obtainedCount} / {suit.totalCount}
-              </span>
-            </summary>
-            <div className="mt-3 divide-y divide-border border-t border-border pt-2 text-xs">
-              {suit.parts.map((part) => (
-                <div key={part.id} className="flex items-center justify-between gap-2 py-1.5">
-                  <span className="w-14 shrink-0 truncate text-text-muted">{part.partName}</span>
-                  <span className={clsx('min-w-0 flex-1 truncate', part.owned ? 'text-text-primary' : 'text-text-muted')}>
-                    {part.name}
-                    {part.source && <span className="ml-1.5 text-[11px] text-text-muted">· {part.source}</span>}
-                  </span>
-                  {part.owned && part.groupId && (
-                    <LevelBadgeInput value={settings.levels[part.groupId] ?? null} inferred={part.inferred} onChange={(lv) => updateLevel(part.groupId!, lv)} />
+      visibleSuits.length > 0 ? (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {visibleSuits.map((suit) => {
+            const thumbUrl = thumbMap[suit.id];
+            const unowned = suit.obtainedCount === 0;
+            const subtitle = suitSubtitle(suit, payload.catalog);
+            return (
+              <button
+                key={suit.id}
+                type="button"
+                onClick={() => setSelectedSuitId(suit.id)}
+                className="group flex flex-col overflow-hidden rounded-xl border border-border bg-bg-secondary text-left transition-all hover:border-accent/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <div className={clsx('relative aspect-[5/7] w-full overflow-hidden', suitBackdropClass(suit.quality))}>
+                  {thumbUrl ? (
+                    <img
+                      src={thumbUrl}
+                      alt={suit.name}
+                      loading="lazy"
+                      decoding="async"
+                      className={clsx(
+                        'h-full w-full object-contain object-bottom px-1.5 pt-2 transition-all duration-300 group-hover:scale-[1.03]',
+                        unowned && 'grayscale-[65%] opacity-60 group-hover:grayscale-[25%] group-hover:opacity-85',
+                      )}
+                    />
+                  ) : (
+                    <div className={clsx('flex h-full w-full items-center justify-center text-text-muted', unowned && 'opacity-50')}>
+                      <Shirt className="h-10 w-10 opacity-30" />
+                    </div>
                   )}
-                  <span className={clsx('w-12 shrink-0 text-right text-[11px]', part.owned ? 'text-success' : 'text-text-muted')}>
-                    {part.owned ? '已拥有' : '未获得'}
+                  <span className="absolute left-2 top-2 rounded-md border border-border/60 bg-bg-secondary/85 px-1.5 py-0.5 text-[10px] font-medium text-accent backdrop-blur-xs">
+                    {suit.quality}★ · {ATTRIBUTES[suit.major] ?? '综合'}
+                  </span>
+                  <span className={clsx(
+                    'absolute right-2 top-2 rounded-md border px-1.5 py-0.5 text-[10px] font-medium tabular-nums backdrop-blur-xs',
+                    suit.complete
+                      ? 'border-success/30 bg-success/15 text-success'
+                      : suit.obtainedCount > 0
+                        ? 'border-border/60 bg-bg-secondary/85 text-text-primary'
+                        : 'border-border/60 bg-bg-secondary/80 text-text-muted',
+                  )}>
+                    {suit.complete ? '已集齐' : unowned ? '未获得' : `${suit.obtainedCount}/${suit.totalCount}`}
                   </span>
                 </div>
-              ))}
-              <div className="flex justify-end pt-2">
-                <button type="button" onClick={() => setSharingSuit(suit)}
-                  className="inline-flex items-center gap-1 text-xs text-text-secondary hover:text-accent">
-                  <ImageIcon className="h-3.5 w-3.5" />生成套装分享卡
-                </button>
-              </div>
-            </div>
-          </details>
-        ))}
-      </div>
+                <div className="space-y-1.5 p-3">
+                  <strong className="block truncate text-sm font-semibold text-text-primary">{suit.name}</strong>
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-text-muted">
+                    <span className="truncate">{subtitle}</span>
+                    <span className={clsx('shrink-0 tabular-nums', suit.complete && 'font-medium text-success')}>
+                      {suit.obtainedCount} / {suit.totalCount}
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-border">
+                    <div
+                      className={clsx('h-full rounded-full transition-all', suit.complete ? 'bg-success' : 'bg-accent')}
+                      style={{ width: `${(suit.obtainedCount / suit.totalCount) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <p className={clsx(card, 'py-12 text-center text-xs text-text-secondary')}>没有符合筛选条件的套装。</p>
+      )
     ) : (
       <div className="overflow-hidden rounded-xl border border-border bg-bg-secondary divide-y divide-border">
         {filteredPieces.slice(0, limit).map((piece) => (
@@ -192,7 +318,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
               {piece.colorCount > 1 && <span className="ml-2 text-text-muted">· 已有 {piece.colorCount} 色</span>}
             </div>
             {piece.owned && piece.groupId && (
-              <LevelBadgeInput value={settings.levels[piece.groupId] ?? null} inferred={piece.inferred} onChange={(lv) => updateLevel(piece.groupId!, lv)} />
+              <LevelBadgeInput value={settings.levels[piece.groupId] ?? null} inferred={piece.inferred} onChange={(lv) => setLevel(piece.groupId!, lv)} />
             )}
             <span className={clsx('inline-flex w-14 shrink-0 items-center justify-end gap-1', piece.owned ? 'text-success' : 'text-text-muted')}>
               {piece.owned && <Check className="h-3.5 w-3.5" />}{piece.owned ? '已拥有' : '未获得'}
@@ -202,12 +328,26 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
       </div>
     )}
 
-    {(view === 'suits' ? filteredSuits.length : filteredPieces.length) > limit && (
-      <button type="button" onClick={() => setLimit((prev) => prev + PAGE_SIZE)}
+    {totalCount > limit && (
+      <button type="button" onClick={() => setLimit((prev) => prev + pageStep)}
         className="w-full rounded-xl border border-border bg-bg-secondary py-2 text-xs text-text-secondary hover:bg-bg-hover">
-        加载更多（已显示 {limit} / {view === 'suits' ? filteredSuits.length : filteredPieces.length}）
+        加载更多（已显示 {limit} / {totalCount}）
       </button>
     )}
+
+    <WardrobeSuitDetailModal
+      suit={selectedSuit}
+      thumbUrl={selectedSuit ? thumbMap[selectedSuit.id] : undefined}
+      catalog={payload.catalog}
+      levels={settings.levels}
+      onLevelChange={setLevel}
+      onShare={(suit) => {
+        setSelectedSuitId(null);
+        setSharingSuit(suit);
+      }}
+      onClose={() => setSelectedSuitId(null)}
+    />
+
     {sharingSuit && (
       <WardrobePhotoCardModal
         open={true}

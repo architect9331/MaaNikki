@@ -1,5 +1,8 @@
 import itemSourcesData from './itemSources.json';
-import type { OwnedProfile, ScoreItem, ScoringPayload } from './types';
+import type { GameItem, OwnedProfile, ScoreItem, ScoringPayload } from './types';
+
+export type SuitSortBy = 'quality' | 'release';
+export type SuitSortOrder = 'desc' | 'asc';
 
 export let ITEM_SOURCES: Record<string, string> = itemSourcesData.sources;
 export let SKETCH_CHESTS = itemSourcesData.chests;
@@ -34,6 +37,10 @@ export interface SuitPartEntry {
 export interface SuitBrowserEntry {
   id: string;
   name: string;
+  suitId?: number;
+  releaseOrder: number;
+  releaseSeason?: string;
+  releaseDate?: string;
   quality: number;
   major: number;
   tags: number[];
@@ -61,6 +68,41 @@ export interface PieceBrowserEntry {
   source?: string;
 }
 
+export function sortSuitEntries(
+  suits: SuitBrowserEntry[],
+  sortBy: SuitSortBy,
+  releaseOrderDir: SuitSortOrder = 'desc',
+): SuitBrowserEntry[] {
+  return [...suits].sort((a, b) => {
+    const ratioDiff = b.obtainedCount / b.totalCount - a.obtainedCount / a.totalCount;
+    if (sortBy === 'release') {
+      if (releaseOrderDir === 'asc') {
+        const aKnown = a.releaseOrder > 0;
+        const bKnown = b.releaseOrder > 0;
+        if (aKnown !== bKnown) return aKnown ? -1 : 1;
+        return (
+          a.releaseOrder - b.releaseOrder
+          || b.quality - a.quality
+          || ratioDiff
+          || a.name.localeCompare(b.name, 'zh-CN')
+        );
+      }
+      return (
+        b.releaseOrder - a.releaseOrder
+        || b.quality - a.quality
+        || ratioDiff
+        || a.name.localeCompare(b.name, 'zh-CN')
+      );
+    }
+    return (
+      b.quality - a.quality
+      || ratioDiff
+      || b.releaseOrder - a.releaseOrder
+      || a.name.localeCompare(b.name, 'zh-CN')
+    );
+  });
+}
+
 export function buildSuitEntries(payload: ScoringPayload, profile: OwnedProfile): SuitBrowserEntry[] {
   const { catalog } = payload;
   const ownedByScoreId = new Map<string, { group?: string; refreshReward?: string }>();
@@ -69,17 +111,27 @@ export function buildSuitEntries(payload: ScoringPayload, profile: OwnedProfile)
       ownedByScoreId.set(item.id, { group: item.group, refreshReward: item.refreshReward });
     }
   }
+  const fallbackGameItem = new Map<string, GameItem>();
+  for (const gameItem of Object.values(catalog.game_items ?? {})) {
+    const key = String(gameItem.score_id);
+    const prev = fallbackGameItem.get(key);
+    if (!prev || gameItem.web_id === gameItem.group) {
+      fallbackGameItem.set(key, gameItem);
+    }
+  }
 
-  return catalog.suits.map((suit) => {
+  const entries = catalog.suits.map((suit) => {
     const validIds = suit.items.filter((id) => catalog.items[id] && catalog.items[id].type < 200);
     const parts: SuitPartEntry[] = validIds.map((id) => {
       const record = catalog.items[id];
       const owned = ownedByScoreId.get(String(id));
+      const needsFallback = record.quality <= 0 || /^\d+$/.test(record.name);
+      const fallback = needsFallback ? fallbackGameItem.get(String(id)) : undefined;
       return {
         id: String(id),
-        name: record.name,
+        name: fallback?.name ?? record.name,
         partName: (catalog.part_names[record.type] ?? String(record.type)).split(' / ').pop() ?? '',
-        quality: record.quality,
+        quality: fallback?.quality ?? record.quality,
         major: record.major,
         tags: record.visibleTags ?? record.tags ?? [],
         owned: !!owned,
@@ -100,6 +152,10 @@ export function buildSuitEntries(payload: ScoringPayload, profile: OwnedProfile)
     return {
       id: suit.id,
       name: suit.name,
+      suitId: suit.suit_id,
+      releaseOrder: suit.release_order ?? 0,
+      releaseSeason: suit.release_season,
+      releaseDate: suit.release_date,
       quality,
       major,
       tags: [...tagSet],
@@ -109,7 +165,9 @@ export function buildSuitEntries(payload: ScoringPayload, profile: OwnedProfile)
       complete: parts.length > 0 && obtainedCount === parts.length,
       parts,
     };
-  }).filter((s) => s.totalCount > 0).sort((a, b) => b.quality - a.quality || b.obtainedCount / b.totalCount - a.obtainedCount / a.totalCount);
+  }).filter((s) => s.totalCount > 0);
+
+  return sortSuitEntries(entries, 'quality', 'desc');
 }
 
 export function buildPieceEntries(payload: ScoringPayload, profile: OwnedProfile): PieceBrowserEntry[] {

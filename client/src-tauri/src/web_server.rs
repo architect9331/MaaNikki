@@ -218,6 +218,12 @@ pub async fn start_web_server(
             "/wardrobe-scoring",
             get(handle_get_wardrobe_scoring).put(handle_save_wardrobe_scoring),
         )
+        .route("/suit-thumbs/status", get(handle_get_suit_thumbs_status))
+        .route(
+            "/suit-thumbs/sync",
+            axum::routing::post(handle_sync_suit_thumbs),
+        )
+        .route("/suit-thumbs/:key", get(handle_get_suit_thumb))
         .route(
             "/config",
             get(handle_get_config)
@@ -1357,4 +1363,40 @@ async fn handle_save_wardrobe_scoring(
         .await
         .map(|()| Json(serde_json::json!({"ok": true})))
         .map_err(|error| (StatusCode::BAD_REQUEST, error))
+}
+
+async fn handle_get_suit_thumbs_status() -> Json<crate::commands::data_update::SuitThumbsStatus> {
+    Json(crate::commands::data_update::get_suit_thumbs_status())
+}
+
+async fn handle_sync_suit_thumbs(
+    State(state): State<WebState>,
+) -> Result<Json<crate::commands::data_update::SuitThumbsStatus>, (StatusCode, String)> {
+    crate::commands::data_update::sync_suit_thumbs_impl(&state.app_handle, &state.app_config)
+        .await
+        .map(Json)
+        .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error))
+}
+
+async fn handle_get_suit_thumb(
+    axum::extract::Path(key): axum::extract::Path<String>,
+) -> impl IntoResponse {
+    match tokio::task::spawn_blocking(move || {
+        crate::commands::data_update::read_suit_thumb_webp(&key)
+    })
+    .await
+    {
+        Ok(Ok(Some(bytes))) => (
+            StatusCode::OK,
+            [
+                (header::CONTENT_TYPE, "image/webp"),
+                (header::CACHE_CONTROL, "public, max-age=86400"),
+            ],
+            bytes,
+        )
+            .into_response(),
+        Ok(Ok(None)) => (StatusCode::NOT_FOUND, "not found").into_response(),
+        Ok(Err(err)) => (StatusCode::BAD_REQUEST, err).into_response(),
+        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
+    }
 }
