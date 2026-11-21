@@ -271,10 +271,9 @@ class ForegroundSession:
                     traceback.print_exc()
         raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
 
-    def window_hung(self):
-        """Stop the queue when the connected game window stays unresponsive past recovery."""
-        message = "游戏窗口长时间未响应，后续任务已停止。请恢复或重启游戏后再运行。"
-        self.evidence.save("window_hung", message, generation=self.generation)
+    def _stop_queue_with_failure(self, stage, message):
+        """Save evidence, release inputs, halt the task queue, and abort execution."""
+        self.evidence.save(stage, message, generation=self.generation)
         self._frame_failure = message
         write_message(message, message)
         for inputs in list(self.inputs):
@@ -293,6 +292,20 @@ class ForegroundSession:
                 except Exception:
                     traceback.print_exc()
         raise TaskStopped(message)
+
+    def window_hung(self):
+        """Stop the queue when the connected game window stays unresponsive past recovery."""
+        self._stop_queue_with_failure(
+            "window_hung",
+            "游戏窗口长时间未响应，后续任务已停止。请恢复或重启游戏后再运行。",
+        )
+
+    def game_disconnected(self):
+        """Stop the queue when the game shows a disconnect or relogin prompt modal."""
+        self._stop_queue_with_failure(
+            "game_disconnected",
+            "检测到游戏断线或需要重新登录提示，后续任务已停止。请重新进入游戏后再运行。",
+        )
 
     @contextmanager
     def coalesce_stop_queries(self, interval=.05):

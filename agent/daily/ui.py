@@ -29,6 +29,8 @@ BLESSING_DECOMPOSE_TUTORIAL_TARGET = [1040, 245]
 _RE_DECOMPOSE_TUTORIAL = re.compile(r"分解后预计获得|闪光粒子数量|将在此显示")
 SAFE_AREA_MODAL_ROI = [360, 200, 560, 320]
 _RE_SAFE_AREA_BODY = re.compile(r"是否返回安全[区區]域")
+DISCONNECT_NOTICE_ROI = [360, 220, 560, 300]
+_RE_DISCONNECT_NOTICE_BODY = re.compile(r"返回登[录錄]界面|尝试重新进入游[戏戲]")
 
 
 def find_expired_notice_confirm_box(rows):
@@ -127,6 +129,43 @@ def find_safe_area_confirm_box(rows):
             if 640 <= cx <= 840 and confirm_box is None and _RE_NOTICE_CONFIRM.search(clean):
                 confirm_box = [bx, by, bw, bh]
     if has_body and has_cancel and confirm_box is not None:
+        return confirm_box
+    return None
+
+
+def find_disconnect_notice_confirm_box(rows):
+    """Locate the centered Confirm button on a disconnect or relogin prompt modal.
+
+    Requires all three geometric and semantic anchors together:
+    - Prompt body matching disconnect/relogin text (y in [240, 410], x in [380, 900])
+    - Centered single "确认" button (y in [415, 510], x in [525, 755])
+    - No sibling "取消" button (y in [415, 510], x in [380, 900])
+    """
+    has_body = False
+    has_cancel = False
+    confirm_box = None
+    for row in rows or ():
+        if row is None:
+            continue
+        clean = str(getattr(row, "text", "") or "").strip()
+        if not clean:
+            continue
+        score = getattr(row, "score", 1.0)
+        if isinstance(score, (int, float)) and score < 0.4:
+            continue
+        box = getattr(row, "box", None)
+        if not box or len(box) < 4:
+            continue
+        bx, by, bw, bh = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        cx, cy = bx + bw * 0.5, by + bh * 0.5
+        if 240 <= cy <= 410 and 380 <= cx <= 900 and _RE_DISCONNECT_NOTICE_BODY.search(clean):
+            has_body = True
+        if 415 <= cy <= 510:
+            if 380 <= cx <= 900 and _RE_NOTICE_CANCEL.search(clean):
+                has_cancel = True
+            if 525 <= cx <= 755 and confirm_box is None and _RE_NOTICE_CONFIRM.search(clean):
+                confirm_box = [bx, by, bw, bh]
+    if has_body and confirm_box is not None and not has_cancel:
         return confirm_box
     return None
 
@@ -574,25 +613,29 @@ class GameUI:
                     return False
         return False
 
-    def expired_notice_confirm_box(self, *, frame=None):
-        """Return the Confirm button box of an item-expiry notice modal, if visible."""
+    def _modal_ocr_rows(self, roi, *, frame=None):
+        """Capture non-main modal OCR rows within one observation frame."""
         with self.rt.observe():
             image = self.rt.frame() if frame is None else frame
             if image is None or self.rt.hit("MaaNikki_MainDetected", image=image):
                 return None
             ocr = self.rt.recognize(
                 "MaaNikki_Daily_OCR",
-                {"roi": EXPIRED_NOTICE_ROI, "expected": ".+", "threshold": 0.4},
+                {"roi": roi, "expected": ".+", "threshold": 0.4},
                 image=image,
             )
         if not ocr:
             return None
-        rows = (
+        return (
             getattr(ocr, "all_results", None)
             or getattr(ocr, "filtered_results", None)
             or [getattr(ocr, "best_result", None)]
         )
-        return find_expired_notice_confirm_box(rows)
+
+    def expired_notice_confirm_box(self, *, frame=None):
+        """Return the Confirm button box of an item-expiry notice modal, if visible."""
+        rows = self._modal_ocr_rows(EXPIRED_NOTICE_ROI, frame=frame)
+        return find_expired_notice_confirm_box(rows) if rows is not None else None
 
     def dismiss_expired_notice(self, *, box=None):
         """Dismiss the item-expiry notice modal by clicking its centered Confirm button."""
@@ -696,23 +739,30 @@ class GameUI:
 
     def safe_area_confirm_box(self, *, frame=None):
         """Return the Confirm button box of the safe-area return modal, if visible."""
-        with self.rt.observe():
-            image = self.rt.frame() if frame is None else frame
-            if image is None or self.rt.hit("MaaNikki_MainDetected", image=image):
-                return None
-            ocr = self.rt.recognize(
-                "MaaNikki_Daily_OCR",
-                {"roi": SAFE_AREA_MODAL_ROI, "expected": ".+", "threshold": 0.4},
-                image=image,
-            )
-        if not ocr:
-            return None
-        rows = (
-            getattr(ocr, "all_results", None)
-            or getattr(ocr, "filtered_results", None)
-            or [getattr(ocr, "best_result", None)]
-        )
-        return find_safe_area_confirm_box(rows)
+        rows = self._modal_ocr_rows(SAFE_AREA_MODAL_ROI, frame=frame)
+        return find_safe_area_confirm_box(rows) if rows is not None else None
+
+    def disconnect_notice_box(self, *, frame=None):
+        """Return the Confirm button box of a disconnect or relogin modal, if visible."""
+        rows = self._modal_ocr_rows(DISCONNECT_NOTICE_ROI, frame=frame)
+        return find_disconnect_notice_confirm_box(rows) if rows is not None else None
+
+    def abort_on_disconnect(self):
+        """Stop the task queue cleanly when a disconnect or relogin modal appears."""
+        from task_control import TaskStopped, active_session
+        if self.rt.navigation_inputs:
+            self.rt.navigation_inputs.release()
+        session = active_session()
+        if session is not None:
+            session.game_disconnected()
+        message = "检测到游戏断线或需要重新登录提示，后续任务已停止。请重新进入游戏后再运行。"
+        self.rt.diagnostic("game_disconnected", message)
+        self.rt.log(message)
+        try:
+            self.rt.context.tasker.post_stop()
+        except Exception:
+            pass
+        raise TaskStopped(message)
 
     def dismiss_safe_area_return(self, *, box=None, event=lambda value: None):
         """Confirm the safe-area return modal and wait for main world recovery."""
@@ -809,7 +859,12 @@ class GameUI:
         revived = self.revive(event)
         if revived is not None:
             return revived
-        return self.dismiss_safe_area_return(event=event)
+        returned = self.dismiss_safe_area_return(event=event)
+        if returned is not None:
+            return returned
+        if self.disconnect_notice_box() is not None:
+            self.abort_on_disconnect()
+        return None
 
     def _locate_menu_entry(self, node, roi, *, ready=None):
         """Ensure Pear-Pal is open and scroll or page until `node` is visible."""
@@ -1369,19 +1424,30 @@ class GameUI:
                     page = "loading"
                 else:
                     safe_area_box = self.safe_area_confirm_box()
+                    expired_notice_box = (
+                        None if safe_area_box is not None else self.expired_notice_confirm_box()
+                    )
+                    disconnect_notice_box = (
+                        None if (safe_area_box is not None or expired_notice_box is not None)
+                        else self.disconnect_notice_box()
+                    )
+                    decompose_tutorial_target = (
+                        None
+                        if (safe_area_box is not None
+                            or expired_notice_box is not None
+                            or disconnect_notice_box is not None)
+                        else self.blessing_decompose_tutorial_target()
+                    )
                     if safe_area_box is not None:
                         page = "safe_area_return"
+                    elif expired_notice_box is not None:
+                        page = "expired_notice"
+                    elif disconnect_notice_box is not None:
+                        page = "disconnect_notice"
+                    elif decompose_tutorial_target is not None:
+                        page = "decompose_tutorial"
                     else:
-                        expired_notice_box = self.expired_notice_confirm_box()
-                        if expired_notice_box is not None:
-                            page = "expired_notice"
-                        else:
-                            decompose_tutorial_target = self.blessing_decompose_tutorial_target()
-                            page = (
-                                "decompose_tutorial"
-                                if decompose_tutorial_target is not None
-                                else "unknown"
-                            )
+                        page = "unknown"
             if page == "star_collect":
                 return self.leave_star_collect()
             elif page == "main":
@@ -1401,6 +1467,8 @@ class GameUI:
                 loading_remaining -= elapsed
                 deadline += elapsed
                 continue
+            elif page == "disconnect_notice":
+                self.abort_on_disconnect()
             elif time.monotonic() >= deadline:
                 break
             elif page == "death":
