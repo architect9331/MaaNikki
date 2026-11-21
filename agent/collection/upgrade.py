@@ -5,7 +5,7 @@ import re
 
 import numpy as np
 
-from task_control import ForegroundChanged
+from task_control import ForegroundChanged, task_time as time
 from .details import COLORS
 from .locking import READY
 from .scanner import LEVEL, FocusRetryBudget, IncompleteObservation, RescanSlot, clean_text
@@ -44,8 +44,15 @@ class UpgradeUI:
             raise IncompleteObservation("升级结果弹层尚未关闭，未读取底下升级页")
         return frame
 
+    def _field_roi(self, field):
+        roi = list(self.layout[field])
+        if field == "material_filter" and len(roi) == 4:
+            # Exclude the right-side dropdown chevron so OCR never appends stray glyph noise.
+            roi[2] = min(roi[2], 180)
+        return roi
+
     def text(self, field, frame):
-        return clean_text(self.rt.text(self.layout[field], image=frame))
+        return clean_text(self.rt.text(self._field_roi(field), image=frame))
 
     def read(self, generation, keys=("name", "level", "xp", "maxed")):
         previous = None
@@ -179,7 +186,14 @@ class UpgradeUI:
         return new_gen
 
     def _recover_selection_after_upgrade(self, facts, list_gen):
-        frame = self.owner.frame(list_gen)
+        if self.owner.key(facts) in self.owner.protected:
+            self.owner.protect_selected(facts, list_gen)
+            return
+        frame = (
+            self.owner.clear_hover(list_gen)
+            if hasattr(self.owner, "clear_hover")
+            else self.owner.frame(list_gen)
+        )
         levels = self.owner.ocr(self.owner.grid, frame, LEVEL)
         for box in self.owner.cards(frame, levels):
             if not self.owner.selected(frame, box):
@@ -194,6 +208,44 @@ class UpgradeUI:
             self.owner.rebuild_slot(facts["slot"])
             return
         self.owner.protect_selected(facts, list_gen)
+
+    def _ensure_five_star_filter(self, frame, page_gen):
+        text = self.text("material_filter", frame)
+        self.owner.check_generation(page_gen)
+        if not re.fullmatch(FILTER, text):
+            selected = False
+            for _ in range(2):
+                self.owner.check_generation(page_gen)
+                if not self.rt.action("Click", target=self.layout["material_filter"]):
+                    continue
+                if not self.rt.pause(0.35):
+                    self.owner.check_generation(page_gen)
+                    raise IncompleteObservation("升级素材筛选切换中断")
+                deadline = time.monotonic() + 1.5
+                while not self.rt.stopped and time.monotonic() < deadline:
+                    self.owner.check_generation(page_gen)
+                    if self.rt.click_text("^" + FILTER + "$", self.layout["filter_choices"]):
+                        selected = True
+                        break
+                    if not self.rt.pause(0.2):
+                        self.owner.check_generation(page_gen)
+                        raise IncompleteObservation("升级素材筛选选择中断")
+                if selected:
+                    break
+            if not selected:
+                self.owner.check_generation(page_gen)
+                raise RuntimeError("未能选择五星及以下升级素材")
+        for attempt in range(6):
+            self.owner.check_generation(page_gen)
+            frame = self.frame(page_gen)
+            if re.fullmatch(FILTER, self.text("material_filter", frame)):
+                self.owner.check_generation(page_gen)
+                return frame
+            if attempt < 5 and not self.rt.pause(0.2):
+                self.owner.check_generation(page_gen)
+                raise IncompleteObservation("升级素材筛选确认中断")
+        self.owner.check_generation(page_gen)
+        raise RuntimeError("升级素材星级未确认，未一键放入")
 
     def run(self, box, facts, evidence, generation, *, once=False):
         self.owner.ensure_known_materials()
@@ -237,13 +289,7 @@ class UpgradeUI:
                     if fields["name"] != current["name"] or page_level != current["level"]:
                         raise RuntimeError("升级页名称或当前等级与选中闪光不一致")
                     old_xp = self.experience(fields["xp"])
-                    if not re.fullmatch(FILTER, self.text("material_filter", frame)):
-                        if (not self.rt.action("Click", target=self.layout["material_filter"])
-                                or not self.rt.click_text("^" + FILTER + "$", self.layout["filter_choices"])):
-                            raise RuntimeError("未能选择五星及以下升级素材")
-                    frame = self.frame(page_gen)
-                    if not re.fullmatch(FILTER, self.text("material_filter", frame)):
-                        raise RuntimeError("升级素材星级未确认，未一键放入")
+                    frame = self._ensure_five_star_filter(frame, page_gen)
                     # The page, target and filter are already verified. Small button
                     # text is not a reliable OCR gate; verify the resulting count below.
                     self.owner.check_generation(page_gen)
@@ -274,6 +320,7 @@ class UpgradeUI:
                         return {"status": "bling_shortage", "bling": bling, "cost": cost,
                                 "reserve_bling": reserve, "facts": current}
                     if not re.fullmatch(FILTER, fields["material_filter"]):
+                        self.owner.check_generation(page_gen)
                         raise RuntimeError("提交前升级素材选项发生变化")
                     self.owner.check_generation(page_gen)
                     self.rt.check_focus()

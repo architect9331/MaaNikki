@@ -46,6 +46,8 @@ class FiveStarInventory(BlessingLocker):
         self.reserve_bling = 0
         self._last_synced_bling = None
         self._live_pending = False
+        self._slot_rebuilds_in_run: dict[str, int] = {}
+        self._slot_rebuilt_without_progress: set[str] = set()
 
     def pearpal_five_star_colors(self, slot=None):
         """Return valid 5-star (name, slot, color) tuples from Pear-Pal notebook."""
@@ -283,7 +285,7 @@ class FiveStarInventory(BlessingLocker):
                 from .decompose import LowRarityDecomposer
                 LowRarityDecomposer(self).run()
         for slot in list(recovery.get("slots", [])):
-            self.rebuild_slot(slot)
+            self.rebuild_slot(slot, startup=True)
         self.organization.pop("recovery", None)
         self.organization["reason"] = None
         self.checkpoint()
@@ -323,9 +325,15 @@ class FiveStarInventory(BlessingLocker):
         self._live_pending = False
         self.checkpoint()
 
-    def rebuild_slot(self, slot):
+    def _slot_rebuild_blocked(self, slot):
+        return (
+            slot in self._slot_rebuilt_without_progress
+            or self._slot_rebuilds_in_run.get(slot, 0) >= 3
+        )
+
+    def rebuild_slot(self, slot, *, startup=False):
         """Reobserve one changed slot once, retaining the other two unchanged."""
-        if slot in self.report.get("recovered_slots", []):
+        if not startup and self._slot_rebuild_blocked(slot):
             raise RecheckSlot(slot, "该部位仍待核对，保留已确认进度")
         self.request_recheck(slot, "核对受影响部位的顺序及收藏")
         self.checkpoint()
@@ -401,7 +409,16 @@ class FiveStarInventory(BlessingLocker):
         recovery["reasons"].pop(slot, None)
         self.view.slot = None
         self.verified.clear()
-        self.report.setdefault("recovered_slots", []).append(slot)
+        if startup:
+            startup_slots = self.report.setdefault("startup_recovered_slots", [])
+            if slot not in startup_slots:
+                startup_slots.append(slot)
+        else:
+            self._slot_rebuilds_in_run[slot] = self._slot_rebuilds_in_run.get(slot, 0) + 1
+            self._slot_rebuilt_without_progress.add(slot)
+            recovered = self.report.setdefault("recovered_slots", [])
+            if slot not in recovered:
+                recovered.append(slot)
         self.checkpoint()
         removed = old_keys - self.protected
         self.rt.log(f"{slot}进度已恢复。" + (f"核对移除 {len(removed)} 个已不在仓库中的收藏颜色。" if removed else ""))
@@ -767,14 +784,14 @@ class FiveStarInventory(BlessingLocker):
                 try:
                     found = self.view.locate(target, rows, quantities=True)
                 except RecheckSlot:
-                    if target["slot"] in self.report.get("recovered_slots", []):
+                    if self._slot_rebuild_blocked(target["slot"]):
                         raise
                     self.rebuild_slot(target["slot"])
                     completed_steps += 1
                     continue
                 if found is None:
                     if target["id"] == self.organization["unfinished"]:
-                        if target["slot"] in self.report.get("recovered_slots", []):
+                        if self._slot_rebuild_blocked(target["slot"]):
                             raise RecheckSlot(target["slot"], "未完成对象仍待核对，保留进度")
                         self.rebuild_slot(target["slot"])
                         completed_steps += 1
@@ -834,6 +851,7 @@ class FiveStarInventory(BlessingLocker):
                 rows.remove(self.active)
             self.active = None
             self.organization["unfinished"] = None
+            self._slot_rebuilt_without_progress.discard(target["slot"])
             self.checkpoint()
         raise RuntimeError("达到本轮升级数量上限")
 
