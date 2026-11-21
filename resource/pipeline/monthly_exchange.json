@@ -71,20 +71,32 @@
     "all_of": ["MaaNikki_Shop_PageReady", "MaaNikki_Shop_QuietSelected"],
     "action": "DoNothing"
   },
+  "MaaNikki_Shop_DetailHeader": {
+    "recognition": "OCR",
+    "roi": [520, 140, 240, 50],
+    "expected": "商品详情",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_RevelationName": {
+    "recognition": "OCR",
+    "roi": [520, 185, 240, 55],
+    "expected": "启示水晶",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_ResonanceName": {
+    "recognition": "OCR",
+    "roi": [520, 185, 240, 55],
+    "expected": "共鸣水晶",
+    "action": "DoNothing"
+  },
   "MaaNikki_Shop_RevelationTitle": {
-    "recognition": "TemplateMatch",
-    "roi": [555, 195, 150, 40],
-    "template": "game/shop/revelation_title.png",
-    "threshold": 0.88,
-    "method": 5,
+    "recognition": "And",
+    "all_of": ["MaaNikki_Shop_DetailHeader", "MaaNikki_Shop_RevelationName"],
     "action": "DoNothing"
   },
   "MaaNikki_Shop_ResonanceTitle": {
-    "recognition": "TemplateMatch",
-    "roi": [555, 195, 150, 40],
-    "template": "game/shop/resonance_title.png",
-    "threshold": 0.88,
-    "method": 5,
+    "recognition": "And",
+    "all_of": ["MaaNikki_Shop_DetailHeader", "MaaNikki_Shop_ResonanceName"],
     "action": "DoNothing"
   },
   "MaaNikki_Shop_ExchangeMax": {
