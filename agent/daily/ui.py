@@ -824,9 +824,16 @@ class GameUI:
                     and not main_ready
                     and self.asset("IconUILoading", threshold=.99, method=cv2.TM_CCORR_NORMED)
                 )
+                revive_ready = (
+                    not reward_overlay
+                    and not skip_prompt
+                    and not main_ready
+                    and not loading
+                    and self.rt.hit("MaaNikki_Navigation_ReviveButton")
+                )
                 confirm_box = (
                     None
-                    if (reward_overlay or skip_prompt or main_ready or loading)
+                    if (reward_overlay or skip_prompt or main_ready or loading or revive_ready)
                     else self.safe_area_confirm_box()
                 )
             if reward_overlay:
@@ -856,6 +863,17 @@ class GameUI:
                 elapsed = time.monotonic() - observed_at
                 loading_remaining -= elapsed
                 deadline += elapsed
+                continue
+            if revive_ready:
+                revived = self.revive(event)
+                if revived is not None:
+                    event({
+                        "type": "safe_area_return",
+                        "success": bool(revived),
+                        "attempts": clicks,
+                        "handoff": "revive",
+                    })
+                    return bool(revived)
                 continue
             if confirm_box is not None and clicks < 3 and (need_click or time.monotonic() - last_click_at >= 1.5):
                 clicked = bool(self.click_box(confirm_box))
