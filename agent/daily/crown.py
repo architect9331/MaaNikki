@@ -44,7 +44,7 @@ class Crown(Runtime):
         elif name == "ButtonMiraCrownSkipAll":
             options.update(threshold=.8, color=([20, 20, 180], [30, 100, 255]))
         elif name in ("ButtonMiraCrownShop", "ButtonMiraCrownAward"):
-            options.update(threshold=.9, color=([0, 0, 190], [40, 40, 255]))
+            options.update(threshold=.82, method=cv2.TM_CCOEFF_NORMED)
         elif name == "ButtonMiraCrownStartChallenge":
             options.update(threshold=.88, method=cv2.TM_CCOEFF_NORMED)
         options.update(overrides)
