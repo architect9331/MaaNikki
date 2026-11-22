@@ -13,6 +13,72 @@ from vision import prepared_template
 
 @agent_recognition("nikki.ui_template")
 class UITemplateRecognition(CustomRecognition):
+    @staticmethod
+    def _match_spec(image, param, image_root):
+        roi = param.get("roi", [0, 0, image.shape[1], image.shape[0]])
+        if (not isinstance(roi, list) or len(roi) != 4
+                or any(type(v) is not int for v in roi)):
+            raise ValueError("页面图像区域无效。")
+        x, y, width, height = roi
+        if (x < 0 or y < 0 or width <= 0 or height <= 0
+                or x+width > image.shape[1] or y+height > image.shape[0]):
+            raise ValueError("页面图像区域超出截图。")
+        templates = param["template"]
+        templates = templates if isinstance(templates, list) else [templates]
+        thresholds = param.get("threshold", .8)
+        thresholds = thresholds if isinstance(thresholds, list) else [thresholds]*len(templates)
+        if not templates or len(templates) != len(thresholds):
+            raise ValueError("页面模板与识别阈值数量不一致。")
+        gray = param.get("gray_limit", [210, 255])
+        if (not isinstance(gray, list) or len(gray) != 2
+                or any(type(v) is not int for v in gray) or not 0 <= gray[0] < gray[1] <= 255):
+            raise ValueError("页面图像亮度范围无效。")
+        color = param.get("color")
+        if color is not None and (not isinstance(color, list) or len(color) != 2
+                or any(not isinstance(bound, list) or len(bound) != 3 for bound in color)
+                or any(type(v) is not int for bound in color for v in bound)
+                or any(not 0 <= low <= high <= limit for low, high, limit
+                       in zip(color[0], color[1], (180, 255, 255)))):
+            raise ValueError("页面图像颜色范围无效。")
+        patch = image[y:y+height, x:x+width]
+        target = (cv2.inRange(cv2.cvtColor(patch, cv2.COLOR_BGR2HSV),
+                              np.array(color[0]), np.array(color[1])) if color else
+                  cv2.threshold(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY),
+                                gray[0], gray[1], cv2.THRESH_BINARY)[1])
+        preprocessing = {"color": color} if color else {"gray_limit": gray}
+        masked = param.get("mask", False)
+        if type(masked) is not bool:
+            raise ValueError("页面模板遮罩参数无效。")
+        if masked:
+            preprocessing["mask"] = "alpha"
+        best_score, best_box, best_template = -1.0, None, None
+        for name, threshold in zip(templates, thresholds):
+            if not isinstance(name, str) or not isinstance(threshold, (int, float)) or not 0 <= threshold <= 1:
+                raise ValueError("页面模板或阈值无效。")
+            path = (image_root / name).resolve()
+            if not path.is_relative_to(image_root):
+                raise ValueError("页面图像资源路径无效。")
+            prepared = prepared_template(path, grayscale=not bool(color) and not masked,
+                                         gray=None if color else gray, color=color)
+            template = prepared.image
+            if not template.size:
+                raise ValueError("页面图像没有可识别的亮色特征。")
+            th, tw = template.shape[:2]
+            if tw > width or th > height:
+                continue
+            rates = cv2.matchTemplate(target, template, cv2.TM_CCORR_NORMED,
+                                      mask=prepared.mask if masked else None)
+            rates = np.nan_to_num(rates, copy=False, nan=-1, posinf=-1, neginf=-1)
+            _, score, _, point = cv2.minMaxLoc(rates)
+            if score > best_score:
+                best_score, best_template = float(score), name
+            if score >= threshold:
+                best_box = [x+point[0], y+point[1], tw, th]
+                return best_box, {
+                    "score": float(score), "template": name, **preprocessing, "method": 3}
+        return None, {
+            "score": best_score, "template": best_template, **preprocessing, "method": 3}
+
     def analyze(self, context, argv):
         del context
         try:
@@ -20,70 +86,26 @@ class UITemplateRecognition(CustomRecognition):
             image = argv.image
             if image is None or image.size == 0:
                 raise ValueError("游戏截图为空。")
-            roi = param.get("roi", [0, 0, image.shape[1], image.shape[0]])
-            if (not isinstance(roi, list) or len(roi) != 4
-                    or any(type(v) is not int for v in roi)):
-                raise ValueError("页面图像区域无效。")
-            x, y, width, height = roi
-            if (x < 0 or y < 0 or width <= 0 or height <= 0
-                    or x+width > image.shape[1] or y+height > image.shape[0]):
-                raise ValueError("页面图像区域超出截图。")
-            templates = param["template"]
-            templates = templates if isinstance(templates, list) else [templates]
-            thresholds = param.get("threshold", .8)
-            thresholds = thresholds if isinstance(thresholds, list) else [thresholds]*len(templates)
-            if not templates or len(templates) != len(thresholds):
-                raise ValueError("页面模板与识别阈值数量不一致。")
-            gray = param.get("gray_limit", [210, 255])
-            if (not isinstance(gray, list) or len(gray) != 2
-                    or any(type(v) is not int for v in gray) or not 0 <= gray[0] < gray[1] <= 255):
-                raise ValueError("页面图像亮度范围无效。")
-            color = param.get("color")
-            if color is not None and (not isinstance(color, list) or len(color) != 2
-                    or any(not isinstance(bound, list) or len(bound) != 3 for bound in color)
-                    or any(type(v) is not int for bound in color for v in bound)
-                    or any(not 0 <= low <= high <= limit for low, high, limit
-                           in zip(color[0], color[1], (180, 255, 255)))):
-                raise ValueError("页面图像颜色范围无效。")
-            resource = ROOT / "resource"
-            image_root = (resource / "image").resolve()
-            patch = image[y:y+height, x:x+width]
-            target = (cv2.inRange(cv2.cvtColor(patch, cv2.COLOR_BGR2HSV),
-                                  np.array(color[0]), np.array(color[1])) if color else
-                      cv2.threshold(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY),
-                                    gray[0], gray[1], cv2.THRESH_BINARY)[1])
-            preprocessing = {"color": color} if color else {"gray_limit": gray}
-            masked = param.get("mask", False)
-            if type(masked) is not bool:
-                raise ValueError("页面模板遮罩参数无效。")
-            if masked:
-                preprocessing["mask"] = "alpha"
-            best_score, best_box, best_template = -1.0, None, None
-            for name, threshold in zip(templates, thresholds):
-                if not isinstance(name, str) or not isinstance(threshold, (int, float)) or not 0 <= threshold <= 1:
-                    raise ValueError("页面模板或阈值无效。")
-                path = (image_root / name).resolve()
-                if not path.is_relative_to(image_root):
-                    raise ValueError("页面图像资源路径无效。")
-                prepared = prepared_template(path, grayscale=not bool(color) and not masked,
-                                             gray=None if color else gray, color=color)
-                template = prepared.image
-                if not template.size:
-                    raise ValueError("页面图像没有可识别的亮色特征。")
-                th, tw = template.shape[:2]
-                if tw > width or th > height:
-                    continue
-                rates = cv2.matchTemplate(target, template, cv2.TM_CCORR_NORMED,
-                                         mask=prepared.mask if masked else None)
-                rates = np.nan_to_num(rates, copy=False, nan=-1, posinf=-1, neginf=-1)
-                _, score, _, point = cv2.minMaxLoc(rates)
-                if score > best_score:
-                    best_score, best_template = float(score), name
-                if score >= threshold:
-                    best_box = [x+point[0], y+point[1], tw, th]
-                    return CustomRecognition.AnalyzeResult(box=best_box, detail={
-                        "score": float(score), "template": name, **preprocessing, "method": 3})
-            return CustomRecognition.AnalyzeResult(box=None, detail={
-                "score": best_score, "template": best_template, **preprocessing, "method": 3})
+            fallback_all = param.get("fallback_all")
+            if fallback_all is not None and (
+                    not isinstance(fallback_all, list) or not fallback_all
+                    or any(not isinstance(spec, dict) for spec in fallback_all)):
+                raise ValueError("页面兜底模板参数无效。")
+            image_root = (ROOT / "resource" / "image").resolve()
+            box, detail = self._match_spec(image, param, image_root)
+            if box is not None or not fallback_all:
+                return CustomRecognition.AnalyzeResult(box=box, detail=detail)
+            matched = []
+            for spec in fallback_all:
+                sub_box, sub_detail = self._match_spec(image, spec, image_root)
+                if sub_box is None:
+                    return CustomRecognition.AnalyzeResult(box=None, detail=detail)
+                matched.append((sub_box, sub_detail))
+            return CustomRecognition.AnalyzeResult(box=matched[0][0], detail={
+                "score": min(item["score"] for _, item in matched),
+                "template": [item["template"] for _, item in matched],
+                "fallback_all": [item for _, item in matched],
+                "method": 3,
+            })
         except (OSError, ValueError, TypeError, KeyError, cv2.error) as error:
             return CustomRecognition.AnalyzeResult(box=None, detail={"error": str(error)})

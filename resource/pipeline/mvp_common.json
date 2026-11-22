@@ -105,7 +105,37 @@
         230,
         255
       ],
-      "threshold": 0.9
+      "threshold": 0.9,
+      "fallback_all": [
+        {
+          "roi": [
+            1216,
+            14,
+            50,
+            42
+          ],
+          "template": "nikki/common/main_dress_icon.png",
+          "gray_limit": [
+            230,
+            255
+          ],
+          "threshold": 0.82
+        },
+        {
+          "roi": [
+            1163,
+            10,
+            52,
+            46
+          ],
+          "template": "nikki/common/main_sketch_icon.png",
+          "gray_limit": [
+            230,
+            255
+          ],
+          "threshold": 0.85
+        }
+      ]
     },
     "action": "DoNothing",
     "next": []
