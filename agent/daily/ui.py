@@ -27,6 +27,11 @@ _RE_NOTICE_CANCEL = re.compile(r"^取消$")
 BLESSING_DECOMPOSE_TUTORIAL_ROI = [670, 190, 320, 130]
 BLESSING_DECOMPOSE_TUTORIAL_TARGET = [1040, 245]
 _RE_DECOMPOSE_TUTORIAL = re.compile(r"分解后预计获得|闪光粒子数量|将在此显示")
+BLESSING_DECOMPOSE_TUTORIAL_STEP2_ROI = [785, 610, 300, 95]
+BLESSING_DECOMPOSE_TUTORIAL_STEP2_TARGET = [1155, 658]
+_RE_DECOMPOSE_TUTORIAL_STEP2 = re.compile(
+    r"点击可将选中的祝福闪光分解|祝福闪光分解并转换|转换为闪光粒子"
+)
 SAFE_AREA_MODAL_ROI = [360, 200, 560, 320]
 _RE_SAFE_AREA_BODY = re.compile(r"是否返回安全[区區]域")
 DISCONNECT_NOTICE_ROI = [360, 220, 560, 300]
@@ -93,6 +98,8 @@ def find_blessing_decompose_tutorial_target(rows):
     joined = "".join(parts)
     if joined and _RE_DECOMPOSE_TUTORIAL.search(joined):
         return list(BLESSING_DECOMPOSE_TUTORIAL_TARGET)
+    if joined and _RE_DECOMPOSE_TUTORIAL_STEP2.search(joined):
+        return list(BLESSING_DECOMPOSE_TUTORIAL_STEP2_TARGET)
     return None
 
 
@@ -684,22 +691,26 @@ class GameUI:
                 return None
             if not self.rt.hit("MaaNikki_Blessing_DecomposeReady", image=image):
                 return None
-            ocr = self.rt.recognize(
-                "MaaNikki_Daily_OCR",
-                {"roi": BLESSING_DECOMPOSE_TUTORIAL_ROI, "expected": ".+", "threshold": 0.4},
-                image=image,
-            )
-        if not ocr:
-            return None
-        rows = (
-            getattr(ocr, "all_results", None)
-            or getattr(ocr, "filtered_results", None)
-            or [getattr(ocr, "best_result", None)]
-        )
-        return find_blessing_decompose_tutorial_target(rows)
+            for roi in (BLESSING_DECOMPOSE_TUTORIAL_ROI, BLESSING_DECOMPOSE_TUTORIAL_STEP2_ROI):
+                ocr = self.rt.recognize(
+                    "MaaNikki_Daily_OCR",
+                    {"roi": roi, "expected": ".+", "threshold": 0.4},
+                    image=image,
+                )
+                if not ocr:
+                    continue
+                rows = (
+                    getattr(ocr, "all_results", None)
+                    or getattr(ocr, "filtered_results", None)
+                    or [getattr(ocr, "best_result", None)]
+                )
+                hit = find_blessing_decompose_tutorial_target(rows)
+                if hit is not None:
+                    return hit
+        return None
 
     def dismiss_blessing_decompose_tutorial(self, *, target=None):
-        """Dismiss the first-time blessing decomposition spotlight tutorial by clicking its preview card."""
+        """Dismiss the first-time blessing decomposition spotlight tutorial sequentially."""
         if self._dismissing_decompose_tutorial:
             return None
         resolved = target if target is not None else self.blessing_decompose_tutorial_target()
@@ -708,14 +719,18 @@ class GameUI:
         self._dismissing_decompose_tutorial = True
         self.rt.log("检测到祝福闪光分解引导提示，正在点击关闭。")
         try:
-            for attempt in range(4):
+            next_target = None
+            for attempt in range(6):
                 if self.rt.stopped:
                     return False
                 if attempt > 0:
-                    with self.rt.observe(fresh=True):
-                        resolved = self.blessing_decompose_tutorial_target()
-                    if resolved is None:
-                        return True
+                    if next_target is not None:
+                        resolved, next_target = next_target, None
+                    else:
+                        with self.rt.observe(fresh=True):
+                            resolved = self.blessing_decompose_tutorial_target()
+                        if resolved is None:
+                            return True
                 if not self.rt.action("Click", target=resolved):
                     return False
                 clear = 0
@@ -724,12 +739,15 @@ class GameUI:
                     with self.rt.observe(fresh=True):
                         if self.rt.hit("MaaNikki_MainDetected"):
                             return True
-                        still_open = self.blessing_decompose_tutorial_target() is not None
-                    if still_open:
+                        current_target = self.blessing_decompose_tutorial_target()
+                    if current_target is not None:
                         clear = 0
+                        if current_target != resolved:
+                            next_target = current_target
+                            break
                     else:
                         clear += 1
-                        if clear >= 2:
+                        if clear >= 3:
                             return True
                     if not self.rt.pause(.25):
                         return False
