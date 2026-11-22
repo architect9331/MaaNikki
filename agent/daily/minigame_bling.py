@@ -45,6 +45,20 @@ FAIL_EXIT_BOX = [488, 432, 56, 30]
 FAIL_RETRY_BOX = [714, 432, 56, 30]
 CONFIRM_CANCEL_BOX = [526, 439, 49, 26]
 CONFIRM_OK_BOX = [703, 439, 48, 25]
+COURSE_TIMER_ROI = [540, 18, 200, 60]
+COURSE_TIMER_INITIAL_SECONDS = 25.0
+COURSE_TIMER_MIN_VALID_SECONDS = 15.0
+# Strictly below 25.0 so a static 00:25.000 shown before/during 3-2-1 cannot trigger early.
+COURSE_TIMER_MAX_TICKING_SECONDS = 24.95
+COURSE_TIMER_POLL_INTERVAL_SECONDS = 0.10
+COURSE_TIMER_POLL_START_NORMAL_SECONDS = 3.0
+COURSE_TIMER_POLL_START_RETRY_SECONDS = 1.0
+# Calibrated in-game clock offsets after 00:25.000 starts ticking, preserving the
+# 3dc2c02 laser-phase alignment (8.07 - 5.55 = 2.52s, 7.03 - 5.55 = 1.48s).
+COURSE_GO_OFFSET_CAMERA_ASSIST_ON = 2.52
+COURSE_GO_OFFSET_CAMERA_ASSIST_OFF = 1.48
+ENTRY_FEE_BLING = 100
+CLEAR_REWARD_BLING = 700
 # Both tracks wait past the ~5.4-5.7s countdown unlock jitter so key holds
 # execute undistorted against G1-G6 moving lasers while still finishing
 # under the 15s hard-clear threshold (~11.5-13.4s).
@@ -79,6 +93,59 @@ _DIALOGUE_EXIT_RE = re.compile(r"不用了|再见|离开|下次再说|取消|稍
 _DIALOGUE_OPTION_RE = re.compile(r"开始|挑战|规则|介绍|说明|准备|继续|重新")
 _DIALOGUE_MODE_RE = re.compile(r"手动|自动")
 _DIALOGUE_SKIP_RE = re.compile(r"跳过")
+_COURSE_TIMER_TRANSLATION = str.maketrans({
+    "O": "0", "o": "0", "D": "0", "Q": "0",
+    "I": "1", "l": "1", "|": "1",
+    "S": "5", "s": "5",
+})
+_COURSE_TIMER_RE = re.compile(
+    r"(?<!\d)(\d{2})\s*[:：.\-]?\s*(\d{2})(?:\s*[.:：,\-]\s*(\d{1,3})|(\d{3}))(?!\d)"
+)
+
+
+def _parse_course_timer_text(text: str) -> float | None:
+    """Parse a ticking top-center MM:SS.mmm Shuttle Adventure countdown string."""
+    if not text:
+        return None
+    norm = text.strip().translate(_COURSE_TIMER_TRANSLATION)
+    match = _COURSE_TIMER_RE.search(norm)
+    if not match:
+        return None
+    mins = int(match.group(1))
+    secs = int(match.group(2))
+    frac_raw = match.group(3) or match.group(4)
+    remaining = secs + int(frac_raw) / (10 ** len(frac_raw))
+    if mins == 0 and COURSE_TIMER_MIN_VALID_SECONDS <= remaining <= COURSE_TIMER_MAX_TICKING_SECONDS:
+        return remaining
+    return None
+
+
+def _mark_entry_paid(stats: dict) -> None:
+    """Record one 100-Bling entry/retry fee when entering a round if not yet recorded."""
+    if not stats.get("active_entry_paid"):
+        stats["entries_paid"] = int(stats.get("entries_paid", 0)) + 1
+        stats["active_entry_paid"] = True
+
+
+def _refund_unentered_entry(stats: dict) -> None:
+    """Revert the pending entry fee when a round never left the overworld or lacked Bling."""
+    if stats.get("active_entry_paid"):
+        stats["entries_paid"] = max(0, int(stats.get("entries_paid", 0)) - 1)
+        stats["active_entry_paid"] = False
+
+
+def _settle_entry(stats: dict) -> None:
+    """Clear the pending flag once the current round has settled (win or fail)."""
+    stats["active_entry_paid"] = False
+
+
+def _calc_net_bling(stats: dict, *, include_pending: bool = True) -> int:
+    """Return signed estimated net Bling: cleared rewards minus paid 100-Bling entries/retries."""
+    wins = int(stats.get("completed_rounds") or 0)
+    paid = int(stats.get("entries_paid") or 0)
+    if not include_pending and stats.get("active_entry_paid"):
+        paid = max(0, paid - 1)
+    return wins * CLEAR_REWARD_BLING - paid * ENTRY_FEE_BLING
 
 INIT_SEQUENCE: tuple[tuple[str, float] | float, ...] = (
     ("interact", 0.2),
@@ -312,12 +379,138 @@ class MinigameBlingRun(Runtime):
                 inputs.hold(key_name, float(dur), restore=False)
         return not self.stopped
 
+    def _wait_sliced(self, inputs: ForegroundInput, target_time: float) -> bool:
+        """Wait until ``target_time`` in <=4s slices to honor ForegroundInput.wait's 8s cap."""
+        while not self.stopped:
+            remaining = target_time - time.monotonic()
+            if remaining <= 1e-6:
+                return True
+            inputs.wait(min(4.0, remaining), restore=False)
+        return False
+
+    def _detect_course_timer(self, frame) -> float | None:
+        """Read the ticking top-center 00:25.000 countdown directly via OCR."""
+        result = self.recognize("MaaNikki_Daily_OCR", {"roi": COURSE_TIMER_ROI}, image=frame)
+        if not result or not result.hit:
+            return None
+        rows = (
+            getattr(result, "filtered_results", None)
+            or getattr(result, "all_results", None)
+            or ([result.best_result] if getattr(result, "best_result", None) is not None else [])
+        )
+        for row in rows:
+            if row is None:
+                continue
+            score = getattr(row, "score", None)
+            if isinstance(score, (int, float)) and score < 0.40:
+                continue
+            txt = str(getattr(row, "text", "") or "").strip()
+            parsed = _parse_course_timer_text(txt)
+            if parsed is not None:
+                return parsed
+        return None
+
+    def _wait_for_course_start(
+        self,
+        inputs: ForegroundInput,
+        trigger_at: float,
+        *,
+        camera_assist: bool,
+        is_retry: bool,
+    ) -> tuple[str, float, float | None]:
+        """Align movement start to the live ticking 25s countdown, falling back on misses."""
+        fallback_wait = (
+            COURSE_START_WAIT_CAMERA_ASSIST_ON
+            if camera_assist
+            else COURSE_START_WAIT_CAMERA_ASSIST_OFF
+        )
+        go_offset = (
+            COURSE_GO_OFFSET_CAMERA_ASSIST_ON
+            if camera_assist
+            else COURSE_GO_OFFSET_CAMERA_ASSIST_OFF
+        )
+        poll_start_offset = (
+            COURSE_TIMER_POLL_START_RETRY_SECONDS
+            if is_retry
+            else COURSE_TIMER_POLL_START_NORMAL_SECONDS
+        )
+        poll_deadline = trigger_at + fallback_wait
+
+        if not self._wait_sliced(inputs, trigger_at + poll_start_offset):
+            return "stopped", 0.0, None
+
+        first_sample: tuple[float, float, float] | None = None
+        aligned_t_go: float | None = None
+        while not self.stopped and time.monotonic() < poll_deadline:
+            t_before = time.monotonic()
+            frame = self.capture()
+            t_after = time.monotonic()
+            if self.stopped:
+                return "stopped", 0.0, None
+            if frame is None:
+                break
+            captured_at = (
+                0.5 * (t_before + t_after)
+                if (t_after - t_before) <= 0.15
+                else (t_after - 0.015)
+            )
+            remaining = self._detect_course_timer(frame)
+            if remaining is not None:
+                t_go = captured_at - (COURSE_TIMER_INITIAL_SECONDS - remaining)
+                if t_go >= trigger_at - 0.5:
+                    if first_sample is None:
+                        if (t_go + go_offset) - time.monotonic() >= 0.25:
+                            first_sample = (captured_at, remaining, t_go)
+                            sleep_s = min(
+                                COURSE_TIMER_POLL_INTERVAL_SECONDS,
+                                max(0.02, (t_go + go_offset) - time.monotonic() - 0.15),
+                            )
+                            if not self.pause(sleep_s):
+                                return "stopped", 0.0, None
+                            continue
+                        aligned_t_go = t_go
+                        break
+                    _, prev_rem, prev_t_go = first_sample
+                    if remaining < prev_rem and abs(t_go - prev_t_go) <= 0.30:
+                        aligned_t_go = 0.5 * (prev_t_go + t_go)
+                        break
+                    first_sample = (captured_at, remaining, t_go)
+                    sleep_s = min(
+                        COURSE_TIMER_POLL_INTERVAL_SECONDS,
+                        max(0.0, poll_deadline - time.monotonic()),
+                    )
+                    if sleep_s > 0 and not self.pause(sleep_s):
+                        return "stopped", 0.0, None
+                    continue
+            sleep_s = min(
+                COURSE_TIMER_POLL_INTERVAL_SECONDS,
+                max(0.0, poll_deadline - time.monotonic()),
+            )
+            if sleep_s <= 0:
+                break
+            if not self.pause(sleep_s):
+                return "stopped", 0.0, None
+
+        if self.stopped:
+            return "stopped", 0.0, None
+        if aligned_t_go is None and first_sample is not None:
+            aligned_t_go = first_sample[2]
+        if aligned_t_go is not None:
+            if not self._wait_sliced(inputs, aligned_t_go + go_offset):
+                return "stopped", 0.0, None
+            return "timer_aligned", time.monotonic() - trigger_at, aligned_t_go
+
+        if not self._wait_sliced(inputs, trigger_at + fallback_wait):
+            return "stopped", 0.0, None
+        return "fallback", time.monotonic() - trigger_at, None
+
     def _play_course(
         self,
         inputs: ForegroundInput,
         *,
         camera_assist: bool = True,
         retry_started_at: float | None = None,
+        stats: dict | None = None,
     ) -> bool:
         if self.stopped:
             return False
@@ -326,22 +519,29 @@ class MinigameBlingRun(Runtime):
             trigger_at = time.monotonic()
         else:
             trigger_at = retry_started_at
-        start_wait = (
-            COURSE_START_WAIT_CAMERA_ASSIST_ON
-            if camera_assist
-            else COURSE_START_WAIT_CAMERA_ASSIST_OFF
+        align_mode, total_wait_s, aligned_t_go = self._wait_for_course_start(
+            inputs,
+            trigger_at,
+            camera_assist=camera_assist,
+            is_retry=retry_started_at is not None,
         )
-        # Slice waits to <= 4s to respect ForegroundInput.wait's 8s per-call cap.
-        while not self.stopped:
-            remaining = min(
-                start_wait,
-                max(0.0, start_wait - (time.monotonic() - trigger_at)),
-            )
-            if remaining <= 1e-6:
-                break
-            inputs.wait(min(4.0, remaining), restore=False)
-        if self.stopped:
+        if align_mode == "stopped" or self.stopped:
             return False
+        if stats is not None:
+            if align_mode == "timer_aligned":
+                stats["timer_aligned_rounds"] = int(stats.get("timer_aligned_rounds", 0)) + 1
+            else:
+                stats["fallback_start_rounds"] = int(stats.get("fallback_start_rounds", 0)) + 1
+        if aligned_t_go is not None:
+            unlock_s = aligned_t_go - trigger_at
+            remaining_at_go = max(0.0, COURSE_TIMER_INITIAL_SECONDS - (time.monotonic() - aligned_t_go))
+            self.log(
+                f"起跑对齐：{align_mode}，倒计时解锁 {unlock_s:.2f} 秒，总等待 {total_wait_s:.2f} 秒"
+                f"（起步剩余计时 {remaining_at_go:.2f} 秒）。",
+                detail=True,
+            )
+        else:
+            self.log(f"起跑对齐：{align_mode}，总等待 {total_wait_s:.2f} 秒。", detail=True)
         straight_seconds = (
             COURSE_STRAIGHT_CAMERA_ASSIST_ON
             if camera_assist
@@ -589,8 +789,9 @@ class MinigameBlingRun(Runtime):
                     stalled_focus_retries = 0
                 continue
             sent_clicks += 1
-            # Runtime.action('Click') pauses 0.1s after MouseUp before returning.
-            click_at = time.monotonic() - 0.1
+            # Account for Runtime.action('Click') 0.1s pause plus window-input 0.03s post-release sleep.
+            post_click_lag = 0.13 if self._use_window_input(self._active_inputs()) else 0.1
+            click_at = time.monotonic() - post_click_lag
             matched, info = self._poll_modal_transition(
                 info,
                 click_at=click_at,
@@ -806,6 +1007,46 @@ class MinigameBlingRun(Runtime):
                 return False
         return self.main()
 
+    def _enter_via_npc_dialogue(self, inputs: ForegroundInput, stats: dict) -> str:
+        """Run NPC dialogue entry and check immediate no-Bling / daily-cap modals before marking paid."""
+        if not self._run_sequence(inputs, INIT_SEQUENCE):
+            return "stopped"
+        post_init = self._inspect_settlement()
+        if post_init["state"] == "no_bling":
+            self.log("当前噗灵不足以支付小游戏入场费，任务停止。")
+            self._exit_failure_to_main(inputs, post_init)
+            return "no_bling"
+        if post_init["state"] == "cap_reached":
+            return "cap_reached"
+        _mark_entry_paid(stats)
+        return "entered"
+
+    def _log_run_summary(self, stats: dict, started_at: float) -> None:
+        wins = int(stats["completed_rounds"] or 0)
+        losses = int(stats["failed_rounds"] or 0)
+        retries = int(stats["retry_count"] or 0)
+        paid = int(stats["entries_paid"] or 0)
+        if wins <= 0 and losses <= 0 and paid <= 0 and self.stopped:
+            return
+        net_bling = _calc_net_bling(stats, include_pending=True)
+        total_min = (time.monotonic() - started_at) / 60.0
+        if losses > 0 or retries > 0:
+            self.log(
+                f"「穿梭大冒险」刷噗灵结束：共完成 {wins} 局，失败 {losses} 次（付费重试 {retries} 次），"
+                f"累计支付入场/重试费 {paid * ENTRY_FEE_BLING:,} 噗灵，预计净收益约 {net_bling:,} 噗灵"
+                f"（耗时 {total_min:.1f} 分钟）。"
+            )
+        elif paid > wins:
+            self.log(
+                f"「穿梭大冒险」刷噗灵结束：共完成 {wins} 局，累计支付入场费 {paid * ENTRY_FEE_BLING:,} 噗灵，"
+                f"预计净收益约 {net_bling:,} 噗灵（耗时 {total_min:.1f} 分钟）。"
+            )
+        else:
+            self.log(
+                f"「穿梭大冒险」刷噗灵结束：共完成 {wins} 局，预计净收益约 {net_bling:,} 噗灵"
+                f"（耗时 {total_min:.1f} 分钟）。"
+            )
+
     def _handle_failure_retry(
         self,
         inputs: ForegroundInput,
@@ -814,6 +1055,7 @@ class MinigameBlingRun(Runtime):
         max_rounds: int,
         consecutive_failures: int,
         *,
+        stats: dict,
         timed_out: bool = False,
     ) -> tuple[str, float | None]:
         """Execute bounded retry on '挑战失败'; returns (action, retry_started_at)."""
@@ -826,12 +1068,15 @@ class MinigameBlingRun(Runtime):
             return "too_many_failures", None
 
         reason_label = "挑战超时失败" if timed_out else "挑战失败"
+        cur_net = _calc_net_bling(stats, include_pending=True)
         self.log(
             f"第 {target_round}/{max_rounds} 局{reason_label}，正在消耗 100 噗灵重试"
-            f"（连续失败 {consecutive_failures}/{MAX_CONSECUTIVE_FAILURES}）…"
+            f"（连续失败 {consecutive_failures}/{MAX_CONSECUTIVE_FAILURES}，当前已结算净收益约 {cur_net:,} 噗灵）…"
         )
         status, click_at = self._retry_from_failure(info)
         if status == "retrying":
+            stats["retry_count"] = int(stats.get("retry_count", 0)) + 1
+            _mark_entry_paid(stats)
             return "retrying", click_at
         if status == "no_bling":
             self.log("当前噗灵不足以支付 100 噗灵重试费用，正在退出小游戏并停止任务。")
@@ -844,8 +1089,17 @@ class MinigameBlingRun(Runtime):
             return "stopped", None
 
         # Fallback: exit to overworld and re-enter through NPC dialogue if near NPC.
-        if self._exit_failure_to_main(inputs) and self._run_sequence(inputs, INIT_SEQUENCE):
-            return "retrying", None
+        if self._exit_failure_to_main(inputs):
+            entry_state = self._enter_via_npc_dialogue(inputs, stats)
+            if entry_state == "entered":
+                stats["retry_count"] = int(stats.get("retry_count", 0)) + 1
+                return "retrying", None
+            if entry_state == "no_bling":
+                return "insufficient_bling", None
+            if entry_state == "cap_reached":
+                return "daily_cap_reached", None
+            if entry_state == "stopped":
+                return "stopped", None
         self.log("未能点击重试恢复挑战，任务停止。")
         return "retry_failed", None
 
@@ -897,6 +1151,7 @@ class MinigameBlingRun(Runtime):
                 status, click_at = self._retry_from_failure(init_info)
                 if status == "retrying":
                     retry_started_at = click_at
+                    _mark_entry_paid(stats)
                 elif status == "no_bling":
                     stats["stop_reason"] = "insufficient_bling"
                     self.log("当前噗灵不足以支付 100 噗灵重试费用，正在退出小游戏并停止任务。")
@@ -1000,180 +1255,216 @@ class MinigameBlingRun(Runtime):
             f"预计耗时约 {int(max_rounds * 31.2 // 60)} 分钟）…"
         )
         if retry_started_at is None:
-            if not self._run_sequence(inputs, INIT_SEQUENCE):
+            entry_state = self._enter_via_npc_dialogue(inputs, stats)
+            if entry_state == "stopped":
                 stats["stop_reason"] = "stopped"
                 return False
-            post_init = self._inspect_settlement()
-            if post_init["state"] == "no_bling":
+            if entry_state == "no_bling":
                 stats["stop_reason"] = "insufficient_bling"
-                self.log("当前噗灵不足以支付小游戏入场费，任务停止。")
-                self._exit_failure_to_main(inputs, post_init)
                 return False
-            if post_init["state"] == "cap_reached":
+            if entry_state == "cap_reached":
                 stats["stop_reason"] = "daily_cap_reached"
                 self.log("检测到今日大世界噗灵获取已达上限，自动结束。")
                 return not self.stopped
 
-        while stats["completed_rounds"] < max_rounds:
-            if self.stopped:
-                stats["stop_reason"] = "stopped"
-                break
-            target_round = stats["completed_rounds"] + 1
-            round_start = time.monotonic()
-            if retry_started_at is None and (
-                target_round == 1 or target_round % 5 == 0 or target_round == max_rounds
-            ):
-                est_bling = max(0, stats["completed_rounds"] * 600 - stats["failed_rounds"] * 100)
-                self.log(f"正在进行「穿梭大冒险」第 {target_round}/{max_rounds} 局（已累计净得约 {est_bling:,} 噗灵）…")
-
-            current_retry_start = retry_started_at
-            retry_started_at = None
-            if not self._play_course(
-                inputs,
-                camera_assist=camera_assist,
-                retry_started_at=current_retry_start,
-            ):
-                stats["stop_reason"] = "stopped"
-                break
-            inputs.wait(5.0, restore=False)
-
-            info = self._inspect_settlement()
-            if info["state"] in ("failed", "retry_confirm"):
-                stats["failed_rounds"] += 1
-                consecutive_failures += 1
-                consecutive_overworld_returns = 0
-                outcome, retry_started_at = self._handle_failure_retry(
-                    inputs, info, target_round, max_rounds, consecutive_failures
-                )
-                if outcome == "retrying":
-                    continue
-                stats["stop_reason"] = outcome
-                if outcome == "daily_cap_reached":
-                    self.log(f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。")
+        try:
+            while stats["completed_rounds"] < max_rounds:
+                if self.stopped:
+                    stats["stop_reason"] = "stopped"
                     break
-                return False
-
-            if info["state"] == "cap_reached":
-                stats["completed_rounds"] += 1
-                consecutive_failures = 0
-                consecutive_overworld_returns = 0
-                stats["stop_reason"] = "daily_cap_reached"
-                self.log(f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。")
-                break
-            if info["state"] == "no_bling":
-                stats["stop_reason"] = "insufficient_bling"
-                self.log("当前噗灵不足以支付小游戏入场费，任务停止。")
-                self._exit_failure_to_main(inputs, info)
-                return False
-
-            if info["state"] == "continue" and self._is_main_detected(info):
-                consecutive_overworld_returns += 1
-                near_npc = self._already_near_npc(
-                    max_radius_px=AT_NPC_VERIFY_RADIUS_PX,
-                    min_score=AT_NPC_VERIFY_MIN_SCORE,
-                    frame=info["frame"],
-                )
-                if not near_npc:
-                    stats["stop_reason"] = "not_near_npc"
-                    self.log("检测到当前停留在非「穿梭大冒险」NPC 附近的大世界，未计入完成局数，任务停止。")
-                    return False
-                if consecutive_overworld_returns >= MAX_CONSECUTIVE_OVERWORLD_RETURNS:
-                    stats["stop_reason"] = "not_in_minigame"
+                target_round = stats["completed_rounds"] + 1
+                round_start = time.monotonic()
+                if retry_started_at is None and (
+                    target_round == 1 or target_round % 5 == 0 or target_round == max_rounds
+                ):
+                    settled_net = _calc_net_bling(stats, include_pending=False)
                     self.log(
-                        f"连续 {consecutive_overworld_returns} 轮未能进入小游戏挑战（仍停留在主界面），已停止任务以避免空跑。"
+                        f"正在进行「穿梭大冒险」第 {target_round}/{max_rounds} 局"
+                        f"（已累计净收益约 {settled_net:,} 噗灵）…"
                     )
-                    return False
-                self.log(
-                    f"本轮未确认进入小游戏结算（仍处于大世界，{consecutive_overworld_returns}/{MAX_CONSECUTIVE_OVERWORLD_RETURNS}），"
-                    "不计入完成局数，正在重新与 NPC 对话…"
-                )
-                if not self._run_sequence(inputs, INIT_SEQUENCE):
-                    stats["stop_reason"] = "stopped"
-                    break
-                continue
 
-            stats["completed_rounds"] += 1
-            consecutive_failures = 0
-            returned_to_overworld = False
-            if stats["completed_rounds"] < max_rounds:
-                if not self._run_sequence(inputs, REPLAY_SEQUENCE):
+                current_retry_start = retry_started_at
+                retry_started_at = None
+                if not self._play_course(
+                    inputs,
+                    camera_assist=camera_assist,
+                    retry_started_at=current_retry_start,
+                    stats=stats,
+                ):
                     stats["stop_reason"] = "stopped"
                     break
-                post_info = self._inspect_settlement()
-                if post_info["state"] == "cap_reached":
-                    stats["stop_reason"] = "daily_cap_reached"
-                    self.log(f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。")
-                    break
-                if post_info["state"] == "no_bling":
-                    stats["stop_reason"] = "insufficient_bling"
-                    self.log("当前噗灵不足以支付小游戏入场费，任务停止。")
-                    self._exit_failure_to_main(inputs, post_info)
-                    return False
-                if post_info["state"] in ("failed", "retry_confirm"):
-                    stats["completed_rounds"] = max(0, stats["completed_rounds"] - 1)
+                inputs.wait(5.0, restore=False)
+
+                info = self._inspect_settlement()
+                if info["state"] in ("failed", "retry_confirm"):
+                    _settle_entry(stats)
                     stats["failed_rounds"] += 1
                     consecutive_failures += 1
                     consecutive_overworld_returns = 0
                     outcome, retry_started_at = self._handle_failure_retry(
                         inputs,
-                        post_info,
-                        stats["completed_rounds"] + 1,
+                        info,
+                        target_round,
                         max_rounds,
                         consecutive_failures,
-                        timed_out=True,
+                        stats=stats,
                     )
                     if outcome == "retrying":
                         continue
                     stats["stop_reason"] = outcome
                     if outcome == "daily_cap_reached":
-                        self.log(f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。")
+                        self.log(
+                            f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。"
+                        )
                         break
                     return False
-                if post_info["state"] == "continue" and self._is_main_detected(post_info):
-                    returned_to_overworld = True
+
+                if info["state"] == "cap_reached":
+                    _settle_entry(stats)
+                    stats["completed_rounds"] += 1
+                    consecutive_failures = 0
+                    consecutive_overworld_returns = 0
+                    stats["stop_reason"] = "daily_cap_reached"
+                    self.log(f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。")
+                    break
+                if info["state"] == "no_bling":
+                    _refund_unentered_entry(stats)
+                    stats["stop_reason"] = "insufficient_bling"
+                    self.log("当前噗灵不足以支付小游戏入场费，任务停止。")
+                    self._exit_failure_to_main(inputs, info)
+                    return False
+
+                if info["state"] == "continue" and self._is_main_detected(info):
+                    _refund_unentered_entry(stats)
                     consecutive_overworld_returns += 1
                     near_npc = self._already_near_npc(
                         max_radius_px=AT_NPC_VERIFY_RADIUS_PX,
                         min_score=AT_NPC_VERIFY_MIN_SCORE,
-                        frame=post_info["frame"],
+                        frame=info["frame"],
                     )
                     if not near_npc:
-                        stats["completed_rounds"] = max(0, stats["completed_rounds"] - 1)
                         stats["stop_reason"] = "not_near_npc"
-                        self.log(
-                            "检测到返回大世界且不在花愿镇「穿梭大冒险」NPC 附近，已撤销本轮计数并停止任务。"
-                        )
+                        self.log("检测到当前停留在非「穿梭大冒险」NPC 附近的大世界，未计入完成局数，任务停止。")
                         return False
                     if consecutive_overworld_returns >= MAX_CONSECUTIVE_OVERWORLD_RETURNS:
-                        stats["completed_rounds"] = max(0, stats["completed_rounds"] - 1)
-                        stats["stop_reason"] = "repeated_overworld_return"
+                        stats["stop_reason"] = "not_in_minigame"
                         self.log(
-                            f"连续 {consecutive_overworld_returns} 轮在结算后退回大世界且未能保持连刷，已停止任务以避免空跑。"
+                            f"连续 {consecutive_overworld_returns} 轮未能进入小游戏挑战（仍停留在主界面），已停止任务以避免空跑。"
                         )
                         return False
-                    self.log("检测到返回大世界，正在重新与 NPC 对话继续挑战…")
-                    if not self._run_sequence(inputs, INIT_SEQUENCE):
+                    self.log(
+                        f"本轮未确认进入小游戏结算（仍处于大世界，{consecutive_overworld_returns}/{MAX_CONSECUTIVE_OVERWORLD_RETURNS}），"
+                        "不计入完成局数，正在重新与 NPC 对话…"
+                    )
+                    entry_state = self._enter_via_npc_dialogue(inputs, stats)
+                    if entry_state == "stopped":
                         stats["stop_reason"] = "stopped"
                         break
-            if not returned_to_overworld:
-                consecutive_overworld_returns = 0
-            elapsed = time.monotonic() - round_start
-            self.log(f"第 {stats['completed_rounds']}/{max_rounds} 局完成，耗时 {elapsed:.1f} 秒。", detail=True)
+                    if entry_state == "no_bling":
+                        stats["stop_reason"] = "insufficient_bling"
+                        return False
+                    if entry_state == "cap_reached":
+                        stats["stop_reason"] = "daily_cap_reached"
+                        self.log(
+                            f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。"
+                        )
+                        break
+                    continue
 
-        if not self.stopped:
-            end_info = self._inspect_settlement()
-            if end_info["state"] in ("failed", "retry_confirm"):
-                self._exit_failure_to_main(inputs, end_info)
-            elif not self._is_main_detected(end_info):
-                self.main()
-        total_min = (time.monotonic() - started_at) / 60.0
-        if stats["failed_rounds"] > 0:
-            self.log(
-                f"「穿梭大冒险」刷噗灵结束：共完成 {stats['completed_rounds']} 局，中途失败重试 {stats['failed_rounds']} 次"
-                f"（耗时 {total_min:.1f} 分钟）。"
-            )
-        else:
-            self.log(f"「穿梭大冒险」刷噗灵结束：共完成 {stats['completed_rounds']} 局（耗时 {total_min:.1f} 分钟）。")
+                stats["completed_rounds"] += 1
+                _settle_entry(stats)
+                consecutive_failures = 0
+                returned_to_overworld = False
+                if stats["completed_rounds"] < max_rounds:
+                    if not self._run_sequence(inputs, REPLAY_SEQUENCE):
+                        stats["stop_reason"] = "stopped"
+                        break
+                    post_info = self._inspect_settlement()
+                    if post_info["state"] == "cap_reached":
+                        stats["stop_reason"] = "daily_cap_reached"
+                        self.log(
+                            f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。"
+                        )
+                        break
+                    if post_info["state"] == "no_bling":
+                        stats["stop_reason"] = "insufficient_bling"
+                        self.log("当前噗灵不足以支付小游戏入场费，任务停止。")
+                        self._exit_failure_to_main(inputs, post_info)
+                        return False
+                    if post_info["state"] in ("failed", "retry_confirm"):
+                        stats["completed_rounds"] = max(0, stats["completed_rounds"] - 1)
+                        stats["failed_rounds"] += 1
+                        consecutive_failures += 1
+                        consecutive_overworld_returns = 0
+                        outcome, retry_started_at = self._handle_failure_retry(
+                            inputs,
+                            post_info,
+                            stats["completed_rounds"] + 1,
+                            max_rounds,
+                            consecutive_failures,
+                            stats=stats,
+                            timed_out=True,
+                        )
+                        if outcome == "retrying":
+                            continue
+                        stats["stop_reason"] = outcome
+                        if outcome == "daily_cap_reached":
+                            self.log(
+                                f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。"
+                            )
+                            break
+                        return False
+                    if post_info["state"] == "continue" and self._is_main_detected(post_info):
+                        returned_to_overworld = True
+                        consecutive_overworld_returns += 1
+                        near_npc = self._already_near_npc(
+                            max_radius_px=AT_NPC_VERIFY_RADIUS_PX,
+                            min_score=AT_NPC_VERIFY_MIN_SCORE,
+                            frame=post_info["frame"],
+                        )
+                        if not near_npc:
+                            stats["completed_rounds"] = max(0, stats["completed_rounds"] - 1)
+                            stats["stop_reason"] = "not_near_npc"
+                            self.log(
+                                "检测到返回大世界且不在花愿镇「穿梭大冒险」NPC 附近，已撤销本轮计数并停止任务。"
+                            )
+                            return False
+                        if consecutive_overworld_returns >= MAX_CONSECUTIVE_OVERWORLD_RETURNS:
+                            stats["completed_rounds"] = max(0, stats["completed_rounds"] - 1)
+                            stats["stop_reason"] = "repeated_overworld_return"
+                            self.log(
+                                f"连续 {consecutive_overworld_returns} 轮在结算后退回大世界且未能保持连刷，已停止任务以避免空跑。"
+                            )
+                            return False
+                        self.log("检测到返回大世界，正在重新与 NPC 对话继续挑战…")
+                        entry_state = self._enter_via_npc_dialogue(inputs, stats)
+                        if entry_state == "stopped":
+                            stats["stop_reason"] = "stopped"
+                            break
+                        if entry_state == "no_bling":
+                            stats["stop_reason"] = "insufficient_bling"
+                            return False
+                        if entry_state == "cap_reached":
+                            stats["stop_reason"] = "daily_cap_reached"
+                            self.log(
+                                f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。"
+                            )
+                            break
+                    else:
+                        _mark_entry_paid(stats)
+                if not returned_to_overworld:
+                    consecutive_overworld_returns = 0
+                elapsed = time.monotonic() - round_start
+                self.log(f"第 {stats['completed_rounds']}/{max_rounds} 局完成，耗时 {elapsed:.1f} 秒。", detail=True)
+
+            if not self.stopped:
+                end_info = self._inspect_settlement()
+                if end_info["state"] in ("failed", "retry_confirm"):
+                    self._exit_failure_to_main(inputs, end_info)
+                elif not self._is_main_detected(end_info):
+                    self.main()
+        finally:
+            self._log_run_summary(stats, started_at)
         return not self.stopped
 
     def run(self, settings: dict) -> bool:
@@ -1198,6 +1489,11 @@ class MinigameBlingRun(Runtime):
         stats = {
             "completed_rounds": 0,
             "failed_rounds": 0,
+            "retry_count": 0,
+            "entries_paid": 0,
+            "active_entry_paid": False,
+            "timer_aligned_rounds": 0,
+            "fallback_start_rounds": 0,
             "camera_assist": camera_assist,
             "stop_reason": "completed",
         }
@@ -1307,20 +1603,34 @@ class MinigameBlingRun(Runtime):
                 folder = ROOT / "logs/minigame_bling"
                 folder.mkdir(parents=True, exist_ok=True)
                 stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+                wins = int(stats["completed_rounds"] or 0)
+                losses = int(stats["failed_rounds"] or 0)
+                retries = int(stats["retry_count"] or 0)
+                paid = int(stats["entries_paid"] or 0)
+                net_bling = _calc_net_bling(stats, include_pending=True)
                 write_json(folder / f"{stamp}.json", {
-                    "completed_rounds": stats["completed_rounds"],
-                    "failed_rounds": stats["failed_rounds"],
+                    "completed_rounds": wins,
+                    "failed_rounds": losses,
+                    "retry_count": retries,
+                    "entries_paid": paid,
+                    "net_bling": net_bling,
+                    "timer_aligned_rounds": int(stats["timer_aligned_rounds"] or 0),
+                    "fallback_start_rounds": int(stats["fallback_start_rounds"] or 0),
                     "camera_assist": stats["camera_assist"],
                     "target_rounds": max_rounds,
                     "navigate": navigate,
                     "background": allow_background,
                     "stop_reason": stats["stop_reason"],
                 })
-                wins = int(stats["completed_rounds"] or 0)
-                losses = int(stats["failed_rounds"] or 0)
-                if wins > 0 or losses > 0:
-                    est_bling = max(0, wins * 600 - losses * 100)
-                    detail = f"成功 {wins} 局" + (f" · 失败 {losses} 局" if losses else "")
+                if wins > 0 or losses > 0 or paid > 0:
+                    detail_parts = [f"成功 {wins} 局"]
+                    if losses:
+                        detail_parts.append(f"失败 {losses} 次")
+                    if retries:
+                        detail_parts.append(f"重试 {retries} 次")
+                    if net_bling <= 0:
+                        detail_parts.append(f"净收益 {net_bling:,} 噗灵")
+                    detail = " · ".join(detail_parts)
                     try_record_adventure_entry(
                         ROOT,
                         self,
@@ -1329,9 +1639,19 @@ class MinigameBlingRun(Runtime):
                         title="穿梭大冒险刷噗灵",
                         detail=detail,
                         runs=wins + losses,
-                        items={"噗灵": est_bling} if est_bling > 0 else {},
-                        meta={"completed_rounds": wins, "failed_rounds": losses},
-                        status="completed" if stats.get("stop_reason") in (None, "completed", "cap_reached") else "partial",
+                        items={"噗灵": net_bling} if net_bling > 0 else {},
+                        meta={
+                            "completed_rounds": wins,
+                            "failed_rounds": losses,
+                            "retry_count": retries,
+                            "entries_paid": paid,
+                            "net_bling": net_bling,
+                        },
+                        status=(
+                            "completed"
+                            if stats.get("stop_reason") in (None, "completed", "daily_cap_reached", "cap_reached")
+                            else "partial"
+                        ),
                     )
             except Exception:
                 pass
