@@ -37,7 +37,8 @@ COUNTDOWN_SECONDS = 15.0
 COUNTDOWN_TICK = 1.0
 
 GRACE_SECONDS = 15.0
-FORCE_WAIT_SECONDS = 5.0
+WINDOW_GONE_EXTRA_GRACE_SECONDS = 30.0
+FORCE_WAIT_SECONDS = 15.0
 POLL_SECONDS = 0.1
 
 SYNCHRONIZE = 0x00100000
@@ -244,7 +245,9 @@ def _timeout_message(close_requested, window_state, grace_seconds, target):
 
 
 def _close(api, target, *, force_on_timeout, stopped, before_close,
-           grace_seconds, force_wait_seconds, clock, details):
+           grace_seconds, force_wait_seconds, clock, details,
+           window_gone_extra_grace_seconds=WINDOW_GONE_EXTRA_GRACE_SECONDS,
+           on_window_gone=None):
     closed = lambda: CloseResult("closed", "无限暖暖已关闭。", details)
     details["close_requested"] = False
     if api.wait_process(target.handle, 0):
@@ -291,9 +294,23 @@ def _close(api, target, *, force_on_timeout, stopped, before_close,
         if send:
             return CloseResult("cancelled", "任务已停止；已请求游戏退出，未强制结束。", details)
         return CloseResult("cancelled", "任务已停止；未发送关闭请求，游戏未退出。", details)
-    details["window_state_at_timeout"] = _observe_window(api, target)
-    message = _timeout_message(details["close_requested"], details["window_state_at_timeout"],
-                               grace_seconds, target)
+    window_state = _observe_window(api, target)
+    waited_grace = grace_seconds
+    if window_state == "gone" and window_gone_extra_grace_seconds > 0:
+        if details["close_requested"] and on_window_gone is not None:
+            on_window_gone()
+        outcome = _wait_exit(api, target.handle, window_gone_extra_grace_seconds, stopped, clock)
+        if outcome == "exited":
+            return closed()
+        if outcome == "cancelled":
+            if send:
+                return CloseResult("cancelled", "任务已停止；已请求游戏退出，未强制结束。", details)
+            return CloseResult("cancelled", "任务已停止；未发送关闭请求，游戏未退出。", details)
+        waited_grace += window_gone_extra_grace_seconds
+        window_state = _observe_window(api, target)
+    details["window_state_at_timeout"] = window_state
+    message = _timeout_message(details["close_requested"], window_state,
+                               waited_grace, target)
     if not force_on_timeout:
         return CloseResult("timeout", message, details)
     if not target.can_terminate:
@@ -323,6 +340,7 @@ def _close(api, target, *, force_on_timeout, stopped, before_close,
 
 def close_connected_game(api, bound_hwnd, *, force_on_timeout=False, stopped=lambda: False,
                          before_close=None, grace_seconds=GRACE_SECONDS,
+                         window_gone_extra_grace_seconds=WINDOW_GONE_EXTRA_GRACE_SECONDS,
                          force_wait_seconds=FORCE_WAIT_SECONDS, clock=time.monotonic,
                          countdown_seconds=COUNTDOWN_SECONDS, on_countdown=None,
                          bring_forward=None, on_window_gone=None):
@@ -349,7 +367,9 @@ def close_connected_game(api, bound_hwnd, *, force_on_timeout=False, stopped=lam
             return CloseResult("cancelled", "任务已停止，未发送关闭请求。", details)
         return _close(api, target, force_on_timeout=force_on_timeout, stopped=stopped,
                       before_close=before_close, grace_seconds=grace_seconds,
-                      force_wait_seconds=force_wait_seconds, clock=clock, details=details)
+                      window_gone_extra_grace_seconds=window_gone_extra_grace_seconds,
+                      force_wait_seconds=force_wait_seconds, clock=clock, details=details,
+                      on_window_gone=on_window_gone)
     except OSError as error:
         details = target.describe() if target else {"bound_hwnd": bound_hwnd}
         details["winerror"] = getattr(error, "winerror", None)
