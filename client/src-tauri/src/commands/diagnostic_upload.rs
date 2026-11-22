@@ -72,8 +72,8 @@ pub(super) fn upload(
     let receipt = runtime.block_on(async {
         let client = reqwest::Client::builder()
             .redirect(Policy::none())
-            .connect_timeout(Duration::from_secs(8))
-            .timeout(Duration::from_secs(24))
+            .connect_timeout(Duration::from_secs(10))
+            .timeout(Duration::from_secs(30))
             .build()
             .map_err(|_| "diagnostic HTTP client unavailable".to_string())?;
         for attempt in 0..2 {
@@ -85,7 +85,18 @@ pub(super) fn upload(
                     .body(payload)
                     .send()
                     .await
-                    .map_err(|_| "screenshot upload network failure".to_string())?;
+                    .map_err(|e| {
+                        let kind = if e.is_timeout() {
+                            "timeout"
+                        } else if e.is_connect() {
+                            "connect"
+                        } else if e.is_body() || e.is_decode() {
+                            "body"
+                        } else {
+                            "network"
+                        };
+                        format!("screenshot upload network failure ({kind})")
+                    })?;
                 if response.status() != reqwest::StatusCode::CREATED {
                     return Err(format!(
                         "screenshot storage returned HTTP {}",
@@ -119,7 +130,9 @@ pub(super) fn upload(
             };
             match outcome {
                 Ok(receipt) => return Ok(receipt),
-                Err(error) if attempt == 0 && error == "screenshot upload network failure" => {
+                Err(error)
+                    if attempt == 0 && error.starts_with("screenshot upload network failure") =>
+                {
                     for _ in 0..5 {
                         if !allowed() {
                             return Err("diagnostic upload cancelled".to_string());

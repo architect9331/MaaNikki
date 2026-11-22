@@ -339,7 +339,7 @@ fn is_runtime_busy(maa_state: &MaaState) -> bool {
 fn build_client(proxy_url: Option<&str>, timeout_secs: u64) -> Result<reqwest::Client, String> {
     let mut builder = reqwest::Client::builder()
         .user_agent(build_user_agent())
-        .connect_timeout(Duration::from_secs(4))
+        .connect_timeout(Duration::from_secs(6))
         .timeout(Duration::from_secs(timeout_secs))
         .no_proxy();
     if let Some(proxy) = proxy_url.filter(|s| !s.trim().is_empty()) {
