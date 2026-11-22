@@ -885,19 +885,21 @@ class BlessingLocker(InventoryScanner):
             raise RuntimeError("未确认获得时间从新到旧的排序箭头，请设为默认降序后重试")
 
     def unchanged(self, before, after):
-        if not self._tall_mode:
-            return self.same_structure(before, after, self.grid, threshold=.997)
-        if self.same_structure(before, after, self._base_layout["grid"], threshold=.997):
+        grid = self._base_layout["grid"] if self._tall_mode else self.grid
+        if self.same_structure(before, after, grid, threshold=.997):
             return True
         boxes = self.cards(before, [])
         if not boxes:
             return False
         # Cards themselves are opaque; exclude transparent gaps, empty space
-        # below the list, the selected first card's border, and scroll target.
-        sample = [
-            b for b in (boxes[1:16] if len(boxes) > 1 else boxes[:1])
-            if not (b[0] <= 1246 <= b[0] + b[2] and b[1] <= 520 <= b[1] + b[3])
-        ] or boxes[:1]
+        # below the list, the selected card's border, and tall-mode scroll target.
+        if self._tall_mode:
+            sample = [
+                b for b in (boxes[1:16] if len(boxes) > 1 else boxes[:1])
+                if not (b[0] <= 1246 <= b[0] + b[2] and b[1] <= 520 <= b[1] + b[3])
+            ] or boxes[:1]
+        else:
+            sample = [b for b in boxes if not self.selected(before, b)] or boxes
         return all(
             self.same_structure(before, after, [x + 4, y + 4, w - 8, h - 8], threshold=.99)
             for x, y, w, h in sample
