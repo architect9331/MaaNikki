@@ -37,6 +37,8 @@ RAIL_GLOW_X0 = 54
 RAIL_GLOW_X1 = 118
 RAIL_TOP_Y = 130
 RAIL_BOTTOM_MARGIN = 50
+RAIL_MAJOR_MAX_Y = 920
+RAIL_MAX_Y = 2000
 RAIL_TOP_SLOT = [86, 174]
 
 COLS = 6
@@ -197,24 +199,24 @@ class RejuvenateModel:
         meta = self.meta_by_id.get(cid)
         return str(meta.get("name") or cid) if meta else cid
 
-    def detect_active_category(self, frame: np.ndarray) -> tuple[str | None, int | None, float]:
-        """Locate the glowing selected left-rail slot and classify its category icon."""
+    def _rail_glow_candidates(self, frame: np.ndarray) -> tuple[int, list[tuple[np.ndarray, int, float, float]]]:
+        """Collect sorted left-rail warm highlight block candidates bounded within the rail band."""
         if frame is None:
-            return None, None, -1.0
-        h, w = frame.shape[:2]
-        y_end = max(RAIL_TOP_Y + 40, h - RAIL_BOTTOM_MARGIN)
+            return 0, []
+        h, _w = frame.shape[:2]
+        y_end = min(max(RAIL_TOP_Y + 40, h - RAIL_BOTTOM_MARGIN), RAIL_MAX_Y)
         strip = frame[RAIL_TOP_Y:y_end, RAIL_GLOW_X0:RAIL_GLOW_X1]
         if strip.size == 0:
-            return None, None, -1.0
+            return 0, []
         r = strip[:, :, 2].astype(np.int32)
         b = strip[:, :, 0].astype(np.int32)
         glow_rows = np.where(((r > 145) & ((r - b) > 22)).sum(axis=1) >= 20)[0] + RAIL_TOP_Y
         if len(glow_rows) < 16:
-            return None, None, -1.0
+            return int(len(glow_rows)), []
 
         # Evaluate contiguous warm highlight blocks by golden box fill coverage,
-        # rejecting faint background bleed behind unselected icons and large
-        # tall-mode background bands below the rail.
+        # prioritizing candidates in the major-category rail band (yc <= RAIL_MAJOR_MAX_Y)
+        # before lower accessory minor slots or tall-mode 3D background bands.
         breaks = np.where(np.diff(glow_rows) > 8)[0]
         candidates: list[tuple[np.ndarray, int, float, float]] = []
         for seg in np.split(glow_rows, breaks + 1):
@@ -231,14 +233,30 @@ class RejuvenateModel:
                 continue
             bright_warm = float(((box_r > 180) & ((box_r - box_b) > 30)).mean())
             candidates.append((seg, yc, warm_frac, bright_warm))
+        candidates.sort(
+            key=lambda item: (
+                item[1] > RAIL_MAJOR_MAX_Y,
+                len(item[0]) > 120,
+                -item[2],
+                -item[3],
+                -len(item[0]),
+            )
+        )
+        return int(len(glow_rows)), candidates
+
+    def detect_active_category(self, frame: np.ndarray) -> tuple[str | None, int | None, float]:
+        """Locate the glowing selected left-rail slot and classify its category icon."""
+        if frame is None:
+            return None, None, -1.0
+        h, w = frame.shape[:2]
+        _glow_count, candidates = self._rail_glow_candidates(frame)
         if not candidates:
             return None, None, -1.0
-        candidates.sort(key=lambda item: (len(item[0]) > 120, -item[2], -item[3], -len(item[0])))
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
         fallback_yc = candidates[0][1]
         fallback_sc = -1.0
-        for _seg, yc, _wf, _bw in candidates[:6]:
+        for _seg, yc, _wf, _bw in candidates[:8]:
             best_by_cid: dict[str, float] = {}
             for y0 in range(max(0, yc - 38), min(h - RAIL_SIZE, yc - 20), 2):
                 for x0 in range(max(0, RAIL_X0 - 2), min(w - RAIL_SIZE, RAIL_X0 + 3)):
@@ -263,6 +281,36 @@ class RejuvenateModel:
             if top1_sc >= 0.62 and (top1_sc - top2_sc) >= 0.06:
                 return top1_id, yc, top1_sc
         return None, fallback_yc, fallback_sc
+
+    def debug_active_category(self, frame: np.ndarray | None) -> dict:
+        """Return JSON-safe rail detection metrics for incomplete-scan diagnostics."""
+        if frame is None:
+            return {
+                "frame_shape": None,
+                "glow_rows_count": 0,
+                "candidates": [],
+                "detected_cid": None,
+                "detected_yc": None,
+                "detected_score": -1.0,
+            }
+        glow_count, candidates = self._rail_glow_candidates(frame)
+        cid, yc, sc = self.detect_active_category(frame)
+        return {
+            "frame_shape": [int(frame.shape[0]), int(frame.shape[1])],
+            "glow_rows_count": glow_count,
+            "candidates": [
+                {
+                    "yc": int(cand_yc),
+                    "len": int(len(seg)),
+                    "warm_frac": round(float(wf), 3),
+                    "bright_warm": round(float(bw), 3),
+                }
+                for seg, cand_yc, wf, bw in candidates[:6]
+            ],
+            "detected_cid": cid,
+            "detected_yc": int(yc) if yc is not None else None,
+            "detected_score": round(float(sc), 4),
+        }
 
 
 @lru_cache(maxsize=2)
@@ -1332,7 +1380,141 @@ class RenewalScanner:
                 or (mid == "acc" and "acc" not in visited_cids and not any(p in visited_cids for p in ACCESSORY_PARTS))
             ]
 
+        def _incomplete_parts() -> list[str]:
+            return [
+                str(p.get("name") or cid)
+                for cid, p in self.summary["parts"].items()
+                if isinstance(p, dict) and not p.get("complete")
+            ]
+
+        def _build_reasons(missing_majors: list[str], incomplete_parts: list[str]) -> list[str]:
+            reasons = []
+            if missing_majors:
+                reasons.append("未读完部位：" + "、".join(missing_majors))
+            if incomplete_parts:
+                reasons.append("未到底部部位：" + "、".join(incomplete_parts))
+            return reasons
+
+        def _record_incomplete_diagnostic(
+            stage: str,
+            is_tall: bool,
+            last_frame: np.ndarray | None,
+            last_cid: str | None,
+            last_yc: int | None,
+            step_trace: list[dict],
+        ) -> None:
+            missing_majors = _missing_majors()
+            incomplete_parts = _incomplete_parts()
+            reasons = _build_reasons(missing_majors, incomplete_parts)
+            diag_frame = self.rt.capture()
+            if diag_frame is None:
+                diag_frame = last_frame
+            self.rt.diagnostic(
+                stage,
+                "；".join(reasons) or "焕新读取未完成",
+                image=diag_frame,
+                details={
+                    "mode": self.mode,
+                    "tall_mode": bool(is_tall),
+                    "frame_shape": list(diag_frame.shape[:2]) if diag_frame is not None else None,
+                    "visited_cids": sorted(visited_cids),
+                    "missing_majors": missing_majors,
+                    "incomplete_parts": incomplete_parts,
+                    "last_cid": last_cid,
+                    "last_yc": last_yc,
+                    "rail_debug": self.model.debug_active_category(diag_frame) if diag_frame is not None else None,
+                    "step_trace": step_trace[-16:],
+                },
+            )
+
+        def _scan_rail(is_tall: bool, step_trace: list[dict]) -> tuple[np.ndarray | None, str | None, int | None]:
+            frame, cid, yc = self._reset_rail_top()
+            prev_cid: str | None = None
+            sort_verified = False
+            for step in range(32):
+                if self.rt.stopped or frame is None:
+                    break
+                if cid == "299":
+                    visited_cids.add("299")
+                    prev_cid = "299"
+                    frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
+                    step_trace.append({
+                        "step": step,
+                        "cid": cid,
+                        "yc": yc,
+                        "moved": moved,
+                        "parts_count": len(self.summary["parts"]),
+                    })
+                    if not moved:
+                        break
+                    continue
+                if cid is None or cid in visited_cids:
+                    if cid in visited_cids and (not _missing_majors() or cid == "299"):
+                        break
+                    frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
+                    step_trace.append({
+                        "step": step,
+                        "cid": cid,
+                        "yc": yc,
+                        "moved": moved,
+                        "parts_count": len(self.summary["parts"]),
+                    })
+                    if not moved:
+                        break
+                    continue
+
+                visited_cids.add(cid)
+                fresh_switch = prev_cid is not None and cid != prev_cid
+                self._last_scan_frame = frame
+                self.rt.log(f"焕新读取：正在读取「{self.model.category_name(cid)}」。", detail=True)
+                self._scan_category(
+                    cid,
+                    is_tall,
+                    owned_groups,
+                    prev_levels,
+                    incremental=(self.mode == "incremental"),
+                    initial_frame=frame,
+                    assume_at_top=(self.mode == "incremental" and fresh_switch),
+                    verify_sort=(self.mode == "incremental" and not sort_verified),
+                )
+                sort_verified = True
+                prev_cid = cid
+                if self.mode != "incremental":
+                    self.save()
+                if not _missing_majors():
+                    step_trace.append({
+                        "step": step,
+                        "cid": cid,
+                        "yc": yc,
+                        "moved": False,
+                        "parts_count": len(self.summary["parts"]),
+                    })
+                    break
+
+                if self.mode == "incremental":
+                    nav_frame = self._last_scan_frame if self._last_scan_frame is not None else frame
+                    frame, cid, yc, moved = self._step_rail_down(nav_frame, cid, yc)
+                else:
+                    frame = self.rt.capture()
+                    cid_now, yc_now, _sc = self.model.detect_active_category(frame)
+                    frame, cid, yc, moved = self._step_rail_down(
+                        frame,
+                        cid_now or cid,
+                        yc_now if yc_now is not None else yc,
+                    )
+                step_trace.append({
+                    "step": step,
+                    "cid": cid,
+                    "yc": yc,
+                    "moved": moved,
+                    "parts_count": len(self.summary["parts"]),
+                })
+                if not moved or (cid in visited_cids and cid == "299"):
+                    break
+            return frame, cid, yc
+
         saved_final = False
+        need_regular_fallback = False
         try:
             tall_ctx = tall_window(self.rt) if self.mode == "full" else nullcontext(False)
             with tall_ctx as is_tall:
@@ -1342,75 +1524,40 @@ class RenewalScanner:
                 elif self.mode == "incremental":
                     self.rt.log("焕新读取：正在常规窗口按获得时间快速增量同步。", detail=True)
 
-                frame, cid, yc = self._reset_rail_top()
-                prev_cid: str | None = None
-                sort_verified = False
-                for _step in range(32):
-                    if self.rt.stopped or frame is None:
-                        break
-                    if cid == "299":
-                        visited_cids.add("299")
-                        prev_cid = "299"
-                        frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
-                        if not moved:
-                            break
-                        continue
-                    if cid is None or cid in visited_cids:
-                        if cid in visited_cids and (not _missing_majors() or cid == "299"):
-                            break
-                        frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
-                        if not moved:
-                            break
-                        continue
-
-                    visited_cids.add(cid)
-                    fresh_switch = prev_cid is not None and cid != prev_cid
-                    self._last_scan_frame = frame
-                    self.rt.log(f"焕新读取：正在读取「{self.model.category_name(cid)}」。", detail=True)
-                    self._scan_category(
-                        cid,
-                        is_tall,
-                        owned_groups,
-                        prev_levels,
-                        incremental=(self.mode == "incremental"),
-                        initial_frame=frame,
-                        assume_at_top=(self.mode == "incremental" and fresh_switch),
-                        verify_sort=(self.mode == "incremental" and not sort_verified),
+                tall_trace: list[dict] = []
+                last_frame, last_cid, last_yc = _scan_rail(bool(is_tall), tall_trace)
+                need_regular_fallback = bool(is_tall and not self.summary["parts"] and not self.rt.stopped)
+                if not self.rt.stopped and (_missing_majors() or _incomplete_parts()):
+                    _record_incomplete_diagnostic(
+                        "renewal_tall_fallback" if need_regular_fallback else "renewal_incomplete",
+                        bool(is_tall),
+                        last_frame,
+                        last_cid,
+                        last_yc,
+                        tall_trace,
                     )
-                    sort_verified = True
-                    prev_cid = cid
-                    if self.mode != "incremental":
-                        self.save()
-                    if not _missing_majors():
-                        break
 
-                    if self.mode == "incremental":
-                        nav_frame = self._last_scan_frame if self._last_scan_frame is not None else frame
-                        frame, cid, yc, moved = self._step_rail_down(nav_frame, cid, yc)
-                    else:
-                        frame = self.rt.capture()
-                        cid_now, yc_now, _sc = self.model.detect_active_category(frame)
-                        frame, cid, yc, moved = self._step_rail_down(
-                            frame,
-                            cid_now or cid,
-                            yc_now if yc_now is not None else yc,
-                        )
-                    if not moved or (cid in visited_cids and cid == "299"):
-                        break
+            if need_regular_fallback:
+                self.rt.log("焕新读取：超长竖屏模式未能识别左侧部位栏，自动切回常规窗口继续读取。")
+                visited_cids.clear()
+                self.summary["tall_mode"] = False
+                fallback_trace: list[dict] = []
+                last_frame, last_cid, last_yc = _scan_rail(False, fallback_trace)
+                if not self.rt.stopped and (_missing_majors() or _incomplete_parts()):
+                    _record_incomplete_diagnostic(
+                        "renewal_incomplete",
+                        False,
+                        last_frame,
+                        last_cid,
+                        last_yc,
+                        fallback_trace,
+                    )
 
             missing_majors = _missing_majors()
-            incomplete_parts = [
-                str(p.get("name") or cid)
-                for cid, p in self.summary["parts"].items()
-                if isinstance(p, dict) and not p.get("complete")
-            ]
+            incomplete_parts = _incomplete_parts()
             parts_complete = bool(self.summary["parts"]) and not incomplete_parts
             self.summary["complete"] = bool(not missing_majors and parts_complete)
-            reasons = []
-            if missing_majors:
-                reasons.append("未读完部位：" + "、".join(missing_majors))
-            if incomplete_parts:
-                reasons.append("未到底部部位：" + "、".join(incomplete_parts))
+            reasons = _build_reasons(missing_majors, incomplete_parts)
             reason = "；".join(reasons) if reasons else None
             self.save(reason)
             saved_final = True
