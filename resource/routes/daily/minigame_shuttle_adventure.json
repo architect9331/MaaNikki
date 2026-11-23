@@ -86,17 +86,25 @@
       "params": {}
     },
     {
-      "x": 10149.6,
-      "y": 10056.8,
-      "radius": 1.8,
+      "x": 10148.2,
+      "y": 10056.0,
+      "radius": 1.4,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10152.4,
-      "y": 10054.9,
-      "radius": 1.0,
+      "x": 10150.4,
+      "y": 10055.4,
+      "radius": 1.2,
+      "jump": false,
+      "action": "",
+      "params": {}
+    },
+    {
+      "x": 10151.8,
+      "y": 10055.4,
+      "radius": 0.8,
       "jump": false,
       "action": "",
       "params": {}
