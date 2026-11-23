@@ -418,6 +418,12 @@ class Gameplay:
                     kind, node, maximize=maximize, fixed_count=fixed_count,
                     energy_before=energy_before, report_prefix=report_prefix, report_task=report_task,
                 )
+            if not result and not self.rt.stopped:
+                self.rt.diagnostic(
+                    "realm_reward",
+                    "挑战奖励领取结果待确认",
+                    details={"kind": kind, "confirm": confirm, "cancel": cancel},
+                )
             self.rt.log("挑战奖励已领取。" if result else "挑战奖励领取结果待确认，请检查游戏画面。",
                         detail=bool(result and before_submit is not None))
             return result
