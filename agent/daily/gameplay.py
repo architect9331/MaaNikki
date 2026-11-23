@@ -739,6 +739,32 @@ class Gameplay:
         except Exception:
             pass
 
+    JIHUA_WORLD_EXIT = {
+        "name": "心愿花街",
+        "province": "心愿原野",
+        "region": "花愿镇",
+        "x": 10260.861,
+        "y": 10085.844,
+    }
+
+    def leave_home_for_jihua(self):
+        from navigation.models import NavigationError, maps
+        from navigation.teleport import Teleporter
+        from navigation.vision import Locator
+
+        try:
+            with self.rt.input_guard():
+                teleporter = Teleporter(
+                    self.rt,
+                    Locator(maps(self.ui.resource)["miraland"]),
+                    inputs=self.rt.navigation_inputs,
+                )
+                teleporter.transport(self.JIHUA_WORLD_EXIT, reuse_map=True)
+            return True
+        except (NavigationError, ValueError, KeyError, OSError, RuntimeError, TypeError, cv2.error) as error:
+            self.rt.log(f"未能先传送回大世界：{error}")
+            return False
+
     def jihua(self, maximize, allow_exhausted=False, fixed_count=None, *, record_bling_stats=True):
         submitted = False
         self._last_jihua_quote = None
@@ -750,11 +776,37 @@ class Gameplay:
                                                wait_seconds=0, verify=False)
             return submitted
 
+        def entered_or_map():
+            with self.rt.observe():
+                return bool(
+                    self.rt.hit("MaaNikki_MainDetected")
+                    or self.rt.hit("MaaNikki_Navigation_MapFeature")
+                )
+
         def steps():
-            if not self.ui.enter_page(enter, "MaaNikki_MainDetected",
-                    source="MaaNikki_Jihua_PageReady", attempts=1, seconds=30):
-                return False
-            if not self.jihua_open_table() or not self.jihua_select_target():
+            nonlocal submitted
+            for attempt in range(2):
+                if not self.ui.enter_page(enter, entered_or_map,
+                        source="MaaNikki_Jihua_PageReady", attempts=1, seconds=30):
+                    return False
+                map_redirected = bool(self.rt.hit("MaaNikki_Navigation_MapFeature"))
+                table_state = "map_redirect" if map_redirected else self.jihua_open_table()
+                if table_state == "map_redirect":
+                    # Clicking 前往 from Home (or another non-Miraland zone) opens
+                    # the Miraland world map instead of entering the realm.
+                    submitted = False
+                    if attempt == 0 and not self.rt.stopped:
+                        self.rt.log("前往素材激化幻境时打开了大地图（当前可能位于家园），正在先传送到花愿镇后重新进入。")
+                        if self.leave_home_for_jihua() and self.ui.realm("jihua"):
+                            continue
+                    if not self.rt.stopped:
+                        self.rt.diagnostic("jihua_table", "前往素材激化幻境时跳转至大地图，未能进入幻境")
+                        self.rt.log("未能进入素材激化幻境，本项停止。")
+                    return False
+                if not table_state:
+                    return False
+                break
+            if not self.jihua_select_target():
                 return False
             staged = self.jihua_stage_materials(maximize, fixed_count)
             if staged is None:
@@ -830,9 +882,19 @@ class Gameplay:
         # World interaction labels move with the object/camera. Use the same
         # search area as other world prompts, rather than the old sample crop.
         prompt = self.ui.feature(text=r"素\s*材\s*激\s*化\s*台", roi=INTERACTION_ROI)
+
+        def world_or_map():
+            with self.rt.observe():
+                return bool(
+                    self.rt.hit("MaaNikki_MainDetected")
+                    or self.rt.hit("MaaNikki_Navigation_MapFeature")
+                )
+
         steps = 0
         reason = "未找到素材激化台交互提示"
         for _ in range(6):
+            if self.rt.hit("MaaNikki_Navigation_MapFeature"):
+                return "map_redirect"
             # Check before the first move and allow a delayed prompt to settle
             # while stopped. Cap total movement at 2.5 seconds.
             if self.ui.wait_page(prompt, seconds=1.2):
@@ -844,15 +906,19 @@ class Gameplay:
                 break
             if self.rt.stopped:
                 return False
+            if self.rt.hit("MaaNikki_Navigation_MapFeature"):
+                return "map_redirect"
             if steps >= 5:
                 break
             # HUD can briefly reappear before the actual loading screen starts.
             # Wait without inputs when it disappears, rather than aborting.
             if not self.rt.hit("MaaNikki_MainDetected"):
                 self.rt.log("正在等待素材激化幻境加载完成。", detail=True)
-                if not self.ui.wait_page("MaaNikki_MainDetected", seconds=30):
+                if not self.ui.wait_page(world_or_map, seconds=30):
                     reason = "等待素材激化幻境主界面恢复超时"
                     break
+                if self.rt.hit("MaaNikki_Navigation_MapFeature"):
+                    return "map_redirect"
                 # Loading may have ended beside the table; recheck its prompt
                 # before moving so arrival does not cause an unnecessary step.
                 if self.ui.wait_page(prompt, seconds=1.2):
