@@ -4,11 +4,63 @@ from __future__ import annotations
 from task_control import task_time as time
 import re
 import cv2
+import numpy as np
 
 from account_state import period_key
 from .runtime import Runtime, parameters
 from .settings import ROOT
 from adventure_report import try_record_adventure_entry
+
+SUMMIT_STAGE_LABEL_ROI = [220, 220, 960, 220]
+SUMMIT_FIRST_DOOR_ROI = [310, 390, 110, 120]
+
+
+def count_stage_stars(frame, label_box):
+    """Count lit gold stars directly beneath a Summit stage label (`第N场`)."""
+    if frame is None or not label_box or len(label_box) != 4:
+        return None
+    bx, by, bw, bh = [int(v) for v in label_box]
+    x0 = max(0, bx - 6)
+    y0 = max(0, by + bh + 1)
+    x1 = min(frame.shape[1], bx + bw + 6)
+    y1 = min(frame.shape[0], y0 + 21)
+    strip = frame[y0:y1, x0:x1]
+    if strip.size == 0 or strip.shape[1] < 12:
+        return None
+    hsv = cv2.cvtColor(strip, cv2.COLOR_BGR2HSV)
+    gold = cv2.inRange(hsv, np.array([12, 40, 190], np.uint8), np.array([42, 255, 255], np.uint8))
+    sw = gold.shape[1]
+    return sum(
+        1 for idx in range(3)
+        if cv2.countNonZero(gold[:, (idx * sw) // 3:((idx + 1) * sw) // 3]) >= 10
+    )
+
+
+def summit_door_order(visible_doors, *, quick_reward=False, current_stars=None):
+    """Order visible Summit portal slots (1=left, 2=center, 3=right) to click.
+
+    - Post quick-reward views center the first remaining stage on slot 2.
+    - 0-star runs (or visible 0-star 第1场 with no 3rd portal) only unlock slot 1.
+    - End-of-carousel 2-door views (e.g. 第7场/第8场, no slot 3) prioritize doors
+      with fewer than 3 lit stars so an unfinished 第7场 is chosen over maxed 第8场.
+    """
+    if quick_reward:
+        return [2, 1, 3]
+    stage1 = visible_doors.get(1)
+    if current_stars == 0 or (
+        stage1 is not None and stage1[0] == 1 and (stage1[1] or 0) == 0 and 3 not in visible_doors
+    ):
+        return [1, 2, 3]
+    if visible_doors and 3 not in visible_doors:
+        unfinished = [
+            slot for slot in (2, 1)
+            if slot in visible_doors
+            and visible_doors[slot][1] is not None
+            and visible_doors[slot][1] < 3
+        ]
+        remaining = [slot for slot in (2, 1) if slot in visible_doors and slot not in unfinished]
+        return unfinished + remaining
+    return [3, 2, 1]
 
 
 def parse_progress(raw):
@@ -329,7 +381,39 @@ class Crown(Runtime):
             return False
         return True
 
-    def challenge(self):
+    def visible_summit_doors(self, frame=None):
+        """Read visible Summit stage labels (`第N场`) and their lit star counts by slot."""
+        image = self.capture() if frame is None else frame
+        if image is None:
+            return {}
+        result = self.recognize(
+            "MaaNikki_Daily_OCR",
+            {"roi": SUMMIT_STAGE_LABEL_ROI, "expected": r"第\s*[1-8]\s*场", "threshold": 0.5},
+            image=image,
+        )
+        if not result or not result.hit:
+            return {}
+        rows = getattr(result, "filtered_results", None) or [result.best_result]
+        doors = {}
+        for row in rows:
+            box = list(getattr(row, "box", ()) or ())
+            text = str(getattr(row, "text", "") or "")
+            match = re.search(r"第\s*([1-8])\s*场", text)
+            if len(box) != 4 or not match:
+                continue
+            cx = box[0] + box[2] / 2
+            slot = 1 if cx < 560 else (2 if cx < 920 else 3)
+            doors[slot] = (int(match.group(1)), count_stage_stars(image, box))
+        return doors
+
+    def click_summit_door(self, slot):
+        if slot == 1:
+            return self.action("Click", target=SUMMIT_FIRST_DOOR_ROI)
+        if slot == 2:
+            return self.area_click("AreaMiraCrownSecondDoor")
+        return self.area_click("AreaMiraCrownThirdDoor")
+
+    def challenge(self, current_stars=None):
         self.log("正在进入奇迹之冠巅峰赛。", detail=True)
         self.require(self.open_summit(), "未能进入巅峰赛")
         quick_reward = self.report_reward_claimed
@@ -338,12 +422,33 @@ class Crown(Runtime):
         if quick_reward and not self.report_reward_claimed:
             self.require(self.pause(5), "挑战已停止")
             self.reward_popup()
+            self.ui.wait_page("MaaNikki_Crown_SummitReady", seconds=5)
         def start_visible():
             return self.asset("ButtonMiraCrownStartChallenge")
         def choose_door():
-            return self.ui.enter_page(lambda: self.area_click(
-                "AreaMiraCrownSecondDoor" if quick_reward else "AreaMiraCrownThirdDoor"),
-                start_visible, source="MaaNikki_Crown_SummitReady", recover=self.open_summit)
+            visible = self.visible_summit_doors()
+            candidates = summit_door_order(
+                visible, quick_reward=quick_reward, current_stars=current_stars
+            )
+            for index, slot in enumerate(candidates):
+                if self.stopped:
+                    return False
+                if not self.ui.page_matches("MaaNikki_Crown_SummitReady"):
+                    if not self.open_summit():
+                        return False
+                if not self.click_summit_door(slot):
+                    continue
+                if self.ui.wait_page(start_visible, seconds=4):
+                    return True
+                if self.stopped:
+                    return False
+                if index + 1 < len(candidates) and self.ui.page_matches("MaaNikki_Crown_SummitReady"):
+                    self.log(f"巅峰赛第 {slot} 个入口未弹出开始挑战，尝试其余入口。", detail=True)
+                    continue
+                if not self.ui.page_matches("MaaNikki_Crown_SummitReady"):
+                    if not self.open_summit():
+                        return False
+            return False
         if not choose_door():
             self.require(self.ui.wait_page("MaaNikki_Crown_SummitReady"), "未能确认巅峰赛挑战页面")
             self.log("当前入口没有可开始的挑战，本次结束。")
@@ -535,7 +640,7 @@ class Crown(Runtime):
             travel.report("crown_world")
         with self.input_guard():
             if challenge_needed:
-                state = self.challenge()
+                state = self.challenge(current_stars=current)
                 if state not in {"rewards", "finished"}:
                     return False
             if self.stopped:
