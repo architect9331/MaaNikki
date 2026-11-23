@@ -24,9 +24,13 @@ from navigation.controller import BackgroundInput, ForegroundInput
 from navigation.models import GameWindowClosed, NavigationError, maps
 from navigation.vision import Locator
 
-NPC_X = 10152.80
-NPC_Y = 10054.80
-NEAR_NPC_RADIUS_PX = 2.8
+NPC_X = 10152.40
+NPC_Y = 10054.90
+NEAR_NPC_RADIUS_PX = 1.6
+POST_ROUTE_NPC_RADIUS_PX = 1.6
+# Historical telemetry (12/12 successes at x <= 10153.425; 3/3 east-side failures at x >= 10153.775)
+# shows the east side of Qimiya's booth blocks interaction even inside a loose arrival radius.
+NPC_INTERACT_MAX_X = 10153.55
 DEFAULT_ROUTE = "minigame_shuttle_adventure"
 DIALOGUE_MODE_ROI = [65, 12, 140, 60]
 DIALOGUE_SKIP_ROI = [1045, 635, 235, 85]
@@ -77,6 +81,7 @@ COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[str, float, float], ...] = (
     ("right", 1.86, 2.80),
 )
 MAX_CONSECUTIVE_FAILURES = 6
+REENTER_NPC_ON_CONSECUTIVE_FAILURE = 3
 MAX_CONSECUTIVE_OVERWORLD_RETURNS = 3
 AT_NPC_VERIFY_RADIUS_PX = 15.0
 AT_NPC_VERIFY_MIN_SCORE = 0.45
@@ -93,6 +98,7 @@ _DIALOGUE_EXIT_RE = re.compile(r"不用了|再见|离开|下次再说|取消|稍
 _DIALOGUE_OPTION_RE = re.compile(r"开始|挑战|规则|介绍|说明|准备|继续|重新")
 _DIALOGUE_MODE_RE = re.compile(r"手动|自动")
 _DIALOGUE_SKIP_RE = re.compile(r"跳过")
+_NPC_INTERACT_TEXT_RE = re.compile(r"奇米亚|穿梭大冒险|对话|交谈")
 _COURSE_TIMER_TRANSLATION = str.maketrans({
     "O": "0", "o": "0", "D": "0", "Q": "0",
     "I": "1", "l": "1", "|": "1",
@@ -147,9 +153,10 @@ def _calc_net_bling(stats: dict, *, include_pending: bool = True) -> int:
         paid = max(0, paid - 1)
     return wins * CLEAR_REWARD_BLING - paid * ENTRY_FEE_BLING
 
+INIT_OPEN_WAIT_SECONDS = 2.4
 INIT_SEQUENCE: tuple[tuple[str, float] | float, ...] = (
     ("interact", 0.2),
-    2.4,
+    INIT_OPEN_WAIT_SECONDS,
     ("interact", 0.2),
     0.5,
     ("backward", 0.2),
@@ -163,6 +170,7 @@ INIT_SEQUENCE: tuple[tuple[str, float] | float, ...] = (
     ("interact", 0.2),
     1.0,
 )
+INIT_CONTINUE_SEQUENCE: tuple[tuple[str, float] | float, ...] = INIT_SEQUENCE[2:]
 
 REPLAY_SEQUENCE: tuple[tuple[str, float] | float, ...] = (
     ("interact", 0.2),
@@ -185,33 +193,53 @@ REPLAY_SEQUENCE: tuple[tuple[str, float] | float, ...] = (
 class MinigameBlingRun(Runtime):
     """Executes the Shuttle Adventure laser-gate mini-game loop until target rounds or daily cap."""
 
+    def _locate_near_npc(
+        self,
+        max_radius_px: float = NEAR_NPC_RADIUS_PX,
+        *,
+        min_score: float = 0.52,
+        frame=None,
+        enforce_front_zone: bool = False,
+    ):
+        try:
+            spec = maps(RESOURCE).get("miraland")
+            if spec is None:
+                return None
+            if frame is None:
+                if not self.hit("MaaNikki_MainDetected"):
+                    return None
+                frame = self.capture()
+                if frame is None:
+                    return None
+            elif not self.hit("MaaNikki_MainDetected", image=frame):
+                return None
+            locator = Locator(spec)
+            pose = locator.locate(frame, hint=(NPC_X, NPC_Y), search_radius=45.0, commit=False)
+            if pose and pose.position_reliable and pose.score >= min_score:
+                if math.hypot(pose.x - NPC_X, pose.y - NPC_Y) <= max_radius_px:
+                    if not enforce_front_zone or pose.x <= NPC_INTERACT_MAX_X:
+                        return pose
+        except Exception:
+            return None
+        return None
+
     def _already_near_npc(
         self,
         max_radius_px: float = NEAR_NPC_RADIUS_PX,
         *,
         min_score: float = 0.52,
         frame=None,
+        enforce_front_zone: bool = False,
     ) -> bool:
-        try:
-            spec = maps(RESOURCE).get("miraland")
-            if spec is None:
-                return False
-            if frame is None:
-                if not self.hit("MaaNikki_MainDetected"):
-                    return False
-                frame = self.capture()
-                if frame is None:
-                    return False
-            elif not self.hit("MaaNikki_MainDetected", image=frame):
-                return False
-            locator = Locator(spec)
-            pose = locator.locate(frame, hint=(NPC_X, NPC_Y), search_radius=45.0, commit=False)
-            if pose and pose.position_reliable and pose.score >= min_score:
-                if math.hypot(pose.x - NPC_X, pose.y - NPC_Y) <= max_radius_px:
-                    return True
-        except Exception:
-            return False
-        return False
+        return (
+            self._locate_near_npc(
+                max_radius_px=max_radius_px,
+                min_score=min_score,
+                frame=frame,
+                enforce_front_zone=enforce_front_zone,
+            )
+            is not None
+        )
 
     def _verify_near_npc(self, *, attempts: int = 2) -> bool:
         for attempt in range(attempts):
@@ -226,12 +254,13 @@ class MinigameBlingRun(Runtime):
                 return False
         return False
 
-    def _can_interact_with_npc(self) -> bool:
-        frame = self.capture()
+    def _can_interact_with_npc(self, frame=None) -> bool:
+        if frame is None:
+            frame = self.capture()
         if frame is None or not self.hit("MaaNikki_MainDetected", image=frame):
             return False
         pickup_roi = self.ui.roi("AreaPickup")
-        return bool(
+        if (
             self.ui.asset(
                 "IconTalkFeature",
                 image=frame,
@@ -248,7 +277,9 @@ class MinigameBlingRun(Runtime):
                 gray=(210, 255),
                 threshold=0.75,
             )
-        )
+        ):
+            return True
+        return bool(self.text(pickup_roi, _NPC_INTERACT_TEXT_RE.pattern, image=frame))
 
     def _dismiss_npc_dialogue(self, inputs: ForegroundInput) -> bool:
         """Exit active NPC dialogue cleanly without selecting '开始游戏'."""
@@ -441,6 +472,7 @@ class MinigameBlingRun(Runtime):
 
         first_sample: tuple[float, float, float] | None = None
         aligned_t_go: float | None = None
+        last_frame = None
         while not self.stopped and time.monotonic() < poll_deadline:
             t_before = time.monotonic()
             frame = self.capture()
@@ -449,6 +481,7 @@ class MinigameBlingRun(Runtime):
                 return "stopped", 0.0, None
             if frame is None:
                 break
+            last_frame = frame
             captured_at = (
                 0.5 * (t_before + t_after)
                 if (t_after - t_before) <= 0.15
@@ -502,7 +535,25 @@ class MinigameBlingRun(Runtime):
 
         if not self._wait_sliced(inputs, trigger_at + fallback_wait):
             return "stopped", 0.0, None
+        # Never execute the blind 11.6s movement sequence when the timer never appeared
+        # and two consecutive frames confirm the game is still on the overworld main screen.
+        if self._confirm_overworld_main(last_frame):
+            return "not_in_course", time.monotonic() - trigger_at, None
+        if self.stopped:
+            return "stopped", 0.0, None
         return "fallback", time.monotonic() - trigger_at, None
+
+    def _confirm_overworld_main(self, initial_frame=None) -> bool:
+        """Confirm on two frames that the game is idle on the overworld main screen."""
+        first = initial_frame if initial_frame is not None else self.capture()
+        if self.stopped or first is None or not self.hit("MaaNikki_MainDetected", image=first):
+            return False
+        if not self.pause(0.25):
+            return False
+        second = self.capture()
+        if self.stopped or second is None:
+            return False
+        return bool(self.hit("MaaNikki_MainDetected", image=second))
 
     def _play_course(
         self,
@@ -511,9 +562,9 @@ class MinigameBlingRun(Runtime):
         camera_assist: bool = True,
         retry_started_at: float | None = None,
         stats: dict | None = None,
-    ) -> bool:
+    ) -> str:
         if self.stopped:
-            return False
+            return "stopped"
         if retry_started_at is None:
             inputs.hold("interact", 0.2, restore=False)
             trigger_at = time.monotonic()
@@ -526,7 +577,14 @@ class MinigameBlingRun(Runtime):
             is_retry=retry_started_at is not None,
         )
         if align_mode == "stopped" or self.stopped:
-            return False
+            return "stopped"
+        if align_mode == "not_in_course":
+            self.log(
+                f"起跑对齐：未检测到 25 秒倒计时且当前仍停留在主界面（已等待 {total_wait_s:.2f} 秒），"
+                "已跳过本轮跑道按键以避免大世界误跑。",
+                detail=True,
+            )
+            return "not_in_course"
         if stats is not None:
             if align_mode == "timer_aligned":
                 stats["timer_aligned_rounds"] = int(stats.get("timer_aligned_rounds", 0)) + 1
@@ -559,7 +617,7 @@ class MinigameBlingRun(Runtime):
                 inputs.wait(straight_seconds)
             for steer_name, hold_steer, wait_after in turns:
                 if self.stopped:
-                    return False
+                    return "stopped"
                 steer_key = steer_keys[steer_name]
                 inputs._down(steer_key)
                 try:
@@ -573,7 +631,7 @@ class MinigameBlingRun(Runtime):
                 inputs._up(steer_key)
             inputs._up(fwd)
             inputs.release()
-        return not self.stopped
+        return "stopped" if self.stopped else "played"
 
     @staticmethod
     def _box_list(raw) -> list[int] | None:
@@ -1007,9 +1065,52 @@ class MinigameBlingRun(Runtime):
                 return False
         return self.main()
 
+    def _open_npc_dialogue(self, inputs: ForegroundInput, *, max_attempts: int = 2) -> str:
+        """Press interact and confirm overworld HUD disappears before sending dialogue keys."""
+        for attempt in range(max_attempts):
+            if self.stopped:
+                return "stopped"
+            inputs.hold("interact", 0.2, restore=False)
+            if self.stopped:
+                return "stopped"
+            wait_deadline = time.monotonic() + INIT_OPEN_WAIT_SECONDS
+            opened = False
+            while not self.stopped and time.monotonic() < wait_deadline:
+                step = min(0.25, max(0.0, wait_deadline - time.monotonic()))
+                if step > 0:
+                    inputs.wait(step, restore=False)
+                if self.stopped:
+                    return "stopped"
+                frame = self.capture()
+                if frame is None:
+                    return "stopped" if self.stopped else "not_entered"
+                if not self.hit("MaaNikki_MainDetected", image=frame):
+                    opened = True
+                    break
+            if self.stopped:
+                return "stopped"
+            if not opened:
+                frame = self.capture()
+                if frame is None:
+                    return "stopped" if self.stopped else "not_entered"
+                opened = not self.hit("MaaNikki_MainDetected", image=frame)
+            if opened:
+                remaining = wait_deadline - time.monotonic()
+                if remaining > 0:
+                    inputs.wait(remaining, restore=False)
+                return "stopped" if self.stopped else "opened"
+            if attempt + 1 < max_attempts:
+                self.log("首次尝试与「奇米亚」对话未离开主界面，重试一次交互键…", detail=True)
+        return "stopped" if self.stopped else "not_entered"
+
     def _enter_via_npc_dialogue(self, inputs: ForegroundInput, stats: dict) -> str:
-        """Run NPC dialogue entry and check immediate no-Bling / daily-cap modals before marking paid."""
-        if not self._run_sequence(inputs, INIT_SEQUENCE):
+        """Open Qimiya dialogue, verify entry, then finish menu selection before marking paid."""
+        open_state = self._open_npc_dialogue(inputs)
+        if open_state != "opened":
+            if open_state == "not_entered":
+                self.log("未能打开「奇米亚」对话（画面仍停留在主界面），已取消后续按键以避免大世界误操作。")
+            return open_state
+        if not self._run_sequence(inputs, INIT_CONTINUE_SEQUENCE):
             return "stopped"
         post_init = self._inspect_settlement()
         if post_init["state"] == "no_bling":
@@ -1062,17 +1163,40 @@ class MinigameBlingRun(Runtime):
         if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
             self.log(
                 f"连续 {consecutive_failures} 次挑战失败，已停止重试并退出小游戏，"
-                "请确认任务的「视角水平辅助」选项与游戏内「设置 → 控制 → 视角水平辅助」一致，并检查移动键位与画面帧率。"
+                "请确认任务的「视角水平辅助」选项与游戏内「设置 → 控制 → 视角水平辅助」一致，"
+                "并检查移动键位、画面帧率或后台限帧状态。"
             )
             self._exit_failure_to_main(inputs, info)
             return "too_many_failures", None
 
         reason_label = "挑战超时失败" if timed_out else "挑战失败"
         cur_net = _calc_net_bling(stats, include_pending=True)
-        self.log(
-            f"第 {target_round}/{max_rounds} 局{reason_label}，正在消耗 100 噗灵重试"
-            f"（连续失败 {consecutive_failures}/{MAX_CONSECUTIVE_FAILURES}，当前已结算净收益约 {cur_net:,} 噗灵）…"
-        )
+        if consecutive_failures == REENTER_NPC_ON_CONSECUTIVE_FAILURE:
+            self.log(
+                f"第 {target_round}/{max_rounds} 局{reason_label}（连续失败 {consecutive_failures}/{MAX_CONSECUTIVE_FAILURES}，"
+                f"当前已结算净收益约 {cur_net:,} 噗灵），正在退出并重新对话刷新挑战状态…"
+            )
+            if self._exit_failure_to_main(inputs, info):
+                entry_state = self._enter_via_npc_dialogue(inputs, stats)
+                if entry_state == "entered":
+                    stats["retry_count"] = int(stats.get("retry_count", 0)) + 1
+                    return "retrying", None
+                if entry_state == "no_bling":
+                    return "insufficient_bling", None
+                if entry_state == "cap_reached":
+                    return "daily_cap_reached", None
+                if entry_state == "stopped":
+                    return "stopped", None
+                return "dialogue_not_opened", None
+            if self.stopped:
+                return "stopped", None
+            self.log("未能退出小游戏刷新状态，继续尝试直接点击重试…", detail=True)
+            info = self._inspect_settlement()
+        else:
+            self.log(
+                f"第 {target_round}/{max_rounds} 局{reason_label}，正在消耗 100 噗灵重试"
+                f"（连续失败 {consecutive_failures}/{MAX_CONSECUTIVE_FAILURES}，当前已结算净收益约 {cur_net:,} 噗灵）…"
+            )
         status, click_at = self._retry_from_failure(info)
         if status == "retrying":
             stats["retry_count"] = int(stats.get("retry_count", 0)) + 1
@@ -1100,6 +1224,8 @@ class MinigameBlingRun(Runtime):
                 return "daily_cap_reached", None
             if entry_state == "stopped":
                 return "stopped", None
+            if entry_state == "not_entered":
+                return "dialogue_not_opened", None
         self.log("未能点击重试恢复挑战，任务停止。")
         return "retry_failed", None
 
@@ -1191,8 +1317,11 @@ class MinigameBlingRun(Runtime):
                     self.log("未能确认大世界主界面，无法开始小游戏。")
                     return {"action": "stop", "success": False}
             if navigate:
-                if self._already_near_npc():
-                    self.log("检测到已位于「穿梭大冒险」NPC 附近，直接开始挑战。")
+                if self._already_near_npc(enforce_front_zone=True) and (
+                    self._can_interact_with_npc()
+                    or self._already_near_npc(max_radius_px=1.0, enforce_front_zone=True)
+                ):
+                    self.log("检测到已位于「穿梭大冒险」NPC 交互范围内，直接开始挑战。")
                 else:
                     need_route = True
             elif not self._verify_near_npc():
@@ -1224,13 +1353,42 @@ class MinigameBlingRun(Runtime):
         nav.label = "前往穿梭大冒险"
         return bool(nav.run_test({"route": route_name, "mode": "movement"}))
 
+    def _wait_for_npc_interact(self, timeout_s: float = 1.0) -> bool:
+        deadline = time.monotonic() + timeout_s
+        while not self.stopped:
+            if self._can_interact_with_npc():
+                return True
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            if not self.pause(min(0.25, remaining)):
+                return False
+        return False
+
     def _verify_post_route(self, inputs: ForegroundInput, nav_ok: bool) -> bool:
         if nav_ok:
-            return True
+            if self._wait_for_npc_interact(timeout_s=1.0):
+                return True
+            if self.stopped:
+                return False
+            if self._already_near_npc(
+                max_radius_px=POST_ROUTE_NPC_RADIUS_PX,
+                enforce_front_zone=True,
+            ):
+                self.log("未直接识别到交互图标，但已确认位于「奇米亚」正面交互区内，继续尝试对话。", detail=True)
+                return True
+            self.log("到达路线终点后未确认位于「奇米亚」正面交互范围内，任务停止。")
+            return False
         if (
             self._dismiss_npc_dialogue(inputs)
             and self.main()
-            and (self._already_near_npc(max_radius_px=1.8) or self._can_interact_with_npc())
+            and (
+                (
+                    self._already_near_npc(max_radius_px=3.5, enforce_front_zone=True)
+                    and self._can_interact_with_npc()
+                )
+                or self._already_near_npc(max_radius_px=1.2, enforce_front_zone=True)
+            )
         ):
             self.log("路线复核中断，但已位于「奇米亚」交互范围内，继续开始挑战。")
             return True
@@ -1259,6 +1417,9 @@ class MinigameBlingRun(Runtime):
             if entry_state == "stopped":
                 stats["stop_reason"] = "stopped"
                 return False
+            if entry_state == "not_entered":
+                stats["stop_reason"] = "dialogue_not_opened"
+                return False
             if entry_state == "no_bling":
                 stats["stop_reason"] = "insufficient_bling"
                 return False
@@ -1285,14 +1446,53 @@ class MinigameBlingRun(Runtime):
 
                 current_retry_start = retry_started_at
                 retry_started_at = None
-                if not self._play_course(
+                play_state = self._play_course(
                     inputs,
                     camera_assist=camera_assist,
                     retry_started_at=current_retry_start,
                     stats=stats,
-                ):
+                )
+                if play_state == "stopped":
                     stats["stop_reason"] = "stopped"
                     break
+                if play_state == "not_in_course":
+                    _refund_unentered_entry(stats)
+                    consecutive_overworld_returns += 1
+                    near_npc = self._already_near_npc(
+                        max_radius_px=AT_NPC_VERIFY_RADIUS_PX,
+                        min_score=AT_NPC_VERIFY_MIN_SCORE,
+                    )
+                    if not near_npc:
+                        stats["stop_reason"] = "not_near_npc"
+                        self.log("检测到当前停留在非「穿梭大冒险」NPC 附近的大世界，未计入完成局数，任务停止。")
+                        return False
+                    if consecutive_overworld_returns >= MAX_CONSECUTIVE_OVERWORLD_RETURNS:
+                        stats["stop_reason"] = "not_in_minigame"
+                        self.log(
+                            f"连续 {consecutive_overworld_returns} 轮未能进入小游戏挑战（仍停留在主界面），已停止任务以避免空跑。"
+                        )
+                        return False
+                    self.log(
+                        f"本轮未进入小游戏倒计时（仍处于大世界，{consecutive_overworld_returns}/{MAX_CONSECUTIVE_OVERWORLD_RETURNS}），"
+                        "已拦截误跑并重新与 NPC 对话…"
+                    )
+                    entry_state = self._enter_via_npc_dialogue(inputs, stats)
+                    if entry_state == "stopped":
+                        stats["stop_reason"] = "stopped"
+                        break
+                    if entry_state == "not_entered":
+                        stats["stop_reason"] = "dialogue_not_opened"
+                        return False
+                    if entry_state == "no_bling":
+                        stats["stop_reason"] = "insufficient_bling"
+                        return False
+                    if entry_state == "cap_reached":
+                        stats["stop_reason"] = "daily_cap_reached"
+                        self.log(
+                            f"检测到今日大世界噗灵获取已达上限（共完成 {stats['completed_rounds']} 局），自动结束。"
+                        )
+                        break
+                    continue
                 inputs.wait(5.0, restore=False)
 
                 info = self._inspect_settlement()
@@ -1360,6 +1560,9 @@ class MinigameBlingRun(Runtime):
                     if entry_state == "stopped":
                         stats["stop_reason"] = "stopped"
                         break
+                    if entry_state == "not_entered":
+                        stats["stop_reason"] = "dialogue_not_opened"
+                        return False
                     if entry_state == "no_bling":
                         stats["stop_reason"] = "insufficient_bling"
                         return False
@@ -1441,6 +1644,9 @@ class MinigameBlingRun(Runtime):
                         if entry_state == "stopped":
                             stats["stop_reason"] = "stopped"
                             break
+                        if entry_state == "not_entered":
+                            stats["stop_reason"] = "dialogue_not_opened"
+                            return False
                         if entry_state == "no_bling":
                             stats["stop_reason"] = "insufficient_bling"
                             return False
