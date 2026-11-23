@@ -732,10 +732,60 @@ class RenewalScanner:
             source="MaaNikki_MenuReady",
         )
 
+    def _is_list_view(self, frame: np.ndarray | None) -> bool:
+        """True when frame shows the 服装焕新 grid list rather than a suit/piece detail subpage."""
+        if frame is None:
+            return False
+        cid, _yc, _sc = self.model.detect_active_category(frame)
+        if cid is not None:
+            return True
+        sort_text = clean_clothing_name(self.rt.text(SORT_BOX_ROI, image=frame))
+        return bool(re.search(r"获得时间|品质|分数|等级|推荐|默认", sort_text))
+
+    def ensure_list_view(self) -> bool:
+        """Step back via Esc when 服装焕新 opened or drifted onto a suit/piece detail subpage."""
+        frame = self.rt.capture()
+        if self._is_list_view(frame):
+            return True
+        if not self.rt.pause(0.35):
+            return False
+        frame = self.rt.capture()
+        if self._is_list_view(frame):
+            return True
+        for _ in range(2):
+            if self.rt.stopped:
+                return False
+            if frame is not None and self.rt.hit("MaaNikki_RejuvenateReady", image=frame):
+                self.rt.key(27, delay=0.5)  # VK_ESCAPE
+                frame = self.rt.capture()
+                if self._is_list_view(frame):
+                    self.rt.log("焕新读取：已从详情子页返回服装焕新列表。", detail=True)
+                    return True
+                continue
+            if not self.open():
+                return False
+            frame = self.rt.capture()
+            if self._is_list_view(frame):
+                return True
+        return self._is_list_view(self.rt.capture())
+
     def _filter_modal_open(self, frame: np.ndarray | None) -> bool:
         if frame is None:
             return False
         return bool(self.rt.text(FILTER_RESET_ROI, r"^重置$", image=frame))
+
+    def _wait_filter_modal_closed(self, seconds: float = 1.5) -> bool:
+        from task_control import task_time
+        deadline = task_time.monotonic() + seconds
+        while not self.rt.stopped:
+            frame = self.rt.capture()
+            if not self._filter_modal_open(frame):
+                return True
+            if task_time.monotonic() >= deadline:
+                return False
+            if not self.rt.pause(0.25):
+                return False
+        return False
 
     def clear_filter(self) -> None:
         if not self.rt.action("Click", target=FILTER_BTN) or not self.rt.pause(0.35):
@@ -749,24 +799,25 @@ class RenewalScanner:
             return
 
         if not self.rt.click_text(r"^重置$", FILTER_RESET_ROI):
-            self.rt.action("Click", target=FILTER_RESET)
-            self.rt.pause(0.25)
+            frame = self.rt.capture()
+            if self._filter_modal_open(frame):
+                self.rt.action("Click", target=FILTER_RESET)
+                self.rt.pause(0.25)
 
         frame = self.rt.capture()
         if self._filter_modal_open(frame):
             # Target bottom button ROI so the top modal header ("筛选") is never matched first.
-            if not self.rt.click_text(r"^(筛选|确认|确定)$", FILTER_CONFIRM_ROI):
-                self.rt.action("Click", target=FILTER_CONFIRM)
-                self.rt.pause(0.25)
-            frame = self.rt.capture()
-            if self._filter_modal_open(frame):
-                self.rt.action("Click", target=FILTER_CONFIRM)
-                self.rt.pause(0.25)
+            # Never issue a second blind click at FILTER_CONFIRM ([734, 512]): once the modal
+            # closes, that coordinate lands directly on a Row-2 suit card and enters suit detail.
+            if not self.rt.click_text(r"^(筛选|确认|确定|应用)$", FILTER_CONFIRM_ROI):
                 frame = self.rt.capture()
-            if self._filter_modal_open(frame):
-                self.rt.key(27, delay=0.25)  # VK_ESCAPE
+                if self._filter_modal_open(frame):
+                    self.rt.action("Click", target=FILTER_CONFIRM)
+                    self.rt.pause(0.35)
+            if not self._wait_filter_modal_closed(1.5):
+                self.rt.key(27, delay=0.35)  # VK_ESCAPE
         self.rt.action("TouchMove", target=_park_point(self.rt))
-        self.rt.pause(0.15)
+        self.rt.pause(0.25)
 
     @staticmethod
     def _sort_arrow_descending(frame: np.ndarray | None) -> tuple[bool | None, list[int]]:
@@ -1361,6 +1412,8 @@ class RenewalScanner:
     def run(self) -> bool:
         if not self.open():
             raise RuntimeError("未能打开服装焕新页面")
+        if not self.ensure_list_view():
+            raise RuntimeError("未能确认服装焕新列表页面")
         role = self.account.load()
         owned_groups = self._owned_groups(role)
         prev_levels = {
@@ -1374,6 +1427,8 @@ class RenewalScanner:
             self.rt.log("焕新读取：当前尚无完整衣柜基准，自动切换为首次完整读取。")
 
         self.clear_filter()
+        if not self.ensure_list_view():
+            raise RuntimeError("清空筛选后未能保持在服装焕新列表页面")
         if self.mode == "incremental":
             self.ensure_sort_acquired_desc()
 
