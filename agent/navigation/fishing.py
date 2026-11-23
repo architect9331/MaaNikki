@@ -355,7 +355,17 @@ class Fishing:
             self.detect_kind()
         if self.kind == "home":
             self.materials.setdefault("陨星", 0)
-        idle_deadline = time.monotonic()+30
+        # The 30s idle timeout guards only the waiting-for-bite phase (FINISH).
+        # Clear it as soon as any active bite/fight/skip prompt is observed,
+        # including when passive exploration joins mid-fight or polling misses
+        # a brief STRIKE prompt before PULL_LINE / REEL_IN begins.
+        active_fight_states = (
+            FishingState.STRIKE,
+            FishingState.PULL_LINE,
+            FishingState.REEL_IN,
+            FishingState.SKIP,
+        )
+        idle_deadline = None if pending in active_fight_states else time.monotonic()+30
         # A fish can already be biting when the entrance is first recognized.
         # Only the waiting-for-bite phase needs the original settling delay.
         if pending == FishingState.FINISH:
@@ -376,12 +386,13 @@ class Fishing:
             pending = None
             if state != FishingState.UNKNOWN:
                 unknown_since = None
+                if state in active_fight_states:
+                    idle_deadline = None
                 if state == FishingState.FINISH:
                     self.wait(.5)
                 elif state == FishingState.STRIKE:
                     if strikes > 3:
                         return FishingResult.NO_FISH
-                    idle_deadline = None
                     self.press(83)
                     strikes += 1
                 elif state == FishingState.PULL_LINE:
