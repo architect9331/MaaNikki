@@ -180,78 +180,80 @@ function UnmetStarsPanel({
       </div>
 
       {minPlan && (
-        <div className="relative overflow-hidden rounded-xl border border-accent/40 bg-accent/5 p-3.5 space-y-3 text-xs">
-          {minPlanSuitThumb && (
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-44 overflow-hidden">
-              <img
-                src={minPlanSuitThumb}
-                alt=""
-                aria-hidden="true"
-                className="absolute right-2 top-0 h-full w-auto object-contain object-top opacity-25"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-bg-secondary/90 via-bg-secondary/65 to-transparent" />
-            </div>
-          )}
-          <div className="relative z-10 flex flex-wrap items-start justify-between gap-2">
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-semibold text-on-accent">
-                  <Sparkles className="h-3 w-3" />
-                  满星最少养成方案
-                </span>
-                <strong className="text-sm text-text-primary">
-                  {`最少需升级 ${minPlan.upgradeItems.length} 件衣服${
-                    minPlan.mandatorySuitName &&
-                    minPlan.upgradeItems.every((i) => i.mandatorySuitRefresh)
-                      ? `（将「${minPlan.mandatorySuitName}」升至已焕新）`
-                      : ''
-                  }`}
-                </strong>
-              </div>
-              <p className="leading-5 text-text-secondary">
-                {minPlan.mandatorySuitName &&
-                minPlan.upgradeItems.every((i) => i.mandatorySuitRefresh) ? (
-                  <>
-                    本关星级要求穿戴<strong>整套焕新套装</strong>，你已集齐{' '}
-                    <strong className="text-text-primary">「{minPlan.mandatorySuitName}」</strong>，
-                    按规则必须将以下{' '}
-                    <strong className="text-accent">{minPlan.upgradeItems.length} 件</strong>{' '}
-                    套装部件全部升至<strong>已焕新 (11级)</strong> 才能触发套装条件（少升 1 件均无法达成）；其余散件保持当前或默认 0 级即可。
-                  </>
-                ) : (
-                  <>
-                    无需将全身衣服全部升满！按单件提分性价比从高到低计算，
-                    <strong>最少只需升级以下 {minPlan.upgradeItems.length} 件衣服</strong>
-                    （其余部件保持当前或默认 0 级即可），即可同时满足星级条件并跨过分数线。
-                  </>
-                )}{' '}
-                达标后预计总分{' '}
-                <strong className="tabular-nums text-accent">{number(minPlan.achievedScore)}</strong> 分
-                {minPlan.targetScore !== undefined && (
-                  <>（完美线 {number(minPlan.targetScore)} 分）</>
-                )}
-                ，可直接达成 <strong>{minPlan.targetStars} 星</strong>。
-              </p>
-            </div>
+        <div className="rounded-2xl border border-accent/40 bg-accent/5 p-3.5 space-y-3 text-xs">
+          <div className={clsx('grid gap-3', minPlanSuitThumb ? 'grid-cols-[minmax(0,1fr)_104px] items-center' : 'grid-cols-1')}>
+            <div className="space-y-2.5 min-w-0">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-semibold text-on-accent">
+                      <Sparkles className="h-3 w-3" />
+                      满星最少养成方案
+                    </span>
+                    <strong className="text-sm text-text-primary">
+                      {`最少需升级 ${minPlan.upgradeItems.length} 件衣服${
+                        minPlan.mandatorySuitName &&
+                        minPlan.upgradeItems.every((i) => i.mandatorySuitRefresh)
+                          ? `（将「${minPlan.mandatorySuitName}」升至已焕新）`
+                          : ''
+                      }`}
+                    </strong>
+                  </div>
+                  <p className="leading-5 text-text-secondary">
+                    {minPlan.mandatorySuitName &&
+                    minPlan.upgradeItems.every((i) => i.mandatorySuitRefresh) ? (
+                      <>
+                        本关星级要求穿戴<strong>整套焕新套装</strong>，你已集齐{' '}
+                        <strong className="text-text-primary">「{minPlan.mandatorySuitName}」</strong>，
+                        按规则必须将以下{' '}
+                        <strong className="text-accent">{minPlan.upgradeItems.length} 件</strong>{' '}
+                        套装部件全部升至<strong>已焕新 (11级)</strong> 才能触发套装条件（少升 1 件均无法达成）；其余散件保持当前或默认 0 级即可。
+                      </>
+                    ) : (
+                      <>
+                        无需将全身衣服全部升满！按单件提分性价比从高到低计算，
+                        <strong>最少只需升级以下 {minPlan.upgradeItems.length} 件衣服</strong>
+                        （其余部件保持当前或默认 0 级即可），即可同时满足星级条件并跨过分数线。
+                      </>
+                    )}{' '}
+                    达标后预计总分{' '}
+                    <strong className="tabular-nums text-accent">{number(minPlan.achievedScore)}</strong> 分
+                    {minPlan.targetScore !== undefined && (
+                      <>（完美线 {number(minPlan.targetScore)} 分）</>
+                    )}
+                    ，可直接达成 <strong>{minPlan.targetStars} 星</strong>。
+                  </p>
+                </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  const updates: Record<string, number | null> = {};
-                  for (const item of minPlan.upgradeItems) {
-                    updates[item.groupId] = item.toLevel;
-                  }
-                  setLevelsBatch(updates, true);
-                }}
-                className="rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover"
-              >
-                {`一键标记这 ${minPlan.upgradeItems.length} 件已达标并重算`}
-              </button>
+                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updates: Record<string, number | null> = {};
+                      for (const item of minPlan.upgradeItems) {
+                        updates[item.groupId] = item.toLevel;
+                      }
+                      setLevelsBatch(updates, true);
+                    }}
+                    className="rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-on-accent hover:bg-accent-hover"
+                  >
+                    {`一键标记这 ${minPlan.upgradeItems.length} 件已达标并重算`}
+                  </button>
+                </div>
+              </div>
             </div>
+            {minPlanSuitThumb && (
+              <div className={clsx('relative flex h-32 items-end justify-center overflow-hidden rounded-xl border border-accent/25 px-1 pt-1.5', suitBackdropClass(5))}>
+                <img
+                  src={minPlanSuitThumb}
+                  alt={minPlan.mandatorySuitName ?? ''}
+                  className="h-full w-full object-contain object-bottom drop-shadow-xs"
+                />
+              </div>
+            )}
           </div>
 
-          <div className="relative z-10 rounded-xl border border-border bg-bg-secondary/95 divide-y divide-border backdrop-blur-xs">
+          <div className="rounded-xl border border-border bg-bg-secondary divide-y divide-border">
             {minPlan.upgradeItems.map((item, idx) => (
               <div key={item.groupId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                 <div className="min-w-0 flex-1">
@@ -291,7 +293,7 @@ function UnmetStarsPanel({
           </div>
 
           {Object.keys(minPlan.totalCost).length > 0 && (
-            <div className="relative z-10 rounded-xl border border-border bg-bg-secondary/95 p-3 space-y-2 backdrop-blur-xs">
+            <div className="rounded-xl border border-border bg-bg-secondary p-3 space-y-2">
               <p className="font-medium text-text-primary">
                 升级以上 {minPlan.upgradeItems.length} 件衣服预计所需材料（未填等级部件按 0 级计算）：
               </p>
@@ -432,62 +434,49 @@ function UnmetStarsPanel({
                   </div>
 
                   {rule.candidates.length ? (
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                       {rule.candidates.map((cand) => {
                         const pendingGroups = cand.unrefreshedGroups;
                         const thumbUrl = suitThumbMap[cand.suitId];
                         const suitPct = cand.totalCount ? Math.min(100, (cand.ownedCount / cand.totalCount) * 100) : 0;
                         return (
-                          <div key={cand.suitId} className="relative overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-xs">
-                            <div className={clsx('pointer-events-none absolute inset-0 overflow-hidden', suitBackdropClass(cand.quality))}>
-                              {thumbUrl && (
-                                <img
-                                  src={thumbUrl}
-                                  alt=""
-                                  aria-hidden="true"
-                                  className={clsx(
-                                    'absolute bottom-0 right-2 h-full max-h-64 w-auto object-contain object-bottom drop-shadow-xs transition-opacity',
-                                    cand.complete ? 'opacity-50' : 'opacity-40 grayscale-[15%]',
-                                  )}
-                                />
-                              )}
-                              <div className="absolute inset-0 bg-gradient-to-r from-bg-secondary via-bg-secondary/88 to-bg-secondary/15" />
-                            </div>
-                            <div className="relative z-10 p-3.5 space-y-2.5">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-text-primary">
-                                  <span>{cand.suitName}</span>
-                                  <span className="rounded-md bg-accent/12 px-1.5 py-0.5 text-[10px] font-semibold text-accent">{cand.quality}★</span>
-                                </span>
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  {cand.complete && (
-                                    <span className="rounded-md border border-border/60 bg-bg-secondary/90 px-2 py-0.5 text-[11px] text-text-secondary backdrop-blur-xs">
-                                      已达标 <strong className="text-text-primary">{cand.readyCount}</strong> / {cand.requiredCount} 件
-                                      {pendingGroups.length > 0 && (
-                                        <span className="ml-1 text-warning">（还需焕新 {pendingGroups.length} 件）</span>
-                                      )}
-                                    </span>
-                                  )}
-                                  <span className={clsx(
-                                    'rounded-md border border-border/60 bg-bg-secondary/90 px-2 py-0.5 text-[11px] font-medium tabular-nums backdrop-blur-xs',
-                                    cand.complete ? 'text-success' : 'text-warning',
-                                  )}>
-                                    已收集 {cand.ownedCount} / {cand.totalCount} 件
+                          <div key={cand.suitId} className="group relative overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-xs">
+                            <div aria-hidden="true" className={clsx('pointer-events-none absolute inset-0 opacity-35', suitBackdropClass(cand.quality))} />
+                            <div className={clsx('relative z-10 grid', thumbUrl ? 'grid-cols-[minmax(0,1fr)_144px] sm:grid-cols-[minmax(0,1fr)_172px]' : 'grid-cols-1')}>
+                              <div className="min-w-0 p-3.5 space-y-2.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+                                    <span>{cand.suitName}</span>
+                                    <span className="rounded-md bg-accent/12 px-1.5 py-0.5 text-[10px] font-semibold text-accent">{cand.quality}★</span>
                                   </span>
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    {cand.complete && (
+                                      <span className="rounded-md border border-border/60 bg-bg-primary/85 px-2 py-0.5 text-[11px] text-text-secondary">
+                                        已达标 <strong className="text-text-primary">{cand.readyCount}</strong> / {cand.requiredCount} 件
+                                        {pendingGroups.length > 0 && (
+                                          <span className="ml-1 text-warning">（还需焕新 {pendingGroups.length} 件）</span>
+                                        )}
+                                      </span>
+                                    )}
+                                    <span className={clsx(
+                                      'rounded-md border border-border/60 bg-bg-primary/85 px-2 py-0.5 text-[11px] font-medium tabular-nums',
+                                      cand.complete ? 'text-success' : 'text-warning',
+                                    )}>
+                                      已收集 {cand.ownedCount} / {cand.totalCount} 件
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="h-1.5 max-w-xs overflow-hidden rounded-full bg-border/80">
-                                <div className={clsx('h-full rounded-full transition-all', cand.complete ? 'bg-success' : 'bg-amber-500')} style={{ width: `${suitPct}%` }} />
-                              </div>
+                                <div className="h-1.5 overflow-hidden rounded-full bg-border/80">
+                                  <div className={clsx('h-full rounded-full transition-all', cand.complete ? 'bg-success' : 'bg-amber-500')} style={{ width: `${suitPct}%` }} />
+                                </div>
 
-                              {cand.complete && !!pendingGroups.length && (
-                                <div className="space-y-1.5">
-                                  <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <p className="text-text-secondary">
-                                      已集齐该套装，本关要求<strong>整套 {cand.requiredCount} 件全部焕新 (11级)</strong>，以下{' '}
-                                      <strong className="text-warning">{pendingGroups.length}</strong> 件尚未焕新（未填等级按 0 级计）：
-                                    </p>
-                                    <div className="flex items-center gap-1.5">
+                                {cand.complete && !!pendingGroups.length && (
+                                  <div className="space-y-1.5">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <p className="text-text-secondary">
+                                        已集齐该套装，本关要求<strong>整套 {cand.requiredCount} 件全部焕新 (11级)</strong>，以下{' '}
+                                        <strong className="text-warning">{pendingGroups.length}</strong> 件尚未焕新（未填等级按 0 级计）：
+                                      </p>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -495,49 +484,67 @@ function UnmetStarsPanel({
                                           for (const g of pendingGroups) updates[g.id] = 11;
                                           setLevelsBatch(updates, true);
                                         }}
-                                        className="rounded-md border border-accent/30 bg-bg-secondary/90 px-2.5 py-1 text-[11px] font-medium text-accent backdrop-blur-xs hover:bg-accent/15"
+                                        className="rounded-md border border-accent/35 bg-accent/10 px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/20"
                                       >
                                         整套标记已焕新(11级)
                                       </button>
                                     </div>
-                                  </div>
-                                  <div className="divide-y divide-border/60 rounded-lg border border-border/50 bg-bg-secondary/80 px-2.5 py-0.5 backdrop-blur-[2px]">
-                                    {pendingGroups.map((g) => (
-                                      <div key={g.id} className="flex items-center justify-between gap-2 py-1">
-                                        <span>
-                                          <strong className="text-text-primary">{g.name}</strong>{' '}
-                                          <span className="text-text-muted">
-                                            · {g.part}（当前：{g.level === null ? '0 级（默认）' : levelLabel(g.level)} → 需升至 已焕新）
+                                    <div className="divide-y divide-border/60 rounded-xl border border-border/60 bg-bg-primary/75 px-2.5 py-0.5">
+                                      {pendingGroups.map((g) => (
+                                        <div key={g.id} className="flex items-center justify-between gap-2 py-1.5">
+                                          <span className="min-w-0">
+                                            <strong className="text-text-primary">{g.name}</strong>{' '}
+                                            <span className="text-text-muted">
+                                              · {g.part}（当前：{g.level === null ? '0 级（默认）' : levelLabel(g.level)} → 需升至 已焕新）
+                                            </span>
                                           </span>
-                                        </span>
-                                        <LevelInput
-                                          value={settings.levels[g.id] ?? null}
-                                          inferred={g.inferred}
-                                          onChange={(lvl) => setLevel(g.id, lvl)}
-                                        />
-                                      </div>
-                                    ))}
+                                          <LevelInput
+                                            value={settings.levels[g.id] ?? null}
+                                            inferred={g.inferred}
+                                            onChange={(lvl) => setLevel(g.id, lvl)}
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
 
-                              {cand.complete && !pendingGroups.length && !rule.satisfied && (
-                                <p className="text-text-secondary">
-                                  已集齐该套装且满足穿戴条件，将左侧计算目标设为「优先满足星级条件」或恢复已排除部件即可整套穿戴。
-                                </p>
-                              )}
+                                {cand.complete && !pendingGroups.length && !rule.satisfied && (
+                                  <p className="text-text-secondary">
+                                    已集齐该套装且满足穿戴条件，将左侧计算目标设为「优先满足星级条件」或恢复已排除部件即可整套穿戴。
+                                  </p>
+                                )}
 
-                              {!cand.complete && !!cand.missingParts.length && (
-                                <div className="space-y-1.5">
-                                  <p className="text-text-secondary">缺失部件（共 {cand.missingParts.length} 件）：</p>
-                                  <ul className="space-y-1">
-                                    {cand.missingParts.map((mp) => (
-                                      <li key={mp.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/40 bg-bg-secondary/80 px-2.5 py-1 text-text-secondary backdrop-blur-[2px]">
-                                        <span><strong className="text-text-primary">{mp.name}</strong> · {mp.partName}</span>
-                                        <span className="text-[11px] text-text-muted">{mp.source ?? '套装获取'}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
+                                {!cand.complete && !!cand.missingParts.length && (
+                                  <div className="space-y-1.5">
+                                    <p className="text-text-secondary">缺失部件（共 {cand.missingParts.length} 件）：</p>
+                                    <ul className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
+                                      {cand.missingParts.map((mp) => (
+                                        <li key={mp.id} className="flex flex-col justify-between gap-0.5 rounded-lg border border-border/60 bg-bg-primary/80 px-2.5 py-1.5">
+                                          <span className="truncate text-text-secondary">
+                                            <strong className="text-text-primary">{mp.name}</strong>
+                                            <span className="ml-1 text-[11px] text-text-muted">· {mp.partName}</span>
+                                          </span>
+                                          <span className="truncate text-[11px] text-text-muted">{mp.source ?? '套装获取'}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+
+                              {thumbUrl && (
+                                <div className={clsx('relative flex min-h-[188px] items-end justify-center overflow-hidden border-l border-border/40 px-2 pt-3', suitBackdropClass(cand.quality))}>
+                                  <img
+                                    src={thumbUrl}
+                                    alt={cand.suitName}
+                                    loading="lazy"
+                                    decoding="async"
+                                    className={clsx(
+                                      'relative z-10 max-h-60 w-full object-contain object-bottom drop-shadow-sm transition-transform duration-300 group-hover:scale-[1.03]',
+                                      !cand.complete && 'opacity-95',
+                                    )}
+                                  />
                                 </div>
                               )}
                             </div>

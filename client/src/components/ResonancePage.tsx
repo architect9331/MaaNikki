@@ -370,7 +370,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
                     src={subThumb}
                     alt=""
                     aria-hidden="true"
-                    className="absolute bottom-0 right-12 h-[84%] w-24 object-contain object-bottom opacity-75 transition-transform duration-300 group-hover:scale-[1.03]"
+                    className="absolute bottom-0 right-12 h-[84%] w-24 object-contain object-bottom opacity-80 transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 )}
                 {mainThumb && (
@@ -381,9 +381,9 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
                     className="absolute bottom-0 right-1 z-10 h-[96%] w-26 object-contain object-bottom drop-shadow-xs transition-transform duration-300 group-hover:scale-[1.05]"
                   />
                 )}
-                <div className="absolute inset-0 z-20 bg-gradient-to-r from-bg-secondary via-bg-secondary/65 to-transparent" />
+                <div className="absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-bg-secondary via-bg-secondary/70 to-transparent" />
               </div>
-              <div className="relative z-30 flex h-full flex-col justify-between p-4 pr-32">
+              <div className="relative z-30 flex h-full flex-col justify-between p-4 pr-36">
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className={clsx(
