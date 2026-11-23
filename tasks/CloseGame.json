@@ -6,7 +6,7 @@
             "entry": "MaaNikki_CloseGame",
             "group": ["launch_close"],
             "default_check": false,
-            "description": "放队列末尾；关前倒计时15秒，未退出不强制；强制及关闭启动器默认不关，选项可开。",
+            "description": "请放队列末尾；执行前倒计时 15 秒，超时默认不强制结束也不关启动器（选项可开）。",
             "option": ["ForceCloseOnTimeout", "CloseLauncher"]
         }
     ],

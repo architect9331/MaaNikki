@@ -555,7 +555,7 @@ export default {
     collapse: 'Collapse panel',
     specialTasks: 'Special Tasks',
     pretasks: 'Pre-tasks',
-    pretaskBadge: 'Auto-run',
+    pretaskBadge: 'Pre-task',
     allSpecialTasksAdded: 'All added',
     ungroupedTasks: 'Others',
     resizeHandleAriaLabel: 'Resize add task panel height',

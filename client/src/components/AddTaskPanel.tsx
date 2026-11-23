@@ -48,6 +48,7 @@ function TaskButton({
   count,
   isNew,
   label,
+  badge,
   langKey,
   basePath,
   disabled,
@@ -59,6 +60,7 @@ function TaskButton({
   count: number;
   isNew: boolean;
   label: string;
+  badge?: string;
   langKey: string;
   basePath: string;
   disabled?: boolean;
@@ -138,6 +140,18 @@ function TaskButton({
         )}
         <Plus className={clsx('w-4 h-4 shrink-0', disabled ? 'text-text-muted' : 'text-accent')} />
         <span className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere]">{label}</span>
+        {badge && (
+          <span
+            className={clsx(
+              'shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded-full border',
+              disabled
+                ? 'bg-text-muted/10 text-text-muted border-border/50'
+                : 'bg-accent/10 text-accent border-accent/25',
+            )}
+          >
+            {badge}
+          </span>
+        )}
         {count > 0 && (
           <span
             className={clsx(
@@ -518,7 +532,7 @@ export function AddTaskPanel() {
     const standalone: PretaskItem[] = [];
     for (const item of visiblePretasks) {
       let assignedToKnownGroup = false;
-      for (const gName of item.group ?? []) {
+      for (const gName of new Set(item.group ?? [])) {
         const list = grouped.get(gName);
         if (list) {
           // 与普通任务一致：声明多个分组时在各分组区块重复展示（属预期）
@@ -534,71 +548,67 @@ export function AddTaskPanel() {
     return { groupedPretasks: grouped, standalonePretasks: standalone };
   }, [hasGroups, sortedGroups, visiblePretasks]);
 
-  /** 渲染一组任务按钮网格 */
-  const renderTaskGrid = (tasks: TaskItem[]) => {
-    if (tasks.length === 0) return null;
-    return (
-      <div className={taskGridClassName}>
-        {tasks.map((task) => {
-          const count = taskCounts[task.name] || 0;
-          const label = resolveI18nText(task.label, langKey) || task.name;
-          const isNew = newTaskNames.includes(task.name);
-          const { isIncompatible, reason, supportedControllerHint } = getTaskCompatibility(task);
+  /** 渲染单个普通任务按钮 */
+  const renderTaskButton = (task: TaskItem) => {
+    const count = taskCounts[task.name] || 0;
+    const label = resolveI18nText(task.label, langKey) || task.name;
+    const isNew = newTaskNames.includes(task.name);
+    const { isIncompatible, reason, supportedControllerHint } = getTaskCompatibility(task);
 
-          return (
-            <TaskButton
-              key={task.name}
-              task={task}
-              count={count}
-              isNew={isNew}
-              label={label}
-              langKey={langKey}
-              basePath={basePath}
-              disabled={isIncompatible}
-              incompatibleReason={reason}
-              supportedControllerHint={supportedControllerHint}
-              onClick={() => handleAddTask(task.name)}
-            />
-          );
-        })}
-      </div>
+    return (
+      <TaskButton
+        key={task.name}
+        task={task}
+        count={count}
+        isNew={isNew}
+        label={label}
+        langKey={langKey}
+        basePath={basePath}
+        disabled={isIncompatible}
+        incompatibleReason={reason}
+        supportedControllerHint={supportedControllerHint}
+        onClick={() => handleAddTask(task.name)}
+      />
     );
   };
 
-  /** 渲染 pretask 前置任务网格（与普通任务同款 TaskButton） */
+  /** 渲染单个 pretask 前置任务按钮（混入普通分组时内置前置标签） */
+  const renderPretaskButton = (item: PretaskItem, showBadge: boolean) => {
+    const taskDef = buildPretaskDef(item);
+    const taskName = pretaskName(item);
+    const count = taskCounts[taskName] || 0;
+    const label = resolveI18nText(item.label, langKey) || item.name || item.exec;
+    const { isIncompatible, reason, supportedControllerHint } = getTaskCompatibility(taskDef);
+
+    return (
+      <TaskButton
+        key={taskName}
+        task={taskDef}
+        count={count}
+        isNew={false}
+        label={label}
+        badge={showBadge ? t('addTaskPanel.pretaskBadge') : undefined}
+        langKey={langKey}
+        basePath={basePath}
+        disabled={isIncompatible}
+        incompatibleReason={reason}
+        supportedControllerHint={supportedControllerHint}
+        onClick={() => handleAddPretask(item)}
+      />
+    );
+  };
+
+  /** 渲染一组任务按钮网格 */
+  const renderTaskGrid = (tasks: TaskItem[]) => {
+    if (tasks.length === 0) return null;
+    return <div className={taskGridClassName}>{tasks.map(renderTaskButton)}</div>;
+  };
+
+  /** 渲染独立「前置任务」区块网格（区块标题已标明前置任务，不再重复显示标签） */
   const renderPretaskGrid = (items: PretaskItem[]) => {
     if (items.length === 0) return null;
     return (
-      <div className={taskGridClassName}>
-        {items.map((item) => {
-          const taskDef = buildPretaskDef(item);
-          const taskName = pretaskName(item);
-          const count = taskCounts[taskName] || 0;
-          const label = resolveI18nText(item.label, langKey) || item.name || item.exec;
-          const { isIncompatible, reason, supportedControllerHint } = getTaskCompatibility(taskDef);
-
-          return (
-            <div key={pretaskItemId(item)} className="relative">
-              <TaskButton
-                task={taskDef}
-                count={count}
-                isNew={false}
-                label={label}
-                langKey={langKey}
-                basePath={basePath}
-                disabled={isIncompatible}
-                incompatibleReason={reason}
-                supportedControllerHint={supportedControllerHint}
-                onClick={() => handleAddPretask(item)}
-              />
-              {/* pretask 由项目声明、连接控制器前自动执行；混入分组后用角标标识，避免被误认为普通任务 */}
-              <span className="pointer-events-none absolute -top-1.5 left-2 flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-accent/15 text-accent border border-accent/30">
-                {t('addTaskPanel.pretaskBadge')}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      <div className={taskGridClassName}>{items.map((item) => renderPretaskButton(item, false))}</div>
     );
   };
 
@@ -653,10 +663,12 @@ export function AddTaskPanel() {
           contentId,
         )}
         {expanded && (
-          <div id={contentId} className="mt-1 space-y-2">
-            {/* pretask（如 启动游戏）排在分组内普通任务之前，与队列中的执行顺序一致 */}
-            {renderPretaskGrid(pretaskItems)}
-            {renderTaskGrid(tasks)}
+          <div id={contentId} className="mt-1">
+            <div className={taskGridClassName}>
+              {/* pretask（如 启动游戏）排在分组内普通任务之前，与队列中的执行顺序一致 */}
+              {pretaskItems.map((item) => renderPretaskButton(item, true))}
+              {tasks.map(renderTaskButton)}
+            </div>
           </div>
         )}
       </div>

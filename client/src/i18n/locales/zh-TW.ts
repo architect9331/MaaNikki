@@ -533,7 +533,7 @@ export default {
     alreadyAdded: '已新增',
     specialTasks: '特殊任務',
     pretasks: '前置任務',
-    pretaskBadge: '自動執行',
+    pretaskBadge: '前置',
     allSpecialTasksAdded: '已全部新增',
     collapse: '收起面板',
     ungroupedTasks: '其他',

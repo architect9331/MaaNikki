@@ -552,7 +552,7 @@ export default {
     alreadyAdded: '追加済み',
     specialTasks: '特殊タスク',
     pretasks: '事前タスク',
-    pretaskBadge: '自動実行',
+    pretaskBadge: '事前',
     allSpecialTasksAdded: 'すべて追加済み',
     collapse: 'パネルを閉じる',
     ungroupedTasks: 'その他',

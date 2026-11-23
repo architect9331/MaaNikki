@@ -545,7 +545,7 @@ export default {
     collapse: '패널 접기',
     specialTasks: '특수 작업',
     pretasks: '사전 작업',
-    pretaskBadge: '자동 실행',
+    pretaskBadge: '사전',
     allSpecialTasksAdded: '모두 추가됨',
     ungroupedTasks: '기타',
     resizeHandleAriaLabel: '작업 추가 패널 높이 조정',
