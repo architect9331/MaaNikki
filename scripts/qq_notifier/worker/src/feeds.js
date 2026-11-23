@@ -479,7 +479,7 @@ export async function syncRedeemCodes(env, enqueueFn) {
     const lines = [
       '【无限暖暖 · 新兑换码】',
       ...freshEntries.map(e => `• ${e.code}${e.reward ? `（${e.reward}）` : ''}`),
-      '兑换方式：游戏内左上角「美鸭梨 → 设置 → 其他 → 兑换码」输入领取，注意时效及时兑换。',
+      '兑换方式：游戏内左上角「美鸭梨 → 设置 → 其他 → 兑换码」输入领取，也可在 MaaNikki 勾选「兑换码领取」自动兑换，注意时效及时兑换。',
     ];
     const eventKey = `redeem:${freshEntries.map(e => e.code).join(',')}`;
     await enqueueFn(env, eventKey, 'redeem', [finalizeOutbound(lines.join('\n'), env)], null, null, [...insertStmts, ...stateUpdates]);
@@ -565,7 +565,7 @@ export async function formatRedeemCodesReply(env) {
   if (showingExpiredFallback || (newestAt && nowSec - newestAt > 21 * 86400 && !list.some(r => r.expires_at && Number(r.expires_at) > nowSec))) {
     lines.push('注：近期暂无新码，部分早期兑换码可能已过期；有新码发布时本群会自动推送。');
   }
-  lines.push('兑换方式：游戏内左上角「美鸭梨 → 设置 → 其他 → 兑换码」。');
+  lines.push('兑换方式：游戏内左上角「美鸭梨 → 设置 → 其他 → 兑换码」（也可在 MaaNikki 勾选「兑换码领取」自动兑换）。');
   return finalizeOutbound(lines.join('\n'), env);
 }
 

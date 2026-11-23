@@ -344,7 +344,7 @@ function canConsiderAutonomous(text, imageUrls, state, senderId, hasOtherAtTag =
   if (state.last_reply_sender === senderId && now - (state.last_reply_at || 0) <= 90) return true;
   const lower = t.toLowerCase();
   if (/maanikki|maa|机器人|小助手|arc9332/.test(lower)) return true;
-  const hasDomain = /版本|最新版|新版|更新|修复|改动|功能|分辨率|16:9|1920|管理员|后台|前台|遮挡|最小化|下载|官网|连接|启动|美鸭梨|挖掘|朝夕心愿|心愿|每日|星海|拾光|星光结晶|星之铃|家园|钓星|巨陨星|幻境|追光|体力|祝福闪光|胚子|全收集|制衣|焕新|采集|钓鱼|跑图|路线|噗灵|衣柜|读取|奇迹之冠|巅峰赛|搭配|标点|标记|地图|奇想星|宝箱|露珠|共鸣|暖暖|大喵|日志|活动|联动|前瞻|直播|兑换码|礼包码|福利码|维护|停服|什么时候结束|几点结束/.test(lower);
+  const hasDomain = /版本|最新版|新版|更新|修复|改动|功能|分辨率|16:9|1920|管理员|后台|前台|遮挡|最小化|下载|官网|连接|启动|关闭游戏|键位|自动读取|美鸭梨|挖掘|朝夕心愿|心愿|每日|星海|拾光|星光结晶|星之铃|晶树|星忆|家园|钓星|巨陨星|幻境|追光|体力|双倍|祝福闪光|胚子|全收集|战力|制衣|焕新|背包|采集|姜饼人|常驻能力|小游戏|穿梭大冒险|钓鱼|跑图|路线|遮罩|漂浮|噗灵|衣柜|读取|奇迹之冠|巅峰赛|搭配|标点|标记|地图|奇想星|宝箱|露珠|共鸣|冒险日报|暖暖|大喵|日志|mirror|活动|联动|前瞻|直播|兑换码|礼包码|福利码|维护|停服|什么时候结束|几点结束/.test(lower);
   const hasQuestionOrTrouble = /[?？]|怎么|如何|为什么|为啥|什么|啥|哪|吗|呢|吧|么|请问|求助|有没有|能不能|支持|可以|报错|失败|卡住|不动|闪退|没反应|识别不到|点不动|黑屏|偏航|卡墙/.test(lower);
   return (hasDomain && hasQuestionOrTrouble) || (hasQuestionOrTrouble && t.length >= 6);
 }
