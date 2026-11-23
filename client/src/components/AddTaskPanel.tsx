@@ -488,6 +488,52 @@ export function AddTaskPanel() {
     return { groupedTasks: grouped, ungroupedTasks: ungrouped };
   }, [hasGroups, sortedGroups, filteredTasks]);
 
+  // pretask 与普通任务一样套用搜索过滤，避免搜索时已归组的前置任务所在分组区块行为不一致
+  const visiblePretasks = useMemo(() => {
+    const searchLower = searchQuery.toLowerCase();
+    if (!searchLower) return pretasks;
+    return pretasks.filter((item) => {
+      const label = resolveI18nText(item.label, langKey) || item.name || item.exec;
+      return (
+        pretaskItemId(item).toLowerCase().includes(searchLower) ||
+        label.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [pretasks, searchQuery, resolveI18nText, langKey]);
+
+  // 将 pretask 也按分组归类：声明了已定义分组的 pretask 渲染进对应分组区块，
+  // 未声明分组或指向未定义分组的 pretask 保留在「前置任务」区块中
+  const { groupedPretasks, standalonePretasks } = useMemo(() => {
+    if (!hasGroups)
+      return {
+        groupedPretasks: new Map<string, PretaskItem[]>(),
+        standalonePretasks: visiblePretasks,
+      };
+
+    const grouped = new Map<string, PretaskItem[]>();
+    for (const g of sortedGroups) {
+      grouped.set(g.name, []);
+    }
+
+    const standalone: PretaskItem[] = [];
+    for (const item of visiblePretasks) {
+      let assignedToKnownGroup = false;
+      for (const gName of item.group ?? []) {
+        const list = grouped.get(gName);
+        if (list) {
+          // 与普通任务一致：声明多个分组时在各分组区块重复展示（属预期）
+          list.push(item);
+          assignedToKnownGroup = true;
+        }
+      }
+      if (!assignedToKnownGroup) {
+        standalone.push(item);
+      }
+    }
+
+    return { groupedPretasks: grouped, standalonePretasks: standalone };
+  }, [hasGroups, sortedGroups, visiblePretasks]);
+
   /** 渲染一组任务按钮网格 */
   const renderTaskGrid = (tasks: TaskItem[]) => {
     if (tasks.length === 0) return null;
@@ -532,19 +578,24 @@ export function AddTaskPanel() {
           const { isIncompatible, reason, supportedControllerHint } = getTaskCompatibility(taskDef);
 
           return (
-            <TaskButton
-              key={pretaskItemId(item)}
-              task={taskDef}
-              count={count}
-              isNew={false}
-              label={label}
-              langKey={langKey}
-              basePath={basePath}
-              disabled={isIncompatible}
-              incompatibleReason={reason}
-              supportedControllerHint={supportedControllerHint}
-              onClick={() => handleAddPretask(item)}
-            />
+            <div key={pretaskItemId(item)} className="relative">
+              <TaskButton
+                task={taskDef}
+                count={count}
+                isNew={false}
+                label={label}
+                langKey={langKey}
+                basePath={basePath}
+                disabled={isIncompatible}
+                incompatibleReason={reason}
+                supportedControllerHint={supportedControllerHint}
+                onClick={() => handleAddPretask(item)}
+              />
+              {/* pretask 由项目声明、连接控制器前自动执行；混入分组后用角标标识，避免被误认为普通任务 */}
+              <span className="pointer-events-none absolute -top-1.5 left-2 flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-accent/15 text-accent border border-accent/30">
+                {t('addTaskPanel.pretaskBadge')}
+              </span>
+            </div>
           );
         })}
       </div>
@@ -581,9 +632,13 @@ export function AddTaskPanel() {
     );
   };
 
-  /** 渲染分组区块（带可折叠标题） */
-  const renderGroupSection = (group: GroupItem, tasks: TaskItem[]) => {
-    if (tasks.length === 0) return null;
+  /** 渲染分组区块（带可折叠标题；分组内可同时容纳 pretask 与普通任务按钮） */
+  const renderGroupSection = (
+    group: GroupItem,
+    tasks: TaskItem[],
+    pretaskItems: PretaskItem[] = [],
+  ) => {
+    if (tasks.length === 0 && pretaskItems.length === 0) return null;
     const groupLabel = resolveI18nText(group.label, langKey) || group.name;
     const expanded = groupExpanded.get(group.name) !== false;
     const contentId = `add-task-panel-section-${encodeURIComponent(group.name)}`;
@@ -594,11 +649,13 @@ export function AddTaskPanel() {
           groupLabel,
           expanded,
           () => toggleGroup(group.name),
-          tasks.length,
+          tasks.length + pretaskItems.length,
           contentId,
         )}
         {expanded && (
-          <div id={contentId} className="mt-1">
+          <div id={contentId} className="mt-1 space-y-2">
+            {/* pretask（如 启动游戏）排在分组内普通任务之前，与队列中的执行顺序一致 */}
+            {renderPretaskGrid(pretaskItems)}
             {renderTaskGrid(tasks)}
           </div>
         )}
@@ -760,7 +817,9 @@ export function AddTaskPanel() {
                 {/* 按分组渲染任务 */}
                 {sortedGroups.map((group) => {
                   const tasks = groupedTasks.get(group.name) || [];
-                  return renderGroupSection(group, tasks);
+                  // 与独立「前置任务」区块的 instance 守卫保持一致：无实例时不展示
+                  const pretaskItems = instance ? groupedPretasks.get(group.name) || [] : [];
+                  return renderGroupSection(group, tasks, pretaskItems);
                 })}
                 {/* 未分组的任务 */}
                 {ungroupedTasks.length > 0 && (
@@ -785,19 +844,19 @@ export function AddTaskPanel() {
               filteredTasks.length > 0 && renderTaskGrid(filteredTasks)
             )}
 
-            {/* 前置任务（pretask），由项目在 interface.json 中声明，连接控制器前自动执行 */}
-            {instance && pretasks.length > 0 && (
+            {/* 未声明分组的前置任务（pretask）保留在「前置任务」区块；已归入分组的前置任务渲染在对应分组中 */}
+            {instance && standalonePretasks.length > 0 && (
               <div>
                 {renderSectionHeader(
                   t('addTaskPanel.pretasks'),
                   pretaskExpanded,
                   () => setPretaskExpanded((prev) => !prev),
-                  pretasks.length,
+                  standalonePretasks.length,
                   pretaskContentId,
                 )}
                 {pretaskExpanded && (
                   <div id={pretaskContentId} className="mt-1">
-                    {renderPretaskGrid(pretasks)}
+                    {renderPretaskGrid(standalonePretasks)}
                   </div>
                 )}
               </div>
@@ -852,8 +911,9 @@ export function AddTaskPanel() {
               </div>
             )}
 
-            {/* 无搜索结果提示 */}
-            {filteredTasks.length === 0 && (
+            {/* 无搜索结果提示（pretask 命中任一即不算空态；无实例时 pretask 均不渲染，
+                该情形由外层 filteredTasks.length === 0 && !instance 的全屏空态兜住） */}
+            {filteredTasks.length === 0 && visiblePretasks.length === 0 && (
               <div className="py-2 text-center text-sm text-text-muted">
                 {t('addTaskPanel.noResults')}
               </div>
