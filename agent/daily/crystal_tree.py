@@ -104,12 +104,14 @@ class CrystalTree(Starsea):
                 return False
             if after_bell is not None:
                 # At most 40 can fall per bell. When ready == 0 before ringing,
-                # stored crystals must condense; when ready > 0, ringing shakes
-                # canopy crystals to the ground even if stored stays unchanged.
+                # stored crystals must condense (or new ready crystals appear);
+                # when ready > 0, ringing shakes canopy crystals to the ground
+                # even if stored stays unchanged. Natural regeneration may add a
+                # few crystals concurrently while ringing/opening the map.
                 moved = after_bell["stored"] - state["stored"]
-                min_moved = 1 if after_bell["ready"] == 0 else 0
-                return (min_moved <= moved <= 40
-                        and sum(state.values()) <= sum(after_bell.values()))
+                if after_bell["ready"] == 0:
+                    return (1 <= moved <= 40) or (state["ready"] > 0 and moved >= 0)
+                return -20 <= moved <= 40
             return True
 
         if not self.rt.ui.wait_page(ready, seconds=8):
@@ -146,6 +148,7 @@ class CrystalTree(Starsea):
 
     def collect(self):
         initial_total = None
+        collected_total = 0
         latest_state = None
         try:
             if not self.rt.background_mode() and not foreground_inputs():
@@ -169,7 +172,12 @@ class CrystalTree(Starsea):
                 state = self.observe_counts(teleporter, approach)
                 latest_state = state
                 if sum(state.values()) > sum(before.values()):
-                    raise NavigationError("星忆晶树数量前后不一致，未继续收集。")
+                    self.events.append({"type": "tree_refreshed", "before": before, "after": state})
+                    self.rt.log(
+                        f"星忆晶树前往期间有新结晶凝结（存储 {state['stored']}/120，待收获 {state['ready']}/40），按最新数量继续收集。"
+                    )
+                else:
+                    collected_total += sum(before.values()) - sum(state.values())
                 # approach already completed one full ground lap around the tree;
                 # any remaining ready crystals are hanging in the high canopy
                 # (Fall_Ring = 1) or newly condensed onto the tree.
@@ -177,9 +185,19 @@ class CrystalTree(Starsea):
                 shaken = False
                 condensed_retry = False
                 skipped_unchanged = False
+                growth_resets = 0
+                rounds = 0
                 while sum(state.values()) > 0:
                     if self.rt.stopped:
                         return False
+                    rounds += 1
+                    if rounds > 12:
+                        skipped_unchanged = True
+                        self.events.append({"type": "tree_round_cap", **state})
+                        self.rt.log(
+                            f"星忆晶树已达到单次收集轮数上限（当前存储 {state['stored']}/120，待收获 {state['ready']}/40），跳过剩余结晶。"
+                        )
+                        break
                     if state["ready"] == 0 or need_bell:
                         condensed_retry = False
                         if state["ready"] == 0:
@@ -188,8 +206,11 @@ class CrystalTree(Starsea):
                             self.rt.log("树冠仍有待收获结晶，长按摇铃震落后继续绕树收取。")
                         if not self.ring(at_hub=True):
                             return False
+                        prev_before_bell = state
                         state = self.observe_counts(teleporter, approach, after_bell=state)
                         latest_state = state
+                        if sum(state.values()) < sum(prev_before_bell.values()):
+                            collected_total += sum(prev_before_bell.values()) - sum(state.values())
                         need_bell = False
                         shaken = True
                         if sum(state.values()) == 0:
@@ -204,8 +225,18 @@ class CrystalTree(Starsea):
                     state = self.observe_counts(teleporter, approach)
                     latest_state = state
                     if sum(state.values()) > sum(before.values()):
-                        raise NavigationError("星忆晶树数量前后不一致，未继续收集。")
+                        growth_resets += 1
+                        self.events.append({"type": "tree_refreshed", "before": before, "after": state})
+                        if growth_resets > 2:
+                            raise NavigationError("星忆晶树数量多次异常增长，未继续收集。")
+                        self.rt.log(
+                            f"绕树期间星忆晶树有新结晶凝结（存储 {state['stored']}/120，待收获 {state['ready']}/40），继续收集。"
+                        )
+                        condensed_retry = False
+                        shaken = False
+                        continue
                     if sum(state.values()) < sum(before.values()):
+                        collected_total += sum(before.values()) - sum(state.values())
                         condensed_retry = False
                         if state["stored"] < before["stored"]:
                             shaken = False
@@ -239,7 +270,7 @@ class CrystalTree(Starsea):
             return False
         finally:
             if initial_total is not None and latest_state is not None:
-                collected = max(0, initial_total - sum(latest_state.values()))
+                collected = max(collected_total, max(0, initial_total - sum(latest_state.values())))
                 if collected > 0:
                     try_record_adventure_entry(
                         ROOT,
