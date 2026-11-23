@@ -23,6 +23,7 @@ export function applyHotItemSources(
 
 export interface SuitPartEntry {
   id: string;
+  gameId?: string;
   name: string;
   partName: string;
   quality: number;
@@ -32,6 +33,20 @@ export interface SuitPartEntry {
   groupId?: string;
   inferred?: string | null;
   source?: string;
+}
+
+export interface SuitVariantEntry {
+  id: string;
+  kind: 'base' | 'evo' | 'glow';
+  stage: number;
+  label: string;
+  name: string;
+  thumbKey: string;
+  obtainedCount: number;
+  totalCount: number;
+  missingCount: number;
+  complete: boolean;
+  parts: SuitPartEntry[];
 }
 
 export interface SuitBrowserEntry {
@@ -49,6 +64,14 @@ export interface SuitBrowserEntry {
   missingCount: number;
   complete: boolean;
   parts: SuitPartEntry[];
+  variants: SuitVariantEntry[];
+  evoTotal: number;
+  evoUnlocked: number;
+  evoComplete: boolean;
+  hasGlow: boolean;
+  glowUnlocked: boolean;
+  glowObtainedCount: number;
+  glowTotalCount: number;
 }
 
 export interface PieceBrowserEntry {
@@ -149,6 +172,89 @@ export function buildSuitEntries(payload: ScoringPayload, profile: OwnedProfile)
       for (const t of p.tags) tagSet.add(t);
     }
     const major = majorCounts.indexOf(Math.max(...majorCounts));
+    const baseComplete = parts.length > 0 && obtainedCount === parts.length;
+
+    const baseOrder = new Map<string, number>();
+    validIds.forEach((id, idx) => baseOrder.set(String(id), idx));
+
+    const catalogVariants = suit.variants ?? [];
+    const evoCatalogCount = catalogVariants.filter((v) => v.kind === 'evo').length;
+    const builtExtraVariants: SuitVariantEntry[] = [];
+    for (const v of catalogVariants) {
+      const vParts: SuitPartEntry[] = [];
+      for (const rawGid of v.game_items ?? []) {
+        const gid = String(rawGid);
+        const gameItem = catalog.game_items?.[gid];
+        if (!gameItem) continue;
+        const record = catalog.items[gameItem.score_id];
+        if (!record || record.type >= 200) continue;
+        const owned = profile.ownedGameIds.has(gid);
+        const ownedMeta = ownedByScoreId.get(String(gameItem.score_id));
+        vParts.push({
+          id: String(gameItem.score_id),
+          gameId: gid,
+          name: gameItem.name || record.name,
+          partName: (catalog.part_names[record.type] ?? String(record.type)).split(' / ').pop() ?? '',
+          quality: gameItem.quality || record.quality,
+          major: record.major,
+          tags: record.visibleTags ?? record.tags ?? [],
+          owned,
+          groupId: owned ? (ownedMeta?.group ?? gameItem.group) : undefined,
+          inferred: owned ? ownedMeta?.refreshReward : undefined,
+          source: ITEM_SOURCES[String(gameItem.score_id)],
+        });
+      }
+      if (!vParts.length) continue;
+      vParts.sort((a, b) => {
+        const ia = baseOrder.get(a.id) ?? (1000 + (catalog.items[a.id]?.type ?? 999));
+        const ib = baseOrder.get(b.id) ?? (1000 + (catalog.items[b.id]?.type ?? 999));
+        return ia - ib;
+      });
+      const vObtained = vParts.filter((p) => p.owned).length;
+      const label = v.kind === 'glow'
+        ? '焕新'
+        : evoCatalogCount <= 1
+          ? '进化'
+          : `${v.stage}进`;
+      builtExtraVariants.push({
+        id: v.id,
+        kind: v.kind,
+        stage: v.stage,
+        label,
+        name: v.name,
+        thumbKey: v.id,
+        obtainedCount: vObtained,
+        totalCount: vParts.length,
+        missingCount: vParts.length - vObtained,
+        complete: vObtained === vParts.length,
+        parts: vParts,
+      });
+    }
+
+    const variants: SuitVariantEntry[] = builtExtraVariants.length > 0
+      ? [
+        {
+          id: `${suit.id}_base`,
+          kind: 'base',
+          stage: 0,
+          label: '原色',
+          name: suit.name,
+          thumbKey: suit.id,
+          obtainedCount,
+          totalCount: parts.length,
+          missingCount: parts.length - obtainedCount,
+          complete: baseComplete,
+          parts,
+        },
+        ...builtExtraVariants,
+      ]
+      : [];
+
+    const evoVariants = builtExtraVariants.filter((v) => v.kind === 'evo');
+    const glowVariant = builtExtraVariants.find((v) => v.kind === 'glow');
+    const evoTotal = evoVariants.length;
+    const evoUnlocked = evoVariants.filter((v) => v.complete).length;
+
     return {
       id: suit.id,
       name: suit.name,
@@ -162,8 +268,16 @@ export function buildSuitEntries(payload: ScoringPayload, profile: OwnedProfile)
       obtainedCount,
       totalCount: parts.length,
       missingCount: parts.length - obtainedCount,
-      complete: parts.length > 0 && obtainedCount === parts.length,
+      complete: baseComplete,
       parts,
+      variants,
+      evoTotal,
+      evoUnlocked,
+      evoComplete: evoTotal > 0 && evoUnlocked === evoTotal,
+      hasGlow: Boolean(glowVariant),
+      glowUnlocked: Boolean(glowVariant?.complete),
+      glowObtainedCount: glowVariant?.obtainedCount ?? 0,
+      glowTotalCount: glowVariant?.totalCount ?? 0,
     };
   }).filter((s) => s.totalCount > 0);
 

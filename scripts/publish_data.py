@@ -63,6 +63,7 @@ STAT_LABELS: tuple[tuple[str, str], ...] = (
     ("clothes_groups", "服装评分归并组"),
     ("game_items", "游戏服装单品条目"),
     ("suits", "服装套装"),
+    ("suit_variants", "套装进化与焕新形态"),
     ("pinnacle_matches", "奇迹之冠关卡"),
     ("resonance_banners", "共鸣卡池"),
     ("resonance_outfits", "共鸣套装"),
@@ -113,11 +114,14 @@ def inspect_suit_thumbs(ws_suits: list[dict]) -> dict | None:
             seen.add(info.filename.removesuffix(".webp"))
     if not seen:
         raise ValueError(f"Suit thumbnail archive contains no entries: {SUIT_THUMBS_LOCAL}")
-    suit_ids = {str(s["id"]) for s in ws_suits}
-    missing = sorted(suit_ids - seen)
+    expected_keys = {str(s["id"]) for s in ws_suits}
+    for s in ws_suits:
+        for v in s.get("variants") or []:
+            expected_keys.add(str(v["id"]))
+    missing = sorted(expected_keys - seen)
     if missing:
         print(
-            f"[提示] 套装预览图包缺少 {len(missing)} 套（共 {len(suit_ids)} 套）：{missing[:5]}",
+            f"[提示] 套装预览图包缺少 {len(missing)} 张（共 {len(expected_keys)} 张）：{missing[:5]}",
             file=sys.stderr,
         )
     return {
@@ -154,6 +158,24 @@ def verify_local_data() -> dict:
 
     if not ws.get("items") or not ws.get("game_items") or not ws.get("suits") or not ws.get("matches"):
         raise ValueError("wardrobe_scoring.json is missing required non-empty tables")
+    ws_items = ws["items"]
+    ws_game_items = ws["game_items"]
+    suit_variants_count = 0
+    for suit in ws["suits"]:
+        for variant in suit.get("variants") or []:
+            vid = str(variant.get("id", ""))
+            if not SUIT_THUMB_ENTRY_RE.fullmatch(f"{vid}.webp"):
+                raise ValueError(f"Invalid suit variant id: {vid}")
+            if variant.get("kind") not in ("evo", "glow"):
+                raise ValueError(f"Invalid suit variant kind on {vid}: {variant.get('kind')}")
+            vgids = variant.get("game_items") or []
+            if not vgids:
+                raise ValueError(f"Suit variant {vid} has empty game_items")
+            for gid in vgids:
+                g = ws_game_items.get(str(gid))
+                if not g or str(g.get("score_id")) not in ws_items:
+                    raise ValueError(f"Suit variant {vid} references unknown game_item {gid}")
+            suit_variants_count += 1
     if not bc.get("sets") or not cc.get("sketches") or not xr.get("tasks") or not mc:
         raise ValueError("One or more auxiliary game catalogs are empty")
     if not isinstance(rdc, dict) or not isinstance(rdc.get("codes"), list):
@@ -194,6 +216,7 @@ def verify_local_data() -> dict:
         "clothes_groups": len(ws["items"]),
         "game_items": len(ws["game_items"]),
         "suits": len(ws["suits"]),
+        "suit_variants": suit_variants_count,
         "pinnacle_matches": len(ws["matches"]),
         "resonance_banners": len(rc["banners"]),
         "resonance_outfits": len(rc["outfits"]),
@@ -267,7 +290,7 @@ def inspect_changes(
             f"- 收录服装单品 {stats['game_items']} 件（{stats['suits']} 套）、共鸣卡池 {stats['resonance_banners']} 期、奇迹之冠 {stats['pinnacle_matches']} 关、祝福闪光 {stats['blessing_sets']} 套、设计图 {stats['crafting_sketches']} 张",
         ]
         if suit_thumbs:
-            lines.append(f"- 收录套装预览图 {suit_thumbs['count']} 套")
+            lines.append(f"- 收录套装预览图 {suit_thumbs['count']} 张")
         return {
             "is_initial": True,
             "catalog_changed": sorted(catalog_files.keys()),
@@ -325,7 +348,7 @@ def inspect_changes(
     else:
         lines.append(f"- 识别模型与图标库无变动（继续复用 `{prev_bundles.get('models', {}).get('tag', '')}`）")
     if suit_thumbs_changed and suit_thumbs:
-        lines.append(f"- 套装预览图包同步更新（共 {suit_thumbs['count']} 套）")
+        lines.append(f"- 套装预览图包同步更新（共 {suit_thumbs['count']} 张）")
     elif prev_thumbs:
         lines.append(f"- 套装预览图包无变动（继续复用 `{prev_thumbs.get('tag', '')}`）")
 

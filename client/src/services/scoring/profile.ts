@@ -4,7 +4,7 @@ const normalize = (name: string) => name.replaceAll('・', '·');
 
 /** Only explicit ID links and equal candidate meanings may establish ownership. */
 export function buildOwnedProfile(payload: ScoringPayload, settings: ScoringSettings): OwnedProfile {
-  const result: OwnedProfile = { items: [], groups: [], aligned: 0, skipped: [], cosmetics: 0 };
+  const result: OwnedProfile = { items: [], groups: [], ownedGameIds: new Set(), aligned: 0, skipped: [], cosmetics: 0 };
   const { catalog } = payload;
   const groups = new Map<string, { entry: GameItem; members: Map<string, GameItem>; reward: string | null }>();
   for (const [part, state] of Object.entries(payload.snapshot?.parts ?? {})) {
@@ -21,6 +21,14 @@ export function buildOwnedProfile(payload: ScoringPayload, settings: ScoringSett
         continue;
       }
       result.aligned++;
+      if (row.item_ids.length === 1) {
+        result.ownedGameIds.add(String(row.item_ids[0]));
+      } else if (row.item_ids.length > 1) {
+        const identities = new Set(entries.map((item) => `${item.name}:${item.glow_reward}`));
+        if (identities.size === 1) {
+          for (const id of row.item_ids) result.ownedGameIds.add(String(id));
+        }
+      }
       const entry = entries[0];
       let group = groups.get(entry.group);
       if (!group) {

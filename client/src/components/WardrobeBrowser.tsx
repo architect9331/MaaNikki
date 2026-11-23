@@ -22,6 +22,7 @@ import {
   type SuitBrowserEntry,
   type SuitSortBy,
   type SuitSortOrder,
+  type SuitVariantEntry,
 } from '@/services/scoring/wardrobeBrowserData';
 import { Segmented, Tile } from './ui/FeaturePage';
 import { WardrobePhotoCardModal } from './WardrobePhotoCardModal';
@@ -70,7 +71,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   const [releaseDir, setReleaseDir] = useState<SuitSortOrder>(initialSort.dir);
   const [limit, setLimit] = useState(SUIT_PAGE_SIZE);
   const [selectedSuitId, setSelectedSuitId] = useState<string | null>(null);
-  const [sharingSuit, setSharingSuit] = useState<SuitBrowserEntry | null>(null);
+  const [sharingTarget, setSharingTarget] = useState<{ suit: SuitBrowserEntry; variant?: SuitVariantEntry } | null>(null);
   const { status: thumbStatus, retrying: retryingThumbs, retrySync } = useSuitThumbsStatus();
 
   useEffect(() => { void load(`${activeUid ?? ''}:${refreshToken}`); }, [activeUid, refreshToken, load]);
@@ -99,10 +100,17 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
     && (tagFilter === 'all' || s.tags.includes(Number(tagFilter)))
     && (statusFilter === 'all'
       || statusFilter === 'complete' && s.complete
+      || statusFilter === 'evolved' && s.evoUnlocked > 0
+      || statusFilter === 'evo_complete' && s.evoComplete
+      || statusFilter === 'glow_unlocked' && s.glowUnlocked
       || statusFilter === 'incomplete' && !s.complete && s.obtainedCount > 0
       || statusFilter === 'near' && (s.missingCount === 1 || s.missingCount === 2)
       || statusFilter === 'unowned' && s.obtainedCount === 0)
-    && (!q || s.name.includes(q) || (s.releaseSeason ?? '').includes(q) || s.parts.some((p) => p.name.includes(q)))),
+    && (!q
+      || s.name.includes(q)
+      || (s.releaseSeason ?? '').includes(q)
+      || s.parts.some((p) => p.name.includes(q))
+      || s.variants.some((v) => v.name.includes(q) || v.parts.some((p) => p.name.includes(q))))),
   [sortedSuits, qualityFilter, majorFilter, tagFilter, statusFilter, q]);
 
   const visibleSuits = useMemo(
@@ -144,6 +152,8 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
   });
 
   const completeSuitsCount = suits.filter((s) => s.complete).length;
+  const unlockedEvoCount = suits.reduce((sum, s) => sum + s.evoUnlocked, 0);
+  const totalEvoCount = suits.reduce((sum, s) => sum + s.evoTotal, 0);
   const ownedPiecesCount = pieces.filter((p) => p.owned).length;
   const refreshedGroupsCount = profile.groups.filter((g) => g.level === 11).length;
   const pageStep = view === 'suits' ? SUIT_PAGE_SIZE : PIECE_PAGE_SIZE;
@@ -151,17 +161,18 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
 
   return <div className="space-y-4">
     <section className={clsx(card, 'space-y-3')}>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Tile label="已集齐套装" value={<>{completeSuitsCount}<span className="ml-1 text-xs font-normal text-text-muted">/ {suits.length}</span></>} />
+        <Tile label="已解锁进化色" value={<>{unlockedEvoCount}<span className="ml-1 text-xs font-normal text-text-muted">/ {totalEvoCount}</span></>} />
         <Tile label="已收录散件" value={<>{ownedPiecesCount}<span className="ml-1 text-xs font-normal text-text-muted">/ {pieces.length}</span></>} />
         <Tile label="已焕新养成组" value={<>{refreshedGroupsCount}<span className="ml-1 text-xs font-normal text-text-muted">/ {profile.groups.length}</span></>} />
       </div>
-      <p className="text-[11px] leading-5 text-text-secondary">顶部进度按本地资料中的 {suits.length} 套服装统计，同一计分款的不同颜色合并判断，不代表全衣柜或全颜色收集率。散件与妆容不计入套装总数，新内容随资料更新补充。</p>
+      <p className="text-[11px] leading-5 text-text-secondary">顶部套装收集按本地资料中的 {suits.length} 套原色计分款统计，点击套装可切换查看进化色与焕新色立绘及部件进度；解锁新进化色后点上方「博物图鉴校准」即可同步更新。</p>
       <div className="flex flex-wrap items-center gap-2">
         <Segmented label="浏览视图" value={view} options={[['suits', '按套装查看'], ['pieces', '按散件查看']] as const} onChange={(v) => { setView(v); setStatusFilter('all'); }} />
         <select aria-label="状态筛选" className={field} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           {view === 'suits' ? <>
-            <option value="all">全部状态</option><option value="complete">已集齐</option><option value="near">差 1～2 件集齐</option><option value="incomplete">收集中</option><option value="unowned">暂未获得</option>
+            <option value="all">全部状态</option><option value="complete">已集齐</option><option value="evolved">已解锁进化</option><option value="evo_complete">已满进</option><option value="glow_unlocked">已集齐焕新色</option><option value="near">差 1～2 件集齐</option><option value="incomplete">收集中</option><option value="unowned">暂未获得</option>
           </> : <>
             <option value="all">全部拥有状态</option><option value="owned">已拥有</option><option value="unowned">未拥有</option><option value="chest_missing">未收集的大世界宝箱散件</option><option value="refreshed">已焕新 (11级)</option><option value="unknown_lv">已拥有但未填等级</option>
           </>}
@@ -277,6 +288,53 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
                   )}>
                     {suit.complete ? '已集齐' : unowned ? '未获得' : `${suit.obtainedCount}/${suit.totalCount}`}
                   </span>
+                  {(suit.evoTotal > 0 || suit.glowObtainedCount > 0) && (
+                    <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center justify-between gap-1.5">
+                      {suit.evoTotal > 0 ? (
+                        <span
+                          className={clsx(
+                            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium tabular-nums backdrop-blur-xs',
+                            suit.evoComplete
+                              ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                              : suit.evoUnlocked > 0
+                                ? 'border-amber-500/30 bg-bg-secondary/90 text-amber-600 dark:text-amber-400'
+                                : 'border-border/60 bg-bg-secondary/80 text-text-muted',
+                          )}
+                        >
+                          <span className="inline-flex items-center gap-0.5" aria-hidden="true">
+                            {Array.from({ length: suit.evoTotal }, (_, idx) => (
+                              <span
+                                key={idx}
+                                className={clsx(
+                                  'h-1.5 w-1.5 rounded-full',
+                                  idx < suit.evoUnlocked ? 'bg-amber-500' : 'bg-text-muted/35',
+                                )}
+                              />
+                            ))}
+                          </span>
+                          <span>
+                            {suit.evoComplete
+                              ? (suit.evoTotal > 1 ? '满进' : '已进化')
+                              : suit.evoUnlocked > 0
+                                ? `${suit.evoUnlocked}进`
+                                : `0/${suit.evoTotal}进`}
+                          </span>
+                        </span>
+                      ) : <span />}
+                      {suit.glowObtainedCount > 0 && (
+                        <span
+                          className={clsx(
+                            'rounded-md border px-1.5 py-0.5 text-[10px] font-medium tabular-nums backdrop-blur-xs',
+                            suit.glowUnlocked
+                              ? 'border-accent/35 bg-accent/15 text-accent'
+                              : 'border-border/60 bg-bg-secondary/85 text-text-secondary',
+                          )}
+                        >
+                          {suit.glowUnlocked ? '焕新' : `焕 ${suit.glowObtainedCount}/${suit.glowTotalCount}`}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5 p-3">
                   <strong className="block truncate text-sm font-semibold text-text-primary">{suit.name}</strong>
@@ -338,62 +396,72 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
     <WardrobeSuitDetailModal
       suit={selectedSuit}
       thumbUrl={selectedSuit ? thumbMap[selectedSuit.id] : undefined}
+      thumbStatus={thumbStatus}
       catalog={payload.catalog}
       levels={settings.levels}
       onLevelChange={setLevel}
-      onShare={(suit) => {
+      onShare={(suit, variant) => {
         setSelectedSuitId(null);
-        setSharingSuit(suit);
+        setSharingTarget({ suit, variant });
       }}
       onClose={() => setSelectedSuitId(null)}
     />
 
-    {sharingSuit && (
-      <WardrobePhotoCardModal
-        open={true}
-        onClose={() => setSharingSuit(null)}
-        outfit={{
-          score: sharingSuit.obtainedCount,
-          globalScore: 0,
-          stars: [],
-          cost: {},
-          unknownCostGroups: [],
-          choice: null,
-          exact: true,
-          targetMet: sharingSuit.complete,
-          pieces: sharingSuit.parts.map((p) => {
-            const effectiveLv = p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? 0) : 0;
-            return {
-              item: { id: p.id, name: p.name, group: p.groupId, level: p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? null) : null },
-              type: payload.catalog.items[p.id]?.type ?? 1,
-              from: effectiveLv,
-              level: effectiveLv,
-              score: p.owned ? 1 : 0,
-              attributeScores: [0, 0, 0, 0, 0],
-              grownAttributes: [0, 0, 0, 0, 0],
-              tagScore: 0,
-              multiplier: 1,
-              cost: {},
-            };
-          }),
-        } satisfies OutfitResult}
-        match={{
-          name: sharingSuit.name,
-          group: `${sharingSuit.quality}★ 套装收藏`,
-          area: 1,
-          weights: [0, 0, 0, 0, 0],
-          tags: {},
-          eurekaTags: {},
-          tagBase: 0,
-          dressMultiplier: 1,
-          bonuses: [],
-          choices: [],
-          stars: [],
-        } satisfies Match}
-        catalog={payload.catalog}
-        modeLabel={ATTRIBUTES[sharingSuit.major] ?? '综合'}
-        customHeadline={`已收集 ${sharingSuit.obtainedCount} / ${sharingSuit.totalCount}`}
-      />
-    )}
+    {sharingTarget && (() => {
+      const { suit, variant } = sharingTarget;
+      const useVariant = variant && variant.kind !== 'base';
+      const shareName = useVariant ? variant.name : suit.name;
+      const shareParts = useVariant ? variant.parts : suit.parts;
+      const shareObtained = useVariant ? variant.obtainedCount : suit.obtainedCount;
+      const shareTotal = useVariant ? variant.totalCount : suit.totalCount;
+      const shareComplete = useVariant ? variant.complete : suit.complete;
+      return (
+        <WardrobePhotoCardModal
+          open={true}
+          onClose={() => setSharingTarget(null)}
+          outfit={{
+            score: shareObtained,
+            globalScore: 0,
+            stars: [],
+            cost: {},
+            unknownCostGroups: [],
+            choice: null,
+            exact: true,
+            targetMet: shareComplete,
+            pieces: shareParts.map((p) => {
+              const effectiveLv = p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? 0) : 0;
+              return {
+                item: { id: p.id, name: p.name, group: p.groupId, level: p.inferred ? 11 : p.groupId ? (settings.levels[p.groupId] ?? null) : null },
+                type: payload.catalog.items[p.id]?.type ?? 1,
+                from: effectiveLv,
+                level: effectiveLv,
+                score: p.owned ? 1 : 0,
+                attributeScores: [0, 0, 0, 0, 0],
+                grownAttributes: [0, 0, 0, 0, 0],
+                tagScore: 0,
+                multiplier: 1,
+                cost: {},
+              };
+            }),
+          } satisfies OutfitResult}
+          match={{
+            name: shareName,
+            group: useVariant ? `${suit.quality}★ 套装收藏 · ${variant.label}` : `${suit.quality}★ 套装收藏`,
+            area: 1,
+            weights: [0, 0, 0, 0, 0],
+            tags: {},
+            eurekaTags: {},
+            tagBase: 0,
+            dressMultiplier: 1,
+            bonuses: [],
+            choices: [],
+            stars: [],
+          } satisfies Match}
+          catalog={payload.catalog}
+          modeLabel={ATTRIBUTES[suit.major] ?? '综合'}
+          customHeadline={`已收集 ${shareObtained} / ${shareTotal}`}
+        />
+      );
+    })()}
   </div>;
 }

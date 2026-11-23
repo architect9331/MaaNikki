@@ -60,6 +60,14 @@ export interface Match {
   max_score?: number;
   thresholds?: Record<string, number>;
 }
+export interface SuitVariantCatalogEntry {
+  id: string;
+  suit_id: number;
+  kind: 'evo' | 'glow';
+  stage: number;
+  name: string;
+  game_items: number[];
+}
 export interface ScoringCatalog {
   schema_version: number;
   version: string;
@@ -75,6 +83,7 @@ export interface ScoringCatalog {
     release_order?: number;
     release_season?: string;
     release_date?: string;
+    variants?: SuitVariantCatalogEntry[];
   }[];
   curves: { ratios: number[]; costs: Record<string, number>[] }[];
   material_names: Record<string, string>;
@@ -224,6 +233,7 @@ export interface GrowthGroup {
 export interface OwnedProfile {
   items: OwnedItem[];
   groups: GrowthGroup[];
+  ownedGameIds: Set<string>;
   aligned: number;
   skipped: { name: string; part: string; reason: string }[];
   cosmetics: number;
