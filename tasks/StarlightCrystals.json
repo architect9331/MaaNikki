@@ -6,15 +6,15 @@
       "entry": "MaaNikki_CollectStarlightCrystals",
       "group": ["daily"],
       "default_check": true,
-      "description": "可选择跑图收集、星忆晶树或两项都选。晶树先收取落地结晶，再按存储量摇铃并绕树收集，直到取完。需解锁星海地图与无界枢纽，并使用前台输入。",
-      "option": ["StarlightCrystalTasks"]
+      "description": "可选择跑图收集、星忆晶树或两项都选。晶树默认摇铃一次并绕树捡完当前落地的结晶后直接结束；如需等待存储量全部凝结清空，可开启下方开关。需解锁星海地图与无界枢纽，并使用前台输入。",
+      "option": ["StarlightCrystalTasks", "CrystalTreeDrain"]
     }
   ],
   "option": {
     "StarlightCrystalTasks": {
       "type": "checkbox",
       "label": "收集项目",
-      "description": "两项都选时先跑图，再收星忆晶树。晶树每次摇铃最多落地 40 个，未取完会继续下一轮。",
+      "description": "两项都选时先跑图，再收星忆晶树。晶树默认只摇铃一次捡完当前批次即走，避免长时间停留。",
       "cases": [
         {"name": "Route", "label": "跑图收集", "pipeline_override": {
           "MaaNikki_CollectStarlightCrystals": {"custom_action_param": {"route": true}}
@@ -26,6 +26,20 @@
       "default_case": ["Route"],
       "min_count": 1,
       "max_count": 2
+    },
+    "CrystalTreeDrain": {
+      "type": "switch",
+      "label": "清空星忆晶树存储",
+      "description": "关闭（默认）时仅摇铃一次、绕树捡完当前落地的结晶即结束，不管刚新凝结出的零星结晶。开启后若存储量仍有剩余，会按约 7 分钟充满一轮的节奏在树下等待凝结并继续摇铃收取，直到清空存储（耗时较长）。",
+      "cases": [
+        {"name": "Yes", "label": "开启", "pipeline_override": {
+          "MaaNikki_CollectStarlightCrystals": {"custom_action_param": {"drain_storage": true}}
+        }},
+        {"name": "No", "label": "关闭", "pipeline_override": {
+          "MaaNikki_CollectStarlightCrystals": {"custom_action_param": {"drain_storage": false}}
+        }}
+      ],
+      "default_case": "No"
     }
   }
 }

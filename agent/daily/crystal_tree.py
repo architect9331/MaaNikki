@@ -133,7 +133,33 @@ class CrystalTree(Starsea):
         if self.rt.stopped:
             raise TaskStopped("星忆晶树收集已停止")
 
-    def collect(self):
+    # Stored crystals trickle onto the canopy at ~1 every 10s (~7 min per 40-crystal batch).
+    CRYSTAL_CONDENSE_SECONDS = 10.5
+    DRAIN_MAX_WAIT_SECONDS = 420
+
+    def _wait_for_condense(self, seconds: int) -> bool:
+        """Wait in short slices so Stop or focus pause interrupts promptly."""
+        remaining = float(seconds)
+        while remaining > 0:
+            if self.rt.stopped:
+                return False
+            step = min(10.0, remaining)
+            if not self.rt.pause(step):
+                return False
+            remaining -= step
+        return not self.rt.stopped
+
+    def _shake_and_sweep(self, teleporter, loop) -> bool:
+        """Ring the bell once, let shaken crystals hit the ground, then run one pickup lap."""
+        if not self.ring(at_hub=True):
+            return False
+        if not self.rt.pause(1.0):
+            return False
+        self.rt.log("正在绕树收集落地结晶。")
+        self.follow(teleporter, loop)
+        return True
+
+    def collect(self, *, drain_storage: bool = False):
         initial_total = None
         collected_total = 0
         latest_state = None
@@ -154,8 +180,39 @@ class CrystalTree(Starsea):
                 if not initial_total:
                     self.rt.log("星忆晶树没有存储或待收获的结晶，本次跳过。")
                     return True
-                self.rt.log("正在前往星忆晶树，先收取已经落地的结晶。")
+
+                if not drain_storage:
+                    # Default quick mode: do not linger waiting ~7 minutes for stored
+                    # crystals to trickle onto the canopy. Shake once, sweep the ground
+                    # lap immediately (since map "待收获量" drops to 0 as soon as crystals
+                    # leave the tree), and leave regardless of a few newly condensed ones.
+                    if before["ready"] == 0:
+                        self.rt.log(
+                            f"星忆晶树当前树上暂无待收获结晶（存储 {before['stored']}/120 正在缓慢凝结），本次先跳过；如需持续等待清空可开启「清空星忆晶树存储」。"
+                        )
+                        return True
+                    self.rt.log("正在前往星忆晶树，摇铃一次并绕树收取当前批次结晶。")
+                    self.follow(teleporter, approach)
+                    if not self._shake_and_sweep(teleporter, loop):
+                        return False
+                    collected_total = before["ready"]
+                    latest_state = {"stored": before["stored"], "ready": 0}
+                    if before["stored"] > 0:
+                        self.rt.log(
+                            f"星忆晶树本批结晶已收取完成（另有存储 {before['stored']}/120 将缓慢凝结，如需清空可开启「清空星忆晶树存储」）。"
+                        )
+                    else:
+                        self.rt.log("星忆晶树本批结晶已收取完成。")
+                    return True
+
+                # Opt-in full drain mode: collect the initial batch, then wait for stored
+                # crystals to refill the canopy (~7 min per 40) before each subsequent shake.
+                self.rt.log("正在前往星忆晶树（清空存储模式），先收取当前批次结晶。")
                 self.follow(teleporter, approach)
+                if before["ready"] > 0:
+                    self.rt.log("长按摇铃震落当前批次结晶并绕树收取。")
+                    if not self._shake_and_sweep(teleporter, loop):
+                        return False
                 state = self.observe_counts(teleporter, approach)
                 latest_state = state
                 if sum(state.values()) > sum(before.values()):
@@ -165,12 +222,7 @@ class CrystalTree(Starsea):
                     )
                 else:
                     collected_total += sum(before.values()) - sum(state.values())
-                # approach already completed one full ground lap around the tree;
-                # any remaining crystals require ringing the bell to shake canopy
-                # crystals (or condense stored crystals) onto the ground. Because
-                # the map's "待收获量" drops to 0 as soon as crystals leave the
-                # tree—while they are still lying on the ground—always run a full
-                # pickup lap immediately after ringing before checking the map.
+
                 condensed_retry = False
                 skipped_unchanged = False
                 growth_resets = 0
@@ -179,30 +231,36 @@ class CrystalTree(Starsea):
                     if self.rt.stopped:
                         return False
                     rounds += 1
-                    if rounds > 12:
+                    if rounds > 6:
                         skipped_unchanged = True
                         self.events.append({"type": "tree_round_cap", **state})
                         self.rt.log(
-                            f"星忆晶树已达到单次收集轮数上限（当前存储 {state['stored']}/120，待收获 {state['ready']}/40），跳过剩余结晶。"
+                            f"星忆晶树已达到单次清空轮数上限（当前存储 {state['stored']}/120，待收获 {state['ready']}/40），跳过剩余结晶。"
                         )
                         break
-                    before = state
-                    if state["ready"] == 0:
-                        self.rt.log("落地结晶已收完，长按摇铃取出下一批后绕树收取。")
-                    else:
-                        self.rt.log("树冠仍有待收获结晶，长按摇铃震落后绕树收取。")
-                    if not self.ring(at_hub=True):
+                    before_round = state
+                    if state["stored"] > 0:
+                        target_ready = min(40, state["stored"] + state["ready"])
+                        need = max(0, target_ready - state["ready"])
+                        if need > 0:
+                            wait_s = min(
+                                self.DRAIN_MAX_WAIT_SECONDS,
+                                max(15, round(need * self.CRYSTAL_CONDENSE_SECONDS)),
+                            )
+                            self.events.append({"type": "tree_drain_wait", "wait_s": wait_s, **state})
+                            self.rt.log(
+                                f"星忆晶树仍有存储 {state['stored']}/120（当前待收获 {state['ready']}/40），在树下等待约 {wait_s} 秒待凝结后再摇铃收取。"
+                            )
+                            if not self._wait_for_condense(wait_s):
+                                return False
+                    self.rt.log("长按摇铃震落当前批次结晶并绕树收取。")
+                    if not self._shake_and_sweep(teleporter, loop):
                         return False
-                    # Give freshly shaken canopy crystals a moment to hit the ground.
-                    if not self.rt.pause(1.0):
-                        return False
-                    self.rt.log("正在绕树收集落地结晶。")
-                    self.follow(teleporter, loop)
                     state = self.observe_counts(teleporter, approach)
                     latest_state = state
-                    if sum(state.values()) > sum(before.values()):
+                    if sum(state.values()) > sum(before_round.values()):
                         growth_resets += 1
-                        self.events.append({"type": "tree_refreshed", "before": before, "after": state})
+                        self.events.append({"type": "tree_refreshed", "before": before_round, "after": state})
                         if growth_resets > 2:
                             raise NavigationError("星忆晶树数量多次异常增长，未继续收集。")
                         self.rt.log(
@@ -210,11 +268,11 @@ class CrystalTree(Starsea):
                         )
                         condensed_retry = False
                         continue
-                    if sum(state.values()) < sum(before.values()):
-                        collected_total += sum(before.values()) - sum(state.values())
+                    if sum(state.values()) < sum(before_round.values()):
+                        collected_total += sum(before_round.values()) - sum(state.values())
                         condensed_retry = False
                         continue
-                    if state["stored"] < before["stored"] and not condensed_retry:
+                    if state["stored"] < before_round["stored"] and not condensed_retry:
                         condensed_retry = True
                         self.rt.log("绕树期间有存储结晶新凝结到树冠，再摇铃绕树一圈确认收取。")
                         continue

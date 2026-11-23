@@ -658,7 +658,8 @@ class CollectStarlightCrystalsAction(CustomAction):
                 from daily.crystal_tree import CrystalTree
                 from daily.runtime import RESOURCE
                 # Recover a known page before an independent second subtask.
-                results.append(bool(runtime.main() and CrystalTree(runtime, RESOURCE).collect()))
+                drain_storage = bool(options.get("drain_storage"))
+                results.append(bool(runtime.main() and CrystalTree(runtime, RESOURCE).collect(drain_storage=drain_storage)))
             completed = bool(results and all(results) and not runtime.stopped)
             if not results and not runtime.stopped:
                 runtime.log("未选择星光结晶收集项目。")
