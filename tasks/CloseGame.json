@@ -4,9 +4,9 @@
             "name": "close_game",
             "label": "关闭游戏",
             "entry": "MaaNikki_CloseGame",
-            "group": ["posttask"],
+            "group": ["launch_close"],
             "default_check": false,
-            "description": "请放在任务队列末尾。执行到本任务时，先将 MaaNikki 窗口置前并倒计时 15 秒（期间可随时停止），随后请求关闭当前连接的游戏窗口并等待游戏进程退出；未正常退出时，日志会给出窗口与进程的观测状态，默认不强制结束。前序任务失败导致队列停止时，本任务不会执行。默认不关闭官方启动器，可在选项中开启；开启后按注册表与安装配置识别官方启动器路径，无法确认身份时跳过。",
+            "description": "放队列末尾；关前倒计时15秒，未退出不强制；强制及关闭启动器默认不关，选项可开。",
             "option": ["ForceCloseOnTimeout", "CloseLauncher"]
         }
     ],

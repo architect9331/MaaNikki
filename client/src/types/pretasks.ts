@@ -70,6 +70,7 @@ export function buildPretaskDef(item: PretaskItem): TaskItem {
     option: item.option,
     controller: item.controller,
     resource: item.resource,
+    group: item.group,
   };
 }
 

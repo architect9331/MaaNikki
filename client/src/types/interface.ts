@@ -91,6 +91,8 @@ export interface PretaskItem {
   icon?: string;
   /** 可选。引用的顶层 option 键名数组，其取值序列化为最后一个参数 */
   option?: string[];
+  /** MaaNikki 扩展：所属分组（group.name），声明后 pretask 显示在「添加任务」面板对应分组区块中 */
+  group?: string[];
   /** MaaNikki: run this pipeline entry after connecting the game window. */
   entry?: string;
   /** Stop the batch if this prerequisite cannot complete. */

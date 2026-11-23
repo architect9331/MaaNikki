@@ -68,8 +68,8 @@
       "default_expand": true
     },
     {
-      "name": "posttask",
-      "label": "后置任务",
+      "name": "launch_close",
+      "label": "启动/关闭游戏",
       "default_expand": true
     },
     {

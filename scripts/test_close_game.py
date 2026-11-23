@@ -883,12 +883,35 @@ class ConfigTests(unittest.TestCase):
         task = read_json("tasks/CloseGame.json")["task"][0]
         self.assertEqual(task["name"], "close_game")
         self.assertFalse(task["default_check"])
-        self.assertEqual(task["group"], ["posttask"])
+        self.assertEqual(task["group"], ["launch_close"])
         labels = {group["name"]: group["label"] for group in read_json("interface.json")["group"]}
-        self.assertEqual(labels.get("posttask"), "后置任务")
-        self.assertIn("倒计时 15 秒", task["description"])
+        self.assertEqual(labels.get("launch_close"), "启动/关闭游戏")
+        self.assertIn("放队列末尾", task["description"])
+        self.assertIn("选项可开", task["description"])
         presets = read_json("tasks/Presets.json")["preset"]
         self.assertFalse(any(item["name"] == "close_game" for preset in presets for item in preset["task"]))
+
+    def test_start_game_pretask_shares_launch_close_group(self):
+        labels = {group["name"]: group["label"] for group in read_json("interface.json")["group"]}
+        pretask = read_json("tasks/StartGame.json")["pretask"][0]
+        self.assertEqual(pretask["name"], "start_game")
+        self.assertEqual(pretask["group"], ["launch_close"])
+        self.assertEqual(labels.get("launch_close"), "启动/关闭游戏")
+
+    def test_group_references_are_defined(self):
+        """tasks/*.json 中所有 task/pretask 的 group 引用必须存在于 interface.json 的 group 列表。
+
+        引用未定义分组时前端会静默回退到独立区块，改名漏改就只剩显示层的错位，这里兜住。"""
+        defined = {group["name"] for group in read_json("interface.json")["group"]}
+        referenced = []
+        for name in read_json("interface.json")["import"]:
+            doc = read_json(name)
+            for task in doc.get("task", []):
+                referenced.extend(task.get("group", []))
+            for pretask in doc.get("pretask", []):
+                referenced.extend(pretask.get("group", []))
+        unknown = sorted(set(referenced) - defined)
+        self.assertEqual(unknown, [], f"引用了未定义的分组: {unknown}")
 
     def test_force_option_defaults_off_everywhere(self):
         option = read_json("tasks/CloseGame.json")["option"]["ForceCloseOnTimeout"]

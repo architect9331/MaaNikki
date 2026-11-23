@@ -551,7 +551,7 @@ const MXU_POWER_OPTION_DEF_INTERNAL: SelectOption = {
  * 所有 MXU 内置特殊任务都在这里注册
  * 添加新特殊任务只需在此注册表中添加新条目
  *
- * 排序（不含"前置任务"，前置任务在 AddTaskPanel 中独立渲染）：
+ * 排序（不含"前置任务"，前置任务按分组声明在 AddTaskPanel 中渲染）：
  */
 export const MXU_SPECIAL_TASKS: Record<string, MxuSpecialTaskDefinition> = {
   [MXU_SLEEP_TASK_NAME]: {

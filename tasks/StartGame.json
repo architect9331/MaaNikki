@@ -3,6 +3,7 @@
     {
       "name": "start_game",
       "label": "启动游戏",
+      "group": ["launch_close"],
       "description": "通过官方启动器启动游戏，处理更新和重启后进入主页。此任务优先执行，切出窗口时暂停，切回后继续。",
       "controller": ["nikki_windows"],
       "exec": "./python/python.exe",
