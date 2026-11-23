@@ -5,12 +5,14 @@ Requires Python 3.11+ on the build host. Uses only the standard library.
 from __future__ import annotations
 
 import argparse
+import ast
 from fnmatch import fnmatchcase
 import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -110,6 +112,36 @@ def source_files():
                     yield path
 
 
+def verify_data_overlay_allowlist():
+    pub_path = ROOT / "scripts/publish_data.py"
+    rs_path = ROOT / "client/src-tauri/src/commands/data_update.rs"
+    if not pub_path.is_file() or not rs_path.is_file():
+        return
+    tree = ast.parse(pub_path.read_text(encoding="utf-8-sig"), filename=str(pub_path))
+    published_targets: set[str] = set()
+    for node in tree.body:
+        target_name = None
+        value_node = None
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            target_name, value_node = node.target.id, node.value
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            target_name, value_node = node.targets[0].id, node.value
+        if target_name in {"CATALOG_FILES", "MODEL_FILES"} and value_node is not None:
+            for pair in ast.literal_eval(value_node):
+                published_targets.add(str(pair[1]))
+    rs_text = rs_path.read_text(encoding="utf-8-sig")
+    match = re.search(r"const\s+ALLOWED_OVERLAY_FILES\s*:\s*&\[&str\]\s*=\s*&\[(.*?)\];", rs_text, re.DOTALL)
+    if not match:
+        raise ValueError("Unable to parse ALLOWED_OVERLAY_FILES in data_update.rs")
+    allowed = set(re.findall(r'"([^"]+)"', match.group(1)))
+    missing = sorted(published_targets - allowed)
+    if missing:
+        raise ValueError(
+            "publish_data.py publishes overlay target(s) missing from data_update.rs "
+            f"ALLOWED_OVERLAY_FILES: {missing}"
+        )
+
+
 def verify_source():
     lock = read_json(ROOT / "build/runtime.lock.json")
     requirements = [line.strip() for line in (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
@@ -136,6 +168,7 @@ def verify_source():
     for imported in interface.get("import", []):
         if not (ROOT / imported).is_file():
             raise ValueError(f"Missing interface import: {imported}")
+    verify_data_overlay_allowlist()
     files = list(source_files())
     for path in files:
         # TypeScript config files use JSONC and are checked by the frontend build.

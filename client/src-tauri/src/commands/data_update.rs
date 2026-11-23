@@ -42,6 +42,7 @@ const ALLOWED_OVERLAY_FILES: &[&str] = &[
     "resource/data/resonance_catalog.json",
     "resource/data/item_sources.json",
     "resource/navigation/materials_catalog_v1.json",
+    "resource/data/redeem_codes.json",
     "resource/model/wardrobe/labels.json",
     "resource/model/wardrobe/parts.json",
     "resource/model/wardrobe/coverage.json",
@@ -175,13 +176,50 @@ fn valid_hex64(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
-fn canonical_rel_path(rel: &str) -> Option<&'static str> {
+fn safe_manifest_rel_path(rel: &str) -> Option<String> {
     let trimmed = rel.trim().replace('\\', "/");
     let stripped = trimmed.trim_start_matches("./");
+    if stripped.is_empty()
+        || stripped.len() > 180
+        || !stripped.starts_with("resource/")
+        || stripped.contains("..")
+        || stripped.contains("//")
+        || stripped.ends_with('/')
+    {
+        return None;
+    }
+    if !Path::new(stripped)
+        .components()
+        .all(|c| matches!(c, Component::Normal(_)))
+    {
+        return None;
+    }
+    if !stripped
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || b"-_./".contains(&b))
+    {
+        return None;
+    }
+    Some(stripped.to_owned())
+}
+
+fn canonical_rel_path(rel: &str) -> Option<&'static str> {
+    let norm = safe_manifest_rel_path(rel)?;
     ALLOWED_OVERLAY_FILES
         .iter()
         .copied()
-        .find(|&allowed| allowed == stripped)
+        .find(|&allowed| allowed == norm)
+}
+
+fn find_bundle_spec<'a>(bundle: &'a BundleSpec, norm_rel: &str) -> Option<&'a FileSpec> {
+    if let Some(spec) = bundle.files.get(norm_rel) {
+        return Some(spec);
+    }
+    bundle
+        .files
+        .iter()
+        .find(|(k, _)| safe_manifest_rel_path(k).as_deref() == Some(norm_rel))
+        .map(|(_, v)| v)
 }
 
 fn safe_slot_name(slot: &str) -> bool {
@@ -392,10 +430,20 @@ fn validate_manifest(manifest: &DataManifest) -> Result<(), String> {
             .get(kind)
             .ok_or_else(|| format!("数据清单缺少 {kind} 分包"))?;
         validate_bundle_header(kind, bundle)?;
+        let mut known_count = 0usize;
         for (rel, spec) in &bundle.files {
-            if canonical_rel_path(rel).is_none() || spec.size == 0 || !valid_hex64(&spec.sha256) {
-                return Err(format!("数据分包 {kind} 包含未授权或无效条目: {rel}"));
+            if safe_manifest_rel_path(rel).is_none() || spec.size == 0 || !valid_hex64(&spec.sha256)
+            {
+                return Err(format!("数据分包 {kind} 包含非法或无效条目: {rel}"));
             }
+            if canonical_rel_path(rel).is_some() {
+                known_count += 1;
+            } else {
+                debug!("[data-update] Skipping unrecognized future entry in {kind}: {rel}");
+            }
+        }
+        if known_count == 0 {
+            return Err(format!("数据分包 {kind} 不包含当前版本支持的条目"));
         }
     }
     if let Some(bundle) = manifest.bundles.get("suit_thumbs") {
@@ -429,12 +477,18 @@ async fn fetch_manifest(
         match req.send().await {
             Ok(resp) if resp.status().is_success() => match resp.bytes().await {
                 Ok(bytes) if bytes.len() <= MAX_MANIFEST_BYTES => {
-                    if let Ok(manifest) = serde_json::from_slice::<DataManifest>(&bytes) {
-                        if validate_manifest(&manifest).is_ok() {
-                            return Ok(manifest);
+                    match serde_json::from_slice::<DataManifest>(&bytes) {
+                        Ok(manifest) => match validate_manifest(&manifest) {
+                            Ok(()) => return Ok(manifest),
+                            Err(reason) => {
+                                warn!("[data-update] Manifest rejected from {url}: {reason}");
+                                last_err = format!("{url}: 清单校验未通过 ({reason})");
+                            }
+                        },
+                        Err(e) => {
+                            last_err = format!("{url}: 清单解析失败 ({e})");
                         }
                     }
-                    last_err = format!("{url}: 清单校验未通过");
                 }
                 _ => last_err = format!("{url}: 响应体积异常"),
             },
@@ -649,28 +703,50 @@ fn extract_verified_bundle(
         if entry.is_symlink() {
             return Err("数据包包含不允许的符号链接".into());
         }
-        let Some(canonical) = canonical_rel_path(entry.name()) else {
-            return Err(format!("数据包包含未授权路径: {}", entry.name()));
+        let Some(norm) = safe_manifest_rel_path(entry.name()) else {
+            return Err(format!("数据包包含非法路径: {}", entry.name()));
         };
-        let Some(spec) = bundle.files.get(canonical) else {
-            return Err(format!("数据包包含清单外文件: {canonical}"));
+        let Some(spec) = find_bundle_spec(bundle, &norm) else {
+            return Err(format!("数据包包含清单外文件: {norm}"));
         };
         if entry.size() != spec.size {
-            return Err(format!("文件大小与清单不符: {canonical}"));
+            return Err(format!("文件大小与清单不符: {norm}"));
         }
-        let target = stage_dir.join(canonical);
-        if let Some(parent) = target.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        if let Some(canonical) = canonical_rel_path(&norm) {
+            let target = stage_dir.join(canonical);
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            let mut out = std::fs::File::create(&target).map_err(|e| e.to_string())?;
+            std::io::copy(&mut entry, &mut out).map_err(|e| e.to_string())?;
+        } else {
+            let mut hasher = Sha256::new();
+            let mut buf = [0u8; 64 * 1024];
+            let mut total = 0u64;
+            loop {
+                let n = entry.read(&mut buf).map_err(|e| e.to_string())?;
+                if n == 0 {
+                    break;
+                }
+                total += n as u64;
+                hasher.update(&buf[..n]);
+            }
+            let digest = format!("{:x}", hasher.finalize());
+            if total != spec.size || digest != spec.sha256.to_ascii_lowercase() {
+                return Err(format!("数据包扩展文件校验失败: {norm}"));
+            }
+            debug!("[data-update] Verified and skipped future overlay file: {norm}");
         }
-        let mut out = std::fs::File::create(&target).map_err(|e| e.to_string())?;
-        std::io::copy(&mut entry, &mut out).map_err(|e| e.to_string())?;
     }
 
     for (rel, spec) in &bundle.files {
-        let target = stage_dir.join(rel);
+        let Some(canonical) = canonical_rel_path(rel) else {
+            continue;
+        };
+        let target = stage_dir.join(canonical);
         let (sz, digest) = sha256_file(&target)?;
         if sz != spec.size || digest != spec.sha256.to_ascii_lowercase() {
-            return Err(format!("解压文件校验失败: {rel}"));
+            return Err(format!("解压文件校验失败: {canonical}"));
         }
     }
     Ok(())
@@ -683,7 +759,7 @@ fn populate_local_bundle(
 ) -> Result<(), String> {
     for (rel, spec) in &bundle.files {
         let Some(canonical) = canonical_rel_path(rel) else {
-            return Err(format!("未授权路径: {rel}"));
+            continue;
         };
         let src = local_matching_source(canonical, spec, exe_dir)
             .ok_or_else(|| format!("本地缺少可复用的校验文件: {canonical}"))?;
@@ -1166,14 +1242,14 @@ async fn run_catalog_and_models_sync(
 
     let catalog_bundle = &manifest.bundles["catalog"];
     let models_bundle = &manifest.bundles["models"];
-    let need_catalog = catalog_bundle
-        .files
-        .iter()
-        .any(|(rel, spec)| local_matching_source(rel, spec, exe_dir).is_none());
-    let need_models = models_bundle
-        .files
-        .iter()
-        .any(|(rel, spec)| local_matching_source(rel, spec, exe_dir).is_none());
+    let need_catalog = catalog_bundle.files.iter().any(|(rel, spec)| {
+        canonical_rel_path(rel)
+            .is_some_and(|canonical| local_matching_source(canonical, spec, exe_dir).is_none())
+    });
+    let need_models = models_bundle.files.iter().any(|(rel, spec)| {
+        canonical_rel_path(rel)
+            .is_some_and(|canonical| local_matching_source(canonical, spec, exe_dir).is_none())
+    });
 
     if !need_catalog && !need_models {
         update_status(app, |st| {
@@ -1235,6 +1311,10 @@ async fn run_catalog_and_models_sync(
         tokio::task::spawn_blocking(move || populate_local_bundle(&mb, &sd, &ed))
             .await
             .map_err(|e| e.to_string())??;
+    }
+
+    if !slot_complete(&stage_dir) {
+        return Err("数据分包缺少当前版本所需文件".into());
     }
 
     while is_runtime_busy(maa_state) {
