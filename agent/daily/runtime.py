@@ -807,6 +807,25 @@ class Runtime:
                 observed = self.read_account_uid(self.capture())
                 if observed is not None or attempt == 3 or not self.pause(.25):
                     break
+        if observed is None and not self.stopped:
+            # Bright sunlit overworld scenes (e.g. Star Sea beach sand) can wash
+            # out the translucent white footer UID. Opening a dimmed full-screen
+            # UI overlay restores contrast behind the same bottom-left watermark.
+            opened_overlay = False
+            try:
+                for opener in (self.ui.menu, self.ui.calendar):
+                    if self.stopped or not opener():
+                        continue
+                    opened_overlay = True
+                    for attempt in range(2):
+                        observed = self.read_account_uid(self.capture())
+                        if observed is not None or attempt == 1 or not self.pause(.25):
+                            break
+                    if observed is not None:
+                        break
+            finally:
+                if opened_overlay and not self.stopped:
+                    self.main()
         if observed is None:
             self._frame_incomplete = True
             raise ValueError("未能识别左下角 UID，请确认游戏画面完整")
