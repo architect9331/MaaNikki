@@ -479,8 +479,18 @@ class Crown(Runtime):
             frame = self.capture()
             raw = self.text(roi, image=frame) if frame is not None else ""
             value = parse_progress(raw)
-            if value is None and source == "calendar" and re.search(r"尚未解锁|未解锁", raw):
-                value = "locked"
+            if value is None and source == "calendar":
+                if re.search(r"尚未解锁|未解锁", raw):
+                    value = "locked"
+                elif frame is not None:
+                    # Whole-card locked state centers "尚未解锁" with no 搭配赛/巅峰赛 rows.
+                    # Exclude unlocked cards where only row 3 (争锋赛) says "尚未解锁".
+                    card_raw = self.text([720, 290, 320, 100], image=frame)
+                    if (
+                        re.search(r"尚未解锁|未解锁", card_raw)
+                        and not re.search(r"巅峰赛|搭配赛", card_raw)
+                    ):
+                        value = "locked"
             if value is not None and value == previous:
                 progress = value
                 break
