@@ -832,6 +832,14 @@ class RenewalScanner:
 
     def _reset_rail_top(self) -> tuple[np.ndarray | None, str | None, int | None]:
         frame = self.rt.capture()
+        if frame is None:
+            # Allow a brief settle window when falling back to 16:9 after a failed tall-mode resize.
+            for _ in range(5):
+                if self.rt.stopped or not self.rt.pause(0.25):
+                    return None, None, None
+                frame = self.rt.capture()
+                if frame is not None:
+                    break
         for _ in range(16):
             if self.rt.stopped or frame is None:
                 return None, None, None

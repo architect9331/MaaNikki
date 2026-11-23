@@ -85,7 +85,7 @@ class WeeklyShop(ShopWorkflow):
 
     def claim(self, name, box):
         if not self.ui.enter_page(lambda: self.ui.click_box(box),
-                "MaaNikki_Shop_DetailReady", source="MaaNikki_Shop_GiftsReady", attempts=1):
+                "MaaNikki_Shop_DetailReady", source="MaaNikki_Shop_GiftsReady", attempts=2):
             return self.fail(f"未能打开{name}详情")
         # All price checks and the confirm box must refer to the same fresh
         # detail frame. Never infer a zero total from the list's free badge.
