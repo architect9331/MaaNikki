@@ -29,6 +29,7 @@ export interface ResonanceHistory {
   banners: { id: string; name: string; kind: number; outfits: string[]; runs?: { start: string; end: string }[] }[];
   items: Record<string, { name: string; rarity: number; canonical_id?: string; outfit_id?: string }>;
   outfits: Record<string, ResonanceOutfit>;
+  outfit_thumbs?: Record<string, string>;
 }
 const initial: ResonanceStatus = {
   enabled: false, active_account: null, accounts: [], busy: false, phase: 'idle',

@@ -5,9 +5,9 @@ use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, OnceLock, RwLock},
     time::{Duration, Instant},
 };
 use tauri::{Emitter, Manager, WebviewWindow};
@@ -505,6 +505,82 @@ pub fn resonance_sync(
     Ok(json!({"accepted": true}))
 }
 
+struct CachedSuitThumbIndex {
+    path: PathBuf,
+    stamp: super::account_state::FileStamp,
+    by_suit_id: HashMap<String, String>,
+    by_name: HashMap<String, String>,
+}
+
+static SUIT_THUMB_INDEX_CACHE: OnceLock<Mutex<Option<CachedSuitThumbIndex>>> = OnceLock::new();
+
+fn build_outfit_thumbs(catalog: &Catalog) -> BTreeMap<String, String> {
+    let Ok(scoring_path) =
+        super::data_update::resolve_data_file("resource/data/wardrobe_scoring.json")
+    else {
+        return BTreeMap::new();
+    };
+    let stamp = super::account_state::file_stamp(&scoring_path);
+    let cache = SUIT_THUMB_INDEX_CACHE.get_or_init(|| Mutex::new(None));
+    let Ok(mut guard) = cache.lock() else {
+        return BTreeMap::new();
+    };
+    let needs_reload = guard
+        .as_ref()
+        .is_none_or(|idx| idx.path != scoring_path || idx.stamp != stamp);
+    if needs_reload {
+        let mut by_suit_id = HashMap::new();
+        let mut by_name = HashMap::new();
+        if let Ok(Some(doc)) = super::account_state::read_json(&scoring_path) {
+            if let Some(suits) = doc["suits"].as_array() {
+                for suit in suits {
+                    let Some(thumb_key) = suit["id"].as_str() else {
+                        continue;
+                    };
+                    if let Some(sid) = suit["suit_id"].as_u64() {
+                        by_suit_id.insert(sid.to_string(), thumb_key.to_owned());
+                    }
+                    if let Some(name) = suit["name"].as_str() {
+                        by_name
+                            .entry(name.to_owned())
+                            .or_insert_with(|| thumb_key.to_owned());
+                    }
+                    if let Some(variants) = suit["variants"].as_array() {
+                        for variant in variants {
+                            if let (Some(v_sid), Some(v_id)) =
+                                (variant["suit_id"].as_u64(), variant["id"].as_str())
+                            {
+                                by_suit_id.insert(v_sid.to_string(), v_id.to_owned());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        *guard = Some(CachedSuitThumbIndex {
+            path: scoring_path,
+            stamp,
+            by_suit_id,
+            by_name,
+        });
+    }
+    let Some(idx) = guard.as_ref() else {
+        return BTreeMap::new();
+    };
+    let mut out = BTreeMap::new();
+    for (oid, outfit) in &catalog.outfits {
+        let matched = idx.by_suit_id.get(oid).or_else(|| {
+            outfit["name"]
+                .as_str()
+                .and_then(|name| idx.by_name.get(name))
+        });
+        if let Some(key) = matched {
+            out.insert(oid.clone(), key.clone());
+        }
+    }
+    out
+}
+
 #[tauri::command]
 pub fn resonance_history(
     window: WebviewWindow,
@@ -539,9 +615,14 @@ pub fn resonance_history(
             }
         }
     }
-    Ok(
-        json!({"history": history, "banners": catalog.banners, "items": items, "outfits": catalog.outfits}),
-    )
+    let outfit_thumbs = build_outfit_thumbs(&catalog);
+    Ok(json!({
+        "history": history,
+        "banners": catalog.banners,
+        "items": items,
+        "outfits": catalog.outfits,
+        "outfit_thumbs": outfit_thumbs,
+    }))
 }
 
 fn map_sync_error(app: &tauri::AppHandle, err: SyncError) -> String {

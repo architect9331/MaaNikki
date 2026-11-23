@@ -8,6 +8,7 @@ import { loadScoring, saveScoring } from '@/services/scoring/api';
 import { scorePiece } from '@/services/scoring/math';
 import { analyzeUnmetStars, buildMinimumStarUpgradePlan, starRequiredGroupBadges, tagLabel } from '@/services/scoring/diagnostics';
 import { buildOwnedProfile } from '@/services/scoring/profile';
+import { useSuitThumbMap, useSuitThumbsStatus } from '@/services/scoring/suitThumbs';
 import { ATTRIBUTES, emptySettings } from '@/services/scoring/types';
 import type { CalculationResult, FieldBonus, Match, OutfitResult, OwnedProfile, ScoringCatalog, ScoringPayload, ScoringSettings } from '@/services/scoring/types';
 import { secondaryButton, StatusBar } from './ui/FeaturePage';
@@ -16,9 +17,10 @@ import { WardrobeHeartEditor } from './WardrobeHeartEditor';
 import { WardrobeMatchPicker } from './WardrobeMatchPicker';
 import { WardrobeBatchPlanView, WardrobeMaterialList } from './WardrobeMaterialActions';
 import { ImageIcon, WardrobePhotoCardModal } from './WardrobePhotoCardModal';
+import { suitBackdropClass } from './WardrobeSuitDetailModal';
 
 const field = 'w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm outline-none focus:border-accent';
-const card = 'rounded-xl border border-border bg-bg-secondary p-4';
+const card = 'rounded-2xl border border-border bg-bg-secondary p-4 shadow-xs';
 const number = (value: number) => value.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
 const levelLabel = (level: number | null) => level === null ? '0 级' : level === 11 ? '已焕新' : `${level} 级`;
 const bonusLabel = (bonus: FieldBonus) => bonus.description.replaceAll('{1}', String(bonus.value ?? bonus.multiplier));
@@ -53,41 +55,57 @@ function Stars({ outfit, match }: { outfit: OutfitResult; match: Match }) {
 function MatchBrief({ match, catalog }: { match: Match; catalog: ScoringCatalog }) {
   const strongest = Math.max(...match.weights);
   const tagEntries = Object.entries(match.tags);
-  return <section className={card}>
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div>
-        <p className="text-xs text-text-muted">{match.group}</p>
-        <h3 className="mt-1 text-base font-semibold">{match.name}</h3>
+  return <section className={clsx(card, 'space-y-3.5')}>
+    <div className="flex flex-wrap items-start justify-between gap-2.5">
+      <div className="min-w-0">
+        <span className="inline-block rounded-md bg-accent/10 px-2 py-0.5 text-[11px] font-medium text-accent">{match.group}</span>
+        <h3 className="mt-1.5 text-base font-semibold tracking-tight">{match.name}</h3>
       </div>
       {match.thresholds?.['5'] && (
-        <div className="text-right text-[11px] text-text-muted">
-          <span className="rounded-md bg-accent/10 px-2 py-0.5 font-medium text-accent">
+        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+          <span className="rounded-lg border border-accent/25 bg-accent/10 px-2.5 py-1 font-medium tabular-nums text-accent">
             参考完美线 {number(match.thresholds['5'])}
           </span>
-          {match.max_score && <span className="ml-1.5">满槽 {number(match.max_score)}</span>}
+          {match.max_score && (
+            <span className="rounded-lg border border-border bg-bg-primary px-2.5 py-1 tabular-nums text-text-muted">
+              满槽 {number(match.max_score)}
+            </span>
+          )}
         </div>
       )}
     </div>
-    <div className="mt-3 grid grid-cols-5 gap-2">{ATTRIBUTES.map((name, index) => <div key={name}>
-      <p className={clsx('text-xs', match.weights[index] === strongest ? 'font-semibold text-accent' : 'text-text-muted')}>{name}</p>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-border"><div className={clsx('h-full rounded-full', match.weights[index] === strongest ? 'bg-accent' : 'bg-text-muted/40')}
-        style={{ width: `${match.weights[index] / strongest * 100}%` }} /></div>
-      <p className="mt-1 text-[11px] tabular-nums text-text-muted">×{number(match.weights[index])}</p>
-    </div>)}</div>
+    <div className="grid grid-cols-5 gap-2">{ATTRIBUTES.map((name, index) => {
+      const topAttr = match.weights[index] === strongest;
+      return <div key={name} className={clsx('rounded-xl border px-2.5 py-2', topAttr ? 'border-accent/35 bg-accent/6' : 'border-border/70 bg-bg-primary/70')}>
+        <div className="flex items-baseline justify-between gap-1">
+          <p className={clsx('text-xs', topAttr ? 'font-semibold text-accent' : 'text-text-secondary')}>{name}</p>
+          <p className={clsx('text-[11px] tabular-nums', topAttr ? 'font-semibold text-accent' : 'text-text-muted')}>×{number(match.weights[index])}</p>
+        </div>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-border/80">
+          <div className={clsx('h-full rounded-full transition-all', topAttr ? 'bg-accent' : 'bg-text-muted/40')}
+            style={{ width: `${match.weights[index] / strongest * 100}%` }} />
+        </div>
+      </div>;
+    })}</div>
     {(!!tagEntries.length || !!match.bonuses.length) && (
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
         {tagEntries.map(([tagId, weights]) => (
-          <span key={`tag-${tagId}`} className="rounded-lg border border-accent/30 bg-accent/5 px-2 py-0.5 text-xs text-accent">
+          <span key={`tag-${tagId}`} className="rounded-lg border border-accent/30 bg-accent/6 px-2.5 py-0.5 text-xs font-medium text-accent">
             标签 · {tagLabel(catalog, tagId)} ×{weights.join('/')}
           </span>
         ))}
         {match.bonuses.map((bonus, index) => (
-          <span key={index} className="rounded-lg bg-accent/10 px-2 py-0.5 text-xs text-accent">{bonusLabel(bonus)}</span>
+          <span key={index} className="rounded-lg border border-border bg-bg-primary px-2.5 py-0.5 text-xs text-text-secondary">{bonusLabel(bonus)}</span>
         ))}
       </div>
     )}
-    {!!match.stars.length && <ul className="mt-3 space-y-1 text-xs text-text-secondary">{match.stars.map((_, index) =>
-      <li key={index} className="flex gap-1.5"><Star className="mt-0.5 h-3 w-3 shrink-0 text-text-muted" />{starLabel(match, index)}</li>)}</ul>}
+    {!!match.stars.length && <ul className="space-y-1.5 rounded-xl border border-border/60 bg-bg-primary/50 p-2.5 text-xs text-text-secondary">{match.stars.map((_, index) =>
+      <li key={index} className="flex items-start gap-2">
+        <span className="mt-0.5 inline-flex shrink-0 items-center gap-0.5 rounded bg-accent/10 px-1.5 py-0.2 text-[10px] font-semibold text-accent">
+          <Star className="h-2.5 w-2.5 fill-accent" />{index + 1}
+        </span>
+        <span className="leading-5">{starLabel(match, index)}</span>
+      </li>)}</ul>}
   </section>;
 }
 
@@ -134,7 +152,22 @@ function UnmetStarsPanel({
         : null,
     [payload.catalog, settings, matchId, match, outfit, potentialOutfit, potential],
   );
+  const { status: thumbStatus } = useSuitThumbsStatus();
+  const suitThumbKeys = useMemo(() => {
+    const keys: string[] = [];
+    if (minPlan?.mandatorySuitId) keys.push(minPlan.mandatorySuitId);
+    for (const star of diagnostics) {
+      for (const rule of star.rules) {
+        if (rule.kind === 'suit') {
+          for (const cand of rule.candidates) keys.push(cand.suitId);
+        }
+      }
+    }
+    return keys;
+  }, [diagnostics, minPlan]);
+  const suitThumbMap = useSuitThumbMap(suitThumbKeys, thumbStatus);
   if (!diagnostics.length) return null;
+  const minPlanSuitThumb = minPlan?.mandatorySuitId ? suitThumbMap[minPlan.mandatorySuitId] : undefined;
 
   return (
     <section className="rounded-xl border border-warning/40 bg-warning/5 p-4 space-y-3">
@@ -147,8 +180,19 @@ function UnmetStarsPanel({
       </div>
 
       {minPlan && (
-        <div className="rounded-xl border border-accent/40 bg-accent/5 p-3.5 space-y-3 text-xs">
-          <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="relative overflow-hidden rounded-xl border border-accent/40 bg-accent/5 p-3.5 space-y-3 text-xs">
+          {minPlanSuitThumb && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-44 overflow-hidden">
+              <img
+                src={minPlanSuitThumb}
+                alt=""
+                aria-hidden="true"
+                className="absolute right-2 top-0 h-full w-auto object-contain object-top opacity-25"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-bg-secondary/90 via-bg-secondary/65 to-transparent" />
+            </div>
+          )}
+          <div className="relative z-10 flex flex-wrap items-start justify-between gap-2">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs font-semibold text-on-accent">
@@ -207,7 +251,7 @@ function UnmetStarsPanel({
             </div>
           </div>
 
-          <div className="rounded-lg border border-border bg-bg-secondary divide-y divide-border">
+          <div className="relative z-10 rounded-xl border border-border bg-bg-secondary/95 divide-y divide-border backdrop-blur-xs">
             {minPlan.upgradeItems.map((item, idx) => (
               <div key={item.groupId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                 <div className="min-w-0 flex-1">
@@ -247,7 +291,7 @@ function UnmetStarsPanel({
           </div>
 
           {Object.keys(minPlan.totalCost).length > 0 && (
-            <div className="rounded-lg border border-border bg-bg-secondary p-3 space-y-2">
+            <div className="relative z-10 rounded-xl border border-border bg-bg-secondary/95 p-3 space-y-2 backdrop-blur-xs">
               <p className="font-medium text-text-primary">
                 升级以上 {minPlan.upgradeItems.length} 件衣服预计所需材料（未填等级部件按 0 级计算）：
               </p>
@@ -388,90 +432,115 @@ function UnmetStarsPanel({
                   </div>
 
                   {rule.candidates.length ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       {rule.candidates.map((cand) => {
                         const pendingGroups = cand.unrefreshedGroups;
+                        const thumbUrl = suitThumbMap[cand.suitId];
+                        const suitPct = cand.totalCount ? Math.min(100, (cand.ownedCount / cand.totalCount) * 100) : 0;
                         return (
-                          <div key={cand.suitId} className="rounded-lg border border-border bg-bg-primary/60 p-2.5 space-y-2">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="font-medium text-text-primary">
-                                {cand.suitName} <span className="text-text-muted">({cand.quality}★)</span>
-                              </span>
-                              <div className="flex flex-wrap items-center gap-2">
-                                {cand.complete && (
-                                  <span className="text-[11px] text-text-secondary">
-                                    已达标 <strong className="text-text-primary">{cand.readyCount}</strong> / {cand.requiredCount} 件
-                                    {pendingGroups.length > 0 && (
-                                      <span className="ml-1 text-warning">（还需焕新 {pendingGroups.length} 件）</span>
-                                    )}
-                                  </span>
-                                )}
-                                <span className={clsx('text-[11px] font-medium', cand.complete ? 'text-success' : 'text-warning')}>
-                                  已收集 {cand.ownedCount} / {cand.totalCount} 件
-                                </span>
-                              </div>
+                          <div key={cand.suitId} className="relative overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-xs">
+                            <div className={clsx('pointer-events-none absolute inset-0 overflow-hidden', suitBackdropClass(cand.quality))}>
+                              {thumbUrl && (
+                                <img
+                                  src={thumbUrl}
+                                  alt=""
+                                  aria-hidden="true"
+                                  className={clsx(
+                                    'absolute bottom-0 right-2 h-full max-h-64 w-auto object-contain object-bottom drop-shadow-xs transition-opacity',
+                                    cand.complete ? 'opacity-50' : 'opacity-40 grayscale-[15%]',
+                                  )}
+                                />
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-r from-bg-secondary via-bg-secondary/88 to-bg-secondary/15" />
                             </div>
+                            <div className="relative z-10 p-3.5 space-y-2.5">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+                                  <span>{cand.suitName}</span>
+                                  <span className="rounded-md bg-accent/12 px-1.5 py-0.5 text-[10px] font-semibold text-accent">{cand.quality}★</span>
+                                </span>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {cand.complete && (
+                                    <span className="rounded-md border border-border/60 bg-bg-secondary/90 px-2 py-0.5 text-[11px] text-text-secondary backdrop-blur-xs">
+                                      已达标 <strong className="text-text-primary">{cand.readyCount}</strong> / {cand.requiredCount} 件
+                                      {pendingGroups.length > 0 && (
+                                        <span className="ml-1 text-warning">（还需焕新 {pendingGroups.length} 件）</span>
+                                      )}
+                                    </span>
+                                  )}
+                                  <span className={clsx(
+                                    'rounded-md border border-border/60 bg-bg-secondary/90 px-2 py-0.5 text-[11px] font-medium tabular-nums backdrop-blur-xs',
+                                    cand.complete ? 'text-success' : 'text-warning',
+                                  )}>
+                                    已收集 {cand.ownedCount} / {cand.totalCount} 件
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="h-1.5 max-w-xs overflow-hidden rounded-full bg-border/80">
+                                <div className={clsx('h-full rounded-full transition-all', cand.complete ? 'bg-success' : 'bg-amber-500')} style={{ width: `${suitPct}%` }} />
+                              </div>
 
-                            {cand.complete && !!pendingGroups.length && (
-                              <div className="space-y-1.5">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <p className="text-text-secondary">
-                                    已集齐该套装，本关要求<strong>整套 {cand.requiredCount} 件全部焕新 (11级)</strong>，以下{' '}
-                                    <strong className="text-warning">{pendingGroups.length}</strong> 件尚未焕新（未填等级按 0 级计）：
-                                  </p>
-                                  <div className="flex items-center gap-1.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const updates: Record<string, number | null> = {};
-                                        for (const g of pendingGroups) updates[g.id] = 11;
-                                        setLevelsBatch(updates, true);
-                                      }}
-                                      className="rounded bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-accent/25"
-                                    >
-                                      整套标记已焕新(11级)
-                                    </button>
+                              {cand.complete && !!pendingGroups.length && (
+                                <div className="space-y-1.5">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-text-secondary">
+                                      已集齐该套装，本关要求<strong>整套 {cand.requiredCount} 件全部焕新 (11级)</strong>，以下{' '}
+                                      <strong className="text-warning">{pendingGroups.length}</strong> 件尚未焕新（未填等级按 0 级计）：
+                                    </p>
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updates: Record<string, number | null> = {};
+                                          for (const g of pendingGroups) updates[g.id] = 11;
+                                          setLevelsBatch(updates, true);
+                                        }}
+                                        className="rounded-md border border-accent/30 bg-bg-secondary/90 px-2.5 py-1 text-[11px] font-medium text-accent backdrop-blur-xs hover:bg-accent/15"
+                                      >
+                                        整套标记已焕新(11级)
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="divide-y divide-border/60 rounded-lg border border-border/50 bg-bg-secondary/80 px-2.5 py-0.5 backdrop-blur-[2px]">
+                                    {pendingGroups.map((g) => (
+                                      <div key={g.id} className="flex items-center justify-between gap-2 py-1">
+                                        <span>
+                                          <strong className="text-text-primary">{g.name}</strong>{' '}
+                                          <span className="text-text-muted">
+                                            · {g.part}（当前：{g.level === null ? '0 级（默认）' : levelLabel(g.level)} → 需升至 已焕新）
+                                          </span>
+                                        </span>
+                                        <LevelInput
+                                          value={settings.levels[g.id] ?? null}
+                                          inferred={g.inferred}
+                                          onChange={(lvl) => setLevel(g.id, lvl)}
+                                        />
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
-                                <div className="divide-y divide-border/60">
-                                  {pendingGroups.map((g) => (
-                                    <div key={g.id} className="flex items-center justify-between gap-2 py-1">
-                                      <span>
-                                        <strong className="text-text-primary">{g.name}</strong>{' '}
-                                        <span className="text-text-muted">
-                                          · {g.part}（当前：{g.level === null ? '0 级（默认）' : levelLabel(g.level)} → 需升至 已焕新）
-                                        </span>
-                                      </span>
-                                      <LevelInput
-                                        value={settings.levels[g.id] ?? null}
-                                        inferred={g.inferred}
-                                        onChange={(lvl) => setLevel(g.id, lvl)}
-                                      />
-                                    </div>
-                                  ))}
+                              )}
+
+                              {cand.complete && !pendingGroups.length && !rule.satisfied && (
+                                <p className="text-text-secondary">
+                                  已集齐该套装且满足穿戴条件，将左侧计算目标设为「优先满足星级条件」或恢复已排除部件即可整套穿戴。
+                                </p>
+                              )}
+
+                              {!cand.complete && !!cand.missingParts.length && (
+                                <div className="space-y-1.5">
+                                  <p className="text-text-secondary">缺失部件（共 {cand.missingParts.length} 件）：</p>
+                                  <ul className="space-y-1">
+                                    {cand.missingParts.map((mp) => (
+                                      <li key={mp.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/40 bg-bg-secondary/80 px-2.5 py-1 text-text-secondary backdrop-blur-[2px]">
+                                        <span><strong className="text-text-primary">{mp.name}</strong> · {mp.partName}</span>
+                                        <span className="text-[11px] text-text-muted">{mp.source ?? '套装获取'}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
                                 </div>
-                              </div>
-                            )}
-
-                            {cand.complete && !pendingGroups.length && !rule.satisfied && (
-                              <p className="text-text-secondary">
-                                已集齐该套装且满足穿戴条件，将左侧计算目标设为「优先满足星级条件」或恢复已排除部件即可整套穿戴。
-                              </p>
-                            )}
-
-                            {!cand.complete && !!cand.missingParts.length && (
-                              <div className="space-y-1">
-                                <p className="text-text-secondary">缺失部件（共 {cand.missingParts.length} 件）：</p>
-                                <ul className="space-y-1">
-                                  {cand.missingParts.map((mp) => (
-                                    <li key={mp.id} className="flex flex-wrap items-center justify-between gap-2 text-text-secondary">
-                                      <span><strong className="text-text-primary">{mp.name}</strong> · {mp.partName}</span>
-                                      <span className="text-[11px] text-text-muted">{mp.source ?? '套装获取'}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -517,25 +586,29 @@ function OutfitView({ outfit, potentialOutfit, payload, profile, settings, match
       setLevelsBatch={setLevelsBatch}
       onMaterialsChange={onMaterialsChange}
     />
-    <section className="overflow-hidden rounded-xl border border-border bg-bg-secondary">
-      {!outfit.exact && <p className="border-b border-border px-4 py-2 text-xs text-text-secondary">搜索时间已到，展示当前找到的可行方案。</p>}
-      {outfit.choice !== null && <p className="border-b border-border px-4 py-2 text-xs text-text-secondary">场地加成：{bonusLabel(match.choices[outfit.choice])}</p>}
+    <section className="overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-bg-primary/50 px-4 py-2.5 text-xs">
+        <span className="font-semibold text-text-primary">推荐搭配清单（{outfit.pieces.length} 件）</span>
+        <span className="text-[11px] text-text-muted">点击任意部件可展开属性或排除重算</span>
+      </div>
+      {!outfit.exact && <p className="border-b border-border bg-warning/5 px-4 py-2 text-xs text-warning">搜索时间已到，展示当前找到的可行方案。</p>}
+      {outfit.choice !== null && <p className="border-b border-border bg-accent/5 px-4 py-2 text-xs text-accent">场地加成：{bonusLabel(match.choices[outfit.choice])}</p>}
       {outfit.pieces.map((piece) => {
         const isExcluded = excludedIds.includes(piece.item.id);
         const itemTags = catalog.items[piece.item.id]?.visibleTags ?? [];
-        return <details key={`${piece.item.id}:${piece.item.group ?? ''}`} className="group border-b border-border last:border-0">
-          <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 hover:bg-bg-hover">
-            <span className="w-16 shrink-0 truncate text-xs text-text-muted">{(catalog.part_names[piece.type] ?? String(piece.type)).split(' / ').pop()}</span>
+        return <details key={`${piece.item.id}:${piece.item.group ?? ''}`} className="group border-b border-border/80 last:border-0">
+          <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 transition-colors hover:bg-bg-hover/70">
+            <span className="w-16 shrink-0 truncate rounded-md bg-bg-primary px-1.5 py-0.5 text-center text-[11px] text-text-muted">{(catalog.part_names[piece.type] ?? String(piece.type)).split(' / ').pop()}</span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <p className={clsx('truncate text-sm', isExcluded && 'line-through opacity-60')}>{piece.item.name}</p>
+                <p className={clsx('truncate text-sm font-medium', isExcluded && 'line-through opacity-60')}>{piece.item.name}</p>
                 {itemTags.map((t) => (
-                  <span key={t} className="shrink-0 rounded bg-bg-primary px-1.5 py-0.2 text-[10px] text-text-muted">
+                  <span key={t} className="shrink-0 rounded bg-accent/8 px-1.5 py-0.2 text-[10px] text-accent">
                     {tagLabel(catalog, t)}
                   </span>
                 ))}
               </div>
-              <div className="mt-1 flex items-center gap-2"><div className="h-1 flex-1 overflow-hidden rounded-full bg-border"><div className="h-full rounded-full bg-accent/60" style={{ width: `${piece.score / top * 100}%` }} /></div>
+              <div className="mt-1 flex items-center gap-2"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border/80"><div className="h-full rounded-full bg-gradient-to-r from-accent/60 to-accent" style={{ width: `${piece.score / top * 100}%` }} /></div>
                 <span className="shrink-0 text-[11px] text-text-muted">{potential && piece.from !== piece.level ? `${levelLabel(piece.from)} → ${levelLabel(piece.level)}` : levelLabel(piece.level)}</span></div></div>
             <strong className="w-16 text-right text-sm font-semibold tabular-nums">{number(piece.score)}</strong>
           </summary>
@@ -901,14 +974,34 @@ export function WardrobeCalculator({ refreshToken, onOpenRead }: { refreshToken:
             onMaterialsChange={(next) => setPayload((prev) => prev ? { ...prev, materials: next } : prev)}
           />
         )}
-        <div className={clsx('grid grid-cols-2 gap-2', stale && 'opacity-60')} role="tablist">{(['current', 'potential'] as const).map((key) => {
+        <div className={clsx('grid grid-cols-2 gap-3', stale && 'opacity-60')} role="tablist">{(['current', 'potential'] as const).map((key) => {
           const outfit = result[key];
-          return <button key={key} role="tab" aria-selected={mode === key} onClick={() => setMode(key)}
-            className={clsx('rounded-xl border p-3 text-left', mode === key ? 'border-accent bg-accent/10' : 'border-border bg-bg-secondary hover:bg-bg-hover')}>
-            <span className="flex items-center gap-1.5 text-xs text-text-secondary">{key === 'potential' && <Sparkles className="h-3.5 w-3.5 text-accent" />}{key === 'current' ? '当前等级' : '全部焕新后'}</span>
-            <span className="mt-1.5 flex items-center gap-3"><strong className={clsx('text-2xl font-semibold tabular-nums', mode === key && 'text-accent')}>{outfit ? number(outfit.score) : '—'}</strong>{outfit && <Stars outfit={outfit} match={resultMatch} />}</span>
-            {key === 'current' && unknownCount > 0 && <span className="mt-1 block text-xs text-text-muted">未填等级按 0 级计</span>}
-            {key === 'potential' && outfit && result.current && <span className="mt-1 block text-xs text-text-muted">比当前等级高 {number(outfit.score - result.current.score)}</span>}
+          const activeTab = mode === key;
+          const gainDelta = key === 'potential' && outfit && result.current ? outfit.score - result.current.score : 0;
+          return <button key={key} role="tab" aria-selected={activeTab} onClick={() => setMode(key)}
+            className={clsx(
+              'rounded-2xl border p-4 text-left transition-all',
+              activeTab
+                ? 'border-accent bg-gradient-to-br from-accent/12 via-accent/6 to-bg-secondary shadow-xs ring-1 ring-accent/25'
+                : 'border-border bg-bg-secondary hover:border-accent/40 hover:bg-bg-hover/60',
+            )}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
+                {key === 'potential' && <Sparkles className="h-3.5 w-3.5 text-accent" />}
+                {key === 'current' ? '当前等级估分' : '全部焕新后潜力'}
+              </span>
+              {gainDelta > 0 && (
+                <span className="rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-success">
+                  +{number(gainDelta)}
+                </span>
+              )}
+            </div>
+            <span className="mt-2 flex items-center gap-3">
+              <strong className={clsx('text-3xl font-bold tracking-tight tabular-nums', activeTab && 'text-accent')}>{outfit ? number(outfit.score) : '—'}</strong>
+              {outfit && <Stars outfit={outfit} match={resultMatch} />}
+            </span>
+            {key === 'current' && unknownCount > 0 && <span className="mt-1.5 block text-[11px] text-text-muted">未填等级默认按 0 级计</span>}
+            {key === 'potential' && outfit && result.current && gainDelta <= 0 && <span className="mt-1.5 block text-[11px] text-text-muted">当前搭配已达焕新上限</span>}
           </button>;
         })}</div>
         <div className="flex items-center justify-between text-xs text-text-muted"><span>计算用时 {result.elapsedMs < 100 ? '不足 0.1' : (result.elapsedMs / 1000).toFixed(1)} 秒 · 点击部件行可展开查看属性或临时排除</span>

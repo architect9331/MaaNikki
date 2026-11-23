@@ -13,19 +13,26 @@ export function FeaturePage({ icon: Icon, title, onBack, actions, children }: {
   children: ReactNode;
 }) {
   return <div className="flex min-h-0 flex-1 flex-col bg-bg-primary text-text-primary">
-    <div className="flex items-center gap-3 border-b border-border bg-bg-secondary px-5 py-2.5">
-      <button onClick={onBack} title="返回任务列表" aria-label="返回任务列表" className="rounded-lg p-2 hover:bg-bg-hover"><ArrowLeft className="h-4 w-4" /></button>
-      <Icon className="h-5 w-5 text-accent-secondary" />
-      <h1 className="mr-auto text-lg font-semibold">{title}</h1>
+    <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-border/80 bg-bg-secondary/90 px-5 py-3 backdrop-blur-md">
+      <button onClick={onBack} title="返回任务列表" aria-label="返回任务列表" className="rounded-xl border border-transparent p-2 transition-colors hover:border-border hover:bg-bg-hover"><ArrowLeft className="h-4 w-4" /></button>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent ring-1 ring-accent/20">
+        <Icon className="h-4 w-4" />
+      </span>
+      <h1 className="mr-auto text-base font-semibold tracking-tight sm:text-lg">{title}</h1>
       {actions}
     </div>
     <div className="min-h-0 flex-1 overflow-auto p-5">
-      <div className="mx-auto max-w-5xl space-y-4">{children}</div>
+      <div className="mx-auto max-w-6xl space-y-4">{children}</div>
     </div>
   </div>;
 }
 
-const TONE_DOT = { ok: 'bg-success', warn: 'bg-warning', idle: 'bg-text-muted', busy: 'bg-accent animate-pulse' };
+const TONE_DOT = {
+  ok: 'bg-success ring-4 ring-success/15',
+  warn: 'bg-warning ring-4 ring-warning/15',
+  idle: 'bg-text-muted ring-4 ring-text-muted/15',
+  busy: 'bg-accent animate-pulse ring-4 ring-accent/20',
+};
 
 /** The strip that opens a page: where things stand, and the one thing to do next. */
 export function StatusBar({ tone = 'idle', title, detail, children }: {
@@ -34,13 +41,13 @@ export function StatusBar({ tone = 'idle', title, detail, children }: {
   detail?: ReactNode;
   children?: ReactNode;
 }) {
-  return <section className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-bg-secondary px-4 py-3">
-    <span aria-hidden="true" className={clsx('h-2 w-2 shrink-0 rounded-full', TONE_DOT[tone])} />
+  return <section className="flex flex-wrap items-center gap-x-3.5 gap-y-2 rounded-2xl border border-border/90 bg-bg-secondary px-4 py-3 shadow-xs">
+    <span aria-hidden="true" className={clsx('ml-0.5 h-2 w-2 shrink-0 rounded-full', TONE_DOT[tone])} />
     <div className="min-w-48 flex-1">
       <p className="text-sm font-medium" role="status">{title}</p>
       {detail && <p className="mt-0.5 text-xs leading-5 text-text-secondary">{detail}</p>}
     </div>
-    {children && <div className="flex shrink-0 items-center gap-2">{children}</div>}
+    {children && <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div>}
   </section>;
 }
 
@@ -75,9 +82,9 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
   onChange: (value: T) => void;
   label: string;
 }) {
-  return <div role="group" aria-label={label} className="inline-flex shrink-0 rounded-lg border border-border bg-bg-secondary p-0.5">
+  return <div role="group" aria-label={label} className="inline-flex shrink-0 rounded-xl border border-border bg-bg-primary/80 p-0.5">
     {options.map(([id, text]) => <button key={id} type="button" onClick={() => onChange(id)} aria-pressed={value === id}
-      className={clsx('rounded-md px-3 py-1 text-xs transition-colors', value === id ? 'bg-accent/10 font-medium text-accent' : 'text-text-secondary hover:bg-bg-hover')}>{text}</button>)}
+      className={clsx('rounded-lg px-3 py-1 text-xs transition-all', value === id ? 'bg-bg-secondary font-medium text-accent shadow-xs ring-1 ring-border/70' : 'text-text-secondary hover:text-text-primary')}>{text}</button>)}
   </div>;
 }
 
@@ -104,7 +111,7 @@ export function Tabs<T extends string>({ label, value, tabs, onChange }: {
     onChange(next.id);
     requestAnimationFrame(() => document.getElementById(`page-tab-${next.id}`)?.focus());
   };
-  return <div role="tablist" aria-label={label} className={clsx('grid grid-cols-2 gap-1 rounded-xl border border-border bg-bg-secondary p-1', tabs.length >= 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4')}
+  return <div role="tablist" aria-label={label} className={clsx('grid grid-cols-2 gap-1.5 rounded-2xl border border-border bg-bg-secondary p-1.5 shadow-xs', tabs.length >= 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4')}
     onKeyDown={(event) => {
       if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
       if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }
@@ -113,7 +120,7 @@ export function Tabs<T extends string>({ label, value, tabs, onChange }: {
       const active = value === id;
       return <button key={id} id={`page-tab-${id}`} type="button" role="tab" aria-selected={active} tabIndex={active ? 0 : -1}
         onClick={() => onChange(id)}
-        className={clsx('min-w-0 rounded-lg px-3 py-2 text-left transition-colors', active ? 'bg-accent/10' : 'hover:bg-bg-hover')}>
+        className={clsx('min-w-0 rounded-xl px-3 py-2 text-left transition-all', active ? 'bg-accent/12 shadow-xs ring-1 ring-accent/25' : 'hover:bg-bg-hover')}>
         <span className="flex items-center gap-2">
           <Icon className={clsx('h-4 w-4 shrink-0', active ? 'text-accent' : 'text-text-muted')} />
           <span className={clsx('truncate text-sm font-semibold', active ? 'text-accent' : 'text-text-primary')}>{text}</span>
@@ -130,9 +137,9 @@ export function Tabs<T extends string>({ label, value, tabs, onChange }: {
 
 /** A compact figure inside a card; several sit side by side. */
 export function Tile({ label, value, detail, warn }: { label: ReactNode; value: ReactNode; detail?: ReactNode; warn?: boolean }) {
-  return <div className="min-w-0 rounded-lg bg-bg-primary px-3 py-2">
+  return <div className="min-w-0 rounded-xl border border-border/70 bg-bg-primary/75 px-3.5 py-2.5">
     <p className="truncate text-[11px] text-text-secondary">{label}</p>
-    <p className={clsx('mt-0.5 truncate text-base font-semibold tabular-nums', warn && 'text-warning')}>{value}</p>
+    <p className={clsx('mt-0.5 truncate text-lg font-semibold tabular-nums tracking-tight', warn && 'text-warning')}>{value}</p>
     {detail && <p className="mt-0.5 text-[11px] leading-4 text-text-muted">{detail}</p>}
   </div>;
 }

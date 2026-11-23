@@ -173,6 +173,7 @@ export interface MinimumStarUpgradePlan {
   currentStars: number;
   achievedScore: number;
   targetScore?: number;
+  mandatorySuitId?: string;
   mandatorySuitName?: string;
   mandatorySuitRequiredCount?: number;
   upgradeItems: MinimumUpgradeItem[];
@@ -197,6 +198,7 @@ export function buildMinimumStarUpgradePlan(
   const pieceSuitName = new Map<string, string>();
   const mandatoryRefreshIds = new Set<string>();
   const pieceRuleLabels = new Map<string, string>();
+  let mandatorySuitId: string | undefined;
   let mandatorySuitName: string | undefined;
   let mandatorySuitRequiredCount: number | undefined;
   let targetScore: number | undefined;
@@ -232,6 +234,7 @@ export function buildMinimumStarUpgradePlan(
                 }
               }
               if (rule.refreshed) {
+                mandatorySuitId = suit.id;
                 mandatorySuitName = suit.name;
                 mandatorySuitRequiredCount = suitRequirement(catalog, suit.items);
               }
@@ -407,6 +410,7 @@ export function buildMinimumStarUpgradePlan(
     currentStars,
     achievedScore: currentEval.score,
     targetScore,
+    mandatorySuitId,
     mandatorySuitName,
     mandatorySuitRequiredCount,
     upgradeItems,

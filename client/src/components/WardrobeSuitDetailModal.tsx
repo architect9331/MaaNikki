@@ -138,9 +138,9 @@ export function WardrobeSuitDetailModal({
                       aria-selected={selected}
                       onClick={() => setSelectedVariantId(variant.id)}
                       className={clsx(
-                        'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition-colors',
+                        'inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs transition-all',
                         selected
-                          ? 'border-accent bg-accent/12 font-medium text-accent'
+                          ? 'border-accent bg-accent/12 font-medium text-accent shadow-xs ring-1 ring-accent/25'
                           : 'border-border bg-bg-secondary text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                       )}
                       title={variant.name}
@@ -189,7 +189,7 @@ export function WardrobeSuitDetailModal({
             <div className="flex flex-col gap-3">
               <div className={clsx('relative aspect-[5/7] overflow-hidden rounded-xl border border-border', suitBackdropClass(suit.quality))}>
                 {activeThumbUrl ? (
-                  <img src={activeThumbUrl} alt={displayName} className="h-full w-full object-contain object-bottom px-1 pt-2" />
+                  <img src={activeThumbUrl} alt={displayName} className="h-full w-full object-contain object-bottom px-1 pt-2 drop-shadow-sm" />
                 ) : (
                   <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center text-text-muted">
                     <Shirt className="h-10 w-10 opacity-35" />

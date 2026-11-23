@@ -29,7 +29,7 @@ import { WardrobePhotoCardModal } from './WardrobePhotoCardModal';
 import { LevelBadgeInput, suitBackdropClass, WardrobeSuitDetailModal } from './WardrobeSuitDetailModal';
 
 const field = 'rounded-lg border border-border bg-bg-primary px-3 py-1.5 text-xs outline-none focus:border-accent';
-const card = 'rounded-xl border border-border bg-bg-secondary p-4';
+const card = 'rounded-2xl border border-border bg-bg-secondary p-4 shadow-xs';
 const SUIT_PAGE_SIZE = 24;
 const PIECE_PAGE_SIZE = 36;
 const SORT_STORAGE_KEY = 'maanikki_wardrobe_suit_sort';
@@ -256,7 +256,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
                 key={suit.id}
                 type="button"
                 onClick={() => setSelectedSuitId(suit.id)}
-                className="group flex flex-col overflow-hidden rounded-xl border border-border bg-bg-secondary text-left transition-all hover:border-accent/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-bg-secondary text-left shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/55 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <div className={clsx('relative aspect-[5/7] w-full overflow-hidden', suitBackdropClass(suit.quality))}>
                   {thumbUrl ? (
@@ -266,7 +266,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
                       loading="lazy"
                       decoding="async"
                       className={clsx(
-                        'h-full w-full object-contain object-bottom px-1.5 pt-2 transition-all duration-300 group-hover:scale-[1.03]',
+                        'h-full w-full object-contain object-bottom px-1.5 pt-2 drop-shadow-xs transition-all duration-300 group-hover:scale-[1.04]',
                         unowned && 'grayscale-[65%] opacity-60 group-hover:grayscale-[25%] group-hover:opacity-85',
                       )}
                     />

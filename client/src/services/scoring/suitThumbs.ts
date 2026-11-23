@@ -90,7 +90,17 @@ export function useSuitThumbMap(visibleKeys: string[], status: SuitThumbsStatus 
   const [revision, setRevision] = useState(0);
   const available = Boolean(status?.available);
   const version = status?.version ?? '1';
-  const keysSignature = visibleKeys.join(',');
+  const keysSignature = useMemo(() => {
+    const seen = new Set<string>();
+    const unique: string[] = [];
+    for (const key of visibleKeys) {
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        unique.push(key);
+      }
+    }
+    return unique.join(',');
+  }, [visibleKeys]);
 
   useEffect(() => {
     ensureCacheVersion(status?.version);

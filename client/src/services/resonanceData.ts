@@ -69,7 +69,7 @@ export function collectionOutfits(data: ResonanceHistory, bannerFilter: string) 
     const copies = Math.min(...parts.map((part) => part.count));
     const spent = parts.flatMap((part) => part.pity);
     const banner = data.banners.find((entry) => entry.outfits.includes(id));
-    return [{ id, ...outfit, parts, obtained, copies, banner: banner?.name ?? '', spent: spent.reduce((sum, value) => sum + value, 0), average: average(spent) }];
+    return [{ id, ...outfit, parts, obtained, copies, bannerId: banner?.id ?? '', banner: banner?.name ?? '', spent: spent.reduce((sum, value) => sum + value, 0), average: average(spent) }];
   }).sort((a, b) => {
     // Unfinished outfits lead, closest to completion first; finished ones follow.
     const done = (outfit: { obtained: number; items: string[] }) => Number(outfit.obtained === outfit.items.length);
@@ -143,7 +143,7 @@ export function activeBanners(data: ResonanceHistory) {
     const bannerOutfits = banner.outfits.flatMap((id) => {
       const outfit = data.outfits[id];
       return outfit?.items.length ? [{ id, ...outfit }] : [];
-    });
+    }).sort((a, b) => b.rarity - a.rarity);
     const total = bannerOutfits.reduce((sum, outfit) => sum + outfit.items.length, 0);
     const missingRarities = bannerOutfits.flatMap((outfit) =>
       outfit.items.filter((item) => !(pulls.get(item)?.length)).map(() => outfit.rarity));
@@ -163,6 +163,7 @@ export function activeBanners(data: ResonanceHistory) {
     return [{
       id: banner.id,
       name: banner.name,
+      kind: banner.kind,
       left,
       since,
       pulls: notebookPulls,
@@ -174,6 +175,7 @@ export function activeBanners(data: ResonanceHistory) {
       need: Math.round(need),
       hasOwnAverage,
       outfits: bannerOutfits.map((outfit) => outfit.name),
+      outfitIds: bannerOutfits.map((outfit) => outfit.id),
     }];
   });
 }
