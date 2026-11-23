@@ -199,6 +199,10 @@ class LowRarityDecomposer:
                 if not (ready and ready.hit):
                     if not self.o.open() or not self.rt.click_template("MaaNikki_Blessing_DecomposeEntrance"):
                         raise IncompleteObservation("未能打开祝福闪光分解页面")
+                    # First-time spotlight tutorial bubble fades in slightly after
+                    # the decompose view renders; allow a brief settle before probing.
+                    if not self.rt.pause(.35):
+                        raise IncompleteObservation("祝福闪光分解页面等待中断")
                 if self.rt.ui.dismiss_blessing_decompose_tutorial() is False:
                     raise IncompleteObservation("祝福闪光分解引导提示未能关闭")
                 state, _ = self.read()
@@ -208,8 +212,26 @@ class LowRarityDecomposer:
                     if state["count"]:
                         raise RuntimeError("分解前未确认旧材料选择已清空")
                 if not re.fullmatch(filter_regex, state["filter"]):
-                    self.click("filter")
-                    if not self.rt.click_text("^" + filter_regex + "$", self.layout["filter_choices"]):
+                    if self.rt.ui.dismiss_blessing_decompose_tutorial() is False:
+                        raise IncompleteObservation("祝福闪光分解引导提示未能关闭")
+                    selected_filter = False
+                    for filter_attempt in range(2):
+                        self.click("filter")
+                        if self.rt.click_text("^" + filter_regex + "$", self.layout["filter_choices"]):
+                            selected_filter = True
+                            break
+                        if filter_attempt == 0:
+                            dismissed = self.rt.ui.dismiss_blessing_decompose_tutorial()
+                            if dismissed is False:
+                                raise IncompleteObservation("祝福闪光分解引导提示未能关闭")
+                            if dismissed:
+                                state, _ = self.read()
+                                if re.fullmatch(filter_regex, state["filter"]):
+                                    selected_filter = True
+                                    break
+                                continue
+                        break
+                    if not selected_filter:
                         raise RuntimeError("未能选择指定分解星级筛选")
                     state, _ = self.read()
                 if state["count"] or not re.fullmatch(filter_regex, state["filter"]):
