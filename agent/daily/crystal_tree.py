@@ -93,31 +93,18 @@ class CrystalTree(Starsea):
                 return
         raise NavigationError("未能打开星忆晶树详情，未继续摇铃或收集。")
 
-    def observe_counts(self, teleporter, route, *, after_bell=None):
+    def observe_counts(self, teleporter, route):
         self.open_panel(teleporter, route)
         state = None
 
         def ready():
             nonlocal state
             state = self.read_panel()
-            if state is None:
-                return False
-            if after_bell is not None:
-                # At most 40 can fall per bell. When ready == 0 before ringing,
-                # stored crystals must condense (or new ready crystals appear);
-                # when ready > 0, ringing shakes canopy crystals to the ground
-                # even if stored stays unchanged. Natural regeneration may add a
-                # few crystals concurrently while ringing/opening the map.
-                moved = after_bell["stored"] - state["stored"]
-                if after_bell["ready"] == 0:
-                    return (1 <= moved <= 40) or (state["ready"] > 0 and moved >= 0)
-                return -20 <= moved <= 40
-            return True
+            return state is not None
 
         if not self.rt.ui.wait_page(ready, seconds=8):
-            message = "摇铃后未确认存储结晶落地" if after_bell is not None else "无法读取星忆晶树存储量和待收获量"
-            raise NavigationError(message + "，本次停止。")
-        self.events.append({"type": "tree_counts", **state, "after_bell": after_bell})
+            raise NavigationError("无法读取星忆晶树存储量和待收获量，本次停止。")
+        self.events.append({"type": "tree_counts", **state})
         self.rt.log(f"星忆晶树：存储 {state['stored']}/120，待收获 {state['ready']}/40。")
         if not self.rt.main():
             raise NavigationError("星忆晶树详情未能关闭，未继续移动。")
@@ -179,10 +166,11 @@ class CrystalTree(Starsea):
                 else:
                     collected_total += sum(before.values()) - sum(state.values())
                 # approach already completed one full ground lap around the tree;
-                # any remaining ready crystals are hanging in the high canopy
-                # (Fall_Ring = 1) or newly condensed onto the tree.
-                need_bell = state["ready"] > 0
-                shaken = False
+                # any remaining crystals require ringing the bell to shake canopy
+                # crystals (or condense stored crystals) onto the ground. Because
+                # the map's "待收获量" drops to 0 as soon as crystals leave the
+                # tree—while they are still lying on the ground—always run a full
+                # pickup lap immediately after ringing before checking the map.
                 condensed_retry = False
                 skipped_unchanged = False
                 growth_resets = 0
@@ -198,28 +186,16 @@ class CrystalTree(Starsea):
                             f"星忆晶树已达到单次收集轮数上限（当前存储 {state['stored']}/120，待收获 {state['ready']}/40），跳过剩余结晶。"
                         )
                         break
-                    if state["ready"] == 0 or need_bell:
-                        condensed_retry = False
-                        if state["ready"] == 0:
-                            self.rt.log("落地结晶已收完，长按摇铃取出下一批（每次最多 40 个）。")
-                        else:
-                            self.rt.log("树冠仍有待收获结晶，长按摇铃震落后继续绕树收取。")
-                        if not self.ring(at_hub=True):
-                            return False
-                        prev_before_bell = state
-                        state = self.observe_counts(teleporter, approach, after_bell=state)
-                        latest_state = state
-                        if sum(state.values()) < sum(prev_before_bell.values()):
-                            collected_total += sum(prev_before_bell.values()) - sum(state.values())
-                        need_bell = False
-                        shaken = True
-                        if sum(state.values()) == 0:
-                            break
-                        # A crystal can be picked up immediately at the bell
-                        # location. Re-check storage rather than run an empty lap.
-                        if state["ready"] == 0:
-                            continue
                     before = state
+                    if state["ready"] == 0:
+                        self.rt.log("落地结晶已收完，长按摇铃取出下一批后绕树收取。")
+                    else:
+                        self.rt.log("树冠仍有待收获结晶，长按摇铃震落后绕树收取。")
+                    if not self.ring(at_hub=True):
+                        return False
+                    # Give freshly shaken canopy crystals a moment to hit the ground.
+                    if not self.rt.pause(1.0):
+                        return False
                     self.rt.log("正在绕树收集落地结晶。")
                     self.follow(teleporter, loop)
                     state = self.observe_counts(teleporter, approach)
@@ -233,28 +209,19 @@ class CrystalTree(Starsea):
                             f"绕树期间星忆晶树有新结晶凝结（存储 {state['stored']}/120，待收获 {state['ready']}/40），继续收集。"
                         )
                         condensed_retry = False
-                        shaken = False
                         continue
                     if sum(state.values()) < sum(before.values()):
                         collected_total += sum(before.values()) - sum(state.values())
                         condensed_retry = False
-                        if state["stored"] < before["stored"]:
-                            shaken = False
-                        continue
-                    if state["ready"] > 0 and not shaken:
-                        need_bell = True
                         continue
                     if state["stored"] < before["stored"] and not condensed_retry:
                         condensed_retry = True
-                        if state["ready"] > 0:
-                            need_bell = True
-                        else:
-                            self.rt.log("绕树期间有存储结晶新落地，再绕树一圈确认收取。")
+                        self.rt.log("绕树期间有存储结晶新凝结到树冠，再摇铃绕树一圈确认收取。")
                         continue
                     skipped_unchanged = True
                     self.events.append({"type": "tree_skipped_unchanged", **state})
                     self.rt.log(
-                        f"星忆晶树绕树后未确认结晶继续减少（当前存储 {state['stored']}/120，待收获 {state['ready']}/40），跳过剩余结晶。"
+                        f"星忆晶树摇铃绕树后未确认结晶继续减少（当前存储 {state['stored']}/120，待收获 {state['ready']}/40），跳过剩余结晶。"
                     )
                     break
                 if not skipped_unchanged:
