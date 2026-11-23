@@ -119,9 +119,12 @@ class WeeklyChallengeAction(CustomAction):
                     break
                 rt.log(f"正在完成每周幻境：{label}。")
                 ok = game.realm("weekly", maximize=False, entered=True, weekly_node=node, allow_exhausted=True)
-                if not ok and game.level_missing:
+                if not ok and (game.level_missing or game.weekly_quick_locked):
                     skipped_missing += 1
-                    rt.log(f"未找到{label}，可能尚未解锁，本次跳过。")
+                    if game.weekly_quick_locked:
+                        rt.log(f"{label}尚未首次通关，无法使用快速挑战，本次跳过。")
+                    else:
+                        rt.log(f"未找到{label}，可能尚未解锁，本次跳过。")
                     continue
                 results.append(ok)
                 if game.energy_exhausted:

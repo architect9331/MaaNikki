@@ -77,6 +77,17 @@ class Gameplay:
         self.rt.evidence.observe("weekly_state", remaining=remaining, energy=energy)
         return remaining, energy
 
+    def weekly_quick_challenge_locked(self, image=None):
+        """Return True when the selected weekly boss has never been cleared (quick challenge locked)."""
+        image = self.rt.capture() if image is None else image
+        if image is None:
+            return False
+        ready = self.rt.recognize("MaaNikki_Weekly_PageReady", image=image)
+        if not ready or not ready.hit:
+            return False
+        record = re.sub(r"\s+", "", self.rt.text([740, 310, 360, 60], image=image) or "")
+        return bool(re.search(r"最佳[时時][间間][记記][录錄][：:]?暂无", record))
+
     def exhausted(self, allow_exhausted, energy=None):
         if self.rt.stopped:
             return False
@@ -311,6 +322,7 @@ class Gameplay:
         self._last_jihua_quote = None
         self.level_missing = False
         self.weekly_quota_used = False
+        self.weekly_quick_locked = False
         prefix = {"jihua": "Jihua", "bless": "Bless", "monster": "Monster", "weekly": "Weekly"}[kind]
         cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
         energy_before = None
@@ -355,6 +367,9 @@ class Gameplay:
                     return True
                 if energy is not None and energy < self.MIN_ENERGY[kind]:
                     return self.exhausted(allow_exhausted, energy)
+                if self.weekly_quick_challenge_locked():
+                    self.weekly_quick_locked = True
+                    return False
             if kind == "bless" and not self.rt.click_template("MaaNikki_Bless_Difficulty"):
                 return False
             quick = "MaaNikki_Weekly_Quick_Qiggeda" if kind == "weekly" else f"MaaNikki_{prefix}_Quick"

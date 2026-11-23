@@ -496,8 +496,11 @@ def _run_double_weekly(
             report_prefix="限时双倍 · ",
             report_task="double_weekly",
         )
-        if not ok and game.level_missing:
-            rt.log(f"深度突破双倍：未找到「{label}」，尝试下一个已勾选目标。")
+        if not ok and (game.level_missing or game.weekly_quick_locked):
+            if game.weekly_quick_locked:
+                rt.log(f"深度突破双倍：「{label}」尚未首次通关，无法使用快速挑战，尝试下一个已勾选目标。")
+            else:
+                rt.log(f"深度突破双倍：未找到「{label}」，尝试下一个已勾选目标。")
             continue
         if game.energy_exhausted:
             break
