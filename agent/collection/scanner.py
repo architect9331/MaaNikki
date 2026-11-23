@@ -178,13 +178,18 @@ class InventoryScanner:
                     and cv2.contourArea(contour) / (w * h) > .8):
                 box = [cx + x, cy + y, w, h]
                 column = round((box[0] - first_x) / pitch)
-                if (0 <= column < self.layout["columns"]
-                        and abs(box[0] - (first_x + column * pitch)) < 8
-                        and not any(abs(box[0] - old[0]) < 10 and abs(box[1] - old[1]) < 10
-                                    for old in contours_found)):
-                    contours_found.append(box)
-        # Inner and outer borders yield different sizes. Use the shared level
-        # baseline for each row and fixed cell dimensions for icon crops.
+                if 0 <= column < self.layout["columns"] and abs(box[0] - (first_x + column * pitch)) < 8:
+                    # Keep the outer card frame when both inner and outer borders match,
+                    # so bottom-aligned card tops stay consistent across each row.
+                    existing = next((i for i, old in enumerate(contours_found)
+                                     if abs(box[0] - old[0]) < 10 and abs(box[1] - old[1]) < 10), None)
+                    if existing is None:
+                        contours_found.append(box)
+                    elif box[2] * box[3] > contours_found[existing][2] * contours_found[existing][3]:
+                        contours_found[existing] = box
+        # Group OCR level labels by row, then anchor each row's vertical top to the
+        # median full-height outer card contour when available. This prevents OCR box
+        # height inflation from shifting the row's icon, level, and stack-badge crops.
         rows = []
         for item in levels:
             bx, by, bw, bh = list(item.box)
@@ -200,10 +205,13 @@ class InventoryScanner:
             row["columns"].add(column)
         boxes = []
         for row in rows:
-            top = round(float(np.median(row["bottoms"]))) + self.layout["level_bottom_padding"] - card_height
+            ocr_top = round(float(np.median(row["bottoms"]))) + self.layout["level_bottom_padding"] - card_height
+            row_contours = [box for box in contours_found
+                            if abs(box[1] + box[3] - card_height - ocr_top) < 12]
+            outer_tops = [box[1] + box[3] - card_height for box in row_contours if box[3] >= card_height]
+            top = round(float(np.median(outer_tops))) if outer_tops else ocr_top
             columns = set(row["columns"])
-            columns.update(round((box[0] - first_x) / pitch) for box in contours_found
-                           if abs(box[1] + box[3] - card_height - top) < 10)
+            columns.update(round((box[0] - first_x) / pitch) for box in row_contours)
             boxes.extend([round(first_x + column * pitch), top, card_width, card_height] for column in columns)
         # Preserve a cell with unreadable level as unresolved rather than
         # dropping it, while still normalising the source artwork geometry.
