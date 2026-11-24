@@ -6,6 +6,7 @@ import { getInterfaceLangKey } from '@/i18n';
 import { loadIconAsDataUrl } from '@/services/contentResolver';
 import { loggers } from '@/utils/logger';
 import { isTauri } from '@/utils/paths';
+import { GiantMeteorTitleBadge } from './GiantMeteorEasterEgg';
 
 // 平台类型
 type Platform = 'windows' | 'macos' | 'linux' | 'unknown';
@@ -121,10 +122,10 @@ export function TitleBar() {
   return (
     <div
       data-tauri-drag-region
-      className="h-8 flex items-center justify-between bg-bg-secondary border-b border-border select-none shrink-0"
+      className="meteor-titlebar-surface h-8 flex items-center justify-between bg-bg-secondary border-b border-border select-none shrink-0"
     >
       {/* 左侧：窗口图标和标题 */}
-      <div className="flex items-center h-full" data-tauri-drag-region>
+      <div className="flex items-center h-full gap-1" data-tauri-drag-region>
         {/* 窗口图标 */}
         <div className="w-8 h-8 flex items-center justify-center">
           {iconUrl ? (
@@ -134,9 +135,10 @@ export function TitleBar() {
             <Box className="w-4 h-4 text-text-secondary" />
           )}
         </div>
-        <span className="text-xs text-text-secondary px-2 truncate max-w-lg" data-tauri-drag-region>
+        <span className="text-xs text-text-secondary px-1.5 truncate max-w-lg" data-tauri-drag-region>
           {getWindowTitle()}
         </span>
+        <GiantMeteorTitleBadge />
       </div>
 
       {/* 右侧：窗口控制按钮（仅 Windows/Linux 显示） */}

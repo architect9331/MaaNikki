@@ -98,6 +98,7 @@ import { ConnectionLostOverlay } from './components/app/ConnectionLostOverlay';
 import { WebUIBetaBanner } from './components/app/WebUIBetaBanner';
 import { AccountStatusActions } from './components/AccountStatusActions';
 import { PearpalAccountModal } from './components/PearpalAccount';
+import { GiantMeteorStage } from './components/GiantMeteorEasterEgg';
 import { useRunResultNotifier } from '@/utils/useRunResultNotifier';
 
 /** Keep in step with SETUP_VERSION in FirstRunSetup, which stays lazily loaded. */
@@ -1968,6 +1969,7 @@ function App() {
         }}
       />
       <PearpalAccountModal />
+      <GiantMeteorStage />
     </>
   );
 

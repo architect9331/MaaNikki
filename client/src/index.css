@@ -3,30 +3,53 @@
 /* A rare home discovery always uses gold, whichever theme is active. */
 .meteor-status--found,
 .meteor-dialog--found,
+.meteor-title-badge,
+.meteor-night-stage,
 [data-sonner-toast].meteor-discovery-toast {
   --meteor-gold: #a76820;
   --meteor-title: #87451e;
   --meteor-border: #e9bf76;
   --meteor-wash: #fff3d7;
   --meteor-rose: #fbf3e2;
+  --meteor-aurora-gold: rgba(244, 194, 88, 0.22);
+  --meteor-aurora-violet: rgba(186, 152, 236, 0.14);
+  --meteor-rim-line: rgba(226, 174, 72, 0.52);
+  --meteor-rim-glow: rgba(244, 198, 92, 0.16);
+  --meteor-tail: rgba(217, 146, 36, 0.62);
+  --meteor-head: #fff6d6;
+  --meteor-head-glow: rgba(235, 168, 48, 0.82);
+  --meteor-mote: #c98324;
+  --meteor-mote-soft: #b68bd8;
 }
 
 .dark .meteor-status--found,
 .dark .meteor-dialog--found,
+.dark .meteor-title-badge,
+.dark .meteor-night-stage,
 .dark [data-sonner-toast].meteor-discovery-toast {
   --meteor-gold: #f5cf83;
   --meteor-title: #ffe2ac;
   --meteor-border: #99764b;
   --meteor-wash: #3d3029;
   --meteor-rose: #352d24;
+  --meteor-aurora-gold: rgba(248, 206, 114, 0.2);
+  --meteor-aurora-violet: rgba(154, 126, 240, 0.17);
+  --meteor-rim-line: rgba(245, 207, 131, 0.48);
+  --meteor-rim-glow: rgba(245, 195, 96, 0.16);
+  --meteor-tail: rgba(248, 212, 134, 0.7);
+  --meteor-head: #ffffff;
+  --meteor-head-glow: rgba(255, 224, 145, 0.92);
+  --meteor-mote: #ffd98a;
+  --meteor-mote-soft: #d7c3ff;
 }
 
 .meteor-status--found {
+  position: relative;
   overflow: hidden;
   color: var(--meteor-title);
   border: 1px solid var(--meteor-border);
   background: linear-gradient(115deg, var(--meteor-wash), var(--meteor-rose) 65%, var(--meteor-wash));
-  box-shadow: 0 0 0 2px #edbc6510, 0 2px 10px #dca54e20;
+  box-shadow: 0 0 0 2px #edbc6516, 0 2px 12px #dca54e28;
 }
 
 .meteor-status--found::after {
@@ -35,13 +58,234 @@
   pointer-events: none;
   inset: -50% auto -50% -50%;
   width: 35%;
-  background: linear-gradient(90deg, transparent, #ffffff80, transparent);
+  background: linear-gradient(90deg, transparent, #ffffff88, transparent);
   transform: skewX(-20deg) translateX(-100%);
-  animation: meteor-sheen 3s ease-in-out 3;
+  animation: meteor-sheen 4.4s ease-in-out infinite;
 }
 
 .meteor-status--found:hover {
-  box-shadow: 0 0 0 2px #edbc6520, 0 3px 14px #dca54e30;
+  box-shadow: 0 0 0 2px #edbc6526, 0 3px 16px #dca54e38;
+}
+
+/* Title bar starfall badge & subtle top sheen when Giant Meteor Night is active */
+.giant-meteor-night .meteor-titlebar-surface {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(244, 198, 92, 0.12) 32%,
+    rgba(196, 162, 242, 0.1) 68%,
+    transparent 100%
+  );
+  border-bottom-color: rgba(233, 191, 118, 0.48);
+}
+
+.dark.giant-meteor-night .meteor-titlebar-surface {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(245, 207, 131, 0.14) 32%,
+    rgba(154, 126, 240, 0.13) 68%,
+    transparent 100%
+  );
+  border-bottom-color: rgba(153, 118, 75, 0.6);
+}
+
+.meteor-title-badge {
+  position: relative;
+  overflow: hidden;
+  color: var(--meteor-title);
+  border: 1px solid var(--meteor-border);
+  background: linear-gradient(115deg, var(--meteor-wash), var(--meteor-rose));
+  box-shadow: 0 0 10px rgba(235, 178, 76, 0.22);
+}
+
+.meteor-title-badge::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  inset: -40% auto -40% -50%;
+  width: 38%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  transform: skewX(-20deg) translateX(-100%);
+  animation: meteor-sheen 4.8s ease-in-out infinite;
+}
+
+/* Whole-window Giant Meteor Easter Egg stage */
+.meteor-night-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.meteor-night-aurora {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 68% 36% at 86% -6%, var(--meteor-aurora-gold), transparent 72%),
+    radial-gradient(ellipse 56% 30% at 18% -8%, var(--meteor-aurora-violet), transparent 72%),
+    radial-gradient(ellipse 46% 24% at 92% 102%, var(--meteor-aurora-gold), transparent 72%);
+  animation: meteor-aurora-breathe 9s ease-in-out infinite;
+}
+
+.meteor-night-rim {
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    inset 0 0 0 1.5px var(--meteor-rim-line),
+    inset 0 0 34px var(--meteor-rim-glow);
+  animation: meteor-rim-pulse 6s ease-in-out infinite;
+}
+
+.meteor-star-mote {
+  position: absolute;
+  color: var(--meteor-mote-soft);
+  opacity: 0.25;
+  animation: meteor-mote-twinkle var(--mote-duration, 3.2s) ease-in-out var(--mote-delay, 0s) infinite;
+}
+
+.meteor-star-mote--warm {
+  color: var(--meteor-mote);
+}
+
+.meteor-star-mote::before,
+.meteor-star-mote::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  background: currentColor;
+  border-radius: 999px;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.meteor-star-mote::before {
+  width: 100%;
+  height: 1.5px;
+}
+
+.meteor-star-mote::after {
+  width: 1.5px;
+  height: 100%;
+}
+
+.meteor-streak {
+  position: absolute;
+  width: var(--streak-length, 140px);
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--meteor-head) 0%,
+    var(--meteor-tail) 26%,
+    transparent 100%
+  );
+  opacity: 0;
+  transform-origin: left center;
+  will-change: transform, opacity;
+  animation: meteor-fall var(--streak-duration, 7.5s) cubic-bezier(0.22, 0.61, 0.36, 1)
+    var(--streak-delay, 0s) infinite;
+}
+
+.meteor-streak::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: var(--meteor-head);
+  box-shadow:
+    0 0 8px 2px var(--meteor-head-glow),
+    0 0 18px 4px var(--meteor-tail);
+}
+
+.meteor-streak--hero {
+  height: 3px;
+}
+
+.meteor-streak--hero::before {
+  width: 7px;
+  height: 7px;
+  box-shadow:
+    0 0 12px 3px var(--meteor-head-glow),
+    0 0 26px 6px var(--meteor-tail);
+}
+
+.meteor-burst-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.meteor-streak--burst {
+  animation: meteor-burst-fall var(--streak-duration, 1.45s) cubic-bezier(0.16, 0.84, 0.44, 1)
+    var(--streak-delay, 0s) 1 both;
+}
+
+@keyframes meteor-aurora-breathe {
+  0%, 100% { opacity: 0.78; }
+  50% { opacity: 1; }
+}
+
+@keyframes meteor-rim-pulse {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+@keyframes meteor-mote-twinkle {
+  0%, 100% {
+    opacity: 0.16;
+    transform: scale(0.68) rotate(0deg);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.12) rotate(18deg);
+  }
+}
+
+@keyframes meteor-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(80px, -60px, 0) rotate(-32deg) scaleX(0.45);
+  }
+  4% {
+    opacity: 0.95;
+    transform: translate3d(10px, -16px, 0) rotate(-32deg) scaleX(1);
+  }
+  20% {
+    opacity: 0.85;
+    transform: translate3d(-440px, 275px, 0) rotate(-32deg) scaleX(1);
+  }
+  28% {
+    opacity: 0;
+    transform: translate3d(-620px, 390px, 0) rotate(-32deg) scaleX(0.65);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-620px, 390px, 0) rotate(-32deg) scaleX(0.65);
+  }
+}
+
+@keyframes meteor-burst-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(110px, -78px, 0) rotate(-32deg) scaleX(0.5);
+  }
+  14% {
+    opacity: 1;
+    transform: translate3d(-10px, -2px, 0) rotate(-32deg) scaleX(1.08);
+  }
+  75% {
+    opacity: 0.9;
+    transform: translate3d(-580px, 360px, 0) rotate(-32deg) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-760px, 475px, 0) rotate(-32deg) scaleX(0.6);
+  }
 }
 
 .meteor-emblem {
@@ -107,8 +351,13 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .meteor-status--found::after,
+  .meteor-title-badge::after,
+  .meteor-night-aurora,
+  .meteor-night-rim,
+  .meteor-star-mote,
   .meteor-emblem--discovered .meteor-emblem-star,
   .meteor-emblem--discovered .meteor-emblem-sparkles { animation: none; }
+  .meteor-streak { display: none; }
 }
 
 /*

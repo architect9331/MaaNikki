@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Calculator, Check, ChevronRight, Compass, LibraryBig, Palette, RefreshCw, Sparkles, Star, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { useEffect, useMemo } from 'react';
+import { BookOpen, Calculator, ChevronRight, Compass, LibraryBig, Palette } from 'lucide-react';
 import clsx from 'clsx';
-import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
+import { useAccountStateStore } from '@/stores/accountStateStore';
+import { useGiantMeteorState } from '@/stores/giantMeteorStore';
 import { explorationStatusLabels, setExplorationEnabled, useExplorationStore } from '@/services/explorationService';
 import { resonanceLabel, setResonanceEnabled, useResonanceStore } from '@/services/resonanceService';
 import { useWardrobeStore, wardrobeLabels } from '@/services/wardrobeService';
@@ -12,46 +12,14 @@ import { useOutfitCollectionStore } from '@/services/outfits/store';
 import { useCollectionOverview } from './useCollectionOverview';
 import { isTauri } from '@/utils/paths';
 import { useAppStore } from '@/stores/appStore';
-import { ModalPortal, useModalFocusTrap } from './ui/Modal';
 import { FeatureTile } from './FeatureTile';
 import { PearpalAccountTile } from './PearpalAccount';
+import { MeteorIcon } from './GiantMeteorEasterEgg';
 import { Tooltip } from './ui/Tooltip';
 
-function MeteorIcon({ className }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
-    strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-    <path d="m19 3-6 6m8-2-4 4m0-9-6 6" />
-    <path d="m9 9 1.4 3.6L14 14l-3.6 1.4L9 19l-1.4-3.6L4 14l3.6-1.4Z" />
-    <path d="m4 20 1-1m11-3 1-1" />
-  </svg>;
-}
-
-function MeteorEmblem({ discovered = false }: { discovered?: boolean }) {
-  return <span className={clsx('meteor-emblem', discovered && 'meteor-emblem--discovered')} aria-hidden="true">
-    <span className="meteor-emblem-orbit" />
-    <MeteorIcon className="meteor-emblem-comet" />
-    {discovered && <>
-      <Star className="meteor-emblem-star meteor-emblem-star--one" />
-      <Star className="meteor-emblem-star meteor-emblem-star--two" />
-      <Sparkles className="meteor-emblem-sparkles" />
-    </>}
-  </span>;
-}
-
 function GiantMeteorStatus({ compact, pill = false }: { compact?: boolean; pill?: boolean }) {
-  const { data, error, loading, refresh } = useAccountStateStore();
-  const [open, setOpen] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const announced = useRef('');
-  const close = useCallback(() => setOpen(false), []);
-  useModalFocusTrap({ active: open, containerRef: panelRef, onEscape: close });
+  const { error, record, found, absent, checkedAt, previewActive, openDialog } = useGiantMeteorState();
 
-  const today = gameDay().toISOString().slice(0, 10);
-  const observation = data?.observations?.giant_meteor;
-  const record = observation?.game_day === today && Number.isFinite(Date.parse(observation.checked_at))
-    ? observation : null;
-  const found = !error && record?.outcome === 'found';
-  const absent = !error && record?.outcome === 'not_found';
   const label = error ? '巨陨星状态读取失败' : found ? '巨陨星降临！'
     : absent ? '今日未发现巨陨星' : record ? '巨陨星检测未确认' : '今日尚未检测巨陨星';
   const description = error ? '账号状态读取失败，可刷新后重试。'
@@ -59,27 +27,6 @@ function GiantMeteorStatus({ compact, pill = false }: { compact?: boolean; pill?
     : absent ? '今日家园检测未发现巨陨星。'
     : record ? '上次检测未能确认地图状态，可重新运行家园日常。'
     : '运行家园日常后，这里会展示今日的检测结果。';
-  const checkedAt = record ? new Date(record.checked_at).toLocaleString('zh-CN', {
-    timeZone: 'Asia/Shanghai', hour12: false,
-  }) : null;
-
-  useEffect(() => {
-    const account = data?.account_key ?? 'legacy';
-    const key = `maanikki:giant-meteor:${account}:${today}`;
-    if (!found || announced.current === key) return;
-    announced.current = key;
-    try {
-      if (window.sessionStorage.getItem(key)) return;
-      window.sessionStorage.setItem(key, 'announced');
-    } catch { /* The mounted component also deduplicates without browser storage. */ }
-    toast('今夜有巨陨星！', {
-      id: key,
-      description: '家园已出现巨陨星预告，记得夜间前往查看。',
-      icon: <MeteorIcon className="w-5 h-5" />,
-      className: 'meteor-discovery-toast',
-      duration: 8000,
-    });
-  }, [found, today, data?.account_key]);
 
   const meteorTooltip = <div className="space-y-1">
     <p className="font-medium">{label}</p>
@@ -87,33 +34,44 @@ function GiantMeteorStatus({ compact, pill = false }: { compact?: boolean; pill?
     <p className="text-text-muted">点击查看 · 每日 04:00 刷新</p>
   </div>;
   const meteorWarn = Boolean(error) || record?.outcome === 'unconfirmed';
-  const meteorShortStatus = error ? '读取失败' : found ? '今日发现' : absent ? '未发现' : record ? '未确认' : '未检测';
+  const highlighted = found || previewActive;
+  const meteorShortStatus = error
+    ? '读取失败'
+    : found
+      ? '今夜降临 ✦'
+      : previewActive
+        ? '预览中 ✦'
+        : absent
+          ? '未发现'
+          : record
+            ? '未确认'
+            : '未检测';
 
   return <>
     {pill && !compact ? (
       <Tooltip side="bottom" content={meteorTooltip}>
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={openDialog}
           aria-label={`巨陨星：${label}`}
           className={clsx(
-            'flex min-w-0 items-center gap-1.5 rounded-lg border bg-bg-secondary px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent',
+            'flex w-full min-w-0 items-center gap-1.5 rounded-lg border bg-bg-secondary px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent',
             meteorWarn ? 'border-warning/45' : 'border-border',
-            found && 'meteor-status--found',
+            highlighted && 'meteor-status--found',
           )}
         >
           <MeteorIcon
             className={clsx(
               'h-3.5 w-3.5 shrink-0',
-              found ? 'text-accent' : meteorWarn ? 'text-warning' : 'text-accent-secondary',
+              highlighted ? 'text-[var(--meteor-gold)]' : meteorWarn ? 'text-warning' : 'text-accent-secondary',
             )}
           />
-          <span className="truncate font-medium text-text-primary">巨陨星</span>
+          <span className={clsx('truncate font-medium', highlighted ? 'text-[var(--meteor-title)]' : 'text-text-primary')}>巨陨星</span>
           <span
             className={clsx(
               'ml-auto shrink-0 text-[11px]',
-              found
-                ? 'font-medium text-accent'
+              highlighted
+                ? 'font-semibold text-[var(--meteor-gold)]'
                 : meteorWarn
                   ? 'text-warning'
                   : 'text-text-muted',
@@ -125,39 +83,12 @@ function GiantMeteorStatus({ compact, pill = false }: { compact?: boolean; pill?
       </Tooltip>
     ) : (
       <FeatureTile icon={MeteorIcon} title="巨陨星" compact={compact} warn={meteorWarn}
-        status={error ? '状态读取失败' : found ? '今日已发现' : absent ? '今日未发现' : record ? '检测未确认' : '今日尚未检测'}
-        className={clsx(found && 'meteor-status--found')}
+        status={error ? '状态读取失败' : found ? '今夜降临 ✦' : previewActive ? '预览中 ✦' : absent ? '今日未发现' : record ? '检测未确认' : '今日尚未检测'}
+        className={clsx(highlighted && 'meteor-status--found')}
         tooltip={meteorTooltip}
-        onClick={() => setOpen(true)} />
+        onClick={openDialog} />
     )}
     <span className="sr-only" role="status">{label}</span>
-    {open && <ModalPortal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-        onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
-        <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="giant-meteor-title"
-          aria-describedby="giant-meteor-description"
-          className={clsx('meteor-dialog relative w-full max-w-sm overflow-hidden rounded-xl border border-border bg-bg-secondary text-text-primary shadow-xl', found && 'meteor-dialog--found')}>
-          <button onClick={close} aria-label="关闭" className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-text-secondary hover:bg-bg-hover"><X className="w-4 h-4" /></button>
-          <div className="meteor-dialog-hero flex flex-col items-center px-7 pb-5 pt-7 text-center">
-            <MeteorEmblem discovered={found} />
-            <h2 id="giant-meteor-title" className="mt-3 text-xl font-semibold tracking-wide">{found ? '巨陨星降临' : '巨陨星状态'}</h2>
-            {found && <span className="meteor-rarity mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"><Star className="w-3 h-3 fill-current" />稀有发现<Star className="w-3 h-3 fill-current" /></span>}
-            <p id="giant-meteor-description" className="mt-3 text-sm leading-6 text-text-secondary">{description}</p>
-          </div>
-          <div className="mx-5 rounded-lg border border-border bg-bg-primary/70 px-4 py-3 text-xs">
-            {data?.uid && <div className="mb-2 flex justify-between gap-3"><span className="text-text-secondary">游戏 UID</span><span className="tabular-nums">{data.uid}</span></div>}
-            <div className="flex justify-between gap-3"><span className="text-text-secondary">游戏日期</span><span className="tabular-nums">{today}</span></div>
-            <div className="mt-2 flex justify-between gap-3"><span className="text-text-secondary">检测时间</span><span className="tabular-nums">{checkedAt ?? '尚未检测'}</span></div>
-          </div>
-          <div className="flex items-center gap-2 px-5 py-4">
-            <span className="mr-auto text-xs text-text-muted">每日 04:00 更新日期</span>
-            <button onClick={() => void refresh().catch(() => {})} disabled={loading} title="刷新本地记录" aria-label="刷新本地记录"
-              className="rounded-lg p-2 text-text-secondary hover:bg-bg-hover disabled:opacity-50"><RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /></button>
-            <button onClick={close} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-bg-hover"><Check className="w-3.5 h-3.5" />知道了</button>
-          </div>
-        </div>
-      </div>
-    </ModalPortal>}
   </>;
 }
 
