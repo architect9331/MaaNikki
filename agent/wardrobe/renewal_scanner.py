@@ -36,7 +36,7 @@ RAIL_SIZE = 48
 RAIL_CENTER_X = 86
 RAIL_MINOR_SIZE = 39
 RAIL_MINOR_X0 = RAIL_CENTER_X - RAIL_MINOR_SIZE // 2
-RAIL_MINOR_BAND_TOP_OFFSET = 40
+RAIL_MINOR_BAND_TOP_OFFSET = 42
 RAIL_MINOR_BAND_HEIGHT = 370
 RAIL_GLOW_X0 = 54
 RAIL_GLOW_X1 = 118
@@ -381,6 +381,94 @@ class RejuvenateModel:
         candidates.sort(key=lambda item: (-item[1], -item[2]))
         return candidates
 
+    def _minor_frame_candidates(
+        self,
+        frame: np.ndarray,
+        y_start: int,
+        y_end: int,
+    ) -> list[tuple[int, int, float]]:
+        """Fallback locator for T_UI_common_btn_tab_05_s using its symmetric left/right box borders.
+
+        When the active accessory minor sits at the bottom slot of X6ScrollBox_0, RetainerBox_365's
+        MI_ListViewMask_TopBottom bottom fade attenuates the lower warm crescent enough to drop
+        R-B below threshold on cool backgrounds, while the upper ~35-40px of the 58x58 bright
+        square border (x≈58 and x≈114, clear of 39x39 icons at x=67..105) remains unmasked.
+        """
+        h, w = frame.shape[:2]
+        if w < 128:
+            return []
+        y0 = max(RAIL_TOP_Y - 10, int(y_start))
+        y1 = min(h - RAIL_MINOR_BOTTOM_MARGIN, int(y_end))
+        if y1 - y0 < 36:
+            return []
+
+        def _wluma(patch: np.ndarray) -> np.ndarray:
+            p = patch.astype(np.float32)
+            return p[:, :, 2] * 0.55 + p[:, :, 1] * 0.30 + p[:, :, 0] * 0.15
+
+        left_edge = _wluma(frame[y0:y1, 55:62]).max(axis=1)
+        left_bg = np.median(_wluma(frame[y0:y1, 44:50]), axis=1)
+        right_edge = _wluma(frame[y0:y1, 110:117]).max(axis=1)
+        right_bg = np.median(_wluma(frame[y0:y1, 122:128]), axis=1)
+        pair_excess = np.minimum(left_edge - left_bg, right_edge - right_bg)
+
+        rows = np.where(pair_excess >= 16.0)[0] + y0
+        if len(rows) < 20:
+            return []
+        breaks = np.where(np.diff(rows) > 6)[0]
+        candidates: list[tuple[int, int, float]] = []
+        for seg in np.split(rows, breaks + 1):
+            if len(seg) < 20 or len(seg) > 76:
+                continue
+            seg_top = int(seg[0])
+            seg_bot = int(seg[-1])
+            strength = float(np.median(pair_excess[seg - y0]))
+            if strength < 20.0:
+                continue
+            candidates.append((seg_top, seg_bot, strength))
+        candidates.sort(key=lambda item: -item[2])
+        return candidates
+
+    def _classify_minor_window(
+        self,
+        gray: np.ndarray,
+        y_lo: int,
+        y_hi: int,
+    ) -> tuple[str | None, int | None, float, float]:
+        """Run detrended 39x39 NCC across [y_lo, y_hi] and return (top1_id, icon_yc, top1_sc, top2_sc)."""
+        h, w = gray.shape[:2]
+        y_lo = max(0, int(y_lo))
+        y_hi = min(h - RAIL_MINOR_SIZE, int(y_hi))
+        if y_hi < y_lo:
+            return None, None, -1.0, -1.0
+        x_lo = max(0, RAIL_MINOR_X0 - 3)
+        x_hi = min(w - RAIL_MINOR_SIZE, RAIL_MINOR_X0 + 4)
+        best_by_cid: dict[str, float] = {}
+        best_y0_by_cid: dict[str, int] = {}
+        for y0 in range(y_lo, y_hi + 1, 2):
+            for x0 in range(x_lo, x_hi):
+                patch = gray[y0:y0 + RAIL_MINOR_SIZE, x0:x0 + RAIL_MINOR_SIZE]
+                # Subtract per-row lower quartile to cancel tab_05_s's vertical gradient
+                # without attenuating the white foreground icon silhouette.
+                detrend = patch - np.percentile(patch, 25, axis=1, keepdims=True)
+                p = detrend - float(detrend.mean())
+                denom = float(np.sqrt((p ** 2).sum()))
+                if denom < 1e-6:
+                    continue
+                pn = p / denom
+                for cid, tmpl in self.minor_templates:
+                    sc = float((pn * tmpl).sum())
+                    if sc > best_by_cid.get(cid, -1.0):
+                        best_by_cid[cid] = sc
+                        best_y0_by_cid[cid] = y0
+        if not best_by_cid:
+            return None, None, -1.0, -1.0
+        ranked = sorted(best_by_cid.items(), key=lambda kv: -kv[1])
+        top1_id, top1_sc = ranked[0]
+        top2_sc = ranked[1][1] if len(ranked) > 1 else -1.0
+        icon_yc = best_y0_by_cid[top1_id] + RAIL_MINOR_SIZE // 2
+        return top1_id, icon_yc, top1_sc, top2_sc
+
     def _detect_active_minor(
         self,
         frame: np.ndarray,
@@ -390,55 +478,53 @@ class RejuvenateModel:
         """Classify the active 0.8x accessory minor sub-slot inside [y_start, y_end]."""
         if frame is None or not self.minor_templates:
             return None, None, -1.0
-        h, w = frame.shape[:2]
-        candidates = self._minor_glow_candidates(frame, y_start, y_end)
-        if not candidates:
-            return None, None, -1.0
+        h, _w = frame.shape[:2]
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
+        candidates = self._minor_glow_candidates(frame, y_start, y_end)
         best_hit: tuple[tuple[float, float, float], str, int, float] | None = None
         fallback_yc: int | None = None
         fallback_sc = -1.0
         for glow_yc, wf, bw in candidates[:4]:
-            best_by_cid: dict[str, float] = {}
-            best_y0_by_cid: dict[str, int] = {}
             # Icon center lies ~14-22px above tab_05_s's lower warm crescent median,
-            # so icon top y0 = icon_cy - RAIL_MINOR_SIZE // 2 lies in [glow_yc - 44, glow_yc - 24].
-            y_lo = max(0, glow_yc - 44)
-            y_hi = min(h - RAIL_MINOR_SIZE, glow_yc - 22)
-            x_lo = max(0, RAIL_MINOR_X0 - 3)
-            x_hi = min(w - RAIL_MINOR_SIZE, RAIL_MINOR_X0 + 4)
-            for y0 in range(y_lo, y_hi + 1, 2):
-                for x0 in range(x_lo, x_hi):
-                    patch = gray[y0:y0 + RAIL_MINOR_SIZE, x0:x0 + RAIL_MINOR_SIZE]
-                    # Subtract per-row lower quartile to cancel tab_05_s's vertical gradient
-                    # without attenuating the white foreground icon silhouette.
-                    detrend = patch - np.percentile(patch, 25, axis=1, keepdims=True)
-                    p = detrend - float(detrend.mean())
-                    denom = float(np.sqrt((p ** 2).sum()))
-                    if denom < 1e-6:
-                        continue
-                    pn = p / denom
-                    for cid, tmpl in self.minor_templates:
-                        sc = float((pn * tmpl).sum())
-                        if sc > best_by_cid.get(cid, -1.0):
-                            best_by_cid[cid] = sc
-                            best_y0_by_cid[cid] = y0
-            if not best_by_cid:
+            # so icon top y0 = icon_cy - RAIL_MINOR_SIZE // 2 lies in [glow_yc - 44, glow_yc - 22].
+            top1_id, icon_yc, top1_sc, top2_sc = self._classify_minor_window(
+                gray,
+                glow_yc - 44,
+                glow_yc - 22,
+            )
+            if top1_id is None or icon_yc is None:
                 continue
-            ranked = sorted(best_by_cid.items(), key=lambda kv: -kv[1])
-            top1_id, top1_sc = ranked[0]
-            top2_sc = ranked[1][1] if len(ranked) > 1 else -1.0
             if top1_sc > fallback_sc:
                 fallback_sc = top1_sc
-                fallback_yc = best_y0_by_cid[top1_id] + RAIL_MINOR_SIZE // 2
+                fallback_yc = icon_yc
             if top1_sc >= 0.56 and (top1_sc - top2_sc) >= 0.08:
-                icon_yc = best_y0_by_cid[top1_id] + RAIL_MINOR_SIZE // 2
                 rank_key = (round(float(wf), 3), round(float(bw), 3), top1_sc)
                 if best_hit is None or rank_key > best_hit[0]:
                     best_hit = (rank_key, top1_id, icon_yc, top1_sc)
         if best_hit is not None:
             return best_hit[1], best_hit[2], best_hit[3]
+
+        # Fallback: detect bottom-masked tab_05_s via its unmasked upper left/right border frame.
+        frame_cands = self._minor_frame_candidates(frame, y_start, y_end)
+        best_frame_hit: tuple[tuple[float, float], str, int, float] | None = None
+        for seg_top, seg_bot, strength in frame_cands[:3]:
+            # tab_05_s top border lies ~29px above icon center -> icon top y0 lies ~10px below seg_top
+            # (or slightly higher when the very top corner of the border is soft on bright backgrounds).
+            y_lo = max(0, seg_top - 4)
+            y_hi = min(h - RAIL_MINOR_SIZE, max(seg_top + 20, seg_bot - 26))
+            top1_id, icon_yc, top1_sc, top2_sc = self._classify_minor_window(gray, y_lo, y_hi)
+            if top1_id is None or icon_yc is None:
+                continue
+            if top1_sc > fallback_sc:
+                fallback_sc = top1_sc
+                fallback_yc = icon_yc
+            if top1_sc >= 0.56 and (top1_sc - top2_sc) >= 0.08:
+                rank_key = (round(float(strength), 2), top1_sc)
+                if best_frame_hit is None or rank_key > best_frame_hit[0]:
+                    best_frame_hit = (rank_key, top1_id, icon_yc, top1_sc)
+        if best_frame_hit is not None:
+            return best_frame_hit[1], best_frame_hit[2], best_frame_hit[3]
         return None, fallback_yc, fallback_sc
 
     def detect_active_category(self, frame: np.ndarray) -> tuple[str | None, int | None, float]:
@@ -491,13 +577,13 @@ class RejuvenateModel:
         glow_count, candidates = self._rail_glow_candidates(frame)
         major_cid, major_yc, _major_sc = self._detect_active_major(frame)
         if major_cid == "acc" and major_yc is not None:
-            minor_cands = self._minor_glow_candidates(
-                frame,
-                major_yc + RAIL_MINOR_BAND_TOP_OFFSET,
-                min(h - RAIL_MINOR_BOTTOM_MARGIN, major_yc + RAIL_MINOR_BAND_TOP_OFFSET + RAIL_MINOR_BAND_HEIGHT),
-            )
+            minor_y0 = major_yc + RAIL_MINOR_BAND_TOP_OFFSET
+            minor_y1 = min(h - RAIL_MINOR_BOTTOM_MARGIN, minor_y0 + RAIL_MINOR_BAND_HEIGHT)
+            minor_cands = self._minor_glow_candidates(frame, minor_y0, minor_y1)
+            minor_frame_cands = self._minor_frame_candidates(frame, minor_y0, minor_y1)
         else:
             minor_cands = []
+            minor_frame_cands = []
         cid, yc, sc = self.detect_active_category(frame)
         return {
             "frame_shape": [h, int(frame.shape[1])],
@@ -518,6 +604,14 @@ class RejuvenateModel:
                     "bright_warm": round(float(bw), 3),
                 }
                 for gyc, wf, bw in minor_cands[:4]
+            ],
+            "minor_frame_candidates": [
+                {
+                    "top": int(seg_top),
+                    "bot": int(seg_bot),
+                    "strength": round(float(strength), 2),
+                }
+                for seg_top, seg_bot, strength in minor_frame_cands[:3]
             ],
             "detected_cid": cid,
             "detected_yc": int(yc) if yc is not None else None,
@@ -1157,13 +1251,18 @@ class RenewalScanner:
                 return after, cid, yc, True
 
         # Fallback: click the next visible slot directly below the active highlight inside clickable work area.
-        if prev_yc is not None:
-            safe_min_y, safe_max_y = safe_capture_y_range(
-                window_hwnd(self.rt),
-                prev_frame.shape[0],
-                capture_width=prev_frame.shape[1],
-                margin_px=8,
-            )
+        # Never click below 'acc' here: when already inside an expanded accessory sub-list, clicking
+        # acc_yc + 70 jumps back to Slot #1 and loops over already-visited subcategories.
+        if prev_yc is not None and prev_cid != "acc":
+            try:
+                safe_min_y, safe_max_y = safe_capture_y_range(
+                    window_hwnd(self.rt),
+                    prev_frame.shape[0],
+                    capture_width=prev_frame.shape[1],
+                    margin_px=8,
+                )
+            except OSError:
+                safe_min_y, safe_max_y = 0, prev_frame.shape[0]
             pitch = 60 if prev_cid in ACCESSORY_PARTS else 70
             cand_y = min(prev_frame.shape[0] - 32, safe_max_y - 12, prev_yc + pitch)
             if cand_y >= safe_min_y + 12 and cand_y > prev_yc + 18:
@@ -1874,18 +1973,45 @@ class RenewalScanner:
                 },
             )
 
+        def _scroll_accessory_sublist_down(acc_yc: int, frame: np.ndarray) -> np.ndarray | None:
+            """Scroll X6ScrollBox_0 down slightly to bring a bottom-clipped active minor into view."""
+            try:
+                safe_min_y, safe_max_y = safe_capture_y_range(
+                    window_hwnd(self.rt),
+                    frame.shape[0],
+                    capture_width=frame.shape[1],
+                    margin_px=8,
+                )
+            except OSError:
+                safe_min_y, safe_max_y = 0, frame.shape[0]
+            target_y = min(frame.shape[0] - 60, safe_max_y - 24, acc_yc + 180)
+            if target_y < max(safe_min_y + 12, acc_yc + 50):
+                return None
+            if (
+                not self.rt.action("TouchMove", target=[RAIL_CENTER_X, target_y])
+                or not self.rt.pause(0.08)
+                or not self.rt.action("Scroll", target=[RAIL_CENTER_X, target_y], dx=0, dy=-240)
+                or not self.rt.pause(0.25)
+                or not self.rt.action("TouchMove", target=_park_point(self.rt))
+                or not self.rt.pause(0.1)
+            ):
+                return None
+            return self.rt.capture()
+
         def _scan_rail(is_tall: bool, step_trace: list[dict]) -> tuple[np.ndarray | None, str | None, int | None]:
             frame, cid, yc = self._reset_rail_top()
             prev_cid: str | None = None
             prev_grid_frame: np.ndarray | None = None
             sort_verified = False
             acc_expand_retries = 0
-            for step in range(44):
+            in_accessory_sublist = False
+            for step in range(56):
                 if self.rt.stopped or frame is None:
                     break
                 if cid == "299":
                     visited_cids.add("299")
                     prev_cid = "299"
+                    in_accessory_sublist = False
                     prev_grid_frame = frame
                     frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
                     step_trace.append({
@@ -1899,8 +2025,8 @@ class RenewalScanner:
                         break
                     continue
                 if cid == "acc":
-                    # '饰品' has no overview view; wait once for expansion animation before clicking
-                    # the '饰品' header to recover a manually collapsed drawer.
+                    # '饰品' has no overview view. Distinguish entering a collapsed drawer from
+                    # stepping inside an already-expanded sub-list whose active slot is bottom-clipped.
                     if acc_expand_retries == 0:
                         acc_expand_retries += 1
                         if self.rt.pause(0.3):
@@ -1914,20 +2040,55 @@ class RenewalScanner:
                                 "parts_count": len(self.summary["parts"]),
                             })
                             continue
-                    if yc is not None and acc_expand_retries < 3:
-                        acc_expand_retries += 1
-                        self.rt.action("Click", target=[RAIL_CENTER_X, yc])
-                        self.rt.pause(0.35)
-                        frame = self.rt.capture()
-                        cid, yc, _sc = self.model.detect_active_category(frame)
-                        step_trace.append({
-                            "step": step,
-                            "cid": cid,
-                            "yc": yc,
-                            "moved": cid not in (None, "acc"),
-                            "parts_count": len(self.summary["parts"]),
-                        })
-                        continue
+                    if in_accessory_sublist:
+                        # Drawer is already open: never click the '饰品' header (which collapses it).
+                        # Gently scroll X6ScrollBox_0 down to pull any bottom-clipped active minor up.
+                        if yc is not None and acc_expand_retries < 3:
+                            acc_expand_retries += 1
+                            scrolled = _scroll_accessory_sublist_down(yc, frame)
+                            if scrolled is not None:
+                                frame = scrolled
+                            cid, yc, _sc = self.model.detect_active_category(frame)
+                            step_trace.append({
+                                "step": step,
+                                "cid": cid,
+                                "yc": yc,
+                                "moved": cid not in (None, "acc"),
+                                "parts_count": len(self.summary["parts"]),
+                            })
+                            continue
+                    else:
+                        if yc is not None and acc_expand_retries == 1:
+                            acc_expand_retries += 1
+                            self.rt.action("Click", target=[RAIL_CENTER_X, yc])
+                            self.rt.pause(0.35)
+                            frame = self.rt.capture()
+                            cid, yc, _sc = self.model.detect_active_category(frame)
+                            step_trace.append({
+                                "step": step,
+                                "cid": cid,
+                                "yc": yc,
+                                "moved": cid not in (None, "acc"),
+                                "parts_count": len(self.summary["parts"]),
+                            })
+                            continue
+                        if yc is not None and acc_expand_retries == 2:
+                            # If clicking once didn't select Slot #1, click Slot #1 directly (~95px below acc)
+                            # rather than clicking 'acc' a second time (which would re-collapse the drawer).
+                            acc_expand_retries += 1
+                            slot1_y = min(frame.shape[0] - 32, yc + 95)
+                            self.rt.action("Click", target=[RAIL_CENTER_X, slot1_y])
+                            self.rt.pause(0.35)
+                            frame = self.rt.capture()
+                            cid, yc, _sc = self.model.detect_active_category(frame)
+                            step_trace.append({
+                                "step": step,
+                                "cid": cid,
+                                "yc": yc,
+                                "moved": cid not in (None, "acc"),
+                                "parts_count": len(self.summary["parts"]),
+                            })
+                            continue
                     prev_grid_frame = frame
                     frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
                     step_trace.append({
@@ -1941,6 +2102,9 @@ class RenewalScanner:
                         break
                     continue
                 if cid is None or cid in visited_cids:
+                    if cid in ACCESSORY_PARTS:
+                        in_accessory_sublist = True
+                        acc_expand_retries = 0
                     if cid in visited_cids and (not _missing_majors() or cid == "299"):
                         break
                     prev_grid_frame = frame
@@ -1958,7 +2122,10 @@ class RenewalScanner:
 
                 visited_cids.add(cid)
                 if cid in ACCESSORY_PARTS:
+                    in_accessory_sublist = True
                     acc_expand_retries = 0
+                else:
+                    in_accessory_sublist = False
                 fresh_switch = prev_cid is not None and cid != prev_cid
                 self._last_scan_frame = frame
                 self.rt.log(f"焕新读取：正在读取「{self.model.category_name(cid)}」。", detail=True)
