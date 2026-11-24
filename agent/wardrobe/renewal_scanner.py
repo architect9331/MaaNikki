@@ -38,7 +38,7 @@ RAIL_GLOW_X1 = 118
 RAIL_TOP_Y = 130
 RAIL_BOTTOM_MARGIN = 50
 RAIL_MAJOR_MAX_Y = 920
-RAIL_MAX_Y = 2000
+RAIL_MAX_Y = 2200
 RAIL_TOP_SLOT = [86, 174]
 
 COLS = 6
@@ -254,9 +254,17 @@ class RejuvenateModel:
             return None, None, -1.0
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
-        fallback_yc = candidates[0][1]
+        # Evaluate top candidates from both the major-category band (<= RAIL_MAJOR_MAX_Y)
+        # and the expanded accessory-minor band (> RAIL_MAJOR_MAX_Y) so neither tall-mode
+        # background bands nor faint upper-rail background bleed can shadow a real glowing slot.
+        upper = [c for c in candidates if c[1] <= RAIL_MAJOR_MAX_Y][:6]
+        lower = [c for c in candidates if c[1] > RAIL_MAJOR_MAX_Y][:6]
+        eval_pool = upper + lower
+
+        fallback_yc = eval_pool[0][1]
         fallback_sc = -1.0
-        for _seg, yc, _wf, _bw in candidates[:8]:
+        best_hit: tuple[tuple[int, float, float, int, float], str, int, float] | None = None
+        for seg, yc, wf, bw in eval_pool:
             best_by_cid: dict[str, float] = {}
             for y0 in range(max(0, yc - 38), min(h - RAIL_SIZE, yc - 20), 2):
                 for x0 in range(max(0, RAIL_X0 - 2), min(w - RAIL_SIZE, RAIL_X0 + 3)):
@@ -279,7 +287,19 @@ class RejuvenateModel:
                 fallback_sc = top1_sc
                 fallback_yc = yc
             if top1_sc >= 0.62 and (top1_sc - top2_sc) >= 0.06:
-                return top1_id, yc, top1_sc
+                # Among valid icon matches, prefer icon-sized golden highlight boxes
+                # with the strongest warm fill coverage over faint background bleed.
+                rank_key = (
+                    1 if len(seg) <= 120 else 0,
+                    round(float(wf), 3),
+                    round(float(bw), 3),
+                    1 if yc <= RAIL_MAJOR_MAX_Y else 0,
+                    top1_sc,
+                )
+                if best_hit is None or rank_key > best_hit[0]:
+                    best_hit = (rank_key, top1_id, yc, top1_sc)
+        if best_hit is not None:
+            return best_hit[1], best_hit[2], best_hit[3]
         return None, fallback_yc, fallback_sc
 
     def debug_active_category(self, frame: np.ndarray | None) -> dict:
@@ -1048,7 +1068,11 @@ class RenewalScanner:
         verify_sort: bool = False,
     ) -> bool:
         expects_items = self._category_expects_items(cid, owned_groups)
-        page0_wait = 2.4 if expects_items else 1.2
+        page0_wait = (
+            2.4
+            if (expects_items or (not incremental and cid in self.model.non_skip_majors))
+            else 1.2
+        )
         frame = initial_frame if (assume_at_top and initial_frame is not None) else None
         prefetched_rows: list[int] = []
         prefetched_occ: list[tuple[int, list[int]]] = []
@@ -1567,14 +1591,28 @@ class RenewalScanner:
 
         visited_cids: set[str] = set()
         expected_majors = [m["id"] for m in self.model.majors if not m.get("skip")]
+        expected_accessory_minors = [m["id"] for m in self.model.minors]
 
         def _missing_majors() -> list[str]:
-            return [
-                self.model.category_name(mid)
-                for mid in expected_majors
-                if (mid != "acc" and mid not in visited_cids)
-                or (mid == "acc" and "acc" not in visited_cids and not any(p in visited_cids for p in ACCESSORY_PARTS))
-            ]
+            missing: list[str] = []
+            for mid in expected_majors:
+                if mid != "acc":
+                    if mid not in visited_cids:
+                        missing.append(self.model.category_name(mid))
+                    continue
+                if "acc" in visited_cids:
+                    continue
+                # When the left rail enters expanded accessory subcategories instead of
+                # the unified "饰品" tab, require every minor subcategory rather than
+                # stopping after the first minor (e.g. 发饰) and skipping 帽子/耳饰/etc.
+                visited_minors = [p for p in expected_accessory_minors if p in visited_cids]
+                if not visited_minors:
+                    missing.append(self.model.category_name(mid))
+                else:
+                    for p in expected_accessory_minors:
+                        if p not in visited_cids:
+                            missing.append(self.model.category_name(p))
+            return missing
 
         def _incomplete_parts() -> list[str]:
             return [
@@ -1637,7 +1675,7 @@ class RenewalScanner:
             prev_cid: str | None = None
             prev_grid_frame: np.ndarray | None = None
             sort_verified = False
-            for step in range(32):
+            for step in range(40):
                 if self.rt.stopped or frame is None:
                     break
                 if cid == "299":
