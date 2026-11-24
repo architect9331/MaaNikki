@@ -68,6 +68,10 @@ COURSE_TIMER_MAX_TICKING_SECONDS = 24.95
 COURSE_TIMER_POLL_INTERVAL_SECONDS = 0.10
 COURSE_TIMER_POLL_START_NORMAL_SECONDS = 3.0
 COURSE_TIMER_POLL_START_RETRY_SECONDS = 1.0
+# Extend polling when the pre-unlock 00:25.000 banner is positively visible so slower
+# GPUs/CPUs still collect two confirmed ticking frames instead of departing early on fallback.
+COURSE_TIMER_MAX_POLL_EXTEND_SECONDS = 12.0
+COURSE_TIMER_CONFIRM_EXTEND_SECONDS = 1.5
 # Calibrated in-game clock offsets after 00:25.000 starts ticking, preserving the
 # 3dc2c02 laser-phase alignment (8.07 - 5.55 = 2.52s, 7.03 - 5.55 = 1.48s).
 COURSE_GO_OFFSET_CAMERA_ASSIST_ON = 2.52
@@ -135,6 +139,21 @@ def _parse_course_timer_text(text: str) -> float | None:
     if mins == 0 and COURSE_TIMER_MIN_VALID_SECONDS <= remaining <= COURSE_TIMER_MAX_TICKING_SECONDS:
         return remaining
     return None
+
+
+def _is_static_course_timer_text(text: str) -> bool:
+    """Return True when OCR reads the pre-unlock frozen 00:25.000 course countdown."""
+    if not text:
+        return False
+    norm = text.strip().translate(_COURSE_TIMER_TRANSLATION)
+    match = _COURSE_TIMER_RE.search(norm)
+    if not match:
+        return False
+    mins = int(match.group(1))
+    secs = int(match.group(2))
+    frac_raw = match.group(3) or match.group(4)
+    remaining = secs + int(frac_raw) / (10 ** len(frac_raw))
+    return mins == 0 and COURSE_TIMER_MAX_TICKING_SECONDS < remaining <= COURSE_TIMER_INITIAL_SECONDS + 0.05
 
 
 def _mark_entry_paid(stats: dict) -> None:
@@ -430,16 +449,17 @@ class MinigameBlingRun(Runtime):
             inputs.wait(min(4.0, remaining), restore=False)
         return False
 
-    def _detect_course_timer(self, frame) -> float | None:
-        """Read the ticking top-center 00:25.000 countdown directly via OCR."""
+    def _detect_course_timer_state(self, frame) -> tuple[float | None, bool]:
+        """Read the top-center countdown, distinguishing ticking time from frozen 00:25.000."""
         result = self.recognize("MaaNikki_Daily_OCR", {"roi": COURSE_TIMER_ROI}, image=frame)
         if not result or not result.hit:
-            return None
+            return None, False
         rows = (
             getattr(result, "filtered_results", None)
             or getattr(result, "all_results", None)
             or ([result.best_result] if getattr(result, "best_result", None) is not None else [])
         )
+        saw_static = False
         for row in rows:
             if row is None:
                 continue
@@ -449,8 +469,15 @@ class MinigameBlingRun(Runtime):
             txt = str(getattr(row, "text", "") or "").strip()
             parsed = _parse_course_timer_text(txt)
             if parsed is not None:
-                return parsed
-        return None
+                return parsed, False
+            if _is_static_course_timer_text(txt):
+                saw_static = True
+        return None, saw_static
+
+    def _detect_course_timer(self, frame) -> float | None:
+        """Read the ticking top-center 00:25.000 countdown directly via OCR."""
+        remaining, _ = self._detect_course_timer_state(frame)
+        return remaining
 
     def _wait_for_course_start(
         self,
@@ -477,11 +504,13 @@ class MinigameBlingRun(Runtime):
             else COURSE_TIMER_POLL_START_NORMAL_SECONDS
         )
         poll_deadline = trigger_at + fallback_wait
+        max_poll_deadline = trigger_at + max(fallback_wait, COURSE_TIMER_MAX_POLL_EXTEND_SECONDS)
 
         if not self._wait_sliced(inputs, trigger_at + poll_start_offset):
             return "stopped", 0.0, None
 
         first_sample: tuple[float, float, float] | None = None
+        last_static_at: float | None = None
         aligned_t_go: float | None = None
         last_frame = None
         while not self.stopped and time.monotonic() < poll_deadline:
@@ -498,31 +527,51 @@ class MinigameBlingRun(Runtime):
                 if (t_after - t_before) <= 0.15
                 else (t_after - 0.015)
             )
-            remaining = self._detect_course_timer(frame)
-            if remaining is not None:
+            ocr_started = time.monotonic()
+            remaining, is_static = self._detect_course_timer_state(frame)
+            ocr_elapsed = max(0.0, time.monotonic() - ocr_started)
+            if is_static:
+                # Seeing frozen 00:25.000 confirms we are inside the 3-2-1 countdown:
+                # discard any earlier single-frame OCR misread, bound future t_go
+                # from below, and extend the poll cap for slower GPUs/CPUs.
+                last_static_at = captured_at
+                first_sample = None
+                poll_deadline = max(poll_deadline, max_poll_deadline)
+            elif remaining is not None:
                 t_go = captured_at - (COURSE_TIMER_INITIAL_SECONDS - remaining)
-                if t_go >= trigger_at - 0.5:
-                    if first_sample is None:
-                        if (t_go + go_offset) - time.monotonic() >= 0.25:
-                            first_sample = (captured_at, remaining, t_go)
-                            sleep_s = min(
-                                COURSE_TIMER_POLL_INTERVAL_SECONDS,
-                                max(0.02, (t_go + go_offset) - time.monotonic() - 0.15),
-                            )
-                            if not self.pause(sleep_s):
-                                return "stopped", 0.0, None
-                            continue
+                min_valid_t_go = (
+                    last_static_at - 0.15
+                    if last_static_at is not None
+                    else trigger_at - 0.5
+                )
+                if t_go >= min_valid_t_go:
+                    if first_sample is not None:
+                        prev_at, prev_rem, prev_t_go = first_sample
+                        if (
+                            captured_at > prev_at
+                            and remaining < prev_rem
+                            and abs(t_go - prev_t_go) <= 0.30
+                        ):
+                            aligned_t_go = 0.5 * (prev_t_go + t_go)
+                            break
+                    now = time.monotonic()
+                    time_to_go = (t_go + go_offset) - now
+                    # Only accept a single ticking frame without a second OCR pass when a prior
+                    # frozen 00:25.000 frame already verified the transition and another OCR pass
+                    # would push departure past go_offset (e.g. slow OCR on low-end GPUs).
+                    if last_static_at is not None and time_to_go < max(0.25, ocr_elapsed + 0.15):
                         aligned_t_go = t_go
                         break
-                    _, prev_rem, prev_t_go = first_sample
-                    if remaining < prev_rem and abs(t_go - prev_t_go) <= 0.30:
-                        aligned_t_go = 0.5 * (prev_t_go + t_go)
-                        break
                     first_sample = (captured_at, remaining, t_go)
+                    poll_deadline = min(
+                        max_poll_deadline,
+                        max(poll_deadline, now + COURSE_TIMER_CONFIRM_EXTEND_SECONDS),
+                    )
                     sleep_s = min(
                         COURSE_TIMER_POLL_INTERVAL_SECONDS,
-                        max(0.0, poll_deadline - time.monotonic()),
+                        max(0.02, time_to_go - 0.15) if time_to_go >= 0.20 else 0.02,
                     )
+                    sleep_s = min(sleep_s, max(0.0, poll_deadline - now))
                     if sleep_s > 0 and not self.pause(sleep_s):
                         return "stopped", 0.0, None
                     continue
@@ -537,8 +586,6 @@ class MinigameBlingRun(Runtime):
 
         if self.stopped:
             return "stopped", 0.0, None
-        if aligned_t_go is None and first_sample is not None:
-            aligned_t_go = first_sample[2]
         if aligned_t_go is not None:
             if not self._wait_sliced(inputs, aligned_t_go + go_offset):
                 return "stopped", 0.0, None
@@ -623,20 +670,33 @@ class MinigameBlingRun(Runtime):
             "right": self.game_keys.get("right"),
         }
         try:
+            # Schedule every turn transition on a cumulative course timeline rather than
+            # chaining relative waits so per-segment sleep quantization never accumulates.
             inputs._down(fwd)
+            course_start = time.monotonic()
+            elapsed_target = 0.0
             if straight_seconds > 0:
-                inputs.wait(straight_seconds)
+                elapsed_target += straight_seconds
+                remaining = (course_start + elapsed_target) - time.monotonic()
+                if remaining > 1e-6:
+                    inputs.wait(remaining)
             for steer_name, hold_steer, wait_after in turns:
                 if self.stopped:
                     return "stopped"
                 steer_key = steer_keys[steer_name]
                 inputs._down(steer_key)
                 try:
-                    inputs.wait(hold_steer)
+                    elapsed_target += hold_steer
+                    remaining = (course_start + elapsed_target) - time.monotonic()
+                    if remaining > 1e-6:
+                        inputs.wait(remaining)
                 finally:
                     inputs._up(steer_key)
                 if wait_after > 0:
-                    inputs.wait(wait_after)
+                    elapsed_target += wait_after
+                    remaining = (course_start + elapsed_target) - time.monotonic()
+                    if remaining > 1e-6:
+                        inputs.wait(remaining)
         finally:
             for steer_key in steer_keys.values():
                 inputs._up(steer_key)
