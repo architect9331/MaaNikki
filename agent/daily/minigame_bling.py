@@ -82,23 +82,25 @@ COURSE_GO_OFFSET_CAMERA_ASSIST_ON = 0.0
 COURSE_GO_OFFSET_CAMERA_ASSIST_OFF = 0.0
 ENTRY_FEE_BLING = 100
 CLEAR_REWARD_BLING = 700
-# Fallback start waits when timer OCR never triggers (normal NPC dialogue vs failure retry).
-COURSE_FALLBACK_START_WAIT_NORMAL = 5.60
-COURSE_FALLBACK_START_WAIT_RETRY = 3.20
-# Immediate-start laser-gate routes calibrated against exact UE5 gate geometry, uphill slope
-# speeds, and Camera Horizontal Assist angular rates (finishing in ~11.0-11.2s with trailing
-# forward buffer to ~12.3-12.4s so slower framerates still cross the finish gate under 15s).
-COURSE_STRAIGHT_CAMERA_ASSIST_ON = 3.85
-COURSE_STRAIGHT_CAMERA_ASSIST_OFF = 3.45
+# Fallback start waits when timer OCR never triggers (normal NPC dialogue vs failure retry),
+# wide enough that typical 4.5-6.1s / 2.5-3.7s unlocks still align cleanly via ticking OCR.
+COURSE_FALLBACK_START_WAIT_NORMAL = 6.20
+COURSE_FALLBACK_START_WAIT_RETRY = 3.80
+# Immediate-start laser-gate routes calibrated against exact UE5 gate geometry, live G1 phase,
+# uphill slope speeds, and Camera Horizontal Assist angular rates: both modes open immediately
+# with a right turn (W+D) to bypass Gate 1's center laser on the right side without waiting,
+# finishing in ~11.0-11.2s with trailing forward buffer to ~12.3-12.55s under the 15s limit.
+COURSE_STRAIGHT_CAMERA_ASSIST_ON = 0.0
+COURSE_STRAIGHT_CAMERA_ASSIST_OFF = 0.0
 COURSE_TURNS_CAMERA_ASSIST_ON: tuple[tuple[str, float, float], ...] = (
-    ("right", 1.00, 1.30),
-    ("right", 1.00, 1.05),
-    ("right", 0.70, 3.40),
+    ("right", 0.50, 4.65),
+    ("right", 0.40, 0.60),
+    ("right", 1.60, 4.55),
 )
 COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[str, float, float], ...] = (
-    ("right", 1.00, 1.45),
-    ("right", 1.50, 0.60),
-    ("right", 1.65, 2.75),
+    ("right", 0.65, 4.70),
+    ("right", 1.70, 0.40),
+    ("right", 1.80, 3.30),
 )
 MAX_CONSECUTIVE_FAILURES = 6
 REENTER_NPC_ON_CONSECUTIVE_FAILURE = 3
@@ -515,9 +517,11 @@ class MinigameBlingRun(Runtime):
         )
         poll_deadline = trigger_at + fallback_wait
         max_poll_deadline = trigger_at + max(fallback_wait, COURSE_TIMER_MAX_POLL_EXTEND_SECONDS)
-        post_static_window = min(
-            max(0.5, straight_seconds - 0.35),
-            COURSE_STATIC_POST_LOST_MAX_WAIT,
+        allow_prehold = go_offset <= 0.0 and straight_seconds >= 1.0
+        post_static_window = (
+            min(max(0.5, straight_seconds - 0.35), COURSE_STATIC_POST_LOST_MAX_WAIT)
+            if allow_prehold
+            else COURSE_STATIC_SINGLE_HIT_EXTEND_SECONDS
         )
 
         if not self._wait_sliced(inputs, trigger_at + poll_start_offset):
@@ -550,7 +554,9 @@ class MinigameBlingRun(Runtime):
                 if (t_after - t_before) <= 0.15
                 else (t_after - 0.015)
             )
+            ocr_started = time.monotonic()
             remaining, is_static = self._detect_course_timer_state(frame)
+            ocr_elapsed = max(0.0, time.monotonic() - ocr_started)
             if is_static:
                 # Seeing frozen 00:25.000 confirms we are inside the 3-2-1 countdown:
                 # discard any earlier single-frame OCR misread, bound future t_go from
@@ -561,7 +567,7 @@ class MinigameBlingRun(Runtime):
                 first_sample = None
                 extend_by = (
                     post_static_window
-                    if static_hits >= COURSE_STATIC_PREHOLD_MIN_HITS
+                    if (allow_prehold and static_hits >= COURSE_STATIC_PREHOLD_MIN_HITS)
                     else COURSE_STATIC_SINGLE_HIT_EXTEND_SECONDS
                 )
                 poll_deadline = min(
@@ -569,8 +575,8 @@ class MinigameBlingRun(Runtime):
                     max(poll_deadline, captured_at + extend_by),
                 )
                 if (
-                    fwd_down_at is None
-                    and go_offset <= 0.0
+                    allow_prehold
+                    and fwd_down_at is None
                     and static_hits >= COURSE_STATIC_PREHOLD_MIN_HITS
                 ):
                     inputs._down(fwd)
@@ -592,6 +598,17 @@ class MinigameBlingRun(Runtime):
                         ):
                             aligned_t_go = 0.5 * (prev_t_go + t_go)
                             break
+                    # When a prior frozen 00:25.000 already confirmed the 3-2-1 countdown
+                    # and OCR itself is slow (>=0.25s per frame), accept a freshly ticking
+                    # frame directly so slow GPUs do not pay a second OCR cycle of launch lag.
+                    if (
+                        not allow_prehold
+                        and last_static_at is not None
+                        and ocr_elapsed >= 0.25
+                        and remaining >= COURSE_TIMER_INITIAL_SECONDS - 2.0
+                    ):
+                        aligned_t_go = t_go
+                        break
                     first_sample = (captured_at, remaining, t_go)
                     now = time.monotonic()
                     poll_deadline = min(
@@ -674,7 +691,7 @@ class MinigameBlingRun(Runtime):
         # Even after starting on fallback_wait, continue polling briefly during the initial
         # straight segment (if frames are available) so late unlocks with missed frozen banners
         # still lock exact t_go for Turn 1 without delaying departure.
-        if last_frame is not None:
+        if last_frame is not None and allow_prehold:
             in_flight_deadline = fwd_down_at + min(2.0, max(0.5, straight_seconds - 0.50))
             while not self.stopped and time.monotonic() < in_flight_deadline:
                 t_before = time.monotonic()
