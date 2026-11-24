@@ -36,6 +36,9 @@ SAFE_AREA_MODAL_ROI = [360, 200, 560, 320]
 _RE_SAFE_AREA_BODY = re.compile(r"是否返回安全[区區]域")
 DISCONNECT_NOTICE_ROI = [360, 220, 560, 300]
 _RE_DISCONNECT_NOTICE_BODY = re.compile(r"返回登[录錄]界面|尝试重新进入游[戏戲]")
+BLESSING_OVERFLOW_MODAL_ROI = [360, 195, 560, 315]
+_RE_BLESSING_OVERFLOW_TITLE = re.compile(r"祝福[闪閃]光[数數]量溢出")
+_RE_BLESSING_OVERFLOW_BODY = re.compile(r"祝福[闪閃]光[数數]量已超[过過]容量上限")
 
 
 def find_expired_notice_confirm_box(rows):
@@ -177,6 +180,49 @@ def find_disconnect_notice_confirm_box(rows):
     return None
 
 
+def find_blessing_overflow_cancel_box(rows):
+    """Locate the left-hand Cancel button on the Eureka overflow warning modal.
+
+    Requires all three geometric and semantic anchors together:
+    - Centered title "祝福闪光数量溢出" (y in [195, 275], x in [440, 840]) or
+      body "祝福闪光数量已超过容量上限" (y in [265, 395], x in [380, 900])
+    - Left "取消" button (y in [415, 505], x in [440, 640])
+    - Right "确认" button (y in [415, 505], x in [640, 840])
+
+    Always returns the Cancel button rather than Confirm ("是否前往消耗？") so
+    realm challenges never jump unexpectedly into the Eureka inventory screen.
+    """
+    has_overflow = False
+    has_confirm = False
+    cancel_box = None
+    for row in rows or ():
+        if row is None:
+            continue
+        clean = str(getattr(row, "text", "") or "").strip()
+        if not clean:
+            continue
+        score = getattr(row, "score", 1.0)
+        if isinstance(score, (int, float)) and score < 0.4:
+            continue
+        box = getattr(row, "box", None)
+        if not box or len(box) < 4:
+            continue
+        bx, by, bw, bh = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        cx, cy = bx + bw * 0.5, by + bh * 0.5
+        if 195 <= cy <= 275 and 440 <= cx <= 840 and _RE_BLESSING_OVERFLOW_TITLE.search(clean):
+            has_overflow = True
+        if 265 <= cy <= 395 and 380 <= cx <= 900 and _RE_BLESSING_OVERFLOW_BODY.search(clean):
+            has_overflow = True
+        if 415 <= cy <= 505:
+            if 440 <= cx <= 640 and cancel_box is None and _RE_NOTICE_CANCEL.search(clean):
+                cancel_box = [bx, by, bw, bh]
+            if 640 <= cx <= 840 and _RE_NOTICE_CONFIRM.search(clean):
+                has_confirm = True
+    if has_overflow and has_confirm and cancel_box is not None:
+        return cancel_box
+    return None
+
+
 def fields(context, node):
     data = context.get_node_data(node) or {}
     recognition = data.get("recognition", {})
@@ -249,6 +295,7 @@ class GameUI:
         self._dismissing_reward = False
         self._dismissing_notice = False
         self._dismissing_decompose_tutorial = False
+        self._dismissing_blessing_overflow = False
         self._asset_definitions = self._asset_paths = None
         self._tutorial = None
         self.monthly_paradise_unavailable = False
@@ -765,6 +812,49 @@ class GameUI:
         rows = self._modal_ocr_rows(DISCONNECT_NOTICE_ROI, frame=frame)
         return find_disconnect_notice_confirm_box(rows) if rows is not None else None
 
+    def blessing_overflow_cancel_box(self, *, frame=None):
+        """Return the Cancel button box of the Eureka overflow warning modal, if visible."""
+        rows = self._modal_ocr_rows(BLESSING_OVERFLOW_MODAL_ROI, frame=frame)
+        return find_blessing_overflow_cancel_box(rows) if rows is not None else None
+
+    def dismiss_blessing_overflow(self, *, box=None):
+        """Dismiss the Eureka overflow warning modal by clicking its left Cancel button."""
+        if self._dismissing_blessing_overflow:
+            return None
+        target = box if box is not None else self.blessing_overflow_cancel_box()
+        if target is None:
+            return None
+        self._dismissing_blessing_overflow = True
+        try:
+            for attempt in range(3):
+                if self.rt.stopped:
+                    return False
+                if attempt > 0:
+                    with self.rt.observe(fresh=True):
+                        target = self.blessing_overflow_cancel_box()
+                    if target is None:
+                        return True
+                if not self.click_box(target):
+                    return False
+                clear = 0
+                check_deadline = time.monotonic() + 2.5
+                while not self.rt.stopped and time.monotonic() < check_deadline:
+                    with self.rt.observe(fresh=True):
+                        if self.rt.hit("MaaNikki_MainDetected"):
+                            return True
+                        still_open = self.blessing_overflow_cancel_box() is not None
+                    if still_open:
+                        clear = 0
+                    else:
+                        clear += 1
+                        if clear >= 2:
+                            return True
+                    if not self.rt.pause(.25):
+                        return False
+            return False
+        finally:
+            self._dismissing_blessing_overflow = False
+
     def abort_on_disconnect(self):
         """Stop the task queue cleanly when a disconnect or relogin modal appears."""
         from task_control import TaskStopped, active_session
@@ -1066,7 +1156,7 @@ class GameUI:
             scroll_steps += 1
         return False
 
-    def skip_reward(self, *, node="MaaNikki_RewardLayer"):
+    def skip_reward(self, *, node="MaaNikki_RewardLayer", abort=None):
         deadline = time.monotonic()+10
         while not self.rt.stopped and time.monotonic() < deadline:
             if self.rt.hit(node):
@@ -1084,6 +1174,8 @@ class GameUI:
                     with self.rt.observe(fresh=True):
                         if self.rt.stopped or not self.rt.hit(node):
                             return False
+                return False
+            if abort is not None and abort():
                 return False
             if not self.rt.pause(.3):
                 break
@@ -1474,6 +1566,14 @@ class GameUI:
                             or disconnect_notice_box is not None)
                         else self.blessing_decompose_tutorial_target()
                     )
+                    blessing_overflow_box = (
+                        None
+                        if (safe_area_box is not None
+                            or expired_notice_box is not None
+                            or disconnect_notice_box is not None
+                            or decompose_tutorial_target is not None)
+                        else self.blessing_overflow_cancel_box()
+                    )
                     if safe_area_box is not None:
                         page = "safe_area_return"
                     elif expired_notice_box is not None:
@@ -1482,6 +1582,8 @@ class GameUI:
                         page = "disconnect_notice"
                     elif decompose_tutorial_target is not None:
                         page = "decompose_tutorial"
+                    elif blessing_overflow_box is not None:
+                        page = "blessing_overflow"
                     else:
                         page = "unknown"
             if page == "star_collect":
@@ -1535,6 +1637,9 @@ class GameUI:
                     return False
             elif page == "decompose_tutorial":
                 if self.dismiss_blessing_decompose_tutorial(target=decompose_tutorial_target) is not True:
+                    return False
+            elif page == "blessing_overflow":
+                if self.dismiss_blessing_overflow(box=blessing_overflow_box) is not True:
                     return False
             else:
                 if self.page_matches("MaaNikki_MainDetected"):

@@ -515,6 +515,8 @@ def _run_double_weekly(
             if energy is not None:
                 energy = max(0, energy - game.MIN_ENERGY["weekly"])
             continue
+        if game.blessing_overflow:
+            raise RuntimeError(f"深度突破双倍挑战「{label}」因祝福闪光数量超过容量上限未能领取")
         raise RuntimeError(f"深度突破双倍挑战「{label}」未确认完成")
 
     if weekly_cal_count is not None and completed_targets:

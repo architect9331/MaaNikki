@@ -138,7 +138,10 @@ class WeeklyChallengeAction(CustomAction):
                         if energy is not None:
                             energy = max(0, energy - game.MIN_ENERGY["weekly"])
                     continue
-                rt.log(f"{label}未确认完成。")
+                if game.blessing_overflow:
+                    rt.log(f"{label}因祝福闪光数量超过容量上限未能领取，已停止本周幻境。")
+                else:
+                    rt.log(f"{label}未确认完成。")
                 # A failed confirmation/reward may leave a dialog open.
                 # Do not search/click another level on that unknown page.
                 break

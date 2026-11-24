@@ -28,6 +28,7 @@ class Gameplay:
         self.jihua_exhausted = False
         self.jihua_material_capped = False
         self.quick_unavailable = False
+        self.blessing_overflow = False
         self._last_jihua_quote = None
 
     def read_energy(self):
@@ -97,11 +98,32 @@ class Gameplay:
                                 "不足一次所选挑战，本项未执行，不计入心愿完成。"))
         return allow_exhausted
 
+    def handle_blessing_overflow(self, *, frame=None, box=None):
+        """Detect and dismiss the Eureka overflow warning modal without navigating away."""
+        if self.rt.stopped:
+            return False
+        target = box if box is not None else self.ui.blessing_overflow_cancel_box(frame=frame)
+        if target is None:
+            return False
+        self.blessing_overflow = True
+        self.rt.diagnostic(
+            "realm_blessing_overflow",
+            "祝福闪光数量已超过容量上限",
+            image=frame,
+        )
+        if self.ui.dismiss_blessing_overflow(box=target) is False:
+            self.rt.log("当前祝福闪光数量已超过容量上限，且未能关闭溢出提示弹窗，本项停止。")
+            return True
+        self.rt.log("当前祝福闪光数量已超过容量上限，无法领取该幻境奖励；已取消提示弹窗，请先清理或分解祝福闪光。")
+        return True
+
     def confirm_unavailable(self, kind, allow_exhausted, cancel=None):
         """A missing/disabled button alone never proves energy exhaustion."""
         if self.rt.stopped:
             return False
         frame = self.rt.capture()
+        if kind in ("weekly", "bless") and self.handle_blessing_overflow(frame=frame):
+            return False
         shortage = bool(frame is not None and self.rt.text(
             [380, 200, 520, 340], r"(?:活跃)?能量(?:不足|不够)|体力(?:不足|不够)", image=frame))
         remaining, energy = self.weekly_state(frame) if kind == "weekly" else (None, None)
@@ -323,6 +345,7 @@ class Gameplay:
         self.level_missing = False
         self.weekly_quota_used = False
         self.weekly_quick_locked = False
+        self.blessing_overflow = False
         prefix = {"jihua": "Jihua", "bless": "Bless", "monster": "Monster", "weekly": "Weekly"}[kind]
         cancel = "MaaNikki_Weekly_Cancel" if kind == "weekly" else f"MaaNikki_{prefix}_Cancel"
         energy_before = None
@@ -402,12 +425,30 @@ class Gameplay:
                 self.invalidate_blessing_inventory("即将提交祝福闪光挑战，奖励数量待复核")
             if not self.rt.click_template(confirm):
                 return self.confirm_unavailable(kind, allow_exhausted, cancel)
-            result = self.ui.skip_reward()
+            overflow_box = None
+            def _overflow_abort():
+                nonlocal overflow_box
+                overflow_box = self.ui.blessing_overflow_cancel_box()
+                return overflow_box is not None
+            result = self.ui.skip_reward(
+                abort=_overflow_abort if kind in ("weekly", "bless") else None,
+            )
+            if overflow_box is not None:
+                self.handle_blessing_overflow(box=overflow_box)
+                return False
+            if not result and not self.rt.stopped and kind in ("weekly", "bless"):
+                if self.handle_blessing_overflow():
+                    return False
             if (not result and not self.rt.stopped and self.rt.hit(confirm)
                     and not self.rt.text([380, 200, 520, 340], r"(?:活跃)?能量(?:不足|不够)|体力(?:不足|不够)")
                     and (kind != "weekly" or self.weekly_state()[0] != 0)):
                 if self.rt.click_template(confirm):
-                    result = self.ui.skip_reward()
+                    result = self.ui.skip_reward(
+                        abort=_overflow_abort if kind in ("weekly", "bless") else None,
+                    )
+                    if overflow_box is not None:
+                        self.handle_blessing_overflow(box=overflow_box)
+                        return False
             if not result and not self.rt.stopped and (self.rt.hit(cancel) or self.rt.hit(confirm)):
                 return self.confirm_unavailable(kind, allow_exhausted,
                                                 cancel if self.rt.hit(cancel) else None)
@@ -434,6 +475,8 @@ class Gameplay:
         finally:
             if not self.rt.stopped and kind != "jihua":
                 self.ui.dismiss_realm_confirm(cancel)
+            if not self.rt.stopped and kind in ("weekly", "bless"):
+                self.ui.dismiss_blessing_overflow()
             if not entered and not self.rt.stopped:
                 returned = self.ui.calendar() if return_page == "calendar" else self.rt.main()
                 if not returned:
