@@ -95,7 +95,7 @@ COURSE_STRAIGHT_CAMERA_ASSIST_OFF = 0.0
 COURSE_TURNS_CAMERA_ASSIST_ON: tuple[tuple[str, float, float], ...] = (
     ("right", 0.50, 4.65),
     ("right", 0.40, 0.60),
-    ("right", 1.60, 4.55),
+    ("right", 2.00, 4.15),
 )
 COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[str, float, float], ...] = (
     ("right", 0.65, 4.70),
