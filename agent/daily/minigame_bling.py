@@ -69,31 +69,36 @@ COURSE_TIMER_POLL_INTERVAL_SECONDS = 0.10
 COURSE_TIMER_POLL_START_NORMAL_SECONDS = 3.0
 COURSE_TIMER_POLL_START_RETRY_SECONDS = 1.0
 # Extend polling when the pre-unlock 00:25.000 banner is positively visible so slower
-# GPUs/CPUs still collect two confirmed ticking frames instead of departing early on fallback.
+# GPUs/CPUs still collect confirmed countdown samples instead of falling back early.
 COURSE_TIMER_MAX_POLL_EXTEND_SECONDS = 12.0
 COURSE_TIMER_CONFIRM_EXTEND_SECONDS = 1.5
-# Calibrated in-game clock offsets after 00:25.000 starts ticking, preserving the
-# 3dc2c02 laser-phase alignment (8.07 - 5.55 = 2.52s, 7.03 - 5.55 = 1.48s).
-COURSE_GO_OFFSET_CAMERA_ASSIST_ON = 2.52
-COURSE_GO_OFFSET_CAMERA_ASSIST_OFF = 1.48
+# Pre-hold forward after two frozen 00:25.000 frames so movement begins immediately on
+# countdown unlock (zero OCR departure latency) while polling continues during the long
+# initial straight segment to lock exact t_go for turn timing.
+COURSE_STATIC_PREHOLD_MIN_HITS = 2
+COURSE_STATIC_POST_LOST_MAX_WAIT = 2.50
+COURSE_STATIC_SINGLE_HIT_EXTEND_SECONDS = 1.50
+COURSE_GO_OFFSET_CAMERA_ASSIST_ON = 0.0
+COURSE_GO_OFFSET_CAMERA_ASSIST_OFF = 0.0
 ENTRY_FEE_BLING = 100
 CLEAR_REWARD_BLING = 700
-# Both tracks wait past the ~5.4-5.7s countdown unlock jitter so key holds
-# execute undistorted against G1-G6 moving lasers while still finishing
-# under the 15s hard-clear threshold (~11.5-13.4s).
-COURSE_START_WAIT_CAMERA_ASSIST_ON = 8.07
-COURSE_START_WAIT_CAMERA_ASSIST_OFF = 7.03
-COURSE_STRAIGHT_CAMERA_ASSIST_ON = 3.50
-COURSE_STRAIGHT_CAMERA_ASSIST_OFF = 0.0
+# Fallback start waits when timer OCR never triggers (normal NPC dialogue vs failure retry).
+COURSE_FALLBACK_START_WAIT_NORMAL = 5.60
+COURSE_FALLBACK_START_WAIT_RETRY = 3.20
+# Immediate-start laser-gate routes calibrated against exact UE5 gate geometry, uphill slope
+# speeds, and Camera Horizontal Assist angular rates (finishing in ~11.0-11.2s with trailing
+# forward buffer to ~12.3-12.4s so slower framerates still cross the finish gate under 15s).
+COURSE_STRAIGHT_CAMERA_ASSIST_ON = 3.85
+COURSE_STRAIGHT_CAMERA_ASSIST_OFF = 3.45
 COURSE_TURNS_CAMERA_ASSIST_ON: tuple[tuple[str, float, float], ...] = (
-    ("right", 1.46, 1.56),
-    ("right", 1.57, 0.92),
-    ("left", 0.79, 1.80),
+    ("right", 1.00, 1.30),
+    ("right", 1.00, 1.05),
+    ("right", 0.70, 3.40),
 )
 COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[str, float, float], ...] = (
-    ("left", 0.38, 2.58),
-    ("right", 2.18, 1.37),
-    ("right", 1.86, 2.80),
+    ("right", 1.00, 1.45),
+    ("right", 1.50, 0.60),
+    ("right", 1.65, 2.75),
 )
 MAX_CONSECUTIVE_FAILURES = 6
 REENTER_NPC_ON_CONSECUTIVE_FAILURE = 3
@@ -484,14 +489,16 @@ class MinigameBlingRun(Runtime):
         inputs: ForegroundInput,
         trigger_at: float,
         *,
+        fwd,
+        straight_seconds: float,
         camera_assist: bool,
         is_retry: bool,
-    ) -> tuple[str, float, float | None]:
-        """Align movement start to the live ticking 25s countdown, falling back on misses."""
+    ) -> tuple[str, float, float | None, float | None, bool]:
+        """Launch immediately on countdown unlock via static-timer pre-hold and live t_go sync."""
         fallback_wait = (
-            COURSE_START_WAIT_CAMERA_ASSIST_ON
-            if camera_assist
-            else COURSE_START_WAIT_CAMERA_ASSIST_OFF
+            COURSE_FALLBACK_START_WAIT_RETRY
+            if is_retry
+            else COURSE_FALLBACK_START_WAIT_NORMAL
         )
         go_offset = (
             COURSE_GO_OFFSET_CAMERA_ASSIST_ON
@@ -505,20 +512,33 @@ class MinigameBlingRun(Runtime):
         )
         poll_deadline = trigger_at + fallback_wait
         max_poll_deadline = trigger_at + max(fallback_wait, COURSE_TIMER_MAX_POLL_EXTEND_SECONDS)
+        post_static_window = min(
+            max(0.5, straight_seconds - 0.35),
+            COURSE_STATIC_POST_LOST_MAX_WAIT,
+        )
 
         if not self._wait_sliced(inputs, trigger_at + poll_start_offset):
-            return "stopped", 0.0, None
+            return "stopped", 0.0, None, None, False
 
         first_sample: tuple[float, float, float] | None = None
+        static_hits = 0
         last_static_at: float | None = None
+        fwd_down_at: float | None = None
         aligned_t_go: float | None = None
         last_frame = None
-        while not self.stopped and time.monotonic() < poll_deadline:
+
+        def _effective_deadline() -> float:
+            deadline = poll_deadline
+            if fwd_down_at is not None and last_static_at is not None:
+                deadline = min(deadline, last_static_at + post_static_window)
+            return deadline
+
+        while not self.stopped and time.monotonic() < _effective_deadline():
             t_before = time.monotonic()
             frame = self.capture()
             t_after = time.monotonic()
             if self.stopped:
-                return "stopped", 0.0, None
+                return "stopped", 0.0, None, None, False
             if frame is None:
                 break
             last_frame = frame
@@ -527,16 +547,31 @@ class MinigameBlingRun(Runtime):
                 if (t_after - t_before) <= 0.15
                 else (t_after - 0.015)
             )
-            ocr_started = time.monotonic()
             remaining, is_static = self._detect_course_timer_state(frame)
-            ocr_elapsed = max(0.0, time.monotonic() - ocr_started)
             if is_static:
                 # Seeing frozen 00:25.000 confirms we are inside the 3-2-1 countdown:
-                # discard any earlier single-frame OCR misread, bound future t_go
-                # from below, and extend the poll cap for slower GPUs/CPUs.
+                # discard any earlier single-frame OCR misread, bound future t_go from
+                # below, slide the poll window forward for slower GPUs/CPUs, and pre-hold
+                # forward after two confirmed frozen frames for zero-latency launch.
+                static_hits += 1
                 last_static_at = captured_at
                 first_sample = None
-                poll_deadline = max(poll_deadline, max_poll_deadline)
+                extend_by = (
+                    post_static_window
+                    if static_hits >= COURSE_STATIC_PREHOLD_MIN_HITS
+                    else COURSE_STATIC_SINGLE_HIT_EXTEND_SECONDS
+                )
+                poll_deadline = min(
+                    max_poll_deadline,
+                    max(poll_deadline, captured_at + extend_by),
+                )
+                if (
+                    fwd_down_at is None
+                    and go_offset <= 0.0
+                    and static_hits >= COURSE_STATIC_PREHOLD_MIN_HITS
+                ):
+                    inputs._down(fwd)
+                    fwd_down_at = time.monotonic()
             elif remaining is not None:
                 t_go = captured_at - (COURSE_TIMER_INITIAL_SECONDS - remaining)
                 min_valid_t_go = (
@@ -554,52 +589,141 @@ class MinigameBlingRun(Runtime):
                         ):
                             aligned_t_go = 0.5 * (prev_t_go + t_go)
                             break
-                    now = time.monotonic()
-                    time_to_go = (t_go + go_offset) - now
-                    # Only accept a single ticking frame without a second OCR pass when a prior
-                    # frozen 00:25.000 frame already verified the transition and another OCR pass
-                    # would push departure past go_offset (e.g. slow OCR on low-end GPUs).
-                    if last_static_at is not None and time_to_go < max(0.25, ocr_elapsed + 0.15):
-                        aligned_t_go = t_go
-                        break
                     first_sample = (captured_at, remaining, t_go)
+                    now = time.monotonic()
                     poll_deadline = min(
                         max_poll_deadline,
                         max(poll_deadline, now + COURSE_TIMER_CONFIRM_EXTEND_SECONDS),
                     )
-                    sleep_s = min(
-                        COURSE_TIMER_POLL_INTERVAL_SECONDS,
-                        max(0.02, time_to_go - 0.15) if time_to_go >= 0.20 else 0.02,
+                    # When forward is not yet pressed, confirm the second ticking frame
+                    # quickly (~50ms) so post-tick departure lag stays minimal.
+                    interval = (
+                        COURSE_TIMER_POLL_INTERVAL_SECONDS
+                        if fwd_down_at is not None
+                        else min(COURSE_TIMER_POLL_INTERVAL_SECONDS, 0.05)
                     )
-                    sleep_s = min(sleep_s, max(0.0, poll_deadline - now))
-                    if sleep_s > 0 and not self.pause(sleep_s):
-                        return "stopped", 0.0, None
+                    sleep_s = min(interval, max(0.0, _effective_deadline() - now))
+                    if sleep_s <= 0:
+                        break
+                    if fwd_down_at is not None:
+                        inputs._down(fwd)
+                        inputs.wait(sleep_s)
+                        if self.stopped:
+                            return "stopped", 0.0, None, None, False
+                    elif not self.pause(sleep_s):
+                        return "stopped", 0.0, None, None, False
                     continue
             sleep_s = min(
                 COURSE_TIMER_POLL_INTERVAL_SECONDS,
-                max(0.0, poll_deadline - time.monotonic()),
+                max(0.0, _effective_deadline() - time.monotonic()),
             )
             if sleep_s <= 0:
                 break
-            if not self.pause(sleep_s):
-                return "stopped", 0.0, None
+            if fwd_down_at is not None:
+                inputs._down(fwd)
+                inputs.wait(sleep_s)
+                if self.stopped:
+                    return "stopped", 0.0, None, None, False
+            elif not self.pause(sleep_s):
+                return "stopped", 0.0, None, None, False
 
         if self.stopped:
-            return "stopped", 0.0, None
+            return "stopped", 0.0, None, None, False
         if aligned_t_go is not None:
-            if not self._wait_sliced(inputs, aligned_t_go + go_offset):
-                return "stopped", 0.0, None
-            return "timer_aligned", time.monotonic() - trigger_at, aligned_t_go
+            if fwd_down_at is None:
+                if go_offset > 0.0 and not self._wait_sliced(inputs, aligned_t_go + go_offset):
+                    return "stopped", 0.0, None, None, False
+                inputs._down(fwd)
+                fwd_down_at = time.monotonic()
+                course_start = fwd_down_at
+                fwd_preheld = False
+            else:
+                inputs._down(fwd)
+                fwd_preheld = fwd_down_at <= aligned_t_go
+                course_start = max(aligned_t_go + go_offset, fwd_down_at)
+            return "timer_aligned", course_start - trigger_at, aligned_t_go, course_start, fwd_preheld
+
+        if fwd_down_at is not None:
+            # Forward was pre-held after confirming frozen 00:25.000, but ticking OCR went
+            # silent before a second sample arrived. Anchor Turn 1 to the best causal
+            # unlock estimate so the course still transitions cleanly into turns.
+            inputs._down(fwd)
+            if first_sample is not None:
+                est_t_go = first_sample[2]
+                align_mode = "timer_aligned"
+            else:
+                est_t_go = (last_static_at + 0.10) if last_static_at is not None else fwd_down_at
+                align_mode = "static_fallback"
+            fwd_preheld = fwd_down_at <= est_t_go
+            course_start = max(est_t_go + go_offset, fwd_down_at)
+            return align_mode, course_start - trigger_at, est_t_go, course_start, fwd_preheld
 
         if not self._wait_sliced(inputs, trigger_at + fallback_wait):
-            return "stopped", 0.0, None
-        # Never execute the blind 11.6s movement sequence when the timer never appeared
+            return "stopped", 0.0, None, None, False
+        # Never execute the blind movement sequence when the timer never appeared
         # and two consecutive frames confirm the game is still on the overworld main screen.
         if self._confirm_overworld_main(last_frame):
-            return "not_in_course", time.monotonic() - trigger_at, None
+            return "not_in_course", time.monotonic() - trigger_at, None, None, False
         if self.stopped:
-            return "stopped", 0.0, None
-        return "fallback", time.monotonic() - trigger_at, None
+            return "stopped", 0.0, None, None, False
+        inputs._down(fwd)
+        fwd_down_at = time.monotonic()
+        # Even after starting on fallback_wait, continue polling briefly during the initial
+        # straight segment (if frames are available) so late unlocks with missed frozen banners
+        # still lock exact t_go for Turn 1 without delaying departure.
+        if last_frame is not None:
+            in_flight_deadline = fwd_down_at + min(2.0, max(0.5, straight_seconds - 0.50))
+            while not self.stopped and time.monotonic() < in_flight_deadline:
+                t_before = time.monotonic()
+                frame = self.capture()
+                t_after = time.monotonic()
+                if self.stopped:
+                    return "stopped", 0.0, None, None, False
+                if frame is None:
+                    break
+                captured_at = (
+                    0.5 * (t_before + t_after)
+                    if (t_after - t_before) <= 0.15
+                    else (t_after - 0.015)
+                )
+                remaining, is_static = self._detect_course_timer_state(frame)
+                if is_static:
+                    last_static_at = captured_at
+                    first_sample = None
+                elif remaining is not None:
+                    t_go = captured_at - (COURSE_TIMER_INITIAL_SECONDS - remaining)
+                    min_valid_t_go = (
+                        last_static_at - 0.15
+                        if last_static_at is not None
+                        else trigger_at - 0.5
+                    )
+                    if t_go >= min_valid_t_go:
+                        if first_sample is not None:
+                            prev_at, prev_rem, prev_t_go = first_sample
+                            if (
+                                captured_at > prev_at
+                                and remaining < prev_rem
+                                and abs(t_go - prev_t_go) <= 0.30
+                            ):
+                                aligned_t_go = 0.5 * (prev_t_go + t_go)
+                                break
+                        first_sample = (captured_at, remaining, t_go)
+                sleep_s = min(
+                    COURSE_TIMER_POLL_INTERVAL_SECONDS,
+                    max(0.0, in_flight_deadline - time.monotonic()),
+                )
+                if sleep_s <= 0:
+                    break
+                inputs._down(fwd)
+                inputs.wait(sleep_s)
+                if self.stopped:
+                    return "stopped", 0.0, None, None, False
+            if aligned_t_go is not None:
+                inputs._down(fwd)
+                fwd_preheld = fwd_down_at <= aligned_t_go
+                course_start = max(aligned_t_go + go_offset, fwd_down_at)
+                return "timer_aligned", course_start - trigger_at, aligned_t_go, course_start, fwd_preheld
+        return "fallback", fwd_down_at - trigger_at, None, fwd_down_at, False
 
     def _confirm_overworld_main(self, initial_frame=None) -> bool:
         """Confirm on two frames that the game is idle on the overworld main screen."""
@@ -628,36 +752,6 @@ class MinigameBlingRun(Runtime):
             trigger_at = time.monotonic()
         else:
             trigger_at = retry_started_at
-        align_mode, total_wait_s, aligned_t_go = self._wait_for_course_start(
-            inputs,
-            trigger_at,
-            camera_assist=camera_assist,
-            is_retry=retry_started_at is not None,
-        )
-        if align_mode == "stopped" or self.stopped:
-            return "stopped"
-        if align_mode == "not_in_course":
-            self.log(
-                f"起跑对齐：未检测到 25 秒倒计时且当前仍停留在主界面（已等待 {total_wait_s:.2f} 秒），"
-                "已跳过本轮跑道按键以避免大世界误跑。",
-                detail=True,
-            )
-            return "not_in_course"
-        if stats is not None:
-            if align_mode == "timer_aligned":
-                stats["timer_aligned_rounds"] = int(stats.get("timer_aligned_rounds", 0)) + 1
-            else:
-                stats["fallback_start_rounds"] = int(stats.get("fallback_start_rounds", 0)) + 1
-        if aligned_t_go is not None:
-            unlock_s = aligned_t_go - trigger_at
-            remaining_at_go = max(0.0, COURSE_TIMER_INITIAL_SECONDS - (time.monotonic() - aligned_t_go))
-            self.log(
-                f"起跑对齐：{align_mode}，倒计时解锁 {unlock_s:.2f} 秒，总等待 {total_wait_s:.2f} 秒"
-                f"（起步剩余计时 {remaining_at_go:.2f} 秒）。",
-                detail=True,
-            )
-        else:
-            self.log(f"起跑对齐：{align_mode}，总等待 {total_wait_s:.2f} 秒。", detail=True)
         straight_seconds = (
             COURSE_STRAIGHT_CAMERA_ASSIST_ON
             if camera_assist
@@ -670,10 +764,47 @@ class MinigameBlingRun(Runtime):
             "right": self.game_keys.get("right"),
         }
         try:
-            # Schedule every turn transition on a cumulative course timeline rather than
-            # chaining relative waits so per-segment sleep quantization never accumulates.
+            align_mode, total_wait_s, aligned_t_go, course_start, fwd_preheld = (
+                self._wait_for_course_start(
+                    inputs,
+                    trigger_at,
+                    fwd=fwd,
+                    straight_seconds=straight_seconds,
+                    camera_assist=camera_assist,
+                    is_retry=retry_started_at is not None,
+                )
+            )
+            if align_mode == "stopped" or self.stopped:
+                return "stopped"
+            if align_mode == "not_in_course":
+                self.log(
+                    f"起跑对齐：未检测到 25 秒倒计时且当前仍停留在主界面（已等待 {total_wait_s:.2f} 秒），"
+                    "已跳过本轮跑道按键以避免大世界误跑。",
+                    detail=True,
+                )
+                return "not_in_course"
+            if course_start is None:
+                return "stopped"
+            if stats is not None:
+                if align_mode == "timer_aligned":
+                    stats["timer_aligned_rounds"] = int(stats.get("timer_aligned_rounds", 0)) + 1
+                else:
+                    stats["fallback_start_rounds"] = int(stats.get("fallback_start_rounds", 0)) + 1
+            if aligned_t_go is not None:
+                unlock_s = aligned_t_go - trigger_at
+                launch_tag = "预按前进" if fwd_preheld else "读秒起步"
+                launch_delta = course_start - aligned_t_go
+                self.log(
+                    f"起跑对齐：{align_mode}（{launch_tag}），倒计时解锁 {unlock_s:.2f} 秒，"
+                    f"起步对齐 {total_wait_s:.2f} 秒（相对解锁 {launch_delta:+.2f} 秒）。",
+                    detail=True,
+                )
+            else:
+                self.log(f"起跑对齐：{align_mode}，总等待 {total_wait_s:.2f} 秒。", detail=True)
+
+            # Schedule every turn transition on a cumulative course timeline anchored to
+            # course_start so per-segment sleep quantization never accumulates.
             inputs._down(fwd)
-            course_start = time.monotonic()
             elapsed_target = 0.0
             if straight_seconds > 0:
                 elapsed_target += straight_seconds
@@ -691,16 +822,18 @@ class MinigameBlingRun(Runtime):
                     if remaining > 1e-6:
                         inputs.wait(remaining)
                 finally:
-                    inputs._up(steer_key)
+                    if not self.stopped:
+                        inputs._up(steer_key)
                 if wait_after > 0:
                     elapsed_target += wait_after
                     remaining = (course_start + elapsed_target) - time.monotonic()
                     if remaining > 1e-6:
                         inputs.wait(remaining)
         finally:
-            for steer_key in steer_keys.values():
-                inputs._up(steer_key)
-            inputs._up(fwd)
+            if not self.stopped:
+                for steer_key in steer_keys.values():
+                    inputs._up(steer_key)
+                inputs._up(fwd)
             inputs.release()
         return "stopped" if self.stopped else "played"
 
@@ -1556,7 +1689,7 @@ class MinigameBlingRun(Runtime):
         assist_label = "已开启视角水平辅助" if camera_assist else "已关闭视角水平辅助"
         self.log(
             f"开始「穿梭大冒险」自动刷噗灵（目标 {max_rounds} 局，走法：{assist_label}，"
-            f"预计耗时约 {int(max_rounds * 31.2 // 60)} 分钟）…"
+            f"预计耗时约 {int(max_rounds * 29.5 // 60)} 分钟）…"
         )
         if retry_started_at is None:
             entry_state = self._enter_via_npc_dialogue(inputs, stats)
