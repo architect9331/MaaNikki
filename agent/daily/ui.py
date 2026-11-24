@@ -623,12 +623,12 @@ class GameUI:
             for attempt in range(20):
                 if self.rt.stopped or time.monotonic() >= deadline:
                     return False
-                use_blank_click = (
-                    allow_upgrade_result
-                    and attempt >= 2
-                    and attempt % 2 == 1
-                    and self.rt.hit("MaaNikki_Pursuit_UpgradeResult")
-                )
+                # Prefer the configured skip/interact key first so background
+                # keyboard dismissal stays cursor-free; if two key presses leave
+                # a modal reward overlay open (e.g. player rebound Interact in-game
+                # without updating MaaNikki's keybinding), alternate with a safe
+                # blank-area click matching the "[key] / 左键 空白区域继续" prompt.
+                use_blank_click = attempt >= 2 and attempt % 2 == 1
                 if use_blank_click:
                     if not (self.rt.action("Click", target=[640, 660]) and self.rt.pause(.25)):
                         return False
@@ -1166,8 +1166,13 @@ class GameUI:
                     return self.dismiss_reward(include_title=True) is True
                 # A press during the reward item reveal can only fast-forward
                 # the animation; verify closure and retry if the popup remains.
-                for _ in range(6):
-                    if not self.rt.key("skip", 0):
+                # Fall back to blank-area click after two key misses so players
+                # who rebound Interact in-game can still dismiss the overlay.
+                for attempt in range(6):
+                    if attempt >= 2 and attempt % 2 == 1:
+                        if not self.rt.action("Click", target=[640, 660]):
+                            return False
+                    elif not self.rt.key("skip", 0):
                         return False
                     if self.wait_page(lambda: not self.rt.hit(node), seconds=2.5, allow_reward=True):
                         return True

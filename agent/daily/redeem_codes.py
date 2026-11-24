@@ -465,12 +465,15 @@ class RedeemCodes:
     def _dismiss_reward_to_modal(self) -> bool:
         if not self.rt.pause(0.5):
             return False
-        for _ in range(10):
+        for attempt in range(10):
             if self.rt.stopped:
                 return False
             if self._modal_ready():
                 return True
-            if not self.rt.key("skip", 0.4):
+            if attempt >= 2 and attempt % 2 == 1:
+                if not (self.rt.action("Click", target=[640, 660]) and self.rt.pause(0.4)):
+                    return False
+            elif not self.rt.key("skip", 0.4):
                 return False
             if self.ui.wait_page(self._modal_ready, seconds=1.2, allow_reward=True):
                 return True

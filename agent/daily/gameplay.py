@@ -1135,9 +1135,13 @@ class Gameplay:
             if reward or continuation:
                 if dismissed >= 15:
                     break
+                use_blank_click = dismissed >= 2 and dismissed % 2 == 1
                 dismissed += 1
                 self.rt.log("乐园构想：已识别奖励继续提示，尝试关闭奖励页面。", detail=True)
-                if not self.rt.key("skip", .5):
+                if use_blank_click:
+                    if not (self.rt.action("Click", target=[640, 660]) and self.rt.pause(.5)):
+                        return False
+                elif not self.rt.key("skip", .5):
                     return False
             elif returned and dismissed:
                 return self.ui.wait_page(page_returned)
@@ -1172,6 +1176,7 @@ class Gameplay:
         """Retry transient OCR misses; submit a tab click only once."""
         deadline = time.monotonic()+5
         submitted = False
+        reward_dismissed = 0
         while not self.rt.stopped and time.monotonic() < deadline:
             with self.rt.observe(fresh=True):
                 reward = self.rt.hit("MaaNikki_RewardLayer")
@@ -1186,8 +1191,14 @@ class Gameplay:
                             self.monthly_diagnostic("travel", "tab_click_failed", f"{page}页签点击未完成")
                             return False
                         submitted = True
-            if reward and not self.rt.key("skip", .25):
-                return False
+            if reward:
+                use_blank_click = reward_dismissed >= 2 and reward_dismissed % 2 == 1
+                reward_dismissed += 1
+                if use_blank_click:
+                    if not (self.rt.action("Click", target=[640, 660]) and self.rt.pause(.25)):
+                        return False
+                elif not self.rt.key("skip", .25):
+                    return False
             if not self.rt.pause(.1):
                 return False
         self.monthly_diagnostic("travel", "tab_unconfirmed", f"{page}页签切换待确认")
@@ -1206,7 +1217,11 @@ class Gameplay:
                 settled = 0
                 if dismissed >= 15:
                     break
-                if not self.rt.key("skip", .25):
+                use_blank_click = dismissed >= 2 and dismissed % 2 == 1
+                if use_blank_click:
+                    if not (self.rt.action("Click", target=[640, 660]) and self.rt.pause(.25)):
+                        return False
+                elif not self.rt.key("skip", .25):
                     return False
                 dismissed += 1
             elif returned:
