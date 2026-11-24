@@ -16,6 +16,7 @@ from task_control import GameWindowClosed, TaskStopped, active_session, task_tim
 from daily.runtime import Executors, ROOT
 from daily.ui import find_expired_notice_confirm_box
 from game_view import ALLOWED_FRAME_SIZES, GameFrameSizeError, is_clipped_game_frame, require_game_frame
+from navigation.controller import is_window_unresponsive, probe_window_responsiveness
 
 
 STARTUP_HUNG_TIMEOUT = 180.0
@@ -142,10 +143,6 @@ def _inspect_startup_screen(runtime, frame) -> dict:
     if state["restart_box"] is None and not state["update_dialog"]:
         state["notice_confirm_box"] = find_expired_notice_confirm_box(rows)
     return state
-_WM_NULL = 0x0000
-_SMTO_BLOCK = 0x0001
-_SMTO_ABORTIFHUNG = 0x0002
-_ERROR_TIMEOUT = 1460
 _PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 _STILL_ACTIVE = 259
 _U32 = None
@@ -219,22 +216,7 @@ def _is_window_process_alive(u32, hwnd) -> bool:
 def _is_window_unresponsive(u32, hwnd) -> bool:
     if u32 is None or not hwnd:
         return False
-    if u32.IsHungAppWindow(hwnd):
-        return True
-    ctypes.set_last_error(0)
-    msg_res = ctypes.c_size_t(0)
-    ok = u32.SendMessageTimeoutW(
-        hwnd,
-        _WM_NULL,
-        0,
-        0,
-        _SMTO_BLOCK | _SMTO_ABORTIFHUNG,
-        80,
-        ctypes.byref(msg_res),
-    )
-    if ok != 0:
-        return False
-    return ctypes.get_last_error() == _ERROR_TIMEOUT and bool(u32.IsWindow(hwnd))
+    return is_window_unresponsive(u32, hwnd)
 
 
 @agent_action("nikki.start_game", stop_on_failure=True)
@@ -337,8 +319,12 @@ class StartGameAction(CustomAction):
                         logged_stall = True
                         runtime.log("游戏窗口正在加载资源（暂时未响应），继续等待恢复。", detail=True)
                     if elapsed_hung >= max_wait:
-                        if u32.IsHungAppWindow(hwnd):
-                            cur.window_hung()
+                        probe = probe_window_responsiveness(u32, hwnd, force_probe=True)
+                        if probe["unresponsive"]:
+                            probe["waited_seconds"] = round(elapsed_hung, 2)
+                            probe["timeout_seconds"] = round(max_wait, 2)
+                            probe["startup_loading"] = bool(startup_state["loading_active"])
+                            cur.window_hung(details=probe)
                         break
                     wall_time.sleep(.2)
                 cur.bump_generation(paused=True)
@@ -381,7 +367,15 @@ class StartGameAction(CustomAction):
                             logged_stall = True
                             runtime.log("游戏窗口正在加载资源（暂时未响应），继续等待恢复。", detail=True)
                         if elapsed_hung >= max_wait:
-                            session.window_hung()
+                            details = (
+                                adapter_obj.hung_details()
+                                if hasattr(adapter_obj, "hung_details")
+                                else {}
+                            )
+                            details["waited_seconds"] = round(elapsed_hung, 2)
+                            details["timeout_seconds"] = round(max_wait, 2)
+                            details["startup_loading"] = bool(startup_state["loading_active"])
+                            session.window_hung(details=details)
                         wall_time.sleep(.2)
                     session.bump_generation(paused=True)
                     runtime.invalidate_frame()

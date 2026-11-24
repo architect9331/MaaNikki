@@ -27,7 +27,10 @@ class ForegroundChanged(RuntimeError):
 
 _ACTIVE = ContextVar("foreground_task", default=None)
 REFOCUS_INTERVAL = 3
-HUNG_WINDOW_TIMEOUT = 45.0
+# Allow up to 90s for genuine cross-map UE5 loading/shader compilation stalls
+# while still aborting true deadlocks confirmed by active WM_NULL timeouts.
+HUNG_WINDOW_TIMEOUT = 90.0
+HUNG_NOTICE_DELAY = 5.0
 _SESSIONS_LOCK = RLock()
 _SESSIONS = OrderedDict()
 _RUNNING = {}
@@ -271,9 +274,9 @@ class ForegroundSession:
                     traceback.print_exc()
         raise GameWindowClosed("连接的游戏窗口已经关闭，请重新连接。")
 
-    def _stop_queue_with_failure(self, stage, message):
+    def _stop_queue_with_failure(self, stage, message, *, details=None):
         """Save evidence, release inputs, halt the task queue, and abort execution."""
-        self.evidence.save(stage, message, generation=self.generation)
+        self.evidence.save(stage, message, details=details, generation=self.generation)
         self._frame_failure = message
         write_message(message, message)
         for inputs in list(self.inputs):
@@ -293,11 +296,12 @@ class ForegroundSession:
                     traceback.print_exc()
         raise TaskStopped(message)
 
-    def window_hung(self):
+    def window_hung(self, *, details=None):
         """Stop the queue when the connected game window stays unresponsive past recovery."""
         self._stop_queue_with_failure(
             "window_hung",
             "游戏窗口长时间未响应，后续任务已停止。请恢复或重启游戏后再运行。",
+            details=details,
         )
 
     def game_disconnected(self):
@@ -467,6 +471,75 @@ class ForegroundSession:
             pass
         return adapter.foreground()
 
+    def _hung_evidence_details(self, adapter, *, waited_s: float, bring_back: bool) -> dict:
+        details = {}
+        hung_details = getattr(adapter, "hung_details", None)
+        if callable(hung_details):
+            try:
+                details.update(hung_details())
+            except Exception:
+                pass
+        details["waited_seconds"] = round(waited_s, 2)
+        details["timeout_seconds"] = HUNG_WINDOW_TIMEOUT
+        details["control_mode"] = self._control_mode()
+        details["bring_back"] = bool(bring_back)
+        return details
+
+    def _wait_for_hung_recovery(
+        self,
+        adapter,
+        hud,
+        *,
+        manage_hud: bool,
+        pause_if_unfocused: bool,
+        pause_if_uncapturable: bool,
+        bring_back: bool,
+    ) -> str:
+        """Wait for a genuinely unresponsive active window to recover, or exit to pause."""
+        hung_begin = wall_time.monotonic()
+        self.waiting = True
+        notified_stall = False
+        try:
+            for inputs in list(self.inputs):
+                inputs.release()
+            while True:
+                if self.stopped() or adapter.stopped():
+                    raise TaskStopped("任务已停止。")
+                if not adapter.user32.IsWindow(adapter.hwnd):
+                    self.window_closed()
+                if adapter.user32.IsIconic(adapter.hwnd):
+                    return "paused"
+                if pause_if_uncapturable and not adapter.capturable():
+                    return "paused"
+                if pause_if_unfocused and not adapter.foreground():
+                    return "paused"
+                if not adapter.hung():
+                    break
+                elapsed = wall_time.monotonic() - hung_begin
+                if not notified_stall and elapsed >= HUNG_NOTICE_DELAY:
+                    notified_stall = True
+                    write_message("游戏窗口暂时未响应，正在等待恢复。", None)
+                    if hud is not None and manage_hud:
+                        hud.set_paused(True, reason="游戏窗口暂时未响应，正在等待恢复…")
+                if elapsed >= HUNG_WINDOW_TIMEOUT:
+                    self.window_hung(
+                        details=self._hung_evidence_details(
+                            adapter,
+                            waited_s=elapsed,
+                            bring_back=bring_back,
+                        )
+                    )
+                wall_time.sleep(.2)
+            self.bump_generation(paused=True)
+            return "recovered"
+        finally:
+            self.paused_seconds += wall_time.monotonic() - hung_begin
+            self.waiting = False
+            if notified_stall and hud is not None and manage_hud:
+                hud.set_paused(False)
+                if self.stopped():
+                    hud.clear_forced()
+
     def _wait_until(self, adapter, ready, pause_message, resume_message, *, check_hung, bring_back):
         if self.stopped():
             raise TaskStopped("任务已停止。")
@@ -479,18 +552,33 @@ class ForegroundSession:
             stable_since = None
             refocused_at = None
             hung_since = None
+            notified_hung = False
             while True:
                 if self.stopped() or adapter.stopped():
                     raise TaskStopped("任务已停止。")
                 if not adapter.user32.IsWindow(adapter.hwnd):
                     self.window_closed()
                 now = wall_time.monotonic()
-                if check_hung and adapter.hung():
+                is_iconic = bool(adapter.user32.IsIconic(adapter.hwnd))
+                if check_hung and not is_iconic and adapter.hung():
                     hung_since = now if hung_since is None else hung_since
-                    if now-hung_since >= HUNG_WINDOW_TIMEOUT:
-                        self.window_hung()
+                    elapsed_hung = now - hung_since
+                    if not notified_hung and elapsed_hung >= HUNG_NOTICE_DELAY:
+                        notified_hung = True
+                        write_message("游戏窗口暂时未响应，正在等待恢复。", None)
+                        if self._hud is not None:
+                            self._hud.set_paused(True, reason="游戏窗口暂时未响应，正在等待恢复…")
+                    if elapsed_hung >= HUNG_WINDOW_TIMEOUT:
+                        self.window_hung(
+                            details=self._hung_evidence_details(
+                                adapter,
+                                waited_s=elapsed_hung,
+                                bring_back=bring_back,
+                            )
+                        )
                 else:
                     hung_since = None
+                    notified_hung = False
                 if ready() and (not check_hung or hung_since is None):
                     stable_since = now if stable_since is None else stable_since
                     if now-stable_since >= .15:
@@ -537,115 +625,131 @@ class ForegroundSession:
             if not bg_active and not adapter.foreground():
                 if not adapter.controller.post_key_up(18).wait().succeeded:
                     raise NavigationError("未能自动聚焦游戏，请检查窗口连接。")
-        if not self._background_observation and adapter.hung():
-            hung_begin = wall_time.monotonic()
-            self.waiting = True
-            try:
-                for inputs in list(self.inputs):
-                    inputs.release()
-                while adapter.hung():
-                    if self.stopped() or adapter.stopped():
-                        raise TaskStopped("任务已停止。")
-                    if not adapter.user32.IsWindow(adapter.hwnd):
-                        self.window_closed()
-                    if wall_time.monotonic()-hung_begin >= HUNG_WINDOW_TIMEOUT:
-                        self.window_hung()
-                    wall_time.sleep(.1)
-                self.bump_generation(paused=True)
-            finally:
-                self.paused_seconds += wall_time.monotonic()-hung_begin
-                self.waiting = False
-        if bg_active and not effective_foreground:
+        while True:
             if self.stopped():
                 raise TaskStopped("任务已停止。")
-            window_only = bool(getattr(adapter, "window_only", False))
-            foreground = adapter.foreground()
-            if self._observed_foreground is not None and foreground != self._observed_foreground:
-                for inputs in list(self.inputs):
-                    # Keep window-targeted movement keys held across focus switches
-                    # when the window remains capturable; release physical inputs.
-                    if not (getattr(inputs, "window_only", False) and inputs.capturable()):
-                        inputs.release()
-                self.bump_generation(paused=False)
-            self._observed_foreground = foreground
-            if not (require_capturable or window_only) or adapter.capturable():
+            if not adapter.user32.IsWindow(adapter.hwnd):
+                self.window_closed()
+            if bg_active and not effective_foreground:
+                window_only = bool(getattr(adapter, "window_only", False))
+                foreground = adapter.foreground()
+                if self._observed_foreground is not None and foreground != self._observed_foreground:
+                    for inputs in list(self.inputs):
+                        # Keep window-targeted movement keys held across focus switches
+                        # when the window remains capturable; release physical inputs.
+                        if not (getattr(inputs, "window_only", False) and inputs.capturable()):
+                            inputs.release()
+                    self.bump_generation(paused=False)
+                self._observed_foreground = foreground
+                need_capturable = require_capturable or window_only
+                if need_capturable and not adapter.capturable():
+                    pause_message = (
+                        "游戏窗口已最小化，任务暂停；恢复窗口后自动继续。"
+                        if adapter.user32.IsIconic(adapter.hwnd)
+                        else "游戏已离开前台且当前截图方式需要前台画面，任务暂停；切回无限暖暖后自动继续。"
+                    )
+                    if hud is not None:
+                        hud.set_paused(
+                            True,
+                            reason=("游戏窗口已最小化，请恢复窗口后继续"
+                                    if adapter.user32.IsIconic(adapter.hwnd)
+                                    else "当前截图方式需要前台画面，切回无限暖暖后继续"),
+                        )
+                    self._wait_until(
+                        adapter,
+                        adapter.capturable,
+                        pause_message,
+                        "游戏窗口已恢复，任务继续。",
+                        check_hung=False,
+                        bring_back=False,
+                    )
+                    continue
+                if (
+                    not self._background_observation
+                    and not adapter.user32.IsIconic(adapter.hwnd)
+                    and adapter.hung()
+                ):
+                    state = self._wait_for_hung_recovery(
+                        adapter,
+                        hud,
+                        manage_hud=manage_hud,
+                        pause_if_unfocused=False,
+                        pause_if_uncapturable=need_capturable,
+                        bring_back=False,
+                    )
+                    if state == "paused":
+                        continue
                 if hud is not None and (manage_hud or self._foreground_required_depth > 0):
                     hud.set_paused(False)
                     if self._foreground_required_depth == 0:
                         hud.clear_forced()
                 return
+            allow_auto_focus = not self._background_observation
+            bg_temp_fg = allow_auto_focus and bg_mode and effective_foreground
+            return_fg = allow_auto_focus and (not bg_temp_fg) and self._returns_to_game()
+            bring_back = bg_temp_fg or return_fg
+            if adapter.foreground():
+                if not self._background_observation and adapter.hung():
+                    state = self._wait_for_hung_recovery(
+                        adapter,
+                        hud,
+                        manage_hud=manage_hud,
+                        pause_if_unfocused=not bring_back,
+                        pause_if_uncapturable=False,
+                        bring_back=bring_back,
+                    )
+                    if state == "paused":
+                        continue
+                if not adapter.foreground():
+                    continue
+                if hud is not None:
+                    hud.set_paused(False)
+                    if bg_mode and self._foreground_required_depth > 0:
+                        hud.set_forced(
+                            self._foreground_pause_message or "当前阶段需要使用物理鼠标或视角控制",
+                            active=True,
+                        )
+                    elif self._foreground_required_depth == 0:
+                        hud.clear_forced()
+                return
             pause_message = (
-                "游戏窗口已最小化，任务暂停；恢复窗口后自动继续。"
-                if adapter.user32.IsIconic(adapter.hwnd)
-                else "游戏已离开前台且当前截图方式需要前台画面，任务暂停；切回无限暖暖后自动继续。"
+                (self._foreground_pause_message
+                 or "当前操作需要使用前台鼠标或视角控制，正在自动将游戏切回前台并保持至本阶段结束。")
+                if bg_temp_fg else
+                ("游戏当前动作需要在前台执行，任务暂停；切回无限暖暖后自动继续。"
+                 if bg_active else
+                 ("游戏已离开前台，正在切回游戏继续运行。"
+                  if return_fg else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。"))
             )
             if hud is not None:
-                hud.set_paused(
-                    True,
-                    reason=("游戏窗口已最小化，请恢复窗口后继续"
-                            if adapter.user32.IsIconic(adapter.hwnd)
-                            else "当前截图方式需要前台画面，切回无限暖暖后继续"),
-                )
-            self._wait_until(
-                adapter,
-                adapter.capturable,
-                pause_message,
-                "游戏窗口已恢复，任务继续。",
-                check_hung=not self._background_observation,
-                bring_back=False,
-            )
-            return
-        if adapter.foreground():
-            if hud is not None:
-                hud.set_paused(False)
-                if bg_mode and self._foreground_required_depth > 0:
+                if bg_temp_fg:
                     hud.set_forced(
-                        self._foreground_pause_message or "当前阶段需要使用物理鼠标或视角控制",
+                        self._foreground_pause_message or "当前操作需要使用物理鼠标或视角控制",
                         active=True,
                     )
-                elif self._foreground_required_depth == 0:
-                    hud.clear_forced()
-            return
-        allow_auto_focus = not self._background_observation
-        bg_temp_fg = allow_auto_focus and bg_mode and effective_foreground
-        return_fg = allow_auto_focus and (not bg_temp_fg) and self._returns_to_game()
-        bring_back = bg_temp_fg or return_fg
-        pause_message = (
-            (self._foreground_pause_message
-             or "当前操作需要使用前台鼠标或视角控制，正在自动将游戏切回前台并保持至本阶段结束。")
-            if bg_temp_fg else
-            ("游戏当前动作需要在前台执行，任务暂停；切回无限暖暖后自动继续。"
-             if bg_active else
-             ("游戏已离开前台，正在切回游戏继续运行。"
-              if return_fg else "游戏已离开前台，任务暂停；切回无限暖暖后自动继续。"))
-        )
-        if hud is not None:
-            if bg_temp_fg:
-                hud.set_forced(
-                    self._foreground_pause_message or "当前操作需要使用物理鼠标或视角控制",
-                    active=True,
-                )
-            elif return_fg:
-                hud.set_forced("已开启「回到游戏」模式，正在自动拉回游戏窗口", active=True)
-            else:
-                hud.set_paused(
-                    True,
-                    reason=("当前动作需要在前台执行，切回游戏后继续"
-                            if bg_active else "游戏已离开前台自动暂停，切回窗口后继续"),
-                )
-        self._wait_until(
-            adapter,
-            lambda: adapter.foreground() and not adapter.hung(),
-            pause_message,
-            "游戏已回到前台，任务继续。",
-            check_hung=not self._background_observation,
-            bring_back=bring_back,
-        )
-        if hud is not None and return_fg and not self.stopped():
-            hud.clear_forced(
-                flash_reason="已开启「回到游戏」模式，游戏离开前台时会自动切回（可在设置中改为「自动暂停」或「后台运行」）",
-                flash_seconds=4.5,
+                elif return_fg:
+                    hud.set_forced("已开启「回到游戏」模式，正在自动拉回游戏窗口", active=True)
+                else:
+                    hud.set_paused(
+                        True,
+                        reason=("当前动作需要在前台执行，切回游戏后继续"
+                                if bg_active else "游戏已离开前台自动暂停，切回窗口后继续"),
+                    )
+            self._wait_until(
+                adapter,
+                (lambda: adapter.foreground() and not adapter.hung()) if bring_back else adapter.foreground,
+                pause_message,
+                "游戏已回到前台，任务继续。",
+                check_hung=bool(bring_back and not self._background_observation),
+                bring_back=bring_back,
             )
+            if hud is not None and return_fg and not self.stopped():
+                hud.clear_forced(
+                    flash_reason="已开启「回到游戏」模式，游戏离开前台时会自动切回（可在设置中改为「自动暂停」或「后台运行」）",
+                    flash_seconds=4.5,
+                )
+            if bring_back:
+                return
 
 
 @contextmanager

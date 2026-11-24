@@ -13,6 +13,7 @@ from game_keys import Binding, GameKeys, MACRO_KEYS
 
 
 MAX_CAMERA_PIXELS = 8192
+_WM_NULL = 0x0000
 _WM_ACTIVATE = 0x0006
 _WA_ACTIVE = 1
 _WM_CHAR = 0x0102
@@ -26,9 +27,13 @@ _WM_MOUSEHWHEEL = 0x020E
 _MK_LBUTTON = 0x0001
 _MK_MBUTTON = 0x0010
 _GA_ROOTOWNER = 3
-_SMTO_ABORTIFHUNG = 0x0002
+# Avoid SMTO_ABORTIFHUNG: Win32's passive IsHungAppWindow heuristic can false-positive
+# on live idle/background UE5 windows and abort synchronous messages in 0 ms.
+_SMTO_NORMAL = 0x0000
 _ERROR_TIMEOUT = 1460
 _WINDOW_SEND_TIMEOUT_MS = 2000
+_HUNG_PROBE_TIMEOUT_MS = 1000
+_HUNG_RESPONSIVE_CACHE_SECONDS = 1.0
 _MONITOR_DEFAULTTONEAREST = 2
 
 
@@ -70,6 +75,87 @@ def _window_key_spec(user32, key: int):
     # Alt uses WM_SYSKEY*, other configured keys use WM_KEY*.
     down, up = (0x0104, 0x0105) if key in (18, 164, 165) else (0x0100, 0x0101)
     return down, up, flags
+
+
+def probe_window_responsiveness(
+    user32,
+    hwnd: int,
+    *,
+    timeout_ms: int = _HUNG_PROBE_TIMEOUT_MS,
+    force_probe: bool = False,
+) -> dict:
+    """Confirm whether a window is genuinely hung using an active WM_NULL probe.
+
+    Win32's passive IsHungAppWindow() only checks a 5-second cached message-read
+    heuristic and can false-positive on live background/idle UE5 windows. Keep
+    the zero-IPC IsHungAppWindow() check as a fast path, and require an active
+    SendMessageTimeoutW(WM_NULL, SMTO_NORMAL) timeout before declaring a hang.
+    """
+    if user32 is None or not hwnd or not user32.IsWindow(hwnd):
+        return {
+            "unresponsive": False,
+            "exists": False,
+            "is_hung_flag": False,
+            "probed": False,
+            "wm_null_ok": None,
+            "wm_null_error": None,
+            "wm_null_ms": None,
+        }
+    is_hung_flag = bool(user32.IsHungAppWindow(hwnd))
+    if not is_hung_flag and not force_probe:
+        return {
+            "unresponsive": False,
+            "exists": True,
+            "is_hung_flag": False,
+            "probed": False,
+            "wm_null_ok": None,
+            "wm_null_error": None,
+            "wm_null_ms": None,
+        }
+    result = ctypes.c_size_t(0)
+    ctypes.set_last_error(0)
+    started = wall_time.monotonic()
+    ok = user32.SendMessageTimeoutW(
+        hwnd,
+        _WM_NULL,
+        0,
+        0,
+        _SMTO_NORMAL,
+        max(100, int(timeout_ms)),
+        ctypes.byref(result),
+    )
+    elapsed_ms = round((wall_time.monotonic() - started) * 1000.0, 1)
+    if ok != 0:
+        return {
+            "unresponsive": False,
+            "exists": True,
+            "is_hung_flag": is_hung_flag,
+            "probed": True,
+            "wm_null_ok": True,
+            "wm_null_error": 0,
+            "wm_null_ms": elapsed_ms,
+        }
+    err = int(ctypes.get_last_error())
+    exists = bool(user32.IsWindow(hwnd))
+    return {
+        "unresponsive": bool(exists and err == _ERROR_TIMEOUT),
+        "exists": exists,
+        "is_hung_flag": is_hung_flag,
+        "probed": True,
+        "wm_null_ok": False,
+        "wm_null_error": err,
+        "wm_null_ms": elapsed_ms,
+    }
+
+
+def is_window_unresponsive(
+    user32,
+    hwnd: int,
+    *,
+    timeout_ms: int = _HUNG_PROBE_TIMEOUT_MS,
+) -> bool:
+    """Return True only when IsHungAppWindow() is confirmed by a WM_NULL timeout."""
+    return bool(probe_window_responsiveness(user32, hwnd, timeout_ms=timeout_ms)["unresponsive"])
 
 
 class ForegroundInput:
@@ -114,6 +200,18 @@ class ForegroundInput:
         self.user32.IsIconic.restype = wintypes.BOOL
         self.user32.IsHungAppWindow.argtypes = [wintypes.HWND]
         self.user32.IsHungAppWindow.restype = wintypes.BOOL
+        self.user32.SendMessageTimeoutW.argtypes = [
+            wintypes.HWND,
+            wintypes.UINT,
+            wintypes.WPARAM,
+            wintypes.LPARAM,
+            wintypes.UINT,
+            wintypes.UINT,
+            ctypes.POINTER(ctypes.c_size_t),
+        ]
+        self.user32.SendMessageTimeoutW.restype = ctypes.c_ssize_t
+        self._hung_probe_ok_until = 0.0
+        self._last_hung_probe = None
         self.user32.MapVirtualKeyW.argtypes = [wintypes.UINT, wintypes.UINT]
         self.user32.MapVirtualKeyW.restype = wintypes.UINT
         self.user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
@@ -165,7 +263,35 @@ class ForegroundInput:
         return {"game_hwnd": self.hwnd, "foreground_hwnd": int(hwnd or 0), "foreground_title": text.value}
 
     def hung(self):
-        return bool(self.user32.IsWindow(self.hwnd) and self.user32.IsHungAppWindow(self.hwnd))
+        if not self.user32.IsWindow(self.hwnd):
+            return False
+        if not self.user32.IsHungAppWindow(self.hwnd):
+            self._last_hung_probe = None
+            return False
+        now = wall_time.monotonic()
+        if now < self._hung_probe_ok_until:
+            return False
+        probe = probe_window_responsiveness(
+            self.user32,
+            self.hwnd,
+            timeout_ms=_HUNG_PROBE_TIMEOUT_MS,
+            force_probe=True,
+        )
+        self._last_hung_probe = probe
+        if not probe["unresponsive"]:
+            self._hung_probe_ok_until = wall_time.monotonic() + _HUNG_RESPONSIVE_CACHE_SECONDS
+            return False
+        self._hung_probe_ok_until = 0.0
+        return True
+
+    def hung_details(self):
+        probe = dict(self._last_hung_probe) if isinstance(self._last_hung_probe, dict) else {}
+        exists = bool(self.user32.IsWindow(self.hwnd))
+        probe["game_hwnd"] = self.hwnd
+        probe["exists"] = exists
+        probe["iconic"] = bool(exists and self.user32.IsIconic(self.hwnd))
+        probe["foreground"] = self.foreground()
+        return probe
 
     def _wait_without_session(self, ready):
         if not ready():
@@ -445,16 +571,6 @@ class BackgroundInput(ForegroundInput):
         self.user32.MonitorFromWindow.restype = wintypes.HMONITOR
         self.user32.GetMonitorInfoW.argtypes = [wintypes.HMONITOR, ctypes.POINTER(_MONITORINFO)]
         self.user32.GetMonitorInfoW.restype = wintypes.BOOL
-        self.user32.SendMessageTimeoutW.argtypes = [
-            wintypes.HWND,
-            wintypes.UINT,
-            wintypes.WPARAM,
-            wintypes.LPARAM,
-            wintypes.UINT,
-            wintypes.UINT,
-            ctypes.POINTER(ctypes.c_size_t),
-        ]
-        self.user32.SendMessageTimeoutW.restype = ctypes.c_ssize_t
         try:
             self.user32.SetThreadDpiAwarenessContext.argtypes = [wintypes.HANDLE]
             self.user32.SetThreadDpiAwarenessContext.restype = wintypes.HANDLE
@@ -743,7 +859,7 @@ class BackgroundInput(ForegroundInput):
             msg,
             wparam,
             lparam,
-            _SMTO_ABORTIFHUNG,
+            _SMTO_NORMAL,
             _WINDOW_SEND_TIMEOUT_MS,
             ctypes.byref(result),
         )
