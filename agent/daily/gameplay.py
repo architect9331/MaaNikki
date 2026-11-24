@@ -923,7 +923,7 @@ class Gameplay:
         result = self.ui.skip_reward()
         if not result and not self.rt.stopped:
             self.rt.diagnostic("jihua_reward", "素材激化奖励领取结果待确认")
-        self.rt.log("挑战奖励已领取。" if result else "挑战奖励领取结果待确认，请检查游戏画面。")
+        self.rt.log("挑战奖励已领取。" if result else "挑战奖励领取结果待确认，请检查游戏画面。", detail=bool(result))
         return result
 
     def jihua_open_table(self):

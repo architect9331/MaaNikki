@@ -1342,7 +1342,7 @@ class GameUI:
                                "source_visible": bool(source and self.page_matches(source)),
                                **failure_frame(attempt, "not_arrived")})
                 if attempt < attempts:
-                    self.rt.log(f"未确认进入目标页面，将重新检查并重试（{attempt+1}/{attempts}）。")
+                    self.rt.log(f"未确认进入目标页面，将重新检查并重试（{attempt+1}/{attempts}）。", detail=True)
             self.rt.log("多次尝试后仍未进入目标页面，本项停止。")
             return False
         finally:
@@ -1817,7 +1817,7 @@ class GameUI:
                             or self.page_matches("MaaNikki_MenuReady"))
             if self.wait_page(returned, seconds=1.5):
                 self.monthly_paradise_unavailable = True
-            self.rt.log("快捷入口未打开，正在从美鸭梨菜单查找奇迹之旅。")
+            self.rt.log("快捷入口未打开，正在从美鸭梨菜单查找奇迹之旅。", detail=True)
             if not self.find_menu_entry(node="MaaNikki_Monthly_MenuEntrance", scroll=True):
                 if not self.rt.stopped:
                     self.rt.diagnostic("monthly_menu_entry", "未能从美鸭梨菜单进入奇迹之旅")

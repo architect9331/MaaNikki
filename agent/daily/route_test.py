@@ -412,7 +412,7 @@ class RouteTest(Runtime):
         # movement is held so logging cannot extend a pulse past its waypoint.
         inputs = self.navigation_inputs
         if self.progress_message and (inputs is None or not inputs.held and not inputs.buttons):
-            self.log(self.progress_message)
+            self.log(self.progress_message, live=True)
             self.progress_message = None
 
     def phase(self, stage, message):
@@ -422,7 +422,7 @@ class RouteTest(Runtime):
             self.trial_document["state"] = "running"
             self.trial_document["message"] = message
             self.publish_trial(force=True)
-        self.log(f"{self.label}：{message}")
+        self.log(f"{self.label}：{message}", live=True)
 
     def prepare_route(self, settings, actions, inputs):
         """Task-specific setup after arriving at the route start, before walking."""
@@ -810,7 +810,7 @@ class RouteTest(Runtime):
                     from navigation.gingerbread_pickup import save_gingerbread_telemetry
                     save_gingerbread_telemetry(ROOT, gb_summary, self.directory)
                     result["gingerbread"] = gb_summary
-                    self.log(f"【姜饼人实测推断】{gb_summary['overall_diagnosis']}")
+                    self.log(f"【姜饼人实测推断】{gb_summary['overall_diagnosis']}", detail=True)
             if not self.dev_only:
                 route_title = str(model.document.get("title") or model.id)
                 gb = result.get("gingerbread")
@@ -881,11 +881,21 @@ class RouteTest(Runtime):
             if self.directory:
                 try:
                     write_json(self.directory / "result.json", result)
-                    status = f"{self.label}完成。" if result["success"] else f"{self.label}结束，请查看异常提示。"
+                    gb = result.get("gingerbread")
+                    picked_n = int(gb.get("total_picked", 0)) if isinstance(gb, dict) else 0
+                    if result["success"]:
+                        status = (
+                            f"{self.label}完成（拾取 {picked_n} 个材料）。"
+                            if picked_n > 0
+                            else f"{self.label}完成。"
+                        )
+                    else:
+                        status = f"{self.label}结束，请查看异常提示。"
                     if mode == "bottle":
                         status += (f"已尝试 {len(self.bottle_results)} 个漂流瓶点，"
                                    f"确认拾取 {result['bottles_collected']} 次。")
-                    self.log(status+"日志："+str(self.directory), ui_text=status)
+                    self.log(status+"日志："+str(self.directory), ui_text=status,
+                             detail=bool(result["success"] and self.collection_entry is not None and picked_n == 0))
                 except (OSError, ValueError):
                     self.log(f"{self.label}日志保存失败。")
         return result["success"]

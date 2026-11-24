@@ -93,7 +93,7 @@ class WeeklyChallengeAction(CustomAction):
             rt.log(f"本周幻境已完成 {finished}/{total} 次。")
             if finished >= total:
                 _record_weekly_state(rt, finished, total)
-                rt.log("本周所选目标已无需挑战。")
+                rt.log("本周所选目标已无需挑战。", detail=True)
                 return True
             game = Gameplay(rt)
             energy = game.read_energy()

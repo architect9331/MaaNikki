@@ -776,14 +776,17 @@ def ensure_wardrobe_synced_for_materials(
             return bool(ok)
 
         if recorded_cn is None:
-            rt.log(f"正在按获得时间快速核对服装焕新与美鸭梨记录（{cn} 件）。")
+            rt.log(f"正在按获得时间快速核对服装焕新与美鸭梨记录（{cn} 件）。", live=True)
         else:
-            rt.log(f"检测到美鸭梨服装数变化（{recorded_cn} → {cn}），正按获得时间进行服装焕新快速增量同步。")
+            rt.log(f"检测到美鸭梨服装数变化（{recorded_cn} → {cn}），正按获得时间进行服装焕新快速增量同步。", live=True)
         scanner = RenewalScanner(rt, account, mode="incremental")
         ok = scanner.run()
         added = scanner.summary.get("added_items", 0)
         upd = scanner.summary.get("updated_levels", 0)
-        rt.log(f"服装焕新快速增量同步{'完成' if ok else '结束'}：新增 {added} 件服装，更新 {upd} 组等级。")
+        rt.log(
+            f"服装焕新快速增量同步{'完成' if ok else '结束'}：新增 {added} 件服装，更新 {upd} 组等级。",
+            detail=bool(ok and added == 0 and upd == 0),
+        )
         return bool(ok)
     except TaskStopped:
         raise

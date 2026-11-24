@@ -2168,6 +2168,36 @@ export const useAppStore = create<AppState>()(
 
     // 日志管理
     instanceLogs: {},
+    instanceLiveStatus: {},
+    logViewMode: (() => {
+      try {
+        return window.localStorage.getItem('maanikki:log-view-mode') === 'detailed'
+          ? 'detailed'
+          : 'concise';
+      } catch {
+        return 'concise';
+      }
+    })(),
+
+    setInstanceLiveStatus: (instanceId, status) =>
+      set((state) => {
+        if ((state.instanceLiveStatus[instanceId] ?? null) === status) return state;
+        return {
+          instanceLiveStatus: {
+            ...state.instanceLiveStatus,
+            [instanceId]: status,
+          },
+        };
+      }),
+
+    setLogViewMode: (mode) => {
+      try {
+        window.localStorage.setItem('maanikki:log-view-mode', mode);
+      } catch {
+        // Ignore storage errors.
+      }
+      set({ logViewMode: mode });
+    },
 
     addLog: (instanceId, log) =>
       set((state) => {
@@ -2214,6 +2244,10 @@ export const useAppStore = create<AppState>()(
         persistRuntimeLogs(nextLogs, state.maxLogsPerInstance);
         return {
           instanceLogs: nextLogs,
+          instanceLiveStatus: {
+            ...state.instanceLiveStatus,
+            [instanceId]: null,
+          },
         };
       });
     },

@@ -54,6 +54,8 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
     selectedInstanceId,
     clearLogs,
     setMaxLogsPerInstance,
+    logViewMode,
+    setLogViewMode,
   } = useAppStore(
     useShallow((state) => ({
       sidePanelExpanded: state.sidePanelExpanded,
@@ -61,18 +63,30 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
       selectedInstanceId: state.activeInstanceId,
       clearLogs: state.clearLogs,
       setMaxLogsPerInstance: state.setMaxLogsPerInstance,
+      logViewMode: state.logViewMode,
+      setLogViewMode: state.setLogViewMode,
     })),
   );
   const activeInstanceId = instanceId ?? selectedInstanceId;
-  // 只订阅当前实例的日志，其他实例写日志时不触发本面板重渲染
+  // 只订阅当前实例的日志与实时状态，其他实例写日志时不触发本面板重渲染
   const logs = useAppStore((state) =>
     activeInstanceId ? state.instanceLogs[activeInstanceId] || EMPTY_LOGS : EMPTY_LOGS,
+  );
+  const liveStatus = useAppStore((state) =>
+    activeInstanceId ? state.instanceLiveStatus[activeInstanceId] ?? null : null,
   );
   const { state: menuState, show: showMenu, hide: hideMenu } = useContextMenu();
   const { exportModal, handleExportLogs, closeExportModal, openExportedFile } = useExportLogs();
 
-  // 获取当前实例的日志
-  const visibleLogs = useMemo(() => logs.slice(-visibleLogLimit), [logs, visibleLogLimit]);
+  // 获取当前实例的日志（精简模式下过滤中间过程 detail 行）
+  const filteredLogs = useMemo(
+    () => (logViewMode === 'concise' ? logs.filter((entry) => entry.kind !== 'detail') : logs),
+    [logs, logViewMode],
+  );
+  const visibleLogs = useMemo(
+    () => filteredLogs.slice(-visibleLogLimit),
+    [filteredLogs, visibleLogLimit],
+  );
   const canShowMoreLogs =
     visibleLogLimit === DEFAULT_VISIBLE_LOG_LIMIT &&
     visibleLogs.length === DEFAULT_VISIBLE_LOG_LIMIT;
@@ -274,6 +288,39 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
       >
         <span className="text-sm font-medium text-text-primary">{t('logs.title')}</span>
         <div className="flex items-center gap-1.5">
+          <div
+            role="group"
+            aria-label="日志显示模式"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center rounded-md border border-border bg-bg-primary p-0.5 text-[11px]"
+          >
+            <button
+              type="button"
+              onClick={() => setLogViewMode('concise')}
+              title="精简模式：仅显示任务阶段、收益汇总与异常（导出日志始终包含完整后端记录）"
+              className={clsx(
+                'rounded px-1.5 py-0.5 transition-colors',
+                logViewMode === 'concise'
+                  ? 'bg-accent/15 font-medium text-accent'
+                  : 'text-text-muted hover:text-text-primary',
+              )}
+            >
+              精简
+            </button>
+            <button
+              type="button"
+              onClick={() => setLogViewMode('detailed')}
+              title="详细模式：显示每步实时进度与连接/资源加载过程"
+              className={clsx(
+                'rounded px-1.5 py-0.5 transition-colors',
+                logViewMode === 'detailed'
+                  ? 'bg-accent/15 font-medium text-accent'
+                  : 'text-text-muted hover:text-text-primary',
+              )}
+            >
+              详细
+            </button>
+          </div>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -326,10 +373,21 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
         </div>
       </div>
 
+      {/* 顶部固定实时进度条（高频中间步骤在此原地刷新，不刷屏历史区） */}
+      {liveStatus && (
+        <div
+          className="flex items-center gap-2 border-b border-border/70 bg-accent/[0.06] px-3 py-1.5 text-[11px] text-text-primary shrink-0"
+          title={liveStatus}
+        >
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent animate-pulse" aria-hidden="true" />
+          <span className="min-w-0 flex-1 truncate">{liveStatus}</span>
+        </div>
+      )}
+
       {/* 日志内容 */}
       <div
         ref={logsContainerRef}
-        className="flex-1 min-h-0 overflow-y-auto p-2.5 font-mono text-[12px] leading-4 bg-bg-tertiary dark:bg-bg-secondary"
+        className="flex-1 min-h-0 overflow-y-auto px-2.5 py-2 font-mono text-[12px] leading-5 bg-bg-tertiary dark:bg-bg-secondary"
         onScroll={handleLogsScroll}
         onContextMenu={handleContextMenu}
       >
@@ -356,44 +414,81 @@ export function LogsPanel({ instanceId }: { instanceId?: string } = {}) {
                 </button>
               </div>
             )}
-            {visibleLogs.map((log, index) => (
-              <Fragment key={log.id}>
-                {log.html ? (
-                  // 富文本内容（focus 消息支持 Markdown/HTML）
+            {visibleLogs.map((log, index) => {
+              if (log.kind === 'summary') {
+                return (
                   <div
+                    key={log.id}
                     className={clsx(
-                      'py-1.5 px-2 rounded-lg flex items-start gap-3',
-                      getLogColor(log.type),
+                      'mt-2 mb-1 flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] font-sans font-medium',
+                      log.type === 'warning'
+                        ? 'border-warning/35 bg-warning/10 text-warning'
+                        : 'border-success/30 bg-success/10 text-success',
                     )}
                   >
-                    <span className="text-text-muted w-[64px] flex-shrink-0 tabular-nums text-[11px] leading-4">
-                      {formatLogTime(log.timestamp, i18n.language)}
-                    </span>
-                    <span
-                      className="min-w-0 flex-1 break-words leading-4 focus-content"
-                      dangerouslySetInnerHTML={{ __html: log.html }}
-                    />
+                    <span className="tabular-nums opacity-75">{formatLogTime(log.timestamp, i18n.language)}</span>
+                    <span className="min-w-0 flex-1 break-words">{log.message}</span>
                   </div>
-                ) : (
+                );
+              }
+              if (log.kind === 'task_start') {
+                return (
                   <div
+                    key={log.id}
                     className={clsx(
-                      'py-1.5 px-2 rounded-lg flex items-start gap-3',
-                      getLogColor(log.type),
+                      'flex items-center gap-2 px-1.5 py-1 text-[12px] font-sans font-semibold text-text-primary',
+                      index > 0 && 'mt-1.5 border-t border-border/50 pt-2',
                     )}
                   >
-                    <span className="text-text-muted w-[64px] flex-shrink-0 tabular-nums text-[11px] leading-4">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 truncate">{log.message}</span>
+                    <span className="shrink-0 font-mono text-[10px] font-normal tabular-nums text-text-muted">
                       {formatLogTime(log.timestamp, i18n.language)}
                     </span>
-                    <span className="min-w-0 flex-1 break-words whitespace-pre-wrap leading-4">
-                      {log.message}
-                    </span>
                   </div>
-                )}
-                {index < visibleLogs.length - 1 && (
-                  <div className="mx-4 my-1 h-px bg-border/50" aria-hidden="true" />
-                )}
-              </Fragment>
-            ))}
+                );
+              }
+              if (log.kind === 'task_end') {
+                return (
+                  <div
+                    key={log.id}
+                    className={clsx(
+                      'flex items-start gap-2.5 pl-4 pr-1.5 py-0.5 text-[11px]',
+                      log.type === 'error' ? 'text-error font-medium' : 'text-success/90',
+                    )}
+                  >
+                    <span className="w-[56px] shrink-0 tabular-nums text-[10px] text-text-muted">
+                      {formatLogTime(log.timestamp, i18n.language)}
+                    </span>
+                    <span className="min-w-0 flex-1 break-words">{log.message}</span>
+                  </div>
+                );
+              }
+              return (
+                <Fragment key={log.id}>
+                  <div
+                    className={clsx(
+                      'flex items-start gap-2.5 rounded-md pl-4 pr-1.5 py-0.5',
+                      log.kind === 'detail' ? 'text-text-muted text-[11px]' : getLogColor(log.type),
+                    )}
+                  >
+                    <span className="text-text-muted w-[56px] flex-shrink-0 tabular-nums text-[10px] leading-5">
+                      {formatLogTime(log.timestamp, i18n.language)}
+                    </span>
+                    {log.html ? (
+                      <span
+                        className="min-w-0 flex-1 break-words leading-5 focus-content"
+                        dangerouslySetInnerHTML={{ __html: log.html }}
+                      />
+                    ) : (
+                      <span className="min-w-0 flex-1 break-words whitespace-pre-wrap leading-5">
+                        {log.message}
+                      </span>
+                    )}
+                  </div>
+                </Fragment>
+              );
+            })}
             <div ref={logsEndRef} aria-hidden="true" />
           </>
         )}

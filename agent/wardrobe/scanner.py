@@ -773,7 +773,8 @@ class WardrobeScanner(InventoryScanner):
                 self.snapshot["verified_parts"].append(part)
             self.save()
             self.rt.log(
-                f"衣柜读取：{self.model.parts[part]['name']} {self.snapshot['parts'][part]['scanned_count']} 件（数量未变，直接沿用）。"
+                f"衣柜读取：{self.model.parts[part]['name']} {self.snapshot['parts'][part]['scanned_count']} 件（数量未变，直接沿用）。",
+                live=True,
             )
             return
 
@@ -793,7 +794,7 @@ class WardrobeScanner(InventoryScanner):
             if part not in self.snapshot["verified_parts"]:
                 self.snapshot["verified_parts"].append(part)
             self.save()
-            self.rt.log(f"衣柜读取：{state['name']} 0 件。")
+            self.rt.log(f"衣柜读取：{state['name']} 0 件。", live=True)
             return
 
         frame = self.top()
@@ -839,7 +840,7 @@ class WardrobeScanner(InventoryScanner):
                         if part not in self.snapshot["verified_parts"]:
                             self.snapshot["verified_parts"].append(part)
                         self.save()
-                        self.rt.log(f"衣柜读取：{state['name']} 0 件。")
+                        self.rt.log(f"衣柜读取：{state['name']} 0 件。", live=True)
                         return
                     raise RuntimeError(f"{state['name']}未发现完整卡片，请确认图鉴筛选正常")
                 slots = [
@@ -943,7 +944,7 @@ class WardrobeScanner(InventoryScanner):
         if part not in self.snapshot["verified_parts"]:
             self.snapshot["verified_parts"].append(part)
         self.save()
-        self.rt.log(f"衣柜读取：{state['name']} {state['scanned_count']} 件。")
+        self.rt.log(f"衣柜读取：{state['name']} {state['scanned_count']} 件。", live=True)
 
     def scroll_tabs(self, dy, target=None):
         point = target or [TAB_X, 340]
@@ -983,7 +984,7 @@ class WardrobeScanner(InventoryScanner):
                     raise RuntimeError("切回游戏后图鉴部位已变化，请重新读取")
                 if part in self.snapshot["parts"]:
                     self._previous[part] = deepcopy(self.snapshot["parts"][part])
-                self.rt.log(f"衣柜读取：重新核对{self.model.parts[part]['name']}。")
+                self.rt.log(f"衣柜读取：重新核对{self.model.parts[part]['name']}。", live=True)
 
     def select_major_tab(self, expected_part, major_index):
         frame = self.rt.capture()
@@ -1144,7 +1145,7 @@ class WardrobeScanner(InventoryScanner):
                 self._tall_mode = True
                 self.layout["grid"] = [265, 130, 950, 4915]
                 self.grid = self.layout["grid"]
-                self.rt.log("衣柜读取：已切换超长竖屏模式（单屏 42 行），读取结束后将自动恢复游戏窗口。")
+                self.rt.log("衣柜读取：已切换超长竖屏模式（单屏 42 行），读取结束后将自动恢复游戏窗口。", detail=True)
             try:
                 for part, major_idx in MAJOR_SEQUENCE:
                     self.select_major_tab(part, major_idx)

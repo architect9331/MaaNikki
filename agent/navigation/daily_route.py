@@ -458,7 +458,8 @@ class RouteActions:
         self.rt.log(
             f"第 {wp_index + 1} 点驻留统计：拾取完毕耗时 {finish_str}（总驻留 {waited_s:.1f}s / 设定 {wait_sec:.1f}s），"
             f"实测拾取 {report['picked_total']} 个（{items_str}），地图15m内预计 {report['expected_0_15m']} 个 → "
-            f"{report['time_verdict']}；{report['range_verdict']}"
+            f"{report['time_verdict']}；{report['range_verdict']}",
+            detail=True,
         )
 
     def gingerbread_summary(self) -> dict | None:

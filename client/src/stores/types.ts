@@ -30,6 +30,12 @@ export type TaskRunStatus = 'idle' | 'pending' | 'running' | 'succeeded' | 'fail
 /** 日志条目类型 */
 export type LogType = 'info' | 'success' | 'warning' | 'error' | 'agent' | 'focus';
 
+/** 日志结构层级（用于精简/详细视图与任务微分组） */
+export type LogKind = 'task_start' | 'task_end' | 'summary' | 'detail';
+
+/** 日志面板展示模式 */
+export type LogViewMode = 'concise' | 'detailed';
+
 /** 日志条目 */
 export interface LogEntry {
   id: string;
@@ -38,6 +44,8 @@ export interface LogEntry {
   message: string;
   /** 可选的富文本 HTML 内容（用于 focus 消息） */
   html?: string;
+  /** 结构层级（未设置视为常规里程碑/结果行） */
+  kind?: LogKind;
 }
 
 export type Theme = 'light' | 'dark' | 'system';
@@ -521,8 +529,12 @@ export interface AppState {
 
   // 日志管理
   instanceLogs: Record<string, LogEntry[]>;
+  instanceLiveStatus: Record<string, string | null>;
+  logViewMode: LogViewMode;
   addLog: (instanceId: string, log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
   clearLogs: (instanceId: string) => void;
+  setInstanceLiveStatus: (instanceId: string, status: string | null) => void;
+  setLogViewMode: (mode: LogViewMode) => void;
   clearControllerRuntimeState: (instanceId: string) => void;
 
   // 回调 ID 与名称的映射

@@ -1272,15 +1272,15 @@ def ensure_backpack_scanned(
         if not refresh_tabs:
             return inv
     if refresh_tabs == (2,):
-        rt.log("正在快速核对养成材料与噗灵库存（仅养成材料页）。")
+        rt.log("正在快速核对养成材料与噗灵库存（仅养成材料页）。", live=True)
     else:
-        rt.log("正在打开背包核对所需材料库存。")
+        rt.log("正在打开背包核对所需材料库存。", live=True)
     result = scan_backpack_inventory(rt, crafting_catalog, tabs=refresh_tabs)
     if not result:
         return inv
     scanned, summary = result
     updated_inv = _apply_backpack_results(rt, account, crafting_catalog, scanned, summary)
-    rt.log(f"背包材料库存核对完成：本次读取 {len(scanned)} 项有库存物品（累计追踪 {len(updated_inv)} 项）。")
+    rt.log(f"背包材料库存核对完成：本次读取 {len(scanned)} 项有库存物品（累计追踪 {len(updated_inv)} 项）。", detail=True)
     return updated_inv
 
 

@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { maaService, type MaaCallbackDetails } from '@/services/maaService';
 import { useAppStore, type LogType } from '@/stores/appStore';
+import type { LogKind } from '@/stores/types';
 import { EXPLORATION_INSTANCE_ID } from '@/types/exploration';
 import { wardrobeBusy, WARDROBE_INSTANCE_ID } from '@/services/wardrobeService';
 import { fishingBusy } from '@/services/fishingService';
@@ -222,10 +223,78 @@ function inferResInfoFromInstance(instanceId: string): string | undefined {
   return resolveI18nText(resource.label, translations) || resource.name;
 }
 
+const LIVE_PREFIX = '[[LIVE]]';
+
+interface QueueRunTracker {
+  startedAt: number;
+  taskStartedAt: number;
+  taskName: string;
+  taskSkipped: boolean;
+  succeeded: number;
+  skipped: number;
+  failed: number;
+}
+
+const queueRunTrackers = new Map<string, QueueRunTracker>();
+
+function formatElapsed(ms: number): string {
+  const sec = Math.max(0, Math.round(ms / 1000));
+  if (sec < 60) return `${sec}秒`;
+  const min = Math.floor(sec / 60);
+  const rem = sec % 60;
+  if (min < 60) return rem > 0 ? `${min}分${rem}秒` : `${min}分钟`;
+  const hrs = Math.floor(min / 60);
+  const remMin = min % 60;
+  return remMin > 0 ? `${hrs}小时${remMin}分` : `${hrs}小时`;
+}
+
+function isSkipOutcomeMessage(text: string): boolean {
+  return /跳过|无需挑战|已达标|已全部|暂无待兑换|没有可领取|没有存储或待收获/.test(text);
+}
+
 export function useMaaCallbackLogger() {
   const { t } = useTranslation();
   const addLog = useAppStore((state) => state.addLog);
+  const setInstanceLiveStatus = useAppStore((state) => state.setInstanceLiveStatus);
   const unlistenRef = useRef<(() => void) | null>(null);
+
+  // 监听实例运行态从 true -> false：清空顶部实时进度条，并为多任务队列补发本轮收官汇总
+  useEffect(() => {
+    const prevRunning = new Map<string, boolean>();
+    for (const inst of useAppStore.getState().instances) {
+      prevRunning.set(inst.id, Boolean(inst.isRunning));
+    }
+    const unsub = useAppStore.subscribe((state) => {
+      for (const inst of state.instances) {
+        const was = prevRunning.get(inst.id) ?? false;
+        const now = Boolean(inst.isRunning);
+        prevRunning.set(inst.id, now);
+        if (was && !now) {
+          state.setInstanceLiveStatus(inst.id, null);
+          const tracker = queueRunTrackers.get(inst.id);
+          if (tracker && tracker.succeeded + tracker.failed >= 2) {
+            const elapsed = formatElapsed(Date.now() - tracker.startedAt);
+            const parts: string[] = [];
+            if (tracker.succeeded > 0) {
+              parts.push(
+                tracker.skipped > 0
+                  ? `完成 ${tracker.succeeded} 项（含跳过 ${tracker.skipped} 项）`
+                  : `完成 ${tracker.succeeded} 项`,
+              );
+            }
+            if (tracker.failed > 0) parts.push(`失败 ${tracker.failed} 项`);
+            state.addLog(inst.id, {
+              type: tracker.failed > 0 ? 'warning' : 'success',
+              kind: 'summary',
+              message: `本轮队列结束：${parts.join('，')} · 共耗时 ${elapsed}`,
+            });
+          }
+          queueRunTrackers.delete(inst.id);
+        }
+      }
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,6 +327,7 @@ export function useMaaCallbackLogger() {
             details as MaaCallbackDetails & Record<string, unknown>,
             t,
             addLog,
+            setInstanceLiveStatus,
           );
         });
 
@@ -281,7 +351,7 @@ export function useMaaCallbackLogger() {
         unlistenRef.current = null;
       }
     };
-  }, [t, addLog]);
+  }, [t, addLog, setInstanceLiveStatus]);
 }
 
 /**
@@ -338,7 +408,8 @@ function handleCallback(
   message: string,
   details: MaaCallbackDetails & Record<string, unknown>,
   t: (key: string, options?: Record<string, unknown>) => string,
-  addLog: (instanceId: string, log: { type: LogType; message: string; html?: string }) => void,
+  addLog: (instanceId: string, log: { type: LogType; message: string; html?: string; kind?: LogKind }) => void,
+  setInstanceLiveStatus: (instanceId: string, status: string | null) => void,
 ) {
   // 获取 ID 名称映射函数
   const { getCtrlName, getCtrlType, getResName, getResBatchInfo } = useAppStore.getState();
@@ -349,12 +420,23 @@ function handleCallback(
   const focusTemplateEntry = focus?.[message];
   const focusEntry = focusTemplateEntry ? parseFocusEntry(focusTemplateEntry) : undefined;
   if (focusEntry) {
-    const { content: focusTemplate, displayChannels } = focusEntry;
+    const rawTemplate = focusEntry.content;
+    const isLive = rawTemplate.startsWith(LIVE_PREFIX);
+    const focusTemplate = isLive ? rawTemplate.slice(LIVE_PREFIX.length) : rawTemplate;
+    const { displayChannels } = focusEntry;
 
     // 日志条目不支持原地更新，因此 {image} 占位符也等截图解析完成后再写入完整日志
     // （截图获取有超时保护），避免只留下“加载中”的占位文本而丢失真正的内容。
     resolveFocusContent(focusTemplate, details, instanceId)
       .then((resolved) => {
+        const cleanMsg = resolved.message.trim();
+        if (cleanMsg) {
+          setInstanceLiveStatus(instanceId, cleanMsg);
+          const tracker = queueRunTrackers.get(instanceId);
+          if (tracker && !isLive && isSkipOutcomeMessage(cleanMsg)) {
+            tracker.taskSkipped = true;
+          }
+        }
         // 根据 display 渠道分发消息
         for (const channel of displayChannels) {
           switch (channel) {
@@ -363,6 +445,7 @@ function handleCallback(
                 type: 'focus',
                 message: resolved.message,
                 html: resolved.html,
+                kind: isLive ? 'detail' : undefined,
               });
               break;
             case 'toast':
@@ -372,17 +455,25 @@ function handleCallback(
             case 'dialog':
             case 'modal':
               // dialog 和 modal 当前都作为 log 处理，将来可扩展为弹窗
-              addLog(instanceId, { type: 'focus', message: resolved.message, html: resolved.html });
+              addLog(instanceId, {
+                type: 'focus',
+                message: resolved.message,
+                html: resolved.html,
+                kind: isLive ? 'detail' : undefined,
+              });
               break;
           }
         }
       })
       .catch((err) => {
         log.warn('Failed to resolve focus content:', err);
+        const fallback = replaceFocusPlaceholders(focusTemplate, details).replace(/\{image\}/g, '');
+        if (fallback.trim()) setInstanceLiveStatus(instanceId, fallback.trim());
         if (displayChannels.includes('log')) {
           addLog(instanceId, {
             type: 'focus',
-            message: replaceFocusPlaceholders(focusTemplate, details).replace(/\{image\}/g, ''),
+            message: fallback,
+            kind: isLive ? 'detail' : undefined,
           });
         }
       });
@@ -408,9 +499,12 @@ function handleCallback(
         const ctrlType = registeredType || inferred.type;
         const targetText =
           ctrlType === 'window' ? t('logs.messages.targetWindow') : t('logs.messages.targetDevice');
+        const text = `${t('logs.messages.connecting', { target: targetText })} ${deviceName}`.trim();
+        setInstanceLiveStatus(instanceId, text);
         addLog(instanceId, {
           type: 'info',
-          message: `${t('logs.messages.connecting', { target: targetText })} ${deviceName}`,
+          kind: 'detail',
+          message: text,
         });
       }
       break;
@@ -429,16 +523,18 @@ function handleCallback(
         const ctrlType = registeredType || inferred.type;
         const targetText =
           ctrlType === 'window' ? t('logs.messages.targetWindow') : t('logs.messages.targetDevice');
+        const text = `${t('logs.messages.connected', { target: targetText })} ${deviceName}${
+          details.screencap_fallback && details.screencap_method
+            ? ` · ${t('logs.messages.screencapFallback', {
+                method: details.screencap_method === 'DXGI_DesktopDup_Window'
+                  ? 'DXGI' : details.screencap_method,
+              })}`
+            : ''
+        }`.trim();
+        setInstanceLiveStatus(instanceId, text);
         addLog(instanceId, {
           type: 'success',
-          message: `${t('logs.messages.connected', { target: targetText })} ${deviceName}${
-            details.screencap_fallback && details.screencap_method
-              ? ` · ${t('logs.messages.screencapFallback', {
-                  method: details.screencap_method === 'DXGI_DesktopDup_Window'
-                    ? 'DXGI' : details.screencap_method,
-                })}`
-              : ''
-          }`,
+          message: text,
         });
       }
       break;
@@ -457,6 +553,7 @@ function handleCallback(
         const ctrlType = registeredType || inferred.type;
         const targetText =
           ctrlType === 'window' ? t('logs.messages.targetWindow') : t('logs.messages.targetDevice');
+        setInstanceLiveStatus(instanceId, null);
         addLog(instanceId, {
           type: 'error',
           message: details.error || `${t('logs.messages.connectFailed', { target: targetText })} ${deviceName}`,
@@ -472,11 +569,14 @@ function handleCallback(
       const registeredName = details.res_id !== undefined ? getResName(details.res_id) : undefined;
       const inferredName = inferResInfoFromInstance(instanceId);
       const resourceName = registeredName || inferredName;
+      const text = t('logs.messages.loadingResource', {
+        name: resourceName || details.path || '',
+      });
+      setInstanceLiveStatus(instanceId, text);
       addLog(instanceId, {
         type: 'info',
-        message: t('logs.messages.loadingResource', {
-          name: resourceName || details.path || '',
-        }),
+        kind: 'detail',
+        message: text,
       });
       break;
     }
@@ -490,6 +590,7 @@ function handleCallback(
       const resourceName = registeredName || inferredName;
       addLog(instanceId, {
         type: 'success',
+        kind: 'detail',
         message: t('logs.messages.resourceLoaded', { name: resourceName || details.path || '' }),
       });
       break;
@@ -500,6 +601,7 @@ function handleCallback(
       const inferredName = inferResInfoFromInstance(instanceId);
       const resourceName = registeredName || inferredName;
       const resourceLabel = [resourceName, details.path].filter(Boolean).join(' ') || '';
+      setInstanceLiveStatus(instanceId, null);
       addLog(instanceId, {
         type: 'error',
         message: `${t('logs.messages.resourceFailed', { name: resourceLabel })} ${t('logs.messages.resourceFailedHint')}`,
@@ -511,19 +613,38 @@ function handleCallback(
     case 'Tasker.Task.Starting': {
       // 特殊处理内部停止任务
       if (details.entry === 'MaaTaskerPostStop') {
+        setInstanceLiveStatus(instanceId, '正在停止当前任务…');
         addLog(instanceId, {
           type: 'info',
+          kind: 'detail',
           message: t('logs.messages.taskStarting', { name: t('logs.messages.stopTask') }),
         });
         break;
       }
       // 使用改进的任务名查找逻辑，避免 entry 覆盖和竞态问题
-      const taskName = getTaskDisplayName(instanceId, details.task_id, details.entry);
+      const taskName = getTaskDisplayName(instanceId, details.task_id, details.entry) || details.entry || '';
+      const now = Date.now();
+      const existing = queueRunTrackers.get(instanceId);
+      if (existing) {
+        existing.taskStartedAt = now;
+        existing.taskName = taskName;
+        existing.taskSkipped = false;
+      } else {
+        queueRunTrackers.set(instanceId, {
+          startedAt: now,
+          taskStartedAt: now,
+          taskName,
+          taskSkipped: false,
+          succeeded: 0,
+          skipped: 0,
+          failed: 0,
+        });
+      }
+      setInstanceLiveStatus(instanceId, `正在执行：${taskName}`);
       addLog(instanceId, {
         type: 'info',
-        message: t('logs.messages.taskStarting', {
-          name: taskName || details.entry || '',
-        }),
+        kind: 'task_start',
+        message: taskName,
       });
       break;
     }
@@ -531,18 +652,32 @@ function handleCallback(
     case 'Tasker.Task.Succeeded': {
       // 特殊处理内部停止任务
       if (details.entry === 'MaaTaskerPostStop') {
+        setInstanceLiveStatus(instanceId, null);
         addLog(instanceId, {
           type: 'success',
+          kind: 'detail',
           message: t('logs.messages.taskSucceeded', { name: t('logs.messages.stopTask') }),
         });
         break;
       }
-      const taskName = getTaskDisplayName(instanceId, details.task_id, details.entry);
+      const taskName = getTaskDisplayName(instanceId, details.task_id, details.entry) || details.entry || '';
+      const tracker = queueRunTrackers.get(instanceId);
+      let elapsedLabel = '';
+      let skipped = false;
+      if (tracker) {
+        tracker.succeeded += 1;
+        if (tracker.taskSkipped) {
+          tracker.skipped += 1;
+          skipped = true;
+        }
+        const dt = Date.now() - tracker.taskStartedAt;
+        if (dt >= 3000) elapsedLabel = `（${formatElapsed(dt)}）`;
+        tracker.taskSkipped = false;
+      }
       addLog(instanceId, {
         type: 'success',
-        message: t('logs.messages.taskSucceeded', {
-          name: taskName || details.entry || '',
-        }),
+        kind: 'task_end',
+        message: skipped ? `已跳过：${taskName}` : `已完成：${taskName}${elapsedLabel}`,
       });
       break;
     }
@@ -550,18 +685,27 @@ function handleCallback(
     case 'Tasker.Task.Failed': {
       // 特殊处理内部停止任务
       if (details.entry === 'MaaTaskerPostStop') {
+        setInstanceLiveStatus(instanceId, null);
         addLog(instanceId, {
           type: 'error',
+          kind: 'detail',
           message: t('logs.messages.taskFailed', { name: t('logs.messages.stopTask') }),
         });
         break;
       }
-      const taskName = getTaskDisplayName(instanceId, details.task_id, details.entry);
+      const taskName = getTaskDisplayName(instanceId, details.task_id, details.entry) || details.entry || '';
+      const tracker = queueRunTrackers.get(instanceId);
+      let elapsedLabel = '';
+      if (tracker) {
+        tracker.failed += 1;
+        const dt = Date.now() - tracker.taskStartedAt;
+        if (dt >= 3000) elapsedLabel = `（${formatElapsed(dt)}）`;
+        tracker.taskSkipped = false;
+      }
       addLog(instanceId, {
         type: 'error',
-        message: t('logs.messages.taskFailed', {
-          name: taskName || details.entry || '',
-        }),
+        kind: 'task_end',
+        message: `未完成：${taskName}${elapsedLabel}`,
       });
       const state = useAppStore.getState();
       const selectedTaskId =

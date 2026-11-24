@@ -103,7 +103,12 @@ class Runtime:
         inputs = self._active_inputs()
         was_background = outermost and inputs is not None and not inputs.foreground()
         if outermost:
-            self.log(f"{reason}，正在抢占并将游戏保持在前台，完成后自动恢复后台模式。", detail=not was_background)
+            self.log(
+                f"{reason}，正在抢占并将游戏保持在前台，完成后自动恢复后台模式。",
+                detail=not was_background,
+                ui_text=f"{reason}：临时切回游戏前台",
+                live=True,
+            )
         with session.foreground_required(message=f"{reason}，正在自动拉回游戏前台并保持至本阶段结束。"):
             active = self._active_inputs()
             if active is not None:
@@ -114,7 +119,7 @@ class Runtime:
                 yield
             finally:
                 if outermost and not self.stopped:
-                    self.log("前台鼠标操作阶段已结束，恢复后台运行模式。", detail=not was_background)
+                    self.log("前台鼠标操作阶段已结束，恢复后台运行模式。", detail=True)
 
     def _seamless_background(self):
         session = active_session()
@@ -218,15 +223,18 @@ class Runtime:
             count("capture.reused")
         return state["image"]
 
-    def log(self, text, *, detail=False, ui_text=None):
+    def log(self, text, *, detail=False, ui_text=None, live=False):
         stopped = self.stopped
         display = None if detail or stopped else (text if ui_text is None else ui_text)
         saved = write_message(text, display)
         # A failed detail file must not silently swallow diagnostic messages.
         if not stopped and (display or not saved):
+            payload = display if saved else text
+            if live and saved and display:
+                payload = f"[[LIVE]]{display}"
             self.context.run_task("MaaNikki_Daily_Message", {
                 "MaaNikki_Daily_Message": {"focus": {
-                    "Node.Action.Starting": display if saved else text}}})
+                    "Node.Action.Starting": payload}}})
         session = active_session()
         if session is not None and not detail and not stopped and display:
             clean = display.strip()
