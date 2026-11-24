@@ -1,0 +1,78 @@
+{
+  "MaaNikki_WeeklyHomeShop": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.gameplay",
+    "custom_action_param": {
+      "kind": "weekly_home_shop"
+    },
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_HomeShop_ManageTitle": {
+    "recognition": "OCR",
+    "roi": [50, 10, 155, 48],
+    "expected": "^家园经营$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_HomeShop_ManageShopBtn": {
+    "recognition": "OCR",
+    "roi": [330, 540, 190, 75],
+    "expected": "园宝小铺",
+    "action": "DoNothing"
+  },
+  "MaaNikki_HomeShop_ManageReady": {
+    "recognition": "And",
+    "all_of": [
+      "MaaNikki_HomeShop_ManageTitle",
+      "MaaNikki_HomeShop_ManageShopBtn"
+    ],
+    "action": "DoNothing"
+  },
+  "MaaNikki_HomeShop_ShopTitle": {
+    "recognition": "OCR",
+    "roi": [50, 10, 155, 48],
+    "expected": "^园宝小铺$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_HomeShop_StrictTab": {
+    "recognition": "OCR",
+    "roi": [430, 8, 145, 46],
+    "expected": "园宝严选",
+    "action": "DoNothing"
+  },
+  "MaaNikki_HomeShop_ShopReady": {
+    "recognition": "And",
+    "all_of": [
+      "MaaNikki_HomeShop_ShopTitle",
+      "MaaNikki_HomeShop_StrictTab"
+    ],
+    "action": "DoNothing"
+  },
+  "MaaNikki_HomeShop_BuyTitle": {
+    "recognition": "OCR",
+    "roi": [585, 122, 110, 48],
+    "expected": "^购买$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_HomeShop_BuyConfirm": {
+    "recognition": "OCR",
+    "roi": [520, 505, 240, 62],
+    "expected": "^确认$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_HomeShop_BuyModalReady": {
+    "recognition": "And",
+    "all_of": [
+      "MaaNikki_HomeShop_BuyTitle",
+      "MaaNikki_HomeShop_BuyConfirm"
+    ],
+    "action": "DoNothing"
+  },
+  "MaaNikki_HomeShop_RewardReady": {
+    "recognition": "OCR",
+    "roi": [550, 155, 180, 55],
+    "expected": "恭喜获得",
+    "action": "DoNothing"
+  }
+}

@@ -45,6 +45,9 @@ class GameplayAction(CustomAction):
             if kind == "weekly_shop":
                 from daily.shop import WeeklyShop
                 return WeeklyShop(runtime).run()
+            if kind == "weekly_home_shop":
+                from daily.home_shop import WeeklyHomeShop
+                return WeeklyHomeShop(runtime, options).run()
             if kind == "monthly_exchange":
                 from daily.monthly_exchange import MonthlyExchange
                 return MonthlyExchange(runtime).run()

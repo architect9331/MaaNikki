@@ -1,0 +1,47 @@
+{
+  "task": [
+    {
+      "name": "weekly_home_shop",
+      "label": "每周园宝小铺",
+      "entry": "MaaNikki_WeeklyHomeShop",
+      "group": ["periodic"],
+      "default_check": true,
+      "description": "前往家园「园宝小铺 → 园宝严选」，消耗万象星实购买每周限购的能量结晶和/或闪亮泡泡，记录每项购买状态。本周所选项目完成后自动跳过，下周恢复。",
+      "option": ["HomeShopItems"]
+    }
+  ],
+  "option": {
+    "HomeShopItems": {
+      "type": "checkbox",
+      "label": "购买项目",
+      "description": "可单独选择能量结晶或闪亮泡泡，也可两项都选。余额不足时自动跳过对应项，不会误记已完成。",
+      "cases": [
+        {
+          "name": "EnergyCrystal",
+          "label": "能量结晶（5万星实/周）",
+          "pipeline_override": {
+            "MaaNikki_WeeklyHomeShop": {
+              "custom_action_param": {
+                "energy_crystal": true
+              }
+            }
+          }
+        },
+        {
+          "name": "ShinyBubbles",
+          "label": "闪亮泡泡x80（8千×10/周）",
+          "pipeline_override": {
+            "MaaNikki_WeeklyHomeShop": {
+              "custom_action_param": {
+                "shiny_bubbles": true
+              }
+            }
+          }
+        }
+      ],
+      "default_case": ["EnergyCrystal", "ShinyBubbles"],
+      "min_count": 1,
+      "max_count": 2
+    }
+  }
+}

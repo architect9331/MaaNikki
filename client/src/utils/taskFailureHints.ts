@@ -12,6 +12,7 @@ const HINTS: Record<string, string> = {
   mailbox: '请确认邮箱页面能正常打开。',
   redeem_codes: '请确认美鸭梨与设置页面能正常打开。',
   weekly_free_gifts: '请确认商城页面能正常打开。',
+  weekly_home_shop: '请确认家园与园宝小铺已解锁，且万象星实充足。',
   monthly_crystal_exchange: '请确认静谧水滴足够兑换。',
   crown: '请确认奇迹之冠已解锁且本期赛事正在开放。',
   blessing_lock: '请清除祝福闪光仓库的筛选后重试。',

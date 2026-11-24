@@ -13,11 +13,13 @@ from file_io import write_json
 GAME_TIMEZONE = timezone(timedelta(hours=8))
 PERIOD_TASKS = {
     "weekly_free_gifts": ("虹迹赠礼", "芳馨赠礼", "星实置业之礼"),
+    "weekly_home_shop": ("能量结晶", "闪亮泡泡"),
     "monthly_crystal_exchange": ("启示水晶", "共鸣水晶"),
     "crown": ("challenge",),
 }
 OUTCOMES = {
     "weekly_free_gifts": {"claimed", "sold_out"},
+    "weekly_home_shop": {"purchased", "sold_out"},
     "monthly_crystal_exchange": {"exchanged", "already_exchanged", "sold_out"},
     "crown": {"completed"},
 }
@@ -31,7 +33,7 @@ def game_day(now=None):
 
 def period_key(task, now=None):
     day = game_day(now)
-    if task == "weekly_free_gifts":
+    if task in ("weekly_free_gifts", "weekly_home_shop"):
         return (day - timedelta(days=day.weekday())).isoformat()
     if task == "crown":
         return f"{day:%Y-%m}-{'01' if day.day < 16 else '16'}"
