@@ -53,8 +53,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1030.8,
-        580.4
+        1022.6,
+        580.0
       ]
     },
     {
@@ -85,8 +85,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        900.2,
-        602.2
+        893.9,
+        597.1
       ]
     },
     {
@@ -117,8 +117,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        878.5,
-        583.5
+        870.1,
+        575.9
       ]
     },
     {
@@ -148,8 +148,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        856.8,
-        557.7
+        852.1,
+        550.8
       ]
     },
     {
@@ -177,8 +177,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        851.9,
-        531.2
+        847.2,
+        522.5
       ]
     },
     {
@@ -206,8 +206,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        847.3,
-        502.9
+        844.1,
+        495.4
       ]
     },
     {
@@ -235,8 +235,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1052.0,
-        618.8
+        1050.9,
+        606.4
       ]
     },
     {
@@ -266,8 +266,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1039.3,
-        624.9
+        1034.3,
+        622.4
       ]
     },
     {
@@ -298,7 +298,7 @@
       "observability": "group_all",
       "screen_pos": [
         1021.6,
-        632.2
+        631.1
       ]
     },
     {
@@ -327,7 +327,7 @@
       "observability": "group_all",
       "screen_pos": [
         1008.3,
-        639.8
+        638.0
       ]
     },
     {
@@ -355,8 +355,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1073.2,
-        587.0
+        1068.4,
+        584.4
       ]
     },
     {
@@ -384,8 +384,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1084.5,
-        569.4
+        1078.1,
+        566.4
       ]
     },
     {
@@ -413,8 +413,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1092.6,
-        547.1
+        1086.1,
+        545.0
       ]
     },
     {
@@ -442,8 +442,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1097.5,
-        524.9
+        1090.6,
+        523.1
       ]
     },
     {
@@ -471,8 +471,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1098.2,
-        506.8
+        1091.8,
+        503.8
       ]
     },
     {
@@ -500,8 +500,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1096.2,
-        488.2
+        1090.3,
+        485.3
       ]
     },
     {
@@ -531,8 +531,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1074.9,
-        628.2
+        1069.9,
+        625.2
       ]
     },
     {
@@ -562,8 +562,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1087.4,
-        643.2
+        1085.0,
+        639.5
       ]
     },
     {
@@ -593,8 +593,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1107.3,
-        623.0
+        1102.3,
+        620.1
       ]
     },
     {
@@ -624,8 +624,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1118.8,
-        606.9
+        1113.7,
+        603.3
       ]
     },
     {
@@ -655,8 +655,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1126.5,
-        587.6
+        1123.7,
+        584.6
       ]
     },
     {
@@ -684,8 +684,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        1136.7,
-        565.4
+        1131.6,
+        562.4
       ]
     },
     {
@@ -748,8 +748,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        866.8,
-        701.1
+        851.8,
+        704.3
       ]
     },
     {
@@ -781,8 +781,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        844.8,
-        738.0
+        835.7,
+        738.6
       ]
     },
     {
@@ -814,8 +814,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        834.7,
-        771.9
+        819.0,
+        777.6
       ]
     },
     {
@@ -845,8 +845,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        831.3,
-        802.2
+        800.3,
+        818.2
       ]
     },
     {
@@ -878,7 +878,7 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        865.0,
+        857.9,
         637.2
       ]
     },
@@ -911,8 +911,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        844.4,
-        668.3
+        829.4,
+        671.6
       ]
     },
     {
@@ -944,8 +944,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        821.2,
-        695.3
+        805.0,
+        703.3
       ]
     },
     {
@@ -977,8 +977,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        793.5,
-        733.3
+        778.5,
+        736.6
       ]
     },
     {
@@ -1008,8 +1008,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        782.5,
-        754.4
+        751.9,
+        770.4
       ]
     },
     {
@@ -1041,7 +1041,7 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        836.5,
+        824.2,
         615.4
       ]
     },
@@ -1074,8 +1074,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        807.5,
-        639.2
+        792.5,
+        642.4
       ]
     },
     {
@@ -1140,8 +1140,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        736.8,
-        694.8
+        721.8,
+        698.1
       ]
     },
     {
@@ -1171,8 +1171,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        709.7,
-        714.9
+        679.1,
+        730.8
       ]
     },
     {
@@ -1237,8 +1237,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        781.0,
-        589.3
+        766.0,
+        592.5
       ]
     },
     {
@@ -1303,8 +1303,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        718.6,
-        618.4
+        703.6,
+        621.6
       ]
     },
     {
@@ -1334,8 +1334,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        698.3,
-        623.4
+        667.7,
+        639.3
       ]
     },
     {
@@ -1363,8 +1363,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1102.8,
-        763.0
+        1074.4,
+        778.2
       ],
       "heart_preset_id": 200003
     },
@@ -1395,8 +1395,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1084.2,
-        769.4
+        1051.1,
+        788.2
       ],
       "heart_preset_id": 200002
     },
@@ -1427,8 +1427,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1029.5,
-        798.8
+        1024.1,
+        796.7
       ]
     },
     {
@@ -1456,8 +1456,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1028.9,
-        787.2
+        997.9,
+        803.1
       ],
       "heart_preset_id": 200001
     },
@@ -1486,8 +1486,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1153.6,
-        731.0
+        1119.4,
+        748.6
       ],
       "heart_preset_id": 200004
     },
@@ -1518,8 +1518,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1179.4,
-        710.2
+        1145.4,
+        728.8
       ],
       "heart_preset_id": 200005
     },
@@ -1581,8 +1581,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1223.9,
-        660.3
+        1192.3,
+        676.2
       ],
       "heart_preset_id": 200006
     },
@@ -1613,8 +1613,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1240.6,
-        631.9
+        1209.5,
+        647.6
       ],
       "heart_preset_id": 200007
     },
@@ -1645,8 +1645,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1256.9,
-        595.8
+        1226.2,
+        611.8
       ],
       "heart_preset_id": 200008
     },
@@ -1706,8 +1706,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1273.7,
-        530.3
+        1243.1,
+        546.2
       ],
       "heart_preset_id": 200009
     },
@@ -1734,8 +1734,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1042.6,
-        684.6
+        1039.4,
+        684.4
       ]
     },
     {
@@ -1761,8 +1761,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1071.2,
-        700.3
+        1062.2,
+        700.1
       ]
     },
     {
@@ -1788,8 +1788,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1056.5,
-        733.4
+        1044.9,
+        727.2
       ]
     },
     {
@@ -1815,8 +1815,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1027.2,
-        716.8
+        1024.1,
+        707.7
       ]
     },
     {
@@ -1844,8 +1844,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        949.6,
-        893.8
+        944.0,
+        888.5
       ]
     },
     {
@@ -1875,7 +1875,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        949.4,
+        944.2,
         853.6
       ]
     },
@@ -1906,7 +1906,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        949.5,
+        943.7,
         800.0
       ]
     },
@@ -1937,7 +1937,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        949.8,
+        943.9,
         750.1
       ]
     },
@@ -1968,7 +1968,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        949.9,
+        943.9,
         703.5
       ]
     },
@@ -1999,7 +1999,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        949.4,
+        943.7,
         647.6
       ]
     },
@@ -2030,7 +2030,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        949.6,
+        944.3,
         597.4
       ]
     },
@@ -2090,7 +2090,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        949.7,
+        943.8,
         485.7
       ]
     },
@@ -2119,8 +2119,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1114.7,
-        468.1
+        1103.4,
+        462.1
       ],
       "heart_preset_id": 200010
     },
@@ -2154,8 +2154,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1043.5,
-        462.8
+        1035.2,
+        451.9
       ]
     },
     {
@@ -2188,8 +2188,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1027.5,
-        440.7
+        1017.1,
+        430.6
       ]
     },
     {
@@ -2222,8 +2222,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1008.5,
-        425.0
+        999.3,
+        418.5
       ]
     },
     {
@@ -2256,8 +2256,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        986.8,
-        414.8
+        981.4,
+        410.5
       ]
     },
     {
@@ -2287,8 +2287,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1140.8,
-        460.4
+        1133.4,
+        453.4
       ],
       "heart_preset_id": 200011
     },
@@ -2319,8 +2319,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1167.6,
-        452.7
+        1163.6,
+        444.7
       ],
       "heart_preset_id": 200012
     },
@@ -2351,8 +2351,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1197.5,
-        444.2
+        1191.3,
+        437.2
       ],
       "heart_preset_id": 200013
     },
@@ -2383,8 +2383,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1226.4,
-        435.5
+        1217.2,
+        429.6
       ],
       "heart_preset_id": 200014
     },
@@ -2413,8 +2413,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1251.6,
-        428.0
+        1243.8,
+        421.4
       ],
       "heart_preset_id": 200015
     },
@@ -2448,7 +2448,7 @@
       "observability": "exact",
       "screen_pos": [
         1069.1,
-        434.5
+        431.9
       ]
     },
     {
@@ -2480,8 +2480,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1125.3,
-        406.8
+        1129.4,
+        398.9
       ]
     },
     {
@@ -2513,8 +2513,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1183.6,
-        373.1
+        1179.0,
+        369.8
       ]
     },
     {
@@ -2545,8 +2545,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1229.1,
-        348.8
+        1213.9,
+        350.5
       ]
     },
     {
@@ -2578,8 +2578,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1058.0,
-        401.8
+        1051.1,
+        397.7
       ]
     },
     {
@@ -2611,8 +2611,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1094.0,
-        368.2
+        1100.5,
+        352.2
       ]
     },
     {
@@ -2676,7 +2676,7 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1194.9,
+        1186.1,
         274.8
       ]
     },
@@ -2709,8 +2709,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1043.8,
-        370.2
+        1029.1,
+        377.2
       ]
     },
     {
@@ -2742,8 +2742,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1069.4,
-        333.1
+        1068.7,
+        320.4
       ]
     },
     {
@@ -2775,8 +2775,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1106.2,
-        279.5
+        1096.9,
+        279.7
       ]
     },
     {
@@ -2807,8 +2807,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1137.0,
-        238.1
+        1124.6,
+        237.8
       ]
     },
     {
@@ -2840,8 +2840,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1020.6,
-        356.6
+        1008.2,
+        361.6
       ]
     },
     {
@@ -2873,8 +2873,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1040.5,
-        315.5
+        1035.3,
+        308.1
       ]
     },
     {
@@ -2906,8 +2906,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1069.0,
-        258.0
+        1058.1,
+        262.3
       ]
     },
     {
@@ -2938,8 +2938,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        1095.3,
-        217.0
+        1082.5,
+        212.6
       ]
     },
     {
@@ -2969,8 +2969,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        907.7,
-        431.8
+        896.4,
+        419.0
       ]
     },
     {
@@ -3000,8 +3000,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        858.7,
-        430.3
+        862.9,
+        417.0
       ]
     },
     {
@@ -3031,8 +3031,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        844.6,
-        471.5
+        832.6,
+        461.5
       ]
     },
     {
@@ -3062,8 +3062,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        876.5,
-        387.9
+        840.8,
+        383.8
       ]
     },
     {
@@ -3093,8 +3093,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        878.1,
-        386.5
+        903.9,
+        369.5
       ]
     },
     {
@@ -3124,8 +3124,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        919.2,
-        334.9
+        872.2,
+        337.7
       ]
     },
     {
@@ -3155,8 +3155,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        927.2,
-        302.8
+        943.3,
+        298.9
       ]
     },
     {
@@ -3186,8 +3186,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        1005.0,
-        244.5
+        1002.1,
+        232.0
       ]
     },
     {
@@ -3215,8 +3215,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        950.3,
-        179.6
+        943.7,
+        174.0
       ]
     },
     {
@@ -3244,8 +3244,8 @@
       ],
       "observability": "max_only",
       "screen_pos": [
-        796.0,
-        290.6
+        794.8,
+        287.9
       ],
       "flat_attr_index": 0
     },
@@ -3274,8 +3274,8 @@
       ],
       "observability": "max_only",
       "screen_pos": [
-        786.3,
-        252.6
+        783.1,
+        255.0
       ],
       "flat_attr_index": 1
     },
@@ -3304,8 +3304,8 @@
       ],
       "observability": "max_only",
       "screen_pos": [
-        818.2,
-        232.5
+        811.2,
+        229.0
       ],
       "flat_attr_index": 2
     },
@@ -3334,8 +3334,8 @@
       ],
       "observability": "max_only",
       "screen_pos": [
-        852.8,
-        258.8
+        845.5,
+        253.0
       ],
       "flat_attr_index": 3
     },
@@ -3364,8 +3364,8 @@
       ],
       "observability": "max_only",
       "screen_pos": [
-        839.3,
-        294.2
+        831.5,
+        287.3
       ],
       "flat_attr_index": 4
     },
@@ -3452,8 +3452,8 @@
       ],
       "observability": "exact",
       "screen_pos": [
-        831.9,
-        139.3
+        809.2,
+        140.0
       ]
     },
     {
@@ -3479,8 +3479,8 @@
       "conditions": [],
       "observability": "group_all",
       "screen_pos": [
-        655.5,
-        533.4
+        652.0,
+        583.4
       ]
     },
     {
@@ -3508,8 +3508,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        649.1,
-        539.5
+        645.4,
+        530.3
       ]
     },
     {
@@ -3538,7 +3538,7 @@
       "observability": "group_all",
       "screen_pos": [
         645.0,
-        480.7
+        487.8
       ]
     },
     {
@@ -3564,8 +3564,8 @@
       "conditions": [],
       "observability": "group_all",
       "screen_pos": [
-        711.2,
-        508.3
+        703.6,
+        499.8
       ]
     },
     {
@@ -3593,8 +3593,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        708.1,
-        471.6
+        701.8,
+        459.9
       ]
     },
     {
@@ -3622,8 +3622,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        707.0,
-        444.6
+        705.8,
+        424.2
       ]
     },
     {
@@ -3649,8 +3649,8 @@
       "conditions": [],
       "observability": "group_all",
       "screen_pos": [
-        772.5,
-        541.6
+        768.6,
+        535.9
       ]
     },
     {
@@ -3678,8 +3678,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        772.0,
-        502.5
+        764.9,
+        502.0
       ]
     },
     {
@@ -3707,7 +3707,7 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        772.5,
+        766.6,
         476.0
       ]
     },
@@ -3737,7 +3737,7 @@
       "observability": "exact",
       "screen_pos": [
         993.8,
-        568.3
+        559.8
       ]
     },
     {
@@ -3766,7 +3766,7 @@
       "observability": "exact",
       "screen_pos": [
         1022.4,
-        604.9
+        596.4
       ]
     },
     {
@@ -3795,7 +3795,7 @@
       "observability": "exact",
       "screen_pos": [
         1014.0,
-        644.4
+        635.8
       ]
     },
     {
@@ -3824,7 +3824,7 @@
       "observability": "exact",
       "screen_pos": [
         994.4,
-        672.9
+        664.4
       ]
     },
     {
@@ -3878,7 +3878,7 @@
       "observability": "unmapped",
       "screen_pos": [
         961.2,
-        696.9
+        688.4
       ]
     },
     {
@@ -6598,7 +6598,7 @@
       "observability": "exact",
       "screen_pos": [
         942.4,
-        610.0
+        601.4
       ]
     },
     {
@@ -7567,7 +7567,7 @@
       "observability": "exact",
       "screen_pos": [
         1065.8,
-        845.9
+        844.9
       ]
     },
     {
@@ -10581,8 +10581,8 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        746.5,
-        632.8
+        738.7,
+        625.5
       ]
     },
     {
@@ -10612,7 +10612,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        782.7,
+        775.4,
         671.6
       ]
     },
@@ -10643,7 +10643,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        782.1,
+        774.0,
         542.0
       ]
     },
@@ -10674,7 +10674,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        690.7,
+        682.6,
         544.8
       ]
     },
@@ -10705,7 +10705,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        636.2,
+        627.8,
         615.4
       ]
     },
@@ -10736,7 +10736,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        652.3,
+        644.4,
         721.2
       ]
     },
@@ -10767,7 +10767,7 @@
       "conditions": [],
       "observability": "exact",
       "screen_pos": [
-        780.6,
+        773.3,
         801.2
       ]
     },
@@ -10829,8 +10829,8 @@
       ],
       "observability": "group_all",
       "screen_pos": [
-        701.9,
-        875.4
+        694.1,
+        868.1
       ]
     },
     {
@@ -10860,7 +10860,7 @@
       "conditions": [],
       "observability": "group_all",
       "screen_pos": [
-        773.3,
+        766.1,
         901.2
       ]
     },
@@ -10891,7 +10891,7 @@
       "conditions": [],
       "observability": "group_all",
       "screen_pos": [
-        997.3,
+        989.3,
         913.5
       ]
     },
@@ -10922,7 +10922,7 @@
       "conditions": [],
       "observability": "group_all",
       "screen_pos": [
-        1105.4,
+        1097.3,
         888.3
       ]
     },
@@ -10953,7 +10953,7 @@
       "conditions": [],
       "observability": "group_all",
       "screen_pos": [
-        1260.4,
+        1252.1,
         782.4
       ]
     },
@@ -10984,7 +10984,7 @@
       "conditions": [],
       "observability": "group_all",
       "screen_pos": [
-        1347.1,
+        1339.2,
         657.9
       ]
     },
@@ -11015,7 +11015,7 @@
       "conditions": [],
       "observability": "group_all",
       "screen_pos": [
-        1384.7,
+        1377.4,
         524.7
       ]
     },

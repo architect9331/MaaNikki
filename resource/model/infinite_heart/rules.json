@@ -1643,22 +1643,22 @@
             {
               "node_id": 1020102,
               "mask": "wish_cir_BG_Ability_2_1020102",
-              "px": 650
+              "px": 731
             },
             {
               "node_id": 1020103,
               "mask": "wish_cir_BG_Ability_2_1020103",
-              "px": 126
+              "px": 130
             },
             {
               "node_id": 1020104,
               "mask": "wish_cir_BG_Ability_2_1020104",
-              "px": 151
+              "px": 137
             },
             {
               "node_id": 1020105,
               "mask": "wish_cir_BG_Ability_2_1020105",
-              "px": 1522
+              "px": 1451
             }
           ]
         },
@@ -1668,27 +1668,27 @@
             {
               "node_id": 1010102,
               "mask": "wish_cir_Combat_1010102",
-              "px": 562
+              "px": 637
             },
             {
               "node_id": 1010103,
               "mask": "wish_cir_Combat_1010103",
-              "px": 263
+              "px": 289
             },
             {
               "node_id": 1010104,
               "mask": "wish_cir_Combat_1010104",
-              "px": 288
+              "px": 293
             },
             {
               "node_id": 1010105,
               "mask": "wish_cir_Combat_1010105",
-              "px": 364
+              "px": 365
             },
             {
               "node_id": 1010106,
               "mask": "wish_cir_Combat_1010106",
-              "px": 961
+              "px": 854
             }
           ]
         },
@@ -1698,47 +1698,47 @@
             {
               "node_id": 1020701,
               "mask": "wish_bird_1020701",
-              "px": 1542
+              "px": 1656
             },
             {
               "node_id": 1020702,
               "mask": "wish_bird_1020702",
-              "px": 1058
+              "px": 804
             },
             {
               "node_id": 1020703,
               "mask": "wish_bird_1020703",
-              "px": 1416
+              "px": 1525
             },
             {
               "node_id": 1020704,
               "mask": "wish_bird_1020704",
-              "px": 762
+              "px": 768
             },
             {
               "node_id": 1020705,
               "mask": "wish_bird_1020705",
-              "px": 781
+              "px": 1350
             },
             {
               "node_id": 1020706,
               "mask": "wish_bird_1020706",
-              "px": 1912
+              "px": 719
             },
             {
               "node_id": 1020707,
               "mask": "wish_bird_1020707",
-              "px": 1020
+              "px": 1961
             },
             {
               "node_id": 1020708,
               "mask": "wish_bird_1020708",
-              "px": 2228
+              "px": 2289
             },
             {
               "node_id": 1020709,
               "mask": "wish_bird_1020709",
-              "px": 2879
+              "px": 2526
             }
           ]
         }
