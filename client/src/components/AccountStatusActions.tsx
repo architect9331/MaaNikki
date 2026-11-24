@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { BookOpen, Calculator, Check, ChevronRight, Compass, LibraryBig, RefreshCw, Route, Sparkles, Star, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BookOpen, Calculator, Check, ChevronRight, Compass, LibraryBig, Palette, RefreshCw, Route, Sparkles, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
@@ -7,6 +7,8 @@ import { explorationStatusLabels, setExplorationEnabled, useExplorationStore } f
 import { resonanceLabel, setResonanceEnabled, useResonanceStore } from '@/services/resonanceService';
 import { useWardrobeStore, wardrobeLabels } from '@/services/wardrobeService';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import { buildWardrobeOwnershipIndex, evaluateOutfit } from '@/services/outfits/matcher';
+import { useOutfitCollectionStore } from '@/services/outfits/store';
 import { useCollectionOverview } from './useCollectionOverview';
 import { isTauri } from '@/utils/paths';
 import { useAppStore } from '@/stores/appStore';
@@ -131,12 +133,30 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
 
   const wardrobe = data?.wardrobe?.inventory ?? data?.wardrobe?.last_scan;
   const loadPlans = useWardrobePlanStore((state) => state.load);
+  const planPayload = useWardrobePlanStore((state) => state.payload);
+  const planSettings = useWardrobePlanStore((state) => state.settings);
   const planError = useWardrobePlanStore((state) => state.error);
   const plansLoading = useWardrobePlanStore((state) => state.loading);
+  const outfitItems = useOutfitCollectionStore((state) => state.items);
+  const outfitDict = useOutfitCollectionStore((state) => state.dict);
+  const outfitRule = useOutfitCollectionStore((state) => state.rule);
+  const loadOutfits = useOutfitCollectionStore((state) => state.load);
   const planRevision = data?.plan_revision ?? wardrobe?.updated_at ?? '';
   useEffect(() => {
     if (data?.uid) void loadPlans(`${data.uid}:${planRevision}:0`);
   }, [data?.uid, planRevision, loadPlans]);
+  useEffect(() => { void loadOutfits(); }, [loadOutfits]);
+  const outfitStatus = useMemo(() => {
+    if (outfitItems.length === 0) return '搭配码与试穿';
+    if (!planPayload) return `${outfitItems.length} 套搭配`;
+    const ownership = buildWardrobeOwnershipIndex(planPayload, planSettings);
+    let wearable = 0;
+    for (const item of outfitItems) {
+      const ev = evaluateOutfit(item, ownership, outfitDict, planPayload, outfitRule);
+      if (ev.status === 'wearable' || ev.status === 'same_model') wearable += 1;
+    }
+    return `${outfitItems.length} 套 · 可穿 ${wearable}`;
+  }, [outfitItems, planPayload, planSettings, outfitDict, outfitRule]);
   const overview = useCollectionOverview();
   const collections = ([
     ['closet', '衣柜套装', '套'], ['crafting', '制衣', '张'],
@@ -197,12 +217,15 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
       warn={wardrobeStatus === 'error'}
       tooltip={<div className="space-y-1"><p className="font-medium">搭配计算</p><p className="text-text-secondary">按已读衣柜计算巅峰赛等比赛的最高分搭配；读取衣柜在「收集进度 → 我的衣柜」。</p></div>}
       onClick={() => open('wardrobe')} />
+    <FeatureTile icon={Palette} title="搭配收藏" compact={compact}
+      status={outfitStatus}
+      tooltip={<div className="space-y-1"><p className="font-medium">搭配收藏</p><p className="text-text-secondary">导入搭配码自动解析全部部件与染色，按全部匹配、忽略妆容或忽略饰品实时筛选当前账号能穿的搭配。</p></div>}
+      onClick={() => open('outfits')} />
     <GiantMeteorStatus compact={compact} />
     <FeatureTile icon={Route} title="路线编辑器" compact={compact} status="录制和编辑路线"
       tooltip={<div className="space-y-1"><p className="font-medium">路线编辑器</p><p className="text-text-secondary">走一遍就能录下路线，再加上采集、钓鱼等动作。</p></div>}
-      className={compact || isTauri() ? undefined : 'col-span-full'}
       onClick={() => open('routes')} />
-    <PearpalAccountTile compact={compact} />
+    <PearpalAccountTile compact={compact} className={compact ? undefined : 'col-span-full'} />
   </>;
   return compact
     ? <>{tiles}</>

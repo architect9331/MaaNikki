@@ -29,6 +29,7 @@ mod library_diagnostics;
 pub mod maa_agent;
 pub mod maa_core;
 pub mod maa_library;
+pub mod outfit_collection;
 pub mod pearpal;
 pub mod pearpal_map_resources;
 pub mod project_patch;

@@ -146,7 +146,7 @@ export function PearpalStatusPill({ className }: { className?: string }) {
   );
 }
 
-export function PearpalAccountTile({ compact = false }: { compact?: boolean }) {
+export function PearpalAccountTile({ compact = false, className }: { compact?: boolean; className?: string }) {
   const status = usePearpalStore((s) => s.status);
   const busy = usePearpalStore((s) => s.busy);
   const loginError = usePearpalStore((s) => s.loginError);
@@ -198,7 +198,7 @@ export function PearpalAccountTile({ compact = false }: { compact?: boolean }) {
       warn={state === 'expired'}
       statusTone={statusTone}
       status={tileStatus}
-      className={clsx(!compact && state === 'expired' && 'border-warning/40')}
+      className={clsx(!compact && state === 'expired' && 'border-warning/40', className)}
       tooltip={tooltip}
       onClick={openModal}
     />

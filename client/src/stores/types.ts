@@ -42,7 +42,7 @@ export interface LogEntry {
 
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'system' | 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP' | 'ko-KR';
-export type PageView = 'main' | 'settings' | 'blessing' | 'exploration' | 'resonance' | 'wardrobe' | 'routes' | 'statistics';
+export type PageView = 'main' | 'settings' | 'blessing' | 'exploration' | 'resonance' | 'wardrobe' | 'outfits' | 'routes' | 'statistics';
 
 // 定时执行状态信息
 export interface ScheduleExecutionInfo {
