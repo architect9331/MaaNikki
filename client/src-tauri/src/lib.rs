@@ -268,6 +268,8 @@ pub fn run() {
             commands::wardrobe_scoring::save_material_plan,
             commands::wardrobe_scoring::list_game_photos,
             commands::wardrobe_scoring::read_game_photo_base64,
+            commands::infinite_heart::get_infinite_heart,
+            commands::infinite_heart::save_infinite_heart_overrides,
             commands::outfit_collection::decode_outfit_share_code,
             commands::outfit_collection::get_outfit_collection,
             commands::outfit_collection::save_outfit_collection,

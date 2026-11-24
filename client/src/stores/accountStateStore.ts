@@ -85,6 +85,17 @@ export interface AccountView {
       unmatched_count?: number;
     };
   };
+  infinite_heart?: {
+    last_scan?: {
+      updated_at?: string;
+      complete?: boolean;
+      scanned_shards?: number[];
+      currencies?: Record<string, number>;
+      bling?: number | null;
+      nodes?: Record<string, { state: string; level?: number }>;
+    };
+    overrides?: Record<string, { state: string; level?: number }>;
+  } | null;
   account_key?: string | null;
   uid?: string | null;
   updated_at?: string | null;

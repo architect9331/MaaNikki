@@ -218,6 +218,10 @@ pub async fn start_web_server(
             "/wardrobe-scoring",
             get(handle_get_wardrobe_scoring).put(handle_save_wardrobe_scoring),
         )
+        .route(
+            "/infinite-heart",
+            get(handle_get_infinite_heart).put(handle_save_infinite_heart_overrides),
+        )
         .route("/suit-thumbs/status", get(handle_get_suit_thumbs_status))
         .route(
             "/suit-thumbs/sync",
@@ -1360,6 +1364,23 @@ async fn handle_save_wardrobe_scoring(
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let key = body["account_key"].as_str().unwrap_or("").to_owned();
     crate::commands::wardrobe_scoring::save_wardrobe_scoring(key, body["settings"].clone())
+        .await
+        .map(|()| Json(serde_json::json!({"ok": true})))
+        .map_err(|error| (StatusCode::BAD_REQUEST, error))
+}
+
+async fn handle_get_infinite_heart() -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    crate::commands::infinite_heart::get_infinite_heart()
+        .await
+        .map(Json)
+        .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error))
+}
+
+async fn handle_save_infinite_heart_overrides(
+    Json(body): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let key = body["account_key"].as_str().unwrap_or("").to_owned();
+    crate::commands::infinite_heart::save_infinite_heart_overrides(key, body["overrides"].clone())
         .await
         .map(|()| Json(serde_json::json!({"ok": true})))
         .map_err(|error| (StatusCode::BAD_REQUEST, error))

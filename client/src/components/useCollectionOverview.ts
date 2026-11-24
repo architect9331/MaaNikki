@@ -20,7 +20,7 @@ const BAG_CATALOG_TOTAL = Object.keys(bagCatalogRaw as Record<string, unknown>).
  * Where each collection area stands, for the tabs of 收集进度. The figures
  * match the ones each tab shows; null means there is no record to count yet.
  */
-export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal' | 'blessing' | 'backpack', Progress | null> {
+export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal' | 'blessing' | 'backpack' | 'heart', Progress | null> {
   const account = useAccountStateStore((state) => state.data);
   const payload = useWardrobePlanStore((state) => state.payload);
   const settings = useWardrobePlanStore((state) => state.settings);
@@ -100,5 +100,19 @@ export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal
     return { done: stocked, total: Math.max(BAG_CATALOG_TOTAL, stocked) };
   }, [materials.inventory, materials.backpack_summary]);
 
-  return { closet, crafting, renewal, blessing, backpack };
+  const heart = useMemo(() => {
+    const scan = account?.infinite_heart?.last_scan;
+    const overrides = account?.infinite_heart?.overrides ?? {};
+    const scannedNodes = scan?.nodes ?? {};
+    const ids = new Set([...Object.keys(scannedNodes), ...Object.keys(overrides)]);
+    if (!ids.size) return null;
+    let done = 0;
+    for (const id of ids) {
+      const ov = overrides[id];
+      if (ov ? ov.state === 'unlocked' : scannedNodes[id]?.state === 'unlocked') done++;
+    }
+    return { done, total: Math.max(383, ids.size) };
+  }, [account?.infinite_heart]);
+
+  return { closet, crafting, renewal, blessing, backpack, heart };
 }

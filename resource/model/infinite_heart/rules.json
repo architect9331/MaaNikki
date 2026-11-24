@@ -1,0 +1,2130 @@
+{
+  "schema_version": 1,
+  "width": 1280,
+  "height": 720,
+  "shards": {
+    "2": {
+      "prefix_chains": [
+        {
+          "group_idx": 0,
+          "nodes": [
+            {
+              "node_id": 2011601,
+              "mask": "loe_n_2011601",
+              "px": 1318
+            },
+            {
+              "node_id": 2011602,
+              "mask": "loe_n_2011602",
+              "px": 791
+            },
+            {
+              "node_id": 2011603,
+              "mask": "loe_n_2011603",
+              "px": 482
+            },
+            {
+              "node_id": 2011604,
+              "mask": "loe_n_2011604",
+              "px": 1357
+            },
+            {
+              "node_id": 2011605,
+              "mask": "loe_n_2011605",
+              "px": 1553
+            },
+            {
+              "node_id": 2011606,
+              "mask": "loe_n_2011606",
+              "px": 1520
+            },
+            {
+              "node_id": 2011607,
+              "mask": "loe_n_2011607",
+              "px": 345
+            },
+            {
+              "node_id": 2011608,
+              "mask": "loe_n_2011608",
+              "px": 421
+            },
+            {
+              "node_id": 2011609,
+              "mask": "loe_n_2011609",
+              "px": 1190
+            },
+            {
+              "node_id": 2011610,
+              "mask": "loe_n_2011610",
+              "px": 716
+            },
+            {
+              "node_id": 2011611,
+              "mask": "loe_n_2011611",
+              "px": 296
+            }
+          ]
+        },
+        {
+          "group_idx": 1,
+          "nodes": [
+            {
+              "node_id": 2011201,
+              "mask": "loe_n_2011201",
+              "px": 44
+            },
+            {
+              "node_id": 2011202,
+              "mask": "loe_n_2011202",
+              "px": 10
+            },
+            {
+              "node_id": 2011203,
+              "mask": "loe_n_2011203",
+              "px": 18
+            },
+            {
+              "node_id": 2011204,
+              "mask": "loe_n_2011204",
+              "px": 15
+            },
+            {
+              "node_id": 2011301,
+              "mask": "loe_n_2011301",
+              "px": 15
+            },
+            {
+              "node_id": 2011302,
+              "mask": "loe_n_2011302",
+              "px": 29
+            },
+            {
+              "node_id": 2011303,
+              "mask": "loe_n_2011303",
+              "px": 59
+            }
+          ]
+        },
+        {
+          "group_idx": 2,
+          "nodes": [
+            {
+              "node_id": 2011401,
+              "mask": "loe_n_2011401",
+              "px": 53
+            },
+            {
+              "node_id": 2011402,
+              "mask": "loe_n_2011402",
+              "px": 26
+            },
+            {
+              "node_id": 2011403,
+              "mask": "loe_n_2011403",
+              "px": 12
+            },
+            {
+              "node_id": 2011404,
+              "mask": "loe_n_2011404",
+              "px": 17
+            }
+          ]
+        },
+        {
+          "group_idx": 3,
+          "nodes": [
+            {
+              "node_id": 2011501,
+              "mask": "loe_n_2011501",
+              "px": 123
+            },
+            {
+              "node_id": 2011502,
+              "mask": "loe_n_2011502",
+              "px": 7
+            },
+            {
+              "node_id": 2011503,
+              "mask": "loe_n_2011503",
+              "px": 18
+            },
+            {
+              "node_id": 2011504,
+              "mask": "loe_n_2011504",
+              "px": 29
+            }
+          ]
+        },
+        {
+          "group_idx": 4,
+          "nodes": [
+            {
+              "node_id": 2010101,
+              "mask": "loe_n_2010101",
+              "px": 21
+            },
+            {
+              "node_id": 2010201,
+              "mask": "loe_n_2010201",
+              "px": 181
+            },
+            {
+              "node_id": 2010202,
+              "mask": "loe_n_2010202",
+              "px": 105
+            },
+            {
+              "node_id": 2010203,
+              "mask": "loe_n_2010203",
+              "px": 136
+            },
+            {
+              "node_id": 2010204,
+              "mask": "loe_n_2010204",
+              "px": 73
+            },
+            {
+              "node_id": 2010205,
+              "mask": "loe_n_2010205",
+              "px": 59
+            },
+            {
+              "node_id": 2010206,
+              "mask": "loe_n_2010206",
+              "px": 126
+            },
+            {
+              "node_id": 2010207,
+              "mask": "loe_n_2010207",
+              "px": 211
+            },
+            {
+              "node_id": 2010208,
+              "mask": "loe_n_2010208",
+              "px": 63
+            },
+            {
+              "node_id": 2010209,
+              "mask": "loe_n_2010209",
+              "px": 80
+            }
+          ]
+        },
+        {
+          "group_idx": 5,
+          "nodes": [
+            {
+              "node_id": 2010301,
+              "mask": "loe_n_2010301",
+              "px": 20
+            },
+            {
+              "node_id": 2010302,
+              "mask": "loe_n_2010302",
+              "px": 30
+            },
+            {
+              "node_id": 2010303,
+              "mask": "loe_n_2010303",
+              "px": 26
+            },
+            {
+              "node_id": 2010304,
+              "mask": "loe_n_2010304",
+              "px": 40
+            },
+            {
+              "node_id": 2010305,
+              "mask": "loe_n_2010305",
+              "px": 44
+            },
+            {
+              "node_id": 2010306,
+              "mask": "loe_n_2010306",
+              "px": 43
+            },
+            {
+              "node_id": 2010307,
+              "mask": "loe_n_2010307",
+              "px": 43
+            },
+            {
+              "node_id": 2010308,
+              "mask": "loe_n_2010308",
+              "px": 53
+            },
+            {
+              "node_id": 2010309,
+              "mask": "loe_n_2010309",
+              "px": 22
+            },
+            {
+              "node_id": 2010310,
+              "mask": "loe_n_2010310",
+              "px": 22
+            },
+            {
+              "node_id": 2010311,
+              "mask": "loe_n_2010311",
+              "px": 31
+            },
+            {
+              "node_id": 2010312,
+              "mask": "loe_n_2010312",
+              "px": 7
+            },
+            {
+              "node_id": 2010313,
+              "mask": "loe_n_2010313",
+              "px": 19
+            }
+          ]
+        },
+        {
+          "group_idx": 6,
+          "nodes": [
+            {
+              "node_id": 2010401,
+              "mask": "loe_n_2010401",
+              "px": 32
+            },
+            {
+              "node_id": 2010402,
+              "mask": "loe_n_2010402",
+              "px": 57
+            },
+            {
+              "node_id": 2010403,
+              "mask": "loe_n_2010403",
+              "px": 128
+            },
+            {
+              "node_id": 2010404,
+              "mask": "loe_n_2010404",
+              "px": 186
+            },
+            {
+              "node_id": 2010405,
+              "mask": "loe_n_2010405",
+              "px": 245
+            },
+            {
+              "node_id": 2010406,
+              "mask": "loe_n_2010406",
+              "px": 326
+            },
+            {
+              "node_id": 2010407,
+              "mask": "loe_n_2010407",
+              "px": 387
+            },
+            {
+              "node_id": 2010408,
+              "mask": "loe_n_2010408",
+              "px": 335
+            }
+          ]
+        },
+        {
+          "group_idx": 7,
+          "nodes": [
+            {
+              "node_id": 2010501,
+              "mask": "loe_n_2010501",
+              "px": 46
+            },
+            {
+              "node_id": 2010502,
+              "mask": "loe_n_2010502",
+              "px": 177
+            },
+            {
+              "node_id": 2010503,
+              "mask": "loe_n_2010503",
+              "px": 417
+            },
+            {
+              "node_id": 2010504,
+              "mask": "loe_n_2010504",
+              "px": 191
+            },
+            {
+              "node_id": 2010505,
+              "mask": "loe_n_2010505",
+              "px": 361
+            },
+            {
+              "node_id": 2010506,
+              "mask": "loe_n_2010506",
+              "px": 184
+            },
+            {
+              "node_id": 2010507,
+              "mask": "loe_n_2010507",
+              "px": 234
+            },
+            {
+              "node_id": 2010508,
+              "mask": "loe_n_2010508",
+              "px": 268
+            }
+          ]
+        },
+        {
+          "group_idx": 11,
+          "nodes": [
+            {
+              "node_id": 2010102,
+              "mask": "loe_n_2010102",
+              "px": 251
+            },
+            {
+              "node_id": 2010901,
+              "mask": "loe_n_2010901",
+              "px": 801
+            },
+            {
+              "node_id": 2010902,
+              "mask": "loe_n_2010902",
+              "px": 305
+            },
+            {
+              "node_id": 2010903,
+              "mask": "loe_n_2010903",
+              "px": 104
+            },
+            {
+              "node_id": 2010904,
+              "mask": "loe_n_2010904",
+              "px": 15
+            },
+            {
+              "node_id": 2010905,
+              "mask": "loe_n_2010905",
+              "px": 18
+            },
+            {
+              "node_id": 2010906,
+              "mask": "loe_n_2010906",
+              "px": 14
+            },
+            {
+              "node_id": 2010907,
+              "mask": "loe_n_2010907",
+              "px": 128
+            },
+            {
+              "node_id": 2010908,
+              "mask": "loe_n_2010908",
+              "px": 60
+            },
+            {
+              "node_id": 2010909,
+              "mask": "loe_n_2010909",
+              "px": 57
+            },
+            {
+              "node_id": 2010910,
+              "mask": "loe_n_2010910",
+              "px": 92
+            }
+          ]
+        },
+        {
+          "group_idx": 12,
+          "nodes": [
+            {
+              "node_id": 2010103,
+              "mask": "loe_n_2010103",
+              "px": 86
+            },
+            {
+              "node_id": 2011001,
+              "mask": "loe_n_2011001",
+              "px": 172
+            },
+            {
+              "node_id": 2011002,
+              "mask": "loe_n_2011002",
+              "px": 139
+            },
+            {
+              "node_id": 2011003,
+              "mask": "loe_n_2011003",
+              "px": 31
+            },
+            {
+              "node_id": 2011004,
+              "mask": "loe_n_2011004",
+              "px": 19
+            },
+            {
+              "node_id": 2011005,
+              "mask": "loe_n_2011005",
+              "px": 21
+            },
+            {
+              "node_id": 2011006,
+              "mask": "loe_n_2011006",
+              "px": 18
+            },
+            {
+              "node_id": 2011007,
+              "mask": "loe_n_2011007",
+              "px": 24
+            },
+            {
+              "node_id": 2011008,
+              "mask": "loe_n_2011008",
+              "px": 196
+            },
+            {
+              "node_id": 2011009,
+              "mask": "loe_n_2011009",
+              "px": 161
+            },
+            {
+              "node_id": 2011010,
+              "mask": "loe_n_2011010",
+              "px": 33
+            }
+          ]
+        },
+        {
+          "group_idx": 13,
+          "nodes": [
+            {
+              "node_id": 2010104,
+              "mask": "loe_n_2010104",
+              "px": 103
+            },
+            {
+              "node_id": 2011101,
+              "mask": "loe_n_2011101",
+              "px": 227
+            },
+            {
+              "node_id": 2011102,
+              "mask": "loe_n_2011102",
+              "px": 135
+            },
+            {
+              "node_id": 2011103,
+              "mask": "loe_n_2011103",
+              "px": 128
+            },
+            {
+              "node_id": 2011104,
+              "mask": "loe_n_2011104",
+              "px": 97
+            },
+            {
+              "node_id": 2011105,
+              "mask": "loe_n_2011105",
+              "px": 69
+            },
+            {
+              "node_id": 2011106,
+              "mask": "loe_n_2011106",
+              "px": 79
+            },
+            {
+              "node_id": 2011107,
+              "mask": "loe_n_2011107",
+              "px": 8
+            },
+            {
+              "node_id": 2011108,
+              "mask": "loe_n_2011108",
+              "px": 26
+            }
+          ]
+        },
+        {
+          "group_idx": 14,
+          "nodes": [
+            {
+              "node_id": 2011701,
+              "mask": "loe_n_2011701",
+              "px": 157
+            },
+            {
+              "node_id": 2011702,
+              "mask": "loe_n_2011702",
+              "px": 275
+            },
+            {
+              "node_id": 2011703,
+              "mask": "loe_n_2011703",
+              "px": 648
+            },
+            {
+              "node_id": 2011704,
+              "mask": "loe_n_2011704",
+              "px": 947
+            },
+            {
+              "node_id": 2011705,
+              "mask": "loe_n_2011705",
+              "px": 439
+            }
+          ]
+        },
+        {
+          "group_idx": 15,
+          "nodes": [
+            {
+              "node_id": 2011901,
+              "mask": "loe_n_2011901",
+              "px": 82
+            },
+            {
+              "node_id": 2011902,
+              "mask": "loe_n_2011902",
+              "px": 454
+            },
+            {
+              "node_id": 2011903,
+              "mask": "loe_n_2011903",
+              "px": 412
+            },
+            {
+              "node_id": 2011904,
+              "mask": "loe_n_2011904",
+              "px": 234
+            },
+            {
+              "node_id": 2011905,
+              "mask": "loe_n_2011905",
+              "px": 136
+            }
+          ]
+        },
+        {
+          "group_idx": 16,
+          "nodes": [
+            {
+              "node_id": 2011801,
+              "mask": "loe_n_2011801",
+              "px": 89
+            },
+            {
+              "node_id": 2011802,
+              "mask": "loe_n_2011802",
+              "px": 608
+            },
+            {
+              "node_id": 2011803,
+              "mask": "loe_n_2011803",
+              "px": 424
+            },
+            {
+              "node_id": 2011804,
+              "mask": "loe_n_2011804",
+              "px": 299
+            },
+            {
+              "node_id": 2011805,
+              "mask": "loe_n_2011805",
+              "px": 812
+            }
+          ]
+        },
+        {
+          "group_idx": 17,
+          "nodes": [
+            {
+              "node_id": 2012001,
+              "mask": "loe_n_2012001",
+              "px": 23
+            },
+            {
+              "node_id": 2012002,
+              "mask": "loe_n_2012002",
+              "px": 19
+            },
+            {
+              "node_id": 2012003,
+              "mask": "loe_n_2012003",
+              "px": 37
+            },
+            {
+              "node_id": 2012004,
+              "mask": "loe_n_2012004",
+              "px": 32
+            },
+            {
+              "node_id": 2012005,
+              "mask": "loe_n_2012005",
+              "px": 81
+            }
+          ]
+        },
+        {
+          "group_idx": 18,
+          "nodes": [
+            {
+              "node_id": 2020101,
+              "mask": "loe_n_2020101",
+              "px": 2385
+            },
+            {
+              "node_id": 2020102,
+              "mask": "loe_n_2020102",
+              "px": 1494
+            }
+          ]
+        },
+        {
+          "group_idx": 19,
+          "nodes": [
+            {
+              "node_id": 2020103,
+              "mask": "loe_n_2020103",
+              "px": 287
+            },
+            {
+              "node_id": 2020104,
+              "mask": "loe_n_2020104",
+              "px": 241
+            },
+            {
+              "node_id": 2020105,
+              "mask": "loe_n_2020105",
+              "px": 130
+            }
+          ]
+        },
+        {
+          "group_idx": 20,
+          "nodes": [
+            {
+              "node_id": 2020201,
+              "mask": "loe_n_2020201",
+              "px": 533
+            },
+            {
+              "node_id": 2020202,
+              "mask": "loe_n_2020202",
+              "px": 503
+            },
+            {
+              "node_id": 2020203,
+              "mask": "loe_n_2020203",
+              "px": 472
+            }
+          ]
+        },
+        {
+          "group_idx": 21,
+          "nodes": [
+            {
+              "node_id": 2020301,
+              "mask": "loe_n_2020301",
+              "px": 271
+            },
+            {
+              "node_id": 2020302,
+              "mask": "loe_n_2020302",
+              "px": 195
+            },
+            {
+              "node_id": 2020303,
+              "mask": "loe_n_2020303",
+              "px": 203
+            },
+            {
+              "node_id": 2020304,
+              "mask": "loe_n_2020304",
+              "px": 273
+            }
+          ]
+        },
+        {
+          "group_idx": 22,
+          "nodes": [
+            {
+              "node_id": 2020401,
+              "mask": "loe_n_2020401",
+              "px": 527
+            },
+            {
+              "node_id": 2020402,
+              "mask": "loe_n_2020402",
+              "px": 519
+            },
+            {
+              "node_id": 2020403,
+              "mask": "loe_n_2020403",
+              "px": 423
+            },
+            {
+              "node_id": 2020404,
+              "mask": "loe_n_2020404",
+              "px": 217
+            }
+          ]
+        },
+        {
+          "group_idx": 23,
+          "nodes": [
+            {
+              "node_id": 2020501,
+              "mask": "loe_n_2020501",
+              "px": 1471
+            },
+            {
+              "node_id": 2020502,
+              "mask": "loe_n_2020502",
+              "px": 533
+            }
+          ]
+        },
+        {
+          "group_idx": 24,
+          "nodes": [
+            {
+              "node_id": 2020601,
+              "mask": "loe_n_2020601",
+              "px": 1317
+            },
+            {
+              "node_id": 2020602,
+              "mask": "loe_n_2020602",
+              "px": 1264
+            },
+            {
+              "node_id": 2020603,
+              "mask": "loe_n_2020603",
+              "px": 623
+            },
+            {
+              "node_id": 2020604,
+              "mask": "loe_n_2020604",
+              "px": 697
+            },
+            {
+              "node_id": 2020605,
+              "mask": "loe_n_2020605",
+              "px": 178
+            },
+            {
+              "node_id": 2020606,
+              "mask": "loe_n_2020606",
+              "px": 252
+            },
+            {
+              "node_id": 2020607,
+              "mask": "loe_n_2020607",
+              "px": 387
+            },
+            {
+              "node_id": 2020608,
+              "mask": "loe_n_2020608",
+              "px": 494
+            },
+            {
+              "node_id": 2020609,
+              "mask": "loe_n_2020609",
+              "px": 752
+            },
+            {
+              "node_id": 2020610,
+              "mask": "loe_n_2020610",
+              "px": 1093
+            }
+          ]
+        },
+        {
+          "group_idx": 25,
+          "nodes": [
+            {
+              "node_id": 2020701,
+              "mask": "loe_n_2020701",
+              "px": 160
+            },
+            {
+              "node_id": 2020702,
+              "mask": "loe_n_2020702",
+              "px": 205
+            }
+          ]
+        },
+        {
+          "group_idx": 26,
+          "nodes": [
+            {
+              "node_id": 2020801,
+              "mask": "loe_n_2020801",
+              "px": 119
+            },
+            {
+              "node_id": 2020802,
+              "mask": "loe_n_2020802",
+              "px": 108
+            }
+          ]
+        },
+        {
+          "group_idx": 29,
+          "nodes": [
+            {
+              "node_id": 2030101,
+              "mask": "loe_n_2030101",
+              "px": 297
+            },
+            {
+              "node_id": 2030102,
+              "mask": "loe_n_2030102",
+              "px": 745
+            },
+            {
+              "node_id": 2030103,
+              "mask": "loe_n_2030103",
+              "px": 558
+            },
+            {
+              "node_id": 2030104,
+              "mask": "loe_n_2030104",
+              "px": 440
+            }
+          ]
+        },
+        {
+          "group_idx": 30,
+          "nodes": [
+            {
+              "node_id": 2030105,
+              "mask": "loe_n_2030105",
+              "px": 243
+            },
+            {
+              "node_id": 2030106,
+              "mask": "loe_n_2030106",
+              "px": 241
+            },
+            {
+              "node_id": 2030107,
+              "mask": "loe_n_2030107",
+              "px": 385
+            }
+          ]
+        },
+        {
+          "group_idx": 32,
+          "nodes": [
+            {
+              "node_id": 2030201,
+              "mask": "loe_n_2030201",
+              "px": 449
+            },
+            {
+              "node_id": 2030202,
+              "mask": "loe_n_2030202",
+              "px": 109
+            },
+            {
+              "node_id": 2030203,
+              "mask": "loe_n_2030203",
+              "px": 126
+            },
+            {
+              "node_id": 2030204,
+              "mask": "loe_n_2030204",
+              "px": 613
+            },
+            {
+              "node_id": 2030205,
+              "mask": "loe_n_2030205",
+              "px": 273
+            },
+            {
+              "node_id": 2030206,
+              "mask": "loe_n_2030206",
+              "px": 63
+            },
+            {
+              "node_id": 2030207,
+              "mask": "loe_n_2030207",
+              "px": 851
+            },
+            {
+              "node_id": 2030208,
+              "mask": "loe_n_2030208",
+              "px": 198
+            },
+            {
+              "node_id": 2030209,
+              "mask": "loe_n_2030209",
+              "px": 384
+            },
+            {
+              "node_id": 2030210,
+              "mask": "loe_n_2030210",
+              "px": 301
+            },
+            {
+              "node_id": 2030211,
+              "mask": "loe_n_2030211",
+              "px": 711
+            }
+          ]
+        },
+        {
+          "group_idx": 35,
+          "nodes": [
+            {
+              "node_id": 2030303,
+              "mask": "loe_n_2030303",
+              "px": 247
+            },
+            {
+              "node_id": 2030304,
+              "mask": "loe_n_2030304",
+              "px": 767
+            },
+            {
+              "node_id": 2030305,
+              "mask": "loe_n_2030305",
+              "px": 644
+            },
+            {
+              "node_id": 2030306,
+              "mask": "loe_n_2030306",
+              "px": 340
+            },
+            {
+              "node_id": 2030307,
+              "mask": "loe_n_2030307",
+              "px": 976
+            }
+          ]
+        },
+        {
+          "group_idx": 36,
+          "nodes": [
+            {
+              "node_id": 2030308,
+              "mask": "loe_n_2030308",
+              "px": 94
+            },
+            {
+              "node_id": 2030309,
+              "mask": "loe_n_2030309",
+              "px": 209
+            },
+            {
+              "node_id": 2030310,
+              "mask": "loe_n_2030310",
+              "px": 663
+            }
+          ]
+        },
+        {
+          "group_idx": 37,
+          "nodes": [
+            {
+              "node_id": 2030401,
+              "mask": "loe_n_2030401",
+              "px": 114
+            },
+            {
+              "node_id": 2030402,
+              "mask": "loe_n_2030402",
+              "px": 623
+            }
+          ]
+        },
+        {
+          "group_idx": 38,
+          "nodes": [
+            {
+              "node_id": 2030501,
+              "mask": "loe_n_2030501",
+              "px": 301
+            },
+            {
+              "node_id": 2030502,
+              "mask": "loe_n_2030502",
+              "px": 690
+            },
+            {
+              "node_id": 2030503,
+              "mask": "loe_n_2030503",
+              "px": 211
+            },
+            {
+              "node_id": 2030504,
+              "mask": "loe_n_2030504",
+              "px": 223
+            },
+            {
+              "node_id": 2030505,
+              "mask": "loe_n_2030505",
+              "px": 168
+            },
+            {
+              "node_id": 2030506,
+              "mask": "loe_n_2030506",
+              "px": 217
+            }
+          ]
+        },
+        {
+          "group_idx": 42,
+          "nodes": [
+            {
+              "node_id": 2030701,
+              "mask": "loe_n_2030701",
+              "px": 102
+            },
+            {
+              "node_id": 2030702,
+              "mask": "loe_n_2030702",
+              "px": 267
+            }
+          ]
+        },
+        {
+          "group_idx": 43,
+          "nodes": [
+            {
+              "node_id": 2030801,
+              "mask": "loe_n_2030801",
+              "px": 39
+            },
+            {
+              "node_id": 2030802,
+              "mask": "loe_n_2030802",
+              "px": 43
+            }
+          ]
+        },
+        {
+          "group_idx": 44,
+          "nodes": [
+            {
+              "node_id": 2030901,
+              "mask": "loe_n_2030901",
+              "px": 196
+            },
+            {
+              "node_id": 2030902,
+              "mask": "loe_n_2030902",
+              "px": 43
+            }
+          ]
+        },
+        {
+          "group_idx": 45,
+          "nodes": [
+            {
+              "node_id": 2031001,
+              "mask": "loe_n_2031001",
+              "px": 239
+            },
+            {
+              "node_id": 2031002,
+              "mask": "loe_n_2031002",
+              "px": 45
+            }
+          ]
+        },
+        {
+          "group_idx": 46,
+          "nodes": [
+            {
+              "node_id": 2031101,
+              "mask": "loe_n_2031101",
+              "px": 21
+            },
+            {
+              "node_id": 2031102,
+              "mask": "loe_n_2031102",
+              "px": 24
+            },
+            {
+              "node_id": 2031103,
+              "mask": "loe_n_2031103",
+              "px": 20
+            }
+          ]
+        },
+        {
+          "group_idx": 47,
+          "nodes": [
+            {
+              "node_id": 2031201,
+              "mask": "loe_n_2031201",
+              "px": 20
+            },
+            {
+              "node_id": 2031202,
+              "mask": "loe_n_2031202",
+              "px": 45
+            },
+            {
+              "node_id": 2031203,
+              "mask": "loe_n_2031203",
+              "px": 290
+            }
+          ]
+        },
+        {
+          "group_idx": 48,
+          "nodes": [
+            {
+              "node_id": 2031301,
+              "mask": "loe_n_2031301",
+              "px": 87
+            },
+            {
+              "node_id": 2031302,
+              "mask": "loe_n_2031302",
+              "px": 42
+            }
+          ]
+        },
+        {
+          "group_idx": 50,
+          "nodes": [
+            {
+              "node_id": 2031401,
+              "mask": "loe_n_2031401",
+              "px": 54
+            },
+            {
+              "node_id": 2031402,
+              "mask": "loe_n_2031402",
+              "px": 46
+            },
+            {
+              "node_id": 2031403,
+              "mask": "loe_n_2031403",
+              "px": 62
+            }
+          ]
+        }
+      ],
+      "singles": [
+        {
+          "node_id": 2010602,
+          "mask": "loe_n_2010602",
+          "px": 31
+        },
+        {
+          "node_id": 2010702,
+          "mask": "loe_n_2010702",
+          "px": 32
+        },
+        {
+          "node_id": 2010802,
+          "mask": "loe_n_2010802",
+          "px": 28
+        },
+        {
+          "node_id": 2020901,
+          "mask": "loe_s_2020901",
+          "px": 19
+        },
+        {
+          "node_id": 2021001,
+          "mask": "loe_s_2021001",
+          "px": 37
+        },
+        {
+          "node_id": 2030108,
+          "mask": "loe_n_2030108",
+          "px": 580
+        },
+        {
+          "node_id": 2030301,
+          "mask": "loe_n_2030301",
+          "px": 110
+        },
+        {
+          "node_id": 2030302,
+          "mask": "loe_n_2030302",
+          "px": 100
+        },
+        {
+          "node_id": 2030601,
+          "mask": "loe_n_2030601",
+          "px": 87
+        },
+        {
+          "node_id": 2030602,
+          "mask": "loe_n_2030602",
+          "px": 128
+        },
+        {
+          "node_id": 2030603,
+          "mask": "loe_n_2030603",
+          "px": 30
+        },
+        {
+          "node_id": 2031303,
+          "mask": "loe_n_2031303",
+          "px": 126
+        }
+      ],
+      "shared_any": [
+        {
+          "node_ids": [
+            2010601,
+            2010701,
+            2010801
+          ],
+          "mask": "loe_sh_Graph_103_BG5_01",
+          "px": 43
+        }
+      ]
+    },
+    "1": {
+      "prefix_chains": [
+        {
+          "group_name": "Catching",
+          "nodes": [
+            {
+              "node_id": 1010103,
+              "mask": "wish_pb_Catching_1010103",
+              "px": 431
+            },
+            {
+              "node_id": 1010801,
+              "mask": "wish_pb_Catching_1010801",
+              "px": 365
+            },
+            {
+              "node_id": 1010802,
+              "mask": "wish_pb_Catching_1010802",
+              "px": 92
+            },
+            {
+              "node_id": 1010803,
+              "mask": "wish_pb_Catching_1010803",
+              "px": 440
+            },
+            {
+              "node_id": 1010804,
+              "mask": "wish_pb_Catching_1010804",
+              "px": 253
+            },
+            {
+              "node_id": 1010805,
+              "mask": "wish_pb_Catching_1010805",
+              "px": 184
+            }
+          ]
+        },
+        {
+          "group_name": "Cleaning",
+          "nodes": [
+            {
+              "node_id": 1010601,
+              "mask": "wish_pb_Cleaning_1010601",
+              "px": 296
+            },
+            {
+              "node_id": 1010602,
+              "mask": "wish_pb_Cleaning_1010602",
+              "px": 77
+            },
+            {
+              "node_id": 1010603,
+              "mask": "wish_pb_Cleaning_1010603",
+              "px": 62
+            },
+            {
+              "node_id": 1010604,
+              "mask": "wish_pb_Cleaning_1010604",
+              "px": 75
+            },
+            {
+              "node_id": 1010605,
+              "mask": "wish_pb_Cleaning_1010605",
+              "px": 41
+            }
+          ]
+        },
+        {
+          "group_name": "Collection",
+          "nodes": [
+            {
+              "node_id": 1010104,
+              "mask": "wish_pb_Collection_1010104",
+              "px": 604
+            },
+            {
+              "node_id": 1010901,
+              "mask": "wish_pb_Collection_1010901",
+              "px": 971
+            },
+            {
+              "node_id": 1010902,
+              "mask": "wish_pb_Collection_1010902",
+              "px": 459
+            },
+            {
+              "node_id": 1010903,
+              "mask": "wish_pb_Collection_1010903",
+              "px": 60
+            },
+            {
+              "node_id": 1010904,
+              "mask": "wish_pb_Collection_1010904",
+              "px": 75
+            },
+            {
+              "node_id": 1010905,
+              "mask": "wish_pb_Collection_1010905",
+              "px": 42
+            }
+          ]
+        },
+        {
+          "group_name": "Design_1",
+          "nodes": [
+            {
+              "node_id": 1020105,
+              "mask": "wish_pb_Design_1_1020105",
+              "px": 1024
+            },
+            {
+              "node_id": 1020601,
+              "mask": "wish_pb_Design_1_1020601",
+              "px": 608
+            },
+            {
+              "node_id": 1020602,
+              "mask": "wish_pb_Design_1_1020602",
+              "px": 107
+            },
+            {
+              "node_id": 1020603,
+              "mask": "wish_pb_Design_1_1020603",
+              "px": 75
+            },
+            {
+              "node_id": 1020604,
+              "mask": "wish_pb_Design_1_1020604",
+              "px": 52
+            }
+          ]
+        },
+        {
+          "group_name": "Design_2",
+          "nodes": [
+            {
+              "node_id": 1020501,
+              "mask": "wish_pb_Design_2_1020501",
+              "px": 652
+            },
+            {
+              "node_id": 1020502,
+              "mask": "wish_pb_Design_2_1020502",
+              "px": 66
+            },
+            {
+              "node_id": 1020503,
+              "mask": "wish_pb_Design_2_1020503",
+              "px": 154
+            },
+            {
+              "node_id": 1020504,
+              "mask": "wish_pb_Design_2_1020504",
+              "px": 29
+            }
+          ]
+        },
+        {
+          "group_name": "Design_3",
+          "nodes": [
+            {
+              "node_id": 1020103,
+              "mask": "wish_pb_Design_3_1020103",
+              "px": 145
+            },
+            {
+              "node_id": 1020401,
+              "mask": "wish_pb_Design_3_1020401",
+              "px": 245
+            },
+            {
+              "node_id": 1020402,
+              "mask": "wish_pb_Design_3_1020402",
+              "px": 186
+            },
+            {
+              "node_id": 1020403,
+              "mask": "wish_pb_Design_3_1020403",
+              "px": 181
+            },
+            {
+              "node_id": 1020404,
+              "mask": "wish_pb_Design_3_1020404",
+              "px": 142
+            }
+          ]
+        },
+        {
+          "group_name": "Design_4",
+          "nodes": [
+            {
+              "node_id": 1020102,
+              "mask": "wish_pb_Design_4_1020102",
+              "px": 394
+            },
+            {
+              "node_id": 1020301,
+              "mask": "wish_pb_Design_4_1020301",
+              "px": 495
+            },
+            {
+              "node_id": 1020302,
+              "mask": "wish_pb_Design_4_1020302",
+              "px": 428
+            },
+            {
+              "node_id": 1020303,
+              "mask": "wish_pb_Design_4_1020303",
+              "px": 73
+            },
+            {
+              "node_id": 1020304,
+              "mask": "wish_pb_Design_4_1020304",
+              "px": 38
+            }
+          ]
+        },
+        {
+          "group_name": "Design_5",
+          "nodes": [
+            {
+              "node_id": 1020101,
+              "mask": "wish_pb_Design_5_1020101",
+              "px": 210
+            },
+            {
+              "node_id": 1020201,
+              "mask": "wish_pb_Design_5_1020201",
+              "px": 67
+            },
+            {
+              "node_id": 1020202,
+              "mask": "wish_pb_Design_5_1020202",
+              "px": 39
+            },
+            {
+              "node_id": 1020203,
+              "mask": "wish_pb_Design_5_1020203",
+              "px": 37
+            },
+            {
+              "node_id": 1020204,
+              "mask": "wish_pb_Design_5_1020204",
+              "px": 44
+            },
+            {
+              "node_id": 1020205,
+              "mask": "wish_pb_Design_5_1020205",
+              "px": 35
+            }
+          ]
+        },
+        {
+          "group_name": "Fishing",
+          "nodes": [
+            {
+              "node_id": 1010102,
+              "mask": "wish_pb_Fishing_1010102",
+              "px": 459
+            },
+            {
+              "node_id": 1010701,
+              "mask": "wish_pb_Fishing_1010701",
+              "px": 1008
+            },
+            {
+              "node_id": 1010702,
+              "mask": "wish_pb_Fishing_1010702",
+              "px": 412
+            },
+            {
+              "node_id": 1010703,
+              "mask": "wish_pb_Fishing_1010703",
+              "px": 299
+            },
+            {
+              "node_id": 1010704,
+              "mask": "wish_pb_Fishing_1010704",
+              "px": 81
+            },
+            {
+              "node_id": 1010705,
+              "mask": "wish_pb_Fishing_1010705",
+              "px": 57
+            }
+          ]
+        },
+        {
+          "group_name": "Others_left",
+          "nodes": [
+            {
+              "node_id": 1011101,
+              "mask": "wish_pb_Others_left_1011101",
+              "px": 171
+            },
+            {
+              "node_id": 1011102,
+              "mask": "wish_pb_Others_left_1011102",
+              "px": 57
+            },
+            {
+              "node_id": 1011103,
+              "mask": "wish_pb_Others_left_1011103",
+              "px": 44
+            },
+            {
+              "node_id": 1011104,
+              "mask": "wish_pb_Others_left_1011104",
+              "px": 39
+            },
+            {
+              "node_id": 1011105,
+              "mask": "wish_pb_Others_left_1011105",
+              "px": 48
+            },
+            {
+              "node_id": 1011106,
+              "mask": "wish_pb_Others_left_1011106",
+              "px": 36
+            },
+            {
+              "node_id": 1011107,
+              "mask": "wish_pb_Others_left_1011107",
+              "px": 75
+            },
+            {
+              "node_id": 1011108,
+              "mask": "wish_pb_Others_left_1011108",
+              "px": 51
+            }
+          ]
+        },
+        {
+          "group_name": "Others_right",
+          "nodes": [
+            {
+              "node_id": 1011001,
+              "mask": "wish_pb_Others_right_1011001",
+              "px": 170
+            },
+            {
+              "node_id": 1011002,
+              "mask": "wish_pb_Others_right_1011002",
+              "px": 28
+            },
+            {
+              "node_id": 1011003,
+              "mask": "wish_pb_Others_right_1011003",
+              "px": 35
+            },
+            {
+              "node_id": 1011004,
+              "mask": "wish_pb_Others_right_1011004",
+              "px": 50
+            }
+          ]
+        },
+        {
+          "group_name": "BG_Ability_2",
+          "nodes": [
+            {
+              "node_id": 1020102,
+              "mask": "wish_cir_BG_Ability_2_1020102",
+              "px": 650
+            },
+            {
+              "node_id": 1020103,
+              "mask": "wish_cir_BG_Ability_2_1020103",
+              "px": 126
+            },
+            {
+              "node_id": 1020104,
+              "mask": "wish_cir_BG_Ability_2_1020104",
+              "px": 151
+            },
+            {
+              "node_id": 1020105,
+              "mask": "wish_cir_BG_Ability_2_1020105",
+              "px": 1522
+            }
+          ]
+        },
+        {
+          "group_name": "Combat",
+          "nodes": [
+            {
+              "node_id": 1010102,
+              "mask": "wish_cir_Combat_1010102",
+              "px": 562
+            },
+            {
+              "node_id": 1010103,
+              "mask": "wish_cir_Combat_1010103",
+              "px": 263
+            },
+            {
+              "node_id": 1010104,
+              "mask": "wish_cir_Combat_1010104",
+              "px": 288
+            },
+            {
+              "node_id": 1010105,
+              "mask": "wish_cir_Combat_1010105",
+              "px": 364
+            },
+            {
+              "node_id": 1010106,
+              "mask": "wish_cir_Combat_1010106",
+              "px": 961
+            }
+          ]
+        },
+        {
+          "group_name": "BG_Mainline_seperate",
+          "nodes": [
+            {
+              "node_id": 1020701,
+              "mask": "wish_bird_1020701",
+              "px": 1542
+            },
+            {
+              "node_id": 1020702,
+              "mask": "wish_bird_1020702",
+              "px": 1058
+            },
+            {
+              "node_id": 1020703,
+              "mask": "wish_bird_1020703",
+              "px": 1416
+            },
+            {
+              "node_id": 1020704,
+              "mask": "wish_bird_1020704",
+              "px": 762
+            },
+            {
+              "node_id": 1020705,
+              "mask": "wish_bird_1020705",
+              "px": 781
+            },
+            {
+              "node_id": 1020706,
+              "mask": "wish_bird_1020706",
+              "px": 1912
+            },
+            {
+              "node_id": 1020707,
+              "mask": "wish_bird_1020707",
+              "px": 1020
+            },
+            {
+              "node_id": 1020708,
+              "mask": "wish_bird_1020708",
+              "px": 2228
+            },
+            {
+              "node_id": 1020709,
+              "mask": "wish_bird_1020709",
+              "px": 2879
+            }
+          ]
+        }
+      ],
+      "singles": [
+        {
+          "node_id": 1010101,
+          "mask": "wish_pic_1010101",
+          "px": 105
+        },
+        {
+          "node_id": 1010201,
+          "mask": "wish_pic_1010201",
+          "px": 262
+        },
+        {
+          "node_id": 1011301,
+          "mask": "wish_pic_1011301",
+          "px": 287
+        },
+        {
+          "node_id": 1011302,
+          "mask": "wish_pic_1011302",
+          "px": 174
+        },
+        {
+          "node_id": 1011303,
+          "mask": "wish_pic_1011303",
+          "px": 382
+        },
+        {
+          "node_id": 1011304,
+          "mask": "wish_pic_1011304",
+          "px": 309
+        },
+        {
+          "node_id": 1011305,
+          "mask": "wish_pic_1011305",
+          "px": 769
+        },
+        {
+          "node_id": 1011306,
+          "mask": "wish_pic_1011306",
+          "px": 779
+        },
+        {
+          "node_id": 1011307,
+          "mask": "wish_pic_1011307",
+          "px": 2078
+        },
+        {
+          "node_id": 1011308,
+          "mask": "wish_pic_1011308",
+          "px": 2132
+        },
+        {
+          "node_id": 1011309,
+          "mask": "wish_pic_1011309",
+          "px": 998
+        },
+        {
+          "node_id": 1011201,
+          "mask": "wish_pic_1011201",
+          "px": 49
+        },
+        {
+          "node_id": 1011202,
+          "mask": "wish_pic_1011202",
+          "px": 16
+        },
+        {
+          "node_id": 1011203,
+          "mask": "wish_pic_1011203",
+          "px": 38
+        },
+        {
+          "node_id": 1011204,
+          "mask": "wish_pic_1011204",
+          "px": 60
+        },
+        {
+          "node_id": 1030201,
+          "mask": "wish_pic_1030201",
+          "px": 63
+        },
+        {
+          "node_id": 1030203,
+          "mask": "wish_pic_1030203",
+          "px": 65
+        },
+        {
+          "node_id": 1030202,
+          "mask": "wish_pic_1030202",
+          "px": 117
+        },
+        {
+          "node_id": 1030101,
+          "mask": "wish_pic_1030101",
+          "px": 95
+        },
+        {
+          "node_id": 1030102,
+          "mask": "wish_pic_1030102",
+          "px": 111
+        },
+        {
+          "node_id": 1030103,
+          "mask": "wish_pic_1030103",
+          "px": 85
+        },
+        {
+          "node_id": 1030104,
+          "mask": "wish_pic_1030104",
+          "px": 32
+        },
+        {
+          "node_id": 1030105,
+          "mask": "wish_pic_1030105",
+          "px": 35
+        },
+        {
+          "node_id": 1020709,
+          "mask": "wish_pic_1020709",
+          "px": 56
+        }
+      ],
+      "group_all": [
+        {
+          "node_ids": [
+            1040101,
+            1040102,
+            1040104
+          ],
+          "mask": "wish_grp_0_BG_Line_Done_1",
+          "px": 506,
+          "widget": "BG_Line_Done_1"
+        },
+        {
+          "node_ids": [
+            1050111,
+            1050112,
+            1050113
+          ],
+          "mask": "wish_grp_1_BG_Line_Done_4",
+          "px": 335,
+          "widget": "BG_Line_Done_4"
+        },
+        {
+          "node_ids": [
+            1060111,
+            1060112,
+            1060113
+          ],
+          "mask": "wish_grp_2_BG_Line_Done_2",
+          "px": 320,
+          "widget": "BG_Line_Done_2"
+        },
+        {
+          "node_ids": [
+            1010301,
+            1010302,
+            1010303
+          ],
+          "mask": "wish_grp_3_ProgressBar_Newbie_1",
+          "px": 65,
+          "widget": "ProgressBar_Newbie_1"
+        },
+        {
+          "node_ids": [
+            1010401,
+            1010402,
+            1010403,
+            1010404,
+            1010405,
+            1010406
+          ],
+          "mask": "wish_grp_4_ProgressBar_Newbie_3",
+          "px": 272,
+          "widget": "ProgressBar_Newbie_3"
+        },
+        {
+          "node_ids": [
+            1010501,
+            1010502
+          ],
+          "mask": "wish_grp_5_ProgressBar_Newbie_2",
+          "px": 28,
+          "widget": "ProgressBar_Newbie_2"
+        },
+        {
+          "node_ids": [
+            1010502,
+            1010503,
+            1010504,
+            1010505,
+            1010506
+          ],
+          "mask": "wish_grp_6_ProgressBar_Newbie_5",
+          "px": 118,
+          "widget": "ProgressBar_Newbie_5"
+        }
+      ]
+    },
+    "3": {
+      "prefix_chains": [],
+      "singles": [
+        {
+          "node_id": 3010101,
+          "mask": "ss_pic_3010101",
+          "px": 2159
+        },
+        {
+          "node_id": 3010102,
+          "mask": "ss_pic_3010102",
+          "px": 4700
+        },
+        {
+          "node_id": 3010103,
+          "mask": "ss_pic_3010103",
+          "px": 4999
+        },
+        {
+          "node_id": 3010104,
+          "mask": "ss_pic_3010104",
+          "px": 381
+        },
+        {
+          "node_id": 3010105,
+          "mask": "ss_pic_3010105",
+          "px": 620
+        },
+        {
+          "node_id": 3010106,
+          "mask": "ss_pic_3010106",
+          "px": 660
+        },
+        {
+          "node_id": 3010107,
+          "mask": "ss_pic_3010107",
+          "px": 1105
+        },
+        {
+          "node_id": 3010108,
+          "mask": "ss_pic_3010108",
+          "px": 390
+        },
+        {
+          "node_id": 3010301,
+          "mask": "ss_pic_3010301",
+          "px": 231
+        },
+        {
+          "node_id": 3010302,
+          "mask": "ss_pic_3010302",
+          "px": 231
+        },
+        {
+          "node_id": 3010303,
+          "mask": "ss_pic_3010303",
+          "px": 216
+        },
+        {
+          "node_id": 3020101,
+          "mask": "ss_pic_3020101",
+          "px": 1328
+        },
+        {
+          "node_id": 3020102,
+          "mask": "ss_pic_3020102",
+          "px": 1752
+        },
+        {
+          "node_id": 3020103,
+          "mask": "ss_pic_3020103",
+          "px": 1981
+        },
+        {
+          "node_id": 3020104,
+          "mask": "ss_pic_3020104",
+          "px": 587
+        },
+        {
+          "node_id": 3020201,
+          "mask": "ss_pic_3020201",
+          "px": 636
+        },
+        {
+          "node_id": 3020202,
+          "mask": "ss_pic_3020202",
+          "px": 13767
+        },
+        {
+          "node_id": 3020203,
+          "mask": "ss_pic_3020203",
+          "px": 488
+        },
+        {
+          "node_id": 3030101,
+          "mask": "ss_pic_3030101",
+          "px": 3419
+        },
+        {
+          "node_id": 3030102,
+          "mask": "ss_pic_3030102",
+          "px": 5669
+        },
+        {
+          "node_id": 3030103,
+          "mask": "ss_pic_3030103",
+          "px": 2116
+        },
+        {
+          "node_id": 3030104,
+          "mask": "ss_pic_3030104",
+          "px": 13702
+        },
+        {
+          "node_id": 3030201,
+          "mask": "ss_pic_3030201",
+          "px": 699
+        },
+        {
+          "node_id": 3030202,
+          "mask": "ss_pic_3030202",
+          "px": 559
+        },
+        {
+          "node_id": 3030203,
+          "mask": "ss_pic_3030203",
+          "px": 290
+        },
+        {
+          "node_id": 3040101,
+          "mask": "ss_pic_3040101",
+          "px": 5474
+        },
+        {
+          "node_id": 3040102,
+          "mask": "ss_pic_3040102",
+          "px": 1869
+        },
+        {
+          "node_id": 3040103,
+          "mask": "ss_pic_3040103",
+          "px": 1943
+        },
+        {
+          "node_id": 3040104,
+          "mask": "ss_pic_3040104",
+          "px": 555
+        },
+        {
+          "node_id": 3040201,
+          "mask": "ss_pic_3040201",
+          "px": 620
+        },
+        {
+          "node_id": 3040202,
+          "mask": "ss_pic_3040202",
+          "px": 153
+        },
+        {
+          "node_id": 3040203,
+          "mask": "ss_pic_3040203",
+          "px": 205
+        }
+      ],
+      "group_all": [
+        {
+          "node_ids": [
+            3010201,
+            3010202,
+            3010203,
+            3010204,
+            3010205,
+            3010206,
+            3010207,
+            3010208,
+            3010209,
+            3010210
+          ],
+          "mask": "ss_pic_3010210",
+          "px": 3370,
+          "widget": "4Star_Progress_1"
+        }
+      ]
+    }
+  }
+}

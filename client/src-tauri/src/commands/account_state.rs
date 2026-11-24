@@ -354,6 +354,10 @@ fn read_account_state_cached(
             }
         }
     }
+    let infinite_heart = source
+        .and_then(|v| v.get("infinite_heart"))
+        .cloned()
+        .unwrap_or(Value::Null);
     let updated_at = source
         .and_then(|v| v.get("updated_at"))
         .cloned()
@@ -363,6 +367,7 @@ fn read_account_state_cached(
         "updated_at": updated_at,
         "plan_revision": plan_rev,
         "tasks": tasks, "observations": observations, "blessing": summary, "wardrobe": wardrobe,
+        "infinite_heart": infinite_heart,
         "catalog": read_json(&catalog_path)?,
         "rotation": read_json(&rotation_path)?,
     });

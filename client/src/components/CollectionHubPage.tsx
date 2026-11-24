@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Clock, Gem, Hammer, LibraryBig, Package, RefreshCw, Play, Sparkles, Square, Shirt } from 'lucide-react';
+import { Check, ChevronDown, Clock, Compass, Gem, Hammer, LibraryBig, Package, RefreshCw, Play, Sparkles, Square, Shirt } from 'lucide-react';
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { useAccountStateStore } from '@/stores/accountStateStore';
@@ -18,6 +18,7 @@ import { FeaturePage, primaryButton, secondaryButton, StatusBar, Tabs } from './
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { useCollectionOverview, type Progress } from './useCollectionOverview';
 import { BackpackViewerPanel } from './BackpackViewerPanel';
+import { InfiniteHeartPanel } from './InfiniteHeartPanel';
 import { WardrobeBrowser } from './WardrobeBrowser';
 import { BlessingProgressPanel } from './BlessingProgressPage';
 import { useCollectionHubStore, type CollectionTab } from '@/stores/collectionHubStore';
@@ -33,6 +34,7 @@ const TABS = [
   ['renewal', Gem, '焕新', '组'],
   ['blessing', Sparkles, '祝福闪光', '色'],
   ['backpack', Package, '背包库存', '种'],
+  ['heart', Compass, '无限之心', '点'],
 ] as const;
 const figure = (progress: Progress | null, unit: string) => progress
   ? `${progress.done.toLocaleString('zh-CN')} / ${progress.total.toLocaleString('zh-CN')} ${unit}` : '尚无记录';
@@ -172,5 +174,6 @@ export function CollectionHubPage({ onClose }: { onClose: () => void }) {
     {opened.has('renewal') && <div className={clsx(tab !== 'renewal' && 'hidden')}><WardrobeRenewalPlanner refreshToken={refreshToken} onOpenCloset={openCloset} /></div>}
     {opened.has('blessing') && <div className={clsx(tab !== 'blessing' && 'hidden')}><BlessingProgressPanel refreshToken={refreshToken} /></div>}
     {opened.has('backpack') && <div className={clsx(tab !== 'backpack' && 'hidden')}><BackpackViewerPanel refreshToken={refreshToken} /></div>}
+    {opened.has('heart') && <div className={clsx(tab !== 'heart' && 'hidden')}><InfiniteHeartPanel refreshToken={refreshToken} /></div>}
   </FeaturePage>;
 }

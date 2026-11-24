@@ -111,7 +111,7 @@ export function Tabs<T extends string>({ label, value, tabs, onChange }: {
     onChange(next.id);
     requestAnimationFrame(() => document.getElementById(`page-tab-${next.id}`)?.focus());
   };
-  return <div role="tablist" aria-label={label} className={clsx('grid grid-cols-2 gap-1.5 rounded-2xl border border-border bg-bg-secondary p-1.5 shadow-xs', tabs.length >= 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4')}
+  return <div role="tablist" aria-label={label} className={clsx('grid grid-cols-2 gap-1.5 rounded-2xl border border-border bg-bg-secondary p-1.5 shadow-xs', tabs.length >= 6 ? 'sm:grid-cols-3 lg:grid-cols-6' : tabs.length >= 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4')}
     onKeyDown={(event) => {
       if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
       if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }

@@ -5,6 +5,7 @@ from maa.custom_action import CustomAction
 
 from account_state import AccountState
 from collection.backpack import rescan_backpack
+from collection.infinite_heart import InfiniteHeartScanner
 from collection.material_pursuit import load_catalogs, record_material_history
 from daily.runtime import Runtime, parameters
 from daily.settings import ROOT
@@ -121,4 +122,32 @@ class BackpackReadAction(CustomAction):
             if not rt.stopped:
                 rt.diagnostic("backpack_read", str(error))
             rt.log(f"背包读取中断：{error}。")
+            return False
+
+
+@agent_action("nikki.infinite_heart_read")
+class InfiniteHeartReadAction(CustomAction):
+    def run(self, context, argv):
+        rt = Runtime(context)
+        folder = ROOT / "logs/infinite_heart" / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        folder.mkdir(parents=True, exist_ok=True)
+        try:
+            rt.log("无限之心读取开始。")
+            scanner = InfiniteHeartScanner(rt, folder)
+            complete = scanner.run()
+            summary = scanner.summary
+            rt.log(
+                f"无限之心读取{'完成' if complete else '结束'}：已识别 {summary.get('shards', 0)} 个碎片，"
+                f"已解锁 {summary.get('unlocked', 0)} / {summary.get('total', 0)} 节点"
+                + (f"（{summary['ambiguous']} 项待确认）" if summary.get("ambiguous") else "")
+                + "。"
+            )
+            _, finished = rt.finish(argv.node_name)
+            return complete and finished
+        except TaskStopped:
+            raise
+        except Exception as error:
+            if not rt.stopped:
+                rt.diagnostic("infinite_heart_read", str(error))
+            rt.log(f"无限之心读取中断：{error}。")
             return False

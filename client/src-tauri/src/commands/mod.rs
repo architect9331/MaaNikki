@@ -25,6 +25,7 @@ mod diagnostic_images;
 mod diagnostic_upload;
 pub mod download;
 pub mod file_ops;
+pub mod infinite_heart;
 mod library_diagnostics;
 pub mod maa_agent;
 pub mod maa_core;
