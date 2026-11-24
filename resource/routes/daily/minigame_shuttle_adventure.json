@@ -87,24 +87,24 @@
     },
     {
       "x": 10148.2,
-      "y": 10056.0,
-      "radius": 1.4,
+      "y": 10055.4,
+      "radius": 1.5,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
       "x": 10150.4,
-      "y": 10055.4,
+      "y": 10054.6,
       "radius": 1.2,
       "jump": false,
       "action": "",
       "params": {}
     },
     {
-      "x": 10151.8,
-      "y": 10055.4,
-      "radius": 0.8,
+      "x": 10152.4,
+      "y": 10054.8,
+      "radius": 0.9,
       "jump": false,
       "action": "",
       "params": {}

@@ -26,7 +26,7 @@ from navigation.models import GameWindowClosed, NavigationError, maps
 from navigation.vision import Locator
 
 NPC_X = 10152.40
-NPC_Y = 10054.90
+NPC_Y = 10054.80
 # Qimiya stands inside the gazebo just north of the SW corridor interaction spot.
 NPC_BOOTH_X = 10152.50
 NPC_BOOTH_Y = 10053.50
@@ -35,13 +35,13 @@ POST_ROUTE_NPC_RADIUS_PX = 1.6
 # Historical telemetry (12/12 successes at x <= 10153.425; 3/3 east-side failures at x >= 10153.775)
 # shows the east side of Qimiya's booth blocks interaction even inside a loose arrival radius.
 NPC_INTERACT_MAX_X = 10153.55
-# Exiting Shuttle Adventure returns Nikki to the SW dirt corridor (~2.5 px from NPC_X/NPC_Y,
-# facing Qimiya's booth), just outside the F-interact trigger radius.
-NPC_REENTER_APPROACH_MIN_RADIUS_PX = 1.2
+# Short omnidirectional WASD nudges close the final 1-3 px when navigation stops slightly short
+# or exiting Shuttle Adventure returns Nikki to the SW dirt corridor just outside F range.
+NPC_REENTER_APPROACH_FRONT_SWITCH_PX = 0.7
+NPC_REENTER_APPROACH_MIN_BOOTH_PX = 0.9
 NPC_REENTER_APPROACH_MAX_RADIUS_PX = 6.0
-NPC_REENTER_APPROACH_MAX_STEPS = 4
-NPC_REENTER_APPROACH_STEP_SECONDS = 0.35
-NPC_REENTER_HEADING_MAX_DIFF_DEG = 45.0
+NPC_REENTER_APPROACH_MAX_STEPS = 5
+NPC_REENTER_APPROACH_STEP_SECONDS = 0.30
 DEFAULT_ROUTE = "minigame_shuttle_adventure"
 DIALOGUE_MODE_ROI = [65, 12, 140, 60]
 DIALOGUE_SKIP_ROI = [1045, 635, 235, 85]
@@ -118,7 +118,10 @@ _DIALOGUE_EXIT_RE = re.compile(r"不用了|再见|离开|下次再说|取消|稍
 _DIALOGUE_OPTION_RE = re.compile(r"开始|挑战|规则|介绍|说明|准备|继续|重新")
 _DIALOGUE_MODE_RE = re.compile(r"手动|自动")
 _DIALOGUE_SKIP_RE = re.compile(r"跳过")
-_NPC_INTERACT_TEXT_RE = re.compile(r"奇米亚|穿梭大冒险|对话|交谈")
+# Do NOT include the NPC's floating overhead 3D nameplate ('奇米亚') here: AreaPickup spans
+# almost the entire screen and matching '奇米亚' false-positives when Nikki is meters away
+# with no F-interact prompt. When the real F-interact pill is visible, IconTalkFeature hits.
+_NPC_INTERACT_TEXT_RE = re.compile(r"穿梭大冒险|对话|交谈")
 _COURSE_TIMER_TRANSLATION = str.maketrans({
     "O": "0", "o": "0", "D": "0", "Q": "0",
     "I": "1", "l": "1", "|": "1",
@@ -1270,20 +1273,53 @@ class MinigameBlingRun(Runtime):
         return self.main()
 
     @staticmethod
-    def _npc_approach_metrics(pose) -> tuple[float, float] | None:
-        """Return (min_dist_to_front_or_booth, min_heading_diff_deg) for a located pose."""
+    def _npc_approach_step(pose) -> tuple[float, tuple[str, ...]] | None:
+        """Return (dist_to_target, wasd_key_names) to nudge closer to Qimiya's open front zone."""
         if pose is None or pose.heading is None or getattr(pose, "heading_confidence", 0.0) < 0.5:
             return None
-        targets = ((NPC_X, NPC_Y), (NPC_BOOTH_X, NPC_BOOTH_Y))
-        dists = [math.hypot(tx - pose.x, ty - pose.y) for tx, ty in targets]
-        diffs = [
-            abs(heading_difference(math.degrees(math.atan2(tx - pose.x, -(ty - pose.y))) % 360.0, pose.heading))
-            for tx, ty in targets
-        ]
-        return min(dists), min(diffs)
+        dist_front = math.hypot(NPC_X - pose.x, NPC_Y - pose.y)
+        dist_booth = math.hypot(NPC_BOOTH_X - pose.x, NPC_BOOTH_Y - pose.y)
+        if dist_booth <= NPC_REENTER_APPROACH_MIN_BOOTH_PX:
+            return None
+        if dist_front > NPC_REENTER_APPROACH_FRONT_SWITCH_PX:
+            tx, ty, dist = NPC_X, NPC_Y, dist_front
+        else:
+            tx, ty, dist = NPC_BOOTH_X, NPC_BOOTH_Y, dist_booth
+        bearing = math.degrees(math.atan2(tx - pose.x, -(ty - pose.y))) % 360.0
+        rel = heading_difference(bearing, pose.heading)
+        if -22.5 <= rel < 22.5:
+            keys: tuple[str, ...] = ("forward",)
+        elif 22.5 <= rel < 67.5:
+            keys = ("forward", "right")
+        elif 67.5 <= rel < 112.5:
+            keys = ("right",)
+        elif 112.5 <= rel < 157.5:
+            keys = ("backward", "right")
+        elif -67.5 <= rel < -22.5:
+            keys = ("forward", "left")
+        elif -112.5 <= rel < -67.5:
+            keys = ("left",)
+        elif -157.5 <= rel < -112.5:
+            keys = ("backward", "left")
+        else:
+            keys = ("backward",)
+        return dist, keys
+
+    def _hold_movement_keys(self, inputs: ForegroundInput, key_names: tuple[str, ...], seconds: float) -> None:
+        bindings = [self.game_keys.get(name) for name in key_names]
+        try:
+            for binding in bindings:
+                inputs._down(binding)
+            inputs.wait(seconds, restore=False)
+        finally:
+            if not self.stopped:
+                for binding in reversed(bindings):
+                    inputs._up(binding)
+            else:
+                inputs.release()
 
     def _approach_npc_for_interact(self, inputs: ForegroundInput) -> bool:
-        """Nudge forward along the flat front corridor when exit respawn sits just outside F range."""
+        """Nudge toward Qimiya's open front apron when standing just outside F-interact range."""
         if self.stopped:
             return False
         frame = self.capture()
@@ -1297,18 +1333,17 @@ class MinigameBlingRun(Runtime):
             frame=frame,
             enforce_front_zone=True,
         )
-        metrics = self._npc_approach_metrics(pose)
-        if pose is None or metrics is None:
+        step = self._npc_approach_step(pose)
+        if pose is None or step is None:
             return False
-        dist, heading_diff = metrics
-        if dist <= NPC_REENTER_APPROACH_MIN_RADIUS_PX or heading_diff > NPC_REENTER_HEADING_MAX_DIFF_DEG:
-            return False
-        self.log("当前位于「奇米亚」正面但尚未进入交互范围，向前微调靠近…", detail=True)
-        prev_x, prev_y, prev_dist = pose.x, pose.y, dist
+        self.log("当前位于「奇米亚」正面但尚未进入交互范围，微调靠近交互点…", detail=True)
+        prev_x, prev_y = pose.x, pose.y
+        prev_booth_dist = math.hypot(NPC_BOOTH_X - pose.x, NPC_BOOTH_Y - pose.y)
         for _ in range(NPC_REENTER_APPROACH_MAX_STEPS):
             if self.stopped:
                 return False
-            inputs.hold("forward", NPC_REENTER_APPROACH_STEP_SECONDS, restore=False)
+            _, key_names = step
+            self._hold_movement_keys(inputs, key_names, NPC_REENTER_APPROACH_STEP_SECONDS)
             if self.stopped:
                 return False
             inputs.wait(0.25, restore=False)
@@ -1325,20 +1360,19 @@ class MinigameBlingRun(Runtime):
                 frame=frame,
                 enforce_front_zone=True,
             )
-            metrics = self._npc_approach_metrics(pose)
-            if pose is None or metrics is None or pose.x > NPC_INTERACT_MAX_X:
+            if pose is None or pose.x > NPC_INTERACT_MAX_X:
                 break
-            new_dist, heading_diff = metrics
+            new_booth_dist = math.hypot(NPC_BOOTH_X - pose.x, NPC_BOOTH_Y - pose.y)
             moved = math.hypot(pose.x - prev_x, pose.y - prev_y)
+            step = self._npc_approach_step(pose)
             if (
-                new_dist <= NPC_REENTER_APPROACH_MIN_RADIUS_PX
-                or new_dist > prev_dist + 0.35
-                or moved < 0.15
-                or heading_diff > NPC_REENTER_HEADING_MAX_DIFF_DEG
+                step is None
+                or new_booth_dist > prev_booth_dist + 0.45
+                or moved < 0.12
             ):
                 break
             prev_x, prev_y = pose.x, pose.y
-            prev_dist = min(prev_dist, new_dist)
+            prev_booth_dist = min(prev_booth_dist, new_booth_dist)
         return self._can_interact_with_npc()
 
     def _open_npc_dialogue(self, inputs: ForegroundInput, *, max_attempts: int = 2) -> str:
@@ -1474,7 +1508,8 @@ class MinigameBlingRun(Runtime):
         else:
             self.log(
                 f"第 {target_round}/{max_rounds} 局{reason_label}，正在消耗 100 噗灵重试"
-                f"（连续失败 {consecutive_failures}/{MAX_CONSECUTIVE_FAILURES}，当前已结算净收益约 {cur_net:,} 噗灵）…"
+                f"（连续失败 {consecutive_failures}/{MAX_CONSECUTIVE_FAILURES}，当前已结算净收益约 {cur_net:,} 噗灵）…",
+                live=True,
             )
         status, click_at = self._retry_from_failure(info)
         if status == "retrying":
@@ -1650,6 +1685,10 @@ class MinigameBlingRun(Runtime):
                 return True
             if self.stopped:
                 return False
+            if self._approach_npc_for_interact(inputs):
+                return True
+            if self.stopped:
+                return False
             if self._already_near_npc(
                 max_radius_px=POST_ROUTE_NPC_RADIUS_PX,
                 enforce_front_zone=True,
@@ -1663,8 +1702,11 @@ class MinigameBlingRun(Runtime):
             and self.main()
             and (
                 (
-                    self._already_near_npc(max_radius_px=3.5, enforce_front_zone=True)
-                    and self._can_interact_with_npc()
+                    self._already_near_npc(max_radius_px=4.5, enforce_front_zone=True)
+                    and (
+                        self._can_interact_with_npc()
+                        or self._approach_npc_for_interact(inputs)
+                    )
                 )
                 or self._already_near_npc(max_radius_px=1.2, enforce_front_zone=True)
             )
@@ -1720,7 +1762,8 @@ class MinigameBlingRun(Runtime):
                     settled_net = _calc_net_bling(stats, include_pending=False)
                     self.log(
                         f"正在进行「穿梭大冒险」第 {target_round}/{max_rounds} 局"
-                        f"（已累计净收益约 {settled_net:,} 噗灵）…"
+                        f"（已累计净收益约 {settled_net:,} 噗灵）…",
+                        live=True,
                     )
 
                 current_retry_start = retry_started_at
@@ -2022,17 +2065,17 @@ class MinigameBlingRun(Runtime):
             interact_binding = self.game_keys.get("interact")
             mouse_interact = interact_binding.kind == "mouse"
             if bg_inputs.capture_requires_foreground:
-                self.log("已开启后台挑战，但当前截图方式需要前台画面；切出游戏或最小化后将暂停，不会强行切回前台。")
+                self.log("已开启后台挑战，但当前截图方式需要前台画面；切出游戏或最小化后将暂停，不会强行切回前台。", detail=True)
             elif mouse_interact and global_background:
-                self.log("已开启完整后台模式；当前交互键为鼠标按键，进入挑战交互期间将自动切回并保持游戏前台，结束后恢复后台模式。")
+                self.log("已开启完整后台模式；当前交互键为鼠标按键，进入挑战交互期间将自动切回并保持游戏前台，结束后恢复后台模式。", detail=True)
             elif mouse_interact:
-                self.log("挑战阶段支持后台运行；当前交互键为鼠标按键，需要交互的步骤会等待游戏回到前台（最小化后自动暂停）。")
+                self.log("挑战阶段支持后台运行；当前交互键为鼠标按键，需要交互的步骤会等待游戏回到前台（最小化后自动暂停）。", detail=True)
             elif navigate and global_background:
-                self.log("已开启完整后台模式：前往「穿梭大冒险」NPC 与后续挑战结算均支持在后台运行（最小化窗口后自动暂停）。")
+                self.log("已开启完整后台模式：前往「穿梭大冒险」NPC 与后续挑战结算均支持在后台运行（最小化窗口后自动暂停）。", detail=True)
             elif navigate:
-                self.log("已开启后台刷噗灵：若需跑图前往 NPC 将在前台完成，进入挑战与结算后支持切出游戏运行（最小化窗口后自动暂停）。")
+                self.log("已开启后台刷噗灵：若需跑图前往 NPC 将在前台完成，进入挑战与结算后支持切出游戏运行（最小化窗口后自动暂停）。", detail=True)
             else:
-                self.log("已开启后台刷噗灵：对话、挑战与结算支持切出游戏运行（最小化窗口后自动暂停，不会强行切回前台）。")
+                self.log("已开启后台刷噗灵：对话、挑战与结算支持切出游戏运行（最小化窗口后自动暂停，不会强行切回前台）。", detail=True)
 
             need_route = False
             with self._phase_inputs(bg_inputs, background=True):
@@ -2061,7 +2104,7 @@ class MinigameBlingRun(Runtime):
                     stats["stop_reason"] = "stopped" if self.stopped else "navigation_failed"
                     return False
                 if nav_ok and not bg_inputs.capture_requires_foreground:
-                    self.log("已到达「穿梭大冒险」NPC 附近，后续挑战与结算可在后台运行，现在可随时切出游戏。")
+                    self.log("已到达「穿梭大冒险」NPC 附近，后续挑战与结算可在后台运行，现在可随时切出游戏。", live=True)
                 with (self.foreground_task("小游戏交互键为鼠标按键") if global_background and mouse_interact else nullcontext()):
                     return self._run_challenge_loop(
                         bg_inputs,
