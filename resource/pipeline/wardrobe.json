@@ -162,18 +162,6 @@
     "post_delay": 0,
     "next": []
   },
-  "MaaNikki_InfiniteHeart_Entrance": {
-    "recognition": "OCR",
-    "roi": [70, 130, 660, 460],
-    "expected": "^无限之心$",
-    "action": "Custom",
-    "custom_action": "nikki.ui_click",
-    "custom_action_param": {
-      "ready": "MaaNikki_InfiniteHeartReady",
-      "source": "MaaNikki_MenuReady"
-    },
-    "post_delay": 400
-  },
   "MaaNikki_InfiniteHeartReady": {
     "recognition": "OCR",
     "roi": [60, 14, 170, 44],

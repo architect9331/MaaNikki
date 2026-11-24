@@ -872,38 +872,24 @@ class InfiniteHeartScanner:
         return fuse_shard_observations(vid, global_decoded, zoomed_obs, styling_levels)
 
     def _enter_infinite_heart(self) -> bool:
-        from wardrobe.scanner import PEAR_PAL_NEXT_PAGE, PEAR_PAL_PREV_PAGE
-
         frame = self.rt.capture()
         if frame is not None and self._is_on_heart_page(frame):
             return True
-        if self.rt.ui.find_menu_entry(node="MaaNikki_InfiniteHeart_Entrance", scroll=True):
-            self.rt.pause(1.5)
+        if self.rt.ui.main() and self.rt.ui.enter_page(
+            lambda: self.rt.key("infinite_heart", 0),
+            "MaaNikki_InfiniteHeartReady",
+            source="MaaNikki_MainDetected",
+            recover=self.rt.ui.main,
+        ):
+            # Let the opener zoom/HUD fade animation settle before reading tabs and currencies.
+            self.rt.pause(1.0)
             frame = self.rt.capture()
             return frame is not None and self._is_on_heart_page(frame)
-        if not self.rt.ui.menu():
-            return False
-        frame = self.rt.capture()
-        for arrow in (PEAR_PAL_PREV_PAGE, PEAR_PAL_PREV_PAGE, PEAR_PAL_NEXT_PAGE, PEAR_PAL_NEXT_PAGE):
-            if frame is not None and self.rt.hit("MaaNikki_InfiniteHeart_Entrance", image=frame):
-                break
-            if not self.rt.action("Click", target=arrow) or not self.rt.pause(0.45):
-                return False
-            frame = self.rt.capture()
-            if frame is not None and not self.rt.hit("MaaNikki_MenuReady", image=frame):
-                return self._is_on_heart_page(frame)
-        if frame is None or not self.rt.hit("MaaNikki_InfiniteHeart_Entrance", image=frame):
-            return False
-        entered = self.rt.ui.enter_page(
-            lambda: self.rt.click_template("MaaNikki_InfiniteHeart_Entrance", verify=False),
-            "MaaNikki_InfiniteHeartReady",
-            source="MaaNikki_MenuReady",
+        key_label = self.rt.game_keys.label("infinite_heart")
+        self.rt.log(
+            f"未能通过快捷键「{key_label}」进入无限之心，请确认游戏停留在可移动的主界面，且「游戏键位 → 系统功能」中的无限之心按键与游戏内一致。"
         )
-        if not entered:
-            return False
-        self.rt.pause(1.5)
-        frame = self.rt.capture()
-        return frame is not None and self._is_on_heart_page(frame)
+        return False
 
     def run(self) -> bool:
         if self.rt.stopped:

@@ -49,7 +49,7 @@ GAME_ROWS = {
     "能力衍生功能1": "ability_derive_1", "能力衍生功能2": "ability_derive_2",
     "家园能力衍生功能1": "sub_ability",
     "地图": "map", "背包": "backpack", "拍照": "photo", "换装": "dress",
-    "奇想日历": "calendar", "奇迹之旅/乐园构想": "monthly", "使用消耗品": "item",
+    "无限之心": "infinite_heart", "奇想日历": "calendar", "奇迹之旅/乐园构想": "monthly", "使用消耗品": "item",
     "商城": "shop", "聊天": "chat",
     **{f"切换能力{n}": f"ability_{i}" for i, n in enumerate("一二三四五六七八", 1)},
     "交互": "interact", "退出关卡": "exit", "钓鱼收线": "fishing_reel",

@@ -111,6 +111,14 @@
     },
     "custom_action": "nikki.daily_config"
   },
+  "MaaNikki_Key_infinite_heart": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action_param": {
+      "value": "I"
+    },
+    "custom_action": "nikki.daily_config"
+  },
   "MaaNikki_Key_calendar": {
     "recognition": "DirectHit",
     "action": "Custom",

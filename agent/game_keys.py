@@ -18,7 +18,7 @@ DEFAULTS = {
     "sub_ability": ("R", "家园能力衍生功能1"),
     # 系统功能
     "map": ("M", "地图"), "backpack": ("B", "背包"), "photo": ("P", "拍照"),
-    "dress": ("C", "换装"), "calendar": ("L", "奇想日历"),
+    "dress": ("C", "换装"), "infinite_heart": ("I", "无限之心"), "calendar": ("L", "奇想日历"),
     "monthly": ("J", "奇迹之旅/乐园构想"), "item": ("Z", "使用消耗品"),
     "shop": ("H", "商城"), "chat": ("Enter", "聊天"),
     **{f"ability_{i}": (str(i), f"切换能力：{n}") for i, n in enumerate("一二三四五六七八", 1)},
