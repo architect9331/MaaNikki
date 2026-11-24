@@ -1,14 +1,13 @@
 // Stores aggregates under a random server-issued reporter ID. Request IPs are never written.
 const MAX_BODY = 64 * 1024;
 const MAX_ROWS = 500;
-const SUMMARY_TTL_SEC = 300;
-const MEM_SUMMARY_TTL_SEC = 60;
-const SUMMARY_CACHE_URL = 'https://stats.maanikki.cn/__cache/v1/summary';
-const SUMMARY_HEADERS = {
-  'Content-Type': 'application/json; charset=utf-8',
-  'Access-Control-Allow-Origin': '*',
-  'Cache-Control': `public, max-age=${SUMMARY_TTL_SEC}, s-maxage=${SUMMARY_TTL_SEC}`,
-};
+const MIN_SUMMARY_TTL_SEC = 6 * 3600;
+const MAX_SUMMARY_TTL_SEC = 24 * 3600;
+const DAILY_SUMMARY_READ_BUDGET = 400_000;
+const REFRESH_LEASE_SEC = 300;
+const MEM_SUMMARY_TTL_SEC = 1800;
+const STALE_SERVE_TTL_SEC = 60;
+const SUMMARY_CACHE_URL = 'https://stats.maanikki.cn/__cache/v2/summary';
 
 let memSummary = { payload: '', expiresAt: 0 };
 let summaryInFlight = null;
@@ -91,18 +90,51 @@ async function report(request, env) {
   return new Response(null, { status: 204, headers });
 }
 
-function buildSummaryResponse(payload) {
-  return new Response(payload, { headers: SUMMARY_HEADERS });
+function buildSummaryResponse(payload, ttlSec = MIN_SUMMARY_TTL_SEC) {
+  const safeTtl = Math.max(STALE_SERVE_TTL_SEC, Math.floor(ttlSec));
+  return new Response(payload, {
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': `public, max-age=${Math.min(3600, safeTtl)}, s-maxage=${safeTtl}, stale-while-revalidate=86400`,
+    },
+  });
+}
+
+function writeEdgeSummary(edgeCache, payload, expiresAt, ctx) {
+  if (!edgeCache) return;
+  const ttl = Math.max(STALE_SERVE_TTL_SEC, expiresAt - nowSec());
+  const cacheKey = new Request(SUMMARY_CACHE_URL, { method: 'GET' });
+  const writePromise = edgeCache.put(cacheKey, new Response(payload, {
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': `public, max-age=${ttl}, s-maxage=${ttl}`,
+      'X-Summary-Expires-At': String(expiresAt),
+    },
+  })).catch(() => {});
+  if (ctx?.waitUntil) ctx.waitUntil(writePromise);
+  return writePromise;
+}
+
+function computeAdaptiveTtl(rowsRead) {
+  if (!Number.isFinite(rowsRead) || rowsRead <= 0) return MIN_SUMMARY_TTL_SEC;
+  const scaled = Math.ceil((rowsRead / DAILY_SUMMARY_READ_BUDGET) * 86400);
+  return Math.min(MAX_SUMMARY_TTL_SEC, Math.max(MIN_SUMMARY_TTL_SEC, scaled));
 }
 
 async function computeSummaryPayload(env) {
-  const active = 'reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)';
-  const [slots, setColors, bling, digTargets, preferences, reporterCounts] = await env.DB.batch([
-    env.DB.prepare(`SELECT slot, SUM(count) AS count FROM rolls WHERE ${active} GROUP BY slot ORDER BY count DESC`),
-    env.DB.prepare(`SELECT name, color, SUM(count) AS count FROM rolls WHERE ${active} GROUP BY name, color ORDER BY name ASC, count DESC`),
-    env.DB.prepare(`SELECT COUNT(*) AS runs, SUM(energy) AS energy, SUM(gain) AS gain FROM bling_runs WHERE ${active}`),
-    env.DB.prepare(`SELECT item, SUM(count) AS count, COUNT(DISTINCT reporter) AS reporters FROM dig_targets WHERE ${active} GROUP BY item ORDER BY count DESC`),
-    env.DB.prepare(`SELECT category, value, COUNT(DISTINCT reporter) AS reporters FROM reporter_preferences WHERE ${active} GROUP BY category, value ORDER BY category ASC, reporters DESC`),
+  const hasExcluded = Boolean(
+    await env.DB.prepare('SELECT 1 AS found FROM reporters WHERE excluded = 1 LIMIT 1').first(),
+  );
+  const whereActive = hasExcluded
+    ? 'WHERE reporter NOT IN (SELECT id FROM reporters WHERE excluded = 1)'
+    : '';
+  const [rollRows, bling, digTargets, preferences, reporterCounts] = await env.DB.batch([
+    env.DB.prepare(`SELECT name, slot, color, SUM(count) AS count FROM rolls ${whereActive} GROUP BY name, slot, color`),
+    env.DB.prepare(`SELECT COUNT(*) AS runs, SUM(energy) AS energy, SUM(gain) AS gain FROM bling_runs ${whereActive}`),
+    env.DB.prepare(`SELECT item, SUM(count) AS count, COUNT(DISTINCT reporter) AS reporters FROM dig_targets ${whereActive} GROUP BY item ORDER BY count DESC`),
+    env.DB.prepare(`SELECT category, value, COUNT(DISTINCT reporter) AS reporters FROM reporter_preferences ${whereActive} GROUP BY category, value ORDER BY category ASC, reporters DESC`),
     env.DB.prepare(`SELECT
         COUNT(DISTINCT CASE WHEN src = 1 THEN reporter END) AS rollReporters,
         COUNT(DISTINCT CASE WHEN src = 2 THEN reporter END) AS digReporters,
@@ -117,25 +149,39 @@ async function computeSummaryPayload(env) {
         UNION ALL
         SELECT DISTINCT reporter, 4 AS src FROM bling_runs
       )
-      WHERE ${active}`),
+      ${whereActive}`),
   ]);
+  const slotTotals = new Map();
   const colorTotals = new Map();
-  for (const row of setColors.results ?? []) {
-    colorTotals.set(row.color, (colorTotals.get(row.color) ?? 0) + Number(row.count ?? 0));
+  const setColorTotals = new Map();
+  for (const row of rollRows.results ?? []) {
+    const qty = Number(row.count ?? 0);
+    slotTotals.set(row.slot, (slotTotals.get(row.slot) ?? 0) + qty);
+    colorTotals.set(row.color, (colorTotals.get(row.color) ?? 0) + qty);
+    const scKey = `${row.name}\0${row.color}`;
+    const prev = setColorTotals.get(scKey);
+    if (prev) prev.count += qty;
+    else setColorTotals.set(scKey, { name: row.name, color: row.color, count: qty });
   }
+  const slots = Array.from(slotTotals.entries(), ([slot, total]) => ({ slot, count: total }))
+    .sort((a, b) => b.count - a.count);
   const colors = Array.from(colorTotals.entries(), ([color, total]) => ({ color, count: total }))
     .sort((a, b) => b.count - a.count);
+  const setColors = Array.from(setColorTotals.values())
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : b.count - a.count));
   const counts = reporterCounts.results[0] ?? {};
   const blingRow = bling.results[0] ?? { runs: 0, energy: 0, gain: 0 };
-  return JSON.stringify({
+  const rowsRead = [rollRows, bling, digTargets, preferences, reporterCounts]
+    .reduce((sum, res) => sum + Number(res?.meta?.rows_read ?? 0), 0);
+  const payload = JSON.stringify({
     updatedAt: new Date().toISOString(),
     reporters: counts.reporters ?? 0,
     rollReporters: counts.rollReporters ?? 0,
     digReporters: counts.digReporters ?? 0,
     prefReporters: counts.prefReporters ?? 0,
     colors,
-    slots: slots.results,
-    setColors: setColors.results,
+    slots,
+    setColors,
     bling: {
       runs: blingRow.runs ?? 0,
       energy: blingRow.energy ?? 0,
@@ -144,12 +190,24 @@ async function computeSummaryPayload(env) {
     digTargets: digTargets.results,
     preferences: preferences.results,
   });
+  return { payload, ttl: computeAdaptiveTtl(rowsRead) };
+}
+
+async function refreshSummaryAndPersist(env, edgeCache) {
+  const { payload, ttl } = await computeSummaryPayload(env);
+  const expiresAt = nowSec() + ttl;
+  await env.DB.prepare(
+    'INSERT INTO summary_cache (id, payload, expires_at) VALUES (1, ?, ?) ON CONFLICT (id) DO UPDATE SET payload = excluded.payload, expires_at = excluded.expires_at',
+  ).bind(payload, expiresAt).run().catch(() => {});
+  memSummary = { payload, expiresAt: Math.min(nowSec() + MEM_SUMMARY_TTL_SEC, expiresAt) };
+  await writeEdgeSummary(edgeCache, payload, expiresAt, null);
+  return { payload, ttl };
 }
 
 async function summary(env, ctx) {
   const now = nowSec();
   if (memSummary.payload && memSummary.expiresAt > now) {
-    return buildSummaryResponse(memSummary.payload);
+    return buildSummaryResponse(memSummary.payload, memSummary.expiresAt - now);
   }
   const cacheKey = new Request(SUMMARY_CACHE_URL, { method: 'GET' });
   let edgeCache = null;
@@ -159,8 +217,10 @@ async function summary(env, ctx) {
       const hit = await edgeCache.match(cacheKey);
       if (hit) {
         const body = await hit.text();
-        memSummary = { payload: body, expiresAt: now + MEM_SUMMARY_TTL_SEC };
-        return buildSummaryResponse(body);
+        const cachedExp = Number.parseInt(hit.headers.get('x-summary-expires-at') ?? '0', 10);
+        const remaining = cachedExp > now ? cachedExp - now : MEM_SUMMARY_TTL_SEC;
+        memSummary = { payload: body, expiresAt: now + Math.min(MEM_SUMMARY_TTL_SEC, remaining) };
+        return buildSummaryResponse(body, remaining);
       }
     }
   } catch {}
@@ -168,35 +228,46 @@ async function summary(env, ctx) {
   if (!summaryInFlight) {
     summaryInFlight = (async () => {
       const checkNow = nowSec();
-      const cachedRow = await env.DB.prepare('SELECT payload, expires_at FROM summary_cache WHERE id = 1')
-        .first().catch(() => null);
-      let payload = cachedRow?.payload && cachedRow.expires_at > checkNow ? cachedRow.payload : '';
-      let ttlRemaining = cachedRow?.expires_at ? Math.max(1, cachedRow.expires_at - checkNow) : SUMMARY_TTL_SEC;
-      if (!payload) {
-        payload = await computeSummaryPayload(env);
-        ttlRemaining = SUMMARY_TTL_SEC;
-        await env.DB.prepare(
-          'INSERT INTO summary_cache (id, payload, expires_at) VALUES (1, ?, ?) ON CONFLICT (id) DO UPDATE SET payload = excluded.payload, expires_at = excluded.expires_at',
-        ).bind(payload, nowSec() + SUMMARY_TTL_SEC).run().catch(() => {});
+      let cachedRow = null;
+      try {
+        cachedRow = await env.DB.prepare('SELECT payload, expires_at FROM summary_cache WHERE id = 1').first();
+      } catch (err) {
+        if (memSummary.payload) return { payload: memSummary.payload, ttl: STALE_SERVE_TTL_SEC };
+        throw err;
       }
-      memSummary = { payload, expiresAt: nowSec() + Math.min(MEM_SUMMARY_TTL_SEC, ttlRemaining) };
-      if (edgeCache) {
-        const writePromise = edgeCache.put(cacheKey, new Response(payload, {
-          headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': `public, max-age=${ttlRemaining}, s-maxage=${ttlRemaining}`,
-          },
-        })).catch(() => {});
-        if (ctx?.waitUntil) ctx.waitUntil(writePromise);
-        else await writePromise;
+
+      if (cachedRow?.payload && cachedRow.expires_at > checkNow) {
+        const ttlRemaining = Math.max(STALE_SERVE_TTL_SEC, cachedRow.expires_at - checkNow);
+        memSummary = { payload: cachedRow.payload, expiresAt: checkNow + Math.min(MEM_SUMMARY_TTL_SEC, ttlRemaining) };
+        const p = writeEdgeSummary(edgeCache, cachedRow.payload, cachedRow.expires_at, ctx);
+        if (!ctx?.waitUntil && p) await p;
+        return { payload: cachedRow.payload, ttl: ttlRemaining };
       }
-      return payload;
+
+      if (cachedRow?.payload) {
+        // Stale-while-revalidate with an atomic D1 lease so at most one isolate recomputes globally.
+        const lease = await env.DB.prepare(
+          'UPDATE summary_cache SET expires_at = ? WHERE id = 1 AND expires_at = ?',
+        ).bind(checkNow + REFRESH_LEASE_SEC, cachedRow.expires_at).run().catch(() => null);
+        if (lease?.meta?.changes) {
+          const refreshPromise = refreshSummaryAndPersist(env, edgeCache).catch(() => null);
+          if (ctx?.waitUntil) {
+            ctx.waitUntil(refreshPromise);
+          } else {
+            const refreshed = await refreshPromise;
+            if (refreshed) return refreshed;
+          }
+        }
+        memSummary = { payload: cachedRow.payload, expiresAt: checkNow + STALE_SERVE_TTL_SEC };
+        return { payload: cachedRow.payload, ttl: STALE_SERVE_TTL_SEC };
+      }
+
+      return await refreshSummaryAndPersist(env, edgeCache);
     })().finally(() => { summaryInFlight = null; });
   }
 
-  const payload = await summaryInFlight;
-  return buildSummaryResponse(payload);
+  const { payload, ttl } = await summaryInFlight;
+  return buildSummaryResponse(payload, ttl);
 }
 
 export default {

@@ -12,12 +12,12 @@ import { HELP_TEXT, KNOWLEDGE_PROMPT, WELCOME_TEXT } from './knowledge.js';
 
 const seconds = () => Math.floor(Date.now() / 1000);
 const fatalGroupCodes = new Set([40034101, 40034105, 40054003, 40054002]);
-const REDEEM_TTL_SEC = 300;
-const MEM_REDEEM_TTL_SEC = 60;
+const REDEEM_TTL_SEC = 1800;
+const MEM_REDEEM_TTL_SEC = 300;
 const REDEEM_CACHE_URL = 'https://qqbot.maanikki.cn/__cache/v1/redeem-codes';
 const REDEEM_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
-  'cache-control': `public, max-age=${REDEEM_TTL_SEC}, s-maxage=${REDEEM_TTL_SEC}`,
+  'cache-control': `public, max-age=${REDEEM_TTL_SEC}, s-maxage=${REDEEM_TTL_SEC}, stale-while-revalidate=3600`,
   'access-control-allow-origin': '*',
 };
 
@@ -381,7 +381,7 @@ async function callAssistantLLM(env, group, info, quoteText, mode) {
     return mode === 'explicit' ? '助手问答服务暂未配置，可先发送「@我 帮助」查看常用指令。' : '';
   }
 
-  const rows = await env.DB.prepare('SELECT sender_name,is_bot,content,quote_text,image_urls,created FROM group_messages WHERE group_id=? ORDER BY id DESC LIMIT 14')
+  const rows = await env.DB.prepare('SELECT sender_name,is_bot,content,quote_text,image_urls,created FROM group_messages WHERE group_id=? ORDER BY created DESC LIMIT 14')
     .bind(group).all().catch(() => ({ results: [] }));
   const history = (rows.results || []).slice().reverse();
   const contextLines = history.map(r => {
@@ -505,8 +505,8 @@ async function handleAutonomousMessage(env, group, msgId, info, quoteText) {
     times = JSON.parse(state.auto_reply_times || '[]').filter(t => now - t < 300);
   } catch {}
   if (times.length >= 4) return;
-  const newer = await env.DB.prepare('SELECT sender_id,mentioned,is_bot FROM group_messages WHERE group_id=? AND id>(SELECT id FROM group_messages WHERE group_id=? AND msg_id=? ORDER BY id DESC LIMIT 1)')
-    .bind(group, group, String(msgId)).all().catch(() => ({ results: [] }));
+  const newer = await env.DB.prepare('SELECT sender_id,mentioned,is_bot FROM group_messages WHERE group_id=? AND created>=? AND id>(SELECT id FROM group_messages WHERE group_id=? AND msg_id=? ORDER BY id DESC LIMIT 1)')
+    .bind(group, now - 60, group, String(msgId)).all().catch(() => ({ results: [] }));
   for (const r of newer.results || []) {
     if (r.is_bot || r.mentioned || r.sender_id === info.senderId) return;
   }
@@ -735,7 +735,7 @@ export default {
   },
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(pollExternalFeeds(env).then(() => dispatch(env)));
-    if (Math.floor(controller.scheduledTime / 60000) % 60 === 0) {
+    if (Math.floor(controller.scheduledTime / 60000) % 1440 === 0) {
       ctx.waitUntil(env.DB.batch([
         env.DB.prepare('DELETE FROM notifications WHERE sent=1 AND created<?').bind(seconds() - 30 * 86400),
         env.DB.prepare("DELETE FROM events WHERE kind NOT IN ('release','legacy_release','activity','redeem') AND created<? AND id NOT IN (SELECT event_id FROM notifications)").bind(seconds() - 7 * 86400),
