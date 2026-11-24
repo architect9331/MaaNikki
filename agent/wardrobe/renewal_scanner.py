@@ -854,7 +854,9 @@ def _detect_occupied_rejuv_rows(frame: np.ndarray, row_ys: list[int]) -> list[tu
     """Return [(by, present_cols)] for rows with visible cards before empty space.
 
     Check every column in a row rather than stopping at the first dim slot so a single
-    mid-FadeIn card in col 0..4 cannot truncate the rest of the row or lower rows.
+    mid-FadeIn card in col 0..4 cannot truncate the rest of the row or lower rows,
+    while still stopping after a clean left-aligned partial last row so empty shimmering
+    3D background rows below the list end are never mistaken for cards.
     """
     rows: list[tuple[int, list[int]]] = []
     for by in row_ys:
@@ -867,6 +869,8 @@ def _detect_occupied_rejuv_rows(frame: np.ndarray, row_ys: list[int]) -> list[tu
                 break
             continue
         rows.append((by, present))
+        if len(present) < COLS and present == list(range(len(present))):
+            break
     return rows
 
 
@@ -1545,26 +1549,52 @@ class RenewalScanner:
             if first_row_y is None:
                 first_row_y = row_ys[0]
             occ_anchors = _build_scroll_anchors(frame, occ_rows, grid_bottom)
-            # Only short-circuit list end on page 0 when empty lattice rows exist cleanly inside the
-            # viewport (list fits without scrolling). When all viewport rows are filled or after
-            # scrolling (page >= 1), confirm true list end via the scroll-stillness check so a
-            # bottom-masked or streaming card on the bottom row never aborts the rest of the category.
-            reached_list_end = (page == 0 and len(occ_rows) < len(row_ys))
+            # Short-circuit list end on page 0 when empty rows exist below the list, or on page >= 1
+            # when the last row has <= 4 clean left-aligned cards (at least 2 trailing columns empty,
+            # which vertical RetainerBox_0 BottomMask cannot cause while leaving earlier cols clear).
+            # Keep scroll confirmation when 5 or 6 columns are filled so a single masked/fading
+            # rightmost card (col 5) never truncates remaining pages.
+            last_cols = occ_rows[-1][1]
+            clean_short_tail = (
+                len(last_cols) <= COLS - 2
+                and last_cols == list(range(len(last_cols)))
+            )
+            reached_list_end = (
+                (page == 0 and len(occ_rows) < len(row_ys))
+                or (page >= 1 and clean_short_tail)
+            )
 
-            rows_to_read: list[tuple[int, int, list[int]]] = []
-            for by, row_idx, scan_cols in _row_cols_to_scan(occ_rows):
-                cols_needed: list[int] = []
-                for col in scan_cols:
-                    slot_key = (row_idx, col)
-                    if slot_key in matched_slots:
-                        continue
-                    prev_unmatched = unmatched_slots.get(slot_key)
-                    if prev_unmatched is not None and abs(by - prev_unmatched[0]) < 40:
-                        continue
-                    cols_needed.append(col)
-                if cols_needed:
-                    rows_to_read.append((by, row_idx, cols_needed))
+            # On full tall pages that will scroll down, defer the bottom-most row (which sits inside
+            # RetainerBox_0's BottomMask) so it is OCR'd once cleanly after scrolling up instead of
+            # paying slow single-card fallback OCR twice. If scrolling reveals we are already at the
+            # bottom, OCR that deferred row immediately before exiting.
+            defer_bottom = (
+                is_tall
+                and not incremental
+                and not reached_list_end
+                and len(occ_rows) == len(row_ys)
+                and len(occ_rows) >= 4
+            )
+            scan_occ_rows = occ_rows[:-1] if defer_bottom else occ_rows
+            deferred_occ_rows = occ_rows[-1:] if defer_bottom else []
 
+            def _build_read_spec(target_occ: list[tuple[int, list[int]]]) -> list[tuple[int, int, list[int]]]:
+                spec: list[tuple[int, int, list[int]]] = []
+                for by, row_idx, scan_cols in _row_cols_to_scan(target_occ):
+                    cols_needed: list[int] = []
+                    for col in scan_cols:
+                        slot_key = (row_idx, col)
+                        if slot_key in matched_slots:
+                            continue
+                        prev_unmatched = unmatched_slots.get(slot_key)
+                        if prev_unmatched is not None and abs(by - prev_unmatched[0]) < 40:
+                            continue
+                        cols_needed.append(col)
+                    if cols_needed:
+                        spec.append((by, row_idx, cols_needed))
+                return spec
+
+            rows_to_read = _build_read_spec(scan_occ_rows)
             hit_tail = _process_ocr_rows(frame, rows_to_read, allow_incremental_stop=True)
             readable_count = len(matched_slots) + len(unmatched_slots)
             if page == 0 and rows_to_read and readable_count == 0:
@@ -1593,16 +1623,20 @@ class RenewalScanner:
                 break
 
             step_dy = -9600 if is_tall else -480
-            scroll_wait = 0.35 if is_tall else 0.28
+            partial_bottom = len(last_cols) < COLS
             moved = False
             for attempt_dy in (step_dy, step_dy // 2, step_dy // 4):
-                after = _scroll_rejuv_and_park(self.rt, attempt_dy, scroll_wait)
+                after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.28)
                 if after is None:
                     break
                 same = _same_rejuv_grid(frame, after, occ_anchors)
                 delta = 0 if same else _measure_rejuv_scroll_delta(frame, after, occ_anchors)
                 if same or delta == 0:
-                    after = _scroll_rejuv_and_park(self.rt, attempt_dy, scroll_wait)
+                    if partial_bottom:
+                        complete = True
+                        moved = True
+                        break
+                    after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.28)
                     if after is None:
                         break
                     same = _same_rejuv_grid(frame, after, occ_anchors)
@@ -1628,6 +1662,8 @@ class RenewalScanner:
                     if undo_occ:
                         occ_anchors = _build_scroll_anchors(frame, undo_occ, grid_bottom)
             if complete or not moved:
+                if deferred_occ_rows and not self.rt.stopped:
+                    _process_ocr_rows(frame, _build_read_spec(deferred_occ_rows), allow_incremental_stop=False)
                 break
             page += 1
 
