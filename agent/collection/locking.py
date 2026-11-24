@@ -731,6 +731,57 @@ class BlessingLocker(InventoryScanner):
             row_y += row_pitch
         return True
 
+    def _reselect_sibling_point(self, frame, box):
+        """Return a safe clickable center of a different visible card in the grid."""
+        x, y, w, h = box
+        gx, gy, gw, gh = self.grid
+        fade = self.layout.get("bottom_fade_margin", 32)
+        max_bottom = gy + gh - fade
+        hwnd, cap_size = self.rt._pointer_guard_context() if self._tall_mode else (None, None)
+
+        def valid_point(cand):
+            cx, cy, cw, ch = cand
+            if abs(cx - x) < 10 and abs(cy - y) < 10:
+                return None
+            if cx < gx or cx + cw > gx + gw or cy < gy or cy + ch > max_bottom:
+                return None
+            pt = [round(cx + cw / 2), round(cy + ch * .45)]
+            if self._tall_mode and not is_capture_point_safe(
+                hwnd,
+                pt,
+                capture_size=cap_size,
+                margin_px=6,
+                require_work_area=True,
+            ):
+                return None
+            return pt
+
+        candidates = []
+        for sib in self.cards(frame, []):
+            pt = valid_point(sib)
+            if pt is not None:
+                dist = abs(sib[0] - x) + abs(sib[1] - y)
+                candidates.append((dist, pt))
+        if candidates:
+            candidates.sort(key=lambda item: item[0])
+            return candidates[0][1]
+
+        # In a row-major grid, the left or upper neighbor of an existing card
+        # is guaranteed populated even if contour detection missed sibling cards.
+        first_x = self.layout["first_x"]
+        col_pitch = self.layout["column_pitch"]
+        row_pitch = self.layout["row_pitch"]
+        for sib in (
+            [round(x - col_pitch), y, w, h],
+            [x, round(y - row_pitch), w, h],
+        ):
+            if sib[0] < first_x - 4:
+                continue
+            pt = valid_point(sib)
+            if pt is not None:
+                return pt
+        return None
+
     def select(self, box, facts, generation, *, verify_details=True, already_selected=False):
         self.check_generation(generation)
         # Stage the pointer first so Seize/Slate hit-testing settles on the
@@ -785,11 +836,55 @@ class BlessingLocker(InventoryScanner):
                 with self.rt.ui.preserve_cursor():
                     confirmed = self.rt.ui.wait_page(
                         lambda: self.selected(self.frame(generation), box),
-                        seconds=2.5,
+                        seconds=1.8,
                     )
                 if not confirmed:
                     frame = self.clear_hover(generation, settle_card=True)
                     confirmed = self.unhovered_selected(frame, box)
+            if not confirmed:
+                # UE TileView occasionally leaves an already-selected card with
+                # no gold border (re-clicking the same item is a selection no-op).
+                # Bounce selection to a nearby visible card and back so the game
+                # fires a fresh selection transition, then keep full verification.
+                can_click_target = True
+                if self._tall_mode:
+                    hwnd, cap_size = self.rt._pointer_guard_context()
+                    can_click_target = is_capture_point_safe(
+                        hwnd,
+                        point,
+                        capture_size=cap_size,
+                        margin_px=6,
+                        require_work_area=True,
+                    )
+                sibling = self._reselect_sibling_point(frame, box) if can_click_target else None
+                if sibling is not None:
+                    self.check_generation(generation)
+                    self.rt.log("目标闪光选中高亮未刷新，尝试先点选相邻格子再切回确认。", detail=True)
+                    self._hover_box = None
+                    if (not self.rt.action("TouchMove", target=sibling)
+                            or not self.rt.pause(.15)
+                            or not self.rt.action("Click", target=sibling, ui_click=False)
+                            or not self.rt.pause(.25)
+                            or not self.rt.action("TouchMove", target=point)
+                            or not self.rt.pause(.2)
+                            or not self.rt.action("Click", target=point, ui_click=False)
+                            or not self.rt.pause(.2)):
+                        raise RuntimeError("未能重新选中目标闪光")
+                    self._hover_box = tuple(box)
+                    with self.rt.ui.preserve_cursor():
+                        confirmed = self.rt.ui.wait_page(
+                            lambda: self.selected(self.frame(generation), box),
+                            seconds=2.0,
+                        )
+                    if not confirmed:
+                        frame = self.clear_hover(generation, settle_card=True)
+                        confirmed = self.unhovered_selected(frame, box)
+                    self.report.setdefault("selection_bounces", []).append({
+                        "slot": self._model_slot,
+                        "box": list(box),
+                        "sibling": sibling,
+                        "confirmed": bool(confirmed),
+                    })
             if not confirmed:
                 raise IncompleteObservation("目标格子的选中高亮尚未确认，保留进度")
             if self._hover_box is not None:
