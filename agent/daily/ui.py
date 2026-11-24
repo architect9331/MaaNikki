@@ -1735,7 +1735,7 @@ class GameUI:
         if open_wardrobe() and self.enter_page(lambda: self.rt.key("ability_config", 0), ability,
                                                source=wardrobe, recover=open_wardrobe):
             return True
-        self.rt.log("未能进入能力配置，请检查换装页面；若仍是旧版界面，请先接取“变强吧大喵”任务。")
+        self.rt.log("未能进入能力配置，请检查换装页面及「游戏键位」中的换装按键是否与游戏内一致；若仍是旧版界面，请先接取“变强吧大喵”任务。")
         return False
 
     def open_map(self, event=lambda value: None, *, attempts=3, seconds=5):
