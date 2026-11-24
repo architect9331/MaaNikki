@@ -946,6 +946,94 @@ class RenewalScanner:
                         return after2, cid2, yc2, True
         return (after if after is not None else prev_frame), prev_cid, prev_yc, False
 
+    def _category_expects_items(self, cid: str, owned_groups: set[str]) -> bool:
+        """True when the account already owns at least one clothing group in this category."""
+        if not owned_groups:
+            return False
+        for grp in owned_groups:
+            meta = self.model.group_meta.get(grp)
+            if not meta:
+                continue
+            part = meta.get("part")
+            if cid == "acc":
+                if part in ACCESSORY_PARTS:
+                    return True
+            elif part == cid:
+                return True
+        return False
+
+    def _detect_grid_cards_with_retry(
+        self,
+        frame: np.ndarray,
+        *,
+        prev_grid_frame: np.ndarray | None = None,
+        max_wait_seconds: float = 1.5,
+        poll_interval: float = 0.15,
+    ) -> tuple[np.ndarray, list[int], list[tuple[int, list[int]]], bool]:
+        """Detect visible card rows, retrying briefly only when the grid is empty, stale, or still populating.
+
+        Returns (frame, row_ys, occ_rows, stale_unchanged).
+        Adds zero extra wait when cards are already loaded and occupy the full viewport.
+        """
+        from task_control import task_time
+
+        def _eval(cur: np.ndarray) -> tuple[list[int], list[tuple[int, list[int]]], bool]:
+            cur_bottom = cur.shape[0] - GRID_BOTTOM_MARGIN
+            r_ys = detect_rejuv_rows(cur, grid_top=GRID_TOP, grid_bottom=cur_bottom)
+            occ = _detect_occupied_rejuv_rows(cur, r_ys) if r_ys else []
+            stale = bool(
+                prev_grid_frame is not None
+                and occ
+                and _same_rejuv_grid(cur, prev_grid_frame, [(by, len(cols)) for by, cols in occ])
+            )
+            return r_ys, occ, stale
+
+        def _card_count(occ: list[tuple[int, list[int]]]) -> int:
+            return sum(len(cols) for _, cols in occ)
+
+        row_ys, occ_rows, stale = _eval(frame)
+        waited_from_unready = False
+        deadline = task_time.monotonic() + max_wait_seconds
+
+        # Only poll when 0 occupied cards are visible or the grid still shows the previous category.
+        while (not occ_rows or stale) and not self.rt.stopped:
+            if task_time.monotonic() >= deadline:
+                break
+            if not self.rt.pause(poll_interval):
+                break
+            fresh = self.rt.capture()
+            if fresh is None:
+                break
+            waited_from_unready = True
+            frame = fresh
+            row_ys, occ_rows, stale = _eval(frame)
+
+        # If cards just appeared from an empty/stale grid or look partial, confirm once after a short
+        # settle tick so fade-in opacity and async streaming rows do not truncate the page.
+        if occ_rows and not stale and not self.rt.stopped:
+            is_partial = len(occ_rows[-1][1]) < COLS or len(occ_rows) < len(row_ys)
+            if waited_from_unready or is_partial:
+                prev_count = _card_count(occ_rows)
+                for settle_step in range(4):
+                    if self.rt.stopped or (settle_step > 0 and task_time.monotonic() >= deadline):
+                        break
+                    if not self.rt.pause(poll_interval):
+                        break
+                    fresh = self.rt.capture()
+                    if fresh is None:
+                        break
+                    r2, o2, s2 = _eval(fresh)
+                    if s2 or not o2:
+                        break
+                    new_count = _card_count(o2)
+                    if new_count >= prev_count:
+                        frame, row_ys, occ_rows = fresh, r2, o2
+                    if new_count <= prev_count:
+                        break
+                    prev_count = new_count
+
+        return frame, row_ys, occ_rows, stale
+
     def _scan_category(
         self,
         cid: str,
@@ -955,32 +1043,54 @@ class RenewalScanner:
         *,
         incremental: bool = False,
         initial_frame: np.ndarray | None = None,
+        prev_grid_frame: np.ndarray | None = None,
         assume_at_top: bool = False,
         verify_sort: bool = False,
     ) -> bool:
+        expects_items = self._category_expects_items(cid, owned_groups)
+        page0_wait = 2.4 if expects_items else 1.2
         frame = initial_frame if (assume_at_top and initial_frame is not None) else None
         prefetched_rows: list[int] = []
+        prefetched_occ: list[tuple[int, list[int]]] = []
+        page0_stale = False
+
         if frame is not None:
-            prefetched_rows = detect_rejuv_rows(
-                frame,
-                grid_top=GRID_TOP,
-                grid_bottom=frame.shape[0] - GRID_BOTTOM_MARGIN,
-            )
-            if not prefetched_rows or prefetched_rows[0] > GRID_TOP + 55:
-                frame = None
-                prefetched_rows = []
+            if verify_sort:
+                cur_sort = clean_clothing_name(self.rt.text(SORT_BOX_ROI, image=frame))
+                if "获得时间" not in cur_sort:
+                    self.ensure_sort_acquired_desc()
+                    frame = None
+                    verify_sort = False
+            if frame is not None:
+                frame, prefetched_rows, prefetched_occ, page0_stale = self._detect_grid_cards_with_retry(
+                    frame,
+                    prev_grid_frame=prev_grid_frame,
+                    max_wait_seconds=page0_wait,
+                )
+                # Only fall back to scroll-to-top when loaded cards are actually scrolled past the top margin.
+                if prefetched_occ and not page0_stale and prefetched_occ[0][0] > GRID_TOP + 55:
+                    frame = None
+                    prefetched_rows = []
+                    prefetched_occ = []
+                    page0_stale = False
+
         if frame is None:
             frame = _scroll_rejuv_to_top(self.rt)
             if frame is None:
                 return False
-        if verify_sort:
-            cur_sort = clean_clothing_name(self.rt.text(SORT_BOX_ROI, image=frame))
-            if "获得时间" not in cur_sort:
-                self.ensure_sort_acquired_desc()
-                frame = _scroll_rejuv_to_top(self.rt)
-                prefetched_rows = []
-                if frame is None:
-                    return False
+            if verify_sort:
+                cur_sort = clean_clothing_name(self.rt.text(SORT_BOX_ROI, image=frame))
+                if "获得时间" not in cur_sort:
+                    self.ensure_sort_acquired_desc()
+                    frame = _scroll_rejuv_to_top(self.rt)
+                    if frame is None:
+                        return False
+            frame, prefetched_rows, prefetched_occ, page0_stale = self._detect_grid_cards_with_retry(
+                frame,
+                prev_grid_frame=prev_grid_frame,
+                max_wait_seconds=page0_wait,
+            )
+
         self._last_scan_frame = frame
         grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
         scroll_y = 0
@@ -995,23 +1105,29 @@ class RenewalScanner:
         prev_map = prev_levels or {}
 
         max_pages = 64 if is_tall else 400
-        for _page in range(max_pages):
+        page = 0
+        page0_ocr_retries = 0
+        while page < max_pages:
             if self.rt.stopped:
                 break
-            if _page == 0 and prefetched_rows:
+            if page == 0 and page0_ocr_retries == 0:
                 row_ys = prefetched_rows
+                occ_rows = [] if page0_stale else prefetched_occ
             else:
-                row_ys = detect_rejuv_rows(frame, grid_top=GRID_TOP, grid_bottom=grid_bottom)
-            if not row_ys:
-                complete = _page == 0
+                frame, row_ys, occ_rows, page0_stale = self._detect_grid_cards_with_retry(
+                    frame,
+                    prev_grid_frame=prev_grid_frame if page == 0 else None,
+                    max_wait_seconds=0.9,
+                )
+                self._last_scan_frame = frame
+                grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
+                if page == 0 and page0_stale:
+                    occ_rows = []
+            if not row_ys or not occ_rows:
+                complete = page == 0 and not expects_items and not page0_stale
                 break
             if first_row_y is None:
                 first_row_y = row_ys[0]
-
-            occ_rows = _detect_occupied_rejuv_rows(frame, row_ys)
-            if not occ_rows:
-                complete = _page == 0
-                break
             occ_anchors = _build_scroll_anchors(frame, occ_rows, grid_bottom)
             # A partial row or an empty lattice row cleanly inside the viewport means list end.
             reached_list_end = (
@@ -1089,6 +1205,22 @@ class RenewalScanner:
                             break
                     if hit_tail:
                         break
+            if page == 0 and rows_to_read and cat_cards == 0:
+                if page0_ocr_retries < 3 and not self.rt.stopped:
+                    page0_ocr_retries += 1
+                    if not self.rt.pause(0.2):
+                        break
+                    fresh = self.rt.capture()
+                    if fresh is None:
+                        break
+                    frame = fresh
+                    self._last_scan_frame = frame
+                    grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
+                    first_row_y = None
+                    seen_slots.clear()
+                    continue
+                complete = not expects_items
+                break
             if hit_tail:
                 break
             if reached_list_end:
@@ -1131,6 +1263,7 @@ class RenewalScanner:
                         occ_anchors = _build_scroll_anchors(frame, undo_occ, grid_bottom)
             if complete or not moved:
                 break
+            page += 1
 
         self.summary["parts"][cid] = {
             "name": self.model.category_name(cid),
@@ -1450,12 +1583,19 @@ class RenewalScanner:
                 if isinstance(p, dict) and not p.get("complete")
             ]
 
-        def _build_reasons(missing_majors: list[str], incomplete_parts: list[str]) -> list[str]:
+        def _build_reasons(
+            missing_majors: list[str],
+            incomplete_parts: list[str],
+            *,
+            zero_cards: bool = False,
+        ) -> list[str]:
             reasons = []
             if missing_majors:
                 reasons.append("未读完部位：" + "、".join(missing_majors))
             if incomplete_parts:
                 reasons.append("未到底部部位：" + "、".join(incomplete_parts))
+            if zero_cards:
+                reasons.append("未读取到任何服装卡片")
             return reasons
 
         def _record_incomplete_diagnostic(
@@ -1468,7 +1608,8 @@ class RenewalScanner:
         ) -> None:
             missing_majors = _missing_majors()
             incomplete_parts = _incomplete_parts()
-            reasons = _build_reasons(missing_majors, incomplete_parts)
+            zero_cards = self.summary.get("scanned_cards", 0) == 0
+            reasons = _build_reasons(missing_majors, incomplete_parts, zero_cards=zero_cards)
             diag_frame = self.rt.capture()
             if diag_frame is None:
                 diag_frame = last_frame
@@ -1479,6 +1620,7 @@ class RenewalScanner:
                 details={
                     "mode": self.mode,
                     "tall_mode": bool(is_tall),
+                    "scanned_cards": self.summary.get("scanned_cards", 0),
                     "frame_shape": list(diag_frame.shape[:2]) if diag_frame is not None else None,
                     "visited_cids": sorted(visited_cids),
                     "missing_majors": missing_majors,
@@ -1493,6 +1635,7 @@ class RenewalScanner:
         def _scan_rail(is_tall: bool, step_trace: list[dict]) -> tuple[np.ndarray | None, str | None, int | None]:
             frame, cid, yc = self._reset_rail_top()
             prev_cid: str | None = None
+            prev_grid_frame: np.ndarray | None = None
             sort_verified = False
             for step in range(32):
                 if self.rt.stopped or frame is None:
@@ -1500,6 +1643,7 @@ class RenewalScanner:
                 if cid == "299":
                     visited_cids.add("299")
                     prev_cid = "299"
+                    prev_grid_frame = frame
                     frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
                     step_trace.append({
                         "step": step,
@@ -1514,6 +1658,7 @@ class RenewalScanner:
                 if cid is None or cid in visited_cids:
                     if cid in visited_cids and (not _missing_majors() or cid == "299"):
                         break
+                    prev_grid_frame = frame
                     frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
                     step_trace.append({
                         "step": step,
@@ -1537,6 +1682,7 @@ class RenewalScanner:
                     prev_levels,
                     incremental=(self.mode == "incremental"),
                     initial_frame=frame,
+                    prev_grid_frame=prev_grid_frame if fresh_switch else None,
                     assume_at_top=(self.mode == "incremental" and fresh_switch),
                     verify_sort=(self.mode == "incremental" and not sort_verified),
                 )
@@ -1556,9 +1702,11 @@ class RenewalScanner:
 
                 if self.mode == "incremental":
                     nav_frame = self._last_scan_frame if self._last_scan_frame is not None else frame
+                    prev_grid_frame = nav_frame
                     frame, cid, yc, moved = self._step_rail_down(nav_frame, cid, yc)
                 else:
                     frame = self.rt.capture()
+                    prev_grid_frame = frame
                     cid_now, yc_now, _sc = self.model.detect_active_category(frame)
                     frame, cid, yc, moved = self._step_rail_down(
                         frame,
@@ -1590,7 +1738,7 @@ class RenewalScanner:
                 tall_trace: list[dict] = []
                 last_frame, last_cid, last_yc = _scan_rail(bool(is_tall), tall_trace)
                 need_regular_fallback = bool(is_tall and not self.summary["parts"] and not self.rt.stopped)
-                if not self.rt.stopped and (_missing_majors() or _incomplete_parts()):
+                if not self.rt.stopped and (_missing_majors() or _incomplete_parts() or self.summary.get("scanned_cards", 0) == 0):
                     _record_incomplete_diagnostic(
                         "renewal_tall_fallback" if need_regular_fallback else "renewal_incomplete",
                         bool(is_tall),
@@ -1606,7 +1754,7 @@ class RenewalScanner:
                 self.summary["tall_mode"] = False
                 fallback_trace: list[dict] = []
                 last_frame, last_cid, last_yc = _scan_rail(False, fallback_trace)
-                if not self.rt.stopped and (_missing_majors() or _incomplete_parts()):
+                if not self.rt.stopped and (_missing_majors() or _incomplete_parts() or self.summary.get("scanned_cards", 0) == 0):
                     _record_incomplete_diagnostic(
                         "renewal_incomplete",
                         False,
@@ -1618,9 +1766,10 @@ class RenewalScanner:
 
             missing_majors = _missing_majors()
             incomplete_parts = _incomplete_parts()
+            zero_cards = self.summary.get("scanned_cards", 0) == 0
             parts_complete = bool(self.summary["parts"]) and not incomplete_parts
-            self.summary["complete"] = bool(not missing_majors and parts_complete)
-            reasons = _build_reasons(missing_majors, incomplete_parts)
+            self.summary["complete"] = bool(not missing_majors and parts_complete and not zero_cards)
+            reasons = _build_reasons(missing_majors, incomplete_parts, zero_cards=zero_cards)
             reason = "；".join(reasons) if reasons else None
             self.save(reason)
             saved_final = True
