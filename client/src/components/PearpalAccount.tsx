@@ -146,7 +146,15 @@ export function PearpalStatusPill({ className }: { className?: string }) {
   );
 }
 
-export function PearpalAccountTile({ compact = false, className }: { compact?: boolean; className?: string }) {
+export function PearpalAccountTile({
+  compact = false,
+  pill = false,
+  className,
+}: {
+  compact?: boolean;
+  pill?: boolean;
+  className?: string;
+}) {
   const status = usePearpalStore((s) => s.status);
   const busy = usePearpalStore((s) => s.busy);
   const loginError = usePearpalStore((s) => s.loginError);
@@ -163,8 +171,8 @@ export function PearpalAccountTile({ compact = false, className }: { compact?: b
     : state === 'logged_in'
       ? '已登录'
       : state === 'expired'
-        ? '登录已过期'
-        : '未登录 · 去登录';
+        ? '已过期'
+        : '未登录';
 
   const tooltip = (
     <div className="space-y-1">
@@ -189,6 +197,64 @@ export function PearpalAccountTile({ compact = false, className }: { compact?: b
     </div>
   );
 
+  if (pill && !compact) {
+    return (
+      <Tooltip side="bottom" content={tooltip}>
+        <button
+          type="button"
+          onClick={openModal}
+          aria-label={`美鸭梨账号：${tileStatus}`}
+          className={clsx(
+            'flex min-w-0 items-center gap-1.5 rounded-lg border bg-bg-secondary px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent',
+            state === 'expired' ? 'border-warning/45' : 'border-border',
+            className,
+          )}
+        >
+          {busy ? (
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-accent" aria-hidden="true" />
+          ) : (
+            <PearPalIcon
+              className={clsx(
+                'h-3.5 w-3.5 shrink-0',
+                state === 'logged_in'
+                  ? 'text-accent-secondary'
+                  : state === 'expired'
+                    ? 'text-warning'
+                    : 'text-text-muted',
+              )}
+            />
+          )}
+          <span className="truncate font-medium text-text-primary">美鸭梨</span>
+          <span
+            className={clsx(
+              'ml-auto inline-flex shrink-0 items-center gap-1 text-[11px]',
+              state === 'logged_in'
+                ? 'text-success'
+                : state === 'expired'
+                  ? 'text-warning'
+                  : 'text-text-muted',
+            )}
+          >
+            {!busy && (
+              <span
+                aria-hidden="true"
+                className={clsx(
+                  'h-1.5 w-1.5 rounded-full',
+                  state === 'logged_in'
+                    ? 'bg-success'
+                    : state === 'expired'
+                      ? 'bg-warning'
+                      : 'bg-text-muted/50',
+                )}
+              />
+            )}
+            {tileStatus}
+          </span>
+        </button>
+      </Tooltip>
+    );
+  }
+
   return (
     <FeatureTile
       icon={PearPalIcon}
@@ -197,7 +263,7 @@ export function PearpalAccountTile({ compact = false, className }: { compact?: b
       busy={busy}
       warn={state === 'expired'}
       statusTone={statusTone}
-      status={tileStatus}
+      status={state === 'logged_out' && !busy ? '未登录 · 去登录' : tileStatus}
       className={clsx(!compact && state === 'expired' && 'border-warning/40', className)}
       tooltip={tooltip}
       onClick={openModal}

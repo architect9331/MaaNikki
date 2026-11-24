@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Calculator, Check, ChevronRight, Compass, LibraryBig, Palette, RefreshCw, Route, Sparkles, Star, X } from 'lucide-react';
+import { BookOpen, Calculator, Check, ChevronRight, Compass, LibraryBig, Palette, RefreshCw, Sparkles, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { gameDay, useAccountStateStore } from '@/stores/accountStateStore';
@@ -38,7 +38,7 @@ function MeteorEmblem({ discovered = false }: { discovered?: boolean }) {
   </span>;
 }
 
-function GiantMeteorStatus({ compact }: { compact?: boolean }) {
+function GiantMeteorStatus({ compact, pill = false }: { compact?: boolean; pill?: boolean }) {
   const { data, error, loading, refresh } = useAccountStateStore();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -81,16 +81,55 @@ function GiantMeteorStatus({ compact }: { compact?: boolean }) {
     });
   }, [found, today, data?.account_key]);
 
+  const meteorTooltip = <div className="space-y-1">
+    <p className="font-medium">{label}</p>
+    <p className="text-text-secondary">{checkedAt ? `检测于 ${checkedAt}` : description}</p>
+    <p className="text-text-muted">点击查看 · 每日 04:00 刷新</p>
+  </div>;
+  const meteorWarn = Boolean(error) || record?.outcome === 'unconfirmed';
+  const meteorShortStatus = error ? '读取失败' : found ? '今日发现' : absent ? '未发现' : record ? '未确认' : '未检测';
+
   return <>
-    <FeatureTile icon={MeteorIcon} title="巨陨星" compact={compact} warn={Boolean(error) || record?.outcome === 'unconfirmed'}
-      status={error ? '状态读取失败' : found ? '今日已发现' : absent ? '今日未发现' : record ? '检测未确认' : '今日尚未检测'}
-      className={clsx(found && 'meteor-status--found')}
-      tooltip={<div className="space-y-1">
-        <p className="font-medium">{label}</p>
-        <p className="text-text-secondary">{checkedAt ? `检测于 ${checkedAt}` : description}</p>
-        <p className="text-text-muted">点击查看 · 每日 04:00 刷新</p>
-      </div>}
-      onClick={() => setOpen(true)} />
+    {pill && !compact ? (
+      <Tooltip side="bottom" content={meteorTooltip}>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={`巨陨星：${label}`}
+          className={clsx(
+            'flex min-w-0 items-center gap-1.5 rounded-lg border bg-bg-secondary px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-bg-hover focus-visible:outline-2 focus-visible:outline-accent',
+            meteorWarn ? 'border-warning/45' : 'border-border',
+            found && 'meteor-status--found',
+          )}
+        >
+          <MeteorIcon
+            className={clsx(
+              'h-3.5 w-3.5 shrink-0',
+              found ? 'text-accent' : meteorWarn ? 'text-warning' : 'text-accent-secondary',
+            )}
+          />
+          <span className="truncate font-medium text-text-primary">巨陨星</span>
+          <span
+            className={clsx(
+              'ml-auto shrink-0 text-[11px]',
+              found
+                ? 'font-medium text-accent'
+                : meteorWarn
+                  ? 'text-warning'
+                  : 'text-text-muted',
+            )}
+          >
+            {meteorShortStatus}
+          </span>
+        </button>
+      </Tooltip>
+    ) : (
+      <FeatureTile icon={MeteorIcon} title="巨陨星" compact={compact} warn={meteorWarn}
+        status={error ? '状态读取失败' : found ? '今日已发现' : absent ? '今日未发现' : record ? '检测未确认' : '今日尚未检测'}
+        className={clsx(found && 'meteor-status--found')}
+        tooltip={meteorTooltip}
+        onClick={() => setOpen(true)} />
+    )}
     <span className="sr-only" role="status">{label}</span>
     {open && <ModalPortal>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
@@ -221,11 +260,15 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
       status={outfitStatus}
       tooltip={<div className="space-y-1"><p className="font-medium">搭配收藏</p><p className="text-text-secondary">导入搭配码自动解析全部部件与染色，按全部匹配、忽略妆容或忽略饰品实时筛选当前账号能穿的搭配。</p></div>}
       onClick={() => open('outfits')} />
-    <GiantMeteorStatus compact={compact} />
-    <FeatureTile icon={Route} title="路线编辑器" compact={compact} status="录制和编辑路线"
-      tooltip={<div className="space-y-1"><p className="font-medium">路线编辑器</p><p className="text-text-secondary">走一遍就能录下路线，再加上采集、钓鱼等动作。</p></div>}
-      onClick={() => open('routes')} />
-    <PearpalAccountTile compact={compact} className={compact ? undefined : 'col-span-full'} />
+    {compact ? <>
+      <GiantMeteorStatus compact />
+      <PearpalAccountTile compact />
+    </> : (
+      <div className={clsx('col-span-full grid gap-2', isTauri() ? 'grid-cols-2' : 'grid-cols-1')}>
+        <PearpalAccountTile pill />
+        <GiantMeteorStatus pill />
+      </div>
+    )}
   </>;
   return compact
     ? <>{tiles}</>

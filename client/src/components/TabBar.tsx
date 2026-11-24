@@ -22,6 +22,7 @@ import {
   Share2,
   FileText,
   BarChart3,
+  Route,
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -538,7 +539,15 @@ export function TabBar() {
       <div className="flex shrink-0 items-center gap-1.5 px-3">
         {/* 功能入口平时在右侧面板；面板收起时显示为图标 */}
         {rightPanelCollapsed && !isMobile && <AccountStatusActions compact />}
-        {/* 冒险日报与运行统计入口（右上角小图标左侧） */}
+        {/* 路线编辑器与冒险日报入口（右上角小图标左侧） */}
+        <button
+          onClick={() => setCurrentPage('routes')}
+          className="p-2 rounded-lg hover:bg-bg-hover transition-colors text-text-secondary"
+          title="路线编辑器"
+          aria-label="路线编辑器"
+        >
+          <Route className="w-5 h-5" />
+        </button>
         <button
           onClick={() => setCurrentPage('statistics')}
           className="p-2 rounded-lg hover:bg-bg-hover transition-colors text-text-secondary"
