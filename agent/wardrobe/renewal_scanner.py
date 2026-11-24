@@ -33,10 +33,16 @@ SORT_DIR_ROI = [1138, 32, 68, 58]
 
 RAIL_X0 = 62
 RAIL_SIZE = 48
+RAIL_CENTER_X = 86
+RAIL_MINOR_SIZE = 39
+RAIL_MINOR_X0 = RAIL_CENTER_X - RAIL_MINOR_SIZE // 2
+RAIL_MINOR_BAND_TOP_OFFSET = 40
+RAIL_MINOR_BAND_HEIGHT = 370
 RAIL_GLOW_X0 = 54
 RAIL_GLOW_X1 = 118
 RAIL_TOP_Y = 130
 RAIL_BOTTOM_MARGIN = 50
+RAIL_MINOR_BOTTOM_MARGIN = 16
 RAIL_MAJOR_MAX_Y = 920
 RAIL_MAX_Y = 2200
 RAIL_TOP_SLOT = [86, 174]
@@ -99,9 +105,15 @@ class RejuvenateModel:
         self.minors: list[dict] = list(cat.get("accessory_minors") or [])
         self.meta_by_id: dict[str, dict] = {m["id"]: m for m in [*self.majors, *self.minors]}
         self.major_ids: list[str] = [m["id"] for m in self.majors]
-        self.non_skip_majors: list[str] = [m["id"] for m in self.majors if not m.get("skip")]
+        self.minor_ids: list[str] = [m["id"] for m in self.minors]
+        self.non_skip_majors: list[str] = [m["id"] for m in self.majors if not m.get("skip") and m["id"] != "acc"]
+        self.expected_categories: list[str] = [*self.non_skip_majors, *self.minor_ids]
 
         npz = np.load(directory / "icons.npz")
+        major_id_set = set(self.major_ids)
+        minor_id_set = set(self.minor_ids)
+        self.major_templates: list[tuple[str, np.ndarray]] = []
+        self.minor_templates: list[tuple[str, np.ndarray]] = []
         self.templates: list[tuple[str, np.ndarray]] = []
         for key in npz.files:
             cid = key[4:].removesuffix("_s") if key.startswith("cat_") else key
@@ -109,7 +121,18 @@ class RejuvenateModel:
             norm_t = alpha - float(alpha.mean())
             denom = float(np.sqrt((norm_t ** 2).sum()))
             if denom > 1e-6:
-                self.templates.append((cid, norm_t / denom))
+                tmpl = norm_t / denom
+                self.templates.append((cid, tmpl))
+                if cid in major_id_set:
+                    self.major_templates.append((cid, tmpl))
+            if cid in minor_id_set:
+                # Accessory minor sub-slots live inside ScaleBox_1 (UserSpecifiedScale=0.8),
+                # rendering at ~39x39px at 720p rather than the 48x48px major icon size.
+                alpha_minor = cv2.resize(alpha, (RAIL_MINOR_SIZE, RAIL_MINOR_SIZE), interpolation=cv2.INTER_AREA)
+                norm_m = alpha_minor - float(alpha_minor.mean())
+                denom_m = float(np.sqrt((norm_m ** 2).sum()))
+                if denom_m > 1e-6:
+                    self.minor_templates.append((cid, norm_m / denom_m))
 
         # Build clean_name -> ordered unique group IDs per part and combined for accessories,
         # plus canonical metadata per group for merging newly seen pieces into wardrobe.inventory.
@@ -200,11 +223,11 @@ class RejuvenateModel:
         return str(meta.get("name") or cid) if meta else cid
 
     def _rail_glow_candidates(self, frame: np.ndarray) -> tuple[int, list[tuple[np.ndarray, int, float, float]]]:
-        """Collect sorted left-rail warm highlight block candidates bounded within the rail band."""
+        """Collect sorted left-rail major-tab golden highlight block candidates."""
         if frame is None:
             return 0, []
         h, _w = frame.shape[:2]
-        y_end = min(max(RAIL_TOP_Y + 40, h - RAIL_BOTTOM_MARGIN), RAIL_MAX_Y)
+        y_end = min(max(RAIL_TOP_Y + 40, h - 24), RAIL_MAJOR_MAX_Y)
         strip = frame[RAIL_TOP_Y:y_end, RAIL_GLOW_X0:RAIL_GLOW_X1]
         if strip.size == 0:
             return 0, []
@@ -214,9 +237,6 @@ class RejuvenateModel:
         if len(glow_rows) < 16:
             return int(len(glow_rows)), []
 
-        # Evaluate contiguous warm highlight blocks by golden box fill coverage,
-        # prioritizing candidates in the major-category rail band (yc <= RAIL_MAJOR_MAX_Y)
-        # before lower accessory minor slots or tall-mode 3D background bands.
         breaks = np.where(np.diff(glow_rows) > 8)[0]
         candidates: list[tuple[np.ndarray, int, float, float]] = []
         for seg in np.split(glow_rows, breaks + 1):
@@ -235,7 +255,6 @@ class RejuvenateModel:
             candidates.append((seg, yc, warm_frac, bright_warm))
         candidates.sort(
             key=lambda item: (
-                item[1] > RAIL_MAJOR_MAX_Y,
                 len(item[0]) > 120,
                 -item[2],
                 -item[3],
@@ -244,8 +263,8 @@ class RejuvenateModel:
         )
         return int(len(glow_rows)), candidates
 
-    def detect_active_category(self, frame: np.ndarray) -> tuple[str | None, int | None, float]:
-        """Locate the glowing selected left-rail slot and classify its category icon."""
+    def _detect_active_major(self, frame: np.ndarray) -> tuple[str | None, int | None, float]:
+        """Locate the glowing selected major-tab slot (T_UI_common_btn_tab_04_s, 48x48 icon)."""
         if frame is None:
             return None, None, -1.0
         h, w = frame.shape[:2]
@@ -254,17 +273,10 @@ class RejuvenateModel:
             return None, None, -1.0
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
-        # Evaluate top candidates from both the major-category band (<= RAIL_MAJOR_MAX_Y)
-        # and the expanded accessory-minor band (> RAIL_MAJOR_MAX_Y) so neither tall-mode
-        # background bands nor faint upper-rail background bleed can shadow a real glowing slot.
-        upper = [c for c in candidates if c[1] <= RAIL_MAJOR_MAX_Y][:6]
-        lower = [c for c in candidates if c[1] > RAIL_MAJOR_MAX_Y][:6]
-        eval_pool = upper + lower
-
-        fallback_yc = eval_pool[0][1]
+        fallback_yc = candidates[0][1]
         fallback_sc = -1.0
-        best_hit: tuple[tuple[int, float, float, int, float], str, int, float] | None = None
-        for seg, yc, wf, bw in eval_pool:
+        best_hit: tuple[tuple[int, float, float, float], str, int, float] | None = None
+        for seg, yc, wf, bw in candidates[:6]:
             best_by_cid: dict[str, float] = {}
             for y0 in range(max(0, yc - 38), min(h - RAIL_SIZE, yc - 20), 2):
                 for x0 in range(max(0, RAIL_X0 - 2), min(w - RAIL_SIZE, RAIL_X0 + 3)):
@@ -274,7 +286,7 @@ class RejuvenateModel:
                     if denom < 1e-6:
                         continue
                     pn = p / denom
-                    for cid, tmpl in self.templates:
+                    for cid, tmpl in self.major_templates:
                         sc = float((pn * tmpl).sum())
                         if sc > best_by_cid.get(cid, -1.0):
                             best_by_cid[cid] = sc
@@ -287,13 +299,10 @@ class RejuvenateModel:
                 fallback_sc = top1_sc
                 fallback_yc = yc
             if top1_sc >= 0.62 and (top1_sc - top2_sc) >= 0.06:
-                # Among valid icon matches, prefer icon-sized golden highlight boxes
-                # with the strongest warm fill coverage over faint background bleed.
                 rank_key = (
                     1 if len(seg) <= 120 else 0,
                     round(float(wf), 3),
                     round(float(bw), 3),
-                    1 if yc <= RAIL_MAJOR_MAX_Y else 0,
                     top1_sc,
                 )
                 if best_hit is None or rank_key > best_hit[0]:
@@ -302,6 +311,170 @@ class RejuvenateModel:
             return best_hit[1], best_hit[2], best_hit[3]
         return None, fallback_yc, fallback_sc
 
+    def _minor_glow_candidates(
+        self,
+        frame: np.ndarray,
+        y_start: int,
+        y_end: int,
+    ) -> list[tuple[int, float, float]]:
+        """Locate accessory minor highlight bands (T_UI_common_btn_tab_05_s bottom warm crescent).
+
+        Unlike major tabs (full golden box), accessory sub-slots use a half-height warm gradient
+        whose opaque band sits in the lower ~20-26px of the 0.8x-scaled slot (~18px below icon center).
+        """
+        h, _w = frame.shape[:2]
+        y0 = max(RAIL_TOP_Y - 10, int(y_start))
+        y1 = min(h - RAIL_MINOR_BOTTOM_MARGIN, int(y_end))
+        if y1 - y0 < 32:
+            return []
+        strip = frame[y0:y1, RAIL_GLOW_X0:RAIL_GLOW_X1]
+        if strip.size == 0:
+            return []
+        r = strip[:, :, 2].astype(np.int32)
+        b = strip[:, :, 0].astype(np.int32)
+        glow_rows = np.where(((r > 145) & ((r - b) > 22)).sum(axis=1) >= 16)[0] + y0
+        if len(glow_rows) < 8:
+            return []
+
+        breaks = np.where(np.diff(glow_rows) > 8)[0]
+        candidates: list[tuple[int, float, float]] = []
+        for seg in np.split(glow_rows, breaks + 1):
+            if len(seg) < 8:
+                continue
+            if len(seg) <= 80:
+                glow_yc = int(round(float(np.median(seg))))
+                box = frame[max(0, glow_yc - 14):min(h, glow_yc + 14), RAIL_GLOW_X0 + 4:RAIL_GLOW_X1 - 4]
+                if box.size == 0:
+                    continue
+                br = box[:, :, 2].astype(np.int32)
+                bb = box[:, :, 0].astype(np.int32)
+                wf = float(((br > 145) & ((br - bb) > 22)).mean())
+                if wf < 0.30:
+                    continue
+                bw = float(((br > 180) & ((br - bb) > 30)).mean())
+                candidates.append((glow_yc, wf, bw))
+            else:
+                # If a warm 3D background floods the rail strip, locate the brighter tab_05_s
+                # golden bottom frame using outer border columns (clear of the central icon)
+                # relative to the segment median.
+                s0, s1 = int(seg[0]), int(seg[-1]) + 1
+                sub = frame[s0:s1, RAIL_GLOW_X0 + 4:RAIL_GLOW_X1 - 4].astype(np.float32)
+                if sub.shape[0] < 22 or sub.shape[1] < 24:
+                    continue
+                side = np.concatenate([sub[:, :10, :], sub[:, -10:, :]], axis=1)
+                row_luma = side[:, :, 2] * 0.5 + side[:, :, 1] * 0.35 + side[:, :, 0] * 0.15
+                row_sig = np.median(row_luma, axis=1)
+                excess = np.maximum(0.0, row_sig - float(np.median(row_sig)))
+                kernel = np.ones(14, dtype=np.float32) / 14.0
+                conv = np.convolve(excess, kernel, mode="same").copy()
+                # Extract up to 3 separated local peaks (>= 48px apart) so a bright parent tab_04_s
+                # or localized 3D sunspot cannot mask the active tab_05_s sub-slot.
+                for _ in range(3):
+                    peak_idx = int(np.argmax(conv))
+                    peak_val = float(conv[peak_idx])
+                    if peak_val < 3.5:
+                        break
+                    candidates.append((s0 + peak_idx, 0.45, peak_val / 50.0))
+                    lo = max(0, peak_idx - 48)
+                    hi = min(len(conv), peak_idx + 49)
+                    conv[lo:hi] = 0.0
+        candidates.sort(key=lambda item: (-item[1], -item[2]))
+        return candidates
+
+    def _detect_active_minor(
+        self,
+        frame: np.ndarray,
+        y_start: int,
+        y_end: int,
+    ) -> tuple[str | None, int | None, float]:
+        """Classify the active 0.8x accessory minor sub-slot inside [y_start, y_end]."""
+        if frame is None or not self.minor_templates:
+            return None, None, -1.0
+        h, w = frame.shape[:2]
+        candidates = self._minor_glow_candidates(frame, y_start, y_end)
+        if not candidates:
+            return None, None, -1.0
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
+
+        best_hit: tuple[tuple[float, float, float], str, int, float] | None = None
+        fallback_yc: int | None = None
+        fallback_sc = -1.0
+        for glow_yc, wf, bw in candidates[:4]:
+            best_by_cid: dict[str, float] = {}
+            best_y0_by_cid: dict[str, int] = {}
+            # Icon center lies ~14-22px above tab_05_s's lower warm crescent median,
+            # so icon top y0 = icon_cy - RAIL_MINOR_SIZE // 2 lies in [glow_yc - 44, glow_yc - 24].
+            y_lo = max(0, glow_yc - 44)
+            y_hi = min(h - RAIL_MINOR_SIZE, glow_yc - 22)
+            x_lo = max(0, RAIL_MINOR_X0 - 3)
+            x_hi = min(w - RAIL_MINOR_SIZE, RAIL_MINOR_X0 + 4)
+            for y0 in range(y_lo, y_hi + 1, 2):
+                for x0 in range(x_lo, x_hi):
+                    patch = gray[y0:y0 + RAIL_MINOR_SIZE, x0:x0 + RAIL_MINOR_SIZE]
+                    # Subtract per-row lower quartile to cancel tab_05_s's vertical gradient
+                    # without attenuating the white foreground icon silhouette.
+                    detrend = patch - np.percentile(patch, 25, axis=1, keepdims=True)
+                    p = detrend - float(detrend.mean())
+                    denom = float(np.sqrt((p ** 2).sum()))
+                    if denom < 1e-6:
+                        continue
+                    pn = p / denom
+                    for cid, tmpl in self.minor_templates:
+                        sc = float((pn * tmpl).sum())
+                        if sc > best_by_cid.get(cid, -1.0):
+                            best_by_cid[cid] = sc
+                            best_y0_by_cid[cid] = y0
+            if not best_by_cid:
+                continue
+            ranked = sorted(best_by_cid.items(), key=lambda kv: -kv[1])
+            top1_id, top1_sc = ranked[0]
+            top2_sc = ranked[1][1] if len(ranked) > 1 else -1.0
+            if top1_sc > fallback_sc:
+                fallback_sc = top1_sc
+                fallback_yc = best_y0_by_cid[top1_id] + RAIL_MINOR_SIZE // 2
+            if top1_sc >= 0.56 and (top1_sc - top2_sc) >= 0.08:
+                icon_yc = best_y0_by_cid[top1_id] + RAIL_MINOR_SIZE // 2
+                rank_key = (round(float(wf), 3), round(float(bw), 3), top1_sc)
+                if best_hit is None or rank_key > best_hit[0]:
+                    best_hit = (rank_key, top1_id, icon_yc, top1_sc)
+        if best_hit is not None:
+            return best_hit[1], best_hit[2], best_hit[3]
+        return None, fallback_yc, fallback_sc
+
+    def detect_active_category(self, frame: np.ndarray) -> tuple[str | None, int | None, float]:
+        """Locate the active left-rail category, resolving '饰品' to its selected minor subcategory.
+
+        In 服装焕新, '饰品' has no unified overview view: whenever any of its 15 accessory
+        subcategories is active, both the parent '饰品' major tab and the active minor sub-slot
+        below it are highlighted simultaneously.
+        """
+        if frame is None:
+            return None, None, -1.0
+        h, _w = frame.shape[:2]
+        major_cid, major_yc, major_sc = self._detect_active_major(frame)
+        if major_cid is not None and major_cid != "acc":
+            return major_cid, major_yc, major_sc
+        if major_cid == "acc" and major_yc is not None:
+            minor_cid, minor_yc, minor_sc = self._detect_active_minor(
+                frame,
+                major_yc + RAIL_MINOR_BAND_TOP_OFFSET,
+                min(h - RAIL_MINOR_BOTTOM_MARGIN, major_yc + RAIL_MINOR_BAND_TOP_OFFSET + RAIL_MINOR_BAND_HEIGHT),
+            )
+            if minor_cid is not None:
+                return minor_cid, minor_yc, minor_sc
+            # Return 'acc' only when the accessory sub-list is collapsed or mid-animation so
+            # the caller can wait/expand it rather than misreading it as an overview page.
+            return "acc", major_yc, major_sc
+        # Fallback if '饰品' itself was scrolled off the top edge of the rail.
+        minor_cid, minor_yc, minor_sc = self._detect_active_minor(
+            frame,
+            RAIL_TOP_Y,
+            min(h - RAIL_MINOR_BOTTOM_MARGIN, RAIL_MAX_Y),
+        )
+        if minor_cid is not None:
+            return minor_cid, minor_yc, minor_sc
+        return None, major_yc, major_sc
+
     def debug_active_category(self, frame: np.ndarray | None) -> dict:
         """Return JSON-safe rail detection metrics for incomplete-scan diagnostics."""
         if frame is None:
@@ -309,14 +482,25 @@ class RejuvenateModel:
                 "frame_shape": None,
                 "glow_rows_count": 0,
                 "candidates": [],
+                "minor_candidates": [],
                 "detected_cid": None,
                 "detected_yc": None,
                 "detected_score": -1.0,
             }
+        h = int(frame.shape[0])
         glow_count, candidates = self._rail_glow_candidates(frame)
+        major_cid, major_yc, _major_sc = self._detect_active_major(frame)
+        if major_cid == "acc" and major_yc is not None:
+            minor_cands = self._minor_glow_candidates(
+                frame,
+                major_yc + RAIL_MINOR_BAND_TOP_OFFSET,
+                min(h - RAIL_MINOR_BOTTOM_MARGIN, major_yc + RAIL_MINOR_BAND_TOP_OFFSET + RAIL_MINOR_BAND_HEIGHT),
+            )
+        else:
+            minor_cands = []
         cid, yc, sc = self.detect_active_category(frame)
         return {
-            "frame_shape": [int(frame.shape[0]), int(frame.shape[1])],
+            "frame_shape": [h, int(frame.shape[1])],
             "glow_rows_count": glow_count,
             "candidates": [
                 {
@@ -326,6 +510,14 @@ class RejuvenateModel:
                     "bright_warm": round(float(bw), 3),
                 }
                 for seg, cand_yc, wf, bw in candidates[:6]
+            ],
+            "minor_candidates": [
+                {
+                    "glow_yc": int(gyc),
+                    "warm_frac": round(float(wf), 3),
+                    "bright_warm": round(float(bw), 3),
+                }
+                for gyc, wf, bw in minor_cands[:4]
             ],
             "detected_cid": cid,
             "detected_yc": int(yc) if yc is not None else None,
@@ -911,7 +1103,8 @@ class RenewalScanner:
                 frame = self.rt.capture()
                 if frame is not None:
                     break
-        for _ in range(16):
+        # 8 major tabs + 15 expanded accessory subcategories = 23 slots total.
+        for _ in range(26):
             if self.rt.stopped or frame is None:
                 return None, None, None
             cid, yc, _sc = self.model.detect_active_category(frame)
@@ -919,9 +1112,15 @@ class RenewalScanner:
                 return frame, cid, yc
             self.rt.key(87, delay=0.25)  # VK_W
             after = self.rt.capture()
-            if after is not None and np.mean(cv2.absdiff(frame[130:660, 54:118], after[130:660, 54:118])) < 1.0:
-                if cid is not None:
-                    break
+            if after is not None:
+                diff_y1 = min(frame.shape[0] - RAIL_MINOR_BOTTOM_MARGIN, after.shape[0] - RAIL_MINOR_BOTTOM_MARGIN, 1150)
+                if diff_y1 > RAIL_TOP_Y + 40:
+                    rail_diff = float(np.mean(cv2.absdiff(
+                        frame[RAIL_TOP_Y:diff_y1, RAIL_GLOW_X0:RAIL_GLOW_X1],
+                        after[RAIL_TOP_Y:diff_y1, RAIL_GLOW_X0:RAIL_GLOW_X1],
+                    )))
+                    if rail_diff < 1.0 and cid is not None and cid != "acc":
+                        break
             frame = after
         self.rt.action("Click", target=RAIL_TOP_SLOT)
         self.rt.pause(0.3)
@@ -937,15 +1136,25 @@ class RenewalScanner:
         after = self.rt.capture()
         if after is not None:
             cid, yc, _sc = self.model.detect_active_category(after)
-            if (cid is not None and cid != prev_cid) or (yc is not None and prev_yc is not None and abs(yc - prev_yc) > 12):
+            # Treat unresolved 'acc' as mid-expansion/animation and wait briefly for the active minor slot.
+            if cid is not None and cid != "acc" and cid != prev_cid:
                 return after, cid, yc, True
-            if self.rt.pause(0.12):
+            if cid is not None and cid != "acc" and yc is not None and prev_yc is not None and abs(yc - prev_yc) > 12:
+                return after, cid, yc, True
+            for wait_s in (0.16, 0.18):
+                if not self.rt.pause(wait_s):
+                    break
                 after_retry = self.rt.capture()
-                if after_retry is not None:
-                    cid_r, yc_r, _sc_r = self.model.detect_active_category(after_retry)
-                    if (cid_r is not None and cid_r != prev_cid) or (yc_r is not None and prev_yc is not None and abs(yc_r - prev_yc) > 12):
-                        return after_retry, cid_r, yc_r, True
-                    after = after_retry
+                if after_retry is None:
+                    break
+                after = after_retry
+                cid, yc, _sc = self.model.detect_active_category(after_retry)
+                if cid is not None and cid != "acc" and cid != prev_cid:
+                    return after_retry, cid, yc, True
+                if cid is not None and cid != "acc" and yc is not None and prev_yc is not None and abs(yc - prev_yc) > 12:
+                    return after_retry, cid, yc, True
+            if cid == "acc" and prev_cid != "acc":
+                return after, cid, yc, True
 
         # Fallback: click the next visible slot directly below the active highlight inside clickable work area.
         if prev_yc is not None:
@@ -955,10 +1164,11 @@ class RenewalScanner:
                 capture_width=prev_frame.shape[1],
                 margin_px=8,
             )
-            cand_y = min(prev_frame.shape[0] - 55, safe_max_y - 12, prev_yc + 75)
+            pitch = 60 if prev_cid in ACCESSORY_PARTS else 70
+            cand_y = min(prev_frame.shape[0] - 32, safe_max_y - 12, prev_yc + pitch)
             if cand_y >= safe_min_y + 12 and cand_y > prev_yc + 18:
-                self.rt.action("Click", target=[86, cand_y])
-                self.rt.pause(0.25)
+                self.rt.action("Click", target=[RAIL_CENTER_X, cand_y])
+                self.rt.pause(0.28)
                 after2 = self.rt.capture()
                 if after2 is not None:
                     cid2, yc2, _sc2 = self.model.detect_active_category(after2)
@@ -1455,14 +1665,13 @@ class RenewalScanner:
                 added += 1
             pstate["items"] = items
 
-        # Mark scanned categories complete in full mode, and ensure empty minor accessory buckets exist.
+        # Mark each actually scanned category complete in full mode.
+        # '饰品' has no overview view, so never bulk-mark all accessory parts from 'acc'.
         if self.mode == "full":
             for cid, pinfo in self.summary.get("parts", {}).items():
-                if not isinstance(pinfo, dict) or not pinfo.get("complete"):
+                if not isinstance(pinfo, dict) or not pinfo.get("complete") or cid == "acc":
                     continue
-                targets = sorted(ACCESSORY_PARTS) if cid == "acc" else [cid]
-                for pcode in targets:
-                    ensure_part(pcode)["complete"] = True
+                ensure_part(cid)["complete"] = True
 
         # Infer missing ability-suit handhelds whenever 278 is complete.
         p278 = parts.get("278")
@@ -1578,10 +1787,20 @@ class RenewalScanner:
             for k, v in (((role.get("wardrobe") or {}).get("scoring") or {}).get("levels") or {}).items()
             if isinstance(v, int)
         }
-        if self.mode == "incremental" and (not owned_groups or not wardrobe_snapshot(role).get("complete")):
+        prev_renewal = (role.get("wardrobe") or {}).get("renewal_scan") or {}
+        prev_renewal_parts = prev_renewal.get("parts") if isinstance(prev_renewal.get("parts"), dict) else {}
+        missing_accessory_baseline = not all(p in prev_renewal_parts for p in self.model.minor_ids)
+        if self.mode == "incremental" and (
+            not owned_groups
+            or not wardrobe_snapshot(role).get("complete")
+            or missing_accessory_baseline
+        ):
             self.mode = "full"
             self.summary["mode"] = "full"
-            self.rt.log("焕新读取：当前尚无完整衣柜基准，自动切换为首次完整读取。")
+            if missing_accessory_baseline and owned_groups and wardrobe_snapshot(role).get("complete"):
+                self.rt.log("焕新读取：检测到此前饰品子分类尚未完整读取，自动切换为完整读取以补全全部饰品。")
+            else:
+                self.rt.log("焕新读取：当前尚无完整衣柜基准，自动切换为首次完整读取。")
 
         self.clear_filter()
         if not self.ensure_list_view():
@@ -1590,29 +1809,14 @@ class RenewalScanner:
             self.ensure_sort_acquired_desc()
 
         visited_cids: set[str] = set()
-        expected_majors = [m["id"] for m in self.model.majors if not m.get("skip")]
-        expected_accessory_minors = [m["id"] for m in self.model.minors]
+        expected_categories = list(self.model.expected_categories)
 
         def _missing_majors() -> list[str]:
-            missing: list[str] = []
-            for mid in expected_majors:
-                if mid != "acc":
-                    if mid not in visited_cids:
-                        missing.append(self.model.category_name(mid))
-                    continue
-                if "acc" in visited_cids:
-                    continue
-                # When the left rail enters expanded accessory subcategories instead of
-                # the unified "饰品" tab, require every minor subcategory rather than
-                # stopping after the first minor (e.g. 发饰) and skipping 帽子/耳饰/etc.
-                visited_minors = [p for p in expected_accessory_minors if p in visited_cids]
-                if not visited_minors:
-                    missing.append(self.model.category_name(mid))
-                else:
-                    for p in expected_accessory_minors:
-                        if p not in visited_cids:
-                            missing.append(self.model.category_name(p))
-            return missing
+            return [
+                self.model.category_name(cid)
+                for cid in expected_categories
+                if cid not in visited_cids
+            ]
 
         def _incomplete_parts() -> list[str]:
             return [
@@ -1675,12 +1879,55 @@ class RenewalScanner:
             prev_cid: str | None = None
             prev_grid_frame: np.ndarray | None = None
             sort_verified = False
-            for step in range(40):
+            acc_expand_retries = 0
+            for step in range(44):
                 if self.rt.stopped or frame is None:
                     break
                 if cid == "299":
                     visited_cids.add("299")
                     prev_cid = "299"
+                    prev_grid_frame = frame
+                    frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
+                    step_trace.append({
+                        "step": step,
+                        "cid": cid,
+                        "yc": yc,
+                        "moved": moved,
+                        "parts_count": len(self.summary["parts"]),
+                    })
+                    if not moved:
+                        break
+                    continue
+                if cid == "acc":
+                    # '饰品' has no overview view; wait once for expansion animation before clicking
+                    # the '饰品' header to recover a manually collapsed drawer.
+                    if acc_expand_retries == 0:
+                        acc_expand_retries += 1
+                        if self.rt.pause(0.3):
+                            frame = self.rt.capture()
+                            cid, yc, _sc = self.model.detect_active_category(frame)
+                            step_trace.append({
+                                "step": step,
+                                "cid": cid,
+                                "yc": yc,
+                                "moved": cid not in (None, "acc"),
+                                "parts_count": len(self.summary["parts"]),
+                            })
+                            continue
+                    if yc is not None and acc_expand_retries < 3:
+                        acc_expand_retries += 1
+                        self.rt.action("Click", target=[RAIL_CENTER_X, yc])
+                        self.rt.pause(0.35)
+                        frame = self.rt.capture()
+                        cid, yc, _sc = self.model.detect_active_category(frame)
+                        step_trace.append({
+                            "step": step,
+                            "cid": cid,
+                            "yc": yc,
+                            "moved": cid not in (None, "acc"),
+                            "parts_count": len(self.summary["parts"]),
+                        })
+                        continue
                     prev_grid_frame = frame
                     frame, cid, yc, moved = self._step_rail_down(frame, cid, yc)
                     step_trace.append({
@@ -1710,6 +1957,8 @@ class RenewalScanner:
                     continue
 
                 visited_cids.add(cid)
+                if cid in ACCESSORY_PARTS:
+                    acc_expand_retries = 0
                 fresh_switch = prev_cid is not None and cid != prev_cid
                 self._last_scan_frame = frame
                 self.rt.log(f"焕新读取：正在读取「{self.model.category_name(cid)}」。", detail=True)
@@ -1746,11 +1995,9 @@ class RenewalScanner:
                     frame = self.rt.capture()
                     prev_grid_frame = frame
                     cid_now, yc_now, _sc = self.model.detect_active_category(frame)
-                    frame, cid, yc, moved = self._step_rail_down(
-                        frame,
-                        cid_now or cid,
-                        yc_now if yc_now is not None else yc,
-                    )
+                    cid_use = cid_now if (cid_now is not None and cid_now != "acc") else cid
+                    yc_use = yc_now if (cid_now is not None and cid_now != "acc" and yc_now is not None) else yc
+                    frame, cid, yc, moved = self._step_rail_down(frame, cid_use, yc_use)
                 step_trace.append({
                     "step": step,
                     "cid": cid,
