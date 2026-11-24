@@ -21,16 +21,27 @@ from .settings import ROOT, foreground_inputs as inputs_allowed
 from .startup import focus_game
 from adventure_report import try_record_adventure_entry
 from navigation.controller import BackgroundInput, ForegroundInput
+from navigation.heading import difference as heading_difference
 from navigation.models import GameWindowClosed, NavigationError, maps
 from navigation.vision import Locator
 
 NPC_X = 10152.40
 NPC_Y = 10054.90
+# Qimiya stands inside the gazebo just north of the SW corridor interaction spot.
+NPC_BOOTH_X = 10152.50
+NPC_BOOTH_Y = 10053.50
 NEAR_NPC_RADIUS_PX = 1.6
 POST_ROUTE_NPC_RADIUS_PX = 1.6
 # Historical telemetry (12/12 successes at x <= 10153.425; 3/3 east-side failures at x >= 10153.775)
 # shows the east side of Qimiya's booth blocks interaction even inside a loose arrival radius.
 NPC_INTERACT_MAX_X = 10153.55
+# Exiting Shuttle Adventure returns Nikki to the SW dirt corridor (~2.5 px from NPC_X/NPC_Y,
+# facing Qimiya's booth), just outside the F-interact trigger radius.
+NPC_REENTER_APPROACH_MIN_RADIUS_PX = 1.2
+NPC_REENTER_APPROACH_MAX_RADIUS_PX = 6.0
+NPC_REENTER_APPROACH_MAX_STEPS = 4
+NPC_REENTER_APPROACH_STEP_SECONDS = 0.35
+NPC_REENTER_HEADING_MAX_DIFF_DEG = 45.0
 DEFAULT_ROUTE = "minigame_shuttle_adventure"
 DIALOGUE_MODE_ROI = [65, 12, 140, 60]
 DIALOGUE_SKIP_ROI = [1045, 635, 235, 85]
@@ -1065,9 +1076,84 @@ class MinigameBlingRun(Runtime):
                 return False
         return self.main()
 
+    @staticmethod
+    def _npc_approach_metrics(pose) -> tuple[float, float] | None:
+        """Return (min_dist_to_front_or_booth, min_heading_diff_deg) for a located pose."""
+        if pose is None or pose.heading is None or getattr(pose, "heading_confidence", 0.0) < 0.5:
+            return None
+        targets = ((NPC_X, NPC_Y), (NPC_BOOTH_X, NPC_BOOTH_Y))
+        dists = [math.hypot(tx - pose.x, ty - pose.y) for tx, ty in targets]
+        diffs = [
+            abs(heading_difference(math.degrees(math.atan2(tx - pose.x, -(ty - pose.y))) % 360.0, pose.heading))
+            for tx, ty in targets
+        ]
+        return min(dists), min(diffs)
+
+    def _approach_npc_for_interact(self, inputs: ForegroundInput) -> bool:
+        """Nudge forward along the flat front corridor when exit respawn sits just outside F range."""
+        if self.stopped:
+            return False
+        frame = self.capture()
+        if frame is None or not self.hit("MaaNikki_MainDetected", image=frame):
+            return False
+        if self._can_interact_with_npc(frame=frame):
+            return True
+        pose = self._locate_near_npc(
+            max_radius_px=NPC_REENTER_APPROACH_MAX_RADIUS_PX,
+            min_score=0.52,
+            frame=frame,
+            enforce_front_zone=True,
+        )
+        metrics = self._npc_approach_metrics(pose)
+        if pose is None or metrics is None:
+            return False
+        dist, heading_diff = metrics
+        if dist <= NPC_REENTER_APPROACH_MIN_RADIUS_PX or heading_diff > NPC_REENTER_HEADING_MAX_DIFF_DEG:
+            return False
+        self.log("当前位于「奇米亚」正面但尚未进入交互范围，向前微调靠近…", detail=True)
+        prev_x, prev_y, prev_dist = pose.x, pose.y, dist
+        for _ in range(NPC_REENTER_APPROACH_MAX_STEPS):
+            if self.stopped:
+                return False
+            inputs.hold("forward", NPC_REENTER_APPROACH_STEP_SECONDS, restore=False)
+            if self.stopped:
+                return False
+            inputs.wait(0.25, restore=False)
+            if self.stopped:
+                return False
+            frame = self.capture()
+            if frame is None or not self.hit("MaaNikki_MainDetected", image=frame):
+                return False
+            if self._can_interact_with_npc(frame=frame):
+                return True
+            pose = self._locate_near_npc(
+                max_radius_px=NPC_REENTER_APPROACH_MAX_RADIUS_PX,
+                min_score=0.52,
+                frame=frame,
+                enforce_front_zone=True,
+            )
+            metrics = self._npc_approach_metrics(pose)
+            if pose is None or metrics is None or pose.x > NPC_INTERACT_MAX_X:
+                break
+            new_dist, heading_diff = metrics
+            moved = math.hypot(pose.x - prev_x, pose.y - prev_y)
+            if (
+                new_dist <= NPC_REENTER_APPROACH_MIN_RADIUS_PX
+                or new_dist > prev_dist + 0.35
+                or moved < 0.15
+                or heading_diff > NPC_REENTER_HEADING_MAX_DIFF_DEG
+            ):
+                break
+            prev_x, prev_y = pose.x, pose.y
+            prev_dist = min(prev_dist, new_dist)
+        return self._can_interact_with_npc()
+
     def _open_npc_dialogue(self, inputs: ForegroundInput, *, max_attempts: int = 2) -> str:
         """Press interact and confirm overworld HUD disappears before sending dialogue keys."""
         for attempt in range(max_attempts):
+            if self.stopped:
+                return "stopped"
+            self._approach_npc_for_interact(inputs)
             if self.stopped:
                 return "stopped"
             inputs.hold("interact", 0.2, restore=False)
