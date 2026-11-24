@@ -52,7 +52,7 @@ FIRST_X = 172
 COL_PITCH = 176
 CARD_W = 150
 CARD_H = 188
-ROW_PITCH_EXACT = 245.0
+ROW_PITCH_EXACT = 245.33
 GRID_TOP = 94
 GRID_BOTTOM_MARGIN = 10
 GRID_SCROLL_TARGET = [620, 360]
@@ -851,22 +851,22 @@ def _scroll_rejuv_and_park(rt, dy: int, wait_seconds: float) -> np.ndarray | Non
 
 
 def _detect_occupied_rejuv_rows(frame: np.ndarray, row_ys: list[int]) -> list[tuple[int, list[int]]]:
-    """Return [(by, present_cols)] for rows with contiguous card occupancy before empty space."""
+    """Return [(by, present_cols)] for rows with visible cards before empty space.
+
+    Check every column in a row rather than stopping at the first dim slot so a single
+    mid-FadeIn card in col 0..4 cannot truncate the rest of the row or lower rows.
+    """
     rows: list[tuple[int, list[int]]] = []
     for by in row_ys:
-        present: list[int] = []
-        for col in range(COLS):
-            bx = FIRST_X + col * COL_PITCH
-            if not is_card_present(frame, bx, by):
-                break
-            present.append(col)
+        present = [
+            col for col in range(COLS)
+            if is_card_present(frame, FIRST_X + col * COL_PITCH, by)
+        ]
         if not present:
             if rows:
                 break
             continue
         rows.append((by, present))
-        if len(present) < COLS:
-            break
     return rows
 
 
@@ -1337,10 +1337,21 @@ class RenewalScanner:
             frame = fresh
             row_ys, occ_rows, stale = _eval(frame)
 
-        # If cards just appeared from an empty/stale grid or look partial, confirm once after a short
-        # settle tick so fade-in opacity and async streaming rows do not truncate the page.
+        # If cards just appeared from an empty/stale grid or look partial/gapped, confirm after short
+        # settle ticks so staggered FadeIn animations and async streaming rows finish populating.
+        def _has_row_gap(occ: list[tuple[int, list[int]]]) -> bool:
+            for idx_r, (_by, cols) in enumerate(occ):
+                if not cols:
+                    continue
+                if len(cols) < max(cols) + 1:
+                    return True
+                if idx_r < len(occ) - 1 and len(cols) < COLS:
+                    return True
+            return False
+
         if occ_rows and not stale and not self.rt.stopped:
-            is_partial = len(occ_rows[-1][1]) < COLS or len(occ_rows) < len(row_ys)
+            has_gap = _has_row_gap(occ_rows)
+            is_partial = has_gap or len(occ_rows[-1][1]) < COLS or len(occ_rows) < len(row_ys)
             if waited_from_unready or is_partial:
                 prev_count = _card_count(occ_rows)
                 for settle_step in range(4):
@@ -1357,7 +1368,7 @@ class RenewalScanner:
                     new_count = _card_count(o2)
                     if new_count >= prev_count:
                         frame, row_ys, occ_rows = fresh, r2, o2
-                    if new_count <= prev_count:
+                    if new_count <= prev_count and not (_has_row_gap(occ_rows) and settle_step < 2):
                         break
                     prev_count = new_count
 
@@ -1428,14 +1439,85 @@ class RenewalScanner:
         grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
         scroll_y = 0
         first_row_y: int | None = None
-        seen_slots: set[tuple[int, int]] = set()
-        cat_cards = 0
-        cat_matched = 0
-        cat_unmatched = 0
-        cat_renewed = 0
+        matched_slots: set[tuple[int, int]] = set()
+        # (row_idx, col) -> (last_by, raw_name, lv) so slots faded by RetainerBox_0's BottomMask
+        # or mid-FadeIn can be re-read cleanly once scrolled away from the viewport edge.
+        unmatched_slots: dict[tuple[int, int], tuple[int, str, int | None]] = {}
+        matched_groups_in_cat: set[str] = set()
+        renewed_slots: set[tuple[int, int]] = set()
         known_tail_streak = 0
         complete = False
         prev_map = prev_levels or {}
+        last_occ_rows: list[tuple[int, list[int]]] = []
+
+        def _row_cols_to_scan(occ_rows_list: list[tuple[int, list[int]]]) -> list[tuple[int, int, list[int]]]:
+            """Expand any interior mid-FadeIn gaps (cols < max_col or rows above non-final rows)."""
+            out_rows: list[tuple[int, int, list[int]]] = []
+            for idx_r, (by, present_cols) in enumerate(occ_rows_list):
+                if not present_cols:
+                    continue
+                row_idx = int(round((by + scroll_y - first_row_y) / ROW_PITCH_EXACT))
+                if row_idx < 0:
+                    continue
+                max_col = COLS - 1 if idx_r < len(occ_rows_list) - 1 else max(present_cols)
+                out_rows.append((by, row_idx, list(range(max_col + 1))))
+            return out_rows
+
+        def _process_ocr_rows(
+            src_frame: np.ndarray,
+            read_spec: list[tuple[int, int, list[int]]],
+            *,
+            allow_incremental_stop: bool,
+        ) -> bool:
+            nonlocal known_tail_streak, complete
+            if not read_spec:
+                return False
+            batch_step = 2 if (incremental and allow_incremental_stop) else len(read_spec)
+            for start in range(0, len(read_spec), batch_step):
+                if self.rt.stopped:
+                    return False
+                chunk = read_spec[start:start + batch_step]
+                parsed = _batch_read_rows_ocr(self.rt, src_frame, [(by, cols) for by, _ri, cols in chunk])
+                for by, row_idx, cols in chunk:
+                    for col in cols:
+                        item = parsed.get((by, col))
+                        if item is None:
+                            continue
+                        raw_name, lv, renewed = item
+                        slot_key = (row_idx, col)
+                        if lv is None and not clean_clothing_name(raw_name):
+                            continue
+                        if lv is None:
+                            if slot_key not in matched_slots:
+                                unmatched_slots[slot_key] = (by, raw_name, None)
+                            known_tail_streak = 0
+                            continue
+                        groups = self.model.lookup_groups(cid, raw_name)
+                        if not groups:
+                            if slot_key not in matched_slots:
+                                unmatched_slots[slot_key] = (by, raw_name, lv)
+                            known_tail_streak = 0
+                            continue
+                        unmatched_slots.pop(slot_key, None)
+                        matched_slots.add(slot_key)
+                        owned_hits = [g for g in groups if g in owned_groups]
+                        targets = owned_hits if owned_hits else [groups[0]]
+                        is_renewed = lv == RENEWED_LEVEL or renewed
+                        was_known = all(g in owned_groups and prev_map.get(g) == lv for g in targets)
+                        for grp in targets:
+                            self.scanned_levels[grp] = lv
+                            self.scanned_renewed[grp] = is_renewed
+                            matched_groups_in_cat.add(grp)
+                        if is_renewed:
+                            renewed_slots.add(slot_key)
+                        if incremental and allow_incremental_stop and was_known:
+                            known_tail_streak += 1
+                            if known_tail_streak >= self.INCREMENTAL_STOP_STREAK:
+                                complete = True
+                                return True
+                        else:
+                            known_tail_streak = 0
+            return False
 
         max_pages = 64 if is_tall else 400
         page = 0
@@ -1450,7 +1532,7 @@ class RenewalScanner:
                 frame, row_ys, occ_rows, page0_stale = self._detect_grid_cards_with_retry(
                     frame,
                     prev_grid_frame=prev_grid_frame if page == 0 else None,
-                    max_wait_seconds=0.9,
+                    max_wait_seconds=1.1,
                 )
                 self._last_scan_frame = frame
                 grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
@@ -1459,86 +1541,33 @@ class RenewalScanner:
             if not row_ys or not occ_rows:
                 complete = page == 0 and not expects_items and not page0_stale
                 break
+            last_occ_rows = occ_rows
             if first_row_y is None:
                 first_row_y = row_ys[0]
             occ_anchors = _build_scroll_anchors(frame, occ_rows, grid_bottom)
-            # A partial row or an empty lattice row cleanly inside the viewport means list end.
-            reached_list_end = (
-                len(occ_rows[-1][1]) < COLS
-                or len(occ_rows) < len(row_ys)
-            )
+            # Only short-circuit list end on page 0 when empty lattice rows exist cleanly inside the
+            # viewport (list fits without scrolling). When all viewport rows are filled or after
+            # scrolling (page >= 1), confirm true list end via the scroll-stillness check so a
+            # bottom-masked or streaming card on the bottom row never aborts the rest of the category.
+            reached_list_end = (page == 0 and len(occ_rows) < len(row_ys))
 
-            rows_to_read: list[tuple[int, list[int]]] = []
-            for by, present_cols in occ_rows:
-                row_idx = int(round((by + scroll_y - first_row_y) / ROW_PITCH_EXACT))
-                if row_idx < 0:
-                    continue
+            rows_to_read: list[tuple[int, int, list[int]]] = []
+            for by, row_idx, scan_cols in _row_cols_to_scan(occ_rows):
                 cols_needed: list[int] = []
-                for col in present_cols:
-                    if (row_idx, col) in seen_slots:
+                for col in scan_cols:
+                    slot_key = (row_idx, col)
+                    if slot_key in matched_slots:
                         continue
-                    seen_slots.add((row_idx, col))
+                    prev_unmatched = unmatched_slots.get(slot_key)
+                    if prev_unmatched is not None and abs(by - prev_unmatched[0]) < 40:
+                        continue
                     cols_needed.append(col)
                 if cols_needed:
-                    rows_to_read.append((by, cols_needed))
+                    rows_to_read.append((by, row_idx, cols_needed))
 
-            hit_tail = False
-            if rows_to_read:
-                # In incremental mode check every 2-row OCR band immediately so tail streak stops before scanning lower rows.
-                batch_step = 2 if incremental else len(rows_to_read)
-                for start in range(0, len(rows_to_read), batch_step):
-                    if self.rt.stopped:
-                        break
-                    chunk_rows = rows_to_read[start:start + batch_step]
-                    parsed = _batch_read_rows_ocr(self.rt, frame, chunk_rows)
-                    for (by, cols) in chunk_rows:
-                        for col in cols:
-                            item = parsed.get((by, col))
-                            if item is None:
-                                continue
-                            raw_name, lv, renewed = item
-                            if lv is None and not clean_clothing_name(raw_name):
-                                continue
-                            cat_cards += 1
-                            self.summary["scanned_cards"] += 1
-                            if lv is None:
-                                cat_unmatched += 1
-                                self.summary["unmatched_count"] += 1
-                                known_tail_streak = 0
-                                continue
-                            groups = self.model.lookup_groups(cid, raw_name)
-                            if not groups:
-                                cat_unmatched += 1
-                                self.summary["unmatched_count"] += 1
-                                known_tail_streak = 0
-                                if len(self.summary["unmatched_samples"]) < 20:
-                                    self.summary["unmatched_samples"].append({
-                                        "part": cid, "name": raw_name, "level": lv,
-                                    })
-                                continue
-                            owned_hits = [g for g in groups if g in owned_groups]
-                            targets = owned_hits if owned_hits else [groups[0]]
-                            is_renewed = lv == RENEWED_LEVEL or renewed
-                            was_known = all(g in owned_groups and prev_map.get(g) == lv for g in targets)
-                            for grp in targets:
-                                self.scanned_levels[grp] = lv
-                                self.scanned_renewed[grp] = is_renewed
-                                cat_matched += 1
-                            if is_renewed:
-                                cat_renewed += 1
-                            if incremental and was_known:
-                                known_tail_streak += 1
-                                if known_tail_streak >= self.INCREMENTAL_STOP_STREAK:
-                                    complete = True
-                                    hit_tail = True
-                                    break
-                            else:
-                                known_tail_streak = 0
-                        if hit_tail:
-                            break
-                    if hit_tail:
-                        break
-            if page == 0 and rows_to_read and cat_cards == 0:
+            hit_tail = _process_ocr_rows(frame, rows_to_read, allow_incremental_stop=True)
+            readable_count = len(matched_slots) + len(unmatched_slots)
+            if page == 0 and rows_to_read and readable_count == 0:
                 if page0_ocr_retries < 3 and not self.rt.stopped:
                     page0_ocr_retries += 1
                     if not self.rt.pause(0.2):
@@ -1550,7 +1579,10 @@ class RenewalScanner:
                     self._last_scan_frame = frame
                     grid_bottom = frame.shape[0] - GRID_BOTTOM_MARGIN
                     first_row_y = None
-                    seen_slots.clear()
+                    matched_slots.clear()
+                    unmatched_slots.clear()
+                    matched_groups_in_cat.clear()
+                    renewed_slots.clear()
                     continue
                 complete = not expects_items
                 break
@@ -1561,15 +1593,16 @@ class RenewalScanner:
                 break
 
             step_dy = -9600 if is_tall else -480
+            scroll_wait = 0.35 if is_tall else 0.28
             moved = False
             for attempt_dy in (step_dy, step_dy // 2, step_dy // 4):
-                after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.28)
+                after = _scroll_rejuv_and_park(self.rt, attempt_dy, scroll_wait)
                 if after is None:
                     break
                 same = _same_rejuv_grid(frame, after, occ_anchors)
                 delta = 0 if same else _measure_rejuv_scroll_delta(frame, after, occ_anchors)
                 if same or delta == 0:
-                    after = _scroll_rejuv_and_park(self.rt, attempt_dy, 0.28)
+                    after = _scroll_rejuv_and_park(self.rt, attempt_dy, scroll_wait)
                     if after is None:
                         break
                     same = _same_rejuv_grid(frame, after, occ_anchors)
@@ -1597,6 +1630,33 @@ class RenewalScanner:
             if complete or not moved:
                 break
             page += 1
+
+        # If any cells on the final visible viewport remain unmatched (e.g. staggered FadeIn on the
+        # last page), give them one brief settle capture and re-OCR only those cells.
+        if unmatched_slots and last_occ_rows and first_row_y is not None and not self.rt.stopped:
+            retry_spec: list[tuple[int, int, list[int]]] = []
+            for by, row_idx, scan_cols in _row_cols_to_scan(last_occ_rows):
+                cols_retry = [col for col in scan_cols if (row_idx, col) in unmatched_slots]
+                if cols_retry:
+                    retry_spec.append((by, row_idx, cols_retry))
+            if retry_spec and self.rt.pause(0.35):
+                settled = self.rt.capture()
+                if settled is not None:
+                    frame = settled
+                    self._last_scan_frame = settled
+                    _process_ocr_rows(settled, retry_spec, allow_incremental_stop=False)
+
+        cat_cards = len(matched_slots) + len(unmatched_slots)
+        cat_matched = len(matched_groups_in_cat)
+        cat_unmatched = len(unmatched_slots)
+        cat_renewed = len(renewed_slots)
+        self.summary["scanned_cards"] += cat_cards
+        self.summary["unmatched_count"] += cat_unmatched
+        for _slot_key, (_u_by, raw_name, lv) in sorted(unmatched_slots.items()):
+            if lv is not None and len(self.summary["unmatched_samples"]) < 20:
+                self.summary["unmatched_samples"].append({
+                    "part": cid, "name": raw_name, "level": lv,
+                })
 
         self.summary["parts"][cid] = {
             "name": self.model.category_name(cid),
