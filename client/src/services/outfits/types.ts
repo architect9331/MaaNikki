@@ -108,7 +108,7 @@ export const DEFAULT_MATCH_RULE: MatchRule = {
   ignoreMakeup: true,
   ignoreAccessories: false,
   ignoreShoesAndSocks: false,
-  requireExactVariant: false,
+  requireExactVariant: true,
 };
 
 export function ruleFromPreset(preset: MatchPreset, current: MatchRule): MatchRule {

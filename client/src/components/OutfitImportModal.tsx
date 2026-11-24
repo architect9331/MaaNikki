@@ -24,7 +24,7 @@ interface GamePhotoItem {
   modified: number;
 }
 
-const QUICK_TAGS = ['日常', '拍照', '甜美', '仙女', '暗黑', '古风', '染色', '待抽'];
+const QUICK_TAGS = ['日常', '拍照', '染色', '礼服', '古风', '哥特', '森系', '学院', '混搭', '待抽'];
 
 function deriveAutoTitle(decoded: DecodedShareCode, payload: ScoringPayload | null): string {
   const gameItems = payload?.catalog.game_items ?? {};
@@ -311,7 +311,7 @@ export function OutfitImportModal({
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={freshCodes.length > 1 ? '批量导入可填统一前缀，如 蓝调仙女' : '如：蓝白仙女裙'}
+                  placeholder={freshCodes.length > 1 ? '批量导入可填统一前缀，如 雾蓝礼服' : '如：雾蓝长裙'}
                   className="w-full rounded-lg border border-border bg-bg-primary px-3 py-1.5 text-xs outline-none focus:border-accent"
                 />
               </div>
@@ -323,7 +323,7 @@ export function OutfitImportModal({
                   type="text"
                   value={tagsText}
                   onChange={(e) => setTagsText(e.target.value)}
-                  placeholder="如：日常 拍照 仙女"
+                  placeholder="如：日常 拍照 礼服"
                   className="w-full rounded-lg border border-border bg-bg-primary px-3 py-1.5 text-xs outline-none focus:border-accent"
                 />
               </div>

@@ -13,7 +13,7 @@ import {
   type OutfitItemDictionary,
 } from './types';
 
-const RULE_STORAGE_KEY = 'maanikki_outfit_match_rule_v1';
+const RULE_STORAGE_KEY = 'maanikki_outfit_match_rule_v2';
 const WEB_COLLECTION_KEY = 'maanikki_outfit_collection_v1';
 
 function readStoredRule(): MatchRule {
@@ -24,7 +24,7 @@ function readStoredRule(): MatchRule {
     const ignoreMakeup = typeof parsed.ignoreMakeup === 'boolean' ? parsed.ignoreMakeup : true;
     const ignoreAccessories = typeof parsed.ignoreAccessories === 'boolean' ? parsed.ignoreAccessories : false;
     const ignoreShoesAndSocks = typeof parsed.ignoreShoesAndSocks === 'boolean' ? parsed.ignoreShoesAndSocks : false;
-    const requireExactVariant = typeof parsed.requireExactVariant === 'boolean' ? parsed.requireExactVariant : false;
+    const requireExactVariant = typeof parsed.requireExactVariant === 'boolean' ? parsed.requireExactVariant : true;
     return {
       preset: inferPreset({ ignoreMakeup, ignoreAccessories, ignoreShoesAndSocks, requireExactVariant }),
       ignoreMakeup,

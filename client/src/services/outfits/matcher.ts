@@ -344,14 +344,14 @@ export function evaluateOutfit(
   const matchedCount = required.filter((p) => p.satisfied).length;
   const requiredCount = required.length;
 
+  const unsatisfiedCount = Math.max(0, requiredCount - matchedCount);
+
   let status: OutfitMatchStatus;
-  if (missingPieces.length === 0) {
-    if (rule.requireExactVariant && sameModelPieces.length > 0) {
-      status = 'same_model';
-    } else {
-      status = 'wearable';
-    }
-  } else if (missingPieces.length <= 2) {
+  if (unsatisfiedCount === 0) {
+    status = 'wearable';
+  } else if (missingPieces.length === 0 && sameModelPieces.length > 0) {
+    status = 'same_model';
+  } else if (unsatisfiedCount <= 2) {
     status = 'near';
   } else {
     status = 'missing';

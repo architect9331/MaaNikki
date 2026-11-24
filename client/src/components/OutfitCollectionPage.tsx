@@ -45,10 +45,11 @@ function statusBadge(ev: OutfitEvaluation): { text: string; cls: string } {
   if (ev.status === 'same_model') {
     return { text: `同模 · 缺 ${ev.sameModelCount} 变体`, cls: 'bg-warning/90 text-white' };
   }
+  const gap = Math.max(1, ev.requiredCount - ev.matchedCount);
   if (ev.status === 'near') {
-    return { text: `仅缺 ${ev.missingCount} 件`, cls: 'bg-warning/90 text-white' };
+    return { text: `仅缺 ${gap} 件`, cls: 'bg-warning/90 text-white' };
   }
-  return { text: `缺 ${ev.missingCount} 件`, cls: 'bg-black/65 text-white' };
+  return { text: `缺 ${gap} 件`, cls: 'bg-black/65 text-white' };
 }
 
 export function OutfitCollectionPage({ onClose }: { onClose: () => void }) {
@@ -111,8 +112,8 @@ export function OutfitCollectionPage({ onClose }: { onClose: () => void }) {
     let anyUsesMakeup = false;
     for (const { ev } of evaluated) {
       if (ev.usesMakeup) anyUsesMakeup = true;
-      if (ev.status === 'wearable' || ev.status === 'same_model') wearable += 1;
-      else if (ev.status === 'near') near += 1;
+      if (ev.status === 'wearable') wearable += 1;
+      else if (ev.status === 'near' || (ev.status === 'same_model' && ev.sameModelCount <= 2)) near += 1;
       else missing += 1;
     }
     return { total: evaluated.length, wearable, near, missing, anyUsesMakeup };
@@ -131,9 +132,11 @@ export function OutfitCollectionPage({ onClose }: { onClose: () => void }) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = evaluated.filter(({ outfit, ev }) => {
-      if (statusFilter === 'wearable' && ev.status !== 'wearable' && ev.status !== 'same_model') return false;
-      if (statusFilter === 'near' && ev.status !== 'near') return false;
-      if (statusFilter === 'missing' && ev.status !== 'missing') return false;
+      const isNear = ev.status === 'near' || (ev.status === 'same_model' && ev.sameModelCount <= 2);
+      const isMissing = ev.status === 'missing' || (ev.status === 'same_model' && ev.sameModelCount > 2);
+      if (statusFilter === 'wearable' && ev.status !== 'wearable') return false;
+      if (statusFilter === 'near' && !isNear) return false;
+      if (statusFilter === 'missing' && !isMissing) return false;
       if (selectedTag !== 'all' && !outfit.tags.includes(selectedTag)) return false;
       if (!q) return true;
       return (
@@ -148,8 +151,10 @@ export function OutfitCollectionPage({ onClose }: { onClose: () => void }) {
       if (sortMode === 'recent') {
         return b.outfit.createdAt.localeCompare(a.outfit.createdAt);
       }
+      const gapA = a.ev.requiredCount - a.ev.matchedCount;
+      const gapB = b.ev.requiredCount - b.ev.matchedCount;
       if (sortMode === 'missing_asc') {
-        return a.ev.missingCount - b.ev.missingCount
+        return gapA - gapB
           || STATUS_PRIORITY[a.ev.status] - STATUS_PRIORITY[b.ev.status]
           || b.outfit.createdAt.localeCompare(a.outfit.createdAt);
       }
@@ -157,7 +162,7 @@ export function OutfitCollectionPage({ onClose }: { onClose: () => void }) {
       const ratioB = b.ev.requiredCount > 0 ? b.ev.matchedCount / b.ev.requiredCount : 1;
       return STATUS_PRIORITY[a.ev.status] - STATUS_PRIORITY[b.ev.status]
         || ratioB - ratioA
-        || a.ev.missingCount - b.ev.missingCount
+        || gapA - gapB
         || b.outfit.createdAt.localeCompare(a.outfit.createdAt);
     });
   }, [evaluated, statusFilter, selectedTag, search, sortMode]);

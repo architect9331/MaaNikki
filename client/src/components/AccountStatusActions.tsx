@@ -153,7 +153,7 @@ export function AccountStatusActions({ compact = false }: { compact?: boolean })
     let wearable = 0;
     for (const item of outfitItems) {
       const ev = evaluateOutfit(item, ownership, outfitDict, planPayload, outfitRule);
-      if (ev.status === 'wearable' || ev.status === 'same_model') wearable += 1;
+      if (ev.status === 'wearable') wearable += 1;
     }
     return `${outfitItems.length} 套 · 可穿 ${wearable}`;
   }, [outfitItems, planPayload, planSettings, outfitDict, outfitRule]);

@@ -55,14 +55,15 @@ function statusSummaryText(ev: OutfitEvaluation): { label: string; cls: string }
       cls: 'border-warning/35 bg-warning/12 text-warning',
     };
   }
+  const gap = Math.max(1, ev.requiredCount - ev.matchedCount);
   if (ev.status === 'near') {
     return {
-      label: `仅缺 ${ev.missingCount} 件`,
+      label: `仅缺 ${gap} 件`,
       cls: 'border-warning/35 bg-warning/12 text-warning',
     };
   }
   return {
-    label: `缺少 ${ev.missingCount} 件`,
+    label: `缺少 ${gap} 件`,
     cls: 'border-error/35 bg-error/10 text-error',
   };
 }
