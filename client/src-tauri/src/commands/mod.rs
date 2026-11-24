@@ -33,6 +33,7 @@ pub mod outfit_collection;
 pub mod pearpal;
 pub mod pearpal_map_resources;
 pub mod project_patch;
+pub mod redeem_codes;
 pub mod resonance;
 pub mod state;
 pub(crate) mod storage_budget;

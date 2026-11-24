@@ -272,6 +272,7 @@ pub fn run() {
             commands::outfit_collection::get_outfit_collection,
             commands::outfit_collection::save_outfit_collection,
             commands::outfit_collection::get_outfit_item_dictionary,
+            commands::redeem_codes::get_synced_redeem_codes,
             commands::data_update::get_data_update_status,
             commands::data_update::trigger_data_update_check,
             commands::data_update::get_suit_thumbs_status,

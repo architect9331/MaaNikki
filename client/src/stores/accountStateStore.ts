@@ -123,6 +123,7 @@ export interface AccountView {
 
 const requiredItems: Record<string, string[]> = {
   weekly_free_gifts: ['虹迹赠礼', '芳馨赠礼', '星实置业之礼'],
+  weekly_home_shop: ['能量结晶', '闪亮泡泡'],
   monthly_crystal_exchange: ['启示水晶', '共鸣水晶'],
   crown: ['challenge'],
 };
@@ -131,7 +132,7 @@ export function gameDay(now = Date.now()): Date {
 }
 export function periodKey(task: string, now = Date.now()): string {
   const day = gameDay(now);
-  if (task === 'weekly_free_gifts') {
+  if (task === 'weekly_free_gifts' || task === 'weekly_home_shop') {
     day.setUTCDate(day.getUTCDate() - (day.getUTCDay() + 6) % 7);
     return day.toISOString().slice(0, 10);
   }
@@ -158,16 +159,30 @@ export function crownAwardsClaimed(data: AccountView | null): boolean {
     awards.claimed_stars >= progress.stars && awards.claimed_stars <= progress.total &&
     Number.isFinite(Date.parse(awards.confirmed_at)));
 }
-export function periodCompleted(data: AccountView | null, task: string, targetStars = 12): boolean {
+export function periodCompleted(
+  data: AccountView | null,
+  task: string,
+  targetStars = 12,
+  optionValues?: Record<string, OptionValue>,
+): boolean {
   if (task === 'crown') {
     const progress = crownProgress(data);
     return progress !== null && progress.stars >= targetStars && crownAwardsClaimed(data);
   }
-  const required = requiredItems[task];
+  let required = requiredItems[task];
+  if (task === 'weekly_home_shop' && optionValues?.HomeShopItems?.type === 'checkbox') {
+    const cases = optionValues.HomeShopItems.caseNames;
+    required = [
+      ...(cases.includes('EnergyCrystal') ? ['能量结晶'] : []),
+      ...(cases.includes('ShinyBubbles') ? ['闪亮泡泡'] : []),
+    ];
+    if (required.length === 0) return false;
+  }
   const record = data?.tasks?.[task];
   const outcomes: Record<string, string[]> = {
-    weekly_free_gifts: ["claimed", "sold_out"],
-    monthly_crystal_exchange: ["exchanged", "already_exchanged", "sold_out"],
+    weekly_free_gifts: ['claimed', 'sold_out'],
+    weekly_home_shop: ['purchased', 'sold_out'],
+    monthly_crystal_exchange: ['exchanged', 'already_exchanged', 'sold_out'],
   };
   return Boolean(required && record?.period === periodKey(task) && required.every((key) =>
     record.items?.[key] && outcomes[task].includes(record.items[key].outcome) &&
@@ -175,7 +190,11 @@ export function periodCompleted(data: AccountView | null, task: string, targetSt
 }
 export function periodTaskLabel(task: string, completed: boolean, selected: boolean): string | null {
   if (!requiredItems[task]) return null;
-  const period = task === 'crown' ? '本期' : task === 'weekly_free_gifts' ? '本周' : '本月';
+  const period = task === 'crown'
+    ? '本期'
+    : (task === 'weekly_free_gifts' || task === 'weekly_home_shop')
+      ? '本周'
+      : '本月';
   return completed ? `${period}已完成` : selected ? `${period}将运行` : `${period}未勾选`;
 }
 

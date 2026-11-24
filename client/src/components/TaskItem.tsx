@@ -8,6 +8,7 @@ import {
   realmQueue,
 } from '@/utils/nikkiOptions';
 import { RealmQueueCard } from './RealmQueueCard';
+import { RedeemCodesPanel } from './RedeemCodesPanel';
 import { XinghaiScoreHint, xinghaiSummary } from './XinghaiScoreHint';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -352,7 +353,7 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
   const accountError = useAccountStateStore((s) => s.error);
   const routeCatalog = useRouteCatalogStore();
   const crownTarget = crownTargetStars(task.optionValues);
-  const completedPeriod = periodCompleted(account, task.taskName, crownTarget);
+  const completedPeriod = periodCompleted(account, task.taskName, crownTarget, task.optionValues);
   const progress = task.taskName === 'crown' ? crownProgress(account) : null;
   const crownStatus = completedPeriod ? '已完成'
     : task.enabled || task.runOnce ? (progress && progress.stars >= crownTarget ? '待领奖' : '将挑战')
@@ -1326,6 +1327,9 @@ export function TaskItem({ instanceId, task }: TaskItemProps) {
                 />
               )}
               {task.taskName === "xinghai" && <div className="mt-3"><XinghaiScoreHint values={task.optionValues} /></div>}
+              {task.taskName === "redeem_codes" && task.expanded && (
+                <div className="mt-3"><RedeemCodesPanel values={task.optionValues} /></div>
+              )}
             </div>
           </div>
         </div>
